@@ -1,0 +1,14 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+sed -i 's/HORZ_VELOC_DIFF_TYPE/HorizontalViscosity_type/g' exp.*oce*
+sed -i 's/HORZ_VELOC_DIFF_TYPE/HorizontalViscosity_type/g' checksuite.ocean_internal/*/exp.*
+#sed -i 's/k_veloc_h/HorizontalViscosityBackground_Biharmonic/g' exp.* only for the biharmonic setups 
+

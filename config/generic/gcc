@@ -1,0 +1,159 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+################################################################################
+
+if test -z "${ICON_SW_PREFIX-}"; then
+  case $(uname -s) in
+    Darwin)
+      # Assume that the packages are installed to '/opt/local'
+      # (default for MacPorts):
+      ICON_SW_PREFIX='/opt/local' ;;
+    *)
+      ICON_SW_PREFIX='/usr' ;;
+  esac
+fi
+
+# Do not export irrelevant environment variable:
+test "$(uname -s)" = Darwin && export_ld_path=no || export_ld_path=yes
+
+if test -d "${ICON_SW_PREFIX}"; then
+  ICON_SW_PREFIX=$(cd "${ICON_SW_PREFIX}"; pwd)
+  echo "INFO: ICON dependencies are expected in '${ICON_SW_PREFIX}'"
+  if test -d "${ICON_SW_PREFIX}/include"; then
+    CPPFLAGS="-I${ICON_SW_PREFIX}/include"
+    FCFLAGS="-I${ICON_SW_PREFIX}/include"
+  fi
+  if test -d "${ICON_SW_PREFIX}/include/libxml2"; then
+    CPPFLAGS="${CPPFLAGS-} -I${ICON_SW_PREFIX}/include/libxml2"
+  fi
+  if test -d "${ICON_SW_PREFIX}/lib64"; then
+    LDFLAGS="-L${ICON_SW_PREFIX}/lib64"
+    if test "${export_ld_path}" = yes; then
+      BUILD_ENV="${BUILD_ENV-} export LD_LIBRARY_PATH=\"${ICON_SW_PREFIX}/lib64:\${LD_LIBRARY_PATH-}\";"
+    fi
+  fi
+  if test -d "${ICON_SW_PREFIX}/lib"; then
+    LDFLAGS="${LDFLAGS-} -L${ICON_SW_PREFIX}/lib"
+    if test "${export_ld_path}" = yes; then
+      BUILD_ENV="${BUILD_ENV-} export LD_LIBRARY_PATH=\"${ICON_SW_PREFIX}/lib:\${LD_LIBRARY_PATH-}\";"
+    fi
+  fi
+  if test -d "${ICON_SW_PREFIX}/bin"; then
+    BUILD_ENV="${BUILD_ENV-} export PATH=\"${ICON_SW_PREFIX}/bin:\${PATH-}\";"
+  fi
+else
+  # Most probably, this will fail because the compiler will not be able to find
+  # Fortran module files even if they are installed to a standard directory.
+  echo "WARNING: directory '${ICON_SW_PREFIX}' not found: \
+set environment variable ICON_SW_PREFIX to the directory with ICON dependencies (NetCDF, LAPACK, etc.)" >&2
+fi
+
+################################################################################
+
+# NetCDF-C
+NETCDF_LIBS='-lnetcdf'
+
+# NetCDF-Fortran
+NETCDFF_LIBS='-lnetcdff'
+
+# BLAS/LAPACK
+BLAS_LAPACK_LIBS='-llapack -lblas'
+
+# ecCodes
+ECCODES_LIBS='-leccodes'
+
+# libfyaml
+FYAML_LIBS='-lfyaml'
+
+# Libxml2
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV="${BUILD_ENV-}"
+
+CC='mpicc'
+CFLAGS='-g -march=native'
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+CPPFLAGS="${CPPFLAGS-}"
+
+# Avoid overlinking to the MPI C++ library:
+CXX=$(eval "${BUILD_ENV}" >/dev/null; mpicxx -show | sed 's: .*$::')
+CXXFLAGS='-g -march=native'
+ICON_BUNDLED_CXXFLAGS='-O2'
+
+FC='mpif90'
+FCFLAGS="${FCFLAGS-} -fmodule-private -fimplicit-none -fmax-identifier-length=63 -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -g -march=native -fbacktrace -fbounds-check -fstack-protector-all -finit-real=nan -finit-integer=-2147483648 -finit-character=127 -O2"
+
+# Avoid Error: Rank mismatch between actual argument at (1) and actual argument at (2) (scalar and rank-1)
+# for gcc 10:
+ICON_FCFLAGS='-std=legacy'
+
+LDFLAGS="${LDFLAGS-}"
+LIBS="${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS}"
+
+MPI_LAUNCH='mpiexec'
+
+EXTRA_CONFIG_ARGS='--enable-openmp --enable-grib2 --enable-mixed-precision --enable-rte-rrtmgp'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+CXX="${CXX}" \
+CXXFLAGS="${CXXFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_BUNDLED_CXXFLAGS="${ICON_BUNDLED_CXXFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  if rsync -h >/dev/null 2>&1; then
+    echo "Copying runscript input files from the source directory..."
+    rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+    ln -sf ${icon_dir}/run/standard_* run/
+    rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+    rsync -uavz ${icon_dir}/make_runscripts .
+    ln -sf ${icon_dir}/data
+    ln -sf ${icon_dir}/vertical_coord_tables
+  else
+    echo "WARNING: 'rsync' is not available: unable to copy runscript input files from the source directory." >&2
+  fi
+fi
+

@@ -1,0 +1,112 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+% =============================================================================
+%
+% ICON_OCEAN_NML_TABLES.TEX
+%
+% This LaTeX file defines ocean (and sea-ice) specific namelist parameters.
+% The file is included by ICON_NML_TABLES.TEX. For atmosphere-only releases
+% the ocean namelists can also easily be excluded.
+%
+% =============================================================================
+
+
+%MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+%MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+%MMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMMM
+
+\section{Ocean-specific namelist parameters}
+
+
+\subsection{ocean\_physics\_nml}
+
+\begin{longtab}
+
+%\hline
+i\_sea\_ice    & I & 1  && 0: No sea ice, 1: Include sea ice& \tabularnewline
+&&&& .FALSE.: compute drag only & \tabularnewline
+%\hline
+richardson\_factor\_tracer  & I & 0.5e-5 & m/s&  & \tabularnewline
+%\hline
+richardson\_factor\_veloc  & I & 0.5e-5 & m/s&  & \tabularnewline
+%\hline
+l\_constant\_mixing  & L & .FALSE. & &  & \tabularnewline
+
+\end{longtab}
+
+
+\subsection{sea\_ice\_nml (relevant if run\_nml/iforcing=2 (ECHAM))}
+
+\begin{longtab}
+
+  %\hline
+  i\_ice\_therm &
+  I             &
+  2             &&
+  Switch for thermodynamic model: \\
+  1: Zero-layer model \\
+  2: Two layer Winton (2000) model \\
+  3: Zero-layer model with analytical forcing (for diagnostics) \\
+  4: Zero-layer model for atmosphere-only runs (for diagnostics) &
+  In an ocean run i\_sea\_ice must be >=1. In an atmospheric run the ice surface type must be defined.
+  \tabularnewline
+
+  i\_ice\_dyn   &
+  I             &
+  0             &&
+  Switch for sea-ice dynamics: \\
+  0: No dynamics \\
+  1: FEM dynamics (from AWI) &
+  \tabularnewline
+
+  i\_ice\_albedo        &
+  I                     &
+  1                     &&
+  Switch for albedo model. Only one is implemented so far. &
+  \tabularnewline
+
+  i\_Qio\_type          &
+  I                     &
+  2                     &&
+  Switch for ice-ocean heat-flux calculation method: \\
+  1: Proportional to ocean cell thickness (like MPI-OM) \\
+  2: Proportional to speed difference between ice and ocean &
+  Defaults to 1 when i\_ice\_dyn=0 and 2 otherwise.
+  \tabularnewline
+
+  kice  &
+  I     &
+  1     &&
+  Number of ice classes (must be one for now) &
+  \tabularnewline
+
+  hnull &
+  R     &
+  0.5   &
+  m     &
+  Hibler's $h_0$ parameter for new-ice growth. &
+  \tabularnewline
+
+  hmin  &
+  R     &
+  0.05  &
+  m     &
+  Minimum sea-ice thickness allowed. &
+  \tabularnewline
+
+  ramp\_wind    &
+  R             &
+  10            &
+  days          &
+  Number of days it takes the wind to reach correct strength. Only used at the start of an OMIP/NCEP simulation (not after restart). &
+  \tabularnewline
+
+\end{longtab}

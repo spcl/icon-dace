@@ -1,0 +1,527 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------------
+# nextGEMS R2B4 atmosphere standalone - for testing only
+# ----------------------------------------------------------------------------
+#
+author_list='Monika Esch, MPIM'
+#--------------------------------------------------------------------------------------------------
+
+# (1) Variables provided by the scripting mechanism
+
+# EXPNAME                = name of exp. in 'exp.<name>'
+# basedir                = base directory, where src/, run/ etc exist
+# icon_data_poolFolder   = root directory for ICON data
+# nproma                 = blocking length for array dimensioning and inner loop lengths
+#                           which is set in run/create_target_header for the used machine
+#
+# nblocks_c              = number of looping chunks used for cells
+#                          which is set in run/create_target_header for the used machine
+#
+# nproma_sub             = radiation blocking length
+#                          which is set in run/create_target_header for the used machine
+#
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/grids/public/mpim"
+
+#--------------------------------------------------------------------------------------------------
+
+# (2) Set variables needed by the scripting mechanism
+
+# horizontal grid(s)
+#
+#
+# domain globe
+grid_id=0043
+grid_id_land=0043-0036
+grids_folder=${icon_data_poolFolder}/${grid_id}
+grid_refinement=R02B04
+grid_label=G
+grid_name=icon_grid_${grid_id}_${grid_refinement}_${grid_label}
+#
+atmo_dyn_grids="'${grid_name}.nc'"
+
+# start and end date+time
+start_date=${start_date:="1979-01-01T00:00:00Z"}
+    end_date=${end_date:="1979-01-04T00:00:00Z"}
+
+# time steps
+radTimeStep="PT12M"
+atmTimeStep="PT40S"
+
+# restart intervals
+checkpoint_interval="P3D"
+restart_interval="P3D"
+
+# namelist files
+atmo_namelist=NAMELIST_${EXPNAME}_atm
+jsbach_namelist=NAMELIST_${EXPNAME}_lnd
+
+#--------------------------------------------------------------------------------------------------
+
+# (3) Define the model configuration
+
+# JSBACH settings
+jsbach_usecase=jsbach_lite    # jsbach_lite or jsbach_pfts
+jsbach_with_carbon=no         # yes needs jsbach_pfts usecase
+
+# Some further processing for land configuration
+# ----------------------------------------------
+#
+lcarbon=$([ "${jsbach_with_carbon:=yes}" == yes ] && echo .TRUE. || echo .FALSE. )
+#
+if [[ $jsbach_usecase == *pfts* ]]
+then
+  pft_file_tag="11pfts_"
+else
+  pft_file_tag=""
+fi
+
+#--------------------------------------------------------------------------------------------------
+
+# (6) Output control
+# ------------------
+
+# output intervals
+# ---------------------
+
+atm_output_interval_2d="PT6H"
+atm_output_interval_3d="PT6H"
+atm_file_interval="P1D"
+
+# output file selection
+# ---------------------
+
+# output_<xyz>=yes : yes --> output files for <xyz>, any other value --> no files for <xyz>
+
+output_atm_vgrid=no          # produces 1 file
+output_atm_2d=yes            # produces 1 files
+output_atm_3d=yes            # produces 3 files
+
+# asynchronous diagnostic output processes
+# ----------------------------------------
+
+# Note that "mpi_atm_io_procs" should match the number of output files
+
+mpi_atm_io_procs=4                # total number of output files
+
+
+# atmospheric dynamics and physics
+# --------------------------------
+#
+# atmosphere namelist
+# -------------------
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma               = ${nproma}
+ nblocks_c            = ${nblocks_c}
+ nproma_sub           = ${nproma_sub}
+ num_io_procs         = ${mpi_atm_io_procs}
+ io_proc_chunk_size   = 46
+ io_process_stride    = 8
+! num_restart_procs    = 0
+/
+&grid_nml
+ dynamics_grid_filename = ${atmo_dyn_grids}
+/
+&run_nml
+ num_lev              = 90          ! number of full levels
+ modeltimestep        = "${atmTimeStep}"
+ ltestcase            = .FALSE.     ! run testcase
+ ldynamics            = .TRUE.      ! dynamics
+ ltransport           = .TRUE.      ! transport
+ iforcing             = 2           ! 0: none, 1: HS, 2: ECHAM, 3: NWP
+ output               = 'nml'
+ msg_level            = 12          ! level of details report during integration
+ restart_filename     = "${EXPNAME}_restart_atm_<rsttime>.mfr"
+ activate_sync_timers = .TRUE.
+ profiling_output     = 1
+ timers_level         = 10
+/
+&extpar_nml
+ itopo                = 1           ! 1: read topography from the grid file
+/
+&initicon_nml
+ init_mode            = 2           ! 2: initialize from IFS analysis
+ ifs2icon_filename    = 'ifs2icon.nc'
+/
+&nonhydrostatic_nml
+ damp_height          = 44000. ! [m]
+ rayleigh_coeff       = 1      ! set to 0.1001 for rerun with little change
+ vwind_offctr         = 0.2
+ divdamp_fac          = 0.004
+ divdamp_order        = 24
+ divdamp_trans_end    = 17500
+ divdamp_trans_start  = 12500
+ divdamp_type         = 32
+ exner_expol          = 0.333
+ hbot_qvsubstep       = 16000.
+ htop_moist_proc      = 22500.
+ iadv_rhotheta        = 2
+ igradp_method        = 3
+ itime_scheme         = 4
+ ivctype              = 2
+ l_zdiffu_t           = .true.
+ thhgtd_zdiffu        = 125.
+ thslp_zdiffu         = 0.02
+/
+&interpol_nml
+/
+&sleve_nml
+ min_lay_thckn        = 25.    ! [m]
+ max_lay_thckn        = 400.   ! [m]
+ top_height           = 75000. ! [m]
+ stretch_fac          = 0.9
+ decay_scale_1        = 4000.  ! [m]
+ decay_scale_2        = 2500.  ! [m]
+ decay_exp            = 1.2
+ flat_height          = 16000. ! [m]
+ htop_thcknlimit      = 14000.
+/
+&dynamics_nml
+ lmoist_thdyn   = .TRUE.
+/
+&diffusion_nml
+/
+&transport_nml
+ tracer_names         = 'hus','clw','cli','qr','qs','qg'
+ ivadv_tracer         =    3 ,   3 ,   3 ,  3 ,  3 ,  3
+ itype_hlimit         =    3 ,   4 ,   4 ,  4 ,  4 ,  4
+ ihadv_tracer         =   20 ,  20 ,  20 , 20 , 20 , 20
+/
+&aes_phy_nml
+!
+! domain 1
+! --------
+!
+! atmospheric physics (""=never)
+ aes_phy_config(1)%dt_rad = "${radTimeStep}"
+ aes_phy_config(1)%dt_vdf = "${atmTimeStep}"
+ aes_phy_config(1)%dt_mig = "${atmTimeStep}"
+!
+! surface (.TRUE. or .FALSE.)
+ aes_phy_config(1)%ljsb   = .TRUE.
+ aes_phy_config(1)%lamip  = .TRUE.
+ aes_phy_config(1)%lice   = .TRUE.
+ aes_phy_config(1)%lmlo   = .FALSE.
+ aes_phy_config(1)%llake  = .TRUE.
+
+ aes_phy_config(1)%iqneg_d2p = 2
+ aes_phy_config(1)%iqneg_p2d = 2
+/
+&aes_rad_nml
+ aes_rad_config(1)%isolrad    = 1 ! Time dependent solar spectrum from file
+ aes_rad_config(1)%irad_h2o   = 1
+ aes_rad_config(1)%irad_co2   = 2
+ aes_rad_config(1)%irad_ch4   = 12
+ aes_rad_config(1)%irad_n2o   = 12
+ aes_rad_config(1)%irad_o3    = 6 ! constant annual cycle climatology
+ aes_rad_config(1)%irad_o2    = 2
+ aes_rad_config(1)%irad_cfc11 = 2
+ aes_rad_config(1)%irad_cfc12 = 2
+ aes_rad_config(1)%irad_aero  = 12
+ aes_rad_config(1)%vmr_co2    = 414.39e-06 ! constant ratio (348.0e-6)
+ aes_rad_config(1)%vmr_ch4    = 1911.0e-09 ! constant ratio (1650.0e-9)
+ aes_rad_config(1)%vmr_n2o    = 332.07e-09 ! constant ratio (306.0e-9)
+ aes_rad_config(1)%lyr_perp   = .true.
+ aes_rad_config(1)%yr_perp    = 2020
+ aes_rad_config(1)%vmr_cfc11  = 218.23e-12
+ aes_rad_config(1)%vmr_cfc12  = 495.02e-12
+/
+&aes_vdf_nml
+ aes_vdf_config(1)%turb       = 2
+ aes_vdf_config(1)%pr0        = 0.7
+! aes_vdf_config(1)%use_tmx    = .TRUE. ! adapted to ngc3039, does not work proper yet
+! aes_vdf_config(1)%lmix_max   = 150.
+/
+&aes_cov_nml
+ aes_cov_config(1)%cqx  = 1.e-6
+/
+&aes_cop_nml
+ aes_cop_config(1)%cinhomi  = 1.0
+ aes_cop_config(1)%cinhoml1 = 0.4
+ aes_cop_config(1)%cinhoml2 = 0.4
+ aes_cop_config(1)%cinhoml3 = 0.4
+ aes_cop_config(1)%cn1lnd   = 50.0
+ aes_cop_config(1)%cn1sea   = 50.0
+ aes_cop_config(1)%cn2lnd   = 220.0
+ aes_cop_config(1)%cn2sea   = 100.0
+/
+&cloud_mig_nml
+/
+&sea_ice_nml
+ albedow_sim  = 0.10
+ albi         = 0.70
+ albim        = 0.65
+ albs         = 0.80
+ albsm        = 0.65
+ i_ice_dyn    = 1
+ i_ice_therm  = 1
+ leadclose_1  = 0.25
+ leadclose_2n = 0.666
+/
+EOF
+
+# jsbach namelist
+# ---------------
+
+cat > ${jsbach_namelist} << EOF
+&jsb_model_nml
+ usecase             = "${jsbach_usecase}"
+ use_lakes           = .TRUE.
+! use_tmx             = .TRUE.    ! adapted to ngc3039, does not work proper yet
+ fract_filename      = 'bc_land_frac.nc'
+ init_from_ifs       = .TRUE.
+/
+&jsb_seb_nml
+ bc_filename         = 'bc_land_phys.nc'
+ ic_filename         = 'ic_land_soil.nc'
+/
+&jsb_rad_nml
+ use_alb_veg_simple  = .TRUE.               ! Use TRUE for jsbach_lite, FALSE for jsbach_pfts
+ bc_filename         = 'bc_land_phys.nc'
+ ic_filename         = 'ic_land_soil.nc'
+/
+&jsb_turb_nml
+ bc_filename         = 'bc_land_phys.nc'
+ ic_filename         = 'ic_land_soil.nc'
+! max_ini_rough_m     = 2.0 ! has to be set with tmx!
+/
+&jsb_sse_nml
+ l_heat_cap_map      = .FALSE.
+ l_heat_cond_map     = .FALSE.
+ l_heat_cap_dyn      = .FALSE.
+ l_heat_cond_dyn     = .FALSE.
+ l_snow              = .TRUE.
+ l_dynsnow           = .TRUE.
+ l_freeze            = .TRUE.
+ l_supercool         = .FALSE.
+ bc_filename         = 'bc_land_soil.nc'
+ ic_filename         = 'ic_land_soil.nc'
+! l_soil_texture      = .TRUE.
+/
+&jsb_hydro_nml
+ bc_filename         = 'bc_land_soil.nc'
+ ic_filename         = 'ic_land_soil.nc'
+ bc_sso_filename     = 'bc_land_sso.nc'
+! l_soil_texture      = .TRUE.
+/
+&jsb_assimi_nml
+ active              = .FALSE.              ! Use FALSE for jsbach_lite, TRUE for jsbach_pfts
+/
+&jsb_pheno_nml
+ scheme              = 'climatology'        ! scheme = logrop / climatology; use climatology for jsbach_lite
+ bc_filename         = 'bc_land_phys.nc'
+ ic_filename         = 'ic_land_soil.nc'
+/
+&jsb_carbon_nml
+ active              = .FALSE.
+ bc_filename         = 'bc_land_carbon.nc'
+ ic_filename         = 'ic_land_carbon.nc'
+ read_cpools         = .FALSE.
+/
+&jsb_fuel_nml
+ active              = .FALSE.
+ fuel_algorithm      = 1
+/
+&jsb_disturb_nml
+ active              = .FALSE.
+ ic_filename         = 'ic_land_soil.nc'
+ bc_filename         = 'bc_land_phys.nc'
+ fire_algorithm      = 1
+ windbreak_algorithm = 1
+ lburn_pasture       = .FALSE.
+/
+EOF
+
+#--------------------------------------------------------------------------------------------------
+
+# (4) Define the input
+
+# model files
+#
+add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc             ./rrtmgp-cloud-optics-coeffs-lw.nc
+add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc             ./rrtmgp-cloud-optics-coeffs-sw.nc
+
+#
+# namelist files
+#
+add_required_file ${basedir}/run/${atmo_namelist}                         ./
+add_required_file ${basedir}/run/${jsbach_namelist}                       ./
+
+# dictionary file for output variable names
+#
+dict_file="dict.${EXPNAME}"
+cat dict.iconam.mpim  > ${dict_file}
+add_required_file ${basedir}/run/${dict_file}                             ./
+
+# initial and boundary conditions
+# 
+datadir=${icon_data_poolFolder}/${grid_id}/initial_condition/r0001
+add_link_file $datadir/ifs2icon_1979010100_${grid_refinement}_G.nc        ./ifs2icon.nc
+#
+datadir=${icon_data_poolFolder}/${grid_id}/ozone/r0001
+add_link_file $datadir/bc_ozone_picontrol.nc                              ./bc_ozone.nc
+# 
+datadir=${icon_data_poolFolder}/${grid_id}/sst_and_seaice/r0001
+add_link_file $datadir/bc_sic_1979_2016.nc                                ./bc_sic.nc
+add_link_file $datadir/bc_sst_1979_2016.nc                                ./bc_sst.nc
+#
+datadir=${icon_data_poolFolder}/${grid_id}/aerosol_kinne/r0001
+add_link_file $datadir/bc_aeropt_kinne_lw_b16_coa.nc                      ./
+add_link_file $datadir/bc_aeropt_kinne_sw_b14_coa.nc                      ./
+add_link_file $datadir/bc_aeropt_kinne_sw_b14_fin_1850.nc                 ./bc_aeropt_kinne_sw_b14_fin.nc
+#
+datadir=${icon_data_poolFolder}/independent
+add_link_file $datadir/greenhouse_gases/greenhouse_ssp245.nc              ./bc_greenhouse_gases.nc
+#
+datadir=${icon_data_poolFolder}/independent/solar_radiation/3.2
+add_link_file $datadir/swflux_14band_cmip6_1850-2299-v3.2.nc              ./bc_solar_irradiance_sw_b14.nc
+#
+datadir=${icon_data_poolFolder}/${grid_id_land}/land/r0002
+add_link_file $datadir/ic_land_soil_1979.nc                               ./ic_land_soil.nc
+add_link_file $datadir/bc_land_frac_1979.nc                               ./bc_land_frac.nc
+add_link_file $datadir/bc_land_phys_1979.nc                               ./bc_land_phys.nc
+add_link_file $datadir/bc_land_soil_1979.nc                               ./bc_land_soil.nc
+add_link_file $datadir/bc_land_sso_1979.nc                                ./bc_land_sso.nc
+#
+# - lctlib file for JSBACH
+add_link_file ${basedir}/externals/jsbach/data/lctlib_nlct21.def          ./lctlib_nlct21.def
+#-----------------------------------------------------------------------------
+# Parameters for all output files
+# -------------------------------
+cat >> ${atmo_namelist} << EOF
+&io_nml
+ output_nml_dict      = "${dict_file}"
+ netcdf_dict          = "${dict_file}"
+ itype_pres_msl       = 4
+ restart_file_type    = 5
+ restart_write_mode   = 'joint procs multifile'
+ lnetcdf_flt64_output = .FALSE.
+/
+EOF
+
+# Define output files
+# -------------------
+#
+# 3-dimensional files include 'ps' and 'pfull' to allow the vertical
+# interpolation to pressure levels by cdo ap2pl.
+
+# fixed model data only written at initial date
+if [[ "$output_atm_vgrid" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_vgrid"
+ filename_format  = "<output_filename>_<levtype_l>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"             ! output_start = output_end
+ output_end       = "${start_date}"             ! --> write once only irrespective of
+ output_interval  = "${atm_output_interval_2d}" !     the output interval and
+ file_interval    = "${atm_file_interval}"      !     the file interval
+ ml_varlist       = 'zghalf'  , 'zg'      , 'dzghalf'
+/
+EOF
+fi
+#
+#
+if [[ "$output_atm_2d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_2d_ml"
+ filename_format  = "<output_filename>_<datetime2>"
+ filetype         = 5
+ mode             = 1
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${atm_output_interval_2d}" !
+ file_interval    = "${atm_file_interval}"    !     the file interval
+ operation        = 'mean'
+ ml_varlist       = 'psl'     ,
+                    'rsdt'    ,
+                    'rsut'    , 'rsutcs'  , 'rlut'    , 'rlutcs'  ,
+                    'rsds'    , 'rsdscs'  , 'rlds'    , 'rldscs'  ,
+                    'rsus'    , 'rsuscs'  , 'rlus'    ,
+                    'ts'      , 'clt'     ,
+                    'pr'      , 'prw'     , 'cllvi'   , 'clivi'   ,
+                    'hfls'    , 'hfss'    , 'evspsbl' ,
+                    'tauu'    , 'tauv'    ,
+                    'sfcwind' , 'tas'     ,
+!                      ! Variables not used for quickplots, but for tables
+                    'ps'      , 'cosmu0'  ,
+                    'sic'     , 'sit'     ,
+                    'albedo'  ,
+                    'prlr'    , 'prls'    ,
+                    'qgvi'    , 'qrvi'    , 'qsvi'    ,
+                    'uas'     , 'vas'     , 'dew2'    ,
+                    'cptgzvi' , 'uphyvi'  , 'udynvi',
+                    'ssfl_tsa', 'rsfl_tsa', 'shfl_qsa',
+                    'rpds_dir', 'rpds_dif', 'rvds_dif', 'rnds_dif',
+                    'pr_rain', 'pr_ice', 'pr_snow', 'pr_grpl',
+/
+EOF
+fi
+#
+if [[ "$output_atm_3d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d_1"
+ filename_format  = "<output_filename>_<datetime2>"
+ filetype         = 5
+ mode             = 1
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ operation        = 'mean'
+ output_interval  = "${atm_output_interval_3d}" !     the output interval and
+ file_interval    = "${atm_file_interval}"    !     the file interval
+ ml_varlist       = 'ta', 'ua', 'va',
+/
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d_2"
+ filename_format  = "<output_filename>_<datetime2>"
+ filetype         = 5
+ mode             = 1
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ operation        = 'mean'
+ output_interval  = "${atm_output_interval_3d}" !     the output interval and
+ file_interval    = "${atm_file_interval}"    !     the file interval
+ ml_varlist       = 'cl', 'cli', 'clw',
+/
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d_3"
+ filename_format  = "<output_filename>_<datetime2>"
+ filetype         = 5
+ mode             = 1
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ operation        = 'mean'
+ output_interval  = "${atm_output_interval_3d}" !     the output interval and
+ file_interval    = "${atm_file_interval}"    !     the file interval
+ ml_varlist       = 'wa', 'hus', 'pfull',
+/
+EOF
+#
+fi
+#
+#  get model
+#
+ls -l ${MODEL}
+check_error $? "${MODEL} does not exist?"
+#
+ldd ${MODEL}
+#
+#-----------------------------------------------------------------------------

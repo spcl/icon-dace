@@ -1,0 +1,57 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------
+#
+# _bb_table_Description_  MCH LAM experiment
+# _bb_table_Model_        non-hydrostatic atmosphere with NWP physics
+
+#--------------------------------------------------------------------------------
+#
+# 1. Define the experiment and the files to be checked
+#
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names: 
+#
+export EXPERIMENT='mch_kenda-ch1'
+
+# set parameters to avoid crash of icon-dev.checksuite
+export TYPES="void"
+export DATES="void"
+export RESTART_DATE="void"
+
+#--------------------------------------------------------------------------------
+# 
+# 2. Define the checksuite mode
+#
+export MD='p'
+
+#--------------------------------------------------------------------------------
+# 
+# 3. Launch the checksuite from run/
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+./icon-dev.checksuite
+STATUS=$?
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit
+
+

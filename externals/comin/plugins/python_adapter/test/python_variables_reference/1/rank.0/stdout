@@ -1,0 +1,17 @@
+plugin_info(id=1, name='python_adapter', options='../variables.py', comm='')
+var_name='u', var_id=1, tracer=False units=m/s^1
+var_name='v', var_id=1, tracer=False units=m/s^1
+var_name='pres', var_id=1, tracer=False units=Pa
+var_name='temp', var_id=1, tracer=False units=K
+var_name='rho', var_id=1, tracer=False units=kg/m3
+var_name='pres_sfc', var_id=1, tracer=False units=Pa
+var_name='tracer', var_id=1, tracer=False units=
+var_name='qr', var_id=1, tracer=True units=kg/kg
+var_name='qi', var_id=1, tracer=True units=kg/kg
+var_name='qv', var_id=1, tracer=True units=kg/kg
+var_name='qs', var_id=1, tracer=True units=kg/kg
+var_name='qc', var_id=1, tracer=True units=kg/kg
+var_name='test', var_id=1, tracer=False units=%
+test.to_3d.shape=(8, 10, 641)
+test.to_3d.shape=(8, 10, 641)
+test.to_3d.shape=(8, 10, 641)

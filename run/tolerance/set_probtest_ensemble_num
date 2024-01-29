@@ -1,0 +1,36 @@
+if [ "${BASH_SOURCE-}" = "$0" ]; then
+    echo "You must source this script in bash: \$ source $0" >&2
+    exit 33
+fi
+
+if [[ $# == 0 ]]; then
+    echo "ERROR: EXPERIMENT not specified."
+    echo
+    echo "Usage:"
+    echo "  source set_probtest_ensemble_num \$EXPERIMENT"
+    echo
+    echo "This script sets probtest_ensemble_num according to EXPERIMENT"
+    echo
+    echo "Bash is exited in case the EXPERIMENT is not defined."
+    exit 22
+fi
+
+EXPERIMENT="$1"
+
+case $EXPERIMENT in
+    mch_opr_r19b07_2m)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,39
+        ;;
+    mch_opr_r19b07_2m_expl)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,16
+        ;;
+    mch_icon-ch2_small)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,12
+        ;;
+    *lhn_00*)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,20
+        ;;
+    *)
+        probtest_ensemble_num=10
+        ;;
+esac

@@ -1,0 +1,102 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  METVIEW.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - copy output and/or
+  - store in database and/or
+  - trigger transfer to DWD
+%end
+
+# include the standard header file
+%include <init_ws_submit.h>
+
+# -------------------------------------------------
+
+echo "METVIEW.SMS" 
+
+
+#-----------------------------------------------------------------------------
+# metview plots
+
+lmetview=1
+
+
+#-----------------------------------------------------------------------------
+# directory
+
+YYYYMM=`echo %YMD% | cut -c 1-6`
+EXPDIR=%ECTEMP%/%SUITE%/%EXPNUM%/%YMD%%INIHOUR%
+METDIR=%ECPERM%/%USER_ICON_DIR%/scripts/postprocessing/tools/metview
+cd ${EXPDIR}
+# base name for output and namelist files
+basename=%SUITE%_%EXPNUM%_%YMD%%INIHOUR%
+
+
+#-----------------------------------------------------------------------------
+# quick plots (find standard output on oflws144:/uwork1/mkoehler/wq)
+
+ndiff=4                     #number of processes (e.g. 4, synchronize with icon.def "work")
+nstart=%metproc%            #index of process    (e.g. 1 or 4)
+nstart=`awk -v var="$nstart" 'BEGIN{ print (var-1) }'` #awk requires indices [0,4-1]
+export nstart
+
+if [[ $lmetview = 1 ]] ; then
+
+  sleep $nstart  # avoid simulaneous copying
+  \cp -f ${METDIR}/many.error.s ${METDIR}/map.error ${METDIR}/zonal.error . || true
+  export PLOTDIR='metplots'
+  export DATADIR='grb_data'
+  export DATAREF='../../../%SUITE2%/%EXPNUM2%/'${YYYYMM}'/grb_data'
+  export TAILFILE='.grb'
+  export LMONTH=0
+  export YYYYMM
+  mkdir -p ${PLOTDIR}
+
+  # add one day "-s -1"!!!
+  VERDATEHOUR=`python %ECBASEDIR%/gen/date_calc.py -a printdate -d %YMD%%INIHOUR% -s -1`
+  VERDATE=`echo $VERDATEHOUR | cut -c1-8`
+  VERHOUR=`echo $VERDATEHOUR | cut -c9-10`
+  ./many.error.s %YMD% %INIHOUR% $VERDATE $VERHOUR 1 %RES% %SUITE%_%EXPNUM% %SUITE2%_%EXPNUM2%
+ ## minus one day "-s +1"!!!
+ #VERDATEHOUR=`python %ECBASEDIR%/gen/date_calc.py -a printdate -d %YMD%%INIHOUR% -s +1`
+ #VERDATE=`echo $VERDATEHOUR | cut -c1-8`
+ #VERHOUR=`echo $VERDATEHOUR | cut -c9-10`
+ #./many.error.s $VERDATE $VERHOUR %YMD% %INIHOUR% 1 %RES% %EXPNUM%
+
+%nopp
+  awk 'NR%'${ndiff}'=='${nstart} met.job.all.${nstart} > met.job.${nstart}
+%end
+  echo "work:"
+  cat met.job.${nstart}
+  chmod u+x ./met.job.${nstart}
+  ./met.job.${nstart}
+  \rm -rf met.job.all.${nstart} met.job.${nstart}
+
+fi
+
+
+# -------------------------------------------------
+
+# include the standard "tail" file
+%include <end_ws.h>
+

@@ -1,0 +1,90 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#-----------------------------------------------------------------------------
+#
+# Basic specifications of the simulation
+# --------------------------------------
+#
+# These variables are set in the header section of the completed run script:
+#   EXPNAME = experiment name
+# They may be overwritten here
+#
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#-----------------------------------------------------------------------------
+# the namelist filename
+testbed_namelist=NAMELIST_${EXPNAME}
+#
+start_date=${start_date:="2008-09-01T00:00:00Z"}
+end_date=${end_date:="2008-09-11T00:00:00Z"}
+#-----------------------------------------------------------------------------
+atmo_model_equations=1   # equation system
+nlevels=40
+nlev=$nlevels
+nproma=32
+
+#-----------------------------------------------------------------------------
+# write ICON namelist parameters
+# input: namelist_filename
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#  
+create_namelist()
+{
+namelist_filename=$1
+cat > $namelist_filename << EOF
+&testbed_nml
+  testbed_model       = 6  ! test_netcdf_read_model
+  testfile_3D_time   = "/pool/data/ICON/input/r0002/r2b4_amip/atm/bc_aeropt_kinne/bc_aeropt_kinne_sw_b14_fin_1982.nc"
+  testfile_2D_time   = "/pool/data/ICON/input/r0002/r2b4_amip/oce/bc_sst_pcmdi_1870-2010.nc"
+/
+&parallel_nml
+ nproma         = ${nproma}
+/
+&grid_nml
+ dynamics_grid_filename = "/pool/data/ICON/grids//private/r2b4_amip/r2b4_amip.nc"
+/
+&gridref_nml
+/
+&run_nml
+ num_lev     = ${nlevels},        ! number of full levels of vertical grid
+ ntracer     = 0            ! number of tracers
+ nsteps      = 1            ! [day] length of run
+ dtime       = 300          ! [s] timestep
+ ldynamics   = .TRUE.       ! dynamics
+ ltransport  = .FALSE.      ! transport 
+ iforcing    = 0            ! no forcing
+ ltestcase   = .TRUE.       ! run testcase
+ output="none",
+/
+&testcase_nml
+ ctest_name  = 'JWw'        ! test case identifier
+/
+&dynamics_nml
+ iequations      = 3
+/
+EOF
+}
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+create_namelist $testbed_namelist
+run_atmo="true"
+#-----------------------------------------------------------------------------
+# add standard atmo_hydrostatic_files
+. ${thisdir}/add_required_atmo_hydrostatic_files
+# copy dictionary file for variable names
+add_required_file ${basedir}/run/${dict_file}                                ./
+#-----------------------------------------------------------------------------

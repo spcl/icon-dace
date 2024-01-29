@@ -1,0 +1,24 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+listname=tolerance-update
+./rmlist $listname
+./create_all_builders $listname
+
+./list_part_update-ref $listname
+./list_part_tolerance $listname
+
+./lslist $listname

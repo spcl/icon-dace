@@ -1,0 +1,21 @@
+#%# ICON
+#%#
+#%# ------------------------------------------
+#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%# Contact information: icon-model.org
+#%# See AUTHORS.TXT for a list of authors
+#%# See LICENSES/ for license information
+#%# SPDX-License-Identifier: BSD-3-Clause
+#%# ------------------------------------------
+# Initialize date/time computation
+
+#%# Take mtime from installation prefix if defined, else from build location
+import sysconfig
+lib_dir = sysconfig.get_path('platlib', vars={'platbase':'%{PREFIX or BUILD_DIR}'})
+import sys
+sys.path.insert(1, lib_dir)
+import mtime
+
+mtime.setCalendar(mtime.CALENDAR_TYPE.%{calendar_mtime})
+#%#
+

@@ -1,0 +1,53 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  SETUP.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - set initial variables
+%end
+
+# include the header file for remote jobs
+%include <init_ws.h> 
+
+# -------------------------------------------------
+
+echo "SETUP.SMS"
+
+
+# Build a new binary every MONDAY:
+WEEKDAY=`python %ECBASEDIR%/gen/date_calc.py -a weekday -d %SMSDATE%00`
+if [[ "${WEEKDAY}" -eq "1" ]]
+then
+     smsevent enable_build
+fi
+
+
+# Create data directory on ecgate
+ 
+mkdir -p %ECTEMP%/%SUITE%/%EXPNUM%/%YMD%%INIHOUR%/%NMEM%
+
+
+# -------------------------------------------------
+
+# include the "tail" file for remote jobs
+%include <end_ws.h>
+

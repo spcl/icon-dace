@@ -1,0 +1,91 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  CHECK_PROGRESS.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - check for available output files
+%end
+
+# include the header file for remote jobs
+%include <init_ws_submit.h> 
+
+
+# -------------------------------------------------
+
+echo "CHECK_PROGRESS.SMS"
+
+date
+
+if [[ %NENS% -gt 0 ]]
+  then DIRENS=/%NMEM%
+  else DIRENS=''
+fi
+
+if [[ %SIMMODE% -eq 3 ]]
+  then DATETXT=/%YMD%%INIHOUR%
+  else DATETXT=''
+fi
+
+# check progress: stdout time step -- -------------
+
+flag=0
+timestep=0
+while [[ $timestep -lt %NSTEPS% && $flag -eq 0 ]]
+do
+
+  timestep1=`ssh cca-log grep 'Time[[:blank:]]step' %SMSOUT%/%SUITE%/%EXPNUM%/forecast${DIRENS}${DATETXT}/model.1.running | tail -n1 | awk '{print $3}' | sed 's/,//'`
+  timestep2=`ssh cca-log grep 'Time[[:blank:]]step' %SMSOUT%/%SUITE%/%EXPNUM%/forecast${DIRENS}${DATETXT}/model.1         | tail -n1 | awk '{print $3}' | sed 's/,//'`
+
+  if [[ "$timestep1" =~ ^[0-9]+$ ]] ; then
+    timestep=$timestep1
+  else
+    if [[ "$timestep2" =~ ^[0-9]+$ ]] ; then
+      timestep=$timestep2
+    else
+      timestep=0
+    fi
+  fi
+
+  #if [ "$timestep1" -eq "$timestep1" 2>/dev/null && "$timestep1" -ne "" ]
+  #if [[ ! -n "$timestep1" ]] 
+  #if [[ "$timestep" = "initial" ]]
+
+  # If new output available: Increment progress meter
+  smsmeter timesteps $timestep
+
+  # wait some time before checking for output
+  sleep %WAITINTVL%
+
+  if [[ -f "%SMSHOME%/model_complete.flag" ]]
+  then
+    flag=1
+  fi
+
+done
+
+
+
+
+# -------------------------------------------------
+
+# include the "tail" file for remote jobs
+%include <end_ws.h>

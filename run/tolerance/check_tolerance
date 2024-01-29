@@ -1,0 +1,150 @@
+#!/usr/bin/env bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+# Run Probtest tolerance check
+#
+print_help () {
+    echo "This is a convenience wrapper to configure probtest with correct paths"
+    echo ""
+    echo "Usage: check_tolerance \$EXPERIMENT \$builder \$MODEL_DIR1 \$EXP_BASE \$FACTOR"
+    echo ""
+    echo "Arguments: "
+    echo " 1: experiment name"
+    echo "    Used to find the tolerance hash)"
+    echo " 2: builder name"
+    echo "    The builder that was used to generate the tolerance data. (usually containing '_cpu_')."
+    echo "    Used to find tolerance hash."
+    echo " 3: model directory"
+    echo "    The directory that contains 'experiments/'. used for --codebase-install"
+    echo "    Default: parent parent of this script."
+    echo " 4: executed experiment name"
+    echo "    This name is used when executing the experiment."
+    echo "    (usually the experiment name, but e.g. icon-dev.checksuite appends '_base'.)"
+    echo "    Default: experiment name (1)"
+    echo " 5: factor"
+    echo "    The reference factor, which is applied to the spread of the tolerances."
+    echo "    Default: 5"
+}
+
+if [[ "${1-}" = "-h" ]] || [[ "${1-}" = "--help" ]]; then
+    print_help
+    exit 0
+fi
+
+if [[ $# -lt 2 ]]; then
+    echo "Error: Too few arguments." >&2
+    print_help >&2
+    exit 2
+fi
+
+SCRIPT_DIR=$( cd -- "$( dirname -- "${BASH_SOURCE[0]}" )" &> /dev/null && pwd )
+
+EXPERIMENT=$1
+builder=$2
+MODEL_DIR1=${3:-"$SCRIPT_DIR/../../"}
+EXP_BASE=${4:-$EXPERIMENT}
+FACTOR=${5:-5}
+
+PROBTEST="${SCRIPT_DIR}/../../externals/probtest/probtest.py"
+
+# always use CPU reference
+hash_file="${SCRIPT_DIR}/hashes/${builder}"
+if [[ ! -e "$hash_file" ]] ; then
+    echo "Could not find any hashes file for builder ${builder} in '${SCRIPT_DIR}/hashes'"
+    echo "Hashes are usually generate with a _cpu_ builder"
+    exit 1
+fi
+
+icon_data_rootFolder=$(sed -n -e "s/^icon_data_rootFolder: //p" "$hash_file")
+experiment_hash=$(sed -n -e "s/^\"$EXPERIMENT\": //p" "$hash_file")
+# -n means not to print anything by default.
+# -e is followed by a sed command.
+# s is the pattern replacement command.
+# The regular expression `^\"$EXPERIMENT\": ` matches the experiment
+# The match, i.e. everything on the line up `: ` , is replaced by the empty string (i.e. deleted).
+# The final p means to print the transformed line.
+if [[ -z "$experiment_hash" ]] ; then
+    ls -l "$hash_file"
+    echo "Could not find any probtest for experiment $EXPERIMENT in $hash_file"
+    exit 1
+fi
+
+if [[ -z "$icon_data_rootFolder" ]] ; then
+    ls -l "$hash_file"
+    echo "Could not find icon_data_rootFolder in $hash_file"
+    exit 1
+fi
+
+CPU_REFERENCE=$icon_data_rootFolder/buildbot_data/ref/$experiment_hash
+if [[ ! -d "$CPU_REFERENCE" ]] ; then
+    echo "Could not find probtest tolerance data dir $CPU_REFERENCE."
+    exit 1
+fi
+
+# find relevant config
+source "${SCRIPT_DIR}/set_probtest_file_id" "$EXPERIMENT"
+
+echo "Running tolerance check with compiler-specific reference at ${CPU_REFERENCE}"
+
+LOG=probtest_${EXPERIMENT}.log
+
+export PROBTEST_CONFIG=${EXP_BASE}.json
+# initialize configuration file
+if ! "${PROBTEST}" --log-file "${LOG}.init" init \
+    --codebase-install "${MODEL_DIR1}" \
+    --reference "not-used" \
+    --experiment-name "${EXP_BASE}" \
+    "${probtest_file_id[@]}" \
+    --config "${PROBTEST_CONFIG}"
+then
+    cat "${LOG}.init"
+    echo "probtest did not initialized successfully"
+    exit 1
+fi
+
+# generate the aggregated "single-column" stats file
+if ! "${PROBTEST}" --log-file "${LOG}.stats" stats \
+    --stats-file-name "${EXPERIMENT}.csv" \
+    --no-ensemble
+then
+    cat "${LOG}.stats"
+    echo "probtest did not generate stats successfully"
+    exit 1
+fi
+
+# validate the generated stats against the reference
+if ! "${PROBTEST}" --log-file "${LOG}.check" check \
+    --input-file-cur "${EXPERIMENT}.csv" \
+    --input-file-ref "${CPU_REFERENCE}/${EXPERIMENT}_reference.csv" \
+    --tolerance-file-name "${CPU_REFERENCE}/${EXPERIMENT}_tolerance.csv" \
+    --factor $FACTOR
+then
+    cat "${LOG}.check"
+    echo "probtest tolerance test did not complete successfully"
+    exit 1
+fi
+
+# get the relevant success check
+fail=$(grep -c "RESULT.*FAIL" "${LOG}.check" || true)
+crash=$(grep -c "RESULT.*CRASH" "${LOG}.check" || true)
+finished=$(grep -c RESULT "${LOG}.check" || true)
+if [[ $(($fail+$crash)) -gt 0 || $((finished)) -lt 1 ]] ; then
+    cat "${LOG}.check"
+    echo "probtest did not complete successfully"
+    exit 1
+fi
+
+echo "probtest complete successfully"
+
+exit 0

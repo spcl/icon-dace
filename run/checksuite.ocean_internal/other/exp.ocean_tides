@@ -1,0 +1,206 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-02-01T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+# model timing
+file_interval="P1Y"
+modelTimeStep="PT02M"
+
+year=31536000
+
+# restart
+months_restart=1     # stop model for restart [days]
+dt_checkpoint=`expr ${months_restart} \* ${month}`
+dt_restart=`expr ${months_restart} \* ${month}`
+days_restart=10
+dt_checkpoint=`expr ${days_restart} \* ${day}`
+dt_restart=`expr ${days_restart} \* ${day}`
+
+#
+#-----------------------------------------------------------------------------
+#
+LOC='none'
+grids_folder="/pool/data/ICON/oes/grids/OceanOnly/"
+# grids_folder="/mnt/lustre01/work/mh0287/users/leonidas/icon/GridGenerator_dev/intel_nMyO_hiopt/grids"
+ocean_grids="OceanOnly_Global_IcosSymmetric_0039km_rotatedZ37d_modified_srtm30_1min.nc"
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma       = ${nproma}
+ l_fast_sum   = .true.
+ p_test_run   = .false.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+ iequations  = -1       ! -1: hydrost. ocean model
+/
+&run_nml
+ modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds
+ output               = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output     = 1
+ msg_timestamp        = .FALSE.
+ timers_level         = 10
+ debug_check_level    = 1
+ restart_filename     = "${EXPNAME}_restart_oce_<rsttime>.nc"
+/
+&dbg_index_nml
+  idbg_mxmn=1                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=40                     ! initialize end level for debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+ n_zlev             =   40
+ dzlev_m(1:40)      =   16.0,   16.0,   16.0,   16.0,   16.0,   16.0,   16.0,   16.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                      100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+                      220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+
+  select_solver                   = 2       ! 1=gmres_oce_old; 2=ocean_restart_gmres, 3=mixed precisison restart
+  use_absolute_solver_tolerance   = .true.
+  solver_tolerance                = 1.0E-13 ! this may further be reduced
+  solver_max_iter_per_restart     = 16        ! this may adjusted according the total iterations
+  solver_max_restart_iterations   = 100
+  select_lhs                      = 2
+  solver_FirstGuess               = 2
+
+  fast_performance_level          = 200       ! performance level 12: for cell-based; 5: default
+  use_continuity_correction       = .TRUE.    ! height adjustment according to vertical velocity in dynamics
+  cfl_check                       = .FALSE.
+  cfl_write                       = .FALSE.
+
+  i_bc_veloc_top                  =   1
+  i_bc_veloc_bot                  =   1       ! 0: (def) bottom friction off, 1: on
+/
+&ocean_tracer_transport_nml
+  no_tracer             = 2     ! tracer-transport: 0=no transport, 1=temperature, 2=temp. and salinity
+  FLUX_CALCULATION_HORZ =  5 ! 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+  FLUX_CALCULATION_VERT =  7 ! 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  fct_low_order_flux    = 1      ! horizontal low  order method: 1=upwind (def), no other implemented
+  fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
+  fct_limiter_horz      = 100    ! zalesak
+  threshold_min_T       = -4.0   ! to avoid abort
+/
+&ocean_horizontal_diffusion_nml
+  laplacian_form = 1                   ! 1=curlcurl-graddiv
+  VelocityDiffusion_order = 2          ! 21=biharmonic+laplacian (for the laplacian leith)
+
+  BiharmonicViscosity_scaling     =  1
+  BiharmonicViscosity_reference   =  1.5E12  !  [m2/s] constant horizontal viscosity coefficient for velocity
+  BiharmonicViscosity_background  =  0.0  ! [m2/s] constant horizontal viscosity coefficient for velocity
+  HarmonicViscosity_scaling     =  1
+  HarmonicViscosity_reference   =  1.0E3  !  [m2/s] constant horizontal viscosity coefficient for velocity
+
+  TracerHorizontalDiffusion_scaling          = 1
+  Temperature_HorizontalDiffusion_Background = 0.0
+  Temperature_HorizontalDiffusion_Reference  = 40
+  Salinity_HorizontalDiffusion_Background    = 0.0
+  Salinity_HorizontalDiffusion_Reference     = 40
+/
+&ocean_vertical_diffusion_nml
+  PPscheme_type                            = 4
+  velocity_VerticalDiffusion_background    =   5.0E-5  ! [m2/s]  vertical background viscosity coefficient for velocity
+  Temperature_VerticalDiffusion_background =   1.0E-5  ! [m2/s]  vertical background diffusion coefficient for temperature
+  Salinity_VerticalDiffusion_background    =   1.0E-5  ! [m2/s]  vertical background diffusion coefficient for salinity
+  tracer_convection_MixingCoefficient =   0.1 ! max vertical tracer diffusion for convection used in case of instability
+  convection_InstabilityThreshold =  -1.0E-6  ! used in update_ho_params - default=-5e-8
+  RichardsonDiffusion_threshold   =   0.0     ! used in update_ho_params - default=+5e-8
+  tracer_RichardsonCoeff          =   1.0E-3  ! factor for vertical diffusion coefficient in PP scheme
+  velocity_RichardsonCoeff        =   1.0E-3  ! factor for vertical viscosity coefficient in PP scheme
+  bottom_drag_coeff               =   1.0E-2  ! default=2.5E-3; active for i_bc_veloc_bot=1
+  use_wind_mixing                 = .true.    ! true: use wind mixing scheme in MPIOM-type pp-scheme
+  lambda_wind                     = 0.03
+  !  tracer_TopWindMixing            = 1.0E-5
+  !  velocity_TopWindMixing          = 1.0E-5
+/
+&ocean_GentMcWilliamsRedi_nml
+  GMRedi_configuration           =   0       ! 0=cartesian diffusion 1=GM-Redi: bolus advection + isopycnal diffusion
+  tapering_scheme=1
+  GMRedi_usesRelativeMaxSlopes = .false.
+  S_max=1.0e-3                               
+  S_d=0.0001                                 ! 1e-3 to 1e-4
+  k_tracer_GM_kappa_parameter     = 0.0     !
+  k_tracer_isoneutral_parameter   = 0.0     ! value for cell-based cartesian diffusion - mpiom: 1000/400km = 400/160km
+  k_tracer_dianeutral_parameter   = 0.0       !1.0E-5  !
+  SWITCH_OFF_DIAGONAL_VERT_EXPL          =.TRUE.
+  GMREDI_COMBINED_DIAGNOSTIC             =.FALSE.
+  SWITCH_ON_REDI_BALANCE_DIAGONSTIC      =.FALSE.
+  REVERT_VERTICAL_RECON_AND_TRANSPOSED   =.TRUE.
+  SLOPE_CALC_VIA_TEMPERTURE_SALINITY = .true.
+  INCLUDE_SLOPE_SQUARED_IMPLICIT         =.TRUE. !think of l_with_vert_tracer_diffusion
+  SWITCH_ON_TAPERING_HORIZONTAL_DIFFUSION=.TRUE.
+/
+&ocean_physics_nml
+  i_sea_ice                       =   0       ! 0 = no sea ice; 1 = sea ice model on; default=1                                           
+/
+&ocean_forcing_nml
+  iforc_oce = 10  ! 11
+  use_tides = .true.
+  
+/
+&ocean_initialConditions_nml
+  initial_salinity_type      = 200  ! 202    
+  initial_salinity_top       = 34   ! 34.8
+  initial_salinity_bottom    = 38   ! 
+  initial_temperature_type   = 200
+  initial_temperature_top    = 20.0 
+  initial_temperature_bottom = 1.0
+/
+&io_nml
+  write_last_restart = .true.
+/
+&output_nml
+  filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
+  output_filename  = "${EXPNAME}"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = 'PT02H'
+  filename_format  = "<output_filename>_<datetime2>"
+  file_interval    = "${file_interval}"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  include_last     = .false.
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'zos'  
+!, 'u', 'v'
+/
+EOF
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------

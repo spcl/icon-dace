@@ -1,0 +1,170 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This section of the run script contains the specifications of the experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# DWD, 2010-08-31
+#
+#=============================================================================
+#
+# These variables are set in the header section of the completed run script:
+#   EXPNAME = experiment name
+#   nproma  = array blocking length / inner loop length
+# They may be overwritten here
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# Basic specifications of the simulation
+# --------------------------------------
+
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#-----------------------------------------------------------------------------
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2008-09-01T00:00:00Z"
+ndays_restart=60
+dt_restart=`expr ${ndays_restart} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# model timing
+dtime=480
+ndays=10
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+nsteps=50
+dt_data=`expr ${dtime} \* ${nsteps}`   # data output at the end of the integration
+#
+#-----------------------------------------------------------------------------
+# model parameters
+atmo_model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm., 
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+nlev=40              # nlev = number of full levels
+#-----------------------------------------------------------------------------
+# the grid parameters
+atmo_dyn_grids="iconR2B04_DOM01.nc"
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#-----------------------------------------------------------------------------
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = ${nproma}
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+/
+&grid_nml
+ ! cell_type is not used = 3            ! triangular cells
+ dynamics_grid_filename = "${atmo_dyn_grids}",
+/
+&nh_testcase_nml
+ nh_test_name   = 'jabw_m'     ! test case identifier
+ rh_at_1000hpa  = 0.99
+ qv_max         = 35.e-3
+/
+&io_nml
+ dt_diag        = ${dt_data}
+/
+&run_nml
+ num_lev        = ${nlev},        ! number of full levels of vertical grid
+ nsteps         = ${nsteps}    ! 50 ! 1200 ! 7200 !
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .TRUE.
+ ntracer        = 5            ! default: 0
+ iforcing       = 3            ! diabatic forcing
+ ltestcase      = .TRUE.       ! run testcase
+ msg_level      = 12           ! detailed report during integration
+ ltimer         = .false.
+/
+&nwp_phy_nml
+inwp_gscp       = 1
+inwp_convection = 1
+inwp_radiation  = 1
+inwp_cldcover   = 3
+inwp_turb       = 1
+inwp_satad      = 1
+inwp_surface    = 0
+/
+&radiation_nml
+ irad_o3 = 6
+ irad_aero  = 2             ! switch off aerosols
+/
+&nonhydrostatic_nml
+ itime_scheme   = 4
+ iadv_rhotheta  = 2
+ ivctype        = 2            ! sleve vertical coordinate
+ exner_expol    = 0.60
+ vwind_offctr   = 0.12
+ damp_height    = 23000.
+ rayleigh_coeff = 0.05
+/
+&sleve_nml
+ min_lay_thckn  = 50.
+ top_height     = 32500.
+ decay_scale_1  = 4000.
+ decay_scale_2  = 2500.
+ decay_exp      = 1.2
+ flat_height    = 16000.
+/
+&dynamics_nml
+ iequations     = ${atmo_model_equations}       ! equation system
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 10.0
+ hdiff_smag_fac   = 0.15
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+ hdiff_multfac    = 1.0
+ hdiff_tv_ratio   = 1.0
+/
+&interpol_nml
+nudge_zone_width  = 4
+/
+&gridref_nml
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo          = 0
+/
+EOF
+#
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_atmo_non-hydrostatic_files
+#-----------------------------------------------------------------------------

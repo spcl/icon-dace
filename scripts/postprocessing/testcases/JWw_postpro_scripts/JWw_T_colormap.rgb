@@ -1,0 +1,29 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#-------------------------
+# Hui Wan (MPI-M, 2008.07)
+#-------------------------------------------------------------------
+# This is the color table used by Jablonowski and Williamson
+# for their baroclinic wave test.
+#-------------------------------------------------------------------
+
+ncolors= 9 
+
+#  r   g   b
+ 160   0 255
+   0  28 255
+   0 170 255
+   0 255 255
+  20 255   0
+ 190 255   0
+ 255 255   0
+ 255 142   0
+ 255   0   0

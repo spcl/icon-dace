@@ -1,0 +1,995 @@
+
+scripts/preprocessing/echam_pre_lnd_atm.ksh,0
+
+scripts/preprocessing/soil_para.ksh,0
+
+scripts/preprocessing/gauss_to_echam_tpe.ksh,0
+
+scripts/preprocessing/gauss_to_icon_tpe.ksh,0
+
+scripts/preprocessing/gauss_to_echam.ksh,0
+
+scripts/preprocessing/gauss_to_icon.ksh,0
+
+scripts/preprocessing/icon_pre_lnd_atm.ksh,0
+
+src/atmland/mo_atmland_interface.f90,110
+MODULE mo_atmland_interfacemo_atmland_interface10,180
+  SUBROUTINE update_land2atm(update_land2atm73,3488
+
+src/atmland/mo_atmland_memory_class.f90,1618
+MODULE mo_atmland_memory_classmo_atmland_memory_class10,195
+  INTEGER, PARAMETER :: max_no_of_vars max_no_of_vars23,520
+    TYPE(t_jsb_var_real2d), TARGET :: &
+t_air26,616
+      t_air            , &
+q_air27,656
+      q_air            , &
+rain28,683
+      rain             , &
+snow29,710
+      snow             , &
+wind_air30,737
+      wind_air         , &
+wind_10m31,764
+      wind_10m         , &
+lw_srf_down32,791
+      lw_srf_down      , &
+swvis_srf_down33,818
+      swvis_srf_down   , &
+swnir_srf_down34,845
+      swnir_srf_down   , &
+swpar_srf_down35,872
+      swpar_srf_down   , &
+press_srf36,899
+      press_srf        , &
+drag_srf37,926
+      drag_srf         , &
+t_acoef38,953
+      t_acoef          , &
+t_bcoef39,980
+      t_bcoef          , &
+q_acoef40,1007
+      q_acoef          , &
+q_bcoef41,1034
+      q_bcoef          , &
+pch42,1061
+      pch              , &
+cos_zenith_angle43,1088
+    TYPE(t_jsb_var_real2d), TARGET :: &
+t_srf50,1276
+      t_srf       ,   &
+t_eff_srf51,1316
+      t_eff_srf   ,   &
+qsat_srf52,1340
+      qsat_srf    ,   &
+fact_q_air53,1364
+      fact_q_air  ,   &
+fact_qsat_srf54,1388
+      fact_qsat_srf , &
+zh_srf55,1412
+      zh_srf      ,   &
+zm_srf56,1436
+      zm_srf      ,   &
+alb_vis_dif57,1460
+      alb_vis_dif ,   &
+alb_nir_dif58,1484
+      alb_nir_dif ,   &
+alb_vis_dir59,1508
+      alb_vis_dir ,   &
+alb_nir_dir60,1532
+  CHARACTER(len=*), PARAMETER :: modname modname66,1662
+  SUBROUTINE Init_atm2land_memory(Init_atm2land_memory70,1742
+  SUBROUTINE Init_land2atm_memory(Init_land2atm_memory204,9114
+
+src/interfaces/mo_jsb_interface.f90,356
+MODULE mo_jsb_interfacemo_jsb_interface10,180
+  CHARACTER(len=*), PARAMETER :: modname modname45,1249
+  SUBROUTINE interface_full(interface_full49,1322
+  SUBROUTINE interface_inquire(interface_inquire239,10579
+  SUBROUTINE jsbach_start_timestep(jsbach_start_timestep261,11180
+  SUBROUTINE jsbach_finish_timestep(jsbach_finish_timestep277,11558
+
+src/adapters/mo_jsb_namelist_iface.f90,256
+MODULE mo_jsb_namelist_ifacemo_jsb_namelist_iface10,178
+  CHARACTER(len=*), PARAMETER :: modname modname29,670
+  INTEGER FUNCTION open_nml(open_nml37,909
+  SUBROUTINE close_nml(close_nml56,1513
+  INTEGER FUNCTION position_nml(position_nml72,1959
+
+src/adapters/mo_jsb_varlist_iface.f90,307
+MODULE mo_jsb_varlist_ifacemo_jsb_varlist_iface10,182
+  CHARACTER(len=*), PARAMETER :: modname modname43,1635
+  SUBROUTINE new_var_list new_var_list47,1712
+  SUBROUTINE add_var_list_element_r2d(add_var_list_element_r2d90,3940
+  SUBROUTINE add_var_list_element_r3d(add_var_list_element_r3d157,7987
+
+src/adapters/mo_jsb_nml_iface.f90,48
+MODULE mo_jsb_nml_ifacemo_jsb_nml_iface10,177
+
+src/adapters/mo_phy_schemes_iface.f90,113
+MODULE mo_phy_schemes_ifacemo_phy_schemes_iface10,176
+  CHARACTER(len=*), PARAMETER :: modname modname25,444
+
+src/adapters/mo_jsb_parallel_iface.f90,443
+MODULE mo_jsb_parallel_ifacemo_jsb_parallel_iface10,184
+  INTEGER :: mpi_commmpi_comm29,824
+  SUBROUTINE init_parallel_ifaceinit_parallel_iface33,857
+  SUBROUTINE init_mpi_communicatorsinit_mpi_communicators49,1130
+  LOGICAL FUNCTION my_process_is_stdio(my_process_is_stdio68,1671
+  LOGICAL FUNCTION my_process_is_mpi_parallel(my_process_is_mpi_parallel80,1884
+  INTEGER FUNCTION get_my_global_mpi_id(get_my_global_mpi_id88,2055
+
+src/adapters/mo_jsb_io_netcdf_iface.f90,893
+MODULE mo_jsb_io_netcdf_ifacemo_jsb_io_netcdf_iface10,168
+  TYPE t_input_filet_input_file29,792
+    INTEGER           :: TYPE TYPE30,812
+    CHARACTER(len=filename_filename31,907
+    TYPE(t_stream_id)stream_id33,989
+    INTEGER :: file_id file_id35,1058
+    INTEGER :: return_status return_status36,1107
+    INTEGER :: nlon nlon37,1176
+    INTEGER :: nlat nlat38,1204
+    INTEGER :: nproma nproma39,1232
+    INTEGER :: ngpblks ngpblks40,1260
+  CHARACTER(len=*), PARAMETER :: modname modname60,1706
+  TYPE(t_input_file) FUNCTION netcdf_open_input(netcdf_open_input64,1785
+  SUBROUTINE netcdf_close_file(netcdf_close_file113,3354
+  FUNCTION netcdf_read_real_2d(netcdf_read_real_2d128,3764
+  FUNCTION netcdf_read_real_2d_time(netcdf_read_real_2d_time179,5366
+  FUNCTION netcdf_read_real_2d_extdim(netcdf_read_real_2d_extdim196,6150
+  SUBROUTINE nf(nf290,10132
+
+src/adapters/mo_jsb_domain_iface.f90,1029
+MODULE mo_jsb_domain_ifacemo_jsb_domain_iface10,193
+  TYPE pe_decomposedpe_decomposed33,938
+    INTEGER :: nlon nlon34,959
+  TYPE(pe_decomposed), SAVE :: global_decomposition(global_decomposition37,1010
+  TYPE t_patcht_patch40,1101
+     INTEGER :: id id41,1116
+  TYPE(t_patch), TARGET, SAVE :: p_patch(p_patch44,1160
+  CHARACTER(len=*), PARAMETER :: modname modname47,1212
+  FUNCTION get_grid_filename(get_grid_filename51,1288
+  INTEGER FUNCTION get_ntotal(get_ntotal81,2217
+  INTEGER FUNCTION get_ntotal_g(get_ntotal_g108,3046
+  FUNCTION get_dims_g(get_dims_g135,3885
+  INTEGER FUNCTION get_nblks(get_nblks165,4819
+  INTEGER FUNCTION get_nproma(get_nproma192,5624
+  INTEGER FUNCTION get_blk_start(get_blk_start223,6583
+  INTEGER FUNCTION get_blk_end(get_blk_end250,7426
+  INTEGER FUNCTION get_col_start(get_col_start277,8289
+  INTEGER FUNCTION get_col_end(get_col_end314,9443
+  FUNCTION get_lon(get_lon355,10697
+  FUNCTION get_lat(get_lat395,11898
+  FUNCTION get_area(get_area435,13098
+
+src/adapters/mo_jsb_time_iface.f90,1270
+MODULE mo_jsb_time_ifacemo_jsb_time_iface10,173
+  CHARACTER(len=*), PARAMETER :: modname modname49,1740
+  SUBROUTINE configure_time_and_events(configure_time_and_events54,1830
+  SUBROUTINE read_time_namelist(read_time_namelist61,1959
+  SUBROUTINE configure_time_and_eventsconfigure_time_and_events67,2085
+  REAL(wp) FUNCTION get_time_dt(get_time_dt94,3031
+  INTEGER FUNCTION get_time_nsteps(get_time_nsteps124,3606
+  TYPE(t_datetime) FUNCTION get_time_start(get_time_start159,4646
+  TYPE(t_datetime) FUNCTION get_time_stop(get_time_stop169,4831
+  TYPE(t_datetime) FUNCTION get_time_current(get_time_current182,5050
+  TYPE(t_datetime) FUNCTION get_time_previous(get_time_previous195,5298
+  SUBROUTINE start_timestep(start_timestep211,5637
+  SUBROUTINE finish_timestep(finish_timestep234,6135
+  SUBROUTINE get_date_components(get_date_components249,6368
+  INTEGER FUNCTION get_year_length(get_year_length278,7240
+  INTEGER FUNCTION get_month_length(get_month_length309,7809
+  REAL(wp) FUNCTION get_day_length(get_day_length340,8385
+  REAL(wp) FUNCTION get_year_day(get_year_day354,8666
+  SUBROUTINE  get_time_interpolation_weights(get_time_interpolation_weights371,8999
+  REAL(wp) FUNCTION get_asselin_coef(get_asselin_coef390,9357
+
+src/adapters/mo_jsb_io_iface.f90,1001
+MODULE mo_jsb_io_ifacemo_jsb_io_iface10,168
+  TYPE t_cf_vart_cf_var41,1626
+    CHARACTER(len=128) :: standard_name standard_name42,1642
+    CHARACTER(len=128) :: units units43,1687
+    CHARACTER(len=128) :: long_name long_name44,1732
+    INTEGER            :: datatype datatype45,1777
+  TYPE t_grib2_vart_grib2_var48,1843
+    INTEGER :: disciplinediscipline49,1862
+    INTEGER :: categorycategory50,1888
+    INTEGER :: numbernumber51,1912
+    INTEGER :: bitsbits52,1934
+    INTEGER :: gridtypegridtype53,1954
+    INTEGER :: subgridtypesubgridtype54,1978
+  INTEGER, PARAMETER :: ZA_SURFACE ZA_SURFACE60,2085
+  INTEGER, PARAMETER :: ZA_DEPTH_BELOW_LAND ZA_DEPTH_BELOW_LAND61,2137
+  INTEGER, PARAMETER :: GRID_CELL GRID_CELL62,2189
+  INTEGER, PARAMETER :: GRID_UNSTRUCTURED_CELL GRID_UNSTRUCTURED_CELL63,2241
+  INTEGER, PARAMETER :: GRID_REFERENCE GRID_REFERENCE64,2293
+  CHARACTER(len=*), PARAMETER :: modname modname67,2353
+  FUNCTION grib2_var(grib2_var73,2486
+
+src/hd/mo_hd_memory_class.f90,1480
+MODULE mo_hd_memory_classmo_hd_memory_class10,185
+  TYPE t_hd_paramt_hd_param22,440
+    REAL(wp), POINTER ::     &
+fdir23,458
+      fdir            (:,:), &  !< index of next grid cell in flow direction
+ret_overlflow24,489
+      ret_overlflow   (:,:), &  !< retention constant of overland flow
+ret_baseflow25,566
+      ret_baseflow    (:,:), &  !< retention constant of baseflow
+ret_riverflow26,637
+      ret_riverflow   (:,:), &  !< retention constant of riverflow
+nres_overlflow27,703
+      nres_overlflow  (:,:), &  !< number of overland flow reservoirs
+nres_baseflow28,770
+      nres_baseflow   (:,:), &  !< number of baseflow reservoirs
+nres_riverflow29,840
+    INTEGER, POINTER ::      &
+nres_o_max31,971
+      nres_o_max,            &  !< maximum number of overland flow reservoirs
+nres_b_max32,1002
+      nres_b_max,            &  !< maximum number of baseflow reservoirs
+nres_r_max33,1080
+  TYPE t_hd_statet_hd_state37,1250
+    REAL(wp), POINTER ::     &
+overlflow_res38,1268
+      overlflow_res (:,:,:), &  !< content of overland flow reservoir cascade
+baseflow_res39,1299
+      baseflow_res  (:,:,:), &  !< content of baseflow reservoir cascade
+riverflow_res40,1377
+    TYPE(t_hd_param)hd_param45,1593
+    TYPE(t_hd_state)hd_state46,1647
+  CHARACTER(len=*), PARAMETER :: modname modname51,1776
+  SUBROUTINE Init_hd_memory(Init_hd_memory55,1851
+    FUNCTION new_param(new_param92,3128
+    FUNCTION new_state(new_state136,5877
+
+src/hd/mo_hd_init.f90,183
+MODULE mo_hd_initmo_hd_init10,179
+  CHARACTER(len=*), PARAMETER :: modname modname31,1000
+  SUBROUTINE hd_init_bc(hd_init_bc35,1067
+  SUBROUTINE hd_init_ic(hd_init_ic122,4031
+
+src/hd/mo_hd_interface.f90,229
+MODULE mo_hd_interfacemo_hd_interface10,182
+  SUBROUTINE hd_riverflow(hd_riverflow175,6297
+  SUBROUTINE hd_init_water_budget(hd_init_water_budget317,11709
+  SUBROUTINE hd_check_water_budget(hd_check_water_budget402,15051
+
+src/hd/mo_hd_constants.f90,661
+MODULE mo_hd_constantsmo_hd_constants10,182
+  INTEGER,  PARAMETER :: &
+nl27,608
+    nl = 720,                          & !< number of longitudes
+nb28,635
+  REAL(wp), PARAMETER :: &
+fullcirc31,765
+    fullcirc    = 360.0_wp,            & !< full circle: 360 degree
+hd_scal_lon32,792
+    hd_scal_lon = fullcirc/nl,         & !<
+hd_scal_lat33,860
+    hd_scal_lat = 0.5_wp*fullcirc/nb,  & !<
+florg34,904
+    florg       = -180.0_wp,           & !< north-west corner longitude of gridbox(1,1)
+fborg35,948
+    fborg       =   90.0_wp,           & !< north-west corner latitude of gridbox(1,1)
+fscal36,1036
+  INTEGER, PARAMETER  :: &
+nmemrf42,1226
+
+src/hd/mo_hd_reservoir_cascade.f90,176
+MODULE mo_hd_reservoir_cascademo_hd_reservoir_cascade10,179
+  CHARACTER(len=*), PARAMETER :: modname modname22,488
+  SUBROUTINE reservoir_cascade(reservoir_cascade27,668
+
+src/hd/mo_interface_hd_ocean.f90,118
+MODULE mo_interface_hd_oceanmo_interface_hd_ocean18,384
+  SUBROUTINE interface_hd_ocean(interface_hd_ocean68,1670
+
+src/hd/mo_hd_config_class.f90,614
+MODULE mo_hd_config_classmo_hd_config_class10,188
+     LOGICAL                     :: active active25,604
+     CHARACTER(len=filename_max) :: ic_filename ic_filename26,685
+     CHARACTER(len=filename_max) :: bc_filename bc_filename27,775
+     LOGICAL                     :: debug_hd debug_hd28,873
+     LOGICAL                     :: diag_water_budget diag_water_budget29,968
+     CHARACTER(len=32)           :: routing_scheme routing_scheme30,1068
+  CHARACTER(len=*), PARAMETER :: modname modname34,1348
+  FUNCTION new_hd_config(new_hd_config38,1423
+    NAMELIST /jsb_hd_nml/jsb_hd_nml56,2551
+
+src/base/mo_jsb_grid.f90,481
+MODULE mo_jsb_gridmo_jsb_grid1,0
+  INTEGER, PARAMETER :: max_no_of_grids max_no_of_grids12,269
+  INTEGER, PARAMETER :: max_no_of_vgrids max_no_of_vgrids13,313
+  TYPE(t_jsb_grid_ptr),  SAVE :: jsbach_grids(jsbach_grids15,360
+  TYPE(t_jsb_vgrid_ptr), SAVE :: jsbach_vgrids(jsbach_vgrids16,423
+  SUBROUTINE Register_grid(Register_grid20,499
+  SUBROUTINE Register_vgrid(Register_vgrid54,1416
+  FUNCTION Get_grid(Get_grid96,2848
+  FUNCTION Get_vgrid(Get_vgrid120,3411
+
+src/base/mo_jsb_model_init.f90,360
+MODULE mo_jsb_model_initmo_jsb_model_init10,183
+  CHARACTER(len=*), PARAMETER :: modname modname29,631
+  SUBROUTINE init_model_standalone(init_model_standalone33,705
+  SUBROUTINE init_model_patch(init_model_patch71,2032
+  SUBROUTINE init_model_decomposition(init_model_decomposition119,3831
+  SUBROUTINE init_model_common(init_model_common148,4679
+
+src/base/mo_jsb_process_class.f90,205
+MODULE mo_jsb_process_classmo_jsb_process_class10,161
+  TYPE t_jsb_processt_jsb_process20,313
+    INTEGER                      :: id id21,334
+  SUBROUTINE Configure_process(Configure_process29,525
+
+src/base/mo_jsb_process_factory.f90,866
+MODULE mo_jsb_process_factorymo_jsb_process_factory10,164
+  INTEGER, PARAMETER :: max_no_of_processes max_no_of_processes34,1119
+  FUNCTION Create_process_config(Create_process_config58,1797
+  FUNCTION Create_process_memory(Create_process_memory94,2836
+  FUNCTION Get_process_name(Get_process_name129,3911
+  SUBROUTINE Get_atm2land_memory(Get_atm2land_memory157,4519
+  SUBROUTINE Get_land2atm_memory(Get_land2atm_memory174,4932
+  SUBROUTINE Get_srf_memory(Get_srf_memory191,5345
+  SUBROUTINE Get_soil_memory(Get_soil_memory208,5738
+  SUBROUTINE Get_veg_memory(Get_veg_memory225,6135
+  SUBROUTINE Get_hd_memory(Get_hd_memory242,6528
+  SUBROUTINE Get_srf_config(Get_srf_config259,6917
+  SUBROUTINE Get_soil_config(Get_soil_config273,7225
+  SUBROUTINE Get_veg_config(Get_veg_config287,7536
+  SUBROUTINE Get_hd_config(Get_hd_config301,7843
+
+src/base/mo_jsb_varlist.f90,307
+MODULE mo_jsb_varlistmo_jsb_varlist10,178
+  CHARACTER(len=*), PARAMETER :: modname modname39,1374
+  FUNCTION Get_varlist(Get_varlist43,1445
+  SUBROUTINE jsb_add_var_list_element_r2d(jsb_add_var_list_element_r2d59,1934
+  SUBROUTINE jsb_add_var_list_element_r3d(jsb_add_var_list_element_r3d133,6097
+
+src/base/mo_jsb_config_class.f90,509
+MODULE mo_jsb_config_classmo_jsb_config_class10,194
+  TYPE t_jsb_model_configt_jsb_model_config21,425
+    CHARACTER(len=filename_max)  :: grid_filenamegrid_filename22,451
+    CHARACTER(len=30)            :: grid_namegrid_name23,501
+    CHARACTER(len=30)            :: usecaseusecase24,547
+  CHARACTER(len=*), PARAMETER :: modname modname30,680
+  FUNCTION new_model_config(new_model_config34,756
+    NAMELIST /jsb_grid_nml/jsb_grid_nml46,1147
+    NAMELIST /jsb_model_nml/jsb_model_nml52,1272
+
+src/base/mo_jsb_time.f90,986
+MODULE mo_jsb_timemo_jsb_time10,171
+  INTEGER                :: number_timestepsnumber_timesteps34,1091
+  REAL(wp)               :: timestep_lengthtimestep_length35,1136
+  TYPE(t_datetime), SAVE :: start_datestart_date36,1180
+  TYPE(t_datetime), SAVE :: current_datecurrent_date37,1219
+  TYPE(t_datetime), SAVE :: final_datefinal_date38,1260
+  LOGICAL, SAVE :: time_initialized time_initialized48,1497
+  CHARACTER(len=*), PARAMETER :: modname modname50,1544
+  SUBROUTINE init_time(init_time58,1736
+  SUBROUTINE update_time_at_beginloop(update_time_at_beginloop120,3701
+  SUBROUTINE update_time_at_endloop(update_time_at_endloop131,3980
+  LOGICAL FUNCTION is_newday(is_newday142,4257
+  INTEGER FUNCTION get_year(get_year160,4680
+  INTEGER FUNCTION get_month(get_month178,5057
+  INTEGER FUNCTION get_day(get_day197,5442
+  INTEGER FUNCTION get_secs_of_day(get_secs_of_day216,5813
+  INTEGER FUNCTION get_year_at_model_start(get_year_at_model_start235,6329
+
+src/base/mo_jsb_model_usecases.f90,436
+MODULE mo_jsb_model_usecasesmo_jsb_model_usecases10,194
+  CHARACTER(len=*), PARAMETER :: modname modname23,519
+  SUBROUTINE init_usecase(init_usecase27,597
+  SUBROUTINE init_usecase_lite(init_usecase_lite56,1328
+  SUBROUTINE init_usecase_lite_tpe_open(init_usecase_lite_tpe_open64,1541
+  SUBROUTINE init_usecase_lite_tpe_closed(init_usecase_lite_tpe_closed78,1902
+  SUBROUTINE init_usecase_tiles(init_usecase_tiles88,2183
+
+src/base/mo_jsb_io_netcdf.f90,507
+MODULE mo_jsb_io_netcdfmo_jsb_io_netcdf1,0
+  CHARACTER(len=*), PARAMETER :: modname modname24,736
+  TYPE(t_input_file) FUNCTION jsb_netcdf_open_input(jsb_netcdf_open_input28,809
+  SUBROUTINE jsb_netcdf_close_file(jsb_netcdf_close_file45,1349
+  FUNCTION jsb_netcdf_read_2d(jsb_netcdf_read_2d53,1530
+  FUNCTION jsb_netcdf_read_2d_time(jsb_netcdf_read_2d_time68,2057
+  FUNCTION jsb_netcdf_read_2d_extdim(jsb_netcdf_read_2d_extdim87,2849
+  LOGICAL FUNCTION ncfile_has_dim(ncfile_has_dim108,3818
+
+src/base/mo_jsb_base.f90,79
+MODULE mo_jsb_basemo_jsb_base10,182
+  SUBROUTINE init_base(init_base40,818
+
+src/base/mo_jsb_control.f90,1396
+MODULE mo_jsb_controlmo_jsb_control10,182
+  LOGICAL :: is_standaloneis_standalone26,590
+  LOGICAL :: restart_jsbachrestart_jsbach27,617
+  CHARACTER(len=99) :: model_base_dirmodel_base_dir28,645
+  INTEGER :: debugdebug29,683
+  TYPE t_jsb_model_nmlt_jsb_model_nml31,703
+    CHARACTER(len=30)  :: model_namemodel_name32,726
+    CHARACTER(len=10)  :: model_shortnamemodel_shortname33,763
+    CHARACTER(len=132) :: model_descriptionmodel_description34,805
+    CHARACTER(len=filename_max) :: model_namelist_filenamemodel_namelist_filename35,849
+  INTEGER, PARAMETER    :: max_no_of_models max_no_of_models38,936
+  INTEGER :: no_of_models no_of_models39,984
+  TYPE(t_jsb_model_nml) :: jsb_models_nml(jsb_models_nml40,1014
+  CHARACTER(len=filename_max) :: master_namelist_filename master_namelist_filename42,1075
+  CHARACTER(len=*), PARAMETER :: modname modname44,1161
+  SUBROUTINE init_jsb_master_control(init_jsb_master_control48,1232
+  SUBROUTINE read_jsb_control_namelist(read_jsb_control_namelist79,2146
+    NAMELIST /jsb_control_nml/jsb_control_nml95,2682
+    NAMELIST /jsb_model_nml/jsb_model_nml101,2827
+  LOGICAL FUNCTION jsbach_runs_standalone(jsbach_runs_standalone145,4215
+  LOGICAL FUNCTION jsbach_is_restarted(jsbach_is_restarted151,4343
+  INTEGER FUNCTION get_no_of_models(get_no_of_models158,4519
+  LOGICAL FUNCTION debug_on(debug_on164,4628
+
+src/base/mo_jsb_var_class.f90,165
+MODULE mo_jsb_var_classmo_jsb_var_class1,0
+    REAL(wp), POINTER :: ptr(ptr20,364
+    REAL(wp), POINTER :: ptr(ptr24,484
+  TYPE t_jsb_var_pt_jsb_var_p27,559
+
+src/base/mo_hsm_class.f90,1108
+MODULE mo_hsm_classmo_hsm_class10,180
+  INTEGER, PARAMETER :: MAX_STATE_NESTING MAX_STATE_NESTING14,236
+  TYPE t_Statet_State20,387
+    CHARACTER(len=10)           :: namename21,402
+    CHARACTER(len=50)           :: descriptiondescription22,442
+    INTEGER                     :: path(path24,530
+  TYPE t_Hsmt_Hsm54,1622
+    CHARACTER(len=10)           :: namename55,1635
+  CHARACTER(len=*), PARAMETER :: modname modname71,2256
+  FUNCTION Construct_state(Construct_state78,2521
+  SUBROUTINE Init_state(Init_state121,3696
+  FUNCTION Get_parent_state(Get_parent_state167,4844
+  FUNCTION Get_parent_name_state(Get_parent_name_state187,5267
+  FUNCTION Has_children_state(Has_children_state206,5668
+  FUNCTION Has_siblings_state(Has_siblings_state215,5896
+  FUNCTION Is_last_child_state(Is_last_child_state224,6161
+  SUBROUTINE Print_state(Print_state233,6398
+  FUNCTION Is_equal_state(Is_equal_state255,6975
+  FUNCTION Construct_hsm(Construct_hsm267,7401
+  FUNCTION Get_current_hsm(Get_current_hsm284,7832
+  FUNCTION Get_levels_to_LCA_hsm(Get_levels_to_LCA_hsm297,8161
+
+src/base/mo_jsb_io.f90,1203
+MODULE mo_jsb_iomo_jsb_io1,0
+  INTEGER, PARAMETER :: grib_bits grib_bits18,621
+  INTEGER, PARAMETER :: grib_bits     = DATATYPE_PACK16, &
+grib_extbits18,621
+                        grib_extbits  = DATATYPE_PACK24, &
+nc_bits19,680
+                        nc_bits       = DATATYPE_FLT32,  &
+nc_extbits20,739
+  TYPE t_cft_cf23,854
+    CHARACTER(len=128) :: standard_name standard_name24,866
+    CHARACTER(len=128) :: units units25,911
+    CHARACTER(len=128) :: long_name long_name26,956
+    INTEGER            :: datatype datatype27,1001
+  TYPE t_grib1t_grib130,1063
+    INTEGER :: tabletable31,1078
+    INTEGER :: parameterparameter32,1099
+    INTEGER :: bitsbits33,1124
+  TYPE t_grib2t_grib236,1164
+    INTEGER :: disciplinediscipline37,1179
+    INTEGER :: categorycategory38,1205
+    INTEGER :: numbernumber39,1229
+    INTEGER :: bitsbits40,1251
+  INTEGER, PARAMETER :: max_tables max_tables43,1291
+  INTEGER, PARAMETER :: max_cdi_zaxis_ids max_cdi_zaxis_ids44,1330
+  INTEGER :: tables(tables46,1378
+  INTEGER, SAVE :: cdi_zaxis_ids(cdi_zaxis_ids48,1441
+  REAL(wp), SAVE :: missval missval50,1545
+  CHARACTER(len=*), PARAMETER :: modname modname52,1583
+
+src/base/mo_jsb_model_class.f90,1091
+MODULE mo_jsb_model_classmo_jsb_model_class10,172
+  TYPE t_jsb_modelt_jsb_model31,705
+    INTEGER                           :: id id32,724
+    CHARACTER(len=30)                 :: name name33,795
+    CHARACTER(len=10)                 :: shortname shortname34,868
+    CHARACTER(len=132)                :: description description35,947
+    CHARACTER(len=filename_max)       :: namelist_filename namelist_filename36,1027
+    TYPE(t_jsb_model_config)config37,1109
+    INTEGER                           :: grid_idgrid_id38,1185
+    TYPE(t_jsb_process), ALLOCATABLE  :: processes(processes39,1234
+    TYPE(t_hsm)hsm40,1288
+  TYPE t_jsb_model_mt_jsb_model_m53,1716
+    TYPE(t_jsb_mom54,1737
+  FUNCTION new_model(new_model64,1936
+  SUBROUTINE Configure_model_processes(Configure_model_processes88,2871
+  FUNCTION Get_model_name(Get_model_name102,3238
+  FUNCTION Get_model_shortname(Get_model_shortname111,3447
+  FUNCTION Get_model_top_tile(Get_model_top_tile120,3671
+  SUBROUTINE delete_model(delete_model147,4404
+  SUBROUTINE print_model(print_model168,4918
+
+src/base/mo_jsb_version.f90,119
+  SUBROUTINE jsbach_init_version(jsbach_init_version49,1569
+  SUBROUTINE jsbach_label_run(jsbach_label_run151,5163
+
+src/base/mo_jsb_grid_class.f90,2694
+MODULE mo_jsb_grid_classmo_jsb_grid_class10,181
+  TYPE t_jsb_gridt_jsb_grid34,1413
+    INTEGER                      :: id id35,1431
+    CHARACTER(LEN=10)            :: name name36,1474
+    CHARACTER(LEN=filename_filename37,1520
+    INTEGER                      :: ntotal ntotal38,1570
+    INTEGER                      :: nland nland39,1656
+    REAL(wp), POINTER            :: lon(lon40,1702
+    REAL(wp), POINTER            :: lat(lat41,1757
+    REAL(wp), POINTER            :: area(area42,1812
+    LOGICAL,  POINTER            :: lsm(lsm43,1868
+    REAL(wp), POINTER            :: lsf(lsf44,1923
+    INTEGER                      :: nblks nblks45,1978
+    INTEGER                      :: nproma nproma46,2024
+    INTEGER                      :: npromz npromz47,2071
+    INTEGER                      :: ntotal_g ntotal_g48,2118
+    INTEGER                      :: dims_g(dims_g49,2207
+    LOGICAL                      :: configured configured50,2293
+    TYPE(t_patch)patch51,2350
+    TYPE(pe_decomposed), POINTER :: decompositiondecomposition52,2392
+  TYPE t_jsb_grid_ptrt_jsb_grid_ptr57,2513
+    TYPE(t_jsb_grid), POINTER :: p p58,2535
+  TYPE t_jsb_subsett_jsb_subset61,2607
+    INTEGER :: blockblock62,2627
+    INTEGER :: start_indexstart_index63,2648
+    INTEGER :: end_indexend_index64,2675
+  TYPE t_jsb_vgridt_jsb_vgrid67,2725
+    INTEGER ::           id id68,2744
+    CHARACTER(len=20) :: name name69,2786
+    CHARACTER(len=50) :: longname longname70,2829
+    CHARACTER(len=10) :: units units71,2872
+    INTEGER :: n_levels n_levels72,2915
+    REAL(wp), POINTER :: levels(levels73,2957
+    REAL(wp), POINTER :: lbounds(lbounds74,3005
+    REAL(wp), POINTER :: ubounds(ubounds75,3053
+    INTEGER :: cdiZaxisID cdiZaxisID76,3101
+  TYPE t_jsb_vgrid_ptrt_jsb_vgrid_ptr79,3167
+    TYPE(t_jsb_vgrid), POINTER :: p p80,3190
+  INTEGER, SAVE :: ngrid_count ngrid_count89,3433
+  CHARACTER(len=*), PARAMETER :: modname modname91,3469
+  FUNCTION new_grid_from_host(new_grid_from_host98,3571
+  FUNCTION new_grid_from_file(new_grid_from_file166,6036
+  FUNCTION new_grid_from_lonlat(new_grid_from_lonlat209,7165
+  SUBROUTINE delete_grid(delete_grid225,7554
+  SUBROUTINE Print_grid(Print_grid253,8305
+  INTEGER FUNCTION get_nblks(get_nblks281,9105
+  INTEGER FUNCTION get_nproma(get_nproma295,9401
+  INTEGER FUNCTION get_blk_start(get_blk_start309,9702
+  INTEGER FUNCTION get_blk_end(get_blk_end327,10257
+  INTEGER FUNCTION get_col_start(get_col_start345,10794
+  INTEGER FUNCTION get_col_end(get_col_end364,11408
+  FUNCTION new_vgrid(new_vgrid383,12004
+  SUBROUTINE delete_vgrid(delete_vgrid482,15367
+
+src/base/mo_jsb_tile_class.f90,824
+MODULE mo_jsb_tile_classmo_jsb_tile_class10,211
+  INTEGER, PARAMETER :: max_depth_of_tile_tree max_depth_of_tile_tree25,636
+    REAL(wp),                POINTER :: fract fract28,727
+    REAL(wp),                POINTER :: fract_max fract_max29,841
+    TYPE(t_jsb_tile),        POINTER :: parent_tile parent_tile32,1062
+    INTEGER                          :: grid_id grid_id33,1124
+    INTEGER                          :: owner_model_id owner_model_id34,1177
+  TYPE t_jsb_tile_pt_jsb_tile_p52,1634
+    TYPE(t_jsb_tile), POINTER :: pp53,1654
+  CHARACTER(len=*), PARAMETER :: modname modname56,1714
+  FUNCTION Construct_tile(Construct_tile60,1788
+  SUBROUTINE Init_tile(Init_tile126,4505
+  FUNCTION Get_parent_memory(Get_parent_memory179,7120
+  FUNCTION Is_process_active(Is_process_active199,7612
+
+src/base/mo_jsb_class.f90,260
+MODULE mo_jsb_classmo_jsb_class1,0
+  TYPE t_jsbt_jsb12,218
+     INTEGER :: no_of_modelsno_of_models13,231
+     TYPE(t_jsb_model_m), POINTER :: models(models14,260
+  TYPE(t_jsb) :: jsbachjsbach17,325
+  FUNCTION get_model_by_id(get_model_by_id37,752
+
+src/base/mo_jsb_memory_class.f90,508
+MODULE mo_jsb_memory_classmo_jsb_memory_class10,201
+    INTEGER :: id id34,994
+    INTEGER :: grid_id grid_id35,1016
+    INTEGER :: owner_model_id owner_model_id36,1043
+    INTEGER :: max_no_of_vars max_no_of_vars37,1077
+    INTEGER :: no_of_vars no_of_vars38,1111
+    CHARACTER(LEN=:), ALLOCATABLE :: varlist_namevarlist_name39,1141
+    TYPE(t_jsb_var_p), ALLOCATABLE :: vars(vars40,1191
+  TYPE t_jsb_memory_pt_jsb_memory_p46,1381
+  CHARACTER(len=*), PARAMETER :: modname modname62,1809
+
+src/shared/mo_util.f90,198
+MODULE mo_utilmo_util10,165
+  CHARACTER(len=*), PARAMETER :: modname modname18,271
+  FUNCTION toupper toupper27,438
+  FUNCTION one_of(one_of51,1165
+  FUNCTION int2string(int2string69,1660
+
+src/shared/mo_phy_schemes.f90,531
+MODULE mo_phy_schemesmo_phy_schemes10,183
+  CHARACTER(len=*), PARAMETER :: modname modname21,402
+  REAL(wp) ELEMENTAL FUNCTION qsat(qsat30,829
+  REAL(wp) ELEMENTAL FUNCTION q_effective(q_effective54,1631
+  REAL(wp) ELEMENTAL FUNCTION surface_dry_static_energy(surface_dry_static_energy65,2047
+  REAL(wp) ELEMENTAL FUNCTION thermal_radiation(thermal_radiation79,2555
+  REAL(wp) ELEMENTAL FUNCTION lwnet_from_lwdown(lwnet_from_lwdown91,2867
+  REAL(wp) ELEMENTAL FUNCTION heat_transfer_coef(heat_transfer_coef104,3290
+
+src/soil/mo_soil_init.f90,299
+MODULE mo_soil_initmo_soil_init10,177
+  REAL(wp), PARAMETER :: &
+fao_thermal_diff35,1179
+  CHARACTER(len=*), PARAMETER :: modname modname38,1312
+  SUBROUTINE soil_init(soil_init45,1448
+  SUBROUTINE soil_init_bc(soil_init_bc56,1682
+  RECURSIVE SUBROUTINE soil_init_ic(soil_init_ic76,2207
+
+src/soil/mo_soil_process.f90,772
+MODULE mo_soil_processmo_soil_process10,183
+  CHARACTER(len=*), PARAMETER :: modname modname23,490
+  REAL(wp) ELEMENTAL FUNCTION snow_fract(snow_fract29,608
+  REAL(wp) ELEMENTAL FUNCTION relative_humidity(relative_humidity42,1012
+  SUBROUTINE init_soil_temperature(init_soil_temperature86,2251
+SUBROUTINE update_surf_down update_surf_down165,4849
+110 END DO110364,12915
+210  END DO210399,14360
+220  END DO220413,14839
+230  END DO230423,15356
+240     END DO240444,16747
+250  END DO250458,17367
+601  END DO601472,17919
+SUBROUTINE update_soiltemp(update_soiltemp485,18131
+SUBROUTINE update_surf_up update_surf_up713,26590
+SUBROUTINE soilhyd(soilhyd1236,48764
+SUBROUTINE soildef soildef1852,71950
+SUBROUTINE soilchange soilchange1981,76454
+
+src/soil/mo_soil_config_class.f90,910
+MODULE mo_soil_config_classmo_soil_config_class10,186
+     LOGICAL :: activeactive24,551
+     CHARACTER(len=filename_max) :: ic_filenameic_filename25,574
+     CHARACTER(len=filename_max) :: bc_filenamebc_filename26,622
+     INTEGER :: nsoil_energynsoil_energy27,670
+     INTEGER :: nsoil_waternsoil_water28,699
+     REAL(wp), ALLOCATABLE :: soil_depth_energy(soil_depth_energy29,727
+     REAL(wp), ALLOCATABLE :: soil_depth_water(soil_depth_water30,778
+     REAL(wp), ALLOCATABLE :: dz_energy(dz_energy31,828
+     REAL(wp), ALLOCATABLE :: dz_water(dz_water32,871
+     REAL(wp) :: wsr_capacity wsr_capacity33,913
+     REAL(wp) :: wsn_capacity wsn_capacity34,1029
+  INTEGER, PARAMETER :: max_soil_layers max_soil_layers37,1188
+  CHARACTER(len=*), PARAMETER :: modname modname39,1234
+  FUNCTION new_soil_config(new_soil_config43,1311
+    NAMELIST /jsb_soil_nml/jsb_soil_nml60,1948
+
+src/soil/mo_soil_memory_class.f90,2841
+MODULE mo_soil_memory_classmo_soil_memory_class10,188
+  INTEGER, PARAMETER :: max_no_of_vars max_no_of_vars23,504
+    TYPE(t_jsb_var_real3d), TARGET :: &
+soil_depth_l44,1657
+    TYPE(t_jsb_var_real2d), TARGET :: &
+soil_depth46,1811
+      soil_depth          ,    & !< Soil depth derived from textures (bedrock) (for hydrology) [m]
+vpor47,1851
+      vpor                ,    & !< Volumetric soil porosity []
+psdi48,1950
+      psdi                ,    & !< Soil pore size distribution index []
+bclapp49,2014
+      bclapp              ,    & !< Exponent B in Clapp and Hornberger
+mpot50,2087
+      mpot                ,    & !< Matrix potential [m]
+shc51,2158
+      shc                 ,    & !< Saturated hydraulic conductivity [m/s]
+vhcap52,2215
+      vhcap               ,    & !< Volumetric heat capacity of dry soil [J m-3 K-1]
+hdiff53,2290
+      hdiff               ,    & !< Thermal diffusivity of soil [m2 s-1]
+alb_vis_soil54,2375
+      alb_vis_soil        ,    & !< Albedo of the soil in the visible range
+alb_nir_soil55,2448
+    TYPE(t_jsb_var_real3d), TARGET :: &
+t_soil59,2621
+      t_soil, &
+t_soil_acoef60,2661
+      t_soil_acoef  , &
+t_soil_bcoef61,2677
+    TYPE(t_jsb_var_real2d), TARGET :: &
+hcap_grnd63,2720
+      hcap_grnd     , &  !< Heat capacity of the ground [J m-2 K-1]
+hcap_grnd_old64,2760
+    TYPE(t_jsb_var_real2d), TARGET :: &
+wfract_soil68,2926
+      wfract_soil   ,   & !< Wet (skin reservoir) fraction of soil []
+wsr_soil69,2966
+      wsr_soil      ,   & !< Water content in skin reservoir on soil [m]
+sfract_soil70,3036
+      sfract_soil   ,   & !< Snow fraction of soil []
+wsn_soil71,3109
+      wsn_soil      ,   & !< Water content of snow reservoir of soil [m water equivalent]
+overflow72,3163
+      overflow      ,   & !< Water content of reservoir for overflown soil water (terraplanet) [m] 
+ws73,3253
+    TYPE(t_jsb_var_real3d), TARGET :: &
+ws_l75,3425
+      ws_l          ,   & !< Water content in soil layers [m]
+ws_sat_l76,3465
+      ws_sat_l      ,   & !< Water content of soil layers at saturation (derived from soil porosity) [m]
+ws_fc_l77,3527
+      ws_fc_l       ,   & !< Water content of soil layers at field capacity (derived from volumetric field capacity)[m]
+ws_pwp_l78,3632
+    TYPE(t_jsb_var_real2d), TARGET :: &
+grnd_hflx82,3903
+      grnd_hflx        ,  &  !< ground heat flux
+grnd_hflx_old83,3943
+    TYPE(t_jsb_var_real2d), TARGET :: &
+runoff87,4072
+      & runoff         , & !< surface runoff
+drainage88,4112
+      & drainage       , & !< drainage
+pme_glacier89,4157
+      & pme_glacier    , & !< P-E on glaciers
+discharge90,4196
+      & discharge      , & !< discharge (local)
+discharge_ocean91,4242
+  CHARACTER(len=*), PARAMETER :: modname modname107,4815
+  SUBROUTINE Init_soil_memory(Init_soil_memory111,4893
+
+src/soil/mo_soil_util.f90,164
+MODULE mo_soil_utilmo_soil_util10,182
+  CHARACTER(len=*), PARAMETER :: modname modname21,352
+  FUNCTION soil_depth_to_layers_2d(soil_depth_to_layers_2d25,421
+
+src/soil/mo_soil_constants.f90,467
+MODULE mo_soil_constantsmo_soil_constants10,180
+  REAL(wp), PARAMETER :: &
+ws_crit_fract18,279
+    & ws_crit_fract  = 0.75_wp, &      !< Fraction of field capacity at which soil starts to dry,
+ws_wilt_fract20,347
+    & ws_wilt_fract  = 0.35_wp, &      !< Fraction of field capacity at which soil is at wilting point,
+wsn2frac_eps22,538
+    & wsn2frac_eps    = 1.E-12_wp,  &
+wsn2frac_sigfac26,773
+    & wsn2frac_sigfac = 0.15_wp,    &
+wsn2frac_const27,811
+
+src/soil/mo_soil_interface.f90,102
+MODULE mo_soil_interfacemo_soil_interface10,184
+  SUBROUTINE update_soil_2(update_soil_2284,11574
+
+src/surface/mo_srf_constants.f90,285
+MODULE mo_srf_constantsmo_srf_constants10,179
+  REAL(wp), PARAMETER :: &
+blending_height25,693
+    blending_height = 100._wp,  & !< Blending height [m]
+roughness_snow28,764
+    roughness_snow  = 0.001_wp, & !< Roughness length of snow-covered surfaces [m]
+roughness_bare29,821
+
+src/surface/mo_srf_memory_class.f90,3862
+MODULE mo_srf_memory_classmo_srf_memory_class10,181
+  TYPE t_srf_phys_statet_srf_phys_state24,519
+    REAL(wp), POINTER ::           &
+land25,543
+      land         (:,:),    & !< Land fraction: 1: land/lake/glacier, 0: sea
+coast_land26,580
+      coast_land   (:,:),    & !< mask for coastal cells of the land
+coast_ocean27,658
+      coast_ocean ocean28,727
+      ocean        (:,:),    & !< mask for ocean cells, 1: ocean
+glacier29,797
+      glacier      (:,:),    & !< Glacier fraction
+lake30,862
+      lake         (:,:),    & !< Lake fraction
+oro_stddev31,913
+      oro_stddev   (:,:),    & !< Standard deviation of orography
+rough_m_srf32,961
+      rough_m_srf  (:,:),    & !< Surface roughness length for momentum
+rough_h_srf33,1027
+      rough_h_srf  (:,:),    & !< Surface roughness length for heat
+albedo_srf34,1099
+      albedo_srf   (:,:),    & !< (Background) albedo of tile
+alb_vis_srf35,1167
+      alb_vis_srf  (:,:),    & !< Albedo in the visible range
+alb_nir_srf36,1229
+  TYPE t_srf_energy_statet_srf_energy_state40,1378
+    REAL(wp), POINTER :: &
+t_srf41,1404
+      t_srf            (:,:), &
+t_srf_old42,1431
+      t_srf_old        (:,:), &
+t_srf_unfilt43,1463
+      t_srf_unfilt     (:,:), &
+t_srf_unfilt_old44,1495
+      t_srf_unfilt_old (:,:), &
+t_eff_srf45,1527
+      t_eff_srf        (:,:), &
+s_srf46,1559
+      s_srf            (:,:), &  !< Dry static energy at surface (new timestep)
+qsat_srf47,1591
+      qsat_srf         (:,:), &
+tte_corr49,1754
+      tte_corr         (:,:), &  !< Correction term of tte for snow melt
+fact_q_air51,1821
+      fact_q_air       (:,:), &  !< cair in echam6
+fact_qsat_srf52,1894
+      fact_qsat_srf    (:,:), &  !< csat in echam6
+fact_qsat_trans_srf53,1945
+  TYPE t_srf_water_statet_srf_water_state57,2099
+    REAL(wp), POINTER :: &
+wfract_srf58,2124
+      wfract_srf    (:,:),   & !< Wet (skin reservoir) fraction of tile []
+wsr_srf59,2151
+      wsr_srf       (:,:),   & !< Water content in skin reservoir [m]
+sfract_srf60,2226
+      sfract_srf    (:,:),   & !< Snow fraction of tile []
+wsn_srf61,2296
+      wsn_srf       (:,:),   & !< Water content of snow reservoir [m water equivalent]
+wsn_glacier62,2355
+  TYPE t_srf_energy_fluxt_srf_energy_flux66,2560
+    REAL(wp), POINTER :: &
+latent_hflx67,2585
+      latent_hflx      (:,:),   & !< latent heat flux
+sensible_hflx68,2612
+      sensible_hflx    (:,:),   & !< sensible heat flux
+sw_srf_net69,2666
+      sw_srf_net       (:,:),   & !< net shortwave radiation at surface
+swvis_srf_net70,2722
+      swvis_srf_net    (:,:),   & !< net shortwave radiation at surface in visible range
+swnir_srf_net71,2794
+      swnir_srf_net    (:,:),   & !< net shortwave radiation at surface in NIR range
+lw_srf_net72,2883
+      lw_srf_net       (:,:),   & !< net longwave radiation at surface
+rad_srf_net73,2968
+  TYPE t_srf_water_fluxt_srf_water_flux77,3131
+    REAL(wp), POINTER :: &
+evapopot78,3155
+      evapopot         (:,:),   & !< Potential evaporation
+evapotrans79,3182
+      evapotrans trans80,3241
+    TYPE(t_srf_phys_state)phys_state85,3423
+    TYPE(t_srf_energy_state)energy_state86,3487
+    TYPE(t_srf_water_state)water_state87,3551
+    TYPE(t_srf_energy_flux)energy_flux88,3615
+    TYPE(t_srf_water_flux)water_flux89,3679
+  CHARACTER(len=*), PARAMETER :: modname modname104,4186
+  SUBROUTINE Init_srf_memory(Init_srf_memory108,4262
+    FUNCTION new_phys_state(new_phys_state143,5505
+    FUNCTION new_energy_state(new_energy_state223,10737
+    FUNCTION new_energy_flux(new_energy_flux315,16848
+    FUNCTION new_water_state(new_water_state365,20234
+    FUNCTION new_water_flux(new_water_flux403,22499
+  SUBROUTINE copy_t_srf_energy_state(copy_t_srf_energy_state431,24032
+  SUBROUTINE add_t_srf_energy_state(add_t_srf_energy_state452,25268
+
+src/surface/mo_srf_init.f90,94
+MODULE mo_srf_initmo_srf_init10,176
+  RECURSIVE SUBROUTINE srf_init_ic(srf_init_ic52,1304
+
+src/surface/mo_srf_config_class.f90,596
+MODULE mo_srf_config_classmo_srf_config_class10,185
+     LOGICAL :: activeactive24,546
+     CHARACTER(len=filename_max) :: ic_filenameic_filename25,569
+     CHARACTER(len=filename_max) :: bc_filenamebc_filename26,617
+     CHARACTER(len=filename_max) :: bc_sso_filenamebc_sso_filename27,665
+     CHARACTER(len=10)           :: scheme_albedo scheme_albedo28,717
+     REAL(wp)                    :: wsn_critical wsn_critical29,832
+  CHARACTER(len=*), PARAMETER :: modname modname32,993
+  FUNCTION new_srf_config(new_srf_config36,1069
+    NAMELIST /jsb_srf_nml/jsb_srf_nml50,1537
+
+src/surface/mo_srf_interface.f90,462
+MODULE mo_srf_interfacemo_srf_interface10,183
+  SUBROUTINE update_snow_and_skin_fraction(update_snow_and_skin_fraction106,3504
+  SUBROUTINE update_surface_energy(update_surface_energy240,9003
+  SUBROUTINE update_t_srf_asselin(update_t_srf_asselin398,16074
+  SUBROUTINE update_surface_fluxes(update_surface_fluxes435,17292
+  SUBROUTINE update_humidity_scaling(update_humidity_scaling535,21785
+  SUBROUTINE update_roughness(update_roughness650,26662
+
+src/surface/mo_srf_process.f90,166
+MODULE mo_srf_processmo_srf_process10,182
+  CHARACTER(len=*), PARAMETER :: modname modname21,353
+  SUBROUTINE surface_temp_implicit(surface_temp_implicit25,424
+
+src/vegetation/mo_veg_config_class.f90,598
+MODULE mo_veg_config_classmo_veg_config_class10,185
+     LOGICAL :: activeactive24,532
+     CHARACTER(len=filename_max) :: ic_filenameic_filename25,555
+     CHARACTER(len=filename_max) :: bc_filenamebc_filename26,603
+     CHARACTER(len=10)           :: scheme_stom_cond scheme_stom_cond27,651
+     REAL(wp)                    :: wsr_capacity wsr_capacity28,784
+     REAL(wp)                    :: wsn_capacity wsn_capacity29,910
+  CHARACTER(len=*), PARAMETER :: modname modname32,1078
+  FUNCTION new_veg_config(new_veg_config36,1154
+    NAMELIST /jsb_veg_nml/jsb_veg_nml50,1621
+
+src/vegetation/mo_veg_process.f90,557
+MODULE mo_veg_processmo_veg_process10,189
+  CHARACTER(len=*), PARAMETER :: modname modname30,691
+  REAL(wp) ELEMENTAL FUNCTION canopy_conductance_unstressed_echam5(canopy_conductance_unstressed_echam534,762
+  REAL(wp) ELEMENTAL FUNCTION canopy_conductance_stressed(canopy_conductance_stressed66,1781
+  REAL(wp) ELEMENTAL FUNCTION water_stress_factor water_stress_factor85,2386
+  REAL(wp) ELEMENTAL FUNCTION foliage_projected_cover(foliage_projected_cover108,3262
+  REAL(wp) ELEMENTAL FUNCTION canopy_albedo_echam5(canopy_albedo_echam5120,3688
+
+src/vegetation/mo_veg_interface.f90,111
+MODULE mo_veg_interfacemo_veg_interface10,190
+  SUBROUTINE update_vegetation_2(update_vegetation_2159,6295
+
+src/vegetation/mo_veg_constants.f90,446
+MODULE mo_veg_constantsmo_veg_constants10,186
+  REAL(wp), PARAMETER :: &
+conductance_k18,284
+    & conductance_k = 0.9_wp,     & !>
+conductance_a21,423
+    & conductance_a = 5000._wp,   & !> Jm-3
+conductance_b22,462
+    & conductance_b = 10._wp,     & !> Wm-2
+conductance_c23,506
+    & conductance_c = 100._wp,    & !> ms-1
+albedo_snow_can24,550
+    albedo_snow_can = 0.2_wp,     & !> Albedo of snow on canopy
+sky_view_factor27,623
+
+src/vegetation/mo_veg_util.f90,152
+MODULE mo_veg_utilmo_veg_util10,177
+  CHARACTER(len=*), PARAMETER :: modname modname21,341
+  FUNCTION water_in_root_zone(water_in_root_zone25,409
+
+src/vegetation/mo_veg_memory_class.f90,2318
+MODULE mo_veg_memory_classmo_veg_memory_class10,193
+  TYPE t_veg_phys_statet_veg_phys_state22,441
+    REAL(wp), POINTER ::    &
+lai23,465
+      & lai            (:,  :), &  !< Leaf area index
+lai_mon24,495
+      & lai_mon        (:,  :, :), & !< Monthly leaf area index (per year or climatology) <nproma x nblks x 14>
+fract_fpc25,549
+      & fract_fpc      (:,  :), &  !< Foliage projected cover (fraction of ground area occupied by the vertical projection of foliage)
+fract_fpc_max26,661
+      & fract_fpc_max  (:,  :), &  !< Maximum fraction of tile that can be covered by leaves (assuming infinite lai)
+fract_forest27,796
+      & fract_forest   (:,  :), &  !< Forest fraction
+canopy_cond28,913
+      & canopy_cond    (:,  :), &  !< Canopy conductance (1/resistance)
+skin_can_depth29,967
+      & skin_can_depth (:,  :), &  !< Depth of skin reservoir on canopy
+root_depth30,1039
+      & root_depth     (:,  :), &  !< Rooting depth [m]
+root_depth_l31,1111
+      & root_depth_l   (:,:,:), &  !< Rooted depth per soil layer (until rooting depth) [m]
+alb_vis_can32,1167
+      & alb_vis_can    (:,  :), &  !< Albedo of the canopy in the visible range
+alb_nir_can33,1259
+  TYPE t_veg_water_statet_veg_water_state37,1444
+    REAL(wp), POINTER ::   &
+wfract_can38,1469
+      & wfract_can  (:,:), &  !< Wet (skin reservoir) fraction of canopy
+wsr_can39,1498
+      & wsr_can     (:,:), &  !< Water content in skin reservoir on canopy [m]
+sfract_can40,1571
+      & sfract_can  (:,:), &  !< Snow fraction of canopy
+wsn_can41,1650
+      & wsn_can     (:,:), &  !< Water content of snow reservoir onn canopy [m water equivalent]
+ws_root42,1707
+      & ws_root     (:,:), &  !< Water content in root zone of the soil [m]
+ws_fc_root43,1804
+      & ws_fc_root  (:,:), &  !< Water content at field capacity in root zone of the soil [m]
+ws_pwp_root44,1880
+      & ws_pwp_root (:,:), &  !< Water content at permanent wilting point in root zone of the soil [m]
+water_stress45,1974
+    TYPE(t_veg_phys_state)phys_state50,2246
+    TYPE(t_veg_water_state)water_state51,2308
+  CHARACTER(len=*), PARAMETER :: modname modname56,2447
+  SUBROUTINE Init_veg_memory(Init_veg_memory60,2523
+    FUNCTION new_phys_state(new_phys_state94,3688
+    FUNCTION new_water_state(new_water_state170,8322
+
+src/vegetation/mo_veg_init.f90,198
+MODULE mo_veg_initmo_veg_init10,183
+  CHARACTER(len=*), PARAMETER :: modname modname34,1104
+  SUBROUTINE veg_init_bc(veg_init_bc38,1172
+  RECURSIVE SUBROUTINE veg_init_ic(veg_init_ic61,1675

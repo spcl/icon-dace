@@ -1,0 +1,224 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\documentclass[DIV16,BCOR1cm,11pt,a4paper,twoside]{scrreprt}
+%-----------------------------------------------------------------------------
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,
+            pdfstartview=FitV,
+            bookmarks=true,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue,
+            unicode
+           ]{hyperref}
+\hypersetup{
+  pdftitle={The physical parameterizations of non-hydrostatic atmospheric and general circulation model ICON  
+            Model Description,},
+  pdfauthor={The ICON developer group}
+}
+\fi
+%-----------------------------------------------------------------------------
+\usepackage{ametsoc}
+\usepackage{a4}
+\usepackage[english]{babel}
+\usepackage{epsf}
+\usepackage{epsfig}
+\usepackage{graphicx}
+\usepackage{array, amsmath,amssymb}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{hyperref}
+\usepackage{enumitem}
+\usepackage{moreverb}
+
+\usepackage[utf8]{inputenc}
+\usepackage[bf]{caption}
+\usepackage{graphicx}
+\usepackage{listings}
+\usepackage{makeidx}
+\usepackage{fancyhdr}
+\usepackage{multicol}
+\usepackage{float}
+\usepackage{textcomp}
+\usepackage{alltt}
+\usepackage{times}
+
+\voffset-0.8cm
+\hoffset-1.0in
+
+\setlength{\oddsidemargin}{2.8cm}
+\setlength{\evensidemargin}{2.8cm}
+\setlength{\textwidth}{15.4cm}
+\setlength{\topmargin}{0.1cm}
+\setlength{\headheight}{0.5cm}
+\setlength{\headsep}{0.6cm}
+\setlength{\parindent}{0.0cm}
+\setlength{\parskip}{0.3cm}
+\setlength{\textheight}{23.7cm}
+\setlength{\footskip}{1.4cm}
+%\addtolength{\skip\footins}{2.5mm}
+
+\input{makros.tex}
+\input{math_definitions.tex}
+
+\newcommand{\clc}{\ensuremath{\mathcal N}}
+\renewcommand{\l}{\ensuremath{\left}}
+\renewcommand{\r}{\ensuremath{\right}}
+\newcommand{\f}[2]{\ensuremath{\frac{#1}{#2}}}
+
+\newcommand{\pd}[2]{\ensuremath{\frac{\partial #1}{\partial #2}}}
+\newcommand{\pdt}[1]{\ensuremath{\pd{#1}{t}}}
+\newcommand{\pdx}[1]{\ensuremath{\pd{#1}{x}}}
+\newcommand{\pdy}[1]{\ensuremath{\pd{#1}{y}}}
+\newcommand{\pdz}[1]{\ensuremath{\pd{#1}{z}}}
+
+\newcommand{\kcc}{\ensuremath{k_{cc}}}
+
+%for the IFSdocu part
+\newcommand\hyperPart[1]{\hyperref[#1]{Part}~\ref{#1}}
+\newcommand\hyperChapter[1]{\hyperref[#1]{Chapter}~\ref{#1}}
+\newcommand\hyperSection[1]{\hyperref[#1]{Section}~\ref{#1}}
+\newcommand\hyperSections[1]{\hyperref[#1]{Sections}~\ref{#1}}
+\newcommand\hyperSubsection[1]{\hyperref[#1]{Subsection}~\ref{#1}}
+\newcommand\hyperSubsections[1]{\hyperref[#1]{Subsections}~\ref{#1}}
+\newcommand\hyperFig[1]{\hyperref[#1]{Fig.}~\ref{#1}}
+\newcommand\hyperFigs[1]{\hyperref[#1]{Figs}~\ref{#1}}
+\newcommand\hyperTable[1]{\hyperref[#1]{Table}~\ref{#1}}
+\newcommand\hyperTables[1]{\hyperref[#1]{Tables}~\ref{#1}}
+\newcommand\hyperEquation[1]{\hyperref[#1]{Equation}~(\ref{#1})}
+\newcommand\hyperEquations[1]{\hyperref[#1]{Equations}~(\ref{#1})}
+\newcommand\AppendixA[1]{\hyperref[appA]{Appendix~A}} 
+%for comments
+\newcommand{\red}[1]{{\color{red} #1}}
+
+
+
+%\usepackage{pdftricks}  %uncomment if needed
+%\begin{psinputs}        %uncomment if needed
+% \usepackage{pstricks}  %uncomment if needed
+%\end{psinputs}          %uncomment if needed
+%-----------------------------------------------------------------------------
+\setcounter{topnumber}{10}
+\setcounter{bottomnumber}{10}
+\setcounter{totalnumber}{12}
+%-----------------------------------------------------------------------------
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+\renewcommand{\textfraction}{0.0}
+\renewcommand{\arraystretch}{1.2}
+%-----------------------------------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2ex plus 0.2ex minus 0.2ex}
+%-----------------------------------------------------------------------------
+\definecolor{mpggreen}{RGB}{0,119,112}
+\definecolor{mpggrey}{RGB}{209,206,198}
+\definecolor{darkred}{RGB}{217,0,0}
+%-----------------------------------------------------------------------------
+
+
+\lstnewenvironment{fortran}
+{\lstset{language=[95]Fortran,%
+basicstyle=\ttfamily\footnotesize\color{mpggreen},%
+commentstyle=\ttfamily\color{mpggreen!50},%
+backgroundcolor=\color{mpggrey!50},%
+frame=shadowbox,%
+rulesepcolor=\color{mpggreen}}}{}
+
+\lstnewenvironment{ksh}
+{\lstset{language=ksh,%
+basicstyle=\ttfamily\footnotesize\color{mpggreen},%
+commentstyle=\ttfamily\color{mpggreen!50},%
+backgroundcolor=\color{mpggrey!50},%
+frame=shadowbox,%
+rulesepcolor=\color{mpggreen}}}{}
+
+\newcommand{\note}[1]{
+\fbox{\begin{minipage}{15cm}{#1}\end{minipage}}\marginpar\textbf{NOTE}
+}
+
+%-----------------------------------------------------------------------------
+\newcommand{\icon}{\color{mpggreen}\texttt{echam}\color{black}~}
+\newcommand{\directory}[1]{\color{mpggreen}\texttt{#1}\color{black}}
+\newcommand{\filename}[1]{\color{mpggreen}\texttt{#1}\color{black}}
+\newcommand{\environment}[1]{\color{mpggreen}\texttt{#1}\color{black}}
+%-----------------------------------------------------------------------------
+
+\makeindex
+
+\setcounter{tocdepth}{3}
+
+\renewcommand{\footrulewidth}{0.4pt}
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+\begin{document}
+%-----------------------------------------------------------------------------
+\pagestyle{empty}
+
+\renewcommand{\footnoterule}{\rule{0pt}{0pt}\vspace{0pt}}
+
+\begin{center}
+\ifpdf
+\parbox{2cm}{
+\includegraphics[height=2cm]{../resources/img/mpilogo.pdf}
+}
+\hfill
+\parbox{2cm}{
+\includegraphics{../resources/img/dwdlogo.pdf}
+}
+\fi
+\end{center}
+
+\vspace{2cm}
+
+\begin{center}
+{\sectfont\Huge
+\color{mpggreen}Model Description\color{black}\\[0.5ex]
+}
+\end{center}
+
+\vspace{2cm}
+
+\begin{center}
+{\sectfont\Large
+The ICON  developer group}
+\end{center}
+
+\vspace{1cm}
+
+\begin{center}
+{\sectfont\Large
+Deutscher Wetterdienst\\and\\
+Max Planck Institute for Meteorology\\
+
+\vspace{1cm}
+
+\today}
+\end{center}
+%-----------------------------------------------------------------------------
+\cleardoublepage
+
+\tableofcontents
+
+\cleardoublepage
+%-----------------------------------------------------------------------------
+\pagestyle{plain}
+
+\input{microphysics}
+
+\input{p4c05}
+
+%\input{cloud_cover_docu}
+
+\bibliographystyle{ametsoc}
+\bibliography{lmclouds}
+
+\end{document}

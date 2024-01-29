@@ -1,0 +1,128 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <chemtracer id="TRCH4" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.604E-2</mol_weight>
+    <lifetime type="real">25920000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRCO</products>
+  </chemtracer>
+  <chemtracer id="TRC2H6" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">3.006E-2</mol_weight>
+    <lifetime type="real">5184000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+  </chemtracer>
+  <chemtracer id="TRC3H8" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.40956E-2</mol_weight>
+    <lifetime type="real">1209600</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">0.736*TRCH3COCH3</products>
+  </chemtracer>
+  <chemtracer id="TRC5H8"  full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.812E-2</mol_weight>
+    <lifetime type="real">8640</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCH3COCH3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">5.808E-2</mol_weight>
+    <lifetime type="real">1728000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+  </chemtracer>
+  <chemtracer id="TRCO" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">2.801E-2</mol_weight>
+    <lifetime type="real">25920000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRCO2</products>
+  </chemtracer>
+  <chemtracer id="TRCO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.401E-2</mol_weight>
+    <lifetime type="real">25920000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <products type="char">TRCO</products>
+  </chemtracer>
+  <chemtracer id="TRNH3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">1.70E-2</mol_weight>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRNO2</products>
+  </chemtracer>
+  <chemtracer id="TRNO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.601E-2</mol_weight>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRHNO3</products>
+  </chemtracer>
+  <chemtracer id="TRSO2" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.40E-2</mol_weight>
+    <lifetime type="real">864000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRH2SO4</products>
+  </chemtracer>
+  <chemtracer id="TROCS" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.01E-2</mol_weight>
+    <lifetime type="real">504576000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">TRSO2</products>
+  </chemtracer>
+  <chemtracer id="TRDMS" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.21E-2</mol_weight>
+    <lifetime type="real">216000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">OH</c_solve>
+    <products type="char">0.993*TRSO2;0.007*TROCS</products>
+  </chemtracer>
+  <chemtracer id="TRHNO3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.30E-2</mol_weight>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <init_mode type="int"> 0 </init_mode>
+    <init_name type="char"> HNO3 </init_name> 
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRH2SO4" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">9.80E-2</mol_weight>
+    <lifetime type="real">259200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+</tracers>

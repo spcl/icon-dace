@@ -1,0 +1,3 @@
+[submodule "plugins/python_adapter"]
+	path = plugins/python_adapter
+	url = https://gitlab.dkrz.de/icon-comin/python_adapter.git

@@ -1,0 +1,133 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  EOM_ARCHIVE.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - copy output and/or
+  - store in database and/or
+  - trigger transfer to DWD
+%end
+
+# include the standard header file
+%include <init_ws_submit.h>
+
+# -------------------------------------------------
+
+echo "EOM_ARCHIVE.SMS" 
+
+
+ldeldata=0
+
+#rm -rf /scratch/ms/de/deia/icon/dei2/245/*/grb_data
+
+#-----------------------------------------------------------------------------
+# directories
+
+YYYYMM=`echo %YMD% | cut -c 1-6`
+DD=`echo %YMD% | cut -c 7-8`
+gatedir=%ECTEMP%/%SUITE%/%EXPNUM%/$YYYYMM
+cd ${gatedir}
+ecfsdir=ec:icon/experiments/%SUITE%/%EXPNUM%/$YYYYMM
+emkdir -p $ecfsdir
+METDIR=%ECPERM%/%USER_ICON_DIR%/scripts/postprocessing/tools/metview
+
+
+#-----------------------------------------------------------------------------
+# scores: plot comparison between this experiment and a reference experiment
+
+module load gdl
+cp ${METDIR}/scores.pro ${METDIR}/batch_scores.pro ${METDIR}/paperopenl.pro ${METDIR}/paperclose.pro .
+gdl batch_scores.pro -args %ECTEMP%/%SUITE%/%EXPNUM%/$YYYYMM/metplots %ECTEMP%/%SUITE2%/%EXPNUM2%/$YYYYMM/metplots \
+  %SUITE%_%EXPNUM% %SUITE2%_%EXPNUM2% ${YYYYMM}01 24 ${DD}
+gdl batch_scores.pro -args %ECTEMP%/%SUITE%/%EXPNUM%/$YYYYMM/metplots %ECTEMP%/%SUITE2%/%EXPNUM2%/$YYYYMM/metplots \
+  %SUITE%_%EXPNUM% %SUITE2%_%EXPNUM2% ${YYYYMM}01 240 ${DD}
+
+# help: offline
+# cd /scratch/ms/de/deia/icon_data/dei2/042/201201
+# cp scores.pro paperopenl.pro paperclose.pro batch_scores.pro ${SCRATCH}/temp/scores
+# cd ${SCRATCH}/temp/scores
+# batch_scores.pro: modify plotfile1
+# module load idl
+# idl batch_scores -args /scratch/ms/de/deia/icon/dei2/042/201201/metplots /scratch/ms/de/deia/icon/dei2/033/201201/metplots dei2_042 dei2_033 20120101 24 31
+
+
+#-----------------------------------------------------------------------------
+# convert scores plot from ps to png
+
+cd ${gatedir}/metplots
+for metfile in `ls scores*.ps` ; do
+  metfile2=`echo $metfile | sed 's/\.ps//'`
+%nopp
+  convert -rotate 270 -density 250 -resize 45% ${metfile2}.ps ${metfile2}.png || true
+%end
+  rm -f ${metfile2}.ps
+done 
+
+
+#-----------------------------------------------------------------------------
+# change metview plot names from *.1.png to *.png
+
+cd ${gatedir}
+chmod a+rx metplots
+chmod a+r  metplots/*
+cd metplots
+for metfile in `ls map*.1.png zon*.1.png` ; do
+  metfile2=`echo $metfile | sed 's/\.1\.png/\.png/'`
+  mv ${metfile} ${metfile2}
+done 
+
+
+#-----------------------------------------------------------------------------
+# ectrans plots to mkoehler@DWD
+
+cd %ECTEMP%/%SUITE%
+ln -sf %EXPNUM% %SUITE%_%EXPNUM%
+tarfile=%SUITE%_%EXPNUM%_${YYYYMM}_UNTAR.tar
+tar cvf ${tarfile} %SUITE%_%EXPNUM%/${YYYYMM}/metplots
+/home/ms/de/dfr/Perl/ectrans.pl -r ECtoFE04 -O plots ${tarfile}
+rm -f ${tarfile} %SUITE%_%EXPNUM%
+
+
+#-----------------------------------------------------------------------------
+# archive plots to ecfs
+
+cd ${gatedir}
+tar cvf  metplots_%SUITE%_%EXPNUM%_$YYYYMM.tar metplots
+gzip -f  metplots_%SUITE%_%EXPNUM%_$YYYYMM.tar
+ecp -o   metplots_%SUITE%_%EXPNUM%_$YYYYMM.tar.gz $ecfsdir
+\rm -rf  metplots_%SUITE%_%EXPNUM%_$YYYYMM.tar.gz
+
+
+#-----------------------------------------------------------------------------
+# delete grib data
+
+if [[ $ldeldata = 1 ]] ; then
+  \rm -rf met.job.*
+  \rm -rf grb_data
+fi
+
+
+# -------------------------------------------------
+
+# include the standard "tail" file
+%include <end_ws.h>
+

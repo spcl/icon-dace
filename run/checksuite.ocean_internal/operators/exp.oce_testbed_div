@@ -1,0 +1,104 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#=============================================================================
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+iforc=10
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-01T00:01:00Z"
+#-----------------------------------------------------------------------------
+# model timing
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+output_interval="PT1H"                  # ocean model output interval in days
+daily="P1D"
+monthly="P1M"
+file_interval="P50Y"
+modelTimeStep="PT1H"
+autoPostProcessing="false"                         # submit postprocessing job
+#steps_per_file=610                               # assigned output intervals per file interval
+#-----------------------------------------------------------------------------
+# model parameters
+ocean_model_equations=-1     # equation system: -1=hydrost. ocean
+#
+#-----------------------------------------------------------------------------
+#
+grids_folder="/pool/data/ICON/oes/grids/AquaPlanets/"
+ocean_grids="AquaPlanet_Icos_0316km_springOpt.nc"
+grids_folder="/pool/data/ICON/oes/grids/Channels_globe"
+ocean_grids="Ocean_Channel_globe_0011km.nc"
+ocean_grids="AquaTorus_Triangles_320x184_8x4m.nc"
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+ ! grid_rescale_factor = 1.0E-3
+/
+&dynamics_nml
+ iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
+/
+&run_nml
+ modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds
+ output               = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output = 3
+ test_mode     = 110 
+/
+&ocean_dynamics_nml
+  n_zlev        =   2      ! number of vertical levels and (dzlev_m) thicknesses
+  dzlev_m(1:2)  =  1.0, 1.0
+!  iswm_oce= 1
+/
+&ocean_initialConditions_nml
+  topography_type = 200 ! uniform
+  topography_height_reference = -1.0
+/
+&dbg_index_nml
+  idbg_mxmn=1                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+/
+&output_nml
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${modelTimeStep}"
+  file_interval    = "P1D"
+  output_grid      = .TRUE.
+  mode             = 1
+  output_filename  = "${EXPNAME}"
+  filename_format  = "<output_filename>_<datetime2>"
+  output_grid      = .TRUE.
+  ml_varlist       =  'mass_flux', 'ptp_vn', 'div_mass_flx_c', 'div_model', 'divPtP', 'div_diff','divPtP_diff', 'vort'
+/
+&ocean_physics_nml
+  i_sea_ice            = 0        ! 0 = no sea ice; 1 = sea ice model on
+/
+&ocean_GentMcWilliamsRedi_nml
+  GMRedi_configuration           =   0       ! 0=cartesian diffusion 1=GM-Redi: bolus advection + isopycnal diffusion
+  GMREDI_COMBINED_DIAGNOSTIC    = .false.
+/
+EOF
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------

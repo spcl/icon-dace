@@ -1,0 +1,59 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -e
+
+# set required environment variables
+export MODULESHOME="/usr/share/Modules"
+
+# this wrapper needs to build two ICON binaries
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+
+# create vector engine binary
+${ICON_DIR}/config/dwd/rcl.VE.bb-dwd_nec --prefix=${PWD}/vector
+MAKE_PROCS=14
+make -j ${MAKE_PROCS}
+make install
+
+
+# Save the _vector_ info file as it is required for
+# create_target_header afterwards.
+mv -v run/set-up.info run/set-up.info.vector
+
+make distclean
+
+# create vector host binary
+${ICON_DIR}/config/dwd/rcl.VH.bb-dwd_nec --prefix=${PWD}/host
+MAKE_PROCS=14
+make -j ${MAKE_PROCS}
+make install
+
+VECTOR_BINARY="${PWD}/vector/bin/icon"
+HOST_BINARY="${PWD}/host/bin/icon"
+
+set +e
+find "${PWD}/vector" "${PWD}/host"
+file "$VECTOR_BINARY" "$HOST_BINARY"
+
+# Restore the _vector_ info file as it is required for create_target_header.
+mv -v run/set-up.info.vector run/set-up.info
+
+# Link a temporary directory with lots of space into the experiments subdir. Reruns
+# /etc/profile to get a new directory
+echo "Link a temporary directory with lots of space into the experiments subdir"
+ksh -c '. /etc/profile && echo "TMPDIR: $TMPDIR" && chmod -R go+rx "$TMPDIR" && ln -s "$TMPDIR" experiments'
+ls -l "${PWD}/experiments"
+
+# Copy the vector binary to the place, that is stored as builddir in set-up.info.
+# Only then it can be found by create_target_header.
+cp "${VECTOR_BINARY}" "${PWD}/bin/icon"

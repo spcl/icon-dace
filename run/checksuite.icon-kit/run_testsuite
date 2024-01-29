@@ -1,0 +1,3 @@
+./create_runscripts --input_file=testsuite.txt --action=none
+#sbatch exp.run_ICON_04_R02B06N08_ifsinit_restarttest.run
+

@@ -1,0 +1,69 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------
+#!/bin/ksh
+#=============================================================================
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# ocean forcing (iforc=12) needs an additional flux file 
+# NO_FORCING                 = 10
+# ANALYT_FORC                = 11  - dependent on testcase
+# FORCING_FROM_FILE_FLUX     = 12  - OMIP or NCEP type forcing
+# FORCING_FROM_FILE_FIELD    = 13  - not yet
+# FORCING_FROM_COUPLED_FLUX  = 14  - coupled experiments
+# FORCING_FROM_COUPLED_FIELD = 15  - not yet
+iforc=10
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-05T00:00:00Z"
+#-----------------------------------------------------------------------------
+# model parameters
+ocean_model_equations=-1     # equation system: -1=hydrost. ocean
+#
+#-----------------------------------------------------------------------------
+#
+ocean_location='fluent'
+ocean_grids="OceanOnly_Icos_0158km_etopo40.nc"
+
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+ iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
+/
+&run_nml
+ dtime       = 3600         ! model timestep in seconds
+ output      = 'none' ! 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output = 3
+ test_mode     = 1103
+/
+&ocean_dynamics_nml
+  n_zlev             =   2      ! number of vertical levels and (dzlev_m) thicknesses
+  dzlev_m(1:2)      =   20.0,   20.0
+/
+EOF
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------

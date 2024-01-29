@@ -1,0 +1,112 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+% &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+%
+% ICON_WAVES_NML_TABLES.TEX
+%
+% This LaTeX file defines ocean waves specific namelist parameters.
+% The file is included by ICON_NML_TABLES.TEX. For atmosphere-only releases
+% the ocean waves namelists can be excluded.
+%
+% &&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&&
+
+\section{Ocean waves specific namelist parameters}
+
+%------------------------------------------------------------------------------
+% energy_propagation_nml:
+%------------------------------------------------------------------------------
+\subsection{energy\_propagation\_nml (used if run\_nml/ltransport=.TRUE.)}
+
+\begin{longtab}
+
+%\hline
+itype\_limit&
+I&
+0& & Type of limiter for wave energy transport:& \tabularnewline
+& & & & 0: no limiter& \tabularnewline
+& & & & 3: monotonic flux limiter (FCT)& \tabularnewline
+& & & & 4: positive definite flux limiter& \tabularnewline
+
+
+%\hline
+beta\_fct&
+R& 1.005& & global boost factor for range of permissible values $\left[q_{max},q_{min}\right]$ in the monotonic flux limiter. A value larger
+than 1 allows for (small) over and undershoots, while a value of $1$ gives strict monotonicity (at the price of increased diffusivity). &
+itype\_limit = 3
+\tabularnewline
+
+
+%\hline
+igrad\_c\_miura&
+I& 1& & Method for gradient reconstruction at cell center for 2nd order miura scheme& \tabularnewline
+& & & & 1: Least-squares (linear, non-consv)& \tabularnewline
+& & & & 2: Green-Gauss& \tabularnewline
+& & & & 3: based on shape function derivatives for a three-node triangular element (Fish. J and T. Belytschko, 2007) &
+\tabularnewline
+
+%\hline
+lgrid\_refr     &
+L& .TRUE. &     & .TRUE.: calculate grid refraction & 
+\tabularnewline
+%\hline
+
+\end{longtab}
+
+Defined and used in: \verb+src/waves/config/mo_energy_propagation_nml.f90+
+
+
+
+\subsection{waves\_nml (used if configurated with --enable-waves and model\_type=98 in master\_model\_nml)}
+
+\begin{longtab}
+%Parameter &Type& Default   & Unit& Description&                                                      Scope
+ ndirs     & I  & 24        &     & number of direction of wave spectrum & \tabularnewline
+ nfreqs    & I  & 25        &     & number of frequencies of wave spectrum & \tabularnewline
+ fr1       & R  & 0.04177248& Hz  & first frequency of wave spectrum & \tabularnewline
+ co        & R  & 1.1       &     & frequency ratio & \tabularnewline
+ iref      & I  & 1         &     & frequency bin number of reference frequency & \tabularnewline
+ alpha     & R  & 0.018     &     & Phillips parameter & \tabularnewline
+ fm        & R  & 0.2       & Hz  & peak frequency and/or maximum frequency & \tabularnewline
+ gamma\_wave&R  & 3.0       &     & overshoot factor & \tabularnewline
+ sigma\_a   &R  & 0.07      &     & left peak width of wave spectrum & \tabularnewline
+ sigma\_b   &R  & 0.09      &     & right peak width of wave spectrum & \tabularnewline
+ fetch     & R  & 300000.   &  m  & fetch & \tabularnewline
+ roair     & R  & 1.225     &kg/m3& air density & \tabularnewline
+ rnuair    & R  & 1.5e-5    &m2/s & kinematic air viscosity & \tabularnewline
+ rnuairm    & R  & 0.11*rnuair&m2/s& kinematic air viscosity for momentum transfer & \tabularnewline
+ rowater   & R  & 1000.     &kg/m3& water density & \tabularnewline
+ xeps      & R  & roair/rowater&  & air water density ratio & \tabularnewline
+ xinveps   & R  & 1./xeps   &     & insersed air water density ratio & \tabularnewline
+ betamax   & R  & 1.20      &     & parameter for wind input (ECMWF cy45r1) & \tabularnewline
+ zalp      & R  & 0.0080    &     & shifts growth curve (ECMWF cy45r1) & \tabularnewline
+ jtot\_tauhf& I  & 19       &     & dimension of high freuency wave stress (wtauhf) & must be odd \tabularnewline 
+ alpha\_ch  & R  & 0.0075   &     & minimum Charnock constant (ecmwf cy45r1) & \tabularnewline
+ depth     &  R & 0.        & m   & ocean depth if not 0, then constant depth & \tabularnewline
+ niter\_smooth  &  I & 1    &     & number of smoothing iterations for wave bathymetry & \tabularnewline
+ xkappa    &  R & 0.40      &     & von Karman constant & \tabularnewline
+ xnlev     &  R & 10.0      & m   & windspeed reference level & \tabularnewline
+ linput\_sf1& L  & .TRUE.   &     & .TRUE.: calculate wind input source function term & \tabularnewline
+ linput\_sf2& L  & .TRUE.   &     & .TRUE.: update wind input source function term & \tabularnewline
+ ldissip\_sf& L  & .TRUE.   &     & .TRUE.: calculate dissipation source function term & \tabularnewline
+ lnon\_linear\_sf&L & .TRUE.&     & .TRUE.: calculate non linear source function term & \tabularnewline
+ lbottom\_fric\_sf&L& .TRUE.&     & .TRUE.: calculate bottom friction source function term & \tabularnewline
+ lwave\_stress1  &L& .TRUE. &     & .TRUE.: calculate wave stress & \tabularnewline
+ lwave\_stress2  &L& .TRUE. &     & .TRUE.: update wave stress & \tabularnewline
+ forc\_file\_prefix &C&     &     & common prefix of forcing files & \tabularnewline
+                    & &     &     & if not empty, the names of forcing files will be consctructed as: & \tabularnewline
+                    & &     &     & forc\_file\_prefix+\_wind.nc - for 10m wind & coupled\_mode= .FALSE. in coupling\_mode\_nml \tabularnewline
+                    & &     &     & forc\_file\_prefix+\_ice.nc - for sea ice concentration & coupled\_mode= .FALSE. in coupling\_mode\_nml \tabularnewline
+                    & &     &     & forc\_file\_prefix+\_slh.nc - for sea level height & \tabularnewline
+                    & &     &     & forc\_file\_prefix+\_osc.nc - for ocean surface currents & \tabularnewline
+                    & &     &     & Data for all time steps in the current simulation should be prepared in a single file. Variables should be named \texttt{u\_10m}, \texttt{v\_10m}, \texttt{fr\_seaice}, \texttt{uosc}, \texttt{vosc} & \tabularnewline
+\end{longtab}
+
+Defined and used in: \verb+src/waves/config/mo_wave_nml.f90+

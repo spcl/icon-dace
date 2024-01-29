@@ -1,0 +1,62 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# list of functions to build the layout of diplay windows.
+function build_layout_1()
+
+    overlay = overlay_control (
+                OVERLAY_MODE    :       "ALWAYS_OVERLAY"
+        )
+
+    Average_View = averageview(  
+        AREA  :  [ lat_max,lon_min,lat_min,lon_max ],
+        DIRECTION  :  ave_dir, 
+        BOTTOM_PRESSURE  :  p_max, 
+        TOP_PRESSURE  :  p_min, 
+        PRESSURE_LEVEL_AXIS  :  p_scale, 
+        OVERLAY_CONTROL          :  overlay,
+        SUBPAGE_X_POSITION       :  10.0, 
+        SUBPAGE_Y_POSITION       :  15.0, 
+        SUBPAGE_X_LENGTH         :  75, 
+        SUBPAGE_Y_LENGTH         :  72, 
+        PAGE_FRAME               :  'OFF', 
+        PAGE_FRAME_COLOUR        :  'BLUE', 
+        PAGE_FRAME_LINE_STYLE    :  'SOLID', 
+        PAGE_FRAME_THICKNESS     :  2, 
+        SUBPAGE_FRAME            :  'ON', 
+        SUBPAGE_FRAME_COLOUR     :  'BLACK', 
+        SUBPAGE_FRAME_LINE_STYLE :  'SOLID', 
+        SUBPAGE_FRAME_THICKNESS  :  2 
+        ) 
+
+    Page = plot_page(  
+        TOP                      :  0, 
+        BOTTOM                   :  100, 
+        LEFT                     :  0, 
+        RIGHT                    :  100, 
+        ROWS                     :  1, 
+        COLUMNS                  :  1, 
+        PAGE_X_GAP               :  0, 
+        PAGE_Y_GAP               :  0, 
+        VIEW                     :  Average_View 
+        )  
+
+    Display_Window = plot_superpage(  
+        LAYOUT_SIZE              :  'A4', 
+        LAYOUT_ORIENTATION       :  'LANDSCAPE', 
+        CUSTOM_WIDTH             :  29.7, 
+        CUSTOM_HEIGHT            :  21.0, 
+        PAGES                    :  [ Page ] 
+        ) 
+
+
+    return Display_Window 
+
+end build_layout_1

@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+
+export HK_GPU_MPIRUN_FLAGS='--mca mpi_cuda_support 0'
+export HK_GPU_FCFLAGS='-noacc'
+${SCRIPT_DIR}/hk.common.nvhpc --disable-gpu "$@"

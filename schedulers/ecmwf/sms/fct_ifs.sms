@@ -1,0 +1,41 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  FCT_IFS.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - dummy task, triggered by IFS, initiates ICON
+    SMS suite.
+%end
+
+# include the standard header file
+%include <init_ws.h>
+
+# -------------------------------------------------
+
+echo "FCT_IFS.SMS"
+
+
+# -------------------------------------------------
+
+# include the standard "tail" file
+%include <end_ws.h>
+

@@ -1,0 +1,247 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# dates.met (metview batch script)
+#
+# task: define period for plotting climate simulations
+#       currently four types of period are seleted:
+#       * each available full month
+#       * each season (e.g. JJA)
+#       * each year (Jan-Dec)
+#       * all full months together
+#
+# example: metview -b 4416 20001001/20001002/20001003
+#          set yy_start = `metview -b dates.met 4416 20001001/20001002/20001003 | grep yy_start | sed 's/yy_start//' | sed 'y/[],/   /'`
+#
+# input:  flen     number of simulation hours
+#         initime  ensemble member starting dates (should be within one month!
+# output: nmon     number of plotting periods
+#         yy_start period starting year
+#         mm_start period starting month
+#         mm_len   period length in months
+#
+# plotting option: plot_opt
+#         1001 (e.g.)
+#         1   : single month means
+#          1  : seasons means
+#           1 : annual means
+#            1: whole experiment mean
+#
+# comment: the metview tool getenv and putenv might also
+#          be used to exchange data between unix and metview
+#-------------------------------------------------------
+
+# argument list processing:
+interactive=0
+
+if (interactive=0) then
+    args    = arguments()
+    flen    = args[1]
+    initime = args[2]
+    plot_opt= args[3]
+    dayl    = args[4] #length of day=24 but shorter for small planet
+else
+#
+# test only
+#
+    flen    = 4416
+#   initime = '20001001/20001002/20001003/20010401/20010402/20010403'
+    initime = '20001001/20001002/20001003'
+    plot_opt= 1001 # mon/seas/year/total
+    dayl=24
+end if
+#dayl=24
+
+plot_mon=0
+plot_seas=0
+plot_year=0
+plot_tot=0
+
+if plot_opt/1000 >= 1 then
+  plot_mon=1
+  plot_opt=plot_opt-1000
+end if
+if plot_opt/100 >= 1 then
+  plot_seas=1
+  plot_opt=plot_opt-100
+end if
+if plot_opt/10 >= 1 then
+  plot_year=1
+  plot_opt=plot_opt-10
+end if
+if plot_opt/1 >= 1 then
+  plot_tot=1
+end if
+
+#
+# seasons are JJA,MAM,JJA,SON
+#
+season=[3,6,9,12] # index of start month for 3 month season
+nseason=count(season)
+
+#
+# define the year arrays depending on whether list or index
+#
+
+#
+# currently this loop is superfluous since this logic is
+# contained in the unix script - but leave in for future
+# development possibilities
+#
+
+datelist=parse(initime,"/")
+nd=count(datelist)
+
+inidate=matrix(nd,nd)
+nens=vector(nd)
+
+nloop=1
+nens[1]=1
+
+refdate=date(datelist[1])
+refdate=year(refdate)*100+month(refdate)
+inidate[1,1]=datelist[1]
+
+for i=2 to nd do
+    idate=date(datelist[i])
+    idate=year(idate)*100+month(idate)
+    if (idate = refdate) then
+        nens[nloop]=nens[nloop]+1
+        inidate[nloop,nens[nloop]]=datelist[i]
+    else
+        # new set of experiments
+        nloop=nloop+1
+        nens[nloop]=1
+        refdate=idate
+        inidate[nloop,nens[nloop]]=datelist[i]
+    end if
+end for
+
+nloop = 1     # currently only capabale to do one loop
+for iloop=1 to nloop do
+    #-------------------------------------------------------
+    #  TOTALLY MASSIVE OUTSIDE LOOP FOR PLOTTING ENSEMBLES
+    #-------------------------------------------------------
+
+
+    #---------------------------------
+    # pick up datelist from array now
+    #---------------------------------
+    ndates=nens[iloop]
+    dates=list(date(inidate[iloop,1]))
+    for i=2 to ndates do
+        dates=dates&list(date(inidate[iloop,i]))
+    end for
+
+#    print ("dates are ",dates)
+
+    #
+    # now set up the mm_start arrays
+    #
+
+   #date1=date(inidate[iloop,nens[iloop]]+100)   # exclude 1st day
+    date1=date(inidate[iloop,nens[iloop]])       # use 1st day
+    date2=date(inidate[iloop,1]-100)+flen/dayl
+
+    iyy=year(date1)
+    yy2=year(date2)
+    imm=month(date1)
+    mm2=month(date2)
+
+    yy_start=nil
+    mm_start=nil
+    mm_len  =nil
+    nmon=0
+
+    yy_sin=nil
+    mm_sin=nil
+    nsingmon=0
+
+    #
+    # single months
+    #
+
+    while (iyy*100+imm <= yy2*100+mm2) do
+        yy_sin=yy_sin & list(iyy)
+        mm_sin=mm_sin & list(imm)
+        nsingmon=nsingmon+1
+
+        if plot_mon then
+            yy_start=yy_start & list(iyy)
+            mm_start=mm_start & list(imm)
+            mm_len  =mm_len   & list(1)
+            nmon=nmon+1
+        end if
+        imm=imm+1
+        if (imm=13) then
+            imm=1
+            iyy=iyy+1
+        end if
+    end while
+
+    #
+    # now search for 3 month seasons e.g: JJA...
+    #
+
+    for i=1 to nseason do
+        for j=1 to nsingmon do
+            if (mm_sin[j] = season[i] and j <= nsingmon-2 and plot_seas) then
+                nmon=nmon+1
+                yy_start=yy_start & list(yy_sin[j])
+                mm_start=mm_start & list(mm_sin[j])
+                mm_len=mm_len&list(3)
+            end if
+        end for
+    end for
+
+    #
+    # and 12 month calendar years (Jan-Dec)
+    #
+
+    for j=1 to nsingmon do
+        if (mm_sin[j] = 1 and j <= nsingmon-11 and plot_year) then
+            nmon=nmon+1
+            yy_start=yy_start & list(yy_sin[j])
+            mm_start=mm_start & list(mm_sin[j])
+            mm_len=mm_len&list(12)
+        end if
+    end for
+
+    #
+    # now finally simply do average of whole experiment
+    # checking that this request does not already exist
+    #
+    if plot_tot then
+        plot_all=1
+        for imon=1 to nmon do
+            if (yy_start[imon] = yy_sin[1] and
+                mm_start[imon] = mm_sin[1] and
+                mm_len[imon]   = nsingmon) then
+              plot_all=0
+            end if
+        end for
+        if (plot_all) then
+           nmon=nmon+1
+           yy_start=yy_start & list(yy_sin[2])  # exclude 1st month
+           mm_start=mm_start & list(mm_sin[2])  # ..
+           mm_len=mm_len&list(nsingmon-1)       # ..
+        end if
+    end if
+
+    #
+    # output (as standard out)
+    #
+
+    print('nmon     ', nmon)
+    print('yy_start ', yy_start)
+    print('mm_start ', mm_start)
+    print('mm_len   ', mm_len)
+
+end for

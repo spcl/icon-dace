@@ -1,0 +1,80 @@
+ icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+ icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+ icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+
+
+[A[A
+# ERR:SYNTAX:unknown command [A[A, (ignored)
+
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+ icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+icon_restart
+# LOG:IOI-SHELL-GET:[id -u]
+# LOG:IOI-SHELL-GET:[expr 35000 + 3455 ]
+# MSG:play:Sending icon to ecgate
+# MSG:play:Suite icon defined.
+
+status
+cancel -y icon

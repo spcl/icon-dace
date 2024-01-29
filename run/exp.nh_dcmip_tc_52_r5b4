@@ -1,0 +1,198 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This section of the run script contains the specifications of the experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# M. Giorgetta, MPI-M, 2012-07-11
+#
+#-----------------------------------------------------------------------------
+#
+# Embedded documentation that can be extracted by Buildbot
+#
+# _bb_table_Description_  DCMIP tropical cyclone test (no.52) with NWP physics
+# _bb_table_Model_        non-hydrost. atmosphere
+# _bb_table_Grid_         triangle
+#
+#=============================================================================
+#
+# Basic specifications of the simulation
+# --------------------------------------
+#
+# Parameters provided through variables set in the header section
+# of the completed run script:
+#
+# EXPNAME = experiment name
+# nproma  = array blocking length
+#
+#-----------------------------------------------------------------------------
+#
+# Local constants
+#
+one_day=86400  # (s)
+one_hour=3600  # (s)
+#
+X=1            # Rescale parameter for scaled Earth experiments
+               # The model uses:
+               # - Earth radius / X
+               # - dtime / X
+               # - Coriolis parameter * X
+#
+echo "Rescaling: X="${X}
+#
+rescale_factor=$(echo "scale=9; 1 / ${X} " | bc) # the model needs 1/X
+#
+#-----------------------------------------------------------------------------
+#
+# Parameters needed by the executing section of the completed run script:  
+#
+atmo_namelist=NAMELIST_${EXPNAME}
+#
+start_date="2008-09-01T00:00:00Z"
+  end_date="2008-09-11T00:00:00Z"
+#
+dt_restart=$(    echo "scale=9; 10 * ${one_day}  * ${rescale_factor} " | bc )
+#
+atmo_dyn_grids="iconR5B04-grid.nc"
+nlev=30
+#
+atmo_model_equations=3  # non-hydrostatic atmosphere
+#
+#-----------------------------------------------------------------------------
+#
+# Parameters to be used in the namelists
+#
+# time step (is scaled in the model)
+#
+dtime=60
+#
+# i/o times, these are rescaled here in the script
+#
+dt_checkpoint=$( echo "scale=9;      ${one_day}  * ${rescale_factor} " | bc )
+dt_data=$(       echo "scale=9;  6 * ${one_hour} * ${rescale_factor} " | bc )
+dt_diag=$(       echo "scale=9;      ${one_day}  * ${rescale_factor} " | bc )
+dt_file=$(       echo "scale=9;  1 * ${one_day}  * ${rescale_factor} " | bc )
+#
+steps_per_file=$(echo " ${dt_file} / ${dt_data} " | bc  )
+#
+#-----------------------------------------------------------------------------
+#
+# Set the relevant namelist parameters, which deviate from the defaults.
+# The full namelists and the default are described in Namelist_overview.pdf
+#
+cat > ${atmo_namelist} << EOF
+!
+&parallel_nml
+ nproma           = ${nproma}
+/
+&grid_nml
+ dynamics_grid_filename  ="${atmo_dyn_grids}"
+ grid_rescale_factor     = ${rescale_factor}
+ lrescale_timestep = .TRUE.
+ lrescale_ang_vel  = .TRUE.
+ vct_filename = "vertical/coord_tables/atm_hyb_sz_30"
+/
+&nh_testcase_nml
+ nh_test_name     = 'dcmip_tc_52'
+ ape_sst_case     = 'sst_const'
+ ape_sst_val      = 29       ! (degC)
+/
+&extpar_nml
+ itopo            = 0
+/
+&run_nml
+ dtime            = ${dtime} ! (s)
+ ltestcase        = .TRUE.
+ ldynamics        = .TRUE.
+ ltransport       = .TRUE.
+ ntracer          = 5
+ iforcing         = 3        ! 3=NWP physics
+ num_lev          = ${nlev}
+ output           = "nml","totint"
+/
+&dynamics_nml
+ iequations       = ${atmo_model_equations}
+/
+&nonhydrostatic_nml
+ ivctype          = 1        ! 1=Gal-Chen hybrid vertical coordinate, 2=sleve vertical coordinate
+ exner_expol      = 0.60
+ vwind_offctr     = 0.12
+ damp_height      = 23000.
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 10.0
+/
+&transport_nml
+/
+&nwp_phy_nml
+ inwp_gscp        = 1
+ inwp_convection  = 1
+ inwp_cldcover    = 3
+ inwp_radiation   = 1
+ inwp_turb        = 1
+ inwp_satad       = 1
+ inwp_sso         = 0
+ inwp_gwd         = 0
+ inwp_surface     = 0
+ dt_conv          = 480      ! (s)
+ dt_rad           = 480      ! (s)
+/
+&radiation_nml
+ izenith          = 3        ! 3: no annual cycle
+ irad_h2o         = 1        ! prognostic vapor, liquid and ice
+ irad_o3          = 6        ! 6: non-hydrostatic ozone
+ irad_co2         = 2        ! constant co2 vmr
+ irad_ch4         = 0        ! switch off ch4
+ irad_n2o         = 0        ! switch off n2o
+ irad_o2          = 0        ! switch off o2
+ irad_cfc11       = 0        ! switch off cfc11
+ irad_cfc12       = 0        ! switch off cfc12
+ irad_aero        = 2        ! switch off aerosols
+/
+&io_nml
+ dt_checkpoint    = ${dt_checkpoint}
+ dt_diag          = ${dt_diag}
+/
+&output_nml
+ output_filename  = 'icon-mpi-dwd.52.high.L30.tri.nonhydro'    ! file name base
+ output_bounds    = 0.,${dt_restart},${dt_data} ! start, end, increment
+ steps_per_file   = ${steps_per_file}
+ remap            = 0                           ! 0 = no remapping
+ output_grid      = .TRUE.
+ ml_varlist       = 'qv','u','v','w','temp','pres_sfc','pres','theta_v','rho','exner','rhotheta_v','tempv','omega_z','div','z_mc','SHFL_S','LHFL_S','qhfl_s','tot_prec','group:precip_vars','cosmu0','flxdwswtoa','SOB_S','group:rad_vars'
+ pl_varlist       = 'u','v','w','temp'
+ p_levels          = 20000.,50000.,85000. ! (Pa) from TOA to surface
+ hl_varlist       = 'u','v'
+ h_levels          = 10000.,1000.,100.    ! (m)  from TOA to surface
+/
+!off!&output_nml
+!off! output_filename  = 'icon-mpi-dwd.52.high.L30.latlon.nonhydro' ! file name base
+!off! output_bounds    = 0.,${dt_restart},${dt_data} ! start, end, increment
+!off! steps_per_file   = ${steps_per_file}
+!off! remap            = 1                           ! 1 = remap to regular lat-lon grid
+!off! reg_lat_def      = -90.,1., 90.                ! latitude grid
+!off! reg_lon_def      =   0.,1.,360.                ! longitude grid
+!off! output_grid      = .TRUE.
+!off! ml_varlist       = 'qv','u','v','w','temp','pres_sfc','pres','z_mc','SHFL_S','LHFL_S','qhfl_s','tot_prec','group:precip_vars','cosmu0','flxdwswtoa','SOB_S','group:rad_vars'
+!off! pl_varlist       = 'u','v','w','temp'
+!off!  p_levels          = 20000.,50000.,85000. ! (Pa) from TOA to surface
+!off! hl_varlist       = 'u','v'
+!off!  h_levels          = 10000.,1000.,100.    ! (m)  from TOA to surface
+!off!/
+EOF
+#
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_atmo_non-hydrostatic_files
+#-----------------------------------------------------------------------------

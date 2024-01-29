@@ -1,0 +1,125 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  - produces monthly means of climate experiments
+%end
+
+%include <qsub.h>
+#=========================================================================
+##.AUTHOR  Martin Koehler 1. September 2003
+#=========================================================================
+#  Define environment variables and export them.
+#==========================================================================
+
+%include <config.h>
+%include <rcp.h>
+%include <trap.h>
+%include <setup.h>
+
+export TMPDIR=$PLOTDATA/$TASK.$SMSTRYNO
+rm -rf $TMPDIR
+mkdir -p -m 775 $TMPDIR
+
+if [[ $SMSTRYNO -gt 1 ]] ; then
+  previous=$(($SMSTRYNO - 1))
+  rm -rf $PLOTDATA/$TASK.$previous
+fi
+
+cd $TMPDIR
+
+#==========================================================================
+
+cat > ./monmeans_clim.met << \++end++
+%include <monmeans_clim.met>
+++end++
+
+cat > ./monmeans_clim_batch << \++end++
+%include <monmeans_clim_batch>
+++end++
+
+cat > ./dates.met << \++end++
+%include <dates.met>
+++end++
+
+cat > ./avgtime.f90 << \++end++
+%include <avgtime.f90>
+++end++
+
+
+chmod u+x ./monmeans_clim_batch
+
+
+inidate=$( print $BASETIME | cut -c 1-8 )
+initime=$( print $BASETIME | cut -c 9-10 )
+
+exp=${EXPVER}
+if [[ $FSFAMILY = "/climplot" ]] ; then
+  exp=${VERFEXP1:-${EXPVER}}
+  locfcrange=$FCRANGE
+  locnumber=$NUMBER
+  class1=$CLASS1
+else
+  locfcrange=-99
+  locnumber=-99
+  class1=rd
+fi
+
+rgtcsp=1.0
+rwindsp=1.0
+rcorioi=1.0
+dayl=24
+if [[ -f $SMSINCLUDE/ifsnam.fc.h && $FSFAMILY = /gfc ]] ; then
+  rsp=$(grep RPLRADI= $SMSINCLUDE/ifsnam.fc.h | sed 's/RPLRADI=//' |sed 's/.$//')
+  if [[ $rsp > 0 ]]; then
+    rwindsp=$rsp
+  fi
+fi
+if [[ -f $SMSINCLUDE/ifsnam.fc.h && $FSFAMILY = /gfc ]] ; then
+   rco=$(grep RCORIOI= $SMSINCLUDE/ifsnam.fc.h | sed 's/RCORIOI=//' |sed 's/.$//')
+   if [[ $rco > 0 ]]; then
+      rcorioi=$rco
+   fi
+fi
+dayl=$((dayl * rcorioi))
+if [[ $dayl -lt 1 ]]; then
+      dayl=1
+fi
+
+
+# Generate monthly means (e.g. mmean_ehrp_pl_ini20001001_mon200012_n1.grb)
+
+# plot_opt
+#  101 (e.g.)
+#  1  : single month means
+#   1 : seasons means
+#    1: whole experiment mean
+
+if [[ $locfcrange = -99 ]] ; then
+
+  PLOT_OPT=011
+
+  nperiods=`metview -b dates.met $FCLENGTH $inidate $PLOT_OPT $dayl | grep nmon | sed 's/nmon//' | sed 'y/[],/   /'`
+  if (( %PLOTPERIOD% <= ${nperiods} )) ; then
+    monmeans_clim_batch -a $exp -c $class1 -l $LEVELS -f $FCLENGTH -r $locfcrange -d $inidate -p $PLOT_OPT \
+                        -x %PLOTPERIOD% -t pl -n $locnumber -i $initime -s $rwindsp -g $rgtcsp
+#   if climplot job then need to rerun for second experiment
+    if [[ $FSFAMILY = "/climplot" ]] ; then
+      exp=${VERFEXP2:-${EXPVER}}
+      monmeans_clim_batch -a $exp -c $class1 -l $LEVELS -f $FCLENGTH -r $locfcrange -d $inidate -p $PLOT_OPT \
+                          -x %PLOTPERIOD% -t pl -n $locnumber -i $initime -s $rwindsp -g $rgtcsp
+    fi
+  fi
+fi 
+
+%include <endt.h>
+

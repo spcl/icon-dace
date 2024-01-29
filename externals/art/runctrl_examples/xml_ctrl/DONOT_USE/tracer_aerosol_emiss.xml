@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "aero_emiss.dtd">
+
+<tracers>
+  <aerosol id="nmb">
+    <moment type="int">0</moment>
+    <mode type="char">sol_ait,sol_acc,sol_coa</mode>
+    <unit type="char">kg-1</unit>
+    <transport type="char">stdaero</transport>
+  </aerosol>
+  <aerosol id="na">
+    <moment type="int">3</moment>
+    <mode type="char">sol_ait,sol_acc,sol_coa</mode>
+    <sol type="real">1.</sol>
+    <mol_weight type="real">22.9898E-3</mol_weight>
+    <rho type="real">2.2E+3</rho>
+    <unit type="char">mug kg-1</unit>
+    <transport type="char">stdaero</transport>
+  </aerosol>
+</tracers>

@@ -1,0 +1,31 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+
+if [ ! -z "${BB_NAME-}" ]; then
+  MAKE_PROCS=22
+else
+  MAKE_PROCS=8
+fi
+
+${ICON_DIR}/config/kit/hk.cpu.gcc
+make -j ${MAKE_PROCS}
+
+if [ ! -z "${BB_NAME-}" ] ; then
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh"
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_remake.sh"
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_git_untracked.sh"
+fi

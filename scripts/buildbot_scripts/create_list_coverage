@@ -1,0 +1,51 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+addexp="./addexp"
+
+listname=${1:-coverage}
+./rmlist $listname
+
+./create_all_builders $listname
+
+./set_builder_flags Inactive --builders "$(./lslist $listname --builders-only)" --list $listname
+./set_builder_flags Active --builders "levante_coverage" --list $listname
+
+#-----------------------------------------------------------
+runTests="checksuite.icon-dev/check.atm_bubble_test exp.test_nwp_R02B04N06multi"
+compCoverage="checksuite.infrastructure/coverage/exp.compute_coverage" 
+
+$addexp "${compCoverage}" --builders "levante_coverage" --list $listname --runflags "queue=shared"
+
+# possible small tests which can be run in the shared queue
+for runTest in \
+  checksuite.icon-dev/check.atm_bubble_test ; \
+do
+  $addexp "${runTest}"      --builders "levante_coverage" --list $listname --runflags "queue=shared"
+  ./adddep --from-experiment "${compCoverage}" --to-experiment ${runTest} --builders "levante_coverage" --list $listname
+done
+
+# larger experiments which need more resources
+for runTest in \
+  exp.test_nwp_R02B04N06multi ; \
+do
+  $addexp "${runTest}"      --builders "levante_coverage" --list $listname --runflags "queue=compute no_of_nodes=1"
+  ./adddep --from-experiment "${compCoverage}" --to-experiment ${runTest} --builders "levante_coverage" --list $listname
+done
+
+./lslist $listname
+#-----------------------------------------------------------

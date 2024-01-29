@@ -1,0 +1,571 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------------
+#
+# Global NWP main run (selecting different grid resolutions)
+# Starting from IFS or DWD analysis/first guess
+#
+# Run on NEC: qsub run_ICON_4_SCMini
+#
+# work flow SCM from ICON input:
+#  - ICON ini:   read_icon_ana_oper_mem1_40km.s
+#  - ICON run:   run_ICON_4_SCMini
+#  - SCM ini:    get_SCM_data_ICON.py
+#  - SCM extpar: create_SCM_extpar_ICON.py
+#  - SCM run:    run_SCM_ICONini
+#  - plot SCM:   plot-scm-*.py
+#
+# ICON initial data:
+#   ~/icon/icon-ini/icon_ana_4_forecasts/read_icon_ana_oper_mem1_40km.s
+#
+# Simple output:
+#   cdo splitsel,1 exp_ifs_R02B04_2015070400_xtra_DOM01_ML_0001.nc out
+#   cdo sub out000001.nc out000000.nc out_diff.nc
+# Meteogram output:
+#   cp ~/projects/plot/meteogram/mtg* .
+#   mtgrm_plot.s 2012010100 R2B04 exp_003 plots METEOGRAM_patch001.nc
+# Metview output:
+#   lce:      /e/uhome/mkoehler/icon/run_icon/eom_prepare.s 003 2012010100
+#   olfws144: cd /fe1-daten/mkoehler/projects/plot/map_zon_icon/
+#             many.error.s 20120101 00 20120102 00 1 R2B04 exp_003 exp_001 \
+#               /uwork1/mkoehler/icon_data /uwork1/mkoehler/icon/plots
+# Energy budget:
+#    ~/icon/energy_budget.s exp_003
+#
+# PBS options: NE=1-64, CPE=8
+#
+# ----------------------------------------------------------------------------
+#PBS -S /bin/bash
+#PBS -q sx_norm
+#PBS -v NE=4,CPE=8           # NE: number VE nodes, CPE: number cores on each VE (8!)
+#PBS --venode=${NE}          # number VEs requested
+#PBS --venum-lhost=2         # number VEs per logical host (partitioning, 2 OK)
+#PBS -l cpunum_job=2         # number x86 cores per logical host (1ini+#IO)
+#PBS -l coresz_prc=0         
+#PBS -T necmpi               # parallel job mit NEC-MPI
+#PBS --use-hca=2             # number of HCA per logical host (2)
+#PBS -l elapstim_req=01:00:00
+#PBS -o /hpc/uwork/mkoehler/wq/iconR2B6.%s
+#PBS -j o
+# ----------------------------------------------------------------------------
+
+date
+module load mpi
+set -x
+ulimit -s unlimited
+. /etc/profile
+
+# ----------------------------------------------------------------------------
+# model setup: timing, grid, code, dir
+
+nhours=72               # number of forecast hours to run
+#nhours=240   # testing purposes
+dtime=360
+nsteps=`expr ${nhours} \*  3600 / ${dtime}`
+ninc_mtgrm=5            # output interval 30min
+#nsteps=100
+#nsteps=5
+
+# RESOLUTION AND DATE(S)
+NEXP=003
+GRID="R02B06"           # grid resolution
+INIDATE="2021061700"    # initial date
+start_date="2021-06-17T00:00:00Z"
+#INIDATE="2020071200"    # initial date
+#start_date="2020-07-12T00:00:00Z"
+EXP=exp_${NEXP}_${INIDATE}  # experiment identifier
+
+# base directory for ICON sources and binary:
+#ICONDIR=${PBS_O_WORKDIR}/../
+ICONDIR=$HOME/icon/icon-nwp
+#ICONDIR=$HOME/icon/icon-nwp-test1
+
+WORK_DIR=/hpc/uwork/mkoehler
+
+
+# ----------------------------------------------------------------------
+
+# OpenMP settings
+export OMP_SCHEDULE="static"
+export OMP_DYNAMIC="false"
+export OMP_NUM_THREADS=1
+
+# Run information
+let PPN=${CPE}*${NE}/${OMP_NUM_THREADS}         # no. of MPI procs. per NQS job
+let NE1=${NE}-1
+echo "PPN etc. $NN $NE $CPE $PPN"
+
+ID=`echo $PBS_JOBID | cut -d: -f2 | cut -d. -f1`
+ulimit -s unlimited
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+export PATH=${PATH}:~routfor/routfox/bin
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n ${PBS_O_WORKDIR} ]] ; then
+  cd ${PBS_O_WORKDIR}
+fi
+
+GRIDDIR=/hpc/rhome/routfox/routfox/icon/grids/public/edzw/ # grid directory
+EXTPDIR=/hpc/rhome/routfox/routfox/icon/grids/public/edzw/ # external parameter directory
+
+# absolute path to directory with plenty of space:
+EXPDIR=${WORK_DIR}/run-icon/experiments/${EXP}
+
+# root directory for input data
+#DATAROOT=/hpc/rwork0/routfor/test/icon/Checksuite_data/
+DATAROOT=$WORK_DIR/run-icon/icon_init
+
+# path to model binary, including the executable:
+MODEL_VE=${ICONDIR}/build/VE/bin/icon
+MODEL_VH=${ICONDIR}/build/VH/bin/icon
+
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+# the directory for the experiment will be created, if not already there
+if [ ! -d $EXPDIR ]; then
+    mkdir -p $EXPDIR
+fi
+cd $EXPDIR
+
+ln -sf $GRIDDIR/icon_grid_0023_R02B05_R.nc iconR2B05_DOM00.nc
+ln -sf $GRIDDIR/icon_grid_0023_R02B05_R-grfinfo.nc iconR2B05_DOM00-grfinfo.nc
+ln -sf $GRIDDIR/icon_grid_0024_R02B06_G.nc iconR2B06_DOM01.nc
+ln -sf $GRIDDIR/icon_grid_0024_R02B06_G-grfinfo.nc iconR2B06_DOM01-grfinfo.nc
+#ln -sf $GRIDDIR/icon_grid_0028_R02B07_N02.nc iconR2B07_DOM02.nc
+#ln -sf $GRIDDIR/icon_grid_0028_R02B07_N02-grfinfo.nc iconR2B07_DOM02-grfinfo.nc
+
+ln -sf $EXTPDIR/icon_extpar_0024_R02B06_G_20200917_tiles.nc extpar_iconR2B06_DOM01.nc
+#ln -sf $EXTPDIR/icon_extpar_0028_R02B07_N02_20161124_tiles.nc extpar_iconR2B07_DOM02.nc
+
+# files needed for radiation
+ln -sf ${ICONDIR}/data/ECHAM6_CldOptProps.nc .
+ln -sf ${ICONDIR}/data/rrtmg_lw.nc .
+
+ecRad_data_path=${ICONDIR}'/externals/ecrad/data'
+
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+
+# the grid parameters
+#atmo_dyn_grids="iconR2B06_DOM01.nc iconR2B07_DOM02.nc"
+atmo_dyn_grids="iconR2B06_DOM01.nc"
+atmo_rad_grids="iconR2B05_DOM00.nc"
+
+ln -sf $DATAROOT/icon2icon_${GRID}_G_${INIDATE}.grb fg_R02B06_DOM01.grb
+
+
+#-----------------------------------------------------------------------------
+# output variables
+
+# variables for SCM input:
+ml_varlist="'u','v','w','qv','qc','qi','qr','qs','o3','ddt_temp_dyn',
+ 'rho','exner','theta_v','temp','tke','pres_sfc','t_g','t_s','qv_s','t_so', 'w_so', 'w_so_ice',
+ 'accshfl_s','acclhfl_s',
+ 't_2m','qv_2m','u_10m','v_10m'"   # just for diagnostic, not needed
+# temp needed for LS forcing
+
+
+# ----------------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------------
+
+cat > icon_master.namelist << EOF
+
+&master_nml
+ lrestart                 = .false.
+/
+&time_nml
+ ini_datetime_string      = "$start_date"
+ dt_restart               = $dt_restart
+/
+&master_model_nml
+ model_type               = 1
+ model_name               = "ATMO"
+ model_namelist_filename  = "$atmo_namelist"
+ model_min_rank           = 1
+ model_max_rank           = 65536
+ model_inc_rank           = 1
+/
+EOF
+
+# ----------------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------------
+
+# reconstruct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma          =  760
+ p_test_run      = .false.
+ l_test_openmp   = .false.
+ l_log_checks    = .true.
+ num_io_procs    =  4
+ num_restart_procs = 0
+ itype_comm      =  1
+ iorder_sendrecv =  3
+ proc0_shift     = 1
+ use_omp_input   = .true.
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ radiation_grid_filename = ${radiation_grid_filename}
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .true.
+ lfeedback               = .true.
+ ifeedback_type          = 2
+ start_time              = 0., -5400.,
+ end_time                = 0., 432000.    ! ** bewirkt, dass das Nest nur bis vv=120h laueft **
+/
+&run_nml
+ num_lev        = 90, 60
+ lvert_nest     = .true.
+ nsteps         = ${nsteps}
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .true.
+ ntracer        = 5            ! default: 0
+ iforcing       = 3
+ ltestcase      = .false.
+ msg_level      = 7 ! detailed report during integration
+ ltimer         = .true.
+ timers_level   = 10
+ check_uuid_gracefully = .true.
+ output         = "nml" ! "none" to turn off output
+/
+&initicon_nml
+ init_mode                    = 1
+ lread_ana                    = .false.
+!dt_iau                       = 10800
+!dt_shift                     = -5400
+!iterate_iau                  = .true.
+ zpbl1                        = 500.
+ zpbl2                        = 1000.
+ dwdfg_filename               = "<path>fg_R<nroot0>B<jlev>_DOM<idom>.grb"
+!dwdana_filename              = "<path>an_R<nroot0>B<jlev>_DOM<idom>.grb"
+!ana_varnames_map_file        = "map_file.ana"
+ ana_varnames_map_file        = '${ICONDIR}/run/ana_varnames_map_file.txt'
+ ltile_coldstart              = .true.
+ lvert_remap_fg               = .false.
+ use_lakeiceana               = .true.
+ lp2cintp_incr                = .TRUE.
+ lp2cintp_sfcana              = .TRUE.
+/
+&io_nml
+ lflux_avg                    = .FALSE.     ! false: accumulated fluxes
+ itype_pres_msl               = 5           ! (1) 3: IFS-type extrapolation
+ itype_rh                     = 1           ! (1) 2: mixed phase (water and ice)
+!output_nml_dict              = 'map_file.fc'
+!dt_checkpoint                = 2592000.    ! 30 days
+ inextra_3d                   = 1           ! 3D extra variables 
+ inextra_2d                   = 1           ! 2D extra variables 
+/
+&nwp_phy_nml
+ inwp_gscp         = 1
+ inwp_convection   = 1
+ inwp_radiation    = 4
+ inwp_cldcover     = 1
+ inwp_turb         = 1
+ inwp_satad        = 1
+ inwp_sso          = 1
+ inwp_gwd          = 1
+ inwp_surface      = 1
+ latm_above_top    = .false.
+ efdt_min_raylfric = 7200.
+ itype_z0          = 2
+ icapdcycl         = 3
+ icpl_aero_conv    = 1
+ icpl_aero_gscp    = 1
+ icpl_o3_tp        = 1
+ dt_rad            = 1800.
+ dt_conv           = 600.
+ dt_sso            = 1200.
+ dt_gwd            = 1200.
+/
+&nwp_tuning_nml
+ itune_albedo                 = 0       ! somewhat reduced albedo (w.r.t. MODIS data) over Sahara in order to reduce cold bias
+ tune_zceff_min               = 0.025    ! ** default value to be used for R3B7; use 0.025 for R2B6 in order to get similar temperature biases in upper troposphere **
+ tune_gkdrag                  = 0.075   ! R2B6: 0.075  
+ tune_gkwake                  = 1.5     ! R2B6: 1.5
+ tune_gfrcrit                 = 0.425   ! R2B6: 0.425
+ tune_dust_abs                = 0.
+ tune_zvz0i                   = 0.85
+ tune_box_liq_asy             = 3.25    ! oper global: 3.0 , oper D2: 3.25, default: 2.5
+ tune_box_liq                 = 0.05
+ tune_rcucov                  = 0.075
+ tune_rhebc_land              = 0.825
+ tune_gust_factor             = 7.0
+ icpl_turb_clc                = 1
+ lcalib_clcov                 = .false. ! turn off TCC, HCC, MCC, LCC tuning
+/
+&turbdiff_nml
+ tkhmin                       = 0.6
+ tkhmin_strat                 = 1.0
+ tkmmin                       = 0.75
+ tkmmin_strat                 = 4
+ alpha0                       = 0.0123
+ alpha0_max                   = 0.0335
+ alpha1                       = 0.125
+ pat_len                      = 750.
+ c_diff                       = 0.2
+ rlam_heat                    = 10.0
+ rat_sea                      = 0.8
+ ltkesso                      = .true.  ! SSO dissipation energy used in TKE equation
+ frcsmot                      = 0.2     ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot                = 2       ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ itype_sher                   = 3       ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects
+ ltkeshs                      = .true.
+ a_hshr                       = 2.0
+ icldm_turb                   = 1       ! 2: Gauss clouds for turbulence    1: grid scale clouds
+ icldm_tran                   = 2       ! 2: Gauss clouds for surface layer 1: grid scale clouds
+/
+&lnd_nml
+  ntiles         = 3
+  nlev_snow      = 3
+  lmulti_snow    = .false.
+  itype_heatcond = 3
+  idiag_snowfrac = 20
+  lsnowtile      = .true.
+  lseaice        = .true.
+  llake          = .true.
+  itype_lndtbl   = 4
+  itype_evsl     = 4
+  itype_trvg     = 3
+  itype_root     = 2
+  cwimax_ml      = 5.e-4
+  c_soil         = 1.25
+  c_soil_urb     = 0.5
+  sstice_mode    = 2
+  lprog_albsi    = .true.
+  itype_snowevap = 2
+/
+&radiation_nml
+ irad_o3                      = 79
+ irad_aero                    = 6
+ izenith                      = 4           ! 4: NWP default, 3: no annual cycle
+ albedo_type                  = 2 ! Modis albedo
+ vmr_co2                      = 390.e-06 ! values representative for 2012
+ vmr_ch4                      = 1800.e-09
+ vmr_n2o                      = 322.0e-09
+ vmr_o2                       = 0.20946
+ vmr_cfc11                    = 240.e-12
+ vmr_cfc12                    = 532.e-12
+ direct_albedo                = 4
+ direct_albedo_water          = 3
+ albedo_whitecap              = 1
+ llw_cloud_scat               = .true.
+ ecRad_data_path              = '${ecRad_data_path}' 
+/
+&nonhydrostatic_nml
+ iadv_rhotheta                = 2
+ ivctype                      = 2
+ itime_scheme                 = 4
+ exner_expol                  = 0.333
+ vwind_offctr                 = 0.2         ! 0.2 for R2B6 and higher resolution, 0.3 for lower resolution
+ damp_height                  = 44000.
+ rayleigh_coeff               = 0.5
+ lhdiff_rcf                   = .true.
+ divdamp_order                = 24          ! 2 ass, 24 fc
+ divdamp_type                 = 32          ! optional: 2 assimilation cycle, 32 forecast
+ divdamp_fac                  = 0.004       ! 0.004 for R2B6; recommendation for R3B7: 0.003
+ divdamp_trans_start          = 12500
+ divdamp_trans_end            = 17500
+ l_open_ubc                   = .false.
+ igradp_method                = 3
+ l_zdiffu_t                   = .true.
+ thslp_zdiffu                 = 0.02
+ thhgtd_zdiffu                = 125.
+ htop_moist_proc              = 22500.
+ hbot_qvsubstep               = 16000.
+/
+&sleve_nml
+ min_lay_thckn                = 20.         ! lowest level thickness (between half-levels)
+ max_lay_thckn                = 400.        ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit              = 14000.
+ top_height                   = 75000.
+ stretch_fac                  = 0.9
+ decay_scale_1                = 4000.
+ decay_scale_2                = 2500.
+ decay_exp                    = 1.2
+ flat_height                  = 16000.
+/
+&dynamics_nml
+ iequations                   = 3
+ idiv_method                  = 1
+ divavg_cntrwgt               = 0.50
+ lcoriolis                    = .true.
+/
+&transport_nml
+ ivadv_tracer                 = 3,3,3,3,3
+ itype_hlimit                 = 3,4,4,4,4,0
+ ihadv_tracer                 = 52,2,2,2,2,0
+/
+&diffusion_nml
+ hdiff_order                  = 5
+ itype_vn_diffu               = 1
+ itype_t_diffu                = 2
+ hdiff_efdt_ratio             = 24.0   ! for R2B6; recommendation for R3B7: 30.0
+ hdiff_smag_fac               = 0.025  ! for R2B6; recommendation for R3B7: 0.02
+ lhdiff_vn                    = .true.
+ lhdiff_temp                  = .true.
+/
+&interpol_nml
+nudge_zone_width  = 8
+lsq_high_ord      = 3
+l_intp_c2l        = .true.
+l_mono_c2l        = .true.
+rbf_scale_mode_ll = 2
+support_baryctr_intp=.true.,
+/
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_scalfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                        = 1
+ n_iter_smooth_topo           = 1,1
+ hgtdiff_max_smooth_topo      = 750.,750.,
+ heightdiff_threshold         = 3000.
+ itype_lwemiss                = 2
+/
+&ensemble_pert_nml
+ use_ensemble_pert=.false.,
+/
+&gribout_nml
+ preset                          ='deterministic'
+ ldate_grib_act                  = .true.
+ lgribout_24bit                  = .true.
+!backgroundProcess               = 2
+ localNumberOfExperiment         = 1
+!productionStatusOfProcessedData = 0
+ generatingProcessIdentifier     = 1
+/
+! OUTPUT: ICON native grid, model levels, data for SCM forcing file
+&output_nml
+ filetype                     =  4                         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                         ! write all domains
+ mode                         =  1                         ! 1: forecast
+ output_time_unit             =  1                         ! 1: seconds
+ output_bounds                =  0., 864000, 3600.         ! start, end, increment
+ steps_per_file               =  120
+ include_last                 = .TRUE.
+ output_filename              = '${EXP}'                   ! file name base
+ ml_varlist                   = ${ml_varlist}
+ output_grid                  = .TRUE.
+ remap                        = 0                          ! 1: latlon,  0: native grid
+/
+! OUTPUT: ICON native grid, model levels, height for SCM forcing file
+&output_nml
+ filetype                     =  4                         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                         ! write all domains
+ mode                         =  1                         ! 1: forecast
+ output_time_unit             =  1                         ! 1: seconds
+ output_bounds                =  3600., 3600, 3600.        ! start, end, increment
+!output_bounds                =  0., 8640, 120.            ! start, end, increment
+ steps_per_file               =  120
+ include_last                 = .TRUE.
+ output_filename              = '${EXP}_z'                 ! file name base
+ ml_varlist                   = 'z_ifc', 'z_mc'
+ output_grid                  = .TRUE. 
+ remap                        = 0                          ! 1: latlon,  0: native grid
+/
+! OUTPUT: lat-lon grid for model diagnostic (not necessary for SCM input file)
+&output_nml
+ filetype                     =  4                         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          = -1                         ! write all domains
+ mode                         =  1                         ! 1: forecast
+ output_time_unit             =  1                         ! 1: seconds
+ output_bounds                =  0, 10000000, 21600.       ! start, end, increment
+ file_interval                =  "P01M"
+ include_last                 = .TRUE.
+ output_filename              = '${EXP}_diag'              ! file name base
+!ml_varlist                   = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars'
+ ml_varlist                   = 'clct',  'accthb_s','accthb_t','accsob_s','accsob_t',
+                                'accshfl_s','acclhfl_s', 'sp_10m', 't_2m' ,'t_g','qv_2m'
+!pl_varlist                   = ${pl_varlist}
+!hl_varlist                   = ${hl_varlist}
+!p_levels                     = 100,200,300,500,700,1000,2000,3000,5000,7000,10000,15000,20000,25000,
+!                               30000,40000,50000,60000,70000,80000,85000,90000,92500,95000,100000
+!h_levels                     = 50000,45000,40000,35000,30000,25000,20000,18000,16000,14000,12000,
+!                               10000,8000,6000,5000,4000,3000,2000,1000,800,600,400,200,100,10
+ output_grid                  = .TRUE.
+ remap                        = 1                         ! 1: latlon,  0: native grid
+ reg_lon_def                  =   0.5, 1.0, 359.5
+ reg_lat_def                  = -89.5, 1.0, 89.5
+/
+&meteogram_output_nml
+  lmeteogram_enabled = .true.
+  n0_mtgrm           = 0                  ! meteogram initial time step (0 is first step!)
+  ninc_mtgrm         = ${ninc_mtgrm}      ! meteogram output interval (in terms of time steps dtime)
+  ldistributed       = .false.
+  loutput_tiles      = .true.
+  stationlist_tot    = 36.61, -97.49, 'ARM_Southern_Great_Plains',
+                       52.24,  14.23, 'Lindenberg_Obs',
+                       48.00,  80.00, 'Sibiria',
+                       30.00, 140.00, 'China ocean cold-air-outbreak'
+                      -20.00,-120.00, 'Tropical Ocean cumulus',
+                      -20.00, -85.00, 'Tropical Ocean IMET strcu',
+                      -20.00,-100.00, 'Tropical Ocean transition',
+                       60.00, 120.00, 'Siberia'
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+export VE_ERRCTL_ALLOCATE=MSG
+export NMPI_PROGINF=YES
+export VE_TRACEBACK=VERBOSE
+export NMPI_SEPSELECT=3
+export GMON_OUT_PREFIX=scal_prof
+export VE_FPE_ENABLE=DIV,FOF,INV
+export GFORTRAN_UNBUFFERED_PRECONNECTED=y
+export NMPI_EXPORT="GFORTRAN_UNBUFFERED_PRECONNECTED"
+
+# NE=4, CPE=8, venum-lhost=2, cpunum_job=2, use-hca=2 
+
+/opt/nec/ve/bin/mpirun -v    -vh     -node 0        -np 1      -env OMP_NUM_THREADS 1 ${MODEL_VH} : \
+                          -x -venode -node 0-${NE1} -np ${PPN} -env OMP_NUM_THREADS 1 ${MODEL_VE} : \
+                             -vh     -node 0        -np 4      -env OMP_NUM_THREADS 1 ${MODEL_VH} 
+
+# NE=8,CPE=8, venum-lhost=4, cpunum_job=2, use-hca=2
+# NOT WORKING
+
+#/opt/nec/ve/bin/mpirun -v    -vh     -node 0        -np 1      -env OMP_NUM_THREADS 1 ${MODEL_VH} : \
+#                          -x -venode -node 0-${NE1} -np ${PPN} -env OMP_NUM_THREADS 1 ${MODEL_VE} : \
+#                             -vh     -node 0        -np 3      -env OMP_NUM_THREADS 1 ${MODEL_VH} 
+

@@ -1,0 +1,585 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+% -------------------------------------------------------------------
+\section{Changes incompatible with former versions of the model code}\label{sec:changes}
+% -------------------------------------------------------------------
+\noindent
+% In this section we propose to document all namelist changes that are incompatible with former versions of the model code.
+% Such changes are
+%
+%    renaming namelist parameters or changing the data type
+%    removing existing namelist parameters
+%    changing default settings
+%    changing the scope of the namelist parameter
+%    introducing new cross-check rules.
+
+% --------------------------------------------------------------------------------------------
+%                   <namelist parameter>                               <date>        <revision>
+\begin{changeitem}{ var\_names\_map\_file, out\_varnames\_map\_file }{ 2013-04-25 }{ 12016 }
+  \begin{itemize}
+   \item Renamed \textbf{var\_names\_map\_file} $\rightarrow$ \textbf{output\_nml\_dict}.
+   \item Renamed \textbf{out\_varnames\_map\_file} $\rightarrow$ \textbf{netcdf\_dict}.
+   \item The dictionary in \emph{netcdf\_dict} is now reversed, s.t.\ the same map file
+         as in output\_nml\_dict can be used to translate variable names to the ICON internal
+         names and back.
+  \end{itemize}
+\end{changeitem}
+
+
+\begin{changeitem}{output\_nml: namespace}{ 2013-04-26 }{ 12051 }
+  \begin{itemize}
+   \item Removed obsolete namelist variable \textbf{namespace} from \textbf{output\_nml}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{gribout\_nml: generatingCenter, generatingSubcenter}{ 2013-04-26 }{ 12051 }
+  \begin{itemize}
+   \item Introduced new namelist variables \textbf{generatingCenter} and \textbf{generatingSubcenter}.
+   \item If not set explicitly, center and subcenter information is copied from the input grid file
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{radiation\_nml: albedo\_type}{ 2013-05-03 }{ 12118 }
+  \begin{itemize}
+   \item Introduced new namelist variable \textbf{albedo\_type}
+   \item If set to $2$, the surface albedo will be based on the MODIS data set.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml: dwdinc\_filename}{ 2013-05-24 }{ 12266 }
+  \begin{itemize}
+   \item Renamed dwdinc\_filename to dwdana\_filename
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml: l\_ana\_sfc}{ 2013-06-25 }{ 12582 }
+  \begin{itemize}
+   \item Introduced new namelist flag \textbf{l\_ana\_sfc}
+   \item If true, soil/surface analysis fields are read from the analysis fiel dwdfg\_filename.
+         If false, surface analyis fields are not read. Soil and surface are initialized with the first guess instead.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{new\_nwp\_phy\_tend\_list: output names consistent with variable names}{ 2013-06-25 }{ 12590 }
+  \begin{itemize}
+   \item temp\_tend\_radlw $\rightarrow$ ddt\_temp\_radlw
+   \item temp\_tend\_turb $\rightarrow$ ddt\_temp\_turb
+   \item temp\_tend\_drag $\rightarrow$ ddt\_temp\_drag
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{prepicon\_nml, remap\_nml, input\_field\_nml}{ 2013-06-25 }{ 12597 }
+  \begin{itemize}
+   \item Removed the sources for the "prepicon" binary!
+   \item The "prepicon" functionality (and most of its code) has become part of the ICON tools.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml}{ 2013-08-19 }{ 13311 }
+  \begin{itemize}
+   \item The number of vertical input levels is now read from file.
+         The namelist parameter \textbf{nlev\_in} has become obsolete in r12700 and has been removed.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{parallel\_nml}{ 2013-10-14 }{ 14160 }
+  \begin{itemize}
+   \item The namelist parameter exch\_msgsize has been removed together with the option iorder\_sendrecv=4.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{parallel\_nml}{ 2013-08-14 }{ 14164 }
+  \begin{itemize}
+   \item The namelist parameter \textbf{use\_sp\_output} has been replaced by an equivalent switch \textbf{use\_dp\_mpi2io}
+         (with an inverse meaning, i.e. we have \textbf{use\_dp\_mpi2io = .NOT. use\_sp\_output}).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{parallel\_nml}{ 2013-08-15 }{ 14175 }
+  \begin{itemize}
+   \item The above-mentioned namelist parameter \textbf{use\_dp\_mpi2io} got the default
+         .FALSE. By this, the output data are sent now in single precision to the output processes.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml: l\_ana\_sfc}{ 2013-10-21 }{ 14280 }
+  \begin{itemize}
+   \item The above-mentioned namelist parameter \textbf{l\_ana\_sfc} has been replaced by \textbf{lread\_ana}. The default 
+         is set to .TRUE., meaning that analysis fields are required and read on default. With lread\_ana=.FALSE. ICON is able to start from 
+         first guess fields only.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{output\_nml: lwrite\_ready, ready\_directory}{ 2013-10-25 }{ 14391 }
+  \begin{itemize}
+   \item The namelist parameters \textbf{lwrite\_ready} and \textbf{ready\_directory} have been replaced
+         by a single namelist parameter \textbf{ready\_file}, where \texttt{ready\_file /= 'default'} enables
+         writing ready files. 
+   \item Different \texttt{output\_nml}'s may be joined together to form a single ready file event -- they
+         share the same \texttt{ready\_file}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{output\_nml: output\_bounds }{ 2013-10-25 }{ 14391 }
+  \begin{itemize}
+   \item The namelist parameter \textbf{output\_bounds} specifies a start, end, and increment of 
+         output invervals.
+         It does no longer allow multiple triples.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{output\_nml: steps\_per\_file }{ 2013-10-30 }{ 14422 }
+  \begin{itemize}
+   \item The default value of the namelist parameter \textbf{steps\_per\_file} has been changed to \texttt{-1}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{run\_nml}{ 2013-11-13 }{ 14759 }
+  \begin{itemize}
+   \item The dump/restore functionality for domain decompositions and interpolation coefficients has
+         been removed from the model code.
+         This means, that the parameters
+         \begin{itemize}
+           \item \texttt{ldump\_states},
+           \item \texttt{lrestore\_states},
+           \item \texttt{ldump\_dd}, 
+           \item \texttt{lread\_dd},  
+           \item \texttt{nproc\_dd},  
+           \item \texttt{dd\_filename},
+           \item \texttt{dump\_filename},
+           \item \texttt{l\_one\_file\_per\_patch}
+         \end{itemize}
+         have been removed together with the corresponding functionality from the ICON model code.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{output\_nml: filename\_format }{ 2013-12-02 }{ 15068 }
+  \begin{itemize}
+   \item The string token \texttt{<ddhhmmss>} is now substituted by the \emph{relative} day-hour-minute-second
+         string, whereas the absolute date-time stamp can be inserted using \texttt{<datetime>}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{output\_nml: ready\_file }{ 2013-12-03 }{ 15081 }
+  \begin{itemize}
+   \item The ready file name has been changed and may now contain
+     string tokens \texttt{<path>}, \texttt{<datetime>},
+     \texttt{<ddhhmmss>} which are substituted as described for the
+     namelist parameter \texttt{filename\_format}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{interpl\_nml: rbf\_vec\_scale\_ll }{ 2013-12-06 }{ 15156 }
+  \begin{itemize}
+   \item The real-valued namelist parameter \texttt{rbf\_vec\_scale\_ll} has been removed.
+   \item Now, there exists a new integer-valued namelist parameter, \texttt{rbf\_scale\_mode\_ll}
+         which specifies the mode, how the RBF shape parameter is
+         determined for lon-lat interpolation.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{io\_nml }{ 2013-12-06 }{ 15161 }
+  \begin{itemize}
+   \item Removed remaining vlist-related namelist parameter. This means that the parameters
+         \begin{itemize}
+            \item out\_filetype
+            \item out\_expname
+            \item dt\_data
+            \item dt\_file
+            \item lwrite\_dblprec, lwrite\_decomposition, lwrite\_vorticity, lwrite\_divergence, lwrite\_pres, 
+                  lwrite\_z3, lwrite\_tracer, lwrite\_tend\_phy, lwrite\_radiation, lwrite\_precip, lwrite\_cloud, 
+                  lwrite\_tke, lwrite\_surface, lwrite\_omega, lwrite\_initial, lwrite\_oce\_timestepping
+         \end{itemize}
+         are no longer available.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{gridref\_nml}{ 2014-01-07 }{ 15436 }
+  \begin{itemize}
+   \item Changed namelist defaults for nesting: \texttt{grf\_intmethod\_e}, \texttt{l\_mass\_consvcorr}, \texttt{l\_density\_nudging}.
+  \end{itemize}
+\end{changeitem}
+
+
+\begin{changeitem}{interpol\_nml}{ 2014-02-10 }{ 16047 }
+  \begin{itemize}
+   \item Changed namelist default for \texttt{rbf\_scale\_mode\_ll}: The RBF scale factor for lat-lon interpolation is now
+      determined automatically by default.
+  \end{itemize}
+\end{changeitem}
+
+
+\begin{changeitem}{echam\_phy\_nml}{ 2014-02-27 }{ 16313 }
+  \begin{itemize}
+   \item Replace the logical switch \texttt{ lcover } by the integer switch \texttt{ icover } that is used in ECHAM-6.2. Values are transferred as follows: .FALSE. = 1 (=default), .TRUE. = 2.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{turbdiff\_nml}{2014-03-12 }{16527 }
+  \begin{itemize}
+   \item Change constant minimum vertical diffusion coefficients to variable ones proportional to $1/\sqrt{Ri}$ for inwp\_turb = 10; at the same time
+         the defaults for tkhmin and tkmmin are increased from $0.2 \, \mathrm{m^2/s}$ to $0.75 \, \mathrm{m^2/s}$.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nwp\_phy\_nml}{2014-03-13 }{16560 }
+  \begin{itemize}
+   \item Removed namelist parameter \texttt{dt\_ccov}, since practically it had no effect. For the  quasi-operational NWP-setup, the calling frequency of the cloud cover scheme is the same as that of the convection scheme. I.e. both are synchronized.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nwp\_phy\_nml}{2014-03-24 }{16668 }
+  \begin{itemize}
+   \item Changed namelist default for \textbf{itype\_z0}: use land cover related roughness only (itype\_z0=2).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2014-05-16 }{17293 }
+  \begin{itemize}
+   \item Removed switch for vertical TKE advection in the dynamical core (\textbf{lvadv\_tke}). TKE advection has been moved into the
+   transport scheme and can be activated with \textbf{iadv\_tke=1} in the \textbf{transport\_nml}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2014-05-27 }{17492}
+  \begin{itemize}
+   \item Removed namelist parameter \texttt{model\_restart\_info\_filename} in namelist
+         \texttt{master\_model\_nml}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{transport\_nml}{2014-06-05 }{17654}
+  \begin{itemize}
+   \item Changed namelist default for \texttt{itype\_hlimit} from monotonous limiter (3) to positive definite limiter (4).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nh\_pzlev\_nml}{2014-08-28 }{18795}
+  \begin{itemize}
+   \item Removed namelist \texttt{nh\_pzlev\_nml}.
+         Instead, each output namelist specifies its separate list of \texttt{p\_levels}, \texttt{h\_levels},
+         and \texttt{i\_levels}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2014-10-27 }{19670}
+  \begin{itemize}
+   \item Removed namelist parameter \texttt{l\_nest\_rcf} in namelist
+         \texttt{nonhydrostatic\_nml}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2014-11-24 }{20073}
+  \begin{itemize}
+   \item Removed namelist parameter \texttt{iadv\_rcf} in namelist
+         \texttt{nonhydrostatic\_nml}. The number of dynamics substeps per advective step are now specified 
+         via \texttt{ndyn\_substeps}. 
+         The meaning of \texttt{run\_nml:dtime} has changed and denotes the advective time step.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{io\_nml}{2015-03-25 }{21501}
+  \begin{itemize}
+   \item Namelist parameter \texttt{lzaxis\_reference} is deprecated and has no effect anymore.
+         However, users are not forced to modify their scripts instantaneously: \texttt{lzaxis\_reference=.FALSE.} 
+         is still a valid namelist setting, but it has no effect and a warning will be issued. 
+         \texttt{lzaxis\_reference} finally removed in \texttt{r24606}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{limarea\_nml}{2016-02-08 }{26390}
+  \begin{itemize}
+   \item Namelist parameter \texttt{dt\_latbc} has been removed. Its value is now
+         identical to the namelist parameter \texttt{dtime\_latbc}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{interpol\_nml}{2016-02-11}{26423}
+  \begin{itemize}
+   \item Namelist parameter \texttt{l\_intp\_c2l} is deprecated and has no effect anymore.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{lnd\_nml}{2016-07-21}{28536}
+  \begin{itemize}
+   \item The numbering of the various options for \texttt{sstice\_mode} has changed. Former option $2$ became $3$, 
+   former option $3$ became $4$, and former option $4$ became $5$. This was necessary, because a new option was introduced (option $2$).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml}{2016-07-22}{28556}
+  \begin{itemize}
+   \item Namelist parameter \texttt{latbc\_varnames\_map\_file} has
+     been moved to the namelist \texttt{limarea\_nml}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{transport\_nml}{2016-09-22}{29339}
+  \begin{itemize}
+   \item Namelist parameter \texttt{niter\_fct} has been removed, since the functionality of 
+   iterative flux correction is no longer available.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml}{2016-10-07}{29484}
+  \begin{itemize}
+   \item Namelist parameter \texttt{l\_sst\_in} has been removed. In case of init\_mode=2 (IFSINIT), 
+   sea points are now initialized with SST, if provided in the input file. Otherwise sea points are initialized 
+   with the skin temperature. The possibility to use the skin temperature despite having the SST available 
+   has been dropped.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml}{2016-12-14}{62288ed77b2975182204a2ec6fa210a3fb1ad8a7}
+  \begin{itemize}
+   \item Namelist parameters \texttt{ana\_varlist, ana\_varlist\_n2} have been renamed to \texttt{check\_ana(jg)\%list}, 
+   with jg indicating the patch ID.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{initicon\_nml}{2017-01-27}{ae1be66f}
+  \begin{itemize}
+   \item The default value of the namelist parameter
+     \texttt{num\_prefetch\_proc} has been changed to 1,
+     i.e. asynchronous read-in of lateral boundary data is now
+     enabled.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{interpol\_nml}{2017-01-31}{e1c56104}
+  \begin{itemize}
+   \item With the introduction of the namelist parameter
+     \texttt{lreduced\_nestbdry\_stencil} in the namelist
+     \texttt{interpol\_nml} the nest boundary points are no longer
+     removed from lat-lon interpolation stencil by default.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{limarea\_nml}{2017-03-14}{631b731627}
+  \begin{itemize}
+   \item The namelist parameter \texttt{nlev\_latbc} is now
+     deprecated. Information about the vertical level number is taken
+     directly from the input file.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_phy\_nml / mpi\_phy\_nml}{2017-04-19}{icon-aes:icon-aes-mag 9ecee54f69108716308029d8d7aa0296c343a3c2}
+  \begin{itemize}
+   \item The namelist echam\_phy\_nml is replaced by the namelist mpi\_phy\_nml, which extends the control to multiple domains and introduces time control in terms of start and end date/time [sd\_prc,ed\_prc[ and time interval dt\_prc for individual atmospheric processes \textit{prc}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{mpi\_phy\_nml / echam\_phy\_nml and mpi\_sso\_nml / echam\_sso\_nml}{2017-11-22}{icon-aes:icon-aes-cfgnml f84219511329281d441d81923fe97ce1d7ecf007}
+  \begin{itemize}
+   \item The namelists, configuration variables and related modules are renamed
+from ...mpi\_phy... to ...echam\_phy... because programmers felt that the acronym "mpi"  for "Max Planck Institute" in relation to physics cannot be distinguished from "mpi" for "Message Passing Interface" as used in the parallelization.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{gw\_hines\_nml / echam\_gwd\_nml}{2017-11-24}{icon-aes:icon-aes-cfgnml 699346b5d318d53be215e0b8e8b5ba8631d44c48}
+  \begin{itemize}
+   \item The namelists gw\_hines\_nml is replaced by the namelist echam\_gwd\_nml, which extends the control to multiple domains.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{vdiff\_nml / echam\_vdf\_nml}{2017-11-27}{icon-aes:icon-aes-cfgnml f1dec0a0d3b8ec506861975cd59a729fe43fdf8e}
+  \begin{itemize}
+   \item The namelists vdiff\_nml is replaced by the namelist echam\_vdf\_nml, which additionally includes tuning parameters for the total turbulent energy scheme, and extends the control to multiple domains.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_conv\_nml / echam\_cnv\_nml}{2017-11-29}{icon-aes:icon-aes-cfgnml 099c40f88dbaae6c7cc79ea878e5862847ef7e27}
+  \begin{itemize}
+   \item The namelists echam\_conv\_nml is replaced by the namelist echam\_cnv\_nml, which extends the control to multiple domains.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_cloud\_nml / echam\_cld\_nml}{2017-12-04}{icon-aes:icon-aes-cfgnml afacc102a87b03f78ff47ad0b7af8f348bacef6f}
+  \begin{itemize}
+   \item The namelists echam\_cloud\_nml is replaced by the namelist echam\_cld\_nml, which extends the control to multiple domains.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{psrad\_orbit\_nml / radiation\_nml / echam\_rad\_nml}{2017-12-12}{icon-aes:icon-aes-cfgnml 8da087238b81183c337a3b1ae81d2b2e3dafdba8}
+  \begin{itemize}
+   \item For controlling the input of ECHAM physics to the PSrad scheme, the namelists psrad\_orbit\_nml and radiation\_nml are replaced by the namelist echam\_rad\_nml, which extends the control to multiple domains. For controlling the input of NWP physics to the RRTMG radiation, the radiation\_nml namelist remains valid. The psrad\_orbit\_nml namelist, which is not used for RRTMG radiation, is deleted.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_cld\_nml / echam\_cov\_nml}{2019-06-07}{icon-aes:icon-aes-cover 09233f275f207d59d2cb6ad75bd13adf81c0d0c2}
+  \begin{itemize}
+   \item The control parameters for the  cloud cover parameterization (crs, crt, nex, jbmin, jbmax, cinv, csatsc)  are shifted to the new namelist echam\_cov\_nml.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_cov\_nml / echam\_cov\_nml}{2019-06-12}{icon-aes:icon-aes-cover 419e7ed54faa6db86a7151ece33b8e0b24737129 and e66e8e0f9cd439b81d7db63e0a4e03004d7f8144}
+  \begin{itemize}
+   \item The control parameters jks, jbmin and jbmax, specifying heights by the index of the vertical grid, are replaced by parameters zcovmax, zinvmax, and zinvmin, respectively, which directly specify the heights of interest. The change is as follows: \newline
+   \begin{itemize}
+    \item jks=15 --> zmaxcov=echam\_phy\_config\%zmaxcloudy
+    \item jbmin=43 --> zmaxinv=2000m
+    \item jbmax=45 --> zmininv=300m
+   \end{itemize}
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{echam\_cld\_nml / echam\_cld\_nml}{2019-06-12}{icon-aes:icon-aes-cover ab95fc16a944dde96a76aeb1f63a7c847d78da06 and e66e8e0f9cd439b81d7db63e0a4e03004d7f8144}
+  \begin{itemize}
+   \item The control parameters jks, specifying height by the index of the vertical grid, is replaced by the parameters zcldmax, which directly specify the height of interest. The change is as follows: \newline
+   \begin{itemize}
+    \item jks=15 --> zmaxcld=echam\_phy\_config\%zmaxcloudy
+   \end{itemize}
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{extpar\_nml}{2019-11-29}{icon-nwp:icon-nwp-dev 21a16daf65aaf8df6fb581daa7dca66e2c915b94}
+  \begin{itemize}
+   \item The logical namelist parameter \texttt{l\_emiss} has been replaced by the integer parameter \texttt{itype\_lwemiss}.
+     The code executed by default does not change.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{transport\_nml}{2020-06-17}{icon-nwp:icon-nwp-dev 616b4698e3a59c641a5ebe90637da2841c6f6a3a}
+  \begin{itemize}
+   \item The logical namelist parameter \texttt{lstrang} has been deleted. The default behaviour of the code is unchanged.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{extpar\_nml}{2021-02-01}{icon-nwp:icon-nwp-dev ebac2edb0}
+  \begin{itemize}
+   \item The functionality of \texttt{itype\_vegetation\_cycle}=3 has been replaced by setting the new namelist parameter \texttt{icpl\_da\_sfcevap} 
+    in initicon\_nml to a value of 1.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{ha\_dyn\_nml / ha\_testcase\_nml}{2021-03-29}{icon-nwp:icon-nwp-dev 599f03e5}
+  \begin{itemize}
+   \item The namelists for configuring the hydrostatic model \texttt{ha\_dyn\_nml} as well as the hydrostatic testcases 
+   \texttt{ha\_testcase\_nml} have been removed completely, as the hydrostatic model is no longer part of the official code.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{dynamics\_nml}{2021-03-30}{icon-nwp:icon-nwp-dev 959fb5db}
+  \begin{itemize}
+   \item \texttt{iequations=0,1,2} (shallow water and hydrostatic atmosphere ($T$ or $\theta\cdot dp$)) no longer supported.
+   \item removed obsolete Namelist parameter \texttt{sw\_ref\_height} (reference height of shallow water model)
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{diffusion\_nml}{2021-04-16}{icon-nwp:icon-nwp-dev 806be7b0}
+  \begin{itemize}
+   \item removed obsolete Namelist parameter \texttt{k2\_pres\_max} and \texttt{k2\_klev\_max}, which were specific to the hydrostatic dynamical core.
+   \item removed horizontal diffusion options \texttt{hdiff\_order=24,42}
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{transport\_nml}{2022-05-07}{icon-nwp:master 8a351b13}
+  \begin{itemize}
+   \item removed Namelist parameter \texttt{iord\_backtraj}, as the option for 2nd order accurate backward trajectory calculation has been removed. 
+         The default behaviour of the code is unchanged.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{radiation\_nml}{2022-08-16}{icon-nwp:master 6e49e2a7}
+  \begin{itemize}
+   \item removed unused Namelist parameter \texttt{ldiur}, \texttt{nmonth}, \texttt{lyr\_perp} and \texttt{yr\_perp}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{radiation\_nml}{2022-10-10}{icon-nwp:master 61a1ac77}
+  \begin{itemize}
+   \item Removed Tanre aerosol option irad\_aero=5.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{radiation\_nml}{2022-11-03}{icon-nwp:master 58a5aed0}
+  \begin{itemize}
+   \item Renamed ecRad-specific namelist settings \texttt{llw\_cloud\_scat} to \texttt{ecrad\_llw\_cloud\_scat}, \texttt{iliquid\_scat} to \texttt{ecrad\_iliquid\_scat} and \texttt{iice\_scat} to \texttt{ecrad\_iice\_scat}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2023-05-22}{icon-nwp:master 1fff9207}
+  \begin{itemize}
+   \item Removed Namelist switch \texttt{l\_open\_ubc}. The upper boundary condition for vertical velocity $w$ is unconditionally set to $w=0$ (with the exception of vertically nested domains).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{Optional output diagnostics, see table~\ref{tab:optionaldiagnostics} on page~\pageref{tab:optionaldiagnostics}}{2023-06-13}{icon-nwp:master 0d921fd4}
+  \begin{itemize}
+   \item Removed optional output diagnostics \texttt{vor\_u} (\emph{zonal component of relative vorticity}) and \texttt{vor\_v} (\emph{meridional component of relative vorticity}). 
+   Reason for removal: the two diagnostics have proven an unfavorable cost-benefit ratio.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2023-07-04}{icon-nwp:master 6e5730d5}
+  \begin{itemize}
+   \item Removed Namelist switch \texttt{lhdiff\_rcf}. Option to compute diffusion at dynamics time steps has been removed. It is only computed at advection time steps (in combination with divergence damping in the dynamical core).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{parallel\_nml}{2023-07-25}{icon-nwp:master 9a3c46e8}
+  \begin{itemize}
+   \item Removed Namelist switch \texttt{itype\_comm}. Option to switch on asynchronous halo communication for the dynamical core has been removed.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2023-07-25}{icon-nwp:master 9a3c46e8}
+  \begin{itemize}
+   \item Removed Namelist switch \texttt{nest\_substeps}. Option to change the number of substeps for the child patches has never been functional.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{diffusion\_nml}{2023-08-02}{icon-nwp:master 78b68550}
+  \begin{itemize}
+   \item Removed option for Smagorinsky $\nabla^{2}$ diffusion \texttt{hdiff\_order=3}. Use \texttt{hdiff\_order=5} in combination with \texttt{hdiff\_efdt\_ratio<=0} (deactivated background diffusion), instead.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{gridref\_nml}{2023-08-07}{icon-nwp:master 64ea30c9}
+  \begin{itemize}
+   \item Removed Inverse Distance Weighting (IDW) option for parent-child interpolation of edge-based variables. Options \texttt{grf\_intmethod\_e=1/3/5} are no longer available. The related namelist switches for specifying the exponent of the generalized IDW function \texttt{grf\_idw\_exp\_e{12/34}} are removed as well.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{upatmo\_nml and nh\_testcase\_nml}{2023-08-18}{icon-nwp:master 255072ef}
+  \begin{itemize}
+    \item Removed Namelist switches \texttt{lnontrad}, \texttt{lconstgrav}, \texttt{lcentrifugal} and \texttt{ldeepatmo2phys} without substitution. 
+         From now on, \texttt{dynamics\_nml/ldeepatmo = .TRUE.} means implicitly \texttt{lnontrad = .TRUE.}, \texttt{lconstgrav = .FALSE.} and \texttt{lcentrifugal = .FALSE.}.
+         The switch \texttt{ldeepatmo2phys} has never been effective anyway. \newline 
+         In addition, deep-atmosphere testcase \texttt{nh\_test\_name =} '\textbf{lahade}' has been removed without substitution.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{gridref\_nml}{2023-08-14}{icon-nwp:master 62819ba6}
+  \begin{itemize}
+   \item Remove optional mass conservation correction in incremental feedback routine \texttt{l\_mass\_consvcorr=TRUE/FALSE}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2023-08-14}{icon-nwp:master 62819ba6}
+  \begin{itemize}
+   \item Remove optional mass conservation correction for nested domains \texttt{l\_masscorr\_nest=TRUE/FALSE}.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{nonhydrostatic\_nml}{2023-09-08}{icon-nwp:master xxx}
+  \begin{itemize}
+   \item Removed Namelist switch \texttt{idiv\_method} which allowed to select different methods for horizontal divergence computations. The possibility of divergence averaging has been removed. For divergence computation we now make unconditional use of the standard Gaussian integral in combination with averaged normal components of horizontal velocity.).
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{coupling\_mode\_nml}{2023-09-07}{icon-nwp:master xxx}
+  \begin{itemize}
+   \item Remove logical switch \texttt{coupled\_mode}. Coupling with specific
+     model components is now described by component specific switches.
+  \end{itemize}
+\end{changeitem}
+% --------------------------------------------------------------------------------------------

@@ -1,0 +1,22 @@
+--- # ICON probtest tolerance data
+# This file can be parsed using yaml
+# Data is stored in <icon_data_rootFolder>/buildbot_data/ref/<experiment_hash>
+icon_data_rootFolder: /users/icontest/pool/data/ICON
+builder: daint_cpu_nvidia
+# The list below maps each experiment to its current experiment_hash
+"atm_qubicc_nc_test": 6068fba4a28485398db85481df007baeb9ccb717
+"exclaim_ape_R02B04": 3eba928bbbfdc07b8ed2b7b32a90f0b93a570e78
+"mch_bench_r19b07_dev_sppt": 0a9769a8704491e4c53006d9dc01c5f16a993764
+"mch_ch_lowres": aecf92f77e71b584ba9fa7672b52a5e233b97c19
+"mch_ch_r04b09_dace": 1204fd179fce0a17815220b8555ae439946444b2
+"mch_ch_r04b09_dace_synsat": 2d7da2d16f6d9cca5f710349a81e411f30171434
+"mch_opr_r04b07": e85afb54d7427df64f4f253719cd6fea0437f923
+"mch_opr_r04b07_lhn_00": 1a37b84fd6a9e72e6eb25a8bb231b4dc9ca22c1f
+"mch_opr_r04b07_nest": c3d0adccd19eeda06e2a9fdf3c0be369cd73da45
+"mch_opr_r04b07_sstice_inst": 8c8d8b1a4e8767e545efa08688fa9a963c1838b4
+"mch_opr_r19b07_2m": d443ac817c67060fc5602edf6d53d75102bd9c67
+"mch_opr_r19b07_2m_expl": 89a15617b31a0f759488984756a421657d9209f1
+"mch_opr_r19b07_2m_gscp5": d68bc78182e75b89ab18b68e5a2a2b1706136607
+"mch_opr_r19b07_lpi": 9a7b01835eefdbac68735aca50a17410fa12cd70
+"mch_opr_r19b07_midnight": 47d331b527225c6d8621cbc5cea1c81789911e75
+"mch_opr_r19b07_turb": a974d9846000f01c1355ef6e525f403ff7946623

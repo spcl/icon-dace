@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# This script adds the update experiments and post-processing scripts
+# needed to generate update references to the list specified by `listname`.
+# Note: This list must always be called as part of a full `create_list_<list>`,
+#       it does not initialize any machines and builders.
+
+import os
+import sys
+
+os.chdir(sys.path[0])
+
+# get list name from argument
+list_name = sys.argv[1]
+
+# Keep in sync with create_list_merge2rc:
+inactive_builders = {
+    "DAINT_CPU_nvidia_mixed",
+    "DAINT_GPU_nvidia_mixed",
+    "levante_aurora",
+    "levante_cpu_nvhpc",
+    "levante_gpu_nvhpc",
+    "levante_gpu_validation",
+    "levante_nag_serial",
+}
+
+test_handler = {
+    "exp.atm_qubicc_nc_test_update_base": {
+        "refgen": "checksuite.icon-dev/pp.refgen_atm_qubicc_nc_test_update-ref",
+        "machines": {
+            "levante": "ntasks=16 queue=shared,compute memory=32G",
+            "daint": "",
+        },
+        "extra_builders": {
+            "levante_cpu_nvhpc": "ntasks=16 queue=shared memory=32G",
+            "levante_gpu_nvhpc": "mpi_procs_pernode=3",
+        },
+    },
+    "exp.aes_bubble_test_update_base": {
+        "refgen": "checksuite.icon-dev/pp.refgen_aes_bubble_test_update-ref",
+        "machines": {
+            "levante": "ntasks=16 queue=shared",
+        },
+        "extra_builders": {
+            "levante_cpu_nvhpc": "ntasks=16 queue=shared memory=32G",
+            "levante_gpu_nvhpc": "mpi_procs_pernode=3",
+        },
+    },
+}
+
+# Collect all extra builders from test_handler:
+extra_builders = {
+    builder for _, data in test_handler.items()
+    if "extra_builders" in data
+    for builder, _ in data["extra_builders"].items()
+}
+
+# Deactivate generally inactive builders (inactive_builders) together with those
+# that require special treatment (extra_builders):
+commands = [
+    f"./set_builder_flags Inactive --builders '{' '.join(inactive_builders | extra_builders)}' --list '{list_name}'"
+]
+
+# Add experiments for the machines:
+for test, data in test_handler.items():
+    refgen = data["refgen"]
+
+    if "machines" in data:
+        for machine, runflags in data["machines"].items():
+            commands.extend([
+                f"./addexp '{test}' --machines '{machine}' --list '{list_name}' --runflags='{runflags}'",
+                f"./addexp '{refgen}' --machines '{machine}' --list '{list_name}'",
+                f"./adddep --from-experiment '{refgen}' --to-experiment '{test}' --machines '{machine}' --list '{list_name}'",
+            ])
+
+# Activate extra builders:
+commands.append(
+    f"./set_builder_flags Active --builders '{' '.join(extra_builders)}' --list '{list_name}'"
+)
+
+# Add experiments for the extra builders:
+for test, data in test_handler.items():
+    refgen = data["refgen"]
+
+    if "extra_builders" in data:
+        for builder, runflags in data["extra_builders"].items():
+            commands.extend([
+                f"./addexp '{test}' --builders '{builder}' --list '{list_name}' --runflags='{runflags}'",
+                f"./addexp '{refgen}' --builders '{builder}' --list '{list_name}'",
+                f"./adddep --from-experiment '{refgen}' --to-experiment '{test}' --builders '{builder}' --list '{list_name}'",
+            ])
+
+exit(os.WEXITSTATUS(os.system(f"set -x;{';'.join(commands)}")))

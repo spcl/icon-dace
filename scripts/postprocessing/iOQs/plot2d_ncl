@@ -1,0 +1,387 @@
+#! /bin/bash -x
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#set -e
+test x${DEBUG+set} != xset || set -x
+
+usage_exit1() {
+  echo -e "generate 2d map plots with ncl" >&2
+  echo -e "SYNOPSIS  plot2d_ncl [OPTIONS] FILE" >&2
+  echo -e "DESCRIPTION ${n}\n\tGenerates 2d map plots from MPIOM data using ncl" >&2
+  echo -e "FILE\n\t\t file to plot (required).\n" >&2
+  echo -e "OPTIONS" >&2
+  echo -e "\t--var , -v       \t VAR       \t\t variable name to plot (required)." >&2
+  echo -e "\t--code , -c       \t CODE       \t\t code to plot (required)." >&2
+  echo -e "\t--step , -v       \t STEP       \t\t timestep to plot ; default=1.." >&2
+  echo -e "\t--lev , -l        \t LEVEL     \t\t level to plot ; default=1." >&2
+  echo -e "\t--min , -x       \t MINIMUM   \t\t miniumum of colorbar (required for plot types 0,1 and 3)." >&2
+  echo -e "\t--max , -y      \t MAXIMUM   \t\t maximum  of colorbar (required for plot types 0,1 and 3 )." >&2
+  echo -e "\t--inc , -z       \t INCREMENT \t\t increment of colorbar (required for plot types 0,1 and 3)." >&2
+  echo -e "\t--scal , -k     \t SCALE     \t\t linear scaling factor ; default is 1." >&2
+  echo -e "\t--unit , -u     \t UNIT      \t\t physical unit of the data ; default is NN." >&2
+  echo -e "\t--title ,-t    \t TITLE     \t\t title of the plot ; default is input file name." >&2
+  echo -e "\t--cstring ,-C    \t CSTRING     \t\t center string of the plot ; default is depth." >&2
+  echo -e "\t--lstring ,-L    \t LSTRING     \t\t left string of the plot ; default is depth." >&2
+  echo -e "\t--rstring ,-R    \t RSTRING     \t\t right string of the plot ; default is date." >&2
+  echo -e "\t--pal , -p      \t PALETTE   \t\t color palette ; default is BlueWhiteOrangeRed." >&2
+  echo -e "\t--proj , -j     \t PROJECTION \t\t MAP,NPS,SPS ; default is MAP." >&2
+  echo -e "\t--type , -T     \t TYPE \t\t CONTOUR/FILL ; default is FILL." >&2
+  echo -e "\t--minlat , -s    \t MINLAT    \t\t ZOOM" >&2
+  echo -e "\t--maxlat ,-n   \t MAXLAT    \t\t ZOOM" >&2
+  echo -e "\t--minlon ,-e   \t MINLON    \t\t ZOOM" >&2
+  echo -e "\t--maxlon ,-w   \t MAXLON    \t\t ZOOM" >&2
+  exit 1
+}
+
+STEP=1
+CDO='cdo -s'
+TYPE=1
+# Defaults
+LEVEL=1
+TITLE=""
+UNIT=""
+SCAL=1
+#pal=temp_diff_18lev
+#BlueDarkRed18
+pal=BlueWhiteOrangeRed
+#pal=BlueYellowRed
+PROJ=MAP
+MINLAT=-90
+MAXLAT=90
+MINLON=-180
+MAXLON=180
+
+
+args=`getopt -u   -lstep:,var:,code:,lev:,min:,max:,inc:,scal:,unit:,title:,cstring:,lstring:,rstring:,pal:,proj:,minlat:,maxlat:,minlon:,maxlon:,type:,help  S:v:c:l:x:y:z:k:u:t:C:L:R:p:i:s:n:e:w:T:h "$@"` || {
+  usage_exit1
+}
+
+set -- $args
+
+while [ $1 != "--" ]
+do
+  case $1 in
+    --help      ) usage_exit1 ;;
+    --step | -S      ) STEP=$2  ;;
+    --var | -v      ) VAR=$2  ;;
+    --code | -c      ) CODE=$2  ;;
+    --lev | -l       ) LEVEL=$2 ;;
+    --min | -x       ) MINI=$2  ;;
+    --max | -y      ) MAXI=$2  ;;
+    --inc | -z      ) INCR=$2  ;;
+    --scal | -k     ) SCAL=$2  ;;
+    --unit | -u     ) UNIT=$2   ;;
+    --title | -t    ) TITLE=$2  ;;
+    --cstring | -C    ) CSTRING=$2  ;;
+    --lstring | -L    ) LSTRING=$2  ;;
+    --rstring | -R    ) RSTRING=$2  ;;
+    --pal | -p      ) pal=$2    ;;
+    --proj | -i      ) PROJ=$2    ;;
+    --minlat | -s     ) MINLAT=$2    ;;
+    --maxlat | -n     ) MAXLAT=$2    ;;
+    --minlon | -e    ) MINLON=$2    ;;
+    --maxlon | -w     ) MAXLON=$2    ;;
+    --type | -T     ) TYPE=$2    ;;
+  esac
+  shift
+done
+
+shift
+IFILE="$1"
+
+OFILE=$(basename $IFILE .nc)
+
+
+test x${VAR} == x && VAR=$(set +e ;  ${CDO} showvar -selcode,${CODE} $IFILE ) ; VAR=$(echo $VAR)
+test x${VAR+set} != xset && $(echo $VAR "not found" ; exit )
+
+#create .lst file
+
+extension=pdf
+filename=$(basename $IFILE .nc)
+steps=$($CDO ntime $IFILE | awk '{ print $1-1 }' )
+code=$($CDO vardes $IFILE | awk '{ print $1 }' )
+name=$($CDO vardes $IFILE | awk '{ print $2 }' )
+longname=$($CDO vardes $IFILE | awk '{ $1=$2=""; print $0 }' )
+title=$TITLE
+for (( n=0 ; n<=steps ; n++))
+do
+#echo $filename:$n:$extension:$name$n:$code:${filename%%_icon*}
+echo $filename:$n:$extension:$title$n:$code:$title
+done > $filename.lst_
+
+#
+
+
+
+echo 'FILE:  ' $IFILE
+echo 'STEP:  ' $STEP
+echo 'VAR:   ' $VAR
+echo 'CODE:  ' $CODE
+echo 'LEVEL: ' $LEVEL
+echo 'MIN:   ' $MINI
+echo 'MAX:   ' $MAXI
+echo 'INCR:  ' $INCR
+echo 'SCALE: ' $SCAL
+if [ "${UNIT}" = "" ] ; then
+  UNIT=NN
+fi
+echo 'UNIT:  ' $UNIT
+echo 'TITLE: ' $TITLE
+
+echo 'CSTRING: ' $CSTRING
+echo 'LSTRING: ' $LSTRING
+echo 'RSTRING: ' $RSTRING
+
+echo 'pal:   ' $pal
+echo 'PROJ:  ' $PROJ
+echo 'TYPE:  ' $TYPE
+
+#exit
+
+test x${DEBUG+set} != xset || set verbose
+
+
+
+
+
+cat >plot.ncl<<EOF
+
+;----------------------------------------------------------------------
+; This is a basic NCL template for creating contours over maps.
+;
+; Use "contour_template.ncl" if you don't need to put the
+; contours over a map.
+;----------------------------------------------------------------------
+
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/shea_util.ncl"
+
+
+begin
+
+  format = "pdf"
+
+;---Determine paper size as orientation does not work as expected
+  if ( "${PROJ}" .eq. "NPS" .or. "${PROJ}" .eq. "SPS" ) then 
+      format@wkPaperSize = "A4"
+  else
+      format@wkPaperHeightF = 8.3
+      format@wkPaperWidthF = 11.7
+  end if
+
+;---Open workstation and change color map
+  wks = gsn_open_wks(format,"$OFILE")   ; "ps", "pdf", "png"
+  gsn_define_colormap(wks,"$pal")           ; optional
+
+;---Read data
+  a   = addfile("${IFILE}","r")
+
+  S=$STEP
+  if ( "${LEVEL}" .eq. "-1") then   
+   l=${LEVEL}-1
+   x   = a->${VAR}(: , :, :)
+  else
+   l=${LEVEL}-1
+   x   = a->${VAR}(: ,l , :, :)
+  end if
+
+  if (isfilevar(a,"lat")) then
+  x@lat2d = a->lat      ; Only necessary if "x" doesn't
+  x@lon2d = a->lon      ; contain 1D coordinate arrays.
+  else
+  x@lat2d = a->clat      ; Only necessary if "x" doesn't
+  x@lon2d = a->clon      ; contain 1D coordinate arrays.
+  end if
+
+
+
+  printVarSummary(x)
+  time = a->time
+
+
+  x=x*${SCAL}
+
+
+
+
+
+;---Set some resources
+  res                   = True
+
+  res@gsnDraw = False
+  res@gsnFrame= False
+
+  res@gsnMaximize       = True     ; maximize plot in frame
+  res@gsnPaperOrientation = "portrait" 
+
+
+;---These are sample resources you might want to set
+  if ( "${TYPE}" .eq. "0") then   
+  res@cnFillOn          = False     ; turn on contour fill
+  res@cnLinesOn         = True    ; turn off contour lines
+  res@cnLineLabelsOn    = True    ; turn off line labels
+  else
+  res@cnFillOn          = True     ; turn on contour fill
+  res@cnLinesOn         = False    ; turn off contour lines
+  res@cnLineLabelsOn    = False    ; turn off line labels
+  end if 
+;---Use if you have a high-res grid that could be slow to plot.
+ res@cnFillMode        = "RasterFill"
+; res@cnFillMode        = "CellFill"
+
+;---This can also speed things up
+ res@trGridType        = "TriangularMesh"
+
+;---These two resources are not needed in V6.1.0
+  res@gsnSpreadColors   = True     ; span full color map
+  res@lbLabelAutoStride = True     ; nice spacing for labelbar labels
+;  res@cnMissingValFillColor    = "gray30" ; set color for missing areas
+
+
+  if ( "${TITLE}" .eq. "") then   
+    res@tiMainString = "${IFILE}"
+  else
+    res@tiMainString = "${TITLE}"
+  end if
+
+
+;---Uncomment if you want to change the contour levels
+;  mnmxint = nice_mnmxintvl( min(x), max(x), 18, False)
+  res@cnLevelSelectionMode = "ManualLevels"
+  res@cnMinLevelValF       = $MINI
+  res@cnMaxLevelValF       = $MAXI
+  res@cnLevelSpacingF      = $INCR
+
+;---Set to False if plotting regional data or setting sfXArray/sfYArray
+;  res@gsnAddCyclic      = False
+;  res@sfXArray          = lon   ; Only necessary if x doesn't 
+;  res@sfYArray          = lat   ; contain 1D coordinate arrays
+;
+
+  if ( "${LSTRING}" .eq. "") then   
+
+    if (isdim(x,"depth")) then
+       res@gsnLeftString = x@depth +"m"
+      else if (isdim(x,"depth_2")) then
+         res@gsnLeftString = x@depth_2 +"m"
+      else 
+        res@gsnLeftString = ""
+      end if
+    end if
+
+  else
+      res@gsnLeftString = "${LSTRING}"
+  end if
+
+;       res@gsnLeftString = x@depth +"m"
+
+  if ( "${CSTRING}" .eq. "") then   
+     res@gsnCenterString = x@long_name+" ["+ x@units+"]"
+;     res@gsnCenterString = ""
+  else
+       res@gsnCenterString = "${CSTRING}"
+  end if
+
+  do timestep = 0, dimsizes(time)-1
+
+    
+   ; Convert to UTC time.
+     utc_date = cd_calendar(time(timestep), 0)
+   ; Store return information into more meaningful variables.
+ 
+    year   = tointeger(utc_date(0,0))    
+    month  = tointeger(utc_date(0,1))
+    day    = tointeger(utc_date(0,2))
+
+    sdate = sprinti("%0.4i", year) +"-"+ sprinti("%0.2i", month) +"-"+ sprinti("%0.2i", day) 
+
+    if ( "${RSTRING}" .eq. "") then   
+      res@gsnRightString = sdate
+    else 
+      res@gsnRightString = "${RSTRING}"
+    end if
+
+
+    if ( "${PROJ}" .eq. "NPS" ) then 
+      res@gsnPolar   = "NH"                          ; specify the hemisphere
+     res@mpMinLatF         = 50
+     res@mpMaxLatF         = 90
+      plot = gsn_csm_contour_map_polar(wks,x(timestep, :,:),res)    ; create the plot
+    else if ( "${PROJ}" .eq. "SPS" ) then 
+      res@mpMinLatF         = -90
+      res@mpMaxLatF         = -20
+      res@gsnPolar   = "SH"                          ; specify the hemisphere
+      plot = gsn_csm_contour_map_polar(wks,x(timestep, :,:),res)    ; create the plot
+    else
+
+
+; Zoom in on map if desired. There are other ways to zoom in on
+; map if you have a different projection, like lambert conformal.
+;
+
+      if ( "${MINLAT}" .eq. "" ) then 
+        res@mpMinLatF         = min(x@lat2d)
+      else
+        res@mpMinLatF         = $MINLAT 
+      end if
+
+      if ( "${MAXLAT}" .eq. "" ) then 
+        res@mpMaxLatF         = max(x@lat2d)
+      else
+        res@mpMaxLatF         = $MAXLAT
+      end if
+
+      if ( "${MINLON}" .eq. "" ) then 
+        res@mpMinLonF         = min(x@lon2d)
+      else
+        res@mpMinLonF         = $MINLON
+      end if
+
+      if ( "${MAXLON}" .eq. "" ) then 
+        res@mpMaxLonF         = max(x@lon2d)
+      else
+        res@mpMaxLonF         = $MAXLON
+      end if
+
+      res@mpCenterLonF      = (res@mpMinLonF + res@mpMaxLonF) / 2.
+      res@mpCenterLatF      = (res@mpMinLatF + res@mpMaxLatF) / 2.
+      plot = gsn_csm_contour_map(wks,x(timestep, :,:),res)
+      if ( "${TYPE}" .eq. "0") then   
+        plot = ColorNegDashZeroPosContour(plot,"red","magenta","blue")
+      end if
+    end if
+    end if
+
+    draw(plot)                                            ; draw
+    frame(wks)                                            ; advance frame
+
+  end do
+
+end
+
+
+EOF
+
+time ncl plot.ncl
+
+
+
+
+#outfile=`basename ${PFILE} .ps`
+#cat  ${PFILE}.[0-9]* | ps2pdf - ${IFILE##*/}.pdf
+#\rm -f ${PFILE}.[0-9]* tt ${OFILE} ${OFILE}.* mist*
+
+
+exit

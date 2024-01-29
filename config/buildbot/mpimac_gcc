@@ -1,0 +1,45 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+if test -n "${BB_NAME-}"; then
+  set -x
+fi
+
+if mpirun --version 2>/dev/null | grep 'Open MPI' >/dev/null; then
+  # Set the MPI launcher command with an additional argument (although the new
+  # build server has enough cores) and set a short temporary directory name if
+  # OpenMPI is used
+  # (see https://gitlab.dkrz.de/icon/icon/-/tree/icon-2.6.5-rc/config/generic#software-libraries):
+  set MPI_LAUNCH='mpirun --oversubscribe' BUILD_ENV="export TMPDIR='/tmp';"
+else
+  set dummy; shift
+fi
+
+${icon_dir}/config/generic/gcc "$@"
+
+make_job_count=10
+make -j ${make_job_count}
+
+if test -n "${BB_NAME-}"; then
+  "${icon_dir}/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh"
+  "${icon_dir}/scripts/buildbot_scripts/build_checks/check_remake.sh"
+  # Build the tests in parallel:
+  make -j ${make_job_count} check TESTS= XFAIL_TESTS=
+  # Run the tests serially:
+  make check
+  "${icon_dir}/scripts/buildbot_scripts/build_checks/check_git_untracked.sh"
+fi

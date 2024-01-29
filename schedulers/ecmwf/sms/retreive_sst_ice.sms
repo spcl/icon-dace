@@ -1,0 +1,53 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  RETREIVE_SST_ICE.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON CLIM SMS suite
+  Initial implementation: P. Ripodas, DWD (2013-01)
+
+  Corresponding author:
+    P Ripodas, DWD, mailto:maria-pilar.ripodas@dwd.de
+
+  Task objectives:
+  - retrieve SST and CI monthly means from MARS ERA interim 
+%end
+
+# include the header file for remote jobs
+%include <init_sc.h> 
+
+# -------------------------------------------------
+
+
+SCRIPTDIR=%SCPERM%/%USER_ICON_DIR%/scripts
+#SSTICEDIR=%SCPERMIII%/icon_input/sstice/%YYYY%
+SSTICEDIR=%SCTEMP%/%SUITE%/%EXPNUM%/input/sstice/%YYYY%
+mkdir -p $SSTICEDIR
+TMPDIR="${TEMP}"
+export SSTICEDIR TMPDIR
+
+myyear=%YYYY%
+echo %YYYY%
+echo $myyear
+
+${SCRIPTDIR}/preprocessing/mars4icon_monmean SST %YYYY%
+${SCRIPTDIR}/preprocessing/mars4icon_monmean CI  %YYYY%
+
+
+ls -lrt ${SSTICEDIR}/*%YYYY%*
+# -------------------------------------------------
+
+# include the "tail" file for remote jobs
+%include <end_sc.h>

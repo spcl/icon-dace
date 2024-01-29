@@ -1,0 +1,18 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+--check-colour red
+# Check whether the dependency graph is acyclic:
+--check-cycles
+# Check that each Fortran module is defined:
+--check-exists-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@
+# Check that each Fortran module is defined only once:
+--check-unique-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@
+# Check that all object files have unique basenames:
+--check-unique-basename *.@OBJEXT@

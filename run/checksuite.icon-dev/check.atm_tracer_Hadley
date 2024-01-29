@@ -1,0 +1,74 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------
+#
+# _bb_table_Description_  Tracer transport only experiment
+# _bb_table_Model_        prescribed, time dependent wind field with 3D transport
+
+#--------------------------------------------------------------------------------
+#
+# 1. Define the experiment and the files to be checked
+#
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names: 
+#
+export EXPERIMENT='atm_tracer_Hadley'
+
+# TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export TYPES='atm_3d_ml'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES='20080902T000000Z'
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+# 
+export RESTART_DATE='20080901T000000Z'
+
+#--------------------------------------------------------------------------------
+# 
+# 2. Define the checksuite mode
+# default: MD='rnmo'
+#
+
+#--------------------------------------------------------------------------------
+# 
+# 3. Launch the checksuite from run/
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+# load python packages
+case $HOST in
+    *daint*)
+        module load daint-gpu
+        module load cray-python/3.6.5.1
+        module load PyExtensions/3.6.5.1-CrayGNU-18.08
+        module load netcdf-python
+esac
+
+./icon-dev.checksuite -m base
+STATUS=$?
+
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit

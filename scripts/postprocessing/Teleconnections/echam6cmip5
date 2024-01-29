@@ -1,0 +1,165 @@
+&parameter  code=4          out_name=pr       standard_name=precipitation_flux  delete=0/
+&parameter  code=34         name=low_cld     delete=1      /
+&parameter  code=35         name=mid_cld     delete=1      /
+&parameter  code=36         name=hih_cld     delete=1      /
+&parameter  code=68         name=fage        delete=1      /
+&parameter  code=69         name=snifrac     delete=1      /
+&parameter  code=70         name=barefrac    delete=1     /
+&parameter  code=71         name=alsom       delete=1       /
+&parameter  code=72         name=alsobs      delete=1      /
+&parameter  code=73         name=sicepdw     delete=1      /
+&parameter  code=74         name=sicepdi     delete=1      /
+&parameter  code=75         name=tsicepdi    delete=1      /
+&parameter  code=76         name=sicepres    delete=1      /
+&parameter  code=77         name=ameltdepth  delete=1      /
+&parameter  code=78         name=ameltfrac    delete=1     /
+&parameter  code=79         name=albedo_vis_dir delete=1   /
+&parameter  code=80         name=albedo_nir_dir  delete=1   /
+&parameter  code=81         name=albedo_vis_dif  delete=1  /
+&parameter  code=82         name=albedo_nir_dif  delete=1  /
+&parameter  code=83         name=ocu             delete=1  /
+&parameter  code=84         name=ocv             delete=1  /
+&parameter  code=89         name=amlcorac         delete=1 /
+&parameter  code=90         name=amlheatac        delete=1 /
+&parameter  code=91         name=trfliac          delete=1 /
+&parameter  code=92         name=trflwac          delete=1 /
+&parameter  code=93         name=trfllac          delete=1 /
+&parameter  code=94         name=sofliac          delete=1 /
+&parameter  code=95         name=soflwac          delete=1 /
+&parameter  code=96         name=sofllac          delete=1 /
+&parameter  code=97         name=friac          out_name=sic       standard_name=sea_ice_ara_fraction delete=0 /
+&parameter  code=102        name=tsi              delete=1 /
+&parameter  code=103        name=tsw              delete=1                 standard_name=surface_temperature_where_open_sea delete=1 /
+&parameter  code=104        name=ustri            delete=1 /
+&parameter  code=105        name=vstri            delete=1 /
+&parameter  code=106        name=ustrw            delete=1 /
+&parameter  code=107        name=vstrw            delete=1 /
+&parameter  code=108        name=ustrl            delete=1 /
+&parameter  code=109        name=vstrl            delete=1 /
+&parameter  code=110        name=ahfliac          delete=1 /
+&parameter  code=111        name=ahflwac          delete=1 /
+&parameter  code=112        name=ahfllac          delete=1 /
+&parameter  code=113        name=evapiac          delete=1 /
+&parameter  code=114        name=evapwac          delete=1 /
+&parameter  code=115        name=evaplac          delete=1 /
+&parameter  code=116        name=az0i             delete=1 /
+&parameter  code=117        name=az0w             delete=1 /
+&parameter  code=118        name=az0l             delete=1 /
+&parameter  code=119        name=ahfsiac          delete=1 /
+&parameter  code=120        name=ahfswac          delete=1 /
+&parameter  code=121        name=ahfslac          delete=1 /
+&parameter  code=122        name=alsoi            delete=1 /
+&parameter  code=123        name=alsow            delete=1 /
+&parameter  code=124        name=alsol                       standard_name=soil_albedo delete=1  /
+&parameter  code=125        name=ahfice           delete=1 /
+&parameter  code=126        name=qres             delete=1 /
+&parameter  code=127        name=alake            delete=1 /
+&parameter  code=128        name=rintop           delete=1 /
+&parameter  code=129        name=geosp           out_name=z        standard_name=surface_geopotential factor=1./9.80665 delete=1  /
+&parameter  code=130        name=stp             out_name=ta       standard_name=air_temperature  delete=0 /
+&parameter  code=131        name=u               out_name=ua       standard_name=eastward_wind  delete=0/
+&parameter  code=132        name=v               out_name=va       standard_name=northward_wind delete=0 /
+&parameter  code=133        name=q               out_name=hus      standard_name=specific_humidity  delete=0/
+&parameter  code=134        name=aps             out_name=ps       standard_name=surface_air_pressure   delete=0/
+&parameter  code=135        name=omega           out_name=wap      standard_name=lagrangian_tendency_of_air_pressure delete=0 /
+&parameter  code=136        name=acdnc            delete=1 /
+&parameter  code=137        name=apmeb            delete=1 /
+&parameter  code=138        name=svo              delete=1 /
+&parameter  code=140        name=ws             out_name=mrso      standard_name=soil_moisture_content factor=1000  delete=0/
+&parameter  code=141        name=sn             out_name=snw       standard_name=surface_snow_amount  factor=1000 delete=0/
+&parameter  code=142        name=aprl                              standard_name=large_scale_rainfall_flux  delete=1/
+&parameter  code=143        name=aprc            out_name=prc      standard_name=convective_precipitation_flux  delete=0/
+&parameter  code=144        name=aprs            out_name=prsn     standard_name=snowfall_flux  delete=0/
+&parameter  code=145        name=vdis             delete=1 /
+&parameter  code=146        name=ahfs            out_name=hfss     standard_name=surface_upward_sensible_heat_flux  factor=-1  delete=0/
+&parameter  code=147        name=ahfl            out_name=hfls     standard_name=surface_upward_latent_heat_flux  factor=-1  delete=0/
+&parameter  code=148        name=stream                            standard_name=atmosphere_horizontal_streamfunction  delete=1/
+&parameter  code=149        name=velopot          delete=1 /
+&parameter  code=150        name=xivi            out_name=clivi    standard_name=atmosphere_cloud_ice_content delete=0 /
+&parameter  code=151        name=slp             out_name=psl      standard_name=air_pressure_at_sea_level delete=0 /
+&parameter  code=152        name=lsp              delete=1 /
+&parameter  code=153        name=xl              out_name=clw      standard_name=mass_fraction_of_cloud_liquid_water_in_air   delete=0            /
+&parameter  code=154        name=xi              out_name=cli      standard_name=mass_fraction_of_cloud_ice_in_air    delete=0  /
+&parameter  code=155        name=sd                                standard_name=divergence_of_wind  delete=1/
+&parameter  code=156        name=geopoth         out_name=zg       standard_name=geopotential_height delete=0 /
+&parameter  code=157        name=rhumidity       out_name=hur      standard_name=relative_humidity   factor=100 delete=0 / 
+&parameter  code=160        name=runoff          out_name=mrro     standard_name=runoff_flux delete=0 /
+&parameter  code=161        name=drain            delete=1 /
+&parameter  code=162        name=aclc             delete=1 /
+&parameter  code=163        name=aclcv            delete=1 /
+&parameter  code=164        name=aclcov          out_name=clt      standard_name=cloud_area_fraction  factor=100 delete=0/
+&parameter  code=165        name=u10             out_name=uas      standard_name=eastward_wind  delete=0/
+&parameter  code=166        name=v10             out_name=vas      standard_name=northward_wind delete=0 /
+&parameter  code=167        name=temp2           out_name=tas      standard_name=air_temperature  delete=0/
+&parameter  code=168        name=dew2                              standard_name=dew_point_temperature  delete=1/
+&parameter  code=169        name=tsurf           out_name=ts       standard_name=surface_temperature delete=0 /
+&parameter  code=170        name=xvar              delete=1/
+&parameter  code=171        name=wind10          out_name=sfcWind  standard_name=wind_speed delete=0 /
+&parameter  code=172        name=slm              delete=1 /
+&parameter  code=173        name=az0                               standard_name=surface_roughness_length  delete=1/
+&parameter  code=174        name=alb               delete=1/
+&parameter  code=175        name=albedo                            standard_name=surface_albedo delete=1 /
+&parameter  code=176        name=srads                             standard_name=surface_net_downward_shortwave_flux delete=1 /
+&parameter  code=177        name=trads                             standard_name=surface_net_downward_longwave_flux  delete=1 /
+&parameter  code=178        name=srad0           out_name=rst      standard_name=toa_net_downward_shortwave_flux delete=1 / 
+&parameter  code=179        name=trad0           out_name=rlut     standard_name=toa_outgoing_longwave_flux  factor=-1 delete=0 /
+&parameter  code=180        name=ustr            out_name=tauu     standard_name=surface_downward_eastward_stress  delete=0 /
+&parameter  code=181        name=vstr            out_name=tauv     standard_name=surface_downward_northward_stress delete=0  /
+&parameter  code=182        name=evap            out_name=evspsbl  standard_name=water_evaporation_flux  factor=-1  delete=0  /
+&parameter  code=183        name=xskew            delete=1 /
+&parameter  code=184        name=srad0d          out_name=rsdt     standard_name=toa_incoming_shortwave_flux delete=0 /
+&parameter  code=185        name=srafs                             standard_name=net_surface_solar_radiation_clear_sky  delete=1 /
+&parameter  code=186        name=trafs                             standard_name=net_surface_thermal_radiation_clear_sky delete=1 /
+&parameter  code=187        name=sraf0                             standard_name=toa_outgoing_shortwave_flux_assuming_clear_sky  factor=-1 delete=1 /
+&parameter  code=188        name=traf0           out_name=rlutcs   standard_name=toa_outgoing_longwave_flux_assuming_clear_sky  factor=-1 delete=0 /
+&parameter  code=189        name=sclfs             delete=1/
+&parameter  code=190        name=tclfs             delete=1/
+&parameter  code=191        name=sclf0             delete=1/
+&parameter  code=192        name=tclf0             delete=1/
+&parameter  code=193        name=wl                delete=1/
+&parameter  code=194        name=slf               delete=1/
+&parameter  code=195        name=ustrgw                            standard_name=atmosphere_eastward_stress_due_to_gravity_wave_drag  delete=1 /
+&parameter  code=196        name=vstrgw                            standard_name=atmosphere_northward_stress_due_to_gravity_wave_drag delete=1  /
+&parameter  code=197        name=vdisgw           delete=1/
+&parameter  code=198        name=vgrat                             standard_name=vegetation_area_fraction delete=1 /
+&parameter  code=199        name=orostd           delete=1/
+&parameter  code=200        name=vlt                               standard_name=leaf_area_index  delete=1/
+&parameter  code=201        name=t2max           out_name=tasmax   standard_name=air_temperature delete=0 /
+&parameter  code=202        name=t2min           out_name=tasmin   standard_name=air_temperature delete=0 /
+&parameter  code=203        name=srad0u          out_name=rsut     standard_name=toa_outgoing_shortwave_flux  factor=-1 delete=0 /
+&parameter  code=204        name=sradsu          out_name=rsus     standard_name=surface_upwelling_shortwave_flux_in_air   factor=-1 delete=0 /
+&parameter  code=205        name=tradsu          out_name=rlus     standard_name=surface_upwelling_longwave_flux_in_air  factor=-1  delete=0/
+&parameter                  name=grndflux         delete=1 /
+&parameter                  name=tsoil                             standard_name=soil_temperature delete=1  /
+&parameter  code=208        name=ahfcon            delete=1/
+&parameter  code=209        name=ahfres            delete=1/
+&parameter  code=210        name=seaice            delete=1/
+&parameter  code=211        name=siced             delete=1/
+&parameter  code=212        name=forest            delete=1/
+&parameter  code=213        name=gld               delete=1/
+&parameter  code=214        name=sni               delete=1/
+&parameter  code=215        name=rogl              delete=1/
+&parameter  code=216        name=wimax         out_name=sfcWindmax standard_name=wind_speed  delete=0/         
+&parameter  code=217        name=topmax        out_name=cct        standard_name=maximum_height_of_convective_cloud_tops       delete=0/
+&parameter  code=218        name=snmel         out_name=snm        standard_name=surface_snow_melt_flux  delete=0/
+&parameter  code=219        name=runtoc           delete=1 /
+&parameter  code=220        name=runlnd            delete=1/
+&parameter  code=221        name=apmegl            delete=1/
+&parameter  code=222        name=snacl                             standard_name=snow_accumulation_over_land  delete=1/
+&parameter  code=223        name=aclcac          out_name=cl       standard_name=cloud_area_fraction_in_atmosphere_layer  factor=100 delete=0/
+&parameter  code=224        name=tke              delete=1 /
+&parameter  code=225        name=tkem1            delete=1 /
+&parameter  code=226        name=fao                               standard_name=soil_type delete=1 /
+&parameter  code=227        name=rgcgn             delete=1/
+&parameter  code=228        name=sodif             delete=1/
+&parameter  code=229        name=wsmx            out_name=mrsomax  standard_name=soil_moisture_content_at_field_capacity factor=1000 delete=1 /
+&parameter  code=230        name=qvi             out_name=prw      standard_name=atmosphere_water_vapor_content  delete=0/
+&parameter  code=231        name=xlvi            out_name=clwvi    standard_name=atmosphere_cloud_condensed_water_content   delete=0/
+&parameter  code=232        name=glac                              standard_name=land_ice_area_fraction   delete=1/
+&parameter  code=60         name=var60           out_name=snc      standard_name=surface_snow_area_fraction  factor=100 delete=1/
+&parameter  code=234        name=rtype                             standard_name=type_of_convection delete=1/
+&parameter  code=235        name=abso4                             standard_name=antropogenic_sulfur_burden  delete=1/
+&parameter  code=236        name=ao3             out_name=tro3     standard_name=mole_fraction_of_ozone_in_air  factor=1.e+9 delete=0/
+&parameter  code=237        name=tropo                             standard_name=WMO_defined_tropopause_height  delete=1 /
+&parameter  code=259        name=windspeed       out_name=sfcWind  standard_name=wind_speed  delete=0/
+&parameter  code=260        name=precip          out_name=pr       standard_name=precipitation_flux  delete=0/

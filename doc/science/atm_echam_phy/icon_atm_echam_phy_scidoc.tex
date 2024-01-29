@@ -1,0 +1,320 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\documentclass[DIV14,BCOR1cm,11pt,a4paper,twoside]{scrreprt}
+%-----------------------------------------------------------------------------
+\usepackage{ifpdf}
+\ifpdf
+\usepackage[pdftex,
+            pdfstartview=FitV,
+            bookmarks=true,
+            pagebackref=true,
+            colorlinks=true,
+            linkcolor=blue,
+            citecolor=blue,
+            unicode
+           ]{hyperref}
+\hypersetup{
+  pdftitle={The atmospheric general circulation model ECHAM6: Model description},
+  pdfauthor={M. A. Giorgetta et al.}
+}
+\fi
+%-----------------------------------------------------------------------------
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage{lmodern}
+\usepackage[bf]{caption}
+\usepackage{xcolor}
+\usepackage{longtable}
+\usepackage{amsmath}
+\usepackage{amssymb,amsthm}
+\usepackage{listings}
+\usepackage{makeidx}
+\usepackage{fancyhdr}
+\usepackage{float}
+\usepackage{textcomp}
+\usepackage{alltt}
+\usepackage{graphicx}
+\usepackage{natbib}
+\usepackage{xtab}
+\usepackage{units}
+%\usepackage{slashbox}
+%-----------------------------------------------------------------------------
+\setcounter{topnumber}{10}
+\setcounter{bottomnumber}{10}
+\setcounter{totalnumber}{12}
+%-----------------------------------------------------------------------------
+\renewcommand{\topfraction}{1.0}
+\renewcommand{\bottomfraction}{1.0}
+\renewcommand{\textfraction}{0.0}
+\renewcommand{\arraystretch}{1.2}
+
+%-----------------------------------------------------------------------------
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{2ex plus 0.2ex minus 0.2ex}
+%-----------------------------------------------------------------------------
+\definecolor{mpggreen}{RGB}{0,119,112}
+\definecolor{mpggrey}{RGB}{209,206,198}
+\definecolor{darkred}{RGB}{181,31,56}
+%-----------------------------------------------------------------------------
+\lstnewenvironment{fortran}
+{\lstset{language=[95]Fortran,%
+basicstyle=\ttfamily\footnotesize\color{mpggreen},%
+commentstyle=\ttfamily\color{darkred},%
+backgroundcolor=\color{mpggrey!10},%
+frame=shadowbox,%
+rulesepcolor=\color{mpggreen}}}{}
+%
+\lstnewenvironment{ksh}
+{\lstset{language=ksh,%
+basicstyle=\ttfamily\footnotesize\color{mpggreen},%
+commentstyle=\ttfamily\color{darkred},%
+backgroundcolor=\color{mpggrey!10},%
+frame=shadowbox,%
+rulesepcolor=\color{mpggreen}}}{}
+%-----------------------------------------------------------------------------
+\newcommand{\note}[1]{
+\fbox{\begin{minipage}{15cm}{#1}\end{minipage}}\marginpar\textbf{NOTE}
+}
+%-----------------------------------------------------------------------------
+\newcommand{\echam}{\color{black}\texttt{ECHAM6}\color{black}}
+\newcommand{\icon}{\color{black}\texttt{ICON}\color{black}}
+\newcommand{\mpiom}{\color{black}\texttt{MPIOM}\color{black}}
+\newcommand{\jsbach}{\color{black}\texttt{JSBACH}\color{black}}
+%-----------------------------------------------------------------------------
+\newcommand{\dnd}[2]      {\frac {\partial #1} {\partial #2} }
+\newcommand{\ddnd}[2]    {\dfrac {\partial #1} {\partial #2} }
+\newcommand{\ovl}         {\overline}
+\newcommand{\e}[1]        {\;\mbox{e}^{#1}}
+\newcommand{\grad}        {\textcelsius}
+\newcommand{\mumum}       {$[\mathrm{\mu m}]$}
+\newcommand{\eref}[1]     {(\ref{#1})}
+\newcommand{\cw}[1]       {\textcolor{white}{#1}}
+\newcommand{\tcr}[1]      {\textcolor{red}{#1}}
+\newcommand{\V}[1]       {{\bf #1}}
+\newcommand{\trunc}[1]   {\mathcal{O}\left(#1\right)}
+\newcommand{\hl}         {\hat{l}}
+\newcommand{\bdd}        {_{_{D\!D}}}
+\newcommand{\bhd}        {_{_{H\!D}}}
+\newcommand{\efdt}       {\tau^*/\Delta t_{_D}}
+\newcommand{\turb}       {\mbox{\footnotesize turb}}
+\newcommand{\sfc}        {\mbox{\footnotesize sfc}}
+\newcommand{\pbl}        {\mbox{\footnotesize pbl}}
+\newcommand{\B}[1]      {{\mbox{\footnotesize #1}}}
+\newcommand{\vtmpcr}     {\underline{\epsilon}\,} 
+\newcommand{\nst}        {{\mbox{\footnotesize N}_{\mbox{\footnotesize st}}}}
+
+\makeindex
+
+\setcounter{tocdepth}{2}
+\setcounter{secnumdepth}{2}
+
+\renewcommand{\footrulewidth}{0.4pt}
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+\begin{document}
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+\thispagestyle{empty}
+
+\renewcommand{\footnoterule}{\rule{0pt}{0pt}\vspace{0pt}}
+
+%\begin{center}
+%\ifpdf
+%\includegraphics{../images/MPI_Logo.pdf}
+%\else
+%\includegraphics[width=0.8\textwidth]{logos/Part3.eps}
+%\fi
+%\end{center}
+
+\vspace{3cm}
+
+\begin{center}
+{\usekomafont{sectioning}\usekomafont{chapter} 
+The atmospheric general circulation model ICON --- ECHAM physics\\[0.5ex]
+\rule{5cm}{0.7mm}\\[2.5ex]
+Model description
+}
+\end{center}
+
+\vspace{3cm}
+
+\begin{center}
+{\usekomafont{sectioning}\usekomafont{section} 
+M.A.~Giorgetta, S.~Rast\footnote{sebastian.rast@mpimet.mpg.de}}
+
+%R.~Brokopf, K.--H.~Wieners, J.~Bader, T.~Crueger, M.A.~Giorgetta, C.~Hohenegger,
+%S.~Kinne, L.~Kornblueh, T.~Krismer, E.~Manzini, T.~Mauritsen,
+%B.~M\"obis, R.~Pincus, E.~Roeckner, H.~Schmidt, B.~Stevens}
+\end{center}
+
+\vspace{2cm}
+
+\begin{center}
+{\usekomafont{sectioning}\usekomafont{section} 
+Max Planck Institute for Meteorology, Hamburg, Germany\\
+
+\vspace{2cm}
+
+\today}
+\end{center}
+%-----------------------------------------------------------------------------
+\newpage
+\rule{0cm}{1cm}
+\thispagestyle{empty}
+\newpage
+
+%\cleardoublepage
+
+\tableofcontents
+
+\listoftables
+
+\listoffigures
+
+\cleardoublepage
+
+\chapter{Introduction}
+
+The \icon{} model comprises a general circulation model of the
+atmosphere, a land model, and an ocean circulation model. It is
+developed at the Deutscher Wetterdienst (DWD), Offenbach and the Max Planck
+Institute for Meteorology, Hamburg. 
+
+The general circulation of the atmosphere and the ocean are calculated
+on a triangular grid derived from an icosahedron. All differential
+operators are calculated on this triangular grid. Local refinements
+can be used for a higher resolution in certain regions of the globe
+(staggered grids). The general
+circulation of the atmosphere is treated by a set of equations describing
+a non--hydrostatic flow. There are several choices for the subgrid--scale  
+physics aiming at the specific needs of numerical weather prediction
+(NWP--physics), describing large eddies (LES--physics), and the
+\echam--physics suitable for climate simulations. This document
+focuses on the description of the atmosphere using \echam--physics and
+the land model. 
+
+The \echam--physics comprises it's own radiation scheme PSRAD that is
+based on the RRTMG scheme that was already used in the \echam6
+model. The distribution of aerosol optical properties in space and
+time are completed by the very flexible ``simple plume'' model for the
+description of the effect of the anthropogenic aerosols on
+radiation. Convection, vertical diffusion, clouds, and gravity waves are
+parametrized as in \echam6.
+
+
+\part{Atmosphere}
+\include{model_equations_ICONAM}
+
+\include{terrain_following_ICONAM}
+
+\include{vortex_bracket_ICONAM}
+
+\include{specials_triangle_ICONAM}
+
+%\include{atmosphere/hdiff}
+
+%\include{atmosphere/radiation}
+
+%\include{atmosphere/vdiff}
+
+%\include{atmosphere/convection}
+
+%\include{atmosphere/convection_trigger}
+
+%\include{atmosphere/cloud}
+
+%\include{atmosphere/gwdrag}
+
+%\include{atmosphere/sso}
+
+%\include{atmosphere/methox}
+
+\chapter{Land}
+The documentation for JSBACH is in progress. Most of the JSBACH components can be found in (\cite{raddatz2007}) and under http://www.mpimet.mpg.de/wissenschaft/land-im-erdsystem/globale-vegetationsmodellierung/jsbach-publikationen.html. For further information please contact Christian Reick (christian.reick@zmaw.de).
+
+\chapter{Slab Ocean and Sea Ice}
+% Juergen Bader
+%\include{atmosphere/slab_ocean}
+
+%\section{Sea Ice}
+%\include{atmosphere/seaice}
+%\include{atmosphere/sea_ice_prescribed}
+% Juergen Bader
+
+
+\chapter{Atmosphere surface coupling}
+The documentation for JSBACH is in progress. Most of the JSBACH components can be found in (\cite{raddatz2007}) and under http://www.mpimet.mpg.de/wissenschaft/land-im-erdsystem/globale-vegetationsmodellierung/jsbach-publikationen.html. For further information please contact Christian Reick (christian.reick@zmaw.de).
+
+%\include{atmosphere/lake_model}
+%\include{atmosphere/albedo}
+
+%\section{Over land}
+
+%\section{Over sea water}
+
+%\subsection{If coupled to MPIOM}
+
+%\subsection{If prescribed}
+
+%\section{Over sea ice}
+
+%\subsection{If coupled to MPIOM}
+
+%\subsection{If prescribed}
+
+\chapter{Model resolutions and resolution dependent parameters}
+%++ T. Mauritsen
+%\include{atmosphere/ECHAM6_resolutions}
+% T. Mauritsen
+
+\chapter{External data}
+
+%++S.Rast
+%\include{externaldata/solar}
+%--S.Rast
+%\section{CO2, CH4, N2O, CFCs}
+
+%++M.Esch
+%\include{externaldata/ghg}
+%--M.Esch
+
+%\subsection{Historic}
+%\subsection{Scenarios}
+
+%++S.Rast
+%\include{externaldata/ozone}
+
+%\include{externaldata/aerosols}
+%--S.Rast 
+
+
+%\section{Sea surface temperature and ice cover}
+%\subsection{Historic}
+%\subsection{Climatologies}
+%\subsection{Aqua planet}
+%\include{externaldata/ssts}
+
+%\section{Land data}
+%\subsection{Land sea maps}
+%There are a couple of land-sea masks, dependent on the horizontal resolution of ECHAM6 and MPI-OM. 
+%Table \ref{tab:Masks} shows the available masks.
+
+\bibliographystyle{../wileyqj}
+\addcontentsline{toc}{chapter}{References}
+\bibliography{../references-icon-science}
+
+%-----------------------------------------------------------------------------
+% End of text
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------
+\end{document}
+%-----------------------------------------------------------------------------
+%-----------------------------------------------------------------------------

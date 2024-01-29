@@ -1,0 +1,36 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+# Usage: create_list_tolerance
+# generate tolerances for all experiments.
+#
+# Usage: create_list_tolerance EXPERIMENT
+# Generate tolerance experiments for just one experiment
+# EXPERIMENT should not start with `exp.`
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+listname=tolerance
+./rmlist $listname
+./create_all_builders $listname
+
+./list_part_tolerance $listname "${1-}"
+
+# Tolerance references are only needed on CPU - turn off GPU builder
+./set_builder_flags Inactive --builders 'DAINT_GPU_nvidia' --list $listname
+./set_builder_flags Inactive --builders 'DAINT_GPU_nvidia_mixed' --list $listname
+./set_builder_flags Inactive --builders 'balfrin_gpu_nvidia' --list $listname
+./set_builder_flags Inactive --builders 'balfrin_gpu_nvidia_mixed' --list $listname
+
+./lslist $listname

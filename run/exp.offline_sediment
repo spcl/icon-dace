@@ -1,0 +1,207 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This script runs the offline sediment spinup for Hamocc
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+
+nproma=16
+
+# global timing
+start_date="1000-01-01T00:00:00Z"
+  end_date="9000-01-01T00:00:00Z"
+#-----------------------------------------------------------------------------
+
+# model timing
+restart_interval="P4000Y"             # 4000 years take < 1 hour on 8 compute notes (R2B4)
+checkpoint_interval="P4000Y"          # Need to set from_restart="no" after first run, as otherwise
+                                      # sediment from reference file is loaded again!
+
+offline_sediment="yes"
+from_restart="yes"     # if yes: the sediment is initialized with sediment from reference run 
+                       # if no: starts with empty sediment or continues the current run
+                       #        (if isRestartRun.sem is present)
+
+
+#### references and init
+# Reference run includes full ocean+hamocc
+# The sediment reference file has to have yearly mean data!
+# There can only be 1 timestep in the sediment reference file!
+reference_exp=ler0707        # id of reference experiment
+reference_year=3700          # year for fluxes and restart of reference run
+ocean_reference_folder="/work/mh0727/m300732/input/example_data"
+ocean_reference_flux_filename="${reference_exp}_hamocc_sediment_${reference_year}0101T000000Z.nc"
+ocean_restart_folder="/work/mh0727/m300732/input/example_data"
+ocean_reference_restart_filename=${reference_exp}"_restart_oce_${reference_year}0101T000000Z.nc"
+#
+#-----------------------------------------------------------------------------
+output_interval="P10Y"                  # 10 year output or less is sufficient
+file_interval="P2000Y"
+
+
+modelTimeStep="PT24H"   # 24 hours
+
+autoPostProcessing="false"                         # submit postprocessing job
+
+#-----------------------------------------------------------------------------
+# global resolution
+
+ocean_vertical_levels=40
+
+ocean_gridID="0036"
+ocean_refinement="R02B04"
+ocean_grid_name="icon_grid_${ocean_gridID}_${ocean_refinement}_O"
+ocean_grid=${ocean_grid_name}.nc
+ocean_grid_folder="/pool/data/ICON/grids/public/mpim/${ocean_gridID}"
+ocean_data_InputFolder="/pool/data/ICON/oes/input/r0004/${ocean_grid_name}"
+
+# HAMOCC
+lhamocc=".true."
+lbgcadv=".true."
+loffsed=".true."
+
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma         = $nproma
+ p_test_run     = .false.
+ l_fast_sum     = .false.
+ num_prefetch_proc = 0 
+ pio_type       = 0
+ num_io_procs   = 0
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grid}"
+ use_dummy_cell_closure      = .TRUE.
+ use_duplicated_connectivity = .FALSE.
+/
+&dynamics_nml
+ iequations                  = -1                               ! -1: hydrost. ocean model
+/
+&run_nml
+ modelTimeStep               = "${modelTimeStep}"
+ output                      = 'nml'                            ! namelist controlled output scheme
+ activate_sync_timers        = .TRUE.
+ profiling_output            = 2                                ! aggregated: 1; detailed: 2; in files: 3
+ msg_timestamp               = .FALSE.
+ timers_level                = 10
+ debug_check_level           = 1
+ restart_filename            = "${EXPNAME}_restart_oce_<rsttime>.nc"
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc_sediment"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${output_interval}"
+  file_interval    = "${file_interval}"
+  output_grid      = .TRUE.
+  mode             = 1
+  operation        = 'mean'
+  ml_varlist       =  'group:HAMOCC_SED'
+/
+
+&dbg_index_nml
+  idbg_mxmn                  = 1                                ! initialize MIN/MAX  debug output
+  idbg_val                   = 0                                ! initialize one cell debug output
+  idbg_slev                  = 1                                ! initialize start level for debug output
+  idbg_elev                  = 5                                ! initialize end level for debug output
+  dbg_lat_in                 = 30.0                             ! latitude location of one cell debug output
+  dbg_lon_in                 = -30.0                            ! longitude location of one cell debug output
+  str_mod_tst                ='oceanCouplng'                    ! define modules to print out in debug mode
+  str_mod_tst                = 'all'                            ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+! 40 unevenly spaced levels used by MPIOM/GR30
+ n_zlev             =   $ocean_vertical_levels
+ dzlev_m(1:40)      =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                       100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+                       220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+/
+&ocean_physics_nml
+  lhamocc                                    = ${lhamocc}
+  lbgcadv                                    = ${lbgcadv}
+  lsediment_only                             = ${loffsed}
+/                                           
+&hamocc_nml
+l_cpl_co2                         = .FALSE.
+l_bgc_check                       = .FALSE.   ! mass check at every time step
+l_implsed                         = .FALSE.    ! implicit sediment formulation
+l_init_bgc                        = .FALSE.
+hion_solver                       = 1
+/
+EOF
+#
+if [ "x${from_restart}" = "xyes" ]; then
+cat >> ${ocean_namelist} << EOF
+&ocean_initialConditions_nml
+  initial_salinity_type                      = 0                ! 0: none, 1: read S from initial_state.nc
+  initial_temperature_type                   = 0                ! 0: none, 1: read T from initial_state.nc
+  initialize_fromRestart                     = .TRUE.
+/
+EOF
+else
+cat >> ${ocean_namelist} << EOF
+&ocean_initialConditions_nml
+  initial_salinity_type                      = 0                ! 0: none, 1: read S from initial_state.nc
+  initial_temperature_type                   = 0                ! 0: none, 1: read T from initial_state.nc
+  initialize_fromRestart                     = .FALSE.
+/
+EOF
+fi
+#
+cat >> ${ocean_namelist} << EOF
+&io_nml
+  lkeep_in_sync                              = .TRUE.           ! sync after each timestep
+/
+EOF
+
+add_required_file ${basedir}/run/${ocean_namelist} ./
+
+#-----------------------------------------------------------------------------
+#
+# Ocean grid
+#
+add_required_file ${ocean_grid_folder}/${ocean_grid} ./
+#
+
+# surface boundary condition
+add_link_file ${ocean_data_InputFolder}/R2B4_ocean-flux.nc     ocean-flux.nc
+add_link_file ${ocean_data_InputFolder}/R2B4_ocean-relax.nc    ocean-relax.nc
+
+
+
+## HAMOCC forcing files
+#
+
+# fluxes into sediment
+# FIXME: this is still a private path
+add_link_file ${ocean_reference_folder}/${ocean_reference_flux_filename} particle_fluxes.nc
+
+# initital state for sediment
+if [  "x${from_restart}"  = "xyes" ]; then
+  add_link_file ${ocean_restart_folder}/${ocean_reference_restart_filename} restart_oce_DOM01.nc
+fi
+#
+#-----------------------------------------------------------------------------

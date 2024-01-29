@@ -1,0 +1,177 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#NOTE: Test runs are very sensitive to t_ref in the equation of state
+#USE t_ref = 5 for lock exchange and t_ref = 10 for overflow
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-02T00:00:00Z"
+# restart=".true."
+#-----------------------------------------------------------------------------
+# model timing
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+output_interval="PT1H"                  # ocean model output interval in days
+daily="P1D"
+monthly="P1M"
+file_interval="P50Y"
+modelTimeStep="PT01M"
+autoPostProcessing="false"                         # submit postprocessing job
+#steps_per_file=610                               # assigned output intervals per file interval
+#-----------------------------------------------------------------------------
+# global resolution
+iforc=10
+forcing_timescale=365  # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; 365/else = daily data
+init_relax=1
+ocean_vertical_levels=20
+ocean_grids="AquaPlanet_Icos_0158km_mirror.nc"    
+grids_folder=/pool/data/ICON/oes/grids/AquaPlanets/
+ocean_grids="Ocean_Channel_100000x64000_500m.nc"    
+grids_folder=/scratch/local1/MPI/Projects/GridGenerator/grids/
+#-----------------------------------------------------------------------------
+#icon_data_rootFolder=/pool/data/ICON
+#
+# write namelist parameters
+# -------------------------
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma         = $nproma
+ p_test_run     = .false.
+ l_fast_sum     = .true.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+ iequations           = -1           ! -1: hydrost. ocean model
+/
+&run_nml
+ modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds
+ output               = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output     = 1
+ msg_timestamp        = .FALSE.
+ timers_level         = 10
+ debug_check_level    = 5
+ restart_filename     = "${EXPNAME}_restart_oce_<rsttime>.nc"
+/
+&dbg_index_nml
+ idbg_mxmn=2                     ! initialize MIN/MAX  debug output
+/
+&ocean_dynamics_nml
+! 40 unevenly spaced levels used by MPIOM/GR30
+ n_zlev             =   $ocean_vertical_levels
+ dzlev_m(1:20)      =  1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,
+                       1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,   1.0,
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+
+  select_solver                   = 4       ! 1=gmres_oce_old; 2=ocean_restart_gmres, 3=mixed precisison restart 
+                                            ! 4=CG (default) 5=CGJ 6=BiCG 7=GMRES restart (legacy) 8=MINRES
+  use_absolute_solver_tolerance   = .true.
+  solver_tolerance                = 1.0E-13 ! this may further be reduced
+
+  select_lhs                      = 1       ! 1=operator based (default) 2=matrix based
+  l_lhs_direct                    = .false. ! .true.= use lhs implementation directly  .false.= matrix scanner (default) 
+  solver_FirstGuess               = 2       ! 0=start from zeros 1=last timestep smoothed 2=last timestep (default) 
+
+  fast_performance_level          = 200       ! performance level 12: for cell-based; 5: default
+  use_continuity_correction       = .TRUE.    ! height adjustment according to vertical velocity in dynamics
+  cfl_check                       = .FALSE.
+  cfl_write                       = .FALSE.
+
+  i_bc_veloc_top                  =   0
+  i_bc_veloc_bot                  =   0       ! 0: (def) bottom friction off, 1: on
+  coriolis_type                   =   0      !None
+/
+&ocean_tracer_transport_nml
+  FLUX_CALCULATION_HORZ =  5 ! 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+  FLUX_CALCULATION_VERT =  7 ! 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  fct_low_order_flux    = 1      ! horizontal low  order method: 1=upwind (def), no other implemented
+  fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
+  fct_limiter_horz      = 100    ! zalesak
+  threshold_min_T       = -2.0   ! to avoid abort
+/
+&ocean_horizontal_diffusion_nml
+  laplacian_form = 1                   ! 1=curlcurl-graddiv
+  VelocityDiffusion_order = 1          ! 21=biharmonic+laplacian (for the laplacian leith)
+
+  HarmonicViscosity_scaling     =  1
+  HarmonicViscosity_reference   =  1.0E+2  !  [m2/s] constant horizontal viscosity coefficient for velocity
+  HarmonicViscosity_background  =  0.0  
+
+  TracerHorizontalDiffusion_scaling          = 1
+  Temperature_HorizontalDiffusion_Background = 0.0
+  Temperature_HorizontalDiffusion_Reference  = 0 !  40
+  Salinity_HorizontalDiffusion_Background    = 0.0
+  Salinity_HorizontalDiffusion_Reference     = 0 !  40
+/
+&ocean_vertical_diffusion_nml
+  PPscheme_type                            = 0 ! Constant
+  velocity_VerticalDiffusion_background    =   0.0     ! [m2/s]  vertical background viscosity coefficient for velocity
+  Temperature_VerticalDiffusion_background =   0.0     ! [m2/s]  vertical background diffusion coefficient for temperature
+  Salinity_VerticalDiffusion_background    =   0.0     ! [m2/s]  vertical background diffusion coefficient for salinity
+/
+
+&ocean_physics_nml
+  eos_type                        =  5            ! equation of state type 
+/
+&ocean_forcing_nml
+  iforc_oce                       = 10            ! ocean forcing
+/
+&ocean_initialConditions_nml
+  initial_salinity_type      = 200
+  initial_salinity_top       = 35.0
+  initial_salinity_bottom    = 35.0
+  initial_temperature_type   = 241
+/                                    
+&ocean_diagnostics_nml
+   diagnostics_level            = 1
+   gibraltar(1:10)              = 1367,1369
+   denmark_strait(1:10)         = 1411,1443
+   drake_passage(1:10)          = 7167,7201,7203,7288,7290,7505
+   indonesian_throughflow(1:20) = 2114,2118,2117,2120,4242,4245,4343,4349,4340,4350,4250,4615,4611,4616
+   scotland_iceland(1:10)       = 1240,1439,1238,1249,1248
+   mozambique(1:10)             = 1704,1688,1707,4200
+   framStrait(1:10)             = 116,118,1462
+   beringStrait(1:10)           = 693,721
+   barentsOpening(1:10)         = 68,65,67,42
+   agulhas(1:10)                = 8024,8022
+   agulhas_long(1:10)           = 8024,8022,6036
+   agulhas_longer(1:10)         = 8024,8022,6036,6025
+/
+&io_nml
+  restart_file_type = 5
+  write_last_restart = .true.
+/
+&output_nml
+  output_filename  = "${EXPNAME}_inst"
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${output_interval}"
+  file_interval    = "${file_interval}"
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'group:oce_default','group:oce_essentials','group:oce_config'
+/
+EOF
+#-----------------------------------------------------------------------------

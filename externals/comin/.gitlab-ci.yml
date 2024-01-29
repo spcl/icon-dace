@@ -1,0 +1,142 @@
+# -------------------------------------------------------------------------
+# CI Config for the ICON ComIn code.
+#
+# @author 06/2023 :: F. Prill, DWD  <comin@icon-model.org>
+# -------------------------------------------------------------------------
+
+
+# Stages
+#
+stages:
+  - build-ci
+  - build
+  - test
+  - documentation
+  - publish
+
+variables:
+  RELEASE_TAG: latest
+  GIT_SUBMODULE_STRATEGY: recursive
+  GIT_SUBMODULE_FORCE_HTTPS: "true"
+
+
+  COMPILE_BASE_IMAGE_NAME: compile-base
+  COMPILE_BASE_DOCKERFILE: Dockerfile.$COMPILE_BASE_IMAGE_NAME
+  COMPILE_BASE_RELEASE_IMAGE: $CI_REGISTRY_IMAGE/$COMPILE_BASE_IMAGE_NAME:$RELEASE_TAG-$CI_COMMIT_REF_NAME
+
+#
+# Build Docker Base Image for CI compile image
+#
+build-compile-base-image:
+  stage: build-ci
+  image:
+    name: gcr.io/kaniko-project/executor:debug
+    entrypoint: [""]
+  script:
+    - echo "{\"auths\":{\"$CI_REGISTRY\":{\"username\":\"$CI_REGISTRY_USER\",\"password\":\"$CI_REGISTRY_PASSWORD\"}}}" > /kaniko/.docker/config.json
+    - /kaniko/executor --reproducible --context $CI_PROJECT_DIR
+        --dockerfile $CI_PROJECT_DIR/config/dockerfiles/$COMPILE_BASE_DOCKERFILE
+        --destination $COMPILE_BASE_RELEASE_IMAGE --cache=true --cache-copy-layers=true --cache-ttl=168h
+  tags:
+    - docker, specific
+  only:
+    changes:
+      - config/dockerfiles/Dockerfile.compile-base
+
+.lint:
+  stage: lint
+  image: $COMPILE_BASE_RELEASE_IMAGE
+  tags:
+    - docker, specific
+  script:
+    - fprettify --diff --disable-whitespace --line-length 120 --indent 2 --recursive . |& tee linter_output
+    - test -z "$(cat linter_output)"
+
+#
+# Build binary from source code
+#
+nvhpc-build:
+  stage: build
+  image: nvcr.io/nvidia/nvhpc:23.11-devel-cuda12.3-ubuntu22.04
+  tags:
+    - docker, specific
+  script:
+    - apt-get update
+    - apt-get install -y --no-install-recommends cmake libnetcdff-dev liblapack-dev xxd python3-dev python3-numpy python3-mpi4py python3-pip
+    - apt-get clean
+    - rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*
+    - bash config/nvhpc_build.sh
+
+#
+# Build binary from source code
+#
+gcc-build:
+  stage: build
+  image: $COMPILE_BASE_RELEASE_IMAGE
+  tags:
+    - docker, specific
+  script:
+    - bash config/gcc_build.sh
+    - (! grep -C 3 -i "warn" build/build.log) || exit 166
+  allow_failure:
+    exit_codes: 166
+  artifacts:
+    when: always
+    paths:
+      - build
+
+gcc-test:
+  stage: test
+  image: $COMPILE_BASE_RELEASE_IMAGE
+  tags:
+    - docker, specific
+  dependencies:
+    - gcc-build
+  needs:
+    - gcc-build
+  script:
+    - cd build
+    - ctest --output-on-failure --output-junit junit.xml
+  artifacts:
+    when: always
+    paths:
+      - build/junit.xml
+    reports:
+      junit:
+        - build/junit.xml
+
+doxygen:
+  stage: documentation
+  variables:
+    PLANTUML_JAR: '/usr/share/java/plantuml.jar'
+  needs:
+    - gcc-build
+  script:
+    - doxygen --version
+    - cd build/doc
+    - doxygen Doxyfile
+  artifacts:
+    expire_in: 30min
+    paths:
+    - build/doc/html
+  tags:
+  - doxygen
+
+pages:
+  stage: publish
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - doxygen
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
+    - when: never
+  script:
+    - mv build/doc/html public
+  artifacts:
+    expire_in: 30min
+    paths:
+    - public
+  tags:
+  - doxygen

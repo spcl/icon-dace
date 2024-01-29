@@ -1,0 +1,107 @@
+#%# ICON
+#%#
+#%# ------------------------------------------
+#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%# Contact information: icon-model.org
+#%# See AUTHORS.TXT for a list of authors
+#%# See LICENSES/ for license information
+#%# SPDX-License-Identifier: BSD-3-Clause
+#%# ------------------------------------------
+definitions:
+  atm2oce: &atm2oce
+    src_component: %{atmo.name}
+    src_grid: icon_atmos_grid
+    tgt_component: %{ocean.name}
+    tgt_grid: icon_ocean_grid
+    coupling_period: %{timestep}
+    time_reduction: average
+    src_lag: %{atmo.lag}
+    tgt_lag: %{ocean.lag}
+  oce2atm: &oce2atm
+    src_component: %{ocean.name}
+    src_grid: icon_ocean_grid
+    tgt_component: %{atmo.name}
+    tgt_grid: icon_atmos_grid
+    coupling_period: %{timestep}
+    time_reduction: average
+    src_lag: %{ocean.lag}
+    tgt_lag: %{atmo.lag}
+  interp_stacks:
+    hcsbb_interp_stack: &hcsbb_interp_stack
+      interpolation:
+        - bernstein_bezier
+        - nnn:
+            n: 4
+            weighted: arithmetic_average
+        - fixed:
+            user_value: -999.9
+    conserv_interp_stack: &conserv_interp_stack
+      interpolation:
+        - conservative:
+            order: 1
+            enforced_conservation: false
+            partial_coverage: true
+            normalisation: fracarea
+        - fixed:
+            user_value: -999.9
+#%  if include_river_runoff is set:
+    spmap_interp_stack: &spmap_interp_stack
+      interpolation:
+#%    set spread=river_runoff_spread|d(0.0)|float
+#%    set weight_file=runoff_weight_file|d('')
+#%    if spread > 0.0 or weight_file:
+        - source_to_target_map:
+#%      if spread > 0.0:
+            spread_distance: %{spread}
+            weighted: arithmetic_average
+#%      endif
+#%      if weight_file:
+            weight_file_name: %{weight_file}
+#%      endif
+#%    else:
+        - source_to_target_map
+#%    endif
+#%#  /////include_river_runoff is set    
+#%- endif
+
+timestep_unit: ISO_format
+calendar: %{calendar}
+coupling:
+  - <<: [ *atm2oce, *hcsbb_interp_stack ]
+    mapping_side: source
+    field: [surface_downward_eastward_stress,
+            surface_downward_northward_stress,
+            10m_wind_speed]
+  - <<: [ *atm2oce, *conserv_interp_stack ]
+    mapping_side: source
+    field: [surface_fresh_water_flux,
+            total_heat_flux,
+            atmosphere_sea_ice_bundle]
+  - <<: [ *oce2atm, *conserv_interp_stack ]
+    mapping_side: source
+    field: [sea_surface_temperature,
+            ocean_sea_ice_bundle]
+  - <<: [ *oce2atm, *conserv_interp_stack ]
+    mapping_side: source
+    field: [eastward_sea_water_velocity,
+            northward_sea_water_velocity]
+#%  if include_river_runoff is set:
+  - <<: [ *atm2oce, *spmap_interp_stack ]
+    field: river_runoff
+#%  endif
+#%  if include_co2 is set:
+  - <<: [ *atm2oce, *hcsbb_interp_stack ]
+    mapping_side: source
+    field: [co2_mixing_ratio] 
+  - <<: [ *oce2atm, *conserv_interp_stack ]
+    mapping_side: source
+    field: [co2_flux] 
+#%#  /////include_co2 is set
+#%- endif
+#%  if include_slp is set:
+  - <<: [ *atm2oce, *conserv_interp_stack ]
+    mapping_side: source
+    field: [sea_level_pressure] 
+#%#  /////include_slp is set
+#%- endif
+EOF

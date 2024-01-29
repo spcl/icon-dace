@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <chemtracer id="TRCH3COCH3" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">5.808E-2</mol_weight>
+    <?source_lifetime Weimer (2015), p. 9 ?>
+    <lifetime type="real">1728000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <emiss_BIO type="char" inum_levs="1">CH3COCH3_BIO_MEGAN-MACC</emiss_BIO>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRH2SO4" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">9.80E-2</mol_weight>
+    <?source_lifetime Fiedler et al., ACP, 2005?>
+    <lifetime type="real">1800</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <c_solve type="char">lt</c_solve>
+    <init_mode type="int">1</init_mode>
+    <init_name type="char">H2SO4</init_name>
+    <dataset01 type="char" cvar_name="H2SO4" rbottom_height="10000" rupper_height="40000">CCMI-ETH_MPIC1.1</dataset01>
+  </chemtracer>
+  <chemtracer id="TRC3H8" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">4.40956E-2</mol_weight>
+    <?source_lifetime Hodnebrog et al, Atmos. Sci. Lett., 2018 ?>
+    <lifetime type="real">1123200</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <emiss_std type="real" inum_levs="5" imode="1">1.e-11</emiss_std>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRC5H8"  full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.812E-2</mol_weight>
+    <?source_lifetime Weimer (2015), p. 16 ?>
+    <lifetime type="real">8640</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <unit type="char">mol mol-1</unit>
+    <emiss_onlBIO type="int" inum_levs="1">1</emiss_onlBIO>
+    <init_mode type="int">0</init_mode>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+  <chemtracer id="TRDMS" full="FALSE" chemtr="TRUE">
+    <tag001 type="char">chemtr</tag001>
+    <mol_weight type="real">6.21E-2</mol_weight>
+    <?source_lifetime Ullwer (2017) ?>
+    <lifetime type="real">216000</lifetime>
+    <transport type="char"> hadv52aero </transport>
+    <init_mode type="int">  0 </init_mode>
+    <unit type="char">mol mol-1</unit>
+    <online type="char">ON</online>
+    <c_solve type="char">lt</c_solve>
+  </chemtracer>
+</tracers>

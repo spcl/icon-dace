@@ -1,0 +1,48 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\subsection{Atmospheric fields}  
+\begin{tabular}{l l l l}  
+& \parbox{.15\textwidth}{name} & \parbox{.65\textwidth}{description} & 
+\parbox{.1\textwidth}{phys.dim.} \\ \hline  
+& \rule{4ex}{0pt} & \\[-10pt]  
+ & \texttt{cpair}   & heat capacity at constant pressure & $J/K kg$ \\  
+ & \texttt{cvair}   & heat capacity at constant volume & $J/K kg$ \\  
+ & \texttt{div}   & divergence & $1/s$ \\  
+ & \texttt{geo}   & geopotential & $m^2/s^2$ \\  
+ & \texttt{mass}   & total mass & $kg$ \\  
+ & \texttt{massX}   & partial mass  of component X, 
+    e.g. H$_2$O \texttt{massh2o}& $kg/m^3$ \\  
+ & \texttt{pres}   & pressure & $Pa$ \\  
+ & \texttt{rho}   & total density & $kg/m^3$ \\  
+ & \texttt{rhoX}   & partial density  of component X, 
+    e.g. H$_2$O \texttt{rhoh2o}& $kg/m^3$ \\  
+ & \texttt{temp}   & temperature & $K$ \\ 
+ & \texttt{tempv}   & virtual temperature & $K$ \\
+ & \texttt{u}	& reconstructed velocity in zonal direction & $m/s$ \\
+ & \texttt{v}	& reconstructed velocity in meridional direction & $m/s$\\
+ & \texttt{vn}   & normal velocity across triangle edge & $m/s$ \\ 
+ & \texttt{vort}   & vorticity & $1/s$ \\  
+ & \texttt{vt}   & tangential velocity along triangle edge 
+ & $m/s$ \\[5pt]
+\multicolumn{4}{r}{\small\slshape continued on next page}  
+\end{tabular}  
+
+\begin{tabular}{l l l l}  
+& \parbox{.15\textwidth}{name} & \parbox{.65\textwidth}{description} & 
+\parbox{.1\textwidth}{phys.dim.} \\ \hline  
+& \rule{4ex}{0pt} & \\[-10pt]  
+  & \texttt{w}	& vertical velocity in height system & $m/s$ \\
+ & \texttt{wind}   & 3d velocity vector & $m/s$ \\ 
+ & \texttt{wpress}   & vertical velocity in pressure system ($\omega$) 
+ & $Pa/s$ \\
+* & \texttt{whsigm}   & vertical velocity in hybrid pressure system 
+($\dot{\eta}$) & $Pa/s$ \\
+\end{tabular}  

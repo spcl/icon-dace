@@ -1,0 +1,117 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+NVHPC_ROOT='/software/all/toolkit/nvidia_hpc_sdk/22.7/Linux_x86_64/22.7'
+
+PGI_ROOT="${NVHPC_ROOT}/compilers"
+PGI_LIBS='-lstdc++ -llapack -lblas -lnvf'
+
+CUDA_ROOT="${NVHPC_ROOT}/cuda/11.7"
+CUDA_LIBS='-lcudart'
+
+CUDACXX="${PGI_ROOT}/bin/nvcc"
+FC="${PGI_ROOT}/bin/nvfortran"
+CC="${PGI_ROOT}/bin/nvc"
+AR='/usr/bin/ar'
+
+MPI_ROOT="${NVHPC_ROOT}/comm_libs/openmpi/openmpi-3.1.5/"
+# MPI_ROOT="${NVHPC_ROOT}/comm_libs/openmpi4/openmpi-4.0.5/"
+MPI_FORTRAN_MOD_DIR="${MPI_ROOT}/lib"
+MPI_LIBS='-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi'
+
+HDF5_ROOT='/software/all/lib/hdf5/1.12_nvidia_22.7_serial'
+HDF5_LIBS='-lhdf5_hl -lhdf5'
+
+NETCDF_ROOT='/software/all/lib/netcdf/4.9_serial_nvidia_22.7'
+NETCDF_LIBS='-lnetcdf'
+
+NETCDFF_ROOT='/software/all/lib/netcdf-fortran/4.6_serial_nvidia_22.7'
+NETCDFF_LIBS='-lnetcdff'
+
+ECCODES_ROOT='/software/all/lib/eccodes/2.31.0_nvidia_22.7'
+ECCODES_LIBS='-leccodes'
+
+# Libraries in /usr/lib
+XML2_INCLUDE_DIR='/usr/include/libxml2'
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV="export LD_LIBRARY_PATH=\"${PGI_ROOT}/lib:${MPI_ROOT}/lib:${CUDA_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:/usr/lib\";export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
+
+LDFLAGS="-L${PGI_ROOT}/lib -L${MPI_ROOT}/lib -L${CUDA_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${ECCODES_ROOT}/lib64"
+LIBS="-Wl,--as-needed ${PGI_LIBS} ${MPI_LIBS} ${CUDA_LIBS} ${HDF5_LIBS} ${NETCDF_LIBS} ${NETCDFF_LIBS} ${ECCODES_LIBS} ${XML2_LIBS} -lrt"
+
+CUDAFLAGS='--std=c++14 -arch=sm_80 -g -O3'
+# 2023-11-06: currently IAU gives inconsistent results with -O2 in FCFLAGS.
+FCFLAGS="-I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${NETCDFF_ROOT}/include -Mpreprocess -g -Mrecursive -Mallocatable=03 -Minfo=accel,inline -Mstack_arrays ${HK_GPU_FCFLAGS}"
+CFLAGS='-std=c99 -g -O2'
+CPPFLAGS="-I${MPI_ROOT}/include -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_INCLUDE_DIR}"
+
+# The compiler fails to process some of the EMVORADO and DACE source files with
+# the default optimization level:
+ICON_WORKAROUND1_FCFLAGS="-O1 "
+ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:src/data_assimilation/interfaces/radar_interface.f90'
+
+MPI_LAUNCH="${MPI_ROOT}/bin/mpirun ${HK_GPU_MPIRUN_FLAGS}"
+
+EXTRA_CONFIG_ARGS="--disable-loop-exchange --disable-coupling --enable-grib2 --enable-art --enable-ecrad"
+#EXTRA_CONFIG_ARGS+=' --enable-emvorado --enable-dace --enable-fcgroup-WORKAROUND1'
+EXTRA_CONFIG_ARGS+=" --disable-mpi-checks"
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+AR="${AR}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+ICON_WORKAROUND1_FCFLAGS="${ICON_WORKAROUND1_FCFLAGS}" \
+ICON_WORKAROUND1_PATH="${ICON_WORKAROUND1_PATH}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+CUDACXX="$CUDACXX" \
+CUDAFLAGS="$CUDAFLAGS" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${ICON_DIR}/run/standard_*
+  ln -sf set-up.info run/SETUP.config
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

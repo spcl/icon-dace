@@ -1,0 +1,77 @@
+#! /usr/bin/env python3
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -*- coding: utf-8 -*-
+#______________________________________________________________________________
+#
+# Build a specific builder
+#______________________________________________________________________________
+
+from buildbot_config import BuildbotConfig
+from icon_paths import buildbot_list_path, run_path
+
+from pathlib import Path
+import click
+import sys
+import json
+
+@click.command()
+@click.argument("builder", type=str)
+@click.option("--list", "list_name", type=str, help="the buildbot configuration list", required=True)
+def build(builder, list_name):
+    full_list_name = buildbot_list_path / list_name
+
+    if Path(full_list_name).exists():
+      thisList = BuildbotConfig.from_pickle(full_list_name)
+    else:
+      print("did not find experiment list {}".format(full_list_name))
+      sys.exit(1)
+
+    thisList.build_builder(builder)
+    exp_list = thisList.make_builder_runscripts(builder)
+
+    with open(str(run_path / "runscript_list"), "w") as f:
+      f.write(exp_list)
+
+    config = {
+      "list_name": list_name,
+      "builder": builder
+    }
+    with open(str(run_path / "buildbot_config.json"), "w") as f:
+      json.dump(config, f)
+
+    thisList.to_pickle(full_list_name)
+
+
+if __name__ == "__main__":
+    build()
+
+
+
+#paths = model_paths()
+#if not paths.thisListExists(args.list_name):
+#  print("This list does not exist: {0}".format(args.list_name))
+#  quit(1)
+#  
+#thisList = buildbot_experiments_list(args.list_name)
+##TODO[ram] use internal methods of the builder to return Boolean instead a string
+#runscriptsList = []
+#if  thisList.get_builder_flags(args.builder_name).lower() in ['build_only'] or args.create_binaries:
+#  status = thisList.make_binaries(args.builder_name)
+#  if not status == 0: quit(1)
+#  runscriptsList = thisList.make_runscripts(args.builder_name)
+#
+#listfile = open(os.path.join(paths.get_runpath(), "runscript_list"), 'w')
+#for runscript in runscriptsList:
+#  listfile.write(runscript+" ")
+#listfile.close()
+

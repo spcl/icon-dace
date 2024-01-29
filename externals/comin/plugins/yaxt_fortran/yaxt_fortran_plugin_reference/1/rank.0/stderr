@@ -1,0 +1,169 @@
+ ICON running
+    running with            1  MPI tasks and            1  thread(s) per task.
+      compatibility check.
+        linked to ICON Community Interface v0.1.0
+      minimal-example: working precision test successful.
+    ICON model setup
+      ICON // Fill descriptive data structure
+      read NetCDF file './grids/grid.1_0.nc'.
+      ICON // Fill variable structure
+       model variable 'u.TL1', filled with value        10.00
+       model variable 'v.TL1', filled with value        20.00
+       model variable 'pres.TL1', filled with value        30.00
+       model variable 'temp.TL1', filled with value        40.00
+       model variable 'rho.TL1', filled with value         0.00
+       model variable 'pres_sfc.TL1', filled with value        50.00
+       model variable 'u.TL2', filled with value        10.00
+       model variable 'v.TL2', filled with value        20.00
+       model variable 'pres.TL2', filled with value        30.00
+       model variable 'temp.TL2', filled with value        40.00
+       model variable 'rho.TL2', filled with value         0.00
+       model variable 'pres_sfc.TL2', filled with value        50.00
+      Associate ICON descriptive data structures and ComIn
+      call of ComIn primary constructors.
+      setup: yaxt_fortran_plugin
+     plugin libyaxt_fortran_plugin.so(comin_main) has id:    1
+     registration for 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) associated for 3rd party plugin libyaxt_fortran_plugin.so(comin_main) successful.
+     registration for 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) associated for 3rd party plugin libyaxt_fortran_plugin.so(comin_main) successful.
+     registration for 'EP_DESTRUCTOR' (ep: 42) associated for 3rd party plugin libyaxt_fortran_plugin.so(comin_main) successful.
+ Initialize yaxt...
+      Complete primary constructors
+      Add tracer variable (container).
+      Associate ICON varlist and ComIn
+      CONTEXT EP_SECONDARY_CONSTRUCTOR
+      current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: libyaxt_fortran_plugin.so(comin_main)
+ yaxt_fortran_constructor (yaxt_fortran_plugin): secondary constructor
+ yaxt_fortran_constructor (yaxt_fortran_plugin): yaxt_fortran_pluginrequest temperature
+      CONTEXT EP_ATM_YAC_DEFCOMP_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_BEFORE' (ep: 2).
+      CONTEXT EP_ATM_YAC_DEFCOMP_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_AFTER' (ep: 3).
+      CONTEXT EP_ATM_YAC_SYNCDEF_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_SYNCDEF_BEFORE' (ep: 4).
+      CONTEXT EP_ATM_YAC_SYNCDEF_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_SYNCDEF_AFTER' (ep: 5).
+      CONTEXT EP_ATM_YAC_ENDDEF_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_ENDDEF_BEFORE' (ep: 6).
+      CONTEXT EP_ATM_YAC_ENDDEF_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_ENDDEF_AFTER' (ep: 7).
+
+    ICON model time loop
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 1
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   12.0000
+        v: value    =   22.0000
+        pres: value =   32.0000
+        temp: value =   42.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: libyaxt_fortran_plugin.so(comin_main)
+ yaxt_fortran_gather (yaxt_fortran_plugin): callback before output
+yaxt_fortran_gather (yaxt_fortran_plugin): libyaxt_fortran_plugin.so(comin_main) has id:    1
+yaxt_fortran_gather (yaxt_fortran_plugin): currently not in domain loop
+ yaxt_fortran_gather (yaxt_fortran_plugin): global average temperature is    42.000000000000000      K
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   15.0000
+        v: value    =   25.0000
+        pres: value =   35.0000
+        temp: value =   45.0000
+  
+      nnow, nold =            2           1
+ WARNING: Variable not found: name, nnow = tracer           2
+ WARNING: Variable not found: name, nnow = qr           2
+ WARNING: Variable not found: name, nnow = qi           2
+ WARNING: Variable not found: name, nnow = qv           2
+ WARNING: Variable not found: name, nnow = qs           2
+ WARNING: Variable not found: name, nnow = qc           2
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 2
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   12.0000
+        v: value    =   22.0000
+        pres: value =   32.0000
+        temp: value =   42.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: libyaxt_fortran_plugin.so(comin_main)
+ yaxt_fortran_gather (yaxt_fortran_plugin): callback before output
+yaxt_fortran_gather (yaxt_fortran_plugin): libyaxt_fortran_plugin.so(comin_main) has id:    1
+yaxt_fortran_gather (yaxt_fortran_plugin): currently not in domain loop
+ yaxt_fortran_gather (yaxt_fortran_plugin): global average temperature is    42.000000000000000      K
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   15.0000
+        v: value    =   25.0000
+        pres: value =   35.0000
+        temp: value =   45.0000
+  
+      nnow, nold =            1           2
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 3
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   17.0000
+        v: value    =   27.0000
+        pres: value =   37.0000
+        temp: value =   47.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: libyaxt_fortran_plugin.so(comin_main)
+ yaxt_fortran_gather (yaxt_fortran_plugin): callback before output
+yaxt_fortran_gather (yaxt_fortran_plugin): libyaxt_fortran_plugin.so(comin_main) has id:    1
+yaxt_fortran_gather (yaxt_fortran_plugin): currently not in domain loop
+ yaxt_fortran_gather (yaxt_fortran_plugin): global average temperature is    47.000000000000000      K
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   20.0000
+        v: value    =   30.0000
+        pres: value =   40.0000
+        temp: value =   50.0000
+  
+      nnow, nold =            2           1
+ WARNING: Variable not found: name, nnow = tracer           2
+ WARNING: Variable not found: name, nnow = qr           2
+ WARNING: Variable not found: name, nnow = qi           2
+ WARNING: Variable not found: name, nnow = qv           2
+ WARNING: Variable not found: name, nnow = qs           2
+ WARNING: Variable not found: name, nnow = qc           2
+      CONTEXT EP_DESTRUCTOR
+      current ep 'EP_DESTRUCTOR' (ep: 42) for library: libyaxt_fortran_plugin.so(comin_main)
+ yaxt_fortran_destructor (yaxt_fortran_plugin): destructor.
+
+    ICON clean-up

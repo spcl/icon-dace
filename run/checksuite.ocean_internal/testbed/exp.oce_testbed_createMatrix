@@ -1,0 +1,154 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-11T00:00:00Z"
+# restart=".true."
+#-----------------------------------------------------------------------------
+# model timing
+(( years_checkpoint  = 25 ))    # write restart file interval [days]
+(( years_restart     = 25 ))    # stop model for restart [days]
+(( days_data         =  1 ))    # ocean model output interval hours [hours] - for test runs
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+leading_zero=""
+if [[ $days_data -lt 10 ]] ; then leading_zero="0"; fi
+output_interval="P$leading_zero${days_data}D"     # ocean model output interval in days
+(( dt_data        = days_data         * day  ))   # used for output_bounds and buildbot
+(( dt_checkpoint  = years_checkpoint  * year ))
+(( dt_restart     = years_restart     * year ))
+(( steps_per_file = dt_restart / dt_data+10  ))   # calculated output intervals per file interval
+#steps_per_file=610                               # assigned output intervals per file interval
+#-----------------------------------------------------------------------------
+# global resolution
+iforc=10 ! 12
+forcing_timescale=365  # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; 365/else = daily data
+init_relax=0 ! 1
+ocean_vertical_levels=40
+ocean_grids="OceanOnly_Icos_0158km_etopo40.nc"
+#grids_folder="/scratch/mpi/CC/mh0287/users/m300056/icon/boundary_files/OceanOnly_160km_20levels_conservative"
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+!cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma         = 1
+ p_test_run     = .true.
+ L_TEST_OPENMP  = .true.
+ l_fast_sum     = .true.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+ iequations           = -1           ! -1: hydrost. ocean model
+/
+&run_nml
+ dtime                = 3600 ! model timestep in seconds
+ output               = 'none'        ! namelist controlled output scheme
+ activate_sync_timers = .false.
+ profiling_output     = 2
+ msg_timestamp        = .FALSE.
+ timers_level         = 0
+ debug_check_level    = 1
+ test_mode     = 1104
+/
+&ocean_dynamics_nml
+ n_zlev             =   40
+ dzlev_m(1:40)      =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                       100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+                       220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+
+  select_solver                   = 4       ! 1=gmres_oce_old; 2=ocean_restart_gmres, 3=mixed precisison restart 
+                                            ! 4=CG (default) 5=CGJ 6=BiCG 7=GMRES restart (legacy) 8=MINRES
+  use_absolute_solver_tolerance   = .true.
+  solver_tolerance                = 1.0E-13 ! this may further be reduced
+
+  select_lhs                      = 1       ! 1=operator based (default) 2=matrix based
+  l_lhs_direct                    = .false. ! .true.= use lhs implementation directly  .false.= matrix scanner (default) 
+  solver_FirstGuess               = 2       ! 0=start from zeros 1=last timestep smoothed 2=last timestep (default) 
+
+  fast_performance_level          = 200       ! performance level 12: for cell-based; 5: default
+  use_continuity_correction       = .TRUE.    ! height adjustment according to vertical velocity in dynamics
+  cfl_check                       = .FALSE.
+  cfl_write                       = .FALSE.
+
+  i_bc_veloc_top                  = 1
+  i_bc_veloc_bot                  = 1
+
+/
+&sea_ice_nml
+  i_ice_dyn                       =   0       ! 1/0=switch on/off AWI ice dynamics
+/
+&dbg_index_nml
+  idbg_mxmn=0                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=1                     ! initialize end level for debug output
+/
+&ocean_forcing_nml
+  iforc_oce                       = ${iforc}            ! ocean forcing
+  forcing_timescale               = $forcing_timescale  ! length of ocean forcing data set, see above
+  init_oce_relax                  = $init_relax         ! read ocean surface relaxation file, see above
+  type_surfRelax_Temp             =   0       ! 0: no relaxation used
+                                              ! 1: relaxation switched on for reading (init_oce_relax=1) or some testcases only
+  para_surfRelax_Temp             =   1.0     ! strength of 2-dim relaxation for temperature (months)
+                                              ! this value is divided by number of seconds per month (=30*24*3600)
+  type_surfRelax_Salt             =   1       ! 2-dim relaxation of salinity - see temperature relaxation for type values
+  para_surfRelax_Salt             =   3.0     ! strength of 2-dim relaxation for salinity (months)
+  forcing_windstress_u_type       =   0 ! 1       ! read from file
+  forcing_windstress_v_type       =   0 ! 1       ! read from file
+  forcing_fluxes_type             =   0 ! 1       ! read from file
+! forcing_enable_freshwater       = .TRUE.    ! apply freshwater forcing boundary condition (OMIP only)
+! forcing_set_runoff_to_zero      = .FALSE.   ! set runoff to zero for comparison to MPIOM; default: false
+! zero_freshwater_flux            = .FALSE.   ! set external freshwater flux to zero; default: false
+                                              ! salt-change due to internal fluxes only
+  limit_seaice                    = .TRUE.    ! default: true
+  seaice_limit                    =   0.8     ! hard limit set to 80% of upper layer for sea ice
+  limit_elevation                 = .TRUE.
+/
+&ocean_initialConditions_nml
+!  initial_salinity_type            = 1
+!  initial_temperature_type         = 1
+/
+&ocean_diagnostics_nml
+   diagnostics_level            = 0
+/
+&io_nml
+  dt_checkpoint = ${dt_checkpoint}
+  lkeep_in_sync = .true.          ! sync after each timestep
+  write_last_restart = .true.
+/
+/
+&ocean_dynamics_nml
+  n_zlev             =   2      ! number of vertical levels and (dzlev_m) thicknesses
+  dzlev_m(1:2)      =   20.0,   20.0
+/
+EOF
+#-----------------------------------------------------------------------------
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------

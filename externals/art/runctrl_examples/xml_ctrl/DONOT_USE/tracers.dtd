@@ -1,0 +1,22 @@
+<!ELEMENT tracers (chemical+, artificial+, aerosol+ )>
+<!ELEMENT chemical (mol_weight, lifetime, init_mode, init_number)>
+<!ATTLIST chemical
+  id    ID    #REQUIRED
+  full  CDATA #IMPLIED
+  chemtr CDATA #IMPLIED
+>
+<!ELEMENT artificial (mol_weight, lifetime)>
+<!ATTLIST artificial
+  id    ID    #REQUIRED
+>
+
+<!ELEMENT aerosol (sol, mol_weight, rho)>
+<!ATTLIST aerosol
+  id    ID    #REQUIRED
+>
+<!ELEMENT mol_weight (#PCDATA)>
+<!ELEMENT lifetime(#PCDATA)>
+<!ELEMENT init_mode(#PCDATA)>
+<!ELEMENT init_number(#PCDATA)>
+<!ELEMENT sol (#PCDATA)>
+<!ELEMENT rho (#PCDATA)>

@@ -1,0 +1,106 @@
+
+#%# ICON
+#%#
+#%# ------------------------------------------
+#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%# Contact information: icon-model.org
+#%# See AUTHORS.TXT for a list of authors
+#%# See LICENSES/ for license information
+#%# SPDX-License-Identifier: BSD-3-Clause
+#%# ------------------------------------------
+#%#
+#%# Format input file list into file commands
+#%#
+#% macro format_files(files, year_var, first_var, last_var, base_var=none, label='files', path=None, base_dir=none, method=none, indent=0):
+#%   if files['.hide'] is not set:
+#%     if method is none:
+%{' '*indent}# $Id: format.tmpl 9264 2021-06-21 21:24:57Z m221078 $
+%{' '*indent}#
+#%     endif
+#%     if not path:
+#%       set path = label
+#%     endif
+#%     set base_dir = files['.base_dir']|default(base_dir)
+#%     if files['.sub_dir']:
+#%       set base_dir = base_dir+'/'+files['.sub_dir']
+#%     endif
+#%     set method = files['.method']|default(method)|default('ln -snvf', true)
+#%     set offsets = files['.offsets']
+#%     if path:
+%{' '*indent}# [%{path}]
+#%     endif
+#%     if offsets:
+%{' '*indent}for((%{year_var} = %{first_var} + %{offsets[0]}; %{year_var} <= %{last_var} + %{offsets[-1]}; ++%{year_var})) 
+%{' '*indent}do
+#%       set indent = indent + 4 
+#%     endif
+#%#-
+#%#-   Extract variable mappings
+#%#-  
+#%-    for file in files:
+#%       if file[0:5] == '.set ':
+#%         set var = file[5:]
+#%         if files[file] is string:
+%{' '*indent}%{var}=%{files[file]|replace('%year', '${'+year_var+'}')}
+#%         else:
+#%           for value in files[file]:
+#%             if ':' in value:
+#%               set (y, v) = value|split(':',1)
+%{' '*(indent + 4)}((%{year_var} >= %{y})) && %{var}=%{v|replace('%year', '${'+year_var+'}')}
+#%             else
+%{' '*indent}%{var}=%{value|replace('%year', '${'+year_var+'}')}
+#%             endif
+#%           endfor
+#%         endif
+#%       endif
+#%     endfor
+#%#-
+#%#-   Write directory definition
+#%#-  
+#%-    if base_dir and label:
+#%       set base_var = label+'_dir' 
+%{' '*indent}%{base_var}=%{base_dir}
+#%     endif
+#%#-
+#%#-   Generate file commands
+#%#-
+#%-    for file in files:
+#%       if files[file] is not mapping: 
+#%         if (file[0] != '.') and files[file]:
+#%           if files[file] == '.':
+#%             set source = file
+#%             set file = '.'
+#%           else
+#%             set source = files[file]
+#%           endif
+#%           if base_dir and source[0] != '/':
+#%             set source = '$'+base_var+'/'+source
+#%           endif
+#%           set comments = files.comments[file]|filter
+#%           for comment in comments:
+%{comment|indent(indent,true)}
+#%           endfor
+%{' '*indent}%{(method, source, file)|join(' ')|replace('%year', '${'+year_var+'}')|wordwrap(80-indent,false,false,' \\\n'+' '*(indent+4))}
+#%         endif
+#%       else:
+#%         if base_var is not none:
+#%           set base_dir = '$'+base_var
+#%         endif
+#%#        EMPTY LINE
+#%         set comments = files.comments[file]|filter
+#%         if false and comments:
+#%           set comments = comments[:-1] + [ comments[-1] + ' (' + file + ')' ]
+#%         endif
+#%         for comment in comments:
+%{comment|indent(indent,true)}
+#%         endfor
+%{format_files(files[file], year_var, first_var, last_var, base_var, file, '.'.join([path, file]), base_dir, method, indent)-}
+#%       endif
+#%     endfor
+#%     if offsets:
+#%       set indent = indent - 4 
+%{' '*indent}done # offsets
+#%     endif
+#%   endif
+#%#     -- files['.hide'] is not set
+#%- endmacro

@@ -1,0 +1,44 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+addexp="./addexp"
+#############################################################################
+##
+## create icon-dev list
+##
+#############################################################################
+list=oes-nec_trace
+./rmlist $list
+./mklist $list
+#############################################################################
+# create nag builder
+machine=mistral
+./addmachine $machine --list $list
+./addbuilder MISTRAL_nag  --machine $machine  --build_script="./config/buildbot/mistral_nag_oes_lvector" --builderflags="Active"  --list $list
+
+# create nec builder
+machine=dwd_nec
+./addmachine $machine --list $list
+./addbuilder DWD_nec             --machine $machine  --build_script="./config/buildbot/oes_dwd_nec_trace"    --builderflags="Active"  --list $list
+#############################################################################
+# add experiments
+$addexp checksuite.ocean_internal/omip/exp.test_ocean_omip_10days --builders MISTRAL_nag  --runflags "cpu_time=00:30:00 queue=compute"  --list $list
+$addexp checksuite.ocean_internal/technical/exp.test_ocean_omip_technical_fast --builders MISTRAL_nag --runflags "cpu_time=00:30:00 queue=compute mpi_procs_pernode=5" --list $list
+
+$addexp checksuite.ocean_internal/dwd_nec/exp.oes_omip_40km.run --builders DWD_nec --list $list
+
+
+#############################################################################
+#lets see the list
+./lslist $list
+#-----------------------------------------------------------
+

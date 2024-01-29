@@ -1,0 +1,361 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#-----------------------------------------------------------------------------
+# the namelist filename
+hamocc_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-11T00:00:00Z"
+# restart=".true."
+#-----------------------------------------------------------------------------
+# model timing
+restart_interval="P8Y"
+checkpoint_interval="P2Y"
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $days_data
+output_interval="P1M"                  # ocean model output interval in days
+daily="P1D"
+monthly="P1M"
+file_interval="P1Y"
+modelTimeStep="PT1H"
+autoPostProcessing="false"                         # submit postprocessing job
+#steps_per_file=610                               # assigned output intervals per file interval
+#-----------------------------------------------------------------------------
+# global resolution
+iforc=10
+forcing_timescale=365  # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; 365/else = daily data
+init_relax=1
+ocean_vertical_levels=40
+ocean_grids="OceanOnly_Icos_0158km_etopo40.nc"    #  default R2B04 without land-points
+
+# HAMOCC
+use_hamocc=yes
+if [  "x${use_hamocc}"  = "xyes" ]; then
+lhamocc=".true."
+lbgcadv=".true."
+nlev_eu=$ocean_vertical_levels
+# set nlev_eu to level belonging to approx 500m
+if [ "x$ocean_vertical_levels" = "x40" ];then
+nlev_eu=19
+fi
+if [ "x$ocean_vertical_levels" = "x64" ];then
+nlev_eu=26
+fi
+if [ "x$ocean_vertical_levels" = "x20" ];then
+nlev_eu=16
+fi
+else
+lhamocc=".false."
+lbgcadv=".false."
+fi
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+cat > ${hamocc_namelist} << EOF0
+!
+&parallel_nml
+ nproma         = $nproma
+ p_test_run     = .false.
+ l_fast_sum     = .true.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+ iequations           = -1           ! -1: hydrost. ocean model
+/
+&run_nml
+ dtime                = 3600         ! model timestep in seconds
+ output               = 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .TRUE.
+ profiling_output     = 2
+ msg_timestamp        = .FALSE.
+ timers_level         = 10
+ debug_check_level    = 1
+/
+EOF0
+if [  "x${use_hamocc}"  = "xyes" ]; then
+cat >> ${hamocc_namelist} << EOF1
+&output_nml
+  output_filename  = "${EXPNAME}_hamocc_monitor"
+  filename_format  = "<output_filename>_<datetime2>"
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${daily}"
+  file_interval="P1Y"
+  output_grid      = .false.
+  operation       = 'mean'
+  ml_varlist       =  'group:HAMOCC_MONI'
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+  file_interval="P1Y"
+  output_grid      = .TRUE.
+  operation       = 'mean'
+  ml_varlist       =  'group:HAMOCC_BASE'
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc_sediment"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+  file_interval="P1Y"
+  output_grid      = .TRUE.
+  operation       = 'mean'
+  ml_varlist       =  'group:HAMOCC_SED'
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc_3d_tendencies"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+  file_interval="P1Y"
+  output_grid      = .TRUE.
+  operation       = 'mean'
+  ml_varlist       =  'HAMOCC_BACFRA','HAMOCC_SRED','HAMOCC_REMIN','HAMOCC_DENIT','HAMOCC_delsil','HAMOCC_delcar','HAMOCC_aou'
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc_EU_tendencies"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+  file_interval="P1Y"
+  !mode             =  2                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  output_grid      = .TRUE.
+  operation       = 'mean'
+  ml_varlist       =  'HAMOCC_NPP','HAMOCC_nfix','HAMOCC_dms_prod','HAMOCC_dms_bac','HAMOCC_dms_uv','HAMOCC_eu_export','HAMOCC_pho_cya','HAMOCC_cya_loss','HAMOCC_grazing','HAMOCC_remin_via_grazer','HAMOCC_exudation_phy','HAMOCC_exudation_zoo','HAMOCC_zoomor','HAMOCC_phymor','HAMOCC_plim','HAMOCC_flim','HAMOCC_nlim','HAMOCC_cTlim','HAMOCC_cLlim','HAMOCC_cPlim','HAMOCC_cFlim'
+  m_levels          ='1...${nlev_eu}'  ! ~500m: 19 for L40, 16 for L20, 26 for L64
+/
+&output_nml
+  filetype         =  4                       ! output format: 2=GRIB2, 4=NETCDFv2
+  filename_format  = "<output_filename>_<datetime2>"
+  output_filename  = "${EXPNAME}_hamocc_2d_tendencies"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+ !mode             =  2                             ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  file_interval="P1Y"
+  output_grid      = .TRUE.
+  operation       = 'mean'
+  ml_varlist       =  'HAMOCC_co2flux','HAMOCC_orginp','HAMOCC_dmsflux','HAMOCC_silinp','HAMOCC_calinp','HAMOCC_o2flux','HAMOCC_n2flux','HAMOCC_n2oflux','HAMOCC_nfix_diag','HAMOCC_coex90','HAMOCC_calex90','HAMOCC_opex90','HAMOCC_coex1000','HAMOCC_opex1000','HAMOCC_calex1000','HAMOCC_coex2000','HAMOCC_opex2000','HAMOCC_calex2000','HAMOCC_o2min','HAMOCC_zo2min'
+/
+EOF1
+fi
+
+cat >> ${hamocc_namelist} << EOF2
+&dbg_index_nml
+  idbg_mxmn=1                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=5                     ! initialize end level for debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+! 20 unevenly spaced levels used by MPIOM/GR60, limited to 700m at bottom
+!  n_zlev             =   20      ! number of vertical levels and (dzlev_m) thicknesses
+!  dzlev_m(1:20)      =   20.0,   20.0,   20.0,   30.0,   40.0,   50.0,   70.0,   90.0,  120.0,  150.0,
+!                        180.0,  210.0,  250.0,  300.0,  400.0,  500.0,  600.0,  700.0,  700.0,  700.0
+! 40 unevenly spaced levels used by MPIOM/GR30
+ n_zlev             =   $ocean_vertical_levels
+ dzlev_m(1:40)      =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+                        30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+                       100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+                       220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+  l_edge_based                    = .FALSE.   ! edge- or cell-based mimetic discretization
+  l_partial_cells                 = .FALSE.   ! partial bottom cells=true: local varying bottom depth
+
+  select_solver                   = 2       ! 1=gmres_oce_old; 2=ocean_restart_gmres, 3=mixed precisison restart
+  use_absolute_solver_tolerance   = .true.
+  solver_tolerance                = 1.0E-13 ! this may further be reduced
+  solver_max_iter_per_restart     = 16        ! this may adjusted according the total iterations
+  solver_max_restart_iterations   = 100
+  select_lhs                      = 2
+  solver_FirstGuess               = 2
+
+  fast_performance_level          = 200       ! performance level 12: for cell-based; 5: default
+  use_continuity_correction       = .TRUE.    ! height adjustment according to vertical velocity in dynamics
+  cfl_check                       = .FALSE.
+  cfl_write                       = .FALSE.
+
+  i_bc_veloc_top                  =   1
+  i_bc_veloc_bot                  =   1       ! 0: (def) bottom friction off, 1: on
+/
+&ocean_tracer_transport_nml
+  FLUX_CALCULATION_HORZ =  5 ! 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+  FLUX_CALCULATION_VERT =  7 ! 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  fct_low_order_flux    = 1      ! horizontal low  order method: 1=upwind (def), no other implemented
+  fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
+  fct_limiter_horz      = 100    ! zalesak
+  threshold_min_T       = -4.0   ! to avoid abort
+/
+&ocean_horizontal_diffusion_nml
+  laplacian_form = 1                   ! 1=curlcurl-graddiv
+  VelocityDiffusion_order = 1          ! 21=biharmonic+laplacian (for the laplacian leith)
+
+  HarmonicViscosity_scaling     =  1
+  HarmonicViscosity_reference   =  3.0E+4  !  [m2/s] constant horizontal viscosity coefficient for velocity
+  HarmonicViscosity_background  =  0.0  
+
+  TracerHorizontalDiffusion_scaling          = 1
+  Temperature_HorizontalDiffusion_Background = 0.0
+  Temperature_HorizontalDiffusion_Reference  = 0 !  40
+  Salinity_HorizontalDiffusion_Background    = 0.0
+  Salinity_HorizontalDiffusion_Reference     = 0 !  40
+/
+&ocean_vertical_diffusion_nml
+  PPscheme_type                            = 4
+  velocity_VerticalDiffusion_background    =   1.5E-5  ! [m2/s]  vertical background viscosity coefficient for velocity
+  Temperature_VerticalDiffusion_background =   1.5E-5  ! [m2/s]  vertical background diffusion coefficient for temperature
+  Salinity_VerticalDiffusion_background    =   1.5E-5  ! [m2/s]  vertical background diffusion coefficient for salinity
+  tracer_convection_MixingCoefficient =   0.1 ! max vertical tracer diffusion for convection used in case of instability
+  convection_InstabilityThreshold =  -1.0E-6  ! used in update_ho_params - default=-5e-8
+  RichardsonDiffusion_threshold   =   0.0     ! used in update_ho_params - default=+5e-8
+  tracer_RichardsonCoeff          =   2.0E-3  ! factor for vertical diffusion coefficient in PP scheme
+  velocity_RichardsonCoeff        =   2.0E-3  ! factor for vertical viscosity coefficient in PP scheme
+  bottom_drag_coeff               =   1.0E-3  ! default=2.5E-3; active for i_bc_veloc_bot=1
+  use_wind_mixing                 = .true.    ! true: use wind mixing scheme in MPIOM-type pp-scheme
+  lambda_wind                     = 0.03
+  !  tracer_TopWindMixing            = 1.0E-5
+  !  velocity_TopWindMixing          = 1.0E-5
+/
+&ocean_GentMcWilliamsRedi_nml
+  GMRedi_configuration           =   0       ! 0=cartesian diffusion 1=GM-Redi: bolus advection + isopycnal diffusion
+/
+&ocean_physics_nml
+  i_sea_ice                       =   1       ! 0 = no sea ice; 1 = sea ice model on; default=1
+  lhamocc                         = ${lhamocc}
+  lbgcadv                         = ${lbgcadv}
+/                                           
+&sea_ice_nml
+  i_ice_therm                     =   1       ! 1=zero-layer (default), 2=Winton, 0/2: not allowed
+  i_ice_dyn                       =   1       ! 1/0=switch on/off AWI ice dynamics
+! i_Qio_type                      =   3       ! 3 (default): energy of whole grid-area used for melting (MPIOM-type)
+! use_constant_tfreez             = .TRUE.    ! default: true
+! use_no_flux_gradients           = .FALSE.   ! default: true
+! leadclose_1                     =   0.25    ! default: 0.5 - value of MPIOM: 0.25
+! leadclose_2n                    =   0.666   ! default: 0.0 - value of MPIOM: 2/3
+
+/
+EOF2
+if [  "x${use_hamocc}"  = "xyes" ]; then
+cat >> ${hamocc_namelist} << EOF3
+&hamocc_nml
+l_cyadyn                          = .TRUE.    ! dynamic cyanobacteria
+l_cpl_co2                         = .FALSE.   ! CO2 coupled to land carbon cycle
+l_bgc_check                       = .FALSE.   ! mass check at every time step
+deltacalc                         = 0.        ! CaCO3 weathering rate [kmol/yr] 
+deltaorg                          = 0.        ! OC weathering rate [kmol/yr]
+deltasil                          = 0.        ! Si(OH)4 weathering rate [kmol/yr]
+atm_co2                           = 278.      ! atmospheric CO2 (default 278)
+atm_n2                            = 802000.   ! atmospheric N2  (default 802000)
+atm_o2                            = 196800.   ! atmospheric O2  (default 196800)
+sinkspeed_opal                    = 30.       ! opal sinking speed [m/d] (default 30)
+sinkspeed_calc                    = 30.       ! calc sinking speed [m/d] (default 30)
+i_settling                        = 1         ! 0 constant POC sinking speed, 1 Martin curve, 2 AGG module (not yet implemented)
+sinkspeed_poc                     = 5.        ! detritus sinking speed [m/d] for i_settling=0 (default 5)
+sinkspeed_martin_ez               = 3.5       ! detritue sinking speed within (0, mc_depth) [m/d] for i_settling=1 (default 3.5)
+mc_depth                          = 100.      ! depth where linear increase of sinking speed starts for i_settling=1 (default 100.)
+mc_fac                            = 2.0       ! slope of sinking speed increase relative to remin rate (default 2.0)
+l_implsed                         =.FALSE.    ! implicit sediment formulation
+l_init_bgc                        =.TRUE.
+/
+EOF3
+fi
+cat >> ${hamocc_namelist} << EOF4
+&ocean_forcing_nml
+  iforc_oce                       = ${iforc}            ! ocean forcing
+  forcing_timescale               = $forcing_timescale  ! length of ocean forcing data set, see above
+  init_oce_relax                  = $init_relax         ! read ocean surface relaxation file, see above
+  type_surfRelax_Temp             =   0       ! 0: no relaxation used
+                                              ! 1: relaxation switched on for reading (init_oce_relax=1) or some testcases only
+  para_surfRelax_Temp             =   1.0     ! strength of 2-dim relaxation for temperature (months)
+                                              ! this value is divided by number of seconds per month (=30*24*3600)
+  type_surfRelax_Salt             =   1       ! 2-dim relaxation of salinity - see temperature relaxation for type values
+  para_surfRelax_Salt             =   3.0     ! strength of 2-dim relaxation for salinity (months)
+  forcing_windstress_u_type       =   1       ! read from file
+  forcing_windstress_v_type       =   1       ! read from file
+  forcing_fluxes_type             =   1       ! read from file
+! forcing_enable_freshwater       = .TRUE.    ! apply freshwater forcing boundary condition (OMIP only)
+! forcing_set_runoff_to_zero      = .FALSE.   ! set runoff to zero for comparison to MPIOM; default: false
+! zero_freshwater_flux            = .FALSE.   ! set external freshwater flux to zero; default: false 
+                                              ! salt-change due to internal fluxes only
+! limit_seaice                    = .TRUE.    ! default: true
+  seaice_limit                    =   0.8     ! hard limit set to 80% of upper layer for sea ice
+  limit_elevation                 = .TRUE.
+/
+&ocean_initialConditions_nml
+  initial_salinity_type           = 1         ! read from file
+  initial_temperature_type        = 1         ! read from file
+/                                    
+&ocean_diagnostics_nml
+   diagnostics_level            = 1
+   gibraltar(1:10)              = 1367,1369
+   denmark_strait(1:10)         = 1411,1443
+   drake_passage(1:10)          = 7167,7201,7203,7288,7290,7505
+   indonesian_throughflow(1:20) = 2114,2118,2117,2120,4242,4245,4343,4349,4340,4350,4250,4615,4611,4616
+   scotland_iceland(1:10)       = 1240,1439,1238,1249,1248
+   mozambique(1:10)             = 1704,1688,1707,4200
+   framStrait(1:10)             = 116,118,1462
+   beringStrait(1:10)           = 693,721
+   barentsOpening(1:10)         = 68,65,67,42
+   agulhas(1:10)                = 8024,8022
+   agulhas_long(1:10)           = 8024,8022,6036
+   agulhas_longer(1:10)         = 8024,8022,6036,6025
+/
+&io_nml
+   lkeep_in_sync = .true.          ! sync after each timestep
+/
+EOF4
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------
+. ${thisdir}/exec.iconrun
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+#  compare with reference
+if [[ "x${BB_NAME}" != "x" ]]; then
+. ${thisdir}/postFunx.sh
+  dataPath="${basedir}/experiments/${EXPNAME}/"
+  cd ${dataPath}
+  refDir=${builbot_ocean_reference_path}/${BB_NAME}/${EXPNAME}/experiments/${EXPNAME}
+
+  directoryDiff ${refDir} .
+  check_error $? "DIFFCHECK for exp: ${EXPNAME}"
+  cd -
+fi
+
+exit

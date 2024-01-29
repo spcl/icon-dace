@@ -1,0 +1,173 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#
+# Purpose: Performs MARS retrieval  
+#
+# Included by: zondia-seas-icon.met
+#
+
+ print("%%I    Retrieving control data from MARS")
+
+# -- set MARS parameters
+
+ levtype=lev_type
+
+ if exp_mode[1] = 'OPER_AN' then
+    print("%%I     Execution mode: ",exp_mode[1])
+    class="od"
+    stream="mnth"
+    type="an"
+    time=00
+    step=0
+    exper=1
+  else if exp_mode[1] = 'ERA40' then
+    fail("%%E ERA40 not yet implemented! MACRO STOPPED!!")
+  else
+    fail("%%E exp_mode[1] not among possible choices. MACRO STOPPED!!")
+  end if
+
+# -- Read data: loop over date
+
+  print("%%I     Reading control data...")
+
+  if verbose = 1 then
+    print("%%I      MARS retrieval parameter:")
+    print("%%I      class      :",class)
+    print("%%I      stream     :",stream)
+    print("%%I      type       :",type)
+    print("%%I      expver     :",exper)
+    print("%%I      levtype    :",levtype)
+    print("%%I      levelist   :",levels)
+    print("%%I      time       :",time)
+    print("%%I      step       :",step)
+    print("%%I      param      :",param)
+    print("%%I      grid       :",[dlat,dlon])
+  end if
+
+  if exp_mode[1] = 'OPER_AN' then
+    mars_in = retrieve(
+      class   :   class,
+      stream  :   stream,
+      type    :   type,
+      expver  :   exper,
+      levtype :   levtype,
+      levelist:   levels,
+      time    :   time,
+      param   :   param,
+      date    :   date_list_con,
+      grid    :   [dlat,dlon]
+    )
+    if verbose = 1 then
+      print("%%I      date       :",date_list_con)
+    end if
+  else
+    fail('ERA40 not yet implemented')
+  end if
+
+  write(control_filename,mars_in)  
+
+# ------- retrieve Experimental data -----------------
+
+  print("%%I    Retrieving experimental data from MARS")
+
+# -- set MARS parameters
+
+  levtype=lev_type
+
+  if exp_mode[2] = 'OPER_SEAS' then
+    print("%%I     Execution mode: ",exp_mode[2])
+    class="od"
+    stream="sfmm"
+    type="fcmean"
+    exper=1
+    time=00
+    step=fc_steps
+    method=1
+    number=ensnum_con
+  else if exp_mode[2] = 'RD_SEAS' then
+    print("%%I     Execution mode: ",exp_mode[2])
+    class="rd"
+    stream="sfmm"
+    type="fcmean"
+    exper=exid[2]
+    time=00
+    step=fc_steps
+    method=1
+    number=ensnum_con
+  else
+    fail("%%E exp_mode[2] not among possible choices. MACRO STOPPED!!")
+  end if
+
+# -- Read data: loop over date
+
+  print("%%I     Reading control data...")
+
+  if verbose = 1 then
+    print("%%I      MARS retrieval parameter:")
+    print("%%I      class      :",class)
+    print("%%I      stream     :",stream)
+    print("%%I      type       :",type)
+    print("%%I      expver     :",exper)
+    print("%%I      levtype    :",levtype)
+    print("%%I      levelist   :",levels)
+    print("%%I      time       :",time)
+    print("%%I      step       :",step)
+    print("%%I      param      :",param)
+    print("%%I      grid       :",[dlat,dlon])
+  end if
+
+  if exp_mode[2] = 'OPER_SEAS' then
+    mars_in = retrieve(
+      class   :   class,
+      stream  :   stream,
+      system  :   system,
+      method  :   method,
+      number  :   number,
+      type    :   type,
+      expver  :   exper,
+      levtype :   levtype,
+      levelist:   levels,
+      time    :   time,
+      fcmonth :   step,
+      param   :   param,
+      date    :   date_list_exp,
+      grid    :   [dlat,dlon]
+    )
+    if verbose = 1 then
+      print("%%I        number     :",number)
+      print("%%I        method     :",method)
+      print("%%I        system     :",system)
+      print("%%I        date       :",date_list_exp)
+    end if
+  else
+    mars_in = retrieve(
+      class   :   class,
+      stream  :   stream,
+      method  :   method,
+      number  :   number,
+      type    :   type,
+      expver  :   exper,
+      levtype :   levtype,
+      levelist:   levels,
+      time    :   time,
+      fcmonth :   step,
+      param   :   param,
+      date    :   date_list_exp,
+      grid    :   [dlat,dlon]
+    )
+    if verbose = 1 then
+      print("%%I        number     :",number)
+      print("%%I        method     :",method)
+      print("%%I        date       :",date_list_exp)
+    end if
+  end if
+
+  write(forecast_filename,mars_in)  

@@ -1,0 +1,916 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+%  
+%  ICON - Fortran 2003 programming guide  
+%  
+%  - Luis Kornblueh, 13 Jan 2000, original version   
+%  - Martin Schultz, 17 Jan 2000, English language corrections  
+%  - Luis Kornblueh, 12 Apr 2000, change for introducing the DOCTOR naming   
+%                                 standard and labeled do loops in the physics
+%                                 package  
+%  - Luis Kornblueh, 26 Jul 2000, changes recommended by Marco Giorgetta,  
+%                                 added, section about parallelization and  
+%                                 libraries added   
+%  - Andreas Rhodin,   
+%    Luis Kornblueh, 17 Aug 2000, description of parallelization  
+%  - Martin Schultz, 17 Aug 2000, netCDF and parallel I/O   
+%  
+%  - Luis Kornblueh, 24 Mar 2004, updated for use within the ICON development
+%  - Thomas Heinze,  10 May 2004, further updated for use within the ICON 
+%                                 development    
+%  - Thomas Heinze,  11 Aug 2004, included several minor features discussed  
+%                                 at ICON meeting at MPI-M Hamburg:  
+%                                 authors, Fortran 2003, date, DOCTOR style 
+%  - Thomas Heinze,  21 Sep 2004, updated templates in appendix  
+%                                 replaced MPIM by MPI-M   
+%                                 replaced mo_kind.f90 by current version   
+%                                 included mo_math_constants.f90
+%  - Thomas Heinze,  28 Sep 2004, discarded IMPLICIT NONE in templates for
+%                                 functions and subroutines  
+%  - Thomas Heinze,  18 Jul 2005, cleaning up DOCTOR style
+%                                 include latest mo_XX_constants  
+%                                 include Peter Korn among authors  
+%  - Thomas Heinze,  25 Jul 2005, include gnames_*.tex  
+%                                 updated rules for variable names suggested
+%                                 by M.Giorgetta
+%  - Thomas Heinze,  26 Jul 2005, updated gnames_*.tex after DWD suggestions  
+%                                 updated DOCTOR standard
+%  - Thomas Heinze,  16 Aug 2005, updated global variable names
+%  - Thomas Heinze,  29 Aug 2005, updated global variable names
+%  - Thomas Heinze,  16 Feb 2006, clarified naming conventions for m_modules
+%                                 and mo_modules
+%  - Thomas Heinze,  22 Feb 2006, included updated templates
+%  - Thomas Heinze,  22 Nov 2006, added latest compilers
+%  - Luis Kornblueh, 05 Dec 2008, updated and proposed doxygen instead of incoprotex
+%  - Luis Kornblueh, 23 Jun 2009, preprocessor defines
+%  - Luis Kornblueh, 20 Jul 2009, changed form ProTeX to doxygen 
+%  - Luis KOrnblueh, 21 Jul 2009, updated with change requests so far available
+%  - Daniel Reinert, 21 Sep 2009, included section about OpenMP parallelization
+%  - Daniel Reinert, 22 Sep 2009, changed documentation of global variable names 
+%                                 (appendix)
+%  - Marco Giorgetta, 14 July 2010, general update, make main text more concise (this is not
+%                                 an introduction to Fortran), replace outdated Fortran files in appendix by 
+%                                 references to the file in the ICON repository.
+%                                 
+%                                 
+  
+\documentclass[a4paper,11pt,DIV16,BCOR1cm,titlepage]{scrartcl}  
+
+\usepackage[blocks]{authblk}
+\usepackage{xcolor}  
+\usepackage{listings}  
+\usepackage{amsmath,amssymb}  
+\usepackage{graphicx}  
+\usepackage{tabularx} 
+
+\definecolor{darkgreen}{RGB}{0,119,112}  
+\definecolor{darkgrey}{RGB}{209,206,198} 
+
+\pagestyle{headings}  
+  
+\parindent 0pt  
+\parskip 1ex plus 0.2ex minus 0.2ex  
+
+\renewcommand{\ttdefault}{pcr}
+
+\lstnewenvironment{fortran}%
+{\lstset{language=[95]Fortran,%
+basicstyle=\ttfamily\footnotesize\color{darkgreen},%
+commentstyle=\ttfamily\color{blue},%
+emptylines=0,%
+keywordstyle=\color{black}\ttfamily\bfseries,%
+backgroundcolor=\color{darkgrey!5},
+framexleftmargin=4mm,%
+frame=shadowbox,%
+rulesepcolor=\color{darkgreen}}}
+{}
+
+\lstnewenvironment{lisp}%
+{\lstset{language=lisp,%
+basicstyle=\ttfamily\footnotesize\color{darkgreen},%
+commentstyle=\ttfamily\color{blue},%
+emptylines=0,%
+keywordstyle=\color{black}\ttfamily\bfseries,%
+backgroundcolor=\color{darkgrey!5},
+framexleftmargin=4mm,%
+frame=shadowbox,%
+rulesepcolor=\color{darkgreen}}}
+{}
+
+\lstnewenvironment{csh}%
+{\lstset{language=csh,%
+basicstyle=\ttfamily\footnotesize\color{darkgreen},%
+commentstyle=\ttfamily\color{blue},%
+emptylines=0,%
+keywordstyle=\ttfamily\footnotesize\color{darkgreen},%
+backgroundcolor=\color{darkgrey!5},
+framexleftmargin=4mm,%
+frame=shadowbox,%
+rulesepcolor=\color{darkgreen}}}
+{}
+
+\renewcommand\Affilfont{\itshape\normalsize}
+
+\titlehead{  
+\unitlength = 1mm  
+\begin{picture}(80,0)  
+\put(-10,-10){ \includegraphics[scale=0.3]{../resources/img/mpilogo.pdf} }  
+\put(63,-20){\makebox(0,0)[rb]{\textbf{Max-Planck-Institut f\"ur Meteorologie}}}
+\put(63,-24){\makebox(0,0)[rb]{Bundesstr. 53}}
+\put(63,-29){\makebox(0,0)[rb]{D-20146 Hamburg}}
+\end{picture}  
+\hspace{1cm}
+\begin{picture}(80,0)  
+\put(50,-20){ \includegraphics[scale=0.6]{../resources/img/dwdlogo.pdf} }  
+\put(5,-2){\makebox(0,0)[lb]{\textbf{Deutscher Wetterdienst}}}
+\put(5,-7){\makebox(0,0)[lb]{Frankfurter Str. 135}}
+\put(5,-11){\makebox(0,0)[lb]{D-63067 Offenbach}}
+\end{picture}  
+}  
+  
+\title{\vspace{6cm}ICON Programming Standard}  
+ 
+\author[1]{Luca Bonaventura}
+\author[1]{Monika Esch}
+\author[2]{Helmut Frank}
+\author[1]{Marco Giorgetta}
+\author[2]{Thomas Heinze}
+\author[1]{Peter Korn}
+\author[1]{Luis Kornblueh}
+\author[2]{Detlev Majewski}
+\author[2]{Andreas Rhodin}
+\author[2]{Pilar R\'\i{}podas}
+\author[2]{Bodo Ritter}
+\author[2]{Daniel Reinert}
+\author[1]{Uwe Schulzweida}
+\affil[1]{Max-Planck-Institut f\"ur Meteorologie\\Bundesstr. 53\\D-20146 Hamburg\\Germany}   
+\affil[2]{Deutscher Wetterdienst\\Frankfurter Str. 135\\D-63067 Offenbach\\Germany}  
+
+\date{\vspace{8cm}\today}  
+  
+\begin{document}  
+
+\maketitle  
+  
+\tableofcontents  
+  
+\newpage  
+\part{ICON programming standard}
+
+% Introduction
+%
+\section{Introduction}  
+ %
+Programming standards have been developed earlier to support the development
+of big software packages following some technical standards and to increase readability.  
+Examples are the \textit{Rules for Interchange of Physical Parametrizations} 
+by Kalnay et al. (1989) or  the \textit{European Standards For  Writing and Documenting 
+Exchangeable Fortran 90 Code}  by Phillip et al. (1995) . The ICON programming standard is 
+inspired by such standards. It is tailored for the development of the Fortran codes of the ICON 
+models, which will be used on a wide variety of computer systems, Unix or Linux related 
+operating systems, and compilers.
+%
+The goal of this programming standard is to contribute to a stable, technically up-to-date 
+and well readable code. This concerns:
+ %
+\begin{itemize}  
+\item writing of readable/comprehensive source code   
+\item modularizing of code with well structured dependencies between \texttt{MODULE}s  
+\item standardizing the look and usage of \texttt{MODULE}s  
+\item avoiding semantical errors  
+\item reducing the maintenance cost  
+\item creating machine independent source code  
+\item well defined exception/error handling  
+\item version control  
+\item quality management and control  
+\end{itemize}  
+
+% Programming language
+%
+\section{Programming language}  
+%
+Codes shall generally be written in Fortran 2003. Excellent textbooks are given by 
+Metcalf et al. (2004) and Adams et al. (2009). However, some relevant compilers do 
+not comply with the full standard, so that not all Fortran 2003 features can be used  
+for ICON codes. Depreciated or obsolete  features of Fortran 2003 shall not be used. 
+Vendor specific extensions are not allowed. 
+%
+In cases, where Fortran 2003 is insufficient, e.g. for including libraries written in
+C, ANSI C with POSIX extensions can be used. This type of code should be stored in 
+a separate directory.
+
+% Rules, conventions, and recommendations
+%
+\section{Rules, conventions, and recommendations}
+%
+The general objective behind a style guide is to write portable code  
+that is easily readable and has a common style that can be maintained 
+by a team of developers. Many rules follow common sense and should be obvious. We note,  
+that many of the formatting suggestions are easily achieved if you use  
+the GNU emacs (or xemacs) editor in Fortran 90 mode.  
+%
+The ICON coding standard comprises three sections: 
+\begin{itemize}  
+\item \emph{Rules} comprise style features, which can be checked or diagnosed by 
+scripts or compiler warnings. Some features may even be adjusted by scripts.
+\item \emph{Conventions} comprise style features, which cannot be checked by a script but are
+  highly recommended to follow.
+\item \emph{Recommendations} refer to style features, which are mostly helpful but not 
+necessarily are applicable in all cases.
+\end{itemize}  
+
+% Rules
+%
+\subsection{Rules}
+%
+\begin{itemize}  
+\item Use free format syntax.
+%
+\item Characters
+\begin{itemize}
+\item Keywords in upper case
+\item Declared names (subroutines, functions, types, variables, etc.) in lower case
+\item Do not use tab characters in your code: this ensures that  the code looks as intended, 
+independent of local tab definitions. 
+\end{itemize}
+%
+\item Line continuation  
+\begin{itemize}
+\item Lines have a maximum length of 99 characters. This is convenient for viewing and printing.
+\item Continuation lines start with the ''\&'' sign.
+\item Split equation so that the operator ("+", "-", ...) follows the ''\&'' sign on the following line.
+\item Align the end-of-the-line ''\&'' of a continuation block.
+\item Align the beginning-of-the-line ''\&'' of a continuation block.
+\end{itemize}
+%
+\item Variables, constants , and operands
+\begin{itemize}
+\item Variable declarations always with "::" syntax
+\item Variable declarations always without DIMENSION attribute
+\item Variables and numbers of type \texttt{REAL} are declared with an explicit kind 
+specifier to be used from module \texttt{mo\_kind}, see Appendix.
+\item Use the working precision \texttt{wp}.
+\item No implicit casting, i.e. all operands of an equation must be of the same kind.
+\end{itemize}
+
+Example for the use of  \texttt{wp}:  
+
+\begin{fortran}  
+USE mo_kind, ONLY: wp  
+  
+IMPLICIT NONE  
+  
+! Declaration of a constant  of type REAL
+  
+REAL(wp), PARAMETER :: a_hour = 3600._wp  ! 1 hour in seconds   
+  
+! Declaration of a constant  of type INTEGER
+
+INTEGER,  PARAMETER :: two    = 2
+
+! Declaration of a 2d field  
+  
+REAL(wp), POINTER   :: z_snowcover(:,:)   
+  
+! Declaration of a local variable  
+  
+REAL(wp) :: z   
+  
+! make all operands of the same type as the variable z
+z = 4.0_wp * REAL(two,wp)
+\end{fortran}  
+  
+
+\begin{itemize}
+\item Names of types start with \texttt{t\_}
+\item Variables used as constants should be declared with the \texttt{PARAMETER} 
+attribute and used always without copying to local
+  variables.  This prevents from using different values for the same
+  constant.
+
+\end{itemize}
+%
+\item Indentation  
+\begin{itemize}
+\item Comments have to be aligned with the source code.
+\item Indentation by 2 blanks has to happen when scope changes.
+\item The leading ''\&'' character of continuation lines is indented by 2 characters w.r.t. the very 
+beginning of the continued line.  Text following the leading ''\&'' character should be vertically 
+aligned across the continuation lines belonging together.
+\end{itemize}
+%
+\item Do not use 
+\begin{itemize}
+\item STOP! Instead use subroutine finish of \texttt{mo\_exception} (The only exception 
+is \texttt{mo\_mpi})
+\item PRINT and WRITE! Instead use subroutine message of \texttt{mo\_exception}.
+\end{itemize}
+%
+\item Intrinsics, programs, functions and subroutines
+\begin{itemize}
+\item Use generic intrinsic functions only
+\item \texttt{USE} statements of a Fortran module are collected in a block directly following 
+the \texttt{MODULE} or \texttt{PROGRAM} statement.
+\item \texttt{USE} statements are always used as \texttt{USE} @module, \texttt{ONLY:}@ with 
+an explicit list of the used items.
+\item Each Fortran module or program contains a single \texttt{IMPLICIT NONE} statement, 
+following directly the \texttt{USE} block, if existing, or otherwise following directly the \texttt
+{MODULE} statement.
+\item Each Fortran module contains a single \texttt{PRIVATE} or \texttt{PUBLIC} statement,
+  following directly the \texttt{IMPLICIT NONE} statement. This \texttt{PRIVATE} or \texttt{PUBLIC}
+  statement defines the default external accessibility of the items (parameters, variables, 
+  procedures, ...) defined in this module. (It is generally safer to use \texttt{PRIVATE} as default.)
+\item The default \texttt{PRIVATE} (or \texttt{PUBLIC}) statement is followed by a \texttt{PUBLIC :: ...} 
+(or \texttt{PRIVATE :: ...}) statement listing all items for which the default setting does not hold.
+
+\item Subroutines and functions must follow a \texttt{CONTAINS} statement, i.e. they must be embedded in Fortran modules.
+\item Arguments of subroutines, which are not of type \texttt{POINTER}, are declared with \\
+  \texttt{INTENT(in|out|inout)}
+\item Arguments of functions, which are not of type \texttt{POINTER}, are declared with 
+\texttt{INTENT(in)}
+\end{itemize}
+ 
+\end{itemize}
+
+% Conventions
+%
+\subsection{Conventions}  
+\begin{itemize}  
+\item All new Fortran codes are based on the ICON Fortran template files
+\item Like the templates suggest always name program units and always use the \texttt{END  
+PROGRAM}; \texttt{END SUBROUTINE}; \texttt{END INTERFACE}; \texttt{END 
+MODULE}; etc constructs, again specifying the name of the program  
+unit. This helps finding the end of the current program  
+entity. \texttt{RETURN} is obsolete and so not necessary at the end of  
+program units.
+\item Programming and commenting in English. Use readable and meaningful English variable names.
+\item Never use a Fortran 2003 keyword as a name of a routine or variable!
+\item CPP keys are only used for:
+\begin{itemize}  
+\item Differentiating codes in relation to computer architecture and compiler properties
+\item Controlling the access to external codes (e.g. MPI and CDI library).
+\end{itemize}  
+\item Documentation of almost all used compiler directives can be found in the following 
+manuals. The list is not complete, because NEC refuses to publish it's compiler 
+documentation to the general public.
+\begin{itemize}  
+\item Standard pre-defined C/C++ Compiler Macros
+\item  Intel compiler documentation
+\item  Sun compiler documentation
+\item  PGI compiler documentation
+\item  NAG compiler documentation
+\item  IBM compiler documentation
+\item  GCC compiler documentation
+\item  OpenMP specification
+\end{itemize}  
+\item \texttt{CHARACTER(len=*) , PARAMETER :: ' \$ module\_subroutine\_name \$ID: n/a\$ \' }, 
+needs a script for the existing code and ..., use it with message and finish. Unify current usage.
+\item Separate the information to be output from the formatting
+  information on how to output it on I/O statements. E.g. don't put
+  text inside the brackets of the I/O statement.
+\end{itemize} 
+
+ % Recommendations
+ %
+\subsection{Recommendations}  
+%
+\begin{itemize}
+  
+\item In general subroutines or functions should not exceed a few hundred lines and
+each programming unit should begin with a header explaining the given
+sections.
+
+\item Any date follows the ISO 8601 standard. That is: YYYY-MM-DD
+  HH:MM:SS. Depending on the case, time information HH:MM:SS 
+  or its SS portion can be omitted. 
+  
+\item Use blank space, in the horizontal and vertical, to improve
+  readability.  In particular try to align related code into columns.
+  For example, instead of:
+  
+\begin{fortran}  
+           ! Initialize Variables  
+           i=1  
+           z_meaningfulname=3.0_wp  
+           z_SillyName=2.0_wp  
+\end{fortran}  
+  
+     write:  
+  
+\begin{fortran}  
+           ! Initialize variables  
+           i                = 1  
+           z_meaningfulname = 3.0_wp  
+           z_silly_name     = 2.0_wp  
+\end{fortran}
+    
+\item Try to avoid using transcendental functions (\texttt{EXP, SIN, COS, ...}). 
+If possibel use tables and interpolations, or use linearized versions.
+\item Try to prevent \texttt{IF}'s in a loop, instead of \texttt{IF} use, if possible, 
+\texttt{SELECT CASE}, or \texttt{MERGE}
+\item Avoid passing strings in the argument list (except for passing file names - 
+special treatment would be fine)
+
+\item Array notation should be used whenever possible. This should help  
+optimization regardless what machine architecture is used (at least in  
+theory) and will reduce the number of lines of code required. To  
+improve readability the array's shape should be shown in brackets, e.g.:  
+  
+\begin{fortran}  
+onedarraya(:)   = onedarrayb(:) + onedarrayc(:)  
+  
+twodarray(:, :) = scalar * anothertwodarray(:, :)  
+\end{fortran}
+\end{itemize}  
+  
+\begin{itemize} 
+\item  Use of \texttt{>}, \texttt{>=}, \texttt{==}, \texttt{<}, \texttt{<=},  
+\texttt{/=} instead of \texttt{.GT.}, \texttt{.GE.}, \texttt{.EQ.},  
+\texttt{.LT.}, \texttt{.LE.}, \texttt{.NE.} in logical comparisons is  
+recommended. The new syntax, being closer to standard mathematical  
+notation, should be clearer.
+
+\item  
+We recommend against the use of recursive routines for efficiency  
+reasons for computational intensive routine.
+
+\item When an error condition occurs inside a package, a
+  message describing what went wrong will be printed. The name of the
+  routine in which the error occurred must be included. It is
+  acceptable to terminate execution within a package, but the
+  developer may instead wish to return an error flag through the
+  argument list.  If the user wishes to terminate execution within the
+  package, a generic ICON coupler termination routine \texttt{finish}
+  must be called instead of issuing a Fortran STOP. Otherwise a
+  message-passing version of the model could hang.
+
+\end{itemize}  
+
+% Naming convention
+%
+\section{Naming convention}\label{sec_gvn}    
+%
+In order to have a readable an easily understandable code, we decided on a 
+naming convention for files as well as for variables, prefixes and so on.
+%
+\subsection{Pre- and suffixes}
+%
+\begin{itemize}
+%
+\item Fortran files
+\begin{itemize}
+\item driver programs: \texttt{atm\_master.f90}, \texttt{oce\_master.f90}, \texttt{cpl\_master.f90}, ...
+\item module files: \texttt{mo\_<name>.f90}
+\item utility interface files: \texttt{util\_<name>.c} $=>$ \texttt{mo\_util\_<name>.f90}
+\end{itemize}
+%
+\item include files for namelists
+\begin{itemize}
+\item collect in \texttt{icon-dev/include/}
+\item fortran include files are named \texttt{<atm|oce|lnd|cpl>\_<name>\_ctl.inc}
+\end{itemize}
+%
+\item functions/subroutines
+\begin{itemize}
+\item \texttt{init\_}...: allocating and setting time invariant variables, done once only 
+at the beginning of the model run
+\item \texttt{setup\_}...: set default values for namelists, read namelists, consistency checks, ...
+\item \texttt{prepare\_}...: within the time loop, set time variant fields/switches
+\item \texttt{clean\_}...: deallocate variables, ...
+\end{itemize}
+%
+\item types: \texttt{t\_<name>}
+%
+% \item variables 
+% \begin{itemize}
+% \item English, concise
+% % \item Variables related to the parallelization have the prefix \texttt{p\_}.
+% % \item Local scratch variables: \texttt{z\_aux, i\_aux, l\_aux}, (+ suffixes for grid position, if useful)
+% \end{itemize}
+%
+\item optional prefixes
+\begin{itemize}
+\item derivatives
+\begin{itemize}
+\item \texttt{ddt\_} : temporal dervatives
+\item \texttt{ddxn\_} : horizontal derivatives in normal direction
+\item \texttt{ddxt\_} : horizontal derivatives in tangential direction
+\item \texttt{ddz\_} : physical space vertical derivative (height coords.)
+\item \texttt{ddp\_} : physical space vertical derivative (pressure coords.)
+\end{itemize}
+
+\item fluxes
+\begin{itemize}
+\item \texttt{flx\_}
+\end{itemize}
+\end{itemize}
+
+\item optional suffixes: order: \texttt{<process><time>\_<vertical pos.><horizontal pos.>}
+\begin{itemize}
+\item processes: \texttt{<name>\_rad} etc.
+\item 2m: \texttt{\_2m}
+\item surface: \texttt{\_sfc}
+\item snow: \texttt{\_snow}
+\item ice: \texttt{\_ice}
+\item horizontal position
+\begin{itemize}
+\item \texttt{\_c}: cell center
+\item \texttt{\_e}: edge
+\item \texttt{\_v}: vertex
+\end{itemize}
+
+\item vertical position
+\begin{itemize}
+\item \texttt{\_m}: main level/mid level/full level
+\item \texttt{\_i}: interface between layers/half levels
+\end{itemize}
+
+\item time position
+\begin{itemize}
+\item \texttt{\_old}
+\item \texttt{\_now}
+\item \texttt{\_new}
+\end{itemize}
+
+\item vector representations
+\begin{itemize}
+\item \texttt{\_o}: orthogonal
+\item \texttt{\_q}: contravariant
+\item \texttt{\_p}: covariant
+\end{itemize}
+
+\item There should be as few as possible suffixes (as many as necessary). If there are 
+more than one suffixes needed, their ordering follows the list sequence above.
+
+\end{itemize}
+
+\item constants
+\begin{itemize}
+\item \texttt{\_dp}, \texttt{\_sp} floating point convention
+\end{itemize}
+
+\end{itemize}
+
+The important variables with global scope are supposed to follow the   
+CF-Conventions as they are adopted as well for PRISM, ESMF, and other  
+international projects. The tables can be found at:  
+http://www.cgd.ucar.edu/cms/eaton/cf-metadata/index.html    
+     
+% Automatic documentation
+%
+\section{Automatic documentation}  
+%
+Each function, subroutine, or module based on the template files (see Appendix) includes a 
+prologue instrumented for use with the Doxygen documentation tool (http://www.doxygen.org). 
+Doxygen can extract information on the structure of the code and compile lists of the declared
+objects, as for example types, variables, routines, modules,, and can show dependencies. In 
+addition Doxygen can compile texts embedded as comments in Fortran codes if marked by
+appropriate formatting instructions.
+%
+Running \texttt{make doc} in the ICON base directory (after the Makefile has been 
+generated by \texttt{./configure}) generates an HTML formatted Doxygen documentation.
+
+% Parallelization issues
+%
+\section{Parallelization issues}
+%
+ICON models are parallelized by MPI and/or OpenMP parallelization. MPI parallelization 
+means that separate model executables are running on sub-domains and communicating 
+with each other following the MPI standard. Following the MPI standard each such model 
+is named a process. A MPI parallelized ICON model is hence split into a number of processes 
+numprocs, or for short nprocs.
+%
+OpenMP parallelization means that the workload of a single model executable is shared by a 
+number of processors or so-called threads. If both methods are combined, the total workload is 
+shared by num\_procs\_ * num\_threads ''CPUs''.
+The naming convention used below is borrowed from the terms and names used in the MPI and 
+OpenMP standards. For variables in Fortran codes, the convention is to use names with prefix 
+''\texttt{p\_}''.\\
+%
+\subsection{Fine-grained parallelism using OpenMP}
+%
+Any OpenMP parallelization should be based on the most recent OpenMP 3.0 standard. \\
+{\color{blue}
+\texttt{http://www.openmp.org/mp-documents/spec30.pdf} }\\
+Here are the most important rules that we would ask you to adhere to, when 
+implementing OpenMP directives.
+%
+Due to the fact that different components coupled in an MPMD fashion may require different total 
+numbers of threads, a single environment variable \texttt{OMP\_NUM\_THREADS} needs later to 
+be replaced by specific environment varaibles OMP\_ATM\_THREADS and 
+\texttt{OMP\_OCE\_THREADS}.
+
+\begin{table}[htb]
+\renewcommand{\arraystretch}{1.4}
+\begin{center}
+% use packages: array,tabularx
+\begin{tabular}{|p{5cm}|p{7 cm}|p{3cm}|}
+\hline
+\textbf{ }  & \textbf{Environment variables in shell scripts}  & \textbf{Name in Fortran code} \\ 
+\hline\hline
+number of threads per process & \texttt{OMP\_NUM\_THREADS}, later: \texttt{OMP\_ATM\_THREADS} and \texttt{OMP\_OCE\_THREADS} & \texttt{p\_nthreads} \\ 
+ID of a single MPI process     & n.a. & \texttt{p\_threads} \\ 
+\hline
+\end{tabular}
+\caption{OMP of ICON.}\label{tbl_OMP}
+\end{center}
+\end{table}
+
+\begin{itemize}  
+  
+\item All OpenMP compiler directives must start with the directive sentinel 
+\texttt{!\$OMP} when using the (recommended) free format syntax.
+  
+\item Do not use combined parallel worksharing constructs like \texttt{!\$OMP PARALLEL DO} 
+or \texttt{!\$OMP PARALLEL WORKSHARE}. Instead use the parallel construct 
+(\texttt{!\$OMP PARALLEL}) followed by the desired worksharing construct (e.g.\ 
+\texttt{!\$OMP DO}). This will increase readability of the code.
+  
+\item Explicitly include loop control variables of a parallel \texttt{DO} loop or 
+a sequential loop enclosed in a parallel construct into a \texttt{PRIVATE} clause. 
+Although those variables are \texttt{PRIVATE} by default, please stick to this since it 
+will increase readability.
+  
+{\color{red}
+\item Be aware of Race-Conditions!}\\
+{\color{blue}
+Definition: Two threads access the same shared variable \textbf{and} at least one thread 
+modifies the variable \textbf{and} the accesses are concurrent, i.e.\ unsynchronized.}\\
+\textbf{Prototypical example:}\\
+\begin{fortran}  
+a(1) = 0._wp
+!$OMP PARALLEL
+!$OMP DO
+
+DO i=2, n
+  a(i) = 2.0_wp * i * (i-1)
+  b(i) = a(i) - a(i-1)
+ENDDO
+
+!$OMP END DO
+!$OMP END PARALLEL
+\end{fortran}
+Note that this can lead to unexpected results. It is not ensured that $a(i-1)$ has already 
+been calculated, when accessed for the calculation of $b(i)$.\\
+
+\textbf{ICON-specific example:}\\
+\begin{fortran}  
+#ifdef TEST_OPENMP
+!$OMP PARALLEL PRIVATE(i_startblk,i_endblk)
+#endif
+
+i_startblk = ptr_patch%cells%start_blk(rl_start,1)
+i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
+
+#ifdef TEST_OPENMP
+!$OMP DO PRIVATE(...)
+#endif
+.
+ Do some work
+.
+
+#ifdef TEST_OPENMP
+!$OMP END DO
+!$OMP END PARALLEL
+#endif
+\end{fortran}
+Even in this case it is necessary to declare \texttt{i\_startblk} and \texttt{i\_endblk} as 
+\texttt{PRIVATE}, although each thread writes the same result to \texttt{i\_startblk} and 
+\texttt{i\_endblk}. On the IBM-machine writing to the same shared variable simultaneously 
+leads to unexpected results.
+
+{\color{red}
+\item Check for strong sequential equivalence (i.e.\ bitwise identical results) of your 
+parallelized code whenever possible. If a reduction operator (\texttt{reduction(operator; list)}) 
+is used, strong sequential equivalence is unlikely to occur. Then, at least, check for weak 
+sequential equivalence (equivalent mathematically, but due to the quirks of floating 
+point arithmetic, not bitwise identical).}
+
+\item Note: reduction operators as well as the \texttt{WORKSHARE} directive may still be 
+computationally inefficient depending on the compiler. Careful runtime testing is required if 
+those constructs are used.
+\end{itemize}
+
+
+\subsection{Parallelism using MPI}
+
+Scripts may need to distinguish the number of processes used by different models, like the 
+atmosphere and ocean models, and the coupler. Fortran variables and subroutines/functions 
+related to MPI parallelization are named with a prefix ''\texttt{p\_}''.
+
+\begin{table}[htb]
+\renewcommand{\arraystretch}{1.4}
+\begin{center}
+% use packages: array,tabularx
+\begin{tabular}{|p{5cm}|p{7 cm}|p{3cm}|}
+\hline
+\textbf{ }  & \textbf{Variables in shell scripts}  & \textbf{Name in Fortran code} \\ 
+\hline\hline
+number of threads per process & \texttt{NPROCS}, later: \texttt{ATM\_NPROCS, OCE\_NPROCS} and \texttt{CPL\_NPROCS} & \texttt{p\_nprocs} \\ 
+ID of a single process     & n.a. & \texttt{p\_rank} \\ 
+\hline
+\end{tabular}
+\caption{MPI of ICON.}\label{tbl_MPI}
+\end{center}
+\end{table}
+
+\section{Literature}  
+%
+Adams, J.C., W.S. Brainerd, R.A. Hendrickson, R.E. Maine, J.T. Martin, and B.T. Smith,
+The Fortran 2003 Handbook, Springer, 712 p., 2009.
+%
+Kalnay, E. et al., Rules for Interchange of Physical Parametrizations,   
+Bull. A.M.S., 70 No. 6, p 620, 1989.  
+%
+Metcalf, M., J. Reid and M. Cohen, Fortran 95/2003 explained, 
+Oxford University Press, 412 p., 2004.
+%
+Phillip, A., G. Cats, D. Dent, M. Gertz, and J. L. Ricard,  
+European Standards For Writing and Documenting Exchangeable Fortran 90  
+Code, Version 1.1,1995.\\  
+\texttt{http://www.meto.gov.uk/research/nwp/numerical/fortran90/f90\_standards.html}  
+ 
+
+\newpage
+
+\part{Appendix}  
+
+\begin{appendix}  
+
+\section{Template Fortran files}  
+%
+Template Fortran files are provided to support the programing following the programming 
+style described above:
+\begin{itemize}
+\item Main programs: \texttt{src/templates/template\_main.f90}
+\item Modules: \texttt{src/templates/template\_module.f90}
+\item Subroutines: \texttt{src/templates/template\_subroutine.f90}
+\item Functions: \texttt{src/templates/template\_function.f90}
+\end{itemize}
+
+\section{Kind specifiers for REALs and INTEGERs}\label{app_knd}  
+%
+All REAL numbers and variables must be defined or declared, respectively, with a specified 
+REAL kind. For integers this is advised for loop indices only. Kind specifiers are provided in: 
+\begin{itemize}
+\item \texttt{src/shared/mo\_kind.f90}
+\end{itemize}
+%
+\texttt{mo\_kind} provides the following kind specifiers:  
+%
+\begin{center}  
+\begin{tabular}{|c|c|c|}
+\hline  
+REAL kind	& precission			& assumed number of bits	\\
+\hline
+\hline   
+\texttt{sp}		& 6 digits				& 32						\\
+\texttt{dp}		& 12 digits			& 64						\\
+\texttt{wp=dp}   & working precission		&						\\
+\hline
+\hline   
+INTEGER kind	& exp. range			& assumed number of bits	\\
+\hline
+\hline   
+\texttt{i4}		& 4					& 32						\\   
+\texttt{i8}		& 8					& 64						\\
+\hline 
+\end{tabular}    
+\end{center}
+%
+\begin{quote}  
+\textbf{Note:}  
+%
+The bit sizes given are not mandatory. The kind value is 
+defined by the precision/range, which results on current 
+systems in these bit sizes. This may change in future.
+\end{quote}  
+
+\section{Constants}\label{app_cn}  
+%
+Universal mathematical and physical constants are defined in modules. Such constants 
+can be used elsewhere by USE association, and they must not be defined locally.
+\begin{itemize}
+\item Mathematical constants: See file \texttt{src/shared/mo\_math\_constants.f90}
+\item Physical constants: See file \texttt{src/shared/mo\_physical\_constants.f90}
+\end{itemize}
+
+\section{Editor customization}\label{sec:editor_help}
+%
+Some editors support customized formatting for line indentation and adjustments of keyword 
+upper-case typing etc. This can be employed to facilitate programming in the style described 
+above. Find below settings for Emacs and Vim. 
+%
+\subsection{Emacs}
+Add the following lines to the ".emacs" file in your Unix home directory to support the Fortran
+programming following the standard described above. 
+\begin{lisp}
+(custom-set-variables
+  ;; custom-set-variables was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ '(f90-mode-hook (quote (f90-add-imenu-menu)))
+ '(f90-auto-keyword-case (quote upcase-word))
+ '(f90-comment-region "!!$")
+ '(f90-directive-comment-re "![\\$hHdDcCoOI][oOpPiIdDcCB][mMfFrRiIlL]")
+ '(f90-indented-comment-re "!")
+ '(f90-program-indent 2)
+ '(f90-type-indent 2)
+ '(f90-associate-indent 2)
+ '(f90-do-indent 2)
+ '(f90-if-indent 2)
+ '(f90-continuation-indent 2)
+ '(f90-beginning-ampersand t)
+ '(f90-break-before-delimiters t)
+ '(f90-break-delimiters "[-+\\*/><=,% 	]")
+ '(f90-smart-end (quote blink))
+ '(show-paren-mode t)
+ '(line-number-mode t)
+ '(column-number-mode t)
+ '(size-indication-mode t)
+)
+(custom-set-faces
+  ;; custom-set-faces was added by Custom.
+  ;; If you edit it by hand, you could mess it up, so be careful.
+  ;; Your init file should contain only one such instance.
+  ;; If there is more than one, they won't work right.
+ )
+(if (window-system)
+    (set-frame-width (selected-frame) 99)
+)
+\end{lisp}
+%
+\subsection{Vim}
+Add the following lines to the Vim setup file in your Unix home directory::
+\begin{csh}
+set nocompatible
+filetype plugin indent on
+syntax enable
+set shiftwidth=2
+set smarttab
+set autoindent 
+set expandtab
+\end{csh}
+
+\section{Preprocessor directives}
+%
+Preprocessor directives are most useful for distinguishing architectures 
+and operating system dependent code variants. However, they are usually not meant 
+for selecting code options, with the exception of debugging. Use preprocessor directives
+as seldom as possible and as often as necessary!
+%
+The following compiler predefined preprocessor macros are available:
+%
+\begin{center}
+\begin{tabular}{|l|c|}\hline
+IBM xlf, xlc		& \texttt{\_\_xlC\_\_}				\\\hline
+NEC f90			& \texttt{\_\_SX\_\_}				\\\hline
+SUN f95			& \texttt{\_\_SUNPRO\_F95}		\\\hline
+GCC ($\ge$ 4.3.0) & \texttt{\_\_GFORTRAN\_\_}		\\\hline
+PGI pgf95			& \texttt{\_\_PGI}				\\\hline
+Intel				& \texttt{\_\_INTEL\_COMPILER}	\\\hline
+\end{tabular}
+\end{center}
+%
+If you like to set groups, make that at the beginning of  a source code
+file like:
+%
+\begin{fortran}  
+#if defined (__PGI)
+#define __ASYNC_GATHER 1
+#define __ASYNC_GATHER_ANY 1
+#endif
+!
+! Reshape is not that powerful implemented in some compiler
+!
+#if defined (__sun) || (__SX__) || defined (__PGI) || defined (__GFORTRAN__)
+#define __REPLACE_RESHAPE 1
+#endif
+!
+! Switch on explicit buffer packing and unpacking, allowing vectorization
+!
+#if defined (__SX__) || defined(__PGI) || (defined __xlC__)
+#define __EXPLICIT 1
+#endif
+!
+! Select communication type, if not defined NON BLOCKING is selected
+!
+#if defined (__PGI)
+#define __SENDRECV 1
+#endif
+\end{fortran}  
+
+\end{appendix}  
+  
+\end{document}  
+  
+  

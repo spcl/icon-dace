@@ -1,0 +1,1372 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE diagnostics SYSTEM "diagnostics.dtd">
+
+<diagnostics>
+  <aerosol id="aod_dust_340nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">340</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_380nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">380</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_440nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">440</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_500nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">500</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_550nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">550</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_675nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">675</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_870nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">870</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_1020nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1020</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_dust_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_dust_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_dust_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_dust_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_dust_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_dust_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_dust_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_dust_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_dust_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_dust_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62001</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="dusta_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62001</constituentType>
+  </aerosol>
+  <aerosol id="dustb_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62001</constituentType>
+  </aerosol>
+  <aerosol id="dustc_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">203</parameterNumber>
+    <constituentType type="int">62001</constituentType>
+  </aerosol>
+  <aerosol id="ustar_thres">
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">2</parameterCategory>
+    <parameterNumber type="int">203</parameterNumber>
+  </aerosol>
+  <aerosol id="aod_seas_340nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">340</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_380nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">380</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_440nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">440</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_500nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">500</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_550nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">550</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_675nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">675</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_870nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">870</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_1020nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1020</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_seas_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_seas_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_seas_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_seas_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_seas_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_seas_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_seas_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_seas_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_seas_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_seas_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62008</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="seasa_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">204</parameterNumber>
+    <constituentType type="int">62008</constituentType>
+  </aerosol>
+  <aerosol id="seasb_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">205</parameterNumber>
+    <constituentType type="int">62008</constituentType>
+  </aerosol>
+  <aerosol id="seasc_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">206</parameterNumber>
+    <constituentType type="int">62008</constituentType>
+  </aerosol>
+  <aerosol id="aod_ash_340nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">340</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_380nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">380</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_440nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">440</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_500nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">500</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_550nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">550</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_675nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">675</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_870nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">870</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_1020nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1020</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="aod_ash_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">102</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_ash_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_ash_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="bsc_ash_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_ash_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_ash_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="ceil_ash_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">108</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_ash_355nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">355</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_ash_532nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">532</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="sat_ash_1064nm">
+    <productDefinitionTemplate type="int">48</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">107</parameterNumber>
+    <aerosolType type="int">62025</aerosolType>
+    <typeOfSizeInterval type="int">255</typeOfSizeInterval>
+    <typeOfWavelengthInterval type="int">11</typeOfWavelengthInterval>
+    <scaledValueOfFirstWavelength type="int">1064</scaledValueOfFirstWavelength>
+    <scaleFactorOfFirstWavelength type="int">9</scaleFactorOfFirstWavelength>
+  </aerosol>
+  <aerosol id="asha_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">207</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ashb_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">208</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ashc_diam">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">254</parameterCategory>
+    <parameterNumber type="int">209</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_total_mc">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">0</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_SFC_200">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_200_350">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_350_550">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_SFC_100">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_100_245">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_245_390">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_max_total_mc_390_530">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">61</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_total_mc_vi">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">1</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_hml_max">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">62</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+  </aerosol>
+  <aerosol id="ash_cloud_base_2000">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">3</parameterCategory>
+    <parameterNumber type="int">6</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+    <typeOfFirstFixedSurface type="int">21</typeOfFirstFixedSurface>
+    <scaledValueOfFirstFixedSurface type="int">2000</scaledValueOfFirstFixedSurface>
+    <scaleFactorOfFirstFixedSurface type="int">9</scaleFactorOfFirstFixedSurface>
+    <typeOfSecondFixedSurface type="int">101</typeOfSecondFixedSurface>
+  </aerosol>
+  <aerosol id="ash_cloud_top_2000">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">3</parameterCategory>
+    <parameterNumber type="int">6</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+    <typeOfFirstFixedSurface type="int">22</typeOfFirstFixedSurface>
+    <scaledValueOfFirstFixedSurface type="int">2000</scaledValueOfFirstFixedSurface>
+    <scaleFactorOfFirstFixedSurface type="int">9</scaleFactorOfFirstFixedSurface>
+    <typeOfSecondFixedSurface type="int">101</typeOfSecondFixedSurface>
+  </aerosol>
+  <aerosol id="ash_cloud_base_4000">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">3</parameterCategory>
+    <parameterNumber type="int">6</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+    <typeOfFirstFixedSurface type="int">21</typeOfFirstFixedSurface>
+    <scaledValueOfFirstFixedSurface type="int">4000</scaledValueOfFirstFixedSurface>
+    <scaleFactorOfFirstFixedSurface type="int">9</scaleFactorOfFirstFixedSurface>
+    <typeOfSecondFixedSurface type="int">101</typeOfSecondFixedSurface>
+  </aerosol>
+  <aerosol id="ash_cloud_top_4000">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">3</parameterCategory>
+    <parameterNumber type="int">6</parameterNumber>
+    <constituentType type="int">62025</constituentType>
+    <typeOfFirstFixedSurface type="int">22</typeOfFirstFixedSurface>
+    <scaledValueOfFirstFixedSurface type="int">4000</scaledValueOfFirstFixedSurface>
+    <scaleFactorOfFirstFixedSurface type="int">9</scaleFactorOfFirstFixedSurface>
+    <typeOfSecondFixedSurface type="int">101</typeOfSecondFixedSurface>
+  </aerosol>
+  <aerosol id="Cs-137w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="Cs-137d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="I-131aw">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30141</constituentType>
+  </aerosol>
+  <aerosol id="I-131ad">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30141</constituentType>
+  </aerosol>
+  <aerosol id="Te-132w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30129</constituentType>
+  </aerosol>
+  <aerosol id="Te-132d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30129</constituentType>
+  </aerosol>
+  <aerosol id="Zr-95w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30079</constituentType>
+  </aerosol>
+  <aerosol id="Zr-95d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30079</constituentType>
+  </aerosol>
+  <aerosol id="Xe-133w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30161</constituentType>
+  </aerosol>
+  <aerosol id="Xe-133d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30161</constituentType>
+  </aerosol>
+  <aerosol id="I-131gw">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30138</constituentType>
+  </aerosol>
+  <aerosol id="I-131gd">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30138</constituentType>
+  </aerosol>
+  <aerosol id="I-131ow">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30139</constituentType>
+  </aerosol>
+  <aerosol id="I-131od">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30139</constituentType>
+  </aerosol>
+  <aerosol id="Ba-140w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30175</constituentType>
+  </aerosol>
+  <aerosol id="Ba-140d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30175</constituentType>
+  </aerosol>
+  <aerosol id="Ru-103w">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30102</constituentType>
+  </aerosol>
+  <aerosol id="Ru-103d">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30102</constituentType>
+  </aerosol>
+  <aerosol id="avg_Cs-137">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="avg_I-131a">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30141</constituentType>
+  </aerosol>
+  <aerosol id="avg_Te-132">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30129</constituentType>
+  </aerosol>
+  <aerosol id="avg_Zr-95">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30079</constituentType>
+  </aerosol>
+  <aerosol id="avg_Xe-133">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30161</constituentType>
+  </aerosol>
+  <aerosol id="avg_I-131g">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30138</constituentType>
+  </aerosol>
+  <aerosol id="avg_I-131o">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30139</constituentType>
+  </aerosol>
+  <aerosol id="avg_Ba-140">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30175</constituentType>
+  </aerosol>
+  <aerosol id="avg_Ru-103">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30102</constituentType>
+  </aerosol>
+  <aerosol id="acc_drydepo">
+    <tracername_list type="char">dusta,dustb,dustc,dusta0,dustb0,dustc0</tracername_list>
+    <parameterNumber_list type="char">192,192,192,193,193,193</parameterNumber_list>
+    <productDefinitionTemplate_list type="char">67,67,67,67,67,67</productDefinitionTemplate_list>
+    <typeOfStatisticalProcessing type="int">1</typeOfStatisticalProcessing>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <typeOfDistributionFunction type="int">8</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">3</numberOfModeOfDistribution>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+    <scaledValueOfDistributionFunctionParameter_1 type="int">1700</scaledValueOfDistributionFunctionParameter_1>
+    <scaleFactorOfDistributionFunctionParameter_1 type="int">3</scaleFactorOfDistributionFunctionParameter_1>
+    <scaledValueOfDistributionFunctionParameter_2 type="int">2650</scaledValueOfDistributionFunctionParameter_2>
+    <scaleFactorOfDistributionFunctionParameter_2 type="int">0</scaleFactorOfDistributionFunctionParameter_2>
+  </aerosol>
+  <aerosol id="acc_wetdepo">
+    <tracername_list type="char">dusta,dustb,dustc,dusta0,dustb0,dustc0</tracername_list>
+    <parameterNumber_list type="char">194,194,194,195,195,195</parameterNumber_list>
+    <productDefinitionTemplate_list type="char">67,67,67,67,67,67</productDefinitionTemplate_list>
+    <typeOfStatisticalProcessing type="int">1</typeOfStatisticalProcessing>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <typeOfDistributionFunction type="int">8</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">3</numberOfModeOfDistribution>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+    <scaledValueOfDistributionFunctionParameter_1 type="int">1700</scaledValueOfDistributionFunctionParameter_1>
+    <scaleFactorOfDistributionFunctionParameter_1 type="int">3</scaleFactorOfDistributionFunctionParameter_1>
+    <scaledValueOfDistributionFunctionParameter_2 type="int">2650</scaledValueOfDistributionFunctionParameter_2>
+    <scaleFactorOfDistributionFunctionParameter_2 type="int">0</scaleFactorOfDistributionFunctionParameter_2>
+  </aerosol>
+  <aerosol id="acc_wetdepo_rrsfc">
+    <tracername_list type="char">dusta,dustb,dustc,dusta0,dustb0,dustc0</tracername_list>
+    <parameterNumber_list type="char">196,196,196,197,197,197</parameterNumber_list>
+    <productDefinitionTemplate_list type="char">67,67,67,67,67,67</productDefinitionTemplate_list>
+    <typeOfStatisticalProcessing type="int">1</typeOfStatisticalProcessing>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <typeOfDistributionFunction type="int">8</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">3</numberOfModeOfDistribution>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+    <scaledValueOfDistributionFunctionParameter_1 type="int">1700</scaledValueOfDistributionFunctionParameter_1>
+    <scaleFactorOfDistributionFunctionParameter_1 type="int">3</scaleFactorOfDistributionFunctionParameter_1>
+    <scaledValueOfDistributionFunctionParameter_2 type="int">2650</scaledValueOfDistributionFunctionParameter_2>
+    <scaleFactorOfDistributionFunctionParameter_2 type="int">0</scaleFactorOfDistributionFunctionParameter_2>
+  </aerosol>
+  <aerosol id="emiss">
+    <tracername_list type="char">dusta,dustb,dustc</tracername_list>
+    <parameterNumber_list type="char">3,3,3</parameterNumber_list>
+    <productDefinitionTemplate_list type="char">57,57,57</productDefinitionTemplate_list>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <typeOfDistributionFunction type="int">8</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">3</numberOfModeOfDistribution>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+    <scaledValueOfDistributionFunctionParameter_1 type="int">1700</scaledValueOfDistributionFunctionParameter_1>
+    <scaleFactorOfDistributionFunctionParameter_1 type="int">3</scaleFactorOfDistributionFunctionParameter_1>
+    <scaledValueOfDistributionFunctionParameter_2 type="int">2650</scaledValueOfDistributionFunctionParameter_2>
+    <scaleFactorOfDistributionFunctionParameter_2 type="int">0</scaleFactorOfDistributionFunctionParameter_2>
+  </aerosol>
+  <aerosol id="acc_emiss">
+    <tracername_list type="char">dusta,dustb,dustc</tracername_list>
+    <parameterNumber_list type="char">3,3,3</parameterNumber_list>
+    <productDefinitionTemplate_list type="char">67,67,67</productDefinitionTemplate_list>
+    <typeOfStatisticalProcessing type="int">1</typeOfStatisticalProcessing>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <typeOfDistributionFunction type="int">8</typeOfDistributionFunction>
+    <numberOfModeOfDistribution type="int">3</numberOfModeOfDistribution>
+    <numberOfDistributionFunctionParameters type="int">2</numberOfDistributionFunctionParameters>
+    <scaledValueOfDistributionFunctionParameter_1 type="int">1700</scaledValueOfDistributionFunctionParameter_1>
+    <scaleFactorOfDistributionFunctionParameter_1 type="int">3</scaleFactorOfDistributionFunctionParameter_1>
+    <scaledValueOfDistributionFunctionParameter_2 type="int">2650</scaledValueOfDistributionFunctionParameter_2>
+    <scaleFactorOfDistributionFunctionParameter_2 type="int">0</scaleFactorOfDistributionFunctionParameter_2>
+  </aerosol>
+  <aerosol id="BETUrprec">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUreso">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUress">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsdes">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUctsum">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisn">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisl">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisa">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUfe">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="ALNUrprec">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUreso">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUress">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsdes">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUctsum">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisn">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisl">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisa">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUfe">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="CORYrprec">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYreso">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYress">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYsdes">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYctsum">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYsaisn">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYsaisl">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYsaisa">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="CORYfe">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62104</constituentType>
+  </aerosol>
+  <aerosol id="POACrprec">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACreso">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACress">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsdes">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACctsum">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisn">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisl">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisa">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACfe">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="AMBRrprec">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRreso">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRress">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRsdes">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRctsum">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRsaisn">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRsaisl">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRsaisa">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+  <aerosol id="AMBRfe">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62200</constituentType>
+  </aerosol>
+</diagnostics>

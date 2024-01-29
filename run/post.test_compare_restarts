@@ -1,0 +1,94 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+# compare the restart files
+#
+# requires the definition of the following variables
+# restart_experiment
+#
+
+#-----------------------------------------------------------------------------
+get_last_1_restart()
+{
+  model_restart_param=$1
+  restart_list=$(ls restart_*${model_restart_param}*_DOM*.nc)
+  
+  last_restart=""
+  last_1_restart=""  
+  for restart_file in $restart_list
+  do
+    last_1_restart=$last_restart
+    last_restart=$restart_file
+
+    echo $restart_file $last_restart $last_1_restart
+  done  
+}
+#-----------------------------------------------------------------------------
+check_restarts()
+{
+  restart_file=$1
+
+  if [ ! -r $restart_folder_1/$restart_file ] ; then
+    echo  " $restart_folder_1/$restart_file does nor exist"
+    exit 0
+  fi
+  if [ ! -r $restart_folder_2/$restart_file ] ; then
+    echo  " $restart_folder_2/$restart_file does nor exist"
+    exit 0
+  fi
+
+  ${cdo_diff} $restart_folder_1/$restart_file $restart_folder_2/$restart_file > $diff_file
+
+  # check if  diff_file contains 'records' 
+  grep "records" $diff_file
+  return_status=$?
+  if [ $return_status != 0 ] ; then
+    check_error 0 "empty diff file"
+    return
+  fi
+
+  grep " 0 of .* records" $diff_file
+  return_status=$?
+  if [ $return_status != 0 ] ; then
+    cat $diff_file
+  fi
+
+  check_error $return_status "restart files differ"
+}
+#-----------------------------------------------------------------------------
+
+restart_folder_1=$basedir/experiments/$EXPNAME
+restart_folder_2=$basedir/experiments/${EXPNAME}_restart
+diff_file=${EXPNAME}_compare_restarts.diff
+
+#-----------------------------------------------------------------------------
+# get the last restart files
+cd $restart_folder_2
+get_last_1_restart "atm"
+restart_atmo=$last_restart
+get_last_1_restart "oce"
+restart_ocean=$last_restart
+#-----------------------------------------------------------------------------
+
+
+cd $basedir/run
+
+if [ x$restart_atmo != x ] ; then
+  check_restarts $restart_atmo
+fi
+if [ x$restart_ocean != x ] ; then
+  check_restarts $restart_ocean
+fi
+
+exit $STATUS
+#-------------------------------------------------------------------

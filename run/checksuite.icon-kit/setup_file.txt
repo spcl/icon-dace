@@ -1,0 +1,2 @@
+runctrl_examples/run_scripts/exp.testsuite.chem0_rorg_base CHEM0_chemrorg none 00:15:00 normal nodes=10
+

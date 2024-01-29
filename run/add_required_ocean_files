@@ -1,0 +1,154 @@
+#!/bin/bash
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#=======================================================
+  # input folders
+  # define the ocean location. 
+  #  ocean_location="local" means the local grids folders
+  #  ocean_location="buildbot" means the standard buildbot oes path: ${icon_data_rootFolder}/oes}
+  #  ocean_location="" means user defined path in ocean_data_MainFolder, or if undefined the standard buildbot oes path: ${icon_data_rootFolder}/oes}
+  #  in other cases where 
+  #    ocean_location/="" then ocean_data_MainFolder=/pool/data/ICON/oes/${ocean_location}
+  if [[ x$BB_SYSTEM != "x" ]] ; then
+    ocean_location=${ocean_location:="buildbot"}
+  else
+    ocean_location=${ocean_location:="fluent"}
+  fi
+  #ocean_location= ${ocean_location:="buildbot"}
+  #ocean_location="local" #${ocean_location:="local"}
+  builbot_ocean_reference_path=/pool/data/ICON/buildbot_data/ref/2023-11-17.icon-mpim.9a0fdc7f17e0
+  get_file=${get_file:='add_link_file'} # or 'add_required_file' for copying
+
+  # if there are local settings from the user... use them
+  if [[ -f ocean_local_settings ]] ; then
+    source ./ocean_local_settings
+  fi
+
+
+  if [[ "x$ocean_location" = "xbuildbot" ]] ; then
+    ocean_data_MainFolder=${icon_data_rootFolder}/buildbot_data/oes
+  elif [[ "x$ocean_location" = "xlocal" ]] ; then
+    ocean_data_MainFolder=${basedir}/grids 
+    ocean_data_InputFolder=${ocean_data_InputFolder:=${ocean_data_MainFolder}}
+  elif [[ "x$ocean_location" != "x" ]] ; then
+    ocean_data_MainFolder=${icon_data_rootFolder}/oes/${ocean_location}
+  fi
+  #if ocean_data_MainFolder not defined, use the buildbot root folder
+  ocean_data_MainFolder=${ocean_data_MainFolder:=${icon_data_rootFolder}/buildbot_data/oes}
+  grid_name=${ocean_grids%.nc}
+  ocean_data_InputFolder=${ocean_data_InputFolder:=${ocean_data_MainFolder}/${grid_name}}
+  grids_folder=${grids_folder:=${ocean_data_InputFolder}}
+  
+  ocean_forcing_folder=${ocean_forcing_folder:=${ocean_data_InputFolder}}
+  ocean_init_folder=${ocean_init_folder:=${ocean_data_InputFolder}}
+  ocean_relax_folder=${ocean_relax_folder:=${ocean_data_InputFolder}}
+  ocean_dust_folder=${ocean_dust_folder:=${ocean_data_InputFolder}}
+  ocean_nitro_folder=${ocean_nitro_folder:=${ocean_data_InputFolder}}
+  
+  #=======================================================
+  # input file names  
+  #pre/postfixes of input files
+  file_vertical_levels="${ocean_vertical_levels}levels"
+  init_DataType=${init_DataType:="omipInitialState-AnnualAverage"}  # needs to be changed to phc3.0 30 year climatology
+  relax_DataType=${relax_DataType:="omipRelaxSurface"}  
+  dust_DataType=${dust_DataType:="MAHOWALDDUST"}  
+  nitro_DataType=${nitro_DataType:="ndepo_CMIP_NCAR_CCMI-1-0_gr_185001-185012-clim"}  
+  forcing_DataType=${forcing_DataType:="omipForcing-mpiom"}
+  if [[ "x$forcing_timescale" = "x1" ]] ; then
+    forcing_FileFrequence=${forcing_FileFrequence:="Annual"}
+  elif [[ "x$forcing_timescale" = "x12" ]] ; then
+    forcing_FileFrequence=${forcing_FileFrequence:="MonthlyMean"}
+  elif [[ "x$forcing_timescale" = "x365" ]] ; then
+    forcing_FileFrequence=${forcing_FileFrequence:="Daily"}
+  fi
+ 
+  ocean_forcing_filename=${ocean_forcing_filename:=${forcing_DataType}${forcing_FileFrequence}-${grid_name}.nc}
+  ocean_forcing_InputFilename=${ocean_forcing_folder}/${ocean_forcing_filename}
+
+  ocean_initialState_filename=${ocean_initialState_filename:=${init_DataType}-${grid_name}-${file_vertical_levels}.nc}
+  ocean_initialState_InputFilename=${ocean_init_folder}/${ocean_initialState_filename}
+
+  ocean_relax_filename=${ocean_relax_filename:=${relax_DataType}-${grid_name}.nc}
+  ocean_relax_InputFilename=${ocean_relax_folder}/${ocean_relax_filename}
+
+  ocean_dust_filename=${ocean_dust_filename:=${dust_DataType}_${grid_name}.nc}
+  ocean_dust_InputFilename=${ocean_dust_folder}/${ocean_dust_filename}
+
+  ocean_nitro_filename=${ocean_nitro_filename:=${grid_name}_${nitro_DataType}.nc}
+  ocean_nitro_InputFilename=${ocean_nitro_folder}/${ocean_nitro_filename}
+  #=======================================================
+  # re-naming of the input files when copying to the experiment folder
+  ocean_forcing_modelFilename="ocean-flux.nc"
+  ocean_initialState_modelFilename="initial_state.nc"
+  ocean_relax_modelFilename="ocean-relax.nc"
+  ocean_dust_modelFilename="dust.nc"
+  ocean_nitro_modelFilename="nitrogen.nc"
+   
+  #=======================================================
+  # add required files if this is not post processing
+  case "x$job_name" in
+    *post*)
+      # for postprocessing we do not need files
+    ;;
+    #-------------------------------------------------
+    *)
+      # add files for runing the ocean  
+      if [[ "x$iforc" = "x12" ]] ; then
+        ls -l $ocean_forcing_InputFilename
+        if [ $? -eq 0 ]; then
+          $get_file ${ocean_forcing_InputFilename}     $ocean_forcing_modelFilename
+        else
+          echo "WARNING: $ocean_forcing_InputFilename does not exist - proceed from local disk"
+        fi
+      fi
+
+      #--------------------------------------------------
+      if [[ "x$iforc" = "x12" ]] ; then
+        use_file_initialConditions=".true."
+      fi
+      if [[ "x$use_file_initialConditions" = "x.true." ]] ; then
+        ls -l $ocean_initialState_InputFilename
+        if [ $? -eq 0 ]; then
+          $get_file ${ocean_initialState_InputFilename}          $ocean_initialState_modelFilename
+        else
+          echo "WARNING: $ocean_initialState_InputFilename does not exist - proceed from local disk"
+        fi
+      fi
+      if [[ "x$use_hamocc" = "xyes" ]] ; then
+       ls -l $ocean_dust_InputFilename
+       if [ $? -eq 0 ]; then
+         $get_file ${ocean_dust_InputFilename}          $ocean_dust_modelFilename
+       else
+         echo "WARNING: $ocean_initialState_InputFilename does not exist - proceed from local disk"
+       fi
+       ls -l $ocean_nitro_InputFilename
+       if [ $? -eq 0 ]; then
+         $get_file ${ocean_nitro_InputFilename}          $ocean_nitro_modelFilename
+       else
+         echo "WARNING: $ocean_initialState_InputFilename does not exist - proceed from local disk"
+       fi
+      fi
+
+      #--------------------------------------------------
+      if [[ "x$init_relax" = "x1" ]] ; then
+        ls -l $ocean_relax_InputFilename
+        if [ $? -eq 0 ]; then
+          $get_file ${ocean_relax_InputFilename} $ocean_relax_modelFilename
+        else
+          echo "WARNING: Cannot find restart file: ${ocean_relax_InputFilename}"
+        fi
+
+      fi
+    ;;
+  esac
+
+  #===============================================================================================

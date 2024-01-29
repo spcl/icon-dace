@@ -1,0 +1,106 @@
+#! /bin/sh
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#
+# Purely file system based flock replacement for use across hosts
+#
+
+SHELL_COMMAND=''
+EXCL_LOCK=true
+
+# Operation modes.
+# No support for non-blocking, timeout, or fd closing yet.
+while getopts sxh OPTOPT
+do
+    case $OPTOPT in
+        x) EXCL_LOCK=true;;
+        s) EXCL_LOCK=false;;
+        h) echo 'Usage: filelock [-sx] file_or_dir {-c command}|command...' >&2
+           exit 0;;
+        *) exit 1;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# We expect at least a file or dir name plus -c or a command to be executed.
+# Using a file descriptor is currently not supported.
+[[ -z "$2" ]] && { echo 'Oops: invalid number of parameters' >&2; exit 1; }
+filepath="$1"
+shift
+
+# Get shell command line if given
+OPTIND=0
+while getopts c: OPTOPT
+do
+    case $OPTOPT in
+        c) SHELL_COMMAND="$OPTARG";;
+        *) exit 1;;
+    esac
+done
+shift $((OPTIND - 1))
+
+# We need three different lock: master, excl, and shared.
+# Shared locks are named by host and process id and are placed in a subdir.
+# The master lock is needed because operations with shareddir are not atomic.
+linktag=LOCKED
+separator=''
+[ -d "$filepath" ] && $separator=/
+
+lockfile="$filepath$separator~filelock~"
+shareddir="$filepath$separator~filelock:read~"
+sharedfile="$shareddir/$(hostname):$$"
+exclfile="$filepath$separator~filelock:write~"
+
+# We need polling, so time granularity must not be too fine.
+# Fractional seconds only supported by GNU sleep.
+WAIT=.25
+wait_for () { while ! "$@"; do sleep $WAIT; done > /dev/null 2>&1; }
+run_over () { "$@" > /dev/null 2>&1; }
+
+wait_for ln -s $linktag "$lockfile"
+trap 'rm -vf "$lockfile"' 15
+if $EXCL_LOCK
+then
+    run_over mkdir "$shareddir" # allows to use rmdir as semaphore
+    wait_for rmdir "$shareddir"
+    wait_for ln -s $linktag "$exclfile"
+    trap 'rm -vf "$exclfile" "$lockfile"' 15
+    trap 'rm -f "$exclfile"' 0
+else
+    wait_for ln -s $linktag "$exclfile"
+    trap 'rm -vf "$exclfile" "$lockfile"' 15
+    run_over mkdir "$shareddir"
+    run_over ln -s $linktag "$sharedfile"
+    trap 'rm -vf "$sharedfile" "$lockfile"' 15
+    rm -f "$exclfile"
+    # Use master lock on clean-up to avoid race with excl lock's mkdir
+    trap '
+        rm -f "$sharedfile"
+        wait_for ln -s $linktag "$lockfile"
+        run_over rmdir "$shareddir"
+        rm -f "$lockfile"
+    ' 0
+fi
+if $EXCL_LOCK
+then
+    trap 'rm -vf "$exclfile"' 15
+else
+    trap 'rm -vf "$sharedfile"' 15
+fi
+rm -f "$lockfile"
+
+if [ "$SHELL_COMMAND" ]
+then
+    ${SHELL:-/bin/sh} -c "$SHELL_COMMAND"
+else
+    "$@"
+fi

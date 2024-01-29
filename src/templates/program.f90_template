@@ -1,0 +1,30 @@
+! @page <program_name> <title>
+!
+! <Short description of function for listings and indices>
+!
+! <Describe the function of the routine and algorithm(s) used in the routine.>
+! <Include any applicable external references inline as module::procedure,>
+! <external_procedure(), or by using @see.>
+! <Don't forget references to literature.>
+!
+!
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
+PROGRAM <name>
+
+  USE <module>, ONLY:
+
+  IMPLICIT NONE
+
+  <<< program body starts here >>>
+
+END PROGRAM

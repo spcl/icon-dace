@@ -1,0 +1,861 @@
+; ICON
+;
+; ---------------------------------------------------------------
+; Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+; Contact information: icon-model.org
+; See AUTHORS.TXT for a list of authors
+; See LICENSES/ for license information
+; SPDX-License-Identifier: BSD-3-Clause
+; ---------------------------------------------------------------
+
+#! /usr/bin/env nclsh
+;
+; $Id: plot_timeser 314 2014-09-19 13:28:12Z m221078 $
+;
+
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_code.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/gsn_csm.ncl"
+load "$NCARG_ROOT/lib/ncarg/nclscripts/csm/contributed.ncl"
+
+;
+; Global settings
+;
+
+default_debug_mode = False
+valid_modes = (/"monitoring", "presentation"/)
+default_format = "pdf"
+default_legend_mode = True
+default_panel_rows = 4
+default_output_file = "plot_timeser"
+default_split_pages = False
+default_units_pos = "top"
+valid_units_pos = (/"top", "left", "none"/)
+default_attribute_names = (/"code"/)
+default_text_scale = 1.0
+default_line_scale = 1.0
+default_manifest = ""
+
+debug_mode = default_debug_mode
+
+;
+; Utility routines
+;
+
+;
+; Write debug messages
+;
+undef("debug_print")
+procedure debug_print(message)
+begin
+    if(debug_mode) then
+        print("Debug: " + message)
+    end if
+end
+
+;
+; Get long name and units in a single string.
+;
+undef("get_long_name")
+function get_long_name(data, default)
+local result
+begin
+    result = default
+    lname = get_valid_long_name_value(data)
+    if(.not. ismissing(lname(0))) then
+        result = lname(1)
+    end if
+    return result
+end
+
+undef("get_units")
+function get_units(data, default)
+local result, uname
+begin
+    result = default
+    uname = get_valid_units_value(data)
+    if(.not. ismissing(uname(0))) then
+        result = uname(1)
+    end if
+    return result
+end
+
+;
+; Get name of time coordinate
+;
+undef("get_time_name")
+function get_time_name(datafile [1]: file)
+local names, name, var_max, var_idx
+begin
+  names = getfilevarnames(datafile)
+  var_max = dimsizes(names)-1
+
+  ; Coordinate vars have the same name for data and dimension, and are 1D.
+  ; CF conforming time coords have an 'axis' attribute of 'T' or
+  ; a relative time description in their 'units' attribute
+  ; Just take the name of the first match.
+  do var_idx = 0, var_max
+    name = names(var_idx)
+    if( \
+        isfilevardim(datafile, name, name) .and. \
+        dimsizes(getfilevardimsizes(datafile, name)) .eq. 1 .and. \
+        ( \
+            ( isfilevaratt(datafile, name, "axis") .and. \
+              datafile->$name$@axis .eq. "T" ) \
+        .or. \
+            ( isfilevaratt(datafile, name, "units") .and. \
+              .not. ismissing( \
+                  str_index_of_substr(datafile->$name$@units, " since ", 1) \
+              ) ) \
+        ) \
+    ) \
+    then
+        return(name)
+    end if
+  end do
+  name = default_fillvalue("string")
+  name@_FillValue = name
+  return(name)
+end
+
+;
+; Create an empty list with default settings.
+;
+undef("empty_list")
+function empty_list()
+local result
+begin
+  result = NewList("fifo")
+  ListSetType(result, "join") ; convert to an array easily (needed since 6.1)
+  return(result)
+end ; empty_list
+
+;
+; Remove in-sequence duplicates from list.
+;
+undef("uniq")
+function uniq(xs[*])
+local size, result, result_list, i
+begin
+    size = dimsizes(xs)
+    result_list = empty_list()
+    ListPush(result_list, ""+xs(size-1)) ; work-around for bug in ListPush
+    do i = size-1, 0, 1
+        if(xs(i) .ne. result_list[0]) then
+            ListPush(result_list, ""+xs(i)) ; work-around for bug in ListPush
+        end if
+    end do
+    result = result_list[:]
+    return(result)
+end ; uniq
+
+;
+; Simplify file names to non-constant parts for labeling.
+;
+undef("get_labels_from_file_names")
+function get_labels_from_file_names(files[*]:string)
+local \
+    split_list, parts_num, file_max, file_idx, parts, part, part_index, \
+    part_idx, first_pattern, mismatch, pattern, labels
+begin
+
+  split_list = "/\_.:"
+
+  file_max = dimsizes(files)-1
+  
+  ; Singleton list is just passed back
+  if(file_max .eq. 0) then
+    files(file_max) = str_strip(str_join(str_split(files(file_max), split_list), " "))
+    return(files)
+  end if
+  
+  ; Split names at some of the usual separators, get size
+  parts_num = 0
+  do file_idx = 0, file_max
+    parts_num = max((/parts_num, dimsizes(str_split(files(file_idx), split_list))/)) 
+  end do
+  ; ; Assume last part to be file extension
+  ; parts_num = parts_num - 1
+
+  ; Split names at some of the usual separators, store
+  parts = new((/file_max+1, parts_num/), string)
+  parts = ""
+  do file_idx = 0, file_max
+    part = str_split(files(file_idx), split_list)
+    ; Put parts at end of array
+    parts(file_idx,parts_num-dimsizes(part):) = part
+    delete(part)
+  end do
+
+  ; Match up parts, taking all that are not found in all names
+  part_index = empty_list()
+  do part_idx = parts_num-1, 0, 1 ; reverse loop
+    first_pattern = parts(0,part_idx)
+    mismatch = False
+    do file_idx = 1, file_max
+        pattern = parts(file_idx,part_idx)
+        ; if(first_pattern .eq. "" .and. pattern .ne. "") then
+        ;     first_pattern = pattern
+        ; end if
+        ; if(pattern .ne. "" .and. first_pattern .ne. pattern) then
+        if(first_pattern .ne. pattern) then
+            mismatch = True
+        end if
+    end do
+    if(mismatch) then
+        ListPush(part_index, 0+part_idx) ; work-around for bug in ListPush
+    end if
+  end do
+
+  ; Create labels from match list
+  labels = new(file_max+1, string)
+  do file_idx = 0, file_max
+    labels(file_idx) = str_strip(str_join(uniq(parts(file_idx,part_index[:])), " "))
+    if(labels(file_idx) .eq. "") then
+        labels(file_idx) = "[baseline]"
+    end if
+  end do
+  
+  return(labels)
+
+end ; get_labels_from_file_names
+
+;
+; Duplicate first element in list if list is a singleton
+;
+undef("fill2")
+function fill2(xs[*])
+local result
+begin
+    if(dimsizes(xs) .eq. 1) then
+        result = (/ xs, xs /)
+        copy_VarAtts(xs, result)
+        result@filled = True
+    else
+        result = xs
+        result@filled = False
+    end if
+    return(result)
+end ; fill2
+
+;
+; Evaluate 'with' command line parameter
+;
+undef("push_with_parameter")
+procedure push_with_parameter(with, file_list, label_list)
+local size
+begin
+    size = dimsizes(with)
+    if(size .gt. 1) then
+        ListPush(file_list, ""+with(0))
+        ListPush(label_list, str_join(with(1:size-1),","))
+    else
+        ListPush(file_list, ""+with)
+        ListPush(label_list, ""+with)
+    end if
+end ; push_with_parameter
+
+;
+; Work around for NCL bug in calendar routines
+;
+undef("hack_calendar_attribute")
+procedure hack_calendar_attribute(time)
+begin
+  if(any((/"6.1.0", "6.1.2", "6.2.0", "6.2.1"/) .eq. get_ncl_version())) then
+    if(time@calendar .eq. "proleptic_gregorian") then
+        print("Hey: work-around for a bug in NCL version " + get_ncl_version())
+        print("Hey: replacing Proleptic Gregorian calendar by Gregorian calendar")
+        time@calendar = "gregorian"
+    end if
+  end if
+end ; hack_calendar_attribute
+
+;
+; Main routine
+;
+
+begin
+
+  ; Check command line arguments
+
+  ; Check debug settings
+  if(.not. isvar("debug")) then
+    debug_mode = default_debug_mode
+  else
+    debug_mode = debug
+  end if
+
+  ; Evaluate mode
+  if(isvar("mode")) then
+    if(mode .eq. "presentation") then
+        default_text_scale = 1.6
+        default_line_scale = 7.0
+        default_panel_rows = 1
+        default_attribute_names = (/""/)
+    else
+    if(mode .eq. "monitoring") then
+        default_panel_rows = 1
+    else
+        print("Oops: invalid mode '" + mode + "', must be one of " + \
+              "'" + str_join(valid_modes, "', '") + "'")
+        status_exit(1)
+    end if
+    end if
+  end if
+
+  ; Supply default for workstation format
+  if(.not. isvar("format")) then
+    format = default_format
+  end if
+
+  ; Supply default for panel rows
+  if(.not. isvar("rows")) then
+    panel_rows = default_panel_rows
+  else
+    panel_rows = rows
+    delete(rows)
+  end if
+
+  ; Supply default for output file name
+  if(.not. isvar("output")) then
+    output_file = default_output_file
+  else
+    output_file = output
+    delete(output)
+  end if
+
+  ; Supply default splitting of pages
+  if(.not. isvar("split_pages")) then
+    split_pages = default_split_pages
+  end if
+
+  ; Supply default for position of units' string
+  if(.not. isvar("units")) then
+    units_pos = default_units_pos
+  else
+    if(any(valid_units_pos .eq. units)) then
+        units_pos = units
+        delete(units)
+    else
+        print("Oops: invalid units position '" + units + "', must be one of " + \
+              "'" + str_join(valid_units_pos, "', '") + "'")
+        status_exit(1)
+    end if
+  end if
+
+  ; Supply default for name of additional attribute
+  if(.not. isvar("attr")) then
+    attribute_names = default_attribute_names
+  else
+    attribute_names = attr
+    delete(attr)
+  end if
+
+  ; Supply default text scale
+  if(.not. isvar("text_scale")) then
+    text_scale = default_text_scale
+  end if
+
+  ; Supply default line scale
+  if(.not. isvar("line_scale")) then
+    line_scale = default_line_scale
+  end if
+
+  ; Supply default manifest name
+  if(.not. isvar("manifest")) then
+    manifest = default_manifest
+  end if
+
+  ; Set distinct colors for consecutive line plots
+  color_specs = (/ (/1, 1, 1/), \
+                   (/0, 0, 0/), \
+                   (/1, 0, 0/), \
+                   (/0, .8, .9/), \
+                   (/1, .8, 0/), \
+                   (/0, 0, .9/), \
+                   (/0, .8, 0/), \
+                   (/1, 0, .9/), \
+                   (/1, .5, .5/), \
+                   (/.5, .8, .9/), \
+                   (/1, .8, .5/), \
+                   (/.5, .5, .9/), \
+                   (/.5, .8, .5/), \
+                   (/1, .5, .8/) /)
+
+  ; Explicitly assign files to colors
+  file_list = empty_list()
+  label_list = empty_list()
+  color_list = empty_list()
+  if(isvar("with1a")) then
+    push_with_parameter(with1a, file_list, label_list)
+    ListPush(color_list, 2)
+  end if
+  if(isvar("with1")) then
+    push_with_parameter(with1, file_list, label_list)
+    ListPush(color_list, 8)
+  end if
+  if(isvar("with2a")) then
+    push_with_parameter(with2a, file_list, label_list)
+    ListPush(color_list, 3)
+  end if
+  if(isvar("with2")) then
+    push_with_parameter(with2, file_list, label_list)
+    ListPush(color_list, 9)
+  end if
+  if(isvar("with3a")) then
+    push_with_parameter(with3a, file_list, label_list)
+    ListPush(color_list, 4)
+  end if
+  if(isvar("with3")) then
+    push_with_parameter(with3, file_list, label_list)
+    ListPush(color_list, 10)
+  end if
+  if(isvar("with4a")) then
+    push_with_parameter(with4a, file_list, label_list)
+    ListPush(color_list, 5)
+  end if
+  if(isvar("with4")) then
+    push_with_parameter(with4, file_list, label_list)
+    ListPush(color_list, 11)
+  end if
+  if(isvar("with5a")) then
+    push_with_parameter(with5a, file_list, label_list)
+    ListPush(color_list, 6)
+  end if
+  if(isvar("with5")) then
+    push_with_parameter(with5, file_list, label_list)
+    ListPush(color_list, 12)
+  end if
+  if(isvar("with6a")) then
+    push_with_parameter(with6a, file_list, label_list)
+    ListPush(color_list, 7)
+  end if
+  if(isvar("with6")) then
+    push_with_parameter(with6, file_list, label_list)
+    ListPush(color_list, 13)
+  end if
+  if(isvar("with0")) then
+    push_with_parameter(with0, file_list, label_list)
+    ListPush(color_list, 1)
+  end if
+
+  ; Filenames are mandatory
+  if(ListCount(file_list) .eq. 0) then
+    print("Invalid number of parameters")
+    status_exit(1)
+  end if
+  files = file_list[:]
+  labels = label_list[:]
+  colors = color_list[:]
+
+  ; Supply default for legend mode, depending of number of files
+  if(.not. isvar("legend")) then
+    legend_mode = dimsizes(files) .gt. 1 .and. default_legend_mode
+  else
+    legend_mode = legend
+    delete(legend)
+  end if
+
+  ; Open input files
+
+  ; Read files
+  datafiles = addfiles(files, "r")
+  file_max = dimsizes(files)-1
+
+  if(legend_mode) then
+    ; Simplify file names to non-constant parts for labeling
+    labels = get_labels_from_file_names(labels)
+  end if
+
+  ; Get time coordinate name from first file,
+  ; assuming same variable structure across files.
+  ; Read in all time axis values and get min and max
+
+  time_name = get_time_name(datafiles[file_max])
+  if(ismissing(time_name)) then
+    print("Sorry: cannot find valid time coordinate in '" + files(file_max) + "'")
+    status_exit(1)
+  end if
+
+  ; Traverse files back to front as list only provides 'push' operation
+  
+  debug_print("scan time axes")
+  debug_print("file '" + files(file_max) + "'")
+  time = datafiles[file_max]->$time_name$
+  hack_calendar_attribute(time)
+  x = [/ fill2(cd_calendar(time, 4)) /]
+  x_min = min(x[0])
+  x_max = max(x[0])
+  debug_print("range [" + x_min + ", " + x_max + "]")
+  delete(time)
+  if(file_max .gt. 0) then
+    do file_idx = file_max-1, 0, 1
+        debug_print("file '" + files(file_idx) + "'")
+        time = datafiles[file_idx]->$time_name$
+        hack_calendar_attribute(time)
+        ListPush(x, fill2(cd_calendar(time, 4)))
+        x_min = min((/x_min, min(x[0])/))
+        x_max = max((/x_max, max(x[0])/))
+        debug_print("range [" + x_min + ", " + x_max + "]")
+        delete(time)
+    end do
+  end if
+
+  ; Open graphic workstation
+
+  if(panel_rows .eq. 1) then
+    format@wkPaperHeightF = 8.3
+    format@wkPaperWidthF = 11.7
+  else
+    format@wkPaperSize = "A4"
+  end if
+  format@wkFullBackground = True
+  
+  ; Setup resources for every plot
+
+  res = True
+
+  res@gsnFrame = False
+  res@gsnDraw = False
+  
+  if(panel_rows .eq. 1) then
+    res@vpHeightF = 0.6
+    res@vpWidthF = 0.8
+  else
+    res@vpHeightF = 0.8
+    res@vpWidthF = 0.6
+  end if    
+  res@vpHeightF = res@vpHeightF / panel_rows
+  res@gsnStringFontHeightF = 0.012 * text_scale
+
+  res@tmBorderThicknessF = 0.5 * line_scale
+  res@tmXBMajorThicknessF = res@tmBorderThicknessF
+  res@tmYLMajorThicknessF = res@tmBorderThicknessF
+  res@tmXBMinorThicknessF = 0.75 * res@tmBorderThicknessF
+  res@tmYLMinorThicknessF = 0.75 * res@tmBorderThicknessF
+
+  res@tmXMajorGrid = True
+  res@tmXMajorGridLineDashPattern = 2
+  res@tmXMajorGridThicknessF = res@tmBorderThicknessF
+
+  res@tmYMajorGrid = True
+  res@tmYMajorGridLineDashPattern = res@tmXMajorGridLineDashPattern
+  res@tmYMajorGridThicknessF = res@tmBorderThicknessF
+
+  res@tmEqualizeXYSizes = True
+  res@tmXBLabelFontHeightF = res@gsnStringFontHeightF
+
+  res@tmLabelAutoStride = True
+
+  res@trXMinF = x_min
+  res@trXMaxF = x_max
+
+  ; Setup page layout (panel)
+
+  panel_res = True
+  panel_res@gsnMaximize      = True
+  panel_res@gsnPaperOrientation = "portrait"
+  ;;; panel_res@gsnPanelYWhiteSpacePercent = 5
+
+  plot_row = 0
+  plots = new(panel_rows, graphic)
+
+  if(legend_mode) then
+
+    ; Setup panel legend (actually a list of text items)
+
+    tx_res = True
+
+    ; Set font size
+    tx_res@txFontHeightF = 0.875 * res@gsnStringFontHeightF
+
+    ; Allocate text items
+    texts = new(file_max+1, graphic)
+
+  end if
+
+  ; Read variable names from first file,
+  ; assuming same variable structure across files.
+
+  names = getfilevarnames(datafiles[file_max])
+  var_max = dimsizes(names)-1
+
+  ; Initialize manifest for pages
+  manifest_list = empty_list()
+
+  do var_idx = 0, var_max
+
+    debug_print("scan '" + names(var_idx) + "' axes")
+    var_dims = getfilevardimsizes(datafiles[file_max], names(var_idx))
+    var_rank = dimsizes(var_dims)
+    if( isfilevardim(datafiles[file_max], names(var_idx), time_name) .and. \
+        names(var_idx) .ne. time_name .and. \
+        var_rank .le. 4 .and. \
+        ( var_rank .eq. 1 .or. all(var_dims(1:) .eq. 1) ) ) \
+    then
+
+        ; Read in all variable values and get min and max
+
+        ; Read files back to front as list only provides 'push' operation
+        y_type = getfilevartypes(datafiles[file_max], names(var_idx))
+        y_fill = getFillValue(datafiles[file_max]->$names(var_idx)$)
+        y_min = new(1, y_type, y_fill)
+        y_max = y_min
+        y_avg = y_max
+        y = empty_list()
+        do file_idx = file_max, file_max, 1
+            if(isfilevar(datafiles[file_idx], names(var_idx))) then
+                debug_print("file '" + files(file_idx) + "'")
+                if(var_rank .eq. 1) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$))
+                end if
+                if(var_rank .eq. 2) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0)))
+                end if
+                if(var_rank .eq. 3) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0,0)))
+                end if
+                if(var_rank .eq. 4) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0,0,0)))
+                end if
+                y_min = min(y[0])
+                y_max = max(y[0])
+                y_avg = avg(y[0])
+                debug_print("range [" + y_min + ", " + y_max + "]")
+            else
+                ; Skip missing variables
+                ListPush(y, fill2(new(dimsizes(x[file_idx]), y_type, y_fill)))
+            end if
+        end do
+        do file_idx = file_max, 0, 1
+            if(isfilevar(datafiles[file_idx], names(var_idx))) then
+                debug_print("file '" + files(file_idx) + "'")
+                if(var_rank .eq. 1) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$))
+                end if
+                if(var_rank .eq. 2) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0)))
+                end if
+                if(var_rank .eq. 3) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0,0)))
+                end if
+                if(var_rank .eq. 4) then
+                    ListPush(y, fill2(datafiles[file_idx]->$names(var_idx)$(:,0,0,0)))
+                end if
+                y_min = min((/y_min, min(y[0])/))
+                y_max = max((/y_max, max(y[0])/))
+                y_avg = avg((/y_avg, avg(y[0])/))
+                debug_print("range [" + y_min + ", " + y_max + "]")
+            else
+                ; Skip missing variables
+                ListPush(y, fill2(new(dimsizes(x[file_idx]), y_type, y_fill)))
+            end if
+        end do
+        delete(y_fill)
+        delete(y_type)
+
+        ; Beautify x scaling
+        if(x_max .eq. x_min) then
+            res@trXMinF = x_min - 0.1
+            res@trXMaxF = x_max + 0.1
+        end if
+
+        ; Beautify y scaling
+        if(y_max .eq. y_min) then
+            debug_print("y range is empty")
+            if(y_max .eq. 0.) then
+                res@trYMinF = -0.01
+                res@trYMaxF = 0.01
+            else
+                res@trYMinF = y_min - 0.01*abs(y_min)
+                res@trYMaxF = y_max + 0.01*abs(y_max)
+            end if
+        else    
+            debug_print("y range spans " + (y_max-y_min))
+            if((y_max-y_min) < 0.0001*abs(y_min) .or. \
+               (y_max-y_min) < 0.0001*abs(y_max)) \
+            then
+                res@trYMinF = y_min - 0.0001*abs(y_min)
+                res@trYMaxF = y_max + 0.0001*abs(y_max)
+            else
+                res@trYMinF = y_min - 0.01*(y_max-y_min)
+                res@trYMaxF = y_max + 0.01*(y_max-y_min)
+            end if
+        end if
+        debug_print("y range adjusted to [" + res@trYMinF + ", " + res@trYMaxF + "]")
+
+        long_name = get_long_name(y[file_max], names(var_idx))
+        units = get_units(y[file_max], "")
+
+        if(units_pos .eq. "top") then
+            if(str_is_blank(units)) then
+                res@gsnLeftString = long_name
+            else
+                res@gsnLeftString = long_name + " [" + units + "]"
+            end if
+            res@tiYAxisString = ""
+        else
+            if(units_pos .eq. "left") then
+                res@gsnLeftString = long_name
+                res@tiYAxisString = units
+                res@tiYAxisFontHeightF = res@gsnStringFontHeightF
+            else
+                res@gsnLeftString = long_name
+                res@tiYAxisString = ""
+            end if
+        end if
+
+        attribute = ""
+        res@gsnRightString = attribute;
+        att_max = dimsizes(attribute_names) - 1
+        do att_idx = 0, att_max
+            attribute_name = attribute_names(att_idx)
+            if(isatt(y[file_max], attribute_name)) then
+                if(str_is_blank(attribute)) then
+                    attribute = "" + y[file_max]@$attribute_name$
+                else
+                    attribute = attribute + ", " + y[file_max]@$attribute_name$
+                end if
+            end if
+        end do
+        if(.not. str_is_blank(attribute)) then
+            res@gsnRightString = "(" + attribute + ")"
+        end if
+
+        file_idx = 0
+        if(y[file_idx]@filled) then
+            res@xyMarkLineMode = "Markers"
+            res@xyMarkerColor = colors(file_idx)
+        else
+            res@xyMarkLineMode = "Lines"
+            res@xyLineColor = colors(file_idx)
+        end if
+
+        if(colors(file_idx) .eq. 1) then
+            res@xyLineThicknessF = 0.5 * line_scale
+        else
+            res@xyLineThicknessF = 1 * line_scale
+        end if
+
+        ; @todo Resolve overlay issue with reference lines
+        ; if(.not. ismissing(y_avg)) then
+        ;     res@gsnYRefLineColor = 31
+        ;     res@gsnYRefLine = y_avg
+        ; else
+        ;     if(isatt(res, "gsnYRefLineColor")) then
+        ;         delete(res@gsnYRefLineColor)
+        ;     end if
+        ;     if(isatt(res, "gsnYRefLine")) then
+        ;         delete(res@gsnYRefLine)
+        ;     end if
+        ; end if
+        ; res@gsnYRefLine = avg(y[file_max])
+        ; res@gsnYRefLineColor = res@xyLineColor
+ 
+        ; Set up new page
+        if(plot_row .eq. 0) then
+
+            ; Append variable name for split pages
+            if(split_pages) then
+                base_name = output_file + "_" + names(var_idx)
+            else
+                base_name = output_file
+            end if
+
+            ; Open and initialize canvas
+            if(.not. isvar("wks")) then
+
+                wks = gsn_open_wks(format, base_name)
+                gsn_define_colormap(wks, color_specs)
+                if(legend_mode) then
+                  ; Initialize text items using plot colors
+                  do file_idx = 0, file_max
+                      tx_res@txFontColor = colors(file_idx)
+                      texts(file_idx) = gsn_create_text(wks, labels(file_idx), tx_res)
+                  end do
+                end if
+
+            end if; wks exists
+
+            ; Add info to manifest
+            idx = ListCount(manifest_list)
+            ListPush(manifest_list, base_name+":"+idx+":"+format+":"+ \
+                     names(var_idx)+":"+attribute+":"+res@gsnLeftString)
+
+        end if; first plot on page
+  
+        plots(plot_row) = gsn_csm_xy(wks, x[0], y[0], res)
+        
+        do file_idx = 1, file_max
+            if(.not. ismissing(y[file_idx](0))) then
+
+                if(y[file_idx]@filled) then
+                    res@xyMarkLineMode = "Markers"
+                    res@xyMarkerColor = colors(file_idx)
+                else
+                    res@xyMarkLineMode = "Lines"
+                    res@xyLineColor = colors(file_idx)
+                end if
+
+                if(colors(file_idx) .eq. 1) then
+                    res@xyLineThicknessF = 0.5 * line_scale
+                else
+                    res@xyLineThicknessF = 1 * line_scale
+                end if
+
+                ; @todo Resolve overlay issue with reference lines
+                ; res@gsnYRefLine = avg(y[file_idx])
+                ; res@gsnYRefLineColor = res@xyLineColor
+
+                overlay(plots(plot_row), \
+                        gsn_csm_xy(wks, x[file_idx], y[file_idx], res))
+
+            end if
+        end do
+        
+        delete(y)
+
+        plot_row = plot_row + 1
+
+    end if
+    delete(var_dims) ; Delete because next variable might be different
+
+    ; Do actual output at end of page or file
+
+    if((plot_row .eq. panel_rows .or. var_idx .eq. var_max) .and. isvar("wks")) then
+
+        if(legend_mode) then
+            ; Add legend texts as annotation into upper left corner of first plot
+            am_res = True
+            am_res@amJust = "TopLeft"
+            am_res@amParallelPosF = -0.5 + tx_res@txFontHeightF
+            annos = new(file_max+1, graphic)
+            do file_idx = 0, file_max
+                am_res@amOrthogonalPosF = -0.5 + (tx_res@txFontHeightF + \
+                    file_idx*1.5/res@vpHeightF/panel_rows*tx_res@txFontHeightF)\
+                    *panel_rows
+                    ;;; file_idx*2.5*tx_res@txFontHeightF)*panel_rows
+                annos(file_idx) = gsn_add_annotation(plots(0), texts(file_idx), am_res)
+            end do; file_idx
+        end if
+
+        gsn_panel(wks, plots, (/panel_rows, 1/), panel_res)
+        plots = getFillValue(plots)
+        plot_row = 0
+
+        ; Close current workstation to end page if splitting is requested
+        if(split_pages) then
+            delete(wks)
+        end if
+
+    end if
+
+  end do; var_idx
+
+  ; Write manifest for pages
+  if(manifest .ne. "") then
+    count = ListCount(manifest_list)
+    asciiwrite(manifest, manifest_list[count-1:0])
+  end if
+      
+  
+end

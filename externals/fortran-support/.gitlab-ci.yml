@@ -1,0 +1,125 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+stages:
+  - lint
+  - build
+  - build_and_test
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+
+nag:
+  stage: build
+  before_script:
+    - . /sw/etc/profile.levante && module use /sw/spack-levante/spack/modules && module list
+  script:
+    - module load gcc/11.2.0-gcc-11.2.0 nag/7.1-gcc-11.2.0
+    - export NAG_KUSARI_FILE="/etc/nag-license"
+    - mkdir nag71
+    - cd nag71
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=gcc -DCMAKE_Fortran_COMPILER=nagfor -DCMAKE_CXX_COMPILER=g++ -DCMAKE_BUILD_RPATH=/sw/spack-levante/gcc-11.2.0-bcn7mb/lib64 -DBUILD_TESTING=OFF
+    - make VERBOSE=1
+  tags:
+    - xen, levante
+  needs: ["Check Style", "Check License"]
+
+gcc11:
+  stage: build_and_test
+  before_script:
+    - . /sw/etc/profile.levante && module use /sw/spack-levante/spack/modules && module list
+  script:
+    - module load gcc/11.2.0-gcc-11.2.0
+    - mkdir gcc112
+    - cd gcc112
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=gcc -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_CXX_COMPILER=g++
+    - make VERBOSE=1
+    - ctest --output-on-failure
+  tags:
+    - xen, levante
+  needs: ["Check Style", "Check License"]
+
+intel22:
+  stage: build_and_test
+  before_script:
+    - . /sw/etc/profile.levante && module use /sw/spack-levante/spack/modules && module list
+  script:
+    - module load gcc/11.2.0-gcc-11.2.0 intel-oneapi-compilers/2022.0.1-gcc-11.2.0
+    - mkdir intel22
+    - cd intel22
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=icc -DCMAKE_Fortran_COMPILER=ifort -DCMAKE_CXX_COMPILER=icpc -DCMAKE_BUILD_RPATH=/sw/spack-levante/gcc-11.2.0-bcn7mb/lib64
+    - make VERBOSE=1
+    - ctest --output-on-failure
+  tags:
+    - xen, levante
+  needs: ["Check Style", "Check License"]
+
+nvhpc:
+  stage: build_and_test
+  before_script:
+    - . /sw/etc/profile.levante && module use /sw/spack-levante/spack/modules && module list
+  script:
+    - module load gcc/11.2.0-gcc-11.2.0 nvhpc/22.5-gcc-11.2.0
+    - mkdir nvhpc
+    - cd nvhpc
+    - /sw/spack-levante/cmake-3.23.1-q5kzz6/bin/cmake ..  -DCMAKE_C_COMPILER=nvc -DCMAKE_Fortran_COMPILER=nvfortran -DCMAKE_CXX_COMPILER=nvc++
+    - make VERBOSE=1
+    - ctest --output-on-failure
+  tags:
+    - xen, levante
+  needs: ["Check Style", "Check License"]
+
+Check Style:
+  stage: lint
+  before_script:
+    # install the formatting tools
+    - pip install fprettify
+    - apk add --no-cache clang-extra-tools
+    # install packages to configure the project
+    - apk add --no-cache cmake gfortran
+  script:
+    # configure the project
+    - mkdir build
+    - cd build
+    - cmake ..
+    # lint the code
+    - make format
+    - cd ..
+    # build git patch
+    - git diff --patch-with-raw > style.patch
+    # test if patching is necessary
+    - test ! -s style.patch || { echo "There are style errors. Please check
+      your code. You might want to run \`make format\` or \`git apply style.patch\`." && false; }
+  tags:
+    # choose runner
+    - sphinx
+  artifacts:
+    paths:
+      - style.patch
+    expire_in: 1 week
+    expose_as: 'Style Git Patch'
+    when: on_failure
+  needs: []
+
+Check License:
+  stage: lint
+  before_script:
+    # install reuse tool
+    - pip install --user reuse
+    - export PATH="/root/.local/bin:$PATH"
+  script:
+    # check license
+    - reuse lint
+  tags:
+    # choose runner
+    - sphinx
+  needs: []

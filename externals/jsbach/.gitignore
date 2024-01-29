@@ -1,0 +1,16 @@
+.history
+*~
+*.mod
+/.projectile
+.env
+.idea/
+.vscode
+/doc/html
+/doc/latex
+/public
+*.clw.d
+*.f90.d
+*.o
+*.pp-*.f90
+*.xmodstamp
+.dirstamp

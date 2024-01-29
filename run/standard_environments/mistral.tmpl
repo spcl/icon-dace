@@ -1,0 +1,159 @@
+#%# -*- mode: sh -*-
+#%# ICON
+#%#
+#%# ------------------------------------------
+#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%# Contact information: icon-model.org
+#%# See AUTHORS.TXT for a list of authors
+#%# See LICENSES/ for license information
+#%# SPDX-License-Identifier: BSD-3-Clause
+#%# ------------------------------------------
+#
+# Setup for mistral (SLURM)
+#
+# $Id: mistral.tmpl 9671 2018-12-19 10:26:35Z m221078 $
+#
+#SBATCH --job-name=%{EXP_ID}_%{JOB.id}
+#% if JOB.partition is defined:
+#%   set partition = JOB.partition
+#%   if partition is string:
+#%      set partition = [partition]
+#%   endif
+#% endif
+#SBATCH --partition=%{partition|join(',')}
+#% if JOB.node_usage == 'not_shared':
+#SBATCH --exclusive
+#% endif
+#%#-
+#%-if JOB.nodes is defined and JOB.tasks_per_node|default(1): 
+#SBATCH --nodes=%{JOB.nodes}
+#SBATCH --tasks-per-node=%{JOB.tasks_per_node}
+#%   if JOB.tasks|int != JOB.nodes|int * JOB.tasks_per_node|default(1)|int:
+#SBATCH --ntasks=%{JOB.tasks}
+#%   endif
+#%#-
+#%-elif JOB.nodes is defined:
+#SBATCH --nodes=%{JOB.nodes}
+#SBATCH --ntasks=%{JOB.tasks}
+#%   if JOB.hardware_threads|default('') is not set:
+#SBATCH --ntasks-per-core=1
+#%   endif
+#%#-
+#%-elif JOB.tasks_per_node|int > 0:
+#%   set match = not JOB.tasks|int % JOB.tasks_per_node|int
+#%   if match:
+#%     set nodes = (JOB.tasks/JOB.tasks_per_node|float)|round(method='ceil')|int
+#%     if nodes > 1:
+#SBATCH --nodes=%{nodes}
+#%     endif
+#%   endif
+#SBATCH --tasks-per-node=%{JOB.tasks_per_node}
+#%   if not match:
+#SBATCH --ntasks=%{JOB.tasks}
+#%   endif
+#%#-
+#%-else:
+#SBATCH --ntasks=%{JOB.tasks}
+#%   if JOB.hardware_threads|default('') is not set:
+#SBATCH --ntasks-per-core=1
+#%   endif
+#% endif
+#%#-
+#%-if JOB.mem_per_cpu:
+#SBATCH --mem-per-cpu=%{JOB.mem_per_cpu}
+#% endif
+#%-if JOB.time_limit:
+#SBATCH --time=%{JOB.time_limit}
+#% endif
+#SBATCH --output=%{EXP_ID}_%{JOB.id}_%j.log
+#SBATCH --error=%{EXP_ID}_%{JOB.id}_%j.log
+#SBATCH --mail-type=FAIL
+#%if EMAIL is defined:
+#SBATCH --mail-user=%{EMAIL}
+#%endif
+#SBATCH --account=%{JOB.account|default(ACCOUNT)}
+#% if JOB.exclude_nodes is defined:
+#%   set exclude = JOB.exclude_nodes
+#%   if exclude is string:
+#%      set exclude = [exclude]
+#%   endif
+#SBATCH --exclude=%{exclude|join(',')}
+#% endif
+#% if JOB.qos:
+#SBATCH --qos=%{JOB.qos}
+#% endif
+#SBATCH --propagate=STACK,CORE
+
+#%if JOB.job_type == 'parallel':
+
+ulimit -s 390625 # * 1024 B = 400 MB
+
+# BullX MPI
+
+# Use MXM (Mellanox Messaging) package
+export OMPI_MCA_pml=cm
+export OMPI_MCA_mtl=mxm
+export OMPI_MCA_mtl_mxm_np=0
+export MXM_RDMA_PORTS=mlx5_0:1
+export MXM_LOG_LEVEL=ERROR
+
+# Use FCA (Fabric Collectives Accelerations) package
+export OMPI_MCA_coll=^ghc
+#export OMPI_MCA_coll_fca_priority=95
+#export OMPI_MCA_coll_fca_enable=1
+#export OMPI_MCA_coll_fca_enable_barrier=0
+#export OMPI_MCA_coll_fca_enable_bcast=1
+#export OMPI_MCA_coll_fca_enable_reduce=1
+#export OMPI_MCA_coll_fca_enable_reduce_scatter=1
+#export OMPI_MCA_coll_fca_enable_allreduce=0
+#export OMPI_MCA_coll_fca_enable_allgather=0
+#export OMPI_MCA_coll_fca_enable_allgatherv=0
+#export OMPI_MCA_coll_fca_enable_gather=1
+#export OMPI_MCA_coll_fca_enable_gatherv=0
+#export OMPI_MCA_coll_fca_enable_alltoall=0
+#export OMPI_MCA_coll_fca_enable_alltoallv=0
+#export OMPI_MCA_coll_fca_enable_alltoallw=0
+
+# Memory tuning
+#export MALLOC_MMAP_MAX_=0
+export MALLOC_TRIM_THRESHOLD_=-1
+
+#% if JOB.turbo_mode|default('') is set:
+export SLURM_CPU_FREQ_REQ=High
+#% else:
+export SLURM_CPU_FREQ_REQ=HighM1
+#% endif
+
+# Intel MPI
+
+export I_MPI_FABRICS=shm:dapl
+export I_MPI_FALLBACK=disable
+export I_MPI_SLURM_EXT=0 # TODO: set back to 1 when MPI_Init issue is solved
+export I_MPI_LARGE_SCALE_THRESHOLD=8192
+export I_MPI_DYNAMIC_CONNECTION=1
+export I_MPI_CHECK_DAPL_PROVIDER_COMPATIBILITY=0
+export DAPL_UCM_REP_TIME=8000
+export DAPL_UCM_RTU_TIME=8000
+export DAPL_UCM_CQ_SIZE=2000
+export DAPL_UCM_QP_SIZE=2000
+export DAPL_UCM_DREQ_RETRY=4
+export DAPL_UCM_WAIT_TIME=10000
+export I_MPI_HARD_FINALIZE=1
+# Intel OpenMP
+export KMP_STACKSIZE=64m
+export KMP_AFFINITY=verbose,granularity=fine,compact,1,0
+# OpenMP
+export OMP_NUM_THREADS=%{JOB.threads_per_task}
+#%endif
+
+# Workaround for SLURM bug in chained jobs
+SLURM_JOB_NAME=%{EXP_ID}_%{JOB.id}
+%{JOB.batch_command} () {
+    unset SLURM_MEM_PER_CPU SLURM_NTASKS_PER_NODE
+    command %{JOB.batch_command} "$@"
+}
+
+. $MODULESHOME/init/ksh
+module purge
+module add %{MODEL_DIR}/etc/Modules/iconesm-dkrz
+module list

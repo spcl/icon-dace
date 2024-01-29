@@ -1,0 +1,74 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+SPACK_VERSION=$1
+VARIANT=$2
+
+# Unset positional parameters
+# so they are not forwarded to spack-c2sm/setup-env.sh
+set -- 
+
+git clone --depth 1 --recurse-submodules --shallow-submodules -b $SPACK_VERSION https://github.com/C2SM/spack-c2sm.git
+
+. spack-c2sm/setup-env.sh
+# Overwrite default spack user and config cache to avoid long path error with Buildbot
+export SPACK_USER_CONFIG_PATH=$ICON_DIR/spack-config
+export SPACK_USER_CACHE_PATH=$ICON_DIR/spack-cache
+echo "Setting SPACK_USER_CONFIG_PATH to $SPACK_USER_CONFIG_PATH"
+echo "Setting SPACK_USER_CACHE_PATH to $SPACK_USER_CACHE_PATH"
+
+
+if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+  echo "Error: This script must be executed from within the icon git repository."
+  # Because the icon package in spack-c2sm relies on that.
+  exit 1
+fi
+
+# Temporary workaround until cmake becomes a build dependency of icon spackage:
+export CMAKE=$(spack find --format='{prefix}/bin/cmake' cmake@3.18: | head -1)
+
+# The spack spec, i.e. the icon configuration is defined in the enviroment file in the path below
+# and is set by the spack activate command
+spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
+spack install -v
+
+# reload spack env to get ECCODES_DEFINITIONECCODES_DEFINITION_PATH
+spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
+# store ECCODES_DEFINITION_PATH in setting, should be later replaced with spack env activate --sh
+echo "export ECCODES_DEFINITION_PATH=${ECCODES_DEFINITION_PATH}" >> $ICON_DIR/setting
+
+# Workaround for Balfrin to set cuda library in LD_LIBRARY_PATH
+# This relies on the spack env activate
+machine="$( ./spack-c2sm/src/machine.sh )"
+if [[ $machine == "balfrin" && "$VARIANT" == *"gpu"* ]]; then
+ 
+  # Extract path to upstream used by spack, this contains also the modules
+  spack_upstream=`spack config get upstreams |grep install_tree`
+  spack_upstream=${spack_upstream#*install_tree:}
+  if [ ! -d $spack_upstream/modules ]; then
+    echo "Error: $spack_upstream/modules is not a directory"
+    exit 1
+  fi
+  module use $spack_upstream/modules
+  cuda_lib_path=`module show cuda 2>&1 |grep LD_LIBRARY_PATH`
+
+  cuda_lib_path=/${cuda_lib_path#*/}
+  if [ ! -d $cuda_lib_path ]; then
+    echo "Error: $cuda_path_lib does not exists"
+    exit 1
+  fi
+  echo "Prepend LD_LIBRARY_PATH with $cuda_lib_path in run setting"
+  echo "export LD_LIBRARY_PATH=$cuda_lib_path\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}" >> $ICON_DIR/setting
+  echo "echo Info: cuda path is set in LD_LIBRARY_PATH=\$LD_LIBRARY_PATH" >> $ICON_DIR/setting
+fi

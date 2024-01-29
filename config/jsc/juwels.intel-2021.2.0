@@ -1,0 +1,109 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+MODULES=''
+
+HDF5_ROOT=$EBROOTHDF5
+HDF5_LIBS='-lhdf5'
+
+NETCDF_ROOT=$EBROOTNETCDF
+NETCDF_LIBS='-lnetcdf'
+
+NETCDFF_ROOT=$EBROOTNETCDFMINFORTRAN
+NETCDFF_LIBS='-lnetcdff'
+
+XML2_ROOT='$EBROOTLIBXML2'
+XML2_LIBS='-lxml2'
+
+#MKL_ROOT='$EBROOTIMKL'
+#MKL_ROOT='/p/software/juwels/stages/2020/software/imkl/2020.2.254/mkl'
+MKL_ROOT='/p/software/juwels/stages/2020/software/imkl/2021.2.0/mkl/2021.2.0'
+MKL_LIBS='-lmkl_gf_lp64 -lmkl_sequential -lmkl_core'
+
+SZIP_ROOT='/p/software/juwels/stages/2020/software/Szip/2.1.1-GCCcore-10.3.0/'
+SZIP_LIBS='-lsz'
+
+################################################################################
+
+BUILD_ENV="jutil env activate -p iconsim -A iconsim; module --force purge ; module load Intel ParaStationMPI netCDF-Fortran ecCodes; module list; export LD_LIBRARY_PATH=${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib64:${NETCDFF_ROOT}/lib:${MKL_ROOT}/lib/intel64:${SZIP_ROOT}/lib:\${LD_LIBRARY_PATH};"
+
+# We need some of the environment variables set by the modules now:
+eval "$BUILD_ENV"
+
+CC='mpicc'
+CFLAGS='-std=gnu99 -gdwarf-4 -O3 -qno-opt-dynamic-align -ftz -march=native -DHAVE_LIBNETCDF -DHAVE_NETCDF4 -DHAVE_NETCDF2 -DHAVE_LIBSZ -DgFortran'
+CPPFLAGS="-I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${XML2_ROOT}/include/libxml2 -I${MKL_ROOT}/include/intel64"
+
+FC='mpif90'
+FFLAGS='-g -pc64 -fpp -D__LOOP_EXCHANGE -assume realloc_lhs'
+FFLAGS='$FFLAGS -DHAVE_SLOW_PASSIVE_TARGET_ONESIDED -DHAVE_PARALLEL_NETCDF'
+CHECK_FLAGS='-check bounds -check pointers -debug'
+DEBUG_FLAGS='-debug-parameters -debug -gdwarf-4 -g -traceback -O0'
+FPPFLAGS='-fpp'
+FFLAGS='$FPPFLAGS -assume realloc_lhs'
+FCFLAGS="-I${NETCDFF_ROOT}/include -I${MKL_ROOT}/include/intel64 -gdwarf-4 -g -march=native -pc64 -fp-model source -g -traceback"
+ICON_ECRAD_FCFLAGS="-D__ECRAD_LITTLE_ENDIAN"
+
+LDFLAGS='-gdwarf-4'
+
+LDFLAGS="-L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${MKL_ROOT}/lib/intel64 -L${SZIP_ROOT}"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${MKL_LIBS} ${SZIP_LIBS}"
+
+MPI_LAUNCH='srun'
+
+#EXTRA_CONFIG_ARGS=''
+EXTRA_CONFIG_ARGS='--enable-openmp --enable-loop-exchange  --enable-ecrad '
+
+################################################################################
+
+echo $BUILD_ENV
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="$BUILD_ENV" \
+CC="$CC" \
+CFLAGS="$CFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
+FC="$FC" \
+FCFLAGS="$FCFLAGS" \
+ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+LDFLAGS="$LDFLAGS" \
+LIBS="$LIBS" \
+MPI_LAUNCH="$MPI_LAUNCH" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${ICON_DIR}/run/standard_*
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

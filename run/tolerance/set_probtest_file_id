@@ -1,0 +1,199 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+if [ "${BASH_SOURCE-}" = "$0" ]; then
+    echo "You must source this script in bash: \$ source $0" >&2
+    exit 33
+fi
+
+if [[ $# == 0 ]]; then
+    echo "ERROR: EXPERIMENT not specified."
+    echo
+    echo "Usage:"
+    echo "  source set_probtest_file_id \$EXPERIMENT"
+    echo
+    echo "This script sets probtest_file_id array according to EXPERIMENT"
+    echo
+    echo "Bash is exited in case the EXPERIMENT is not defined."
+    exit 22
+fi
+
+EXPERIMENT="$1"
+
+# Valid file-id formats (e.g. NetCDF, latlon, ...) are defined under file_specification in
+# externals/probtest/templates/ICON.jinja.
+
+# probtest_file_id is a bash array.
+case $EXPERIMENT in
+    *atm*qubicc*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm2d_ml*.nc"
+        --file-id NetCDF "*cli_ml*.nc"
+        --file-id NetCDF "*clw_ml*.nc"
+        --file-id NetCDF "*ddt_ua_adv_ml*.nc"
+        --file-id NetCDF "*ddt_ua_cor_ml*.nc"
+        --file-id NetCDF "*ddt_ua_dmp_ml*.nc"
+        --file-id NetCDF "*ddt_ua_dyn_ml*.nc"
+        --file-id NetCDF "*ddt_ua_hdf_ml*.nc"
+        --file-id NetCDF "*ddt_ua_pgr_ml*.nc"
+        --file-id NetCDF "*ddt_va_adv_ml*.nc"
+        --file-id NetCDF "*ddt_va_cor_ml*.nc"
+        --file-id NetCDF "*ddt_va_dmp_ml*.nc"
+        --file-id NetCDF "*ddt_va_dyn_ml*.nc"
+        --file-id NetCDF "*ddt_va_hdf_ml*.nc"
+        --file-id NetCDF "*ddt_va_pgr_ml*.nc"
+        --file-id NetCDF "*flx2d_ml*.nc"
+        --file-id NetCDF "*hus_ml*.nc"
+        --file-id NetCDF "*pfull_ml*.nc"
+        --file-id NetCDF "*qg_ml*.nc"
+        --file-id NetCDF "*qr_ml*.nc"
+        --file-id NetCDF "*qs_ml*.nc"
+        --file-id NetCDF "*rho_ml*.nc"
+        --file-id NetCDF "*ta_ml*.nc"
+        --file-id NetCDF "*tend_cli_mig_ml*.nc"
+        --file-id NetCDF "*tend_cli_vdf_ml*.nc"
+        --file-id NetCDF "*tend_clw_mig_ml*.nc"
+        --file-id NetCDF "*tend_clw_vdf_ml*.nc"
+        --file-id NetCDF "*tend_hus_mig_ml*.nc"
+        --file-id NetCDF "*tend_hus_vdf_ml*.nc"
+        --file-id NetCDF "*tend_ta_mig_ml*.nc"
+        --file-id NetCDF "*tend_ta_rlw_ml*.nc"
+        --file-id NetCDF "*tend_ta_rsw_ml*.nc"
+        --file-id NetCDF "*tend_ta_vdf_ml*.nc"
+        --file-id NetCDF "*tend_ua_vdf_ml*.nc"
+        --file-id NetCDF "*tend_va_vdf_ml*.nc"
+        --file-id NetCDF "*ua_ml*.nc"
+        --file-id NetCDF "*va_ml*.nc"
+        --file-id NetCDF "*wa_ml*.nc"
+        )
+        ;;
+    *atm*ape*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d*.nc"
+        )
+        ;;
+    *exclaim_ape*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_2d*.nc"
+        --file-id NetCDF "*atm_3d_pl*.nc"
+        )
+        ;;
+    *mch_dev_icon-ch2_small*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*iaf*"
+        --file-id NetCDF "*lfff0*"
+        --file-id NetCDF_no_time_dim "*lfff_ml*"
+        )
+        ;;
+    *mch_kenda-ch1_small*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*iaf*"
+        --file-id NetCDF "*lfff0*"
+        --file-id NetCDF_no_time_dim "*lfff_ml*"
+        --file-id dace "*fofTEMP*.nc"
+        )
+        ;;
+    *mch_icon-ch2_small*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*lfff0*c"
+        --file-id NetCDF "*lfff0*p"
+        --file-id NetCDF "*lfff0*z"
+        )
+        ;;
+    *mch_opr_r04b07_lhn_12*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*atm_3d_il*.nc"
+        --file-id NetCDF "*atm_3d_hl*.nc"
+        --file-id NetCDF "*atm_3d_pl*.nc"
+        --file-id latlon "*atm_2d_ll*.nc"
+        --file-id meteogram "Meteogram*.nc"
+        --file-id total_integrals "total_integrals.dat"
+        --file-id tracer_total_integrals "tracer_total_integrals.dat"
+        --file-id emvorado_vrsim_volscan "radar_dom1/cdfin*zrsim*volscan.nc"
+        )
+        ;;
+    *mch_*nest*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_DOM01_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM01_hl*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_hl*.nc"
+        --file-id NetCDF "*atm_3d_DOM01_pl*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_pl*.nc"
+        --file-id latlon "*atm_3d_ll_DOM01_ml*.nc"
+        --file-id latlon "*atm_3d_ll_DOM02_ml"
+        )
+        ;;
+    *mch_*dace_synsat*)
+        # --file-id dace "*fofAIREP*.nc" # not tested as of June 2023 due to missing spread in the tolerance data
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d*.nc"
+        )
+        ;;
+    *mch_*dace*)
+        probtest_file_id=(
+        --file-id dace "*fofAIREP*.nc"
+        )
+        ;;
+    *mch_*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d*.nc"
+        )
+        ;;
+    *dwd_run_ICON_09_R2B4N5_EPS_prog_rbf*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_DOM01_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_hl*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_pl*.nc"
+        --file-id latlon "*atm_3d_ll_DOM01_ml*.nc"
+        --file-id latlon "*atm_3d_ll_DOM02_ml*.nc"
+        --file-id meteogram "Meteogram*.nc"
+        )
+        ;;
+    *dwd_run_ICON_09_R2B4N5_EPS*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_DOM01_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_ml*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_hl*.nc"
+        --file-id NetCDF "*atm_3d_DOM02_pl*.nc"
+        --file-id latlon "*atm_3d_ll_DOM01_ml*.nc"
+        --file-id latlon "*atm_3d_ll_DOM02_ml*.nc"
+        --file-id meteogram "Meteogram*.nc"
+        --file-id NetCDF "iga_fg_DOM01_ML_0000000.nc"
+        --file-id NetCDF "iga_fg_DOM01_ML_tiles_0000000.nc"
+        --file-id NetCDF "iga_fg_DOM02_ML_0000000.nc"
+        --file-id NetCDF "iga_fg_DOM02_ML_tiles_0000000.nc"
+        --file-id NetCDF "iglo_fc_DOM01_0001.nc"
+        --file-id NetCDF "iglo_fc_DOM02_0001.nc"
+        --file-id latlon "iga_fg_latlon_DOM01_ML_0000000.nc"
+        --file-id latlon "iga_fg_latlon_DOM01_PL_0000000.nc"
+        )
+        ;;
+    *)
+        echo "no file ids specified for '${EXPERIMENT}'"
+        echo "you most likely did not change the entries in"
+        echo "set_probtest_file_id"
+        exit 1
+        ;;
+
+esac
+
+if (( ${#probtest_file_id[@]} % 3 != 0 )) ; then
+    echo "set_probtest_file_id ERROR:"
+    echo "    EXPERIMENT: ${EXPERIMENT}"
+    echo "    \$probtest_file_id is not set properly. Its length is not a multiple of 3. Current value:"
+    echo "    ${probtest_file_id[*]}"
+    exit 2
+fi

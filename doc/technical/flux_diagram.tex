@@ -1,0 +1,127 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\jot=8pt
+%\begin{table}
+%\scalebox{0.5}{
+%\begin{center}
+%\begin{tabular}[!]{l r@{{\hspace{0.1cm}}}l@{}l@{{\hspace{0.2cm}}}l r@{}l}
+%\rowcolors{1}{yellow!50}{green!25}
+\begin{align*}
+%\begin{array}{|l@{}|c@{}|c@{}|c@{}|c@{}|c@{}|l@{}|}
+\begin{array}{|l|c|c|c|c|c|l|}
+\toprule
+%\hiderowcolors
+\color{blue}{\bf SLOW} & {\bf DYNAMICS}& {\bf HYD-ADV} &  {\bf HYD-UPDATE} &{\bf
+ SATAD}&{\bf FAST-PHYSICS} & {\bf SLOW} \\ 
+\color{blue}\textbf{-PHYSICS} &&&&&& \textbf{-PHYSICS}\\ 
+\midrule
+\color{blue} Radiation, &  Wind & Advection \; of & Hydrometeor  &
+ Saturation & Turbulence   & Radiation, \\
+\color{blue} Convection, & and  &hydrometeors &update & adjustment& and \;Diffusion,&  Convection, \\
+\color{blue} cloud \;cover &Exner \; pressure & and \; tracers& & &  Microphysics&  cloud \; cover \\
+\midrule
+\begin{aligned}
+&\color{blue} \Delta \vec{v}_{n_{phy}}\\[8pt]
+&\color{blue} \Delta \pi_{sp} \\[8pt]
+&\color{blue} \Delta Qx_{sp} 
+ \end{aligned} &  
+\begin{aligned}
+   \vec{v}_n^{\; t+1}&=\vec{v}_n^t +\Delta
+   \vec{v}_{n_{dyn}}+\Delta \vec{v}_{n_{phy}} \\[8pt]
+ \pi^{t \star}&=\pi^{t} +\Delta \pi_{dyn}+\Delta \pi_{sp}\\[8pt]
+&
+\end{aligned}
+&
+\begin{aligned}
+& \\[8pt]
+& \\[8pt]
+&Qx^{t \star}=Qx^{t}+\Delta Qx_{adv}\end{aligned} &
+\begin{aligned}
+& \\[8pt]
+& \\[8pt]
+& Qx^{t \star\,\star}=Qx^{t \star}+\Delta Qx_{sp}
+\end{aligned}
+ & 
+\begin{aligned}
+\\[8pt]
+\pi^{t \star\,\star}&=\pi^{\star} +\Delta \pi_{satad} \\[8pt]
+Qx^{t\star\,\star\,\star}&=Qx^{t\star\,\star} +\Delta Qx_{satad}
+\end{aligned} &
+\begin{aligned}
+ \Delta \vec{v}_{n_{phy}} \\[8pt]
+ \pi^{\;t+1}&=\pi^{t \star,\star} +\Delta \pi_{fp}   \\[8pt]
+ Qx^{\,t+1}&=Qx^{t \star\,\star\,\star} +\Delta Qx_{fp}
+\end{aligned}  &
+\begin{aligned}
+& \Delta \vec{v}_{n_{phy}} \\[8pt]
+& \Delta \pi_{sp} \\[8pt]
+& \Delta Qx_{sp}\\
+\end{aligned} \\  
+%
+%\hiderowcolors
+\midrule
+ \color{blue} t_{step}=1 \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=8ex]{\ }; & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };   &\tikz\node[rectangle,fill=red,anchor=text,minimum
+    height=15 pt, minimum width=20ex]{\ }; &\tikz\node[rectangle,fill=red,anchor=text,minimum
+    height=15 pt, minimum width=20ex]{\ }; &\tikz\node[rectangle,fill=red,anchor=text,minimum
+    height=15 pt, minimum width=20ex]{\ }; &\tikz\node[rectangle,fill=red,anchor=text,minimum
+    height=15 pt, minimum width=20ex]{\ }; & \\ 
+%
+\midrule
+t_{step}= t_{dyn} & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  &&&&& \\ 
+\midrule
+%
+t_{step}=t_{adv} & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };   & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \\ 
+\midrule
+%
+t_{step}= t_{dyn} &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };   &&&&& \\ 
+\midrule
+%
+t_{step}=t_{slowphys} & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=13ex]{\ };   \\ 
+\midrule
+%
+t_{step}= t_{dyn} &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };   &&&&& \\ 
+\midrule
+%
+t_{step}= t_{adv} & \tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };  &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };   &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };      &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };    &\tikz\node[rectangle,fill=red,anchor=text,minimum height=15 pt, 
+    minimum width=20ex]{\ };    & \\ 
+\bottomrule
+\end{array}
+\end{align*} 
+%\end{center}
+%}
+%\endgroup
+
+%\label{RTE}
+%\protect \caption{\small Applied variations to the radiation routine, taken from XY.}
+%\end{table}
+
+%\end{singlespacing}
+%\end{landscape}

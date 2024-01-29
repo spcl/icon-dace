@@ -1,0 +1,579 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+# =====================================
+# mistral batch job parameters
+#-----------------------------------------------------------------------------
+#SBATCH --account=mh0287 
+##SBATCH --job-name=icon-nwp-test
+#SBATCH --partition=compute
+#SBATCH --nodes=20
+#SBATCH --threads-per-core=2
+#SBATCH --exclusive
+#SBATCH --time=00:20:00
+
+
+
+set -x
+
+# OpenMP settings
+export OMP_NUM_THREADS=6
+export ICON_THREADS=6
+export OMP_SCHEDULE=dynamic,1
+export OMP_DYNAMIC="false"
+export OMP_STACKSIZE=200M
+
+
+export GRIB_DEFINITION_PATH=/home/zmaw/m214089/grib2/definitions.edzw:/home/zmaw/m214089/grib2/definitions
+
+# MPI variables
+# ----------------------------
+mpi_root=/opt/mpi/bullxmpi_mlx/1.2.8.3
+no_of_nodes=${SLURM_JOB_NUM_NODES:-1}
+mpi_procs_pernode=8
+((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
+START="srun --cpu-freq=2500000 --kill-on-bad-exit=1 --nodes=${SLURM_JOB_NUM_NODES:-1} --cpu_bind=verbose,cores --distribution=block:block --ntasks=$((no_of_nodes * mpi_procs_pernode)) --ntasks-per-node=${mpi_procs_pernode} --cpus-per-task=${OMP_NUM_THREADS} --propagate=STACK --mpi=openmpi"
+
+
+cd ${SLURM_SUBMIT_DIR}
+
+basedir=${SLURM_SUBMIT_DIR}/../../
+
+# ----------------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------------
+
+# directory with input grids:
+GRIDDIR=/pool/data/ICON/grids/public/edzw
+
+# directory with input data
+INDATADIR=/pool/data/ICON/grids/private/m222072/initdata_R3B7N8_grib
+
+# directory with external parameter data:
+EXTPARDIR=/pool/data/ICON/grids/public/edzw
+
+# base directory for ICON sources and binary:
+bindir="${basedir}/build/x86_64-unknown-linux-gnu/bin"   # binaries
+
+EXPNAME=icon-nwp-test3
+
+# absolute path to directory with plenty of space:
+EXPDIR=${basedir}/experiments/${EXPNAME}
+
+# path to model binary, including the executable:
+MODEL=$bindir/icon
+
+
+# ----------------------------------------------------------------------------
+# copy input data: grids, external parameters, model
+# ----------------------------------------------------------------------------
+
+# the directory for the experiment will be created, if not already there
+if [ ! -d $EXPDIR ]; then
+    mkdir -p $EXPDIR
+fi
+cd ${EXPDIR}
+
+
+# grid files
+ln -sf $GRIDDIR/icon_grid_0025_R03B06_R.nc iconR3B06_DOM00.nc
+ln -sf $GRIDDIR/icon_grid_0025_R03B06_R-grfinfo.nc iconR3B06_DOM00-grfinfo.nc
+ln -sf $GRIDDIR/icon_grid_0026_R03B07_G.nc iconR3B07_DOM01.nc
+ln -sf $GRIDDIR/icon_grid_0026_R03B07_G-grfinfo.nc iconR3B07_DOM01-grfinfo.nc
+ln -sf $GRIDDIR/icon_grid_0027_R03B08_N02.nc iconR3B08_DOM02.nc
+ln -sf $GRIDDIR/icon_grid_0027_R03B08_N02-grfinfo.nc iconR3B08_DOM02-grfinfo.nc
+
+ln -sf $EXTPARDIR/icon_extpar_0026_R03B07_G_20150805_tiles.nc extpar_iconR3B07_DOM01.nc
+ln -sf $EXTPARDIR/icon_extpar_0027_R03B08_N02_20150805_tiles.nc extpar_iconR3B08_DOM02.nc
+
+# interpolated IFS data
+ ln -sf  $INDATADIR/igaf20160711000000R.grb  an_R03B07_DOM01.grb
+ ln -sf  $INDATADIR/ieaf20160711000000R.grb  an_R03B08_DOM02.grb
+ ln -sf $INDATADIR/igfff2016071021-0130R.grb fg_R03B07_DOM01.grb
+ ln -sf $INDATADIR/iefff2016071021-0130R.grb fg_R03B08_DOM02.grb
+
+
+# files needed for radiation
+ln -sf ${basedir}/data/ECHAM6_CldOptProps.nc rrtm_cldopt.nc
+ln -sf ${basedir}/data/rrtmg_lw.nc .
+
+# map file for analysis variable names
+ln -sf ${basedir}/run/ana_varnames_map_file.txt .
+
+# copy binary
+cp -p $MODEL icon
+
+
+# ----------------------------------------------------------------------------
+# grid namelist settings
+# ----------------------------------------------------------------------------
+
+# the grid parameters
+atmo_dyn_grids="iconR3B07_DOM01.nc iconR3B08_DOM02.nc"
+atmo_rad_grids="iconR3B06_DOM00.nc"
+
+# reconstruct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+# ----------------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------------
+
+cat > icon_master.namelist << EOF
+
+! master_nml: ----------------------------------------------------------------
+&master_nml
+  lrestart                    = .FALSE.
+/
+&time_nml
+  ini_datetime_string         = "2016-07-11T00:00:00Z"
+  dt_restart                  = 5184000
+/
+&master_model_nml
+  model_type                  = 1
+  model_name                  = "ATMO"
+  model_namelist_filename     = "NAMELIST_nwptest"
+  model_min_rank              = 1
+  model_max_rank              = 65536
+  model_inc_rank              = 1
+/
+
+EOF
+
+
+# ----------------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------------
+# For a complete list see doc/Namelist_overview.pdf
+
+cat > NAMELIST_nwptest << EOF
+
+&parallel_nml
+ nproma                       = 16
+ p_test_run                   = .false.
+ l_test_openmp                = .false.
+ l_log_checks                 = .false.
+ num_io_procs                 = 2           ! 0: no dedicated I/O processor
+ iorder_sendrecv              = 3           ! (1), 3: best value for CRAY
+/
+&grid_nml
+ dynamics_grid_filename       =  ${dynamics_grid_filename}
+ radiation_grid_filename      =  ${radiation_grid_filename} 
+ dynamics_parent_grid_id      = 0,1
+ lredgrid_phys                = .true.,.true.
+ lfeedback                    = .true.
+ ifeedback_type               = 2
+ start_time                   = 0., -5400.,
+ end_time                     = 0., 432000. ! nest stops after 5 days
+/
+&initicon_nml
+ init_mode                    = 5
+ dt_iau                       = 10800
+ dt_shift                     = -5400
+ iterate_iau                  = .true.
+ zpbl1                        = 500.
+ zpbl2                        = 1000.
+ niter_diffu                  = 15
+ niter_divdamp                = 50
+ dwdfg_filename               = "<path>fg_R<nroot0>B<jlev>_DOM<idom>.grb"
+ dwdana_filename              = "<path>an_R<nroot0>B<jlev>_DOM<idom>.grb"
+ ana_varnames_map_file        = "./ana_varnames_map_file.txt"
+ ltile_coldstart              = .false.
+ lvert_remap_fg               = .false.
+ lp2cintp_incr                = .TRUE.
+ lp2cintp_sfcana              = .FALSE.
+/
+&run_nml
+ num_lev                      = 90, 60
+ lvert_nest                   = .true.      ! use vertical nesting if a nest is active
+ nsteps                       = 90
+ dtime                        = 120     ! timestep in seconds
+ ldynamics                    = .true.      ! dynamics
+ ltransport                   = .true.
+ iforcing                     = 3           ! NWP forcing
+ ltestcase                    = .false.     ! false: run with real data
+ msg_level                    = 12         ! default: 5, much more: 20
+ ltimer                       = .true.      ! set .true. for detailed timer output
+ timers_level                 = 10          ! can be increased up to 10 for detailed timer output
+ output                       = "nml"
+/
+&nwp_phy_nml
+ inwp_gscp                    = 1
+ inwp_convection              = 1
+ inwp_radiation               = 1
+ inwp_cldcover                = 1
+ inwp_turb                    = 1
+ inwp_satad                   = 1
+ inwp_sso                     = 1
+ inwp_gwd                     = 1
+ inwp_surface                 = 1
+ icapdcycl                    = 3   ! CAPE modification, improve diurnal cycle over tropical land
+ latm_above_top               = .false., .true.
+ efdt_min_raylfric            = 7200.
+ itype_z0                     = 2   ! 1: default, 2: turn off SSO part of z0
+ icpl_aero_conv               = 1
+ icpl_aero_gscp               = 1
+ dt_rad                       = 1440.
+ dt_conv                      = 360., 180.,
+ dt_sso                       = 720.,
+ dt_gwd                       = 720.,
+ cldopt_filename              = 'rrtm_cldopt.nc'
+/
+&nwp_tuning_nml
+ itune_albedo   = 1     ! somewhat reduced albedo (w.r.t. MODIS data) over Sahara
+/
+&turbdiff_nml
+ tkhmin                       = 0.75
+ tkmmin                       = 0.75
+ pat_len                      = 750.
+ c_diff                       = 0.2
+ rat_sea                      = 0.8     ! resolution independent since r21818 (2015-04-13)
+ ltkesso                      = .true.
+ frcsmot                      = 0.2     ! vertical smoothing of TKE source terms, tropics (only)
+ imode_frcsmot                = 2       ! to reduce moist bias in the tropical lower troposphere
+ ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher = 3
+ ltkeshs    = .true.
+ a_hshr     = 2.0
+ icldm_turb = 1
+/
+&lnd_nml
+ ntiles                       = 3
+ nlev_snow                    = 1
+ lmulti_snow                  = .false.
+ itype_heatcond               = 3
+ idiag_snowfrac               = 20
+ lsnowtile                    = .true.
+ lseaice                      = .true.
+ llake                        = .true.
+ itype_lndtbl                 = 4
+ itype_root                   = 2
+ itype_evsl                   = 4
+/
+&radiation_nml
+ irad_o3                      = 7
+ irad_aero                    = 6
+ albedo_type                  = 2        ! Modis albedo
+ direct_albedo                = 4        ! Briegleb
+ vmr_co2                      = 390.e-06 ! values representative for 2012
+ vmr_ch4                      = 1800.e-09
+ vmr_n2o                      = 322.0e-09
+ vmr_o2                       = 0.20946
+ vmr_cfc11                    = 240.e-12
+ vmr_cfc12                    = 532.e-12
+/
+&nonhydrostatic_nml
+ iadv_rhotheta                = 2
+ ivctype                      = 2
+ itime_scheme                 = 4
+ exner_expol                  = 0.333
+ vwind_offctr                 = 0.2
+ damp_height                  = 44000.
+ rayleigh_coeff               = 1.0
+ divdamp_fac                  = 0.004
+ divdamp_order                = 24
+ divdamp_type                 = 32
+ igradp_method                = 3
+ l_zdiffu_t                   = .true.
+ thslp_zdiffu                 = 0.02
+ thhgtd_zdiffu                = 125.
+ htop_moist_proc              = 22500.
+ hbot_qvsubstep               = 22500.   ! R2B6: 22500.; R3B7: 19000.
+/
+&sleve_nml
+ min_lay_thckn                = 20.     ! lowest level thickness (between half-levels)
+ max_lay_thckn                = 400.    ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit              = 14000.  ! 15 km is the default
+ top_height                   = 75000.
+ stretch_fac                  = 0.9
+ decay_scale_1                = 4000.
+ decay_scale_2                = 2500.
+ decay_exp                    = 1.2
+ flat_height                  = 16000.
+/
+&dynamics_nml
+ iequations                   = 3
+ divavg_cntrwgt               = 0.50
+ lcoriolis                    = .true.
+/
+&transport_nml
+ ivadv_tracer                 = 3,3,3,3,3
+ itype_hlimit                 = 3,4,4,4,4
+ ihadv_tracer                 = 52,2,2,2,2
+/
+&diffusion_nml
+ hdiff_order                  = 5
+ itype_vn_diffu               = 1
+ itype_t_diffu                = 2
+ hdiff_efdt_ratio             = 24.0 
+ hdiff_smag_fac               = 0.025
+ lhdiff_vn                    = .true.
+ lhdiff_temp                  = .true.
+/
+&interpol_nml
+ nudge_zone_width             = 8
+ lsq_high_ord                 = 3
+ l_intp_c2l                   = .true.
+ l_mono_c2l                   = .true.
+/
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                = 1
+ n_iter_smooth_topo   = 1,1
+ hgtdiff_max_smooth_topo = 0.,750.,
+ heightdiff_threshold = 3000.
+/
+&io_nml
+ itype_pres_msl               = 5         ! (1) 4: IFS method with consistency fix
+ itype_rh                     = 1         ! (1) 2: mixed phase (water and ice)
+/
+&gribout_nml
+ significanceOfReferenceTime     = 0      ! analysis
+ productionStatusOfProcessedData = 1      ! Oper. test products
+ backgroundProcess               = 2      ! 0=main,2=assimilation
+ generatingProcessIdentifier(1:2)= 1,2    ! icogl, icoeu
+ preset                          = 'deterministic'
+!typeOfProcessedData             = 1      ! [WMO Table 1.4] forecast
+!typeOfGeneratingProcess         = 2      ! [WMO Table 4.3] forecast
+!localDefinitionNumber           = 254    ! [DWD] Deterministic system
+ localNumberOfExperiment         = 0132  ! [DWD] Experiment ID
+!numberOfForecastsInEnsemble     = %nens%
+!perturbationNumber              = %iens%
+!typeOfEnsembleForecast          = %tens% ! See WMO Table 4.6
+!lgribout_24bit                  = .true. ! (F) write rho,theta,T,p with 24bits
+!lspecialdate_invar              = .true.
+/
+&meteogram_output_nml
+ lmeteogram_enabled= .true.
+ n0_mtgrm          = 0              ! meteogram initial time step (0 is first step!)
+ ninc_mtgrm        = 300   ! meteogram output interval (in terms of time steps)
+ ldistributed      = .false.
+ stationlist_tot   =  52.17,  14.12, 'Lindenberg',                        ! Lat,Lon
+                      51.97,   4.93, 'Cabauw',
+                     -10.08, -61.93, 'LBA_Rondonia',
+                      13.50,   2.5 , 'Niamey',
+                      36.61, -97.49, 'ARM_Southern_Great_Plains',
+                     -71.32, 156.62, 'ARM_North_Slope_of_Alaska_Barrow',
+                      -2.06, 147.43, 'ARM_Tropical_W_Pacific_Manus',
+                     -12.43, 130.89, 'ARM_Tropical_W_Pacific_Darwin',
+                      60.00,  80.00, 'Snow Test Russia',
+/
+
+!----------------------------------------------------------------------------
+! Define pressure levels for interpolation
+!----------------------------------------------------------------------------
+&nh_pzlev_nml
+ nplev             = 29   ! number of p level output (attention: levels in [Pa] and top-down)
+ plevels           = 10,    30,    50,    100,   200,   300,   500,   700,
+                   1000,  1500,  2000,   3000,  5000,  7000, 10000, 15000, 
+                  20000, 25000, 30000,  40000, 50000, 60000, 70000, 80000,
+                  85000, 90000, 92500,  95000,100000
+/
+
+!----------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains: "initialized analysis"
+!----------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    = -1                          ! write all domains
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  0,0,100000 ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'ini'                       ! file name base
+ ml_varlist             = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','-z_ifc'
+!output_grid            = .TRUE.
+/
+
+!----------------------------------------------------------------------------------
+! OUTPUT: ICON interpolated to latlon grid, pressure levels: "initialized analysis"
+!----------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  1                          ! write domain 1 only
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  0,0,100000 ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'ini_latlon'                ! file name base
+ pl_varlist             = 'temp','u','v','geopot','rh','w'
+ p_levels = 10,    30,    50,    100,   200,   300,   500,   700,
+          1000,  1500,  2000,   3000,  5000,  7000, 10000, 15000, 
+         20000, 25000, 30000,  40000, 50000, 60000, 70000, 80000,
+         85000, 90000, 92500,  95000,100000
+ ml_varlist             = 'pres_msl','clct','clcl','clcm','clch','group:precip_vars'
+ output_grid            = .false.
+ remap                  = 1
+ reg_lon_def            = 0.,0.25,359.75
+ reg_lat_def            = -90.,0.25,90.
+/
+
+
+
+
+
+!------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains: FG to be re-read by ICON
+!------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    = -1                          ! write all domains
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  10800,43200,10800          ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg'                        ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','-z_ifc','lhfl_s','shfl_s','rh_2m','runoff_g','runoff_s','tot_prec'
+!output_grid            = .TRUE.
+/
+
+!------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains, tiles: FG to be re-read by ICON
+!------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    = -1                          ! write all domains
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  10800,43200,10800          ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg'                        ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_tiles_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_sfc_vars_t'
+!output_grid            = .TRUE.
+/
+
+!----------------------------------------------------------------------------------
+! OUTPUT: ICON interpolated to latlon grid, pressure levels: FG diagnostics
+!----------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  1                          ! write domain 1 only
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  10800,43200,10800          ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg_latlon'                 ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ pl_varlist             = 'temp','u','v','geopot','rh','w'
+ p_levels = 10,    30,    50,    100,   200,   300,   500,   700,
+          1000,  1500,  2000,   3000,  5000,  7000, 10000, 15000, 
+         20000, 25000, 30000,  40000, 50000, 60000, 70000, 80000,
+         85000, 90000, 92500,  95000,100000
+ ml_varlist             = 'pres_msl','clct','clcl','clcm','clch','group:precip_vars'
+ output_grid            = .false.
+ remap                  = 1
+ reg_lon_def            = 0.,0.25,359.75
+ reg_lat_def            = -90.,0.25,90.
+/
+
+
+
+
+
+!------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains: FG to be re-read by ICON
+!------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    = -1                          ! write all domains
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  5400,5400,10000000  ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg'                        ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','-z_ifc'
+!output_grid            = .TRUE.
+/
+
+!------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains, tiles: FG to be re-read by ICON
+!------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    = -1                          ! write all domains
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  5400,5400,10000000  ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg'                        ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_tiles_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_sfc_vars_t'
+!output_grid            = .TRUE.
+/
+
+!----------------------------------------------------------------------------------
+! OUTPUT: ICON interpolated to latlon grid, pressure levels: FG diagnostics
+!----------------------------------------------------------------------------------
+&output_nml
+ filetype               =  2                          ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  1                          ! write domain 1 only
+ mode                   =  1                          ! 1: forecast
+ output_time_unit       =  1                          ! 1: seconds
+ output_bounds          =  5400,5400,10000000  ! start, end, increment
+!taxis_tunit            =  1                          ! 1: GRIB2 Units = seconds
+ steps_per_file         =  1
+ include_last           = .FALSE.
+ output_filename        = 'fg_latlon'                 ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ pl_varlist             = 'temp','u','v','geopot','rh','w'
+ p_levels = 10,    30,    50,    100,   200,   300,   500,   700,
+          1000,  1500,  2000,   3000,  5000,  7000, 10000, 15000, 
+         20000, 25000, 30000,  40000, 50000, 60000, 70000, 80000,
+         85000, 90000, 92500,  95000,100000
+ ml_varlist             = 'pres_msl','clct','clcl','clcm','clch','group:precip_vars'
+ output_grid            = .false.
+ remap                  = 1
+ reg_lon_def            = 0.,0.25,359.75
+ reg_lat_def            = -90.,0.25,90.
+/
+
+EOF
+
+
+# ----------------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------------
+
+echo ${START} ${MODEL}
+${START} ${MODEL}
+

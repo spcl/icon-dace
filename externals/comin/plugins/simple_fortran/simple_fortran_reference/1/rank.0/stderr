@@ -1,0 +1,191 @@
+ ICON running
+    running with            1  MPI tasks and            1  thread(s) per task.
+      compatibility check.
+        linked to ICON Community Interface v0.1.0
+      minimal-example: working precision test successful.
+    ICON model setup
+      ICON // Fill descriptive data structure
+      read NetCDF file './grids/grid.1_0.nc'.
+      ICON // Fill variable structure
+       model variable 'u.TL1', filled with value        10.00
+       model variable 'v.TL1', filled with value        20.00
+       model variable 'pres.TL1', filled with value        30.00
+       model variable 'temp.TL1', filled with value        40.00
+       model variable 'rho.TL1', filled with value         0.00
+       model variable 'pres_sfc.TL1', filled with value        50.00
+       model variable 'u.TL2', filled with value        10.00
+       model variable 'v.TL2', filled with value        20.00
+       model variable 'pres.TL2', filled with value        30.00
+       model variable 'temp.TL2', filled with value        40.00
+       model variable 'rho.TL2', filled with value         0.00
+       model variable 'pres_sfc.TL2', filled with value        50.00
+      Associate ICON descriptive data structures and ComIn
+      call of ComIn primary constructors.
+      setup: simple_fortran_plugin
+     plugin simple_fortran_plugin has id:    1
+     registration for 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) associated for 3rd party plugin simple_fortran_plugin successful.
+     registration for 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) associated for 3rd party plugin simple_fortran_plugin successful.
+     registration for 'EP_DESTRUCTOR' (ep: 42) associated for 3rd party plugin simple_fortran_plugin successful.
+      timesteplength from comin_descrdata_get_timesteplength   600.00000000000000        300.00000000000000     
+      Complete primary constructors
+      Add tracer variable (container).
+         add variable 'simple_fortran_var', requested by third party plugins.
+         add variable 'simple_fortran_tracer', requested by third party plugins.
+      Associate ICON varlist and ComIn
+      CONTEXT EP_SECONDARY_CONSTRUCTOR
+      current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: simple_fortran_plugin
+      third party callback: secondary constructor.
+      third party callback: iterate over variable list:
+ Variable found: u(           1 )
+ Variable found: v(           1 )
+ Variable found: pres(           1 )
+ Variable found: temp(           1 )
+ Variable found: rho(           1 )
+ Variable found: pres_sfc(           1 )
+ Variable found: tracer(           1 )
+ Variable found: qr(           1 )
+ Variable found: qi(           1 )
+ Variable found: qv(           1 )
+ Variable found: qs(           1 )
+ Variable found: qc(           1 )
+ Variable found: simple_fortran_var(           1 )
+ Variable found: simple_fortran_tracer(           1 )
+      simple_fortran_plugin - register some variables in some context
+           8          10         641
+      CONTEXT EP_ATM_YAC_DEFCOMP_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_BEFORE' (ep: 2).
+      CONTEXT EP_ATM_YAC_DEFCOMP_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_AFTER' (ep: 3).
+      CONTEXT EP_ATM_YAC_SYNCDEF_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_SYNCDEF_BEFORE' (ep: 4).
+      CONTEXT EP_ATM_YAC_SYNCDEF_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_SYNCDEF_AFTER' (ep: 5).
+      CONTEXT EP_ATM_YAC_ENDDEF_BEFORE
+      no calls associated with entry point 'EP_ATM_YAC_ENDDEF_BEFORE' (ep: 6).
+      CONTEXT EP_ATM_YAC_ENDDEF_AFTER
+      no calls associated with entry point 'EP_ATM_YAC_ENDDEF_AFTER' (ep: 7).
+
+    ICON model time loop
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 1
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   12.0000
+        v: value    =   22.0000
+        pres: value =   32.0000
+        temp: value =   42.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: simple_fortran_plugin
+      third party callback: before output.
+      plugin simple_fortran_plugin has id:    1
+      currently not in domain loop
+ domain            1 : global max =    3.0000000000000000     
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   15.0000
+        v: value    =   25.0000
+        pres: value =   35.0000
+        temp: value =   45.0000
+  
+      nnow, nold =            2           1
+ WARNING: Variable not found: name, nnow = tracer           2
+ WARNING: Variable not found: name, nnow = qr           2
+ WARNING: Variable not found: name, nnow = qi           2
+ WARNING: Variable not found: name, nnow = qv           2
+ WARNING: Variable not found: name, nnow = qs           2
+ WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = simple_fortran_var           2
+ WARNING: Variable not found: name, nnow = simple_fortran_tracer           2
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 2
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   12.0000
+        v: value    =   22.0000
+        pres: value =   32.0000
+        temp: value =   42.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: simple_fortran_plugin
+      third party callback: before output.
+      plugin simple_fortran_plugin has id:    1
+      currently not in domain loop
+ domain            1 : global max =    3.0000000000000000     
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   15.0000
+        v: value    =   25.0000
+        pres: value =   35.0000
+        temp: value =   45.0000
+  
+      nnow, nold =            1           2
+      CONTEXT EP_ATM_TIMELOOP_START
+      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
+
+      time step 3
+      ===========
+
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+
+        <advection>
+        u: value    =   17.0000
+        v: value    =   27.0000
+        pres: value =   37.0000
+        temp: value =   47.0000
+  
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: simple_fortran_plugin
+      third party callback: before output.
+      plugin simple_fortran_plugin has id:    1
+      currently not in domain loop
+ domain            1 : global max =    3.0000000000000000     
+
+        <output>
+
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+
+        <phys>
+        u: value    =   20.0000
+        v: value    =   30.0000
+        pres: value =   40.0000
+        temp: value =   50.0000
+  
+      nnow, nold =            2           1
+ WARNING: Variable not found: name, nnow = tracer           2
+ WARNING: Variable not found: name, nnow = qr           2
+ WARNING: Variable not found: name, nnow = qi           2
+ WARNING: Variable not found: name, nnow = qv           2
+ WARNING: Variable not found: name, nnow = qs           2
+ WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = simple_fortran_var           2
+ WARNING: Variable not found: name, nnow = simple_fortran_tracer           2
+      CONTEXT EP_DESTRUCTOR
+      current ep 'EP_DESTRUCTOR' (ep: 42) for library: simple_fortran_plugin
+      third party callback: destructor.
+
+    ICON clean-up

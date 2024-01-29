@@ -1,0 +1,122 @@
+#!/usr/bin/python
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -*- coding: utf-8 -*-
+#==============================================================================
+# Creates the ICON multiple builds based on config/multiple_builds
+# Leonidas Linardakis, MPI-M, 2011-25-1
+#==============================================================================
+import sys
+import os
+import stat
+
+create_folders=["run"]
+
+link_files=["blas", "config", "data", "doc", "grids", "hyb_params",
+"include", "lapack", "scripts", "src", "support",
+"aclocal.m4", "configure.ac","configure", "make_runscripts", "Makefile.in"]
+
+
+def warning(where,message):
+  print '********************'
+  print "Warning: "+where+" "+message
+  print '********************'
+  
+def error(where,message):
+  print '********************'
+  print "ERROR: "+where+" "+message
+  print "Exit 1 "
+  print '********************'
+  sys.exit(1)
+
+
+builds_file="./config/multiple_builds"
+noOfTabSpaces=1
+run_scripts=[]
+
+infile  = open(builds_file, 'r')
+for line in infile:
+  # replace tabs and remove leadin, trailing spaces
+  line = line.expandtabs(noOfTabSpaces)
+  line = line.lstrip()
+  line = line.rstrip()
+  lineLength = len(line)
+  if (lineLength < 1):
+    continue
+  if (line[0] == '#'):
+    continue
+  if (lineLength < 10):
+    error(line, " invalid line")
+    continue
+
+  # check if it's run_scripts
+  sep_idx=line.find("run_scripts")
+  if (sep_idx > -1):
+    # it's run_scripts
+    sep_idx=line.find('=')
+    if (sep_idx < 1):
+      error(line, "wrong syntax")
+    line=line[sep_idx+1:]    
+    line=line.rstrip()
+    
+    run_scripts=[]
+    while (len(line) > 0):
+      line=line.lstrip()
+      sep_idx=line.find(',')
+      if (sep_idx < 0):
+        sep_idx=len(line)
+      new_script=line[0:sep_idx]
+      new_script=new_script.rstrip()
+      run_scripts.append(new_script)
+
+      line=line[sep_idx+1:]
+    continue
+        
+  
+  # get build_folder
+  sep_idx=line.find('=')
+  if (sep_idx < 1):
+    error(line, "wrong syntax")
+    continue  
+  parameter_name=line[0:sep_idx]
+  parameter_name=parameter_name.rstrip()
+  if (parameter_name != "build_folder"):
+    error(parameter_name, " != build_folder")
+    continue    
+  line=line[sep_idx+1:]
+  line=line.lstrip()
+  sep_idx=line.find("configure_options")
+  if (sep_idx < 1):
+    error("configure_options", "parameter not found")
+    continue    
+  build_folder=line[0:sep_idx]
+  build_folder=build_folder.rstrip()
+
+  # get configure_options
+  line=line[sep_idx:]
+  sep_idx=line.find('=')
+  if (sep_idx < 1):
+    error(line, "wrong syntax")
+    continue  
+  configure_options=line[sep_idx+1:]
+ 
+  print "building for "+build_folder
+  os.chdir(build_folder)
+  os.system("./build_local &")
+  os.chdir("..")
+
+print "-------------------------------\n"
+print "Build all is completed"
+print "-------------------------------\n"
+
+sys.exit(0)
+

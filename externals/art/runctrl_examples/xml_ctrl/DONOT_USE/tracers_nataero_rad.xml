@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE tracers SYSTEM "tracers.dtd">
+
+<tracers>
+  <aerosol id="dusta">
+    <moment type="int">3</moment>
+    <mode type="char">dusta</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dusta0">
+    <moment type="int">0</moment>
+    <mode type="char">dusta</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="dustb">
+    <moment type="int">3</moment>
+    <mode type="char">dustb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dustb0">
+    <moment type="int">0</moment>
+    <mode type="char">dustb</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+  <aerosol id="dustc">
+    <moment type="int">3</moment>
+    <mode type="char">dustc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">mug kg-1</unit>
+  </aerosol>
+  <aerosol id="dustc0">
+    <moment type="int">0</moment>
+    <mode type="char">dustc</mode>
+    <sol type="real">1.0</sol>
+    <mol_weight type="real">50.00E-3</mol_weight>
+    <rho type="real">2.650E3</rho>
+    <unit type="char">kg-1</unit>
+  </aerosol>
+</tracers>

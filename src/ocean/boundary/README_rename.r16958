@@ -1,0 +1,83 @@
+
+
+================================================================================
+Info on renaming variables
+  - for forcing ocean surface in src/ocean/boundary/mo_ocean_bulk.f90
+  - subroutine update_surface flux (and others)
+  - most are components of type t_sfc_flx
+  - also changes in namelist, runscripts, related fortran files
+  - revison r16958 (re-integrated branch icon-oce-bulk-restruct into trunk)
+  - issue #4639
+================================================================================
+
+
+    Old Variable Name              New Variable Name
+    ================================================
+
+ - rename wind stress forcing:
+    forc_wind_u / v            -   topBoundCond_windStress_u/v
+    forcing_wind_u_amplitude   -   forcing_windStress_u_amplitude
+
+ - rename heat/freshwater fluxes (t_sfc_flx):
+    forc_hflx                  -   HeatFlux_Total - in W/m2
+    forc_swflx                 -   HeatFlux_ShortWave
+    forc_lwflx                 -   HeatFlux_LongWave
+    forc_ssflx                 -   HeatFlux_Sensible
+    forc_slflx                 -   HeatFlux_Latent
+    forc_precip                -   FrshFlux_Precipitation
+    forc_evap                  -   FrshFlux_Evaporation
+    forc_snow                  -   FrshFlux_SnowFall
+    forc_runoff                -   FrshFlux_Runoff
+    forc_fw_bc                 -   FrshFlux_TotalSalt
+    forc_fw_tot                -   FrshFlux_VolumeTotal
+    forc_fw_ice_vol            -   FrshFlux_VolumeIce
+    forc_fw_bc_ice             -   FrshFlux_TotalIce
+    forc_fw_bc_oce             -   FrshFlux_TotalOcean
+
+ - rename tracer forcing  (t_sfc_flx):
+    forc_tracer(:,:,1)         -   topBoundCond_Temp_vdiff
+    forc_tracer(:,:,2)         -   topBoundCond_Salt_vdiff
+
+ - rename relaxation - parameter/type:              
+    temperature_relaxation     -   type_surfRelax_Temp  - 0/1/2/3
+    relaxation_param           -   para_surfRelax_Temp
+    irelax_2d_S                -   type_surfRelax_Salt
+    relax_2d_mon_S             -   para_surfRelax_Salt
+    irelax_3d_T                -   type_3dimRelax_Temp
+    relax_3d_mon_T             -   para_3dimRelax_Temp
+    irelax_3d_S                -   type_3dimRelax_Salt
+    relax_3d_mon_S             -   para_3dimRelax_Salt
+
+ - rename relaxation - data arrays (t_hydro_ocean_aux and t_sfc_flx)
+    forc_tracer_relax(:,:,1)   -   data_surfRelax_Temp (2-dim)
+    forc_tracer_relax(:,:,2)   -   data_surfRelax_Salt (2-dim)
+    relax_3d_data_t            -   data_3dimRelax_Temp
+    relax_3d_forc_t            -   forc_3dimRelax_Temp
+    relax_3d_data_s            -   data_3dimRelax_Salt
+    relax_3d_forc_s            -   forc_3dimRelax_Salt
+
+================================================================================
+Info on new relaxation routines
+  - revison r17227/r17229 on trunk
+  - issue #4639
+================================================================================
+
+
+ - changed relaxation subroutines:
+    update_relaxation_flux   : old relaxation method (fluxes after call of sea ice) - deactivated
+    update_surface_relaxation: relaxation fluxes (heat/freshwater) and restoring rates (for T/S) are calculated
+                               at begin of routine update_surface_fluxes using values from former timestep
+    apply_surface_relaxation : activate relaxation through simple restoring to T* and S* at begin of
+                               update_surface_fluxes, no additional fluxes for ocean forcing are used;
+                               alternatively, add diagnosed fluxes to total sum of fluxes (not yet activated)
+
+ - rename relaxation variables and new ones (t_sfc_flx)
+
+    Old Variable Name              New Variable Name    Explanation
+    ===============================================================
+    forc_fwrelax               -   FrshFlux_Relax     : freshwater flux due to relaxation [m/s]
+    (none)                     -   HeatFlux_Relax     : heat flux due to relaxation [W/m2]
+    (none)                     -   TempFlux_Relax     : temperature restoring rate [K/s]
+    (none)                     -   SaltFlux_Relax     : salinity restoring rate [psu/s]
+
+

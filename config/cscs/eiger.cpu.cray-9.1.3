@@ -1,0 +1,78 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+MODULES='modules craype PrgEnv-cray cce/9.1.3 cray-mpich cray-netcdf cray-hdf5'
+
+XML2_ROOT='/apps/daint/UES/jenkins/6.0.UP07/gpu/easybuild/software/libxml2/2.9.7-CrayGNU-18.08'
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV=". \"${SCRIPT_DIR}/module_switcher\"; module use /project/d56/modules; switch_for_module ${MODULES}; export LD_LIBRARY_PATH=\"/usr/lib64:\${XML2_ROOT}/lib:\${LD_LIBRARY_PATH}\";"
+
+CC='cc'
+CFLAGS='-g -O3'
+CPPFLAGS="-I${XML2_ROOT}/include/libxml2"
+
+FC='ftn'
+FCFLAGS="-hadd_paren -r am -Ktrap=divz,ovf,inv -hflex_mp=intolerant -hfp1 -O1,cache0"
+
+LDFLAGS="-L${XML2_ROOT}/lib -L${ICON_DIR}"
+LIBS="-Wl,--as-needed ${XML2_LIBS}"
+
+MPI_LAUNCH='/apps/daint/UES/xalt/production/bin/srun -p debug -C gpu'
+
+EXTRA_CONFIG_ARGS='--disable-coupling --without-external-yac --enable-openmp'
+
+# Speed up the configuration by disabling MPI checks:
+EXTRA_CONFIG_ARGS+=' --disable-mpi-checks'
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="$BUILD_ENV" \
+CC="$CC" \
+CFLAGS="$CFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
+FC="$FC" \
+FCFLAGS="$FCFLAGS" \
+LDFLAGS="$LDFLAGS" \
+LIBS="$LIBS" \
+MPI_LAUNCH="$MPI_LAUNCH" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Generate input file for runscript generation:
+./config.status --file=run/set-up.info
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi

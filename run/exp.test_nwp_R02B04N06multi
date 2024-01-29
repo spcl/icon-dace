@@ -1,0 +1,279 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# exp.test_nwp_R02B04N06multi
+#
+# Basic test case for the ICON NWP mode with multiple nesting.
+#
+#
+# This section of the run script contains the specifications of the experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# EXPNAME and NPROMA must be defined as environment variables or they must 
+# be substituted with appropriate values.
+#
+# Initial revision: 2015-04-14, F. Prill, DWD
+#
+#-----------------------------------------------------------------------------
+#
+# Basic specifications of the simulation
+# --------------------------------------
+#
+# These variables are set in the header section of the completed run script:
+#
+# EXPNAME = experiment name
+# NPROMA  = array blocking length / inner loop length
+#-----------------------------------------------------------------------------
+#
+#-----------------------------------------------------------------------------
+# The following information is included to present some information on the buildbot-html main page
+#
+# _bb_table_Description_  Basic real-data test case for the ICON NWP mode
+# _bb_table_Model_        non-hydrost. atmosph.
+# _bb_table_Grid_         triangle
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2011-01-01T00:00:00Z"
+end_date="2011-01-04T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# the grid files
+grids_folder="${icon_data_rootFolder}/buildbot_data/nwp/grids/multinest"
+atmo_dyn_grids="iconR2B04_DOM01.nc iconR2B05_DOM02.nc iconR2B06_DOM03.nc iconR2B05_DOM04.nc iconR2B06_DOM05.nc"
+atmo_rad_grids="iconR2B03_DOM00.nc"
+#
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+#-----------------------------------------------------------------------------
+
+
+# If the model runs with mpi_procs=1, then this script exits without error:
+if [[ ${mpi_total_procs} = 1 ]]; then
+  echo "This test must not be started if mpi_procs=1 --> exit test without error"
+  check_error 0 "exp.nat_jww_nwp_mpiomp"
+  exit 0
+fi
+
+# If running in parallel, mpi_procs*no_of_nodes must be bigger than 2:
+n_procs=`expr ${mpi_procs_pernode} \* ${no_of_nodes}`
+if [[ ${n_procs} = 2 ]]; then
+  echo "This test needs at least 3 MPI processes --> increase mpi_procs from 2 to 3"
+  mpi_procs=3
+  START=${START%2}3
+fi
+
+# reconstruct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+dynamics_parent_grid_id="${dynamics_parent_grid_id},"
+#
+
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#
+cat > ${atmo_namelist} << EOF
+! parallel_nml: MPI parallelization -------------------------------------------
+&parallel_nml
+ nproma                      =                          8         ! loop chunk length
+ p_test_run                  =                     .FALSE.        ! .TRUE. means verification run for MPI parallelization
+ num_io_procs                =                          1         ! number of I/O processors
+ num_restart_procs           =                          0         ! number of restart processors
+ iorder_sendrecv             =                          3         ! sequence of MPI send/receive calls
+ num_dist_array_replicas     = ${replicate_grid-1} ! can be 1 iff passive or active (see HAVE_SLOW_PASSIVE_TARGET_ONESIDED) target RMA works well
+/
+
+! run_nml: general switches ---------------------------------------------------
+&run_nml
+ ltestcase                   =                      .TRUE.        ! idealized testcase runs
+ num_lev                     =         90, 60, 54, 60, 54         ! number of full levels (atm.) for each domain
+ lvert_nest                  =                      .TRUE.        ! vertical nesting
+ nsteps                      =                         10         ! number of time steps of this run
+ dtime                       =                       1440         ! timestep in seconds
+ ldynamics                   =                      .TRUE.        ! compute adiabatic dynamic tendencies
+ ltransport                  =                      .TRUE.        ! compute large-scale tracer transport
+ ntracer                     =                          5         ! number of advected tracers
+ iforcing                    =                          3         ! forcing of dynamics and transport by parameterized processes
+ msg_level                   =                          7         ! controls how much printout is written during runtime
+ ltimer                      =                     .FALSE.        ! timer for monitoring the runtime of specific routines
+ timers_level                =                         10         ! performance timer granularity
+ output                      =                       "nml"        ! main switch for enabling/disabling components of the model output
+/
+
+! diffusion_nml: horizontal (numerical) diffusion ----------------------------
+&diffusion_nml
+ hdiff_order                 =                          5         ! order of nabla operator for diffusion
+ itype_vn_diffu              =                          1         ! reconstruction method used for Smagorinsky diffusion
+ itype_t_diffu               =                          2         ! discretization of temperature diffusion
+ hdiff_efdt_ratio            =                         36.0       ! ratio of e-folding time to time step 
+ hdiff_smag_fac              =                          0.015     ! scaling factor for Smagorinsky diffusion
+ lhdiff_vn                   =                      .TRUE.        ! diffusion on the horizontal wind field
+ lhdiff_temp                 =                      .TRUE.        ! diffusion on the temperature field
+/
+
+! dynamics_nml: dynamical core -----------------------------------------------
+&dynamics_nml
+ iequations                  =                          3         ! type of equations and prognostic variables
+ divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
+ lcoriolis                   =                      .TRUE.        ! Coriolis force
+/
+
+! extpar_nml: external data --------------------------------------------------
+&extpar_nml
+ extpar_filename             =                         ""         ! filename of external parameter input file
+ itopo                       =                          0         ! topography (0:analytical)
+/
+
+! grid_nml: horizontal grid --------------------------------------------------
+&grid_nml
+ dynamics_grid_filename      =  ${dynamics_grid_filename}
+ radiation_grid_filename     = ${radiation_grid_filename}
+ dynamics_parent_grid_id     =              0, 1, 2, 1, 4         ! array of the indexes of the parent grid filenames
+ lredgrid_phys               = .TRUE.,.TRUE.,.TRUE.,.TRUE.,.TRUE. ! .true.=radiation is calculated on a reduced grid
+ lfeedback                   =                      .TRUE.        ! specifies if feedback to parent grid is performed
+ ifeedback_type              =                          2         ! feedback type (incremental/relaxation-based)
+/
+
+! gridref_nml: grid refinement and nesting -----------------------------------
+&gridref_nml
+ grf_intmethod_e             =                          6         ! interpolation method for grid refinement
+ grf_scalfbk                 =                          2         ! feedback method for dynamical scalar variables
+ grf_tracfbk                 =                          2         ! feedback method for tracer variables
+ denom_diffu_v               =                        150.0       ! Denominator for lateral boundary diffusion of velocity
+/
+
+! io_nml: general switches for model I/O -------------------------------------
+&io_nml
+ dt_diag                     =                      21600.0       ! diagnostic integral output interval
+ dt_checkpoint               =                    5760000.0       ! time interval for writing restart files.
+ itype_pres_msl              =                          2         ! method for computation of mean sea level pressure
+/
+
+! nh_testcase_nml: idealized testcase specification --------------------------
+&nh_testcase_nml
+ nh_test_name                =                    'jabw_m'        ! testcase selection
+ mount_height                =                       7500.0       ! maximum mount height
+ mount_half_width            =                    2000000.0       ! half width of mountain
+ rh_at_1000hpa               =                          0.99      ! relative humidity at 1000 hPa
+ qv_max                      =                         35.e-3     ! specific humidity in the tropics
+/
+
+! nonhydrostatic_nml: nonhydrostatic model -----------------------------------
+&nonhydrostatic_nml
+ iadv_rhotheta               =                          2         ! advection method for rho and rhotheta
+ ivctype                     =                          2         ! type of vertical coordinate
+ itime_scheme                =                          4         ! time integration scheme
+ exner_expol                 =                          0.333     ! temporal extrapolation of Exner function
+ vwind_offctr                =                          0.2       ! off-centering in vertical wind solver
+ damp_height                 =                      50000.0       ! height at which Rayleigh damping of vertical wind starts
+ rayleigh_coeff              =                          0.10      ! Rayleigh damping coefficient
+ ndyn_substeps               =                          5         ! number of dynamical core substeps
+ divdamp_order               =                          4         ! order of divergence damping
+ igradp_method               =                          3         ! discretization of horizontal pressure gradient
+ l_zdiffu_t                  =                      .TRUE.        ! specifies computation of Smagorinsky temperature diffusion
+ thslp_zdiffu                =                          0.02      ! slope threshold (temperature diffusion)
+ thhgtd_zdiffu               =                        125.0       ! threshold of height difference (temperature diffusion)
+ htop_moist_proc             =                      22500.0       ! max. height for moist physics
+ hbot_qvsubstep              =                      22500.0       ! height above which QV is advected with substepping scheme
+/
+
+! nwp_phy_nml: switches for the physics schemes ------------------------------
+&nwp_phy_nml
+ inwp_gscp                   =                          1         ! cloud microphysics and precipitation
+ inwp_convection             =                          1         ! convection
+ inwp_radiation              =                          1         ! radiation
+ inwp_cldcover               =                          1         ! cloud cover scheme for radiation
+ inwp_turb                   =                          1         ! vertical diffusion and transfer
+ inwp_satad                  =                          1         ! saturation adjustment
+ inwp_sso                    =                          0         ! subgrid scale orographic drag
+ inwp_gwd                    =                          1         ! non-orographic gravity wave drag
+ inwp_surface                =                          0         ! surface scheme
+ latm_above_top              =              .FALSE.,.TRUE.        ! take into account atmosphere above model top for radiation computation
+ efdt_min_raylfric           =                       7200.0       ! minimum e-folding time of Rayleigh friction
+ itype_z0                    =                          2         ! type of roughness length data
+/
+
+! output_nml: specifies an output stream --------------------------------------
+&output_nml
+ filetype                    =                          4         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                         =                         -1         ! write all domains
+ output_bounds               =       0., 10000000., 21600.        ! output: start, end, increment
+ steps_per_file              =                          2         ! number of output steps in one output file
+ mode                        =                          1         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last                =                      .TRUE.        ! flag whether to include the last time step
+ output_filename             =                       'NWP'        ! file name base
+ output_grid                 =                      .TRUE.        ! flag whether grid information is added to output.
+ !
+ ml_varlist                  =  'u', 'v', 'w', 'temp', 'pres','topography_c', 'pres_msl', 
+                                'qv', 'qc', 'qi', 'qr', 'qs', 'tke',                      
+                                'group:precip_vars', 'group:additional_precip_vars'
+/
+
+! sleve_nml: vertical level specification -------------------------------------
+&sleve_nml
+ min_lay_thckn               =                         20.0       ! layer thickness of lowermost layer
+ top_height                  =                      75000.0       ! height of model top
+ stretch_fac                 =                          0.9       ! stretching factor to vary distribution of model levels
+ decay_scale_1               =                       4000.0       ! decay scale of large-scale topography component
+ decay_scale_2               =                       2500.0       ! decay scale of small-scale topography component
+ decay_exp                   =                          1.2       ! exponent of decay function
+ flat_height                 =                      16000.0       ! height above which the coordinate surfaces are flat
+/
+
+! radiation_nml: radiation scheme ---------------------------------------------
+&radiation_nml
+ irad_o3                     =                          6         ! ozone climatology
+ irad_aero                   =                          0         ! aerosols
+/
+
+! transport_nml: tracer transport ---------------------------------------------
+&transport_nml
+ ivadv_tracer                =              3, 3, 3, 3, 3         ! tracer specific method to compute vertical advection
+ itype_hlimit                =           3, 4, 4, 4, 4, 0         ! type of limiter for horizontal transport
+ ihadv_tracer                =          52, 2, 2, 2, 2, 0         ! tracer specific method to compute horizontal advection
+ llsq_svd                    =                      .TRUE.        ! use SV decomposition for least squares design matrix
+ beta_fct                    =                          1.005     ! factor of allowed over-/undershooting in monotonous limiter
+/
+
+! turbdiff_nml: turbulent diffusion -------------------------------------------
+&turbdiff_nml
+ tkhmin                      =                          0.2       ! scaling factor for minimum vertical diffusion coefficient
+ tkmmin                      =                          0.2       ! scaling factor for minimum vertical diffusion coefficient
+ pat_len                     =                        100.0       ! 
+ c_diff                      =                          0.2       !
+ rat_sea                     =                          0.8       !
+/
+EOF
+#-----------------------------------------------------------------------------
+cat ${atmo_namelist}
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_atmo_non-hydrostatic_files
+#-----------------------------------------------------------------------------

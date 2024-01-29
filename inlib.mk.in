@@ -1,0 +1,135 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+######################## PGI/NVIDIA INLINE LIBRARY DATA ########################
+
+# List of procedures to be inlined:
+pgi_inlib_procedures+= \
+  T_from_internal_energy \
+  alb_seaice_equil \
+  alpha0_char \
+  calc_ustar \
+  ccw \
+  clct2ww \
+  create_rdm_seed \
+  create_rdm_seed_in_time \
+  cuadjtq \
+  cubidiag \
+  dewpoint_water \
+  dqsatdt_ice \
+  dqsatdt_rho \
+  esat_water \
+  flake_buoypar \
+  flake_driver \
+  flake_radflux \
+  flake_snowdensity \
+  flake_snowheatconduct \
+  foealfa \
+  foealfcu \
+  foedelta \
+  foedem \
+  foedemcu \
+  foeewi \
+  foeewl \
+  foeewm \
+  foeewm_v \
+  foeewmcu \
+  foeewmcu_v \
+  foeies_v \
+  foeldcp \
+  foeldcpm \
+  foeldcpmcu \
+  foeles_v \
+  fqvs \
+  fthetae \
+  internal_energy \
+  is_close_i \
+  is_close_r \
+  is_close_s \
+  isextremumspurious \
+  jac \
+  ko_index \
+  latent_heat_sublimation \
+  latent_heat_vaporization \
+  laxfr_upflux \
+  laxfr_upflux_v \
+  line_intersect \
+  lintersect \
+  make_normalized \
+  mc_limiter \
+  nwp_dyn_gust \
+  pade_eval_1 \
+  qsat_ice_rho \
+  qsat_rho \
+  reff_crystal \
+  reff_droplet \
+  rel_hum \
+  rel_hum_ifs \
+  sat_pres_ice \
+  sat_pres_water \
+  sfc_albedo_dir_briegleb \
+  sfc_albedo_dir_rg \
+  sfc_albedo_dir_taylor \
+  sfc_albedo_dir_yang \
+  sfc_albedo_dir_zaengl \
+  sfc_albedo_whitecap \
+  spec_humi \
+  swdir_s \
+  time_avg \
+  vdiff_mixed_time_value \
+  vdiff_new_time_value \
+  watrcon_rt \
+  watrdiff_rt \
+  zdqsdt \
+  zdqsdt_old \
+  zexner \
+  zpsat_w \
+  zqvap \
+  zqvap_old \
+  zsf_dqvdt_iw \
+  zsf_heav \
+  zsf_psat_iw
+
+# List of original Fortran '.f90' files containing $(pgi_inlib_procedures):
+pgi_inlib_f90_files+= \
+  src/advection/mo_advection_quadrature.f90 \
+  src/advection/mo_advection_utils.f90 \
+  src/advection/mo_advection_vlimit.f90 \
+  src/atm_phy_ice/mo_aes_thermo.f90 \
+  src/atm_phy_nwp/mo_nwp_ecrad_utilities.f90 \
+  src/atm_phy_nwp/mo_nwp_ww.f90 \
+  src/atm_phy_nwp/mo_opt_nwp_diagnostics.f90 \
+  src/atm_phy_nwp/mo_util_phys.f90 \
+  src/atm_phy_rte_rrtmgp/mo_cloud_optics.f90 \
+  src/atm_phy_schemes/gscp_cloudice.f90 \
+  src/atm_phy_schemes/gscp_graupel.f90 \
+  src/atm_phy_schemes/gscp_hydci_pp_ice.f90 \
+  src/atm_phy_schemes/mo_adjust.f90 \
+  src/atm_phy_schemes/mo_albedo.f90 \
+  src/atm_phy_schemes/mo_cuflxtends.f90 \
+  src/atm_phy_schemes/mo_cufunctions.f90 \
+  src/atm_phy_schemes/mo_satad.f90 \
+  src/atm_phy_schemes/mo_turb_vdiff.f90 \
+  src/atm_phy_schemes/turb_utilities.f90 \
+  src/lnd_phy_schemes/sfc_flake.f90 \
+  src/lnd_phy_schemes/sfc_seaice.f90 \
+  src/lnd_phy_schemes/sfc_terra.f90 \
+  src/serialization/mo_ser_common.f90 \
+  src/shared/mo_math_utilities.f90 \
+  src/shared/mo_statistics.f90
+
+# List of files to be compiled with the GPU register limit flag:
+@GPU_ENABLED@pgi_inlib_reglim_f90_files+= \
+@GPU_ENABLED@  src/atm_phy_schemes/mo_cuinit.f90
+
+# acc routines that are not inlined:
+# functions and subroutines in submodules dace and rte-rrtmgp
+# name:blk_no,name:idx_no,name:idx_1d, from src/configure_model/mo_parallel_config.f90
+# name:binary_search,name:get_local_index,name:get_valid_local_index_prev,name:get_valid_local_index_next, from src/parallel_infrastructure/mo_decomposition_tools.f90
+# name:nwp_con_gust from src/atm_phy_nwp/mo_util_phys.f90

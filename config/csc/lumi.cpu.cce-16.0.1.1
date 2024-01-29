@@ -1,0 +1,119 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+${SINGULARITY_CONTAINER+:} false || {
+  {
+    echo "ERROR: this configure wrapper must be run inside a container:"
+    echo "       run '${script_dir}/lumi.container_wrapper.cce-16.0.1.1 bash' first"
+  } >&2
+  exit 1
+}
+
+modules='PrgEnv-cray cce/16.0.1.1 craype-x86-milan cray-mpich cray-hdf5 cray-netcdf cray-libsci'
+sw_root='/project/project_465000454/icon/sw'
+
+ZLIB_LIBS='-lz'
+
+ECCODES_ROOT="${sw_root}/cce-15.0.1-zen2/eccodes-2.24.2"
+ECCODES_LIBS='-leccodes'
+
+FYAML_ROOT="${sw_root}/cce-15.0.1-zen2/libfyaml-0.8"
+FYAML_LIBS='-lfyaml'
+
+XML2_ROOT="${sw_root}/cce-15.0.1-zen2/libxml2-2.10.1"
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV=". /opt/cray/pe/modules/3.2.11.7/init/sh; . \"${script_dir}/module_switcher\"; switch_for_module ${modules}; export LD_LIBRARY_PATH=\"${ECCODES_ROOT}/lib64:${XML2_ROOT}/lib:${FYAML_ROOT}/lib:\${LD_LIBRARY_PATH-}\";"
+
+CC='cc'
+CPPFLAGS="-I${ECCODES_ROOT}/include -I${FYAML_ROOT}/include -I${XML2_ROOT}/include/libxml2"
+CFLAGS='-g -gdwarf-4'
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+
+FC='ftn'
+FCFLAGS="-hadd_paren -Ktrap=divz,ovf,inv -hflex_mp=intolerant -hfp1 -g"
+
+# It takes ages (if at all) to compile the following file with optimization
+# level other than -O0:
+ICON_O0_PATH='externals/jsbach/src/base/mo_jsb_process_factory_core.f90'
+ICON_O0_FCFLAGS='-O0'
+
+# We might need compiler diagnostic output for certain source files (to be set
+# on the command line when calling this wrapper as an extra argument
+# ICON_DIAG_PATH='<file1>:<file2>', where <file1>:<files2> is a colon-separated
+# list of relative paths to the files of interest):
+ICON_DIAG_FCFLAGS='-hlist=a'
+
+LDFLAGS="-L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib -L${XML2_ROOT}/lib"
+
+# Use the GNU linker as a workaround for the problem reported in
+# https://gitlab.dkrz.de/icon/icon/-/merge_requests/254:
+LDFLAGS+=' -fuse-ld=ld'
+
+ICON_LDFLAGS="-Wl,--disable-new-dtags -Wl,--as-needed"
+
+LIBS="${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${ZLIB_LIBS}"
+
+CMAKE="${sw_root}/gcc-12.2.0-zen2/cmake-3.21.4/bin/cmake"
+
+EXTRA_CONFIG_ARGS='--disable-mpi-checks --enable-openmp --enable-grib2 --enable-loop-exchange --enable-fcgroup-O0 --enable-fcgroup-DIAG'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CMAKE="${CMAKE}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_DIAG_FCFLAGS="${ICON_DIAG_FCFLAGS}" \
+ICON_LDFLAGS="${ICON_LDFLAGS}" \
+ICON_O0_FCFLAGS="${ICON_O0_FCFLAGS}" \
+ICON_O0_PATH="${ICON_O0_PATH}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  export PATH="${sw_root}/gcc-12.2.0-zen2/rsync-3.2.3/bin:${PATH-}"
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi
+

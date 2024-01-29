@@ -1,0 +1,215 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+# We do not use Spack to speed up the configuration. Uncomment the following
+# lines if you need to re-explore the environment using the commented spack
+# commands that you can find below.
+#
+# compiler='nag@7.1'
+# mpi='openmpi@4.1.2'
+
+# MPI_ROOT=$(spack find --format='{prefix}' "${mpi}%${compiler}")
+MPI_ROOT='/sw/spack-levante/openmpi-4.1.2-beqrxf'
+# We avoid using MPI wrappers because we want to make sure that NAG passes the
+# list of libraries in the same order it receives it (see comments on
+# '--as-needed' linker flag below). Therefore, we specified the required linker
+# flags explicitly:
+MPI_LIBS='-lmpi_usempi -lmpi_mpifh -lmpi'
+
+# ZLIB_ROOT=$(spack find --format='{prefix}' "zlib%${compiler}")
+ZLIB_ROOT='/usr'
+ZLIB_LIBS='-lz'
+
+# HDF5_ROOT=$(spack find --format='{prefix}' "hdf5%${compiler} +fortran+hl ^${mpi}%${compiler}")
+HDF5_ROOT='/sw/spack-levante/hdf5-1.12.1-ddjui3'
+HDF5_LIBS='-lhdf5_hl_fortran -lhdf5_fortran -lhdf5'
+
+# NETCDF_ROOT=$(spack find --format='{prefix}' "netcdf-c%${compiler} ^${mpi}%${compiler}")
+NETCDF_ROOT='/sw/spack-levante/netcdf-c-4.8.1-vbnli5'
+NETCDF_LIBS='-lnetcdf'
+
+# NETCDFF_ROOT=$(spack find --format='{prefix}' "netcdf-fortran%${compiler} ^${mpi}%${compiler}")
+NETCDFF_ROOT='/sw/spack-levante/netcdf-fortran-4.5.3-5di6qe'
+NETCDFF_LIBS='-lnetcdff'
+
+# BLAS_LAPACK_ROOT=$(spack find --format='{prefix}' "netlib-lapack%${compiler}")
+BLAS_LAPACK_ROOT='/sw/spack-levante/netlib-lapack-3.9.1-krseg4'
+BLAS_LAPACK_LIBS='-llapack -lblas'
+
+# The RTTOV license does not allow for a public installation (at least, we are
+# not sure whether it does). Therefore, the users who want to build ICON with
+# RTTOV have to download the library (implies accepting the license), install
+# it and provide the installation prefix below:
+RTTOV_ROOT=''
+if test -x "${RTTOV_ROOT}" >/dev/null 2>&1; then
+  RTTOV_FCFLAGS="-I${RTTOV_ROOT}/include"
+  RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
+  # The Fortran module files might be installed to a separate subdirectory:
+  test ! -d "${RTTOV_ROOT}/mod" >/dev/null 2>&1 || RTTOV_FCFLAGS="${RTTOV_FCFLAGS} -I${RTTOV_ROOT}/mod"
+  RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
+fi
+
+# ECCODES_ROOT=$(spack find --format='{prefix}' "eccodes%${compiler} +fortran")
+ECCODES_ROOT='/sw/spack-levante/eccodes-2.21.0-atq45o'
+ECCODES_LIBS='-leccodes_f90 -leccodes'
+
+# WARNING: make sure you are using libxml2 2.9.10 or older because newer
+# versions intentionally perform division by zero, which NAG compiler does not
+# like (see https://gitlab.gnome.org/GNOME/libxml2/-/merge_requests/186)
+#
+# XML2_ROOT=$(spack find --format='{prefix}' "libxml2%${compiler}")
+XML2_ROOT='/usr'
+XML2_LIBS='-lxml2'
+
+# FYAML_ROOT=$(spack find --format='{prefix}' "libfyaml%${compiler}")
+FYAML_ROOT='/sw/spack-levante/libfyaml-0.7.12-fvbhgo'
+FYAML_LIBS='-lfyaml'
+
+################################################################################
+
+BUILD_ENV="export LD_LIBRARY_PATH=\"${MPI_ROOT}/lib:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${BLAS_LAPACK_ROOT}/lib64:${ECCODES_ROOT}/lib64:${FYAML_ROOT}/lib:\${LD_LIBRARY_PATH}\"; export PATH=\"${HDF5_ROOT}/bin:\${PATH}\";"
+
+CC=$("${MPI_ROOT}/bin/mpicc" -show | sed 's: .*$::')
+CFLAGS='-g -gdwarf-4 -march=native'
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+ICON_YAC_CFLAGS='-pthread'
+CPPFLAGS="-I${MPI_ROOT}/include -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_ROOT}/include/libxml2 -I${FYAML_ROOT}/include"
+
+FC=$("${MPI_ROOT}/bin/mpif90" -show | sed 's: .*$::')
+FCFLAGS="-I${MPI_ROOT}/lib -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include ${RTTOV_FCFLAGS-} -I${ECCODES_ROOT}/include -Wc=${CC} -f2008 -colour -w=uep -g -gline -O0 -float-store -nan"
+
+# Fortran compiler flags that cannot be handled by vanilla libtool scripts:
+non_libtool_FCFLAGS='-Wc,-g -Wc,-pipe -Wc,--param,max-vartrack-size=200000000 -Wc,-mno-fma'
+
+# Fortran compiler flags allowing for acceptable argument mismatches when
+# calling MPI and NetCDF-Fortran APIs (which are called wrong from inside NetCDF itself):
+mismatch_mpi_FCFLAGS='-wmismatch=mpi_allgather,mpi_allgatherv,mpi_allreduce,mpi_alltoall,mpi_alltoallv,mpi_bcast,mpi_free_mem,mpi_gather,mpi_gatherv,mpi_get,mpi_get_address,mpi_ibcast,mpi_irecv,mpi_isend,mpi_pack,mpi_recv,mpi_reduce,mpi_rget,mpi_scatter,mpi_scatterv,mpi_send,mpi_sendrecv,mpi_unpack,mpi_win_create'
+# XXX: Temporary until either NAG provides an option to ignore interface conflicts or NetCDF uses its own functions correctly:
+mismatch_mpi_FCFLAGS="-mismatch ${mismatch_mpi_FCFLAGS}"
+mismatch_FCFLAGS='-wmismatch=mpi_allgather,mpi_allgatherv,mpi_allreduce,mpi_alltoall,mpi_alltoallv,mpi_bcast,mpi_free_mem,mpi_gather,mpi_gatherv,mpi_get,mpi_get_address,mpi_ibcast,mpi_irecv,mpi_isend,mpi_pack,mpi_recv,mpi_reduce,mpi_rget,mpi_scatter,mpi_scatterv,mpi_send,mpi_sendrecv,mpi_unpack,mpi_win_create,nf_def_var,nf_get_att_double,nf_get_att_int,nf_get_att_real,nf_get_vara_double,nf_get_vara_int,nf_get_vars_double,nf_get_vars_int,nf_put_att_double,nf_put_att_int,nf_put_vara_double,nf_put_vara_int,nf_put_vara_real'
+
+# The compiler either fails to compile or the produced executables crash with
+# the flag '-C=calls' implied by '-C=all'. The following variable is supposed to
+# be the same as -C=all without -C=calls:
+check_all_wo_ccalls_FCFLAGS='-C=alias -C=array -C=bits -C=dangling -C=do -C=intovf -C=present -C=pointer -C=recursion'
+# XXX: Temporary until "-mismatch" can be removed from mismatch_mpi_FCFLAGS
+check_all_FCFLAGS="${check_all_wo_ccalls_FCFLAGS}"
+
+ICON_FCFLAGS="${non_libtool_FCFLAGS} ${mismatch_mpi_FCFLAGS} ${check_all_FCFLAGS}"
+
+# Tolerate all argument mismatches in DACE (setting the function-specific
+# -wmismatch=p_bcast_derivedtype flag does not work due to what seems to be a
+# compiler bug):
+ICON_DACE_FCFLAGS="${non_libtool_FCFLAGS} -mismatch ${check_all_wo_ccalls_FCFLAGS}"
+ICON_DACE_PATH='externals/dace_icon'
+
+# Enable recognition of non-standard double precision complex intrinsic
+# functions (DCMPLX and DCONJG):
+ICON_EMVORADO_FCFLAGS="${non_libtool_FCFLAGS} ${mismatch_mpi_FCFLAGS} ${check_all_FCFLAGS} -dcfuns"
+ICON_EMVORADO_PATH='externals/emvorado'
+
+# Compile the bundled libraries with no tolerance to argument mismatches:
+ICON_BUNDLED_FCFLAGS="${non_libtool_FCFLAGS} -C=all"
+
+# Do not pass Fortran compiler flags that cannot be handled by the libtool
+# scripts of the bundled CDI and MTIME:
+ICON_CDI_FCFLAGS='-C=all'
+ICON_MTIME_FCFLAGS='-C=all'
+
+# Do not pass Fortran compiler flags that cannot be handled by the libtool
+# script of the bundled SCT and pass an additional flag enabling 'mpif.h':
+ICON_SCT_FCFLAGS="-I${MPI_ROOT}/include -C=all"
+
+# Prevent the test suite of YAC from failing:
+#   * compile test_dummy_coupling3.f90 without the '-C=calls' flag (all other
+#     files can be compiled with the flag but we do not have enough control to
+#     address the issue in a less general way;
+#   * this workaround is not needed once we switch to YAC 2.4.3+.
+ICON_YAC_FCFLAGS="${non_libtool_FCFLAGS}"
+
+LDFLAGS="-L${MPI_ROOT}/lib -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${BLAS_LAPACK_ROOT}/lib64 ${RTTOV_LDFLAGS-} -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib"
+# We put '-Wl,-Wl,,--as-needed' not to LDFLAGS or LIBS, which are used by both
+# Fortran and C compilers (the latter is used for linking by the bundled
+# libraries) but to ICON_LDFLAGS:
+ICON_LDFLAGS='-Wl,-Wl,,--disable-new-dtags -Wl,-Wl,,--as-needed'
+
+LIBS="${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${RTTOV_LIBS-} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ZLIB_LIBS} ${MPI_LIBS}"
+
+# We use the '--as-needed' linker flag in order to avoid redundant dependencies
+# on the libraries (e.g. -leccodes is not needed when GRIB2 support is
+# disabled). This flag must be passed to the linker (i.e. to 'ld') before the
+# list of libraries. To circumvent the way NAG treats linker flags, we have to
+# prepend each '-l<library>' flag with '-Wl,'. Otherwise NAG puts them before
+# '-Wl,--as-needed' when calling gcc for linking and the flag does not give the
+# desired effect:
+LIBS=$(echo "${LIBS}" | sed 's/\([ ]\|^\)-l/\1-Wl,-l/g')
+
+MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
+
+EXTRA_CONFIG_ARGS='--enable-parallel-netcdf --enable-ecrad --enable-grib2 --enable-yaxt --enable-fcgroup-DACE --enable-fcgroup-EMVORADO --enable-art --disable-openmp'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_BUNDLED_FCFLAGS="${ICON_BUNDLED_FCFLAGS}" \
+ICON_CDI_FCFLAGS="${ICON_CDI_FCFLAGS}" \
+ICON_YAC_CFLAGS="${ICON_YAC_CFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
+ICON_DACE_PATH="${ICON_DACE_PATH}" \
+ICON_EMVORADO_FCFLAGS="${ICON_EMVORADO_FCFLAGS}" \
+ICON_EMVORADO_PATH="${ICON_EMVORADO_PATH}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_LDFLAGS="${ICON_LDFLAGS}" \
+ICON_MTIME_FCFLAGS="${ICON_MTIME_FCFLAGS}" \
+ICON_SCT_FCFLAGS="${ICON_SCT_FCFLAGS}" \
+ICON_YAC_FCFLAGS="${ICON_YAC_FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi
+

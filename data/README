@@ -1,0 +1,26 @@
+*****************************************************
+*** Short description of files in this directory  ***
+*****************************************************
+
+ECHAM6_CldOptProps.nc:
+=======================
+
+
+rrtmg_lw.nc:
+=============
+
+
+dmin_wetgrowth_lookup.dat:
+===========================
+Data file for two-moment microphysics containing look-up table of minimum
+diameter of graupel for wet growth regime. Data is specific for graupel type
+'graupelhail_cosmo5' and needs to be re-calculated for other graupel
+properties. Contact A. Seifert or U. Blahak for more details.
+
+
+sound_landseabr:
+==================
+
+
+sound_rce:
+==========

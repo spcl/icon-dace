@@ -1,0 +1,322 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This section of the run script containes the specifications of the ocean experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# Default EXPNAME is the suffix of this script after "exp."
+#
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+#
+# Basic specifications for the hydrostatic ocean model (hom)
+# --------------------------------------
+# Stephan Lorenz, MPI-M, 2011-01 / 2012-03
+#
+# These variables are set in the header section of the completed run script:
+#
+# EXPNAME = experiment name
+# NPROMA  = array blocking length / inner loop length
+#-----------------------------------------------------------------------------
+#
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#
+#-----------------------------------------------------------------------------
+# model parameters
+ocean_model_equations=-1 # -1=hydrost. ocean
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global resolution
+R=2   # nroot
+B=4   # number of bisections applied
+#
+#-----------------------------------------------------------------------------
+# ocean initialization, forcing, and grid file location specifics:
+  LOC='POOL'   # all ocean files needed for running are found on pool
+# LOC='othr'   # else all ocean files needed for running are found on local 'grids' directory
+# specific path of input data is set by exec.iconrun
+#
+#-----------------------------------------------------------------------------
+use_file_initialConditions=".true."
+# prognostic ocean initialization file must match the vertical levels
+#   ts_phc_annual-iconR${R}B0{B}-L10x500m.nc      # 10 levels, 500m each
+#   ts_phc_annual-iconR${R}B0{B}-L10_50-1000m.nc  # 10 levels, 10-1000m varying thickness
+# provide name suffix for vertical resolution
+init_oce_suff='L10_50-1000m.nc'
+#
+#-----------------------------------------------------------------------------
+# surface relaxation initialization (init_relax=1) needs an additional file for temperature/salinity
+init_relax=1   # 1: use relaxation initialization file
+# surface relaxation file must match the thickness of the surface level
+#   ts_surf_annual-iconR${R}B0{B}-50m.nc          # 50m thickness
+#
+#-----------------------------------------------------------------------------
+# ocean forcing (iforc=12) needs an additional flux file 
+# NO_FORCING                 = 10
+# ANALYT_FORC                = 11  - dependent on testcase
+# FORCING_FROM_FILE_FLUX     = 12  - OMIP or NCEP type forcing
+# FORCING_FROM_FILE_FIELD    = 13  - not yet
+# FORCING_FROM_COUPLED_FLUX  = 14  - coupled experiments
+# FORCING_FROM_COUPLED_FIELD = 15  - not yet
+iforc=12
+#
+# type of OMIP or NCEP forcing to read (iforc=12 only)
+#  1 = u/v-stress [and temperature relaxation, depending on "type_surfRelax_Temp" below]
+#  2 = use all 12 datasets of full OMIP forcing
+#  3 = u/v-stress [and temperature relaxation], heat and mass flux
+#  4 = u/v-stress [and temperature relaxation], 4 parts of heat flux, precip/evap flux
+#  5 = use full NCEP datasets; read monthly mean data of consecutive years, set forcing_timescale=12 !
+iforc_type=5
+forcing_timescale=12   # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; else = daily data
+# surface flux file must match the length given by forcing_timescale
+#   omip4icon-R${R}B0{B}-monmean.nc  # 12 monthly mean datasets
+#   omip4icon-R${R}B0{B}-annual.nc   #  1 annual mean dataset
+#   ncep4icon-R${R}B0{B}.nc          # consecutive 12 monthly mean datasets (forcing_timescale=12)
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-03-01T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+# model timing
+dtime=1800           # ocean model timestep [s]
+nhours_data=6        # ocean model output interval hours [hours]
+ndays=370            # ocean model run in days
+ndays_file=1000      # new output file generation interval [days]
+ndays_checkp=90      # write restart file interval [days]
+ndays_restart=370    # stop model for restart [days]
+#
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $ndays
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+nsteps=5 
+dt_data=`expr ${nhours_data} \* 3600`
+dt_file=`expr ${ndays_file} \* 86400`
+dt_checkpoint=`expr ${ndays_checkp} \* 86400`
+dt_restart=`expr ${ndays_restart} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# provide an ocean horizontal grid file
+# grid_ext="etopo40_flat"    # mapped from ETOPO-file with 2/3 deg resolution, flat bottom bathymetry
+  grid_ext="etopo40_planet"  # mapped from ETOPO-file with 2/3 deg resolution, variable bottom bathymetry
+# grid_ext="aqua_planet"     # global flat bottom bathymetry for aqua planet experiments
+# grid_ext="bas0-60N"        # pentagon ocean basin with flat bottom at 30N 0E location
+# grid_ext="chann45N"        # circumpolar channel at 45N with flat bottom
+#
+ocean_grids="iconR${R}B0${B}-ocean_${grid_ext}.nc"
+# 
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf - in progress
+#
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma         = ${nproma}
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+/
+&grid_nml
+ ! cell_type is not used = 3            ! triangular cells
+ dynamics_grid_filename = "${ocean_grids}",
+/
+&run_nml
+ nsteps      = ${nsteps}    ! number of steps length of run
+ dtime       = ${dtime}     ! [s] timestep in seconds
+ output      = 'vlist'      ! We're still using the old output mechanism
+/
+&dynamics_nml
+ iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
+/
+&extpar_nml
+ itopo       = 0                 ! read external ocean data from gridfile
+/
+&dbg_index_nml
+  idbg_mxmn=1                     ! initialize MIN/MAX  debug output
+  idbg_val =1                     ! initialize one cell debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=5                     ! initialize end level for debug output
+  str_mod_tst='all', 'module'     ! define modules to print out in debug mode
+/
+&octst_nml
+  rlat_in = 50.0 rlon_in = -30.0 ! lat/lon-location of one cell debug output
+/
+&ocean_dynamics_nml
+! 10 levels of 500m depth
+! n_zlev             =   10      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)      =  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,
+!                      1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0
+! 10 unevenly spaced levels beginning with 50m depth
+  n_zlev             =   10      ! number of vertical levels and (dzlev_m) thicknesses
+  dzlev_m(1:20)      =   50.0,  100.0,  200.0,  300.0,  450.0,  600.0,  800.0, 1000.0, 1000.0, 1000.0,
+                       1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0
+! 10 unevenly spaced levels according to MPIOM test setup
+! n_zlev             =   10      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)       =  40.0,   50.0,   90.0,  160.0,  270.0,  390.0,  550.0,  900.0, 1300.0, 2300.0,
+!                      1000.0  1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0
+! 15 unevenly spaced levels beginning with 50m depth
+! n_zlev             =   15      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)      =   50.0,  100.0,  200.0,  300.0,  350.0,  400.0,  400.0,  400.0,  400.0,  400.0,
+!                       500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0,  500.0
+! 20 unevenly spaced levels used by MITGCM global ocean model example - reduced at bottom to 5400m
+! n_zlev             =   20      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)      =   50.0,   50.0,   55.0,   60.0,   65.0,   70.0,   80.0,   95.0,  120.0,  155.0,
+!                       200.0,  260.0,  320.0,  400.0,  480.0,  540.0,  600.0,  600.0,  600.0,  600.0
+! 20 unevenly spaced levels used by MPIOM/GR60, limited to 700m at bottom
+! n_zlev             =   20      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)      =   20.0,   20.0,   20.0,   30.0,   40.0,   50.0,   70.0,   90.0,  120.0,  150.0,
+!                       180.0,  210.0,  250.0,  300.0,  400.0,  500.0,  600.0,  700.0,  700.0,  700.0
+! 10 unevenly spaced levels used by MPIOM/GR30 with thin (12m) surface depth
+! n_zlev             =   10      ! number of vertical levels and (dzlev_m) thicknesses
+! dzlev_m(1:20)      =   12.0,   38.0,  150.0,  300.0,  500.0,  500.0, 1000.0, 1000.0, 1000.0, 1000.0,
+!                      1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0, 1000.0
+  iswm_oce           =    0      ! switch for one layer shallow water model (iswm_oce=1) or 3-d
+  idisc_scheme       =    1      ! 1=mimetic discretization, 2=rbf discretization
+  FLUX_CALCULATION_HORZ = 3      ! 1=upwind, 2=central, 3=mimetic, 4=mimetic_miura
+  FLUX_CALCULATION_VERT = 3      ! 1=upwind, 2=central, 3=mimetic, 4=mimetic_miura
+  l_staggered_timestep  =.FALSE. ! TRUE=thermodynamic and dynamic part staggered by half timestep
+  l_inverse_flip_flop= .FALSE.   ! within mimetic discretization:
+                                 ! TRUE : full scalar product (slow)
+                                 ! FALSE: reduced scalarproduct variant (fast and default)
+  l_rigid_lid        = .FALSE.   ! TRUE : use rigid lid as upper boundary condition 
+                                 ! FALSE: use the free surface dynamics
+  ab_beta            =    0.7    ! parameter for Adam-Bashforth time-stepping
+  ab_gam             =    0.7    ! parameter for Adam-Bashforth time-stepping
+  solver_tolerance   = 1.0E-11
+  solver_max_iter_per_restart = 20
+  solver_max_restart_iterations = 50
+  i_bc_veloc_lateral =    0      ! Boundary condition for normal velocity for lateral walls
+  i_bc_veloc_top     =    1      ! Boundary condition for normal velocity for ocean top
+  i_bc_veloc_bot     =    0      ! Boundary condition for normal velocity for ocean bottom
+  basin_center_lat   =   30.0    ! lat-lon coordinate of basin center, used 
+  basin_center_lon   =    0.0    ! in (non-global) basin configuration such as the Stommel-type tests
+  basin_width_deg    =   60.0    ! basin extension in x-direction, units are degrees
+  basin_height_deg   =   60.0    ! basin extension in y-direction, units are degrees
+  coriolis_type      =    1      ! 0=zero Coriolis, the non-rotating case
+                                 ! 1=full varying Coriolis
+                                 ! 2=beta-plane (linear) approximation to Coriolis
+                                 ! 3=f-plane (constant) approximation to Coriolis
+                                 ! IMPORTANT: SOME TESTCASES REQUIRE SPECIFIC SETTINGS: 
+                                 !  for Stommel-type basin (2D- and 3D, testcase 27 and/or 30) select
+                                 !  f- or beta-plane.
+  expl_vertical_velocity_diff = 1  ! 0=explicit, 1 = implicit  
+  expl_vertical_tracer_diff   = 1  ! 0=explicit, 1 = implicit
+  l_edge_based = .TRUE.          !  edge- or cell-based mimetic discretization
+  FLUX_CALCULATION_HORZ = 4      ! 1=upwind, 2=central, 3=mimetic, 4=mimetic_miura
+  FLUX_CALCULATION_VERT = 4      ! 1=upwind, 2=central, 3=mimetic, 4=mimetic_miura
+  i_apply_bulk          = 0      ! 1=use bulk formula without sea ice
+/
+&ocean_physics_nml
+  i_sea_ice          =    1      ! 0 = no sea ice; 1 = Winton; 2 = Semtner
+  no_tracer          =    2      ! tracer-transport: 0=no transport, 1=temperature, 2=temp. and salinity
+  EOS_TYPE           =    2      ! 1=linear EOS
+                                 ! 2= (nonlinear) EOS from MPI-OM 
+                                 ! 3= not recommended: (nonlinear) Jacket-McDoudgall density-formulation
+  k_veloc_h          = 7.5E+4    ! [m2/s] horizontal viscosity coefficient for velocity
+  k_veloc_v          = 1.0E-3    ! [m/s]  vertical viscosity coefficient for velocity
+  MAX_VERT_DIFF_VELOC= 1.0       ! max diffusion coeff, used in impl.vert.velocity diffusion, if stabil. crit.is met
+  k_pot_temp_h       = 1.0E+3    ! [m2/s] horizontal viscosity coefficient for temperature
+  k_pot_temp_v       = 3.0E-5    ! [m/s]  vertical viscosity coefficient for temperature
+  k_sal_h            = 1.0E+3    ! [m2/s] horizontal viscosity coefficient for salinity
+  k_sal_v            = 3.0E-5    ! [m/s]  vertical viscosity coefficient for salinity
+  MAX_VERT_DIFF_TRAC = 3.0E-2    ! max diffusion coeff, used in impl.vert.tracer diffusion, if stability crit.is met
+  HorizontalViscosity_type =  1      ! 0=no horizontal diffusion
+                                 ! 1= constant Laplacian viscosity coefficient given in namelist (k_veloc_h)
+                                 ! 2= constant Laplacian viscosity coefficient determined by requirement to
+                                 !    have at least one gridpoint in boundary layer. The namelist value is overwritten.
+                                 ! 3= spatially variable Laplacian viscosity coefficient determined by requirement to
+                                 !    have at least one gridpoint in boundary layer. The namelist value is overwritten.
+  CWA                = 0.5E-3    ! Tuning parameters for vertical mixing of tracer and velocity
+  CWT                = 0.5E-3    ! Set to standard values
+  bottom_drag_coeff  =    0.0025 ! Chezy coefficient for bottom friction
+  wstress_coeff      =    0.3    ! wind stress coefficient for top boundary forcing
+/
+&ocean_forcing_nml
+  iforc_oce          = ${iforc}       ! ocean forcing:
+  iforc_type         = ${iforc_type}  ! type of ocean forcing, see above
+  forcing_timescale          = ${forcing_timescale}   ! length of ocean forcing data set, see above
+  iforc_stat_oce     =    3      ! stationary (wind) forcing for iforc_oce=11 only:
+                                 ! 1=locally varying u,v (testcase 27, 29)
+                                 ! 2=varying u with latitude for basin using basin_width_deg
+                                 ! 3=varying u with latitude globally
+  init_oce_relax     = ${init_relax}  ! read ocean surface relaxation file, see above
+  type_surfRelax_Temp= 0      !  0: no relaxation used
+                                 !  1: relaxation switched on for reading (init_oce_relax=1) or some testcases only
+                                 !  2: use SST read from bulk forcing (iforc=12);
+                                 !     use atmospheric temperature in case of coupling (iforc=14)
+                                 !  3: use initial prognostic T as 2-dim relax, copy SST on tracer_relax(1)
+                                 ! -1: use net surface heat flux from atmosphere as boundary condition
+  para_surfRelax_Temp   =    1.0    ! strength of 2-dim relaxation for temperature (months)
+                                 ! this value is divided by number of seconds per month (=30*24*3600)
+  type_surfRelax_Salt        =    1      ! 2-dim relaxation of salinity - see "type_surfRelax_Temp" for parameter values
+  para_surfRelax_Salt     =    3.0    ! strength of 2-dim relaxation for salinity (months)
+  irelax_3d_T        =    0      ! 3-dim relaxation of temperature (0: no relax) 1-2: not yet used
+                                 ! 3: use initial T read with init_oce=1
+  relax_3d_mon_T     =    1.0    ! strength of 3-dim relaxation for temperature (months)
+  irelax_3d_S        =    0      ! 3-dim relaxation of salinity (0: no relax) 1-2: not yet used
+                                 ! 3: use initial S read with init_oce=1
+  relax_3d_mon_S     =    1.0    ! strength of 3-dim relaxation for salinity (months)
+  forcing_enable_freshwater      = .FALSE.   ! TRUE : apply freshwater forcing boundary condition (OMIP only)
+/
+&ocean_initialConditions_nml
+  use_file_initialConditions = ${use_file_initialConditions}    ! read ocean initialization file, see above
+  ! itestcase_oce      =   50      ! 25=shallow-water-Laeuter-Test; 26=shallow-water-Williamson test5;
+                                 ! 30=3D-multilayer Stommel; 31=3D-gravity wave
+                                 ! 32=Multilayer Munk-Gyre test (following Sergey Danilov)
+                                 ! 33=Collapsing density front, requires realistic lsm and topography
+                                 ! 34=Adjusting density front in an ocean basin
+                                 ! 40=global temperature initialization for wind and temperature forcing tests
+                                 ! 43=Collapsing density front at first level only with smaller amplitude (global)
+                                 ! 45=horizontally homogen temperature
+                                 ! 46=zonally and vertically homogen T/S
+                                 ! 50=zonally homogen temperature for APE SST (Williamson)
+/
+&io_nml
+ dt_checkpoint = ${dt_checkpoint}
+ lkeep_in_sync = .TRUE.          ! sync after each timestep
+/
+EOF
+#-----------------------------------------------------------------------------
+
+# MPIOM 40 levels:
+# n_zlev          =   40
+# dzlev_m(1:40)   =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   13.0,   15.0,   20.0,   25.0,
+#                     30.0,   35.0,   40.0,   45.0,   50.0,   55.0,   60.0,   70.0,   80.0,   90.0,
+#                    100.0,  110.0,  120.0,  130.0,  140.0,  150.0,  170.0,  180.0,  190.0,  200.0,
+#                    220.0,  250.0,  270.0,  300.0,  350.0,  400.0,  450.0,  500.0,  500.0,  600.0
+
+# MPIOM 80 levels:
+# n_zlev          =   80
+# dzlev_m(1:80)   =   12.0,   10.0,   10.0,   10.0,   10.0,   10.0,   10.0,   11.0,   11.0,   12.0,
+#                     13.,13.,14.,14.,15.,16.,16.,17.,18.,19.,
+#                     20.,21.,21.,22.,24.,25.,26.,27.,28.,29.,
+#                     31.,32.,34.,35.,37.,39.,40.,42.,44.,46.,
+#                     48.,50.,53.,55.,58.,60.,63.,66.,69.,72.,
+#                     76.,79.,83.,87.,91.,95.,99.,104.,108.,113.,
+#                     119.,124.,130.,136.,142.,149.,155.,163.,170.,178.,
+#                     186.,195.,204.,213.,223.,233.,244.,255.,267.,279.,
+

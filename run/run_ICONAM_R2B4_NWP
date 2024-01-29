@@ -1,0 +1,672 @@
+#! /bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------------------------------------------------
+#
+# ICON on NEC@DWD
+#
+# J. Foerstner, DWD, 2008-11
+# P. Ripodas,   DWD, 2010-09-15
+# M. Koehler,   DWD, 2011-02-01
+# J. Foerstner, DWD, 2011-03-06
+#
+#-----------------------------------------------------------------------------
+#
+# submit: 
+#   qsub run_ICONAM_R2B4_NWP
+#   qstat | grep mkoehler
+#   nqstat
+#   dayfile #hpcjob-id ("F" updating)
+#   nqcat -n 200 -o #hpcjob-id
+#   l ~/wq/.
+#
+# 4 OpenMP threads (max.=)
+# 16 CPUs on one NODE (OpenMP)
+#--------------------------------------------------
+
+#### BATCH_SYSTEM=PBS ####
+
+#PBS -N icon
+#PBS -S /bin/ksh
+#PBS -q lang
+#PBS -m n
+#PBS -r n
+#PBS -l walltime=48:00:00
+#PBS -o /e/uhome/mkoehler/wq
+#PBS -j oe
+#PBS -W umask=0027
+
+set -ex
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n ${PBS_O_WORKDIR} ]] ; then
+  cd ${PBS_O_WORKDIR}
+fi
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# setup
+
+EDIR="exp05"                               # working directory
+EXPNAME="NWP"                              # experiment identifier
+
+#-----------------------------------------------------------------------------
+# initial time
+
+inidates=2011010100
+#inidates=`eval_numlist -d -i 24 2011010100-2011010200`
+#inidates=`eval_numlist -d -i 24 2011010100-2011011100`
+
+#-----------------------------------------------------------------------------
+# to do list (1=true, 0=false)
+
+lmodel=1
+ldata=0
+lmeteogram=0
+lecfs=0
+lcpdata=0
+ldelscores=0
+lmetview=0
+lscores=0
+expnum2=05     # experiment number to be used as reference for scores
+
+#-----------------------------------------------------------------------------
+# model timing
+
+dtime=600
+dtconv=1800
+ninc_mtgrm=24  #36            # output interval 3600s
+ndays=5                       # number of days to run
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+#nsteps=40
+
+#-----------------------------------------------------------------------------
+# model output (unit: seconds)
+
+DT_DATA=`expr 12 \* 3600  `   # output each 12 hours
+#DT_DIAG=`expr 24 \* 3600  `   # ascii diagnostic output each 24 hours
+#DT_DATA=`expr 6  \* 3600  ` 
+#DT_DATA=600           
+
+#-----------------------------------------------------------------------------
+# directories
+
+PATH=${PATH}:/SX/usr/bin:.
+PATH=${PATH}:/e/rhome/routfor/routfox/abs  # CDO netcdf operators
+PATH=${PATH}:/e/uhome/for1han/bin          # various scripts
+export PATH
+
+DATA_DIR="/e/uwork/"${USER}"/icon"         # /e/uwork, /e/uscratch, /e/gtmp
+#DATA_DIR="/e/uscratch/"${USER}"/icon"     # /e/uwork, /e/uscratch, /e/gtmp
+                                           # or transfer data to oflxs04:/uwork1
+# absolute path to directory with plenty of space:
+EXPDIR=${DATA_DIR}/experiments/${EDIR}
+mkdir -p ${EXPDIR}
+
+#-----------------------------------------------------------------------------
+# the namelist filename
+
+atmo_namelist=NAMELIST_${EXPNAME}
+
+#-----------------------------------------------------------------------------
+# determine architecture
+
+#arch=sx9-nec-superux-sx9ftr 
+#arch=sx9-nec-superux-sx9debug 
+arch=sx9-nec-superux-sx9mpidebug 
+#arch=sx9-nec-superux-sx9omp
+#arch=sx9-nec-superux-sx9mpiomp
+
+#-----------------------------------------------------------------------------
+# determine base directory (../icon-dev)
+
+dir=$(pwd -P)
+WORK_DIR=${dir%/*}
+
+#-----------------------------------------------------------------------------
+# absolute path to model binary, copy executable
+
+MODEL=${WORK_DIR}/build/${arch}/bin/control_model
+cp -p ${MODEL} ${EXPDIR}/icon.exe
+
+#-----------------------------------------------------------------------------
+# metview: delete scores*txt file
+
+if [[ $ldelscores = 1 ]] ; then
+  ssh oflws144 \rm -rf /fe1-daten/mkoehler/plots/icon/nwp.${EDIR}/scores_${EDIR}.txt
+fi
+
+#-----------------------------------------------------------------------------
+# loop over dates
+
+for inidate in ${inidates[*]} ; do
+
+#start_date="2011-01-01T00:00:00Z"
+start_date=`echo $inidate | cut -c 1-4`"-"`echo $inidate | cut -c 5-6`"-"`echo $inidate | cut -c 7-8`"T"`echo $inidate | cut -c 9-10`":00:00Z"
+ndays_restart=1000            # time after which to stop model for later restart
+ndays_checkpoint=1000         # time interval to write restart files
+dt_restart=`expr ${ndays_restart} \* 86400`
+dt_checkpoint=`expr ${ndays_checkpoint} \* 86400`
+#dt_checkpoint=232500          # set checkpoint for restarting at that point [sec]
+
+#-----------------------------------------------------------------------------
+# model parameters
+
+model_equations=3              # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+nlev=90              # nlev = number of full levels
+res=R2B04            # R2B04 or R2B06
+res1=R2B4            # R2B4  or R2B6
+
+#-----------------------------------------------------------------------------
+# the grid parameters
+
+atmo_dyn_grids="icon"${res}"_DOM01.nc" # iconR2B07_DOM02.nc" # iconR2B08_DOM03.nc"
+atmo_rad_grids="icon"${res}"_DOM01.nc"
+
+
+#-----------------------------------------------------------------------------
+# create ICON master namelist
+# (For a complete list see Namelist_overview and Namelist_overview.pdf)
+
+cat > ${EXPDIR}/icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.        ! .true. to restart at dt_checkpoint [s]
+/
+&time_nml
+ ini_datetime_string    = "$start_date"
+ dt_restart             = $dt_restart
+/
+&master_model_nml
+ model_type             = 1
+ model_name             = "ATMO"
+ model_namelist_filename= "$atmo_namelist"
+ model_min_rank         = 1
+ model_max_rank         = 65536
+ model_inc_rank         = 1
+/
+EOF
+
+#-----------------------------------------------------------------------------
+# reconstruct the grid parameters in namelist form
+
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+#-----------------------------------------------------------------------------
+# write ICON namelist parameters
+
+cat > ${EXPDIR}/${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = 1024      ! array blocking length
+ p_test_run     = .false.   ! test syncing: slow (turn off output)
+ l_test_openmp  = .true.
+ l_log_checks   = .false.
+ num_io_procs   = 0         ! 0: synch output (slow), 1+: asynchron output (fast)
+ iorder_sendrecv= 1
+/
+&grid_nml
+ ! cell_type is not used = 3              ! triangular cells
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+!radiation_grid_filename = ${radiation_grid_filename}
+ radiation_grid_filename = ' '
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .false.
+ lfeedback               = .false.
+/
+&initicon_nml
+ init_mode   = 2           ! initialization mode
+ nlev_in     = 91          ! number of levels of input data
+ zpbl1       = 500.        ! stable BL shifting when interpolated
+ zpbl2       = 1000.       ! -"-
+/
+&io_nml
+ dt_checkpoint=$dt_checkpoint       ! restart file frequency in [sec]
+/
+&output_nml
+ filetype           = 2                        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                = -1                       ! output for all subdomains
+ output_time_unit   = 1                        ! 1: seconds, 2: minute, 3: hour, 4: day, 5: month, 6: year
+ output_bounds      = 0., 1000000., ${DT_DATA} ! start, end, increment 
+ steps_per_file     = 60
+ mode               = 1                        ! 1: forecast mode (relative time axis), 2: climate mode (absolute time axis)
+ include_last       = .TRUE.
+ output_filename    = '${EXPNAME}_icon${res}'  ! file name base
+ ml_varlist         = 
+    'temp','u','v','w','pres','pres_sfc',
+    'qv','qc','qi','qr','qs','o3',
+    'tot_cc','tot_qv','tot_qc','tot_qi'
+    'TCC','TQV','TQC','TQI',
+    'tot_prec','rain_gsp','rain_con','snow_gsp','snow_con',   
+    'U_10M','V_10M',
+    'ACCSHFL_S','ACCLHFL_S',
+    'ACCTHB_S','ACCTHB_T','ACCSOB_S','ACCSOB_T',
+    'ddt_temp_radsw', 'ddt_temp_radlw', 
+    'ddt_temp_turb', 'ddt_temp_drag', 'ddt_temp_pconv', 
+    'ddt_u_turb',    'ddt_u_sso',     'ddt_u_gwd',      'ddt_u_pconv',
+    'ddt_v_turb',    'ddt_v_sso',     'ddt_v_gwd',      'ddt_v_pconv',
+    'ddt_qv_turb',   'ddt_qv_conv'
+!'t_s_1','t_snow_1','t_gt_1','h_snow_1','rho_snow_1','w_snow_1','w_i_1','t_so_1',
+!'qhfl_s_avg'
+!'omega_z','div','exner','rho'
+!'z_mc','z_ifc'
+!'tra_rate_qv','tra_rate_qc',
+! 'w_snow_1','rho_snow_1','h_snow_1',
+!'U_10M_s6avg','V_10M_s6avg'
+!,'pres_sfc_s6avg'
+!'vn'  problem: Warning (gribapiScanTimestep) : Param=2.2.0 level=1 not available at timestep 4!
+!'tke' problem: Warning (gribapiScanTimestep) : Param=11.19.0 level=1 not available at timestep 4!
+!'tcm' problem: Warning (gribapiScanTimestep) : Param=29.2.0 level=0 not available at timestep 4!
+!'tch' problem: Warning (gribapiScanTimestep) : Param=19.0.0 level=0 not available at timestep 4!
+!'t_g','t_gt_1','t_snow_1','t_s_1','T_2M','T_2M_s6avg','theta_v','t_so_1','QV_2M','QV_2M_s6avg','qv_s'
+!,'w_so_ice_1''wliq_snow_1','wtot_snow_1','dzh_snow_1': mo_name_list_output/add_varlist_to_output_file: Output name list variable not found
+!'snow_gsp','snow_con','tot_prec_rate_avg','con_prec_rate_avg','gsp_prec_rate_avg','tot_prec'
+! 'all'
+! bad:
+!  'tracer', 'tracer_rate','t_gt','t_snow','t_snow_mult','t_snow_mult_1','t_s','w_snow','rho_snow','rho_snow_mult'
+!  'rho_snow_mult_1','w_i','t_so','w_so','w_so_ice','wliq_snow','wtot_snow','h_snow','dzh_snow'
+!  'tracer_vi','tracer_vi_avg'
+ pl_varlist         =  'u', 'v','temp','geopot','qv','qc','qi'  !'w', 'qr', 'qs', 'geopot'
+ p_levels           = 100,200,300,500,700,1000,2000,3000,5000,7000,10000,15000,20000,25000,
+                     30000,40000,50000,60000,70000,80000,85000,90000,92500,95000,100000
+ hl_varlist         =  'u', 'v','temp','pres',  'qv','qc','qi'  !'w', 'qr', 'qs'
+ h_levels           = 50000,45000,40000,35000,30000,25000,20000,18000,16000,14000,12000,
+                     10000,8000,6000,5000,4000,3000,2000,1000,800,600,400,200,100,10
+!pl_varlist         =  'all'
+!hl_varlist         =  'all'
+ remap              = 1
+ reg_lon_def        =  0.,2.,358.
+ reg_lat_def        = 90.,-2., -90.
+ output_grid        = .FALSE.
+ map_file           = "/e/uhome/mkoehler/icon-dev/run/mapfile_vlist.txt"
+!namespace          = "DWD"                              ! may give problems with metview - leave default ecmwf
+/ 
+&meteogram_output_nml
+ lmeteogram_enabled= .TRUE.
+ n0_mtgrm          = 0              ! meteogram initial time step (0 is first step!)
+ ninc_mtgrm        = ${ninc_mtgrm}  ! meteogram output interval
+ ldistributed      = .false.
+ stationlist_tot   =  52.17,  14.12, 'Lindenberg',                        ! Lat,Lon
+                      51.97,   4.93, 'Cabauw',
+                     -10.08, -61.93, 'LBA_Rondonia',
+                      13.50,   2.5 , 'Niamey',
+                      36.61, -97.49, 'ARM_Southern_Great_Plains',
+                     -71.32, 156.62, 'ARM_North_Slope_of_Alaska_Barrow',
+                      -2.06, 147.43, 'ARM_Tropical_W_Pacific_Manus',
+                     -12.43, 130.89, 'ARM_Tropical_W_Pacific_Darwin',
+                      60.00,  80.00, 'Snow Test Russia',
+                     -20.00,-120.00, 'South Tropical Pacific',
+                     -20.00, -85.00, 'IMET stratus buoy',
+/
+&run_nml
+ num_lev     = ${nlev},     ! number of full levels of vertical grid
+ nsteps      = ${nsteps}    ! number of time steps
+ dtime       = ${dtime}     ! timestep in seconds
+ ldynamics   = .TRUE.       ! dynamics
+ ltransport  = .TRUE.       ! tracer transport
+ ntracer     = 5            ! 5, no need to increase for ozone, 6 with var(qt)
+ iforcing    = 3            ! 3 NWP forcing
+ ltestcase   = .FALSE.      ! true: run testcase, false: run with real data
+ msg_level   = 11           ! detailed report during integration (11: little, 20: a lot)
+ ltimer      = .false.      ! turn on/off timers
+ output      = "nml"        ! "nml": new output, "none": no output
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1        ! 1: RRTM, 2: Ritter-Geleyn
+ inwp_cldcover   = 1        ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale,
+ inwp_turb       = 1        ! 1: Raschendorfer
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1        ! 1: non-orographic gravity wave drag as in Bechtold, 2010
+ inwp_surface    = 1
+ dt_conv         = ${dtconv}
+ dt_sso          = ${dtconv}
+ dt_gwd          = ${dtconv}
+ dt_rad          = 3600
+ latm_above_top  = .TRUE.   ! radiation above model top
+ itype_z0        = 2        ! 1: land-cover z0 + SSO orography, 2: land-cover z0 only
+/
+&turbdiff_nml
+ rat_sea         = 5        ! ocean surface flux tuning factor (ICON:1, COSMO:20)
+/
+&lnd_nml
+ ntiles           = 1       ! number of tiles
+ lana_rho_snow    = .TRUE.  ! true: initialization of rho_snow and depth_snow, false: set rho_snow to default value 
+ lmulti_snow      = .FALSE. ! true: multi-level snow, false: single-level snow
+ lsnowtile        = .FALSE. ! true: allow separate snow and snow-free tiles
+ nlev_snow        = 2       ! 2 for multi-level snow
+/
+&radiation_nml
+ irad_o3         = 7        ! 0: no ozone, 3: aqua-planet ozone??, 6: prescribed simple ozone, 7: GEMS ozone as IFS
+ irad_aero       = 6        ! 6: Tegen areosol climatology, 5: some older climatology?
+ izenith         = 4        ! 4: NWP default, 3: no annual cycle
+/
+&nonhydrostatic_nml
+ iadv_rhotheta   = 2
+ ivctype         = 2        ! set vertical grid automatically using sleve_ctl
+ itime_scheme    = 4        ! default 4; 5: modified Matsuno for better numerical stability of sound waves
+ exner_expol     = 0.666    ! exner function extrapolation?
+ vwind_offctr    = 0.60     ! off-centering for time differencing (like alpha in turb)
+ damp_height     = 50000.   ! damping height vertical wind (set about 10km below top, 10 levels)
+ rayleigh_coeff  = 0.05     ! Rayleigh coefficient for damping in upper levels
+ igradp_method   = 3        ! new default
+ hbot_qvsubstep  = 24000.   ! height above which qv advection substepping is done
+/
+&sleve_nml                  ! vertical grid standard output for message level >= 15
+ min_lay_thckn   = 20.      ! lowest level thickness (between half-levels)
+!top_height      = 60000.   ! model top (half level), top of first domain (others less)
+!stretch_fac     = 0.6      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+!top_height      = 65000.   ! model top (half level)
+!stretch_fac     = 0.65     ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+ top_height      = 75000.   ! model top (half level)
+ stretch_fac     = 0.8      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+!top_height      = 90000.   ! model top (half level)
+!stretch_fac     = 0.7      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+ decay_scale_1   = 4000.    ! decay scales for topography
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ iequations      = 3
+ divavg_cntrwgt  = 0.50
+ lcoriolis       = .TRUE.
+/
+&transport_nml
+ ivadv_tracer    = 3,3,3,3,3
+ itype_hlimit    = 3,4,4,4,4,0
+ ihadv_tracer    = 32,2,2,2,2,0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 10.0
+ hdiff_smag_fac   = 0.15
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+ hdiff_multfac    = 1.0
+ hdiff_tv_ratio   = 1.0
+/
+&interpol_nml
+nudge_zone_width  = 8
+l_intp_c2l        = .false.   ! 10-cell stencil interpolation ??
+l_mono_c2l        = .true.    ! monotonicity enforced during latlon interpolation
+/
+&gridref_nml
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                = 1     ! 0 for aqua-planet, 1 for realistic topography   
+ n_iter_smooth_topo   = 3
+ heightdiff_threshold = 1800.
+/
+EOF
+
+
+#-----------------------------------------------------------------------------
+# job on NEC
+#-----------------------------------------------------------------------------
+
+cat > /e/uhome/${USER}/wq/job.nec_tmp.${inidate}.$$ <<EOF_NEC
+#### BATCH_SYSTEM=NQS2 ####
+
+#PBS -N icon
+#PBS -q normal
+#PBS -j o
+#PBS -b 1
+#PBS -l cpunum_job=8
+#PBS -T mpisx
+#PBS -l elapstim_req=86400
+#PBS -m n
+#PBS -o /e/uhome/${USER}/wq/o.icon_model.${inidate}.$$
+
+set -x
+
+#-----------------------------------------------------------------------------
+# set number of threads for OpenMP parallelization
+#     and other OpenMP environment variables
+
+export OMP_NUM_THREADS=1
+export ICON_THREADS=${OMP_NUM_THREADS}
+export OMP_SCHEDULE="static"
+export OMP_DYNAMIC="false"
+export MPIMULTITASKMIX=ON
+export NC_BLOCKSIZE=128mb
+
+NODES=1        # muss gleich -b sein
+NMPITASKS=8    # MPI tasks pro Knoten (muss multipliziert mit OMP_NUM_THREADS gleich cpunum_job sein)
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n \${PBS_O_WORKDIR} ]] ; then
+  cd \${PBS_O_WORKDIR}
+fi
+export F_PROGINF=DETAIL
+export F_NORCW=65535
+
+export MPIPROGINF=yes
+export MPIPROGINF=ALL_DETAIL
+export MPIEXPORT="MPIPROGINF F_PROGINF NC_BLOCKSIZE MPIMULTITASKMIX OMP_NUM_THREADS ICON_THREADS OMP_SCHEDULE OMP_DYNAMIC F_NORCW"
+
+#-----------------------------------------------------------------------------
+# horizontal grid file
+
+#ln -sf ${DATA_DIR}/${IDIR}/iconR2B04-grid_spr0.90.nc                     ${EXPDIR}/iconR2B04_DOM01-grid.nc
+#ln -sf /e/uwork/mkoehler/icon/GRIDR2/iconR2B04_grid.nc                   ${EXPDIR}/iconR2B04_DOM01.nc
+#INDIR=/e/uhome/gzaengl/icon-dev/experiments/GRIDR2_new
+#ln -sf  \${INDIR}/icon${res}-grid_spr0.90.nc                             ${EXPDIR}/icon${res}_DOM01.nc
+#INDIR=/e/uwork/fprill/tests/grids
+#ln -sf  \${INDIR}/icon${res}_DOM01.nc                                    ${EXPDIR}/icon${res}_DOM01.nc
+INDIR=/e/uwork/gzaengl/ICON/experiments/GRF_R2B4P3
+ln -sf  \${INDIR}/icon${res}_DOM01.nc                                     ${EXPDIR}/icon${res}_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# external parameters
+
+#EXTPARDIR=/e/uwork/fprill/extpar/out (bad data???)
+#ln -sf  \${EXTPARDIR}/extpar_R2B04_DOM01.nc                              ${EXPDIR}/extpar_icon${res}_DOM01.nc
+#EXTPARDIR=/e/uhome/gzaengl/icon-1.0.6_RESTRUCT/experiments
+#ln -sf \${EXTPARDIR}/Extpar_${res1}/extpar_${res}_DOM01.nc               ${EXPDIR}/extpar_icon${res}_DOM01.nc
+#EXTPARDIR=/e/uwork/fprill/tests/extpar
+#ln -sf \${EXTPARDIR}/extpar_icon${res}_DOM01.nc                          ${EXPDIR}/extpar_icon${res}_DOM01.nc
+#EXTPARDIR=/e/uwork/gzaengl/ICON/experiments/Extpar_R2B4
+#ln -sf \${EXTPARDIR}/extpar_${res}_DOM01.nc                              ${EXPDIR}/extpar_icon${res}_DOM01.nc
+EXTPARDIR=/e/uwork/mkoehler/icon/grid-extpar/R2B04.single-global
+ln -sf \${EXTPARDIR}/extpar_modis_alb_${res}_DOM01.nc                     ${EXPDIR}/extpar_icon${res}_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# ifs2icon initial conditions
+
+#ln -sf /e/uwork/mkoehler/icon/ifs2icon.data/ifs2icon_R2B04_${inidate}.nc ${EXPDIR}/ifs2icon_R2B04_DOM01.nc
+ln -sf /e/uwork/mkoehler/icon/ifs2icon.data/ifs2icon_${res}_${inidate}.nc ${EXPDIR}/ifs2icon_${res}_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# radiation input files
+
+cp /e/uhome/treinhar/ICON/ECHAM6_CldOptProps.nc                           ${EXPDIR}
+cp /e/uhome/treinhar/ICON/rrtmg_lw.nc                                     ${EXPDIR}
+
+#-----------------------------------------------------------------------------
+# start experiment
+
+cd ${EXPDIR}
+mpirun -nn \$NODES -nnp \$NMPITASKS ./icon.exe   # MPI+OpenMP: -b 1, cpunum_job=8, OMP_NUM_THREADS=1, NMPITASKS=8 
+#time ./icon.exe                                 # OpenMP:     -b 1, cpunum_job=8, OMP_NUM_THREADS=8, NMPITASKS=1 
+
+#-----------------------------------------------------------------------------
+# check return code
+
+rc=\${?}
+if [[ ":\${rc}" != ':0' && ":\${rc}" != ':' ]] ; then
+  print "QSUBW_ERROR: JOB_%HOSTNAME%_%PID%: RC = \${rc}"
+fi
+
+EOF_NEC
+
+
+#-----------------------------------------------------------------------------
+# submit and plot
+#----------------
+
+#-----------------------------------------------------------------------------
+# submit model job to NEC and wait
+
+if [[ $lmodel = 1 ]] ; then
+  qsubw /e/uhome/${USER}/wq/job.nec_tmp.${inidate}.$$
+  rc=${?}
+  if [[ ":${rc}" != ':0' ]] ; then
+     exit 201
+  fi
+fi
+
+#-----------------------------------------------------------------------------
+# add date to file name
+
+cd ${EXPDIR}
+if [[ $ldata = 1 ]] ; then
+  for levtype in ML PL HL ; do
+    outfile1=${EXPNAME}_icon${res}_DOM01_${levtype}_0001.grb
+    outfile2=${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.grb
+    mv $outfile1 $outfile2
+  done
+  
+  outfile1=METEOGRAM_patch001.nc
+  outfile2=${EXPNAME}_icon${res}_DOM01_${inidate}_0001_meteogram.nc
+  mv $outfile1 $outfile2
+fi
+
+#-----------------------------------------------------------------------------
+# meteogram plots
+
+if [[ $lmeteogram = 1 && ${inidate} = 2011010100 ]] ; then
+  dir_mtgrm=/e/uhome/mkoehler/icon-dev/scripts/postprocessing/tools
+  cp ${dir_mtgrm}/mtgrm_plot.s ${dir_mtgrm}/mtgrm_plot.ncl ${dir_mtgrm}/mtgrm_plot_sfc.ncl .
+  ncfile=${EXPNAME}_icon${res}_DOM01_${inidate}_0001_meteogram.nc
+  cat > meteo.s << EOF_METEO
+  mtgrm_plot.s ${inidate} ${res} ${EDIR} ${EXPDIR} ${ncfile} > /e/uhome/mkoehler/wq/o.icon.meteo.plot
+  chmod a+r meteo/*
+  ssh oflxs04 mkdir -p /fe1-daten/mkoehler/plots/icon/nwp.${EDIR}/meteo
+  scp -r meteo/NWP_iconR2B*_DOM01_2011010100_0001_meteogram.*.png \
+    oflxs04:/fe1-daten/mkoehler/plots/icon/nwp.${EDIR}/meteo
+EOF_METEO
+  chmod a+x meteo.s
+  ./meteo.s
+ #./meteo.s > /e/uhome/mkoehler/wq/o.icon.meteo.script 2>&1 &  # attention: stop at full script completion
+fi
+
+#-----------------------------------------------------------------------------
+# save data to ecfs
+
+if [[ $lecfs = 1 ]] ; then
+  #   ECFS settings
+  if [[ -n "${ECFS_SYS_PATH}" && -d "${ECFS_SYS_PATH}" ]] ; then
+     export ECFS_SYS_PATH
+     if [[ -s "${ECFS_SYS_PATH}/.ecfs_k_env" ]] ; then
+        . ${ECFS_SYS_PATH}/.ecfs_k_env
+     fi
+  fi
+  emkdirf dwd:/${USER}/icon-exp/${EDIR}
+  ecpf -o   ${EXPNAME}_icon${res}_DOM01_${inidate}_0001_meteogram.nc   dwd:/${USER}/icon-exp/${EDIR}
+  for levtype in ML PL HL ; do
+    ecpf -o ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.grb dwd:/${USER}/icon-exp/${EDIR}
+  done
+fi
+
+#-----------------------------------------------------------------------------
+# copy data to scratch on oflxs04 for metview processing
+
+if [[ $lcpdata = 1 ]] ; then
+  mkdir -p grb_data
+  ssh oflxs04 mkdir -p /uwork1/mkoehler/icon/experiments/${EDIR}
+  for levtype in ML PL ; do
+#    grib_set -s centre=98 ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.grb      \
+#                          ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.temp.grb
+#    \mv                   ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.temp.grb \
+#                          ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.grb
+    grib_copy  ${EXPNAME}_icon${res}_DOM01_${inidate}_${levtype}_0001.grb \
+      grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_[shortName]_[typeOfFirstFixedSurface].grb
+  done
+  grib_copy  ${EXPNAME}_icon${res}_DOM01_${inidate}_HL_0001.grb \
+    grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_[shortName]_zl.grb
+
+#fixes:
+  for levtype in sfc ml pl zl ; do
+    for bad in unknown '~' ; do
+      if [[ -f    grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_${bad}_${levtype}.grb ]] ; then     
+        grib_copy grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_${bad}_${levtype}.grb \
+                  grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_[discipline].[parameterCategory].[parameterNumber]_${levtype}.grb
+        \rm -rf   grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_${bad}_${levtype}.grb
+      fi
+    done
+  done
+
+# for grbfile in `ls grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_*_*.grb` ; do
+#   cdo invertlat ${grbfile} temp.grb
+#   mv temp.grb   ${grbfile}
+# done
+
+  scp -r grb_data/${EXPNAME}_icon${res}_DOM01_${inidate}_0001_*_*.grb \
+    oflxs04:/uwork1/mkoehler/icon/experiments/${EDIR}
+fi
+
+#-----------------------------------------------------------------------------
+# quick plots (find standard output on oflws144:/uwork1/mkoehler/wq)
+
+EXPNUM=`echo ${EDIR} | cut -c 4-5`
+if [[ $lmetview = 1 ]] ; then
+  case $inidate in 
+    2011010100) ssh -n -f oflws144 ". /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110101 00  1 ${res} ${EXPNUM} > /uwork1/mkoehler/wq/o.icon.metview.1 2>&1 &" ;;
+    2011010200) ssh -n -f oflws144 ". /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110102 00  1 ${res} ${EXPNUM} > /uwork1/mkoehler/wq/o.icon.metview.2 2>&1 &" ;;
+    2011010300) ssh -n -f oflws144 ". /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110103 00  1 ${res} ${EXPNUM} > /uwork1/mkoehler/wq/o.icon.metview.3 2>&1 &" ;;
+    2011010600) ssh -n -f oflws144 ". /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110106 00  1 ${res} ${EXPNUM} > /uwork1/mkoehler/wq/o.icon.metview.6 2>&1 &" ;;
+  esac
+fi
+
+done  # loop over inidates
+
+#-----------------------------------------------------------------------------
+# metview on my workstation
+
+if [[ $lmetview = 1 ]] ; then
+  cat > metview.list << EOF_LIST
+  ssh oflws144 '. /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110102 00 10 ${res} ${EXPNUM}'
+  ssh oflws144 '. /opt/grib_api/.grib_api_environment ; /fe1-daten/mkoehler/metview/ICON/many.error.s 20110101 00 20110106 00  6 ${res} ${EXPNUM}'
+EOF_LIST
+  /e/uhome/for1han/bin/pshell -p2 -f metview.list  # can be used on the command line for plots only
+fi
+
+#-----------------------------------------------------------------------------
+# scores plots using IDL
+
+if [[ $lscores = 1 ]] ; then
+  IDL_HOME=/home/idl/idl71/bin
+  ssh oflws144 "cd /fe1-daten/mkoehler/metview/ICON ; ${IDL_HOME}/idl batch_scores -args /fe1-daten/mkoehler/plots/icon ${EXPNUM} ${expnum2} 20110101"
+fi
+
+#-----------------------------------------------------------------------------
+
+exit 0

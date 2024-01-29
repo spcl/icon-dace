@@ -1,0 +1,22 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# set experiment specific variables
+base_exp=test_ocean_omip_10days
+
+. ./add_refgen_routines
+
+store_model_output
+
+status=$?
+echo $status > pp.${EXPNAME}.run.final_status
+exit $status

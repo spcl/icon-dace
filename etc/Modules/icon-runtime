@@ -1,0 +1,32 @@
+#%Module1.0
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+
+source [file join [file dirname $ModulesCurrentModulefile] .pkg]
+
+set ICON_DIR [file dirname [file dirname [file dirname $ModulesCurrentModulefile]]]
+
+prepend-path-if-exists PATH $ICON_DIR/utils/mkexp
+prepend-path-if-exists PYTHONPATH $ICON_DIR/utils/mkexp
+prepend-path-if-exists MANPATH $ICON_DIR/utils/mkexp/doc
+
+prepend-path-if-exists PATH $ICON_DIR/utils/plotems
+prepend-path-if-exists MANPATH $ICON_DIR/utils/plotems/man
+
+set build_dir build
+if [info exists env(ICON_BUILD_DIR)] {
+    set build_dir $env(ICON_BUILD_DIR)
+}
+
+prepend-path-if-exists MKEXP_PATH $ICON_DIR/run
+prepend-path-if-exists MKEXP_PATH $ICON_DIR/$build_dir/run
+prepend-path MKEXP_PATH .

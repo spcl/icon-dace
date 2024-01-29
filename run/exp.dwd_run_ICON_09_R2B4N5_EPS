@@ -1,0 +1,1668 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ===========================================================================
+# 
+# Name: exp.dwd_run_ICON_09_R2B4N5_EPS.run
+#
+# Purpose: Run script for ICON at 160 km grid spacing on a global domain.
+#          This is a low resolution version used for development purpose.
+
+# Checks included:
+# 2 forecast runs are performed:
+# 1) forecast run without iterative IAU
+# 2) forecast run with iterative IAU
+# By comparing the output files, this test case checks the correctness of
+# - iterative IAU
+#
+# If the environmental variable `tolerance_run` is set, only one iteration is
+# executed.
+
+#
+# Author: Marek Jacob (DWD) et al.
+#
+# =========================================================================== 
+
+set -x
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+#--------------------------------------------------------------------------------------------------
+
+# (1) Variables provided by the scripting mechanism
+
+# EXPNAME                       = name of exp. in 'exp.<name>'
+# basedir                       = base directory, where src/, run/ etc exist
+# icon_data_poolFolder          = base directory, where grids/, input/ and setup/ exist
+# nproma                        = blocking length for array dimensioning and inner loop lengths
+
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# =======================================================================
+# Setup - experiment
+# ======================================================================
+
+# ===========================================================================
+# This experiment describes a ICON global experiment using the physics packages that are
+# used at DWD for global ensembles in production. This simulation computes a few time steps on 
+# a low-resolution grid. The setup is for development purposes.
+#
+# Options that are not working on GPU at the moment are replaced or disabled. 
+# The original settings are marked by "TODO". These should be reactivated as soon
+# as the corresponding option is ported.
+
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+GRIDDIR=${icon_data_poolFolder}/grids/public/edzw/ # grid and external parameter directory
+
+# absolute path to input directory - for the time being
+INDIR=${icon_data_poolFolder}/Checksuite_data_small/EPS_R2B4N5
+
+# grids_folder variable is require by make_runscripts
+grids_folder=$INDIR
+
+# ----------------------------------------------------------------------
+# link input data: external parameters
+# ----------------------------------------------------------------------
+
+# grids are automatically linked through make_runscripts
+ln -s ${GRIDDIR}/icon_grid_0011_R02B03_R.nc iconR2B03_DOM00.nc
+ln -s ${INDIR}/icon_grid_0012b_R02B04_G.nc iconR2B04_DOM01.nc
+ln -s ${INDIR}/icon_grid_0099_R02B05_N02.nc iconR2B05_DOM02.nc
+
+ln -s ${INDIR}/external_parameter_icon_domain1_DOM01_tiles.nc extpar_iconR2B04_DOM01.nc
+ln -s ${INDIR}/external_parameter_icon_domain2_DOM02_tiles.nc extpar_iconR2B05_DOM02.nc
+
+# files needed for radiation
+ln -s ${basedir}/externals/ecrad/data ecrad_data
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}_atm
+
+# global timing
+start_date="2022-03-01T00:00:00Z"
+ndays_restart=60
+dt_restart=`expr ${ndays_restart} \* 86400`
+
+# possible dtime values (large values might be unstable)
+# 1 | 2 | 3 | 4 | 5 | 6 | 8 | 9 | 10 | 12 | 15 | 18 | 20 | 24 | 25 | 27 | 30 | 36 | 40 | 45 | 50 | 54 | 60 | 72 | 75 
+# 90 | 100 | 108 | 120 | 135 | 150 | 180 | 200 | 216 | 225 | 270 | 300 | 360 | 450 | 540 | 600 | 675 | 900
+# 1080 | 1350 | 1800 | 2700 | 5400
+dtime=540
+nsteps=9
+
+# the grid parameters
+atmo_dyn_grids="iconR2B04_DOM01.nc iconR2B05_DOM02.nc"
+atmo_rad_grids="iconR2B03_DOM00.nc"
+
+ln -s ${INDIR}/an_20220228.grb an_R02B04_DOM01.grb
+ln -s ${INDIR}/fc_R02B04.20220228223000_joined fg_R02B04_DOM01.grb
+ln -s ${INDIR}/fc_R02B05_N02.20220228223000_joined fg_R02B05_DOM02.grb
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+lrestart               = .false.
+/
+&time_nml
+ini_datetime_string = "$start_date"
+dt_restart          = $dt_restart
+/
+&master_model_nml
+ model_type=1
+ model_name="ATMO"
+ model_namelist_filename="$atmo_namelist"
+ model_min_rank=1
+ model_max_rank=65536
+ model_inc_rank=1
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+tot_iter=2
+if [[ -n "$tolerance_run" ]]; then
+  tot_iter=1
+fi
+
+for iter in $(seq $tot_iter); do
+
+  if [ "$iter" -eq 1 ] ; then
+
+    echo "#############################################################"
+    echo "###               Run without iterative IAU               ###"
+    echo "#############################################################"
+
+    # run without iterative IAU
+    iterate_iau=".FALSE."
+
+  elif [ "$iter" -eq 2 ] ; then
+
+    echo "##############################################################"
+    echo "###                 Run with iterative IAU                 ###"
+    echo "##############################################################"
+
+    iterate_iau=".TRUE."
+
+  fi
+
+cat > ${atmo_namelist} << EOF
+!------------------
+! ICON parallel_nml
+!------------------
+&parallel_nml
+ nproma                       = $nproma
+ nproma_sub = $nproma_sub
+ p_test_run                   = .false.
+ num_io_procs                 = 0         ! 0: no dedicated I/O processor
+! num_io_procs_radar = 5   ! 0: no dedicated I/O processor
+ num_restart_procs            = 0
+ iorder_sendrecv              = 3                 ! (1), 3: best value for CRAY
+!   proc0_shift         = 1
+!   use_omp_input       = .true.
+ l_log_checks                 = .true.
+ l_test_openmp                = .true.
+ num_dist_array_replicas      = 4
+/
+!--------------
+! ICON grid_nml
+!--------------
+&grid_nml
+ dynamics_grid_filename       = ${dynamics_grid_filename}
+ radiation_grid_filename      = ${radiation_grid_filename}
+ dynamics_parent_grid_id      = 0,1
+ lredgrid_phys                = .true.,.true.
+ lfeedback                    = .true.
+ ifeedback_type               = 2
+ l_limited_area               = .false.
+ nexlevs_rrg_vnest            = 14
+ start_time                   = 0, -5400
+ end_time                     = 0, 432000   ! stop nest after 120 h
+/
+!------------------
+! ICON initicon_nml
+!------------------
+&initicon_nml
+ init_mode                    = 5 ! 1: operation mode, 5: IAU, 6: 5+sma_inc
+ dt_iau                       = 10800    ! Window for incr.analysis update
+ dt_shift                     = -5400  ! Offset for incr.analysis update
+ type_iau_wgt                 = 1           ! IAU weighting function (const.)
+  iterate_iau                 = ${iterate_iau}      ! iterate IAU cycle with one-sided and centered windows
+ niter_diffu                  = 5,
+ niter_divdamp                = 10,
+ zpbl1                        = 500.
+ zpbl2                        = 1000.
+ lread_ana                    = .true.        ! (T) Read dwdana
+ lp2cintp_incr                = .true.    ! parent-to-child-interpolation
+ lp2cintp_sfcana              = .true.  ! of analyses (DET:.false.;EPS:.true.)
+ dwdfg_filename               = "<path>fg_R<nroot0>B<jlev>_DOM<idom>.grb"
+ dwdana_filename              = "<path>an_R<nroot0>B<jlev>_DOM<idom>.grb"
+ ifs2icon_filename            = "<path>ifs2icon_R<nroot0>B<jlev>.nc"
+ ana_varnames_map_file        = "map_file.ana"
+ check_ana(1)%list            = 'P','QV','T','U','V','FRESHSNW','H_SNOW'
+ ! check_ana(2)%list            = 'FRESHSNW','H_SNOW'
+ ltile_coldstart              = .false.  ! intermediate mode until tile-based I/O is available
+ ltile_init                   = .false.
+ use_lakeiceana               = .true.
+ qcana_mode                   = 2           ! (0) no QC-increments,
+                                            ! (1) QC+QV-increments added to QV,
+                                            ! (2) QC-increments added to QC if already present at gridpoint
+                                            !     and added to QV if not
+ qiana_mode                   = 0         ! 0/1: ignore/use QI increments
+ qrsgana_mode                 = 0       ! 0/1: ignore/use QR,QS,QG increments
+! qnxana_2mom_mode             = 0           ! 0: diagnose from mass 1: use from an_inc
+ icpl_da_sfcevap              = 4    ! use filtered T2m bias and filtered RH increment ...
+ icpl_da_skinc                = 2
+ icpl_da_snowalb              = 2
+ icpl_da_sfcfric              = 2
+ icpl_da_tkhmin               = 1
+ adjust_tso_tsnow             = .true.
+ dt_ana                       = 10800             ! ... to control evaporation relevant parameters
+ pinit_seed                   = 0          ! seed for perturbation of initial model state. no perturbation by default
+ pinit_amplitude              = 1e-14      ! amplitude of perturbation 
+/
+!-------------
+! ICON run_nml
+!-------------
+&run_nml
+ num_lev                      =  90, 60
+ lvert_nest                   = .true.   ! use vertical nesting if a nest is active
+ nsteps                       = ${nsteps}
+ dtime                        = ${dtime}     ! timestep in seconds
+ ldynamics                    = .true.         ! dynamics
+ ltransport                   = .true.
+ iforcing                     = 3     ! 3: NWP forcing; 0: no forcing
+ lart                         = .false.         ! ICON-ART main switch
+ ltestcase                    = .false.        ! false: run with real data
+ msg_level                    = 7    ! default: 5, much more: 20
+ ltimer                       = .true.         ! set .true. for detailed timer output
+ timers_level                 = 11 ! can be increased up to 10 for detailed timer output
+!activate_sync_timers         = .false.
+ ntracer                      = 0
+ check_uuid_gracefully        = .true.
+ output                       = "nml"
+ ldass_lhn                    = .FALSE.
+! restart_filename     = ""
+! luse_radarfwo      = .FALSE., .false.
+/
+!-----------------
+! ICON nwp_phy_nml
+!-----------------
+&nwp_phy_nml
+ inwp_gscp                    = 1   ! 1: default, 2: graupel scheme for convection-permitting scales
+ mu_rain                      = 0.5     ! new tuning becoming operational in July 2018
+ rain_n0_factor               = 0.1
+ inwp_convection              = 1
+ lshallowconv_only            = .false.,.false.
+ lgrayzone_deepconv           = .false.
+ inwp_radiation               = 4
+ inwp_cldcover                = 1   ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale
+ inwp_turb                    = 1
+ inwp_satad                   = 1
+ inwp_sso                     = 1
+ inwp_gwd                     = 1
+ inwp_surface                 = 1
+ icapdcycl                    = 3   ! CAPE modification, improve diurnal cycle over tropical land
+ latm_above_top               = .true.,.true.
+ efdt_min_raylfric            = 3600.
+ itype_z0                     = 2   ! 1: default, 2: turn off SSO part of z0
+ icpl_aero_conv               = 1
+ icpl_aero_gscp               = 1
+ icalc_reff                   = 0 ! 0 for 1Mom
+ icpl_rad_reff                = 0   ! 0 for 1Mom
+! ithermo_water                = 0   ! 0 for 1Mom
+ icpl_o3_tp                   = 1
+dt_rad                        = 2160.
+dt_conv                       = 720., 360.
+dt_sso                        = 1440.,720.
+dt_gwd                        = 1440.,
+ ldetrain_conv_prec = .false.,.true.  ! .true. should be used in R03B08 EU-nest only
+/
+!--------------------
+! ICON nwp_tuning_nml
+!--------------------
+&nwp_tuning_nml
+ tune_eiscrit      = 7.
+ tune_gkdrag       = 0.07
+ tune_gkwake       = 0.55
+ tune_gfrcrit      = 0.375
+ tune_grcrit       = 0.5           ! only for tune_gkdrag != 0.0
+ tune_gustsso_lim  = 20.
+ tune_gust_factor  = 8.0
+ tune_rcucov       = 0.075
+ tune_rhebc_land   = 0.825
+ tune_zvz0i        = 0.85            ! new tuning since June 2018
+ tune_box_liq      = 0.05
+ tune_box_liq_asy  = 3.25      ! new tuning becoming operational in July 2018
+ tune_minsnowfrac  = 0.2
+ tune_sgsclifac    = 0.0        ! new tuning becoming operational in July 2019
+ tune_gfluxlaun    = 3.75e-3
+ icpl_turb_clc     = 1
+ tune_minsso       = 1
+ tune_blockred     = 1.5
+ itune_gust_diag   = 2
+ itune_albedo      = 0
+! tune_zceff_min    = 0.025
+! lcalib_clcov      = .false.
+ max_calibfac_clcl = 4
+/
+!-----------------------
+! ICON ensemble_pert_nml
+!-----------------------
+&ensemble_pert_nml
+ use_ensemble_pert = .true.
+ stdev_sst_pert    = 1.5
+ timedep_pert      = 2
+/
+!------------------
+! ICON turbdiff_nml
+!------------------
+&turbdiff_nml
+ tkhmin  = 0.6 ! new default since rev. 16527
+ tkmmin  = 0.75  !           "
+ tkhmin_strat  = 1.0
+ tkmmin_strat  = 1.5
+ pat_len = 750.
+ c_diff  = 0.2
+ rlam_heat = 10.0
+ rat_sea = 0.875    ! operational since May 2017
+ ltkesso = .true.
+ frcsmot = 0        ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_charpar = 3  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+! imode_frcsmot = 2  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher = 3
+ ltkeshs    = .true.
+ a_hshr     = 2.0
+ alpha0     = 0.0123
+ alpha0_max = 0.0335        ! Charnock parameter tuning
+ alpha1     = 0.125
+ icldm_turb = 1  ! ** new recommendation for v2.0.15 in conjunction with evaporation fix for grid-scale rain **
+ tur_len       = 500.
+ q_crit        = 1.6
+ imode_tkesso  = 1
+/
+!-------------
+! ICON lnd_nml
+!-------------
+&lnd_nml
+ ntiles                       = 3
+ lmulti_snow                  = .false.
+ itype_heatcond               = 3
+ idiag_snowfrac               = 20
+ itype_snowevap               = 3 ! operational since late summer 2018, requires cycling of snow_age and hsnow_max
+ lsnowtile                    = .true.  !.false.
+ lseaice                      = .true.
+ llake                        = .true.
+ lprog_albsi                  = .true.
+ itype_lndtbl                 = 4
+ itype_root                   = 2
+ itype_evsl                   = 4
+ itype_trvg                   = 3 ! operational since 14 March 2018, requires FG cycling of EVAP_PL (internal name plantevap)
+ cwimax_ml                    = 5.e-4
+ c_soil                       = 1.25
+ c_soil_urb                   = 0.5
+ sstice_mode                  = 2        ! requires extpar >= 20170202
+ itype_canopy                 = 2 ! operational since May 2020, skin-temperature scheme
+  hice_min       = 0.5 ! For Buildbot Testing. Let even thick ice be taken out of the list_seaice_idx
+! hice_min                = 0.05                      ! default of nwp sea-ice model
+! hice_max                = 4.8                       ! corresponding to 40% seaice_limit in icon-o
+/
+!-------------------
+! ICON radiation_nml
+!-------------------
+&radiation_nml
+ ecrad_isolver = 2
+ irad_o3                      = 79
+ irad_aero                    = 6
+ izenith                      = 4
+ albedo_type                  = 2        ! 1: default, 2: MODIS
+ direct_albedo                = 4
+ direct_albedo_water          = 3
+ albedo_whitecap              = 1
+ vmr_co2                      = 390.e-06 ! values representative for 2012
+ vmr_ch4                      = 1800.e-09
+ vmr_n2o                      = 322.0e-09
+ vmr_o2                       = 0.20946
+ vmr_cfc11                    = 240.e-12
+ vmr_cfc12                    = 532.e-12
+ ecrad_llw_cloud_scat         = .false.
+! llw_cloud_scat         = .false.   ! for backward compatibility for CLIMA mode
+ ecrad_data_path     = './ecrad_data'
+/
+!------------------------
+! ICON nonhydrostatic_nml
+!------------------------
+&nonhydrostatic_nml
+ iadv_rhotheta                = 2
+ ivctype                      = 2
+ itime_scheme                 = 4
+ exner_expol                  = 0.6
+ vwind_offctr                 = 0.2
+ damp_height                  = 43500
+ rayleigh_coeff               = 2.0
+ divdamp_fac                  = 0.032         ! factor 8 iff divdamp_order=2 !!!
+ divdamp_order                = 2       ! use 24 for forecast, 2 for IAU
+ divdamp_type                 = 32        ! (3): 2 for assimilation cycle
+ divdamp_trans_start          = 2500. ! use 2500. in assimilation cycle
+ divdamp_trans_end            = 5000.   ! use 5000. in assimilation cycle
+ ndyn_substeps                = 5
+ igradp_method                = 3
+ l_zdiffu_t                   = .true.
+ thslp_zdiffu                 = 0.02
+ thhgtd_zdiffu                = 125.
+ htop_moist_proc              = 22500.
+ hbot_qvsubstep               = 16000.   ! revised (to avoid too large CFL)
+/
+!---------------
+! ICON sleve_nml
+!---------------
+&sleve_nml
+ min_lay_thckn                = 20.                ! lowest level thickness (between half-levels)
+ max_lay_thckn                = 400    ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit              = 14000.  ! 15 km is the default
+ top_height                   = 75000.
+ stretch_fac                  = 0.9
+ decay_scale_1                = 4000.
+ decay_scale_2                = 2500.
+ decay_exp                    = 1.2
+ flat_height                  = 16000.
+/
+!------------------
+! ICON dynamics_nml
+!------------------
+&dynamics_nml
+ iequations     = 3
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+!-------------------
+! ICON transport_nml
+!-------------------
+&transport_nml
+ ctracer_list                 = '12345'
+ ivadv_tracer                 = 3,3,3,3,3
+ itype_hlimit                 = 3,4,4,4,4
+ ihadv_tracer                 = 52,2,2,2,2
+! iadv_tke                    = 0
+  llsq_svd             = .true.
+/
+!-------------------
+! ICON diffusion_nml
+!-------------------
+&diffusion_nml
+ hdiff_order                  = 5
+ itype_vn_diffu               = 1
+ itype_t_diffu                = 2
+ hdiff_efdt_ratio             = 24.
+ hdiff_smag_fac               = 0.025
+ lhdiff_vn                    = .true.
+ lhdiff_temp                  = .true.
+ hdiff_multfac                = 1.0
+ hdiff_tv_ratio               = 1.0
+/
+!------------------
+! ICON interpol_nml
+!------------------
+&interpol_nml
+ nudge_zone_width             = 8
+ nudge_max_coeff              = 0.02
+ lsq_high_ord                 = 3
+ l_intp_c2l                   = .true.
+ l_mono_c2l                   = .true.
+ support_baryctr_intp         = .true.
+/
+!-----------------
+! ICON gridref_nml
+!-----------------
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+!----------------
+! ICON extpar_nml
+!----------------
+&extpar_nml
+ itopo                              = 1
+ itype_lwemiss              = 2
+ itype_vegetation_cycle             = 2
+ n_iter_smooth_topo                 = 1,1
+ heightdiff_threshold               = 3000.
+ pp_sso                             = 2
+ hgtdiff_max_smooth_topo    = 750.,750.,
+ read_nc_via_cdi            = .true.
+/
+!------------
+! ICON io_nml
+!------------
+&io_nml
+! lflux_avg        = .FALSE.
+ itype_pres_msl   = 5           ! (1) 4: IFS method with consistency fix
+ itype_rh         = 1  ! (1) 2: mixed phase (water and ice)
+! inextra_3d              = 2                           ! 3D extra variables
+! inextra_2d              = 10                          ! 2D extra variables
+! restart_write_mode      = "sync"      ! write mode of restart-files
+ output_nml_dict      = 'map_file.icon'
+ gust_interval    = 21600., 21600.
+linvert_dict         = .true.
+!lzaxis_reference = .true.      ! (F) use REFERENCE instead of HYBRID
+ lmask_boundary   = .false.
+ lnetcdf_flt64_output        =                      .TRUE.        ! double precision output
+
+/
+!-----------------
+! ICON gribout_nml
+!-----------------
+&gribout_nml
+ productionStatusOfProcessedData = 2                        ! Research products
+ backgroundProcess               = 2      ! 0=main,2=assimilation
+ generatingProcessIdentifier     = 1,2,3                    ! 1=icogl,2=icoeu,3=icode
+ preset                          = 'ensemble'               ! deterministic or ensemble
+!typeOfProcessedData             = 1                        ! [WMO Table 1.4] forecast
+!typeOfGeneratingProcess         = 2                        ! [WMO Table 4.3] forecast
+!localDefinitionNumber           = 253  ! [DWD] system, 254=det,253=eps
+ localNumberOfExperiment         = 52                    ! [DWD] Experiment ID
+ generatingcenter                = 78                       ! [DWD]
+ generatingsubcenter             = 255                      ! [DWD]
+ tablesVersion                           = 14
+ lgribout_24bit                  = .false. ! (F) write rho,theta,T,p with 24bits
+ lspecialdate_invar              = .false.
+/
+
+&output_nml
+ ! This output is to test the iterative IAU reset. It is used to compare the
+ ! iterative and non-iterative execution of this experiment at timestep >= 1.
+ output_filename  = "${EXPNAME}_${iter}_winds"
+ dom              = 1,2                       ! both domains
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_bounds    = ${dtime},99999,${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 99999
+ include_last     = .TRUE.
+ ml_varlist       = 'vn','w','t_g','w_so','t_so','tot_prec'
+/
+EOF
+
+if [ "$iter" -eq 1 ] ; then # write output in first iteration (with iterative IAU)
+cat >> ${atmo_namelist} << EOF
+! //// Probtest Output Start //// !
+!--------------------------
+! ICON meteogram_output_nml
+!--------------------------
+&meteogram_output_nml
+  lmeteogram_enabled = .FALSE., .TRUE. ! generate no more than one meteogram file. Otherwise probtest will complain.
+  ldistributed       = .FALSE., .FALSE.
+  loutput_tiles      = .TRUE.
+  n0_mtgrm           = 0   ! meteogram initial time step (0 is first step!)
+  ninc_mtgrm         = 2   ! meteogram output interval (in terms of time steps)
+  stationlist_tot = 47.065, 7.094, 'La Neuveville',
+    49.931, 9.568, 'Neustadt am Main',
+    54.107, 10.816, 'Neustadt in Holstein',
+    48.193, 14.903, 'Neustadtl an der Donau',
+    51.037, 5.862, 'Nieuwstadt',
+    54.942, 22.867, 'Kudirkos Naumiestis',
+    43.852, 18.385, 'Sarajevo-Novi Grad'
+
+  max_time_stamps    = 6
+  zprefix            = 'Meteogram_', 'Meteogram_'
+  var_list           = '  '
+/
+&output_nml
+ ! This namelist is designed for Probtest tolerance testing
+ ! The probability that one cpu run is not within the tolerance spread produced
+ ! by 10 other cpu runs is less than 0.3% per variable.
+ output_filename  = "${EXPNAME}_atm_3d"
+ filename_format  = "<output_filename>_DOM<physdom>_<levtype_l>_<datetime2>"
+ dom              = 1                         ! global domain
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_bounds    = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 4
+ include_last     = .TRUE.
+ ml_varlist       =
+  'cape', 'clct_mod', 'ddt_qc_conv', 'ddt_temp_radlw', 'ddt_v_sso',
+  'ddt_vn_pgr', 'div', 'div_ic', 'hdef_ic', 'lwflxall', 'rho_snow', 'runoff_g',
+  'temp', 'temp_ifc', 'thbclr_s', 'tke', 'tot_prec', 'tot_qi_dia',
+  'u', 'v', 'v_10m', 'vt'
+/
+
+&output_nml
+ ! This namelist is designed for Probtest tolerance testing
+ output_filename  = "${EXPNAME}_atm_3d"
+ filename_format  = "<output_filename>_DOM<physdom>_<levtype_l>_<datetime2>"
+ dom              = 2                         ! nested domain
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_bounds    = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 4
+ include_last     = .TRUE.
+ ml_varlist       =
+  'cape_ml', 'clct_mod', 'cldepth', 'ddt_temp_drag', 'ddt_temp_radlw',
+  'ddt_tke_hsh', 'dyn_gust', 'exner_pr', 'gust10', 'hdef_ic', 'lhfl_bs',
+  'lwflx_up_clr', 'lwflxall', 'rh', 'rho', 'rho_ic', 'runoff_g', 'shfl_s',
+  'sp_10m', 't_sk', 'temp', 'temp_ifc', 'tempv', 'thbclr_s', 'theta_v',
+  'tqc_dia', 'tqs'
+ pl_varlist           = 'temp'
+ p_levels             = 100, 200, 92500, 100000
+ hl_varlist           = 'temp'
+ h_levels             = 5000, 3000, 1500
+/
+
+&output_nml
+ ! This namelist is designed for Probtest tolerance testing
+ output_filename  = "${EXPNAME}_atm_3d_ll"
+ filename_format  = "<output_filename>_DOM<physdom>_<levtype_l>_<datetime2>"
+ dom              = 1                         ! global domain
+ filetype         = 5
+ remap            = 1
+ output_grid      = .TRUE.
+ output_bounds    = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 20
+ include_last     = .FALSE.
+ reg_lon_def      = 0.,2.5,359.501
+ reg_lat_def      = -90.,2.5,90.
+ output_grid      = .false.
+ ml_varlist       = 'u', 'v', 'clch'
+ ! clch is used to check with probtest that the barycentric interpolation does not extrapolate such that 0<=clch<=100%
+/
+
+&output_nml
+ ! This namelist is designed for Probtest tolerance testing
+ output_filename  = "${EXPNAME}_atm_3d_ll"
+ filename_format  = "<output_filename>_DOM<physdom>_<levtype_l>_<datetime2>"
+ dom              = 2                         ! nested domain
+ filetype         = 5
+ remap            = 1
+ output_grid      = .TRUE.
+ output_bounds    = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 20
+ include_last     = .FALSE.
+ reg_lon_def      = 0.,2.5,359.501
+ reg_lat_def      = -90.,2.5,90.
+ output_grid      = .false.
+ ml_varlist       = 'rho'
+/
+! //// Probtest Output End //// !
+
+! //// ICON Global Analysis in Bacy - Start //// !
+!-----------------------------------------------------------------------------------------
+! OUTPUT: ICON interpolated to latlon grid, pressure levels: "initialized analysis"
+!         and
+! OUTPUT: ICON interpolated to latlon grid, pressure levels, global domain: FG diagnostics
+!         including iglo:
+! OUTPUT: ICON interpolated to latlon grid, pressure levels, global domain: main forecast
+!-----------------------------------------------------------------------------------------
+&output_nml
+ filetype               =  5                           ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  1                           ! write domain 1 only
+ mode                   =  1                           ! 1: forecast
+ output_time_unit       =  1                           ! 1: seconds
+ output_bounds          = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ taxis_tunit            =  1                           ! 1: GRIB2 Units = seconds
+                                                       ! 3: GRIB2 Units = hours
+ steps_per_file         =  20
+ include_last           = .FALSE.
+ output_filename        = 'iga_fg_latlon'         ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ pl_varlist             = 'temp','u','v','geopot','rh','qv'
+ p_levels = 100  ,200        ,300  ,500  ,700,
+            1000 ,2000       ,3000 ,5000 ,7000,
+            10000,20000,25000,30000,50000,70000,85000,92500,100000
+ ml_varlist             = 'pres_msl','clct','clcl','clcm','clch','group:precip_vars','gust10','rh_2m'
+ output_grid            = .false.
+ remap                  = 1
+ reg_def_mode           = 0
+ north_pole             = 0.0,90.0
+ reg_lon_def            = 0.0, 0.5, 359.75
+ reg_lat_def            = -90.0, 0.5, 90.0
+/
+
+!--------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, global domain: FG to be re-read by ICON
+!--------------------------------------------------------------------------------
+&output_nml
+ filetype               =  5                           ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  -1                       ! write domain 1 only
+ mode                   =  1                           ! 1: forecast
+ output_time_unit       =  1                           ! 1: seconds
+ output_bounds          = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ taxis_tunit            =  1                           ! 1: GRIB2 Units = seconds
+                                                       ! 3: GRIB2 Units = hours
+ steps_per_file         =  20
+ include_last           = .FALSE.
+ output_filename        = 'iga_fg'                ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','-z_ifc','t_seasfc','t_avginc','rh_avginc','t_wgt_avginc','vabs_avginc','-temp','-u','-v','-pres','-pres_sfc','-t_2m','-td_2m','-u_10m','-v_10m','-fr_land','-t_g','-w_i','-t_so','-w_so','-plantevap','-w_so_ice','-t_snow','-w_snow','-rho_snow','-rho_snow_mult','-t_snow_mult','-wtot_snow','-wliq_snow','-dzh_snow','-qv_s','-h_snow','-freshsnow','-snowfrac_lc',
+                           '-hsnow_max' ! 2023-10-24: temporarily disable hsnow_max as the probtest CPU spread is too small
+!output_grid            = .TRUE.
+/
+
+
+!---------------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, tiles: FG to be re-read by ICON
+!---------------------------------------------------------------------------------------
+&output_nml
+ filetype               =  5                              ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  -1                          ! write domain 1 only
+ mode                   =  1                              ! 1: forecast
+ output_time_unit       =  1                              ! 1: seconds
+ output_bounds          = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ taxis_tunit            =  1                              ! 1: GRIB2 Units = seconds
+ steps_per_file         =  20
+ include_last           = .FALSE.
+ output_filename        = 'iga_fg'                   ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<levtype>_tiles_<hhhmmss>'
+ ml_varlist             = 'group:dwd_fg_sfc_vars_t',
+                          '-h_snow_t_4' ! 2023-10-24: temporarily disable h_snow_t_4 as the probtest CPU spread is too small
+!output_grid            = .TRUE.
+/
+! //// ICON Global Analysis in Bacy - End //// !
+
+
+
+! //// ICON Global Forecast in Bacy - Start //// !
+!----------------------------------------------------------------------------------------
+! OUTPUT: ICON native grid, model levels, all domains: main forecast
+!         and
+! OUTPUT: ICON native grid, model levels, all domains: ranged variables
+!----------------------------------------------------------------------------------------
+&output_nml
+ filetype               =  5                           ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                    =  -1                       ! write domains: -1=all, 1=domain 1 only
+ mode                   =  1                           ! 1: forecast
+ output_time_unit       =  1                           ! 1: seconds
+ output_bounds          = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ taxis_tunit            =  1                           ! 1: GRIB2 Units = seconds
+                                                       ! 3: GRIB2 Units = hours
+ steps_per_file         =  20
+ include_last           = .FALSE.
+ output_filename        = 'iglo_fc'                ! file name base
+ filename_format        = '<output_filename>_DOM<physdom>_<jfile>'
+ ml_varlist             = 'group:dwd_fg_atm_vars','group:dwd_fg_sfc_vars','-z_ifc','gust10','rh_2m','pres_msl',
+                          'clcl','clct','clcm','clch','group:cloud_diag','clc','-vn','-w','-theta_v','-tke','-rho',
+                          'tot_prec','asodird_s','asodifd_s','asodifu_s',
+                          '-qc_sgs', '-tot_qc_dia',
+                          '-h_snow', '-hsnow_max'
+                          ! 2023-08-30: temporarily disable qc_sgs, tot_qc_dia as they give false alarm in probtest.
+                          ! 2023-10-24: temporarily disable h_snow and hsnow_max as their probtest CPU spread is too small
+!output_grid            = .TRUE.
+/
+! //// ICON Global Forecast in Bacy - End //// !
+
+&output_nml
+ ! Define a dummy output with CEILING.
+ ! This is in order to include it in the meteogram data.
+ ! This makes sure that the meteogram contains the same variable regardless of the GPU memory size (see if condition below.)
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write global domains
+ output_time_unit     = 3                         ! 3: hours
+ output_bounds        = 0.,48.,1.
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ output_filename      = 'CEILING'
+ filename_format      = '<output_filename><ddhhmmss>'
+ ml_varlist           = 'CEILING',
+ output_grid          = .false.
+/
+
+
+! //// ICON Global Forecast in Routine - Start //// !
+! // Grib is currently not checked with probtest // !
+&output_nml
+ ! ------------------------------------------------------------ !
+ ! ---  IGLO: constant output fields - native grid at VV=0  --- !
+ ! ------------------------------------------------------------ !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 0., 3600.             ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0
+ ml_varlist           = '-grid:VLAT', '-grid:VLON', 'DEPTH_LK', 'FR_LAKE',
+                        'FR_LAND', 'HHL', 'HSURF', 'LAI', 'NDVIRATIO', 'PLCOV',
+                        'ROOTDP', 'SOILTYP',
+ output_grid          = .true.
+/
+&output_nml
+ ! ------------------------------------------------------------- !
+ ! ---  IGLO: constant output fields - regular grid at VV=0  --- !
+ ! ------------------------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        = 0., 0., 3600.            ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 1
+ ml_varlist           = 'DEPTH_LK', 'FR_LAKE', 'FR_LAND', 'HHL', 'HSURF',
+                        'LAI', 'PLCOV', 'ROOTDP', 'SOILTYP',
+ reg_lon_def          = 0.,2.5,359.755
+ reg_lat_def          = -90.,2.5,90.
+ output_grid          = .true.
+/
+&output_nml
+ ! ------------------------------------------------------- !
+ ! ---  IGLO: fields used by interpolation IGLO -> LM  --- !
+ ! ---        (part 1 of output namelist)              --- !
+ ! ------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 0., 3600.             ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 2
+ ml_varlist           = 'P', 'QC', 'QI', 'QR', 'QS', 'QV', 'T', 'U', 'V', 'W',
+                        'QV_S', 'T_G', 'W_I', 'Z0',
+                        'FRESHSNW', 'H_SNOW', 'RHO_SNOW', 'T_SNOW', 'W_SNOW', 'SNOAG', 'HSNOW_MAX',
+                        'FR_ICE', 'H_ICE', 'T_ICE',
+                        'T_SO', 'W_SO', 'W_SO_ICE',
+                        'C_T_LK', 'H_ML_LK', 'T_BOT_LK', 'T_MNW_LK', 'T_WML_LK',
+                        'ALB_SEAICE', 'EVAP_PL', 'SMI',
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------- !
+ ! ---  IGLO: fields used by interpolation IGLO -> LM  --- !
+ ! ---        (part 1 of output namelist)              --- !
+ ! ------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 3600.,280800.,3600., 291600.,10000000.,10800.           ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 3
+ !pe_placement_ml      = 3,1,2
+ ml_varlist           = 'P', 'QC', 'QI', 'QR', 'QS', 'QV', 'T', 'U', 'V', 'W',
+                        'QV_S', 'T_G', 'W_I', 'Z0',
+                        'FRESHSNW', 'H_SNOW', 'RHO_SNOW', 'T_SNOW', 'W_SNOW',
+                        'FR_ICE', 'H_ICE', 'T_ICE',
+                        'T_SO', 'W_SO', 'W_SO_ICE',
+                        'C_T_LK', 'H_ML_LK', 'T_BOT_LK', 'T_MNW_LK', 'T_WML_LK',
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------------------------ !
+ ! ---  IGLO: output fields used by other programs/users - native grid  --- !
+ ! ---        (forecast run, part 2 of output namelist)                 --- !
+ ! ------------------------------------------------------------------------ !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        =      0.,280800.,3600., 291600.,10000000.,10800.           ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>oth'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 2
+ !pe_placement_ml      = 4,5
+ !stream_partitions_pl = 1
+ !pe_placement_pl      = 10
+ ml_varlist           = 'CLC', 'DEN',
+                        'ALB_RAD', 'ALHFL_S', 'ASHFL_S', 'ASOB_S', 'ASOB_T', 'ASOB_S_CS',
+                        'ASWDIFD_S', 'ASWDIFU_S', 'ASWDIR_S', 'ATHB_S', 'ATHB_T',
+                        'AUMFL_S', 'AVMFL_S', 'CAPE_CON', 'CAPE_ML',
+                        'CLCH', 'CLCL', 'CLCM', 'CLCT', 'CLCT_MOD', 'CLDEPTH',
+                        'HBAS_CON', 'HTOP_CON', 'HTOP_DC', 'HZEROCL',
+                        'PMSL', 'PS',
+                        'RAIN_CON', 'RAIN_GSP', 'SNOW_CON', 'SNOW_GSP', 'TOT_PREC',
+                        'RUNOFF_G', 'RUNOFF_S', 'TCH', 'TCM',
+                        'T_2M', 'TMAX_2M', 'TMIN_2M', 'TD_2M', 'T_S',
+                        'RELHUM_2M', 'U_10M', 'V_10M', 'WW',
+                        'TQC', 'TQC_DIA', 'TQI', 'TQI_DIA', 'TQR', 'TQS', 'TQV',
+ m_levels             = '39...(nlev+1)',
+ pl_varlist           = 'U', 'V', 'T', 'FI', 'RELHUM',
+ p_levels             =  3000,  5000,  7000, 10000, 15000, 20000, 25000,
+                        30000, 40000, 50000, 60000, 70000, 80000, 85000,
+                        90000, 92500, 95000, 100000
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------------------------ !
+ ! ---  IGLO: output fields used by other programs/users - native grid  --- !
+ ! ---        (forecast run, part 2 of output namelist)                 --- !
+ ! ------------------------------------------------------------------------ !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 3                         ! 1: seconds, 3: hours
+ output_bounds        = 0.,48.,1.                 ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>tke'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0 ! 12
+ ml_varlist           = 'DTKE_CON', 'TKE', 'DTKE_HSH', 'LPI_CON_MAX'
+ m_levels             = '61...(nlev+1)',
+ output_grid          = .false.
+/
+&output_nml
+ ! -------------------------------------------------------------- !
+ ! ---  IGLO: original grid hourly until the end of forecast  --- !
+ ! ---        + max. wind at 10m                              --- !
+ ! -------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 3600., 648000., 3600.      ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>uv'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0
+ ml_varlist           = 'VMAX_10M',
+ output_grid          = .false.
+/
+&output_nml
+ ! -------------------------------------------- !
+ ! ---  IGLO: output fields - regular grid  --- !
+ ! -------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        =      0.,280800.,3600., 291600.,10000000.,10800.          ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 3
+ !pe_placement_ml      = 7,8,9
+ !stream_partitions_pl = 1
+ !pe_placement_pl      = 10
+ ml_varlist           = 'ALB_RAD', 'ALHFL_S', 'APAB_S', 'ASHFL_S', 'ASOB_S',
+                        'ASOB_T', 'ASWDIFD_S', 'ASWDIFU_S', 'ASWDIR_S', 'ATHB_S',
+                        'ATHB_T', 'AUMFL_S', 'AVMFL_S', 'CAPE_ML', 'CIN_ML',
+                        'CLC', 'CLCH', 'CLCL', 'CLCM', 'CLCT', 'CLCT_MOD',
+                        'CLDEPTH', 'FR_ICE', 'HBAS_CON', 'HTOP_CON', 'HTOP_DC',
+                        'HZEROCL', 'H_ICE', 'H_SNOW', 'P', 'PMSL', 'PS',
+                        'QC', 'QI', 'QV', 'QV_2M', 'QV_S', 'RAIN_CON', 'RAIN_GSP',
+                        'RELHUM_2M', 'RHO_SNOW', 'RUNOFF_G', 'RUNOFF_S',
+                        'SNOW_CON', 'SNOW_GSP', 'SOBS_RAD', 'T', 'TCH', 'TCM',
+                        'TD_2M', 'THBS_RAD', 'TKE', 'TMAX_2M', 'TMIN_2M',
+                        'TOT_PREC', 'TQC', 'TQC_DIA', 'TQI', 'TQI_DIA', 'TQR',
+                        'TQS', 'TQV', 'T_2M', 'T_G', 'T_ICE', 'T_SNOW', 'T_SO',
+                        'U', 'V', 'W', 'WW', 'W_SNOW', 'W_SO', 'W_SO_ICE',
+                        'Z0',
+ m_levels             = '39...(nlev+1)',
+ pl_varlist           = 'FI', 'T', 'U', 'V', 'RELHUM', 'OMEGA', 'CLC'
+ p_levels             =   500,  1000,  3000,  5000,  7000, 10000, 12500, 15000,
+                        17500, 20000, 22500, 25000, 27500, 30000, 35000, 40000,
+                        45000, 50000, 55000, 60000, 65000, 70000, 75000, 77500,
+                        80000, 82500, 85000, 87500, 90000, 92500, 95000, 97500,
+                        100000
+ reg_lon_def          = 0.,2.5,359.755
+ reg_lat_def          = -90.,2.5,90.
+ output_grid          = .false.
+/
+&output_nml
+ ! -------------------------------------------- !
+ ! ---  IGLO: output fields - regular grid  --- !
+ ! -------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        =      0.,280800.,3600., 291600.,10000000.,10800.          ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>strato'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_pl = 1
+ !pe_placement_pl      = 10
+ pl_varlist           = 'FI', 'T', 'U', 'V'
+ p_levels             =    10,   100,   200,
+ reg_lon_def          = 0.,2.5,359.755
+ reg_lat_def          = -90.,2.5,90.
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------------- !
+ ! ---  IGLO: regular grid hourly until the end of forecast  --- !
+ ! ---        + fields used by WAVE model (wind 10m)         --- !
+ ! ---        + max. wind at 10m                             --- !
+ ! ------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1
+ remap                = 1                         ! reg. lat-lon
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 648000., 3600.      ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>uv'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0
+ ml_varlist           = 'U_10M', 'VMAX_10M', 'V_10M',
+ reg_lon_def          = 0.,2.5,359.755
+ reg_lat_def          = -90.,2.5,90.
+ output_grid          = .false.
+/
+&output_nml
+! ---------------------------------------------------------------- !
+ ! ---  ICON-EU: constant output fields - native grid at VV=0  --- !
+ ! --------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write EU nest
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 0., 3600.             ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0
+ ml_varlist           = '-grid:VLAT', '-grid:VLON', 'DEPTH_LK', 'FR_LAKE',
+                        'FR_LAND', 'HHL', 'HSURF', 'LAI', 'PLCOV', 'ROOTDP',
+                        'SOILTYP',
+                        'H_SNOW', 'SNOAG', 'HSNOW_MAX', 'Z0', 'SMI', 'EVAP_PL', 'ALB_SEAICE',
+ output_grid          = .true.
+/
+&output_nml
+ ! ------------------------------------------------------------------- !
+ ! ---  ICON-EU: constant output fields - regular EU-grid at VV=0  --- !
+ ! ------------------------------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        = 0., 0., 3600.            ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 1
+ ml_varlist           = 'DEPTH_LK', 'FR_LAKE', 'FR_LAND', 'HHL', 'HSURF',
+                        'LAI', 'PLCOV', 'ROOTDP', 'SOILTYP',
+!pl_varlist           =
+ reg_lon_def          = -23.5,2.5,62.5
+ reg_lat_def          = 29.5,2.5,70.5
+ output_grid          = .true.
+/
+&output_nml
+ ! -------------------------------------------------------------- !
+ ! ---  ICON-EU: fields used by interpolation ICON-EU -> LMK  --- !
+ ! ---           (part 1 of output namelist)                  --- !
+ ! -------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write EU nest
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0.,183600.,3600., 194400.,10000000.,21600.           ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 6
+ ml_varlist           = 'P', 'QC', 'QI', 'QR', 'QS', 'QV', 'T', 'U', 'V', 'W',
+                        'QV_S', 'T_G', 'W_I',
+                        'FRESHSNW', 'RHO_SNOW', 'T_SNOW', 'W_SNOW',
+                        'H_ICE', 'T_ICE',
+                        'T_SO', 'W_SO',
+ output_grid          = .false.
+/
+&output_nml
+ ! --------------------------------------------------------------------------- !
+ ! ---  ICON-EU: output fields used by other programs/users - native grid  --- !
+ ! ---           (forecast run, part 2 of output namelist)                 --- !
+ ! --------------------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write EU nest
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0.,183600.,3600., 194400.,10000000.,21600.           ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>oth'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 11
+ ml_varlist           = 'ALHFL_S', 'ASHFL_S', 'ASOB_S', 'ASOB_S_CS', 'ASWDIFD_S', 'ASWDIR_S',
+                        'CEILING', 'CLCH', 'CLCL', 'CLCM', 'CLCT',
+                        'PS', 'TCH', 'TCM',
+                        'T_2M', 'TMAX_2M', 'TMIN_2M', 'TD_2M',
+                        'TOT_PREC',
+                        'U_10M', 'VMAX_10M', 'V_10M',
+                        'FR_ICE',
+                        'W_SO_ICE',
+                        'C_T_LK', 'H_ML_LK', 'T_BOT_LK', 'T_MNW_LK', 'T_WML_LK',
+!m_levels             = '1...(nlev+1)',
+ output_grid          = .false.
+/
+&output_nml
+ ! --------------------------------------------------------------------------- !
+ ! ---  ICON-EU: output fields used by other programs/users - native grid  --- !
+ ! ---           (forecast run, part 2 of output namelist)                 --- !
+ ! --------------------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write EU nest
+ remap                = 0                         ! icon grid
+ output_time_unit     = 1                         ! 1: seconds, 3: hours
+ output_bounds        = 0.,172800.,3600.          ! start, end, increment [s]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>tke'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 11
+ ml_varlist           = 'DTKE_CON', 'TKE', 'DTKE_HSH',
+                        'HTOP_CON'
+ m_levels             = '15...(nlev+1)',
+ output_grid          = .false.
+/
+&output_nml
+ ! -------------------------------------------------------------- !
+ ! ---  ICON-EU: output convection (LPI)                      --- !
+ ! -------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 3                         ! 3: hours
+ output_bounds        = 0.,48.,1., 51.,72.,3., 78.,120.,6.
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>lpi'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 11
+ ml_varlist           = 'LPI_CON_MAX',
+ output_grid          = .false.
+/
+&output_nml
+ ! ----------------------------------------------- !
+ ! ---  ICON-EU: output fields - regular grid  --- !
+ ! ----------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        =      0.,280800.,3600., 291600.,10000000.,10800.          ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 3
+ !pe_placement_ml      = 7,8,9
+ !stream_partitions_pl = 1
+ !pe_placement_pl      = 11
+ ml_varlist           = 'ALB_RAD', 'ALHFL_S', 'APAB_S', 'ASHFL_S', 'ASOB_S', 'ASOB_S_CS',
+                        'ASOB_T',              'ASWDIFU_S',             'ATHB_S',
+                        'ATHB_T', 'AUMFL_S', 'AVMFL_S', 'CAPE_CON', 'CAPE_ML',
+                        'CEILING', 'CIN_ML', 'CLC', 'CLCH', 'CLCL', 'CLCM', 'CLCT',
+                        'CLCT_MOD', 'CLDEPTH',             'HBAS_CON', 'HTOP_CON',
+                        'HTOP_DC', 'HZEROCL', 'H_ICE', 'H_SNOW', 'P', 'PMSL',
+                        'PS', 'QC', 'QI', 'QV', 'QV_2M', 'QV_S', 'RAIN_CON',
+                        'RAIN_GSP', 'RELHUM_2M', 'RHO_SNOW', 'RUNOFF_G',
+                        'RUNOFF_S', 'SNOWLMT', 'SNOW_CON', 'SNOW_GSP',
+                        ! 'SYNMSG_BT_CL_IR10.8', 'SYNMSG_BT_CL_WV6.2',
+                        'T', 'TCH', 'TCM', 'TD_2M',
+                        'TKE', 'TMAX_2M', 'TMIN_2M', 'TOT_PREC', 'TQC', 'TQI',
+                        'TQR', 'TQS', 'TQV', 'T_2M', 'T_G', 'T_ICE', 'T_SNOW',
+                        'T_SO', 'U', 'V', 'W', 'WW', 'W_SNOW', 'W_SO', 'W_SO_ICE',
+                        'Z0',
+!m_levels             = '1...(nlev+1)',
+ pl_varlist           = 'U',         'V',         'OMEGA',         'T',         'FI',
+                        'RELHUM',    'CLC'
+ p_levels             =  5000,  7000, 10000, 12500, 15000,
+                        17500, 20000, 22500, 25000, 27500, 30000, 35000, 40000,
+                        45000, 50000, 55000, 60000, 65000, 70000, 75000, 77500,
+                        80000, 82500, 85000, 87500, 90000, 92500, 95000, 97500,
+                        100000
+ reg_lon_def          = -23.5,2.5,62.5
+ reg_lat_def          = 29.5,2.5,70.5
+ output_grid          = .false.
+/
+&output_nml
+ ! -------------------------------------------------------------- !
+ ! ---  ICON-EU: output convection (LPI)                      --- !
+ ! -------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                         ! write global domains
+ remap                = 1                         ! reg. lat-lon
+ output_time_unit     = 3                         ! 3: hours
+ output_bounds        = 0.,48.,1., 51.,72.,3., 78.,120.,6.
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>lpi'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 6   ! 11
+ ml_varlist           = 'LPI_CON_MAX',
+ reg_lon_def          = -23.5,2.5,62.5
+ reg_lat_def          = 29.5,2.5,70.5
+ output_grid          = .false.
+/
+&output_nml
+ ! ---------------------------------------------------------------- !
+ ! ---  ICON-EU: regular grid hourly until the end of forecast  --- !
+ ! ---           + fields used by WAVE model (wind 10m)         --- !
+ ! ---           + max. wind at 10m                             --- !
+ ! ---------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2
+ remap                = 1                         ! reg. lat-lon
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 648000., 3600.      ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss>uv'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 0
+ ml_varlist           = 'U_10M', 'VMAX_10M', 'V_10M',
+                        'ASWDIFD_S', 'ASWDIR_S',
+ reg_lon_def          = -23.5,2.5,62.5
+ reg_lat_def          = 29.5,2.5,70.5
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------------------------ !
+ ! ---  IGLO: output fields used by SMA                  - native grid  --- !
+ ! ------------------------------------------------------------------------ !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                      ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 3                         ! 3: hours
+ output_bounds        = 2.,23.,3., 3.,24.,3.      ! start, end, increment [h]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>sma'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 5,
+ ml_varlist           = 'ALHFL_BS', 'ALHFL_PL', 'RSTOM'
+ output_grid          = .false.
+/
+&output_nml
+ ! ------------------------------------------------------------------------ !
+ ! ---  ICON-EU: output fields used by SMA                  - native grid  --- !
+ ! ------------------------------------------------------------------------ !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 2                      ! write global domains
+ remap                = 0                         ! icon grid
+ output_time_unit     = 3                         ! 3: hours
+ output_bounds        = 2.,23.,3., 3.,24.,3.      ! start, end, increment [h]
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'iefff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>sma'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_ml = 1
+ !pe_placement_ml      = 5,
+ ml_varlist           = 'ALHFL_BS', 'ALHFL_PL', 'RSTOM'
+ output_grid          = .false.
+/
+! //// skip &meteogram_output_nml ////!
+&output_nml
+ ! -------------------------------------------- !
+ ! ---  IGLO: 75hPa for WV2                 --- !
+ ! -------------------------------------------- !
+ filetype             = 2        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1
+ remap                = 1                        ! reg. lat-lon
+ output_time_unit     = 1                        ! 1: seconds
+ output_bounds        = 0.,172800.,3600.         ! start, end, increment
+ steps_per_file       = 1
+ taxis_tunit          = 2
+ mode                 = 1  ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = 'igfrf'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>75hPa'
+ !ready_file           = './dir_iglo_dat/ready//IGLO_<ddhhmmss>'
+ !stream_partitions_pl = 1
+ !pe_placement_pl      = 10
+ pl_varlist           = 'FI', 'T', 'U', 'V', 'RELHUM', 'CLC'
+ p_levels             =  7500,
+ reg_lon_def          = 0.,2.5,359.755
+ reg_lat_def          = -90.,2.5,90.
+ output_grid          = .false.
+/
+! //// ICON Global Forecast in Routine - End //// !
+EOF
+
+fi # [ "$iter" -eq 1 ]
+
+cat >> ${atmo_namelist} << EOF
+!output!! ser_nml: serialization configuration ----------------------------------------
+!&ser_nml
+! ser_initialization          =                            1,12,12 !
+! ser_output_diag             =                            0,12,12 !
+! ser_output_diag_dyn             =                        0,12,12 !
+! ser_latbc_data              =                            1,12,12 !
+! ser_dynamics                =                            1,12,12 !
+! ser_nesting_compute_tendencies     =                     0,12,12 !
+! ser_nesting_boundary_interpolation =                     0,12,12 !
+! ser_nesting_relax_feedback =                             0,12,12 !
+! ser_diffusion               =                            1,12,12 !
+! ser_step_advection          =                            1,12,12 !
+! ser_physics                 =                            0,12,12 !
+! ser_surface                 =                            1,12,12 !
+! ser_microphysics            =                            1,12,12 !
+! ser_turbtrans               =                            1,12,12 !
+! ser_turbdiff                =                            1,12,12 !
+! ser_lhn                     =                            0,12,12 !
+! ser_cover                   =                            1,12,12 !
+! ser_radiation               =                            0,12,12 !
+! ser_radheat                 =                            1,12,12 !
+! ser_gwdrag                  =                            1,12,12 !
+! ser_convection              =                            1,12,12 !
+! ser_nudging                 =                            0,12,12 !
+! ser_time_loop_end           =                            0,12,12 !
+! ser_nfail                   =                            0
+! ser_nreport                 =                            10
+! ser_all_debug               =                            1, 12, 12 
+! ser_debug                   =                        .FALSE.      ! serialize the debug statements from mo_ser_debug
+!/
+EOF
+
+cat > map_file.ana << EOF2
+# internal name     GRIB2 shortName
+theta_v             THETA_V
+rho                 DEN
+vn                  VN
+u                   U
+v                   V
+w                   W
+tke                 TKE
+temp                T
+pres                P
+qv                  QV
+qc                  QC
+qi                  QI
+qr                  QR
+qs                  QS
+t_g                 T_G
+qv_s                QV_S
+fr_seaice           FR_ICE
+alb_si              ALB_SEAICE
+t_ice               T_ICE
+h_ice               H_ICE
+t_snow              T_SNOW
+freshsnow           FRESHSNW
+snowfrac_lc         SNOWC
+w_snow              W_SNOW
+rho_snow            RHO_SNOW
+h_snow              H_SNOW
+w_i                 W_I
+w_so                W_SO
+w_so_ice            W_SO_ICE
+t_so                T_SO
+smi                 SMI
+gz0                 Z0
+pres_sfc            PS
+z_ifc               HHL
+
+t_mnw_lk            T_MNW_LK
+t_wml_lk            T_WML_LK
+h_ml_lk             H_ML_LK
+t_bot_lk            T_BOT_LK
+c_t_lk              C_T_LK
+t_b1_lk             T_B1_LK
+h_b1_lk             H_B1_LK
+EOF2
+
+cat > map_file.icon << EOF3
+# Dictionary for mapping between internal names and GRIB2 shortNames
+# needed by GRIB2 read procedures.
+# can be used in mamelist &io_nml for output_nml_dict if linvert_dict=T
+# internal name     GRIB2 shortName
+aer_bc              AER_BC
+aer_du              AER_DUST
+aer_or              AER_ORG
+aer_ss              AER_SS
+aer_su              AER_SO4
+alb_si              ALB_SEAICE
+albdif              ALB_RAD
+asobclr_s           ASOB_S_CS
+asodifd_s           ASWDIFD_S
+asodifu_s           ASWDIFU_S
+asodird_s           ASWDIR_S
+aswflx_par_sfc      APAB_S
+c_t_lk              C_T_LK
+cape                CAPE_CON
+ddt_tke_hsh         DTKE_HSH
+ddt_tke_pconv       DTKE_CON
+dzh_snow            H_SNOW_M
+fr_seaice           FR_ICE
+freshsnow           FRESHSNW
+geopot              FI
+graupel_gsp         GRAU_GSP
+graupel_gsp_rate    PRG_GSP
+gust10              VMAX_10M
+gz0                 Z0
+h_b1_lk             H_B1_LK
+h_ice               H_ICE
+h_ml_lk             H_ML_LK
+h_snow              H_SNOW
+hail_gsp_rate       PRH_GSP
+hsnow_max           HSNOW_MAX
+mlpi_con            LPI_CON_CI
+mlpi_con_max        LPI_CON_CI_MAX
+lpi_con_max         LPI_CON_MAX
+p_avginc            P_LML_FILTINC
+plantevap           EVAP_PL
+pollalnu            ALNUSNC
+pollambr            AMBRSNC
+pollbetu            BETUSNC
+pollpoac            POACSNC
+prec_gsp            PREC_GSP
+prec_gsp_rate       PR_GSP
+pres                P
+pres_msl            PMSL
+pres_sfc            PS
+qc                  QC
+qh                  QH
+qi                  QI
+qnc                 NCCLOUD
+qng                 NCGRAUPEL
+qnh                 NCHAIL
+qni                 NCICE
+qnr                 NCRAIN
+qns                 NCSNOW
+qr                  QR
+qs                  QS
+qv                  QV
+qv_s                QV_S
+rain_gsp_rate       PRR_GSP
+rh                  RELHUM
+rh_2m               RELHUM_2M
+rh_2m_land          RELHUM_2M_L
+rh_avginc           RELHUM_LML_FILTINC
+rho                 DEN
+rho_snow            RHO_SNOW
+rho_snow_mult       RHO_SNOW_M
+sdi2                SDI_2
+smi                 SMI
+snow_age            SNOAG
+snow_gsp_rate       PRS_GSP
+snowfrac_lc         SNOWC
+sob_s               SOBS_RAD
+t2m_bias            T_2M_FILTBIAS
+t_2m                T_2M
+t_2m_land           T_2M_L
+t_avginc            T_LML_FILTINC
+t_b1_lk             T_B1_LK
+t_bot_lk            T_BOT_LK
+t_g                 T_G
+t_ice               T_ICE
+t_mnw_lk            T_MNW_LK
+t_seasfc            T_SEA
+t_sk                SKT
+t_snow              T_SNOW
+t_snow_mult         T_SNOW_M
+t_so                T_SO
+t_wgt_avginc        T_LML_COSWGT_FILTINC
+t_wml_lk            T_WML_LK
+tcond10_max         TCOND10_MX
+td_2m_land          TD_2M_L
+temp                T
+thb_s               THBS_RAD
+theta_v             THETA_V
+tke                 TKE
+topography_c        HSURF
+tot_qc_dia          QC_DIA
+tot_qi_dia          QI_DIA
+tot_prec_rate       PR_TOT
+u                   U
+v                   V
+vabs_avginc         SP_LML_FILTINC
+vn                  VN
+w                   W
+w_i                 W_I
+w_snow              W_SNOW
+w_so                W_SO
+w_so_ice            W_SO_ICE
+wliq_snow           WLIQ_SNOW_M
+wtot_snow           W_SNOW_M
+z_ifc               HHL
+# ECMWF
+geop_ml             GEOP_ML
+geosp               GEOSP
+#pres_sfc            LNPS
+EOF3
+
+  $START_MODEL
+  EXIT_STATUS=$?
+
+  if [ "$EXIT_STATUS" -ne "0" ]; then
+    echo "ICON EXIT_STATUS: $EXIT_STATUS"
+    exit $EXIT_STATUS
+  fi
+
+# ----------------------------------------------------------------------------
+done # model run iterations
+# ----------------------------------------------------------------------------
+
+ERROR_SUM=0
+
+# Iteration 1 output filenames
+FILE1_DOM01="${EXPNAME}_1_winds_DOM01_ML_0001.nc"
+FILE1_DOM02="${EXPNAME}_1_winds_DOM02_ML_0001.nc"
+# Iteration 2 output filenames
+FILE2_DOM01="${EXPNAME}_2_winds_DOM01_ML_0001.nc"
+FILE2_DOM02="${EXPNAME}_2_winds_DOM02_ML_0001.nc"
+
+set +x
+
+if [[ -z "${tolerance_run:-}" ]]; then
+
+  echo "Check iterative IAU"
+  DIFF_STATUS_IAU=0
+
+  # compare_output_files is defined in ./add_run_routines
+  compare_output_files "${FILE1_DOM01}" "${FILE2_DOM01}"
+  DIFF_STATUS_IAU=$((DIFF_STATUS_IAU + $?))
+  if [[ $(echo $atmo_dyn_grids | wc -w) -gt 1 ]]; then
+    compare_output_files "${FILE1_DOM02}" "${FILE2_DOM02}"
+    DIFF_STATUS_IAU=$((DIFF_STATUS_IAU + $?))
+  fi
+
+  ERROR_SUM=$((ERROR_SUM + DIFF_STATUS_IAU))
+
+  if [[ $DIFF_STATUS_IAU -ne 0 ]]; then
+   echo " "
+   echo "IAU test FAILED"
+   echo " "
+  fi
+
+  echo "Cdo comparison ERROR_SUM: $ERROR_SUM"
+
+else
+
+  echo "Skip iterative checks"
+
+fi
+
+exit $ERROR_SUM
+
+# This exit above avoids the execution of the script exec.iconrun which is added below.

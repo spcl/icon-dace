@@ -1,0 +1,97 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -------------------------------------------------------
+# MARS request to read SST or CI (monthly means of daily means) for a given year.
+# run as: mars4icon_monmean CI  2011  (or with "SST")
+#
+# versions:
+#   mars4icon_smi_32r3+:      conversion of SWVL to soil moisture index SMI
+#                             for horizontal interpolation (assuming post 32r3
+#                             soil model input - 6 soil types)
+#   mars4icon_smi_32r2-:      assuming model input from pre 32r3 cycles
+#                             (single soil type)
+#   mars4icon_smi_ERAinterim: using ERA-Interim data 
+#                             (31r1 model with 36r4 land model data)
+#                             2 options:
+#                             exp=fiv7: ERA-Interim forced land model
+#                             exp=fiv8: ERA-Interim + GPCP corrected precip
+#   mars4icon_monmean:        monthly means of daily means from ERA-Interim (sst and ci)
+#
+# attention: 
+#   * at DWD requires ECMWF login by eccert
+#   * requires mars version 1.9.9       ??
+#     (. ${GRIB_API}/bin/grib_api-setenv -r -V1.9.9)
+#
+# history:
+#  Pilar Ripodas  (2013):   original
+#  Martin Koehler (201405): unify SST and CI scripts
+# -------------------------------------------------------
+
+set -x
+
+# --- argument list ---
+
+var=${1}
+year=${2:-2011}
+
+# --- data retrieval ---
+
+# define data directory (if not set otherwise)
+datadir=${SSTICEDIR:-/e/uwork/${USER}/icon/ifs.data}
+mkdir -p $datadir
+tempdir=${TMPDIR}
+
+month_list="01 02 03 04 05 06 07 08 09 10 11 12"
+for month in ${month_list}
+do
+  mdate="${year}-${month}-01"
+  grib_file=${datadir}/ifs_ei_${var}_${year}_${month}.grb
+
+  cat > ${tempdir}/MARS_IN.$$ << MARS_IFS2ICON_EOF.$$
+  retrieve,
+        class    = ei,
+        expver   = 1,
+        domain   = g,
+        stream   = moda,
+        type     = an,
+        date     = ${mdate},
+        target   = "${grib_file}",
+        #param    = 31.128,                             #ci
+        #param    = 34.128,                             #sst
+        param    = ${var},
+        repres   = gg,                                  # gaussian grid
+        gaussian = regular,
+        grid     = 128,                                 # ERA interim !
+        levtype  = surface
+MARS_IFS2ICON_EOF.$$
+
+  mars ${tempdir}/MARS_IN.$$
+  rc_mars=$?
+
+  if [ $rc_mars -ne 0 ]; then
+    { print -- "Error $rc_mars executing mars"
+      print -- "Input file to MARS:"
+      cat ${tempdir}/MARS_IN.$$
+    } >&2
+     rm ${tempdir}/MARS_IN.$$
+    exit $rc_mars
+  fi
+
+  print "Retrieved ERA interim analysis for "${var} $year $month 
+
+  ls -al ${grib_file}
+  rm -f ${tempdir}/MARS_IN.$$
+
+done
+
+exit 0

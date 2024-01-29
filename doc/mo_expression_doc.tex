@@ -1,0 +1,201 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+% ------------------------------------------------------------------------------------------
+\section{Arithmetic expression evaluation}
+% ------------------------------------------------------------------------------------------
+
+The \texttt{mo\_expression} module evaluates basic arithmetic
+expressions specified by character-strings.
+%
+It is possible to include mathematical functions, operators, and
+constants. 
+An application of this module is the evaluation of arithmetic
+expressions povided as namelist parameters.
+
+Besides, Fortran variables can be linked to the expression and used in
+the evaluation.
+The implementation supports scalar input variables as well as 2D and
+3D fields.
+
+From a users' point of view, the basic usage of this module is
+described in Section~\ref{section:examples_for_arithmetic_expressions}
+below.
+Technically, infix expressions are processed based on a Finite State
+Machine (FSM) and Dijkstra's shunting yard algorithm.
+A more detailed described of the Fortran interface is given in
+Section~\ref{section:usage_with_fortran}.
+
+
+% ------------------------------------------------------------------------------------------
+\subsection{Examples for arithmetic expressions}
+\label{section:examples_for_arithmetic_expressions}
+% ------------------------------------------------------------------------------------------
+
+Basic examples:
+\begin{itemize}
+  \item \texttt{ "sqrt(2.0)" }
+  \item \texttt{ "sin(45*pi/180.) * 10 + 5" }
+  \item \texttt{ "if(1. > 2, 99, -1.*pi)" }
+  \item \texttt{ "min(1,2)" }
+\end{itemize}
+
+Variables are used with a bracket notation:
+\begin{itemize}
+ \item \verb;"sqrt([u]^2 + [v]^2)";
+\end{itemize}
+Note that the use of variables requires that these are enabled
+("linked") by the Fortran routine that calls the
+\texttt{mo\_expression} module.
+
+
+% ------------------------------------------------------------------------------------------
+\subsection{Expression syntax}
+% ------------------------------------------------------------------------------------------
+
+% ------------------------------------------------------------------------------------------
+\subsubsection{List of functions}
+% ------------------------------------------------------------------------------------------
+
+\begin{tabular}{|l|c|p{7cm}|}
+  \hline
+  name                           & \#args & description \\
+  \hline\hline
+  \texttt{log()}, \texttt{exp()} & 1                & natural logarithm and its inverse function. \\
+  \texttt{sin()}, \texttt{cos()} & 1                & trigonometric functions                     \\
+  \texttt{sqrt()}                & 1                & square root                                 \\
+  \texttt{erf()}                 & 1                & Gauss error function                        \\
+  \texttt{min()}, \texttt{max()} & 2                & minimum and maximum of two values           \\
+  \texttt{if(\textit{value},\textit{then},\textit{else})} & 3 & conditional expression 
+                                                      (\texttt{\textit{value} > 0.})              \\
+  \hline
+\end{tabular}
+
+
+% ------------------------------------------------------------------------------------------
+\subsubsection{List of operators}
+% ------------------------------------------------------------------------------------------
+
+\begin{tabular}{|p{3cm}|p{7cm}|}
+  \hline
+  name                              & evaluates to \\
+  \hline\hline
+  \raggedright%
+  \texttt{\textit{a}~+~\textit{b}},
+  \texttt{\textit{a}~-~\textit{b}},
+  \texttt{\textit{a}~*~\textit{b}},
+  \texttt{\textit{a}~/~\textit{b}}  & $(a+b)$, $(a-b)$, $(a*b)$, $(a/b)$ \\[0.5em]
+  \texttt{\textit{a}~\^~\textit{b}} & $a^b$                              \\[0.5em]
+  \texttt{\textit{a}~>~\textit{b}}  & $\begin{cases}
+                                        ~  1, & \text{if } a > b, \\
+                                        ~  0, & \text{otherwise}.
+                                       \end{cases}$                      \\[1.5em]
+  \texttt{\textit{a}~<~\textit{b}}  & $\begin{cases}
+                                        ~  1, & \text{if } a < b, \\
+                                        ~  0, & \text{otherwise}.
+                                       \end{cases}$                      \\[0.5em]
+  \hline
+\end{tabular}
+
+
+
+% ------------------------------------------------------------------------------------------
+\subsubsection{List of available constants}
+% ------------------------------------------------------------------------------------------
+
+\begin{tabular}{|l|l|p{7cm}|}
+  \hline
+  name of constant & assigned value & description \\
+  \hline\hline
+  \texttt{pi} & $4 \, \atan(1)$     & mathematical constant equal to a circle's circumference 
+                                      divided by its diameter  \\
+  \texttt{r}  & $6.371229\cdot10^6$ & Earth's radius\footnotemark[1]  \\
+  \hline
+\end{tabular}
+
+
+% ------------------------------------------------------------------------------------------
+\subsection{Usage with Fortran}
+\label{section:usage_with_fortran}
+% ------------------------------------------------------------------------------------------
+
+The minimal Fortran interface is as follows:
+\begin{enumerate}
+\item The \texttt{TYPE expression} which is initialized with the
+  character-string that specifies the arithmetic expression.
+\item The type-bound procedure \texttt{evaluate()}, which returns the
+  result (scalar or array-shaped) as a \texttt{POINTER}.
+\item The type-bound procedure \texttt{link()} connecting a variable
+ to a name in the character-string expression.
+\end{enumerate}
+
+
+% ------------------------------------------------------------------------------------------
+\subsubsection{Fortran examples}
+% ------------------------------------------------------------------------------------------
+
+The following examples illustrate the arithmetic expression parser.
+The calls to \texttt{DEALLOCATE} the data structures have been
+ommitted for the sake of brevity:
+
+\begin{enumerate}
+  \item Scalar arithmetic expression:
+   \begin{verbatim}
+  formula = expression("sin(45*pi/180.) * 10 + 5")
+  CALL formula%evaluate(val)
+    ... use "val" for some purpose ...
+   \end{verbatim}
+  \item Masking of a 2D array as an example for the \texttt{link} procedure:
+    \begin{verbatim}
+  formula = expression("if([z_sfc] > 2., [z_sfc], 0. )")
+  CALL formula%link("z_sfc", z_sfc)
+  CALL formula%evaluate(val_2D)
+    ... use "val_2D(:,:)" for some purpose ...
+   \end{verbatim}
+\end{enumerate}
+  
+
+
+
+
+
+% ------------------------------------------------------------------------------------------
+\subsubsection{Error handling}
+% ------------------------------------------------------------------------------------------
+
+Invalid arithmetic expressions yield "empty" expression objects. When these
+are evaluated, a \texttt{NULL()} pointer is returned.
+
+A successful expression evaluation can be tested with the \texttt{err\_no} variable:
+\begin{verbatim}
+  IF (formula%err_no == ERR_NONE) THEN
+    ...
+  END IF
+\end{verbatim}
+In case of error, the \texttt{err\_no} variable also provides the
+reason for the aborted evaluation process.
+
+
+% ------------------------------------------------------------------------------------------
+\subsection{Remarks}
+% ------------------------------------------------------------------------------------------
+
+\begin{itemize}
+  \item Variable names are treated case-sensitive!
+  \item For 3D array input it is implicitly assumed that 2D fields are
+    embedded in 3D fields as "3D(:,level,:) = 2D(:,:)".
+\end{itemize}
+
+
+\footnotetext[1]{This number seems to be based on Hayford's 1910 estimate
+  of the Earth. It is used in ICON as well as MPAS and was almost
+  certainly taken from the Jablonowski and Williamson test case
+  (QJRMS, 2006).}
+

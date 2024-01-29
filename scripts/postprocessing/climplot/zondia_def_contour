@@ -1,0 +1,185 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# Simple contouring
+
+      blue = mcont(
+        contour_line_colour             :       "blue",
+        contour_level_selection_type    :       "interval",
+        contour_line_thickness          :       3,
+        contour_line_style              :       "DASH",
+        contour_interval                :       cint_param[iparam],
+        contour_label                   :       "on",
+        contour_label_type              :       "number",
+#        contour_label_quality           :       "high",
+        contour_label_height            :       0.45,
+        contour_label_colour            :       "black",
+        contour_label_frequency         :       1,
+        contour_shade_label_blanking    :       "off",
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off",
+        contour_max_level               :       0 
+      )
+
+      red = mcont(
+        contour_line_colour             :       "red",
+        contour_level_selection_type    :       "interval",
+        contour_line_thickness          :       3,
+        contour_interval                :       cint_param[iparam],
+        contour_label                   :       "on",
+        contour_label_type              :       "number",
+#        contour_label_quality           :       "high",
+        contour_label_height            :       0.45,
+        contour_shade_label_blanking    :       "off",
+        contour_label_colour            :       "black",
+        contour_label_frequency         :       1,
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off",
+        contour_min_level               :       0
+      )
+
+# Simple contouring if simple shading
+
+      blue2 = mcont(
+        contour_line_colour             :       "blue",
+        contour_level_selection_type    :       "interval",
+        contour_line_thickness          :       1,
+        contour_line_style              :       "DASH",
+        contour_interval                :       cint_param[iparam],
+        contour_label                   :       "off",
+        contour_label_colour            :       "black",
+        contour_label_frequency         :       1,
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off",
+        contour_max_level               :       0
+      )
+
+      red2 = mcont(
+        contour_line_colour             :       "red",
+        contour_level_selection_type    :       "interval",
+        contour_line_thickness          :       1,
+        contour_interval                :       cint_param[iparam],
+        contour_label                   :       "off",
+        contour_label_colour            :       "black",
+        contour_label_frequency         :       1,
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off",
+        contour_min_level               :       0
+      )
+
+# Plain shading
+      shade = mcont(
+        legend                          :       "on",
+        contour                         :       "off",
+        contour_reference_level         :       0.0,
+        contour_level_selection_type    :       "interval",
+        contour_interval                :       cint_param[iparam],
+        contour_shade                   :       "on",
+        contour_shade_method            :       "area_fill",
+        contour_shade_colour_method     :       "calculate",
+        contour_shade_label_blanking    :       "off",
+        contour_shade_max_level_colour  :       "red",
+        contour_shade_min_level_colour  :       "blue",
+        contour_shade_colour_direction  :       "clockwise",
+        contour_label                   :       "off",
+        contour_label_height            :       0.45,
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off"
+        )
+
+# Plain shading - more fancy
+
+      shade2 = mcont(
+        legend                          :       "on",
+        contour                         :       "on",
+        contour_line_colour             :       "black",
+        contour_line_style              :       "solid",
+        contour_line_thickness          :       1,
+        contour_reference_level         :       0.0,
+        contour_level_selection_type    :       "interval",
+        contour_interval                :       cint_param[iparam],
+        contour_max_level               :       cont_max_level_pos,
+        contour_min_level               :       cont_min_level_pos,
+        contour_shade_max_level         :       cont_shade_max_level_pos,
+        contour_shade_min_level         :       cont_shade_min_level_pos,
+        contour_shade                   :       "on",
+        contour_shade_method            :       "area_fill",
+        contour_shade_colour_method     :       "calculate",
+        contour_shade_label_blanking    :       "off",
+        contour_shade_max_level_colour  :       "red",
+        contour_shade_min_level_colour  :       "blue",
+        contour_shade_colour_direction  :       "clockwise",
+        contour_label                   :       "off",
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off"
+        )
+
+      contours_pos = mcont(
+        legend                          :       "on",
+        contour                         :       "on",
+        contour_line_colour             :       "red",
+        contour_line_style              :       "solid",
+        contour_line_thickness          :       1,
+        contour_level_selection_type    :       "interval",
+        contour_interval                :       cint_param[iparam],
+        contour_max_level               :       cont_max_level_pos,
+        contour_min_level               :       cont_min_level_pos,
+        contour_shade                   :       "on",
+        contour_shade_method            :       "area_fill",
+        contour_shade_max_level         :       cont_shade_max_level_pos,
+        contour_shade_min_level         :       cont_shade_min_level_pos,
+        contour_shade_colour_direction  :       "clockwise",
+        contour_shade_max_level_colour  :       "RED",
+        contour_shade_min_level_colour  :       "YELLOW",
+        contour_label                   :       "off",
+        contour_highlight               :       "off",
+        contour_shade_label_blanking    :       "off",
+        contour_label_height            :       0.45,
+        contour_hilo                    :       "off"
+        )
+  
+      contours_neg = mcont(
+        legend                          :       "on",
+        contour                         :       "on",
+        contour_line_colour             :       "blue",
+        contour_line_style              :       "solid",
+        contour_line_thickness          :       1,
+        contour_level_selection_type    :       "interval",
+        contour_interval                :       cint_param[iparam],
+        contour_max_level               :       cont_max_level_neg,
+        contour_min_level               :       cont_min_level_neg,
+        contour_shade                   :       "on",
+        contour_shade_method            :       "area_fill",
+        contour_shade_max_level         :       cont_shade_max_level_neg,
+        contour_shade_min_level         :       cont_shade_min_level_neg,
+        contour_shade_colour_direction  :       "clockwise",
+        contour_shade_max_level_colour  :       "BLUE_GREEN",
+        contour_shade_min_level_colour  :       "BLUE",
+        contour_label                   :       "off",
+        contour_highlight               :       "off",
+        contour_shade_label_blanking    :       "off",
+        contour_label_height            :       0.45,
+        contour_hilo                    :       "off"
+        )
+  
+# Simple background
+
+      contours_simple_bg = mcont(
+        contour_line_colour             :       "black",
+        contour_level_selection_type    :       "count",
+        contour_line_thickness          :       1,
+        contour_label                   :       "on",
+        contour_label_type              :       "number",
+        contour_label_height            :       0.35,
+        contour_label_colour            :       "black",
+        contour_label_frequency         :       2,
+        contour_highlight               :       "off",
+        contour_hilo                    :       "off"
+        )

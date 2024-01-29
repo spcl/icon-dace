@@ -1,0 +1,311 @@
+#!@SHELL@
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# Define a variable with a name that is hardly owerriten by $BUILD_ENV:
+_collected_set_up_info=
+
+# The first argument is our output file:
+test "$#" -gt 0 && test -n "$1" && rm -f "$1" && _collected_set_up_info=$1
+
+# Silently initialize the environment:
+{ @BUILD_ENV@:; } >/dev/null 2>&1
+
+# List of output variables
+output_vars='
+use_builddir
+use_compiler
+use_compiler_version
+use_gpu
+use_host
+use_load_modules
+use_load_profile
+use_mpi
+use_mpi_procs_pernode
+use_num_io_procs
+use_mpi_root
+use_mpi_startrun
+use_openmp
+use_queue
+use_shell
+use_srcdir
+use_submit
+use_sync_submit
+use_target
+use_flags_group
+VERSION_
+'
+
+# Set directories:
+use_srcdir='@abs_top_srcdir@'
+use_builddir='@abs_top_builddir@'
+
+# Version info required by mkexp
+VERSION_='@PACKAGE_VERSION@'
+
+# Set use_site:
+use_host='@host_fqdn@'
+use_site='local.net'
+case "$use_host" in
+  l*.lvt.dkrz.de|aurora*) use_site=dkrz.de ;;
+  daint*|tave*|santis*|kesch*|tsa*|nid*|balfrin*) use_site=cscs.ch ;;
+  uc2*|fh2*|hk*) use_site=kit.edu ;;
+  xc*|rcnl*|oflws*|omlws*|gpnl*) use_site=dwd.de ;;
+  *euler.ethz.ch) use_site=ethz.ch ;;
+  *mpimet.mpg.de)
+    # Filter out machines in the MPI-M network with dynamically assigned domain
+    # names because we cannot be sure that they are configured the way we
+    # expect, especially with respect to the mount point of the pool directory.
+    # To make the Buildbot tests representative, we also treat the macOS testing
+    # server (buildmac1.mpimet.mpg.de) in the same way:
+    echo "$use_host" | grep '^\([dw]14[6-9]-[1-9][0-9]\{0,2\}\|buildmac1\)\.mpimet\.mpg\.de$' >/dev/null 2>&1 || use_site=mpg.de ;;
+  uan0?) use_site=csc.fi ;;
+esac
+test x"$ICON_DOCKER" = x1 && use_site=docker
+
+# Set use_compiler:
+use_compiler='@FC_VENDOR@'
+case "$use_compiler" in
+  gnu) use_compiler='gcc' ;;
+  portland) use_compiler='pgi' ;;
+  unknown) use_compiler= ;;
+esac
+
+# Set use_compiler_version:
+use_compiler_version='@FC_VERSION@'
+case "$use_compiler_version" in
+  unknown) use_compiler_version= ;;
+esac
+
+# Set use_mpi:
+use_mpi='no'
+@MPI_ENABLED@use_mpi='yes'
+
+# Set use_openmp:
+use_openmp='no'
+@OPENMP_ENABLED@use_openmp='yes'
+
+# Set use_gpu:
+use_gpu='no'
+@GPU_ENABLED@use_gpu='yes'
+
+# Set use_mpi_startrun:
+test -n '@MPI_LAUNCH@' && use_mpi_startrun='@MPI_LAUNCH@ -n $mpi_total_procs'
+
+# Set site-specific values:
+case "$use_site" in
+  cscs.ch)
+    case "${HOST:-$(hostname)}" in
+      *daint*|*dom*)
+        use_load_profile='. /opt/modules/default/etc/modules.sh'
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
+        if test xyes = x"${use_gpu}"; then use_target='daint_gpu'; else use_target='daint_cpu'; fi
+      ;;
+
+      # balfrin (the current hostname is nid but will be changed to balfrin)
+      *nid*|*balfrin*)
+        if test -f "/etc/xthostname"; then
+          host_name=$(cat /etc/xthostname)
+
+          use_load_profile='. /etc/profile.d/modules.sh'
+          use_submit='sbatch'
+          use_sync_submit='sbatch --wait'
+          if test xyes = x"${use_gpu}"; then
+            use_target=${host_name}'_gpu'
+            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --distribution=cyclic ${basedir}/run/run_wrapper/'${host_name}'_gpu.sh'
+          else
+            use_target=${host_name}'_cpu'
+            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1'
+          fi
+        fi
+      ;;
+
+      *tave*)
+        use_load_profile='. /opt/modules/default/etc/modules.sh'
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
+        use_target='tave_knl'
+      ;;
+
+      *tsa*)
+        use_load_profile='. /etc/profile.d/modules.sh'
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
+        if test xyes = x"${use_gpu}"; then use_target='tsa_gpu'; else use_target='tsa_cpu'; fi
+      ;;
+
+      *kesch*)
+        use_load_profile='. /etc/profile.d/modules.sh'
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
+        if test xyes = x"${use_gpu}"; then use_target='kesch_gpu'; else use_target='kesch_cpu'; fi
+      ;;
+    esac
+  ;;
+
+  ethz.ch)
+    case "$use_host" in
+      *euler*)
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_target='euler'
+        use_mpi_startrun='mpirun -n $mpi_total_procs'
+      ;;
+    esac
+  ;;
+  dwd.de)
+    case "$use_host" in
+      rcnl*)
+        use_load_profile='. /etc/profile'
+        #use_load_profile='/usr/share/Modules/init/sh'
+        use_submit='qsub'
+        use_sync_submit='qsub'
+        use_target='rcl'
+        use_shell='/bin/bash'
+        use_mpi_startrun='@MPI_LAUNCH@'
+        if ((RH_VERSION != 8)); then
+          use_queue='sx_norm'
+        else
+          use_queue='sx_norm_rh8'
+          use_load_modules='mpi/2.24.0' # 2.24.0 is an alias for mpi 3.3.0 on RH8 VH/VE systems
+        fi
+      ;;
+      xc*)
+        use_submit='qsub'
+        use_sync_submit='qsub -Wblock=true'
+      ;;
+      oflws*|omlws*)
+        use_target='oflws'
+      ;;
+      gpnl*)
+        use_target='gpnl'
+        use_mpi_startrun='@MPI_LAUNCH@ -np $mpi_total_procs --oversubscribe -mca orte_base_help_aggregate 0 -mca btl_base_warn_component_unused 0 ${basedir}/run/run_wrapper/gpnl.sh '
+      ;;
+      *) #hpc
+        use_submit='qsubw'
+        use_sync_submit='qsub -W block=true'
+        use_target='hpc'
+      ;;
+    esac
+  ;;
+
+  dkrz.de)
+    case $use_host in
+      aurora*)
+        use_target='levante_aurora'
+        ;;
+      *)
+        use_load_profile='. /etc/profile'
+        use_load_modules="$use_srcdir/etc/Modules/icon-levante"
+        use_shell='/usr/bin/bash'
+        use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
+        use_mpi_startrun='srun'
+        use_mpi_root='openmpi'
+        if test xyes = x"${use_gpu}"; then
+          use_target='bullx_gpu'
+        else
+          use_target='bull_milan'
+        fi
+        ;;
+    esac
+  ;;
+
+  kfa-juelich.de|fz-juelich.de|*jureca*|*juwels*)
+    case "$use_host" in
+      jrl*|juwels*)
+        use_submit='sbatch'
+        use_mpi_startrun='srun'
+        use_target='jureca'
+      ;;
+      juqueen*)
+        use_submit='llsubmit'
+        use_mpi_startrun='runjob --ranks-per-node \$mpi_procs_pernode --envs OMP_NUM_THREADS=\$OMP_NUM_THREADS --exe'
+        use_target='juqueen'
+      ;;
+    esac
+  ;;
+
+  kit.edu)
+    use_load_profile='. /etc/profile'
+    use_shell='/usr/bin/bash'
+    use_submit='sbatch'
+    use_sync_submit='sbatch --wait'
+    use_load_profile='. /etc/profile'
+    use_mpi_startrun='@MPI_LAUNCH@ -n ${SLURM_NPROCS}'
+    use_load_modules=""
+    case "$use_host" in
+      uc2*) use_target='uc2' ;;
+      fh2*) use_target='fh2' ;;
+      hk*)  
+        if test xyes = x"${use_gpu}"; then 
+            use_target='hk_gpu';
+            use_mpi_startrun='@MPI_LAUNCH@ -n ${SLURM_NPROCS} ${basedir}/run/run_wrapper/hk.sh'
+        else 
+            use_target='hk'; 
+        fi
+    esac
+  ;;
+
+  mpg.de)
+    use_target='mpipc'
+    case "`lsb_release -c | awk '{print $2}'`" in
+      stretch)
+        use_load_profile='. /etc/profile.d/mpim.sh'
+        use_load_modules='cdo/1.9.6-gccsys python/2.7.14-stable'
+        ;;
+    esac
+  ;;
+
+  csc.fi)
+    use_submit='sbatch'
+    use_sync_submit='sbatch --wait'
+    use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
+    use_target='lumi'
+  ;;
+
+  ecmwf.int)
+  ;;
+
+  local.net)
+    use_target='default'
+  ;;
+
+  pa.cluster)
+    use_target='pacluster'
+    use_submit='qsub'
+  ;;
+
+  docker)
+    if test xyes = x"${use_gpu}"; then use_target='docker_gpu'; else use_target='docker_cpu'; fi
+  ;;
+
+esac
+
+test -n "$_collected_set_up_info" && exec >>"$_collected_set_up_info"
+
+for var in $output_vars; do
+  eval value=\$$var
+
+  # Replace any occurrence of the single-quote (') in the $value with the
+  # escape sequence ('\''), so that the output of this script could be sourced.
+  case $value in
+    *\'*)
+      value=`echo "$value" | sed "s/'/'\\\\\\\\''/g"` ;;
+  esac
+
+  echo "$var='$value'"
+done

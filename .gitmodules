@@ -1,0 +1,24 @@
+[submodule "externals/mtime"]
+	path = externals/mtime
+	url = ../../icon-libraries/libmtime.git
+[submodule "externals/yac"]
+	path = externals/yac
+	url = ../../dkrz-sw/YAC.git
+[submodule "externals/yaxt"]
+	path = externals/yaxt
+	url = ../../dkrz-sw/yaxt.git
+[submodule "externals/rte-rrtmgp"]
+	path = externals/rte-rrtmgp
+	url = https://github.com/earth-system-radiation/rte-rrtmgp.git
+[submodule "externals/cdi"]
+	path = externals/cdi
+	url = ../../mpim-sw/libcdi.git
+[submodule "externals/probtest"]
+	path = externals/probtest
+	url = https://github.com/MeteoSwiss/probtest.git
+[submodule "utils/mkexp"]
+	path = utils/mkexp
+	url = https://git.mpimet.mpg.de/public/mkexp
+[submodule "externals/ppm"]
+	path = externals/ppm
+	url = ../../jahns/ppm.git

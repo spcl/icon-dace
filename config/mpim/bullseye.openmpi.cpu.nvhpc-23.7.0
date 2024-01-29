@@ -1,0 +1,121 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+sw_root='/sw/bullseye-x64/views/icon/openmpi/nvhpc-23.7'
+
+if test -r "${sw_root}/lib/librttov_main.a"; then
+  RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
+else
+  # The RTTOV license does not allow for a public installation. Therefore, only
+  # members of the 'buildbot' group (40001) have read access to the RTTOV files
+  # in ${sw_root}. To make the configure wrapper work for other users, we have
+  # to set RTTOV_LIBS to an empty string. That, of course, means that other
+  # users cannot use the wrapper as-is to build ICON with RTTOV. They need to
+  # download (implies accepting the license) and install RTTOV themselves.
+  RTTOV_LIBS=
+  # Uncomment the following lines and set RTTOV_ROOT to the path to your
+  # installation of RTTOV if you want to build ICON with it but do not have read
+  # access to the installation in ${sw_root}:
+  # RTTOV_ROOT='/path/to/rttov'
+  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV}/include"
+  # RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
+  # RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
+fi
+
+################################################################################
+
+BUILD_ENV="export PATH=\"${sw_root}/bin:\${PATH-}\"; export LD_LIBRARY_PATH=\"${sw_root}/lib:\${LD_LIBRARY_PATH-}\"; export PYTHONPATH=\"${sw_root}/python/pp_ser:\${PYTHONPATH-}\";"
+
+CC='mpicc'
+CFLAGS='-g -O2'
+
+CXX=$(eval "${BUILD_ENV}" >/dev/null; mpicxx -show | sed 's: .*$::')
+CXXFLAGS='-g -O2'
+
+CPPFLAGS="-I${sw_root}/include -I${sw_root}/include/libxml2"
+
+FC='mpif90'
+FCFLAGS="-I${sw_root}/include ${RTTOV_FCFLAGS-} -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline"
+
+ICON_FCFLAGS='-O2'
+
+# The compiler fails to process some of the EMVORADO and DACE source files with
+# the default optimization level:
+ICON_WORKAROUND1_FCFLAGS='-O1'
+ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:externals/emvorado/src_iface_icon/radar_interface.f90'
+
+LDFLAGS="-L${sw_root}/lib ${RTTOV_LDFLAGS-}"
+# The configure scripts of some of the bundled libraries (e.g. SCT) are
+# generated using original (non-patched) Libtool macros, which are not aware of
+# NVidia HPC compilers. As a result, their libtool scripts do not keep the
+# '-Wl,' prefix and pass the linker flags to the compiler without it. The
+# compiler can handle some of them (e.g. '--as-needed') but chokes with some
+# other (e.g. '--disable-new-dtags'). For consistency, we pass all flags that
+# are meant for the linker only via ICON_LDFLAGS so that they are not passed to
+# any libtool script:
+ICON_LDFLAGS='-Wl,--disable-new-dtags -Wl,--as-needed'
+LIBS="-lxml2 -lfyaml -lSerialboxFortran -leccodes_f90 -leccodes ${RTTOV_LIBS-} -llapack -lblas -lnetcdff -lnetcdf -lhdf5_hl_fortran -lhdf5_fortran -lhdf5 -lz"
+
+MPI_LAUNCH='mpiexec --oversubscribe'
+
+EXTRA_CONFIG_ARGS='--enable-loop-exchange --enable-grib2 --enable-fcgroup-WORKAROUND1'
+
+# The compiler fails one of the YAC configure-time tests, which we suppress and
+# hope for the best:
+EXTRA_CONFIG_ARGS+=' yac_cv_fc_is_contiguous_works=yes'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+CXX="${CXX}" \
+CXXFLAGS="${CXXFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_LDFLAGS="${ICON_LDFLAGS}" \
+ICON_WORKAROUND1_FCFLAGS="${ICON_WORKAROUND1_FCFLAGS}" \
+ICON_WORKAROUND1_PATH="${ICON_WORKAROUND1_PATH}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi
+

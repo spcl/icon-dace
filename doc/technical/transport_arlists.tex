@@ -1,0 +1,164 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\chapter{Transport}
+\section{Argument lists}
+Argument lists of the following subroutines are documented below:
+\begin{itemize}
+\item \lstinline!step_advection! (table \ref{tbl_arlist_stepping})
+\item \lstinline!vert_upwind_flux! (table \ref{tbl_arlist_vuf})
+\item \lstinline!hor_upwind_flux! (table \ref{tbl_arlist_huf})
+\end{itemize}
+
+\renewcommand{\arraystretch}{1.8}
+\begin{landscape}
+\begin{singlespacing}
+\small
+
+\begingroup
+\setlength\tabcolsep{3pt}
+\begin{longtable}{p{2.9cm}|x{2.3cm}|x{2.3cm}|x{1.9cm}|x{1.9cm}|x{2.2cm}|p{8.2cm}}
+\caption{Argument list of driver subroutine \textbf{\lstinline!step_advection!}}\label{tbl_arlist_stepping}\\
+
+   & \multicolumn{2}{c|}{\textbf{physical variable}} & \multicolumn{2}{c|}{\textbf{units}}& \textbf{INTENT} &\\
+Name  & ICOHAM & ICONAM &    ICOHAM & ICONAM   & & description  \\
+\hline\hline
+\endhead
+\hline \multicolumn{7}{r}{\emph{continued on the next page}}
+\endfoot
+\hline
+\endlastfoot
+
+$p\_patch$              &   --                            &   --                          &  --             &  --                   &  IN       &  patch on which computation is performed\\
+$p\_int\_state$         &   --                            &   --                          &  --             &  --                   &  IN       &  interpolation state\\
+$p\_metrics$            &   --                            &   --                          &  --             &  --                   &  IN       &  metrics\\
+$p\_dtime$              &  $\Delta t$                     &  $\Delta t$                   &  $s$            &  $s$                  &  IN       &  time step\\
+$k\_step$               &  --                             &  --                           &  $1$            &  $1$                  &  IN       &  time step counter\\
+$p\_tracer\_now$        &  $\overline{q}^{n}_{k}$         &  $\overline{q}^{n}_{k}$       &  $kg\,kg^{-1}$  &  $kg\,kg^{-1}$        &  IN       &  4D tracer array\\
+$p\_mflx\_contra\_h$    &  $\Delta p^{n+\alpha} v_{n}^{n+\alpha}$&  $\rho^{n+1/2}\Delta z\, v_{n}^{n+1/2}$ & $kg\,s^{-3}$&  $kg\,m^{-1}\,s^{-1}$&  IN&  horizontal mass flux at edge midpoints\\
+$p\_vn\_contra\_traj$   &  $v_{n}^{n+\alpha}$             &  $v_{n}^{n+1/2}$              &  $m\,s^{-1}$    &  $m\,s^{-1}$          &  IN       &  normal velocity component at edge midpoints\\
+$p\_mflx\_contra\_v$    &  $(\dot{\eta}\frac{\partial p}{\partial \eta})^{n+\alpha}_{k-1/2}$&  $\rho^{n+1/2}_{k-1/2}w^{n+1/2}_{k-1/2}$&  $Pa\,s^{-1}$&   $kg\,m^{-2}\,s^{-1}$&  INOUT &  contravariant vertical mass flux at half level centers\\
+$p\_w\_contra\_traj$    &  $(\dot{\eta}\frac{\partial p}{\partial \eta})^{n+\alpha}_{k-1/2}$&  $w^{n+1/2}_{k-1/2}$&   $Pa\,s^{-1}$  &  $m\,s^{-1}$&  IN&  contravariant vertical velocity at half level centers\\
+$p\_cellhgt\_mc\_now$   &  $\Delta p^{n}_{k}$             &  $\Delta z_{k}$               &  $Pa$           &  $m$                  &  IN       &  cell height at cell circumcenter\\
+$p\_delp\_mc\_new$      &  $\Delta p^{n+1}_{k}$           &  $\rho^{n+1}_{k}\Delta z_{k}$ &  $Pa$           &  $kg\,m^{-2}$         &  IN       &  new weighted density \\
+$p\_delp\_mc\_now$      &  $\Delta p^{n}_{k}$             &  $\rho^{n}_{k}\Delta z_{k}$   &  $Pa$           &  $kg\,m^{-2}$         &  IN       &  old weighted density\\
+$p\_pres\_mc\_now$      &  $p^{n}_{k}$                    &  $z_{k}$                      &  $Pa$           &  $m$                  &  IN       &  full level height\\
+$p\_pres\_ic\_now$      &  $p^{n}_{k-1/2}$                &  $z_{k-1/2}$                  &  $Pa$           &  $m$                  &  IN       &  half level height\\
+$p\_grf\_tend\_tracer$  &  $\Delta t\frac{\partial q}{\partial t}$&  $\Delta t\frac{\partial q}{\partial t}$&  $kg\,kg^{-1}$&  $kg\,kg^{-1}$&  INOUT&  interpolated tracer time tendencies\\
+$p\_tracer\_new$        &  $\overline{q}^{n+1}_{k}$       & $\overline{q}^{n+1}_{k}$      &  $kg\,kg^{-1}$  &  $kg\,kg^{-1}$        &  INOUT    &  updated 4D tracer array\\
+$p\_mflx\_tracer\_h$    &  $F^{n}_{i}$                    &  $F^{n}_{i}$                  &  $kg\,s^{-3}$   &  $kg\,m^{-1}\,s^{-1}$ &  INOUT    &  horizontal tracer mass flux at edge midpoints\\
+$p\_mflx\_tracer\_v$    &  $F^{n}_{k-1/2}$                &  $F^{n}_{k-1/2}$              &  $Pa\,s^{-1}$   &  $kg\,m^{-2}\,s^{-1}$ &  INOUT    &  vertical tracer mass flux at half level centers\\
+$ldeepatmo$             &  --                             &  --                         &  --             &  --                 &  IN       &  switch for deep atmosphere\\
+$opt\_rho\_ic$          &  --                             &  $\rho_{k-1/2}^{n+1/2}$       &  --             &  $kg\,m^{-3}$         &  OPT IN   &  half level density (NH-core only)\\
+$opt\_topflx\_tra$      &  --                             &  $F^{n}_{1/2}$                &  $Pa\,s^{-1}$   &  $kg\,m^{-2}\,s^{-1}$ &  OPT IN   &  vertical tracer flux at upper boundary (NH-core only)\\
+$opt\_q\_int$           &  --                             &  $\overline{q}^{n}_{1/2}$     &  --             &  $kg\,kg^{-1}$        &  OPT OUT  &  tracer value at upper boundary of child nest (NH-core only)\\
+$opt\_ddt\_tracer\_adv$ &  $\frac{\partial q}{\partial t}$&  $\frac{\partial q}{\partial t}$ &  $kg\,kg^{-1}\,s^{-1}$&  $kg\,kg^{-1}\,s^{-1}$& OPT INOUT&  advective tendency (NH-core only)\\
+\end{longtable}
+\endgroup
+
+\end{singlespacing}
+
+\end{landscape}
+\normalsize 
+
+%==============================
+
+
+\begin{landscape}
+\begin{singlespacing}
+\small
+
+\begingroup
+\setlength\tabcolsep{3pt}
+\begin{longtable}{p{2.9cm}|x{2.9cm}|x{2.9cm}|x{1.9cm}|x{1.9cm}|x{1.7cm}|p{7.3cm}}
+\caption{Argument list of subroutine \textbf{\lstinline!vert_upwind_flux!}}\label{tbl_arlist_vuf}\\
+
+   & \multicolumn{2}{c|}{\textbf{physical variable}} & \multicolumn{2}{c|}{\textbf{units}}& \textbf{INTENT} &\\
+Name  & ICOHAM & ICONAM &    ICOHAM & ICONAM   & & description  \\
+\hline\hline
+\endhead
+\hline \multicolumn{7}{r}{\emph{continued on the next page}}
+\endfoot
+\hline
+\endlastfoot
+
+$p\_patch$             &  --                              &  --                          &  --                 &  --                    &  IN        &  patch on which computation is performed\\
+$p\_cc$                &  $\overline{q}^{n}$              &  $\overline{q}^{n}$          &  $kg\,kg^{-1}$      &  $kg\,kg^{-1}$         &  IN        &  advected cell centered variable (3D field)\\
+$p\_mflx\_contra\_v$   &  $(\dot{\eta}\frac{\partial p}{\partial \eta})^{n+\alpha}$&  $\rho^{n+1/2}w^{n+1/2}$&  $Pa\,s^{-1}$&  $kg\,m^{-2}\,s^{-1}$&  INOUT &  contravariant vertical mass flux at half level centers\\
+$p\_w\_contra$         &  $(\dot{\eta}\frac{\partial p}{\partial \eta})^{n+\alpha}$&  $w^{n+1/2}$&  $Pa\,s^{-1}$&  $m\,s^{-1}$          &  IN        &  contravariant vertical velocity at half level centers\\
+$p\_dtime$             &  $\Delta t$                      &  $\Delta t$                  &  $s$                &  $s$                   &  IN        &  time step\\
+$p\_pres\_ic$          &  $p^{n}_{k-1/2}$                 &  $z_{k-1/2}$                 &  $Pa$               &  $m$                   &  IN        &  half level height\\
+$p\_pres\_mc$          &  $p^{n}_{k}$                     &  $z_{k}$                     &  $Pa$               &  $m$                   &  IN        &  full level height\\
+$p\_cellhgt\_mc\_now$  &  $\Delta p^{n}$                  &  $\Delta z$                  &   $Pa$              &  $m$                   &  IN        &  cell height at cell circumcenter\\
+$p\_rcellhgt\_mc\_now$ &  $1/\Delta p^{n}$                &  $1/\Delta z$                &   $Pa^{-1}$         &  $m^{-1}$              &  IN        &  reciprocal cell height at cell circumcenter\\
+$p\_cellmass\_now$     &  $\Delta p^{n}$                  &  $\rho^{n}\Delta z$          &   $Pa$              &  $kg\,m^{-2}$          &  IN        &  $1D$ cell mass\\
+$p\_ivadv\_tracer$     &  --                              &  --                          &   1                 &  1                     &  IN        &  selects numerical scheme for vertical transport\\
+$p\_itype\_vlimit$     &  --                              &  --                          &   1                 &  1                     &  IN        &  selects limiter for vertical transport \\
+$p\_iubc\_adv$         &  --                              &  --                          &   1                 &  1                     &  IN        &  selects upper bpoundary condition \\
+$p\_iadv\_slev$        &  --                              &  --                          &   1                 &  1                     &  IN        &  vertical start level \\
+$p\_upflux$            &  $F^{n}_{k-1/2}$                 &  $F^{n}_{k-1/2}$             &    $Pa\,s^{-1}$     &  $kg\,m^{-2}\,s^{-1}$  &  OUT       &  vertical tracer mass flux at half level centers\\
+$opt\_topflx\_tra$     &  --                              &  $F^{n}_{1/2}$               &    --               &  $kg\,m^{-2}\,s^{-1}$  &  IN        &  vertical tracer flux at upper boundary (NH core only)\\
+$opt\_q\_int$          &  --                              &  $\overline{q}^{n}_{1/2}$    &    --               &  $kg\,kg^{-1}$         &  OUT       &  tracer value at upper boundary of child nest (NH core only)\\
+$opt\_rho\_ic$         &  --                              &  $\rho_{k-1/2}^{n+1/2}$      &    --               &  $kg\,m^{-3}$          &  OPT IN    &  half level density (NH-core only)\\
+$opt\_rlstart$         &  --                              &  --                          &    1                &  1                     &  OPT IN    &  refinement control start level\\
+$opt\_rlend$           &  --                              &  --                          &    1                &  1                     &  OPT IN    &  refinement control end level\\
+
+\end{longtable}
+\endgroup
+
+\end{singlespacing}
+
+\end{landscape}
+\normalsize 
+
+
+%==============================
+
+
+\begin{landscape}
+\begin{singlespacing}
+\small
+
+\begingroup
+\setlength\tabcolsep{3pt}
+\begin{longtable}{p{2.9cm}|x{2.9cm}|x{2.9cm}|x{1.9cm}|x{1.9cm}|x{1.7cm}|p{7.3cm}}
+\caption{Argument list of  subroutine \textbf{\lstinline!hor_upwind_flux!}}\label{tbl_arlist_huf}\\
+
+   & \multicolumn{2}{c|}{\textbf{physical variable}} & \multicolumn{2}{c|}{\textbf{units}}& \textbf{INTENT} &\\
+Name  & ICOHAM & ICONAM &    ICOHAM & ICONAM   & & description  \\
+\hline\hline
+\endhead
+\hline \multicolumn{7}{r}{\emph{continued on the next page}}
+\endfoot
+\hline
+\endlastfoot
+
+$p\_cc$                 &  $\overline{q}^{n}$           &  $\overline{q}^{n}$       &  $kg\,kg^{-1}$         &  $kg\,kg^{-1}$         &  IN        &  advected cell centered variable (3D field)\\
+$p\_c0$                 &  $\overline{q}^{n}$           &  $\overline{q}^{n}$       &  $kg\,kg^{-1}$         &  $kg\,kg^{-1}$         &  IN        &  advected cell centered variable (3D field) step (n)\\
+$p\_mass\_flx\_e$       &  $\Delta p^{n+\alpha} v_{n}^{n+\alpha}$&   $\rho^{n+1/2}\Delta z\, v_{n}^{n+1/2}$&  $kg\,s^{-3}$&  $kg\,m^{-1}\,s^{-1}$&  IN &  horizontal mass flux at edge midpoints\\
+$p\_vn$                 &  $v_{n}^{n+\alpha}$           &  $v_{n}^{n+1/2}$          &  $m\,s^{-1}$           &  $m\,s^{-1}$           &  IN        &  normal velocity component at edge midpoints\\
+$p\_dtime$              &  $\Delta t$                   &  $\Delta t$               &  $s$                   &  $s$                   &  IN        &  time step\\
+$p\_patch$              &  --                           &  --                       &  --                    &  --                    &  IN        &  patch on which computation is performed\\
+$p\_int$                &  --                           &  --                       &  --                    &  --                    &  IN        &  interpolation state\\
+$p\_ihadv\_tracer$      &  --                           &  --                       &  1                     &  1                     &  IN        &  selects numerical scheme for horizontal transport\\
+$p\_igrad\_c\_miura$    &  --                           &  --                       &  1                     &  1                     &  IN        &  selects gradient reconstruction method at cell centers\\
+$p\_itype\_hlimit$      &  --                           &  --                       &  1                     &  1                     &  IN        &  selects limiter for horizontal transport\\
+$p\_iadv\_slev$         &  --                           &  --                       &  1                     &  1                     &  IN        &  vertical start level \\
+$p\_iord\_backtraj$     &  --                           &  --                       &  1                     &  1                     &  IN        &  selects method for backward trajectory computaion\\
+$p\_upflux$             &  $F^{n}_{i}$                  &  $F^{n}_{i}$              &  $kg\,s^{-3}$          &  $kg\,m^{-1}\,s^{-1}$  &  INOUT     &  horizontal tracer mass flux at edge \\
+$opt\_rlend$            &  --                           &  --                       &  1                     &  1                     &  OPT IN    &  refinement control end level \\
+
+\end{longtable}
+\endgroup
+
+\end{singlespacing}
+
+\end{landscape}
+\normalsize 

@@ -1,0 +1,114 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  METVIEW.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - copy output and/or
+  - store in database and/or
+  - trigger transfer to DWD
+%end
+
+# include the standard header file
+%include <init_ws.h>
+
+# -------------------------------------------------
+
+echo "METVIEW.SMS" 
+
+
+#========================================================================
+#  Is this the last cycle of the current month and did this experiment
+#  include the entire month, as well as the last day of the previous month?
+#========================================================================
+
+lquickshots=1
+
+
+####
+#lquickshots=0
+####
+
+
+# -------------------------------------------------
+# test end-of-month
+
+EOFM=`python %ECBASEDIR%/gen/date_calc.py -a endofmonth -d %YMD%%INIHOUR%`
+if [[ "${EOFM}" -eq "1" ]]
+then
+    echo "End of month!"
+    smsevent time_eom
+fi
+
+
+# -------------------------------------------------
+# test if 2nd or 12th or 20th of month to do plotting like end-of-month
+# (see also eom_prepare.sms)
+
+if [[ $lquickshots -eq "1"  ]]
+then
+  if [[ `echo %YMD% | cut -c 7-8` -eq "2"  ]]
+  then
+      echo "2nd of month - do some plots!"
+      smsevent time_eom
+  fi
+  if [[ `echo %YMD% | cut -c 7-8` -eq "12" ]]
+  then
+      echo "12th of month - do some plots!"
+      smsevent time_eom
+  fi
+  if [[ `echo %YMD% | cut -c 7-8` -eq "20" ]]
+  then
+      echo "20th of month - do some plots!"
+      smsevent time_eom
+  fi
+fi
+
+ssh cca-log ls -l
+
+
+## -------------------------------------------------
+# test for monthly mean runs if current month is selected
+
+YYYYMM=`echo %YMD% | cut -c 1-6`
+MONTHS=`echo %MONTHS% | sed 's/_/ /g'`
+set -A MON_IFS_ICON `echo %MON_IFS_ICON% | sed 's/_/ /g'`
+iii=0
+for month in ${MONTHS[*]} ; do
+  if [[ ${YYYYMM} -eq ${month} ]]
+  then
+    echo "Calculate this month!"
+    smsevent time_domonth
+    if [[ ${MON_IFS_ICON[${iii}]} = 'ifs' ]]
+    then
+      smsmeter time_ifs_icon 1
+    else
+      smsmeter time_ifs_icon 2
+    fi
+  fi
+  iii=`expr ${iii} + 1`
+done
+
+
+# -------------------------------------------------
+
+# include the standard "tail" file
+%include <end_ws.h>

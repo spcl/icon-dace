@@ -1,0 +1,79 @@
+=============
+Plot'em ESMs!
+=============
+
+---------------
+Release Changes
+---------------
+
+Release 1.0.6
+=============
+
+mk_index_html
+-------------
+
+* Added German language support, using ISO timestamps
+* Added 'index.html' to links for SWIFT cloud browsing
+
+plot_timeser
+------------
+
+* Added time stamp formating (controlled by --time_format and --time_ticks)
+
+Tools
+-----
+
+* Added update script for use of plotems in ICON (update_icon)
+
+
+Release 1.0.5
+=============
+
+plot_timeser
+------------
+
+* Added work-around for NetCDF4 bug in NCLs 'isfilevardim' function
+* Made calendar work-around permanent for NCL >= 6.1.0
+
+Release 1.0.4
+=============
+
+plot_timeser
+------------
+
+* Fixed setting of single precision properties from data variables
+  that may be double precision
+
+Release 1.0.3
+=============
+
+plot_timeser
+------------
+
+* Changed handling of vars with rank > 1 to be independent of rank and order
+* Fixed plotting of invalid panels due to invalid variables at end of file
+* Extended calendar work-around to NCL 6.5.0
+
+Release 1.0.2
+=============
+
+plot_timeser
+------------
+
+* Fixed omissions in plot_timeser documentation
+
+Release 1.0.1
+=============
+
+plot_timeser
+------------
+
+* Changed time qaxis handling to be more robust
+* Changed to ignore string-valued variables
+* Fixed plot scaling for double-valued variables
+* Fixed version check for work-arounds
+
+Release 1.0.0
+=============
+
+First release, unification from different source repositories

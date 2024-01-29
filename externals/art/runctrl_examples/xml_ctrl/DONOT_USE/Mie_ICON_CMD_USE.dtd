@@ -1,0 +1,43 @@
+<!ELEMENT visparams (mode+)>
+<!ATTLIST visparams
+  dia_max_factor CDATA #REQUIRED
+  dia_min_factor CDATA #REQUIRED
+>
+<!ELEMENT mode (waveband+)>
+<!ATTLIST mode
+  name    ID    #REQUIRED
+  num_params CDATA #REQUIRED
+>
+<!ELEMENT waveband (ext, ssa, asy)>
+<!ATTLIST waveband
+  lambda_max CDATA #REQUIRED
+  lambda_min CDATA #REQUIRED
+  number    ID    #REQUIRED
+>
+<!ELEMENT ext EMPTY>
+<!ATTLIST ext
+  default_max CDATA #REQUIRED
+  default_min CDATA #REQUIRED
+  p1 CDATA #REQUIRED
+  p2 CDATA #REQUIRED
+  p3 CDATA #REQUIRED
+  p4 CDATA #REQUIRED
+>
+<!ELEMENT ssa EMPTY>
+<!ATTLIST ssa
+  default_max CDATA #REQUIRED
+  default_min CDATA #REQUIRED
+  p1 CDATA #REQUIRED
+  p2 CDATA #REQUIRED
+  p3 CDATA #REQUIRED
+  p4 CDATA #REQUIRED
+>
+<!ELEMENT asy EMPTY>
+<!ATTLIST asy
+  default_max CDATA #REQUIRED
+  default_min CDATA #REQUIRED
+  p1 CDATA #REQUIRED
+  p2 CDATA #REQUIRED
+  p3 CDATA #REQUIRED
+  p4 CDATA #REQUIRED
+>

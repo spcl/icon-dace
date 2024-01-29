@@ -1,0 +1,27 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: CC-BY-4.0
+# ---------------------------------------------------------------
+
+#-----------------------------------------------------------------------------------
+get_atmo
+   creates a new copy (link) from an existing icon folder containing only the atmosphere related files 
+     usage get_atmo <icon-dev full path> <atmo only full path>
+     links from the <icon-dev full path> the atmosphere files to <atmo only full path>
+
+#-----------------------------------------------------------------------------------
+get_ocean
+   creates a new copy (link) from an existing icon folder containing only the ocean related files 
+     usage get_ocean <icon-dev full path> <ocean only full path>
+     links from the <icon-dev full path> the ocean files to <ocean only full path>
+
+#-----------------------------------------------------------------------------------
+get_icon
+   creates a new copy (link) from an existing icon folder to a new folder
+     usage get_icen <icon-dev full path> <new link icon full path>
+     links from the <icon-dev full path> all icon files to <new link icon full path>

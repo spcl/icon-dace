@@ -1,0 +1,51 @@
+! <Short description of module for listings and indices>
+!
+! <Describe the concepts of the procedures and algorithms used in the module.>
+! <Details of procedures are documented below with their definitions.>
+! <Include any applicable external references inline as module::procedure,>
+! <external_procedure(), or by using @see.>
+! <Don't forget references to literature.>
+!
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+MODULE mo_<name>
+
+  USE <module>, ONLY:
+
+  IMPLICIT NONE
+
+  PRIVATE
+
+  PUBLIC  :: parameters, &
+    &        types,      &
+    &        variables,  &
+    &        procedures>
+
+  <type>, PARAMETER :: <parameter> !<  <Parameter description>
+
+  !>
+  !! <Short description of type.>
+  !!
+  !! <Describe type rationale in more detail.>
+  !!
+  TYPE, PUBLIC :: <type_name>
+    <type> :: <element_name> !<  <Type element description>
+  END TYPE <type_name>
+
+  <type> :: <variable> !<  <Variable description>
+
+CONTAINS
+
+  <<< Insert here procedures based on the templates
+      template_function.f90 and template_subroutine.f90 >>>
+
+END MODULE mo_<name>
+

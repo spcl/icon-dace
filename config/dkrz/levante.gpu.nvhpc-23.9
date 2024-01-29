@@ -1,0 +1,110 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+NVHPC_ROOT="/sw/spack-levante/nvhpc-23.9-xpxqeo/Linux_x86_64/23.9"
+MPI_ROOT="/sw/spack-levante/openmpi-4.1.6-mjsagq"
+
+HDF5_ROOT="/sw/spack-levante/hdf5-1.14.3-hnqib6"
+HDF5_LIBS='-lhdf5_hl -lhdf5'
+
+NETCDF_ROOT="/sw/spack-levante/netcdf-c-main-q3icox"
+NETCDF_LIBS='-lnetcdf'
+
+NETCDFF_ROOT="/sw/spack-levante/netcdf-fortran-4.6.1-sfunrz"
+NETCDFF_LIBS='-lnetcdff'
+
+BLAS_LAPACK_LIBS='-llapack -lblas'
+
+ECCODES_ROOT="/sw/spack-levante/eccodes-2.30.2-phi7rs"
+ECCODES_LIBS='-leccodes'
+
+FYAML_ROOT='/sw/spack-levante/libfyaml-0.7.12-fvbhgo'
+FYAML_LIBS='-lfyaml'
+
+XML2_ROOT='/usr'
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV="export LD_LIBRARY_PATH=\"${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${FYAML_ROOT}/lib:\${LD_LIBRARY_PATH}\";"
+
+CC="${MPI_ROOT}/bin/mpicc"
+CFLAGS='-g -O2'
+
+# Let YAC find LAPACK with the C compiler:
+ICON_YAC_CFLAGS='-fortranlibs'
+
+CPPFLAGS="-I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${FYAML_ROOT}/include -I${XML2_ROOT}/include/libxml2"
+
+FC="${MPI_ROOT}/bin/mpif90"
+FCFLAGS="-I${NETCDFF_ROOT}/include -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=accel,inline -acc=gpu,verystrict -gpu=cc80,cuda12.2"
+
+# CUDA compiler must be from the same prefix as the Fortran compiler:
+CUDACXX="${NVHPC_ROOT}/cuda/12.2/bin/nvcc"
+CUDAFLAGS='-arch=sm_80 -g -O3'
+
+LDFLAGS="-c++libs -cuda -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
+
+MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
+
+EXTRA_CONFIG_ARGS='--enable-gpu --enable-mpi-gpu'
+
+# The compiler fails one of the YAC configure-time tests, which we suppress and
+# hope for the best:
+EXTRA_CONFIG_ARGS+=' yac_cv_fc_is_contiguous_works=yes'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+CUDACXX="${CUDACXX}" \
+CUDAFLAGS="${CUDAFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_YAC_CFLAGS="${ICON_YAC_CFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  ln -sf set-up.info run/SETUP.config
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  rsync -uavz ${icon_dir}/scripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi

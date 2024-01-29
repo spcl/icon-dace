@@ -1,0 +1,475 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#@ shell = /usr/bin/ksh
+#@ step_name = step_1
+#@ class = ns
+#@ notification = never
+#@ output = /perm/rd/pao/wq/prep.out.$(jobid)
+#@ error  = /perm/rd/pao/wq/prep.err.$(jobid)
+#@ queue
+
+#@ step_name = step_2
+#@ dependency = ( step_1 == 0 )
+#@ class = np
+#@ job_type = parallel
+#@ step_name = step_2
+#@ restart = no
+#@ job_name = icon
+#@ core_limit = 4096
+#@ cpu_limit = 36000,35000
+#@ job_cpu_limit = 35600,34000
+#@ user_priority = 50
+#@ node = 1
+#@ parallel_threads = 4
+#@ total_tasks      = 16
+#@ node_usage = not_shared
+#@ network.MPI = sn_all,not_shared,US,HIGH
+#@ resources = ConsumableMemory(780Mb)
+#@ output = /perm/rd/pao/wq/icon.out.$(jobid)
+#@ error  = /perm/rd/pao/wq/icon.err.$(jobid)
+#@ queue
+
+#@ step_name = step_3
+#@ dependency = ( step_2 == 0 )
+#@ class = ns
+#@ job_type = serial
+#@ node_usage = shared
+#@ resources = ConsumableMemory(781mb)
+#@ output = /perm/rd/pao/wq/save.out.$(jobid)
+#@ error  = /perm/rd/pao/wq/save.err.$(jobid)
+#@ queue
+
+#-----------------------------------------------------------------------------
+# Run ICON at ECMWF.
+# 
+# * submit: llsubmit run_ICONAM_ECMWF
+#
+# * set MPI tasks and OpenMP thread:
+#   @ parallel_threads = 1            #see above   (4 OpenMP best)
+#   @ total_tasks      = 64           #see  -"-    (16, makes one node of 64 processors)
+#   export MP_PROCS=64                #see below
+#   export OMP_NUM_THREADS=1          #see  -"-
+#
+# * best configuration: 64 MPI processes on one node (no OpenMP).
+#
+# * ConsumableMemory=50GB total (divide by MPI*OpenMP)
+#
+# * check run: prep pao (user id)
+#
+# Dominique Lucas, ECMWF 2011-10-12, multi-step load leveler
+# Martin Koehler, DWD    2011-10-13, ICON implementation
+#-----------------------------------------------------------------------------
+
+#-----------------------------------------------------------------------------
+# setup
+
+EDIR="exp03"                               # working directory
+EXPNAME="NWP"                              # experiment identifier
+
+#-----------------------------------------------------------------------------
+# global timing (optionally done from outside submitting script)
+#inidate=2011010100
+
+#start_date="2011-01-01T00:00:00Z"
+start_date=`echo $inidate | cut -c 1-4`"-"`echo $inidate | cut -c 5-6`"-"`echo $inidate | cut -c 7-8`"T"`echo $inidate | cut -c 9-10`":00:00Z"
+ndays_restart=1000            # time after which to stop model for later restart
+ndays_checkpoint=1000         # time interval to write restart files
+dt_restart=`expr ${ndays_restart} \* 86400`
+dt_checkpoint=`expr ${ndays_checkpoint} \* 86400`
+
+#-----------------------------------------------------------------------------
+# directories
+
+USER=pao
+#DATA_DIR="/perm/rd/"${USER}"/icon-data"   # /perm/rd/pao/icon-data, $TEMP/icon-data
+DATA_DIR=${TEMP}"/icon-data"
+
+# absolute path to directory with plenty of space:
+EXPDIR=${DATA_DIR}/experiments/${EDIR}/${inidate}
+mkdir -p ${DATA_DIR}/experiments/${EDIR}
+mkdir -p ${EXPDIR}
+
+#-----------------------------------------------------------------------------
+# the namelist filename
+
+atmo_namelist=NAMELIST_${EXPNAME}
+
+#-----------------------------------------------------------------------------
+# model timing
+
+dtime=360                     # time step in seconds
+ndays=10                      # number of days to run
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+#nsteps=100
+
+#-----------------------------------------------------------------------------
+# model output
+
+DT_DATA=`expr 12 \* 3600  `   # output each 12 hours
+DT_DIAG=`expr 24 \* 3600  `   # ascii diagnostic output each 24 hours
+DT_FILE=`expr 10 \* 86400 `   # 10 days per file
+#DT_DATA=`expr 6  \* 3600  ` 
+#DT_DATA=2             
+#DT_FILE=2  
+
+#-----------------------------------------------------------------------------
+# model parameters
+
+model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+nlev=90              # nlev = number of full levels
+
+#-----------------------------------------------------------------------------
+# the grid parameters
+
+atmo_dyn_grids="iconR2B04_DOM01.nc" # iconR2B07_DOM02.nc" # iconR2B08_DOM03.nc"
+atmo_rad_grids="iconR2B04_DOM01.nc"
+
+
+
+#-----------------------------------------------------------------------------
+# step 1: preparation
+#-----------------------------------------------------------------------------
+
+case $LOADL_STEP_NAME in
+
+step_1)
+
+#-----------------------------------------------------------------------------
+# create ICON master namelist
+# (For a complete list see Namelist_overview and Namelist_overview.pdf)
+
+cat > ${EXPDIR}/icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string    = "$start_date"
+ dt_restart             = $dt_restart
+/
+&master_model_nml
+ model_type             = 1
+ model_name             = "ATMO"
+ model_namelist_filename= "$atmo_namelist"
+ model_min_rank         = 1
+ model_max_rank         = 65536
+ model_inc_rank         = 1
+/
+EOF
+
+#-----------------------------------------------------------------------------
+# reconstruct the grid parameters in namelist form
+
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+dynamics_parent_grid_id="${dynamics_parent_grid_id},"
+lredgrid_phys="${lredgrid_phys},"
+lfeedback="${lfeedback},"
+
+#-----------------------------------------------------------------------------
+# write ICON namelist parameters
+
+cat > ${EXPDIR}/${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = 40        ! array blocking length (40 for IBM, 1024 for NEC)
+ p_test_run     = .false.
+ l_test_openmp  = .true.
+ l_log_checks   = .true.
+/
+&grid_nml
+ ! cell_type is not used = 3              ! triangular cells
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+!radiation_grid_filename = ${radiation_grid_filename}
+ radiation_grid_filename = ' '
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .false.
+ lfeedback               = .false.
+/
+&initicon_nml
+  init_mode   = 2           ! initialization mode
+  nlev_in     = 91          ! number of levels of input data
+  zpbl1       = 500.        ! stable BL shifting when interpolated
+  zpbl2       = 1000.       ! -"-
+/
+&nh_testcase_nml
+/
+&io_nml
+ dt_diag           = ${DT_DIAG}
+ dt_checkpoint     = ${dt_checkpoint}
+/
+&lonlat_intp_nml
+ llonlat_enabled    = .TRUE.
+ lsupersede         = .TRUE.      ! .TRUE. no output on ICON grid
+ lonlat_var_list    = 'all'       ! 'all' or 'Q1,Q2'
+ lat_delta          = 2.0
+ lon_delta          = 2.0
+ lon_corner1        = 0.0
+ lon_corner2        = 358.0
+/
+&run_nml
+ num_lev     = ${nlev},     ! number of full levels of vertical grid
+ nsteps      = ${nsteps}    ! number of time steps
+ dtime       = ${dtime}     ! timestep in seconds
+ ldynamics   = .TRUE.       ! dynamics
+ ltransport  = .TRUE.       ! tracer transport
+ ntracer     = 6            ! 5 plus 1 for ozone
+ iforcing    = 3            ! 3 NWP forcing
+ ltestcase   = .FALSE.      ! true: run testcase, false: run with real data
+ msg_level   = 11           ! detailed report during integration (11: little, 15: a lot)
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1        ! 1: RRTM, 2: Ritter-Geleyn
+ inwp_cldcover   = 1        ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale,
+ inwp_turb       = 1        ! 1: Raschendorfer
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1        ! 1: non-orographic gravity wave drag as in Bechtold, 2010
+ inwp_surface    = 1
+ dt_conv         = 900
+ dt_sso          = 900
+ dt_gwd          = 900
+ dt_rad          = 3600
+/
+&lnd_nml
+ntiles           = 1
+/
+&radiation_nml
+ irad_o3         = 7        ! 0: no ozone, 3: aqua-planet ozone??, 6: prescribed simple ozone, 7: GEMS ozone as IFS
+ irad_aero       = 6        ! 6: Tegen areosol climatology, 5: some older climatology?
+ izenith         = 4        ! 4: NWP default, 3: no annual cycle
+ dt_rad          = 3600
+/
+&nonhydrostatic_nml
+ iadv_rhotheta   = 2
+ ivctype         = 2        ! set vertical grid automatically using sleve_ctl
+ itime_scheme    = 4        ! default 4; 5: modified Matsuno for better numerical stability of sound waves
+ exner_expol     = 0.666    ! exner function extrapolation?
+!vwind_offctr    = 0.50     ! off-centering for time differencing (like alpha in turb)
+!damp_height     = 35000.   ! damping height vertical wind (set about 10km below top, 10 levels)
+ damp_height     = 50000.   ! damping height vertical wind (set about 10km below top, 10 levels)
+ rayleigh_coeff  = 0.05     ! Rayleigh coefficient for damping in upper levels
+ igradp_method   = 3        ! new default
+ htop_moist_proc = 30000.   ! height above which moist physics and cld/precip advection off
+/
+&sleve_nml                  ! vertical grid standard output for message level >= 15
+ min_lay_thckn   = 20.      ! lowest level thickness (between half-levels)
+!flat_height     = 20000.
+ top_height      = 60000.   ! model top (half level)
+ stretch_fac     = 0.6      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+!top_height      = 65000.   ! model top (half level)
+!stretch_fac     = 0.65     ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+!top_height      = 70000.   ! model top (half level)
+!stretch_fac     = 0.7      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+ decay_scale_1   = 4000.    ! decay scales for topography
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+/
+&dynamics_nml
+ iequations     = 3
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+ ivadv_tracer  = 3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4,0
+ ihadv_tracer  = 3,3,3,3,2,0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 10.0
+ hdiff_smag_fac   = 0.15
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+ hdiff_multfac    = 1.0
+ hdiff_tv_ratio   = 1.0
+/
+&interpol_nml
+nudge_zone_width  = 8
+/
+&gridref_nml
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo              = 1     ! 0 for aqua-planet, 1 for realistic topography   
+ n_iter_smooth_topo = 3
+ heightdiff_threshold = 1800.
+/
+EOF
+
+
+;;
+
+
+
+#-----------------------------------------------------------------------------
+# step 2: run ICON on IBM
+#-----------------------------------------------------------------------------
+
+step_2)
+set -ex
+
+#-----------------------------------------------------------------------------
+# set number of threads for OpenMP parallelization
+#     and other OpenMP environment variables
+
+export MPL_MBX_SIZE=200000
+export MP_WAIT_MODE=poll
+export MP_LABELIO=yes
+export MP_SHARED_MEMORY=yes
+export MP_ADAPTER_USE=shared
+export MP_PROCS=16
+export OMP_NUM_THREADS=4
+export XLSMPOPTS="parthds=$OMP_NUM_THREADS:stack=358400000"
+export XLFRTEOPTS=buffering=disable_all:err_recovery=no
+
+export ICON_THREADS=$OMP_NUM_THREADS
+export OMP_STACKSIZE=400M
+export OMP_SCHEDULE="static"
+export OMP_DYNAMIC="false"
+export NC_BLOCKSIZE=128mb
+
+#-----------------------------------------------------------------------------
+# determine architecture
+
+arch=powerpc-ibm-aix5.3.0.0
+
+#-----------------------------------------------------------------------------
+# determine base directory (../icon-dev)
+
+dir=$(pwd -P)
+WORK_DIR=${dir%/*}
+
+#-----------------------------------------------------------------------------
+# absolute path to model binary, including the executable
+
+MODEL=${WORK_DIR}/build/${arch}/bin/control_model
+
+#-----------------------------------------------------------------------------
+# horizontal grid file
+
+data_input="/perm/rd/pao/icon-data/input"
+ln -sf ${data_input}/iconR2B04_grid.nc                 ${EXPDIR}/iconR2B04_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# external parameters
+
+ln -sf ${data_input}/extpar_R2B04_DOM01.nc             ${EXPDIR}/extpar_iconR2B04_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# ifs2icon initial conditions
+
+ln -sf ${data_input}/ifs2icon_R2B04_${inidate}.nc      ${EXPDIR}/ifs2icon_R2B04_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# radiation input files
+
+ln -sf ${data_input}/ECHAM6_CldOptProps.nc             ${EXPDIR}
+ln -sf ${data_input}/rrtmg_lw.nc                       ${EXPDIR}
+
+#-----------------------------------------------------------------------------
+# Aqua Planet Ozone (irad_o3=4)
+
+ln -sf ${data_input}/ape_o3_R2B04_1Pa_spr0.90-cell.nc  ${EXPDIR}/o3_icon_DOM01.nc
+
+#-----------------------------------------------------------------------------
+# start experiment
+
+cd ${EXPDIR}
+cp -p ${MODEL} ./icon.exe
+./icon.exe
+
+#-----------------------------------------------------------------------------
+# check return code
+
+rc=${?}
+if [[ ":${rc}" != ':0' && ":${rc}" != ':' ]] ; then
+  print "QSUBW_ERROR: JOB_%HOSTNAME%_%PID%: RC = ${rc}"
+fi
+
+;;
+
+
+
+#-----------------------------------------------------------------------------
+# step 3: process and save data
+#-----------------------------------------------------------------------------
+
+step_3)
+set -ex
+
+#-----------------------------------------------------------------------------
+# add date to file name
+
+cd ${EXPDIR}
+outfile1=${EXPNAME}_iconR2B04_DOM01_0001.nc
+outfile2=${EXPNAME}_iconR2B04_DOM01_${inidate}_0001.nc
+mv $outfile1 $outfile2
+
+#-----------------------------------------------------------------------------
+# save netcdf data to ecfs
+
+emkdir ec:/${USER}/icon-exp/${EDIR}
+ecp -o $outfile2 ec:/${USER}/icon-exp/${EDIR}
+
+#-----------------------------------------------------------------------------
+# grib conversion on HPC and copy data to scratch
+
+cp /perm/rd/pao/icon-post/icon2grib.s .
+./icon2grib.s ${inidate} ${EDIR}
+ssh lxab mkdir -p /scratch/rd/${USER}/icon/experiments/${EDIR}
+ecrcp grb_data/${EXPNAME}_iconR2B04_DOM01_${inidate}_0001*.grb \
+             lxab:/scratch/rd/${USER}/icon/experiments/${EDIR}
+
+#-----------------------------------------------------------------------------
+# metview on my workstation
+# - wait until all runs are finished
+
+touch    ${DATA_DIR}/experiments/${EDIR}/${inidate}.done
+if [[ -f ${DATA_DIR}/experiments/${EDIR}/2011010100.done && \
+      -f ${DATA_DIR}/experiments/${EDIR}/2011010200.done && \
+      -f ${DATA_DIR}/experiments/${EDIR}/2011010300.done && \
+      -f ${DATA_DIR}/experiments/${EDIR}/2011010400.done && \
+      -f ${DATA_DIR}/experiments/${EDIR}/2011010500.done && \
+      -f ${DATA_DIR}/experiments/${EDIR}/2011010600.done ]] ; then
+  EXPNUM=`echo ${EDIR} | cut -c 4-5`
+  qsub=/usr/local/apps/sge/sge6_2u5/bin/lx24-amd64/qsub
+  dirmet=/home/rd/pao/metview/ICON
+  dirout=/scratch/rd/pao/wq
+  ssh lxab ${qsub} -o ${dirout}/plot.out.20110102 ${dirmet}/icon.metview.s ${EXPNUM} 20110102
+  ssh lxab ${qsub} -o ${dirout}/plot.out.20110103 ${dirmet}/icon.metview.s ${EXPNUM} 20110103
+  ssh lxab ${qsub} -o ${dirout}/plot.out.20110106 ${dirmet}/icon.metview.s ${EXPNUM} 20110106
+  ssh lxab ${qsub} -o ${dirout}/plot.out.20110101 ${dirmet}/icon.metview.s ${EXPNUM} 20110101
+ #ssh lxab /home/rd/pao/metview/ICON/many.error.s 20110101 00 20110102 00 ${EXPNUM}
+fi
+;;
+
+
+esac
+
+#-----------------------------------------------------------------------------
+
+exit 0

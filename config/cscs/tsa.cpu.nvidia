@@ -1,0 +1,126 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+#MODULES='PrgEnv-pgi/20.4-nocuda netcdf netcdf-fortran'
+#TODO: temp fix until nocuda is fixed (not compatible with netcdf)
+MODULES='PrgEnv-pgi/20.4 netcdf netcdf-fortran'
+
+# Requirements
+if [ -z "${XML2_ROOT+x}" ]; then
+    echo "Warning: XML2_ROOT is not set"
+    XML2_ROOT=''
+    XML2_LIBS=''
+else
+    XML2_LIBS='-lxml2'
+fi
+if [ -z "${SERIALBOX2_ROOT+x}" ]; then
+    echo "Warning: SERIALBOX2_ROOT is not set, please use spack or set manually, if you intend to use serialization"
+    SERIALBOX2_ROOT=''
+    SERIALBOX2_LIBS=''
+    SERIALBOXI=''
+    SB2PP=''
+else
+    SERIALBOX2_LIBS='-lSerialboxFortran -lSerialboxC -lSerialboxCore'
+    SERIALBOXI="-I${SERIALBOX2_ROOT}/include"
+    SB2PP="python2 ${SERIALBOX2_ROOT}/python/pp_ser/pp_ser.py"
+fi
+if [ -z "${ECCODES_ROOT+x}" ]; then
+    echo "Warning: ECCODES_ROOT is not set, please use spack or set manually if you intend to use ECCODES"
+    ECCODES_ROOT=''
+    ECCODES_LIBS=''
+    ECCODESI=''
+else
+    ECCODES_LIBS='-leccodes'
+    ECCODESI="-I${ECCODES_ROOT}/include"
+fi
+
+# Mandatory LIBS
+BLAS_LAPACK_LIBS='-llapack -lblas'
+NETCDF_LIBS='-lnetcdf -lnetcdff'
+# The rest of libraries required by CUDA will be provided by PGI compiler:
+STDCPP_LIBS='-lstdc++fs -lstdc++'
+
+################################################################################
+
+BUILD_ENV=". \"${SCRIPT_DIR}/module_switcher\"; switch_for_module ${MODULES}; export LD_LIBRARY_PATH=\"${XML2_ROOT}/lib:}\${LD_LIBRARY_PATH}\";"
+
+# We need some of the environment variables set by the modules now:
+eval "$BUILD_ENV"
+
+NETCDFFI="-I${EBROOTNETCDFMINFORTRAN}/include"
+
+CC='mpicc'
+CFLAGS='-g -O2 -DNO_RTTOV'
+CPPFLAGS="-I${XML2_ROOT}/include/libxml2 -I${EBROOTNETCDF}/include"
+
+FC='mpif90'
+FCFLAGS="-g -O0 -Mrecursive -Mallocatable=03 -tp=haswell ${SERIALBOXI} ${ECCODESI} ${NETCDFFI}  -D__SWAPDIM -DNO_RTTOV"
+
+LDFLAGS="-L${SERIALBOX2_ROOT}/lib -L${ECCODES_ROOT}/lib64 -L${XML2_ROOT}/lib -L${EBROOTNETCDF}/lib64 -L${EBROOTNETCDFMINFORTRAN}/lib"
+
+# ICON executable will be linked to /opt/cray/pe/lib64/libmpichf90_pgi.so.3,
+# which depends on libomptarget.so but doesn't have an RPATH to it. For this
+# reason, it becomes impossible to run the executable without setting
+# LD_LIBRARY_PATH in advance (e.g. by loading an environment module). To solve
+# this issue, we overlink to libomptarget.so so that it can be found through
+# RPATH entries of the executable, which are injected by the compiler.
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${BLAS_LAPACK_LIBS} ${SERIALBOX2_LIBS} ${ECCODES_LIBS}  ${STDCPP_LIBS} ${NETCDF_LIBS}"
+
+#MPI_LAUNCH='/apps/daint/UES/xalt/production/bin/srun -p debug -C gpu'
+MPI_LAUNCH=false
+
+EXTRA_CONFIG_ARGS='--enable-rte-rrtmgp --enable-ecrad'
+
+# Speed up the configuration by disabling MPI checks:
+EXTRA_CONFIG_ARGS+=' --disable-coupling'
+
+#TODO
+EXTRA_CONFIG_ARGS+=' --disable-openmp'
+
+################################################################################
+"${ICON_DIR}/configure" \
+BUILD_ENV="$BUILD_ENV" \
+CC="$CC" \
+CFLAGS="$CFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
+FC="$FC" \
+FCFLAGS="$FCFLAGS" \
+LDFLAGS="$LDFLAGS" \
+LIBS="$LIBS" \
+MPI_LAUNCH="$MPI_LAUNCH" \
+SB2PP="$SB2PP" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${ICON_DIR}/run/standard_*
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi

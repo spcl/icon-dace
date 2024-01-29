@@ -1,0 +1,52 @@
+#! /usr/bin/env python3
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -*- coding: utf-8 -*-
+#==============================================================================
+# create an experiment list
+#==============================================================================
+from buildbot_config import BuildbotConfig
+from icon_paths import buildbot_list_path
+from util import WhitespaceSeperatedFiles, WhitespaceSeperatedList, WhitespaceSeperatedDict
+
+from pathlib import Path
+import click
+import sys
+
+@click.command()
+@click.option("--from-builder", type=str, help="the builder that contains the dependent experiment")
+@click.option("--from-experiment", type=WhitespaceSeperatedFiles(), help="the dependent experiment", required=True)
+@click.option("--to-builder", type=str, help="the builder that contains the dependee experiment")
+@click.option("--to-experiment", type=WhitespaceSeperatedFiles(), help="the dependee experiment", required=True)
+@click.option("--builders", type=WhitespaceSeperatedList(), help="names of the builders to add")
+@click.option("--with-configureflags", type=WhitespaceSeperatedDict(), help="only use builders with these configure options")
+@click.option("--without-configureflags", type=WhitespaceSeperatedDict(), help="discard bulders with these configure options")
+@click.option("--machines", type=WhitespaceSeperatedList(), help="the machine name to add the builder")
+@click.option("--list", "list_name", type=str, help="the buildbot configuration list", required=True)
+def adddep(from_builder, from_experiment, to_builder, to_experiment, builders, with_configureflags, without_configureflags, machines, list_name):
+
+    full_list_name = buildbot_list_path / list_name
+
+    if Path(full_list_name).exists():
+      thisList = BuildbotConfig.from_pickle(full_list_name)
+    else:
+      print("did not find experiment list {}".format(full_list_name))
+      sys.exit(1)
+
+    thisList.add_dependency_manager(from_experiment, to_experiment, from_builder, to_builder, builders, machines, with_configureflags, without_configureflags)
+
+    thisList.to_pickle(full_list_name)
+
+if __name__ == "__main__":
+    adddep()
+
+
