@@ -1,0 +1,24 @@
+&timeControl
+
+  calendar = 'proleptic Gregorian'	
+
+  experimentReferenceDate = '200-01-01T00:00:00'		
+  experimentStartDate = '2000-01-01T00:00:00'		
+  experimentEndDate = '2000-01-05T00:00:00'		
+
+  modelTimeStep = 'PT6M'
+
+  advectionTimeInterval = 'R/PT12M'
+
+  radiationTimeInterval = 'R/PT1H'
+
+  convectionTimeInterval = 'R/PT12M'
+  cloudTimeInterval = 'R/PT12M'
+  ssoTimeInterval = 'R/PT12M'
+  gwdragTimeInterval = 'R/PT12M'
+
+  checkpointTimeInterval = 'R/P1D'
+  restartTimeInterval = 'R/P5D'
+
+  couplingTimeInterval = 'R/PT2H'
+/

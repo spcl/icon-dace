@@ -1,0 +1,218 @@
+/**
+ * \page yinstance_example Example on how to use YAC instances
+
+\tableofcontents
+
+\section yinstance_example_intro Introduction to exemplary coupled model setup
+
+The following picture shows an exemplary coupled model setup. It consists of
+two main components (Atmosphere and Ocean) and a number of other processes not
+involved in any coupling (for example I/O-Server).
+
+The Atmosphere itself is comprised of two subcomponents: **compute**
+(simulating the atmosphere), **rad** (simulating radiation), and **out**
+(doing output). The components **compute** and **rad** communicate through other
+means than YAC (for example [yaxt](https://dkrz-sw.gitlab-pages.dkrz.de/yaxt/)).
+Via the **out** component data from **compute** are written to the file system.
+Since in this setup the communication between **compute** and **out** is
+handled by YAC, **out** can use a different grid than **compute** and/or only a
+subsection of the area covered by **compute**.
+
+The setup of the Ocean component is similar to Atmosphere. But all its
+processes are either **compute** or **out**.
+
+In addition to the communication within the main components, the
+Atmosphere **compute** and the Ocean **compute** have a bidirectional exchange
+between themselves through YAC.
+
+\image html YAC_instance_example.png
+
+\section yinstance_example_single Implementing setup using default YAC instance
+
+A straight forward approach to implement this coupled model setup is to only
+use the default YAC instance. All processes would initialise YAC with:
+
+\code
+
+char * yaml_filename = "coupling.yaml";
+
+yac_cinit ( );
+yac_cread_config_yaml ( yaml_filename );
+
+\endcode
+
+This would initialise the default YAC instance. The
+\ref yaml_file "configuration file" (*coupling.yaml*) would have to contain
+the information for all couplings described above.
+
+Afterwards all processes would have to register their components.
+For a **ATM_compute** process this could be done like this:
+
+\code
+
+char const * comp_names[2] = {"ATM_all", "ATM_compute"};
+int num_comps = 2;
+int comp_ids[2];
+
+yac_cdef_comps ( &(comp_names[0]), num_comps, comp_ids );
+
+\endcode
+
+This would be followed by the definition of the respective grids, points,
+masks, and fields. The call to \ref yac_cenddef would finalise the definition
+phase.
+
+\subsection yinstance_example_other_single How to handle the "OTHER" processes
+
+\ref yac_cinit, \ref yac_cdef_comps, and \ref yac_cenddef are collective
+for all processes in the yac instance. Therefore we want to exclude "OTHER" processes
+from the yac instance.
+The default initialization (that does not take a communicator as argument) executes an
+MPI Handshake to split non-participating processes from the communicator.
+YAC provides an implementation of the MPI Handshake that needs to be called.
+This enables the "OTHER" processes also to create their communicator.
+
+\code
+char const * other_groupname = "other";
+MPI_Comm other_comm;
+yac_cmpi_handshake(MPI_COMM_WORLD, 1, &other_groupname, &other_comm);
+\endcode
+
+\subsubsection yinstance_example_other_single_dummy Dummy initialisation
+
+Alternatively, the call to \ref yac_cinit could be replaced with
+\ref yac_cinit_dummy on the **OTHER** processes. This would exclude
+them from all other collective calls except for the \ref yac_cfinalize at the
+end of the run.
+
+\subsubsection yinstance_example_other_single_comm User provided communicator
+
+In case a MPI communicator that only contains the Atmosphere and Ocean
+processes is available before YAC is initialised (e.g. by some other MPI Handshake),
+\ref yac_cinit could be replaced with \ref yac_cinit_comm on these processes.
+The **OTHER** processes would not have to initialise YAC or call any other YAC routines.
+
+\code
+
+MPI_Comm atm_ocn_comm;
+
+[...]
+
+char * yaml_filename = "coupling.yaml";
+
+yac_cinit_comm ( atm_ocn_comm );
+yac_cread_config_yaml ( yaml_filename );
+
+\endcode
+
+\section yinstance_example_multi Implementing setup using multiple YAC instances
+
+Instead of using only the default YAC instance, it is possible to implement the
+same coupled model setup using multiple instances.
+
+\subsection yinstance_example_multi_inter_model Inter-Model coupling
+
+At first, the coupling between the main components is established using the
+default YAC instance. In the models this can be done the same way as described
+in \ref yinstance_example_single. However, the **out** and **rad** would only
+have to register their respective main component.
+
+The \ref yaml_file "configuration file" would only have to contain the
+description of coupling between the Atmosphere and Ocean component, which makes
+it much cleaner and easier to handle.
+
+\subsection yinstance_example_multi_intra_model Intra-Model coupling
+
+To implement the coupling between the **compute** and **out** subcomponents, a
+MPI communicator that only contains the processes of the respective main
+components is required. It can be generated through the use of
+\ref yac_cget_comp_comm (see \ref yinstance_example_comms).
+
+Using this communicator an additional YAC instance can be instantiated with the
+following call (in this case for the Atmosphere component):
+
+\code
+
+MPI_Comm atm_all_comm;
+
+[...]
+
+int atm_instance_id;
+
+char * yaml_filename = "coupling_atm.yaml";
+
+yac_cinit_comm_instance ( atm_all_comm, &atm_instance_id );
+yac_cread_config_yaml_instance ( atm_instance_id, yaml_filename );
+
+\endcode
+
+Within the configuration file (*coupling_atm.yaml*) for the intra-model
+coupling, only the coupling between **compute** and **out** has to be defined.
+This makes the three configuration files for this setup
+(*coupling.yaml*, *coupling_atm.yaml*, and *coupling_ocn.yaml*) independent of
+each other. This can result in cleaner configuration files. In addition,
+adding new YAC instances would not effect any of the already existing ones
+and their configuration files.
+
+Components for a specific YAC instance are registered via
+\ref yac_cdef_comp_instance or \ref yac_cdef_comps_instance. Since the YAC
+instance for the intra-model communication in the use case described here
+only contains processes of a single main component, it is sufficient to
+register the subcomponents.
+
+\code
+
+char * comp_name = "ATM_compute";
+int comp_atm_compute_id;
+
+yac_cdef_comp_instance (
+  atm_instance_id, comp_name, &comp_atm_compute_id );
+
+\endcode
+
+\subsection yinstance_example_multi_dummy Handling of uninvolved processes
+
+Processes not involved in any coupling (for example **rad**) can be handled the
+same way as described in \ref yinstance_example_other_single.
+
+\section yinstance_example_comms Generating communicators
+
+Using the YAC interfaces \ref yac_cget_comp_comm and
+\ref yac_cget_comps_comm "yac_cget_comps_comm"(\ref yac_cget_comps_comm_instance "_instance"),
+it is possible to generate various MPI communicators.
+
+In case a communicator that contains all processes of a registered component
+is needed, you can use \ref yac_cget_comp_comm. This call is collective for
+all processes that registered the respective component.
+
+\code
+
+int comp_atm_all_id;
+
+[...]
+
+MPI_Comm atm_all_comm;
+
+yac_cget_comp_comm( comp_atm_all_id, &atm_all_comm );
+
+\endcode
+
+It is also possible to generate a communicator that contains all processes
+that registered at least one component registered in the same
+YAC instance. The respective call for the default YAC instance is
+\ref yac_cget_comps_comm and \ref yac_cget_comps_comm_instance for any
+other YAC instance.
+
+\code
+
+MPI_Comm atm_compute_rad_comm;
+
+
+char const * comp_names[2] = {"ATM_compute", "ATM_rad"};
+
+yac_cget_comps_comm_instance (
+  atm_instance_id, &atm_compute_rad_comm, comp_names, 2 );
+
+\endcode
+
+ */

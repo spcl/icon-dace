@@ -1,0 +1,85 @@
+# Parameter table
+#
+# TABLE_ID=002
+# TABLE_MODEL=COSMO
+# TABLE_INSTITUT=MCH
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+   1 | P | pressure | Pa  |
+   2 | PMSL | mean sea level pressure | Pa  |
+   3 | DPSDT | surface pressure change | Pa s-1  |
+   6 | FI | geopotential | m2 s-2  |
+   8 | HH | height | m  |
+  10 | TO3 | vertical integrated ozone content | Dobson  |
+  11 | T | temperature | K  |
+  15 | TMAX | 2m maximum temperature | K  |
+  16 | TMIN | 2m minimum temperature | K  |
+  17 | TD | 2m dew point temperature | K  |
+  31 | DD | undefined | undefined  |
+  32 | FF | undefined | undefined  |
+  33 | U | U-component of wind | m s-1  |
+  34 | V | V-component of wind | m s-1  |
+  39 | OMEGA | omega | Pa s-1  |
+  40 | W | vertical wind velocity | m s-1  |
+  51 | QV | specific humidity | kg kg-1  |
+  52 | RELHUM | relative humidity | %  |
+  54 | TQV | precipitable water | kg m-2  |
+  57 | AEVAP | surface evaporation | kg m-2  |
+  58 | TQI | vertical integrated cloud ice | kg m-2  |
+  59 | TOT_PR | total precipitation rate | kg m-2 s-1  |
+  61 | TOT_PREC | total precipitation amount | kg m-2  |
+  65 | W_SNOW | surface snow amount | m  |
+ 66 | H_SNOW | thickness of snow | m  |
+ 71 | CLCT | total cloud cover | 1  |
+ 72 | CLC_CON | convective cloud area fraction | 1  |
+ 73 | CLCL | low cloud cover | 1  |
+ 74 | CLCM | medium cloud cover | 1  |
+ 75 | CLCH | high cloud cover | 1  |
+ 76 | TQC | vertical integrated cloud water | kg m-2  |
+ 78 | SNOW_CON | convective snowfall | kg m-2  |
+ 79 | SNOW_GSP | large scale snowfall | kg m-2  |
+ 81 | FR_LAND | land-sea fraction | 1  |
+ 83 | Z0 | surface roughness length | m  |
+ 84 | ALB_RAD | surface albedo | 1  |
+ 85 | TSOIL | soil surface temperature | K  |
+ 86 | WSOIL | water content of 1. soil layer | m  |
+ 87 | PLCOV | vegetation area fraction | 1  |
+ 90 | RUNOFF | subsurface runoff | kg m-2  |
+ 91 | FR_ICE | sea ice area fraction | 1  |
+ 92 | H_ICE | sea ice thickness | m  |
+ 111 | ASOB | averaged surface net downward shortwave radiation | W m-2  |
+ 112 | ATHB | averaged surface net downward longwave radiation | W m-2  |
+ 113 | ASOB | averaged TOA net downward shortwave radiation | W m-2  |
+ 114 | ATHB | averaged TOA outgoing longwave radiation | W m-2  |
+ 115 | ASWDIR | direct downward sw radiation at the surface | W m-2  |
+ 116 | ASWDIFD | diffuse downward sw radiation at the surface | W m-2  |
+ 117 | ASWDIFU | diffuse upwnward sw radiation at the surface | W m-2  |
+ 118 | ALWD | downward lw radiation at the surface | W m-2  |
+ 119 | ALWU | upward lw radiation at the surface | W m-2  |
+ 121 | ALHFL | averaged surface latent heat flux | W m-2  |
+ 122 | ASHFL | averaged surface sensible heat flux | W m-2  |
+ 124 | AUMFL | averaged eastward stress | Pa  |
+ 125 | AVMFL | averaged northward stress | Pa  |
+ 128 | SUNSH | undefined | undefined  |
+ 129 | SUNSH2 | undefined | undefined  |
+ 130 | SUN_SUM | undefined | undefined  |
+ 131 | SUN_SUM2 | undefined | undefined  |
+ 133 | FCOR | undefined | undefined  |
+ 134 | SKYVIEW | sky-view factor | 1  |
+ 137 | SWDIR_COR | topo correction of direct solar radiarion | 1  |

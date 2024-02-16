@@ -1,0 +1,7 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+@TEST_PTHREAD_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 2 ./test_multithreading.x
+

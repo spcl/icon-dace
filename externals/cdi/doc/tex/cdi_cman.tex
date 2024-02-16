@@ -1,0 +1,255 @@
+\documentclass[DIV16,BCOR1cm,11pt,a4paper,fleqn,twoside]{scrreprt}         % for pdf output
+%\documentclass[DIV16,BCOR1cm,11pt,a4paper,fleqn]{report}         % for pdf output
+
+% To allow automatic selection of the right graphics type ...
+% preset \pdfoutput for older latex installation, it is allways defined for
+% news ones
+\ifx\pdfoutput\undefined
+\gdef\pdfoutput{0}
+\fi
+
+\newif\ifpdfx
+\ifnum\pdfoutput=0
+% latex is called for dvi output
+   \pdfxfalse
+   \usepackage{graphics}
+   \usepackage{hyperref}
+\else
+% pdflatex is called for pdf output
+   \pdfxtrue
+   \usepackage[pdftex]{graphicx}
+   \usepackage[pdftex]{hyperref}
+\fi
+
+\setlength{\parindent}{0pt}
+\usepackage{graphics}
+
+\newcommand{\CDI}{\bfseries\sffamily CDI}
+
+% To define headers and footers
+\usepackage{fancyhdr}
+\pagestyle{fancy}
+
+% Headers and footers personalization using the `fancyhdr' package
+\fancyhf{} % Clear all fields
+
+\renewcommand{\headrulewidth}{0.2mm}
+\renewcommand{\footrulewidth}{0.2mm}
+
+\renewcommand{\chaptermark}[1]{\markboth{#1}{}}
+%\renewcommand{\sectionmark}[1]{\markright{#1}}
+
+\fancyhead[LO,RE]{\slshape \leftmark}
+%\fancyhead[LE,RO]{\slshape \rightmark}
+\fancyfoot[LE,RO]{\Large\thepage}
+\fancypagestyle{plain}{%
+  \fancyhead{} % get rid of headers
+  \renewcommand{\headrulewidth}{0pt}
+}
+
+\usepackage{html}
+\usepackage{exscale}
+\usepackage{array,colortbl}    % color table
+
+\usepackage{listings}
+%\lstloadlanguages{[ANSI]C,[77]Fortran}
+\usepackage{color}
+\definecolor{pyellow}{rgb}{1, 0.98, 0.86}
+
+%\usepackage{ae}               % fuer die "almost european" computer modern fonts
+%\usepackage{url}              % Standard-Paket fuer WWW-Adressen
+
+%\typearea{10}                 % Einen sinnvollen Satzspiegel aktivieren
+
+%\documentclass[DIV16,BCOR1cm,12pt,a4paper,fleqn]{scrreprt}         % for pdf output
+%\documentclass[DIV16,BCOR1cm,11pt,a4paper,twoside]{scrreprt}  % for ps output
+%\documentclass[a4paper,DIV14,BCOR1cm]{scrartcl}
+
+%Usage:
+%latex2html -local_icons -split 4 -toc_depth 3 -white cdi.tex
+%dvips -o cdi.ps cdi.dvi
+%dvips ps+pdf
+%dvipdf
+%pdflatex
+
+\usepackage{thumbpdf}
+
+%\usepackage{html}
+
+\usepackage{makeidx}
+
+%\ifpdf
+%\usepackage[a4paper, colorlinks=true, pdfstartview=FitV, bookmarks=true, linkcolor=blue,
+%            citecolor=blue, urlcolor=blue, latex2html=true]{hyperref}
+%\fi
+
+\usepackage{hyperref}
+\hypersetup{pdftoolbar=true,
+            pdfmenubar=true,
+            pdfwindowui=true,   
+%            pdffitwindow=true,
+            pdfauthor={Uwe Schulzweida},
+            pdftitle={CDI C Manual},
+            pdfcreator={pdflatex + hyperref},
+            pdfstartview=FitV,
+%            pdfpagemode=FullScreen,
+            a4paper,
+            bookmarks=true,
+            linkcolor=blue,
+            citecolor=blue,
+            urlcolor=blue,
+            colorlinks=true}
+
+\makeindex
+%\newcommand{\ii}[1]{\textit{#1}}  \newcommand{\nn}[1]{#1n}
+%\renewcommand{\dotfill}{\leaders\hbox to 5p1{\hss.\hss}\hfill}
+%\newcommand{\idxdotfill}{5p1{\hss.\hss}\hfill}
+\newcommand{\idxdotfill}{\ \dotfill \ }
+%\def\idxdotfill{\leaders\hbox to.6em{\hss .\hss}\hskip 0pt plus 1fill}
+%\MakeShortVerb{\@}
+
+\renewcommand{\indexname}{Function index}
+
+
+\newcommand{\deflabel}[1]{\bfseries #1\hfill}
+\newenvironment{deflist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{\bfseries #1}
+\setlength{\parsep}{0mm}
+\setlength{\itemsep}{1mm}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\deflabel}}}
+{\end{list}}
+
+
+\begin{document}
+
+\begin{titlepage}
+\vspace*{50mm}
+{\Huge{\CDI} \ \bfseries C Manual}
+
+\setlength{\unitlength}{1cm}
+\begin{picture}(16,0.4)
+\linethickness{1.5mm}
+\put(0,0.1){\line(1,0){16.3}}
+\end{picture}
+
+\begin{flushright}
+{\large\bfseries Climate Data Interface \\ Version 2.2.0 \\ March 2023}
+\end{flushright}
+
+\vfill
+
+{\Large\bfseries Uwe Schulzweida}
+
+{\Large\bfseries Max-Planck-Institute for Meteorology}
+
+\begin{picture}(16,1)
+\linethickness{1.0mm}
+\put(0,0.7){\line(1,0){16.3}}
+\end{picture}
+\end{titlepage}
+
+
+\tableofcontents
+
+
+\chapter{Introduction}
+\input{intro}
+
+
+\chapter{File Formats}
+\input{formats}
+
+
+\chapter{Use of the CDI Library}
+\input{usage}
+\input{c_link}
+
+
+\chapter{CDI modules}
+\input{modules}
+
+%\newpage
+\section{Dataset functions}
+\input{dataset}
+\input{c_stream}
+\input{c_stream_write}
+\input{c_stream_read}
+
+
+\newpage
+\section{Variable list functions}
+\input{vlist}
+\input{c_vlist}
+
+
+\newpage
+\section{Variable functions}
+\input{variable}
+\input{c_vlist_var}
+
+
+\newpage
+\section{Key attributes}
+\input{keys}
+\input{c_cdi_key}
+
+
+\newpage
+\section{User attributes}
+\input{attribute}
+\input{c_cdi_att}
+
+
+\newpage
+\section{Grid functions}
+\input{grid}
+\input{c_grid}
+
+
+\newpage
+\section{Z-axis functions}
+\input{zaxis}
+\input{c_zaxis}
+
+
+\newpage
+\section{T-axis functions}
+\input{taxis}
+\input{c_taxis}
+
+
+%\chapter{Institute}
+
+%\chapter{Model}
+
+\input{bib}
+
+
+\appendix
+
+
+\chapter{Quick Reference}
+%\chapter{Quick Reference\markboth{Quick Reference}{}}
+%\addcontentsline{toc}{chapter}{Quick Reference}
+
+This appendix provide a brief listing of the C language bindings of the {\CDI} library routines:
+
+\input{c_ref}
+
+\input{c_examples}
+
+\input{environment}
+
+
+\clearpage
+\ifpdfx
+\phantomsection
+\fi
+\addcontentsline{toc}{chapter}{\indexname}
+
+\printindex
+
+\end{document}

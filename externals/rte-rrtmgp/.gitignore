@@ -1,0 +1,85 @@
+# Autoreconf stage files:
+/autom4te.cache
+
+# Configure stage files:
+*.F90.d
+*.pyc
+*.pyo
+.dirstamp
+/Makefile
+/config.cache
+/config.log
+/config.status
+/examples/**/*.test
+/tests/**/*.test
+__pycache__
+
+# Build stage files:
+*.a
+*.o
+/examples/all-sky/rrtmgp_allsky
+/examples/rfmip-clear-sky/rrtmgp_rfmip_lw
+/examples/rfmip-clear-sky/rrtmgp_rfmip_sw
+/mod/*
+
+# Test stage files:
+/.testcache/*
+/examples/**/*.test.log
+/examples/all-sky/rrtmgp-allsky.nc
+/examples/rfmip-clear-sky/*.nc
+/examples/rfmip-clear-sky/timing.*
+/tests/**/*.test.log
+/tests/clear_sky_regression
+/tests/test_atmospheres.nc
+/tests/test_zenith_angle_spherical_correction
+/tests/validation-figures.pdf
+
+# Dist stage files:
+/rte+rrtmgp-*.tar*
+
+# MacOS files:
+*.dSYM
+.DS_Store
+
+# Original .gitignore:
+
+# Module files
+*.mod
+
+# Libraries
+*.a
+
+# Object files
+*.o
+
+# Dependency files
+*.d
+
+# Fortran module files
+*.mod
+*.mod.proxy
+
+# Intel vectorization reports
+*.optrpt
+
+# Netcdf file during testing
+examples/*/*.nc
+examples/*/*/*.nc
+
+# Jupyter notebooks
+.ipynb_checkpoints
+
+# Intel code coverage
+*.dyn
+*.dpi
+*.spi
+*.spl
+*.HTML
+*.html
+*.gif
+
+# gh-pages directory
+public
+
+# Ruby stuff
+**/Gemfile.lock

@@ -1,0 +1,6 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 4 ./test_interpolation_parallel1.x tgt && \
+@MPI_LAUNCH@ -n 4 ./test_interpolation_parallel1.x src

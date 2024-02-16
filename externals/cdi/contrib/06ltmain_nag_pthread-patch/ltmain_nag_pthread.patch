@@ -1,0 +1,45 @@
+--- a/config/ltmain.sh
++++ b/config/ltmain.sh
+@@ -7936,6 +7936,12 @@ func_mode_link ()
+ 	# Convert "-framework foo" to "foo.ltframework"
+ 	if test -n "$inherited_linker_flags"; then
+ 	  tmp_inherited_linker_flags=`$ECHO "$inherited_linker_flags" | $SED 's/-framework \([^ $]*\)/\1.ltframework/g'`
++
++	  # Additionally convert " -pthread" to " -Wl,-pthread" for nagfor
++	  if test yes = "$with_nagfor" ; then
++	    tmp_inherited_linker_flags=`$ECHO " $tmp_inherited_linker_flags" | $SED 's/ -pthread\b/ -Wl,-pthread/g'`
++	  fi
++
+ 	  for tmp_inherited_linker_flag in $tmp_inherited_linker_flags; do
+ 	    case " $new_inherited_linker_flags " in
+ 	      *" $tmp_inherited_linker_flag "*) ;;
+@@ -9570,6 +9577,20 @@ EOF
+ 	  ;;
+       esac
+ 
++      # Time to revert the changes made for nagfor. This might be required if
++      # we need to make the output '*.la' file to be correctly interpreted for
++      # gcc (e.g. the output library that we are linking now with nagfor needs
++      # to be linked by gcc later). In this case, the libtool script of a
++      # package that will try to link our library will have to make similar
++      # non-standard nagfor-specific modifications of the '-pthread' flag.
++      # Thus, if we are creating a Fortran library for nagfor only, it is
++      # better not to revert the changes, otherwise, uncomment the following
++      # lines.
++
++      if test yes = "$with_nagfor" ; then
++        new_inherited_linker_flags=`$ECHO " $new_inherited_linker_flags" | $SED 's/ -Wl,-pthread\b/ -pthread/g;s/^ *//'`
++      fi
++
+       # move library search paths that coincide with paths to not yet
+       # installed libraries to the beginning of the library search list
+       new_libs=
+@@ -10328,6 +10348,8 @@
+ 	  *) func_append new_libs " $deplib" ;;
+ 	  esac
+ 	  ;;
++	-Wl,-pthread)
++	  func_append new_libs " $deplib" ;;
+ 	-Wl,*)
+ 	  func_stripname -Wl, '' "$deplib"
+ 	  func_append new_libs " $wl$func_stripname_result"

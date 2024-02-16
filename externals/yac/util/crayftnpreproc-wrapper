@@ -1,0 +1,114 @@
+#! /bin/bash
+#
+# crayftnpreproc-wrapper --- wrapper to produce Cray ftn style front-end
+#                            preprocessor output on stdout
+#
+# Copyright  (C)  2014  Nathanael Hübbe <nathanael.huebbe@informatik.uni-hamburg.de>
+#                       Thomas Jahns <jahns@dkrz.de>
+#
+# Author: Nathanael Hübbe <nathanael.huebbe@informatik.uni-hamburg.de>
+#         Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#
+# Wrapper for the ftn command to write preprocessed fortran files to stdout.
+#
+test x"$DEBUG" = x || set -x
+set -e
+# create temp directory for intermediate .i-files
+temporaries="$(mktemp -d -t)"
+trap "rm -rf $temporaries" EXIT
+callDir="$PWD"
+
+declare -a inargs outargs preprocessedFiles
+inargs=("$@")
+j=0
+# filter -o option and argument from flags
+for (( i = 0 ; i < ${#inargs[@]} ; i++ )) ; do
+	case ${inargs[$i]} in
+		(-o) i=$((i + 1)) ;;
+		(-o*) ;;
+                (-eZ) ;;
+	        (-e*Z*)
+			outargs[$j]="${inargs[$i]//Z/}"
+			j=$((j + 1))
+		;;
+		(*)
+			outargs[$j]="${inargs[$i]}"
+			j=$((j + 1))
+		;;
+	esac
+done
+
+# find non-option arguments at end of input and convert to absolute
+# path if necessary
+for (( i = ${#outargs[@]} - 1 ; i >= 0 ; i-- )) ; do
+	[[ -r "${outargs[$i]}" ]] || break
+	case "${outargs[$i]}" in
+		(/*) ;;
+		(*) outargs[$i]="$callDir/${outargs[$i]}" ;;
+	esac
+done
+j=0
+# use previous loop termination to build list of
+# names of .i-files produced by compiler
+for (( i = i + 1 ; i < ${#outargs[@]} ; i++ )) ; do
+	preprocessedFiles[$j]="${outargs[$i]%.*}.i"
+	preprocessedFiles[$j]="${preprocessedFiles[$j]##*/}"
+	j=$((j + 1))
+done
+
+# switch to temp directory to no pollute working directory
+cd "$temporaries"
+
+# find compiler if not set
+if [ "${FC+set}" != set ]; then
+	for F90C in ftn '' ; do
+		test -n "$F90C" || exit 1
+		set +e
+		F90BIN=`which $F90C 2>/dev/null`
+		set -e
+		test ! -x "$F90BIN" || break
+	done
+fi
+FC=${FC-$F90C}
+
+# run compiler to produce preprocessor output
+${FC} -eP "${outargs[@]}"
+# pipe sanitized preprocessor output to stdout
+grep -v -h '^#' "${preprocessedFiles[@]}"
+
+#
+# Local Variables:
+# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

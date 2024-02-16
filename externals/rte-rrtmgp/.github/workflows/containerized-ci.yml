@@ -1,0 +1,93 @@
+name: Continuous integration in a box
+on:
+  push:
+    branches-ignore:
+    - documentation
+  pull_request:
+    branches-ignore:
+    - documentation
+
+jobs:
+  Containerized-CI:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        fortran-compiler: [ifort, ifx, nvfortran]
+        rte-kernels: [default, openacc]
+        include:
+        - fortran-compiler: ifort
+          fcflags: "-m64 -g  -traceback -heap-arrays -assume realloc_lhs -extend-source 132 -check bounds,uninit,pointers,stack -stand f08"
+          image: "ghcr.io/earth-system-radiation/rte-rrtmgp-ci:ifort"
+        - fortran-compiler: ifx
+          fcflags: "-m64 -g  -traceback -heap-arrays -assume realloc_lhs -extend-source 132 -check bounds,uninit,pointers,stack -stand f08"
+          image: "ghcr.io/earth-system-radiation/rte-rrtmgp-ci:ifort"
+        - fortran-compiler: nvfortran
+          fcflags: "-Mallocatable=03 -Mstandard -Mbounds -Mchkptr -Kieee -Mchkstk"
+          image: "ghcr.io/earth-system-radiation/rte-rrtmgp-ci:nvfortran"
+    container:
+      image: ${{ matrix.image }}
+    env:
+      # Core variables:
+      FC: ${{ matrix.fortran-compiler }}
+      FCFLAGS: ${{ matrix.fcflags }}
+      # Configure script variables:
+      LAUNCH_PREFIX:
+      # Auxiliary variables:
+      NFHOME: /opt/netcdf-fortran
+      RFMIP_CACHEDIR: .testcache
+    steps:
+    #
+    # Checks-out repository under $GITHUB_WORKSPACE
+    #
+    - uses: actions/checkout@v3
+    #
+    # Cache RFMIP files
+    #
+    - name: Cache RFMIP files
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.RFMIP_CACHEDIR }}
+        key: rfmip-files-autoconf
+    #
+    # Configure
+    #
+    - name: Configure
+      run: |
+        test 'x${{ matrix.rte-kernels }}' = xopenacc && enable_gpu=yes || enable_gpu=no
+        ./configure \
+          --disable-examples \
+          --disable-silent-rules \
+          --enable-gpu=$enable_gpu \
+          --enable-tests \
+          --with-netcdf-fortran="${NFHOME}" \
+          acx_cv_fc_openacc_flag= \
+        || { cat ./config.log; exit 1; }
+    #
+    # Build
+    #
+    - name: Build
+      run: make -j
+    #
+    # Check
+    #
+    - name: Check
+      run: |
+        make -j check
+        find . -name '*.test.log' -print -exec cat {} ';'
+    #
+    # Generate validation plots
+    #
+    - name: Generate validation plots
+      if: matrix.fortran-compiler == 'ifort' && matrix.rte-kernels == 'default'
+      working-directory: tests
+      run: python validation-plots.py
+    #
+    # Upload validation plots
+    #
+    - name: Upload validation plots
+      if: matrix.fortran-compiler == 'ifort' && matrix.rte-kernels == 'default'
+      uses: actions/upload-artifact@v3
+      with:
+        name: valdiation-plot
+        path: tests/validation-figures.pdf

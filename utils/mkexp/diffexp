@@ -1,0 +1,34 @@
+#! /bin/sh
+#
+# Compare experiment setups trying to identify file pairs.
+#
+# $Id$
+#
+
+PROGRAM=`basename $0`
+BINDIR=`dirname $0`
+PATH="$BINDIR:$PATH"
+
+die () {
+    echo "$@" >&2
+    exit 1
+}
+
+[ "x$2" = x ] && die "Oops: invalid number of parameters
+Usage: $PROGRAM config_a config_b [key=value...]"
+
+CONFIG_A=$1
+CONFIG_B=$2
+shift; shift
+
+eval `getexp "$CONFIG_A" "$@" || echo '
+' exit $?`
+EXP_A=$EXP_ID
+PATH_A=$SCRIPT_DIR
+
+eval `getexp "$CONFIG_B" "$@" || echo '
+' exit $?`
+EXP_B=$EXP_ID
+PATH_B=$SCRIPT_DIR
+
+exec diffpath "$EXP_A" "$EXP_B" "$PATH_A" "$PATH_B"

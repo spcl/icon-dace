@@ -1,0 +1,51 @@
+# Copyright (c) 2013-2024 MPI-M, Luis Kornblueh, Rahul Sinha and DWD, Florian Prill. All rights reserved.
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+
+# Autoreconf stage files
+/autom4te.cache
+/config/config.h.in~
+
+# Configure stage files
+.deps
+/a.out
+/config.log
+/config.status
+/config/config.h
+/config/stamp-h1
+/doc/Doxyfile
+/libtool
+Makefile
+
+# Build stage files
+*.L
+*.i
+*.la
+*.lo
+*.mod
+*.o
+.libs
+
+# Documentation stage files
+/doc/doxygen-doc
+
+# Test stage files
+/test/*.log
+/test/*.trs
+
+# Dist stage files
+/libmtime-*.tar.gz
+
+# Other files
+*.dSYM
+*.patch
+*~
+*#
+.DS_Store
+.autotools
+.cproject
+.project
+.settings
+/build
+Doxyfile.bak

@@ -1,0 +1,77 @@
+#! /usr/bin/env python
+'''\
+Show differences between two configuration files (config1 - config2)
+
+$Id$
+'''
+from __future__ import print_function
+
+import sys
+import io
+import argparse
+import package_info
+import re
+from feedback import die
+
+from configobj import Section
+from expconfig import ConfigObj
+
+
+# recursively removes differences between two config objects c1 and c2 
+def subConfig(c1, c2):
+    for k in c1:
+        if (type(c1[k]) is Section) and (k in c2):
+            subConfig(c1[k],c2[k])
+            if not c1[k].keys():
+                del c1[k]
+        else:
+            if (k in c2) and c2[k]==c1[k]:
+                del c1[k]
+        
+#
+# Main routine
+#
+
+# Check command line
+
+command_line = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
+# TODO: print differences option,  ...
+command_line.add_argument('--indent-string', default='  ', help='set indent string [%(default)s]')
+command_line.add_argument('--inline-comments' , '-c', action='store_true',
+                          help='compact white space before inline comments'
+                               ' (BETA)')
+command_line.add_argument('--trailing-space' , '-t', action='store_true',
+                          help='remove white space at end of lines')
+command_line.add_argument('config1', help='original configuration file name of minuend')
+command_line.add_argument('config2', help='original configuration file name of subtrahend')
+command_line.add_argument('-V', '--version', action='version',
+                          version=package_info.version)
+args = command_line.parse_args()
+
+
+# File handling
+
+try:
+    config_file1 = args.config1
+    config_file2 = args.config2
+    config_data1 = ConfigObj(config_file1, 
+                file_error=True,write_empty_values=True)
+    config_data2 = ConfigObj(config_file2, 
+                file_error=True)
+except IOError as error:
+    die(error.message)
+
+# Removes elements which are also in c2 from c1:
+subConfig(config_data1,config_data2)
+
+# Ready to roll out
+lines = io.BytesIO()
+config_data1.write(lines)
+
+lines.seek(0)
+for line in io.TextIOWrapper(lines):
+    if args.inline_comments: line = re.sub(r' = (.*?)  #', r' = \1 #', line)
+    if args.trailing_space:
+        print(line.rstrip())
+    else:
+        print(line, end='')

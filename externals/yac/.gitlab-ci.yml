@@ -1,0 +1,431 @@
+#run for all commits to the master branch and for merge requests
+workflow:
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
+    - if: '$CI_COMMIT_BRANCH == "to_be_checked"'
+      when: always
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: never
+
+# build:
+#   - builds externals (mtime and yaxt)
+#   - generates the coverage report data
+# tests:
+#   - run_test_*: build and test YAC
+#   - check_warning_*: checks output of run_test_* compiler outputs
+#     - fails if it contains warings -> pipeline can still run
+#       successfully, but with warning
+# documentation:
+#   - generate html doxygen documentation and html coverage report
+# publish
+#   - uploads html pages
+stages:
+  - build
+  - tests
+  - documentation
+  - publish
+
+.load_basic_modules: &load_basic_modules
+  - . /sw/etc/profile.levante
+  - module purge
+  - module load git
+  - spack load /fwv /6fs7izz /3bl6rja /kslwl5a
+  - python3 -m venv $CI_PROJECT_DIR/install_dir/python-venv/yac-ci
+  - . $CI_PROJECT_DIR/install_dir/python-venv/yac-ci/bin/activate
+  - pip install netcdf4 matplotlib
+
+.init_build:
+  before_script:
+    - *load_basic_modules
+  tags:
+    - levante, xen
+
+.init_build_gcc:
+  extends: .init_build
+  before_script:
+    - *load_basic_modules
+    - >
+      module load
+      gcc/11.2.0-gcc-11.2.0
+      openmpi/4.1.2-gcc-11.2.0
+      netcdf-c/4.8.1-openmpi-4.1.2-gcc-11.2.0
+      hdf5/1.12.1-openmpi-4.1.2-gcc-11.2.0
+      intel-oneapi-mkl/2022.0.1-gcc-11.2.0
+    - pip install mpi4py
+
+.init_build_intel:
+  extends: .init_build
+  variables:
+    CC: mpicc
+    CXX: mpicxx
+    FC: mpif90
+    CFLAGS: -O0 -g -Wall
+    LDFLAGS: -L/sw/spack-levante/openmpi-4.1.2-yfwe6t/lib/ -lmpi -Wl,-rpath,/lib64
+    LD_LIBRARY_PATH: /sw/spack-levante/openmpi-4.1.2-yfwe6t/lib/ /lib64
+  before_script:
+    - *load_basic_modules
+    - >
+      module load
+      gcc/11.2.0-gcc-11.2.0
+      intel-oneapi-compilers/2022.0.1-gcc-11.2.0
+      openmpi/4.1.2-intel-2021.5.0
+      netcdf-c/4.8.1-intel-2021.5.0
+      hdf5/1.12.1-intel-2021.5.0
+      intel-oneapi-mkl/2022.0.1-gcc-11.2.0
+    - pip install mpi4py
+
+.install_gcovr: &install_gcovr
+# 'jinja2<3.1' is required to avoid bug, which was fixed in gcovr 5.1
+# gcovr 5.0 is required because newer version had other issues
+  - pip install 'jinja2<3.1' gcovr==5.0
+
+.build_external: &build_external
+    - cd $EXTERNALS_BUILD_DIR
+    - git clone --depth 1 --branch $EXTERNAL_TAG $EXTERNAL_URL $EXTERNAL_NAME
+    - cd $EXTERNAL_NAME
+    - autoreconf -i
+    - >
+      ./configure $EXTERNAL_CONFIGURE_ARG
+      --disable-silent-rules
+      --prefix=$EXTERNALS_DIR/$EXTERNAL_NAME
+    - cat config.log
+    - make -j8 install
+
+.build_externals:
+  stage: build
+  variables:
+    GIT_STRATEGY: none
+  script:
+    - EXTERNALS_BUILD_DIR=$CI_PROJECT_DIR/externals_build
+    - EXTERNALS_DIR=$CI_PROJECT_DIR/externals
+    - mkdir $EXTERNALS_BUILD_DIR
+    - TEMP_EXTERNAL_CONFIGURE_ARG=$EXTERNAL_CONFIGURE_ARG
+    - |
+      EXTERNAL_NAME=yaxt
+      EXTERNAL_URL=https://gitlab.dkrz.de/dkrz-sw/yaxt.git
+      EXTERNAL_TAG=v0.9.1
+      EXTERNAL_CONFIGURE_ARG="$TEMP_EXTERNAL_CONFIGURE_ARG $EXTERNAL_CONFIGURE_ARG_YAXT"
+    - *build_external
+    - |
+      EXTERNAL_NAME=mtime
+      EXTERNAL_URL=https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/icon-libraries/libmtime.git
+      EXTERNAL_TAG=1.0.10
+      EXTERNAL_CONFIGURE_ARG="$TEMP_EXTERNAL_CONFIGURE_ARG $EXTERNAL_CONFIGURE_ARG_MTIME"
+    - *build_external
+  artifacts:
+    when: always
+    paths:
+      - externals/
+      - $CI_PROJECT_DIR/externals_build/*/config.log
+    expire_in: 60min
+
+.check_warnings:
+  variables:
+    AWK_SCRIPT: '/warning/ || /WARNING/ || /Warning/'
+  after_script:
+    - awk "$AWK_SCRIPT" $OUTPUT_FILE > awk.out
+    - "if [ -s awk.out ]; then cat awk.out; exit 166; fi"
+  allow_failure:
+    exit_codes: 166
+
+build_externals_gcc:
+  extends:
+    - .init_build_gcc
+    - .build_externals
+
+build_externals_intel:
+  extends:
+    - .init_build_intel
+    - .build_externals
+
+gen_cov_data:
+  stage: build
+  needs:
+    - build_externals_gcc
+  extends: .init_build_gcc
+  script:
+    - export OMPI_MCA_btl_sm_use_knem=0
+    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
+    - autoreconf -i
+    - >
+      ./configure
+      CC=mpicc FC=mpif90
+      FCFLAGS="-O0 -g -cpp -fprofile-arcs -ftest-coverage"
+      CFLAGS="-O0 -g -Wall -fprofile-arcs -ftest-coverage"
+      LDFLAGS=-lm
+      --with-netcdf-root=/sw/spack-levante/netcdf-c-4.8.1-6qheqr
+      --with-external-mtime=yes
+      --with-mtime-root=$CI_PROJECT_DIR/externals/mtime
+      --with-yaxt-root=$CI_PROJECT_DIR/externals/yaxt
+      --with-fyaml-root=/sw/spack-levante/libfyaml-0.7.12-fvbhgo
+      --disable-mpi-checks
+      --enable-python-bindings
+      MKL_CLIBS="`pkg-config --libs mkl-static-lp64-seq`"
+      MKL_CFLAGS="`pkg-config --cflags mkl-static-lp64-seq`"
+      MPI_LAUNCH="mpirun --oversubscribe"
+    - make -j8 check
+  artifacts:
+    when: always
+    paths:
+      - ./*.gcno
+      - ./*/*.gcno
+      - ./*/*/*.gcno
+      - ./*/*/*/*.gcno
+      - ./*.gcda
+      - ./*/*.gcda
+      - ./*/*/*.gcda
+      - ./*/*/*/*.gcda
+      - ./*/test-suite.log
+    expire_in: 30min
+
+run_test_gcc:
+  stage: tests
+  needs:
+    - build_externals_gcc
+  extends:
+    - .init_build_gcc
+    - .check_warnings
+  script:
+    - export OMPI_MCA_btl_sm_use_knem=0
+    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
+    - autoreconf -i
+    - >
+      ./configure
+      CC=mpicc FC=mpif90
+      CFLAGS="-O0 -g -Wall -fsignaling-nans"
+      FCFLAGS="-O0 -g -cpp -Wall -ffpe-trap=invalid -fcheck=bounds"
+      LDFLAGS=-lm
+      --with-netcdf-root=/sw/spack-levante/netcdf-c-4.8.1-6qheqr
+      --with-external-mtime=yes
+      --with-mtime-root=$CI_PROJECT_DIR/externals/mtime
+      --with-yaxt-root=$CI_PROJECT_DIR/externals/yaxt
+      --with-fyaml-root=/sw/spack-levante/libfyaml-0.7.12-fvbhgo
+      --disable-mpi-checks
+      --enable-python-bindings
+      MKL_CLIBS="`pkg-config --libs mkl-static-lp64-seq`"
+      MKL_CFLAGS="`pkg-config --cflags mkl-static-lp64-seq`"
+      MPI_LAUNCH="mpirun --oversubscribe"
+# build YAC and unit tests without running tests
+    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
+# run tests
+    - make check
+  artifacts:
+    when: always
+    paths:
+      - make.err
+      - ./*/test-suite.log
+    expire_in: 30min
+
+run_test_intel:
+  stage: tests
+  needs:
+    - build_externals_intel
+  extends:
+    - .init_build_intel
+    - .check_warnings
+  script:
+    - export OMPI_MCA_btl_sm_use_knem=0
+    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
+    - autoreconf -i
+    - >
+      ./configure
+      FCFLAGS="-O0 -g -cpp -warn all,noerrors,nostderrors -fpe0"
+      --with-netcdf-root=/sw/spack-levante/netcdf-c-4.8.1-f7hh57
+      --with-yaxt-root=$CI_PROJECT_DIR/externals/yaxt
+      --with-fyaml-root=/sw/spack-levante/libfyaml-0.7.12-fvbhgo
+      --disable-mpi-checks
+      --enable-python-bindings
+      MKL_CLIBS="`pkg-config --libs mkl-static-lp64-seq`"
+      MKL_CFLAGS="`pkg-config --cflags mkl-static-lp64-seq`"
+      MPI_LAUNCH="mpirun --oversubscribe"
+# build YAC and unit tests without running tests
+    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
+# run tests
+    - make check
+  artifacts:
+    when: always
+    paths:
+      - config.log
+      - make.err
+      - ./*/test-suite.log
+    expire_in: 120min
+
+
+run_test_gcc_long_double_64:
+  stage: tests
+  needs:
+    - build_externals_gcc
+  extends:
+    - .init_build_gcc
+    - .check_warnings
+  script:
+    - export OMPI_MCA_btl_sm_use_knem=0
+    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
+    - autoreconf -i
+    - >
+      ./configure
+      CC=mpicc FC=mpif90
+      CFLAGS="-O0 -g -Wall -mlong-double-64"
+      FCFLAGS="-O0 -g -cpp"
+      LDFLAGS=-lm
+      --with-netcdf-root=/sw/spack-levante/netcdf-c-4.8.1-6qheqr
+      --with-external-mtime=yes
+      --with-mtime-root=$CI_PROJECT_DIR/externals/mtime
+      --with-yaxt-root=$CI_PROJECT_DIR/externals/yaxt
+      --with-fyaml-root=/sw/spack-levante/libfyaml-0.7.12-fvbhgo
+      --disable-mpi-checks
+      --enable-python-bindings
+      MKL_CLIBS="`pkg-config --libs mkl-static-lp64-seq`"
+      MKL_CFLAGS="`pkg-config --cflags mkl-static-lp64-seq`"
+      MPI_LAUNCH="mpirun --oversubscribe"
+# build YAC and unit tests without running tests
+    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
+# run tests
+    - make check
+  artifacts:
+    when: always
+    paths:
+      - make.err
+      - ./*/test-suite.log
+    expire_in: 30min
+
+run_test_gcc_O3:
+  stage: tests
+  needs:
+    - build_externals_gcc
+  extends:
+    - .init_build_gcc
+    - .check_warnings
+  script:
+    - export OMPI_MCA_btl_sm_use_knem=0
+    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
+    - autoreconf -i
+    - >
+      ./configure
+      CC=mpicc FC=mpif90
+      CFLAGS="-O3 -g -Wall -fsignaling-nans"
+      FCFLAGS="-O3 -g -cpp -ffpe-trap=invalid"
+      LDFLAGS=-lm
+      --with-netcdf-root=/sw/spack-levante/netcdf-c-4.8.1-6qheqr
+      --with-external-mtime=yes
+      --with-mtime-root=$CI_PROJECT_DIR/externals/mtime
+      --with-yaxt-root=$CI_PROJECT_DIR/externals/yaxt
+      --with-fyaml-root=/sw/spack-levante/libfyaml-0.7.12-fvbhgo
+      --disable-mpi-checks
+      --enable-python-bindings
+      MKL_CLIBS="`pkg-config --libs mkl-static-lp64-seq`"
+      MKL_CFLAGS="`pkg-config --cflags mkl-static-lp64-seq`"
+      MPI_LAUNCH="mpirun --oversubscribe"
+# build YAC and unit tests without running tests
+    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
+#debug
+    - export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:/builds/YAC/YAC-dev/externals/mtime/lib:/usr/lib64/:/builds/YAC/YAC-dev/externals/yaxt/lib:/sw/spack-levante/netcdf-c-4.8.1-6qheqr/lib
+    - cd tests
+    - ./test_grid.x && echo okay || echo error
+    - cd ..
+# run tests
+    - make check
+  artifacts:
+    when: always
+    paths:
+      - make.err
+      - ./*/test-suite.log
+    expire_in: 30min
+
+gen_doxy_html:
+  stage: documentation
+  extends: .check_warnings
+  variables:
+    PLANTUML_JAR: '/usr/share/java/plantuml.jar'
+    AWK_SCRIPT: '/warning/ && !/doc\/Doxyfile/ && !/doxygen -u/ && !/DOT_GRAPH_MAX_NODES/'
+    OUTPUT_FILE: doxy.err
+  needs:
+    - job: gen_cov_data
+      artifacts: false
+  script:
+    - doxygen --version
+    - doxygen doc/Doxyfile 2> >(tee doxy.err)
+  artifacts:
+    expire_in: 30min
+    paths:
+    - doc/html
+    - doxy.err
+  tags:
+    - doxygen
+
+gen_cov_rep_html:
+  stage: documentation
+  needs:
+    - gen_cov_data
+  extends: .init_build_gcc
+  script:
+    - *install_gcovr
+    - mkdir coverage_tests
+    - mkdir coverage
+    - >
+      gcovr
+      --html-details
+      --exclude-unreachable-branches
+      -o coverage_tests/index.html
+      --root .
+      -f tests
+    - >
+      gcovr
+      --html-details
+      --exclude-unreachable-branches
+      --print-summary
+      -o coverage/index.html
+      --root .
+      -f src
+      -f contrib
+  coverage: /^\s*lines:\s*\d+.\d+\%/
+  artifacts:
+    paths:
+      - coverage/
+      - coverage_tests/
+    expire_in: 120min
+
+pages:
+  stage: publish
+  variables:
+    GIT_STRATEGY: none
+  needs:
+    - gen_cov_rep_html
+    - gen_doxy_html
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: always
+    - when: never
+  script:
+    - mv doc/html/ public/
+    - mv coverage/ public/coverage
+    - mv coverage_tests public/coverage_tests
+  artifacts:
+    expire_in: 30min
+    paths:
+    - public
+  tags:
+  - doxygen
+
+#generate coverage report for diff view of merge request
+gen_cov_rep_xml:
+  stage: documentation
+  needs:
+    - gen_cov_data
+  extends: .init_build_gcc
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
+      when: always
+    - when: never
+  script:
+    - *install_gcovr
+    - gcovr --xml-pretty --exclude-unreachable-branches -o coverage.xml --root .
+  coverage: /^\s*lines:\s*\d+.\d+\%/
+  artifacts:
+   expire_in: 1 week
+   reports:
+     coverage_report:
+       coverage_format: cobertura
+       path: coverage.xml

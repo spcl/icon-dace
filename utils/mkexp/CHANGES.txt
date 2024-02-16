@@ -1,0 +1,632 @@
+=================
+Make Experiments!
+=================
+
+---------------
+Release Changes
+---------------
+
+Release 1.3.1
+=============
+
+Global
+------
+
+* Changed license to BSD 3-clause
+
+Config
+------
+
+* Add '%{id}' placeholder for use in repeated namelist groups
+
+Tools
+-----
+
+* Allow additional directories to be created by mkexp (EXP_DIR_NAMES)
+
+Release 1.3.0
+=============
+
+Global
+------
+
+* Created first example (formatting of namelists as YAML)
+
+Config
+------
+
+* Added shared namelist settings ([[namelist_a, namelist_b]])
+
+Templates
+---------
+
+* Allow use of iterators with 'list' and 'join' filters
+* Unify namelist and job templates. 'DEFAULT.' prefix is optional but preferred
+* Add option to use global config in namelist templates (.use_full_config).
+  Original values for global variables overridden by namelist settings
+  are kept in section '_'
+
+Tools
+-----
+
+* editexp: allow editing additional files from experiment and mkexp path
+
+Release 1.2.0
+=============
+
+Global
+------
+
+* Fixed "missing config" test for python3
+
+Config
+------
+
+* Added incremental adding and removing (+=, -=), currently for lists only
+* Same for incremental renaming (>=)
+
+Tools
+-----
+
+* Added getexp support for loading mkexp dumps
+
+Release 1.1.6
+=============
+
+Global
+------
+
+* getconfig: added option to control indentation of output
+* changed installation to explictly use `setuptools` and `pip`
+
+Tools
+-----
+
+* importexp: added support for running outside of native environment
+* update: avoid code duplication in generated script
+
+Release 1.1.5
+=============
+
+Config
+------
+
+* Fixed error due to variables at namelist level
+* Fixed recognition of native variables to ignore invalid variable names
+* Fixed missing [jobs] level variables in extended jobs
+
+Tools
+-----
+
+* importexp: fixed extraction of start/end date in input scripts
+* mkexp: fixed long run times for extended jobs/namelist groups
+
+Release 1.1.4
+=============
+
+Config
+------
+
+* Added inheritance via .extends or by group name for namelist groups
+
+Release 1.1.3
+=============
+
+Global
+------
+
+* Added wrapper to generate config from exp.*.run files (importexp)
+* Added support for mkexp generated run scripts to config generation
+* files2config: use '.' short-cut in file definitions,
+  use global variables in directories
+* namelist2config: re-enable here-doc detection to remove spurious data,
+  use global variables in namelists and output, remove array slice syntax
+* Fixes related to python3, perl-5.26, and jinja2-3.0 compatibility
+* Added tools to manage differences/similarities between config files
+  (compconfig, diffconfig, unmergeconfig)
+* Handle deprecation warnings for versions 3+ of Jinja2
+
+Release 1.1.2
+=============
+
+Global
+------
+
+* Updated code to run with python3 and full Unicode set
+
+Configuration
+-------------
+
+* Fixed job config corruption while overriding namelists in another job
+
+Templates
+---------
+
+* 'split' filter allows omission of separator (same as Python 'split')
+
+Release 1.1.1
+=============
+
+* Replaced by 1.1.2
+
+Version 1.1.1rc2
+================
+
+Configuration
+-------------
+
+* Fixed job config corruption while formatting native variables in another job
+
+Version 1.1.1rc1
+================
+
+Configuration
+-------------
+
+* Allow hiding for namelist files with templates
+
+Release 1.1.0
+=============
+
+Global
+------
+
+* Added 'selconfig' tool to extract sections from config files
+* Added 'files2config' tool to extract input file info from logs and scripts
+* Added variable replacement beta options to the '...2config' tools
+* Added output of file name in -d mode of 'namelist2config'
+* Added file tags for 'output_nml' groups in 'namelist2config'
+
+Configuration
+-------------
+
+* Changed empty namelist variables to be suppressed, ie. default is used
+* Added '.default' variable to namelists and namelist groups to define an
+  alternative default value if the empty string is a valid value
+* Added 'is_set' utility to be used on logicals in 'eval(...)' expressions
+* Added configurable hiding (disabling) of namelist files
+
+Templates
+---------
+
+* Added optional parameter 'default_value' to 'format_namelists' to define an
+  alternative default value for namelist variables
+
+Release 1.0.12
+==============
+
+Global
+------
+
+* Added option for removing trailing white space to 'setconfig'
+* Also added beta option for reducing white space before inline comments
+* Added 'namelist2config' tool to extract namelist info from logs and scripts
+
+Release 1.0.11
+==============
+
+Configuration
+-------------
+
+* Fixed to use native variable formatting in all sections of a job's config
+
+Release 1.0.10
+==============
+
+Global
+------
+
+* Changed directory creation to only create parts w/o native variables
+
+Configuration
+-------------
+
+* Changed to allow values with native variables to be interpolated correctly
+
+Release 1.0.9
+=============
+
+Global
+------
+
+* Reverted retrieval of version info from version control system.
+  Avoids two-step setting of the tag and enables use as external.
+  Also avoids additional 'make' step
+
+Release 1.0.8
+=============
+
+Global
+------
+
+* Changed version info to be retrieved from version control system.
+  This requires an additional 'make' step before running
+* Changed 'setconfig' to take additional config files to merged with the first
+* Added dry run option (-n) to 'cpexp'
+
+Configuration
+-------------
+
+* Added new way to disable namelist groups by setting the special variable
+  '.hide' to 'true'. This allows to selectively re-enable groups in higher
+  order config files by setting '.hide' to 'false'
+* Simplified commented namelist settings at the end of a group by adding a
+  special variable '.end'
+
+Templates
+---------
+
+* Changed 'format_namelist' function to allow use of (yet) undefined groups
+* Changed 'mkexp_input' variable to show package version as Subversion $Id$
+  is no longer maintained in Git
+
+Release 1.0.7
+=============
+
+Global
+------
+
+* Added 'setconfig' filter tool to alter config files via command line.
+  Supports adding, altering, and deleting of keys in arbitrary sections,
+  and amendments of header comment
+
+Templates
+---------
+
+* Added 'format_namelist' function allowing to render individual groups,
+  as well as full namelists, identical to the NAMELIST variable
+
+Release 1.0.6
+=============
+
+Global
+------
+
+* Changed 'cdexp' shell tool to honor command line variable assignments
+
+Templates
+---------
+
+* Changed 'get_file' function to return unknown variable references unchanged
+* Added 'get_dir' function, returning the path for a given 'files' section
+
+Release 1.0.5
+=============
+
+Global
+------
+
+* Added 'getconfig' tool to generate clean config files from 'update' scripts
+* Added 'editexp' tool to edit the config file for a given 'update' script
+* Added common update module for 'getconfig', 'editexp', and 'mkexp.bash'
+* Added 'upexp' tool to run the 'update' script for a given config file
+
+Templates
+---------
+
+* Changed 'list' filter replacement to map the empty string to an empty list.
+  Added option to keep empty string as singleton list if needed
+
+Release 1.0.4
+=============
+
+Global
+------
+
+* Changed 'key' option of getexp to be repeatable
+* Added 'set' option to getexp to be used with 'key' for script evaluation
+* Changed output to be written as UTF-8
+
+Configuration
+-------------
+
+* Made 'time' module available in eval(...)
+* Reading of EXP_DESCRIPTION from initial comment now also discards leading and
+  trailing lines that only contain white space and comment characters
+* Updated to configobj-5.0.6
+* Fixed error message for missing namelist templates
+* Changed namelist templates to support names with upper case letters
+
+Release 1.0.3
+=============
+
+Global
+------
+
+* Improved retrieval of working directory for 'update' script,
+  using 'PWD' from environment if available
+* Fixed bash shell utility 'cdexp' to handle absolute file names
+  when reading from 'update' script
+* Fixed update script to export all ...PATH variables in case they don't exist
+* Fixed missing installation of 'duexp'
+
+Release 1.0.2
+=============
+
+Global
+------
+
+* Fixed test suite to clean up all temporary files
+* Fixed tool 'cppath' to not choke when called twice on the same directory
+
+Templates
+---------
+
+* Changed 'set' test to work, and return False, on undefined variables
+* Re-enabled Jinja statement and comment syntax, now using '__mkexp__' keyword
+  ({%__mkexp__ ... %}, {#__mkexp__ ... #})
+* Replaced 'list' and 'join' filters by versions that treat simple values as
+  singleton lists
+
+Configuration
+-------------
+
+* Changed job inheritance to work for more than one levels
+* Changed job inheritance to be run for all jobs, not just the current
+* Added global 'jobs' section to be available for all job templates
+
+Release 1.0.1
+=============
+
+Global
+------
+
+* Added creation of config dump to mkexp (including backup)
+* Changed mkexp namelist formatting to add multi-group identifiers as comment
+* Changed merge of process environment ('DEFAULT' section) to be sorted
+* Added tool 'duexp' to show disk usage by the given experiment
+* Added 'key' option to getexp for querying a specific config value
+* Added example script 'share/doc/mkexp/mkexp.bash' with 'bash' shell utilities
+
+Release 1.0.0
+=============
+
+Global
+------
+
+* Fixed error handling for rmexp, cpexp, diffexp; minor edits
+* Fixed descriptive message for getexp, cpexp
+* Added --version option to mkexp
+* Changed rmexp to remove empty parent directories
+* Changed rmexp to remove monitoring data
+
+Release 0.4.3
+=============
+
+Templates
+---------
+* Changed retrieval of templates for config files that alter EXP_ID
+  Now tries config file name before using EXP_ID as template name
+* Disabled evaluation of standard Jinja blocks ({% ... %}) and comments
+  ({# ... #}). This allows handling templates with standard Jinja code and shell
+  scripts using array length expansion (${#ARRAY})
+
+Release 0.4.2
+=============
+
+Global
+------
+
+* Changed rmexp to be compatible with Debian's /bin/sh (dash)
+* Changed mkexp and expconfig to be compatible with python-2.6
+* Added 'mkexp' option to re-run using 'getexp -vv' output
+
+Release 0.4.1
+=============
+
+Templates
+---------
+
+* Added global function 'get_file' to expand input file names for scripts
+
+Release 0.4.0
+=============
+
+Global
+------
+
+* Added support for configuration dump to 'getexp'
+* Changed tools' section in user guide to better describe command line options
+* Changed 'rmexp' to only ask for approval once per directory
+* Changed 'rmexp' to also remove restart, data, and log directories
+* Added 'cpexp', 'cppath' to copy experiment data to a new experiment name
+
+Release 0.3.7
+=============
+
+Configuration
+-------------
+
+* Added support for SETUP_OPTIONS that are loaded before the EXP_OPTIONS.
+  Used for pushing options that are required due to model configuration
+
+Release 0.3.6
+=============
+
+Configuration
+-------------
+
+* Changed handling of '.use_template' to allow use of arbitrary template names
+* Fixed error message for missing or wrong options
+* Fixed setting ENVIRONMENT to 'DEFAULT' if set to empty in SETUP.config (#5808)
+
+Templates
+---------
+
+* Added 'match' filter, allowing to use regular expression matches
+* Changed 'extended' jobs to allow their own templates override the parent's
+* Added missing tests for 'wordwrap' filter
+* Re-wrote documentation on additional Jinja filters
+
+Release 0.3.5
+=============
+
+Global
+------
+
+* Added -q (quiet) option to mkexp to suppress info messages
+* Fixed diffpath to also compare two files (used to expect directories)
+
+Templates
+---------
+
+* Replaced wordwrap by a private version that allows to suppress breaks on
+  hyphens (used to break long absolute file names)
+
+Release 0.3.4
+=============
+
+Configuration
+-------------
+
+* The VERSION_ keyword in standard config files is now optional.
+  The user is notified if it is missing in at least one file.
+
+Release 0.3.3
+=============
+
+Configuration
+-------------
+
+* Added 'raw(...)' expression to allow unquoted namelist expressions.
+  Needed for native variables containing lists
+
+Templates
+---------
+
+* Added 'set' test to reliably check if namelist switches are true
+
+Release 0.3.2
+=============
+
+Configuration
+-------------
+
+* Fixed bug in native variable support
+
+  * Expanding native variables did not update but created new entries
+
+* Changed creation of job specific config
+
+  * Configuration of other jobs is now excluded from the job config
+
+* Added job specific override of input files
+
+  * Job specific configurations may now contain their own 'files' section
+
+Release 0.3.1
+=============
+
+Global
+------
+
+* Additional output files
+
+  * Added creation of an 'update' script for re-creating output files from
+    the script directory
+
+Configuration
+-------------
+
+* Extended expressions in configuration files
+
+  * Adding (possibly negative) offsets to days in date string (add_days)
+
+Release 0.3.0
+=============
+
+Global
+------
+
+* Support for using native variables in templates
+
+  * Detection of variable use in configuration keys and values
+  * Context query for global template variable values
+  * Native variable format as special job configuration (.var_format)
+
+* Backup of old versions for re-generated files
+
+  * Backup directory with timestamp for each re-generation, containing previous
+    files incl. README
+  * Fixed 'diffexp' to ignore backup directories
+
+* Support for out-of-directory generation
+
+  * Added command line option and path environment variable for configuration
+    files (--path, MPEXP_PATH)
+  * Changed template lookup paths to also use these settings
+
+* Extended queue settings into host environment
+
+  * Renamed configuration variable and directory (QUEUE_TYPE -> ENVIRONMENT,
+    standard_queue_settings -> standard_environments)
+  * Support for setting environment on the command line
+  * Support for default or blank host environment
+
+* Support for setting section variables on the command line
+
+* Fixed 'diffexp' to ignore CDPATH settings
+
+* Added model directory, verbose mode, README mode to 'getexp'
+
+* Changed 'getexp' output from warning to info
+
+* Added option to skip directory creation for config tests (--no-make-dirs/-m)
+
+* Added User Guide
+
+Configuration
+-------------
+
+* Support for job inheritance (.extends), and job removal (.remove)
+
+  * Inheritance of job configuration
+  * Namelist overloading
+
+* Support for packages of configuration options (EXP_OPTIONS, standard_options)
+
+* Support for default configuration settings by model build (SETUP.config)
+
+* Improved namelist handling
+
+  * Support for removing namelist groups and variables from the parent
+    configuration (.remove)
+  * Support for namelist templates for non-Fortran namelists, e.g. OASIS
+    namcouple (.use_template)
+  * Namelist output restricted to 80 characters per line
+  * Support for automatic conversion of comments in namelist configurations,
+    on all levels
+  * Support for example namelist settings (commented assignments)
+
+* Extended expressions in configuration files
+
+  * Use of lists in configuration expressions
+  * Support for reading configuration values from a file (read)
+  * Second to time string conversion in configuration files (sec2time)
+  * Splitting of date strings also works for YYYYMMDD format (split_date)
+  * Adding (possibly negative) offsets to years in date string (add_years)
+
+* Support for overriding the 'tasks' job variable
+
+* Fixed evaluation of job configuration levels (global settings were masking
+  user settings)
+
+* Experiment identifier is taken from the file name by default
+
+* Changed to mask dollar characters when reading environment variables into
+  configuration to avoid spurious interpolation
+
+Templates
+---------
+
+* Support for input file template library
+
+  * 'split' filter for use in templates
+  * 'filter' filter for use in templates
+  * 'wrapstring' work-around for legacy Jinja (2.6)
+
+* Support for user defined, experiment specific templates
+
+* Support for 'mkexp' version info in templates (mkexp_input)
+
+

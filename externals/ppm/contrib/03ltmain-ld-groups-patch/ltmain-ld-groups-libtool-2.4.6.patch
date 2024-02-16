@@ -1,0 +1,30 @@
+--- a/config/ltmain.sh	2016-10-27 18:24:46.464521224 +0200
++++ b/config/ltmain.sh	2016-10-27 18:25:41.837607694 +0200
+@@ -7226,6 +7226,11 @@
+ 	arg=$func_stripname_result
+ 	;;
+ 
++      -Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\))
++	func_append deplibs " $arg"
++	continue
++	;;
++
+       -Wl,*)
+ 	wlprefix=`expr x"$wl" : '.*' - 1`
+ 	wlprefix=`expr x"$arg" : 'x\(.\{'"$wlprefix"'\}\)'`
+@@ -7879,6 +7884,15 @@
+ 	  alldeplibs=:
+ 	  continue
+ 	  ;;
++	-Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\))
++	  if test "$linkmode,$pass" = "prog,link"; then
++	    compile_deplibs="$deplib $compile_deplibs"
++	    finalize_deplibs="$deplib $finalize_deplibs"
++	  else
++	    deplibs="$deplib $deplibs"
++	  fi
++	  continue
++	  ;;
+ 	esac # case $deplib
+ 
+ 	$found || test -f "$lib" \

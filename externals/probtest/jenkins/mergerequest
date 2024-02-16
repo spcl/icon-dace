@@ -1,0 +1,28 @@
+pipeline {
+    agent {
+        node {
+            label 'daint'
+        }
+    }
+
+    stages {
+        stage('generate testdata') {
+            steps {
+                sh './jenkins/scripts/step_generate_testdata.sh'
+            }
+        }
+
+        stage('run unittests amip') {
+            steps {
+                sh './jenkins/scripts/step_execute_unittest_amip.sh'
+            }
+        }
+
+        stage('run unittests mch') {
+            steps {
+                sh './jenkins/scripts/step_execute_unittest_mch.sh'
+            }
+        }
+    }
+
+}

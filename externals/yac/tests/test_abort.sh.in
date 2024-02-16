@@ -1,0 +1,7 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 2 ./test_abort.x 2> /dev/null && exit 1
+@MPI_LAUNCH@ -n 2 ./test_abort_c.x
+

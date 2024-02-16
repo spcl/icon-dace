@@ -1,0 +1,31 @@
+predef:
+  src2tgt: &src2tgt
+    src_component: source_comp
+    src_grid: source_grid
+    tgt_component: target_comp
+    tgt_grid: target_grid
+    coupling_period: 4
+    interpolation:
+      - nnn:
+          n: 1
+
+start_date: 1850-01-01T00:00:00
+end_date: 1850-01-03T00:00:00
+timestep_unit: second
+coupling:
+  - <<: *src2tgt
+    field: time_op_accu_field
+    time_reduction: accumulate
+  - <<: *src2tgt
+    field: time_op_avg_field
+    time_reduction: average
+  - <<: *src2tgt
+    field: time_op_none_field
+    time_reduction: none
+  - <<: *src2tgt
+    field: time_op_min_field
+    time_reduction: minimum
+  - <<: *src2tgt
+    field: time_op_max_field
+    time_reduction: maximum
+

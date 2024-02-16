@@ -1,0 +1,104 @@
+# Parameter table
+#
+# TABLE_ID=201
+# TABLE_MODEL=COSMO
+# TABLE_INSTITUT=MCH
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+ 5 | APAB | & | W m-2  |
+ 13 | SOHR_RAD | & | K s-1  |
+ 14 | THHR_RAD | & | K s-1  |
+ 20 | DURSUN | duration of sunshine | s  |
+ 29 | CLC | cloud area fraction | 1  |
+ 30 | CLC_SGS | grid scale cloud area fraction | 1  |
+ 31 | QC | specific cloud liquid water content | kg kg-1  |
+ 33 | QI | specific cloud ice content | kg kg-1  |
+ 35 | QR | specific rain content | kg kg-1  |
+ 36 | QS | specific snow content | kg kg-1  |
+ 37 | TQR | total rain water content vertically integrated | kg m-2  |
+ 38 | TQS | total snow content vertically integrated | kg m-2  |
+ 39 | QG | specific graupel content | kg kg-1  |
+ 40 | TQG | total graupel content vertically integrated | kg m-2  |
+ 41 | TWATER | cloud condensed water content | kg m-2  |
+ 42 | TDIV_HUM | atmosphere water divergence | kg m-2  |
+ 43 | QC_RAD | sub scale specific cloud liquid water content | kg kg-1  |
+ 44 | QI_RAD | sub scale specific cloud ice content | kg kg-1  |
+ 61 | CLW_CON | convective cloud liquid water | 1  |
+ 68 | HBAS_CON | height of convective cloud base | m  |
+ 69 | HTOP_CON | height of convective cloud top | m  |
+ 70 | HBAS_CONI | height of convective cloud base | m  |
+ 71 | HTOP_CONI | height of convective cloud top | m  |
+ 72 | BAS_CON | index of convective cloud base | 1  |
+ 73 | TOP_CON | index of convective cloud top | 1  |
+ 74 | DT_CON | convective tendency of temperature | K s-1  |
+ 75 | DQV_CON | convective tendency of specific humidity | s-1  |
+ 78 | DU_CON | convective tendency of u-wind component | m s-2  |
+ 79 | DV_CON | convective tendency of v-wind component | m s-2  |
+ 82 | HTOP_DC | height of dry convection top | m  |
+ 84 | HZEROCL | height of freezing level | m  |
+ 85 | SNOWLMT | height of the snow fall limit in m above sea level | m  |
+ 86 | HCBAS | height of cloud base | m  |
+ 87 | HCTOP | height of cloud top | m  |
+ 91 | C_T_LK | & | 1  |
+ 92 | GAMSO_LK | & | m-1  |
+ 93 | DP_BS_LK | & | m  |
+ 94 | H_B1_LK | & | m  |
+ 95 | H_ML_LK | & | m  |
+ 96 | DEPTH_LK | lake depth | m  |
+ 97 | FETCH_LK | wind fetch over lake | m  |
+ 99 | QRS | precipitation water (water loading) | 1  |
+ 100 | PRR_GSP | mass flux density of large scale rainfall | kg m-2 s-1  |
+ 101 | PRS_GSP | mass flux density of large scale snowfall | kg m-2 s-1  |
+ 102 | RAIN_GSP | large scale rainfall | kg m-2  |
+ 111 | PRR_CON | mass flux density of convective rainfall | kg m-2 s-1  |
+ 112 | PRS_CON | mass flux density of convective snowfall | kg m-2 s-1  |
+ 113 | RAIN_CON | convective rainfall | kg m-2  |
+ 129 | FRESHSNW | freshness of snow | undefined  |
+ 131 | PRG_GSP | mass flux density of large scale graupel | kg m-2 s-1  |
+ 132 | GRAU_GSP | large scale graupel | kg m-2  |
+ 133 | RHO_SNOW | density of snow | kg m-3  |
+ 139 | PP | deviation from reference pressure | Pa  |
+ 140 | RCLD | standard deviation of saturation deficit | undefined  |
+ 143 | CAPE_MU | cape of most unstable parcel | J kg-1  |
+ 144 | CIN_MU | convective inhibition of most unstable parcel | J kg-1  |
+ 145 | CAPE_ML | cape of mean surface layer parcel | J kg-1  |
+ 146 | CIN_ML | convective inhibition of mean surface layer parcel | J kg-1  |
+ 147 | TKE_CON | convective turbulent kinetic energy | undefined  |
+ 148 | TKETENS | tendency of turbulent kinetic energy | undefined  |
+ 152 | TKE | turbulent kinetic energy | m2 s-2  |
+ 153 | TKVM | diffusion coefficient of momentum | m2 s-1  |
+ 154 | TKVH | diffusion coefficient of heat | m2 s-1  |
+ 170 | TCM | drag coefficient of momentum | 1  |
+ 171 | TCH | drag coefficient of heat | 1  |
+ 187 | VMAX | maximum turbulent wind gust in 10m | m s-1  |
+ 190 | TSOIL | & | K  |
+ 191 | TSOIL | & | K  |
+ 192 | TSOIL | & | K  |
+ 193 | TSOIL | mixed layer temperature | K  |
+ 194 | TSOIL | mean temperature of water column | K  |
+ 197 | TSOIL | soil temperature | K  |
+ 198 | W_SO | soil water content | m  |
+ 199 | W_SO_ICE | soil frozen water content | m  |
+ 200 | W_I | canopy water amount | m  |
+ 203 | TSOIL | snow surface temperature | K  |
+ 215 | TSOIL | temperature of ice upper surface | K  |
+ 230 | dBZ | unattenuated radar reflectivity in Rayleigh approximation | 1  |
+ 240 | MFLX_CON | convective mass flux density | kg m-2 s-1  |
+ 241 | CAPE_CON | & | J kg-1  |
+ 243 | QCVG_CON | & | s-1  |

@@ -1,0 +1,5 @@
+#!@SHELL@
+
+@TEST_NETCDF_FALSE@exit 77
+@TEST_MPI_FALSE@exit 77
+@TEST_MPI_TRUE@@MPI_LAUNCH@ -n 5 ./toy_scrip.x -e NOICOH

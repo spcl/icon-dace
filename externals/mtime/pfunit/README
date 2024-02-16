@@ -1,0 +1,8 @@
+Unit Tests for mtime with pFUnit
+================================
+
+pFUnit: http://pfunit.sourceforge.net/
+
+For installation see http://pfunit.sourceforge.net/page_Installation.html
+
+Works only with gfortran 4.8.1 and above. Only pFUnit version 2.1.0 branch worked for me.

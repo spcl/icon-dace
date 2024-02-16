@@ -1,0 +1,32 @@
+predef:
+  time_config: &time_config
+    coupling_period: 60
+    time_reduction: accumulate
+    src_lag: 60
+    tgt_lag: 60
+    interpolation:
+      - fixed:
+          user_value: -1.0
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+coupling:
+  - src_component: comp_1
+    src_grid: grid1
+    tgt_component: comp_2
+    tgt_grid: grid2
+    field: field_1
+    <<: *time_config
+  - src_component: comp_2
+    src_grid: grid2
+    tgt_component: comp_3
+    tgt_grid: grid3
+    field: field_2
+    <<: *time_config
+  - src_component: comp_3
+    src_grid: grid3
+    tgt_component: comp_1
+    tgt_grid: grid1
+    field: field_3
+    <<: *time_config

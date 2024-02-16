@@ -1,0 +1,9 @@
+#!@SHELL@
+
+set -e
+
+@TEST_MPI_FALSE@exit 77
+@TEST_YAXT_FC_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 6 ./test_mpi_handshake.x
+

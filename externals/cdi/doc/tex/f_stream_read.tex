@@ -1,0 +1,120 @@
+
+
+\subsection{Read a variable: \texttt{streamReadVar}}
+\index{streamReadVar}
+\label{streamReadVar}
+
+The function streamReadVar reads all the values of one time step of a variable
+from an open dataset.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamReadVar(INTEGER streamID, INTEGER varID, REAL*8 data, 
+                             INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenRead}}{streamOpenRead}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{data}]
+Pointer to the location into which the data values are read.
+                     The caller must allocate space for the returned values.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Read a variable: \texttt{streamReadVarF}}
+\index{streamReadVarF}
+\label{streamReadVarF}
+
+The function streamReadVar reads all the values of one time step of a variable
+from an open dataset.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamReadVar(INTEGER streamID, INTEGER varID, REAL*4 data, 
+                             INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenRead}}{streamOpenRead}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{data}]
+Pointer to the location into which the data values are read.
+                     The caller must allocate space for the returned values.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Read a horizontal slice of a variable: \texttt{streamReadVarSlice}}
+\index{streamReadVarSlice}
+\label{streamReadVarSlice}
+
+The function streamReadVarSlice reads all the values of a horizontal slice of a variable
+from an open dataset.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamReadVarSlice(INTEGER streamID, INTEGER varID, INTEGER levelID, 
+                                  REAL*8 data, INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenRead}}{streamOpenRead}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{levelID}]
+Level identifier.
+\item[\texttt{data}]
+Pointer to the location into which the data values are read.
+                     The caller must allocate space for the returned values.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Read a horizontal slice of a variable: \texttt{streamReadVarSliceF}}
+\index{streamReadVarSliceF}
+\label{streamReadVarSliceF}
+
+The function streamReadVarSliceF reads all the values of a horizontal slice of a variable
+from an open dataset.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamReadVarSliceF(INTEGER streamID, INTEGER varID, INTEGER levelID, 
+                                   REAL*4 data, INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenRead}}{streamOpenRead}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{levelID}]
+Level identifier.
+\item[\texttt{data}]
+Pointer to the location into which the data values are read.
+                     The caller must allocate space for the returned values.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}

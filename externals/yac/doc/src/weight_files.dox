@@ -1,0 +1,35 @@
+/**
+ * \page weight_files Creating weight files and visualise them
+
+\author Moritz Hanke (Deutsches Klimarechenzentrum Hamburg)
+
+In order to let YAC write out weight files the writing has to be enabled
+either through the interface or the \ref yaml_file "configuration file" by
+providing a weight file name.
+
+YAC will write out the wight file in parallel. This parallel output can be
+configured as described here: \ref io_config_detail
+
+\code{.yaml}
+
+coupling:
+  - src_component: ...
+    tgt_component: ...
+    ...
+    field: TAUX
+    weight_file_name: *weights_TAUX.nc*
+  - ...
+
+\endcode
+
+The my_weight_file.nc can be converted to vtk using weights2vtk.x in the contrib directory
+
+\code{.sh}
+
+weights2vtk.x -S I -T I -s <source_grid.nc> -t <target_grid.nc> -w my_weight_file.nc -o weights.vtk
+
+\endcode
+
+weights.vtk can be visualised with paraview.
+
+ */

@@ -1,0 +1,12 @@
+#!@SHELL@
+
+set -e
+
+@TEST_MPI_FALSE@exit 77
+@TEST_YAXT_FC_FALSE@exit 77
+
+for COUNT in 1 2 3 4 5 10 13
+do
+  @MPI_LAUNCH@ -n $COUNT ./test_query_routines_c.x
+  @MPI_LAUNCH@ -n $COUNT ./test_query_routines.x
+done

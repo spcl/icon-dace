@@ -1,0 +1,35 @@
+#!@SHELL@
+
+@TEST_PYTHON_BINDINGS_FALSE@exit 77
+@TEST_MPI_FALSE@exit 77
+
+@SHLIB_ENVIRONMENT_SHELL@
+PYTHONPATH="@abs_top_builddir@/python:$PYTHONPATH"
+export PYTHONPATH;
+
+cd "@abs_builddir@"
+
+cat <<EOF > par_nc2plot_test.py
+#!/usr/bin/env python3
+from yac.examples import Driver, Plotter, NetCDF_Reader
+from yac import YAC
+import sys
+
+yac = YAC(default_instance=True)
+
+driver = Driver()
+if sys.argv[1] == "netcdf_reader":
+  driver.run(
+    NetCDF_Reader("par_noise.nc", gridfile="@abs_top_srcdir@/grids/icon_grid_R02B00.nc")
+  )
+elif sys.argv[1] == "plotter":
+  driver.run(
+    Plotter(variables=[("netcdf_reader","netcdf_reader_grid","noise")])
+  )
+else:
+  raise Exception("Unknown component")
+
+EOF
+
+@MPI_LAUNCH@ -n 1 @PYTHON@ par_nc2plot_test.py netcdf_reader : \
+             -n 1 @PYTHON@ par_nc2plot_test.py plotter

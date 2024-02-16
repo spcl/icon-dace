@@ -1,0 +1,191 @@
+# Parameter table
+#
+# TABLE_ID=128
+# TABLE_MODEL=REMO
+# TABLE_INSTITUT=MPIMET
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+  14 | FTKVM       | turbulent transfer coefficient of momentum in the atmosphere
+  15 | FTKVH       | turbulent transfer coefficient of heat in the atmosphere
+  38 | U10ER       | 10m u-velocity                           | m/s
+  39 | V10ER       | 10m v-velocity                           | m/s
+  40 | CAPE        | convetive available potential energy
+  41 | GHPBL       | height of the planetary boudary layer    | gpm
+  42 | BETA        | BETA
+  43 | WMINLOK     | WMINLOK
+  44 | WMAXLOK     | WMAXLOK
+  45 | VBM10M      | maximum of the expected gust velocity near the surface | m/s
+  46 | BFLHS       | surface sensible heat flux               | W/m**2
+  47 | BFLQDS      | surface latent heat flux                 | W/m**2
+  48 | TMCM        | turbulent transfer coefficient of momentum at the surface
+  49 | TRSOL       | TRSOL                          
+  50 | TMCH        | turbulent transfer coefficient of heat at the surface
+  51 | EMTEF       | EMTEF
+  52 | TRSOF       | TRSOF
+  53 | DRAIN       | drainage                                 | mm
+  54 | TSL         | surface temperature (land)               | K
+  55 | TSW         | surface temperature (water)              | K
+  56 | TSI         | surface temperature (ice)                | K
+  57 | USTRL       | surface u-stress (land)                  | Pa
+  58 | USTRW       | surface u-stress (water)                 | Pa
+  59 | USTRI       | surface u-stress (ice)                   | Pa
+  60 | VSTRL       | surface v-stress (land)                  | Pa
+  61 | VSTRW       | surface v-stress (water)                 | Pa
+  62 | VSTRI       | surface v-stress (ice)                   | Pa
+  63 | EVAPL       | surface evaporation (land)               | mm
+  64 | EVAPW       | surface evaporation (water)              | mm
+  65 | EVAPI       | surface evaporation (ice)                | mm
+  66 | AHFLL       | surface latent heat flux (land)          | W/m**2
+  67 | AHFLW       | surface latent heat flux (water)         | W/m**2
+  68 | AHFLI       | surface latent heat flux (ice)           | W/m**2
+  69 | AHFSL       | surface sensible heat flux (land)        | W/m**2
+  70 | AHFSW       | surface sensible heat flux (water)       | W/m**2
+  71 | AHFSI       | surface sensible heat flux (ice)         | W/m**2
+  72 | AZ0L        | surface roughness length (land)          | m
+  73 | AZ0W        | surface roughness length (water)         | m
+  74 | AZ0I        | surface roughness length (ice)           | m
+  75 | ALSOL       | surface albedo (land)                    | fract.
+  76 | ALSOW       | surface albedo (water)                   | fract.
+  77 | ALSOI       | surface albedo (ice)                     | fract.
+  81 | TMCHL       | turbulent transfer coefficient of heat at the surface (land)
+  82 | TMCHW       | turbulent transfer coefficient of heat at the surface (water)
+  83 | TMCHI       | turbulent transfer coefficient of heat at the surface (ice)
+  84 | QDBL        | specific humidity surface (land)         | kg/kg
+  85 | QDBW        | specific humidity surface (water)        | kg/kg
+  86 | QDBI        | specific humidity surface (ice)          | kg/kg
+  87 | BFLHSL      | surface sensible heat flux (land)        | W/m**2
+  88 | BFLHSW      | surface sensible heat flux (water)       | W/m**2
+  89 | BFLHSI      | surface sensible heat flux (ice)         | W/m**2
+  90 | BFLQDSL     | surface latent heat flux (land)          | W/m**2
+  91 | BFLQDSW     | surface latent heat flux (water)         | W/m**2
+  92 | BFLQDSI     | surface latent heat flux (ice)           | W/m**2
+  93 | AHFICE      | sea-ice: conductive heat                 | W/m
+  94 | QRES        | residual heat flux for melting sea ice   | W/m**2
+  95 | SRFL        | SRFL
+  96 | QDBOXS      | horizontal transport of water vapour     | kg/m**2
+  97 | QWBOXS      | horizontal transport of cloud water      | kg/m**2
+  98 | EKBOXS      | horizontal transport of kinetic energy   | (3600*J)/m**2
+  99 | FHBOXS      | horizontal transport of sensible heat    | (3600*J)/m**2
+ 100 | FIBOXS      | horizontal transport of potential energy | (3600*J)/m**2
+ 101 | TLAMBDA     | heat conductivity of dry soil            | W/(K*m)
+ 103 | DLAMBDA     | parameter for increasing the heat conductivity of the soil
+ 104 | PORVOL      | pore volume
+ 105 | FCAP        | field capacity of soil
+ 106 | WI3         | fraction of frozen soil
+ 107 | WI4         | fraction of frozen soil
+ 108 | WI5         | fraction of frozen soil
+ 109 | WI          | fraction of frozen soil
+ 110 | WICL        | fraction of frozen soil
+ 112 | QDB         | specific humidity surface                | kg/kg
+ 129 | FIB         | surface geopotential (orography)         | m
+ 130 | T           | temperature                              | K
+ 131 | U           | u-velocity                               | m/s
+ 132 | V           | v-velocity                               | m/s
+ 133 | QD          | specific humidity                        | kg/kg
+ 134 | PS          | Surface pressure                         | Pa
+ 135 | VERVEL      | Vertical velocity                        | Pa/s
+ 138 | SVO         | vorticity                                | 1/s
+ 139 | TS          | surface temperature                      | K
+ 140 | WS          | soil wetness                             | m
+ 141 | SN          | snow depth                               | m
+ 142 | APRL        | large scale precipitation                | mm
+ 143 | APRC        | convective  precipitation                | mm
+ 144 | APRS        | snow fall                                | mm
+ 145 | VDIS        | boundary layer dissipation               | W/m**2
+ 146 | AHFS        | surface sensible heat flux               | W/m**2
+ 147 | AHFL        | surface latent heat flux                 | W/m**2
+ 148 | STREAM      | streamfunction                           | m**2/s
+ 149 | VELOPOT     | velocity potential                       | m**2/s
+ 151 | PSRED       | mean sea level pressure                  | Pa
+ 152 | LSP         | log surface pressure
+ 153 | QW          | liquid water content                     | kg/kg
+ 155 | SD          | divergence                               | 1/s
+ 156 | FI          | geopotential height                      | gpm
+ 159 | USTAR3      | ustar**3                                 | m**3/s**3
+ 160 | RUNOFF      | surface runoff                           | mm
+ 162 | ACLC        | cloud cover                              | fract.
+ 163 | ACLCV       | total cloud cover                        | fract.
+ 164 | ACLCOV      | total cloud cover                        | fract.
+ 165 | U10         | 10m u-velocity                           | m/s
+ 166 | V10         | 10m v-velocity                           | m/s
+ 167 | TEMP2       | 2m temperature                           | K
+ 168 | DEW2        | 2m dew point temperature                 | K
+ 169 | TSURF       | surface temperature (land)               | K
+ 170 | TD          | deep soil temperature                    | K
+ 171 | WIND10      | 10m windspeed                            | m/s
+ 172 | BLA         | land sea mask                            | fract.
+ 173 | AZ0         | surface roughness length                 | m
+ 174 | ALB         | surface background albedo                | fract.
+ 175 | ALBEDO      | surface albedo                           | fract.
+ 176 | SRADS       | net surface solar radiation              | W/m**2
+ 177 | TRADS       | net surface thermal radiation            | W/m**2
+ 178 | SRAD0       | net top solar radiation                  | W/m**2
+ 179 | TRAD0       | top thermal radiation (OLR)              | W/m**2
+ 180 | USTR        | surface u-stress                         | Pa
+ 181 | VSTR        | surface v-stress                         | Pa
+ 182 | EVAP        | surface evaporation                      |  mm
+ 183 | TDCL        | soil temperature                         | K
+ 185 | SRAFS       | net surf. solar radiation   (clear sky)  | W/m**2
+ 186 | TRAFS       | net surf. thermal radiation (clear sky)  | W/m**2
+ 187 | SRAF0       | net top solar radiation     (clear sky)  | W/m**2
+ 188 | TRAF0       | net top thermal radiation   (clear sky)  | W/m**2
+ 189 | SCLFS       | surface solar cloud forcing              | W/m**2
+ 190 | TCLFS       | surface thermal cloud forcing            | W/m**2
+ 191 | SCLF0       | top solar cloud forcing                  | W/m**2
+ 192 | TCLF0       | top thermal cloud forcing                | W/m**2
+ 194 | WL          | skin reservoir content                   | m
+ 195 | USTRGW      | u-gravity wave stress                    | Pa
+ 196 | VSTRGW      | v-gravity wave stress                    | Pa
+ 197 | VDISGW      | gravity wave dissipation                 | W/m**2
+ 198 | VGRAT       | vegetation ratio
+ 199 | VAROR       | orographic variance (for surface runoff)
+ 200 | VLT         | leaf area index
+ 201 | T2MAX       | maximum 2m-temperature                   | K
+ 202 | T2MIN       | minimum 2m-temperature                   | K
+ 203 | SRAD0U      | top solar radiation upward               | W/m**2
+ 204 | SRADSU      | surface solar radiation upward           | W/m**2
+ 205 | TRADSU      | surface thermal radiation upward         | W/m**2
+ 206 | TSN         | snow temperature                         | K
+ 207 | TD3         | soil temperature                         | K
+ 208 | TD4         | soil temperature                         | K
+ 209 | TD5         | soil temperature                         | K
+ 210 | SEAICE      | sea ice cover                            | fract.
+ 211 | SICED       | sea ice depth                            | m
+ 212 | FOREST      | vegetation type
+ 213 | TEFF        | (effective) sea-ice skin temperature     | K
+ 214 | TSMAX       | maximum surface temperature              | K
+ 215 | TSMIN       | minimum surface temperature              | K
+ 216 | WIMAX       | maximum 10m-wind speed                   | m/s
+ 217 | TOPMAX      | maximum height of convective cloud tops  | Pa
+ 218 | SNMEL       | snow melt                                | mm
+ 220 | TSLIN       | land: residual surface heat budget       | W/m**2
+ 221 | DSNAC       | snow depth change                        | mm
+ 222 | EMTER       | EMTER
+ 223 | ACLCAC      | cloud cover                              | fract.
+ 224 | TKE         | turbulent kinetic energy
+ 226 | FAO         | FAO data set (soil data flags)
+ 227 | RGCGN       | heat capacity of soil
+ 229 | WSMX        | field capacity of soil
+ 230 | QVI         | vertically integrated specific humidity  | kg/m**2
+ 231 | ALWCVI      | vertically integrated liquid water cont. | kg/m**2
+ 232 | GLAC        | glacier mask
+ 253 | PHI         | latitude in real coordinates             | degrees_north
+ 254 | RLA         | longitude in real coordinates            | degrees_east
+ 259 | WINDSPEED   | windspeed (sqrt(u**2+v**2))
+ 260 | PRECIP      | total precipitation

@@ -1,0 +1,11 @@
+In order to easily check the source to target mapping, especially required
+to map the hydrological discharge from the atmosphere to the ocean, a pair
+of toys is provided
+
+  a) toy_icon_runoff_atm.c
+  b) toy_icon_runoff_ocn.c
+
+The coupling configuration is described in toy_icon_runoff.yaml.
+The components read in ICON grids and send data from atm to ocn.
+
+mpirun -np 1 toy_icon_runoff_atm.x : -np 2 toy_icon_runoff_ocn.x

@@ -1,0 +1,20 @@
+#! /usr/bin/env python
+
+import fileinput
+import re
+import sys
+
+from package_info import version
+
+seek = True
+code = 1
+for line in fileinput.input():
+    if seek:
+        result = re.match(r"^(.*<text:p.*?>Release )(.*?)(</text:p>.*)$", line)
+        if result:
+            line = result.group(1) + version + result.group(3) + "\n"
+            if result.group(2) != version:
+                code = 0
+            seek = False
+    sys.stdout.write(line)
+sys.exit(code)

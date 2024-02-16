@@ -1,0 +1,12 @@
+f77 -g -I../src -o cdi_write_f cdi_write_f.f   -L../src -lcdi -L/home/m214003/local/lib -lnc-dap
+f77 -g -I../src -o cdi_read_f cdi_read_f.f   -L../src -lcdi -L/home/m214003/local/lib -lnc-dap
+f77 -g -I../src -o cdi_copy_f cdi_copy_f.f   -L../src -lcdi -L/home/m214003/local/lib -lnc-dap
+f77 -g -I../src -o cdi_write_f cdi_write_f.f   -L../src -lcdi -L/client/lib -lnetcdf
+f77 -g -I../src -o cdi_read_f cdi_read_f.f   -L../src -lcdi -L/client/lib -lnetcdf
+f77 -g -I../src -o cdi_copy_f cdi_copy_f.f   -L../src -lcdi -L/client/lib -lnetcdf
+g77 -g -I../src -o cdi_write_f cdi_write_f.f -L/pf/m/m214003/local/etch-ia32/lib -lcdi -static -L/scratch/local2/m214003/local/lib -lgrib_api -L/sw/etch-ia32/jasper-1.900.1/lib -ljasper -L/sw/etch-ia32/netcdf-4.0.1/lib -lnetcdf
+
+
+
+
+gfortran -I../src -I../src -g -O2 -o  vgrid_write vgrid_write.f90  -L/Users/m214003/local/gribapi-1.10.4/lib -L/Users/m214003/local/lib -L/opt/local/lib ../src/.libs/libcdi.a -L/Users/m214003/work/libs4cdo-0.0.10/build/lib /Users/m214003/local/gribapi-1.10.4/lib/libgrib_api.dylib /opt/local/lib/libopenjpeg.dylib /Users/m214003/local/lib/libjasper.dylib /Users/m214003/work/libs4cdo-0.0.10/build/lib/libnetcdf.dylib /Users/m214003/work/libs4cdo-0.0.10/build/lib/libhdf5_hl.dylib /Users/m214003/work/libs4cdo-0.0.10/build/lib/libhdf5.dylib -lpthread /opt/local/lib/libcurl.dylib /opt/local/lib/libidn.dylib /opt/local/lib/libintl.dylib -lc /opt/local/lib/libiconv.dylib -lssl -lcrypto /Users/m214003/local/lib/libsz.dylib -lz -lm -pthread

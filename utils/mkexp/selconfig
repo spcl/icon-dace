@@ -1,0 +1,83 @@
+#! /usr/bin/env python
+'''\
+Select the given section of a config file
+
+$Id$
+'''
+
+from __future__ import print_function
+
+import argparse
+import io
+import re
+import sys
+
+from expconfig import ConfigObj
+
+from expargparse import assigns_to_dicts, get_key_chain
+from feedback import die
+import package_info
+
+#
+# Main routine
+#
+
+# Check command line
+
+command_line = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
+command_line.add_argument('section',
+                          help='section to be selected, in . notation')
+command_line.add_argument('config', nargs='?', default='-', 
+                          help='original configuration file name [%(default)s]')
+command_line.add_argument('-V', '--version', action='version',
+                          version=package_info.version)
+command_line.add_argument('--inline-comments' , '-c', action='store_true',
+                          help='compact white space before inline comments'
+                               ' (BETA)')
+command_line.add_argument('--trailing-space' , '-t', action='store_true',
+                          help='remove white space at end of lines')
+
+args = command_line.parse_args()
+
+# File handling
+
+try:
+    config_file = args.config
+    if config_file == '-':
+        config_file = sys.stdin
+    config_data = ConfigObj(config_file, file_error=True)
+except IOError as error:
+    die(error.message)
+
+# Walk config to the appropriate section and create output structure
+
+selected_data = ConfigObj(write_empty_values=True,
+                          indent_type='  ')
+if args.section:
+    config = config_data
+    selected = selected_data
+    for section in reversed(get_key_chain(args.section)):
+        if section in config.comments:
+            selected.comments[section] = config.comments[section]
+        if section in config.inline_comments:
+            selected.inline_comments[section] = config.inline_comments[section]
+        config = config[section]
+        selected[section] = {}
+        selected = selected[section]
+    # Replace the empty leaf section by the original section to be selected
+    selected.parent[section] = config
+else:
+    selected_data.merge(config_data)
+
+# Ready to roll out
+
+lines = io.BytesIO()
+selected_data.write(lines)
+
+lines.seek(0)
+for line in io.TextIOWrapper(lines):
+    if args.inline_comments: line = re.sub(r' = (.*?)  #', r' = \1 #', line)
+    if args.trailing_space:
+        print(line.rstrip())
+    else:
+        print(line, end='')

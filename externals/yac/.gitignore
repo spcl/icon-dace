@@ -1,0 +1,98 @@
+# Autoreconf stage files
+/aclocal.m4
+/autom4te.cache
+/config/compile
+/config/config.guess
+/config/config.sub
+/config/depcomp
+/config/install-sh
+/config/missing
+/config/test-driver
+/configure
+/configure~
+/src/config.h.in
+/src/config.h.in~
+Makefile.in
+
+# Configure stage files
+.deps
+/config.cache
+/config.log
+/config.status
+/examples/*.csv
+/examples/*.nc
+/examples/*/*.sh
+!/examples/toy_slurm_batch.sh
+/examples/mesh_compA_convex.txt
+/examples/mesh_compA_exact.txt
+/python/setup.py
+/python/tests/*.sh
+/src/config.h
+/src/pkgconfig/yac.pc
+/src/stamp-h1
+/src/stamp-h2
+/src/yac_config.h
+/tests/*.csv
+/tests/*.nc
+/tests/*.sh
+/tests/*.txt
+Makefile
+
+# Build stage files
+*.a
+*.i
+*.mod
+*.o
+*.so
+*.x
+.dirstamp
+/clapack/sysdep1.h
+/python/yac.c
+/python/build
+/python/yac
+
+# Test stage files
+/examples/*.0
+/examples/*.vtk
+/python/examples/**/*.log
+/python/examples/**/*.png
+/python/examples/**/*.trs
+/python/test-suite.log
+/tests/*.0
+/tests/*.1
+/tests/*.2
+/tests/*.err
+/tests/*.json
+/tests/*.log
+/tests/*.trs
+/tests/*.vtk
+/tests/*.yaml
+
+# Install stage files
+/python/yac.egg-info
+
+# Files of additional manual stages
+/doc/doxygen_sqlite3.db
+/doc/html
+
+# VIM files:
+.*.swp
+Session.vim
+tags
+
+# Core dump files
+core
+core.[0-9]
+core.[0-9][0-9]
+core.[0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9][0-9][0-9]
+
+# Mac OS generated files
+*.x.dSYM
+.DS_Store
+
+# Dist stage files
+/yac-*.tar.gz

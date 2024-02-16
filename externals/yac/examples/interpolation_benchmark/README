@@ -1,0 +1,15 @@
+The toy_scrip and generate_OASIS_mask_file tools were used to generate the data for:
+  Valcke S, Piacentini A, Jonville G.
+  Benchmarking Regridding Libraries Used in Earth System Modelling.
+  Mathematical and Computational Applications. 2022; 27(2):31.
+  https://doi.org/10.3390/mca27020031
+and
+  Valcke, S., Piacentini, A. and Jonville, G.
+  Benchmarking of regridding libraries used in Earth System Modelling: SCRIP, YAC, ESMF and XIOS
+  Technical Report, WN/CMGC/21/145,
+  CERFACS, Toulouse, France, 2021.
+  https://oasis.cerfacs.fr/wp-content/uploads/sites/114/2021/11/GLOBC-TR_Valcke_Report_regridding_analysis_final_2021.pdf
+
+The "grids.nc", "masks_no_atm.nc", "masks_nogt_yac.nc", and "masks_torc_yac.nc"
+file required by toy_scrip.x can be downloaded from:
+  https://doi.org/10.5281/zenodo.5342778

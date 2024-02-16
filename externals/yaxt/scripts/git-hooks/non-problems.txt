@@ -1,0 +1,17 @@
+[global_ignore]
+^config/checksrc/
+^config/workarounds/
+^include/cfortran\.h$
+^src/core/ppm_omp_assign\.h$
+^src/core/symprefix\.h$
+^include/xpfpa.*\.h$
+^doc/makef90depends/example/
+
+[ignore_fc_defs_problem]
+^src/solver/[^/]*_multi.f90$
+^src/core/ppm_ncdf_dump_wrappers.f90$
+
+[ignore_config_h_problem]
+^src/xt/[^/]*.h$
+^src/xt_quicksort_base.h$
+

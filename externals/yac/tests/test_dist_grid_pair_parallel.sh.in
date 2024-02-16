@@ -1,0 +1,8 @@
+#!@SHELL@
+
+@TEST_NETCDF_FALSE@exit 77
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 4 ./test_dist_grid_pair_parallel.x && \
+@MPI_LAUNCH@ -n 8 ./test_dist_grid_pair_parallel.x && \
+@MPI_LAUNCH@ -n 17 ./test_dist_grid_pair_parallel.x

@@ -1,0 +1,312 @@
+
+
+\subsection{Create a Time axis: \texttt{taxisCreate}}
+\index{taxisCreate}
+\label{taxisCreate}
+
+The function {\texttt{taxisCreate}} creates a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisCreate(INTEGER taxistype)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxistype}\ }
+\item[\texttt{taxistype}]
+The type of the Time axis, one of the set of predefined {\CDI} time axis types.
+                      The valid {\CDI} time axis types are {\texttt{TAXIS\_ABSOLUTE}} and {\texttt{TAXIS\_RELATIVE}}.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisCreate}} returns an identifier to the Time axis.
+
+
+\subsubsection*{Example}
+
+Here is an example using {\texttt{taxisCreate}} to create a relative T-axis with a standard calendar.
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+
+    INCLUDE 'cdi.inc'
+       ...
+    INTEGER taxisID
+       ...
+    taxisID = taxisCreate(TAXIS_RELATIVE)
+    taxisDefCalendar(taxisID, CALENDAR_STANDARD)
+    taxisDefRdate(taxisID, 19850101)
+    taxisDefRtime(taxisID, 120000)
+       ...
+\end{lstlisting}
+
+
+\subsection{Destroy a Time axis: \texttt{taxisDestroy}}
+\index{taxisDestroy}
+\label{taxisDestroy}
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDestroy(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\texttt{taxisCreate}}
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Define the reference date: \texttt{taxisDefRdate}}
+\index{taxisDefRdate}
+\label{taxisDefRdate}
+
+The function {\texttt{taxisDefRdate}} defines the reference date of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDefRdate(INTEGER taxisID, INTEGER rdate)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}}
+\item[\texttt{rdate}]
+Reference date (YYYYMMDD)
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the reference date: \texttt{taxisInqRdate}}
+\index{taxisInqRdate}
+\label{taxisInqRdate}
+
+The function {\texttt{taxisInqRdate}} returns the reference date of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisInqRdate(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}} or {\htmlref{\texttt{vlistInqTaxis}}{vlistInqTaxis}}
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisInqRdate}} returns the reference date.
+
+
+
+\subsection{Define the reference time: \texttt{taxisDefRtime}}
+\index{taxisDefRtime}
+\label{taxisDefRtime}
+
+The function {\texttt{taxisDefRtime}} defines the reference time of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDefRtime(INTEGER taxisID, INTEGER rtime)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}}
+\item[\texttt{rtime}]
+Reference time (hhmmss)
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the reference time: \texttt{taxisInqRtime}}
+\index{taxisInqRtime}
+\label{taxisInqRtime}
+
+The function {\texttt{taxisInqRtime}} returns the reference time of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisInqRtime(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}} or {\htmlref{\texttt{vlistInqTaxis}}{vlistInqTaxis}}
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisInqRtime}} returns the reference time.
+
+
+
+\subsection{Define the verification date: \texttt{taxisDefVdate}}
+\index{taxisDefVdate}
+\label{taxisDefVdate}
+
+The function {\texttt{taxisDefVdate}} defines the verification date of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDefVdate(INTEGER taxisID, INTEGER vdate)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}}
+\item[\texttt{vdate}]
+Verification date (YYYYMMDD)
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the verification date: \texttt{taxisInqVdate}}
+\index{taxisInqVdate}
+\label{taxisInqVdate}
+
+The function {\texttt{taxisInqVdate}} returns the verification date of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisInqVdate(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}} or {\htmlref{\texttt{vlistInqTaxis}}{vlistInqTaxis}}
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisInqVdate}} returns the verification date.
+
+
+
+\subsection{Define the verification time: \texttt{taxisDefVtime}}
+\index{taxisDefVtime}
+\label{taxisDefVtime}
+
+The function {\texttt{taxisDefVtime}} defines the verification time of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDefVtime(INTEGER taxisID, INTEGER vtime)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}}
+\item[\texttt{vtime}]
+Verification time (hhmmss)
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the verification time: \texttt{taxisInqVtime}}
+\index{taxisInqVtime}
+\label{taxisInqVtime}
+
+The function {\texttt{taxisInqVtime}} returns the verification time of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisInqVtime(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}} or {\htmlref{\texttt{vlistInqTaxis}}{vlistInqTaxis}}
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisInqVtime}} returns the verification time.
+
+
+
+\subsection{Define the calendar: \texttt{taxisDefCalendar}}
+\index{taxisDefCalendar}
+\label{taxisDefCalendar}
+
+The function {\texttt{taxisDefCalendar}} defines the calendar of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE taxisDefCalendar(INTEGER taxisID, INTEGER calendar)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{calendar}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}}
+\item[\texttt{calendar}]
+The type of the calendar, one of the set of predefined {\CDI} calendar types.
+                    The valid {\CDI} calendar types are {\texttt{CALENDAR\_STANDARD}}, {\texttt{CALENDAR\_PROLEPTIC}},
+                    {\texttt{CALENDAR\_360DAYS}}, {\texttt{CALENDAR\_365DAYS}} and {\texttt{CALENDAR\_366DAYS}}.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the calendar: \texttt{taxisInqCalendar}}
+\index{taxisInqCalendar}
+\label{taxisInqCalendar}
+
+The function {\texttt{taxisInqCalendar}} returns the calendar of a Time axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION taxisInqCalendar(INTEGER taxisID)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{taxisID}\ }
+\item[\texttt{taxisID}]
+Time axis ID, from a previous call to {\htmlref{\texttt{taxisCreate}}{taxisCreate}} or {\htmlref{\texttt{vlistInqTaxis}}{vlistInqTaxis}}
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{taxisInqCalendar}} returns the type of the calendar,
+one of the set of predefined {\CDI} calendar types.
+The valid {\CDI} calendar types are {\texttt{CALENDAR\_STANDARD}}, {\texttt{CALENDAR\_PROLEPTIC}},
+{\texttt{CALENDAR\_360DAYS}}, {\texttt{CALENDAR\_365DAYS}} and {\texttt{CALENDAR\_366DAYS}}.
+

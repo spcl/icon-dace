@@ -1,0 +1,26 @@
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - black>=22.8.0
+  - codespell>=2.2.2
+  - flake8>=5.0.4
+  - flake8-black
+  - ipdb
+  - ipython
+  - isort>=5
+  - mypy
+  - pip
+  - pre-commit>=2.19.0
+  - pre-commit-hooks>=4.3.0
+  - pydocstyle>=6.1.1
+  - pylint>=2.6.0
+  - pytest
+  - rope
+  - rstcheck>=6.1.1
+  - sphinx
+  - sphinx-autobuild
+  - toml>=0.10.2
+  - pip
+  - pip:
+    - flake8-pyproject

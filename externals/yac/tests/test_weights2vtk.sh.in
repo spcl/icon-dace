@@ -1,0 +1,6 @@
+#!@SHELL@
+
+@ENABLE_LIB_ONLY_TRUE@exit 77
+@TEST_NETCDF_FALSE@exit 77
+
+./test_weights2vtk.x

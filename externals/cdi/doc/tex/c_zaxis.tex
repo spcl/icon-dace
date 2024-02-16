@@ -1,0 +1,211 @@
+
+
+\subsection{Create a vertical Z-axis: \texttt{zaxisCreate}}
+\index{zaxisCreate}
+\label{zaxisCreate}
+
+The function {\texttt{zaxisCreate}} creates a vertical Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    int zaxisCreate(int zaxistype, int size);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxistype}\ }
+\item[\texttt{zaxistype}]
+The type of the Z-axis, one of the set of predefined {\CDI} Z-axis types.
+                      The valid {\CDI} Z-axis types are {\texttt{ZAXIS\_GENERIC}}, {\texttt{ZAXIS\_SURFACE}},
+                      {\texttt{ZAXIS\_HYBRID}}, {\texttt{ZAXIS\_SIGMA}}, {\texttt{ZAXIS\_PRESSURE}}, {\texttt{ZAXIS\_HEIGHT}},
+                      {\texttt{ZAXIS\_ISENTROPIC}}, {\texttt{ZAXIS\_ALTITUDE}}, {\texttt{ZAXIS\_MEANSEA}}, {\texttt{ZAXIS\_TOA}},
+                      {\texttt{ZAXIS\_SEA\_BOTTOM}}, {\texttt{ZAXIS\_ATMOSPHERE}}, {\texttt{ZAXIS\_CLOUD\_BASE}},
+                      {\texttt{ZAXIS\_CLOUD\_TOP}}, {\texttt{ZAXIS\_ISOTHERM\_ZERO}}, {\texttt{ZAXIS\_SNOW}},
+                      {\texttt{ZAXIS\_LAKE\_BOTTOM}}, {\texttt{ZAXIS\_SEDIMENT\_BOTTOM}}, {\texttt{ZAXIS\_SEDIMENT\_BOTTOM\_TA}},
+                      {\texttt{ZAXIS\_SEDIMENT\_BOTTOM\_TW}}, {\texttt{ZAXIS\_MIX\_LAYER}},
+                      {\texttt{ZAXIS\_DEPTH\_BELOW\_SEA}} and {\texttt{ZAXIS\_DEPTH\_BELOW\_LAND}}.
+\item[\texttt{size}]
+Number of levels.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{zaxisCreate}} returns an identifier to the Z-axis.
+
+
+\subsubsection*{Example}
+
+Here is an example using {\texttt{zaxisCreate}} to create a pressure level Z-axis:
+
+\begin{lstlisting}[language=C, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+
+    #include "cdi.h"
+       ...
+    #define  nlev    5
+       ...
+    double levs[nlev] = {101300, 92500, 85000, 50000, 20000};
+    int zaxisID;
+       ...
+    zaxisID = zaxisCreate(ZAXIS_PRESSURE, nlev);
+    zaxisDefLevels(zaxisID, levs);
+       ...
+\end{lstlisting}
+
+
+\subsection{Destroy a vertical Z-axis: \texttt{zaxisDestroy}}
+\index{zaxisDestroy}
+\label{zaxisDestroy}
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    void zaxisDestroy(int zaxisID);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}}.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get the type of a Z-axis: \texttt{zaxisInqType}}
+\index{zaxisInqType}
+\label{zaxisInqType}
+
+The function {\texttt{zaxisInqType}} returns the type of a Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    int zaxisInqType(int zaxisID);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}} or {\htmlref{\texttt{vlistInqVarZaxis}}{vlistInqVarZaxis}}.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{zaxisInqType}} returns the type of the Z-axis,
+one of the set of predefined {\CDI} Z-axis types.
+The valid {\CDI} Z-axis types are {\texttt{ZAXIS\_GENERIC}}, {\texttt{ZAXIS\_SURFACE}},
+{\texttt{ZAXIS\_HYBRID}}, {\texttt{ZAXIS\_SIGMA}}, {\texttt{ZAXIS\_PRESSURE}}, {\texttt{ZAXIS\_HEIGHT}},
+{\texttt{ZAXIS\_ISENTROPIC}}, {\texttt{ZAXIS\_ALTITUDE}}, {\texttt{ZAXIS\_MEANSEA}}, {\texttt{ZAXIS\_TOA}},
+{\texttt{ZAXIS\_SEA\_BOTTOM}}, {\texttt{ZAXIS\_ATMOSPHERE}}, {\texttt{ZAXIS\_CLOUD\_BASE}},
+{\texttt{ZAXIS\_CLOUD\_TOP}}, {\texttt{ZAXIS\_ISOTHERM\_ZERO}}, {\texttt{ZAXIS\_SNOW}},
+{\texttt{ZAXIS\_LAKE\_BOTTOM}}, {\texttt{ZAXIS\_SEDIMENT\_BOTTOM}}, {\texttt{ZAXIS\_SEDIMENT\_BOTTOM\_TA}},
+{\texttt{ZAXIS\_SEDIMENT\_BOTTOM\_TW}}, {\texttt{ZAXIS\_MIX\_LAYER}},
+{\texttt{ZAXIS\_DEPTH\_BELOW\_SEA}} and {\texttt{ZAXIS\_DEPTH\_BELOW\_LAND}}.
+
+
+
+\subsection{Get the size of a Z-axis: \texttt{zaxisInqSize}}
+\index{zaxisInqSize}
+\label{zaxisInqSize}
+
+The function {\texttt{zaxisInqSize}} returns the size of a Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    int zaxisInqSize(int zaxisID);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}} or {\htmlref{\texttt{vlistInqVarZaxis}}{vlistInqVarZaxis}}.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{zaxisInqSize}} returns the number of levels of a Z-axis.
+
+
+
+\subsection{Define the levels of a Z-axis: \texttt{zaxisDefLevels}}
+\index{zaxisDefLevels}
+\label{zaxisDefLevels}
+
+The function {\texttt{zaxisDefLevels}} defines the levels of a Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    void zaxisDefLevels(int zaxisID, const double *levels);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}}.
+\item[\texttt{levels}]
+All levels of the Z-axis.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Get all levels of a Z-axis: \texttt{zaxisInqLevels}}
+\index{zaxisInqLevels}
+\label{zaxisInqLevels}
+
+The function {\texttt{zaxisInqLevels}} returns all levels of a Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    void zaxisInqLevels(int zaxisID, double *levels);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}} or {\htmlref{\texttt{vlistInqVarZaxis}}{vlistInqVarZaxis}}.
+\item[\texttt{levels}]
+Pointer to the location into which the levels are read.
+                    The caller must allocate space for the returned values.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{zaxisInqLevels}} saves all levels to the parameter {\texttt{levels}}.
+
+
+\subsection{Get one level of a Z-axis: \texttt{zaxisInqLevel}}
+\index{zaxisInqLevel}
+\label{zaxisInqLevel}
+
+The function {\texttt{zaxisInqLevel}} returns one level of a Z-axis.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    double zaxisInqLevel(int zaxisID, int levelID);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{zaxisID}\ }
+\item[\texttt{zaxisID}]
+Z-axis ID, from a previous call to {\htmlref{\texttt{zaxisCreate}}{zaxisCreate}} or {\htmlref{\texttt{vlistInqVarZaxis}}{vlistInqVarZaxis}}.
+\item[\texttt{levelID}]
+Level index (range: 0 to nlevel-1).
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{zaxisInqLevel}} returns the level of a Z-axis.

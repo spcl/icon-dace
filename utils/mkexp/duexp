@@ -1,0 +1,41 @@
+#! /bin/sh
+#
+# Show disk usage for experiment using config information.
+#
+# $Id$
+#
+
+PROGRAM=`basename $0`
+BINDIR=`dirname $0`
+PATH="$BINDIR:$PATH"
+
+die () {
+    echo "$@" >&2
+    exit 1
+}
+
+[ "x$1" = x ] && die "Oops: invalid number of parameters
+Usage: $PROGRAM config_file [key=value...]"
+
+CONFIG=$1
+shift
+
+eval `getexp -v "$CONFIG" "$@" || echo '
+' exit $?`
+
+du -ch --time \
+    $WORK_DIR \
+    $RESTART_DIR \
+    $SCRIPT_DIR \
+    $LOG_DIR \
+    $DATA_DIR \
+    $MON_DIR/$EXP_ID \
+2> /dev/null |
+sed "
+    s,$WORK_DIR,\$WORK_DIR,
+    s,$RESTART_DIR,\$RESTART_DIR,
+    s,$SCRIPT_DIR,\$SCRIPT_DIR,
+    s,$LOG_DIR,\$LOG_DIR,
+    s,$DATA_DIR,\$DATA_DIR,
+    s,$MON_DIR/$EXP_ID,\$MON_DIR/\$EXP_ID,
+"

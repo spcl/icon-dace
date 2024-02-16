@@ -1,0 +1,19 @@
+/**
+ * \page clipping Polygon clipping in YAC
+
+\author Moritz Hanke (Deutsches Klimarechenzentrum Hamburg)
+
+The actual polygon clipping in YAC is done by the routine
+\ref point_list_clipping. The algorithm being used is based on the
+Sutherland-Hodgman algorithm. It supports polygons that contain edges which can
+be on latitude, longitude, or great circles (\ref yac_edge_type).
+
+The following is a list of all special cases considered by the algorithm:
+\image html clipping_1.png
+\image html clipping_2.png
+\image html clipping_3.png
+\image html clipping_4.png
+\image html clipping_5.png
+\image html clipping_6.png
+
+ */

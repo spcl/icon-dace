@@ -1,0 +1,52 @@
+definitions:
+  - &config_conserv
+    coupling_period: 2
+    time_reduction: accumulate
+    interpolation:
+      - conservative:
+          enforced_conservation: true
+          partial_coverage: true
+          normalisation: fracarea
+      - fixed:
+          user_value: -1.0
+  - &config_hcsbb
+    coupling_period: 2
+    time_reduction: accumulate
+    interpolation:
+      - conservative:
+          enforced_conservation: true
+          partial_coverage: false
+          normalisation: fracarea
+      - bernstein_bezier
+      - fixed:
+          user_value: 999.0
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+calendar: proleptic-gregorian
+coupling:
+  - src_component: ATMOS
+    src_grid: grid1
+    tgt_component: OCEAN
+    tgt_grid: grid2
+    field: conserv_field_atm_oce
+    <<: *config_conserv
+  - src_component: OCEAN
+    src_grid: grid2
+    tgt_component: ATMOS
+    tgt_grid: grid1
+    field: conserv_field_oce_atm
+    <<: *config_conserv
+  - src_component: ATMOS
+    src_grid: grid1
+    tgt_component: OCEAN
+    tgt_grid: grid2
+    field: hcsbb_field_atm_oce
+    <<: *config_hcsbb
+  - src_component: OCEAN
+    src_grid: grid2
+    tgt_component: ATMOS
+    tgt_grid: grid1
+    field: hcsbb_field_oce_atm
+    <<: *config_hcsbb

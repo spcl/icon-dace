@@ -1,0 +1,125 @@
+import os
+from sysconfig import get_config_vars
+
+from setuptools import setup, Extension
+from Cython.Build import cythonize
+import numpy
+
+# This script is normally called from the Makefile and, while supporting the
+# direct execution of the script, we want the compiler command and compiler
+# flags to be consistent with those set by `make`. This is why the Makefile
+# calls the script with the overridden environment variables. For example, this
+# is supposed to ensure the consistency when the user wants to override the
+# compiler with a command line argument when calling `make`, e.g. `make CC=gcc`.
+
+# We need to compile and link the extension with the same compiler command that
+# is used for the building of YAC, which might be an MPI wrapper. By default,
+# setuptools take the compilation and linking commands from the sysconfigdata
+# but we are going to override them with the environment variables.
+
+# The first variable, CC, which holds the compilation command, is set to the
+# value detected by the configure script (either by `make` via the environment
+# variable or as a fallback value here in the script). That is not 100% correct
+# because the value for CC in the sysconfigdata file often contains additional
+# compiler flags (e.g. -pthread), which we lose in this case. Moreover, the user
+# might try to configure and build the whole project with a compiler that is
+# different from the one that was used to build Python itself, which might have
+# unexpected side effects. However, the experience shows that none of that is a
+# real issue and we will try not to make things too complicated:
+cc = os.environ.get("CC", "@CC@")
+
+# We now need to modify LDSHARED, the second variable, which is used for
+# linking, in a consistent manner. However, doing that in a makefile is harder
+# than in a Python script. Therefore, we honour the environment variable but
+# interpret its empty value as a trigger for the substitution:
+ldshared = os.environ.get("LDSHARED", None)
+if not ldshared:
+    # Get the values from the sysconfigdata:
+    config = get_config_vars()
+    config_cc = config["CC"]
+    config_ldshared = config["LDSHARED"]
+
+    # Normally, the link command starts with the compilation command:
+    if config_ldshared.startswith(config_cc):
+        ldshared = cc + config_ldshared[len(config_cc):]
+    else:
+        # Otherwise, we try to replace the compiler command if it appears "in
+        # the middle" of the link command; to avoid mistaking some substring of
+        # a path for the compiler (e.g. to avoid replacing "gcc" in
+        # "-L/path/to/gcc/"), we require that the compiler command be surrounded
+        # by spaces. Note this may leave "config_ldshared" unchanged if the
+        # compilation command does not appear in the link command at all, for
+        # example, if "ld" is invoked directly (no change would be required in
+        # that case):
+        ldshared = config_ldshared.replace(" {0} ".format(config_cc),
+                                           " {0} ".format(cc))
+
+# Override the default compiler flags set by setuptools but not the ones from
+# the environment:
+os.environ["CC"] = cc
+os.environ["LDSHARED"] = ldshared
+os.environ["CPPFLAGS"] = os.environ.get(
+    "CPPFLAGS",
+    "@CPPFLAGS@")
+os.environ["CFLAGS"] = os.environ.get(
+    "CFLAGS",
+    "-I@top_srcdir@/src "
+    "@MPI_CFLAGS@ "
+    "@CFLAGS@")
+os.environ["LDFLAGS"] = os.environ.get(
+    "LDFLAGS",
+    "@LDFLAGS@")
+
+# Setuptools do not support the LIBS environment variable, therefore, we pass
+# its contents via the extra_link_args argument:
+libs = os.environ.get(
+    "LIBS",
+    "@top_builddir@/src/libyac.a "
+    "@LAPACK_CLIBS@ "
+    "@MTIME_CLIBS@ "
+    "@FYAML_CLIBS@ "
+    "@NETCDF_CLIBS@ "
+    "@YAXT_CLIBS@ "
+    "@MPI_CLIBS@ "
+    "@LIBS@")
+
+extra_link_args = libs.split()
+
+# Non-portable linker flags, which we uncomment on Linux when compiling with GCC
+# for debugging:
+#   - make sure that the extension is linked to all required libraries:
+# extra_link_args.append("-Wl,--no-undefined")
+#   - check which libraries are actually needed for the extension:
+# extra_link_args.append("-Wl,--as-needed")
+
+# The extension depends on all static libraries of the project:
+depends = [
+    link_arg for link_arg in extra_link_args
+    if (os.path.isfile(link_arg) and
+        os.path.abspath(link_arg).startswith("@abs_top_builddir@/"))]
+
+rpaths = [flag[2:] for flag in os.environ["LDFLAGS"].split()
+          if flag.startswith("-L")]
+
+yac_extension = Extension(
+    name="yac._yac",
+    sources=["yac.pyx"],
+    extra_link_args=extra_link_args,
+    include_dirs=[numpy.get_include()],
+    define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
+    depends=depends,
+    runtime_library_dirs=rpaths,
+)
+
+setup(
+    name="yac",
+    version="@VERSION@",
+    ext_modules=cythonize([yac_extension], language_level=3),
+    packages=["yac", "yac.examples", "yac.utils"],
+    package_dir={"yac": "@abs_top_srcdir@/python/src"},
+    zip_safe=False,
+    install_requires=["numpy"],
+    extras_require={
+        "full": ["mpi4py"]
+    }
+)

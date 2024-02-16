@@ -1,0 +1,135 @@
+repos:
+  -   repo: local
+      hooks:
+      -   id: check-ast
+          name: check python ast
+          description: simply checks whether the files parse as valid python.
+          entry: check-ast
+          language: system
+          types: [python]
+      -   id: check-case-conflict
+          name: check for case conflicts
+          description: checks for files that would conflict in case-insensitive filesystems.
+          entry: check-case-conflict
+          language: system
+      -   id: check-docstring-first
+          name: check docstring is first
+          description: checks a common error of defining a docstring after code.
+          entry: check-docstring-first
+          language: system
+          types: [python]
+      -   id: check-symlinks
+          name: check for broken symlinks
+          description: checks for symlinks which do not point to anything.
+          entry: check-symlinks
+          language: system
+          types: [symlink]
+      -   id: check-toml
+          name: check toml
+          description: checks toml files for parseable syntax.
+          entry: check-toml
+          language: system
+          types: [toml]
+      -   id: check-yaml
+          name: check yaml
+          description: checks yaml files for parseable syntax.
+          entry: check-yaml
+          language: system
+          types: [yaml]
+      -   id: debug-statements
+          name: debug statements (python)
+          description: checks for debugger imports and py37+ `breakpoint()` calls in python source.
+          entry: debug-statement-hook
+          language: system
+          types: [python]
+      -   id: end-of-file-fixer
+          name: fix end of files
+          description: ensures that a file is either empty, or ends with one newline.
+          entry: end-of-file-fixer
+          language: system
+          types: [text]
+          exclude: tests/data/
+      -   id: trailing-whitespace
+          name: trim trailing whitespace
+          description: trims trailing whitespace.
+          entry: trailing-whitespace-fixer
+          language: system
+          types: [text]
+          exclude: tests/data/
+  -   repo: local
+      hooks:
+      -   id: forbidden-files-copier-rej
+          name: find copier rejection files
+          language: fail
+          entry: "Found copier update rejection file(s): review and remove them"
+          files: "\\.rej$"
+      -   id: forbidden-files-git-orig
+          name: find git merge backup files
+          language: fail
+          entry: "Found git merge backup file(s): review and remove them"
+          files: "\\.orig$"
+  -   repo: local
+      hooks:
+      -   id: rstcheck
+          name: rstcheck
+          description: Check REST files for correctness
+          language: system
+          entry: rstcheck
+          types: [rst]
+  -   repo: local
+      hooks:
+      -   id: codespell
+          name: codespell
+          description: Check for spelling errors
+          language: system
+          entry: codespell
+          exclude: tests/data/
+          args: ['-L astroid,fof']
+  -   repo: local
+      hooks:
+      -   id: black
+          name: black
+          description: Format Python code
+          language: system
+          entry: black
+          types_or: [python, pyi]
+  -   repo: local
+      hooks:
+      -   id: isort
+          name: isort
+          description: Group and sort Python imports
+          language: system
+          entry: isort
+          types_or: [python, pyi, cython]
+          args: ['--filter-files']
+  -   repo: local
+      hooks:
+      -   id: pydocstyle
+          name: pydocstyle
+          description: Check docstrings in Python code for compliance with conventions
+          language: system
+          entry: pydocstyle
+          types: [python]
+          files: ^src/
+  # -   repo: local
+  #     hooks:
+  #     -   id: pylint
+  #         name: pylint
+  #         description: Check Python code for correctness, consistency and adherence to best practices
+  #         language: system
+  #         entry: pylint
+  #         types: [python]
+  #         args:
+  #         - "--max-line-length=88"
+  -   repo: local
+      hooks:
+      -   id: flake8
+          name: flake8
+          description: Check Python code for correctness, consistency and adherence to best practices
+          language: system
+          entry: flake8
+          types: [python]
+          args:
+          - "--max-line-length=88"
+          - "--ignore=E203,W503,F811,I002"
+          # - "--max-complexity=10"

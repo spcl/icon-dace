@@ -1,0 +1,400 @@
+#! /usr/bin/env perl
+#
+# compare_archive_to_tree -- Make sure published tar archive matches
+#                            release commit.
+#
+#
+# Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
+#
+# Keywords: archive compare git repository
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+
+use strict;
+use warnings;
+use Cwd ();
+use Data::Dumper ();
+use File::Basename ();
+use File::Spec ();
+use File::Temp ();
+use Getopt::Long ();
+use Pod::Usage;
+
+sub is_dir_in_git(\%$);
+sub parseOptions();
+
+my ($verbose, $debug) = (0, 0);
+
+my ($gnutar) = 'tar';
+
+# the following files are specific to the vcs and are not needed in
+# the source archive
+my %ignore_archive_missing = map { $_ => undef } (
+  '.gitignore',
+  '.gitlab-ci.yml',
+  'include/.vcs_dummy',
+  'scripts/release/Makefile',
+  'scripts/release/compare_archive_to_tree',
+  'scripts/release/extra_release_dist_files',
+  'scripts/release/get-package-and-version.shinc',
+  'scripts/release/setup-sed.shinc',
+  'scripts/release/make-distcheck',
+  'scripts/release/make-release',
+  'scripts/release/make-release-commit',
+  'scripts/release/release-as',
+  'scripts/release/undo-release',
+  'scripts/release/check-gitignore',
+  'scripts/git-hooks/find-problem-sources',
+  'scripts/git-hooks/checklicense',
+  'scripts/git-hooks/checklicense.exclusions',
+  'scripts/git-hooks/pre-commit',
+  'scripts/git-hooks/non-problems.txt',
+ );
+
+parseOptions();
+
+# usage: compare_archive_to_tree /path/to/archive.tar.{gz|xz|bz2} tree-ish
+my ($archive, $tree) = ($ARGV[0], $ARGV[1]);
+
+print(STDERR "archive: ", $archive,
+      ", tree commit: ", $tree, "\n") if ($verbose or $debug);
+
+# establish hard links in archive
+my (%links, %in_archive_files);
+{
+  open(my $tar_list_fh, '-|', $gnutar, '--list', '--verbose',
+       '--strip=1', '--show-transformed-names', '--file', $archive)
+      or die("failed to list archive contents: $!");
+  while (<$tar_list_fh>) {
+    if (substr($_, 0, 1) eq 'h') {
+      my ($mode, undef, undef, $size, $iso8601_date, $path, $link_to) =
+          $_ =~ m{^(.{10})\s+(\w+)/(\w+)\s+(\d+)\s+
+                  (\d+-\d+-\d+\s\d\d:\d\d)\s(.*)\slink\sto\s(.*)$}xo;
+      $links{$path} = $link_to;
+    } elsif (substr($_, 0, 1) eq '-') {
+      my ($mode, undef, undef, $size, $iso8601_date, $path) =
+          $_ =~ m{^(.{10})\s+(\w+)/(\w+)\s+(\d+)\s+
+                  (\d+-\d+-\d+\s\d\d:\d\d)\s(.*)$}xo;
+      $in_archive_files{$path} = $size;
+    }
+  }
+  close($tar_list_fh) or die("close failed: $!");
+}
+print(STDERR Data::Dumper->Dump([\%links, \%in_archive_files],
+                                ['links', 'in_archive_files']))
+    if $debug;
+
+# map regular files from archive to their git hash
+my %archive_hashes;
+{
+  open(my $tar_list_fh, '-|', $gnutar, '--extract', '--verbose',
+       '--to-command=git hash-object --stdin',
+       '--file', $archive)
+      or die("failed to list archive contents: $!");
+  while (my $path = <$tar_list_fh>) {
+    chomp($path);
+    my $path_sep_pos = index($path, '/');
+    next if ($path_sep_pos == length($path)-1);
+    if ($path_sep_pos != -1) {
+      substr($path, 0, $path_sep_pos+1) = '';
+    }
+    if (exists($in_archive_files{$path})) {
+      $_ = <$tar_list_fh>;
+      chomp;
+      $archive_hashes{$path} = $_;
+      next;
+    }
+    # ignore directories
+    next if (substr($path, -1, 1) eq '/');
+    # follow hard links
+    if (exists($links{$path})) {
+      $archive_hashes{$path} = $archive_hashes{$links{$path}};
+      next;
+    }
+    print(STDERR 'unhandled: ', $path, "\n");
+  }
+  close($tar_list_fh) or die("close failed: $!");
+}
+print(STDERR Data::Dumper->Dump([\%archive_hashes], ['archive_hashes']))
+    if $debug;
+
+# and add links to the map
+
+my (%seen, $mismatch, $missing_from_archive, $missing_from_git);
+$mismatch = 0;
+$missing_from_archive = 0;
+$missing_from_git = 0;
+
+# find files not in archive but in git
+my (%git_obj_by_path, %effective_git_links);
+{
+  my (@in_git_links);
+  local $/ = "\0";
+  # query git for hash of each blob
+  open(my $git_ls_tree, '-|', 'git', 'ls-tree', '-r', '-z',
+       $tree) or die();
+  while (my $git_obj = <$git_ls_tree>) {
+    chomp($git_obj);
+    my ($mode, $type, $hash, $path)
+        = $git_obj =~ m{(\d{6})\s+(\w+)\s+([0-9a-f]*)\t(.*)}xo;
+    $git_obj_by_path{File::Spec->canonpath($path)} = $git_obj
+        if ($mode ne '120000');
+    if (!defined($mode)) {
+      die('match failure: ', $git_obj);
+    } elsif ($mode eq '120000') {
+      # handle links after enumerating everything else that a link
+      # can resolve to
+      push(@in_git_links, $git_obj);
+    } elsif (exists($archive_hashes{$path})) {
+      $seen{$path} = 1;
+      if ($archive_hashes{$path} ne $hash) {
+        print(STDERR 'Hash mismatch: ', $path, ', hash in git: ', $hash,
+              ', hash in archive: ', $archive_hashes{$path}, "\n");
+	++$mismatch;
+      }
+    } elsif (not exists($ignore_archive_missing{$path})) {
+      print(STDERR 'Not in archive: ', $path, "!\n");
+      ++$missing_from_archive;
+    }
+  }
+
+  print(STDERR Data::Dumper->Dump([\@in_git_links, \%git_obj_by_path],
+                                  ['in_git_links', 'git_obj_by_path']))
+    if $debug;
+
+  foreach my $git_obj (@in_git_links) {
+    my ($mode, $type, $hash, $path)
+        = $git_obj =~ m{(\d{6})\s+(\w+)\s+([0-9a-f]*)\t(.*)}xo;
+    my $link_target = qx(git cat-file blob $hash);
+    if (substr($link_target, 0, 1) eq '/') {
+      die('Unexpected absolute link target!');
+    }
+    my $link_root = File::Basename::dirname($path);
+    my $tgt_path = File::Spec->catfile($link_root, $link_target);
+    # fixme: rather than resolve through file system, the link needs
+    # to take into account in-git-structure!
+    my $canon_path = File::Spec->abs2rel(Cwd::abs_path($tgt_path));
+    print(STDERR 'Inspecting link from ', $path, ' to ', $tgt_path,
+          ($canon_path ne $tgt_path ? (' resulting in ', $canon_path) : ()),
+          "\n") if ($debug or $verbose);
+    if (is_dir_in_git(%git_obj_by_path, $canon_path)) {
+      # process all git paths below canon_path here
+      foreach my $in_tgt_dir_path (grep(m{^$canon_path/},
+                                        keys(%git_obj_by_path))) {
+        my ($path_below_tgt_dir) = $in_tgt_dir_path =~ m{^$canon_path/(.*)};
+        my $in_archive_path = File::Spec->catfile($path, $path_below_tgt_dir);
+        my ($tgt_mode, $tgt_type, $tgt_hash, $tgt_path)
+            = $git_obj_by_path{$in_tgt_dir_path}
+            =~ m{(\d{6})\s+(\w+)\s+([0-9a-f]*)\t(.*)}xo;
+        print(STDERR 'comparing ', $in_tgt_dir_path,
+              ' to ', $in_archive_path, "\n") if ($verbose or $debug);
+        $effective_git_links{$in_archive_path} = $git_obj;
+        if (exists($archive_hashes{$in_archive_path})) {
+          $mismatch += $tgt_hash ne $archive_hashes{$in_archive_path};
+        } elsif (not exists($ignore_archive_missing{$in_tgt_dir_path})) {
+          print(STDERR 'Not in archive: ', $canon_path, "!\n");
+          ++$missing_from_archive;
+        }
+      }
+    } elsif (exists($archive_hashes{$canon_path})
+                 && exists($git_obj_by_path{$canon_path})) {
+      my $archive_hash = $archive_hashes{$canon_path};
+      my ($tgt_mode, $tgt_type, $tgt_hash, $tgt_path)
+          = $git_obj_by_path{$canon_path}
+          =~ m{(\d{6})\s+(\w+)\s+([0-9a-f]*)\t(.*)}xo;
+      $effective_git_links{$path} = $git_obj_by_path{$canon_path};
+      if ($archive_hash ne $tgt_hash) {
+        print(STDERR 'Hash mismatch: ', $path, ', hash of linked file ',
+              $tgt_path, ' in git: ', $tgt_hash,
+              ', hash of linked file in archive: ', $archive_hash, "\n");
+	++$mismatch;
+      }
+    } else {
+      die($path, ': symbolic link to unexpected target type!')
+    }
+  }
+  close($git_ls_tree) or die();
+}
+
+# find files in archive but not in git
+for my $path (keys %in_archive_files) {
+  if (not exists($git_obj_by_path{$path}) and not exists($effective_git_links{$path})) {
+    print(STDERR 'error: ', $path, ' in archive but missing from tree-ish!',
+          "\n");
+    ++$missing_from_git;
+  }
+}
+
+print(STDERR 'number of mismatches: ', $mismatch, "\n",
+      'number of non-ignored git files missing from archive: ',
+      $missing_from_archive, "\n",
+      'number of archive files missing from git: ',
+      $missing_from_git, "\n"
+     ) if ($verbose or $debug);
+
+exit($mismatch or $missing_from_archive != 0 or $missing_from_git != 0);
+
+
+sub is_dir_in_git(\%$)
+{
+  my ($git_obj_by_path, $is_dir_path) = @_;
+  $is_dir_path =~ s{/*\z}{/};
+  my $l = length($is_dir_path);
+  foreach my $path (keys %$git_obj_by_path) {
+    if (substr($path, 0, $l) eq $is_dir_path) {
+      print(STDERR $is_dir_path, ' is prefix of ', $path, "\n")
+          if ($debug);
+      return 1;
+    }
+  }
+  return 0;
+}
+
+sub parseOptions()
+{
+  my ($help, $usage);
+  my $optionParser = new Getopt::Long::Parser;
+  configureOptionParser($optionParser, 'no_auto_abbrev', 'no_ignore_case');
+  my $result
+      = $optionParser->getoptions('debug+' => \$debug,
+                                  'help|?!' => \$help,
+                                  'gnutar=s' => \$gnutar,
+                                  'usage!' => \$usage,
+                                  'verbose+' => \$verbose);
+  if($help or $usage)
+  {
+    pod2usage( {
+      '-msg' => "",
+      '-exitval' => 0,
+      '-verbose' => 1
+     });
+  }
+}
+
+# evil hack to work with older versions of Getopt::Long
+sub configureOptionParser
+{
+   my ($optionParser, @options) = (@_);
+   eval {
+      $optionParser->configure(@options);
+   };
+   if (@options)
+   {
+      my $save = Getopt::Long::Configure($optionParser->{settings}, @options);
+      $optionParser->{settings} = Getopt::Long::Configure($save);
+   }
+}
+
+
+=head1 NAME
+
+compare-archive-to-tree - compare distribution archive to commit
+
+=head1 SYNOPSIS
+
+compare-archive-to-tree [options] [--] archive-file commit
+
+Examine if contents of archive-file and commit match.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<--help>, B<--usage>
+
+Print usage information.
+
+=item B<--debug>
+
+Produces debugging output.
+
+=item B<--verbose>
+
+Print verbose progress information.
+
+=back
+
+=head1 EXAMPLES
+
+=head1 AUTHOR
+
+Written by Thomas Jahns.
+
+=head1 Version
+
+compare-archive-to-tree Version 1.0
+
+=head1 Reporting Bugs
+
+Please report bugs to Thomas Jahns <jahns@dkrz.de>.
+
+=head1 Copyright
+
+Copyright (C) Thomas Jahns <jahns@dkrz.de>.
+
+Redistribution and use in source and binary forms, with or without
+modification, are  permitted provided that the following conditions are
+met:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+Neither the name of the DKRZ GmbH nor the names of its contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=cut
+
+
+# Local Variables:
+# mode: cperl
+# coding: utf-8
+# cperl-indent-level: 2
+# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:

@@ -1,0 +1,3 @@
+An example of how to use YAC for sequential coupling is provided with
+toy_coupling.c. A shell script to launch the (single) executable is
+provided with toy_coupling.sh

@@ -1,0 +1,4 @@
+#!@SHELL@
+test 'x@ENABLE_GRIB@' = xyes || exit 77
+
+./test_grib || exit 1

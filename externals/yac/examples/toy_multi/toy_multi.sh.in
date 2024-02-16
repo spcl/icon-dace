@@ -1,0 +1,14 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+
+BUILDPATH=(@abs_top_builddir@/python/build/lib.*/)
+PYTHONPATH="${BUILDPATH[0]}:$PYTHONPATH"
+export PYTHONPATH;
+
+@TEST_MPI_TRUE@@MPI_LAUNCH@ \
+  -n 2 ./toy_multi_reg2d.x : \
+  -n 3 ./toy_multi_unstruct.x : \
+  -n 3 ./toy_multi_unstruct_2.x : \
+  -n 6 ./toy_multi_cube.x \
+@TEST_PYTHON_BINDINGS_TRUE@ : -n 2 @PYTHON@ @abs_srcdir@/toy_multi_curve2d.py

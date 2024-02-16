@@ -1,0 +1,37 @@
+/** @mainpage
+
+\image html yak_small.jpg
+
+<h2>Autors</h2>
+
+Moritz Hanke, Nils-Arne Dreier, and Ren&eacute; Redler
+
+<h2>References</h2>
+
+Moritz Hanke, Ren&eacute; Redler, Teresa Holfeld und Maxim Yastremsky, 2016: YAC 1.2.0: new aspects for coupling software in Earth system modelling. Geoscientific Model Development, 9, 2755-2769. <a href="https://doi.org/10.5194/gmd-9-2755-2016">DOI:10.5194/gmd-9-2755-201</a>.
+
+Moritz Hanke und Ren&eacute; Redler, 2019: New features with YAC 1.5.0. Reports on ICON, No 3. DOI: <a href="https://doi.org/10.5676/DWD_pub/nwv/icon_003">10.5676/DWD_pub/nwv/icon_003</a>.
+
+<h2>Table of Contents</h2>
+
+- @ref license
+- @ref availability
+- @ref rationale
+- @ref version_info
+- @ref overview "User Interface"
+  - @ref interface
+  - @ref pythonbindings
+- <b>Configuration</b>
+  - @ref configuration
+- <b>Search and Interpolation</b>
+  - @ref interp_main
+    - @ref interp_stack
+    - @ref interp_methods
+  - @ref clipping
+  - @ref weight_files
+
+<h2>Copyright</h2>
+
+Copyright 2018 by DKRZ and MPI-M.
+
+*/

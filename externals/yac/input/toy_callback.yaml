@@ -1,0 +1,18 @@
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+calendar: proleptic-gregorian
+coupling:
+  - src_component: ICON
+    src_grid: icon_grid
+    tgt_component: CUBE
+    tgt_grid: cube_grid
+    field: icon_to_cube
+    coupling_period: 2
+    time_reduction: accumulate
+    interpolation:
+      - user_callback:
+          func_compute_weights: compute_weights_callback
+      - fixed:
+          user_value: -2.0
+

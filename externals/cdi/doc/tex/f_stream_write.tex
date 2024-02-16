@@ -1,0 +1,116 @@
+
+
+\subsection{Write a variable: \texttt{streamWriteVar}}
+\index{streamWriteVar}
+\label{streamWriteVar}
+
+The function streamWriteVar writes the values of one time step of a variable to an open dataset.
+The values are converted to the external data type of the variable, if necessary.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamWriteVar(INTEGER streamID, INTEGER varID, REAL*8 data, 
+                              INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{data}]
+Pointer to a block of double precision floating point data values to be written.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Write a variable: \texttt{streamWriteVarF}}
+\index{streamWriteVarF}
+\label{streamWriteVarF}
+
+The function streamWriteVarF writes the values of one time step of a variable to an open dataset.
+The values are converted to the external data type of the variable, if necessary.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamWriteVarF(INTEGER streamID, INTEGER varID, REAL*4 data, 
+                               INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{data}]
+Pointer to a block of single precision floating point data values to be written.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Write a horizontal slice of a variable: \texttt{streamWriteVarSlice}}
+\index{streamWriteVarSlice}
+\label{streamWriteVarSlice}
+
+The function streamWriteVarSlice writes the values of a horizontal slice of a variable to an open dataset.
+The values are converted to the external data type of the variable, if necessary.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamWriteVarSlice(INTEGER streamID, INTEGER varID, INTEGER levelID, 
+                                   REAL*8 data, INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{levelID}]
+Level identifier.
+\item[\texttt{data}]
+Pointer to a block of double precision floating point data values to be written.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}
+
+
+\subsection{Write a horizontal slice of a variable: \texttt{streamWriteVarSliceF}}
+\index{streamWriteVarSliceF}
+\label{streamWriteVarSliceF}
+
+The function streamWriteVarSliceF writes the values of a horizontal slice of a variable to an open dataset.
+The values are converted to the external data type of the variable, if necessary.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    SUBROUTINE streamWriteVarSliceF(INTEGER streamID, INTEGER varID, INTEGER levelID, 
+                                    REAL*4 data, INTEGER nmiss)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{levelID}]
+Level identifier.
+\item[\texttt{data}]
+Pointer to a block of single precision floating point data values to be written.
+\item[\texttt{nmiss}]
+Number of missing values.
+
+\end{deflist}
+\end{minipage}

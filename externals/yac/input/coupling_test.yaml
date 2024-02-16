@@ -1,0 +1,44 @@
+predef:
+  interp_stacks:
+    nn_interp_stack: &nn_interp_stack
+      interpolation:
+        - nnn:
+            n: 1
+            weighted: arithmetic_average
+        - fixed:
+            user_value: -5.0
+    conserv_interp_stack: &conserv_interp_stack
+      interpolation:
+        - conservative:
+            normalisation: fracarea
+        - fixed:
+            user_value: -2.0
+  time_config: &time_config
+    coupling_period: 3600
+    time_reduction: accumulate
+  component_configs:
+    atm2ocn: &atm2ocn
+      src_component: dummy_atmosphere
+      src_grid: dummy_atmosphere_grid
+      tgt_component: dummy_ocean
+      tgt_grid: dummy_ocean_grid
+      <<: *time_config
+    ocn2atm: &ocn2atm
+      src_component: dummy_ocean
+      src_grid: dummy_ocean_grid
+      tgt_component: dummy_atmosphere
+      tgt_grid: dummy_atmosphere_grid
+      <<: [ *time_config, *conserv_interp_stack ]
+
+start_date: 1850-01-01T00:00:00
+end_date: 1850-01-03T00:00:00
+timestep_unit: second
+coupling:
+# ATM -> OCN
+  - <<: [ *atm2ocn, *nn_interp_stack ]
+    field: [TAUX, TAUY]
+  - <<: [ *atm2ocn, *conserv_interp_stack ]
+    field: [SFWFLX, SFTEMP, THFLX, ICEATM]
+# OCN -> ATM
+  - <<: *ocn2atm
+    field: [SST, OCEANU, OCEANV, ICEOCE]

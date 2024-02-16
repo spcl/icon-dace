@@ -1,0 +1,28 @@
+a) toy_multi_cube.c
+
+  component on a cubed sphere grid
+
+b) toy_multi_reg2d.c
+
+  component on a regular longitude-latitude grid
+
+c) toy_multi_unstruct.c
+
+  component reading in a ICON grid
+
+d) toy_multi_unstruct_2.c
+
+  component reading in a MPIOM grid
+
+A mpmd run with any combination of these toy can be run (e.g. only two
+components or all). Each component can be run with an arbitrary number of
+processes, as long as enough cells per process is available.
+
+The coupling configuration for this example is in toy_multi.yaml. It
+contains for all two component pairs multiple different interpolations in both
+directions each.
+
+The runscript toy_multi.sh contains an example run configuration.
+
+Each process writes out a vtk file containing the interpolation results. The
+output fields of the components are all based on a analytic function.

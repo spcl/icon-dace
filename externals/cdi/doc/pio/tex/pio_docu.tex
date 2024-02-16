@@ -1,0 +1,93 @@
+\documentclass[DIV16,BCOR1cm,11pt,a4paper,fleqn,twoside,onecolumn,notitlepage]{scrreprt}
+
+\makeatletter
+\renewcommand\chapter{\par%
+  \thispagestyle{plain}%
+  \global\@topnum\z@
+  \@afterindentfalse
+  \secdef\@chapter\@schapter}
+\makeatother
+
+\usepackage{graphicx,subfig,color}
+\usepackage{listings}
+\definecolor{zebg}{rgb}{1,1,.8} %elfenbeinfarbig 
+\usepackage{wrapfig}
+\usepackage{float}
+\setcapindent{0pt}
+\usepackage{makeidx}
+\usepackage{thumbpdf}
+
+\usepackage{hyperref}
+\hypersetup{pdftoolbar=true,
+            pdfmenubar=true,
+            pdfwindowui=true,   
+%            pdffitwindow=true,
+            pdfauthor={Deike Kleberg},
+            pdftitle={CDI-pio Manual},
+            pdfcreator={pdflatex + hyperref},
+            pdfstartview=FitV,
+%            pdfpagemode=FullScreen,
+            a4paper,
+            bookmarks=true,
+            linkcolor=blue,
+            citecolor=blue,
+            urlcolor=blue,
+            colorlinks=true}
+
+\usepackage[all]{hypcap}
+\usepackage{nameref}
+
+
+\setlength{\parindent}{0pt} 
+
+\newcommand{\CDI}{\bfseries\sffamily CDI}
+\newcommand{\pio}{\bfseries\sffamily CDI-pio}
+
+\newcommand{\tabbox}[1]{\parbox{11.5cm}{\rule{0pt}{1.1\baselineskip}#1\vspace{1ex}}}
+
+\newcommand{\deflabel}[1]{\bf #1\hfill}
+\newenvironment{deflist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{\bf #1}
+\setlength{\parsep}{0mm}
+\setlength{\itemsep}{1mm}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\deflabel}}}
+{\end{list}}
+
+\makeindex
+\newcommand{\idxdotfill}{\ \dotfill \ }
+
+\begin{document}
+
+\title{{\pio}, {\CDI} with parallel I/O}
+\author{Deike Kleberg, Uwe Schulzweida, Thomas Jahns and Luis Kornblueh\\
+Max-Planck-Institute for Meteorology and Deutsches Klima Rechenzentrum\\
+Project ScalES funded by BMBF}
+\date{\today}
+\maketitle
+
+\tableofcontents
+\listoffigures
+
+\chapter{Introduction}
+\input{intro}
+
+\chapter{I/O stages in the program flow}
+\input{stages}
+
+\chapter{Modes of low level writing}
+\input{modes}
+
+\chapter{{\pio} modules}
+\label{modules}
+\input{subprograms}
+
+\chapter{Internal concepts}
+\input{communicators}
+\input{timestepping}
+
+\printindex
+
+\end{document}

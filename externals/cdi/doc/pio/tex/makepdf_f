@@ -1,0 +1,15 @@
+#!/bin/sh
+FILE=pio_docu
+pdflatex ${FILE}
+pdflatex ${FILE}
+cat > ${FILE}.ist << 'EOF'
+delim_0        "{\\idxdotfill} "
+headings_flag  1
+heading_prefix "{\\centerline {\\Large \\bf "
+%heading_prefix "{\\centerline {\\bfseries "
+heading_suffix "}}"
+EOF
+makeindex -s ${FILE}.ist ${FILE}.idx
+pdflatex ${FILE}
+thumbpdf ${FILE}
+pdflatex ${FILE}

@@ -1,0 +1,135 @@
+MODULE from_example_test
+
+USE pFUnit_mod
+USE mtime
+
+IMPLICIT NONE
+
+CONTAINS
+
+@before
+SUBROUTINE setup()
+
+    call setCalendar(year_of_365_days) ! proleptic_gregorian/year_of_365_days/year_of_360_days.
+    
+END SUBROUTINE setup
+
+@test()
+SUBROUTINE test_calendar_setup()
+    
+    character(len=max_calendar_str_len)  :: calendar_in_use
+    
+    call calendarToString(calendar_in_use)
+    @assertEqual('Year of 365 days', TRIM(calendar_in_use))
+    @assertEqual(2, calendarType())
+    
+END SUBROUTINE test_calendar_setup
+
+@test()
+SUBROUTINE test_date_interface()
+
+    type(date), pointer :: test_date
+    character(len=max_date_str_len)      :: test_date_string
+
+    test_date => newdate(2020,01,30)
+    @assertTrue(associated(test_date))
+  
+    call dateToString(test_date, test_date_string)
+    @assertEqual('2020-01-30', TRIM(test_date_string))
+    
+    call deallocateDate(test_date)
+    @assertFalse(associated(test_date))   
+    
+END SUBROUTINE test_date_interface
+
+
+
+@test()
+SUBROUTINE test_datetime_and_timeddelta_interface()
+    
+    type(datetime), pointer :: start_date 
+    type(datetime), pointer :: start_date_tmp
+    type(datetime), pointer :: start_date_test
+    type(datetime), pointer :: stop_date 
+    
+    type(timedelta), pointer :: time_step
+    
+    type(datetime), pointer :: current_date 
+    
+    character(len=max_date_str_len)      :: start_date_string
+    character(len=max_date_str_len)      :: stop_date_string
+    character(len=max_date_str_len)      :: time_step_string
+    character(len=max_date_str_len)      :: current_date_string
+    character(len=32) :: fmtstr = '%x'
+    
+    integer :: step_count
+    
+
+    start_date_tmp => newDatetime('2012-09-01T02:10:00.000')
+    start_date => newDatetime(start_date_tmp)
+    @assertTrue(associated(start_date))
+    call datetimetoString(start_date, start_date_string)
+    @assertEqual('2012-09-01T02:10:00.000Z', TRIM(start_date_string))
+
+    start_date_tmp => newDatetime(2012,09,01,02,10,0,0)
+    start_date => newDatetime(start_date_tmp)
+    @assertTrue(associated(start_date))
+    call datetimetoString(start_date, start_date_string)
+    @assertEqual('2012-09-01T02:10:00.000Z', TRIM(start_date_string))
+  
+
+    stop_date => newDateTime("2012-09-10T14:00:00.000");
+    call datetimeToPosixString(stop_date, stop_date_string, fmtstr)
+    @assertEqual('09/10/12', TRIM(stop_date_string))
+
+
+    time_step => newTimedelta('PT12H')
+    call timedeltaToString(time_step, time_step_string)
+    @assertEqual('PT12H', TRIM(time_step_string))
+
+
+    ! copy operator - overload newDatetime using construct and copy!
+    current_date => newDatetime('2012-09-01T02:10:00.000')
+    call datetimeToString(current_date, current_date_string)
+    @assertEqual('2012-09-01T02:10:00.000Z', TRIM(current_date_string))
+    
+    current_date = start_date
+    call datetimeToString(current_date, current_date_string)
+    @assertEqual('2012-09-01T02:10:00.000Z', TRIM(current_date_string))
+
+
+    step_count = 0
+    time_integration: do
+        current_date = current_date + time_step
+        step_count = step_count + 1
+        call datetimeToString(current_date, current_date_string)
+        @assertTrue(step_count /=  1 .OR. TRIM(current_date_string) == '2012-09-01T14:10:00.000Z')
+        @assertTrue(step_count /=  2 .OR. TRIM(current_date_string) == '2012-09-02T02:10:00.000Z')      
+        @assertTrue(step_count /=  5 .OR. TRIM(current_date_string) == '2012-09-03T14:10:00.000Z')      
+        @assertTrue(step_count /= 18 .OR. TRIM(current_date_string) == '2012-09-10T02:10:00.000Z')      
+        if (current_date >= stop_date) exit time_integration
+    enddo time_integration
+    @assertEqual(19, step_count)
+    @assertEqual('2012-09-10T14:10:00.000Z', current_date_string)
+
+
+    call deallocateDatetime(start_date)
+    call deallocateDatetime(stop_date)
+    call deallocateDatetime(current_date)
+    call deallocateTimeDelta(time_step)
+    
+    @assertFalse(associated(start_date))  
+    @assertFalse(associated(stop_date))  
+    @assertFalse(associated(current_date))  
+    @assertFalse(associated(time_step))  
+    
+END SUBROUTINE test_datetime_and_timeddelta_interface
+
+@after
+SUBROUTINE teardown()
+
+    call resetCalendar()
+    
+END SUBROUTINE teardown
+
+END MODULE from_example_test

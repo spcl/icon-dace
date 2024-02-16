@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+ccompiler=@CC@
+fccompiler=@FC@
+
+Name: @PACKAGE_NAME@
+Description: Yet Another Coupler
+URL: @PACKAGE_URL@
+Version: @VERSION@
+Cflags: -I${includedir}
+Libs: -L${libdir} @YAC_PKGCONF_CLIBS@

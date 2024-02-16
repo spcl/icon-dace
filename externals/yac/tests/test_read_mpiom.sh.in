@@ -1,0 +1,5 @@
+#!@SHELL@
+
+@TEST_NETCDF_FALSE@exit 77
+
+./test_read_mpiom.x

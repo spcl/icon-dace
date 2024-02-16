@@ -1,0 +1,85 @@
+/** \example rrobin.c
+ */
+
+/**
+  \page rrobin Round Robin example on how to use yaxt
+  \dontinclude rrobin.c
+
+  This example(\ref rrobin.c) is the first step to understand working with yaxt.
+  First of all include the basic header files:
+
+  \skip mpi.h
+  \until yaxt.h
+
+  We need to initialize MPI and yaxt as follows:
+
+  \skip main
+  \until xt_initialize
+
+  Find out number of processes and the local rank like in common MPI programs.
+
+  \skip int rank, size
+  \until MPI_Comm_size
+
+  In this exmaple we are going to create a source array of length 5 for each process. \n
+  Each process will have an array the is filled with unique values. It is recommendable
+  to use an array length < 10 and a number of processes < 10 to get a readable output. \n
+  In this case each process gets values of the form "abc", where \n
+    - a = 1
+    - b = rank of the local process
+    - c = index of the element within the local array
+
+  For example: 132 is the source value of on the process with rank 3 and is on the
+  position 3 in the local array. \n
+
+  The goal of this little program is to rotate the source arrays in a round robin fashion.
+  First proces owns first five elements indexed by 0, 1, 2, 3, 4 and is going to get the
+  next five elements from the second process indexed by 5, 6, 7, 8, 9, without knowing who
+  owns those. In fact first rank gets value array from second rank, the second one from
+  the third and so on. The last rank gets an array from the first. We fill the source
+  arrays with the previously defined values, and fill the destination arrays with -1 to
+  see the change.
+
+  \skip {
+  \until }
+
+  There are many ways to define, which elements are locally available (source) and which
+  are required (destination). We could define them with an array of indices using an index
+  vector (\ref xt_idxvec.h), or we could define a block of elements we want to have using
+  index stripes (\ref xt_idxstripes.h). Using stripes we have to name the local start index,
+  how many elements we want to have, an the stride between the elements. Here we need for
+  the source an index stripe containing 5 elements with a stride of 1, beginnig at 0 for
+  rank 0, at 1*len for rank 1 etc.
+
+  \skip source
+  \until dst_idxlist = xt_idxstripes_new
+
+  Now, we need the mapping of source and destination data between the processes and a
+  redistribution object for the actual data exchange. There multiple strategies for doing
+  the mapping, in this example all2all is used. An alternative would be %dist_dir
+  (\ref xt_xmap_dist_dir.h).
+
+  \skip xmap
+  \until xt_redist_p2p_new
+
+  To do the main step, we need pointers of source and destination arrays. Here it is
+  "overdressed", but shows the main charachter if you have higher number of data arrays.
+
+  \skip array
+  \until xt_redist_s_exchange
+
+  To see the result:
+
+  \skip for (
+  \until printf
+
+  Once the created yaxt objects are not needed anymore they need to be deleted.
+
+  \skip xt_redist_delete
+  \until }
+
+  Common MPI finalisation
+
+  \skip MPI_Finalize
+  \until }
+*/

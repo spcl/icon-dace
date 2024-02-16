@@ -1,0 +1,120 @@
+/**
+ * \page yinstance YAC instances
+
+\tableofcontents
+
+\section inst_intro Introduction
+
+With \ref version_230 the concept of YAC instances was introduced. This new
+feature allows the user to instantiate YAC multiple times in the same
+application. Additionally, each instance can be initialised with a different
+MPI communicator and a different coupling configuration (via interface
+and/or \ref yaml_file "configuration file").
+
+In case an application uses YAC for different purposes, individual YAC
+instances can be used for each of them without interfering with each other. A
+potential use case may a model setup consisting of an global atmosphere and
+ocean model, which are coupled to each other. If in this setup the atmosphere
+has some dedicated processes that are responsible for writing out a regional
+part of the data using a different grid, YAC could be used to provide the
+respective data to these output processes. Using a dedicated YAC instance for
+the coupling between the atmosphere and its output processes could use its own
+\ref yaml_file "configuration file", which might simplify the setup of the
+model run. Both YAC instances could be initialised using dedicated MPI
+communicators, which reduces complexity even further.
+
+YAC provides a default instance, which is used in case the user does not
+explicitly provide an instance.
+
+YAC instances are referenced by ID's that are returned by either
+\ref yac_cinit_instance or \ref yac_cinit_comm_instance. Various routines
+required the user to explicitly provide this ID as an argument. These routines
+can be identified by an "_instance" at the end of their names. Some routines
+like \ref yac_cdef_field do not require an explicit YAC instance ID,
+because it is implicitly given by another argument (component_id in this case).
+
+An example on how to use YAC instances can be found
+\subpage yinstance_example "here".
+
+\section inst_usage Usage
+
+Here the usage of YAC instances is shown for the C interface; equivalent
+Fortran interfaces are also available.
+
+\subsection inst_init_phase Initialisation Phase
+
+A YAC instance is initialised by a call to \ref yac_cinit_instance or
+\ref yac_cinit_comm_instance.
+
+\code
+  char * yaml_filename = "coupling_aquaplanet.yaml";
+  int yac_instance_id;
+
+  yac_cinit_instance ( &yac_instance_id );
+  yac_cread_config_yaml_instance ( yac_instance_id, yaml_filename );
+\endcode
+
+\code
+  char * yaml_filename = "coupling_aquaplanet.yaml";
+  MPI_Comm comm = MPI_COMM_WORLD;
+  int yac_instance_id;
+
+  yac_cinit_comm_instance ( comm, &yac_instance_id );
+  yac_cread_config_yaml_instance ( yac_instance_id, yaml_filename );
+\endcode
+
+\subsection inst_def_phase Definition Phase
+
+The definition of components, grid, and start- and endtime require the user to
+explicitly provide the YAC instance ID.
+
+- \ref yac_cdef_comp_instance
+- \ref yac_cdef_comps_instance
+- \ref yac_cdef_datetime_instance
+
+For all other definition routines the YAC instance ID is provided implicitly.
+
+\subsection inst_search_phase End of definition and search
+
+The definition phase is finalized and the search started with a call to
+\ref yac_cenddef_instance.
+
+\code
+
+  yac_cenddef_instance ( yac_instance_id );
+
+\endcode
+
+A call to \ref yac_cenddef will do this only for the default instance.
+
+\subsection inst_ex_phase Data Exchange
+
+For the data exchange not specific interfaces are required.
+
+\subsection inst_end_phase Ending Phase
+
+A YAC instance needs to be explicitly finalized:
+
+\code
+  yac_cfinalize_instance ( yac_instance_id );
+\endcode
+
+In case any other YAC instance is still active while \ref yac_cfinalize_instance
+is called, MPI will not by finalized by this call.
+
+If for any other instance \ref yac_cfinalize_instance or \ref yac_cfinalize
+is called at a later point in time, a call to \ref yac_ccleanup_instance
+is sufficiant to clean up the memory of a YAC instance.
+
+\subsection inst_restart_phase Restart Phase
+
+The default instance can be restarted. To do this its memory needs to be freed
+by a call to \ref yac_ccleanup. Afterwards \ref yac_cinit can be called again.
+
+It is not possible to restart the other YAC instances. However, at any point in
+time a new instance can be initialised with a call to \ref yac_cinit_instance
+\ref yac_cinit_comm_instance even with the same arguments as for a previous call.
+This new instance can be viewed as a restart of another instance. In any case
+all initialised instances have to be cleaned up or finalized.
+
+ */

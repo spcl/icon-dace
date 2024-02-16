@@ -1,0 +1,9 @@
+#!@SHELL@
+
+set -e
+
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling_dble.x
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling_real.x
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling_c.x

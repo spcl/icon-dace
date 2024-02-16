@@ -1,0 +1,269 @@
+/* include/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Define if building universal (internal helper macro) */
+#undef AC_APPLE_UNIVERSAL_BUILD
+
+/* Define as the number of bits in a byte, if `limits.h' doesn't. */
+#undef CHAR_BIT
+
+/* type kind override */
+#undef C_FLOAT
+
+/* type kind override */
+#undef C_INT64_T
+
+/* Define to dummy `main' function (if any) required to link to the Fortran
+   libraries. */
+#undef FC_DUMMY_MAIN
+
+/* Define if F77 and FC dummy `main' functions are identical. */
+#undef FC_DUMMY_MAIN_EQ_F77
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking with Fortran. */
+#undef FC_FUNC
+
+/* As FC_FUNC, but for C identifiers containing underscores. */
+#undef FC_FUNC_
+
+/* Define to 1 if your Fortran compiler doesn't accept -c and -o together. */
+#undef FC_NO_MINUS_C_MINUS_O
+
+/* The size of `INTEGER', as computed by sizeof. */
+#undef FORTRAN_SIZEOF_INTEGER
+
+/* Define to 1 if you have the <dlfcn.h> header file. */
+#undef HAVE_DLFCN_H
+
+/* Define to 1 if the system has the type `double complex'. */
+#undef HAVE_FORTRAN_DOUBLE_COMPLEX
+
+/* type kind override */
+#undef HAVE_FORTRAN_ISO_
+
+/* type kind override */
+#undef HAVE_FORTRAN_ISO_C_FLOAT
+
+/* type kind override */
+#undef HAVE_FORTRAN_ISO_C_INT64_T
+
+/* Defined if Fortran module ISO_C_BINDING is available */
+#undef HAVE_FORTRAN_MODULE_ISO_C_BINDING
+
+/* netCDF Fortran bindings present if defined to 1 */
+#undef HAVE_FORTRAN_NETCDF
+
+/* Defined if Fortran routine get_environment_variable is available */
+#undef HAVE_FORTRAN_ROUTINE_GET_ENVIRONMENT_VARIABLE
+
+/* whether fpsetprec is present and usable */
+#undef HAVE_FPSETPREC
+
+/* whether FPU control word can be manipulated by inline assembler */
+#undef HAVE_FPU_INLINE_ASM_X86
+
+/* Define to 1 if you have the `gettimeofday' function. */
+#undef HAVE_GETTIMEOFDAY
+
+/* copysign(x, -0.0) is negative (for x != 0.0) */
+#undef HAVE_IEEE_COPYSIGN
+
+/* Can we produce an NaN that raises an FPU exception? */
+#undef HAVE_IEEE_SIGNALING_NAN
+
+/* Define to 1 if you have the <inttypes.h> header file. */
+#undef HAVE_INTTYPES_H
+
+/* HDF 5 library is present if defined to 1 */
+#undef HAVE_LIBHDF5
+
+/* Define to 1 if you have the <limits.h> header file. */
+#undef HAVE_LIMITS_H
+
+/* Define to 1 if you have the <memory.h> header file. */
+#undef HAVE_MEMORY_H
+
+/* whether FTZ/DAZ control bits can be manipulated by inline assembler */
+#undef HAVE_MXCSR_INLINE_ASM_X86
+
+/* Define to 1 if you have the <setjmp.h> header file. */
+#undef HAVE_SETJMP_H
+
+/* Define to 1 if you have the <stdint.h> header file. */
+#undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdlib.h> header file. */
+#undef HAVE_STDLIB_H
+
+/* Define to 1 if you have the <strings.h> header file. */
+#undef HAVE_STRINGS_H
+
+/* Define to 1 if you have the <string.h> header file. */
+#undef HAVE_STRING_H
+
+/* Define to 1 if you have the `sysconf' function. */
+#undef HAVE_SYSCONF
+
+/* Define to 1 if you have the <sys/stat.h> header file. */
+#undef HAVE_SYS_STAT_H
+
+/* Define to 1 if you have the <sys/time.h> header file. */
+#undef HAVE_SYS_TIME_H
+
+/* Define to 1 if you have the <sys/types.h> header file. */
+#undef HAVE_SYS_TYPES_H
+
+/* Define to 1 if you have the <sys/unistd.h> header file. */
+#undef HAVE_SYS_UNISTD_H
+
+/* Define to 1 if you have the <time.h> header file. */
+#undef HAVE_TIME_H
+
+/* Define to 1 if you have the `uname' function. */
+#undef HAVE_UNAME
+
+/* Define to 1 if you have the <unistd.h> header file. */
+#undef HAVE_UNISTD_H
+
+/* Define to 1 if the system has the type `u_char'. */
+#undef HAVE_U_CHAR
+
+/* whether _controlfp is present usable */
+#undef HAVE__CONTROLFP
+
+/* whether _controlfp_s is present and usable */
+#undef HAVE__CONTROLFP_S
+
+/* whether _FPU_SETCW is present and usable */
+#undef HAVE__FPU_SETCW
+
+/* defined if int64_t is long in disguise */
+#undef INT64_T_IS_LONG
+
+/* defined if int64_t is long long in disguise */
+#undef INT64_T_IS_LONG_LONG
+
+/* Define to the sub-directory where libtool stores uninstalled libraries. */
+#undef LT_OBJDIR
+
+/* Older versions of Metis don't define this themselves. */
+#undef METIS_VER_MAJOR
+
+/* defined if precision control is needed */
+#undef NEED_PRECISION_CONTROL
+
+/* defined if underflow control is needed */
+#undef NEED_UNDERFLOW_CONTROL
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* number of decimal digits for identity conversions of C expressions of type
+   double */
+#undef PPM_CONF_DBL_DECIMAL_DIG
+
+/* number of decimal exponent digits for identity conversions of C expressions
+   of type float */
+#undef PPM_CONF_DBL_EXP_DECIMAL_DIG
+
+/* number of decimal digits for identity conversions of C expressions of type
+   float */
+#undef PPM_CONF_FLT_DECIMAL_DIG
+
+/* number of decimal exponent digits for identity conversions of C expressions
+   of type float */
+#undef PPM_CONF_FLT_EXP_DECIMAL_DIG
+
+/* Align data of unknown alignment to multiples of this value. */
+#undef PPM_MAXIMUM_ALIGNMENT
+
+/* The size of `char', as computed by sizeof. */
+#undef SIZEOF_CHAR
+
+/* The size of `double', as computed by sizeof. */
+#undef SIZEOF_DOUBLE
+
+/* The size of `float', as computed by sizeof. */
+#undef SIZEOF_FLOAT
+
+/* The size of `int', as computed by sizeof. */
+#undef SIZEOF_INT
+
+/* The size of `int *', as computed by sizeof. */
+#undef SIZEOF_INT_P
+
+/* The size of `jmp_buf', as computed by sizeof. */
+#undef SIZEOF_JMP_BUF
+
+/* The size of `long', as computed by sizeof. */
+#undef SIZEOF_LONG
+
+/* The size of `long double', as computed by sizeof. */
+#undef SIZEOF_LONG_DOUBLE
+
+/* The size of `long long', as computed by sizeof. */
+#undef SIZEOF_LONG_LONG
+
+/* The size of `short', as computed by sizeof. */
+#undef SIZEOF_SHORT
+
+/* The size of `size_t', as computed by sizeof. */
+#undef SIZEOF_SIZE_T
+
+/* Define to 1 if you have the ANSI C header files. */
+#undef STDC_HEADERS
+
+/* SSL crypto functions are available */
+#undef USE_CRYPTO
+
+/* use MPI parallel process environment */
+#undef USE_MPI
+
+/* Version number of package */
+#undef VERSION
+
+/* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
+   significant byte first (like Motorola and SPARC, unlike Intel). */
+#if defined AC_APPLE_UNIVERSAL_BUILD
+# if defined __BIG_ENDIAN__
+#  define WORDS_BIGENDIAN 1
+# endif
+#else
+# ifndef WORDS_BIGENDIAN
+#  undef WORDS_BIGENDIAN
+# endif
+#endif
+
+/* To pass the value for MPI_Abort to the surrounding execution environment, a
+   hack is needed. */
+#undef XT_NEED_MPI_ABORT_WORK_AROUND
+
+/* Define to 1 if type `char' is unsigned and you are not using gcc.  */
+#ifndef __CHAR_UNSIGNED__
+# undef __CHAR_UNSIGNED__
+#endif
+
+/* Define to empty if `const' does not conform to ANSI C. */
+#undef const
+
+/* Define to the type of a signed integer type of width exactly 64 bits if
+   such a type exists and the standard includes do not define it. */
+#undef int64_t

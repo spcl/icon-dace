@@ -1,0 +1,7 @@
+#ifndef YAC_CONFIG_H
+#define YAC_CONFIG_H
+
+#undef YAC_VERSION
+#undef YAC_NETCDF_ENABLED
+
+#endif

@@ -1,0 +1,329 @@
+{
+  "name": "root",
+  "ancestry": [],
+  "children": [
+    {
+      "name": "exch_data",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "exch_data.wait",
+          "ancestry": [
+            "root",
+            "exch_data"
+          ],
+          "children": []
+        }
+      ]
+    },
+    {
+      "name": "global_sum",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "ordglb_sum",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "nh_diagnostics",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "diagnose_pres_temp",
+      "ancestry": [
+        "root"
+      ],
+      "children": []
+    },
+    {
+      "name": "model_init",
+      "ancestry": [
+        "root"
+      ],
+      "children": [
+        {
+          "name": "wrt_output",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "physics",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": [
+            {
+              "name": "nwp_radiation",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": [
+                {
+                  "name": "nwp_radiation_upscale",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nwp_radiation_downscale",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nwp_ecrad_utilities",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nwp_ecrad_store_fluxes",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "nwp_ecrad_ecrad",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                },
+                {
+                  "name": "preradiaton",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_radiation"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "phys_acc_sync",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "satad",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "phys_u_v",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "nwp_turbulence",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": [
+                {
+                  "name": "nwp_turbtrans",
+                  "ancestry": [
+                    "root",
+                    "model_init",
+                    "physics",
+                    "nwp_turbulence"
+                  ],
+                  "children": []
+                }
+              ]
+            },
+            {
+              "name": "rediag_prog_vars",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "nwp_convection",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "sso",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "cloud_cover",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            },
+            {
+              "name": "radheat",
+              "ancestry": [
+                "root",
+                "model_init",
+                "physics"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "compute_domain_decomp",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "compute_intp_coeffs",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_ext_data",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_icon",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": [
+            {
+              "name": "read_fg",
+              "ancestry": [
+                "root",
+                "model_init",
+                "init_icon"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "init_gcopy",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_latbc",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "init_nwp_phy",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        },
+        {
+          "name": "upper_atmosphere",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": [
+            {
+              "name": "upatmo_construction",
+              "ancestry": [
+                "root",
+                "model_init",
+                "upper_atmosphere"
+              ],
+              "children": []
+            }
+          ]
+        },
+        {
+          "name": "optional_diagnostics_atmosphere",
+          "ancestry": [
+            "root",
+            "model_init"
+          ],
+          "children": []
+        }
+      ]
+    }
+  ]
+}

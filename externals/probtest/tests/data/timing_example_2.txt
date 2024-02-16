@@ -1,0 +1,1718 @@
++ icon_data_poolFolder=/scratch/e1000/jenkins/icon/pool/data/ICON/mch 
++ grids_folder=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1 
++ latbc_path=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1 
++ dynamics_grid_filename=icon_grid_0001_R19B08_mch.nc 
++ atmo_dyn_grids=\''icon_grid_0001_R19B08_mch.nc'\'',' 
++ radiation_grid_filename=icon_grid_0001_R19B08_mch.parent.nc 
++ atmo_rad_grids=\''icon_grid_0001_R19B08_mch.parent.nc'\'',' 
++ start_date=2022-03-30T12:00:00Z 
++ end_date=2022-03-30T12:00:00Z 
++ output_bounds=0.,10000000.,3600. 
++ output_bounds_10=0.,10000000.,600. 
++ steps_per_file=1 
++ atmo_namelist=NAMELIST_icon1-gpu_atm 
++ extpar_filename=external_parameter_icon_grid_0001_R19B08_mch.nc 
++ add_required_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/external_parameter_icon_grid_0001_R19B08_mch.nc ./
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/external_parameter_icon_grid_0001_R19B08_mch.nc 
++ new_name=./ 
++ input_required_file[$number_of_required_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/external_parameter_icon_grid_0001_R19B08_mch.nc 
++ output_required_file[$number_of_required_files]=./ 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ add_link_file /scratch/e1000/dremo/icon22_benchmark_3/gpu/externals/ecrad/data ecrad_data
++ in_name=/scratch/e1000/dremo/icon22_benchmark_3/gpu/externals/ecrad/data 
++ new_name=ecrad_data 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/dremo/icon22_benchmark_3/gpu/externals/ecrad/data 
++ output_linked_file[$number_of_linked_files]=ecrad_data 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_required_file /scratch/e1000/dremo/icon22_benchmark_3/gpu/data/ECHAM6_CldOptProps.nc rrtm_cldopt.nc
++ in_name=/scratch/e1000/dremo/icon22_benchmark_3/gpu/data/ECHAM6_CldOptProps.nc 
++ new_name=rrtm_cldopt.nc 
++ input_required_file[$number_of_required_files]=/scratch/e1000/dremo/icon22_benchmark_3/gpu/data/ECHAM6_CldOptProps.nc 
++ output_required_file[$number_of_required_files]=rrtm_cldopt.nc 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ add_required_file /scratch/e1000/dremo/icon22_benchmark_3/gpu/data/rrtmg_lw.nc .
++ in_name=/scratch/e1000/dremo/icon22_benchmark_3/gpu/data/rrtmg_lw.nc 
++ new_name=. 
++ input_required_file[$number_of_required_files]=/scratch/e1000/dremo/icon22_benchmark_3/gpu/data/rrtmg_lw.nc 
++ output_required_file[$number_of_required_files]=. 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ add_required_file /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/ana_varnames_map_file.txt map_file.ana
++ in_name=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/ana_varnames_map_file.txt 
++ new_name=map_file.ana 
++ input_required_file[$number_of_required_files]=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/ana_varnames_map_file.txt 
++ output_required_file[$number_of_required_files]=map_file.ana 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ add_required_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/map_file.latbc map_file.latbc
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/map_file.latbc 
++ new_name=map_file.latbc 
++ input_required_file[$number_of_required_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/map_file.latbc 
++ output_required_file[$number_of_required_files]=map_file.latbc 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ laf_file_name=laf2022033012 
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/laf2022033012 .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/laf2022033012 
++ new_name=. 
++ new_name=./laf2022033012 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/laf2022033012 
++ output_linked_file[$number_of_linked_files]=./laf2022033012 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_required_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lateral_boundary.grid.nc lateral_boundary.grid.nc
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lateral_boundary.grid.nc 
++ new_name=lateral_boundary.grid.nc 
++ input_required_file[$number_of_required_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lateral_boundary.grid.nc 
++ output_required_file[$number_of_required_files]=lateral_boundary.grid.nc 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc 
++ new_name=. 
++ new_name=./lbff00000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00030000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00030000.nc 
++ new_name=. 
++ new_name=./lbff00030000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00030000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00030000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00060000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00060000.nc 
++ new_name=. 
++ new_name=./lbff00060000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00060000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00060000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00090000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00090000.nc 
++ new_name=. 
++ new_name=./lbff00090000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00090000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00090000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00120000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00120000.nc 
++ new_name=. 
++ new_name=./lbff00120000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00120000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00120000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00150000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00150000.nc 
++ new_name=. 
++ new_name=./lbff00150000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00150000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00150000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00180000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00180000.nc 
++ new_name=. 
++ new_name=./lbff00180000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00180000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00180000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00210000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00210000.nc 
++ new_name=. 
++ new_name=./lbff00210000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00210000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff00210000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01000000.nc 
++ new_name=. 
++ new_name=./lbff01000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01030000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01030000.nc 
++ new_name=. 
++ new_name=./lbff01030000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01030000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01030000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01060000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01060000.nc 
++ new_name=. 
++ new_name=./lbff01060000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01060000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01060000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01090000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01090000.nc 
++ new_name=. 
++ new_name=./lbff01090000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01090000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01090000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01120000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01120000.nc 
++ new_name=. 
++ new_name=./lbff01120000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01120000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01120000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01150000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01150000.nc 
++ new_name=. 
++ new_name=./lbff01150000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01150000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01150000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01180000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01180000.nc 
++ new_name=. 
++ new_name=./lbff01180000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01180000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01180000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01210000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01210000.nc 
++ new_name=. 
++ new_name=./lbff01210000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01210000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff01210000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02000000.nc 
++ new_name=. 
++ new_name=./lbff02000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02030000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02030000.nc 
++ new_name=. 
++ new_name=./lbff02030000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02030000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02030000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02060000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02060000.nc 
++ new_name=. 
++ new_name=./lbff02060000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02060000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02060000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02090000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02090000.nc 
++ new_name=. 
++ new_name=./lbff02090000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02090000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02090000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02120000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02120000.nc 
++ new_name=. 
++ new_name=./lbff02120000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02120000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02120000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02150000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02150000.nc 
++ new_name=. 
++ new_name=./lbff02150000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02150000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02150000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02180000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02180000.nc 
++ new_name=. 
++ new_name=./lbff02180000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02180000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02180000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02210000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02210000.nc 
++ new_name=. 
++ new_name=./lbff02210000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02210000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff02210000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03000000.nc 
++ new_name=. 
++ new_name=./lbff03000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03030000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03030000.nc 
++ new_name=. 
++ new_name=./lbff03030000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03030000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03030000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03060000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03060000.nc 
++ new_name=. 
++ new_name=./lbff03060000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03060000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03060000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03090000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03090000.nc 
++ new_name=. 
++ new_name=./lbff03090000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03090000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03090000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03120000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03120000.nc 
++ new_name=. 
++ new_name=./lbff03120000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03120000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03120000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03150000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03150000.nc 
++ new_name=. 
++ new_name=./lbff03150000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03150000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03150000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03180000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03180000.nc 
++ new_name=. 
++ new_name=./lbff03180000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03180000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03180000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03210000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03210000.nc 
++ new_name=. 
++ new_name=./lbff03210000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03210000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff03210000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04000000.nc 
++ new_name=. 
++ new_name=./lbff04000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04030000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04030000.nc 
++ new_name=. 
++ new_name=./lbff04030000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04030000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04030000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04060000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04060000.nc 
++ new_name=. 
++ new_name=./lbff04060000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04060000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04060000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04090000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04090000.nc 
++ new_name=. 
++ new_name=./lbff04090000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04090000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04090000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04120000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04120000.nc 
++ new_name=. 
++ new_name=./lbff04120000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04120000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04120000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04150000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04150000.nc 
++ new_name=. 
++ new_name=./lbff04150000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04150000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04150000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04180000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04180000.nc 
++ new_name=. 
++ new_name=./lbff04180000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04180000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04180000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04210000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04210000.nc 
++ new_name=. 
++ new_name=./lbff04210000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04210000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff04210000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff05000000.nc .
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff05000000.nc 
++ new_name=. 
++ new_name=./lbff05000000.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff05000000.nc 
++ output_linked_file[$number_of_linked_files]=./lbff05000000.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ dict_file=dict.output.mch 
++ add_required_file /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/dict.output.mch .
++ in_name=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/dict.output.mch 
++ new_name=. 
++ input_required_file[$number_of_required_files]=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/dict.output.mch 
++ output_required_file[$number_of_required_files]=. 
++ let ' number_of_required_files = number_of_required_files + 1 '
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/icon_master.namelist 
++ <<EOF 
++ cat
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm 
++ <<EOF 
++ cat
++ output_opr_nml=yes 
++ >>/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm 
++ <<EOF 
++ cat
++ output_test_nml=no 
++ >>/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm 
++ <<EOF 
++ cat
++ final_status_file=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status 
++ rm -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status
++ RUNSCRIPTDIR=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run 
++ '[' x/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1 '=' x ']'
++ HGRIDDIR=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1 
++ EXPDIR=/scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu 
++ '[' ! -d /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu ']'
++ ls -ld /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
+drwxr-xr-x 2 dremo s83 4096 Jun 26 20:11 /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
++ '[' ! -d /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu ']'
++ ls -ld /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
+drwxr-xr-x 2 dremo s83 4096 Jun 26 20:11 /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
++ check_error 0 '/scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu does not exist?'
++ '[' 0 '!=' 0 ']'
++ '['  '='  ']'
++ current_status_file=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ cd /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
++ final_status_file=/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status 
++ rm -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status
++ '[' x '=' x ']'
++ minrank_list[0]=0 
++ maxrank_list[0]=65535 
++ incrank_list[0]=1 
++ '[' xNAMELIST_icon1-gpu_atm '!=' x ']'
++ namelist_list[0]=NAMELIST_icon1-gpu_atm 
++ modelname_list[0]=atmo 
++ modeltype_list[0]=1 
++ run_atmo=true 
++ restart=.false. 
++ restartSemaphoreFilename=isRestartRun.sem 
++ '[' -f isRestartRun.sem ']'
++ '[' x.false. '!=' x.false. -a xsbatch '!=' x ']'
++ run_atmo=true 
++ '[' xNAMELIST_icon1-gpu_atm '!=' x ']'
++ run_atmo=true 
++ run_jsbach_standalone=false 
++ run_jsbach=false 
++ '[' x '!=' x ']'
++ run_ocean=false 
++ '[' x '!=' x ']'
++ run_psrad=false 
++ '[' x '!=' x ']'
++ run_hamocc=false 
++ '[' x '!=' x ']'
++ all_grids=\''icon_grid_0001_R19B08_mch.nc'\'', '\''icon_grid_0001_R19B08_mch.parent.nc'\'', ' 
++ gridfile=icon_grid_0001_R19B08_mch.nc, 
++ gridfile=icon_grid_0001_R19B08_mch.nc, 
++ gridfile=icon_grid_0001_R19B08_mch.nc 
++ grfinfofile=icon_grid_0001_R19B08_mch-grfinfo.nc 
++ ls -l /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc
+-rwxr-xr-x 1 jenkins d56 696447788 Apr  7 15:36 /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc
++ check_error 0 '/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc does not exist.'
++ '[' 0 '!=' 0 ']'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status '='  ']'
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc ./
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc 
++ new_name=./ 
++ new_name=./icon_grid_0001_R19B08_mch.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc 
++ output_linked_file[$number_of_linked_files]=./icon_grid_0001_R19B08_mch.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ '[' -f /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch-grfinfo.nc ']'
++ gridfile=icon_grid_0001_R19B08_mch.parent.nc, 
++ gridfile=icon_grid_0001_R19B08_mch.parent.nc, 
++ gridfile=icon_grid_0001_R19B08_mch.parent.nc 
++ grfinfofile=icon_grid_0001_R19B08_mch.parent-grfinfo.nc 
++ ls -l /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc
+-rwxr-xr-x 1 jenkins d56 170857704 Apr  7 15:36 /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc
++ check_error 0 '/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc does not exist.'
++ '[' 0 '!=' 0 ']'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status '='  ']'
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ add_link_file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc ./
++ in_name=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc 
++ new_name=./ 
++ new_name=./icon_grid_0001_R19B08_mch.parent.nc 
++ input_linked_file[$number_of_linked_files]=/scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc 
++ output_linked_file[$number_of_linked_files]=./icon_grid_0001_R19B08_mch.parent.nc 
++ let ' number_of_linked_files = number_of_linked_files + 1 '
++ '[' -f /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent-grfinfo.nc ']'
++ copy_required_files
++ i=0 
++ '[' 0 -lt 7 ']'
++ cp -f /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/external_parameter_icon_grid_0001_R19B08_mch.nc ./
++ let ' i=i+1 '
++ '[' 1 -lt 7 ']'
++ cp -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/data/ECHAM6_CldOptProps.nc rrtm_cldopt.nc
++ let ' i=i+1 '
++ '[' 2 -lt 7 ']'
++ cp -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/data/rrtmg_lw.nc .
++ let ' i=i+1 '
++ '[' 3 -lt 7 ']'
++ cp -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/ana_varnames_map_file.txt map_file.ana
++ let ' i=i+1 '
++ '[' 4 -lt 7 ']'
++ cp -f /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/map_file.latbc map_file.latbc
++ let ' i=i+1 '
++ '[' 5 -lt 7 ']'
++ cp -f /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lateral_boundary.grid.nc lateral_boundary.grid.nc
++ let ' i=i+1 '
++ '[' 6 -lt 7 ']'
++ cp -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/dict.output.mch .
++ let ' i=i+1 '
++ '[' 7 -lt 7 ']'
++ link_required_files
++ i=0 
++ '[' 0 -lt 45 ']'
++ rm -f ecrad_data
++ ln -s /scratch/e1000/dremo/icon22_benchmark_3/gpu/externals/ecrad/data ecrad_data
++ let ' i=i+1 '
++ '[' 1 -lt 45 ']'
++ rm -f ./laf2022033012
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/laf2022033012 ./laf2022033012
++ let ' i=i+1 '
++ '[' 2 -lt 45 ']'
++ rm -f ./lbff00000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc ./lbff00000000.nc
++ let ' i=i+1 '
++ '[' 3 -lt 45 ']'
++ rm -f ./lbff00030000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00030000.nc ./lbff00030000.nc
++ let ' i=i+1 '
++ '[' 4 -lt 45 ']'
++ rm -f ./lbff00060000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00060000.nc ./lbff00060000.nc
++ let ' i=i+1 '
++ '[' 5 -lt 45 ']'
++ rm -f ./lbff00090000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00090000.nc ./lbff00090000.nc
++ let ' i=i+1 '
++ '[' 6 -lt 45 ']'
++ rm -f ./lbff00120000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00120000.nc ./lbff00120000.nc
++ let ' i=i+1 '
++ '[' 7 -lt 45 ']'
++ rm -f ./lbff00150000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00150000.nc ./lbff00150000.nc
++ let ' i=i+1 '
++ '[' 8 -lt 45 ']'
++ rm -f ./lbff00180000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00180000.nc ./lbff00180000.nc
++ let ' i=i+1 '
++ '[' 9 -lt 45 ']'
++ rm -f ./lbff00210000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00210000.nc ./lbff00210000.nc
++ let ' i=i+1 '
++ '[' 10 -lt 45 ']'
++ rm -f ./lbff01000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01000000.nc ./lbff01000000.nc
++ let ' i=i+1 '
++ '[' 11 -lt 45 ']'
++ rm -f ./lbff01030000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01030000.nc ./lbff01030000.nc
++ let ' i=i+1 '
++ '[' 12 -lt 45 ']'
++ rm -f ./lbff01060000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01060000.nc ./lbff01060000.nc
++ let ' i=i+1 '
++ '[' 13 -lt 45 ']'
++ rm -f ./lbff01090000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01090000.nc ./lbff01090000.nc
++ let ' i=i+1 '
++ '[' 14 -lt 45 ']'
++ rm -f ./lbff01120000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01120000.nc ./lbff01120000.nc
++ let ' i=i+1 '
++ '[' 15 -lt 45 ']'
++ rm -f ./lbff01150000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01150000.nc ./lbff01150000.nc
++ let ' i=i+1 '
++ '[' 16 -lt 45 ']'
++ rm -f ./lbff01180000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01180000.nc ./lbff01180000.nc
++ let ' i=i+1 '
++ '[' 17 -lt 45 ']'
++ rm -f ./lbff01210000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff01210000.nc ./lbff01210000.nc
++ let ' i=i+1 '
++ '[' 18 -lt 45 ']'
++ rm -f ./lbff02000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02000000.nc ./lbff02000000.nc
++ let ' i=i+1 '
++ '[' 19 -lt 45 ']'
++ rm -f ./lbff02030000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02030000.nc ./lbff02030000.nc
++ let ' i=i+1 '
++ '[' 20 -lt 45 ']'
++ rm -f ./lbff02060000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02060000.nc ./lbff02060000.nc
++ let ' i=i+1 '
++ '[' 21 -lt 45 ']'
++ rm -f ./lbff02090000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02090000.nc ./lbff02090000.nc
++ let ' i=i+1 '
++ '[' 22 -lt 45 ']'
++ rm -f ./lbff02120000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02120000.nc ./lbff02120000.nc
++ let ' i=i+1 '
++ '[' 23 -lt 45 ']'
++ rm -f ./lbff02150000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02150000.nc ./lbff02150000.nc
++ let ' i=i+1 '
++ '[' 24 -lt 45 ']'
++ rm -f ./lbff02180000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02180000.nc ./lbff02180000.nc
++ let ' i=i+1 '
++ '[' 25 -lt 45 ']'
++ rm -f ./lbff02210000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff02210000.nc ./lbff02210000.nc
++ let ' i=i+1 '
++ '[' 26 -lt 45 ']'
++ rm -f ./lbff03000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03000000.nc ./lbff03000000.nc
++ let ' i=i+1 '
++ '[' 27 -lt 45 ']'
++ rm -f ./lbff03030000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03030000.nc ./lbff03030000.nc
++ let ' i=i+1 '
++ '[' 28 -lt 45 ']'
++ rm -f ./lbff03060000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03060000.nc ./lbff03060000.nc
++ let ' i=i+1 '
++ '[' 29 -lt 45 ']'
++ rm -f ./lbff03090000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03090000.nc ./lbff03090000.nc
++ let ' i=i+1 '
++ '[' 30 -lt 45 ']'
++ rm -f ./lbff03120000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03120000.nc ./lbff03120000.nc
++ let ' i=i+1 '
++ '[' 31 -lt 45 ']'
++ rm -f ./lbff03150000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03150000.nc ./lbff03150000.nc
++ let ' i=i+1 '
++ '[' 32 -lt 45 ']'
++ rm -f ./lbff03180000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03180000.nc ./lbff03180000.nc
++ let ' i=i+1 '
++ '[' 33 -lt 45 ']'
++ rm -f ./lbff03210000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff03210000.nc ./lbff03210000.nc
++ let ' i=i+1 '
++ '[' 34 -lt 45 ']'
++ rm -f ./lbff04000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04000000.nc ./lbff04000000.nc
++ let ' i=i+1 '
++ '[' 35 -lt 45 ']'
++ rm -f ./lbff04030000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04030000.nc ./lbff04030000.nc
++ let ' i=i+1 '
++ '[' 36 -lt 45 ']'
++ rm -f ./lbff04060000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04060000.nc ./lbff04060000.nc
++ let ' i=i+1 '
++ '[' 37 -lt 45 ']'
++ rm -f ./lbff04090000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04090000.nc ./lbff04090000.nc
++ let ' i=i+1 '
++ '[' 38 -lt 45 ']'
++ rm -f ./lbff04120000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04120000.nc ./lbff04120000.nc
++ let ' i=i+1 '
++ '[' 39 -lt 45 ']'
++ rm -f ./lbff04150000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04150000.nc ./lbff04150000.nc
++ let ' i=i+1 '
++ '[' 40 -lt 45 ']'
++ rm -f ./lbff04180000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04180000.nc ./lbff04180000.nc
++ let ' i=i+1 '
++ '[' 41 -lt 45 ']'
++ rm -f ./lbff04210000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff04210000.nc ./lbff04210000.nc
++ let ' i=i+1 '
++ '[' 42 -lt 45 ']'
++ rm -f ./lbff05000000.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff05000000.nc ./lbff05000000.nc
++ let ' i=i+1 '
++ '[' 43 -lt 45 ']'
++ rm -f ./icon_grid_0001_R19B08_mch.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.nc ./icon_grid_0001_R19B08_mch.nc
++ let ' i=i+1 '
++ '[' 44 -lt 45 ']'
++ rm -f ./icon_grid_0001_R19B08_mch.parent.nc
++ ln -s /scratch/e1000/jenkins/icon/pool/data/ICON/mch/grids/icon-1/icon_grid_0001_R19B08_mch.parent.nc ./icon_grid_0001_R19B08_mch.parent.nc
++ let ' i=i+1 '
++ '[' 45 -lt 45 ']'
++ '[' x '!=' x ']'
++ '[' x '!=' x ']'
++ read_restart_namelists=.true. 
++ '[' -z  ']'
++ master_namelist=icon_master.namelist 
++ calendar='proleptic gregorian' 
++ calendar_type=1 
++ >icon_master.namelist 
++ echo '&master_nml'
++ echo ' lrestart               =  .false.'
++ echo ' read_restart_namelists =  .true.'
++ echo /
++ '[' -z  ']'
++ echo '&master_time_control_nml'
++ echo ' calendar             = '\''proleptic gregorian'\'
++ echo ' experimentStartDate  = '\''2022-03-30T12:00:00Z'\'
++ echo ' restartTimeIntval    = '\'\'
++ echo ' checkpointTimeIntval = '\'\'
++ '[' -n 2022-03-30T12:00:00Z ']'
++ echo ' experimentStopDate = '\''2022-03-30T12:00:00Z'\'
++ echo /
++ echo '&time_nml'
++ echo ' is_relative_time     = .false.'
++ echo /
++ no_of_models=1 
++ echo 'no_of_models=1'
+no_of_models=1
++ rank_group_size=1 
++ j=0 
++ '[' 0 -lt 1 ']'
++ add_component_to_master_namelist NAMELIST_icon1-gpu_atm atmo 1 0 65535 1 1
++ model_namelist_filename=NAMELIST_icon1-gpu_atm 
++ '[' x '!=' xset ']'
++ model_name=atmo 
++ model_type=1 
++ model_min_rank=0 
++ model_max_rank=65535 
++ model_inc_rank=1 
++ model_rank_group_size=1 
++ >>icon_master.namelist 
++ <<EOF 
++ cat
++ '[' -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm ']'
++ mv -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu
++ check_error 0 'mv -f /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/NAMELIST_icon1-gpu_atm /scratch/e1000/dremo/icon22_benchmark_3/gpu/experiments/icon1-gpu'
++ '[' 0 '!=' 0 ']'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status '='  ']'
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ expr 0 + 1
++ j=1 
++ '[' 1 -lt 1 ']'
++ ls -l /scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh
+-rwxr-xr-x 1 dremo s83 572 Jun 22 17:20 /scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh
++ check_error 0 '/scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh does not exist?'
++ '[' 0 '!=' 0 ']'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status '='  ']'
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ ldd /scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh
+	not a dynamic executable
++ rm -f finish.status
++ date
+Sun Jun 26 23:50:04 CEST 2022
++ srun -n 10 '--threads-per-core=1' --cpus-per-task 1 '--distribution=cyclic' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh
+
+ ICON MPI interface runtime information:
+ mo_mpi::start_mpi Used MPI version: 3.1
+ mo_mpi::start_mpi ICON: Globally run on 10 mpi processes.
+
+ ICON runs on 10 mpi processes.
+
+ Repository: git@gitlab.dkrz.de:icon/icon-nwp.git
+ Branch    : icon22_benchmark_3
+ Revision  : fbd14eb1b4a02e747e27118b611fcb16fd4c4074
+ Executable: /scratch/e1000/dremo/icon22_benchmark_3/gpu/bin/icon at 20220626 235008
+ User      : Remo Dietlicher, ETHZ (dremo) on nid020001 (Linux 5.3.18-24.75_10.0.189-cray_shasta_c x86_64)
+ GRIB-API  : 2.19.0
+ 
+ master_control: start model initialization.
+
+ atmo runs on 10 mpi processes.
+
+  PE      4 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      6 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      2 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      8 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      0 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      3 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      7 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      9 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      5 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      1 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file.
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file (output names).
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file.
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file (output names).
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file.
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file (output names).
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file.
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file (output names).
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file.
+ mo_name_list_output_init::read_name_list_output_namelists: load dictionary file (output names).
+ mo_dbg_nml/read_dbg_namelist:: read debug namelist dbg_index_nml
+ 
+ mo_advection_nml: read_transport_nml: Evaluate the number of names in transport_nml/tracer_names
+ ---      number of named tracers :         0
+ mo_advection_nml: read_transport_nml: Setting default names for tracers without names.
+ ---      number of tracers without names :         5
+ ---      tracer name q1 in position :         1
+ ---      tracer name q2 in position :         2
+ ---      tracer name q3 in position :         3
+ ---      tracer name q4 in position :         4
+ ---      tracer name q5 in position :         5
+ 
+  PE      8 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      9 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      1 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      3 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      5 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      7 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      2 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      4 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+  PE      6 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+ WARNING: Namelist switch l_sst_in is obsolete and will soon be removed!
+ mo_gribout_nml::preset_value: presetting namelist parameter 'typeOfGeneratingProcess' as 4
+ mo_gribout_nml::preset_value: presetting namelist parameter 'typeOfProcessedData' as 5
+ 
+ Model time step          : PT10.000S
+ 
+ - Time step on grid jg=01: PT10.000S =   10.000 sec
+ 
+ Checkpoint interval      : PT0.000S
+ Restart interval         : PT0.000S
+ 
+ This is not a RESTART run ...
+ IAU time shift: PT00.000S
+ 
+ Calendar: Proleptic Gregorian
+ 
+ Experiment reference date: 2022-03-30T12:00:00Z
+ Experiment start date    : 2022-03-30T12:00:00Z
+ Experiment stop date     : 2022-03-30T12:00:00.000
+ 
+ 
+ Start date    : 2022-03-30T12:00:00Z
+ Stop date     : 2022-03-30T12:00:00.000
+ 
+  PE      0 WARNING: check_parallel_configuration: The value of "nproma" seems to be set for a vector machine!
+ mo_nml_crosscheck::atm_crosscheck: radiation is used with ozone
+ mo_nml_crosscheck::atm_crosscheck: Attention: NWP physics is used, ntracer is automatically reset to   6
+ mo_nml_crosscheck::atm_crosscheck: NetCDF output of floating point variables will be in 64-bit accuracy
+ mo_nml_crosscheck::atm_crosscheck: --> use_dp_mpi2io is changed to .TRUE. to allow 64-bit accuracy in the NetCDF output.
+ INFO   : mo_nml_crosscheck::atm_crosscheck: namelist parameter 'activate_sync_timers' has been set to .TRUE., because global 'timers_level' is > 9.
+ set_mpi_work_communicators: num_io_procs_radar has no effect if there are no radar-active domains!
+ set_mpi_work_communicators: --> num_io_procs_radar set to 0
+ set_mpi_work_communicators: Number of procs for test: 0, work: 8, I/O: 1, Restart: 0, Prefetching: 1
+ set_mpi_work_communicators:  0 <=             0  test procs <             0  <=             8  work procs <             8  <=             1  io procs <             9  <=             0  restart procs <             9  <=             1  pref procs <            10  <=             0  radario procs <            10
+ mo_model_domimp_patches:import_pre_patches: start to import patches
+ mo_model_domimp_patches:read_pre_patch: start to init patch_pre
+ Read grid file icon_grid_0001_R19B08_mch.parent.nc
+ mo_model_domimp_patches:read_pre_patch: grid uuid: 161d722e-17b2-5f20-bf58-5f3b0b632fa0
+ mo_model_domimp_patches:read_pre_patch: generating center of patch    0:  215
+ mo_model_domimp_patches:read_pre_patch: generating subcenter of patch    0:  255
+ mo_model_domimp_patches:read_pre_patch: number_of_grid_used of patch    0:    0
+ mo_model_domimp_patches:read_pre_patch: URI of patch    0:
+ mo_model_domimp_patches:read_pre_patch: read_patches finished
+ mo_model_domimp_patches:read_pre_patch: start to init patch_pre
+ Read grid file icon_grid_0001_R19B08_mch.nc
+ mo_model_domimp_patches:read_pre_patch: grid uuid: 17643da2-5749-59b6-44d2-54a3cd6e2bc0
+ mo_model_domimp_patches:read_pre_patch: generating center of patch    1:  215
+ mo_model_domimp_patches:read_pre_patch: generating subcenter of patch    1:  255
+ mo_model_domimp_patches:read_pre_patch: number_of_grid_used of patch    1:    1
+ mo_model_domimp_patches:read_pre_patch: URI of patch    1:
+ mo_model_domimp_patches:read_pre_patch: read_patches finished
+ mo_subdivision:decompose_domain: start of domain decomposition
+ mo_subdivision:decompose_domain: Is this taking a long time? Consider adding macro definition HAVE_SLOW_PASSIVE_TARGET_ONESIDED to compile time settings.
+ No splitting of processor grid
+ divide_patch: Using geometric area subdivision (normal)
+ mo_setup_subdivision::divide_patch: dividing patch
+ mo_setup_subdivision::prepare_patch: Set new nproma for each MPI work process.
+ # New nproma values:: max/min/avg:  145285 144548 144922.13
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 1
+ mo_setup_subdivision::divide_patch: dividing patch
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 0
+ divide_patch: Using geometric area subdivision (normal)
+ mo_setup_subdivision::divide_patch: dividing patch
+ mo_setup_subdivision: divide_patch: erase negative refin_ctrl flags in patch 0
+ mo_build_decomposition:set_child_indices: patch 0 -> 1 - Enter.
+ mo_build_decomposition:set_child_indices: patch 0 -> 1 - Done.
+ mo_build_decomposition:set_child_indices: loc par patch 0 -> 1 - Enter.
+ mo_build_decomposition:set_child_indices: loc par patch 0 -> 1 - Done.
+ mo_model_domimp_patches:read_remaining_patch: Read gridmap file icon_grid_0001_R19B08_mch.parent.nc
+ mo_read_netcdf_distributed::distrib_nf_open: icon_grid_0001_R19B08_mch.parent.nc
+ mo_model_domimp_patches:read_remaining_patch: read finished
+ mo_model_domimp_patches:read_remaining_patch: Read gridmap file icon_grid_0001_R19B08_mch.nc
+ mo_read_netcdf_distributed::distrib_nf_open: icon_grid_0001_R19B08_mch.nc
+ mo_model_domimp_patches:read_remaining_patch: read finished
+ mo_model_domimp_patches: set negative edge/vertex refin_ctrl flags for patch (id 0)
+ mo_model_domimp_patches: set negative edge/vertex refin_ctrl flags for local parent patch (id 0)
+ Information on domain decomposition: grid    1
+ Number of compute PEs used for this grid: 8
+ #   lateral boundary cells: max/min/avg    4510   1706   3153.00
+ #         prognostic cells: max/min/avg  141068 139676 140350.50
+ # cells up to halo level 1: max/min/avg  141952 140222 141056.75
+ # cells up to halo level 2: max/min/avg  142842 140775 141769.13
+ #              cells total: max/min/avg  145285 144548 144922.13
+ #   lateral boundary edges: max/min/avg    7331   2776   5126.75
+ #         prognostic edges: max/min/avg  211613 209035 210330.13
+ # edges up to halo level 1: max/min/avg  211936 209508 210682.88
+ # edges up to halo level 2: max/min/avg  213709 210606 212100.50
+ # edges up to halo level 3: max/min/avg  214599 211157 212811.63
+ #   lateral boundary verts: max/min/avg    2260    853   1579.50
+ #         prognostic verts: max/min/avg   70759  69866  70371.00
+ # verts up to halo level 1: max/min/avg   71084  70392  70725.63
+ # verts up to halo level 2: max/min/avg   71975  70944  71437.75
+ 
+ # send PEs (cells): max/min/avg       5      2      3.25
+ # recv PEs (cells): max/min/avg       5      2      3.25
+ # send PEs (edges): max/min/avg       5      2      3.25
+ # recv PEs (edges): max/min/avg       5      2      3.25
+ # send PEs (verts): max/min/avg       5      2      3.25
+ # recv PEs (verts): max/min/avg       5      2      3.25
+ 
+ build_decomposition: Done.
+ mo_atmo_model:construct_atmo_model: asynchronous input prefetching is enabled.
+ mo_icon_output_tools:init_io_processes: asynchronous namelist I/O scheme is enabled.
+ RBF scale factors for cells/edges/vertices, domain   1:  0.23715 0.42665 0.33175
+ RBF scale factors for velocity boundary interpolation   1:  0.50000
+ mo_intp_state:construct_2d_interpol_state: start to construct int_state
+ mo_intp_state:construct_2d_interpol_state: constructing int_state for patch 0
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_cell:
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_vertex:
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_edge:
+ mo_interpolation:tri_quadrature_pts:
+ mo_intp_coeffs:calculate_tangent_plane_at_edge:
+ mo_intp_coeffs:calculate_dotproduct_at_edge:
+ mo_interpolation:init_tplane_c_sphere:
+ mo_interpolation:lsq_stencil_create:
+ mo_interpolation:lsq_compute_coeff_cell_sphere:
+ mo_interpolation:lsq_stencil_create:
+ mo_interpolation:lsq_compute_coeff_cell_sphere:
+ mo_intp_state:construct_2d_interpol_state: constructing int_state for patch 1
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_cell:
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_vertex:
+ mo_intp_rbf_coeffs:rbf_vec_compute_coeff_edge:
+ mo_interpolation:tri_quadrature_pts:
+ mo_intp_coeffs:calculate_tangent_plane_at_edge:
+ mo_intp_coeffs:calculate_dotproduct_at_edge:
+ mo_interpolation:init_tplane_c_sphere:
+ mo_interpolation:lsq_stencil_create:
+ mo_interpolation:lsq_compute_coeff_cell_sphere:
+ mo_interpolation:lsq_stencil_create:
+ mo_interpolation:lsq_compute_coeff_cell_sphere:
+ mo_intp_state:construct_2d_interpol_state: construction of interpolation state finished
+ mo_intp_state:allocate_int_state: memory allocation finished
+ mo_grf_intp_state:construct_2d_gridref_state: start to construct grf_state
+ mo_grf_intp_state:construct_2d_gridref_state: memory allocation finished
+ mo_grf_intp_state:construct_2d_gridref_state: construction of interpolation state finished
+ setup_phys_patches: Physical domain    1 belongs to logical domain    1
+ mo_dynamics_config:setup_dynamics_config: Set time level indices
+ ldynamics  =  .TRUE.: 2 time levels used for progn. dynamics  variables -> nnew /= nnow
+ ltransport =  .TRUE.: 2 time levels used for progn. transport variables -> nnew_rcf /= nnow_rcf
+ ---      nnow    (01) :         1
+ ---      nnew    (01) :         2
+ ---      nold    (01) :         3
+ ---      nnow_rcf(01) :         1
+ ---      nnew_rcf(01) :         2
+ mo_lnd_nwp_config::configure_lnd_nwp: Number of hydrological active soil layers ibot_w_so is set to:  6
+ Surface tile setup
+ 
+ tileName | GRIB2 tileId | tileAtts | ICON tile Ids |  
+ -------- | ------------ | -------- | ------------- |  
+ 
+ Land     | 1            | 1,2,     | 1,4,          |  
+ Land     | 2            | 1,2,     | 2,5,          |  
+ Land     | 3            | 1,2,     | 3,6,          |  
+ Ocean    | 4            | 1,4,     | 7,9,          |  
+ Lake     | 5            | 0,       | 8,            |  
+  
+ mo_ext_data_init:init_ext_data: Start
+ mo_ext_data_init::inquire_extpar_file: extpar_file = external_parameter_icon_grid_0001_R19B08_mch.nc
+ mo_ext_data_init::inquire_extpar_file: Number of land_use classes in external data file =   23
+ mo_ext_data_init::inquire_extpar_file: Number of months in external data file =   12
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data started
+ 
+ adding new var_list ext_data_atm_D01
+ 
+ adding new var_list ext_data_atm_td_D01
+ mo_ext_data_state:construct_ext_data: Construction of data structure for external data finished
+ mo_ext_data_init:init_ext_data: Start reading external data from file
+ mo_read_netcdf_distributed::distrib_nf_open: external_parameter_icon_grid_0001_R19B08_mch.nc
+ mo_ext_data_init:init_ext_data: Finished reading external data
+ number of topography smoothing steps in domain   1:   1
+ init_sleve_coord: Coordinate setup finished
+ flat coordinate surfaces starting at level   6
+ Nominal heights of coordinate half levels and layer thicknesses (m):
+ jk, vct_a, dvct:    1   22000.000    2191.633
+ jk, vct_a, dvct:    2   19808.367    1184.849
+ jk, vct_a, dvct:    3   18623.518     952.139
+ jk, vct_a, dvct:    4   17671.378     820.845
+ jk, vct_a, dvct:    5   16850.533     731.864
+ jk, vct_a, dvct:    6   16118.669     665.732
+ jk, vct_a, dvct:    7   15452.937     613.735
+ jk, vct_a, dvct:    8   14839.202     571.261
+ jk, vct_a, dvct:    9   14267.941     535.595
+ jk, vct_a, dvct:   10   13732.346     505.010
+ jk, vct_a, dvct:   11   13227.336     478.347
+ jk, vct_a, dvct:   12   12748.989     454.793
+ jk, vct_a, dvct:   13   12294.196     433.757
+ jk, vct_a, dvct:   14   11860.439     414.796
+ jk, vct_a, dvct:   15   11445.644     397.570
+ jk, vct_a, dvct:   16   11048.073     381.816
+ jk, vct_a, dvct:   17   10666.257     367.323
+ jk, vct_a, dvct:   18   10298.934     353.919
+ jk, vct_a, dvct:   19    9945.015     341.467
+ jk, vct_a, dvct:   20    9603.548     329.851
+ jk, vct_a, dvct:   21    9273.697     318.974
+ jk, vct_a, dvct:   22    8954.723     308.756
+ jk, vct_a, dvct:   23    8645.967     299.126
+ jk, vct_a, dvct:   24    8346.841     290.026
+ jk, vct_a, dvct:   25    8056.815     281.404
+ jk, vct_a, dvct:   26    7775.411     273.215
+ jk, vct_a, dvct:   27    7502.197     265.420
+ jk, vct_a, dvct:   28    7236.777     257.985
+ jk, vct_a, dvct:   29    6978.792     250.879
+ jk, vct_a, dvct:   30    6727.913     244.076
+ jk, vct_a, dvct:   31    6483.836     237.552
+ jk, vct_a, dvct:   32    6246.285     231.284
+ jk, vct_a, dvct:   33    6015.001     225.253
+ jk, vct_a, dvct:   34    5789.748     219.442
+ jk, vct_a, dvct:   35    5570.306     213.835
+ jk, vct_a, dvct:   36    5356.471     208.417
+ jk, vct_a, dvct:   37    5148.053     203.176
+ jk, vct_a, dvct:   38    4944.877     198.098
+ jk, vct_a, dvct:   39    4746.779     193.174
+ jk, vct_a, dvct:   40    4553.605     188.392
+ jk, vct_a, dvct:   41    4365.214     183.743
+ jk, vct_a, dvct:   42    4181.471     179.218
+ jk, vct_a, dvct:   43    4002.253     174.810
+ jk, vct_a, dvct:   44    3827.443     170.510
+ jk, vct_a, dvct:   45    3656.933     166.311
+ jk, vct_a, dvct:   46    3490.623     162.206
+ jk, vct_a, dvct:   47    3328.417     158.190
+ jk, vct_a, dvct:   48    3170.227     154.255
+ jk, vct_a, dvct:   49    3015.972     150.396
+ jk, vct_a, dvct:   50    2865.576     146.608
+ jk, vct_a, dvct:   51    2718.968     142.885
+ jk, vct_a, dvct:   52    2576.083     139.221
+ jk, vct_a, dvct:   53    2436.862     135.612
+ jk, vct_a, dvct:   54    2301.250     132.053
+ jk, vct_a, dvct:   55    2169.196     128.539
+ jk, vct_a, dvct:   56    2040.657     125.064
+ jk, vct_a, dvct:   57    1915.593     121.624
+ jk, vct_a, dvct:   58    1793.969     118.214
+ jk, vct_a, dvct:   59    1675.755     114.828
+ jk, vct_a, dvct:   60    1560.926     111.461
+ jk, vct_a, dvct:   61    1449.465     108.107
+ jk, vct_a, dvct:   62    1341.358     104.761
+ jk, vct_a, dvct:   63    1236.597     101.415
+ jk, vct_a, dvct:   64    1135.182      98.063
+ jk, vct_a, dvct:   65    1037.118      94.697
+ jk, vct_a, dvct:   66     942.422      91.307
+ jk, vct_a, dvct:   67     851.115      87.884
+ jk, vct_a, dvct:   68     763.230      84.416
+ jk, vct_a, dvct:   69     678.814      80.889
+ jk, vct_a, dvct:   70     597.925      77.286
+ jk, vct_a, dvct:   71     520.639      73.586
+ jk, vct_a, dvct:   72     447.053      69.763
+ jk, vct_a, dvct:   73     377.291      65.781
+ jk, vct_a, dvct:   74     311.510      61.594
+ jk, vct_a, dvct:   75     249.916      57.134
+ jk, vct_a, dvct:   76     192.782      52.299
+ jk, vct_a, dvct:   77     140.483      46.922
+ jk, vct_a, dvct:   78      93.560      40.690
+ jk, vct_a, dvct:   79      52.870      32.870
+ jk, vct_a, dvct:   80      20.000      20.000
+ jk, vct_a, dvct:   81       0.000       0.000
+ parallel calculation of vgrid UUID. Generated UUID: 
+ 6fa9e9b5-8ad4-5b2a-947c-0e86aadb2de0
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; computation of moist physics processes starts in layer    1
+ mo_nonhydrostatic_config:configure_nonhydrostatic: Domain   1; high- and mid-level clouds in layers above   28  57
+ Index list generation - number of land tiles:    3
+ Total number of tiles:    6
+ Number of land points in domain  1:    968944
+ Number of sea points in domain  1:    157880
+ Number of lake points in domain  1:     20293
+ Number of points in tile 1:    968944
+ Number of points in tile 2:    878832
+ Number of points in tile 3:    667321
+ Number of corrected false glacier points in domain  1:         1
+ Time intervals for calling NWP physics on patch             1
+ 
+ Process | dt user [=> final] |  
+ ------- | ------------------ |  
+ 
+ fastphy |  120.00            |  
+ conv    |  120.00            |  
+ ccov    |  600.00            |  
+ rad     |  120.00            |  
+ gwd     |   10.00            |  
+  
+ mo_limarea_config::configure_latbc: Lateral boundary condition using interpolated boundary data.
+ mo_atm_phy_nwp_config:configure_atm_phy_nwp: Use blending between GEMS and MACC ozone climatologies with tuning
+ Event-setup for phyNwpEventGroup on patch  1
+ 
+ eventName | enabled | startDate                | endDate                  | intvl     |  
+ --------- | ------- | ------------------------ | ------------------------ | --------- |  
+ 
+ conv      | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT02M     |  
+ ccov      | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT02M     |  
+ rad       | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10M     |  
+ sso       | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT02M     |  
+ gwd       | F       | ]2022-03-30T12:00:10.000 | 2022-03-30T12:00:10.000] | PT02M     |  
+ satad     | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10.000S |  
+ turb      | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10.000S |  
+ gscp      | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10.000S |  
+ sfc       | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10.000S |  
+ radheat   | T       | [2022-03-30T12:00:10.000 | 2022-03-30T12:00:00.000] | PT10.000S |  
+  
+ atm_phy_nwp:configure_ww: Domain   1; ih_500hPa, ihb500hPa, ih_700hPa, ih_850hPa, ih_950hPa, ihb950hPa   35  35  49  61  72  72
+ atm_phy_nwp:configure_ww: Domain   1; ifog_temp, ifog_wind   66  74
+ mo_nonhydro_state::construct_nh_state: Construction of NH state started
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_01
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list nh_state_tracer_of_domain_01_and_timelev_02
+ 
+ adding new var_list nh_state_prog_of_domain_01_and_timelev_03
+ 
+ adding new var_list nh_state_diag_of_domain_01
+ 
+ adding new var_list nh_state_metrics_of_domain_01
+ mo_nonhydro_state::construct_nh_state: NH state construction completed
+ 
+ adding new var_list nh_state_opt_diag_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_z_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_p_of_domain_01
+ 
+ adding new var_list nh_state_opt_diag_i_of_domain_01
+ 
+ adding new var_list nh_accumulation_for_ProgAndDiag_of_domain_01
+ 
+ adding new var_list prepadv_of_domain_01
+ mo_prepadv_state:construct_prepadv_state: construction of prep_adv state finished
+ mo_nwp_phy_state:construct_nwp_state: start to construct 3D state vector
+ 
+ adding new var_list prm_diag_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_diag: construction of NWP physical fields finished
+ 
+ adding new var_list prm_tend_of_domain_01
+ mo_nwp_phy_state:construct_nwp_phy_tend: construction of NWP physical tendency fields finished
+ 
+ adding new var_list prm_stch_of_domain_01
+ mo_nwp_phy_state:construct_nwp_state: construction of state vector finished
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction started
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_01
+ 
+ adding new var_list lnd_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list wtr_prog_of_domain_01_and_timelev_02
+ 
+ adding new var_list lnd_diag_of_domain_01
+ mo_nwp_lnd_state:construct_nwp_lnd_state: land state construction completed
+ Tracer meta-information for patch             1
+ 
+ VarName | Tracer ID | feedback | in list trAdvect | in list trNotAdvect | in list trHydroMass | slev | substep range | nadv_substeps |  
+ ------- | --------- | -------- | ---------------- | ------------------- | ------------------- | ---- | ------------- | ------------- |  
+ 
+ qv.TL1  |   1       | X        | X                |                     |                     |   1  |   1/  0       |   3           |  
+ qc.TL1  |   2       | X        | X                |                     | X                   |   1  | -- / --       | --            |  
+ qi.TL1  |   3       | X        | X                |                     | X                   |   1  | -- / --       | --            |  
+ qr.TL1  |   4       |          | X                |                     | X                   |   1  | -- / --       | --            |  
+ qs.TL1  |   5       |          | X                |                     | X                   |   1  | -- / --       | --            |  
+ qg.TL1  |   6       |          | X                |                     | X                   |   1  | -- / --       | --            |  
+  
+ mo_vertical_grid:set_nh_metrics: Domain   1; end index of Rayleigh damping layer for w:   13
+ mo_vertical_grid: Damping coefficient for w; diffusion enhancement coefficient:
+ mo_vertical_grid: level    1, half-level height 22000.0  0.50000E+01  0.24000E+02
+ mo_vertical_grid: level    2, half-level height 19808.4  0.15338E+01  0.95117E+01
+ mo_vertical_grid: level    3, half-level height 18623.5  0.67112E+00  0.47532E+01
+ mo_vertical_grid: level    4, half-level height 17671.4  0.33115E+00  0.28026E+01
+ mo_vertical_grid: level    5, half-level height 16850.5  0.17742E+00  0.19296E+01
+ mo_vertical_grid: level    6, half-level height 16118.7  0.10106E+00  0.15080E+01
+ mo_vertical_grid: level    7, half-level height 15452.9  0.60396E-01  0.12910E+01
+ mo_vertical_grid: level    8, half-level height 14839.2  0.37518E-01  0.11734E+01
+ mo_vertical_grid: level    9, half-level height 14267.9  0.24068E-01  0.11068E+01
+ mo_vertical_grid: level   10, half-level height 13732.3  0.15867E-01  0.10677E+01
+ mo_vertical_grid: level   11, half-level height 13227.3  0.10709E-01  0.10440E+01
+ mo_vertical_grid: level   12, half-level height 12749.0  0.73784E-02  0.10292E+01
+ mo_vertical_grid: level   13, half-level height 12294.2  0.51772E-02  0.10198E+01
+ mo_vertical_grid:prepare_zdiffu: Number of z-diffusion points:   20269415
+ mo_vertical_grid:set_nh_metrics: Maximum vertical wind offcentering:   0.4080
+ mo_vertical_grid:set_nh_metrics: Maximum slope:   0.9472
+ mo_vertical_grid:set_nh_metrics: Maximum height difference between adjacent points:    926.3
+ mo_input_instructions:readInstructionList_make: Declare qg as OPTIONAL for DOM  1
+ mo_input_instructions:readInstructionList_make: Declare alb_si as OPTIONAL for DOM  1
+ mo_input_instructions:readInstructionList_make: Declare t_sk as OPTIONAL for DOM  1
+ mo_input_instructions:readInstructionList_make: Declare hsnow_max as OPTIONAL for DOM  1
+ mo_input_instructions:readInstructionList_make: Declare snow_age as OPTIONAL for DOM  1
+ mo_input_instructions:readInstructionList_make: Declare plantevap as OPTIONAL for DOM  1
+ mo_initicon: MODE_VREMAP: read ICON data and perform vertical remapping
+ mo_initicon:read_dwdfg: read atm_FG fields from laf2022033012
+ mo_input_request_list:InputRequestList_readFile: READ 1339 records from file 'laf2022033012', ignoring 7 records
+ Timer report: Total  128.85038 s, Read metadata    3.98608 s, Read data    2.93952 s
+               Compute statistics    0.35238 s, Distribute data  121.23590s
+ 
+ jg | variable  | triple      | validity time           | vvmm  | levTyp | nlev | tileCnt | untiled | runtype | clas | expid | grid | rgrid | min             | mean            | max             |  
+ -- | --------- | ----------- | ----------------------- | ----- | ------ | ---- | ------- | ------- | ------- | ---- | ----- | ---- | ----- | --------------- | --------------- | --------------- |  
+ 
+ 1  | vn        |   0.  2. 34 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 3     | -42.218811      | 0.35881151      | 42.848118       |  
+ 1  | w         |   0.  2.  9 | 2022-03-30T12:00:00.000 | PT12H | 25     | 81   |         | yes     | 4       | 0    | -1    | 1    | 1     | -6.3184338      | 0.87852435E-02  | 8.4128904       |  
+ 1  | rho       |   0.  3. 10 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.69165461E-01  | 0.72035612      | 1.2363091       |  
+ 1  | theta_v   |   0.  0. 15 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 280.01129       | 318.43687       | 535.60718       |  
+ 1  | qc        |   0.  1. 22 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.12554671E-04  | 0.31774640E-02  |  
+ 1  | qi        |   0.  1. 82 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.25337834E-05  | 0.78858435E-03  |  
+ 1  | qr        |   0.  1. 24 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.18104192E-05  | 0.62220097E-02  |  
+ 1  | qs        |   0.  1. 25 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.11943812E-04  | 0.21264553E-02  |  
+ 1  | qg        |   0.  1. 32 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.19956381E-05  | 0.66359043E-02  |  
+ 1  | tke       |   0. 19. 11 | 2022-03-30T12:00:00.000 | PT12H | 25     | 81   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.49999999E-04  | 0.20605033      | 624.45319       |  
+ 1  | z_ifc     |   0.  3.  6 | 2022-03-30T12:00:00.000 | PT12H | 25     | 81   |         | yes     | 4       | 0    | -1    | 1    | 1     | -14.646213      | 6194.9891       | 22000.000       |  
+ 1  | gz0       |   2.  0.  1 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.30990617E-04  | 0.30009944      | 1.0000005       |  
+ 1  | t_g       |   0.  0.  0 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 263.49890       | 286.26665       | 301.20886       |  
+ 1  | alb_si    |   0. 19.234 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | -100.00000      | -100.00000      | -100.00000      |  
+ 1  | t_mnw_lk  |   1.  2.  1 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 271.11787       | 286.88281       |  
+ 1  | t_wml_lk  |   1.  2.  1 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 271.12220       | 286.88281       |  
+ 1  | h_ml_lk   |   1.  2.  0 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.17177421      | 50.000000       |  
+ 1  | t_bot_lk  |   1.  2.  1 | 2022-03-30T12:00:00.000 | PT12H | 20     | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 271.11140       | 286.88281       |  
+ 1  | c_t_lk    |   1.  2. 10 | 2022-03-30T12:00:00.000 | PT12H | 24     | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.48903570      | 0.79978943      |  
+ 1  | qv_s      |   0.  1.  0 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.99999993E-03  | 0.73326376E-02  | 0.13071610E-01  |  
+ 1  | t_sk      |   0.  0. 17 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 258.87985       | 286.23148       | 301.20407       |  
+ 1  | w_i       |   2.  0. 13 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.15176818      | 1.7429199       |  
+ 1  | hsnow_max |   0.  1.235 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.62118455E-01  | 16.340820       |  
+ 1  | snow_age  |   0.  1. 17 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.71908329      | 365.00000       |  
+ 1  | t_so      |   2.  3. 18 | 2022-03-30T12:00:00.000 | PT12H | 7      | 9    |         | yes     | 4       | 0    | -1    | 1    | 1     | -999.00000      | 279.43522       | 300.75778       |  
+ 1  | w_so_ice  |   2.  3. 22 | 2022-03-30T12:00:00.000 | PT12H | 7      | 8    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 1.2745521       | 1450.2500       |  
+ 1  | plantevap |   2.  0.198 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | -0.57252520     | -0.15987711E-01 | -0.17881393E-06 |  
+ 1  | w_snow    |   0.  1. 60 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 15.976848       | 4898.0000       |  
+ 1  | rho_snow  |   0.  1. 61 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 28.802873       | 318.12500       |  
+ 1  | qv        |   0.  1.  0 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.26008404E-05  | 0.22290069E-02  | 0.95411455E-02  |  
+ 1  | u         |   0.  2.  2 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | -16.744137      | 10.677922       | 45.267578       |  
+ 1  | v         |   0.  2.  3 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | -29.186569      | 2.8035783       | 23.947624       |  
+ 1  | temp      |   0.  0.  0 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 201.41788       | 249.91729       | 292.06918       |  
+ 1  | pres      |   0.  3.  0 | 2022-03-30T12:00:00.000 | PT12H | 25     | 80   |         | yes     | 4       | 0    | -1    | 1    | 1     | 4208.8789       | 54226.856       | 100756.45       |  
+ 1  | t_ice     |  10.  2.  8 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 267.15810       | 273.14844       |  
+ 1  | h_ice     |  10.  2.  1 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.0000000       | 0.0000000       |  
+ 1  | fr_seaice |  10.  2.  0 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.0000000       | 0.0000000       |  
+ 1  | t_seasfc  |  10.  3.  0 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | -0.89999999E+34 | -0.77622431E+34 | 288.04199       |  
+ 1  | w_so      |   2.  3. 20 | 2022-03-30T12:00:00.000 | PT12H | 7      | 8    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 417.36025       | 5482.8750       |  
+ 1  | t_snow    |   0.  0. 18 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 241.31919       | 300.75781       |  
+ 1  | h_snow    |   0.  1. 11 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.55546973E-01  | 15.851563       |  
+ 1  | freshsnow |   0.  1.203 | 2022-03-30T12:00:00.000 | PT12H | 0      | 1    |         | yes     | 4       | 0    | -1    | 1    | 1     | 0.0000000       | 0.81812022      | 1.0000000       |  
+ 1  | smi       |   2.  3.200 | 2022-03-30T12:00:00.000 | PT12H | 7      | 8    |         | yes     | 4       | 0    | -1    | 1    | 1     | -0.39442122     | 0.27802494      | 2.1372364       |  
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_snow
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_i
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: w_so_ice
+ initicon_inverse_post_op: Inverse Post_op for: gz0
+ smi_to_wsoil:: convert SMI to W_SO
+ smi_to_wsoil:: convert SMI to W_SO
+ smi_to_wsoil:: convert SMI to W_SO
+ smi_to_wsoil:: convert SMI to W_SO
+ smi_to_wsoil:: convert SMI to W_SO
+ smi_to_wsoil:: convert SMI to W_SO
+ 
+ jg | variable | triple | validity time | vvmm | levTyp | nlev | tileCnt | untiled | runtype | clas | expid | grid | rgrid | min | mean | max |  
+ -- | -------- | ------ | ------------- | ---- | ------ | ---- | ------- | ------- | ------- | ---- | ----- | ---- | ----- | --- | ---- | --- |  
+ 
+ vert_interp_atm: Vertical interpolation of analysis data, domain    1
+ 
+input results for domain 1:
+ 
+ variable  | FG read attempt | FG data found | ANA read attempt | ANA data found | ANA DATA required (ana_checklist) | data used from |  
+ --------- | --------------- | ------------- | ---------------- | -------------- | --------------------------------- | -------------- |  
+ 
+ vn        | no              |               | no               |                |                                   | none           |  
+ w         | yes             | yes           | no               |                |                                   | fg             |  
+ rho       | no              |               | no               |                |                                   | none           |  
+ theta_v   | no              |               | no               |                |                                   | none           |  
+ qc        | yes             | yes           | no               |                |                                   | fg             |  
+ qi        | yes             | yes           | no               |                |                                   | fg             |  
+ qr        | no              |               | no               |                |                                   | none           |  
+ qs        | no              |               | no               |                |                                   | none           |  
+ qg        | no              |               | no               |                |                                   | none           |  
+ tke       | no              |               | no               |                |                                   | none           |  
+ z_ifc     | yes             | yes           | no               |                |                                   | fg             |  
+ gz0       | yes             | yes           | no               |                |                                   | fg             |  
+ t_g       | yes             | yes           | no               |                |                                   | fg             |  
+ alb_si    | no              |               | no               |                |                                   | none           |  
+ t_mnw_lk  | yes             | yes           | no               |                |                                   | fg             |  
+ t_wml_lk  | yes             | yes           | no               |                |                                   | fg             |  
+ h_ml_lk   | yes             | yes           | no               |                |                                   | fg             |  
+ t_bot_lk  | yes             | yes           | no               |                |                                   | fg             |  
+ c_t_lk    | yes             | yes           | no               |                |                                   | fg             |  
+ qv_s      | yes             | yes           | no               |                |                                   | fg             |  
+ t_sk      | yes             | yes           | no               |                |                                   | fg             |  
+ w_i       | yes             | yes           | no               |                |                                   | fg             |  
+ hsnow_max | yes             | yes           | no               |                |                                   | fg             |  
+ snow_age  | yes             | yes           | no               |                |                                   | fg             |  
+ t_so      | yes             | yes           | no               |                |                                   | fg             |  
+ w_so_ice  | yes             | yes           | no               |                |                                   | fg             |  
+ plantevap | yes             | yes           | no               |                |                                   | fg             |  
+ w_snow    | yes             | yes           | no               |                |                                   | fg             |  
+ rho_snow  | yes             | yes           | no               |                |                                   | fg             |  
+ qv        | yes             | yes           | no               |                |                                   | fg             |  
+ u         | no              |               | no               |                |                                   | none           |  
+ v         | no              |               | no               |                |                                   | none           |  
+ temp      | no              |               | no               |                |                                   | none           |  
+ pres      | no              |               | no               |                |                                   | none           |  
+ t_ice     | yes             | yes           | no               |                |                                   | fg             |  
+ h_ice     | yes             | yes           | no               |                |                                   | fg             |  
+ fr_seaice | yes             | yes           | no               |                |                                   | fg             |  
+ t_seasfc  | no              |               | no               |                |                                   | none           |  
+ w_so      | no              |               | no               |                |                                   | none           |  
+ t_snow    | yes             | yes           | no               |                |                                   | fg             |  
+ h_snow    | yes             | yes           | no               |                |                                   | fg             |  
+ freshsnow | yes             | yes           | no               |                |                                   | fg             |  
+ smi       | yes             | yes           | no               |                |                                   | fg             |  
+ 
+ mo_async_latbc::init_prefetch: sparse LATBC read-in mode.
+ mo_async_latbc::init_prefetch: prefetching PE reads 86928 cells and 133496 edges.
+ mo_async_latbc::init_prefetch: 8 of 8 worker PEs are involved in the LATBC read-in.
+ mo_async_latbc_utils::check_validity_date_and_print_filename:: reading boundary data from file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc for date: 2022-03-30T12:00:00.000
+ mo_async_latbc::check_variables: Tracer variable qg not available in input DATA.
+ mo_async_latbc::check_variables: Input levels (HHL) are computed from sfc geopotential.
+ mo_async_latbc::check_variables: Compute W from OMEGA.
+ mo_async_latbc::check_variables: PS and GEOP are read from file.
+ mo_async_latbc::check_variables: HHL and PRES are computed based on PS and GEOP.
+ mo_async_latbc::check_variables: PRES is diagnosed.
+ mo_async_latbc::check_variables: TEMP is read from file.
+ mo_async_latbc::check_variables: VN is read from file.
+ mo_async_latbc_utils::check_validity_date_and_print_filename:: reading boundary data from file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00000000.nc for date: 2022-03-30T12:00:00.000
+ mo_util_cdi:deleteInputParameters: Total read statistics for stream ID  
+           23
+        amount:              668302464 bytes
+        duration:                1.087 seconds
+        bandwidth:             586.191 MiB/s
+ mo_grid_distribution_base:scatterPatternPrintStatistics
+ : data distribution totals:
+        amount:             4467804320 bytes
+        duration:                3.170 seconds
+        bandwidth:            1344.306 MiB/s
+ mo_util_cdi:deleteInputParameters: Total read statistics for stream ID  
+           23
+        amount:              146311616 bytes
+        duration:                0.193 seconds
+        bandwidth:             722.611 MiB/s
+ mo_grid_distribution_base:scatterPatternPrintStatistics
+ : data distribution totals:
+        amount:              957851392 bytes
+        duration:                0.806 seconds
+        bandwidth:            1133.666 MiB/s
+ mo_async_latbc_utils::check_validity_date_and_print_filename:: reading boundary data from file /scratch/e1000/jenkins/icon/pool/data/ICON/mch/input/icon-1/lbff00010000.nc for date: 2022-03-30T13:00:00.000
+ mo_util_cdi:deleteInputParameters: Total read statistics for stream ID  
+           23
+        amount:              668302464 bytes
+        duration:                1.120 seconds
+        bandwidth:             568.894 MiB/s
+ mo_grid_distribution_base:scatterPatternPrintStatistics
+ : data distribution totals:
+        amount:             4467804320 bytes
+        duration:                2.113 seconds
+        bandwidth:            2016.032 MiB/s
+ mo_util_cdi:deleteInputParameters: Total read statistics for stream ID  
+           23
+        amount:              146311616 bytes
+        duration:                0.178 seconds
+        bandwidth:             783.966 MiB/s
+ mo_grid_distribution_base:scatterPatternPrintStatistics
+ : data distribution totals:
+        amount:              957851392 bytes
+        duration:                0.476 seconds
+        bandwidth:            1918.684 MiB/s
+ mo_async_latbc::init_prefetch: Done
+ 
+ Output on pressure/height levels and/or isentropes: domain 1
+ selected pressure levels: 
+  30000.00,  40000.00,  50000.00,  60000.00,  70000.00,
+  75000.00,  80000.00,  85000.00,  90000.00,  92500.00,
+  95000.00,
+ 
+ selected height levels: 
+  10500.00,   8500.00,   5000.00,   4000.00,   3000.00,
+   2000.00,   1000.00,    750.00,    500.00,
+ 
+ setting output bounds as 2022-03-30T12:00:00.000 / 2022-03-30T12:00:00.000 / 
+ P03M23DT17H46M40.000S
+ setting output bounds as 2022-03-30T12:00:00.000 / 2022-07-24T05:46:40.000 / 
+ PT01H
+ setting output bounds as 2022-03-30T12:00:00.000 / 2022-07-24T05:46:40.000 / 
+ PT01H
+ setting output bounds as 2022-03-30T12:00:00.000 / 2022-07-24T05:46:40.000 / 
+ PT10M
+ setting output bounds as 2022-03-30T12:00:00.000 / 2022-07-24T05:46:40.000 / 
+ PT01H
+ mo_name_list_output_init::init_name_list_output: Number of name list output files:    5
+
+output "default", does not write ready files:
+ 
+ model step   model date                filename        I/O PE   output date               #     open   close    
+ ----------   -----------------------   -------------   ------   -----------------------   ---   ----   -----    
+ 
+ 0            2022-03-30T12:00:00.000   lfff00000000c   0        2022-03-30T12:00:00.000   1.1   x               
+                                        lfff00000000p   0        2022-03-30T12:00:00.000   1.1   x               
+                                        lfff00000000z   0        2022-03-30T12:00:00.000   1.1   x               
+                                        lffm00000000    0        2022-03-30T12:00:00.000   1.1   x               
+                                        lfff00000000    0        2022-03-30T12:00:00.000   1.1   x               
+
+ mo_name_list_output_init::init_name_list_output: Done
+ Variables assigned to action RESET: rain_gsp, snow_gsp, graupel_gsp, ice_gsp, prec_gsp, rain_con, snow_con, prec_con, tot_prec, tot_prec_d, prec_gsp_d, prec_con_d, prec_con_rate_avg, prec_gsp_rate_avg, tot_prec_rate_avg, gust10, tmax_2m, tmin_2m, runoff_s, runoff_g, runoff_s_t, runoff_g_t
+ 
+ VarName           | PID | Ref date                | Start date              | End date                | Interval |  
+ ----------------- | --- | ----------------------- | ----------------------- | ----------------------- | -------- |  
+ 
+ rain_gsp          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ snow_gsp          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ graupel_gsp       |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ ice_gsp           |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ prec_gsp          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ rain_con          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ snow_con          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ prec_con          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ tot_prec          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ tot_prec_d        |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ prec_gsp_d        |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ prec_con_d        |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ prec_con_rate_avg |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ prec_gsp_rate_avg |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ tot_prec_rate_avg |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ gust10            |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ tmax_2m           |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ tmin_2m           |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | PT01H    |  
+ runoff_s          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ runoff_g          |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ runoff_s_t        |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+ runoff_g_t        |  1  | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | 2022-03-30T12:00:00.000 | P01Y     |  
+  
+ Modify NDVI-based plant cover properties using T2M climatology
+ mo_nwp_phy_init: initialized surface temp and humidity
+ mo_nwp_phy_init: init microphysics
+ gscp_set_coefficients: microphysical values initialized
+ mo_nwp_phy_init: init ECRAD
+ Setup of ecRad
+ mo_nwp_phy_init: init convection
+ mo_cuparameters, sucumf: NJKT1, NJKT2, KSMAX
+ mo_cuparameters, sucumf: 25      2 0.10383E+04
+ mo_cuparameters, sucumf: LMFMID, LMFDD, LMFDUDV, RTAU, ENTRORG, TEXC, QEXC
+ mo_cuparameters, sucumf: F     T     T  6.1389 0.4279E-02 0.00157 0.00016
+ mo_cuparameters, sucumf: RHEBC_LND, RHEBC_LND_TROP, RHEBC_OCE, RHEBC_OCE_TROP, RCUCOV, RCUCOV_TROP
+ mo_cuparameters, sucumf: 0.9978  0.9962  0.9981  0.9970  0.9769  0.9758
+ mo_nwp_phy_init: convection initialized
+ mo_nwp_phy_init: init TERRA
+ mo_nwp_phy_init: init COSMO turbulence
+ mo_nwp_phy_init: Cosmo turbulence initialized
+ mo_cuparameters, sugwd: nktopg, ngwdlim, ngwdtop
+ mo_cuparameters, sugwd: 53     2     1
+ mo_nh_stepping:init_slowphysics: initial call of (slow) physics, domain  1
+ mo_nwp_ecrad_interface::nwp_ecrad_radiation_reduced: ecrad radiation on reduced grid
+ upscale_rad_input: Upscaling of radiation input fields 1 => 0
+ downscale_rad_output: Downscaling of radiation output fields 0 => 1
+  PE      2 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      2 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      2 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      2 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      0 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      0 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      0 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      0 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      5 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      4 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      5 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      5 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      5 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      4 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      4 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      4 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      1 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      3 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      7 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      1 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      1 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      1 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      3 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      3 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      3 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      7 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      7 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      7 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+  PE      6 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable ceiling
+  PE      6 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable hbas_sc
+  PE      6 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable htop_sc
+  PE      6 WARNING: pp_task_compute_field: untested postproc job-type on GPU for variable smi
+ 
+ Timer report, ranks 0-7
+ mo_name_list_output::open_output_file: opened lfff00000000c
+ mo_name_list_output::open_output_file: opened lfff00000000p
+ mo_name_list_output::open_output_file: opened lfff00000000z
+ mo_name_list_output::open_output_file: opened lffm00000000
+ mo_name_list_output::open_output_file: opened lfff00000000
+problem: sub-timers inconsistent! read_fg, 120, 41, 3
+ cause: inconsistent subtimer counts:             3            1            1 
+            1            1            1            1            1
+ timer hierarchy inconsistencies detected, timing report truncated
+ 
+ ----------------------------------   -------   ------------   --------   ------------   ------------   --------   -------------   --------------   -------------   --------------   -------------    
+ name                                 # calls   t_min          min rank   t_avg          t_max          max rank   total min (s)   total min rank   total max (s)   total max rank   total avg (s)    
+ ----------------------------------   -------   ------------   --------   ------------   ------------   --------   -------------   --------------   -------------   --------------   -------------    
+ 
+ exch_data                            46424         0.00001s   [5]            0.00275s       11.9727s   [4]              14.222    [0]                    17.817    [2]                    15.971     
+  L exch_data.wait                    46424         0.00001s   [0]            0.00243s       11.9701s   [4]               3.754    [1]                    17.582    [2]                    14.077     
+ global_sum                           72            0.00000s   [0]            0.01023s       0.19446s   [2]               0.000    [6]                     0.220    [2]                     0.092     
+ ordglb_sum                           184           0.00001s   [5]            0.00127s       0.06649s   [2]               0.002    [4]                     0.068    [2]                     0.029     
+ nh_diagnostics                       48            0.00000s   [0]            0.62928s        3.1766s   [4]               3.621    [7]                     3.871    [4]                     3.776     
+ diagnose_pres_temp                   16            0.00085s   [4]            0.07530s       0.15352s   [6]               0.147    [4]                     0.154    [6]                     0.151     
+ model_init                           24            23.2940s   [0]              01m26s         03m03s   [0]             260.146    [5]                   260.146    [6]                   260.146     
+  L wrt_output                        8             0.18350s   [6]            0.23723s       0.37419s   [2]               0.183    [6]                     0.374    [2]                     0.237     
+  L physics                           8              1.5245s   [6]             1.5675s        1.6545s   [5]               1.525    [6]                     1.654    [5]                     1.568     
+     L nwp_radiation                  8              1.2072s   [0]             1.3150s        1.4691s   [5]               1.207    [0]                     1.469    [5]                     1.315     
+        L nwp_radiation_upscale       8             0.00205s   [1]            0.00219s       0.00239s   [0]               0.002    [1]                     0.002    [0]                     0.002     
+        L nwp_radiation_downscale     8             0.10766s   [6]            0.32523s       0.64030s   [5]               0.108    [6]                     0.640    [5]                     0.325     
+        L nwp_ecrad_utilities         24            0.00273s   [6]            0.00470s       0.00633s   [1]               0.014    [2]                     0.015    [1]                     0.014     
+        L nwp_ecrad_store_fluxes      24            0.00021s   [5]            0.00023s       0.00025s   [0]               0.001    [2]                     0.001    [6]                     0.001     
+        L nwp_ecrad_ecrad             24            0.14328s   [2]            0.29020s       0.39531s   [6]               0.715    [5]                     1.028    [6]                     0.871     
+        L preradiaton                 16            0.00142s   [3]            0.01100s       0.02233s   [5]               0.019    [3]                     0.024    [5]                     0.022     
+     L phys_acc_sync                  8             0.00595s   [6]            0.03338s       0.07290s   [2]               0.006    [6]                     0.073    [2]                     0.033     
+     L satad                          8             0.00139s   [4]            0.00175s       0.00242s   [0]               0.001    [4]                     0.002    [0]                     0.002     
+     L phys_u_v                       8             0.00092s   [6]            0.00095s       0.00099s   [0]               0.001    [6]                     0.001    [0]                     0.001     
+     L nwp_turbulence                 8             0.03807s   [4]            0.06844s       0.09675s   [0]               0.038    [4]                     0.097    [0]                     0.068     
+        L nwp_turbtrans               58            0.00094s   [5]            0.00583s       0.04998s   [3]               0.025    [4]                     0.057    [0]                     0.042     
+     L rediag_prog_vars               8             0.00033s   [4]            0.00033s       0.00034s   [3]               0.000    [4]                     0.000    [3]                     0.000     
+     L nwp_convection                 8             0.10151s   [5]            0.12327s       0.14362s   [1]               0.102    [5]                     0.144    [1]                     0.123     
+     L sso                            8             0.00457s   [5]            0.00538s       0.00599s   [0]               0.005    [5]                     0.006    [0]                     0.005     
+     L cloud_cover                    8             0.00943s   [1]            0.00961s       0.01013s   [0]               0.009    [1]                     0.010    [0]                     0.010     
+     L radheat                        8             0.00189s   [3]            0.00246s       0.00336s   [1]               0.002    [3]                     0.003    [1]                     0.002     
+  L compute_domain_decomp             8             36.9572s   [5]            36.9572s       36.9572s   [4]              36.957    [5]                    36.957    [4]                    36.957     
+  L compute_intp_coeffs               8             14.4501s   [2]            14.4785s       14.5459s   [6]              14.450    [2]                    14.546    [6]                    14.478     
+     L compute_intp_coeffs_1          8             0.00001s   [3]            0.00001s       0.00001s   [0]               0.000    [3]                     0.000    [0]                     0.000     
+     L compute_intp_coeffs_2          8             0.00000s   [1]            0.00000s       0.00001s   [0]               0.000    [1]                     0.000    [0]                     0.000     
+     L compute_intp_coeffs_3          8             12.7385s   [1]            12.7385s       12.7386s   [4]              12.738    [1]                    12.739    [4]                    12.739     
+     L compute_intp_coeffs_4          8             0.48631s   [4]            0.48636s       0.48642s   [3]               0.486    [4]                     0.486    [3]                     0.486     
+     L compute_intp_coeffs_5          8             0.54733s   [4]            0.55206s       0.57401s   [6]               0.547    [4]                     0.574    [6]                     0.552     
+     L compute_intp_coeffs_6          8             0.44887s   [6]            0.47077s       0.47578s   [4]               0.449    [6]                     0.476    [4]                     0.471     
+     L compute_intp_coeffs_7          8             0.00001s   [2]            0.00001s       0.00002s   [6]               0.000    [2]                     0.000    [6]                     0.000     
+     L compute_intp_coeffs_8          8             0.20176s   [2]            0.23069s       0.29804s   [6]               0.202    [2]                     0.298    [6]                     0.231     
+     L compute_intp_coeffs_9          8             0.00001s   [7]            0.00001s       0.00001s   [2]               0.000    [7]                     0.000    [2]                     0.000     
+     L compute_intp_coeffs_10         8             0.00000s   [6]            0.00000s       0.00000s   [4]               0.000    [6]                     0.000    [4]                     0.000     
+  L init_ext_data                     8              1.3596s   [6]             1.4279s        1.4554s   [2]               1.360    [6]                     1.455    [2]                     1.428     
+  L init_icon                         8               02m26s   [7]              02m26s         02m26s   [0]             146.496    [7]                   146.541    [0]                   146.529     
+     L read_fg                        8               02m08s   [5]              02m08s         02m08s   [2]             128.786    [5]                   128.855    [2]                   128.834     
+  L init_gcopy                        16             5.5051s   [3]             6.4019s        7.2719s   [0]              12.740    [3]                    12.885    [5]                    12.804     
+  L init_latbc                        8             25.2788s   [0]            25.2918s       25.3303s   [7]              25.279    [0]                    25.330    [7]                    25.292     
+  L init_nwp_phy                      8              2.3146s   [5]             2.3817s        2.4301s   [7]               2.315    [5]                     2.430    [7]                     2.382     
+  L upper_atmosphere                  16            0.00001s   [7]            0.00230s       0.00469s   [6]               0.004    [7]                     0.005    [6]                     0.005     
+     L upatmo_construction            16            0.00001s   [7]            0.00230s       0.00469s   [6]               0.004    [7]                     0.005    [6]                     0.005     
+  L optional_diagnostics_atmosphere   48            0.00006s   [4]            0.05568s       0.31176s   [4]               0.330    [5]                     0.336    [0]                     0.334     
+ -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------    
+ 
+ synchronous restart writing selected.
+ 
+ INFO   : added event group: checkpointEventGroup
+ Event list: checkpointEventGroup
+        1          checkpoint
+        2          restart
+ 
+ Start date of this run: 2022-03-30T12:00:00.000
+ Stop date of this run:  2022-03-30T12:00:00.000
+ 
+ mo_name_list_output::write_name_list_output: Output to lfff00000000c at simulation time 2022-03-30T12:00:00.000 by PE 8
+#################### I/O PE 8 starting I/O at 235430.376
+#################### I/O PE 8 done at 235431.557
+ Got    881.649 MB, time get:      0.305 s [  2886.627 MB/s], time write:      0.761 s [   579.166 MB/s], times copy:      0.112 s
+ mo_name_list_output::write_name_list_output: Output to lfff00000000p at simulation time 2022-03-30T12:00:00.000 by PE 8
+#################### I/O PE 8 starting I/O at 235431.682
+#################### I/O PE 8 done at 235432.485
+ Got    606.133 MB, time get:      0.185 s [  3277.828 MB/s], time write:      0.534 s [   567.042 MB/s], times copy:      0.083 s
+ mo_name_list_output::write_name_list_output: Output to lfff00000000z at simulation time 2022-03-30T12:00:00.000 by PE 8
+#################### I/O PE 8 starting I/O at 235432.600
+#################### I/O PE 8 done at 235433.134
+ Got    413.273 MB, time get:      0.114 s [  3614.020 MB/s], time write:      0.361 s [   572.852 MB/s], times copy:      0.058 s
+ mo_name_list_output::write_name_list_output: Output to lffm00000000 at simulation time 2022-03-30T12:00:00.000 by PE 8
+#################### I/O PE 8 starting I/O at 235433.245
+#################### I/O PE 8 done at 235433.298
+ Got     27.552 MB, time get:      0.026 s [  1048.939 MB/s], time write:      0.022 s [   630.750 MB/s], times copy:      0.005 s
+ mo_name_list_output::write_name_list_output: Output to lfff00000000 at simulation time 2022-03-30T12:00:00.000 by PE 8
+#################### I/O PE 8 starting I/O at 235433.367
+ 
+ Time step:        1, model time: 2022-03-30 12:00:10.000 forecast time 00D 00H00M10S
+ MAXABS VN, W in domain  1:  0.4194370237E+02 at level  17,   0.7713854844E+01 at level  81,
+ MAXABS VN, W in domain  1:  0.4239756292E+02 at level  17,   0.7305682754E+01 at level  77,
+ MAXABS VN, W in domain  1:  0.4244889521E+02 at level  17,   0.7338800161E+01 at level  78,
+ MAXABS VN, W in domain  1:  0.4237915470E+02 at level  17,   0.7328020232E+01 at level  78,
+ MAXABS VN, W in domain  1:  0.4225531818E+02 at level  17,   0.7325882808E+01 at level  78,
+ integrate_nh: call advection  DOM: 1
+ mo_nwp_ecrad_interface::nwp_ecrad_radiation_reduced: ecrad radiation on reduced grid
+ upscale_rad_input: Upscaling of radiation input fields 1 => 0
+ downscale_rad_output: Downscaling of radiation output fields 0 => 1
+ nwp_nh_interface:: average |dPS/dt| =    0.706819 Pa/s in domain  1
+#################### I/O PE 8 done at 235443.828
+ Got   9698.135 MB, time get:      1.900 s [  5104.472 MB/s], time write:      7.519 s [   644.927 MB/s], times copy:      1.038 s
+ destruct_atmo_nonhydrostatic: start to clean up
+ mo_pp_scheduler::pp_scheduler_finalize:
+ mo_nonhydro_state::destruct_nh_state: Destruction of NH state started
+ mo_nonhydro_state::destruct_nh_state: NH state destruction completed
+ mo_prepadv_state:destruct_prepadv_state: destruction of prep_adv state finished
+ mo_nwp_phy_state:destruct_nwp_phy_state: start to destruct 3D state vector
+ mo_nwp_phy_state:destruct_nwp_phy_state: destruction of 3D state vector finished
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state started
+ mo_nwp_lnd_state:destruct_nwp_lnd_state: Destruction of nwp land state completed
+ mo_async_latbc_types::t_latbc_data_finalize: deallocating latbc data
+ mo_async_latbc_types::t_patch_data_finalize:
+ destruct_atmo_nonhydrostatic: delete output variable lists
+ destruct_atmo_nonhydrostatic: finish statistics streams
+ destruct_atmo_nonhydrostatic: finalize meteogram output
+ destruct_atmo_nonhydrostatic: clean-up finished
+ 
+ Timer report, ranks 0-7
+ 
+ Timer report
+ 
+ ------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ name                       # calls   t_min          t_avg          t_max          total min (s)   total max (s)   total avg (s)    
+ ------------------------   -------   ------------   ------------   ------------   -------------   -------------   -------------    
+ 
+ wrt_output                 2             0.00000s        6.8026s       13.6051s         13.605          13.605           1.701     
+ model_init                 1             36.9573s       36.9573s       36.9573s         36.957          36.957           4.620     
+  L compute_domain_decomp   1             36.9572s       36.9572s       36.9572s         36.957          36.957           4.620     
+ -------------------------------------------------------------------------------------------------------------------------------    
+ 
+ 
+ -----------------------------------   -------   ------------   --------   ------------   ------------   --------   -------------   --------------   -------------   --------------   -------------    
+ name                                  # calls   t_min          min rank   t_avg          t_max          max rank   total min (s)   total min rank   total max (s)   total max rank   total avg (s)    
+ -----------------------------------   -------   ------------   --------   ------------   ------------   --------   -------------   --------------   -------------   --------------   -------------    
+ 
+ total                                 8             15.7711s   [3]            15.8719s       16.0475s   [0]              15.771    [3]                    16.048    [0]                    15.872     
+  L integrate_nh                       8              2.4585s   [0]             3.0158s        3.1417s   [3]               2.458    [0]                     3.142    [3]                     3.016     
+     L nh_solve                        40            0.03203s   [0]            0.10795s       0.40569s   [1]               0.533    [0]                     0.544    [3]                     0.540     
+        L nh_solve.veltend             48            0.00328s   [1]            0.01187s       0.30870s   [2]               0.023    [1]                     0.338    [2]                     0.071     
+        L nh_solve.cellcomp            80            0.00001s   [3]            0.00005s       0.00017s   [0]               0.000    [3]                     0.001    [0]                     0.000     
+        L nh_solve.vnupd               80            0.00225s   [4]            0.00378s       0.00534s   [0]               0.038    [4]                     0.038    [0]                     0.038     
+        L nh_solve.vimpl               80            0.00451s   [6]            0.00514s       0.00570s   [5]               0.051    [4]                     0.052    [2]                     0.051     
+        L nh_solve.exch                160           0.00062s   [0]            0.01212s       0.35635s   [1]               0.030    [0]                     0.415    [3]                     0.242     
+     L nh_hdiff                        16            0.00705s   [0]            0.28180s       0.67891s   [7]               0.017    [0]                     0.692    [7]                     0.564     
+     L physics                         8              1.7261s   [0]             1.7272s        1.7281s   [4]               1.726    [0]                     1.728    [4]                     1.727     
+        L nwp_radiation                8             0.90114s   [0]             1.1018s        1.2786s   [6]               0.901    [0]                     1.279    [6]                     1.102     
+           L nwp_radiation_upscale     8             0.00193s   [3]            0.00540s       0.00957s   [7]               0.002    [3]                     0.010    [7]                     0.005     
+           L nwp_radiation_downscale   8             0.00803s   [7]            0.21821s       0.43546s   [3]               0.008    [7]                     0.435    [3]                     0.218     
+           L nwp_ecrad_utilities       24            0.00272s   [6]            0.00824s       0.02847s   [5]               0.014    [4]                     0.037    [5]                     0.025     
+           L nwp_ecrad_store_fluxes    24            0.00020s   [3]            0.00023s       0.00026s   [0]               0.001    [7]                     0.001    [0]                     0.001     
+           L nwp_ecrad_ecrad           24            0.12452s   [3]            0.25982s       0.36754s   [7]               0.729    [3]                     0.841    [7]                     0.779     
+           L preradiaton               16            0.00140s   [3]            0.00372s       0.00684s   [1]               0.006    [3]                     0.008    [1]                     0.007     
+        L phys_acc_sync                8             0.00821s   [6]            0.03550s       0.07597s   [4]               0.008    [6]                     0.076    [4]                     0.035     
+           L global_sum                8             0.00000s   [6]            0.00001s       0.00001s   [0]               0.000    [6]                     0.000    [0]                     0.000     
+           L ordglb_sum                8             0.00003s   [2]            0.00016s       0.00030s   [5]               0.000    [2]                     0.000    [5]                     0.000     
+        L diagnose_pres_temp           8             0.00020s   [4]            0.00020s       0.00021s   [7]               0.000    [4]                     0.000    [7]                     0.000     
+        L satad                        8             0.00419s   [6]            0.00499s       0.00601s   [2]               0.004    [6]                     0.006    [2]                     0.005     
+        L phys_u_v                     8             0.00083s   [6]            0.00097s       0.00138s   [2]               0.001    [6]                     0.001    [2]                     0.001     
+        L nwp_turbulence               16            0.01323s   [3]            0.04298s       0.09637s   [0]               0.042    [3]                     0.141    [0]                     0.086     
+           L nwp_turbtrans             58            0.00106s   [3]            0.00480s       0.01160s   [0]               0.008    [3]                     0.071    [5]                     0.035     
+           L nwp_turbdiff              8             0.01521s   [1]            0.02006s       0.02532s   [5]               0.015    [1]                     0.025    [5]                     0.020     
+        L nwp_surface                  8             0.24228s   [1]            0.33811s       0.44778s   [0]               0.242    [1]                     0.448    [0]                     0.338     
+        L nwp_microphysics             8             0.00800s   [3]            0.00825s       0.00872s   [5]               0.008    [3]                     0.009    [5]                     0.008     
+        L rediag_prog_vars             8             0.00166s   [2]            0.00167s       0.00168s   [3]               0.002    [2]                     0.002    [3]                     0.002     
+        L nwp_convection               8             0.11686s   [4]            0.13302s       0.15739s   [0]               0.117    [4]                     0.157    [0]                     0.133     
+        L sso                          8             0.00411s   [4]            0.00480s       0.00557s   [0]               0.004    [4]                     0.006    [0]                     0.005     
+        L cloud_cover                  8             0.00916s   [1]            0.00944s       0.00981s   [0]               0.009    [1]                     0.010    [0]                     0.009     
+        L radheat                      8             0.00179s   [6]            0.00191s       0.00215s   [3]               0.002    [6]                     0.002    [3]                     0.002     
+     L transport                       8             0.15614s   [3]            0.15763s       0.16041s   [5]               0.156    [3]                     0.160    [5]                     0.158     
+        L adv_horiz                    8             0.13945s   [1]            0.14149s       0.14432s   [5]               0.139    [1]                     0.144    [5]                     0.141     
+           L adv_hflx                  8             0.13929s   [3]            0.14095s       0.14309s   [5]               0.139    [3]                     0.143    [5]                     0.141     
+        L adv_vert                     8             0.00188s   [7]            0.00232s       0.00432s   [0]               0.002    [7]                     0.004    [0]                     0.002     
+           L adv_vflx                  8             0.00185s   [7]            0.00229s       0.00428s   [0]               0.002    [7]                     0.004    [0]                     0.002     
+     L nesting                         8             0.00000s   [0]            0.00000s       0.00000s   [1]               0.000    [0]                     0.000    [1]                     0.000     
+        L nesting.bdy_interp           8             0.00000s   [0]            0.00000s       0.00000s   [1]               0.000    [0]                     0.000    [1]                     0.000     
+  L write_restart                      16            0.00000s   [4]            0.00002s       0.00006s   [3]               0.000    [7]                     0.000    [3]                     0.000     
+     L write_restart_io                8             0.00000s   [0]            0.00000s       0.00000s   [0]               0.000    [0]                     0.000    [0]                     0.000     
+     L write_restart_communication     8             0.00000s   [0]            0.00000s       0.00000s   [0]               0.000    [0]                     0.000    [0]                     0.000     
+ exch_data                             328           0.00017s   [3]            0.02727s       0.66790s   [3]               0.152    [0]                     1.639    [3]                     1.118     
+  L exch_data.wait                     328           0.00004s   [0]            0.02577s       0.66769s   [3]               0.079    [0]                     1.582    [3]                     1.056     
+ back_traj                             64            0.00004s   [6]            0.00075s       0.00386s   [2]               0.002    [3]                     0.010    [2]                     0.006     
+ nh_diagnostics                        24            0.00000s   [1]            0.00010s       0.00033s   [6]               0.000    [5]                     0.000    [6]                     0.000     
+ upper_atmosphere                      16            0.00000s   [1]            0.00000s       0.00001s   [0]               0.000    [1]                     0.000    [0]                     0.000     
+  L upatmo_destruction                 16            0.00000s   [1]            0.00000s       0.00001s   [0]               0.000    [6]                     0.000    [0]                     0.000     
+ --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------    
+ 
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data started
+ mo_ext_data_state:destruct_ext_data: Destruction of data structure for external data finished
+ mo_atmo_model:destruct_atmo_model: destruct_ext_data is done
+ mo_atmo_model:destruct_atmo_model: destruct_2d_gridref_state is done
+ mo_interpolation:destruct_int_state: start to destruct int state
+ mo_interpolation:destruct_int_state: destruction of interpolation state finished
+ mo_atmo_model:destruct_atmo_model: destruct_2d_interpol_state is done
+ mo_alloc_patches:destruct_comm_patterns: start
+ mo_alloc_patches:destruct_comm_patterns: destruct_comm_patterns finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_alloc_patches:destruct_patches: start
+ mo_alloc_patches:destruct_patches: destruct_patches finished
+ mo_atmo_model:destruct_atmo_model: destruct_patches is done
+ mo_atmo_model:destruct_atmo_model: clean-up finished
+[1656280208.493822] [nid020004:111006:0]     ucp_context.c:974  UCX  WARN  transports 'cuda_copy','cuda_ipc' are not available, please use one or more of: cma, dc, dc_mlx5, dc_x, ib, mm, posix, rc, rc_mlx5, rc_v, rc_verbs, rc_x, self, shm, sm, sysv, tcp, ud, ud_mlx5, ud_v, ud_verbs, ud_x, xpmem
+[1656280423.598490] [nid020004:111006:0]     ucp_context.c:974  UCX  WARN  transports 'cuda_copy','cuda_ipc' are not available, please use one or more of: cma, dc, dc_mlx5, dc_x, ib, mm, posix, rc, rc_mlx5, rc_v, rc_verbs, rc_x, self, shm, sm, sysv, tcp, ud, ud_mlx5, ud_v, ud_verbs, ud_x, xpmem
+[1656280205.558108] [nid020001:61558:0]     ucp_context.c:974  UCX  WARN  transports 'cuda_copy','cuda_ipc' are not available, please use one or more of: cma, dc, dc_mlx5, dc_x, ib, mm, posix, rc, rc_mlx5, rc_v, rc_verbs, rc_x, self, shm, sm, sysv, tcp, ud, ud_mlx5, ud_v, ud_verbs, ud_x, xpmem
+[1656280446.410163] [nid020001:61558:0]     ucp_context.c:974  UCX  WARN  transports 'cuda_copy','cuda_ipc' are not available, please use one or more of: cma, dc, dc_mlx5, dc_x, ib, mm, posix, rc, rc_mlx5, rc_v, rc_verbs, rc_x, self, shm, sm, sysv, tcp, ud, ud_mlx5, ud_v, ud_verbs, ud_x, xpmem
+[1656280486.932137] [nid020001:61556:0]       tag_match.c:62   UCX  WARN  unexpected tag-receive descriptor 0x1a31a540 was not matched
++ date
+Sun Jun 26 23:54:52 CEST 2022
++ '[' -r finish.status ']'
++ check_final_status 0 'srun -n 10 --threads-per-core=1 --cpus-per-task 1 --distribution=cyclic /scratch/e1000/dremo/icon22_benchmark_3/gpu/run_manali/manali_icon_wrapper.sh'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status '='  ']'
++ '[' /scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status '='  ']'
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.status 
++ echo 0
++ >/scratch/e1000/dremo/icon22_benchmark_3/gpu/run/exp.mch_bench_r19b08_icon1.run.final_status 
++ echo 0
++ '[' 0 '!=' 0 ']'
++ cat finish.status
++ finish_status=' OK' 
++ echo OK
+OK
++ echo '============================'
+============================
++ echo 'Script run successfully:  OK'
+Script run successfully:  OK
++ echo '============================'
+============================
++ namelist_list= 
++ '[' OK '=' RESTART ']'
++ '[' x '=' xtrue ']'
++ cd /scratch/e1000/dremo/icon22_benchmark_3/gpu/run

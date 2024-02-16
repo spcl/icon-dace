@@ -1,0 +1,12 @@
+--- a/config/ltmain.sh
++++ b/config/ltmain.sh
+@@ -3300,7 +3300,8 @@ func_mode_compile ()
+       case $arg_mode in
+       arg  )
+ 	# do not "continue".  Instead, add this to base_compile
+-	lastarg=$arg
++	lastarg=$srcfile
++	srcfile=$arg
+ 	arg_mode=normal
+ 	;;
+ 

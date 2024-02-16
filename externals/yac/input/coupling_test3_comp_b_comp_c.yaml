@@ -1,0 +1,26 @@
+predef:
+  interp_stacks:
+    interp_stack_a: &interp_stack
+      coupling_period: 1
+      interpolation:
+        - average:
+            weighted: barycentric_coordinate
+        - fixed:
+            user_value: -1.0
+
+start_date: +1800-01-01T00:00:00.000
+end_date: +2100-01-01T00:00:00.000
+timestep_unit: second
+coupling:
+  - src_component: comp_b
+    src_grid: cube_grid
+    tgt_component: comp_c
+    tgt_grid: mpiom_grid
+    field: comp_b_out
+    <<: *interp_stack
+  - src_component: comp_c
+    src_grid: mpiom_grid
+    tgt_component: comp_b
+    tgt_grid: cube_grid
+    field: comp_c_out
+    <<: *interp_stack

@@ -1,0 +1,68 @@
+/*! @page overview Interface Overview
+
+<p>The coupling and associated tasks can be grouped into four different phases, the
+initialisation and definition phase; the neighbourhood search and calculation of
+interpolation weights; the data exchange; and the finalisation of the coupling.</p>
+
+<p>In the initialisation phase the grids and coupling fields are defined by the user
+via the user interfaces. The initialisation and definition phase is terminated with
+a single command which at the same time invokes the neighbourhood search and
+calculation of weights. The data exchange consists of pairs of calls to send and
+receive routines while the end of the coupling is announced with a single finalising
+call.</p>
+
+\startuml
+box Component 1
+participant "Process 1"
+participant "Process 2"
+end box
+box Component ...
+participant "..."
+end box
+box Component M
+participant "Process N"
+end box
+
+== Initialization ==
+note across
+Initialization of YAC (e.g. by yac_cinit)
+end note
+== Definition ==
+note across
+Every process define on which components it take part
+and define its grids and fields
+end note
+== Synchronization ==
+note across
+During the call of yac_csync_def the information
+ about the definitionas are exchanged.
+After the call processes can access the definitions
+of other processes by query functions.
+Additional definitions can be made, but are not available
+for other processes.
+end note
+== Ready ==
+note across
+The coupling configuration is fixed.
+Put and get calls can be made to exchange information.
+end note
+\enduml
+
+<p>The coupling configuration, e.g. the definition of exchange timesteps or
+the interpolation method that shall be applied for a data exchange is
+specified through the interface via a call of \ref yac_cdef_couple and/or in a
+\ref yaml_file "configuration file".</p>
+
+<p>We use the git version control system, inline Doxygen documentation, and autoconf
+for the configuration management.</p>
+
+<p>YAC is programmed in C, user interfaces to Fortran (prefix <em>yac_f</em>), Python and
+C (prefix <em>yac_c</em>) are available. The Fortran interface is provided using
+the ISO-C standard. The python bindings need to be enabled explicitly by passing
+`--enable-python-bindings` to `./configure`</p>
+
+A detailed description of the Fortran, Python and C interfaces can be found
+\subpage interface "here".
+The python bindings are documented \subpage pythonbindings "here".
+
+*/

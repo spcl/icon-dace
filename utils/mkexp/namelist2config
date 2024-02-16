@@ -1,0 +1,246 @@
+#! /usr/bin/env perl
+
+use strict;
+use warnings;
+
+use Getopt::Std;
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+
+my %var_map = (
+    EXPNAME => 'EXP_ID',
+    start_date => 'initial_date',
+    end_date => 'final_date'
+);
+
+sub map_name($) {
+    my $name = shift;
+    if(exists $var_map{$name}) {
+        return $var_map{$name};
+    }
+    return $name;
+}
+
+sub format_value($) {
+    my $value = shift;
+    if($value =~ /^t$/i) {
+        return 'true';
+    }
+    if($value =~ /^f$/i) {
+        return 'false';
+    }
+    if($value =~ /^\.(true|false)\./i) {
+        return lc($1);
+    }
+    $value =~ s/\$/\$\$/g;
+    $value =~ s/\{(.*?)\}/'{'.map_name($1).'}'/eg;
+    return $value;
+}
+
+my %subst_map = (
+    i => 'EXP_ID',
+    a => 'ATMO_GRID_ID',
+    o => 'OCEAN_GRID_ID',
+    A => 'ATMO_GRID_TYPE',
+    O => 'OCEAN_GRID_TYPE',
+    I => 'INITIAL_DATE',
+    F => 'FINAL_DATE',
+);
+
+my %opts = ();
+
+sub subst_key($) {
+    my $key = shift;
+    for my $var (keys %subst_map) {
+        if($opts{$var}) {
+            $key =~ s/[._]$opts{$var}//;
+        }
+    }
+    return $key;
+}
+
+sub subst_value($) {
+    my $value = shift;
+    # Hack to avoid clash between exp ID and grid ID
+    my $var = 'i';
+    if($opts{$var}) {
+        $value =~ s/$opts{$var}(\w)/\${$subst_map{$var}}$1/;
+        $value =~ s/$opts{$var}/\$$subst_map{$var}/;
+    }
+    if($opts{a} && $opts{A}) {
+        $value =~ s/$opts{a}_$opts{A}(\w)/\${$subst_map{a}}_\${$subst_map{A}}$1/;
+        $value =~ s/$opts{a}_$opts{A}/\${$subst_map{a}}_\$$subst_map{A}/;
+    }
+    if($opts{o} && $opts{O}) {
+        $value =~ s/$opts{o}_$opts{O}(\w)/\${$subst_map{o}}_\${$subst_map{O}}$1/;
+        $value =~ s/$opts{o}_$opts{O}/\${$subst_map{o}}_\$$subst_map{O}/;
+    }
+    for my $var (qw(a A o O)) {
+        if($opts{$var}) {
+            $value =~ s:([-_/])$opts{$var}(\w):$1\${$subst_map{$var}}$2:;
+            $value =~ s:([-_/])$opts{$var}:$1\$$subst_map{$var}:;
+        }
+    }
+    ### for my $var (keys %subst_map) {
+    for my $var (qw(I F)) {
+        if($opts{$var}) {
+            $value =~ s/$opts{$var}(\w)/\${$subst_map{$var}}$1/;
+            $value =~ s/$opts{$var}/\$$subst_map{$var}/;
+        }
+    }
+    return $value;
+}
+
+my $verbose = 0;
+my $direct = 0;
+my $comments = 0;
+for my $var (keys %subst_map) {
+    $opts{$var} = '';
+}
+
+getopts('dvc'.join(':', keys(%subst_map), ''), \%opts) or die("\n");
+exists $opts{v} and $verbose = 1;
+exists $opts{d} and $direct = 1;
+exists $opts{c} and $comments = 1;
+
+my $in_doc = 1;
+my $in_group = 0;
+my $open_value = 0;
+my $i = 0;
+
+my %namelists = ();
+my $namelist_file = {};
+my $namelist_group = {};
+my $namelist_variable = [];
+
+while(<>) {
+    s/^\d{4,}-\d\d-\d\dT\d\d:\d\d:\d\d: //; # Remove log time stamps
+    if($in_doc && m/^EOF/) {
+        if($open_value) {
+            $direct and print("\n");
+            $open_value = 0;
+        }
+        $in_doc = 0;
+        $direct and $verbose and print "### $_";
+    }
+    elsif($in_doc && m/^\s*\/\s*$/) {
+        if($open_value) {
+            $direct and print("\n");
+            $open_value = 0;
+        }
+        $in_group = 0;
+    }
+    elsif(/(\S+)\s*0?<<\s*\\?EOF/) {
+        $in_doc = 1;
+        $direct and $verbose and print "### $_";
+        my $key = subst_key($1);
+        $direct and print("  [[$key]]\n");
+        exists $namelists{$key} or $namelists{$key} = {};
+        $namelist_file = $namelists{$key};
+    }
+    elsif($in_doc && m/^\s*&(\w+)/) {
+        $in_group = 1;
+        my $group = lc($1);
+        ### $group =~ s/output_nml/'output_nml TODO'.++$i/e; 
+        exists $namelist_file->{$group} and $group .= sprintf(' TODO %02d', ++$i);
+        $direct and print("    [[[$group]]]\n");
+        exists $namelist_file->{$group} or $namelist_file->{$group} = {};
+        $namelist_group = $namelist_file->{$group};
+    }
+    elsif($in_doc && $in_group) {
+        my $key = '';
+        my $value;
+        my $comment = '';
+        if(/^\s*!\s*(.*)$/) {
+            if($comments) {
+                $direct and $open_value and print("\n");
+                $direct and print("      #", ($1 ? " $1" : ''));
+                $direct and $open_value or print("\n");
+            }
+            next;
+        }
+        elsif(/^\s*(.*?)(?:\(\d+:\d+\))?\s*=\s*(.*?)(\s*!\s*(.*?))?\s*$/) {
+            if($open_value) {
+                $direct and print("\n");
+            }
+            $key = lc($1);
+            $value = $2;
+            $comment = $4;
+            $open_value = 1;
+            $direct and print("      $key = ");
+            if(exists $namelist_group->{$key}) {
+                my $value = join(', ', @{$namelist_group->{$key}});
+                my $line = ' '.$_;
+                $line =~ s/\s+/ /g;
+                warn("Hey: duplicate key, current value '$value'\n");
+                warn("$.:$line\n"); 
+                $key = '#DUPLICATE# '.$key;
+            }
+            $namelist_group->{$key} = [];
+            $namelist_variable = $namelist_group->{$key};
+        }
+        else {
+            $value = $_;
+            $value =~ s/^\s*(.*?)\s*$/$1/;
+            $direct and print(', ');
+        }
+        my @values = ();
+        if($value =~ /^["']/) {
+            while($value =~ /\G(["'])(.*?)\1(\s*,\s*)?/g) {
+                my $subvalue = $2;
+                if($subvalue =~ /,/) {
+                    $subvalue = '"'.$subvalue.'"';
+                }
+                push(@values, subst_value(format_value($subvalue)));
+            }
+        }
+        else {
+            while($value =~ /\G([^\s,]+)(\s*,\s*)?/g) {
+                my $subvalue = $1;
+                push(@values, subst_value(format_value($subvalue)));
+            }
+        }
+        $direct and print(join(', ', @values));
+        $direct and $comments and print($comment ? " # $comment" : '');
+        push(@$namelist_variable, @values);
+    }
+    elsif(/^\s*$/) {
+        $direct and $verbose and print;
+    }
+    else {
+        $direct and $verbose and print "### $_";
+    }
+}
+
+unless($direct) {
+    my %rev_subst_map = reverse %subst_map;
+    for my $key (sort keys %rev_subst_map) {
+        next if $key eq 'EXP_ID';
+        my $var = $rev_subst_map{$key};
+        if($opts{$var}) {
+            print("$key = $opts{$var}\n");
+        }
+    }
+    print("[namelists]\n");
+    for my $file (sort keys %namelists) {
+        print("  [[$file]]\n");
+        $namelist_file = $namelists{$file};
+
+        # Replace TODO markers for output_nml by output_filename info
+        for my $group (grep(/^output_nml/, keys %$namelist_file)) {
+            $namelist_group = $namelist_file->{$group};
+            my $key = subst_value($namelist_group->{output_filename}->[0]);
+            $key =~ s/^\$\{EXP_ID\}_//;
+            $key = 'output_nml '.$key;
+            $namelist_file->{$key} = $namelist_group;
+            delete $namelist_file->{$group};
+        }
+
+        for my $group (sort keys %$namelist_file) {
+            print("    [[[$group]]]\n");
+            $namelist_group = $namelist_file->{$group};
+            for my $key (sort keys %$namelist_group) {
+                print("      $key = ", join(', ', @{$namelist_group->{$key}}), "\n");
+            }
+        }
+    }
+}

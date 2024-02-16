@@ -1,0 +1,6 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 1 ./test_mpi_error.x
+

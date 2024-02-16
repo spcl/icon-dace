@@ -1,0 +1,64 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+top_srcdir=$(cd "${script_dir}/../../.."; pwd)
+
+. "${script_dir}/init.sh"
+init_cray
+
+# Save time for the person running this script manually:
+if test "x${PE_NETCDF_MODULE_NAME}" = 'xcray-netcdf'; then
+  case $top_srcdir in
+    "${HOME}/"*)
+      echo "ERROR: parallel NetCDF4 tests are known to fail when CDI is built in the user home directory and linked against NetCDF that does not support MPI parallel invocations" >&2
+      exit 1
+  esac
+fi
+
+enable_maintainer_mode='no'
+if test ! -f "${top_srcdir}/configure"; then
+  "${top_srcdir}/autogen.sh"
+  # If there is no configure script, there are, most probably, no Fortran
+  # interface files, which are generated in the maintainer mode only:
+  enable_maintainer_mode='yes'
+fi
+
+# The configure script does not check the 'lib64' subdirectory, therefore we
+# run it with '--with-eccodes' and the following flags. Note that fixing this
+# in the configure script might be tricky: the 'lib64' subdirectory should be
+# checked first but if it does not exist or does not contain the library, we
+# might end up linking to a library from the linker's default search path
+# (e.g. /usr/lib) instead of the one from "$with_eccodes/lib" because
+# "-L${with_eccodes}/lib64" would be ignored in that case:
+CPPFLAGS="-I${ECCODES_ROOT}/include"
+LDFLAGS="-L${ECCODES_ROOT}/lib64"
+
+"${top_srcdir}/configure" \
+--enable-cf-interface \
+--enable-iso-c-interface \
+--enable-maintainer-mode="${enable_maintainer_mode}" \
+--enable-mpi \
+--enable-option-checking=fatal \
+--enable-ppm-dist-array \
+--with-concurrent-mpi-checks \
+--with-eccodes \
+--with-netcdf \
+CC="${CC}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+LDFLAGS="${LDFLAGS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+PKG_CONFIG_PATH="${YAXT_ROOT}/lib/pkgconfig:${PPM_ROOT}/lib/pkgconfig:${PKG_CONFIG_PATH}"
+
+make -j8
+
+# Run with '-j' to submit as many MPI jobs as possible
+# (see '--with-concurrent-mpi-checks'):
+make -j check || { cat tests/test-suite.log; exit 1; }
+
+check_all_tests_passed tests/test-suite.log
+
+check_no_git_untracked

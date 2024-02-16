@@ -1,0 +1,7 @@
+#!@SHELL@
+
+@TEST_NETCDF_FALSE@exit 77
+@TEST_MPI_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 8 ./test_interpolation_parallel3.x tgt && \
+@MPI_LAUNCH@ -n 8 ./test_interpolation_parallel3.x src

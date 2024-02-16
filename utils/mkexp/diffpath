@@ -1,0 +1,83 @@
+#! /bin/sh
+#
+# Compare experiment setups trying to identify file pairs.
+#
+# $Id$
+#
+
+PROGRAM=`basename $0`
+
+die () {
+    echo "$@" >&2
+    exit 1
+}
+
+DIFF=${DIFF:-diff}
+
+diff_exp_files () (
+    exp_a=$1
+    exp_b=$2
+    file_a=$3
+    file_b=$4
+    if [ -e "$file_b" ]
+    then
+        trap 'rm -f $temp_b' 0
+        temp_b=`mktemp`
+        if [ -r "$file_b" ]
+        then
+            sed "s,$exp_b,$exp_a,g" "$file_b" > $temp_b
+        else
+            chmod 0000 $temp_b
+        fi
+    else
+        temp_b=$file_b
+    fi
+    $DIFF --label "$file_a" --label "$file_b" "$file_a" "$temp_b"
+)
+
+[ "x$3" = x ] && die "Oops: invalid number of parameters
+Usage: $PROGRAM experiment_id_a experiment_id_b path_to_a [path_to_b]"
+
+unset CDPATH
+
+EXP_A=$1
+EXP_B=$2
+PATH_A=$3
+# If path to b is not set or empty, use path to a as template
+PATH_B=${4:-`echo "$PATH_A" | sed "s,$EXP_A,$EXP_B,g"`}
+
+trap 'rm -r $DIFF_FILE' 0
+DIFF_FILE=`mktemp`
+
+if [ -d "$PATH_A" ]
+then :
+else
+    FIND_A="-name $(basename $PATH_A)"
+    PATH_A=$(dirname $PATH_A)
+fi
+
+if [ -d "$PATH_B" ]
+then :
+else
+    FIND_B="-name $(basename $PATH_B)"
+    PATH_B=$(dirname $PATH_B)
+fi
+    
+for FILE_A in $(
+    {
+        ( cd "$PATH_A" &&
+          find . ! -type d ! -name '*.log' ! -path '*/backup/*' $FIND_A )
+        ( cd "$PATH_B" &&
+          find . ! -type d ! -name '*.log' ! -path '*/backup/*' $FIND_B |
+              sed "s,$EXP_B,$EXP_A,g" )
+    } | sed 's,^\./,,' | sort -u
+)
+do
+    FILE_B=`echo "$FILE_A" | sed "s,$EXP_A,$EXP_B,g"`
+    diff_exp_files "$EXP_A" "$EXP_B" "$PATH_A/$FILE_A" "$PATH_B/$FILE_B" > $DIFF_FILE ||
+    STATUS=1
+    sed "1i Index: $FILE_A\n\
+===================================================================" $DIFF_FILE
+done
+
+exit $STATUS

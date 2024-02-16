@@ -1,0 +1,39 @@
+/** \page xmaps Algorithms to generate exchange maps
+  \section xmap_intro Introduction
+
+  The exchange map matches the source and target decompositions of all processes and
+  generates a mapping between source and target points with identical global indices.
+
+  The yaxt library provides multiple algorithms to generate an example.
+
+  \section xmap_algo Algorithms
+
+  \subsection xmap_p2p All-to-all
+
+  This algorithm uses collective MPI routines to distribute the source and target
+  decomposition among all processes. Afterwards all processes are able to compute
+  the mapping of their local data with remote data by themselves.
+
+  This algorithm is quite simple, but has some drawbacks. Since it uses collective
+  communication its scaling to high process counts is limited. In addtion, the
+  distribution of the complete source and target decomposition to all processes can
+  lead to memory problems, if no compact index list types are being used. For small
+  process counts it might give good results.
+
+  \dontinclude xt_xmap_all2all.h
+  \skip Xt_xmap xt_xmap_all2all_new
+  \until ;
+
+  \subsection xmap_dist_dir Distributed directory
+
+  This exchange map type uses a rendezvous algorithm described in:\n
+  <em>A. Pinar and B. Hendrickson,
+  <a href="http://www.sandia.gov/~apinar/papers/siampp00.pdf">Communication Support
+  for Adaptive Computation</a> in Proc. SIAM Conf. on Parallel Processing
+  for Scientific Computing, 2001.</em>
+
+  \dontinclude xt_xmap_dist_dir.h
+  \skip Xt_xmap xt_xmap_dist_dir_new
+  \until ;
+
+ */

@@ -1,0 +1,18 @@
+&timeControl
+
+  calendar = 'proleptic gregorian'
+
+  experimentReferenceDate = '1999-01-01T00:00:00'
+  experimentStartDate = '2000-01-01T00:00:00'
+  experimentEndDate = '2200-01-01T00:00:00'
+
+  modelTimeStep = 'PT2H'
+
+  checkpointTimeInterval = 'P0Y'
+  restartTimeInterval = 'P7Y'
+
+  couplingTimeInterval = 'PT2H'
+
+  isRestart = .true.
+  isRestartTimeRelative = .true.
+/

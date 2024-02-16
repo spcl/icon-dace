@@ -1,0 +1,17 @@
+#!/bin/sh
+#
+FILE=cdi_cman
+#
+latex ${FILE}.tex
+latex ${FILE}.tex
+cat > ${FILE}.ist << 'EOF'
+delim_0        "\\idxdotfill "
+headings_flag  1
+heading_prefix "{\\centerline {\\Large \\bf "
+%heading_prefix "{\\centerline {\\bfseries "
+heading_suffix "}}"
+EOF
+makeindex -s ${FILE}.ist ${FILE}.idx
+latex ${FILE}.tex
+latex ${FILE}.tex
+dvips -o ${FILE}.ps ${FILE}.dvi

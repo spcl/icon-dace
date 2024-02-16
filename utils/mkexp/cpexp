@@ -1,0 +1,39 @@
+#! /bin/sh
+#
+# Compare experiment setups trying to identify file pairs.
+#
+# $Id$
+#
+
+PROGRAM=`basename $0`
+BINDIR=`dirname $0`
+PATH="$BINDIR:$PATH"
+
+die () {
+    echo "$@" >&2
+    exit 1
+}
+
+CPPATHFLAGS=
+if [ "x$1" = x-n ]
+then
+    CPPATHFLAGS=-n
+    shift
+fi
+
+[ "x$2" = x ] && die "Oops: invalid number of parameters
+Usage: $PROGRAM [-n] config_file new_exp_id [key=value...]"
+
+CONFIG_A=$1
+EXP_B=$2
+shift; shift
+
+eval `getexp -v "$CONFIG_A" "$@" || echo '
+' exit $?`
+EXP_A=$EXP_ID
+
+set $SCRIPT_DIR $WORK_DIR $RESTART_DIR $DATA_DIR $LOG_DIR ${MON_DIR}${MON_DIR:+/$EXP_A} ### $MON_DIR/index.html
+for PATH_A
+do
+    cppath $CPPATHFLAGS "$EXP_A" "$EXP_B" "$PATH_A"
+done

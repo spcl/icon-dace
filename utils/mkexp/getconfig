@@ -1,0 +1,55 @@
+#! /usr/bin/env python
+#
+# Reconstruct config from update file, including command line
+#
+# $Id$
+#
+
+from __future__ import print_function
+
+import argparse
+import io
+import sys
+
+from expconfig import ConfigObj
+
+import update
+from feedback import die
+import package_info
+
+#
+# Main routine
+#
+
+# Check command line
+
+command_line = argparse.ArgumentParser(description=
+    'Reconstruct config from update file, including command line.')
+command_line.add_argument('update', nargs='?', default='update', 
+                          help='update script file name [%(default)s]')
+command_line.add_argument('-V', '--version', action='version',
+                          version=package_info.version)
+command_line.add_argument('-i', '--indent-string', default='  ',
+                          help='set indent string [%(default)s]')
+
+args = command_line.parse_args()
+
+try:
+    update_data = update.Update(args.update)
+except IOError as error:
+    die("'{0}': {1}".format(error.filename, error.strerror))
+
+config_data = ConfigObj(update_data.get_config_file(), write_empty_values=True,
+                        indent_type=args.indent_string)
+for d in update_data.get_config_dicts():
+    config_data.merge(d)
+
+# Ready to roll out
+
+lines = io.BytesIO()
+config_data.write(lines)
+
+lines.seek(0)
+for line in io.TextIOWrapper(lines):
+    print(line, end='')
+

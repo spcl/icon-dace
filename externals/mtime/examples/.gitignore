@@ -1,0 +1,24 @@
+# Copyright (c) 2013-2024 MPI-M, Luis Kornblueh, Rahul Sinha and DWD, Florian Prill. All rights reserved.
+#
+# SPDX-License-Identifier: CC0-1.0
+#
+
+tas
+callback_test
+comp_weights
+duration
+example
+example_hl
+iconatm
+iconoce
+iconoce_hl
+model_integration
+modulo
+output_control
+recurrence
+repetitor
+simulate_iau
+test_dace
+time_calculus
+test_jd_logic
+uniq

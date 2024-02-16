@@ -1,0 +1,30 @@
+Attributes are metadata used to describe variables or a data set.
+CDI distinguishes between key attributes and user attributes.
+Key attributes are described in the last chapter.
+
+User defined attributes are additional attributes that are not interpreted by CDI.
+These attributes are only available for NetCDF datasets. Here they
+correspond to all attributes that are not used by CDI as key attributes.
+
+A user defined attribute has a variable to which it is assigned, a name, a type,
+a length, and a sequence of one or more values.
+The attributes have to be defined after the variable is created and 
+before the variables list is associated with a stream.
+
+It is also possible to have attributes that are not associated with any variable.
+These are called global attributes and are identified by using CDI\_GLOBAL as a 
+variable pseudo-ID. Global attributes are usually related to the dataset as a whole.
+
+CDI supports integer, floating point and text attributes. The data types are defined 
+by the following predefined constants:
+
+\vspace*{3mm}
+\hspace*{8mm}\begin{minipage}{15cm}
+\begin{deflist}{\large\texttt{CDI\_DATATYPE\_TXT \ \ }}
+\item[\large\texttt{CDI\_DATATYPE\_INT16}]   16-bit integer attribute
+\item[\large\texttt{CDI\_DATATYPE\_INT32}]   32-bit integer attribute
+\item[\large\texttt{CDI\_DATATYPE\_FLT32}]   32-bit floating point attribute
+\item[\large\texttt{CDI\_DATATYPE\_FLT64}]   64-bit floating point attribute
+\item[\large\texttt{CDI\_DATATYPE\_TXT}]     Text attribute
+\end{deflist}
+\end{minipage}

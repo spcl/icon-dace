@@ -1,0 +1,54 @@
+predef:
+  src2tgt: &src2tgt
+    src_component: source_comp
+    src_grid: source_grid
+    tgt_component: target_comp
+    tgt_grid: target_grid
+    coupling_period: 1
+    interpolation:
+      - nnn:
+          n: 1
+
+start_date: 1850-01-01T00:00:00
+end_date: 1850-01-03T00:00:00
+timestep_unit: second
+coupling:
+  - <<: *src2tgt
+    src_mask_name: even_mask
+    tgt_mask_name: even_mask
+    field: [src2tgt_yaml_without_field_mask_even_src_mask_even_tgt_mask,
+            src2tgt_yaml_with_field_mask_even_src_mask_even_tgt_mask]
+  - <<: *src2tgt
+    src_mask_name: even_mask
+    tgt_mask_name: odd_mask
+    field: [src2tgt_yaml_without_field_mask_even_src_mask_odd_tgt_mask,
+            src2tgt_yaml_with_field_mask_even_src_mask_odd_tgt_mask]
+  - <<: *src2tgt
+    src_mask_name: even_mask
+    field: [src2tgt_yaml_without_field_mask_even_src_mask_none_tgt_mask,
+            src2tgt_yaml_with_field_mask_even_src_mask_none_tgt_mask]
+  - <<: *src2tgt
+    src_mask_name: odd_mask
+    tgt_mask_name: even_mask
+    field: [src2tgt_yaml_without_field_mask_odd_src_mask_even_tgt_mask,
+            src2tgt_yaml_with_field_mask_odd_src_mask_even_tgt_mask]
+  - <<: *src2tgt
+    src_mask_name: odd_mask
+    tgt_mask_name: odd_mask
+    field: [src2tgt_yaml_without_field_mask_odd_src_mask_odd_tgt_mask,
+            src2tgt_yaml_with_field_mask_odd_src_mask_odd_tgt_mask]
+  - <<: *src2tgt
+    src_mask_name: odd_mask
+    field: [src2tgt_yaml_without_field_mask_odd_src_mask_none_tgt_mask,
+            src2tgt_yaml_with_field_mask_odd_src_mask_none_tgt_mask]
+  - <<: *src2tgt
+    tgt_mask_name: even_mask
+    field: [src2tgt_yaml_without_field_mask_none_src_mask_even_tgt_mask,
+            src2tgt_yaml_with_field_mask_none_src_mask_even_tgt_mask]
+  - <<: *src2tgt
+    tgt_mask_name: odd_mask
+    field: [src2tgt_yaml_without_field_mask_none_src_mask_odd_tgt_mask,
+            src2tgt_yaml_with_field_mask_none_src_mask_odd_tgt_mask]
+  - <<: *src2tgt
+    field: [src2tgt_yaml_without_field_mask_none_src_mask_none_tgt_mask,
+            src2tgt_yaml_with_field_mask_none_src_mask_none_tgt_mask]

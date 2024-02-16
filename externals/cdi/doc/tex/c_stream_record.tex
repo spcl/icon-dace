@@ -1,0 +1,24 @@
+
+
+\subsection{Define the next record: \texttt{streamDefRecord}}
+\index{streamDefRecord}
+\label{streamDefRecord}
+
+The function streamDefRecord defines the meta-data of the next record.
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    void streamDefRecord(int streamID, int varID, int levelID);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{streamID}\ }
+\item[\texttt{streamID}]
+Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
+\item[\texttt{varID}]
+Variable identifier.
+\item[\texttt{levelID}]
+Level identifier.
+
+\end{deflist}
+\end{minipage}

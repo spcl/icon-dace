@@ -1,0 +1,15 @@
+start_date: +1800-01-01T00:00:00.000
+end_date: +2100-01-01T00:00:00.000
+timestep_unit: second
+coupling:
+  - src_component: comp_a
+    src_grid: icon_grid
+    tgt_component: comp_regional
+    tgt_grid: regional_grid
+    field: base_to_regional
+    coupling_period: 1
+    interpolation:
+      - average:
+          weighted: barycentric_coordinate
+      - fixed:
+          user_value: -1.0

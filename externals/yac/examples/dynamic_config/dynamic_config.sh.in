@@ -1,0 +1,4 @@
+#!@SHELL@
+
+@TEST_MPI_FALSE@exit 77
+@TEST_MPI_TRUE@@MPI_LAUNCH@ -n 3 ./dynamic_config.x

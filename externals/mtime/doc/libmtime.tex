@@ -1,0 +1,101 @@
+%article: \documentclass[BCOR1cm,DIV12,a4paper,mpinclude,headsepline,footsepline]{scrartcl}
+%report:  \documentclass[BCOR1cm,DIV12,a4paper,mpinclude,headsepline,footsepline]{scrreprt}
+%__________________________________________________________________________________________
+%
+\documentclass[BCOR1cm,DIV18,a4paper,mpinclude,headsepline,footsepline,twoside,titlepage]{article}
+
+
+\usepackage{fixltx2e}
+\usepackage{calc}
+\usepackage{doxygen}
+\usepackage[export]{adjustbox} % also loads graphicx
+\usepackage{graphicx}
+\usepackage{makeidx}
+\usepackage{multicol}
+\usepackage{multirow}
+\PassOptionsToPackage{warn}{textcomp}
+\usepackage{textcomp}
+\usepackage[nointegrals]{wasysym}
+\usepackage[table]{xcolor}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+
+\usepackage{gensymb}
+\usepackage{lmodern}
+\usepackage{scrpage2}
+
+\usepackage{authblk}
+
+\usepackage{natbib}
+
+\makeindex
+
+\renewcommand{\DoxyLabelFont}{\fontseries{bc}\selectfont\color{darkgray}}
+\newcommand{\+}{\discretionary{\mbox{\scriptsize$\hookleftarrow$}}{}{}}
+\newcommand{\clearemptydoublepage}{\newpage{\pagestyle{empty}\cleardoublepage}}
+
+\definecolor{mpggreen}{RGB}{0,119,112}
+\definecolor{mpggrey}{RGB}{209,206,198}
+\definecolor{darkred}{RGB}{184,50,50}
+
+\setlength{\parskip}{0.5ex}
+\setlength{\parindent}{0pt}
+
+%\addtolength{\marginparsep}{10pt}
+%\addtolength{\marginparwidth}{0.5\marginparwidth}
+
+%\addtokomafont{sectioning}{\color{mpggreen}}
+%\setkomafont{pageheadfoot}{\sffamily\normalsize}
+%\addtokomafont{pageheadfoot}{\color{mpggreen}}
+%\addtokomafont{pagenumber}{\color{mpggreen}}
+%\addtokomafont{headsepline}{\color{mpggreen}}
+%\addtokomafont{footsepline}{\color{mpggreen}}
+
+\renewcommand\Authfont{\sffamily\normalsize}
+\renewcommand\Affilfont{\sffamily\itshape\small}
+
+%article: \automark[subsection]{section}
+\automark[subsection]{section}
+%report:  \automark[section]{chapter}
+\pagestyle{scrheadings}
+\clearscrheadings
+\ohead{\headmark}
+\ofoot{\pagemark}
+
+%\titlehead{
+%  \rule{\textwidth}{1pt}
+%  \textsf{Max-Planck-Institut f\"ur Meteorologie \hfill Compte rendu CIMD No. 12}
+%}
+\title{libmtime}
+
+\author{Luis Kornblueh}
+\affil{}
+
+\date{
+  \textsf{\today}
+  \rule{\textwidth}{1pt}
+}
+
+\usepackage{ifpdf}
+\ifpdf
+  \usepackage[pdftex,pagebackref=true]{hyperref}
+\else
+  \usepackage[ps2pdf,pagebackref=true]{hyperref}
+\fi
+\hypersetup{colorlinks=true,linkcolor=mpggreen,citecolor=mpggreen,unicode}
+
+\begin{document}
+
+
+\hypersetup{pageanchor=false,bookmarks=true,bookmarksnumbered=true,pdfencoding=unicode}
+
+\pagenumbering{roman}
+
+\color{mpggreen}
+\maketitle
+\color{black}
+
+\tableofcontents
+\pagenumbering{arabic}
+\hypersetup{pageanchor=true}
