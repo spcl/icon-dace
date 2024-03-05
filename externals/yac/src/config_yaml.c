@@ -210,9 +210,12 @@ DEF_NAME_TYPE_PAIRS(
   DEF_NAME_TYPE_PAIR(target, 0));
 
 typedef
-#if defined __NVCOMPILER && (__NVCOMPILER_MAJOR__ <= 22 || __NVCOMPILER_MAJOR__ == 23 && __NVCOMPILER_MINOR__ <= 11)
+#if defined __NVCOMPILER && __NVCOMPILER_MAJOR__ <= 24
 // Older versions of NVHPC have serious problems with unions that contain
-// pointers that are not the first members.
+// pointers that are not the first members: versions 23.7 and older fail with
+// 'Internal compiler error. unhandled type', the newer versions produce code
+// that fails at the runtime with
+// 'Segmentation fault: address not mapped to object'.
 struct
 #else
 union
@@ -239,7 +242,7 @@ struct interp_method_parameter {
   char const * name;
   enum interp_method_parameter_value_type type;
 
-#if defined __NVCOMPILER && (__NVCOMPILER_MAJOR__ <= 22 || __NVCOMPILER_MAJOR__ == 23 && __NVCOMPILER_MINOR__ <= 11)
+#if defined __NVCOMPILER && __NVCOMPILER_MAJOR__ <= 24
   // Older versions of NVHPC generate invalid LLVM IR for unions that contain
   // structures with doubles: an attempt to initialize a member of type double
   // that is not the first member of the respective structure will lead to a
@@ -262,7 +265,8 @@ struct interp_method_parameter {
     struct { // string
       size_t max_str_len;
     } str_param;
-    // Note that NVHPC 23.7 and older will not be able to compile this file if
+    // Note that NVHPC 24.1 and older fail to compile this file with
+    // 'Internal compiler error. dinit: initialization of undefined struct' if
     // the following empty structure is not the last member of the parent
     // structure/union.
     struct { // bool

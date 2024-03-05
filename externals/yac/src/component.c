@@ -107,7 +107,6 @@ struct yac_component_config * yac_component_config_new(
     comp_config->components[i] =
       xmalloc(1 * sizeof(*(comp_config->components[i])));
     comp_config->components[i]->name = strdup(names[i]);
-    comp_config->components[i]->comm = MPI_COMM_NULL;
   }
 
   MPI_Group world_group;
@@ -128,6 +127,11 @@ struct yac_component_config * yac_component_config_new(
   qsort(comp_groups, num_global_components, sizeof(*comp_groups),
         compare_component_groups);
 
+  int comm_size;
+  yac_mpi_call(MPI_Comm_size(comm, &comm_size), comm);
+  int * rank_mask = xmalloc((size_t)comm_size * sizeof(*rank_mask));
+  int * ranks = xmalloc((size_t)comm_size * sizeof(*ranks));
+
   // for all sorted component groups
   for (size_t i = 0; i < num_global_components; ++i) {
 
@@ -139,39 +143,38 @@ struct yac_component_config * yac_component_config_new(
       if (!strcmp(comp_name, names[j]))
         comp = comp_config->components[j];
 
-    // if the local process has the current component
-    if (comp) {
+    int is_in_comp = comp != NULL;
 
-      // generate communicator for all process that defined the current
-      // component
-      MPI_Comm comp_comm;
-      yac_mpi_call(MPI_Comm_split(comm, 0, 0, &comp_comm), comm);
+    // determine which rank is part of the current component
+    yac_mpi_call(
+      MPI_Allgather(
+        &is_in_comp, 1, MPI_INT, rank_mask, 1, MPI_INT, comm), comm);
 
-      // create group for all processes in the comp communicator
-      yac_mpi_call(
-        MPI_Comm_group(comp_comm, &(comp_groups[i].group)), comp_comm);
-      int comp_group_size;
-      yac_mpi_call(
-        MPI_Group_size(comp_groups[i].group, &comp_group_size), comp_comm);
-
-      comp->comm = comp_comm;
-
-    } else {
-
-      MPI_Comm dummy_comm;
-      yac_mpi_call(MPI_Comm_split(comm, 1, 0, &dummy_comm), comm);
-
-      // create group for all processes in the component communicator
-      MPI_Group non_comp_group;
-      yac_mpi_call(MPI_Comm_group(dummy_comm, &non_comp_group), dummy_comm);
-      yac_mpi_call(
-        MPI_Group_difference(
-          world_group, non_comp_group, &(comp_groups[i].group)), comm);
-      yac_mpi_call(MPI_Group_free(&non_comp_group), dummy_comm);
-      yac_mpi_call(MPI_Comm_free(&dummy_comm), comm);
+    // generate list of all ranks included in the current component
+    int comp_size = 0;
+    for (int rank = 0; rank < comm_size; ++rank) {
+      if (rank_mask[rank]) {
+        ranks[comp_size] = rank;
+        ++comp_size;
+      }
     }
+
+    // generate group containing all ranks from the current component
+    yac_mpi_call(
+      MPI_Group_incl(
+        world_group, comp_size, ranks, &(comp_groups[i].group)), comm);
+
+    // generate communicator for all process that defined the current
+    // component
+    MPI_Comm comp_comm;
+    yac_mpi_call(
+      MPI_Comm_split(
+        comm, is_in_comp, is_in_comp?0:MPI_UNDEFINED, &comp_comm), comm);
+    if (is_in_comp) comp->comm = comp_comm;
   }
 
+  free(ranks);
+  free(rank_mask);
   yac_mpi_call(MPI_Group_free(&world_group), comm);
 
   return comp_config;

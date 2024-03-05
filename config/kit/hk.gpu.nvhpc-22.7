@@ -10,9 +10,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-set -e
-MY_DIR=$(cd "$(dirname "$0")"; pwd)
+set -eu
+unset CDPATH
+ulimit -c 0
 
-source "${MY_DIR}/dwd_fcns.sh"
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 
-build_dwd dwd_nec_yac2
+export HK_GPU_MPIRUN_FLAGS=''
+export HK_GPU_FCFLAGS='-acc=verystrict -gpu=cc80'
+${SCRIPT_DIR}/hk.common.nvhpc-22.7 --enable-gpu --enable-mpi-gpu "$@"

@@ -1,3 +1,9 @@
+# Release notes for patch icon-2024.01-1
+
+A workaround for the NVIDIA compiler has been implemented to be able to compile yac.
+
+Necessary backports from the main ICON repository for buildbot testing are also included.
+
 # Release notes for icon-2024.01
 
 It took a lot of work, sweat and tears: ICON's first Open Source 

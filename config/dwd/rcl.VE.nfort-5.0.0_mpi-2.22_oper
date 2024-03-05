@@ -27,7 +27,7 @@ source "${SCRIPT_DIR}/inlinelist.sh"
 MODULE_SETTINGS=". ${MODULESHOME}/init/sh; module purge"
 
 
-MODULES='sx/default nfort/4.0.0 nc++/4.0.0 mpi/2.22.0 netcdf4/4.7.3-sx hdf5/1.10.5-sx eccodes/2.28.0-sx aec/1.0.3-sx nlc/3.0.0 libxml2/2.9.10-sx szip/2.1.1-sx zlib/1.2.11-sx libfyaml/0.8-sx unsupported cmake/3.26.4'
+MODULES='sx/default nfort/5.0.0 nc++/5.0.0 mpi/2.22.0 netcdf4/4.7.3-sx hdf5/1.10.5-sx eccodes/2.28.0-sx aec/1.0.3-sx nlc/3.0.0 libxml2/2.9.10-sx szip/2.1.1-sx zlib/1.2.11-sx libfyaml/0.8-sx unsupported cmake/3.26.4'
 
 
 ### Libraries ###
@@ -85,23 +85,25 @@ LD='nld'
 # C compiler wrapper on NEC machine
 CC='mpincc'
 CXX='mpinc++'
-CFLAGS='-std=gnu11 -O3 -ftrace -finline-functions -mno-vector-fma -fno-associative-math -msched-block -fcse-after-vectorization -DUSE_XML2 -USX -D__SX__=__NEC__'
+CFLAGS='-std=gnu11 -O3 -finline-functions -mno-vector-fma -fno-associative-math -msched-block -fcse-after-vectorization -DUSE_XML2 -USX -D__SX__=__NEC__'
 ICON_CFLAGS='-O3'
 ICON_BUNDLED_CFLAGS='-O2'
+ICON_YAXT_CFLAGS='-O2 -finline-functions -DXT_NEED_MPI_ABORT_WORK_AROUND=2'
 CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2"
 
 # Fortran compiler wrapper on NEC machine
 FC='mpinfort'
-FCFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include -I${RTTOV_ROOT}/include/rttov13 -ftrace -fdiag-vector=0 -report-all -no-report-cg -traceback=verbose -O3 -mstack-arrays -msched-block -mvector-floating-divide-instruction -mvector-sqrt-instruction -floop-unroll-completely=8 -floop-unroll-completely-nest=8 -fcse-after-vectorization -mno-vector-fma -fno-associative-math -DUSE_XML2 -USX -D__SX__=__NEC__ -D__COMM_OPT__ -D__BLOCK_GET__ -D_RTTOV_ARCH_VECTOR"
+FCFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include -I${RTTOV_ROOT}/include/rttov13 -fdiag-vector=0 -report-all -no-report-cg -traceback=verbose -O3 -mstack-arrays -msched-block -mvector-floating-divide-instruction -mvector-sqrt-instruction -floop-unroll-completely=8 -floop-unroll-completely-nest=8 -fcse-after-vectorization -mno-vector-fma -fno-associative-math -DUSE_XML2 -USX -D__SX__=__NEC__ -D__COMM_OPT__ -D__BLOCK_GET__ -D_RTTOV_ARCH_VECTOR"
 
 ICON_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_EMVORADO[@]}" "${INLINE_LIST_ICON[@]}" "${INLINE_LIST_ART[@]}" "${INLINE_LIST_DACE[@]}")"
 
+ICON_YAXT_FCFLAGS='-DXT_NEED_MPI_ABORT_WORK_AROUND=2'
 ICON_OCEAN_FCFLAGS='-O2 -D__LVECTOR__'
 ICON_OCEAN_PATH='src/hamocc:src/ocean:src/sea_ice'
-ICON_ECRAD_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_ECRAD[@]}") -ftrace"
+ICON_ECRAD_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_ECRAD[@]}")"
 ICON_FORTRAN_SUPPORT_FCFLAGS='-fpp'
 
-LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5_DIR}/lib -L${NETCDF_DIR}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${LAPACKROOT}/lib -L${XML2ROOT}/lib -L/opt/nec/ve/nfort/4.0.0/lib -ftrace -traceback=verbose -static -static-nec -shared-mpi"
+LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5_DIR}/lib -L${NETCDF_DIR}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${LAPACKROOT}/lib -L${XML2ROOT}/lib -L/opt/nec/ve/nfort/5.0.0/lib -traceback=verbose -static -static-nec -shared-mpi"
 
 LIBS="-Wl,--as-needed ${XML2_LIBS} ${RTTOV_LIBS} ${LAPACK_LIBS} ${ECCODES__LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB}"
 
@@ -122,6 +124,8 @@ CPPFLAGS="${CPPFLAGS}" \
 FC="${FC}" \
 FCFLAGS="${FCFLAGS}" \
 ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_YAXT_CFLAGS="${ICON_YAXT_CFLAGS}" \
+ICON_YAXT_FCFLAGS="${ICON_YAXT_FCFLAGS}" \
 ICON_CFLAGS="${ICON_CFLAGS}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \

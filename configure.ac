@@ -12,7 +12,7 @@ AC_PREREQ([2.69])
 
 ACX_POLYMORPHIC_OPTION([enable], [fcgroup-*], [icon_fcgroups])
 
-AC_INIT([icon], [2024.01], [], [icon-2024.01])
+AC_INIT([icon], [2024.01-1], [], [icon-2024.01-1])
 
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_forbid([^A[SC]?X_])dnl

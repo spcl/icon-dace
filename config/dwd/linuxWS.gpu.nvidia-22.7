@@ -116,6 +116,7 @@ fi
 BUILD_ENV="export PATH=\"${PATH}\"; export LD_LIBRARY_PATH=\"${LD_LIBRARY_PATH}\"; "
 
 CC="${PGI_ROOT}/comm_libs/mpi/bin/mpicc"
+CXX="${PGI_ROOT}/comm_libs/mpi/bin/mpic++"
 CFLAGS="-g -O2"
 CPPFLAGS="-I${ECCODES_INCLUDE} -I${HDF5_INCLUDE} -I${NETCDF_INCLUDE} -I${XML2_INCLUDE} -I${RTTOV_INCLUDE}"
 
@@ -171,6 +172,7 @@ EXTRA_CONFIG_ARGS+=' --disable-mpi-checks'
 "${ICON_DIR}/configure" \
 BUILD_ENV="${BUILD_ENV}" \
 CC="${CC}" \
+CXX="${CXX}" \
 CFLAGS="${CFLAGS}" \
 CPPFLAGS="${CPPFLAGS}" \
 ICON_CFLAGS="${ICON_CFLAGS}" \

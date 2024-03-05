@@ -132,6 +132,7 @@ BUILD_ENV=""
 
 # C compiler wrapper on cray machine
 CC='mpicc'
+CXX='mpic++'
 CFLAGS='-std=gnu99'
 
 ICON_CFLAGS='-O2'
@@ -157,6 +158,7 @@ EXTRA_CONFIG_ARGS='--enable-grib2 --enable-openmp --disable-ocean --disable-jsba
 "${ICON_DIR}/configure" \
 BUILD_ENV="${BUILD_ENV}" \
 CC="${CC}" \
+CXX="${CXX}" \
 CFLAGS="${CFLAGS}" \
 CPPFLAGS="${CPPFLAGS}" \
 FC="${FC}" \

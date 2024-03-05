@@ -11,7 +11,7 @@
 # ------------------------------------------
 
 # ----------------------------------------------------------------------------
-#PBS -q sx_norm
+#PBS -q sx_norm_rh8
 #PBS -v NE=1,CPE=8
 #PBS -v NMPI_MALLOC_HEAP_EXPANSION_SIZE=512
 #PBS -v NMPI_MALLOC_MMAP_THRESHOLD=512
@@ -48,6 +48,13 @@ ulimit -s unlimited
 
 # abort on error
 set -euo pipefail
+
+#=============================================================================
+# load modules
+loadmodule="mpi/3.5.0"
+module load $loadmodule
+module list
+#=============================================================================
 
 # ----------------------------------------------------------------------------
 # specifiy experiment (real simulation)
@@ -434,7 +441,7 @@ EOF
 
 tic=$(date)
 
-/opt/nec/ve/mpi/2.22.0/bin/runtime/mpirun -v     -x      -venode        -np ${PPN} -env OMP_NUM_THREADS 1 ${MODEL} 
+/opt/nec/ve/mpi/3.5.0/bin/runtime/mpirun -v     -x      -venode        -np ${PPN} -env OMP_NUM_THREADS 1 ${MODEL} 
 
 toc=$(date)
 echo 'tic: ' $tic

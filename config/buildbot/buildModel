@@ -58,6 +58,10 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
     fi
     ;;
   dwd*)
+    # Temporary hack:
+    # switch python virtual environment
+    . /hpc/sw/buildbot/home/fe13/venv_dwd0_rh8/bin/activate
+    #
     # DWD might avoid job submission for building the model
     cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
     if test 0 -ne "$?" ; then

@@ -14,14 +14,14 @@
 # configure wrapper which is used for buildbot builder dwd_nec_hybrid (VH)
 #
 if ((RH_VERSION !=8 )); then
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-2.22_art_oper \
+  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-2.22_oper \
     --disable-les \
     --enable-waves \
     --enable-jsbach \
     --disable-jsbach-hd \
     "$@"
 else
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-9.2.0_mpi-3.3_art_oper_RH8 \
+  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-3.5_oper_RH8 \
     --disable-les \
     --enable-waves \
     --enable-jsbach \

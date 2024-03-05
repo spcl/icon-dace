@@ -1402,13 +1402,13 @@ add_link_file ${ocean_grid_folder}/${ocean_grid} $ocean_grid
 if [[ "$START" == *"srun"* ]]; then
     eval "$(echo '@BUILD_ENV@' | ${basedir}/config.status -q --file=-)"
     make -C ${basedir}/externals/yac/examples toy_output/toy_output.x
-    # we cannot uses EXPDIR here -.-
-    mkdir ${experiments_dir}/${EXPNAME}
-    cat > ${experiments_dir}/${EXPNAME}/mpmd.conf << EOF
+
+    cat > ${basedir}/run/mpmd.conf << EOF
 0 ${basedir}/externals/yac/examples/toy_output/toy_output.x atmo_output icon_atmos_grid tas
 1 ${basedir}/externals/yac/examples/toy_output/toy_output.x ocean_output icon_ocean_grid to
 * ${MODEL}
 EOF
+    add_required_file ${basedir}/run/mpmd.conf                        ./
 
     START_MODEL="${START} --multi-prog mpmd.conf"
 fi

@@ -684,7 +684,7 @@ set_run_target_rcl()
     # $use_memory can be used to set memsz_job. e.G. "24gb"
 
     # absolute path to cdo
-    cdo="/hpc/sw/cdo/1.9.8/x86/gnu/bin/cdo"
+    cdo="/hpc/sw/cdo/2.2.1/x86/gnu/bin/cdo"
     cdo_diff="diffn"
 
     add_free_var VE_ERRCTL_ALLOCATE "MSG"
@@ -1865,8 +1865,8 @@ EOF
     start_header
 
     cat >> "$output_script" << EOF
-export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0/bin:\${PATH}
-export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.31.0/definitions.edzw-2.31.0-2:/hkfs/home/dataset/datasets/icon/sw/definitions/2.31.0/definitions
+export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0-rev1/bin:\${PATH}
+export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions
 export NVCOMPILER_TERM=trace
 export OMPI_MCA_btl=self,tcp
 EOF
@@ -1924,8 +1924,8 @@ EOF
     start_header
 
     cat >> "$output_script" << EOF
-export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0/bin:\${PATH}
-export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.31.0/definitions.edzw-2.31.0-2:/hkfs/home/dataset/datasets/icon/sw/definitions/2.31.0/definitions
+export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0-rev1/bin:\${PATH}
+export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions
 export NVCOMPILER_TERM=trace
 EOF
 }
@@ -2307,6 +2307,9 @@ create_target_header()
             case $use_target in
                 daint*)
                     use_nodes=14
+                    ;;
+                hk)
+                    use_nodes=4
                     ;;
                 rcl)
                     use_nodes=2

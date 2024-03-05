@@ -12,7 +12,7 @@
 
 ##################################################################
 ###        Configure wrapper for NEC SX AURORA                 ###
-###                   VECTOR ENGINE                            ###
+###                     VECTOR HOST                            ###
 ##################################################################
 
 set -eu
@@ -20,14 +20,11 @@ set -eu
 SCRIPT_DIR=$(cd "$(dirname "$0")">/dev/null; pwd)
 ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd)
 
-# Load lists of inlining files.
-source "${SCRIPT_DIR}/inlinelist.sh"
-
 # make module command available
 MODULE_SETTINGS=". ${MODULESHOME}/init/sh; module purge"
 
 
-MODULES='sx/default nfort/4.0.0 nc++/4.0.0 mpi/2.22.0 netcdf4/4.7.3-sx hdf5/1.10.5-sx eccodes/2.28.0-sx aec/1.0.3-sx nlc/3.0.0 libxml2/2.9.10-sx szip/2.1.1-sx zlib/1.2.11-sx libfyaml/0.8-sx unsupported cmake/3.26.4'
+MODULES='apps sx/default gcc/11.2.0 mpi/2.22.0 netcdf4/4.7.3-VH-gnu hdf5/1.10.5-VH-gnu eccodes/2.25.0-VH-gnu aec/1.0.3-VH-gnu aocl/2.1-VH-gnu szip/2.1.1-VH-gnu libfyaml/0.8-VH-gnu unsupported cmake/3.26.4'
 
 
 ### Libraries ###
@@ -40,12 +37,14 @@ NETCDF_LIBS='-lnetcdf'
 HDF5_LIBS='-lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5'
 
 # BLAS, LAPACK
-LAPACK_LIBS='-llapack -lblas_sequential'
+AMDLIB_ROOT='/hpc/sw/amd/aocl/2.1'
+AMD_LIBS='-lflame -lblis'
 
 # ECCODES - note that we use a double underscore because ECCODES_LIBS may be overwritten by system settings
 ECCODES__LIBS='-leccodes_f90 -leccodes'
 
 # XML
+XML2ROOT='/hpc/sw/NEC-old/libxml2-2.9.10/VH'
 XML2_LIBS='-lxml2'
 
 # AEC
@@ -55,60 +54,53 @@ AEC_LIB='-laec'
 SZIP_LIB='-lsz'
 
 # ZLIB
+ZLIBROOT='/hpc/sw/zlib/1.2.11/x86/gnu'
 ZLIB_LIB='-lz' 
 
 # RTTOV
-RTTOV_ROOT='/hpc/rhome/for0adm/nwp/ve1/external'
+RTTOV_ROOT='/hpc/rhome/for0adm/nwp/x86_vh/external'
 RTTOV_LIBS='-lrttov13'
 
 # FYAML
 FYAML_LIB='-lfyaml'
 
+# flags needed for static linking
+STATICLINK_FLAGS='-static -add-gcc-rpath'
+
 ################################################################################
 
 
-BUILD_ENV="export ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd); ${MODULE_SETTINGS} && . \"${SCRIPT_DIR}/module_switcher\"; switch_for_module ${MODULES};"
+BUILD_ENV="${MODULE_SETTINGS} && . \"${SCRIPT_DIR}/module_switcher\"; switch_for_module ${MODULES}; export NMPI_FC_H=gfortran;"
 echo ${BUILD_ENV}
 
 # We need some of the environment variables set by the modules now:
 eval "$BUILD_ENV"
 
-echo ${MODULEPATH}
-
-
-# cross compiling!
-HOST='none'
-AR='nar'
-AS='nas'
-LD='nld'
-
 # C compiler wrapper on NEC machine
-CC='mpincc'
-CXX='mpinc++'
-CFLAGS='-std=gnu11 -O3 -ftrace -finline-functions -mno-vector-fma -fno-associative-math -msched-block -fcse-after-vectorization -DUSE_XML2 -USX -D__SX__=__NEC__'
-ICON_CFLAGS='-O3'
+CC='mpincc -vh'
+CXX='mpinc++ -vh'
+CFLAGS='-std=gnu99 -mavx2 -mno-fma -O3 -DUSE_XML2 -fbacktrace -g'
+ICON_CFLAGS=''
 ICON_BUNDLED_CFLAGS='-O2'
-CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2"
+CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2"
 
 # Fortran compiler wrapper on NEC machine
-FC='mpinfort'
-FCFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include -I${RTTOV_ROOT}/include/rttov13 -ftrace -fdiag-vector=0 -report-all -no-report-cg -traceback=verbose -O3 -mstack-arrays -msched-block -mvector-floating-divide-instruction -mvector-sqrt-instruction -floop-unroll-completely=8 -floop-unroll-completely-nest=8 -fcse-after-vectorization -mno-vector-fma -fno-associative-math -DUSE_XML2 -USX -D__SX__=__NEC__ -D__COMM_OPT__ -D__BLOCK_GET__ -D_RTTOV_ARCH_VECTOR"
-
-ICON_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_EMVORADO[@]}" "${INLINE_LIST_ICON[@]}" "${INLINE_LIST_ART[@]}" "${INLINE_LIST_DACE[@]}")"
-
+FC='mpinfort -vh'
+FCFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include -I${NETCDFFROOT}/include -I${RTTOV_ROOT}/include/rttov13 -std=gnu -fno-range-check -fbacktrace -g -fmodule-private -fimplicit-none -fmax-identifier-length=63 -ffree-line-length-none -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -mavx2 -O2 -mno-fma -mpc64 -D__COMM_OPT__ -D__BLOCK_GET__ -D__NEC_VH__ -DUSE_XML2"
+ICON_FCFLAGS=''
 ICON_OCEAN_FCFLAGS='-O2 -D__LVECTOR__'
 ICON_OCEAN_PATH='src/hamocc:src/ocean:src/sea_ice'
-ICON_ECRAD_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_ECRAD[@]}") -ftrace"
-ICON_FORTRAN_SUPPORT_FCFLAGS='-fpp'
+ICON_ECRAD_FCFLAGS=""
+ICON_DACE_FCFLAGS="-O2 -fallow-argument-mismatch"
+ICON_DACE_PATH="externals/dace_icon"
 
-LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5_DIR}/lib -L${NETCDF_DIR}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${LAPACKROOT}/lib -L${XML2ROOT}/lib -L/opt/nec/ve/nfort/4.0.0/lib -ftrace -traceback=verbose -static -static-nec -shared-mpi"
+LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5ROOT}/lib -L${NETCDFROOT}/lib -L${NETCDFFROOT}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${AMDLIB_ROOT}/libs -L${XML2ROOT}/lib -shared-mpi"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES__LIBS} ${RTTOV_LIBS} ${AMD_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB} ${STATICLINK_FLAGS}"
 
-LIBS="-Wl,--as-needed ${XML2_LIBS} ${RTTOV_LIBS} ${LAPACK_LIBS} ${ECCODES__LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB}"
-
-MPI_LAUNCH='/opt/nec/ve/mpi/2.22.0/bin/runtime/mpirun'  # needed e.g. for YAXT and YAC configuration as well as make_runscripts
+MPI_LAUNCH=''  # needed e.g. for yac configuration. What is the correct setting for gnu ?? 
 
 # full operational NWP configuration including ecRad and DACE+EMVORADO coupling
-EXTRA_CONFIG_ARGS='--host='${HOST}' --disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-mixed-precision --disable-loop-exchange --enable-grib2 --enable-mpi --disable-openmp --enable-rttov --enable-ecrad --enable-dace --enable-emvorado --enable-art --disable-aes --disable-jsbach --disable-ocean --disable-coupling'
+EXTRA_CONFIG_ARGS='--disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-mixed-precision --enable-loop-exchange --enable-grib2 --enable-mpi --enable-openmp --enable-rttov --enable-ecrad --enable-dace --enable-fcgroup-DACE --enable-emvorado --enable-art --disable-aes --disable-jsbach --disable-ocean --disable-coupling'
 
 ################################################################################
 
@@ -127,13 +119,11 @@ ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
 ICON_OCEAN_PATH="${ICON_OCEAN_PATH}" \
 ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
-ICON_FORTRAN_SUPPORT_FCFLAGS="${ICON_FORTRAN_SUPPORT_FCFLAGS}" \
+ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
+ICON_DACE_PATH="${ICON_DACE_PATH}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \
-AR="${AR}" \
-LD="${LD}" \
-AS="${AS}" \
 ${EXTRA_CONFIG_ARGS} \
 "$@"
 

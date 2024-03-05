@@ -1,3 +1,13 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
 # Join all arguments using the separator given by the first argument, prefixing each with the second.
 # Usage: join_arr <sep> <prefix> <item0> <item1>...
 function join_arr {

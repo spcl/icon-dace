@@ -247,8 +247,10 @@ $addexp exp.seamless_bb-ecradmin --builders "levante_intel_hybrid levante_gcc_hy
 $addexp test_nextGEMS.config --builders levante_intel_hybrid --list $listname
 
 # test memory loggin in amip setup
-$addexp checksuite.infrastructure/memLog/exp.atm_memLog         --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
-$addexp checksuite.infrastructure/memLog/exp.atm_memLog_AsyncIO --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
+#   input data for the following two tests have been removed, therefore, we
+#   temporarily disable them
+# $addexp checksuite.infrastructure/memLog/exp.atm_memLog         --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
+# $addexp checksuite.infrastructure/memLog/exp.atm_memLog_AsyncIO --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
 $addexp checksuite.infrastructure/memLog/exp.oce_memLog         --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
 #-----------------------------------------------------------
 #remove red setups
@@ -285,11 +287,8 @@ $addexp checksuite.art/exp.art_levante_test_short.run --builders "levante_gcc" -
 ./set_builder_flags Active --builders 'levante_gpu_nvhpc levante_cpu_nvhpc' --list $listname
 $addexp exp.atm_tracer_Hadley --builders 'levante_gpu_nvhpc' --list ${listname} --runflags "mpi_procs_pernode=5"
 $addexp exp.atm_tracer_Hadley --builders 'levante_cpu_nvhpc' --list ${listname} --runflags "queue=compute"
-$addexp "checksuite.icon-dev/check.atm_bubble_test" --builders 'levante_gpu_nvhpc' --list $listname --runflags "mpi_procs_pernode=3"
-$addexp "checksuite.icon-dev/check.atm_bubble_test_update" --builders 'levante_gpu_nvhpc' --list $listname --runflags "mpi_procs_pernode=3"
 $addexp "checksuite.icon-dev/check.atm_bubble_test" --builders 'levante_cpu_nvhpc' --list $listname --runflags "queue=shared ntasks=16 memory=32G"
 $addexp "checksuite.icon-dev/check.atm_bubble_test_update" --builders 'levante_cpu_nvhpc' --list $listname --runflags "queue=shared ntasks=16 memory=32G"
-$addexp "checksuite.icon-dev/check.atm_bubble_land_test" --builders 'levante_gpu_nvhpc' --list $listname --runflags "mpi_procs_pernode=3"
 $addexp "checksuite.icon-dev/check.atm_bubble_land_test" --builders 'levante_cpu_nvhpc' --list $listname --runflags "queue=shared ntasks=16 memory=32G"
 
 # add qubicc tests without tolerances on netcdf to levante nvhpc
@@ -307,9 +306,7 @@ $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0"  --builders '
 $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0"  --builders 'levante_gpu_nvhpc' --list $listname --runflags "cpu_time=00:10:00"
 
 # add tests for checking yaxt and yac stand-alone; this needs yaxt/yac to be enabled
-# Three YAXT tests (test_idxvec_run, test_idxstripes_run, test_perf_stripes_run) fail wih nfort-3.5.1
-# Until there is a fix, these tests are deactivated
-#$addexp  checksuite.infrastructure/checkExternals/exp.check_externals_DWD.run --builders DWD_nec_yac2 --list ${listname}
+$addexp  checksuite.infrastructure/checkExternals/exp.check_externals_DWD.run --builders DWD_nec_yac2 --list ${listname}
 $addexp  checksuite.infrastructure/checkExternals/exp.check_externals_LEVANTE.run --machines levante --list ${listname}
 ./adddep --from-experiment "checksuite.infrastructure/comin/exp.build_comin_plugins_LEVANTE.run" --to-experiment "checksuite.infrastructure/checkExternals/exp.check_externals_LEVANTE.run" --builders "levante_gcc" --list $listname
 
@@ -337,7 +334,9 @@ do
 done
 
 # JSBACH-NWP test, has to be down here because the GPU builders get deactivated at the top and activated later.
-jsbach_nwp_builders='DWD_nec DWD_nec_hybrid levante_gcc levante_intel levante_gpu_nvhpc'
+# Temporarily deactivated on DWD_nec DWD_nec_hybrid due to crashes with nfort 5.1.0
+# jsbach_nwp_builders='DWD_nec DWD_nec_hybrid levante_gcc levante_intel levante_gpu_nvhpc'
+jsbach_nwp_builders='levante_gcc levante_intel levante_gpu_nvhpc'
 $addexp checksuite.icon-dev/check.atm_nwp_jsbach_test --builders "${jsbach_nwp_builders}" --list $listname
 
 # aurora node at DKRZ - not in production,yet

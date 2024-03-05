@@ -53,19 +53,20 @@ case $lapack_provider in
     ;;
 esac
 
-ECCODES_ROOT='/software/all/lib/eccodes/2.31.0_gnu_12'
+ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_gnu_12'
 ECCODES_LIBS='-leccodes_f90 -leccodes'
 
-# Libraries in /usr/lib
+# Libraries in /usr/lib{,64}
 XML2_INCLUDE_DIR='/usr/include/libxml2'
 XML2_LIBS='-lxml2'
+ZLIB_LIBS='-lz'
 
 ################################################################################
 
-BUILD_ENV="export LD_LIBRARY_PATH=\"${GCC_ROOT}/lib64:${MPI_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${BLAS_LAPACK_LIB_DIR}:/usr/lib\"; export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
+BUILD_ENV="export LD_LIBRARY_PATH=\"${GCC_ROOT}/lib64:${MPI_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${BLAS_LAPACK_LIB_DIR}:/usr/lib64:/usr/lib\"; export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
 
 LDFLAGS="-L${GCC_ROOT}/lib64 -L${MPI_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${ECCODES_ROOT}/lib64 -L${BLAS_LAPACK_LIB_DIR}"
-LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${MPI_LIBS} ${XML2_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
+LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${MPI_LIBS} ${XML2_LIBS} ${ZLIB_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
 
 FCFLAGS="-I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -ffree-line-length-none -fmodule-private -fimplicit-none -fmax-identifier-length=63 -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -g -march=native -mpc64"
 CFLAGS='-g -gdwarf-4 -march=native -mpc64'
@@ -83,7 +84,7 @@ ICON_DACE_PATH='externals/dace_icon'
 
 MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
 
-EXTRA_CONFIG_ARGS='--disable-coupling --enable-ecrad --enable-art --enable-grib2'
+EXTRA_CONFIG_ARGS='--disable-coupling --enable-ecrad --enable-art --enable-grib2 --enable-emvorado --enable-dace'
 EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-mpi-checks --enable-fcgroup-DACE"
 
 ################################################################################

@@ -38,19 +38,20 @@ NETCDFF_LIBS='-lnetcdff'
 MKL_ROOT='/software/all/toolkit/Intel_OneAPI/mkl/2022.0.2/'
 MKL_LIBS='-lmkl_gf_lp64 -lmkl_sequential -lmkl_core'
 
-ECCODES_ROOT='/software/all/lib/eccodes/2.31.0_intel_2022.0.2'
+ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_intel_2022.0.2'
 ECCODES_LIBS='-leccodes_f90 -leccodes'
 
-# Libraries in /usr/lib
+# Libraries in /usr/lib{,64}
 XML2_INCLUDE_DIR='/usr/include/libxml2'
 XML2_LIBS='-lxml2'
+ZLIB_LIBS='-lz'
 
 ################################################################################
 
-BUILD_ENV="export LD_LIBRARY_PATH=\"${INTEL_ROOT}/lib:${INTEL_ROOT}/compiler/lib/intel64:${MPI_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${MKL_ROOT}/lib/intel64:/usr/lib\"; export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
+BUILD_ENV="export LD_LIBRARY_PATH=\"${INTEL_ROOT}/lib:${INTEL_ROOT}/compiler/lib/intel64:${MPI_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${MKL_ROOT}/lib/intel64:/usr/lib64:/usr/lib\"; export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
 
 LDFLAGS="-L${INTEL_ROOT}/lib -L${INTEL_ROOT}/compiler/lib/intel64 -L${MPI_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${MKL_ROOT}/lib/intel64 -L${ECCODES_ROOT}/lib64"
-LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${MPI_LIBS} ${XML2_LIBS} ${ECCODES_LIBS} ${MKL_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
+LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${MPI_LIBS} ${XML2_LIBS} ${ZLIB_LIBS} ${ECCODES_LIBS} ${MKL_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
 
 ARCH="-m64 -march=core-avx2 -mtune=core-avx2"
 FCFLAGS="-I${INTEL_ROOT}/include -I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include ${ARCH} -g -gdwarf-4 -pc64 -fp-model source"
@@ -69,7 +70,7 @@ ICON_ECRAD_FCFLAGS='-qno-opt-dynamic-align -no-fma -fpe0'
 # MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec -launcher fork"
 MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
 
-EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --disable-coupling --enable-ecrad --enable-art --enable-grib2'
+EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --disable-coupling --enable-ecrad --enable-art --enable-grib2 --enable-emvorado --enable-dace'
 EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-mpi-checks"
 
 ################################################################################

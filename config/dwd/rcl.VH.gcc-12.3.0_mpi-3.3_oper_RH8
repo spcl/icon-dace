@@ -32,7 +32,7 @@ ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd)
 MODULE_SETTINGS=". ${MODULESHOME}/init/sh; module purge"
 
 
-MODULES='apps sx/default gcc/9.2.0 mpi/3.3.0 netcdf4/4.7.3-VH-gnu hdf5/1.10.5-VH-gnu eccodes/2.28.0-VH-gnu aec/1.0.6-VH-gnu aocl/2.1-VH-gnu szip/2.1.1-VH-gnu unsupported cmake/3.26.4'
+MODULES='apps sx/default gcc/12.3.0 mpi/3.3.0 netcdf4/4.7.3-VH-gnu hdf5/1.10.5-VH-gnu eccodes/2.28.0-VH-gnu aec/1.0.6-VH-gnu aocl/2.1-VH-gnu szip/2.1.1-VH-gnu libfyaml/0.8-VH-gnu unsupported cmake/3.26.4'
 
 
 ### Libraries ###
@@ -63,14 +63,14 @@ SZIP_LIB='-lsz'
 
 # ZLIB
 ZLIBROOT='/hpc/sw/zlib/1.2.11/x86/gnu'
-ZLIB_LIB='-lz' 
+ZLIB_LIB='-lz'
 
 # RTTOV
 RTTOV_ROOT='/hpc/rhome/for0adm/nwp/x86_vh/external'
 RTTOV_LIBS='-lrttov13'
 
-FYAML_ROOT="/hpc/sw/libfyaml/0.8/x86/gnu"
-FYAML_LIBS="-L${FYAML_ROOT}/lib -lfyaml"
+# FYAML
+FYAML_LIB='-lfyaml'
 
 # flags needed for static linking
 STATICLINK_FLAGS='-static -add-gcc-rpath'
@@ -84,27 +84,31 @@ echo ${BUILD_ENV}
 # We need some of the environment variables set by the modules now:
 eval "$BUILD_ENV"
 
-# C compiler wrapper on cray machine
+# C compiler wrapper on NEC machine
 CC='mpincc -vh'
+CXX='mpinc++ -vh'
 CFLAGS='-std=gnu99 -mavx2 -mno-fma -O3 -DUSE_XML2 -fbacktrace -g'
 ICON_CFLAGS=''
 ICON_BUNDLED_CFLAGS='-O2'
-CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2 -I${FYAML_ROOT}/include"
+CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2"
 
-# Fortran compiler wrapper on cray machine
+# Fortran compiler wrapper on NEC machine
 FC='mpinfort -vh'
-FCFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include -I${NETCDFFROOT}/include -I${RTTOV_ROOT}/include/rttov13 -std=gnu -fno-range-check -fbacktrace -g -fmodule-private -fimplicit-none -fmax-identifier-length=63 -ffree-line-length-none -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -mavx2 -O2 -mno-fma -mpc64  -D__COMM_OPT__ -D__BLOCK_GET__ -D__NEC_VH__ -DUSE_XML2"
+FCFLAGS="${ECCODES_INCLUDE} -I${HDF5ROOT}/include -I${NETCDFROOT}/include -I${NETCDFFROOT}/include -I${RTTOV_ROOT}/include/rttov13 -std=gnu -fno-range-check -fbacktrace -g -fmodule-private -fimplicit-none -fmax-identifier-length=63 -ffree-line-length-none -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -mavx2 -O2 -mno-fma -mpc64 -D__COMM_OPT__ -D__BLOCK_GET__ -D__NEC_VH__ -DUSE_XML2"
 ICON_FCFLAGS=''
 ICON_OCEAN_FCFLAGS='-O2 -D__LVECTOR__'
+ICON_OCEAN_PATH='src/hamocc:src/ocean:src/sea_ice'
 ICON_ECRAD_FCFLAGS=""
+ICON_DACE_FCFLAGS="-O2 -fallow-argument-mismatch"
+ICON_DACE_PATH="externals/dace_icon"
 
-LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5ROOT}/lib -L${NETCDFROOT}/lib -L${NETCDFFROOT}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${AMDLIB_ROOT}/libs -L${XML2ROOT}/lib -L${FYAML_ROOT}/lib -shared-mpi"
-LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES__LIBS} ${RTTOV_LIBS} ${AMD_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIBS} ${STATICLINK_FLAGS}"
+LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5ROOT}/lib -L${NETCDFROOT}/lib -L${NETCDFFROOT}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${AMDLIB_ROOT}/libs -L${XML2ROOT}/lib -shared-mpi"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES__LIBS} ${RTTOV_LIBS} ${AMD_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB} ${STATICLINK_FLAGS}"
 
-MPI_LAUNCH=''  # needed e.g. for yac configuration. What is the correct setting for gnu ?? 
+MPI_LAUNCH=''  # needed e.g. for yac configuration. What is the correct setting for gnu ??
 
 # full operational NWP configuration including ecRad and DACE+EMVORADO coupling
-EXTRA_CONFIG_ARGS='--disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-mixed-precision --enable-loop-exchange --enable-grib2 --enable-mpi --enable-openmp --enable-rttov --enable-ecrad --enable-dace --enable-emvorado --enable-art --disable-aes --disable-jsbach --disable-ocean --disable-coupling'
+EXTRA_CONFIG_ARGS='--disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-mixed-precision --enable-loop-exchange --enable-grib2 --enable-mpi --enable-openmp --enable-rttov --enable-ecrad --enable-dace --enable-fcgroup-DACE --enable-emvorado --enable-art --disable-aes --disable-jsbach --disable-ocean --disable-coupling'
 
 ################################################################################
 
@@ -112,6 +116,7 @@ EXTRA_CONFIG_ARGS='--disable-mpi-checks --disable-rpaths --enable-active-target-
 "${ICON_DIR}/configure" \
 BUILD_ENV="${BUILD_ENV}" \
 CC="${CC}" \
+CXX="${CXX}" \
 CFLAGS="${CFLAGS}" \
 CPPFLAGS="${CPPFLAGS}" \
 FC="${FC}" \
@@ -120,7 +125,10 @@ ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
 ICON_CFLAGS="${ICON_CFLAGS}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+ICON_OCEAN_PATH="${ICON_OCEAN_PATH}" \
 ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
+ICON_DACE_PATH="${ICON_DACE_PATH}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \

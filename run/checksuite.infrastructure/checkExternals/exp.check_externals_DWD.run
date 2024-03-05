@@ -11,7 +11,7 @@
 # ---------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
-#PBS -q sx_norm
+#PBS -q sx_norm_rh8
 #PBS -l elapstim_req=00:20:00
 #PBS --venode=3          # Run up to 3 * 8 = 24 MPI jobs
 #PBS --venum-lhost=8     # Number of VE per logical host
@@ -24,7 +24,7 @@
 # for PBS change to directory where job was submitted
 # (without this job is started in HOME)
 if [[ -n ${PBS_O_WORKDIR} ]] ; then
-  cd ${PBS_O_WORKDIR}
+  cd ${PBS_O_WORKDIR} # This is ${ICON_DIR}/run under buildbot.
 fi
 
 # We cannot rely on the contents of the 'exp.check_externals_DWD.run.status.2'
@@ -38,11 +38,11 @@ echo '255' > exp.check_externals_DWD.run.final_status
 
 # Speed up the 'make check' (this step is allowed to fail):
 MAKE_PROCS=14
-make -C "${basedir}" -j ${MAKE_PROCS} check-bundled TESTS= XFAIL_TESTS=
+make -C ../vector -j ${MAKE_PROCS} check-bundled TESTS= XFAIL_TESTS=
 
 # Run 'make check' for the vector engine build and save its exit code:
 exitcode=0
-make -C ../build/vector check || exitcode=$?
+make -C ../vector check || exitcode=$?
 
 # Overwrite the status file with the real exit code:
 echo "${exitcode}" > exp.check_externals_DWD.run.final_status

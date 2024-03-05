@@ -180,7 +180,8 @@ case "$use_site" in
           use_queue='sx_norm'
         else
           use_queue='sx_norm_rh8'
-          use_load_modules='mpi/2.24.0' # 2.24.0 is an alias for mpi 3.3.0 on RH8 VH/VE systems
+          use_load_modules='mpi/3.5.0'  # binary is created on RHEL8 node and run on RHEL8 compute node
+                                        # !!! must be adapted, if the configure wrapper does not use mpi 3.5.0.
         fi
       ;;
       xc*)

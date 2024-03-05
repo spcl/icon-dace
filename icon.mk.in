@@ -606,7 +606,7 @@ $(BUNDLED_LIBFILES): $(bundled_subdirs);
 
 # Version source file generation rule:
 version.c: force-create-version
-	$(silent_GEN)$(PERL) $(srcdir)/utils/pvcs.pl --srcdir $(srcdir)
+	$(silent_GEN)$(PERL) $(srcdir)/utils/pvcs.pl --srcdir $(srcdir) --builddir .
 
 # Directory creation rule:
 %/.dirstamp:

@@ -17,12 +17,12 @@ ulimit -c 0
 SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
 
-NVHPC_ROOT='/software/all/toolkit/nvidia_hpc_sdk/22.7/Linux_x86_64/22.7'
+NVHPC_ROOT='/software/all/toolkit/nvidia_hpc_sdk/23.9/Linux_x86_64/23.9'
 
 PGI_ROOT="${NVHPC_ROOT}/compilers"
 PGI_LIBS='-lstdc++ -llapack -lblas -lnvf'
 
-CUDA_ROOT="${NVHPC_ROOT}/cuda/11.7"
+CUDA_ROOT="${NVHPC_ROOT}/cuda/12.2"
 CUDA_LIBS='-lcudart'
 
 CUDACXX="${PGI_ROOT}/bin/nvcc"
@@ -30,21 +30,23 @@ FC="${PGI_ROOT}/bin/nvfortran"
 CC="${PGI_ROOT}/bin/nvc"
 AR='/usr/bin/ar'
 
-MPI_ROOT="${NVHPC_ROOT}/comm_libs/openmpi/openmpi-3.1.5/"
-# MPI_ROOT="${NVHPC_ROOT}/comm_libs/openmpi4/openmpi-4.0.5/"
+
+#MPI_ROOT="${NVHPC_ROOT}/comm_libs/openmpi/openmpi-3.1.5/" # OpenMPI 3.1.5
+#MPI_ROOT="${NVHPC_ROOT}/comm_libs/12.2/openmpi4/openmpi-4.1.5/" # OpenMPI 4.1.5
+MPI_ROOT="${NVHPC_ROOT}/comm_libs/12.2/hpcx/hpcx-2.16/ompi/" # hpcx 2.16
 MPI_FORTRAN_MOD_DIR="${MPI_ROOT}/lib"
 MPI_LIBS='-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi'
 
-HDF5_ROOT='/software/all/lib/hdf5/1.12_nvidia_22.7_serial'
+HDF5_ROOT='/software/all/lib/hdf5/1.12_nvidia_23.9_serial'
 HDF5_LIBS='-lhdf5_hl -lhdf5 -lhdf5_hl_fortran -lhdf5_fortran'
 
-NETCDF_ROOT='/software/all/lib/netcdf/4.9_serial_nvidia_22.7'
+NETCDF_ROOT='/software/all/lib/netcdf/4.9_serial_nvidia_23.9'
 NETCDF_LIBS='-lnetcdf'
 
-NETCDFF_ROOT='/software/all/lib/netcdf-fortran/4.6_serial_nvidia_22.7'
+NETCDFF_ROOT='/software/all/lib/netcdf-fortran/4.6_serial_nvidia_23.9'
 NETCDFF_LIBS='-lnetcdff'
 
-ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_nvidia_22.7'
+ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_nvidia_23.9'
 ECCODES_LIBS='-leccodes -leccodes_f90'
 
 # Libraries in /usr/lib{,64}
