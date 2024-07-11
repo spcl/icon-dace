@@ -95,7 +95,7 @@ _Release Date: 26 June 2018_
   - Fix missing communicator argument in p_bcast calls
   - Fix pointless polymorphism in `mo_jsb_tile_class.f90`
   - Fix implicit (re-)allocation on assignment
-  
+
     For performance reasons it is better not to use automatic reallocation of left-hand side (e.g. realloc-lhs compiler option for intel)
   - Use correct character length for version string
 

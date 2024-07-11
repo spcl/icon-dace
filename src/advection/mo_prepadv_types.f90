@@ -36,6 +36,8 @@ MODULE mo_prepadv_types
                               !< averaged over dynamics substeps
       mass_flx_ic(:,:,:) ,  & !< mass flux at half level centers [kg/m^2/s]
                               !< averaged over dynamics substeps
+      vol_flx_ic(:,:,:) ,   & !< volume flux at half level centers [m/s]
+                              !< averaged over dynamics substeps
       vn_traj    (:,:,:) ,  & !< horizontal velocity at edges for computation of backward trajectories [m/s]
                               !< averaged over dynamics substeps
       q_int      (:,:,:) ,  & !< Storage field for vertical nesting: 

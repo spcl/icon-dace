@@ -102,7 +102,7 @@ CONTAINS
     ! Get turb config
     dsl4jsb_Get_config(TURB_)
 
-    IF (.NOT. dsl4jsb_Config(TURB_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(TURB_)) RETURN
 
     IF (debug_on()) CALL message(TRIM(routine), &
          'Reading turb init vars for tile from '//TRIM(dsl4jsb_Config(TURB_)%bc_filename))
@@ -152,7 +152,7 @@ CONTAINS
     ! Get turb config
     dsl4jsb_Get_config(TURB_)
 
-    IF (.NOT. dsl4jsb_Config(TURB_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(TURB_)) RETURN
 
     ! Get turb memory of the tile
     dsl4jsb_Get_memory(TURB_)
@@ -178,7 +178,7 @@ CONTAINS
       IF (.NOT. jsbach_runs_standalone()) & ! (TODO: doesn't work for standalone ... why?)
         & dsl4jsb_var2D_onDomain(TURB_,rough_h) = turb_init_vars%rough_m
 
-      !$ACC UPDATE &
+      !$ACC UPDATE ASYNC(1) &
       !$ACC   DEVICE(dsl4jsb_var2D_onDomain(TURB_,rough_m), dsl4jsb_var2D_onDomain(TURB_,rough_m_star)) &
       !$ACC   DEVICE(dsl4jsb_var2D_onDomain(TURB_,rough_h))
 

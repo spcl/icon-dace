@@ -12,6 +12,8 @@
 
 SHELL= @SHELL@
 BUILD_ENV= @BUILD_ENV_MAKE@
+# The same build environment in the shell-compatible syntax:
+# @BUILD_ENV@
 
 DELEGATEE_FILE= icon.mk
 
@@ -86,4 +88,3 @@ snapshot:
 	rm -f "$$snapshot" && @LN_S@ @top_srcdir@ "$$snapshot"; \
 	GIT_DIR=; unset GIT_DIR; ($(GIT) -C @top_srcdir@ ls-files --recurse-submodules && $(GIT) -C @top_srcdir@ ls-files -o --exclude-standard -x "/$$snapshot") | sed "s%^%$$snapshot/%" | $(TAR) chf - -T - | BZIP2=$${BZIP2--9} bzip2 -c > "$$snapshot.tar.bz2"; \
 	rm -f "$$snapshot"
-

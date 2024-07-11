@@ -281,7 +281,7 @@ cat > NAMELIST_NWP << EOF
  inwp_gscp                   =                          2         ! cloud microphysics and precipitation
  inwp_convection             =                          1         ! convection
  lshallowconv_only           =                      .FALSE.        ! only shallow convection
- inwp_radiation              =                          1         ! radiation
+ inwp_radiation              =                          4         ! radiation
  inwp_cldcover               =                          1         ! cloud cover scheme for radiation
  inwp_turb                   =                          1         ! vertical diffusion and transfer
  inwp_satad                  =                          1         ! saturation adjustment
@@ -355,6 +355,7 @@ cat > NAMELIST_NWP << EOF
 &radiation_nml
  irad_o3                     =                          7         ! ozone climatology
  irad_aero                   =                          6         ! aerosols
+ ecrad_data_path             =  '${ICONFOLDER}/externals/ecrad/data'
  albedo_type                 =                          2         ! type of surface albedo
  vmr_co2                     =                    390.e-06
  vmr_ch4                     =                   1800.e-09

@@ -35,7 +35,8 @@ MODULE mo_turbdiff_nml
     & tur_len, pat_len, a_stab, tkhmin, tkmmin, c_diff, ltkeshs, &
     & rlam_heat, rlam_mom, rat_sea, tkesmot, frcsmot, impl_s, impl_t, q_crit, &
     & a_hshr, imode_frcsmot, lfreeslip, alpha0, alpha1, alpha0_max, alpha0_pert, &
-    & tkhmin_strat, tkmmin_strat, rat_glac, imode_charpar
+    & tkhmin_strat, tkmmin_strat, rat_glac, imode_charpar, &
+    & rat_lam
   USE mo_nml_annotate,        ONLY: temp_defaults, temp_settings
   
   IMPLICIT NONE
@@ -67,7 +68,8 @@ MODULE mo_turbdiff_nml
     & rlam_heat, rlam_mom, rat_sea, rat_glac, tkesmot, frcsmot, impl_s, impl_t, q_crit, &
     & a_hshr, imode_frcsmot, alpha0, alpha1, alpha0_max, tkhmin_strat, tkmmin_strat, &
 !   additional namelist parameters:
-    & lconst_z0, const_z0, ldiff_qi, ldiff_qs
+    & lconst_z0, const_z0, ldiff_qi, ldiff_qs, &
+    & rat_lam
 
 CONTAINS
 
@@ -151,8 +153,8 @@ CONTAINS
     ! The product rlam_heat*rat_sea should be on the order of 10; otherwise, the surface fluxes over oceans
     ! will be unrealistic. Comment the following lines if you want to do it anyway.
     !
-    IF (rlam_heat*rat_sea < 5._wp .OR. rlam_heat*rat_sea > 15._wp) THEN
-      CALL finish( TRIM(routine), 'The product of rlam_heat and rat_sea should be between 5 and 15')
+    IF (rlam_heat*rat_sea < 2._wp .OR. rlam_heat*rat_sea > 15._wp) THEN
+      CALL finish( TRIM(routine), 'The product of rlam_heat and rat_sea should be between 2 and 15')
     ENDIF
 
 
@@ -196,6 +198,7 @@ CONTAINS
       turbdiff_config(jg)%rlam_heat    = rlam_heat
       turbdiff_config(jg)%rlam_mom     = rlam_mom
       turbdiff_config(jg)%rat_sea      = rat_sea
+      turbdiff_config(jg)%rat_lam      = rat_lam
       turbdiff_config(jg)%rat_glac     = rat_glac
       turbdiff_config(jg)%tkesmot      = tkesmot
       turbdiff_config(jg)%frcsmot      = frcsmot

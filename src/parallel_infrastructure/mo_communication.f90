@@ -53,9 +53,6 @@ USE mo_util_string,          ONLY: int2string
 USE mo_fortran_tools,        ONLY: t_ptr_3d, t_ptr_3d_sp
 USE mo_communication_types,  ONLY: t_comm_pattern, t_comm_pattern_collection, &
   &                                t_p_comm_pattern
-#ifdef _OPENACC
-USE mo_mpi,                  ONLY: i_am_accel_node
-#endif
 USE mo_communication_types,  ONLY: t_comm_pattern, t_comm_pattern_collection, &
   &                                t_p_comm_pattern, xfer_list
 
@@ -505,26 +502,28 @@ CONTAINS
   !================================================================================================
   ! REAL SECTION ----------------------------------------------------------------------------------
   !
-  SUBROUTINE exchange_data_r3d(p_pat, recv, send, add)
+  SUBROUTINE exchange_data_r3d(p_pat, lacc, recv, send, add)
 
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET        :: recv(:,:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
 
-    CALL p_pat%exchange_data_r3d(recv, send, add)
+    CALL p_pat%exchange_data_r3d(lacc, recv, send, add)
 
   END SUBROUTINE exchange_data_r3d
 
 
-  SUBROUTINE exchange_data_s3d(p_pat, recv, send, add)
+  SUBROUTINE exchange_data_s3d(p_pat, lacc, recv, send, add)
 
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(sp), INTENT(INOUT), TARGET        :: recv(:,:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
 
-    CALL p_pat%exchange_data_s3d(recv, send, add)
+    CALL p_pat%exchange_data_s3d(lacc, recv, send, add)
 
   END SUBROUTINE exchange_data_s3d
 
@@ -532,51 +531,55 @@ CONTAINS
   !================================================================================================
   ! INTEGER SECTION -------------------------------------------------------------------------------
   !
-  SUBROUTINE exchange_data_i3d(p_pat, recv, send, add)
+  SUBROUTINE exchange_data_i3d(p_pat, lacc, recv, send, add)
 
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     INTEGER, INTENT(INOUT), TARGET        :: recv(:,:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
 
-    CALL p_pat%exchange_data_i3d(recv, send, add)
+    CALL p_pat%exchange_data_i3d(lacc, recv, send, add)
 
   END SUBROUTINE exchange_data_i3d
 
-  SUBROUTINE exchange_data_l3d(p_pat, recv, send)
+  SUBROUTINE exchange_data_l3d(p_pat, lacc, recv, send)
 
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     LOGICAL, INTENT(INOUT), TARGET        :: recv(:,:,:)
     LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
 
-    CALL p_pat%exchange_data_l3d(recv, send)
+    CALL p_pat%exchange_data_l3d(lacc, recv, send)
 
   END SUBROUTINE exchange_data_l3d
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
+  SUBROUTINE exchange_data_4de1(p_pat, lacc, nfields, ndim2tot, recv, send)
 
     CLASS(t_comm_pattern), POINTER :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT)           :: recv(:,:,:,:)
     REAL(dp), INTENT(IN   ), OPTIONAL :: send(:,:,:,:)
     INTEGER, INTENT(IN)           :: nfields, ndim2tot
 
-    CALL p_pat%exchange_data_4de1(nfields, ndim2tot, recv, send)
+    CALL p_pat%exchange_data_4de1(lacc, nfields, ndim2tot, recv, send)
 
   END SUBROUTINE exchange_data_4de1
 
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_grf(p_pat_coll, nfields, ndim2tot, recv1, send1, &
+  SUBROUTINE exchange_data_grf(p_pat_coll, lacc, nfields, ndim2tot, recv1, send1, &
     recv2, send2, recv3, send3, recv4, send4, &
     recv5, send5, recv6, send6, recv4d1, send4d1, &
     recv4d2, send4d2)
 
     CLASS(t_comm_pattern_collection), POINTER :: p_pat_coll
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET, OPTIONAL ::  &
       recv1(:,:,:), recv2(:,:,:), recv3(:,:,:), recv4d1(:,:,:,:), &
       recv4(:,:,:), recv5(:,:,:), recv6(:,:,:), recv4d2(:,:,:,:)
@@ -636,7 +639,7 @@ CONTAINS
       ENDIF
     ENDIF
 
-    CALL p_pat_coll%exchange_data_grf(nfields, ndim2tot, recv, send)
+    CALL p_pat_coll%exchange_data_grf(lacc, nfields, ndim2tot, recv, send)
 
   END SUBROUTINE exchange_data_grf
 
@@ -652,27 +655,29 @@ CONTAINS
   !================================================================================================
   ! REAL SECTION ----------------------------------------------------------------------------------
   !
-  SUBROUTINE exchange_data_r2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE exchange_data_r2d(p_pat, lacc, recv, send, add, l_recv_exists)
     !
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET        :: recv(:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
 
-    CALL p_pat%exchange_data_r2d(recv, send, add, l_recv_exists)
+    CALL p_pat%exchange_data_r2d(lacc, recv, send, add, l_recv_exists)
 
   END SUBROUTINE exchange_data_r2d
 
-  SUBROUTINE exchange_data_s2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE exchange_data_s2d(p_pat, lacc, recv, send, add, l_recv_exists)
     !
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(sp), INTENT(INOUT), TARGET        :: recv(:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
 
-    CALL p_pat%exchange_data_s2d(recv, send, add, l_recv_exists)
+    CALL p_pat%exchange_data_s2d(lacc, recv, send, add, l_recv_exists)
 
   END SUBROUTINE exchange_data_s2d
 
@@ -680,37 +685,40 @@ CONTAINS
   !================================================================================================
   ! INTEGER SECTION -------------------------------------------------------------------------------
   !
-  SUBROUTINE exchange_data_i2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE exchange_data_i2d(p_pat, lacc, recv, send, add, l_recv_exists)
     !
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     INTEGER, INTENT(INOUT), TARGET        :: recv(:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
 
-    CALL p_pat%exchange_data_i2d(recv, send, add, l_recv_exists)
+    CALL p_pat%exchange_data_i2d(lacc, recv, send, add, l_recv_exists)
 
   END SUBROUTINE exchange_data_i2d
 
-  SUBROUTINE exchange_data_l2d(p_pat, recv, send, l_recv_exists)
+  SUBROUTINE exchange_data_l2d(p_pat, lacc, recv, send, l_recv_exists)
     !
     CLASS(t_comm_pattern), POINTER :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     LOGICAL, INTENT(INOUT), TARGET        :: recv(:,:)
     LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
 
-    CALL p_pat%exchange_data_l2d(recv, send, l_recv_exists)
+    CALL p_pat%exchange_data_l2d(lacc, recv, send, l_recv_exists)
 
   END SUBROUTINE exchange_data_l2d
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_mult(p_pat, nfields, ndim2tot, recv1, send1, recv2, send2,   &
+  SUBROUTINE exchange_data_mult(p_pat, lacc, nfields, ndim2tot, recv1, send1, recv2, send2,   &
     recv3, send3, recv4, send4,  recv5, send5, recv6, send6, recv7, send7,              &
     recv4d, send4d, nshift, recv3d_arr, send3d_arr)
 
     CLASS(t_comm_pattern), POINTER, INTENT(in) :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET, OPTIONAL ::  &
       recv1(:,:,:), recv2(:,:,:), recv3(:,:,:), recv4(:,:,:), recv5(:,:,:), recv6(:,:,:), &
       recv7(:,:,:), recv4d(:,:,:,:)
@@ -797,9 +805,9 @@ CONTAINS
     ENDIF
 
     IF (lsend) THEN
-      CALL p_pat%exchange_data_mult(ndim2tot, recv, send, nshift)
+      CALL p_pat%exchange_data_mult(lacc, ndim2tot, recv, send, nshift)
     ELSE
-      CALL p_pat%exchange_data_mult(ndim2tot, recv, nshift=nshift)
+      CALL p_pat%exchange_data_mult(lacc, ndim2tot, recv, nshift=nshift)
     END IF
 
   END SUBROUTINE exchange_data_mult
@@ -808,13 +816,14 @@ CONTAINS
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_mult_mixprec(p_pat, nfields_dp, ndim2tot_dp, nfields_sp, ndim2tot_sp,        &
+  SUBROUTINE exchange_data_mult_mixprec(p_pat, lacc, nfields_dp, ndim2tot_dp, nfields_sp, ndim2tot_sp,        &
     recv1_dp, send1_dp, recv2_dp, send2_dp, recv3_dp, send3_dp, recv4_dp, send4_dp, recv5_dp, send5_dp, &
     recv1_sp, send1_sp, recv2_sp, send2_sp, recv3_sp, send3_sp, recv4_sp, send4_sp, recv5_sp, send5_sp, &
     recv4d_dp, send4d_dp, recv4d_sp, send4d_sp, nshift)
 
     CLASS(t_comm_pattern), INTENT(INOUT) :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET, OPTIONAL ::  &
       recv1_dp(:,:,:), recv2_dp(:,:,:), recv3_dp(:,:,:), recv4_dp(:,:,:), recv5_dp(:,:,:), recv4d_dp(:,:,:,:)
     REAL(dp), INTENT(IN   ), TARGET, OPTIONAL ::  &
@@ -917,10 +926,10 @@ CONTAINS
     ENDIF
 
     IF (lsend) THEN
-      CALL p_pat%exchange_data_mult_mixprec(nfields_dp, ndim2tot_dp, &
+      CALL p_pat%exchange_data_mult_mixprec(lacc, nfields_dp, ndim2tot_dp, &
            nfields_sp, ndim2tot_sp, recv_dp, send_dp, recv_sp, send_sp, nshift)
     ELSE
-      CALL p_pat%exchange_data_mult_mixprec(nfields_dp, ndim2tot_dp, &
+      CALL p_pat%exchange_data_mult_mixprec(lacc, nfields_dp, ndim2tot_dp, &
            nfields_sp, ndim2tot_sp, recv_dp=recv_dp, recv_sp=recv_sp, &
            nshift=nshift)
     END IF

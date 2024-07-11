@@ -701,7 +701,7 @@ streamReadVar
 \fi
 }}
 \begin{verbatim}
-    void streamReadVar(int streamID, int varID, double *data, SizeType *nmiss);
+    void streamReadVar(int streamID, int varID, double *data, SizeType *numMissVals);
 \end{verbatim}
 
 Read a variable
@@ -716,7 +716,7 @@ streamReadVarF
 \fi
 }}
 \begin{verbatim}
-    void streamReadVar(int streamID, int varID, float *data, SizeType *nmiss);
+    void streamReadVar(int streamID, int varID, float *data, SizeType *numMissVals);
 \end{verbatim}
 
 Read a variable
@@ -732,7 +732,7 @@ streamReadVarSlice
 }}
 \begin{verbatim}
     void streamReadVarSlice(int streamID, int varID, int levelID, double *data, 
-                            SizeType *nmiss);
+                            SizeType *numMissVals);
 \end{verbatim}
 
 Read a horizontal slice of a variable
@@ -748,7 +748,7 @@ streamReadVarSliceF
 }}
 \begin{verbatim}
     void streamReadVarSliceF(int streamID, int varID, int levelID, float *data, 
-                             SizeType *nmiss);
+                             SizeType *numMissVals);
 \end{verbatim}
 
 Read a horizontal slice of a variable
@@ -763,7 +763,8 @@ streamWriteVar
 \fi
 }}
 \begin{verbatim}
-    void streamWriteVar(int streamID, int varID, const double *data, SizeType nmiss);
+    void streamWriteVar(int streamID, int varID, const double *data, 
+                        SizeType numMissVals);
 \end{verbatim}
 
 Write a variable
@@ -778,7 +779,8 @@ streamWriteVarF
 \fi
 }}
 \begin{verbatim}
-    void streamWriteVarF(int streamID, int varID, const float *data, SizeType nmiss);
+    void streamWriteVarF(int streamID, int varID, const float *data, 
+                         SizeType numMissVals);
 \end{verbatim}
 
 Write a variable
@@ -794,7 +796,7 @@ streamWriteVarSlice
 }}
 \begin{verbatim}
     void streamWriteVarSlice(int streamID, int varID, int levelID, const double *data, 
-                             SizeType nmiss);
+                             SizeType numMissVals);
 \end{verbatim}
 
 Write a horizontal slice of a variable
@@ -810,7 +812,7 @@ streamWriteVarSliceF
 }}
 \begin{verbatim}
     void streamWriteVarSliceF(int streamID, int varID, int levelID, const float *data, 
-                              SizeType nmiss);
+                              SizeType numMissVals);
 \end{verbatim}
 
 Write a horizontal slice of a variable

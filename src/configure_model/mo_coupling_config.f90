@@ -23,6 +23,8 @@ MODULE mo_coupling_config
   LOGICAL :: config_coupled_to_atmo      = .FALSE.
   LOGICAL :: config_coupled_to_hydrodisc = .FALSE.
   LOGICAL :: config_coupled_to_output    = .FALSE.
+  LOGICAL :: config_coupled_to_aero      = .FALSE.
+  LOGICAL :: config_coupled_to_o3        = .FALSE.
 
 
   ! variables
@@ -31,6 +33,8 @@ MODULE mo_coupling_config
   PUBLIC :: config_coupled_to_atmo
   PUBLIC :: config_coupled_to_hydrodisc
   PUBLIC :: config_coupled_to_output
+  PUBLIC :: config_coupled_to_aero
+  PUBLIC :: config_coupled_to_o3
 
   ! functions
   PUBLIC :: is_coupled_run
@@ -39,6 +43,8 @@ MODULE mo_coupling_config
   PUBLIC :: is_coupled_to_atmo
   PUBLIC :: is_coupled_to_hydrodisc
   PUBLIC :: is_coupled_to_output
+  PUBLIC :: is_coupled_to_aero
+  PUBLIC :: is_coupled_to_o3
 
 CONTAINS
 
@@ -49,7 +55,9 @@ CONTAINS
       &              config_coupled_to_waves .OR.     &
       &              config_coupled_to_atmo  .OR.     &
       &              config_coupled_to_hydrodisc .OR. &
-      &              config_coupled_to_output
+      &              config_coupled_to_output .OR.    &
+      &              config_coupled_to_aero .OR.      &
+      &              config_coupled_to_o3
 
   END FUNCTION is_coupled_run
 
@@ -75,18 +83,32 @@ CONTAINS
   END FUNCTION is_coupled_to_atmo
 
   !------------------------------------------------------------------------
-  !------------------------------------------------------------------------
   LOGICAL FUNCTION is_coupled_to_hydrodisc()
 
     is_coupled_to_hydrodisc = config_coupled_to_hydrodisc
 
   END FUNCTION is_coupled_to_hydrodisc
 
+  !------------------------------------------------------------------------
   LOGICAL FUNCTION is_coupled_to_output()
 
     is_coupled_to_output = config_coupled_to_output
 
   END FUNCTION is_coupled_to_output
+
+  !------------------------------------------------------------------------
+  LOGICAL FUNCTION is_coupled_to_aero()
+
+    is_coupled_to_aero = config_coupled_to_aero
+
+  END FUNCTION is_coupled_to_aero
+
+  !------------------------------------------------------------------------
+  LOGICAL FUNCTION is_coupled_to_o3()
+
+    is_coupled_to_o3 = config_coupled_to_o3
+
+  END FUNCTION is_coupled_to_o3
 
   !------------------------------------------------------------------------
 

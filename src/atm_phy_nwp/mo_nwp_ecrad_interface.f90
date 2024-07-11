@@ -58,7 +58,7 @@ MODULE mo_nwp_ecrad_interface
                                    &   iRadAeroNone, iRadAeroConst, iRadAeroTegen,            &
                                    &   iRadAeroART, iRadAeroConstKinne, iRadAeroKinne,        &
                                    &   iRadAeroVolc, iRadAeroKinneVolc,  iRadAeroKinneVolcSP, &
-                                   &   iRadAeroKinneSP, iRadAeroCAMSclim
+                                   &   iRadAeroKinneSP, iRadAeroCAMSclim, iRadAeroCAMStd
   USE mo_phys_nest_utilities,    ONLY: t_upscale_fields, upscale_rad_input, downscale_rad_output
   USE mtime,                     ONLY: datetime
 #ifdef __ECRAD
@@ -253,7 +253,7 @@ CONTAINS
 
     IF ( ecrad_conf%use_aerosols ) THEN
       ! Allocate aerosol container
-      IF ( irad_aero == iRadAeroCAMSclim ) THEN
+      IF ( irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
         CALL ecrad_aerosol%allocate( nproma_sub, 1, nlev, ecrad_conf%n_aerosol_types)
         ALLOCATE(ptr_camsaermr(n_camsaermr))
       ELSE
@@ -302,7 +302,7 @@ CONTAINS
           ptr_reff_qi => prm_diag%reff_qi(jcs:jce,:,jb)
         ENDIF
 
-        IF (irad_aero == iRadAeroCAMSclim) THEN
+        IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
           DO jt = 1, n_camsaermr
             ptr_camsaermr(jt)%p => pt_diag%camsaermr(jcs:jce,:,jb,jt)
           ENDDO
@@ -401,7 +401,7 @@ CONTAINS
               &                         zaeq3(jcs:jce,:,jb), zaeq4(jcs:jce,:,jb),  &
               &                         zaeq5(jcs:jce,:,jb),                       &
               &                         ecrad_conf, ecrad_aerosol, lacc=.TRUE.)
-          CASE(iRadAeroCAMSclim)
+          CASE(iRadAeroCAMSclim,iRadAeroCAMStd)
             ! Fill aerosol configuration type with CAMS 3D climatology/forecasted aerosols
             CALL nwp_ecrad_prep_aerosol(1, nlev, i_startidx_rad, i_endidx_rad,      &
               &                         ecrad_aerosol, ptr_camsaermr)
@@ -509,7 +509,7 @@ CONTAINS
       CALL opt_ptrs_sw(jw)%finalize()
     ENDDO
     DEALLOCATE( opt_ptrs_lw, opt_ptrs_sw )
-    IF (irad_aero == iRadAeroCAMSclim) DEALLOCATE( ptr_camsaermr )
+    IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) DEALLOCATE( ptr_camsaermr )
 !$OMP END PARALLEL
 
     !$ACC END DATA
@@ -869,7 +869,7 @@ CONTAINS
       ENDDO
     END IF
 
-     IF (irad_aero == iRadAeroCAMSclim) THEN
+     IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
        DO jt = 1, n_camsaermr
          CALL input_extra_flds%assign(pt_diag%camsaermr(:,:,:,jt), irg_camsaermr(jt))
        ENDDO
@@ -903,37 +903,37 @@ CONTAINS
 !$OMP PARALLEL
 
     ! Initialize output fields
-    CALL init(zrg_trsolall(:,:,:), 0._wp, opt_acc_async=.TRUE.)
-    CALL init(zrg_lwflxall(:,:,:), 0._wp, opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_up_toa(:,:)     , opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_up_sfc(:,:)     , opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_nir_sfc(:,:)    , opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_vis_sfc(:,:)    , opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_par_sfc(:,:)    , opt_acc_async=.TRUE.)
-    CALL init(zrg_fr_nir_sfc_diff(:,:)  , opt_acc_async=.TRUE.)
-    CALL init(zrg_fr_vis_sfc_diff(:,:)  , opt_acc_async=.TRUE.)
-    CALL init(zrg_fr_par_sfc_diff(:,:)  , opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_dn_sfc_diff(:,:), opt_acc_async=.TRUE.)
-    CALL init(zrg_trsol_clr_sfc(:,:)    , opt_acc_async=.TRUE.)
-    CALL init(zrg_lwflx_up_sfc(:,:)     , opt_acc_async=.TRUE.)
-    CALL init(zrg_lwflx_clr_sfc(:,:)    , opt_acc_async=.TRUE.)
-    CALL init(zrg_aclcov(:,:)           , opt_acc_async=.TRUE.)
+    CALL init(zrg_trsolall(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_lwflxall(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_up_toa(:,:)     , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_up_sfc(:,:)     , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_nir_sfc(:,:)    , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_vis_sfc(:,:)    , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_par_sfc(:,:)    , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_fr_nir_sfc_diff(:,:)  , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_fr_vis_sfc_diff(:,:)  , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_fr_par_sfc_diff(:,:)  , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_dn_sfc_diff(:,:), lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_trsol_clr_sfc(:,:)    , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_lwflx_up_sfc(:,:)     , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_lwflx_clr_sfc(:,:)    , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_aclcov(:,:)           , lacc=.TRUE., opt_acc_async=.TRUE.)
 #ifdef _OPENACC
-    CALL init(zrg_cosmu0                , opt_acc_async=.TRUE.)
-    CALL init(zrg_tsfc                  , opt_acc_async=.TRUE.)
-    CALL init(zrg_emis_rad              , opt_acc_async=.TRUE.)
-    CALL init(zrg_albdif                , opt_acc_async=.TRUE.)
+    CALL init(zrg_cosmu0                , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_tsfc                  , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_emis_rad              , lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(zrg_albdif                , lacc=.TRUE., opt_acc_async=.TRUE.)
 #endif
 
     IF (atm_phy_nwp_config(jg)%l_3d_rad_fluxes) THEN
-      CALL init(zrg_lwflx_up    (:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_lwflx_dn    (:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_swflx_up    (:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_swflx_dn    (:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_lwflx_up_clr(:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_lwflx_dn_clr(:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_swflx_up_clr(:,:,:), 0._wp, opt_acc_async=.TRUE.)
-      CALL init(zrg_swflx_dn_clr(:,:,:), 0._wp, opt_acc_async=.TRUE.)
+      CALL init(zrg_lwflx_up    (:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_lwflx_dn    (:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_swflx_up    (:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_swflx_dn    (:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_lwflx_up_clr(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_lwflx_dn_clr(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_swflx_up_clr(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(zrg_swflx_dn_clr(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
     END IF
 
 !$OMP DO PRIVATE(jb, i_startidx, i_endidx), ICON_OMP_GUIDED_SCHEDULE
@@ -1020,7 +1020,7 @@ CONTAINS
 
     IF ( ecrad_conf%use_aerosols ) THEN
       ! Allocate aerosol container
-      IF ( irad_aero == iRadAeroCAMSclim) THEN
+      IF ( irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
         CALL ecrad_aerosol%allocate( nproma_sub, 1, nlev_rg, ecrad_conf%n_aerosol_types)
         ALLOCATE(ptr_camsaermr(n_camsaermr))
       ELSE
@@ -1090,7 +1090,7 @@ CONTAINS
         IF ( irg_reff_qs > 0 ) ptr_reff_qs => zrg_extra_reff(jcs:jce,:,jb,irg_reff_qs)
         IF ( irg_reff_qg > 0 ) ptr_reff_qg => zrg_extra_reff(jcs:jce,:,jb,irg_reff_qg)
 
-        IF (irad_aero == iRadAeroCAMSclim) THEN
+        IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
           IF ( ALL(irg_camsaermr(:)  > 0) ) THEN
             DO jt = 1, n_camsaermr
               ptr_camsaermr(jt)%p  => zrg_extra_flds(jcs:jce,:,jb,irg_camsaermr(jt))
@@ -1174,7 +1174,7 @@ CONTAINS
               &                         zrg_aeq3(jcs:jce,:,jb), zrg_aeq4(jcs:jce,:,jb),   &
               &                         zrg_aeq5(jcs:jce,:,jb),                           &
               &                         ecrad_conf, ecrad_aerosol, lacc=.TRUE.)
-          CASE(iRadAeroCAMSclim)
+          CASE(iRadAeroCAMSclim,iRadAeroCAMStd)
             ! Fill aerosol configuration type with CAMS 3D climatology/forecasted aerosols
             CALL nwp_ecrad_prep_aerosol(1, nlev_rg, i_startidx_rad, i_endidx_rad,  &
               &                         ecrad_aerosol, ptr_camsaermr)  
@@ -1254,7 +1254,7 @@ CONTAINS
       CALL opt_ptrs_sw(jw)%finalize()
     ENDDO
     DEALLOCATE( opt_ptrs_lw, opt_ptrs_sw )
-    IF (irad_aero == iRadAeroCAMSclim) DEALLOCATE( ptr_camsaermr )
+    IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) DEALLOCATE( ptr_camsaermr )
 !$OMP END PARALLEL
 
 ! Downscale radiative fluxes from reduced radiation grid to full grid

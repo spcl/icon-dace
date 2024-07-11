@@ -16,6 +16,7 @@
 MODULE mo_art_decay_radioact
 ! ICON
   USE mo_kind,                          ONLY: wp
+  USE mo_math_constants,                ONLY: ln2
 
   IMPLICIT NONE
 
@@ -47,14 +48,12 @@ SUBROUTINE art_decay_radioact(dtime,istart,iend,nlev,halflife_tracer,tracer)
     &  tracer(:,:)                       !< concentration of the radioactive species
 ! Local variables
   REAL(wp)                          :: &
-    &  decay_rate,                     & !< rate of radioactive decay
-    &  ln2                               !< logarithmus naturalis of two
+    &  decay_rate                      !< rate of radioactive decay
   INTEGER                           :: &
     &  jc, jk                            !< loop indizes
 
   IF(halflife_tracer > 0.0_wp) THEN
 
-    ln2 = 0.69314718056_wp
     decay_rate = ln2 / halflife_tracer
 
     DO jk=1,nlev

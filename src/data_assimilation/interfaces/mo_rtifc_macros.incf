@@ -48,6 +48,14 @@
 #undef _RTTOV_VERSION
 #endif
 
+#ifndef _RTTOV_MINOR
+#if (_RTTOV_VERSION == 13) && defined(_DACE_) && !defined(__ICON__)
+#define _RTTOV_MINOR 2
+#else
+#define _RTTOV_MINOR 0
+#endif
+#endif
+
 ! Set macros for RTTOV coefficient distribution
 #if (_RTTOV_VERSION <= 0) || defined(NOMPI)
 #undef _RTIFC_DISTRIBCOEF

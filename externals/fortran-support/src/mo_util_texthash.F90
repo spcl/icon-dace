@@ -30,7 +30,7 @@ MODULE mo_util_texthash
 CONTAINS
 
   FUNCTION sel_char(key, routine, err_msg) RESULT(ptr)
-    CLASS(*), POINTER, INTENT(in) :: key
+    CLASS(*), POINTER, INTENT(IN) :: key
     CHARACTER(*), INTENT(IN) :: routine, err_msg
     CHARACTER(:), POINTER :: ptr
 
@@ -74,7 +74,7 @@ CONTAINS
   END FUNCTION text_hash
 
   LOGICAL FUNCTION text_isEqual(keyA, keyB) RESULT(is_equal)
-    CLASS(*), POINTER, INTENT(in) :: keyA, keyB
+    CLASS(*), POINTER, INTENT(IN) :: keyA, keyB
     CHARACTER(*), PARAMETER :: routine = modname//":text_isEqual_cs"
     CHARACTER(:), POINTER :: keyA_p, keyB_p
 

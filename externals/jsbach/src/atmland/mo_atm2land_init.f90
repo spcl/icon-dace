@@ -12,7 +12,7 @@
 !> ---------------------------------------
 !>
 MODULE mo_atm2land_init
-#ifndef __NO_JSBACH__
+#ifndef __NO_QUINCY__
 
   USE mo_kind,              ONLY: wp
   USE mo_exception,         ONLY: message
@@ -41,8 +41,8 @@ CONTAINS
 
 
     ! Use of process configurations (t_PROC_config)
-    !dsl4jsb_Use_config(A2L_)    
-    
+    !dsl4jsb_Use_config(A2L_)
+
     ! USE PROC_memory
     dsl4jsb_Use_memory(A2L_)
 
@@ -61,10 +61,11 @@ CONTAINS
     !dsl4jsb_Def_config(A2L_)
     dsl4jsb_Def_memory(A2L_)
     ! Declare pointers to variables in memory
-    !dsl4jsb_Real2D_onDomain      :: swpar_fdiffuse
+    !dsl4jsb_Real2D_onDomain      :: fract_par_diffuse
     ! ---------------------------
     ! 0.4 Process Activity, Debug Option
-    IF (.NOT. tile%Is_process_active(A2L_)) RETURN
+    IF (ASSOCIATED(tile%parent_tile)) RETURN ! should only run on the uppermost tile of the hierarchy
+
     IF (debug_on()) CALL message(TRIM(routine), 'Setting initial conditions of atm2land memory (quincy) for tile '// &
       &                          TRIM(tile%name))
     ! ---------------------------
@@ -75,7 +76,7 @@ CONTAINS
     ! Get process memories
     dsl4jsb_Get_memory(A2L_)
     ! Get process variables (Set pointers to variables in memory)
-    !dsl4jsb_Get_var2D_onDomain(A2L_, swpar_fdiffuse)
+    !dsl4jsb_Get_var2D_onDomain(A2L_, fract_par_diffuse)
 
 
     ! ------------------------------------------------------------------------------------------------------------
@@ -83,7 +84,7 @@ CONTAINS
     ! ------------------------------------------------------------------------------------------------------------
 
 
-    !swpar_fdiffuse(:,:)               = def_fdiffuse
+    !fract_par_diffuse(:,:)               = def_fdiffuse
 
 
   END SUBROUTINE atm2land_init

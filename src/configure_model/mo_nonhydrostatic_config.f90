@@ -39,6 +39,7 @@ MODULE mo_nonhydrostatic_config
     ! related runtime control variables for adaptive ndyn_substeps:
     INTEGER :: ndyn_substeps_max        ! maximum number of dynamics substeps per fast-physics step
     INTEGER :: ndyn_substeps_var(max_dom)! current (variable) number of dynamics substeps per fast-physics step
+    INTEGER :: nlev_hcfl(max_dom)       ! number of model levels (counted from top) for which the horizontal CFL number is monitored in addition
 
     LOGICAL :: lextra_diffu             ! if true: apply additional diffusion at grid points close
                                         ! to the CFL stability limit for vertical advection
@@ -183,7 +184,7 @@ CONTAINS
     CALL message(routine, message_text)
 
     ! initialization of control variables derived from ndyn_substeps
-    ndyn_substeps_max    = ndyn_substeps + 5
+    ndyn_substeps_max    = ndyn_substeps + 7
     ndyn_substeps_var(:) = ndyn_substeps !** needs to be saved in restart attributes **
 
 

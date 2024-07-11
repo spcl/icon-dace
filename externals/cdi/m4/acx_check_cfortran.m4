@@ -8,7 +8,7 @@ dnl Version: 1.0
 dnl Keywords:
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
-dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
+dnl URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are  permitted provided that the following conditions are
@@ -260,7 +260,9 @@ FCALLSCSUB0(errExit,ERR_EXIT,err_exit)
               [_ACX_CHECK_CFORTRAN_FC],
               [acx_cv_cfortran_works=${acx_cv_cfortran_works-yes}])])
          AC_PROVIDE_IFELSE([AC_PROG_F77],
-           [AS_IF([test -n "$F77" -a X"$F77" != Xno AC_PROVIDE_IFELSE([AC_PROG_FC],[-a \( x"$acx_cv_cfortran_works" = xyes -o -z "$FC" -o X"$FC" = Xno \)])],[_ACX_CHECK_CFORTRAN_F77])])
+           [AS_IF([test -n "$F77" -a X"$F77" != Xno AC_PROVIDE_IFELSE(
+              [AC_PROG_FC],[-a \( x"$acx_cv_cfortran_works" = xyes dnl
+-o -z "$FC" -o X"$FC" = Xno \)])],[_ACX_CHECK_CFORTRAN_F77])])
          rm -f "conftest_c.$ac_objext" "conftest_c.$OBJEXT"
         ],
         [acx_cv_cfortran_works="compiling with cfortran.h failed"])
@@ -282,6 +284,6 @@ FCALLSCSUB0(errExit,ERR_EXIT,err_exit)
 dnl
 dnl Local Variables:
 dnl mode: autoconf
-dnl license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+dnl license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 dnl license-default: "bsd"
 dnl End:

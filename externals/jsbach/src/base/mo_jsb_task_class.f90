@@ -37,11 +37,15 @@ MODULE mo_jsb_task_class
   TYPE t_jsb_task_options
     REAL(wp)                  :: dtime   = -1._wp
     REAL(wp)                  :: steplen = -1._wp
+    REAL(wp)                  :: alpha   = -1._wp !< Implicitness factor
     TYPE(t_datetime), POINTER :: current_datetime
     INTEGER                   :: iblk    = -1  ! Number of current block (chunk)
     INTEGER                   :: ics     = -1  ! Index of chunk start
     INTEGER                   :: ice     = -1  ! Index of chunk end
     INTEGER                   :: nc      = -1  ! Length of chunk
+    INTEGER                   :: nsoil_e = -1  !< Number of soil layers for energy
+    INTEGER                   :: nsoil_w = -1  !< Number of soil layers for water
+    INTEGER                   :: nsnow_e = -1  !< Number of snow layers for energy
   END TYPE t_jsb_task_options
 
 !!$  TYPE, EXTENDS(t_Message) :: t_jsb_task_msg
@@ -118,7 +122,7 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Do_it'
 
-    ! If process the task belongs to is not active on this tile, do nothing.
+    ! If process the task belongs to is not to be calculated or aggregated on this tile, do nothing.
     IF (.NOT. tile%Is_process_active(this%process_id)) RETURN
 
     SELECT TYPE (this)

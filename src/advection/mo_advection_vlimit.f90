@@ -23,9 +23,6 @@ MODULE mo_advection_vlimit
   USE mo_kind,                ONLY: wp
   USE mo_math_constants,      ONLY: dbl_eps
   USE mo_parallel_config,     ONLY: nproma, p_test_run
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -109,11 +106,10 @@ CONTAINS
   !-------------------------------------------------------------------------
 
 
-    !$ACC DATA CREATE(r_m) PRESENT(p_cc, p_rhodz_now, p_mflx_tracer_v) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC DATA CREATE(r_m) PRESENT(p_cc, p_rhodz_now, p_mflx_tracer_v)
 
     IF (p_test_run) THEN
-      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
       r_m = 0._wp
       !$ACC END KERNELS
     ENDIF
@@ -121,7 +117,7 @@ CONTAINS
     !
     ! 1. Compute total outward mass (loop over full levels)
     !
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG COLLAPSE(2) PRIVATE(jkp1, p_m)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
@@ -146,7 +142,7 @@ CONTAINS
     ! 2. Limit outward fluxes (loop over half levels)
     !    Choose r_m depending on the sign of p_mflx_tracer_v
     !
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(jkm1, z_signum) COLLAPSE(2)
     DO jk = slev+1, elev
       DO jc = i_startidx, i_endidx
@@ -225,15 +221,14 @@ CONTAINS
     !-----------------------------------------------------------------------
 
     !$ACC DATA PRESENT(p_cc, p_face, p_face_up, p_face_low) &
-    !$ACC   CREATE(z_delta, z_a6i, l_limit) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   CREATE(z_delta, z_a6i, l_limit)
 
     ! selective limitation yes or no
     IF (p_ivlimit_selective == 1) THEN
       ! 
       elev_slim = MIN(elev+1,UBOUND(p_face,2))
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jkp1, jkp2, jkp3, jkm1, jkm2, is_main_crit) COLLAPSE(2)
       DETECT_SEL:DO jk = slev, elev
         DO jc = i_startidx, i_endidx
@@ -262,7 +257,7 @@ CONTAINS
       ENDDO DETECT_SEL
       !$ACC END PARALLEL
     ELSE
-      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jkp1) COLLAPSE(2)
       DETECT:DO jk = slev, elev
         DO jc = i_startidx, i_endidx
@@ -284,7 +279,7 @@ CONTAINS
     ENDIF  ! p_ivlimit_selective
 
 
-    !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(z_delta, z_a6i, l_limit) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(jkp1, q_face_up, q_face_low) COLLAPSE(2)
     LIMIT:DO jk = slev, elev
       DO jc = i_startidx, i_endidx
@@ -396,16 +391,14 @@ CONTAINS
   !-------------------------------------------------------------------------
 
 
-    !$ACC DATA PRESENT(p_cc, p_face, p_face_up, p_face_low) &
-    !$ACC   CREATE(l_limit) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC DATA PRESENT(p_cc, p_face, p_face_up, p_face_low) CREATE(l_limit)
 
     ! selective limitation yes or no
     IF (p_ivlimit_selective == 1) THEN
       ! 
       elev_slim = MIN(elev+1,UBOUND(p_face,2))
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jkp1, jkp2, jkp3, jkm1, jkm2, z_delta, z_a6i, is_main_crit) COLLAPSE(2)
       DETECT_SEL:DO jk = slev, elev
         DO jc = i_startidx, i_endidx
@@ -434,7 +427,7 @@ CONTAINS
       ENDDO DETECT_SEL
       !$ACC END PARALLEL
     ELSE
-      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jkp1, z_delta, z_a6i) COLLAPSE(2)
       DETECT:DO jk = slev, elev
         DO jc = i_startidx, i_endidx
@@ -456,7 +449,7 @@ CONTAINS
     ENDIF  ! p_ivlimit_selective
 
 
-    !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(l_limit) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(jkp1, q_face_up, q_face_low) COLLAPSE(2)
     LIMIT:DO jk = slev, elev
       DO jc = i_startidx, i_endidx
@@ -605,7 +598,7 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(ikm1, ikp1, p_cc_min, p_cc_max) COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
@@ -666,7 +659,7 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(ikm1, ikp1, p_cc_min) COLLAPSE(2)
     DO jk = slev, elev
       DO jc = i_startidx, i_endidx
@@ -739,7 +732,7 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(ikm2, ikm1, ikp1, l_limit, mc_slope_u, mc_slope_l, faceval_u, faceval_l) &
     !$ACC   COLLAPSE(2)
     DO jk= slev, elev
@@ -851,7 +844,7 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(ikm2, ikm1, ikp1, l_limit, mc_slope_u, mc_slope_l, faceval_u, faceval_l) &
     !$ACC   COLLAPSE(2)
     DO jk= slev, elev

@@ -58,12 +58,12 @@
 
 #include "core/ppm_xfuncs.h"
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_redist_common.h"
 
 int main(int argc, char **argv) {
 
-  // init mpi
-  xt_mpi_call(MPI_Init(&argc, &argv), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 
@@ -115,6 +115,8 @@ int main(int argc, char **argv) {
         mismatch |= (recv_buf[(size_t)i * msg_size + j] != i);
     if (mismatch)
       PUT_ERR("recv_buf[i * msg_size + j] != i\n");
+    free(send_buf);
+    free(recv_buf);
   }
 
   { // each process receives and sends data from/to every other process with

@@ -301,8 +301,9 @@ cdiIterator_serialize(CdiIterator *me)
     }
 
   const char *ftypeStr = fileType2String(me->filetype), *advStr = me->isAdvanced ? kAdvancedString : kUnadvancedString;
-  char *result = (char *) Malloc(strlen(ftypeStr) + 1 + strlen(advStr) + 1 + strlen(subclassDescription) + 1);
-  sprintf(result, "%s %s %s", ftypeStr, advStr, subclassDescription);
+  size_t len = strlen(ftypeStr) + 1 + strlen(advStr) + 1 + strlen(subclassDescription) + 1;
+  char *result = (char *) Malloc(len);
+  snprintf(result, len, "%s %s %s", ftypeStr, advStr, subclassDescription);
   Free(subclassDescription);
   return result;
 }
@@ -955,18 +956,18 @@ cdiIterator_inqGridId(CdiIterator *me)
 @Function cdiIterator_readField
 @Title Read the whole field into a double buffer
 
-@Prototype void cdiIterator_readField(CdiIterator *me, double *buffer, SizeType *nmiss)
+@Prototype void cdiIterator_readField(CdiIterator *me, double *buffer, SizeType *numMissVals)
 @Parameter
     @item iterator The iterator to operate on.
     @item buffer A pointer to the double array that the data should be written to.
-    @item nmiss A pointer to a variable where the count of missing values will be stored. May be NULL.
+    @item numMissVals A pointer to a variable where the count of missing values will be stored. May be NULL.
 
 @Description
     It is assumed that the caller first analyses the return value of cdiIterator_inqGridId to determine the required size of the
 buffer. Failing to do so results in undefined behavior. You have been warned.
 */
 void
-cdiIterator_readField(CdiIterator *me, double *buffer, SizeType *nmiss)
+cdiIterator_readField(CdiIterator *me, double *buffer, SizeType *numMissVals)
 {
   size_t numMiss = 0;
   sanityCheck(me);
@@ -994,25 +995,25 @@ cdiIterator_readField(CdiIterator *me, double *buffer, SizeType *nmiss)
     default: Error(kUnexpectedFileTypeMessage);
     }
 
-  *nmiss = (SizeType) numMiss;
+  *numMissVals = (SizeType) numMiss;
 }
 
 /*
 @Function cdiIterator_readFieldF
 @Title Read the whole field into a double buffer
 
-@Prototype void cdiIterator_readFieldF(CdiIterator  me, float *buffer, SizeType *nmiss)
+@Prototype void cdiIterator_readFieldF(CdiIterator  me, float *buffer, SizeType *numMissVals)
 @Parameter
     @item iterator The iterator to operate on.
     @item buffer   A pointer to the double array that the data should be written to.
-    @item nmiss    A pointer to a variable where the count of missing values will be stored. May be NULL.
+    @item numMissVals    A pointer to a variable where the count of missing values will be stored. May be NULL.
 
 @Description
     It is assumed that the caller first analyses the return value of cdiIterator_inqGridId to determine the required size of the
 buffer. Failing to do so results in undefined behavior. You have been warned.
 */
 void
-cdiIterator_readFieldF(CdiIterator *me, float *buffer, SizeType *nmiss)
+cdiIterator_readFieldF(CdiIterator *me, float *buffer, SizeType *numMissVals)
 {
   size_t numMiss = 0;
   sanityCheck(me);
@@ -1040,7 +1041,7 @@ cdiIterator_readFieldF(CdiIterator *me, float *buffer, SizeType *nmiss)
     default: Error(kUnexpectedFileTypeMessage);
     }
 
-  *nmiss = (SizeType) numMiss;
+  *numMissVals = (SizeType) numMiss;
 }
 
 /*

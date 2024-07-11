@@ -5,7 +5,6 @@
 int
 main(void)
 {
-
   // Open the input dataset
   int streamID1 = streamOpenRead("example.nc");
   if (streamID1 < 0)
@@ -17,11 +16,11 @@ main(void)
   // Get the variable list of the dataset
   int vlistID1 = streamInqVlist(streamID1);
 
-  int nvars = vlistNvars(vlistID1);
+  int numVars = vlistNvars(vlistID1);
 
   int varDataSize = 0;
   double *varData = NULL;
-  for (int varID = 0; varID < nvars; ++varID)
+  for (int varID = 0; varID < numVars; ++varID)
     {
       int varSize = vlistInqVarSize(vlistID1, varID);
       varDataSize = varSize > varDataSize ? varSize : varDataSize;
@@ -52,13 +51,13 @@ main(void)
       // Define the output time step
       streamDefTimestep(streamID2, tsID);
 
-      for (int varID = 0; varID < nvars; ++varID)
+      for (int varID = 0; varID < numVars; ++varID)
         {
-          SizeType nmiss;
+          SizeType numMissVals;
           // Read var
-          streamReadVar(streamID1, varID, varData, &nmiss);
+          streamReadVar(streamID1, varID, varData, &numMissVals);
           // Write var
-          streamWriteVar(streamID2, varID, varData, nmiss);
+          streamWriteVar(streamID2, varID, varData, numMissVals);
         }
       ++tsID;
     }

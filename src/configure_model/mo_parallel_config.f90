@@ -12,7 +12,7 @@
 
 MODULE mo_parallel_config
 
-  USE mo_exception,          ONLY: message, finish, warning
+  USE mo_exception,          ONLY: message, message_text, finish, warning
   USE mo_io_units,           ONLY: filename_max
   USE mo_impl_constants,     ONLY: max_dom, max_num_io_procs, pio_type_async
   USE mo_util_string,        ONLY: int2string
@@ -23,7 +23,7 @@ MODULE mo_parallel_config
 
   PRIVATE
   ! Exported variables:
-  PUBLIC :: nproma, nblocks_c, ignore_nproma_use_nblocks_c
+  PUBLIC :: nproma, nblocks_c, nblocks_e, ignore_nproma_use_nblocks_c, ignore_nproma_use_nblocks_e
   PUBLIC :: nproma_sub, nblocks_sub, ignore_nproma_sub_use_nblocks_sub
 !
   PUBLIC :: n_ghost_rows,                                     &
@@ -44,22 +44,24 @@ MODULE mo_parallel_config
        &  io_process_stride, io_process_rotate, proc0_shift,        &
        &  use_omp_input
 
-  PUBLIC :: set_nproma, get_nproma, cpu_min_nproma, proc0_offloading, &
+  PUBLIC :: set_nproma, set_nproma_nblocks, set_nproma_nblocks_sub, get_nproma, cpu_min_nproma, proc0_offloading, &
        &    check_parallel_configuration, use_async_restart_output, blk_no, idx_no, idx_1d,    &
        &    update_nproma_for_io_procs
 
   ! computing setup
   ! ---------------
-  INTEGER  :: nproma = 1              ! inner loop length/vector length
+  INTEGER  :: nproma = 0              ! inner loop length/vector length
   !$ACC DECLARE COPYIN(nproma)
   INTEGER  :: nblocks_c = 0
+  INTEGER  :: nblocks_e = 0
   LOGICAL  :: ignore_nproma_use_nblocks_c = .FALSE.
+  LOGICAL  :: ignore_nproma_use_nblocks_e = .FALSE.
 
   ! Secondary nproma for, e.g., radiation chunking
   INTEGER  :: nproma_sub = -1
   !$ACC DECLARE COPYIN(nproma_sub)
   INTEGER  :: nblocks_sub = -1
-  LOGICAL  :: ignore_nproma_sub_use_nblocks_sub = .TRUE.
+  LOGICAL  :: ignore_nproma_sub_use_nblocks_sub = .FALSE.
 
   ! Number of rows of ghost cells
   INTEGER :: n_ghost_rows = 1
@@ -201,6 +203,9 @@ CONTAINS
     IF (ignore_nproma_use_nblocks_c) THEN
       ! Sanity Check. (nblocks_c<=0) should never be the case here.
       IF (nblocks_c<=0) CALL finish(TRIM(method_name),'"nblocks_c" must be positive')
+    ELSEIF (ignore_nproma_use_nblocks_e) THEN
+      ! Sanity Check. (nblocks_e<=0) should never be the case here.
+      IF (nblocks_e<=0) CALL finish(TRIM(method_name),'"nblocks_e" must be positive')
     ELSE
       IF (nproma<=0)  CALL finish(TRIM(method_name),'"nproma" must be positive')
     ENDIF
@@ -297,6 +302,71 @@ CONTAINS
   END SUBROUTINE set_nproma
   !-------------------------------------------------------------------------
 
+  !-------------------------------------------------------------------------
+  !>
+  SUBROUTINE set_nproma_nblocks(loc_nproma, loc_nblocks_c, loc_nblocks_e)
+    INTEGER, INTENT(IN) :: loc_nproma, loc_nblocks_c, loc_nblocks_e
+    CHARACTER(*), PARAMETER :: method_name = "set_nproma_nblocks"
+
+   ! Note: mo_model_domimp_patches:read_pre_patch assumes nproma>0, and recomputation of nproma from 
+   ! nblocks_c or nblocks_e (if required), only happens in the subsequent step. So we set nproma=1 in such 
+   ! cases even though it is overwritten in prepare_patch 
+    IF(loc_nblocks_c > 0) THEN
+        IF (loc_nblocks_e > 0 .OR. loc_nproma > 0) THEN 
+            WRITE(message_text,'(a,i7,a,i3,a,i3)') 'More than one of (nproma, nblocks_c, nblocks_e)' // &
+            ' is specified (>0), nproma=',loc_nproma,', nblocks_c=',loc_nblocks_c,', nblocks_e=',loc_nblocks_e
+            CALL finish(TRIM(method_name), message_text) 
+        ENDIF
+        nblocks_c = loc_nblocks_c
+        nproma = 1       ! Required for mo_model_domimp_patches:read_pre_patch
+        ignore_nproma_use_nblocks_c=.TRUE.
+        CALL message(TRIM(method_name), 'Will recompute nproma based on nblocks_c') 
+    ELSE IF(loc_nblocks_e > 0) THEN
+        IF (loc_nproma > 0) THEN
+            WRITE(message_text,'(a,i7,a,i3,a,i3)') 'More than one of (nproma, nblocks_c, nblocks_e)' // &
+            ' is specified (>0), nproma=',loc_nproma,', nblocks_c=',loc_nblocks_c,', nblocks_e=',loc_nblocks_e
+            CALL finish(TRIM(method_name), message_text) 
+        ENDIF
+        nblocks_e = loc_nblocks_e
+        nproma = 1       ! Required for mo_model_domimp_patches:read_pre_patch
+        ignore_nproma_use_nblocks_e=.TRUE.
+        CALL message(TRIM(method_name), 'Will recompute nproma based on nblocks_e') 
+    ELSE IF(loc_nproma > 0) THEN
+        nproma = loc_nproma
+        WRITE(message_text,'(a,i7)') 'Using namelist nproma=',nproma
+        CALL message(TRIM(method_name), message_text) 
+    !$ACC UPDATE DEVICE(nproma) ASYNC(1) IF_PRESENT
+    ELSE        
+        CALL message(TRIM(method_name),'Setting nproma = 1, as none of (nproma, nblocks_c, nblocks_e) specified (> 0).')
+        nproma = 1
+    !$ACC UPDATE DEVICE(nproma) ASYNC(1) IF_PRESENT
+    ENDIF
+
+  END SUBROUTINE set_nproma_nblocks
+  !-------------------------------------------------------------------------
+  !-------------------------------------------------------------------------
+  !>
+  SUBROUTINE set_nproma_nblocks_sub(loc_nproma_sub, loc_nblocks_sub)
+    INTEGER, INTENT(IN) :: loc_nproma_sub, loc_nblocks_sub
+    CHARACTER(*), PARAMETER :: method_name = "set_nproma_nblocks_sub"
+
+    IF(loc_nblocks_sub > 0) THEN
+        IF (loc_nproma_sub > 0) CALL finish(TRIM(method_name),'Cannot specify both nproma_sub and nblocks_sub in the namelist')
+        nblocks_sub = loc_nblocks_sub
+        ignore_nproma_sub_use_nblocks_sub=.TRUE.
+        CALL message(TRIM(method_name), 'Will recompute nproma_sub based on nblocks_sub') 
+    ELSE IF(loc_nproma_sub > 0) THEN
+        nproma_sub = loc_nproma_sub
+        WRITE(message_text,'(a,i7)') 'Using namelist nproma_sub=',nproma_sub
+        CALL message(TRIM(method_name), message_text)
+    ELSE
+        CALL message(TRIM(method_name),'Setting nblocks_sub = 1, as neither nproma_sub nor nblocks_sub specified (>0)')
+        nblocks_sub = 1
+        ignore_nproma_sub_use_nblocks_sub=.TRUE.
+    ENDIF
+
+  END SUBROUTINE set_nproma_nblocks_sub
+  !-------------------------------------------------------------------------
 
   !-------------------------------------------------------------------------
   !>

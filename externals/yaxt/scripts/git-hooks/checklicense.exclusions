@@ -3,6 +3,7 @@
 \(^\|/\).gitignore$
 ^include/config.h.in$
 ^src/m4.deps$
+^src/mpi-workarounds/.*_wrap\.c$
 ^src/pkgconfig/yaxt.pc.in$
 ^src/pkgconfig/yaxt_c.pc.in$
 ^src/xt_slice_c_loc.inc$
@@ -11,6 +12,8 @@
 ^config/checkdoc/.*\.txt$
 ^config/checkpatch/mpich_3.4_yaksa_hindexed.patch$
 ^config/checkpatch/mpich_3.x_unweighted.patch$
+^config/checkpatch/mpich_neighbor_alltoallw.patch$
+^config/checkpatch/mpich_zero_size_contiguous.patch$
 ^config/checkpatch/openmpi_datatype.opal_datatype_add.c.patch$
 ^config/checkpatch/openmpi_datatype.opal_datatype_optimize.c.patch$
 ^config/checksrc/mpich_3.4_yaksa_hindexed.c$
@@ -23,7 +26,9 @@
 ^contrib/05macos-nagfor-patch/.*\.patch$
 ^contrib/06ltmain_nag_pthread-patch/.*\.patch$
 ^contrib/07ltmain-early-xcompile-patch/.*\.patch$
-^contrib/libtool-patch-gen.sh$
+^contrib/08ltmain-parallel-printf-patch/.*\.patch$
+^contrib/09debian-no-overlink-patch/.*\.patch$
+^contrib/libtool-patch-gen\.sh$
 ^contrib/.*/README\.txt$
 ^contrib/.*/README$
 ^doc/Doxyfile.in$

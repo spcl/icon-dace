@@ -21,6 +21,12 @@
 
 MODULE mo_nh_nest_utilities
   !
+!===============================================================================!
+! OpenACC compiler error workaround (Found and solved by Xavier Lapillone):
+! LV: The local variables zrho, ztheta_v and zexner are used to circumvent a nvhpc 23.3 OpenACC compiler bug.
+! The sections should be revisited once bug is resolved.
+! The affected sections are marked by "ACCWA (nvhpc 23.3, LV, see above)"
+!===============================================================================!
   !
   USE mo_kind,                ONLY: wp, vp
   USE mo_exception,           ONLY: message_text, message, finish
@@ -37,7 +43,7 @@ MODULE mo_nh_nest_utilities
   USE mo_run_config,          ONLY: ltransport, msg_level, ntracer, lvert_nest, iqv, iqc, iforcing
   USE mo_nonhydro_types,      ONLY: t_nh_state, t_nh_prog, t_nh_diag, t_nh_metrics
   USE mo_nonhydro_state,      ONLY: p_nh_state
-  USE mo_nwp_phy_state,       ONLY: prm_diag
+  USE mo_nwp_phy_types,       ONLY: t_nwp_phy_diag
   USE mo_prepadv_types,       ONLY: t_prepare_adv
   USE mo_nonhydrostatic_config,ONLY: ndyn_substeps_var
   USE mo_atm_phy_nwp_config,  ONLY: iprog_aero
@@ -47,9 +53,7 @@ MODULE mo_nh_nest_utilities
     &                               grf_bdywidth_e, grf_nudgintp_start_c, grf_nudgintp_start_e, &
     &                               grf_nudge_start_c
   USE mo_mpi,                 ONLY: my_process_is_mpi_parallel
-#ifdef _OPENACC  
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
+  USE mo_fortran_tools,       ONLY: assert_acc_device_only
   USE mo_communication,       ONLY: exchange_data, exchange_data_mult
   USE mo_sync,                ONLY: SYNC_C, SYNC_E, sync_patch_array, sync_patch_array_mult
   USE mo_physical_constants,  ONLY: rd, cvd_o_rd, p0ref, vtmpc1, rd_o_cpd
@@ -141,7 +145,7 @@ CONTAINS
         p_nh_state(jgc)%metrics%rho_ref_corr(:,:,:) = 0._vp
 
         ! copy rho_ref of domain jg to local-parent grid of domain jgc
-        CALL exchange_data(p_pp%comm_pat_glb_to_loc_c, RECV=z_rho_ref, &
+        CALL exchange_data(p_pat=p_pp%comm_pat_glb_to_loc_c, lacc=.FALSE., RECV=z_rho_ref, &
           &                SEND=p_nh_state(jg)%metrics%rho_ref_mc)
 
         DO jb = i_startblk, i_endblk
@@ -185,11 +189,12 @@ CONTAINS
   !! Saves the dynamic prognostic variables needed afterwards for computing
   !! the lateral boundary tendencies for nested domains
   !!
-  SUBROUTINE save_progvars (jg,p_nh_prog,p_nh_save)
+  SUBROUTINE save_progvars (jg,p_nh_prog,p_nh_save, lacc)
 
     INTEGER,         INTENT(IN)    :: jg
     TYPE(t_nh_prog), INTENT(IN)    :: p_nh_prog
     TYPE(t_nh_prog), INTENT(INOUT) :: p_nh_save
+    LOGICAL, INTENT(IN) :: lacc
 
     ! local variables
     !
@@ -200,7 +205,7 @@ CONTAINS
     TYPE(t_gridref_state), POINTER :: p_grf
 
     !-----------------------------------------------------------------------
-
+    CALL assert_acc_device_only("save_progvars", lacc)
 
     p_grf  => p_grf_state(jg)
 
@@ -233,9 +238,8 @@ CONTAINS
       ENDIF
       jshift = (ib-1)*nproma_bdyintp
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
-      !$ACC LOOP GANG VECTOR PRIVATE(jc, jb)
       DO ic = jshift+1, jshift+nlen
         jc = p_grf%idxlist_bdyintp_src_c(ic)
         jb = p_grf%blklist_bdyintp_src_c(ic)
@@ -258,7 +262,7 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jc, jb)
       DO ic = jshift+1, jshift+nlen
         jc = p_grf%idxlist_bdyintp_src_c(ic)
@@ -291,7 +295,7 @@ CONTAINS
       ENDIF
       jshift = (ib-1)*nproma_bdyintp
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO ie = jshift+1, jshift+nlen
         je = p_grf%idxlist_bdyintp_src_e(ie)
@@ -329,7 +333,7 @@ CONTAINS
   !! In addition, compute upper boundary condition for vertical nesting.
   !!
   SUBROUTINE compute_tendencies (jg,n_new,n_now,n_new_rcf,n_now_rcf,&
-    &                            rdt,rdt_mflx)
+    &                            rdt,rdt_mflx, lacc)
 
 
     INTEGER,  INTENT(IN) :: jg  ! domain ID
@@ -342,6 +346,7 @@ CONTAINS
     REAL(wp), INTENT(IN) ::  rdt
     ! Inverse value of time step needed for computing the mass flux tendencies
     REAL(wp), INTENT(IN) ::  rdt_mflx
+    LOGICAL, INTENT(IN) :: lacc
 
 
     ! local variables
@@ -367,6 +372,7 @@ CONTAINS
     TYPE(t_nh_prog),  POINTER :: p_prog_new_rcf
 
     !-----------------------------------------------------------------------
+    CALL assert_acc_device_only("compute_tendencies", lacc)
 
     nsubs  = ndyn_substeps_var(jg)
     rnsubs = 1._wp/REAL(nsubs,wp)
@@ -423,7 +429,7 @@ CONTAINS
         CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, &
           i_startidx, i_endidx, grf_bdywidth_c+1, min_rlcell_int)
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO jc = i_startidx, i_endidx
           p_nh%diag%w_int          (jc,jb,nsubs+1) = 0._wp
@@ -492,7 +498,7 @@ CONTAINS
           i_startidx, i_endidx, grf_bdywidth_e+1, min_rledge_int-2)
 
 !DIR$ IVDEP
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR
         DO je = i_startidx, i_endidx
           p_nh%diag%vn_ie_int(je,2,jb) = rdt_ubc*(p_nh%diag%vn_ie(je,nshift,jb)-p_nh%diag%vn_ie_int(je,1,jb))
@@ -529,7 +535,7 @@ CONTAINS
       ENDIF
       jshift = (ib-1)*nproma_bdyintp
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO ic = jshift+1, jshift+nlen
         jc = p_grf%idxlist_bdyintp_src_c(ic)
@@ -565,7 +571,7 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jc, jb)
       DO ic = jshift+1, jshift+nlen
         jc = p_grf%idxlist_bdyintp_src_c(ic)
@@ -577,7 +583,7 @@ CONTAINS
 
       IF (ltransport) THEN
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
         DO ic = jshift+1, jshift+nlen
           jc = p_grf%idxlist_bdyintp_src_c(ic)
@@ -628,7 +634,7 @@ CONTAINS
       ENDIF
       jshift = (ib-1)*nproma_bdyintp
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO ie = jshift+1, jshift+nlen
         je = p_grf%idxlist_bdyintp_src_e(ie)
@@ -666,7 +672,7 @@ CONTAINS
   !! for vertical nesting.
   !!
   SUBROUTINE boundary_interpolation (jg,jgc,ntp_dyn,ntc_dyn,ntp_tr,ntc_tr, &
-    p_patch, p_nh_state, prep_adv, p_grf_state)
+    p_patch, p_nh_state, prep_adv, prm_diag, p_grf_state, lacc)
 
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = modname//':boundary_interpolation'
@@ -679,7 +685,9 @@ CONTAINS
     TYPE(t_patch)        , INTENT(   IN), TARGET :: p_patch(:)
     TYPE(t_nh_state)     , INTENT(INOUT), TARGET :: p_nh_state(:)
     TYPE(t_prepare_adv)  , INTENT(INOUT), TARGET :: prep_adv(:)
+    TYPE(t_nwp_phy_diag) , INTENT(INOUT)         :: prm_diag(:)
     TYPE(t_gridref_state), INTENT(   IN), TARGET :: p_grf_state(:)
+    LOGICAL, INTENT(IN) :: lacc
 
     ! local variables
 
@@ -724,8 +732,9 @@ CONTAINS
 #endif
 
     !-----------------------------------------------------------------------
+    CALL assert_acc_device_only("boundary_interpolation", lacc)
 
-    !$ACC DATA CREATE(aux3dp, aux3dc, theta_prc, rho_prc) IF(i_am_accel_node)
+    !$ACC DATA CREATE(aux3dp, aux3dc, theta_prc, rho_prc)
     IF (msg_level >= 10) THEN
       WRITE(message_text,'(a,i2,a,i2)') '========= Interpolate:',jg,' =>',jgc
       CALL message(routine, message_text)
@@ -774,7 +783,7 @@ CONTAINS
     IF (l_child_vertnest) THEN
 
       IF (p_test_run) THEN
-        !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
+        !$ACC KERNELS ASYNC(1)
         aux3dp = 0._wp
         aux3dc = 0._wp
         !$ACC END KERNELS
@@ -783,7 +792,7 @@ CONTAINS
       CALL sync_patch_array(SYNC_E,p_pp,p_diagp%vn_ie_int)
 
       CALL interpol_vec_ubc (p_pp, p_pc, p_grf%p_dom(i_chidx), &
-        p_diagp%vn_ie_int, p_diagc%vn_ie_ubc)
+        p_diagp%vn_ie_int, p_diagc%vn_ie_ubc, lacc=.TRUE.)
 
       ! Start and end blocks for which interpolation is needed
       i_startblk = p_pp%cells%start_block(0)
@@ -801,7 +810,7 @@ CONTAINS
           CALL get_indices_c(p_pp, jb, i_startblk, i_endblk, i_startidx, i_endidx, &
             0, min_rlcell_int)
         
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG(STATIC: 1) VECTOR
 !$NEC ivdep
           DO jc = i_startidx, i_endidx
@@ -825,7 +834,7 @@ CONTAINS
         CALL sync_patch_array(SYNC_C,p_pp,aux3dp)
 
         CALL interpol_scal_ubc (p_pc, p_grf%p_dom(i_chidx),  &
-          ntracer+8, aux3dp, aux3dc)
+          ntracer+8, aux3dp, aux3dc, lacc=.TRUE.)
 
 !$OMP PARALLEL DO PRIVATE(jb,i_startidx,i_endidx,jc,jt) ICON_OMP_DEFAULT_SCHEDULE
         DO jb = i_sbc, i_ebc
@@ -834,7 +843,7 @@ CONTAINS
             grf_nudge_start_c-2, min_rlcell_int)
 
 !$NEC ivdep
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG(STATIC: 1) VECTOR
           DO jc = i_startidx, i_endidx
             p_diagc%w_ubc(jc,jb,1:2)          = aux3dc(jc,1:2,jb)
@@ -863,7 +872,7 @@ CONTAINS
           CALL get_indices_c(p_pp, jb, i_startblk, i_endblk, i_startidx, i_endidx, &
             0, min_rlcell_int)
 !$NEC ivdep
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR
           DO jc = i_startidx, i_endidx
             aux3dp(jc,1:2,jb) = p_diagp%w_int         (jc,jb,nsubs+1:nsubs+2)
@@ -878,7 +887,7 @@ CONTAINS
 
         CALL sync_patch_array(SYNC_C,p_pp,aux3dp)
 
-        CALL interpol_scal_ubc(p_pc, p_grf%p_dom(i_chidx), 8, aux3dp, aux3dc)
+        CALL interpol_scal_ubc(p_pc, p_grf%p_dom(i_chidx), 8, aux3dp, aux3dc, lacc=.TRUE.)
 
 !$OMP PARALLEL DO PRIVATE(jb,i_startidx,i_endidx,jc) ICON_OMP_DEFAULT_SCHEDULE
         DO jb = i_sbc, i_ebc
@@ -887,7 +896,7 @@ CONTAINS
             grf_nudge_start_c-2, min_rlcell_int)
 
 !$NEC ivdep
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR
           DO jc = i_startidx, i_endidx
             p_diagc%w_ubc(jc,jb,1:2)          = aux3dc(jc,1:2,jb)
@@ -908,17 +917,20 @@ CONTAINS
     !
     IF (grf_intmethod_c == 1) THEN ! tendency copying for all cell-based variables
 
-      CALL exchange_data(p_pc%comm_pat_interpolation_c, &
+      CALL exchange_data(p_pat=p_pc%comm_pat_interpolation_c, &
+        lacc=.TRUE., &
         RECV=p_diagc%grf_tend_rho,     &
         SEND=p_diagp%grf_tend_rho)
 
-      CALL exchange_data(p_pc%comm_pat_interpolation_c, &
+      CALL exchange_data(p_pat=p_pc%comm_pat_interpolation_c, &
+        lacc=.TRUE., &
         RECV=p_diagc%grf_tend_thv,     &
         SEND=p_diagp%grf_tend_thv)
 
       ! exchange_data should also work for w because it determines the
       ! vertical dimension with UBOUND
-      CALL exchange_data(p_pc%comm_pat_interpolation_c, &
+      CALL exchange_data(p_pat=p_pc%comm_pat_interpolation_c, &
+        lacc=.TRUE., &
         RECV=p_diagc%grf_tend_w,       &
         SEND=p_diagp%grf_tend_w)
 
@@ -927,13 +939,13 @@ CONTAINS
 
       ! Interpolation of temporal tendencies, full w, perturbation density (stored in div)
       !  and perturbationvirtual potential temperature (stored in dpres_mc)
-      CALL interpol_scal_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), 6,         &
-        p_diagp%grf_tend_rho, p_diagc%grf_tend_rho,  &
-        p_diagp%grf_tend_thv, p_diagc%grf_tend_thv,  &
-        p_diagp%grf_tend_w,   p_diagc%grf_tend_w,    &
-        p_nhp_dyn%w,          p_nhc_dyn%w,           &
-        p_nh_state(jg)%diag%div, rho_prc,            &
-        p_nh_state(jg)%diag%dpres_mc, theta_prc      )
+      CALL interpol_scal_grf (p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx), nfields=6, lacc=.TRUE., &
+        f3din1=p_diagp%grf_tend_rho, f3dout1=p_diagc%grf_tend_rho,  &
+        f3din2=p_diagp%grf_tend_thv, f3dout2=p_diagc%grf_tend_thv,  &
+        f3din3=p_diagp%grf_tend_w,   f3dout3=p_diagc%grf_tend_w,    &
+        f3din4=p_nhp_dyn%w,          f3dout4=p_nhc_dyn%w,           &
+        f3din5=p_nh_state(jg)%diag%div, f3dout5=rho_prc,            &
+        f3din6=p_nh_state(jg)%diag%dpres_mc, f3dout6=theta_prc      )
 
       ! Start and end blocks for which interpolation is needed
       i_startblk = p_pc%cells%start_block(1)
@@ -946,7 +958,7 @@ CONTAINS
         CALL get_indices_c(p_pc, jb, i_startblk, i_endblk, i_startidx, i_endidx, &
           1, grf_bdywidth_c)
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = 1, nlev_c
 !DIR$ IVDEP
@@ -965,7 +977,7 @@ CONTAINS
       ! The following index list contains the halo points of the lateral boundary
       ! cells. These have to be copied as well in order for rho and theta to be
       ! synchronized.
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(jc, jb)
 !$OMP DO PRIVATE(ic,jb,jc,jk)
       DO ic = 1, p_nh_state(jgc)%metrics%bdy_halo_c_dim
@@ -993,8 +1005,11 @@ CONTAINS
       i_startblk = p_gcp%start_block(grf_bdyintp_start_c)
       i_endblk   = p_gcp%end_block(grf_bdyintp_end_c)
 
-      CALL exchange_data_mult(p_pc%comm_pat_interpolation_c, ntracer_bdyintp, ntracer_bdyintp*nlev_c, &
-        RECV4D=p_diagc%grf_tend_tracer(:,:,:,1:ntracer_bdyintp),                                      &
+      CALL exchange_data_mult(                                    &
+        p_pat=p_pc%comm_pat_interpolation_c,                      &
+        lacc=.TRUE.,                                     &
+        nfields=ntracer_bdyintp, ndim2tot=ntracer_bdyintp*nlev_c, &
+        RECV4D=p_diagc%grf_tend_tracer(:,:,:,1:ntracer_bdyintp),  &
         SEND4D=p_diagp%grf_tend_tracer(:,:,:,1:ntracer_bdyintp))
 
 
@@ -1004,7 +1019,8 @@ CONTAINS
       l_limit(1:ntracer_bdyintp) = .FALSE.
       l_limit(ntracer_bdyintp+1:2*ntracer_bdyintp) = .TRUE.
 
-      CALL interpol_scal_grf ( p_pp, p_pc, p_grf%p_dom(i_chidx), 2*ntracer_bdyintp, &
+      CALL interpol_scal_grf ( p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx),    &
+        nfields=2*ntracer_bdyintp, lacc=.TRUE.,                                     &
         f4din1 =  p_diagp%grf_tend_tracer(:,:,:,1:ntracer_bdyintp),                 &
         f4dout1 = p_diagc%grf_tend_tracer(:,:,:,1:ntracer_bdyintp),                 &
         f4din2  = p_nhp_tr%tracer(:,:,:,1:ntracer_bdyintp),                         &
@@ -1014,25 +1030,27 @@ CONTAINS
     ENDIF
 
     IF (ltransport .AND. iprog_aero >= 1) THEN
-     CALL interpol_scal_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), 1, prm_diag(jg)%aerosol,    &
-                             prm_diag(jgc)%aerosol, llimit_nneg=(/.TRUE./), lnoshift=.TRUE.)
+     CALL interpol_scal_grf (p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx), nfields=1, lacc=.TRUE., &
+      f3din1=prm_diag(jg)%aerosol, f3dout1=prm_diag(jgc)%aerosol, &
+      llimit_nneg=(/.TRUE./), lnoshift=.TRUE.)
     ENDIF
 
     ! Lateral boundary interpolation of edge-based variables  (velocity components)
     IF (grf_intmethod_e == 2) THEN
 
-      CALL interpol_vec_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), p_diagp%grf_tend_vn, p_diagc%grf_tend_vn)
+      CALL interpol_vec_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), p_diagp%grf_tend_vn, p_diagc%grf_tend_vn, lacc=.TRUE.)
 
     ELSE IF (grf_intmethod_e == 4) THEN
 
-      CALL interpol2_vec_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), 1, p_diagp%grf_tend_vn, p_diagc%grf_tend_vn)
+      CALL interpol2_vec_grf (p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx), nfields=1, lacc=.TRUE., &
+        f3din1=p_diagp%grf_tend_vn, f3dout1=p_diagc%grf_tend_vn)
 
     ELSE IF (grf_intmethod_e == 6) THEN
 
-      CALL interpol2_vec_grf (p_pp, p_pc, p_grf%p_dom(i_chidx), 3,                              &
-        p_diagp%grf_tend_vn, p_diagc%grf_tend_vn, prep_advp%mass_flx_me, prep_advc%mass_flx_me, &
-        p_diagp%grf_tend_mflx, p_diagc%grf_tend_mflx )
-
+      CALL interpol2_vec_grf (p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx), nfields=3, lacc=.TRUE., &
+        f3din1=p_diagp%grf_tend_vn,   f3dout1=p_diagc%grf_tend_vn, &
+        f3din2=prep_advp%mass_flx_me, f3dout2=prep_advc%mass_flx_me, &
+        f3din3=p_diagp%grf_tend_mflx, f3dout3=p_diagc%grf_tend_mflx)
     ENDIF
     !$ACC WAIT
     !$ACC END DATA ! aux3dp, aux3dc, theta_prc, rho_prc
@@ -1052,14 +1070,14 @@ CONTAINS
   !!    variables.
   !! 3. Interpolation of difference fields to the child grid
   !!
-  SUBROUTINE prep_bdy_nudging(jgp, jg)
+  SUBROUTINE prep_bdy_nudging(jgp, jg, lacc)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':prep_bdy_nudging'
 
 
     INTEGER, INTENT(IN) :: jg   ! child grid level
     INTEGER, INTENT(IN) :: jgp  ! parent grid level
-
+    LOGICAL, INTENT(IN) :: lacc
 
     ! local variables
     !
@@ -1096,6 +1114,8 @@ CONTAINS
     LOGICAL :: l_parallel
     REAL(wp), DIMENSION(:,:,:), POINTER :: p_fbkwgt, p_fbkwgt_tr, p_fbkwgt_v
     !-----------------------------------------------------------------------
+
+    CALL assert_acc_device_only(routine, lacc)
 
     IF (msg_level >= 10) THEN
       WRITE(message_text,'(a,i2,a,i2)') '1-way nesting: == Boundary nudging:',jg
@@ -1162,8 +1182,8 @@ CONTAINS
       &      diff_vn    (nproma, nlev_c, p_patch_local_parent(jg)%nblks_e)  )
 
     !$ACC DATA CREATE(parent_thv, diff_thv, parent_rho, diff_rho, parent_w, diff_w) &
-    !$ACC   CREATE(parent_vn, diff_vn) IF(i_am_accel_node)
-    !$ACC DATA CREATE(parent_tr, diff_tr) IF(i_am_accel_node .AND. ltransport)
+    !$ACC   CREATE(parent_vn, diff_vn)
+    !$ACC DATA CREATE(parent_tr, diff_tr) IF(ltransport)
     
     ! Set pointers to index and coefficient fields for cell-based variables
     iidx  => p_gcp%child_idx
@@ -1186,16 +1206,21 @@ CONTAINS
     ! 1st step: Copy prognostic variables from parent grid to fields on feedback-parent grid
     ! (trivial without MPI parallelization, but communication call needed for MPI)
 
-    CALL exchange_data_mult(p_pp%comm_pat_glb_to_loc_c, 3, 3*nlev_p, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_glb_to_loc_c, &
+      lacc=.TRUE.,                                            &
+      nfields=3, ndim2tot=3*nlev_p,                           &
       RECV1=parent_rho, SEND1=p_parent_prog%rho,         &
       RECV2=parent_thv, SEND2=p_parent_prog%theta_v,     &
       RECV3=parent_w,   SEND3=p_parent_prog%w            )
 
-    CALL exchange_data(p_pp%comm_pat_glb_to_loc_e,     &
+    CALL exchange_data(p_pat=p_pp%comm_pat_glb_to_loc_e, &
+      lacc=.TRUE.,                                       &
       RECV=parent_vn, SEND=p_parent_prog%vn)
 
     IF (ltransport) &
-      CALL exchange_data_mult(p_pp%comm_pat_glb_to_loc_c, ntracer_nudge, ntracer_nudge*nlev_p, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_glb_to_loc_c, &
+      lacc=.TRUE.,                                            &
+      nfields=ntracer_nudge, ndim2tot=ntracer_nudge*nlev_p,   &
       RECV4D=parent_tr, SEND4D=p_parent_prog_rcf%tracer(:,:,:,1:ntracer_nudge))
 
     ! 2nd step: perform feedback from refined grid to intermediate grid and compute differences
@@ -1215,14 +1240,14 @@ CONTAINS
         grf_nudgintp_start_c+1, min_rlcell_int)
 
       ! initialize diff_w at surface with zero
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR
       DO jc = 1, nproma
         diff_w(jc,nlev_c+1,jb) = 0._wp
       END DO
       !$ACC END PARALLEL
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
@@ -1260,7 +1285,7 @@ CONTAINS
 
         DO jt = 1, ntracer_nudge
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
           DO jc = i_startidx, i_endidx
@@ -1297,7 +1322,7 @@ CONTAINS
       CALL get_indices_e(p_pp, jb, i_startblk, i_endblk, i_startidx, i_endidx, &
         grf_nudgintp_start_e+2, min_rledge_int)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
       DO je = i_startidx, i_endidx
@@ -1331,12 +1356,14 @@ CONTAINS
     ! the dynamical core. This is needed for the scalars for reasons of mass consistency, but is also done for the
     ! wind tendencies because this turns out to improve noise filtering
 
-    IF(l_parallel) CALL exchange_data(p_pp%comm_pat_e, diff_vn)
+    IF(l_parallel) CALL exchange_data(p_pat=p_pp%comm_pat_e, lacc=.TRUE., recv=diff_vn)
     CALL interpol_vec_nudging (p_pp, p_pc, p_int, p_grf%p_dom(i_chidx),   &
-      &                        0, istartblk_e, diff_vn,p_diag%grf_tend_vn )
+      &                        0, istartblk_e, diff_vn,p_diag%grf_tend_vn, lacc=.TRUE.)
     CALL sync_patch_array(SYNC_E,p_pc,p_diag%grf_tend_vn)
 
-    IF(l_parallel) CALL exchange_data_mult(p_pp%comm_pat_c, 3, 3*nlev_c+1, &
+    IF(l_parallel) CALL exchange_data_mult(p_pat=p_pp%comm_pat_c, &
+      lacc=.TRUE., &
+      nfields=3, ndim2tot=3*nlev_c+1, &
       recv1=diff_thv, recv2=diff_rho, recv3=diff_w)
     CALL interpol_scal_nudging (p_pp, p_int, p_grf%p_dom(i_chidx), 0, 3, istartblk_c,          &
       &                         f3din1=diff_thv, f3dout1=p_diag%grf_tend_thv,                  &
@@ -1346,7 +1373,9 @@ CONTAINS
       p_diag%grf_tend_w)
 
     IF (ltransport) THEN
-      IF(l_parallel) CALL exchange_data_mult(p_pp%comm_pat_c, ntracer_nudge, ntracer_nudge*nlev_c, recv4d=diff_tr)
+      IF(l_parallel) CALL exchange_data_mult(p_pat=p_pp%comm_pat_c, &
+        lacc=.TRUE., &
+        nfields=ntracer_nudge, ndim2tot=ntracer_nudge*nlev_c, recv4d=diff_tr)
 
       CALL interpol_scal_nudging (p_pp, p_int, p_grf%p_dom(i_chidx),                   &
         &                         0, ntracer_nudge, istartblk_c, f4din=diff_tr,        &
@@ -1377,12 +1406,12 @@ CONTAINS
   !!    variables.
   !! 3. Interpolation of difference fields to the child grid
   !!
-  SUBROUTINE prep_rho_bdy_nudging(jgp, jg)
+  SUBROUTINE prep_rho_bdy_nudging(jgp, jg, lacc)
 
 
     INTEGER, INTENT(IN) :: jg   ! child grid level
     INTEGER, INTENT(IN) :: jgp  ! parent grid level
-
+    LOGICAL, INTENT(IN) :: lacc
 
     ! local variables
 
@@ -1411,7 +1440,7 @@ CONTAINS
     LOGICAL :: l_parallel
     REAL(wp), DIMENSION(:,:,:), POINTER :: p_fbkwgt
     !-----------------------------------------------------------------------
-
+    CALL assert_acc_device_only("prep_rho_bdy_nudging", lacc)
 
     l_parallel = my_process_is_mpi_parallel()
 
@@ -1448,7 +1477,7 @@ CONTAINS
 
     ALLOCATE(parent_rho  (nproma, nlev_p, p_patch_local_parent(jg)%nblks_c), &
       &      diff_rho    (nproma, nlev_c, p_patch_local_parent(jg)%nblks_c)  )
-    !$ACC DATA CREATE(parent_rho, diff_rho) IF(i_am_accel_node)
+    !$ACC DATA CREATE(parent_rho, diff_rho)
 
     ! Set pointers to index and coefficient fields for cell-based variables
     iidx  => p_gcp%child_idx
@@ -1463,7 +1492,7 @@ CONTAINS
     ! 1st step: Copy prognostic variables from parent grid to fields on feedback-parent grid
     ! (trivial without MPI parallelization, but communication call needed for MPI)
 
-    CALL exchange_data(p_pp%comm_pat_glb_to_loc_c,        &
+    CALL exchange_data(p_pat=p_pp%comm_pat_glb_to_loc_c, lacc=.TRUE., &
       &                RECV=parent_rho, SEND=p_parent_prog%rho )
 
     ! 2nd step: perform feedback from refined grid to intermediate grid and compute differences
@@ -1481,7 +1510,7 @@ CONTAINS
       CALL get_indices_c(p_pp, jb, i_startblk, i_endblk, i_startidx, i_endidx, &
         grf_nudgintp_start_c+1, min_rlcell_int)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
@@ -1518,7 +1547,7 @@ CONTAINS
     ! Synchronization is needed after the interpolation step for cell-based variables because for
     ! those, the nudging tendencies are applied outside the dynamical core for reasons of mass consistency
 
-    IF(l_parallel) CALL exchange_data(p_pp%comm_pat_c, diff_rho)
+    IF(l_parallel) CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=.TRUE., recv=diff_rho)
     CALL interpol_scal_nudging (p_pp, p_int, p_grf%p_dom(i_chidx), 0, 1, istartblk_c, &
       &                         f3din1=diff_rho, f3dout1=p_diag%grf_tend_rho                   )
     CALL sync_patch_array(SYNC_C,p_pc,p_diag%grf_tend_rho)
@@ -1619,19 +1648,17 @@ CONTAINS
           rho_tend = p_latbc_const%rho    (jc,jk,jb) - p_prog%rho    (jc,jk,jb)
 
 #ifdef _OPENACC
-            ! local variables zrho, ztheta_v and zexner are used because of GPU pgi compiler bug
-            ! this section should be revisited once bug is resolved.
-            ! BUG-FIX for nvfort 21.3.0 (Daint) fond and solved by Xavier Lapillonne
-            zrho     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
-            ztheta_v = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
-            zexner   = EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v))
-            p_prog%rho(jc,jk,jb)     = zrho
-            p_prog%theta_v(jc,jk,jb) = ztheta_v
-            p_prog%exner(jc,jk,jb)   = zexner
+          ! ACCWA (nvhpc 23.3, LV, see above)
+          zrho     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
+          ztheta_v = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
+          zexner   = EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v))
+          p_prog%rho(jc,jk,jb)     = zrho
+          p_prog%theta_v(jc,jk,jb) = ztheta_v
+          p_prog%exner(jc,jk,jb)   = zexner
 #else
-            p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
-            p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
-            p_prog%exner(jc,jk,jb)   = EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb)))
+          p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
+          p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
+          p_prog%exner(jc,jk,jb)   = EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb)))
 #endif
 
         ENDDO
@@ -1724,8 +1751,7 @@ CONTAINS
               tempv_inc*p_diag%pres(jc,jk,jb)/p_diag%tempv(jc,jk,jb)**2 )/rd
 
 #ifdef _OPENACC
-            ! local variables zrho, ztheta_v and zexner are used because of GPU pgi compiler bug
-            ! this section should be revisited once bug is resolved.
+            ! ACCWA (nvhpc 23.3, LV, see above)
             zrho     = p_prog%rho(jc,jk,jb)     + p_int%nudgecoeff_c(jc,jb)*rho_tend
             ztheta_v = p_prog%theta_v(jc,jk,jb) + p_int%nudgecoeff_c(jc,jb)*thv_tend
             zexner   = EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v))
@@ -1871,6 +1897,7 @@ CONTAINS
     REAL(wp) :: rho_tend, thv_tend, vn_tend
     REAL(wp) :: rd_o_cvd, rd_o_p0ref, nudgecoeff
     REAL(wp) :: max_nudge_coeff_vn, max_nudge_coeff_thermdyn
+    REAL(wp) :: zrho, ztheta_v, zexner
     LOGICAL  :: bdymask(nproma)
     LOGICAL  :: lnudge_hydro_pres_ubn
     !
@@ -1902,9 +1929,6 @@ CONTAINS
     max_nudge_coeff_vn       = nudging_config(jg)%max_nudge_coeff_vn
     max_nudge_coeff_thermdyn = nudging_config(jg)%max_nudge_coeff_thermdyn
 
-#ifdef _OPENACC
-    CALL finish(TRIM(routine), 'UPPER boundary nudging for the limited-area mode is not tested on GPU')
-#endif
 
     IF (PRESENT(p_latbc_const) .AND. (PRESENT(p_latbc_old) .OR. PRESENT(p_latbc_new))) THEN
 
@@ -1919,18 +1943,7 @@ CONTAINS
     ELSE IF (PRESENT(p_latbc_old) .AND. PRESENT(p_latbc_new)) THEN ! Mode for time-dependent lateral boundary data
 
 
-      !$ACC DATA PRESENT(p_diag%temp, p_diag%pres, p_diag%tempv, p_prog%rho) &
-      !$ACC   PRESENT(ptr_tracer, p_prog%theta_v, p_prog%exner, p_prog%vn) &
-      !$ACC   PRESENT(p_patch%cells%refin_ctrl, p_patch%edges%refin_ctrl) &
-      !$ACC   CREATE(bdymask) &
-      !$ACC   PRESENT(p_latbc_old, p_latbc_new) &
-      !$ACC   PRESENT(p_metrics%nudgecoeff_vert) &
-      !$ACC   PRESENT(p_int, p_int%nudgecoeff_c) &
-      !$ACC   PRESENT(p_latbc_old%pres, p_latbc_old%temp, p_latbc_old%qv) &
-      !$ACC   PRESENT(p_latbc_new%pres, p_latbc_new%temp, p_latbc_new%qv) &
-      !$ACC   PRESENT(p_latbc_old%theta_v, p_latbc_old%rho, p_latbc_old%vn) &
-      !$ACC   PRESENT(p_latbc_new%theta_v, p_latbc_new%rho, p_latbc_new%vn) &
-      !$ACC   PRESENT(p_prog, p_diag, p_metrics, p_patch)
+      !$ACC DATA CREATE(bdymask)
 
       IF (.NOT. PRESENT(lc1) .OR. .NOT. PRESENT(lc2)) THEN
         CALL finish(routine,'missing interpolation weights wfac_old, wfac_new')
@@ -1957,8 +1970,10 @@ CONTAINS
         !$ACC END PARALLEL
 
         IF (lnudge_hydro_pres_ubn) THEN
+
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-          !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(nudgecoeff, pres, temp, qv, tempv_inc, pres_inc, thv_tend, rho_tend)
+          !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(nudgecoeff, pres, temp, qv, tempv_inc, pres_inc) &
+          !$ACC   PRIVATE(thv_tend, rho_tend, zrho, ztheta_v, zexner)
           DO jk = 1, ke_nudge
 !DIR$ IVDEP
             DO jc = i_startidx, i_endidx
@@ -1978,17 +1993,33 @@ CONTAINS
               rho_tend = ( pres_inc/p_diag%tempv(jc,jk,jb) -                 &
                 tempv_inc*p_diag%pres(jc,jk,jb)/p_diag%tempv(jc,jk,jb)**2 )/rd
 
+#ifdef _OPENACC
+              ! ACCWA (nvhpc 23.3, LV, see above)
+              zrho     = p_prog%rho(jc,jk,jb)     + nudgecoeff*rho_tend
+              ztheta_v = p_prog%theta_v(jc,jk,jb) + nudgecoeff*thv_tend
+              zexner   = MERGE(p_prog%exner(jc,jk,jb), EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v)), bdymask(jc))
+              p_prog%rho(jc,jk,jb)     = zrho
+              p_prog%theta_v(jc,jk,jb) = ztheta_v
+              p_prog%exner(jc,jk,jb)   = zexner
+#else
               p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + nudgecoeff*rho_tend
               p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + nudgecoeff*thv_tend
               p_prog%exner(jc,jk,jb)   = MERGE(p_prog%exner(jc,jk,jb), &
                 EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb))),bdymask(jc))
-
+#endif
             ENDDO
           ENDDO
           !$ACC END PARALLEL
         ELSE
+
+#ifdef _OPENACC
+          WRITE(message_text,'(a)') 'The option .NOT. lnudge_hydro_pres_ubn is not part of any OpenACC testcase ' // &
+                                    'and code changes are therefore not tested.'
+          CALL message(routine, message_text)
+#endif
+
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-          !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(nudgecoeff, thv_tend, rho_tend)
+          !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(nudgecoeff, thv_tend, rho_tend, zrho, ztheta_v, zexner)
           DO jk = 1, ke_nudge
 !DIR$ IVDEP
             DO jc = i_startidx, i_endidx
@@ -1999,10 +2030,20 @@ CONTAINS
               thv_tend = wfac_old*p_latbc_old%theta_v(jc,jk,jb) + wfac_new*p_latbc_new%theta_v(jc,jk,jb) - p_prog%theta_v(jc,jk,jb)
               rho_tend = wfac_old*p_latbc_old%rho(jc,jk,jb) + wfac_new*p_latbc_new%rho(jc,jk,jb)- p_prog%rho(jc,jk,jb)
 
+#ifdef _OPENACC
+              ! ACCWA (nvhpc 23.3, LV, see above)
+              zrho     = p_prog%rho(jc,jk,jb)     + nudgecoeff*rho_tend
+              ztheta_v = p_prog%theta_v(jc,jk,jb) + nudgecoeff*thv_tend
+              zexner   = MERGE(p_prog%exner(jc,jk,jb), EXP(rd_o_cvd*LOG(rd_o_p0ref*zrho*ztheta_v)), bdymask(jc))
+              p_prog%rho(jc,jk,jb)     = zrho
+              p_prog%theta_v(jc,jk,jb) = ztheta_v
+              p_prog%exner(jc,jk,jb)   = zexner
+#else
               p_prog%rho(jc,jk,jb)     = p_prog%rho(jc,jk,jb)     + nudgecoeff*rho_tend
               p_prog%theta_v(jc,jk,jb) = p_prog%theta_v(jc,jk,jb) + nudgecoeff*thv_tend
               p_prog%exner(jc,jk,jb)   = MERGE(p_prog%exner(jc,jk,jb), &
                 EXP(rd_o_cvd*LOG(rd_o_p0ref*p_prog%rho(jc,jk,jb)*p_prog%theta_v(jc,jk,jb))),bdymask(jc))
+#endif
             ENDDO
           ENDDO
           !$ACC END PARALLEL
@@ -2045,8 +2086,10 @@ CONTAINS
         !$ACC END PARALLEL
 
       ENDDO
+
       !$ACC WAIT(1)
       !$ACC END DATA
+
 !$OMP END DO NOWAIT
 
 !$OMP END PARALLEL
@@ -2062,13 +2105,14 @@ CONTAINS
   !! This routine interpolates lateral boundary data (or more generally forcing data) 
   !! from the base domain to a specific child domain (jg), and all childs contained therein.
   !!
-  RECURSIVE SUBROUTINE intp_nestubc_nudging (p_patch, latbc_data, jg)
+  RECURSIVE SUBROUTINE intp_nestubc_nudging (p_patch, latbc_data, jg, lacc)
 
     TYPE(t_patch),       INTENT(INOUT) :: p_patch(:)
     TYPE(t_latbc_state), INTENT(INOUT) :: latbc_data        ! source data (for base domain)
 
     INTEGER, INTENT(IN) :: jg      ! domain ID of the target (child) domain. 
                                    ! i.e. the domain to which the data are interpolated
+    LOGICAL, INTENT(IN) :: lacc ! if true (and compile with OpenACC) use data on GPU
 
     INTEGER :: nlev, i_chidx, jn
 
@@ -2081,7 +2125,6 @@ CONTAINS
     CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: vDateTime_str_cur
     !
     CHARACTER(len=*), PARAMETER :: routine = 'intp_nestubc_nudging'
-
 
     ! only interpolate, if upper boundary nudging is activated for domain jg
     !
@@ -2111,12 +2154,15 @@ CONTAINS
         &      vn_lp  (nproma, nlev, p_plp%nblks_e)   )
 
 
-      CALL exchange_data_mult(p_plp%comm_pat_glb_to_loc_c, 3, 3*nlev,     &
+      CALL exchange_data_mult(p_pat=p_plp%comm_pat_glb_to_loc_c, &
+        &                     lacc=lacc, &
+        &                     nfields=3, ndim2tot=3*nlev, &
         &                     RECV1=pres_lp, SEND1=latbc_data%atm%pres,   &
         &                     RECV2=temp_lp, SEND2=latbc_data%atm%temp,   &
         &                     RECV3=qv_lp,   SEND3=latbc_data%atm%qv )
 
-      CALL exchange_data(p_plp%comm_pat_glb_to_loc_e, &
+      CALL exchange_data(p_pat=p_plp%comm_pat_glb_to_loc_e, &
+        &                lacc=lacc, &
         &                RECV=vn_lp, SEND=latbc_data%atm%vn)
 
 
@@ -2124,7 +2170,9 @@ CONTAINS
       !
       ! pres, temp, qv
       !
-      CALL exchange_data_mult(p_plp%comm_pat_c, 3, 3*nlev,             &
+      CALL exchange_data_mult(p_pat=p_plp%comm_pat_c, &
+        &                     lacc=lacc, &
+        &                     nfields=3, ndim2tot=3*nlev, &
         &                     recv1=pres_lp, recv2=temp_lp, recv3=qv_lp)
       !
       CALL interpol_scal_nudging (p_plp, p_int, p_grf%p_dom(i_chidx), 0, 3, 1,           &
@@ -2139,10 +2187,10 @@ CONTAINS
 
       ! vn
       !
-      CALL exchange_data(p_plp%comm_pat_e, vn_lp)
+      CALL exchange_data(p_pat=p_plp%comm_pat_e, lacc=lacc, recv=vn_lp)
       !
       CALL interpol_vec_nudging (p_plp, p_patch(jg), p_int, p_grf%p_dom(i_chidx), &
-        &                        0, 1, vn_lp, latbc_data%atm_child(jg)%vn )
+        &                        0, 1, vn_lp, latbc_data%atm_child(jg)%vn, lacc=lacc)
       !
       CALL sync_patch_array(SYNC_E, p_patch(jg), latbc_data%atm_child(jg)%vn)
 
@@ -2157,7 +2205,7 @@ CONTAINS
 
        CALL intp_nestubc_nudging (p_patch    = p_patch(:),    &
         &                        latbc_data  = latbc_data,    &
-        &                        jg          = p_patch(jg)%child_id(jn))
+        &                        jg          = p_patch(jg)%child_id(jn), lacc=lacc)
     ENDDO
 
 
@@ -2169,10 +2217,11 @@ CONTAINS
   !! This routine executes boundary nudging for one-way nested domains
   !!
   !!
-  SUBROUTINE nest_boundary_nudging(jg, nnew, nnew_rcf)
+  SUBROUTINE nest_boundary_nudging(jg, nnew, nnew_rcf, lacc)
 
 
     INTEGER, INTENT(IN)  :: jg, nnew, nnew_rcf
+    LOGICAL, INTENT(IN)  :: lacc
 
     ! Pointers
     TYPE(t_nh_state),  POINTER ::  p_nh
@@ -2185,6 +2234,8 @@ CONTAINS
     INTEGER :: ntracer_nudge !< number of tracers to be nudged
 
     REAL(wp) :: rd_o_cvd, rd_o_p0ref, upper_lim, lower_lim
+
+    CALL assert_acc_device_only("nest_boundary_nudging", lacc)
 
     ! Set pointers
     p_nh  => p_nh_state(jg)
@@ -2208,7 +2259,7 @@ CONTAINS
 !$OMP PARALLEL
 
 !$OMP DO PRIVATE(jk,jc,jb,ic,upper_lim,lower_lim) ICON_OMP_DEFAULT_SCHEDULE
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
     DO ic = 1, p_nh%metrics%nudge_c_dim
       jc = p_nh%metrics%nudge_c_idx(ic)
@@ -2250,7 +2301,7 @@ CONTAINS
 !$OMP END DO
 
 !$OMP DO PRIVATE(jb,jk,je,ic) ICON_OMP_DEFAULT_SCHEDULE
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
     DO ic = 1, p_nh%metrics%nudge_e_dim
       je = p_nh%metrics%nudge_e_idx(ic)
@@ -2274,7 +2325,7 @@ CONTAINS
 
     IF (ltransport) THEN
 !$OMP DO PRIVATE(jk,jc,jb,jt,ic,upper_lim,lower_lim) ICON_OMP_DEFAULT_SCHEDULE
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO ic = 1, p_nh%metrics%nudge_c_dim
         jc = p_nh%metrics%nudge_c_idx(ic)
@@ -2315,10 +2366,11 @@ CONTAINS
   !! This routine executes boundary nudging for density (for use with 2-way nesting)
   !!
   !!
-  SUBROUTINE density_boundary_nudging(jg, nnew)
+  SUBROUTINE density_boundary_nudging(jg, nnew, lacc)
 
 
     INTEGER, INTENT(IN)  :: jg, nnew
+    LOGICAL, INTENT(IN)  :: lacc
 
     ! Pointers
     TYPE(t_nh_state),  POINTER ::  p_nh
@@ -2330,6 +2382,8 @@ CONTAINS
     INTEGER :: nlev  ! number of vertical full levels
 
     REAL(wp) :: rd_o_cvd, rd_o_p0ref
+
+    CALL assert_acc_device_only("density_boundary_nudging", lacc)
 
     ! Set pointers
     p_nh  => p_nh_state(jg)
@@ -2354,7 +2408,7 @@ CONTAINS
 !DIR$ IVDEP
       DO jk = 1, nlev
 #else
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR PRIVATE(jc, jb) COLLAPSE(2)
     DO jk = 1, nlev
 !$NEC ivdep

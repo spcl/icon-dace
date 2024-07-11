@@ -30,16 +30,14 @@ USE mo_intp_data_strc,      ONLY: t_int_state, p_int_state_local_parent
 USE mo_grf_intp_data_strc,  ONLY: t_gridref_state, t_gridref_single_state, &
                                   p_grf_state, p_grf_state_local_parent
 USE mo_nwp_phy_types,       ONLY: t_nwp_phy_diag
-USE mo_nwp_lnd_types,       ONLY: t_lnd_prog, t_lnd_diag, t_wtr_prog
+USE mo_nwp_lnd_types,       ONLY: t_lnd_state, t_lnd_prog, t_lnd_diag, t_wtr_prog
 USE mo_ext_data_types,      ONLY: t_external_data
-USE mo_nwp_lnd_state,       ONLY: p_lnd_state
 USE mo_grf_bdyintp,         ONLY: interpol_scal_grf
 USE mo_grf_nudgintp,        ONLY: interpol_scal_nudging
 USE mo_parallel_config,     ONLY: nproma, p_test_run
 USE mo_dynamics_config,     ONLY: nnow_rcf
 USE mo_run_config,          ONLY: msg_level, iqv, iqc, iqi
 USE mo_grid_config,         ONLY: l_limited_area, nexlevs_rrg_vnest
-USE mo_nwp_phy_state,       ONLY: prm_diag
 USE mo_nonhydro_state,      ONLY: p_nh_state
 USE mo_impl_constants,      ONLY: min_rlcell, min_rlcell_int
 USE mo_physical_constants,  ONLY: rd, grav, stbo, tmelt
@@ -56,7 +54,7 @@ USE sfc_terra_data,         ONLY: cadp
 USE mo_mpi,                 ONLY: my_process_is_mpi_seq
 USE sfc_flake,              ONLY: flake_coldinit
 USE sfc_flake_data,         ONLY: tpl_T_r, C_T_min, rflk_depth_bs_ref
-USE mo_fortran_tools,       ONLY: init, copy, set_acc_host_or_device, assert_acc_host_only, assert_lacc_equals_i_am_accel_node
+USE mo_fortran_tools,       ONLY: init, copy, set_acc_host_or_device, assert_acc_host_only
 USE mo_io_config,           ONLY: var_in_output
 
 ! ACC LOOP Comment "comment_collapse"
@@ -1041,14 +1039,18 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
 !$OMP END PARALLEL
 
   IF (jgp == 0 .AND. .NOT. l_limited_area) THEN
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 5, 4*nlev_rg+n2d_upsc+1, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,                    &
+                            lacc=lzacc,                                              &
+                            nfields=5, ndim2tot=4*nlev_rg+n2d_upsc+1,                &
                             RECV1=rg_pres_ifc, SEND1=z_pres_ifc,                     &
                             RECV2=rg_pres,     SEND2=z_pres,                         &
                             RECV3=rg_temp,     SEND3=z_temp,                         &
                             RECV4=zrg_aux3d,   SEND4=z_aux3d,                        &
                             RECV5=rg_q_o3,     SEND5=z_q_o3                  )
 
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 9, 9*nlev_rg, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,         &
+                            lacc=lzacc,                                   &
+                            nfields=9, ndim2tot=9*nlev_rg,                &
                             RECV1=rg_aeq1,     SEND1=z_aeq1,              &
                             RECV2=rg_aeq2,     SEND2=z_aeq2,              &
                             RECV3=rg_aeq3,     SEND3=z_aeq3,              &
@@ -1059,22 +1061,28 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
 
 ! Maximum number of SEND/RECIV is 7. Put this into first call when acdnc is not used
     IF ( l_upsc_reff ) THEN
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 2, 2*nlev_rg,   &
-                              RECV1=rg_reff_liq, SEND1=z_reff_liq,            & 
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,           &
+                              lacc=lzacc,                                     &
+                              nfields=2, ndim2tot=2*nlev_rg,                  &
+                              RECV1=rg_reff_liq, SEND1=z_reff_liq,            &
                               RECV2=rg_reff_frz, SEND2=z_reff_frz             )
     END IF
 
     IF ( l_upsc_extra_flds ) THEN
       ntotsend = input_extra_flds%ntot
       nlevsend = input_extra_flds%nlev_rg*ntotsend      
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, ntotsend, nlevsend,  &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk, &
+                              lacc=lzacc,                           &
+                              nfields=ntotsend, ndim2tot=nlevsend,  &
                               RECV4D=rg_extra_flds, SEND4D=z_extra_flds            )
     END IF
     
     IF ( l_upsc_extra_reff ) THEN
       ntotsend = input_extra_reff%ntot
       nlevsend = input_extra_reff%nlev_rg*ntotsend      
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, ntotsend, nlevsend,  &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk, &
+                              lacc=lzacc,                           &
+                              nfields=ntotsend, ndim2tot=nlevsend,  &
                               RECV4D=rg_extra_reff, SEND4D=z_extra_reff            )
     END IF
     
@@ -1283,7 +1291,6 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
 !-----------------------------------------------------------------------
 
   CALL set_acc_host_or_device(lzacc, lacc)
-  CALL assert_lacc_equals_i_am_accel_node("downscale_rad_output", lzacc)
 
   IF (msg_level >= 10) THEN
     WRITE(message_text,'(a,i2,a,i2)') 'Downscaling of radiation output fields',&
@@ -1388,41 +1395,47 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
     ! and set pointers such that further processing is the same for MPI / non-MPI cases
 
 !$OMP PARALLEL
-    CALL init(zpg_aux3d(:,1:nshift,:))
-    CALL copy(rg_aclcov(:,:), zpg_aux3d(:,iclcov,:))
-    CALL copy(tsfc_rg(:,:), zpg_aux3d(:,itsfc,:))
-    CALL copy(albdif_rg(:,:), zpg_aux3d(:,ialb,:))
-    CALL copy(emis_rad_rg(:,:), zpg_aux3d(:,iemis,:))
-    CALL copy(cosmu0_rg(:,:), zpg_aux3d(:,icosmu0,:))
-    CALL copy(rg_lwflx_up_sfc(:,:), zpg_aux3d(:,ilwsfc,:))
-    CALL copy(rg_trsol_up_toa(:,:), zpg_aux3d(:,itrutoa,:))
-    CALL copy(rg_trsol_up_sfc(:,:), zpg_aux3d(:,itrusfc,:))
-    CALL copy(rg_trsol_dn_sfc_diff(:,:), zpg_aux3d(:,itrdiff,:))
-    CALL copy(rg_trsol_clr_sfc(:,:), zpg_aux3d(:,itrclrsfc,:))
-    CALL copy(rg_lwflx_clr_sfc(:,:), zpg_aux3d(:,ilwclrsfc,:))
-    CALL copy(rg_trsol_nir_sfc(:,:), zpg_aux3d(:,itrnirsfc,:))
-    CALL copy(rg_trsol_vis_sfc(:,:), zpg_aux3d(:,itrvissfc,:))
-    CALL copy(rg_trsol_par_sfc(:,:), zpg_aux3d(:,itrparsfc,:))
-    CALL copy(rg_fr_nir_sfc_diff(:,:), zpg_aux3d(:,ifrnirsfcdf,:))
-    CALL copy(rg_fr_vis_sfc_diff(:,:), zpg_aux3d(:,ifrvissfcdf,:))
-    CALL copy(rg_fr_par_sfc_diff(:,:), zpg_aux3d(:,ifrparsfcdf,:))
+    CALL init(zpg_aux3d(:,1:nshift,:), lacc=lzacc)
+    CALL copy(rg_aclcov(:,:), zpg_aux3d(:,iclcov,:), lacc=lzacc)
+    CALL copy(tsfc_rg(:,:), zpg_aux3d(:,itsfc,:), lacc=lzacc)
+    CALL copy(albdif_rg(:,:), zpg_aux3d(:,ialb,:), lacc=lzacc)
+    CALL copy(emis_rad_rg(:,:), zpg_aux3d(:,iemis,:), lacc=lzacc)
+    CALL copy(cosmu0_rg(:,:), zpg_aux3d(:,icosmu0,:), lacc=lzacc)
+    CALL copy(rg_lwflx_up_sfc(:,:), zpg_aux3d(:,ilwsfc,:), lacc=lzacc)
+    CALL copy(rg_trsol_up_toa(:,:), zpg_aux3d(:,itrutoa,:), lacc=lzacc)
+    CALL copy(rg_trsol_up_sfc(:,:), zpg_aux3d(:,itrusfc,:), lacc=lzacc)
+    CALL copy(rg_trsol_dn_sfc_diff(:,:), zpg_aux3d(:,itrdiff,:), lacc=lzacc)
+    CALL copy(rg_trsol_clr_sfc(:,:), zpg_aux3d(:,itrclrsfc,:), lacc=lzacc)
+    CALL copy(rg_lwflx_clr_sfc(:,:), zpg_aux3d(:,ilwclrsfc,:), lacc=lzacc)
+    CALL copy(rg_trsol_nir_sfc(:,:), zpg_aux3d(:,itrnirsfc,:), lacc=lzacc)
+    CALL copy(rg_trsol_vis_sfc(:,:), zpg_aux3d(:,itrvissfc,:), lacc=lzacc)
+    CALL copy(rg_trsol_par_sfc(:,:), zpg_aux3d(:,itrparsfc,:), lacc=lzacc)
+    CALL copy(rg_fr_nir_sfc_diff(:,:), zpg_aux3d(:,ifrnirsfcdf,:), lacc=lzacc)
+    CALL copy(rg_fr_vis_sfc_diff(:,:), zpg_aux3d(:,ifrvissfcdf,:), lacc=lzacc)
+    CALL copy(rg_fr_par_sfc_diff(:,:), zpg_aux3d(:,ifrparsfcdf,:), lacc=lzacc)
 !$OMP END PARALLEL
 
     nlev_tot =  2*nlevp1_rg + n2dvars_rg
 
-    CALL exchange_data_mult(p_pp%comm_pat_glb_to_loc_c, 3, nlev_tot, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_glb_to_loc_c,        &
+                            lacc=lzacc,                              &
+                            nfields=3, ndim2tot=nlev_tot,            &
                             RECV1=z_lwflxall, SEND1=rg_lwflxall,     &
                             RECV2=z_trsolall, SEND2=rg_trsolall,     &
                             RECV3=zrg_aux3d , SEND3=zpg_aux3d        )
 
     IF (atm_phy_nwp_config(jg)%l_3d_rad_fluxes) THEN
-      CALL exchange_data_mult(p_pp%comm_pat_glb_to_loc_c, 4, 4*nlevp1_rg,  &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_glb_to_loc_c,            &
+                              lacc=lzacc,                                  &
+                              nfields=4, ndim2tot=4*nlevp1_rg,             &
                               RECV1=z_lwflx_up, SEND1=rg_lwflx_up,         &
                               RECV2=z_lwflx_dn, SEND2=rg_lwflx_dn,         &
                               RECV3=z_swflx_up, SEND3=rg_swflx_up,         &
                               RECV4=z_swflx_dn, SEND4=rg_swflx_dn          )
 
-      CALL exchange_data_mult(p_pp%comm_pat_glb_to_loc_c, 4, 4*nlevp1_rg,  &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_glb_to_loc_c,            &
+                              lacc=lzacc,                                  &
+                              nfields=4, ndim2tot=4*nlevp1_rg,             &
                               RECV1=z_lwflx_up_clr, SEND1=rg_lwflx_up_clr, &
                               RECV2=z_lwflx_dn_clr, SEND2=rg_lwflx_dn_clr, &
                               RECV3=z_swflx_up_clr, SEND3=rg_swflx_up_clr, &
@@ -1467,26 +1480,26 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
   
 !$OMP PARALLEL
 #ifdef _OPENACC
-    CALL init(zrg_trdiffsolall(:,:,:), opt_acc_async=.TRUE.)
+    CALL init(zrg_trdiffsolall(:,:,:), lacc=lzacc, opt_acc_async=.TRUE.)
 #endif
-    CALL init(zrg_aux3d(:,1:nshift,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_aclcov(:,:), zrg_aux3d(:,iclcov,:), opt_acc_async=.TRUE.)
-    CALL copy(tsfc_rg(:,:), zrg_aux3d(:,itsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(albdif_rg(:,:), zrg_aux3d(:,ialb,:), opt_acc_async=.TRUE.)
-    CALL copy(emis_rad_rg(:,:), zrg_aux3d(:,iemis,:), opt_acc_async=.TRUE.)
-    CALL copy(cosmu0_rg(:,:), zrg_aux3d(:,icosmu0,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_lwflx_up_sfc(:,:), zrg_aux3d(:,ilwsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_up_toa(:,:), zrg_aux3d(:,itrutoa,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_up_sfc(:,:), zrg_aux3d(:,itrusfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_dn_sfc_diff(:,:), zrg_aux3d(:,itrdiff,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_clr_sfc(:,:), zrg_aux3d(:,itrclrsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_lwflx_clr_sfc(:,:), zrg_aux3d(:,ilwclrsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_nir_sfc(:,:), zrg_aux3d(:,itrnirsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_vis_sfc(:,:), zrg_aux3d(:,itrvissfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_trsol_par_sfc(:,:), zrg_aux3d(:,itrparsfc,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_fr_nir_sfc_diff(:,:), zrg_aux3d(:,ifrnirsfcdf,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_fr_vis_sfc_diff(:,:), zrg_aux3d(:,ifrvissfcdf,:), opt_acc_async=.TRUE.)
-    CALL copy(rg_fr_par_sfc_diff(:,:), zrg_aux3d(:,ifrparsfcdf,:), opt_acc_async=.TRUE.)
+    CALL init(zrg_aux3d(:,1:nshift,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_aclcov(:,:), zrg_aux3d(:,iclcov,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(tsfc_rg(:,:), zrg_aux3d(:,itsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(albdif_rg(:,:), zrg_aux3d(:,ialb,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(emis_rad_rg(:,:), zrg_aux3d(:,iemis,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(cosmu0_rg(:,:), zrg_aux3d(:,icosmu0,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_lwflx_up_sfc(:,:), zrg_aux3d(:,ilwsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_up_toa(:,:), zrg_aux3d(:,itrutoa,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_up_sfc(:,:), zrg_aux3d(:,itrusfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_dn_sfc_diff(:,:), zrg_aux3d(:,itrdiff,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_clr_sfc(:,:), zrg_aux3d(:,itrclrsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_lwflx_clr_sfc(:,:), zrg_aux3d(:,ilwclrsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_nir_sfc(:,:), zrg_aux3d(:,itrnirsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_vis_sfc(:,:), zrg_aux3d(:,itrvissfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_trsol_par_sfc(:,:), zrg_aux3d(:,itrparsfc,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_fr_nir_sfc_diff(:,:), zrg_aux3d(:,ifrnirsfcdf,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_fr_vis_sfc_diff(:,:), zrg_aux3d(:,ifrvissfcdf,:), lacc=lzacc, opt_acc_async=.TRUE.)
+    CALL copy(rg_fr_par_sfc_diff(:,:), zrg_aux3d(:,ifrparsfcdf,:), lacc=lzacc, opt_acc_async=.TRUE.)
 !$OMP END PARALLEL
 
     !$ACC END DATA
@@ -1610,13 +1623,19 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
 
   !$ACC WAIT
   IF (.NOT. my_process_is_mpi_seq()) THEN
-    CALL exchange_data_mult(p_pp%comm_pat_c, 3, nlev_tot, recv1=p_lwflxall, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_c,                          &
+                            lacc=lzacc,                                     &
+                            nfields=3, ndim2tot=nlev_tot, recv1=p_lwflxall, &
       &                     recv2=zrg_trdiffsolall, recv3=zrg_aux3d   )
     IF (atm_phy_nwp_config(jg)%l_3d_rad_fluxes) THEN
-      CALL exchange_data_mult(p_pp%comm_pat_c, 4, 4*nlevp1_rg,                &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_c,                          &
+                              lacc=lzacc,                                     &
+                              nfields=4, ndim2tot=4*nlevp1_rg,                &
                               RECV1=p_lwflx_up,     RECV2=p_lwflx_dn,         &
                               RECV3=p_swflx_up,     RECV4=p_swflx_dn          )
-      CALL exchange_data_mult(p_pp%comm_pat_c, 4, 4*nlevp1_rg,                &
+      CALL exchange_data_mult(p_pat=p_pp%comm_pat_c,                          &
+                              lacc=lzacc,                                     &
+                              nfields=4, ndim2tot=4*nlevp1_rg,                &
                               RECV1=p_lwflx_up_clr, RECV2=p_lwflx_dn_clr,     &
                               RECV3=p_swflx_up_clr, RECV4=p_swflx_dn_clr      )
     END IF
@@ -1767,9 +1786,9 @@ SUBROUTINE downscale_rad_output(jg, jgp, nlev_rg, rg_aclcov, rg_lwflxall,   &
 !$OMP END DO
   ENDIF
 
-  CALL copy(z_aux3d(:,var_clcov,:), aclcov(:,:))
-  CALL copy(z_aux3d(:,var_tsfc,:), tsfc_backintp(:,:))
-  CALL copy(z_aux3d(:,var_alb,:), alb_backintp(:,:))
+  CALL copy(z_aux3d(:,var_clcov,:), aclcov(:,:), lacc=lzacc)
+  CALL copy(z_aux3d(:,var_tsfc,:), tsfc_backintp(:,:), lacc=lzacc)
+  CALL copy(z_aux3d(:,var_alb,:), alb_backintp(:,:), lacc=lzacc)
 !$OMP BARRIER
 
   ! Reconstruct solar transmissivities from interpolated transmissivity differences
@@ -2092,13 +2111,14 @@ END SUBROUTINE downscale_rad_output
 !>
 !! This routine optimizes the boundary interpolation of diagnostic physics fields for output
 !!
-SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
+SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc)
 
-  USE mo_nwp_phy_state,      ONLY: prm_diag
   USE mo_nonhydro_state,     ONLY: p_nh_state
 
   ! Input:
-  TYPE(t_external_data), INTENT(in) :: ext_data(:)
+  TYPE(t_external_data),     INTENT(IN)    :: ext_data(:)
+  TYPE(t_nwp_phy_diag),      INTENT(INOUT) :: prm_diag(:)
+  TYPE(t_lnd_state), TARGET, INTENT(INOUT) :: p_lnd_state(:)
   INTEGER              , INTENT(in) :: jg,jgc,jn
   LOGICAL, OPTIONAL    , INTENT(IN) :: lacc ! If true, use openacc
 
@@ -2114,7 +2134,7 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
   TYPE(t_wtr_prog),             POINTER :: ptr_wprogc ! child level water prog state
 
   ! Local fields
-  INTEGER, PARAMETER  :: nfields_p1=77   ! Number of positive-definite 2D physics fields for which boundary interpolation is needed
+  INTEGER, PARAMETER  :: nfields_p1=79   ! Number of positive-definite 2D physics fields for which boundary interpolation is needed
   INTEGER, PARAMETER  :: nfields_p2=19   ! Number of remaining 2D physics fields for which boundary interpolation is needed
   INTEGER, PARAMETER  :: nfields_l2=19   ! Number of 2D land state fields
 
@@ -2167,11 +2187,11 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
   !$ACC   PRESENT(ptr_wprogc, var_in_output) IF(lzacc)
 
   IF (p_test_run) THEN
-    CALL init(z_aux3dp1_p(:,:,:))
-    CALL init(z_aux3dp2_p(:,:,:))
-    CALL init(z_aux3dl2_p(:,:,:))
-    CALL init(z_aux3dso_p(:,:,:))
-    CALL init(z_aux3dsn_p(:,:,:))
+    CALL init(z_aux3dp1_p(:,:,:), lacc=lzacc)
+    CALL init(z_aux3dp2_p(:,:,:), lacc=lzacc)
+    CALL init(z_aux3dl2_p(:,:,:), lacc=lzacc)
+    CALL init(z_aux3dso_p(:,:,:), lacc=lzacc)
+    CALL init(z_aux3dsn_p(:,:,:), lacc=lzacc)
   ENDIF
 
   i_startblk = ptr_pp%cells%start_block(grf_bdywidth_c+1)
@@ -2278,6 +2298,9 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
       z_aux3dp1_p(jc,75,jb)  = prm_diag(jg)%prec_con_d(jc,jb)
       z_aux3dp1_p(jc,76,jb)  = prm_diag(jg)%swflxclr_sfc(jc,jb)
       z_aux3dp1_p(jc,77,jb)  = prm_diag(jg)%swflxclrsfc_a(jc,jb)
+
+      z_aux3dp1_p(jc,78,jb)  = prm_diag(jg)%rain_con_rate_corr(jc,jb)
+      z_aux3dp1_p(jc,79,jb)  = prm_diag(jg)%snow_con_rate_corr(jc,jb)
 
       z_aux3dp2_p(jc,1,jb) = prm_diag(jg)%u_10m(jc,jb)
       z_aux3dp2_p(jc,2,jb) = prm_diag(jg)%v_10m(jc,jb)
@@ -2420,27 +2443,33 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
     IF (lsfc_interp .AND. lmulti_snow) THEN
 
       CALL sync_patch_array_mult(SYNC_C,ptr_pp,5,z_aux3dp1_p,z_aux3dp2_p,z_aux3dl2_p,z_aux3dso_p,z_aux3dsn_p)
-      CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 5, z_aux3dp1_p, z_aux3dp1_c, z_aux3dp2_p, z_aux3dp2_c,&
-        z_aux3dl2_p, z_aux3dl2_c, z_aux3dso_p, z_aux3dso_c, z_aux3dsn_p, z_aux3dsn_c, &
+      CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=5, lacc=lzacc, &
+        f3din1=z_aux3dp1_p, f3dout1=z_aux3dp1_c, f3din2=z_aux3dp2_p, f3dout2=z_aux3dp2_c, &
+        f3din3=z_aux3dl2_p, f3dout3=z_aux3dl2_c, f3din4=z_aux3dso_p, f3dout4=z_aux3dso_c, &
+        f3din5=z_aux3dsn_p, f3dout5=z_aux3dsn_c, &
         llimit_nneg=(/.TRUE.,.FALSE.,.TRUE.,.TRUE.,.TRUE./), lnoshift=.TRUE.)
 
     ELSE IF (lsfc_interp) THEN
 
       CALL sync_patch_array_mult(SYNC_C,ptr_pp,4,z_aux3dp1_p,z_aux3dp2_p,z_aux3dl2_p,z_aux3dso_p)
-      CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 4, z_aux3dp1_p, z_aux3dp1_c, z_aux3dp2_p, z_aux3dp2_c,&
-        z_aux3dl2_p, z_aux3dl2_c, z_aux3dso_p, z_aux3dso_c,                       &
+      CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=4, lacc=lzacc, &
+        f3din1=z_aux3dp1_p, f3dout1=z_aux3dp1_c, f3din2=z_aux3dp2_p, f3dout2=z_aux3dp2_c,&
+        f3din3=z_aux3dl2_p, f3dout3=z_aux3dl2_c, f3din4=z_aux3dso_p, f3dout4=z_aux3dso_c,                       &
         llimit_nneg=(/.TRUE.,.FALSE.,.TRUE.,.TRUE./), lnoshift=.TRUE.)
 
     ELSE
       CALL sync_patch_array_mult(SYNC_C,ptr_pp,2,z_aux3dp1_p,z_aux3dp2_p)
-      CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 2, z_aux3dp1_p, z_aux3dp1_c, z_aux3dp2_p, z_aux3dp2_c, &
+      CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=2, lacc=lzacc, &
+        f3din1=z_aux3dp1_p, f3dout1=z_aux3dp1_c, f3din2=z_aux3dp2_p, f3dout2=z_aux3dp2_c, &
         llimit_nneg=(/.TRUE.,.FALSE./), lnoshift=.TRUE.)
 
     ENDIF
 
     CALL sync_patch_array_mult(SYNC_C,ptr_pp,3,prm_diag(jg)%tkvm,prm_diag(jg)%tkvh,prm_diag(jg)%rcld)
-    CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 3, prm_diag(jg)%tkvm, prm_diag(jgc)%tkvm, &
-      prm_diag(jg)%tkvh, prm_diag(jgc)%tkvh, prm_diag(jg)%rcld, prm_diag(jgc)%rcld,            &
+    CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=3, lacc=lzacc, &
+      f3din1=prm_diag(jg)%tkvm, f3dout1=prm_diag(jgc)%tkvm, &
+      f3din2=prm_diag(jg)%tkvh, f3dout2=prm_diag(jgc)%tkvh, &
+      f3din3=prm_diag(jg)%rcld, f3dout3=prm_diag(jgc)%rcld, &
       llimit_nneg=(/.TRUE.,.TRUE.,.TRUE./))
 
   i_startblk = ptr_pc%cells%start_blk(1,1)
@@ -2543,6 +2572,9 @@ SUBROUTINE interpol_phys_grf (ext_data, jg, jgc, jn, lacc)
       
       prm_diag(jgc)%swflxclr_sfc(jc,jb)   = z_aux3dp1_c(jc,76,jb)
       prm_diag(jgc)%swflxclrsfc_a(jc,jb)  = z_aux3dp1_c(jc,77,jb)
+
+      prm_diag(jgc)%rain_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,78,jb)
+      prm_diag(jgc)%snow_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,79,jb)
 
       prm_diag(jgc)%u_10m(jc,jb)          = z_aux3dp2_c(jc,1,jb)
       prm_diag(jgc)%v_10m(jc,jb)          = z_aux3dp2_c(jc,2,jb)
@@ -2751,10 +2783,12 @@ END SUBROUTINE interpol_phys_grf
 !! radiation is computed on a reduced grid
 !!
 !!
-SUBROUTINE interpol_rrg_grf (jg, jgc, jn, ntl_rcf, lacc)
+SUBROUTINE interpol_rrg_grf (jg, jgc, jn, ntl_rcf, prm_diag, p_lnd_state, lacc)
 
-  INTEGER, INTENT(in) :: jg, jgc, jn, ntl_rcf ! Input grid parameters
-  LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
+  INTEGER,                      INTENT(IN)    :: jg, jgc, jn, ntl_rcf ! Input grid parameters
+  TYPE(t_nwp_phy_diag), TARGET, INTENT(INOUT) :: prm_diag(:)
+  TYPE(t_lnd_state),    TARGET, INTENT(INOUT) :: p_lnd_state(:)
+  LOGICAL,           OPTIONAL,  INTENT(IN)    :: lacc                 ! If true, use openacc
 
   ! Pointers
   TYPE(t_patch),                POINTER :: ptr_pp
@@ -2826,11 +2860,13 @@ SUBROUTINE interpol_rrg_grf (jg, jgc, jn, ntl_rcf, lacc)
     ! Halo update is needed before interpolation
     CALL sync_patch_array_mult(SYNC_C,ptr_pp,2,z_aux3d_p,prm_diagp%rcld)
 
-    CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 1, z_aux3d_p, z_aux3d_c, llimit_nneg=(/.TRUE./),&
+    CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=1, lacc=lzacc, &
+      &                     f3din1=z_aux3d_p, f3dout1=z_aux3d_c, llimit_nneg=(/.TRUE./),&
       &                     lnoshift=.TRUE.)
 
     ! needed for cloud-cover scheme
-    CALL interpol_scal_grf (ptr_pp, ptr_pc, ptr_grf, 1, prm_diagp%rcld, prm_diagc%rcld, llimit_nneg=(/.TRUE./))
+    CALL interpol_scal_grf (p_pp=ptr_pp, p_pc=ptr_pc, p_grf=ptr_grf, nfields=1, lacc=lzacc, &
+      f3din1=prm_diagp%rcld, f3dout1=prm_diagc%rcld, llimit_nneg=(/.TRUE./))
 
 
   i_startblk = ptr_pc%cells%start_blk(1,1)
@@ -2871,10 +2907,12 @@ END SUBROUTINE interpol_rrg_grf
 !! This routine copies additional model levels to the local parent grid if vertical nesting
 !! is combined with a reduced radiation grid and the option latm_above_top = .TRUE.
 !!
-SUBROUTINE copy_rrg_ubc (jg, jgc)
+SUBROUTINE copy_rrg_ubc (jg, jgc, prm_diag, lacc)
 
   ! Input grid parameters
-  INTEGER, INTENT(in) :: jg, jgc
+  INTEGER,              INTENT(IN)   :: jg, jgc
+  TYPE(t_nwp_phy_diag), INTENT(INOUT):: prm_diag(:)
+  LOGICAL, INTENT(IN) :: lacc
 
   ! Local fields
 
@@ -2885,7 +2923,9 @@ SUBROUTINE copy_rrg_ubc (jg, jgc)
   nshift = MIN(nexlevs_rrg_vnest, p_patch(jgc)%nshift)
 
   IF (nshift > 0) THEN
-    CALL exchange_data_mult(p_patch_local_parent(jgc)%comm_pat_glb_to_loc_c, 3, 3*nshift,                        &
+    CALL exchange_data_mult(p_pat=p_patch_local_parent(jgc)%comm_pat_glb_to_loc_c,                               &
+       lacc=lacc,                                                                                                &
+       nfields=3, ndim2tot=3*nshift,                                                                             &
        RECV1=prm_diag(jgc)%buffer_rrg(:,         1:  nshift,:), SEND1=p_nh_state(jg)%diag%pres_ifc(:,jks:jke,:), &
        RECV2=prm_diag(jgc)%buffer_rrg(:,  nshift+1:2*nshift,:), SEND2=p_nh_state(jg)%diag%pres(:,jks:jke,:),     &
        RECV3=prm_diag(jgc)%buffer_rrg(:,2*nshift+1:3*nshift,:), SEND3=p_nh_state(jg)%diag%temp(:,jks:jke,:)      )
@@ -2898,11 +2938,12 @@ END SUBROUTINE copy_rrg_ubc
 !>
 !! This routine performs the feedback of diagnostic physics fields for output
 !!
-SUBROUTINE feedback_phys_diag(jg, jgp, lacc)
+SUBROUTINE feedback_phys_diag(jg, jgp, prm_diag, lacc)
 
-  INTEGER, INTENT(IN) :: jg   ! child grid level
-  INTEGER, INTENT(IN) :: jgp  ! parent grid level
-  LOGICAL, INTENT(IN), OPTIONAL :: lacc ! If true, use openacc
+  INTEGER,              INTENT(IN)    :: jg         ! child grid level
+  INTEGER,              INTENT(IN)    :: jgp        ! parent grid level
+  TYPE(t_nwp_phy_diag), INTENT(INOUT) :: prm_diag(:)
+  LOGICAL, OPTIONAL,    INTENT(IN)    :: lacc       ! If true, use openacc
 
   ! Pointers to types needed to minimize code duplication for MPI/no-MPI cases
   TYPE(t_grid_cells), POINTER     :: p_gcp
@@ -3029,7 +3070,7 @@ SUBROUTINE feedback_phys_diag(jg, jgp, lacc)
 !$OMP END PARALLEL
 
 
-  CALL exchange_data(p_pp%comm_pat_loc_to_glb_c_fbk, RECV=z_aux3d_par, SEND=z_aux3d_lp)
+  CALL exchange_data(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk, lacc=.FALSE., RECV=z_aux3d_par, SEND=z_aux3d_lp)
   p_aux3d => z_aux3d_par
 
   i_startblk = p_patch(jgp)%cells%start_blk(1,1)
@@ -3070,6 +3111,3 @@ END SUBROUTINE feedback_phys_diag
 
 
 END MODULE mo_phys_nest_utilities
-
-
-

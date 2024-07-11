@@ -179,7 +179,6 @@ cat > NAMELIST_NWP << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /
@@ -303,8 +302,9 @@ cat > NAMELIST_NWP << EOF
  efdt_min_raylfric           =                       7200.        ! minimum e-folding time of Rayleigh friction
  itype_z0                    =                          2         ! type of roughness length data
  icapdcycl                   =                          3         ! apply CAPE modification to improve diurnalcycle over tropical land
- icpl_aero_conv              =                          0         ! coupling between autoconversion and Tegen aerosol climatology
- icpl_aero_gscp              =                          0         ! coupling between autoconversion and Tegen aerosol climatology
+ icpl_aero_conv              =                          1         ! coupling between autoconversion and Tegen aerosol climatology
+ icpl_aero_gscp              =                          1         ! coupling between autoconversion and Tegen aerosol climatology
+ icpl_aero_ice               =                          1         ! DeMott ice nucleation
  lrtm_filename               =                'rrtmg_lw.nc'       ! longwave absorption coefficients for RRTM_LW
  cldopt_filename             =             'rrtm_cldopt.nc'       ! RRTM cloud optical properties
  dt_rad                      =                         720.       ! time step for radiation in s
@@ -346,7 +346,7 @@ cat > NAMELIST_NWP << EOF
 &radiation_nml
  irad_o3                     =                          7         ! ozone climatology
  irad_aero                   =                          7         ! CAMS climatology
- cams_clim_filename          =      'icon_cams_clim_lam_test_DOM<idom>.nc'
+ cams_aero_filename          =      'icon_cams_clim_lam_test_DOM<idom>.nc'
  albedo_type                 =                          2         ! type of surface albedo
  vmr_co2                     =                    390.e-06
  vmr_ch4                     =                   1800.e-09

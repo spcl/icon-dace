@@ -100,11 +100,11 @@ CONTAINS
     IF (dummy .NE. 0) int_is_int = .FALSE.
     IF(my_process_is_mpi_workroot()) THEN
       WRITE(0, "(a)") "opening " // restart_filename
-      CALL nf(nf_open(restart_filename, NF_NOWRITE, fID), routine)
+      CALL nf(nf90_open(restart_filename, NF90_NOWRITE, fID), routine)
       DO iV = 1, SIZE(vDat)
         skip(iV) = .NOT.has_valid_time_level(vDat(iV)%p%info, ptc%id, nnow(ptc%id), nnow_rcf(ptc%id))
         IF (.NOT.skip(iV)) THEN
-          skip(iV) = nf_inq_varid(fID, TRIM(vDat(iV)%p%info%name), dummy) .NE. NF_NOERR
+          skip(iV) = nf90_inq_varid(fID, TRIM(vDat(iV)%p%info%name), dummy) .NE. NF90_NOERR
           IF ((ocean_initFromRestart_OVERRIDE .OR. vDat(iV)%p%info%lrestart_cont) .AND. skip(iV)) THEN
             CALL warning(routine, "variable not found: '"//TRIM(vDat(iV)%p%info%name))
           ELSE IF (skip(iV)) THEN
@@ -112,7 +112,7 @@ CONTAINS
           END IF
         END IF
       END DO
-      CALL nf(nf_close(fID), routine)
+      CALL nf(nf90_close(fID), routine)
     END IF
     CALL p_bcast(skip, 0, comm=p_comm_work)
     fID = distrib_nf_open(restart_filename) 

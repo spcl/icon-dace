@@ -28,16 +28,12 @@ MODULE mo_rte_rrtmgp_radiation
   USE mo_kind,                ONLY: wp, i8
   USE mo_mpi,                 ONLY: my_process_is_stdio
   USE mo_model_domain,        ONLY: t_patch
-  USE mo_loopindices         ,ONLY: get_indices_c
-  USE mo_parallel_config,     ONLY: nproma
-  USE mo_impl_constants      ,ONLY: min_rlcell_int, grf_bdywidth_c
 
-  USE mo_physical_constants,  ONLY: rae, amd, amco2, amch4, amn2o, amo2, amc11, amc12
+  USE mo_physical_constants,  ONLY: rae
   USE mo_exception,           ONLY: finish, message, message_text
-  USE mo_run_config,          ONLY: iqv, iqc, iqi, ico2, io3, ntracer
   USE mo_aes_phy_config,      ONLY: aes_phy_tc
   USE mo_aes_rad_config,      ONLY: aes_rad_config
-  USE mo_bc_ozone,            ONLY: ext_ozone
+  USE mo_coupling_config,     ONLY: is_coupled_to_aero
 
   USE mo_orbit,               ONLY: orbit_kepler, orbit_vsop87, get_orbit_times
   USE mo_radiation_solar_data, ONLY: ssi_default, ssi_amip,                    &
@@ -220,7 +216,7 @@ MODULE mo_rte_rrtmgp_radiation
       CASE (1)
         tsi=tsi_radt
         ssi_factor=ssi_radt
-        continue ! solar irradiance was read in aes_phy_bcs_global
+      ! solar irradiance was read in aes_phy_bcs_global
       CASE (2)
         tsi = SUM(ssi_cmip5_picontrol)
         ssi_factor = ssi_cmip5_picontrol
@@ -292,6 +288,7 @@ MODULE mo_rte_rrtmgp_radiation
     & dz             ,&!< in  geometric height thickness of layer [m]
     & pp_hl          ,&!< in  pressure at half levels at t-dt [Pa]
     & pp_fl          ,&!< in  pressure at full levels at t-dt [Pa]
+    & rad_2d         ,&!< inout arbitrary 2d field in radiation for output
     & tk_fl          ,&!< in  tk_fl  = temperature at full level at t-dt
     & xm_air         ,&!< in  air mass in layer [kg/m2]
     & xq_trc         ,&!< in  tracer  mass fraction [kg/kg]
@@ -358,6 +355,7 @@ MODULE mo_rte_rrtmgp_radiation
     & xq_trc(:,:,:),    & !< tracer mass fraction [kg/kg]
     & cdnc(:,:)           !< Cloud drop number concentration
     REAL(wp), INTENT(INOUT) :: &
+    & rad_2d(:),        & !< arbitrary 2d field in radiation for output
     & reff_ice(:,:),    & !< effective radius of cloud ice [m]
     & tau_ice(:,:),     & !< optical depth of cloud ice, integraded over all bands     
     & reff_snow(:,:),   & !< effective radius of snow [m]
@@ -412,7 +410,7 @@ MODULE mo_rte_rrtmgp_radiation
 
     REAL (wp) :: pp_sfc(nproma)
 
-    INTEGER   :: jl, jk, jt
+    INTEGER   :: jl, jk
 
     !$ACC DATA PRESENT(xv_ozn) &
     !$ACC   CREATE(pp_sfc, tk_hl, xm_liq, xm_ice, xc_frc, xm_snw) &
@@ -446,7 +444,7 @@ MODULE mo_rte_rrtmgp_radiation
          &                klev,         xq_trc, xm_air, xm_snw            )
 
     CALL rte_rrtmgp_interface(jg, jb, jcs, jce, nproma, klev             ,&
-      aes_rad_config(jg)%irad_aero, aes_rad_config(jg)%lrad_yac          ,&
+      aes_rad_config(jg)%irad_aero, is_coupled_to_aero()                 ,&
       psctm(jg), ssi_factor, loland, loglac, this_datetime               ,&
       pcos_mu0        ,daylght_frc                                       ,&
       alb_vis_dir     ,alb_nir_dir     ,alb_vis_dif     ,alb_nir_dif     ,&
@@ -454,6 +452,7 @@ MODULE mo_rte_rrtmgp_radiation
       zf              ,zh              ,dz                               ,&
       pp_sfc          ,pp_fl           ,pp_hl                            ,&
       tk_sfc          ,tk_fl           ,tk_hl                            ,&
+      rad_2d                                                             ,&
       xvmr_vap        ,xm_liq          ,xm_ice                           ,&
       reff_ice        ,tau_ice         ,reff_snow       ,tau_snow        ,&
       cdnc            ,xc_frc          ,xm_snw                           ,&

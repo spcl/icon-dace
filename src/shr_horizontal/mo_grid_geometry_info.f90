@@ -26,19 +26,7 @@ MODULE mo_grid_geometry_info
   ! The USE statement below lets this module use the routines from
   ! mo_netcdf_parallel where only 1 processor is reading and
   ! broadcasting the results  
-  USE mo_netcdf_parallel, ONLY:                        &
-!     & nf_nowrite, nf_global, nf_noerr,               &
-!     & nf_open            => p_nf_open,               &
-!     & nf_close           => p_nf_close,              &
-!     & nf_inq_dimid       => p_nf_inq_dimid,          &
-!     & nf_inq_dimlen      => p_nf_inq_dimlen,         &
-!     & nf_inq_varid       => p_nf_inq_varid,          &
-!     & nf_get_att_text    => p_nf_get_att_text,       &
-!     & p_nf_get_att_int     => p_nf_get_att_int,        &
-!     & p_nf_get_att_double  => p_nf_get_att_double,     &
-!     & nf_get_var_int     => p_nf_get_var_int,        &
-!     & nf_get_var_double  => p_nf_get_var_double
-    & p_nf_get_att_int, p_nf_get_att_double
+  USE mo_netcdf_parallel, ONLY: p_nf90_get_att
 #endif
   
   IMPLICIT NONE
@@ -216,81 +204,81 @@ CONTAINS
     CALL set_default_geometry_info(geometry_info)
     parallel_read_geometry_info = -1
     
-    netcd_status = p_nf_get_att_int(ncid, nf_global,'grid_geometry', geometry_type)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'grid_geometry', geometry_type)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","grid_geometry")
       RETURN
     ENDIF
     
     geometry_info%geometry_type = geometry_type
 
-    netcd_status = p_nf_get_att_int(ncid, nf_global,'grid_cell_type', cell_type)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'grid_cell_type', cell_type)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","grid_geometry")
       RETURN
     ENDIF
         
     geometry_info%cell_type = cell_type
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'mean_edge_length', mean_edge_length)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_edge_length', mean_edge_length)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_edge_length")
       RETURN
     ENDIF
     
     geometry_info%mean_edge_length = mean_edge_length
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'mean_dual_edge_length', &
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_dual_edge_length', &
       & mean_dual_edge_length)
-    IF (netcd_status /= nf_noerr) THEN
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_dual_edge_length")
       RETURN
     ENDIF
     
     geometry_info%mean_dual_edge_length = mean_dual_edge_length
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'mean_cell_area', mean_cell_area)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_cell_area', mean_cell_area)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_cell_area")
       RETURN
     ENDIF
     
     geometry_info%mean_cell_area = mean_cell_area
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'mean_dual_cell_area', mean_dual_cell_area)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'mean_dual_cell_area', mean_dual_cell_area)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_dual_cell_area")
       RETURN
     ENDIF
     
     geometry_info%mean_dual_cell_area = mean_dual_cell_area
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'domain_length', domain_length)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_length', domain_length)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_length")
       RETURN
     ENDIF
     
     geometry_info%domain_length = domain_length
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'domain_height', domain_height)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_height', domain_height)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_height")
       RETURN
     ENDIF
 
     geometry_info%domain_height = domain_height
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'sphere_radius', sphere_radius)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'sphere_radius', sphere_radius)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","sphere_radius")
       RETURN
     ENDIF
     
     geometry_info%sphere_radius = sphere_radius
 
-    netcd_status = p_nf_get_att_double(ncid, nf_global,'domain_cartesian_center', center_x)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = p_nf90_get_att(ncid, nf90_global,'domain_cartesian_center', center_x)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_cartesian_center")
       RETURN
     ENDIF
@@ -327,80 +315,80 @@ CONTAINS
     CALL set_default_geometry_info(geometry_info)
     read_geometry_info = -1
     
-    netcd_status = nfx_get_att(ncid, nf_global,'grid_geometry', geometry_type)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'grid_geometry', geometry_type)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","grid_geometry")
       RETURN
     ENDIF
     
     geometry_info%geometry_type = geometry_type
 
-    netcd_status = nfx_get_att(ncid, nf_global,'grid_cell_type', cell_type)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'grid_cell_type', cell_type)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","grid_geometry")
       RETURN
     ENDIF
                 
     geometry_info%cell_type = cell_type
 
-    netcd_status = nfx_get_att(ncid, nf_global,'mean_edge_length', mean_edge_length)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'mean_edge_length', mean_edge_length)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_edge_length")
       RETURN
     ENDIF
     
     geometry_info%mean_edge_length = mean_edge_length
 
-    netcd_status = nfx_get_att(ncid, nf_global,'mean_dual_edge_length', mean_dual_edge_length)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'mean_dual_edge_length', mean_dual_edge_length)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_dual_edge_length")
       RETURN
     ENDIF
     
     geometry_info%mean_dual_edge_length = mean_dual_edge_length
 
-    netcd_status = nfx_get_att(ncid, nf_global,'mean_cell_area', mean_cell_area)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'mean_cell_area', mean_cell_area)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_cell_area")
       RETURN
     ENDIF
     
     geometry_info%mean_cell_area = mean_cell_area
 
-    netcd_status = nfx_get_att(ncid, nf_global,'mean_dual_cell_area', mean_dual_cell_area)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'mean_dual_cell_area', mean_dual_cell_area)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","mean_dual_cell_area")
       RETURN
     ENDIF
     
     geometry_info%mean_dual_cell_area = mean_dual_cell_area
 
-    netcd_status = nfx_get_att(ncid, nf_global,'domain_length', domain_length)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'domain_length', domain_length)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_length")
       RETURN
     ENDIF
     
     geometry_info%domain_length = domain_length
 
-    netcd_status = nfx_get_att(ncid, nf_global,'domain_height', domain_height)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'domain_height', domain_height)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_height")
       RETURN
     ENDIF
 
     geometry_info%domain_height = domain_height
 
-    netcd_status = nfx_get_att(ncid, nf_global,'sphere_radius', sphere_radius)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'sphere_radius', sphere_radius)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","sphere_radius")
       RETURN
     ENDIF
     
     geometry_info%sphere_radius = sphere_radius
 
-    netcd_status = nfx_get_att(ncid, nf_global,'domain_cartesian_center', center_x)
-    IF (netcd_status /= nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global,'domain_cartesian_center', center_x)
+    IF (netcd_status /= nf90_noerr) THEN
 !       CALL finish("Cannot read","domain_cartesian_center")
       RETURN
     ENDIF
@@ -421,34 +409,34 @@ CONTAINS
 
     write_geometry_info = -1
 
-    CALL nf(nfx_put_att      (ncid, nf_global, 'grid_geometry', nf_int,     &
+    CALL nf(nf90_put_att      (ncid, nf90_global, 'grid_geometry',  &
       & geometry_info%geometry_type), routine)
     
-    CALL nf(nfx_put_att      (ncid, nf_global, 'grid_cell_type', nf_int,     &
+    CALL nf(nf90_put_att      (ncid, nf90_global, 'grid_cell_type', &
       & geometry_info%cell_type), routine)
     
-    CALL nf(nfx_put_att  (ncid, nf_global, 'mean_edge_length' , nf_double, &
+    CALL nf(nf90_put_att  (ncid, nf90_global, 'mean_edge_length' , &
       & geometry_info%mean_edge_length), routine)
       
-    CALL nf(nfx_put_att  (ncid, nf_global, 'mean_dual_edge_length' , nf_double, &
+    CALL nf(nf90_put_att  (ncid, nf90_global, 'mean_dual_edge_length' , &
       & geometry_info%mean_dual_edge_length), routine)
       
-    CALL nf(nfx_put_att  (ncid, nf_global, 'mean_cell_area' , nf_double, &
+    CALL nf(nf90_put_att  (ncid, nf90_global, 'mean_cell_area' , &
       & geometry_info%mean_cell_area), routine)
       
-    CALL nf(nfx_put_att  (ncid, nf_global, 'mean_dual_cell_area' , nf_double, &
+    CALL nf(nf90_put_att  (ncid, nf90_global, 'mean_dual_cell_area' , &
       & geometry_info%mean_dual_cell_area), routine)
       
-    CALL nf(nfx_put_att   (ncid, nf_global, 'domain_length' , nf_double, &
+    CALL nf(nf90_put_att   (ncid, nf90_global, 'domain_length' , &
       & geometry_info%domain_length), routine)
     
-    CALL nf(nfx_put_att   (ncid, nf_global, 'domain_height' , nf_double, &
+    CALL nf(nf90_put_att   (ncid, nf90_global, 'domain_height' , &
       & geometry_info%domain_height), routine)
     
-    CALL nf(nfx_put_att   (ncid, nf_global, 'sphere_radius' , nf_double, &
+    CALL nf(nf90_put_att   (ncid, nf90_global, 'sphere_radius' , &
       & geometry_info%sphere_radius), routine)
     
-    CALL nf(nfx_put_att  (ncid, nf_global, 'domain_cartesian_center', nf_double, &
+    CALL nf(nf90_put_att  (ncid, nf90_global, 'domain_cartesian_center', &
       & geometry_info%center%x), routine)
       
     write_geometry_info = 0

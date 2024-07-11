@@ -28,6 +28,7 @@ MODULE mo_carbon_config_class
   PUBLIC :: t_carbon_config
 
   TYPE, EXTENDS(t_jsb_config) :: t_carbon_config
+    LOGICAL  :: with_nitrogen
     LOGICAL  :: read_cpools ! Read Cpools from external file when experiment is newly started (cpools are
                             ! initialized with values from file) or restarted (cpools from restart file are
                             ! overwritten by values from file).
@@ -58,6 +59,7 @@ CONTAINS
 
     LOGICAL                     :: active
     CHARACTER(len=filename_max) :: ic_filename, bc_filename
+    LOGICAL                     :: with_nitrogen
     LOGICAL                     :: read_cpools, diag_humus_fluxes
     REAL(wp)                    :: fire_fract_wood_2_atmos
     ! LOGICAL           :: lemissions
@@ -66,6 +68,7 @@ CONTAINS
          active,                   &
          ic_filename,              &
          bc_filename,              &
+         with_nitrogen,            &
          read_cpools,              &
          diag_humus_fluxes,        &
          fire_fract_wood_2_atmos
@@ -80,6 +83,7 @@ CONTAINS
     active                 = .FALSE.
     bc_filename            = 'bc_land_carbon.nc'
     ic_filename            = 'ic_land_carbon.nc'
+    with_nitrogen          = .FALSE.
     read_cpools            = .FALSE.
     diag_humus_fluxes      = .FALSE.
     fire_fract_wood_2_atmos = FireFracWood2Atmos
@@ -96,6 +100,7 @@ CONTAINS
     config%active                 = active
     config%ic_filename            = ic_filename
     config%bc_filename            = bc_filename
+    config%with_nitrogen          = with_nitrogen
     config%read_cpools            = read_cpools
     config%diag_humus_fluxes      = diag_humus_fluxes
     config%fire_fract_wood_2_atmos = fire_fract_wood_2_atmos

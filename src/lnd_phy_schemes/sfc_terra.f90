@@ -71,7 +71,8 @@ USE mo_physical_constants, ONLY: t0_melt => tmelt,& ! absolute zero for temperat
                                  rho_w => rhoh2o, & ! density of liquid water (kg/m^3)
                                  rdocp => rd_o_cpd  ! r_d / cp_d
 !
-USE mo_convect_tables,     ONLY: b1    => c1es  , & !! constants for computing the sat. vapour
+USE mo_lookup_tables_constants,ONLY: &
+                                 b1    => c1es  , & !! constants for computing the sat. vapour
                                  b2w   => c3les , & !! pressure over water (l) and ice (i)
                                  b2i   => c3ies , & !!               -- " --
                                  b4w   => c4les , & !!               -- " --
@@ -83,7 +84,7 @@ USE mo_lnd_nwp_config,     ONLY: lmulti_snow, l2lay_rho_snow,     &
   &                              itype_root, itype_heatcond,      &
   &                              itype_hydbound,                  &
   &                              itype_canopy, tau_skin,          &
-  &                              lterra_urb, lurbahf, itype_eisa, &
+  &                              lterra_urb, itype_ahf, itype_eisa, &
   &                              lstomata,                        &
   &                              max_toplaydepth, itype_interception, &
   &                              cwimax_ml
@@ -92,6 +93,7 @@ USE mo_lnd_nwp_config,     ONLY: lmulti_snow, l2lay_rho_snow,     &
 USE mo_exception,          ONLY: finish
 USE mo_run_config,         ONLY: msg_level
 USE mo_fortran_tools,      ONLY: set_acc_host_or_device
+USE mo_lnd_nwp_config,     ONLY: lcuda_graph_lnd
 
 !------------------------------------------------------------------------------
 ! Declarations
@@ -110,12 +112,6 @@ PUBLIC :: terra
 !------------------------------------------------------------------------------
 ! Public variables
 !------------------------------------------------------------------------------
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
 !------------------------------------------------------------------------------
 ! Parameters and variables which are global in this module
@@ -142,7 +138,6 @@ CONTAINS
                   soiltyp_subs     , & ! type of the soil (keys 0-9)                     --
 ! for TERRA_URB
                   urb_isa          , & ! impervious surface area fraction of the urban canopy ( - )
-                  fr_paved         , & ! impervious surface area (ISA) fraction               ( - )
                   urb_ai           , & ! surface area index of the urban canopy               ( - )
                   urb_h_bld        , & ! building height                                      ( m )
                   urb_hcap         , & ! volumetric heat capacity of urban material      (J/m**3/K)
@@ -255,9 +250,6 @@ CONTAINS
                   runoff_s         , & ! surface water runoff; sum over forecast       (kg/m2)
                   runoff_g         , & ! soil water runoff; sum over forecast          (kg/m2)
                   resid_wso        , & ! soil water budget, residuum                   (kg/m2)
-! for TERRA_URB
-!                 w_imp            , & ! impervious water storage                        --
-!                 w_isa            , & ! same, multiplied by fr_paved                    --
 !
                   zshfl_s          , & ! sensible heat flux soil/air interface         (W/m2)
                   zlhfl_s          , & ! latent   heat flux soil/air interface         (W/m2)
@@ -301,7 +293,6 @@ CONTAINS
   REAL    (KIND = wp), DIMENSION(nvec), INTENT(IN) :: &
 ! for TERRA_URB
                   urb_isa          , & ! impervious surface area fraction of the urban canopy ( - )
-                  fr_paved         , & ! impervious surface area (ISA) fraction               ( - )
                   urb_ai           , & ! surface area index of the urban canopy               ( - )
                   urb_h_bld        , & ! building height                                      ( m )
                   urb_hcap         , & ! volumetric heat capacity of urban material      (J/m**3/K)
@@ -373,10 +364,7 @@ CONTAINS
                   tcm              , & ! turbulent transfer coefficient for momentum   ( -- )
                   runoff_s         , & ! surface water runoff; sum over forecast       (kg/m2)
                   runoff_g         , & ! soil water runoff; sum over forecast          (kg/m2)
-                  resid_wso         ! residuum of the budget of soil water content  (kg/m2)
-! for TERRA_URB
-!                 w_imp            , & ! impervious water storage                        --
-!                 w_isa                ! same, multiplied by fr_paved                    --
+                  resid_wso            ! residuum of the budget of soil water content  (kg/m2)
 
   REAL    (KIND = wp), DIMENSION(nvec), INTENT(OUT) :: &
                   t_snow_new       , & !
@@ -874,9 +862,9 @@ CONTAINS
     ztsnow      (nvec)             , & ! snow surface temperaure
     ztsnow_mult (nvec,0:ke_snow)   , & ! snow surface temperaure
 
-    ! HEATCOND (soil moisture dependent heat conductivity of the soil)
-    zalamtmp    (nvec,ke_soil)     , & ! heat conductivity
-    zalam       (nvec,ke_soil)     , & ! heat conductivity
+    ! HEATCOND (soil moisture dependent thermal conductivity of the soil)
+    zalamtmp    (nvec,ke_soil)     , & ! thermal conductivity
+    zalam       (nvec,ke_soil)     , & ! thermal conductivity on half levels, meaning at the (lower) boundaries of soil layers 1 to ke_soil
     zrocg       (nvec,ke_soil+1)   , & ! total volumetric heat capacity of soil
     zrocg_soil  (nvec,ke_soil+1)   , & ! volumetric heat capacity of bare soil
     zrocs       (nvec)             , & ! heat capacity of snow
@@ -917,7 +905,7 @@ CONTAINS
 
   REAL    (KIND=wp) ::  &
     ! Auxiliary variables
-    hzalam      (nvec,ke_soil+1)   , & ! heat conductivity
+    hzalam      (nvec,ke_soil+1)   , & ! thermal conductivity on full levels, meaning at the centers of soil layers 1 to ke_soil+1
     zdqvtsnow   (nvec)             , & ! first derivative of saturation specific humidity
                                        !    with respect to t_snow
     zrho_snow   (nvec)             , & ! snow density used for computing heat capacity and conductivity
@@ -1021,7 +1009,6 @@ mvid =   8
         WRITE(*,'(A,I28   )') '   soiltyp          :  ', soiltyp_subs(i)
 ! for TERRA_URB
         WRITE(*,'(A,F28.16)') '   urb_isa          :  ', urb_isa     (i)
-        WRITE(*,'(A,F28.16)') '   fr_paved         :  ', fr_paved    (i)
         WRITE(*,'(A,F28.16)') '   urb_ai           :  ', urb_ai      (i)
         WRITE(*,'(A,F28.16)') '   urb_h_bld        :  ', urb_h_bld   (i)
         WRITE(*,'(A,F28.16)') '   urb_hcap         :  ', urb_hcap    (i)
@@ -1134,7 +1121,7 @@ ENDDO
   !$ACC DATA &
   !$ACC   PRESENT(ivend) &
   !$ACC   PRESENT(zmls) &
-  !$ACC   PRESENT(soiltyp_subs, urb_isa, fr_paved, urb_ai, urb_h_bld) &
+  !$ACC   PRESENT(soiltyp_subs, urb_isa, urb_ai, urb_h_bld) &
   !$ACC   PRESENT(urb_hcap, urb_hcon, ahf) &
   !$ACC   PRESENT(plcov, rootdp, sai, eai, tai, laifac, skinc) &
   !$ACC   PRESENT(heatcond_fac, heatcap_fac) &
@@ -1420,9 +1407,6 @@ ENDDO
     lhfl_pl(i,ke_soil+1)  = 0.0_wp
     rstom  (i)            = 0.0_wp
     zahf   (i)            = 0.0_wp         ! TERRA_URB: Anthropogenic heat flux
-!   IF (lterra_urb .AND. (itype_eisa==2)) THEN
-!     zeisa(i)            = 0.0_wp
-!   ENDIF
   ENDDO
 
   ! REORDER
@@ -1611,15 +1595,47 @@ ENDDO
       ENDDO
     ENDDO
 
+
+    IF (lterra_urb) THEN
+      ! HW: Modification of the surface thermal conductivity:
+      ! - according to the building materials (urb_hcon)
+      ! - area index of buildings (urb_ai), height of building elements (urb_h_bld)
+      !   and building fraction (urb_isa)
+      !
+      ! Because of the curvature of the surface, the uppermost soil layer heat
+      ! transfer is larger compared to the thermal conductivity of a plan area.
+      ! As a result, the effective thermal conductivity of the upper surface is increased.
+      ! This is also the case in the layers beneath, in which the effective thermal conductivity
+      ! decreases with depth.
+      !
+      ! This modification decreases with depth with respect to the
+      ! natural soil below the buildings.
+
+      !$ACC LOOP SEQ
+      DO kso = 1, ke_soil+1
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zalpha_uf)
+        DO i = ivstart, ivend
+
+          zalpha_uf     = MAX(0.0_wp, MIN(zmls(kso)/urb_h_bld(i), 1.0_wp))
+
+          hzalam(i,kso) =           urb_isa(i)  * ( (1.0_wp - zalpha_uf) * urb_hcon(i)*urb_ai(i)        &
+                                                    +         zalpha_uf  * hzalam(i,kso)         )      &
+                        + (1.0_wp - urb_isa(i)) * hzalam(i,kso)
+
+        ENDDO
+      ENDDO
+    END IF
+
+
 !$NEC nofuse
 !$NEC outerloop_unroll(7)
     !$ACC LOOP SEQ
     DO kso = 1, ke_soil
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i = ivstart, ivend
-        ! mean heat conductivity
-        zalam(i,kso) = hzalam(i,kso)*hzalam(i,kso+1)*(zmls(kso+1)-zmls(kso))    &
-                       / ( hzalam(i,kso)*(zmls(kso+1)-zzhls(kso))                   &
+        ! interpolated thermal conductivity on half levels, meaning at the boundaries between soil layers
+        zalam(i,kso) = hzalam(i,kso)*hzalam(i,kso+1)*(zmls(kso+1)-zmls(kso))                            &
+                       / ( hzalam(i,kso)*(zmls(kso+1)-zzhls(kso))                                       &
                        +   hzalam(i,kso+1)*(zzhls(kso)-zmls(kso)) )
       ENDDO
     ENDDO
@@ -1655,37 +1671,6 @@ ENDDO
     ENDDO
   ENDIF
 
-
-  IF (lterra_urb) THEN
-    ! HW: Modification of the surface thermal conductivity:
-    ! - according to the building materials,
-    ! - area index of buildings (urb_ai), height of building elements (urb_h_bld)
-    !   and building fraction (urb_isa)
-    ! - area index of natural surfaces (c_lnd) and height of natural soil elements (c_lnd_h)
-    !
-    ! Because of the curvature of the surface, the uppermost soil layer heat
-    ! transfer is larger compared to the thermal conductivity of a plan area.
-    ! As a result, the effective thermal conductivity of the upper surface is increased.
-    ! This is also the case in the layers beneath, in which the effective thermal conductivity
-    ! decreases with depth.
-    !
-    ! This modification decreases with depth with respect to the
-    ! natural soil below the buildings.
-
-    !$ACC LOOP SEQ
-    DO kso = 1, ke_soil
-      !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zalpha_uf)
-      DO i = ivstart, ivend
-
-        zalpha_uf    = MAX(0.0_wp, MIN(zmls(kso)/urb_h_bld(i), 1.0_wp))
-
-        zalam(i,kso) =           urb_isa(i)  * ( (1.0_wp - zalpha_uf) * urb_hcon(i)*urb_ai(i)   &
-                                                 +         zalpha_uf  * zalam(i,kso)          ) &
-                     + (1.0_wp - urb_isa(i)) * zalam(i,kso)
-
-      ENDDO
-    ENDDO
-  END IF
 
 ! Initialisations and conversion of tch to tmch
   !$ACC LOOP GANG(STATIC: 1) VECTOR
@@ -2214,21 +2199,8 @@ ENDDO
                           *(1.0_wp - zf_pd(i))     ! not pond covered
         END IF ! interception
 
-!       IF (lterra_urb .AND. ((itype_eisa == 1).OR. (itype_eisa == 2))) THEN
-!         ! HW: evaporation of water stored on imperivous ground
-!         !zesoil(i) = zesoil(i)*(1.0_wp - fr_paved(i))    
-!         IF (itype_eisa == 2) THEN
-!           zeisa(i) = zep_s(i) *(1.0_wp - zf_snow(i)) & ! not snow covered
-!                     * fr_paved(i)*c_isa_delt * (w_imp(i)/c_isa_wmax)**0.6667_wp
-
-!           ! no seperate variable is made for the isa evaporation yet.
-!           lhfl_bs(i) = lh_v * (zesoil(i) + zeisa(i))
-!         ELSE
-!           lhfl_bs(i) = lh_v * (zesoil(i))
-!         END IF
-!       ELSE
-          lhfl_bs(i) = lh_v * zesoil(i)
-!       END IF
+        lhfl_bs(i) = lh_v * zesoil(i)
+        
       END IF  ! upwards directed potential evaporation
     END DO
   END IF ! BATS version
@@ -2290,20 +2262,8 @@ ENDDO
                           *(1.0_wp - zf_pd(i))     ! not pond covered
         END IF ! interception
 
-!       IF (lterra_urb .AND. ((itype_eisa == 1) .OR. (itype_eisa == 2))) THEN
-!         ! HW: evaporation of water stored on imperivous ground
-!         ! zesoil(i) = zesoil(i)*(1.0_wp - fr_paved(i))    
-!         IF (itype_eisa == 2) THEN
-!           zeisa(i) = zep_s(i) *(1.0_wp - zf_snow(i)) & ! not snow covered
-!                    * fr_paved(i)*c_isa_delt * (w_imp(i)/c_isa_wmax)**0.6667_wp
-!           ! no seperate variable is made for the isa evaporation yet.
-!           lhfl_bs(i) = lh_v * (zesoil(i) + zeisa(i))
-!         ELSE
-!           lhfl_bs(i) = lh_v * (zesoil(i))
-!         END IF
-!       ELSE
-          lhfl_bs(i) = lh_v * zesoil(i)
-!       ENDIF
+        lhfl_bs(i) = lh_v * zesoil(i)
+
       END IF  ! upwards directed potential evaporation
     END DO
   END IF ! NP89
@@ -2354,20 +2314,7 @@ ENDDO
                      *(1.0_wp - zf_pd(i))          ! not pond covered
         END IF ! Interception
 
-!       IF (lterra_urb .AND. ((itype_eisa == 1) .OR. (itype_eisa == 2))) THEN
-!         ! HW: evaporation of water stored on imperivous ground
-!         ! zesoil(i) = zesoil(i)*(1.0_wp - fr_paved(i))    
-!         IF (itype_eisa == 2) THEN
-!           zeisa(i) = zep_s(i) *(1.0_wp - zf_snow(i)) & ! not snow covered
-!                    * fr_paved(i)*c_isa_delt * (w_imp(i)/c_isa_wmax)**0.6667_wp
-!           ! no seperate variable is made for the isa evaporation yet.
-!           lhfl_bs(i) = lh_v * (zesoil(i) + zeisa(i))
-!         ELSE
-!           lhfl_bs(i) = lh_v * (zesoil(i))
-!         END IF
-!       ELSE
-          lhfl_bs(i) = lh_v * zesoil(i)
-!       ENDIF
+        lhfl_bs(i) = lh_v * zesoil(i)
 
       END IF  ! upwards directed potential evaporation
     END DO
@@ -2677,13 +2624,7 @@ ENDDO
              + zrr    (i  )  & ! formation of dew
              + zrs    (i  )    ! formation of rime
 
-!     IF (lterra_urb .AND. (itype_eisa == 2)) THEN
-!       ze_sum = ze_sum + zeisa(i)     ! impervious surface evaporation
-!     END IF
-!     zqvfl_s(i) = ze_sum   !US:  is this some other variable? zqhfl_sfc or so?    yes, it is zqhfl_sfc
-
       qv_s(i) = qv (i) - ze_sum /(zrhoch(i) + eps_div)
-!JH   qv_s(i,nnew) = qv_s(i,nx)
     END DO
   ELSE          IF (itype_interception == 2) THEN
     !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(ze_sum)
@@ -2696,13 +2637,7 @@ ENDDO
              + zdrr   (i) &
              + zrrs   (i)
 
-!     IF (lterra_urb .AND. (itype_eisa == 2)) THEN
-!       ze_sum = ze_sum + zeisa(i)     ! impervious surface evaporation
-!     END IF
-!     zqvfl_s(i) = ze_sum   !US:  is this some other variable? zqhfl_sfc or so?
-
       qv_s(i) = qv (i) - ze_sum /(zrhoch(i) + eps_div)
-!JH   qv_s(i,nnew) = qv_s(i,nx)
     END DO
   END IF
   !$ACC END PARALLEL
@@ -2928,66 +2863,19 @@ ENDDO
       zvers(i) = zinf + (1._wp - zalf)*zrr(i) + (1._wp-conv_frac(i))*zalf*prr_con(i)
 
 
-!     IF (lterra_urb .AND. ((itype_eisa == 2) .OR. (itype_eisa == 3))) THEN
-!       !HW: this is just a reminder
-!       !zvers * (1._wp- isa(i,j) is the amount of water falling on non-impervious surface
-!       !zvers *  isa(i,j) is the amount of water falling on impervious surface 
-!       !        -> this needs to go in the impervious water-storage reservoir
+      ! Infiltration
+      !
+      ! Avoid infiltration for rock, ice and snow-covered surfaces
+      zinfil(i) = zvers(i)*zrock(i)*(1.0_wp - zf_snow(i))
 
-!       ! HW: water storage content on impervious surfaces (per unit impervious surface area)
-!       ! I have disabled it, because it doesn't work yet
-
-!       !zep_s,zvers,zeisa unit: m/s x kg / m^3 = kg/ m^2/s
-
-!       !zeisa: unit: m/s x kg / m^3 = kg/ m^2/s
-!       !zeisa*zdtdrhw : unit: m/s x kg / m^3 x s / kg x m ^2= m
-
-!       ! unit c_isa_wmax: kg/m^2
-!       c_isa_wmax = 1.31_wp ! Maximum amount of water that can be stored by impervious surfaces
-
-!       ! unit w_imp: kg/m^2
-!       w_imp(i) = MAX(w_imp(i) + zvers(i)*zdt + zeisa(i)*zdt , 0.0_wp)
-
-!       ! potential infiltration contribution from impervious to natural surface 
-!       zisa_infil = MAX(w_imp(i) - c_isa_wmax, 0.0_wp)/zdt
-!       w_imp(i)   = MIN(w_imp(i) , c_isa_wmax) !water is lost from impervious water reservoirs
-!       w_isa(i)   = w_imp(i) * fr_paved(i)
-
-!       ! surface run-off by impervious surfaces.
-!       ! by default the impervious surface areas only lead to runoff (c_isa_runoff = 1.)
-!       zinfil(i) =                                                      &
-!                    ! the water captured by non-impervious area
-!                    zvers(i) * (1.0_wp - fr_paved(i)) +                 &
-!                    ! the contribution captured by impervious area that gets infiltrated 
-!                    zisa_infil * fr_paved(i) * (1.0_wp - c_isa_runoff)
-
-!       ! final infiltration rate limited by maximum value
-!       ! only the non-impervious area is able to infiltrate!
-!       zinfil(i) = MIN(zinfmx(i) * (1.0_wp - fr_paved(i)), zinfil(i))
-
-!       ! surface run-off (residual of potential minus actual infiltration)
-!       ! HW: here we add to contribution from the impervious surfaces (but is switched of by default)
-!       zro_inf  = MAX(0.0_wp, zvers(i)*(1.0_wp - fr_paved(i)) - zinfil(i) + &
-!                               zisa_infil * fr_paved(i) * c_isa_runoff    )
-
-!     ELSE
-
-        ! Infiltration
-        !
-        ! Avoid infiltration for rock, ice and snow-covered surfaces
-        zinfil(i) = zvers(i)*zrock(i)*(1.0_wp - zf_snow(i))
-
-        ! Avoid infiltration for urban impervious surface area fraction
-        IF (lterra_urb .AND. ((itype_eisa == 2) .OR. (itype_eisa == 3))) THEN
-          zinfil(i) = zinfil(i) * (1.0_wp - urb_isa(i))
-        END IF
+      ! Avoid infiltration for urban impervious surface area fraction
+      IF (lterra_urb .AND. ((itype_eisa == 2) .OR. (itype_eisa == 3))) THEN
+        zinfil(i) = zinfil(i) * (1.0_wp - urb_isa(i))
+      END IF
 
 
-        ! Add difference to surface runoff
-        zro_inf = zvers(i) - zinfil(i)
-
-!     END IF
-
+      ! Add difference to surface runoff
+      zro_inf = zvers(i) - zinfil(i)
 
       ! Surface runoff, including the effect of the impervious surface area, if present
       !
@@ -4074,7 +3962,7 @@ ENDDO
   ELSE  ! single-layer snow model
 
     ! TERRA_URB: Set anthropogenic heat flux
-    IF (lterra_urb .AND. lurbahf) THEN
+    IF (lterra_urb .AND. itype_ahf >= 1) THEN
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
       !$ACC LOOP GANG VECTOR
       DO i = ivstart, ivend
@@ -4092,12 +3980,7 @@ ENDDO
       ! part of surface based on area mean values calculated in radiation
       ! code (positive = downward)
 
-!     IF (lterra_urb) THEN
-!       ! modification of the infrared albedo according to the buliding fraction
-!       ztalb = sa_uf(i) * ctalb_bm * alb_red_uf(i) + (1.0_wp - sa_uf(i)) * Ctalb
-!     ELSE
-        ztalb = Ctalb
-!     END IF
+      ztalb = Ctalb
 
       zgstr     =   sigma*(1._wp - ztalb) * ( (1._wp - zf_snow(i))* &
                     ztsk(i) + zf_snow(i)*ztsnow(i) )**4 + thbs(i)
@@ -5527,7 +5410,7 @@ ENDDO
     !$ACC END PARALLEL
   ENDIF
 
-  IF (.NOT. using_cuda_graph) THEN
+  IF (.NOT. lcuda_graph_lnd) THEN
     !$ACC WAIT(acc_async_queue)
   END IF
 
@@ -5543,7 +5426,7 @@ ENDDO
 
   IF (msg_level >= 19) THEN
     !$ACC UPDATE HOST(ivend) ASYNC(acc_async_queue)
-    IF (.NOT. using_cuda_graph) THEN
+    IF (.NOT. lcuda_graph_lnd) THEN
       !$ACC WAIT(acc_async_queue)
     END IF
     DO i = ivstart, ivend

@@ -87,8 +87,8 @@ case $builder in
         MD='rmo'
         ;;
     levante_gpu*)
-        # MPI test fails.
-        MD='rn'
+        # MPI test fails. nproma test is invalid
+        MD='r'
         ;;
 esac
 

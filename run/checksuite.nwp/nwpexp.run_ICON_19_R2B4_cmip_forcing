@@ -78,7 +78,7 @@ ln -sf ${INDATADIR}/eraint_T255_1979010100_0012_R02B04_G.nc ini_filename
 # link grid files, extpar file
 ln -sf ${GRIDDIR}/icon_grid_0012_R02B04_G.nc .
 ln -sf ${GRIDDIR}/icon_grid_0011_R02B03_R.nc .
-ln -sf ${EXTPDIR}/icon_extpar_0012_R02B04_G_20161124_tiles.nc .
+ln -sf ${INDATADIR}/external_parameter_icon_icon_grid_0012_R02B04_G_tiles.nc .
 
 # files needed for radiation
 cp ${ICONDIR}/data/ECHAM6_CldOptProps.nc .
@@ -116,10 +116,9 @@ ln -sf ${INDATADIR}/greenhouse_historical.nc .
 ini_filename=ini_filename
 
 # extpar filename
-ext_filename=icon_extpar_0012_R02B04_G_20161124_tiles.nc
+ext_filename=external_parameter_icon_icon_grid_0012_R02B04_G_tiles.nc
 
 # grid filenames
-ext_filename=icon_extpar_0012_R02B04_G_20161124_tiles.nc
 atmo_dyn_grids="icon_grid_0012_R02B04_G.nc"
 atmo_rad_grids="icon_grid_0011_R02B03_R.nc"
 # reconstruct the grid parameters in namelist form
@@ -248,6 +247,10 @@ cat > NAMELIST_${EXPID} << EOF
           remap                  =  0
         /
         &nwp_phy_nml
+          icalc_reff        = 100
+          icpl_rad_reff     = 0
+          icpl_aero_gscp    = 3   ! Use cloud droplet number climatology
+          icpl_aero_conv    = 1
           inwp_gscp         = 1
           inwp_convection   = 1
           inwp_radiation    = 4   !ecRad
@@ -376,7 +379,6 @@ cat > NAMELIST_${EXPID} << EOF
           flat_height         = 16000.
         /
         &dynamics_nml	
-          iequations     = 3
           divavg_cntrwgt = 0.50
           lcoriolis      = .TRUE.
         /

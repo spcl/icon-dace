@@ -995,12 +995,12 @@ CONTAINS  !.....................................................................
 !$OMP PARALLEL PRIVATE (rl_start,rl_end,i_startblk,i_endblk)
 
     ! (Initialization with zeroes might perhaps be more secure)
-    CALL init( z_dtheta_c(:,:,:)   )
-    CALL init( z_dtheta_e(:,:,:)   )
-    CALL init( z_theta_e(:,:,:)    )
-    CALL init( z_dexner_c(:,:,:)   )
-    CALL init( z_dexner_v(:,:,:)   )
-    CALL init( z_dexnerdt_e(:,:,:) )
+    CALL init( z_dtheta_c(:,:,:), lacc=.FALSE. )
+    CALL init( z_dtheta_e(:,:,:), lacc=.FALSE. )
+    CALL init( z_theta_e(:,:,:), lacc=.FALSE. )
+    CALL init( z_dexner_c(:,:,:), lacc=.FALSE. )
+    CALL init( z_dexner_v(:,:,:), lacc=.FALSE. )
+    CALL init( z_dexnerdt_e(:,:,:), lacc=.FALSE. )
 
     rl_start   = 1
     rl_end     = min_rlcell
@@ -2065,7 +2065,7 @@ CONTAINS  !.....................................................................
         &       STAT=istat                   )
       IF (istat /= SUCCESS) CALL finish(routine, 'Allocation failed')
 !$OMP PARALLEL 
-      CALL init( clim_state%temp(:) )
+      CALL init( clim_state%temp(:), lacc=.FALSE. )
 !$OMP END PARALLEL
       clim_state%linitialized = .TRUE.
     ELSE
@@ -2096,10 +2096,10 @@ CONTAINS  !.....................................................................
         &       STAT=istat                                            )  
       IF (istat /= SUCCESS) CALL finish(routine, 'Allocation failed')
 !$OMP PARALLEL 
-      CALL init( expol_metrics%zgpot_mc(:)        )
-      CALL init( expol_metrics%zgpot_ifc(:)       )
-      CALL init( expol_metrics%wfac_blnd_mc(:,:)  )
-      CALL init( expol_metrics%wfac_blnd_ifc(:,:) )
+      CALL init( expol_metrics%zgpot_mc(:), lacc=.FALSE. )
+      CALL init( expol_metrics%zgpot_ifc(:), lacc=.FALSE. )
+      CALL init( expol_metrics%wfac_blnd_mc(:,:), lacc=.FALSE. )
+      CALL init( expol_metrics%wfac_blnd_ifc(:,:), lacc=.FALSE. )
 !$OMP END PARALLEL
       expol_metrics%linitialized = .TRUE.
     ELSE
@@ -2133,13 +2133,13 @@ CONTAINS  !.....................................................................
         &       STAT=istat                                                     )  
       IF (istat /= SUCCESS) CALL finish(routine, 'Allocation failed')
 !$OMP PARALLEL 
-      CALL init( expol_blending_state%temp(:,:,:) )
-      CALL init( expol_blending_state%vn(:,:,:)   )
-      CALL init( expol_blending_state%w(:,:,:)    )
-      CALL init( expol_blending_state%qc(:,:,:)   )
-      CALL init( expol_blending_state%qi(:,:,:)   )
-      CALL init( expol_blending_state%qr(:,:,:)   )
-      CALL init( expol_blending_state%qs(:,:,:)   )
+      CALL init( expol_blending_state%temp(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%vn(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%w(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%qc(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%qi(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%qr(:,:,:), lacc=.FALSE. )
+      CALL init( expol_blending_state%qs(:,:,:), lacc=.FALSE. )
 !$OMP END PARALLEL
       expol_blending_state%linitialized = .TRUE.
     ELSE
@@ -2153,7 +2153,7 @@ CONTAINS  !.....................................................................
   !            Deconstruction routines for data types
   !---------------------------------------------------------------
 
-  ! (Note: the 'src/shared/mo_fortran_tools:DO_DEALLOCATE'-interface does not support all kind
+  ! (Note: the 'externals/fortran-support/src/mo_fortran_tools:DO_DEALLOCATE'-interface does not support all kind
   ! of fields we have allocated, so we fall back on the classical 'deallocate' here)
 
   SUBROUTINE t_clim_state_finalize(clim_state)

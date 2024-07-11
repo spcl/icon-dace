@@ -30,9 +30,8 @@ MODULE mo_fuel_memory_class
   TYPE, EXTENDS(t_jsb_memory) :: t_fuel_memory
 
    TYPE(t_jsb_var_real2d) ::   &
-      fuel                       ! R: Normalerweise wäre dies eine lokale Variable, weil sie nur für das veg Tile berechnet wird
-                                 ! und nur für Feuer benötigt wird. Aber sie wird 1. nach dem Zeitschritt wieder verwendet und
-                                 ! sollte 2. im Output sein, da sie nicht nur technisch wichtig ist!
+      fuel                       !< Carbon fuel for burned area calculations [mol(C) m-2]
+
   CONTAINS
     PROCEDURE :: Init => Init_fuel_memory
   END TYPE t_fuel_memory
@@ -71,11 +70,11 @@ CONTAINS
 
     CALL mem%Add_var( 'fuel', mem%fuel,                                                                      &
       & hgrid, surface,                                                                                           &
-      & t_cf('fuel', 'mol(C)/m^2 (potential vegetation)', 'Amount of carbon fuel for burned area calculations.'), &
+      & t_cf('fuel', 'mol(C) m-2', 'Amount of carbon fuel'),                                                      &
       & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                                        &
       & prefix, suffix,                                                                                           &
-      & output_level=BASIC,                                                                                       &
-      & lrestart=.FALSE., initval_r=0.0_wp ) ! initval taken from JSBACH3
+      & loutput=.TRUE., output_level=BASIC,                                                                       &
+      & lrestart=.TRUE., initval_r=0.0_wp ) ! initval taken from JSBACH3
 
   END SUBROUTINE Init_fuel_memory
 

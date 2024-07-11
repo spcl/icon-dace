@@ -53,6 +53,7 @@ EXTRA_DIST = util/sunf95preproc-wrapper \
 	util/mpi_launch_poe \
 	util/mpi_launch_bgrunjob \
 	util/icomp15/ld \
+	util/nagdynlib/ld \
 	config/checksrc/intelmpi_datatype.c \
 	config/checkdoc/intelmpi_datatype.txt \
 	config/checksrc/openmpi_struct_dt.c \
@@ -73,10 +74,21 @@ EXTRA_DIST = util/sunf95preproc-wrapper \
 	config/checksrc/mpich_unweighted_topo_comm_dup.c \
 	config/checkdoc/mpich_unweighted_topo_comm_dup.txt \
 	config/checkpatch/mpich_3.x_unweighted.patch \
+	config/checkdoc/mpich_neighbor_alltoallw.txt \
+	config/checksrc/mpich_neighbor_alltoallw.c \
+	config/checkpatch/mpich_neighbor_alltoallw.patch \
+	config/checkdoc/mpich_zero_size_contiguous.txt \
+	config/checkpatch/mpich_zero_size_contiguous.patch \
+	config/checksrc/mpich_zero_size_contiguous.c \
+	config/checkdoc/mpich_4.0.x_ddt_transfer.txt \
+	config/checkpatch/mpich_4.0.x_ddt_transfer.patch \
+	config/checksrc/mpich_4.0.x_ddt_transfer.c \
+	config/checkdoc/mpi_fortran_startup.txt \
+	config/checksrc/mpi_fortran_startup.f90 \
 	contrib/00nagfor-libtool-patch/README.txt \
-	contrib/00nagfor-libtool-patch/nagfor-libtool.patch \
 	contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.2.patch \
 	contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.6.patch \
+	contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.7.patch \
 	contrib/01aix-deplib-rpath-patch/README \
 	contrib/01aix-deplib-rpath-patch/aix-deplib-libtool.patch \
 	contrib/02nagfor53-shared-patch/README.txt \
@@ -86,10 +98,19 @@ EXTRA_DIST = util/sunf95preproc-wrapper \
 	contrib/03ltmain-ld-groups-patch/ltmain-ld-groups-libtool-2.4.2.patch \
 	contrib/04ltmain-xlinker-patch/README \
 	contrib/04ltmain-xlinker-patch/ltmain-xlinker-patch.patch \
+	contrib/05macos-nagfor-patch/macos-nagfor-libtool-2.4.2.patch \
 	contrib/05macos-nagfor-patch/macos-nagfor.patch \
 	contrib/06ltmain_nag_pthread-patch/ltmain_nag_pthread.patch \
+	contrib/06ltmain_nag_pthread-patch/ltmain_nag_pthread-libtool-2.4.2.patch \
 	contrib/07ltmain-early-xcompile-patch/README \
 	contrib/07ltmain-early-xcompile-patch/ltmain-early-xcompile-libtool-2.4.6.patch \
+	contrib/08ltmain-parallel-printf-patch/ltmain-parallel-printf-libtool-2.4.2.patch \
+	contrib/08ltmain-parallel-printf-patch/ltmain-parallel-printf-libtool-2.4.6.patch \
+	contrib/09debian-no-overlink-patch/README.txt \
+	contrib/09debian-no-overlink-patch/deplib_binary-libtool-2.4.2.patch \
+	contrib/09debian-no-overlink-patch/deplib_binary.patch \
+	contrib/09debian-no-overlink-patch/link_all_deplibs-libtool-2.4.2.patch \
+	contrib/09debian-no-overlink-patch/link_all_deplibs.patch \
 	doc/Makefile \
 	doc/Doxyfile.in doc/README.build doc/cfortran.doc \
 	doc/cfortran.html doc/cfortran.txt doc/styleguide.txt \
@@ -128,6 +149,7 @@ EXTRA_DIST = util/sunf95preproc-wrapper \
 	doc/src/xmaps.dox \
 	doc/src/yaxt_concept.dox \
 	doc/src/correct_use_of_addresses.dox \
+	doc/src/multi-threading.dox \
 	include/cfortran.h \
 	m4/tj_find_type.m4 \
 	m4/forloop2.m4 \

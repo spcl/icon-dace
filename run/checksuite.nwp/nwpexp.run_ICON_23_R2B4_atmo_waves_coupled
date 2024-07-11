@@ -455,7 +455,6 @@ cat > ${atm_namelist} << EOF
  Restart_filename        = "${EXPNAME}_restart_atm_<rsttime>.nc"
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /

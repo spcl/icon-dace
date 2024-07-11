@@ -72,8 +72,7 @@ SUBROUTINE art_CO2_deposition(jg, CO2_mmr, p_dtime, art_atmo)
       IF (.NOT. art_atmo%llsm(jc,jb)) THEN
         CALL art_convert_emission_to_mmr(p_art_data(jg)%chem%CO2_mmr_depos,   &
                        &                 mean_emiss_kgm2s,                    &
-                       &                 art_atmo%temp(jc,:,jb),              &
-                       &                 art_atmo%pres(jc,:,jb),              &
+                       &                 art_atmo%rho(jc,:,jb),               &
                        &                 art_atmo%dz(jc,:,jb),                &
                        &                 p_dtime,1,art_atmo%nlev)
 

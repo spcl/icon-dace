@@ -32,10 +32,6 @@ MODULE mo_advection_geometry
   USE mo_math_utilities,      ONLY: lintersect, line_intersect
   USE mo_advection_utils,     ONLY: t_list2D
   USE mo_index_list,          ONLY: generate_index_list_batched
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
-
 
   IMPLICIT NONE
 
@@ -1078,8 +1074,7 @@ CONTAINS
     !$ACC   CREATE(idxlist_c3m, levlist_c3m, idxlist_rem, levlist_rem) &
     !$ACC   CREATE(idxlist_vn0, levlist_vn0, idxlist_err, levlist_err) &
     !$ACC   CREATE(arrival_pts, depart_pts, fl_line, fl_e1, fl_e2) &
-    !$ACC   CREATE(tri_line1, tri_line2, nvalid, conditions, indices) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   CREATE(tri_line1, tri_line2, nvalid, conditions, indices)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jk,je,jl,ie,lvn_pos,fl_line,tri_line1,                  &
@@ -1101,7 +1096,7 @@ CONTAINS
       ! get arrival and departure points. Note that the indices of the departure
       ! points have to be switched so that departure point 1 belongs to arrival
       ! point one and departure point 2 to arrival point 2.
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(je, jk)
 !NEC$ ivdep
       DO ie = 1, falist%len(jb)
@@ -1125,12 +1120,12 @@ CONTAINS
       icnt_err = 0
       icnt_vn0 = 0
 
-      !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS ASYNC(1)
       conditions(:,:) = 0
       indices(:,:) = 0
       !$ACC END KERNELS
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(je, jk, lvn_pos, lintersect_line1, lintersect_line2)
       DO ie = 1, falist%len(jb)
 
@@ -1204,19 +1199,16 @@ CONTAINS
       ENDDO ! loop over index list
       !$ACC END PARALLEL
 
-#ifdef _OPENACC
-      CALL generate_index_list_batched(conditions, indices, 1, falist%len(jb), nvalid, 1, i_am_accel_node)
-#else
-      CALL generate_index_list_batched(conditions, indices, 1, falist%len(jb), nvalid, 1, .false.)
-#endif
-      !$ACC UPDATE HOST(nvalid) ASYNC(1) IF(i_am_accel_node)
-      !$ACC WAIT(1) IF(i_am_accel_node)
+      CALL generate_index_list_batched(conditions, indices, 1, falist%len(jb), nvalid, 1, opt_use_acc=.TRUE.)
+
+      !$ACC UPDATE HOST(nvalid) ASYNC(1)
+      !$ACC WAIT(1)
       icnt_c1 = nvalid(1)
       icnt_c2p = nvalid(2)
       icnt_c2m = nvalid(3)
       icnt_rem = nvalid(4)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR
       DO jl = 1, icnt_c1
         ielist_c1(jl) = indices(jl, 1)
@@ -1243,7 +1235,7 @@ CONTAINS
       ENDDO
       !$ACC END PARALLEL
 
-      !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS ASYNC(1)
       conditions(:,:) = 0
       indices(:,:) = 0
       !$ACC END KERNELS
@@ -1251,7 +1243,7 @@ CONTAINS
 
       ! Second step of index list computation
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ie, je, jk, lintersect_e2_line1, lintersect_e1_line2)
 !$NEC IVDEP
       DO jl = 1, icnt_rem
@@ -1306,19 +1298,16 @@ CONTAINS
       ENDDO  !jl
       !$ACC END PARALLEL
 
-#ifdef _OPENACC
-      CALL generate_index_list_batched(conditions, indices, 1, icnt_rem, nvalid, 1, i_am_accel_node)
-#else
-      CALL generate_index_list_batched(conditions, indices, 1, icnt_rem, nvalid, 1, .false.)
-#endif
-      !$ACC UPDATE HOST(nvalid) ASYNC(1) IF(i_am_accel_node)
-      !$ACC WAIT(1) IF(i_am_accel_node)
+      CALL generate_index_list_batched(conditions, indices, 1, icnt_rem, nvalid, 1, opt_use_acc=.TRUE.)
+
+      !$ACC UPDATE HOST(nvalid) ASYNC(1)
+      !$ACC WAIT(1)
       icnt_c3p = nvalid(1)
       icnt_c3m = nvalid(2)
       icnt_vn0 = nvalid(3)
       icnt_err = nvalid(4)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR
       DO jl = 1, icnt_c3p
         ielist_c3p(jl) = ielist_rem(indices(jl, 1))
@@ -1357,8 +1346,8 @@ CONTAINS
       icnt_vn0 = icnt_vn0 + icnt_err
 
       IF ( icnt_err>0 ) THEN
-        !$ACC UPDATE HOST(idxlist_err, levlist_err, p_vn, p_vt) ASYNC(1) IF(i_am_accel_node)
-        !$ACC WAIT(1) IF(i_am_accel_node)
+        !$ACC UPDATE HOST(idxlist_err, levlist_err, p_vn, p_vt) ASYNC(1)
+        !$ACC WAIT(1)
         ! Check for unassigned grid points (i.e. collected in list_Err) because of CFL violation
         DO jl = 1, icnt_err
 
@@ -1383,7 +1372,7 @@ CONTAINS
       !
       ! CASE 1
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ps1, ps2, ie, je, jk, lvn_sys_pos)
 !$NEC IVDEP
       DO jl = 1, icnt_c1
@@ -1446,7 +1435,7 @@ CONTAINS
       !
       ! CASE 2a
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ps1, ie, je, jk, lvn_sys_pos)
 !$NEC IVDEP
       DO jl = 1, icnt_c2p
@@ -1504,7 +1493,7 @@ CONTAINS
       !
       ! CASE 2b
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ps2, ie, je, jk, lvn_sys_pos)
 !$NEC IVDEP
       DO jl = 1, icnt_c2m
@@ -1561,7 +1550,7 @@ CONTAINS
       !
       ! CASE 3a
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(pi1, ie, je, jk, lvn_sys_pos)
 !$NEC IVDEP
       DO jl = 1, icnt_c3p
@@ -1614,7 +1603,7 @@ CONTAINS
       !
       ! CASE 3b
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(pi2, ie, je, jk, lvn_sys_pos)
 !$NEC IVDEP
       DO jl = 1, icnt_c3m
@@ -1667,7 +1656,7 @@ CONTAINS
       !
       ! CASE 4  (very small normal velocity)
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(ie)
 !$NEC IVDEP
       DO jl = 1, icnt_vn0
@@ -1692,7 +1681,7 @@ CONTAINS
 
      ! end of index list stuff
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(bf_cc, je, jk, lvn_pos)
 !$NEC IVDEP
       DO ie = 1, falist%len(jb)

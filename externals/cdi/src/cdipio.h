@@ -80,14 +80,14 @@ void cdiPioStreamDefDecomposedVlist(int streamID, int vlistID, const Xt_idxlist 
  * the corresponding array passed to streamWriteVar in the serial version.
  * The group of processes collectively calling streamWriteVarPart
  * must provide data for all indices or the behaviour is undefined. */
-void streamWriteVarPart(int streamID, int varID, const double *data, int nmiss, Xt_idxlist partDesc);
+void streamWriteVarPart(int streamID, int varID, const double *data, int numMissVals, Xt_idxlist partDesc);
 
 /* streamWriteVarPartF: Write part of the data making up variable
  * varID of stream streamID.
  *
  * Single-precision version of streamWriteVarPart.
  */
-void streamWriteVarPartF(int streamID, int varID, const float *data, int nmiss, Xt_idxlist partDesc);
+void streamWriteVarPartF(int streamID, int varID, const float *data, int numMissVals, Xt_idxlist partDesc);
 
 /* streamWriteScatteredVarPart: Write part of the data making up
  * variable varID of stream streamID.
@@ -97,7 +97,7 @@ void streamWriteVarPartF(int streamID, int varID, const float *data, int nmiss, 
  * blocklengths[i] and starting displacements[i] each for i in [0,numBlocks)
  */
 void streamWriteScatteredVarPart(int streamID, int varID, const double *data, int numBlocks, const int blocklengths[],
-                                 const int displacements[], int nmiss, Xt_idxlist partDesc);
+                                 const int displacements[], int numMissVals, Xt_idxlist partDesc);
 
 /* streamWriteScatteredVarPartF: Write part of the data making up
  * variable varID of stream streamID.
@@ -105,7 +105,7 @@ void streamWriteScatteredVarPart(int streamID, int varID, const double *data, in
  * Single-precision version of streamWriteScatteredVarPart.
  */
 void streamWriteScatteredVarPartF(int streamID, int varID, const float *data, int numBlocks, const int blocklengths[],
-                                  const int displacements[], int nmiss, Xt_idxlist partDesc);
+                                  const int displacements[], int numMissVals, Xt_idxlist partDesc);
 /* cdiPioCSRLastN: return role codes appropriate to use the last
    \textit{nProcsIO} tasks as I/O servers */
 int cdiPioCSRLastN(MPI_Comm commSuper, int IOMode, int nProcsIO);

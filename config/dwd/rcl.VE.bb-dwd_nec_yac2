@@ -39,28 +39,15 @@
 # to 'yes'.
 # Please note that MPI_LAUNCH is set in ${ICON_DIR}/config/dwd/rcl.VE.nfort-5.0.0_mpi-2.22_art_oper
 
-if ((RH_VERSION !=8 )); then
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-5.0.0_mpi-2.22_oper \
-    --disable-openmp \
-    --enable-ocean \
-    --enable-waves \
-    --enable-ecrad \
-    --enable-coupling \
-    --enable-yaxt \
-    --enable-fcgroup-OCEAN \
-    acx_cv_prog_mpirun='/opt/nec/ve/mpi/2.22.0/bin/runtime/mpirun' \
-    acx_cv_fc_c_compatible_mpi=yes \
-    "$@"
-else
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-5.1.0_mpi-3.5_oper_RH8 \
-    --disable-openmp \
-    --enable-ocean \
-    --enable-waves \
-    --enable-ecrad \
-    --enable-coupling \
-    --enable-yaxt \
-    --enable-fcgroup-OCEAN \
-    acx_cv_prog_mpirun='/opt/nec/ve/mpi/3.5.0/bin/runtime/mpirun' \
-    acx_cv_fc_c_compatible_mpi=yes \
-    "$@"
-fi
+"$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-5.1.0_mpi-3.5_oper \
+  --disable-openmp \
+  --enable-ocean \
+  --enable-waves \
+  --enable-ecrad \
+  --enable-coupling \
+  --enable-yaxt \
+  --enable-hd \
+  --enable-fcgroup-OCEAN \
+  acx_cv_prog_mpirun='/opt/nec/ve/mpi/3.5.0/bin/runtime/mpirun' \
+  acx_cv_fc_c_compatible_mpi=yes \
+  "$@"

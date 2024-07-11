@@ -26,7 +26,7 @@ else
   set dummy; shift
 fi
 
-${ICON_DIR}/config/dkrz/levante.intel --disable-openmp  "$@"
+${ICON_DIR}/config/dkrz/levante.intel --disable-openmp --enable-separate-mods "$@"
 
 if [ ! -z "${BB_NAME-}" ] ; then
   MAKE_PROCS=22

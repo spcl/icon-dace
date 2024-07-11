@@ -24,7 +24,7 @@ MODULE mo_disturbance_constants
   !INTEGER , PARAMETER, PUBLIC  :: DIST_FIRE_WOOD        =  1 !! Calculation wrt. burning woody pfts
   !INTEGER , PARAMETER, PUBLIC  :: DIST_FIRE_GRASS       =  2 !! Calculation wrt. burning grass pfts
   INTEGER , PARAMETER, PUBLIC  :: DIST_FIRE             =  3 !! Calculation wrt. any burning pfts
-  !INTEGER , PARAMETER, PUBLIC  :: DIST_WINDBREAK_WOOD   =  4 !! Calculation wrt. windbread of woody types
+  !INTEGER , PARAMETER, PUBLIC  :: DIST_WINDBREAK_WOOD   =  4 !! Calculation wrt. windbreak of woody types
   !INTEGER , PARAMETER, PUBLIC  :: DIST_WINDBREAK_GRASS  =  8 !! Calculation wrt. windbreak of grass types
   !                                                           !! (ok: 8 is unlikely to ever be used - maybe for extreme
   !                                                           !! precipitation events?!)

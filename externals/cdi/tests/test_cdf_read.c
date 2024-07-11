@@ -84,8 +84,9 @@ printAtts(int vlistID)
           int rc = cdiInqAtt(vlistID, varID, (int) attIdx, attName, &attType, &attLen);
           {
             const char *varDesc
-                = varIdx > 0 ? (sprintf((char *) buf, "%s%d", varDescPrefix, vlistInqVarCode(vlistID, varID)), (char *) buf)
-                             : globDesc;
+                = varIdx > 0
+                      ? (snprintf((char *) buf, bufSize, "%s%d", varDescPrefix, vlistInqVarCode(vlistID, varID)), (char *) buf)
+                      : globDesc;
             printf("%s attribute \"%s\", value: ", varDesc, attName);
           }
           if (attLen < 0)

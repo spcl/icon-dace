@@ -1,20 +1,18 @@
 #! /usr/bin/env python #%# -*- mode: python -*- vi: set ft=python :
-
-#%# ICON
-#%#
-#%# ------------------------------------------
-#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-#%# Contact information: icon-model.org
-#%# See AUTHORS.TXT for a list of authors
-#%# See LICENSES/ for license information
-#%# SPDX-License-Identifier: BSD-3-Clause
-#%# ------------------------------------------
-
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
 #SBATCH --account=%{ACCOUNT}
 #%  if JOB.qos is defined:
 #SBATCH --qos=%{JOB.qos}
 #%  endif
-#SBATCH --job-name=%{EXP_ID}.%{JOB.id}
+#SBATCH --job-name=%{EXP_ID}.mon
 #SBATCH --partition=%{JOB.partition}
 #%  if JOB.tasks is defined:
 #SBATCH --ntasks=%{JOB.tasks}
@@ -22,7 +20,7 @@
 #%  if JOB.hardware_threads|default('') is not set:
 #SBATCH --ntasks-per-core=1
 #%  endif
-#SBATCH --output=%{SCRIPT_DIR}/%x.%8j.log
+#SBATCH --output=%{LOG_DIR}/%x.%8j.log
 #SBATCH --time=%{JOB.time_limit}
 #%include 'standard_environments/'+ENVIRONMENT+'.tmpl' ignore missing
 
@@ -41,6 +39,15 @@ import sys
 #% include 'standard_experiments/mtime.tmpl'
 #% include 'standard_experiments/logging.tmpl'
 
+# Convenience link to log file
+job_name = 'mon'
+job_id = os.environ['%{JOB.id_environ}']
+log_name = f'%{LOG_DIR}/%{EXP_ID}.{job_name}.{job_id:>08}.log'
+log_link = f'%{SCRIPT_DIR}/%{EXP_ID}.{job_name}.log'
+try: os.remove(log_link)
+except FileNotFoundError: pass
+os.symlink(log_name, log_link)
+
 # Process command line options
 
 def check_date(arg):
@@ -54,7 +61,7 @@ command_line = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
 command_line.add_argument('start_date', type=check_date, help=
     'first date of period (YYYY-MM-DD... or YYYYMMDD...)')
 command_line.add_argument('-V', '--version', action='version', version="""
-$Id: DEFAULT.mon.tmpl 2 2023-05-09 09:37:54Z k203123 $
+$Id: run/standard_experiments/DEFAULT.mon.tmpl 3 2024-02-08 14:02:37Z m221078 $
 %{VERSIONS_|join('\n')}
 """)
 command_line.add_argument('-c', '--clean', action='store_true', help=
@@ -77,6 +84,10 @@ command_line.add_argument('-n', '--set-next-date', type=check_date, help=
     ' (implies --no-trigger)')
 command_line.add_argument('--no-trigger', action='store_true', help=
     'do not execute triggered jobs')
+command_line.add_argument('--merge-only', action='store_true', help=
+    'do not visualize or publish files')
+command_line.add_argument('--no-upload', action='store_true', help=
+    'do not publish files')
 args = command_line.parse_args()
 
 if args.set_start_date or args.set_next_date:
@@ -149,6 +160,7 @@ if args.include_next_date:
 template_dict['input_dir'] = input_dir
 template_dict['mon_dir'] = mon_dir
 template_dict['exp_id'] = exp_id
+template_dict['target_extension'] = ('nc' if args.merge_only else 'html')
 
 # Prolog
 
@@ -342,7 +354,6 @@ DATA_DIR = {input_dir}
 MON_DIR = {mon_dir}
 SCRIPT_DIR = %{SCRIPT_DIR}
 
-MON_SCRIPT = $(SCRIPT_DIR)/$(EXP_ID).%{JOB.id}
 MON_INDEX_SCRIPT = $(SCRIPT_DIR)/$(EXP_ID).mon_index
 
 MIN_DATE = {min_date}
@@ -354,7 +365,7 @@ MEAN_OP_NAME = {mean_op_name}
 
 FILES1 = $(FILES:.nc=)
 FILES2 = $(FILES1:.grb=)
-TARGETS = $(FILES2:%=$(TARGETS_DIR)/%.html) $(MON_DIR)/index.html
+TARGETS = $(FILES2:%=$(TARGETS_DIR)/%.{target_extension}) $(MON_DIR)/index.html
 
 all: $(TARGETS)
 
@@ -366,7 +377,7 @@ clean:
 $(MON_DIR)/index.html: $(MON_INDEX_SCRIPT)
 	SHELL= filelock $@ -c '$(MON_INDEX_SCRIPT) $@'
 
-$(TARGETS_DIR)/%.nc: $(DATA_DIR)/%.nc $(MON_SCRIPT)
+$(TARGETS_DIR)/%.nc: $(DATA_DIR)/%.nc
 	$(CDO) $(CDOFLAGS) select,startdate=$(MIN_DATE) $< $(<F)
 	base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.nc -c \
 	   "set -e ;\
@@ -461,27 +472,28 @@ if make_result:
     sys.exit(1)
 
 #%  if JOB.upload_url|d:
+if not args.no_upload and not args.merge_only:
 
-logging.info('transfer data to upload URL')
+    logging.info('transfer data to upload URL')
 
-import itertools, fnmatch, urllib.request, mimetypes
+    import itertools, fnmatch, urllib.request, mimetypes
 
-upload_url = '%{JOB.upload_url}'
-names = os.listdir(mon_dir)
+    upload_url = '%{JOB.upload_url}'
+    names = os.listdir(mon_dir)
 
-for name in itertools.chain.from_iterable(
-    fnmatch.filter(names, pattern) for pattern in ('*.pdf', '*.png', '*.html')
-):
-    with open(os.path.join(mon_dir, name), "rb") as input:
-        data = input.read()
-    url = upload_url.replace('/?', '/%{EXP_ID}/' + name + '?')
-    request = urllib.request.Request(url=url, data=data, method='PUT')
-    (mime_type, encoding) = mimetypes.guess_type(name)
-    request.add_header('Content-Type', mime_type)
-    with urllib.request.urlopen(request) as response:
-        pass
-    logging.info('%s (%s): %s (%d)',
-        name, mime_type, response.reason, response.status)
+    for name in itertools.chain.from_iterable(
+        fnmatch.filter(names, pattern) for pattern in ('*.pdf', '*.png', '*.html')
+    ):
+        with open(os.path.join(mon_dir, name), "rb") as input:
+            data = input.read()
+        url = upload_url.replace('/?', '/%{EXP_ID}/' + name + '?')
+        request = urllib.request.Request(url=url, data=data, method='PUT')
+        (mime_type, encoding) = mimetypes.guess_type(name)
+        request.add_header('Content-Type', mime_type)
+        with urllib.request.urlopen(request) as response:
+            pass
+        logging.info('%s (%s): %s (%d)',
+            name, mime_type, response.reason, response.status)
 
 #%  endif
 os.chdir('%{SCRIPT_DIR}')

@@ -669,7 +669,7 @@ SUBROUTINE art_calc_aodvar(rho, tracer, dz, istart, iend, nlev, jb, jg, p_art_da
             CALL p_art_data%dict_tracer%get('ashc',iashc,ierror)
               IF(ierror /= SUCCESS) CALL finish (thisroutine, 'Tracer labeled "ashc" not found in dictionary.')
           ENDIF
-          IF (art_config(jg)%iart_fire > 1) THEN
+          IF (art_config(jg)%iart_fire > 0) THEN
             CALL p_art_data%dict_tracer%get('soot',isoot,ierror)
               IF(ierror /= SUCCESS) CALL finish (thisroutine, 'Tracer labeled "soot" not found in dictionary.')
           ENDIF
@@ -1025,7 +1025,7 @@ SUBROUTINE art_calc_bsc(rho,tracer, dz, istart, iend, nlev, jb, jg, p_art_data)
             CALL p_art_data%dict_tracer%get('ashc',iashc,ierror)
               IF(ierror /= SUCCESS) CALL finish (thisroutine, 'Tracer labeled "ashc" not found in dictionary.')
           ENDIF
-          IF (art_config(jg)%iart_fire > 1) THEN
+          IF (art_config(jg)%iart_fire > 0) THEN
             CALL p_art_data%dict_tracer%get('soot',isoot,ierror)
               IF(ierror /= SUCCESS) CALL finish (thisroutine, 'Tracer labeled "soot" not found in dictionary.')
           ENDIF

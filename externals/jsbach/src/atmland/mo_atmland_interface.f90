@@ -18,8 +18,10 @@ MODULE mo_atmland_interface
   USE mo_kind,            ONLY: wp
 
   USE mo_jsb_control,        ONLY: jsbach_runs_standalone
-  USE mo_jsb_model_class,    ONLY: t_jsb_model
+  USE mo_jsb_model_class,    ONLY: t_jsb_model, MODEL_QUINCY
   USE mo_jsb_class,          ONLY: Get_model
+  USE mo_jsb_grid,           ONLY: Get_grid
+  USE mo_jsb_grid_class,     ONLY: t_jsb_grid
   USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract
   USE mo_jsb_lct_class,      ONLY: LAKE_TYPE
   !USE mo_jsb_config_class,   ONLY: t_jsb_config
@@ -70,8 +72,14 @@ CONTAINS
     & pch,                    &
     & cos_zenith_angle,       &
     & CO2_air,                &
-    & DEBUG_VAR,              &
+    ! For QUINCY
+    & nhx_deposition,         &
+    & noy_deposition,         &
+    & nhx_n15_deposition,     &
+    & noy_n15_deposition,     &
+    & p_deposition,           &
     ! For lakes:
+    & DEBUG_VAR,              &
     & drag_wtr,               &
     & drag_ice,               &
     & t_acoef_wtr,            &
@@ -85,23 +93,36 @@ CONTAINS
     & )
 
     USE mo_jsb_physical_constants, ONLY: molarMassDryAir, molarMassCO2
-
+    USE mtime,                     ONLY: datetime
+    USE mo_time_config,            ONLY: time_config
+    USE mo_jsb_time,               ONLY: get_secs_of_day
+#ifndef __NO_QUINCY__
+    USE mo_iq_atm2land_process,     ONLY: update_local_time_and_daytime_counter
+#endif
+    ! ----------------------------------------------------------------------------------------------------- !
     CLASS(t_jsb_tile_abstract), INTENT(inout)             :: tile
     TYPE(t_jsb_task_options),   INTENT(in)                :: options
     ! TODO This line doesn't work with intel on mistral and standalone JSBACH with ECHAM infrastructure ... why?
     ! REAL(wp), OPTIONAL, DIMENSION(options%nc), INTENT(in) ::                                                       &
     REAL(wp), OPTIONAL, DIMENSION(:), INTENT(in) ::                                                                &
       & t_air, q_air, press_air, rain, snow, wind_air, wind_10m, lw_srf_down, swvis_srf_down, swnir_srf_down, swpar_srf_down, &
-      & fract_par_diffuse, dz_srf, press_srf, rho_srf, drag_srf, t_acoef, t_bcoef, q_acoef, q_bcoef, pch, cos_zenith_angle, &
-      & CO2_air, DEBUG_VAR, drag_wtr, drag_ice,                                                                    &
+      & fract_par_diffuse, dz_srf, press_srf, rho_srf, drag_srf, t_acoef, t_bcoef, q_acoef, q_bcoef, pch, cos_zenith_angle,         &
+      & CO2_air,                                                                                                   &
+      & nhx_deposition, noy_deposition, nhx_n15_deposition, noy_n15_deposition, p_deposition,                      &
+      & DEBUG_VAR, drag_wtr, drag_ice,                                                                             &
       & t_acoef_wtr, t_bcoef_wtr, q_acoef_wtr, q_bcoef_wtr,                                                        &
       & t_acoef_ice, t_bcoef_ice, q_acoef_ice, q_bcoef_ice
 
     dsl4jsb_Def_memory(A2L_)
 
-    INTEGER ::  iblk, ics, ice, nc, i
+    INTEGER  :: iblk, ics, ice, nc, i
+    INTEGER  :: global_seconds_day
+    REAL(wp) :: dtime
+    TYPE(datetime),    POINTER :: mtime_current !< elapsed simulation time
     TYPE(t_jsb_model), POINTER :: model
-    LOGICAL :: use_quincy
+    TYPE(t_jsb_grid),  POINTER :: grid
+    REAL(wp), POINTER :: lon(:)
+    INTEGER :: model_scheme
     LOGICAL :: tile_contains_lake
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_atm2land'
@@ -131,7 +152,14 @@ CONTAINS
       & cos_zenith_angle_ptr,  &
       & CO2_air_ptr,           &
       & CO2_air_mol_ptr,       &
+#ifndef __NO_QUINCY__
       & CO2_mixing_ratio_ptr,  &
+      & nhx_deposition_ptr,    &
+      & noy_deposition_ptr,    &
+      & nhx_n15_deposition_ptr,&
+      & noy_n15_deposition_ptr,&
+      & p_deposition_ptr,      &
+#endif
       & DEBUG_VAR_ptr,         &
       & drag_wtr_ptr,          &
       & drag_ice_ptr,          &
@@ -143,16 +171,25 @@ CONTAINS
       & t_bcoef_ice_ptr,       &
       & q_acoef_ice_ptr,       &
       & q_bcoef_ice_ptr
-
+    ! quincy
+    dsl4jsb_Real2D_onChunk :: daytime_counter
+    dsl4jsb_Real2D_onChunk :: local_time_day_seconds
+    ! ----------------------------------------------------------------------------------------------------- !
     IF (ASSOCIATED(tile%parent)) CALL finish(TRIM(routine), 'Should only be called for the root tile')
 
-    iblk = options%iblk
-    ics  = options%ics
-    ice  = options%ice
-    nc   = options%nc
+    iblk  = options%iblk
+    ics   = options%ics
+    ice   = options%ice
+    nc    = options%nc
+    dtime = options%dtime
 
     model => Get_model(tile%owner_model_id)
-    use_quincy = model%config%use_quincy
+    grid  => get_grid(model%grid_id)
+    lon   => grid%lon(ics:ice, iblk)
+    mtime_current => time_config%tc_current_date
+    global_seconds_day = get_secs_of_day(mtime_current)
+
+    model_scheme = model%config%model_scheme
 
     ! make this logical accessible in the OpenACC code directly
     tile_contains_lake = tile%contains_lake
@@ -233,8 +270,29 @@ CONTAINS
     IF (PRESENT(CO2_air)) THEN
       CO2_air_ptr           => dsl4jsb_var2D_onChunk(A2L_, CO2_air)
       CO2_air_mol_ptr       => dsl4jsb_var2D_onChunk(A2L_, CO2_air_mol)
-      IF (use_quincy) CO2_mixing_ratio_ptr  => dsl4jsb_var2D_onChunk(A2L_, CO2_mixing_ratio)
+#ifndef __NO_QUINCY__
+      IF (model_scheme == MODEL_QUINCY) THEN
+        CO2_mixing_ratio_ptr  => dsl4jsb_var2D_onChunk(A2L_, CO2_mixing_ratio)
+      END IF
+#endif
     END IF
+#ifndef __NO_QUINCY__
+    IF (PRESENT(nhx_deposition)) THEN
+      nhx_deposition_ptr      => dsl4jsb_var2D_onChunk(A2L_, nhx_deposition)
+    END IF
+    IF (PRESENT(noy_deposition)) THEN
+      noy_deposition_ptr      => dsl4jsb_var2D_onChunk(A2L_, noy_deposition)
+    END IF
+    IF (PRESENT(nhx_n15_deposition)) THEN
+      nhx_n15_deposition_ptr  => dsl4jsb_var2D_onChunk(A2L_, nhx_n15_deposition)
+    END IF
+    IF (PRESENT(noy_n15_deposition)) THEN
+      noy_n15_deposition_ptr  => dsl4jsb_var2D_onChunk(A2L_, noy_n15_deposition)
+    END IF
+    IF (PRESENT(p_deposition)) THEN
+      p_deposition_ptr        => dsl4jsb_var2D_onChunk(A2L_, p_deposition)
+    END IF
+#endif
     IF (PRESENT(drag_wtr)) THEN
       drag_wtr_ptr          => dsl4jsb_var2D_onChunk(A2L_, drag_wtr)
     END IF
@@ -266,216 +324,262 @@ CONTAINS
       q_bcoef_ice_ptr       => dsl4jsb_var2D_onChunk(A2L_, q_bcoef_ice)
     END IF
 
-    !$ACC PARALLEL DEFAULT(PRESENT)
+#ifndef __NO_QUINCY__
+    IF (model_scheme == MODEL_QUINCY) THEN
+      daytime_counter             => dsl4jsb_var2D_onChunk(A2L_, daytime_counter)
+      local_time_day_seconds      => dsl4jsb_var2D_onChunk(A2L_, local_time_day_seconds)
+    END IF
+#endif
+
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 
     IF (PRESENT(DEBUG_VAR)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         DEBUG_VAR_ptr(i) = DEBUG_VAR(i)
       END DO
     END IF
 
     IF (PRESENT(t_air)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         t_air_ptr(i) = t_air(i)
       END DO
     END IF
     IF (PRESENT(q_air)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         q_air_ptr(i) = q_air(i)
       END DO
     END IF
     IF (PRESENT(press_air)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         press_air_ptr(i) = press_air(i)
       END DO
     END IF
     IF (PRESENT(rain)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         rain_ptr(i) = rain(i)
       END DO
     END IF
     IF (PRESENT(snow)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         snow_ptr(i) = snow(i)
       END DO
     END IF
     IF (PRESENT(wind_air)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         wind_air_ptr(i) = wind_air(i)
       END DO
     END IF
     IF (PRESENT(wind_10m)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         wind_10m_ptr(i) = wind_10m(i)
       END DO
     END IF
     IF (PRESENT(lw_srf_down)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         lw_srf_down_ptr(i) = lw_srf_down(i)
       END DO
     END IF
     IF (PRESENT(swvis_srf_down)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         swvis_srf_down_ptr(i) = swvis_srf_down(i)
       END DO
     END IF
     IF (PRESENT(swnir_srf_down)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         swnir_srf_down_ptr(i) = swnir_srf_down(i)
       END DO
     END IF
     IF (PRESENT(swpar_srf_down)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         swpar_srf_down_ptr(i) = swpar_srf_down(i)
       END DO
     END IF
     IF (PRESENT(fract_par_diffuse)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         fract_par_diffuse_ptr(i)  = fract_par_diffuse(i)
       END DO
     END IF
     IF (PRESENT(dz_srf)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         dz_srf_ptr(i) = dz_srf(i)
       END DO
     END IF
     IF (PRESENT(press_srf)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         press_srf_ptr(i) = press_srf(i)
       END DO
     END IF
     IF (PRESENT(drag_srf)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         drag_srf_ptr(i) = drag_srf(i)
       END DO
     END IF
     IF (PRESENT(rho_srf)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         rho_srf_ptr(i) = rho_srf(i)
       END DO
     END IF
     IF (PRESENT(t_acoef)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         t_acoef_ptr(i) = t_acoef(i)
       END DO
     END IF
     IF (PRESENT(t_bcoef)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         t_bcoef_ptr(i) = t_bcoef(i)
       END DO
     END IF
     IF (PRESENT(q_acoef)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         q_acoef_ptr(i) = q_acoef(i)
       END DO
     END IF
     IF (PRESENT(q_bcoef)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         q_bcoef_ptr(i) = q_bcoef(i)
       END DO
     END IF
     IF (PRESENT(pch)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         pch_ptr(i) = pch(i)
       END DO
     END IF
     IF (PRESENT(cos_zenith_angle)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         cos_zenith_angle_ptr(i) = cos_zenith_angle(i)
       END DO
     END IF
     IF (PRESENT(CO2_air)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         CO2_air_ptr(i) = CO2_air(i)
         ! Convert CO2 mass mixing ratio [kg/kg] to particle mixing ratio [mol/mol]
         CO2_air_mol_ptr(i) = CO2_air(i) * molarMassDryAir / molarMassCO2
-        ! convert CO2 from "molar ratio (volume)" to "co2 mixing ratio ppmv" (quincy | used in e.g. update_canopy_fluxes)
-        IF (use_quincy) CO2_mixing_ratio_ptr(i) = CO2_air_mol_ptr(i) * 1000000._wp
+        ! convert CO2 from "molar ratio (volume)" to "co2 mixing ratio ppmv"
+#ifndef __NO_QUINCY__
+        IF (model_scheme == MODEL_QUINCY) THEN
+          CO2_mixing_ratio_ptr(i) = CO2_air_mol_ptr(i) * 1000000._wp
+        END IF
+#endif
       END DO
     END IF
+#ifndef __NO_QUINCY__
+    !> MODEL_QUINCY
+    !>
+    IF (PRESENT(nhx_deposition)) THEN
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      DO i=1,nc
+        nhx_deposition_ptr(i) = nhx_deposition(i)
+      END DO
+    END IF
+    IF (PRESENT(noy_deposition)) THEN
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      DO i=1,nc
+        noy_deposition_ptr(i) = noy_deposition(i)
+      END DO
+    END IF
+    IF (PRESENT(nhx_n15_deposition)) THEN
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      DO i=1,nc
+        nhx_n15_deposition_ptr(i) = nhx_n15_deposition(i)
+      END DO
+    END IF
+    IF (PRESENT(noy_n15_deposition)) THEN
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      DO i=1,nc
+        noy_n15_deposition_ptr(i) = noy_n15_deposition(i)
+      END DO
+    END IF
+    IF (PRESENT(p_deposition)) THEN
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      DO i=1,nc
+        p_deposition_ptr(i) = p_deposition(i)
+      END DO
+    END IF
+#endif
 
+    !> lakes
+    !>
     IF (tile_contains_lake) THEN
-
       IF (PRESENT(drag_wtr)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           drag_wtr_ptr(i) = drag_wtr(i)
         END DO
       END IF
       IF (PRESENT(drag_ice)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           drag_ice_ptr(i) = drag_ice(i)
         END DO
       END IF
       IF (PRESENT(t_acoef_wtr)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_acoef_wtr_ptr(i) = t_acoef_wtr(i)
         END DO
       END IF
       IF (PRESENT(t_bcoef_wtr)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_bcoef_wtr_ptr(i) = t_bcoef_wtr(i)
         END DO
       END IF
       IF (PRESENT(q_acoef_wtr)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           q_acoef_wtr_ptr(i) = q_acoef_wtr(i)
         END DO
       END IF
       IF (PRESENT(q_bcoef_wtr)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           q_bcoef_wtr_ptr(i) = q_bcoef_wtr(i)
         END DO
       END IF
       IF (PRESENT(t_acoef_ice)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_acoef_ice_ptr(i) = t_acoef_ice(i)
         END DO
       END IF
       IF (PRESENT(t_bcoef_ice)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_bcoef_ice_ptr(i) = t_bcoef_ice(i)
         END DO
       END IF
       IF (PRESENT(q_acoef_ice)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           q_acoef_ice_ptr(i) = q_acoef_ice(i)
         END DO
       END IF
       IF (PRESENT(q_bcoef_ice)) THEN
-      !$ACC LOOP GANG VECTOR
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           q_bcoef_ice_ptr(i) = q_bcoef_ice(i)
         END DO
@@ -484,6 +588,20 @@ CONTAINS
     END IF
 
     !$ACC END PARALLEL
+
+    !$ACC WAIT(1)
+
+#ifndef __NO_QUINCY__
+    IF (model_scheme == MODEL_QUINCY) THEN
+      IF (.NOT. PRESENT(cos_zenith_angle)) THEN
+        CALL finish(TRIM(routine), 'cos_zenith_angle not present but needed for QUINCY model')
+      END IF
+
+      ! Update local time and the daytime counter
+      CALL update_local_time_and_daytime_counter( &
+        &     global_seconds_day, dtime, lon, swpar_srf_down, daytime_counter, local_time_day_seconds)
+    END IF ! MODEL_QUINCY
+#endif
 
   END SUBROUTINE update_atm2land
 
@@ -528,13 +646,16 @@ CONTAINS
     CLASS(t_jsb_tile_abstract), POINTER :: land_tile
     dsl4jsb_Def_memory_tile(TURB_, land_tile)
 
-    INTEGER ::  iblk, ics, ice, nc, i, j, it, nt
+    INTEGER  :: iblk, ics, ice, nc, i, j, it, nt
+    LOGICAL  :: use_tmx, tile_is_carbon_active
     REAL(wp) :: fact_lake(options%nc), fact_land(options%nc)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_land2atm'
 
     dsl4jsb_Real2D_onChunk :: &
+      & t_ptr, &                  ! tmx
       & t_filt_ptr, &
+      & t_rad_ptr, &
       & t_eff_ptr, &
       & qsat_star_ptr, &
       & s_star_ptr, &
@@ -543,11 +664,14 @@ CONTAINS
       & fact_qsat_srf_ptr, &
       & fact_qsat_srf_land_tile, &
       & evapopot_ptr, &
+      & evapotrans_ptr, &         ! tmx
+      & latent_hflx_ptr, &        ! tmx
+      & sensible_hflx_ptr, &      ! tmx
       & evapotrans_lnd_ptr, &
       & latent_hflx_lnd_ptr, &
       & sensible_hflx_lnd_ptr, &
       & forc_hflx_ptr, &
-      & heat_cap_old_ptr, &
+      & heat_cap_ptr, &
       & rough_h_ptr, &
       & rough_m_ptr, &
       & q_snocpymlt_ptr, &
@@ -590,21 +714,25 @@ CONTAINS
     ice  = options%ice
     nc   = options%nc
 
-    ! IF (nc /= SIZE(t_srf,1)) CALL finish(TRIM(routine), 'Wrong dimensions')
+    IF (nc /= SIZE(t_srf,1)) CALL finish(TRIM(routine), 'Wrong dimensions')
 
     model => Get_model(tile%owner_model_id)
+
+    use_tmx = model%config%use_tmx
+    tile_is_carbon_active = tile%Is_process_active(CARBON_)
 
     dsl4jsb_Get_config(SEB_)
     dsl4jsb_Get_memory(SEB_)
     dsl4jsb_Get_memory(TURB_)
     dsl4jsb_Get_memory(HYDRO_)
     dsl4jsb_Get_memory(RAD_)
-    IF (tile%Is_process_active(CARBON_)) THEN
+    IF (tile_is_carbon_active) THEN
       dsl4jsb_Get_memory(CARBON_)
     END IF
 
     !$ACC DATA CREATE(fact_land, fact_lake)
-    IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
+
+    IF (tile%contains_lake .AND. .NOT. use_tmx .AND. .NOT. jsbach_runs_standalone()) THEN
 
       ! With lakes, re-scale _lnd, _lice and _lwtr fluxes given back to the atmosphere so that they are relative to the
       ! jsbach grid box, not/only including lakes (JSBACH grid boxes do not include ocean fractions.). Re-scaling is
@@ -616,8 +744,8 @@ CONTAINS
         IF (tile%lcts(j)%id == LAKE_TYPE) EXIT         ! We get index j of the lake tile
       END DO
 
-      !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(tile%lcts)
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(tile%lcts)
+      !$ACC LOOP GANG VECTOR
       DO i=1,nc
         fact_lake(i) = tile%lcts(j)%fract(ics+i-1,iblk)      ! Lake fraction
         fact_land(i) = 1._wp - fact_lake(i)            ! Land fraction
@@ -636,8 +764,8 @@ CONTAINS
       !$ACC END PARALLEL
 
     ELSE    ! without lakes
- 
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT)
+
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO i=1,nc
         fact_land(i) = 1._wp
         fact_lake(i) = 0._wp
@@ -663,254 +791,222 @@ CONTAINS
     END DO
     dsl4jsb_Get_memory_tile(TURB_, land_tile)
 
-    IF (model%config%use_tmx) THEN
+    t_eff_ptr        => dsl4jsb_var2D_onChunk(SEB_,   t_eff4)
+    qsat_star_ptr    => dsl4jsb_var2D_onChunk(SEB_,   qsat_star)
+    s_star_ptr       => dsl4jsb_var2D_onChunk(SEB_,   s_star)
+    dsl4jsb_Get_var2d_onChunk_tile_name(TURB_, fact_q_air, land_tile)
+    dsl4jsb_Get_var2d_onChunk_tile_name(TURB_, fact_qsat_srf, land_tile)
+    evapopot_ptr     => dsl4jsb_var2D_onChunk(HYDRO_, evapopot) ! For offline only
+    forc_hflx_ptr    => dsl4jsb_var2D_onChunk(SEB_,   forc_hflx)    ! TODO Not used
+    heat_cap_ptr     => dsl4jsb_var2D_onChunk(SEB_,   heat_cap)
+    rough_h_ptr      => dsl4jsb_var2D_onChunk(TURB_,  rough_h)
+    rough_m_ptr      => dsl4jsb_var2D_onChunk(TURB_,  rough_m)
+    q_snocpymlt_ptr  => dsl4jsb_var2D_onChunk(HYDRO_, q_snocpymlt)
+    IF (use_tmx) THEN
+      t_ptr                 => dsl4jsb_var2D_onChunk(SEB_,   t)
+      t_rad_ptr             => dsl4jsb_var2D_onChunk(SEB_,   t_rad4)
+      evapotrans_ptr        => dsl4jsb_var2D_onChunk(HYDRO_, evapotrans)
+      latent_hflx_ptr       => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx)
+      sensible_hflx_ptr     => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx)
+      alb_vis_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_vis)      ! TODO
+      alb_vis_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_vis)      ! TODO
+      alb_nir_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_nir)      ! TODO
+      alb_nir_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_nir)
+      kh_ptr                => dsl4jsb_var2D_onChunk(TURB_,  kh)
+      km_ptr                => dsl4jsb_var2D_onChunk(TURB_,  km)
+      kh_neutral_ptr        => dsl4jsb_var2D_onChunk(TURB_,  kh_neutral)
+      km_neutral_ptr        => dsl4jsb_var2D_onChunk(TURB_,  km_neutral)
+    ELSE
+      t_filt_ptr            => dsl4jsb_var2D_onChunk(SEB_,   t_filt)
+      evapotrans_lnd_ptr    => dsl4jsb_var2D_onChunk(HYDRO_, evapotrans_lnd)
+      latent_hflx_lnd_ptr   => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_lnd)
+      sensible_hflx_lnd_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_lnd)
+      alb_vis_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_vis_lnd)  ! TODO
+      alb_vis_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_vis_lnd)  ! TODO
+      alb_nir_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_nir_lnd)  ! TODO
+      alb_nir_lnd_ptr       => dsl4jsb_var2D_onChunk(RAD_,   alb_nir_lnd)
+    END IF
+
+    IF (tile_is_carbon_active) THEN
+      co2flux_npp_2_atm_ta_ptr      => dsl4jsb_var2D_onChunk(CARBON_,co2flux_npp_2_atm_ta)
+      co2flux_soilresp_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_soilresp_2_atm_ta)
+      co2flux_herb_2_atm_ta_ptr     => dsl4jsb_var2D_onChunk(CARBON_,co2flux_herb_2_atm_ta)
+      co2flux_fire_all_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_fire_all_2_atm_ta)
+    END IF
+
+    IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
+      t_lwtr_ptr            => dsl4jsb_var2D_onChunk(SEB_,   t_lwtr)
+      qsat_lwtr_ptr         => dsl4jsb_var2D_onChunk(SEB_,   qsat_lwtr)
+      s_lwtr_ptr            => dsl4jsb_var2D_onChunk(SEB_,   s_lwtr)
+      evapo_wtr_ptr         => dsl4jsb_var2D_onChunk(HYDRO_, evapo_wtr)
+      latent_hflx_wtr_ptr   => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_wtr)
+      sensible_hflx_wtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_wtr)
+      albedo_lwtr_ptr       => dsl4jsb_var2D_onChunk(RAD_,   albedo_lwtr)
+      fract_lice_ptr        => dsl4jsb_var2D_onChunk(SEB_,   fract_lice)
+    END IF
+
+    IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
+      t_lice_ptr            => dsl4jsb_var2D_onChunk(SEB_,   t_lice)
+      qsat_lice_ptr         => dsl4jsb_var2D_onChunk(SEB_,   qsat_lice)
+      s_lice_ptr            => dsl4jsb_var2D_onChunk(SEB_,   s_lice)
+      evapo_ice_ptr         => dsl4jsb_var2D_onChunk(HYDRO_, evapo_ice)
+      latent_hflx_ice_ptr   => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_ice)
+      sensible_hflx_ice_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_ice)
+      albedo_lice_ptr       => dsl4jsb_var2D_onChunk(RAD_,   albedo_lice)
+    END IF
+
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+
+    IF (use_tmx) THEN
       IF (PRESENT(t_srf)) THEN
-        t_filt_ptr => dsl4jsb_var2D_onChunk(SEB_, t)
-        !$ACC DATA PRESENT(t_srf, t_filt_ptr)
-        !$ACC PARALLEL LOOP
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
-          t_srf(i) = t_filt_ptr(i)
+          t_srf(i) = t_ptr(i)
         END DO
-        !$ACC END DATA
       END IF
       IF (PRESENT(t_srf_rad)) THEN
-        t_filt_ptr => dsl4jsb_var2D_onChunk(SEB_, t_rad4)
-        !$ACC DATA PRESENT(t_srf_rad, t_filt_ptr)
-        !$ACC PARALLEL LOOP
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
-          t_srf_rad(i) = t_filt_ptr(i)**0.25_wp
+          t_srf_rad(i) = t_rad_ptr(i)**0.25_wp
         END DO
-        !$ACC END DATA
+      END IF
+      IF (PRESENT(evapotrans)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          evapotrans(i) = evapotrans_ptr(i)
+        END DO
+      END IF
+      IF (PRESENT(latent_hflx)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          latent_hflx(i) = latent_hflx_ptr(i)
+        END DO
+      END IF
+      IF (PRESENT(sensible_hflx)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          sensible_hflx(i) = sensible_hflx_ptr(i)
+        END DO
       END IF
     ELSE
       IF (PRESENT(t_srf)) THEN
-        t_filt_ptr => dsl4jsb_var2D_onChunk(SEB_, t_filt)
-        !$ACC DATA PRESENT(t_srf, t_filt_ptr)
-        !$ACC PARALLEL LOOP
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_srf(i) = t_filt_ptr(i)
         END DO
-        !$ACC END DATA
+      END IF
+      IF (PRESENT(evapotrans)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          evapotrans(i) = fact_land(i) * evapotrans_lnd_ptr(i)
+        END DO
+      END IF
+      IF (PRESENT(latent_hflx)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          latent_hflx(i) = fact_land(i) * latent_hflx_lnd_ptr(i)
+        END DO
+      END IF
+      IF (PRESENT(sensible_hflx)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          sensible_hflx(i) = fact_land(i) * sensible_hflx_lnd_ptr(i)
+        END DO
       END IF
     END IF
     IF (PRESENT(t_eff_srf)) THEN
-      t_eff_ptr => dsl4jsb_var2D_onChunk(SEB_,   t_eff4)
-      !$ACC DATA PRESENT(t_eff_srf, t_eff_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         t_eff_srf(i) = t_eff_ptr(i)**0.25_wp
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(qsat_srf)) THEN
-      qsat_star_ptr => dsl4jsb_var2D_onChunk(SEB_,   qsat_star)
-      !$ACC DATA PRESENT(qsat_srf, qsat_star_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         qsat_srf(i) = qsat_star_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(s_srf)) THEN
-      s_star_ptr => dsl4jsb_var2D_onChunk(SEB_,   s_star)
-      !$ACC DATA PRESENT(s_srf, s_star_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         s_srf(i) = s_star_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(fact_q_air)) THEN
-      dsl4jsb_Get_var2d_onChunk_tile_name(TURB_, fact_q_air, land_tile)
-      !$ACC DATA PRESENT(fact_q_air, fact_q_air_land_tile)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         fact_q_air(i) = fact_q_air_land_tile(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(fact_qsat_srf)) THEN
-      dsl4jsb_Get_var2d_onChunk_tile_name(TURB_, fact_qsat_srf, land_tile)
-      !$ACC DATA PRESENT(fact_qsat_srf, fact_qsat_srf_land_tile)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         fact_qsat_srf(i) = fact_qsat_srf_land_tile(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(evapopot)) THEN
-      evapopot_ptr => dsl4jsb_var2D_onChunk(HYDRO_, evapopot) ! For offline only
-      !$ACC DATA PRESENT(evapopot, evapopot_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         evapopot(i) = evapopot_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
-    END IF
-    IF (PRESENT(evapotrans)) THEN
-      IF (model%config%use_tmx) THEN
-        evapotrans_lnd_ptr => dsl4jsb_var2D_onChunk(HYDRO_, evapotrans)
-      ELSE
-        evapotrans_lnd_ptr => dsl4jsb_var2D_onChunk(HYDRO_, evapotrans_lnd)
-      END IF
-      !$ACC DATA PRESENT(evapotrans, fact_land, evapotrans_lnd_ptr)
-      !$ACC PARALLEL LOOP
-      DO i=1,nc
-        evapotrans(i) = fact_land(i) * evapotrans_lnd_ptr(i)
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
-    END IF
-    IF (PRESENT(latent_hflx)) THEN
-      IF (model%config%use_tmx) THEN
-        latent_hflx_lnd_ptr => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx)
-      ELSE
-        latent_hflx_lnd_ptr => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_lnd)
-      END IF
-      !$ACC DATA PRESENT(latent_hflx, fact_land, latent_hflx_lnd_ptr)
-      !$ACC PARALLEL LOOP
-      DO i=1,nc
-        latent_hflx(i) = fact_land(i) * latent_hflx_lnd_ptr(i)
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
-    END IF
-    IF (PRESENT(sensible_hflx)) THEN
-      IF (model%config%use_tmx) THEN
-        sensible_hflx_lnd_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx)
-      ELSE
-        sensible_hflx_lnd_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_lnd)
-      END IF
-      !$ACC DATA PRESENT(sensible_hflx, fact_land, sensible_hflx_lnd_ptr)
-      !$ACC PARALLEL LOOP
-      DO i=1,nc
-        sensible_hflx(i) = fact_land(i) * sensible_hflx_lnd_ptr(i)
-      END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(grnd_hflx)) THEN
-      forc_hflx_ptr => dsl4jsb_var2D_onChunk(SEB_,   forc_hflx)    ! TODO Not used
-      !$ACC DATA PRESENT(grnd_hflx, forc_hflx_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         grnd_hflx(i) = forc_hflx_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(grnd_hcap)) THEN
-      heat_cap_old_ptr => dsl4jsb_var2D_onChunk(SEB_,   heat_cap_old)  ! not computed for lake
-      !$ACC DATA PRESENT(grnd_hcap, heat_cap_old_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
-        grnd_hcap(i) = heat_cap_old_ptr(i)
+        grnd_hcap(i) = heat_cap_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(rough_h_srf)) THEN
-      rough_h_ptr => dsl4jsb_var2D_onChunk(TURB_,  rough_h)
-      !$ACC DATA PRESENT(rough_h_srf, rough_h_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         rough_h_srf(i) = rough_h_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(rough_m_srf)) THEN
-      rough_m_ptr => dsl4jsb_var2D_onChunk(TURB_,  rough_m)
-      !$ACC DATA PRESENT(rough_m_srf, rough_m_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         rough_m_srf(i) = rough_m_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(q_snocpymlt)) THEN
-      q_snocpymlt_ptr => dsl4jsb_var2D_onChunk(HYDRO_, q_snocpymlt)
-      !$ACC DATA PRESENT(q_snocpymlt, q_snocpymlt_ptr, fact_land)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         q_snocpymlt(i) = fact_land(i) * q_snocpymlt_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(alb_vis_dir)) THEN
-      IF (model%config%use_tmx) THEN
-        alb_vis_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_vis)      ! TODO
-      ELSE
-        alb_vis_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_vis_lnd)  ! TODO
-      END IF
-      !$ACC DATA PRESENT(alb_vis_lnd_ptr, alb_vis_dir)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         alb_vis_dir(i) = alb_vis_lnd_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(alb_vis_dif)) THEN
-      IF (model%config%use_tmx) THEN
-        alb_vis_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_vis)      ! TODO
-      ELSE
-        alb_vis_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_vis_lnd)  ! TODO
-      END IF
-      !$ACC DATA PRESENT(alb_vis_dif, alb_vis_lnd_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         alb_vis_dif(i) = alb_vis_lnd_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(alb_nir_dir)) THEN
-      IF (model%config%use_tmx) THEN
-        alb_nir_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_nir)      ! TODO
-      ELSE
-        alb_nir_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_nir_lnd)  ! TODO
-      END IF
-      !$ACC DATA PRESENT(alb_nir_dir, alb_nir_lnd_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         alb_nir_dir(i) = alb_nir_lnd_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(alb_nir_dif)) THEN
-      IF (model%config%use_tmx) THEN
-        alb_nir_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_nir)
-      ELSE
-        alb_nir_lnd_ptr => dsl4jsb_var2D_onChunk(RAD_, alb_nir_lnd)
-      END IF
-      !$ACC DATA PRESENT(alb_nir_dif, alb_nir_lnd_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         alb_nir_dif(i) = alb_nir_lnd_ptr(i)
       END DO
-      !$ACC END PARALLEL LOOP
-      !$ACC END DATA
     END IF
     IF (PRESENT(CO2_flux)) THEN
-      IF (tile%Is_process_active(CARBON_)) THEN
-        co2flux_npp_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_npp_2_atm_ta)
-        co2flux_soilresp_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_soilresp_2_atm_ta)
-        co2flux_herb_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_herb_2_atm_ta)
-        co2flux_fire_all_2_atm_ta_ptr => dsl4jsb_var2D_onChunk(CARBON_,co2flux_fire_all_2_atm_ta)
-
-        !$ACC DATA PRESENT(CO2_flux, fact_land, co2flux_npp_2_atm_ta_ptr, co2flux_soilresp_2_atm_ta_ptr) &
-        !$ACC   PRESENT(co2flux_herb_2_atm_ta_ptr, co2flux_fire_all_2_atm_ta_ptr)
-        !$ACC PARALLEL LOOP
+      IF (tile_is_carbon_active) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           CO2_flux(i) = fact_land(i) *              &
             & (   co2flux_npp_2_atm_ta_ptr(i)       &
@@ -919,300 +1015,264 @@ CONTAINS
             &   + co2flux_fire_all_2_atm_ta_ptr(i)  &
             & )
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
       ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        CO2_flux(:) = 0._wp
-        !$ACC END KERNELS
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          CO2_flux(i) = 0._wp
+        END DO
       END IF
     END IF
     IF (PRESENT(kh)) THEN
-      kh_ptr => dsl4jsb_var2D_onChunk(TURB_, kh)
-      !$ACC DATA PRESENT(kh, kh_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         kh(i) = kh_ptr(i)
       END DO
-      !$ACC END DATA
     END IF
     IF (PRESENT(km)) THEN
-      km_ptr => dsl4jsb_var2D_onChunk(TURB_, km)
-      !$ACC DATA PRESENT(km, km_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         km(i) = km_ptr(i)
       END DO
-      !$ACC END DATA
     END IF
     IF (PRESENT(kh_neutral)) THEN
-      kh_neutral_ptr => dsl4jsb_var2D_onChunk(TURB_, kh_neutral)
-      !$ACC DATA PRESENT(kh_neutral, kh_neutral_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         kh_neutral(i) = kh_neutral_ptr(i)
       END DO
-      !$ACC END DATA
     END IF
     IF (PRESENT(km_neutral)) THEN
-      km_neutral_ptr => dsl4jsb_var2D_onChunk(TURB_, km_neutral)
-      !$ACC DATA PRESENT(km_neutral, km_neutral_ptr)
-      !$ACC PARALLEL LOOP
+      !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO i=1,nc
         km_neutral(i) = km_neutral_ptr(i)
       END DO
-      !$ACC END DATA
     END IF
+
+    !$ACC END PARALLEL
 
     ! Exchange fields on lake water fractions
     ! ---------------------------------------
 
-    IF (PRESENT(t_lwtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        t_lwtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   t_lwtr)
-        !$ACC DATA PRESENT(t_lwtr_ptr, t_lwtr)
-        !$ACC PARALLEL LOOP
+    IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
+
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+
+      IF (PRESENT(t_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_lwtr(i) = t_lwtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-      !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        t_lwtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(qsat_lwtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        qsat_lwtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   qsat_lwtr)
-        !$ACC DATA PRESENT(qsat_lwtr, qsat_lwtr_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(qsat_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           qsat_lwtr(i) = qsat_lwtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        qsat_lwtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(s_lwtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        s_lwtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   s_lwtr)
-        !$ACC DATA PRESENT(s_lwtr, s_lwtr_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(s_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           s_lwtr(i) = s_lwtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-          s_lwtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(evapo_wtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        evapo_wtr_ptr => dsl4jsb_var2D_onChunk(HYDRO_, evapo_wtr)
-        !$ACC DATA PRESENT(evapo_wtr, evapo_wtr_ptr, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(evapo_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           evapo_wtr(i) = fact_lake(i) * evapo_wtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        evapo_wtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(latent_hflx_wtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        latent_hflx_wtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_wtr)
-        !$ACC DATA PRESENT(latent_hflx_wtr, latent_hflx_wtr_ptr, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(latent_hflx_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           latent_hflx_wtr(i) = fact_lake(i) * latent_hflx_wtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        latent_hflx_wtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(sensible_hflx_wtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        sensible_hflx_wtr_ptr => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_wtr)
-        !$ACC DATA PRESENT(sensible_hflx_wtr, sensible_hflx_wtr_ptr, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(sensible_hflx_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           sensible_hflx_wtr(i) = fact_lake(i) * sensible_hflx_wtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        sensible_hflx_wtr(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(albedo_lwtr)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        albedo_lwtr_ptr => dsl4jsb_var2D_onChunk(RAD_,   albedo_lwtr)
-        !$ACC DATA PRESENT(albedo_lwtr, albedo_lwtr_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(albedo_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           albedo_lwtr(i) = albedo_lwtr_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        albedo_lwtr(:) = 0.07_wp
-        !$ACC END KERNELS
       END IF
-    END IF
 
     ! Exchange fields on the ice fraction of lakes
     ! --------------------------------------------
 
-    IF (PRESENT(ice_fract_lake)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone()) THEN
-        fract_lice_ptr => dsl4jsb_var2D_onChunk(SEB_,   fract_lice)
-        !$ACC DATA PRESENT(ice_fract_lake, fract_lice_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(ice_fract_lake)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           ice_fract_lake(i) = fract_lice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        ice_fract_lake(:) = 0._wp
-        !$ACC END KERNELS
       END IF
+
+      !$ACC END PARALLEL
+
+    ELSE
+
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+
+      IF (PRESENT(t_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          t_lwtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(qsat_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          qsat_lwtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(s_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          s_lwtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(evapo_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          evapo_wtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(latent_hflx_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          latent_hflx_wtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(sensible_hflx_wtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          sensible_hflx_wtr(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(albedo_lwtr)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          albedo_lwtr(i) = 0.07_wp
+        END DO
+      END IF
+
+    ! Exchange fields on the ice fraction of lakes
+    ! --------------------------------------------
+
+      IF (PRESENT(ice_fract_lake)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          ice_fract_lake(i) = 0._wp
+        END DO
+      END IF
+
+      !$ACC END PARALLEL
+
     END IF
 
-    IF (PRESENT(t_lice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        t_lice_ptr => dsl4jsb_var2D_onChunk(SEB_,   t_lice)
-        !$ACC DATA PRESENT(t_lice, t_lice_ptr)
-        !$ACC PARALLEL LOOP
+    IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
+
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+
+      IF (PRESENT(t_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           t_lice(i) = t_lice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        t_lice(:) = 273.15_wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(qsat_lice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        qsat_lice_ptr => dsl4jsb_var2D_onChunk(SEB_,   qsat_lice)
-        !$ACC DATA PRESENT(qsat_lice, qsat_lice_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(qsat_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           qsat_lice(i) = qsat_lice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        qsat_lice(:) = 0.0075_wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(s_lice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        s_lice_ptr => dsl4jsb_var2D_onChunk(SEB_,   s_lice)
-        !$ACC DATA PRESENT(s_lice, s_lice_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(s_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           s_lice(i) = s_lice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        s_lice(:) = 2.9E5_wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(evapo_ice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        evapo_ice_ptr => dsl4jsb_var2D_onChunk(HYDRO_, evapo_ice)
-        !$ACC DATA PRESENT(evapo_ice_ptr, evapo_ice, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(evapo_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           evapo_ice(i) = fact_lake(i) * evapo_ice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        evapo_ice(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(latent_hflx_ice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        latent_hflx_ice_ptr => dsl4jsb_var2D_onChunk(SEB_,   latent_hflx_ice)
-        !$ACC DATA PRESENT(latent_hflx_ice, latent_hflx_ice_ptr, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(latent_hflx_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           latent_hflx_ice(i) = fact_lake(i) * latent_hflx_ice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        latent_hflx_ice(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(sensible_hflx_ice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        sensible_hflx_ice_ptr  => dsl4jsb_var2D_onChunk(SEB_,   sensible_hflx_ice)
-        !$ACC DATA PRESENT(sensible_hflx_ice_ptr, sensible_hflx_ice, fact_lake)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(sensible_hflx_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           sensible_hflx_ice(i) = fact_lake(i) * sensible_hflx_ice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        sensible_hflx_ice(:) = 0._wp
-        !$ACC END KERNELS
       END IF
-    END IF
-    IF (PRESENT(albedo_lice)) THEN
-      IF (tile%contains_lake .AND. .NOT. jsbach_runs_standalone() .AND. dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
-        albedo_lice_ptr => dsl4jsb_var2D_onChunk(RAD_,   albedo_lice)
-        !$ACC DATA PRESENT(albedo_lice, albedo_lice_ptr)
-        !$ACC PARALLEL LOOP
+      IF (PRESENT(albedo_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO i=1,nc
           albedo_lice(i) = albedo_lice_ptr(i)
         END DO
-        !$ACC END PARALLEL LOOP
-        !$ACC END DATA
-      ELSE
-        !$ACC KERNELS DEFAULT(PRESENT)
-        albedo_lice(:) = 0.55_wp
-        !$ACC END KERNELS
       END IF
+
+      !$ACC END PARALLEL
+
+    ELSE
+
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+
+      IF (PRESENT(t_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          t_lice(i) = 273.15_wp
+        END DO
+      END IF
+      IF (PRESENT(qsat_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          qsat_lice(i) = 0.0075_wp
+        END DO
+      END IF
+      IF (PRESENT(s_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          s_lice(i) = 2.9E5_wp
+        END DO
+      END IF
+      IF (PRESENT(evapo_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          evapo_ice(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(latent_hflx_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          latent_hflx_ice(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(sensible_hflx_ice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          sensible_hflx_ice(i) = 0._wp
+        END DO
+      END IF
+      IF (PRESENT(albedo_lice)) THEN
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO i=1,nc
+          albedo_lice(i) = 0.55_wp
+        END DO
+      END IF
+
+      !$ACC END PARALLEL
+
     END IF
 
+    !$ACC WAIT(1)
     !$ACC END DATA
 
   END SUBROUTINE update_land2atm

@@ -41,17 +41,11 @@ USE mo_exception,          ONLY: finish
 USE mo_timer,              ONLY: timer_start, timer_stop, timer_grad
 USE mo_loopindices,        ONLY: get_indices_c, get_indices_e
 USE mo_fortran_tools,      ONLY: init
-#ifdef _OPENACC
 USE mo_mpi,                ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
 PRIVATE
-
-#ifndef _OPENACC
-LOGICAL :: i_am_accel_node=.FALSE.
-#endif
 
 PUBLIC :: grad_fd_norm, grad_fd_tang
 PUBLIC :: grad_green_gauss_cell
@@ -456,7 +450,7 @@ iblk => ptr_patch%cells%neighbor_blk
     p_grad(:,:,:,1:i_startblk) = 0._wp
     !$ACC END KERNELS
 #else
-    CALL init(p_grad(:,:,:,1:i_startblk))
+    CALL init(p_grad(:,:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
 #endif
   ENDIF
@@ -592,7 +586,7 @@ iblk => ptr_patch%cells%neighbor_blk
 
   IF (ptr_patch%id > 1) THEN
   ! Fill nest boundaries with zero to avoid trouble with MPI synchronization
-    CALL init(p_grad(:,:,1:i_startblk))
+    CALL init(p_grad(:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
   ENDIF
 
@@ -741,7 +735,7 @@ ENDIF
     p_grad(:,:,:,1:i_startblk) = 0._wp
     !$ACC END KERNELS
 #else
-    CALL init(p_grad(:,:,:,1:i_startblk))
+    CALL init(p_grad(:,:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
 #endif
   ENDIF

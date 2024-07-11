@@ -31,12 +31,24 @@
 import os
 import sys
 
+try:
+    from itertools import zip_longest as zip_longest23
+except ImportError:
+    # noinspection PyUnresolvedReferences
+    from itertools import izip_longest as zip_longest23
+
 
 def open23(name, mode="r"):
     if sys.version_info < (3, 0, 0):
         return open(name, mode)
     else:
-        return open(name, mode, encoding="latin-1")
+        # noinspection PyArgumentList
+        return open(
+            name,
+            mode,
+            encoding=(None if "b" in mode else "UTF-8"),
+            errors=(None if "b" in mode else "surrogateescape"),
+        )
 
 
 def map23(foo, iterable):
@@ -44,6 +56,20 @@ def map23(foo, iterable):
         return map(foo, iterable)
     else:
         return list(map(foo, iterable))
+
+
+if hasattr(sys, "implementation") and sys.implementation.name == "cpython":
+    # see https://docs.python.org/3/library/itertools.html#itertools-recipes
+    import collections
+
+    def exhaust(it):
+        return collections.deque(it, maxlen=0)
+
+else:
+
+    def exhaust(it):
+        for _ in it:
+            pass
 
 
 def file_in_dir(f, d):
@@ -111,30 +137,28 @@ class IncludeFinder:
         return None
 
 
-class StreamStack:
+class StreamStack(object):
+    __slots__ = ["_stream_stack", "_close_stack", "_name_stack"]
+
     def __init__(self):
-        # Stack of file-like objects (i.e. objects implementing methods
-        # readline, close, and a property name:
+        # Stack of file-like objects (i.e. string iterators with the close
+        # method:
         self._stream_stack = []
         self._close_stack = []
-
-    def __enter__(self):
-        return self
-
-    def __exit__(self, exc_type, exc_value, exc_traceback):
-        self.clear()
+        self._name_stack = []
 
     @property
     def root_name(self):
-        return self._stream_stack[0].name if self._stream_stack else None
+        return self._name_stack[0] if self._name_stack else None
 
     @property
     def current_name(self):
-        return self._stream_stack[-1].name if self._stream_stack else None
+        return self._name_stack[-1] if self._name_stack else None
 
-    def add(self, stream, close=True):
+    def push(self, stream, name=None, close=True):
         self._stream_stack.append(stream)
         self._close_stack.append(close)
+        self._name_stack.append(name)
 
     def clear(self):
         for stream, close in zip(self._stream_stack, self._close_stack):
@@ -142,41 +166,21 @@ class StreamStack:
                 stream.close()
         self._stream_stack *= 0
         self._close_stack *= 0
+        self._name_stack *= 0
 
-    def readline(self):
+    def __iter__(self):
+        return self
+
+    def __next__(self):
         while self._stream_stack:
-            line = self._stream_stack[-1].readline()
-            if line:
-                return line
-            else:
+            try:
+                return next(self._stream_stack[-1])
+            except StopIteration:
+                self._name_stack.pop()
                 stream = self._stream_stack.pop()
                 if self._close_stack.pop():
                     stream.close()
-        return ""
+        raise StopIteration
 
-
-class StdStreamWrapper:
-    def __init__(self, stream, name=None):
-        self._stream = stream
-        self.name = stream.name if name is None else name
-
-    def readline(self):
-        return self._stream.readline()
-
-    def writelines(self, lines):
-        return self._stream.writelines(lines)
-
-    def close(self):
-        pass
-
-
-class DummyParser:
-    def __init__(self):
-        pass
-
-    @staticmethod
-    def parse(stream):
-        while 1:
-            line = stream.readline()
-            if not line:
-                break
+    if sys.version_info < (3,):
+        next = __next__

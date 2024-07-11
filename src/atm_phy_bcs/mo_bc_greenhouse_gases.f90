@@ -24,9 +24,10 @@ MODULE mo_bc_greenhouse_gases
   USE mo_kind,               ONLY: wp, dp, i8
   USE mo_exception,          ONLY: finish, message, message_text, warning
   USE mo_physical_constants, ONLY: vmr_to_mmr_co2, vmr_to_mmr_ch4, vmr_to_mmr_n2o, vmr_to_mmr_c11, vmr_to_mmr_c12
-  USE mo_netcdf_parallel,    ONLY: p_nf_open, p_nf_inq_dimid, p_nf_inq_dimlen, &
-       &                           p_nf_inq_varid, p_nf_get_var_double, p_nf_close, &
-       &                           nf_read, nf_noerr
+  USE mo_netcdf,             ONLY: nf90_noerr, nf90_nowrite, nf90_max_var_dims
+  USE mo_netcdf_parallel,    ONLY: p_nf90_open, p_nf90_inq_dimid, p_nf90_inquire_dimension, &
+       &                           p_nf90_inq_varid, p_nf90_get_var, p_nf90_close, &
+       &                           p_nf90_inquire_variable
   USE mtime,                 ONLY: datetime, no_of_sec_in_a_day, &
        &                           getNoOfDaysInYearDateTime, &
        &                           getdayofyearfromdatetime,  &
@@ -70,7 +71,8 @@ CONTAINS
 
   SUBROUTINE read_bc_greenhouse_gases(ghg_filename)
 
-    INTEGER :: ncid, ndimid, nvarid
+    INTEGER :: ncid, nvarid, time_dimid, var_ndims
+    INTEGER, DIMENSION(nf90_max_var_dims) :: var_dimids, var_count
     INTEGER :: i
     CHARACTER(LEN=*) :: ghg_filename
 
@@ -80,9 +82,9 @@ CONTAINS
     ENDIF
 
     CALL message('','Use transient, annually resolved greenhouse gases secenario based on CMIP5')
-    CALL nf_check(p_nf_open(ghg_filename, nf_read, ncid))
-    CALL nf_check(p_nf_inq_dimid (ncid, 'time', ndimid))
-    CALL nf_check(p_nf_inq_dimlen (ncid, ndimid, ghg_no_years))
+    CALL nf_check(p_nf90_open(ghg_filename, nf90_nowrite, ncid))
+    CALL nf_check(p_nf90_inq_dimid (ncid, 'time', time_dimid))
+    CALL nf_check(p_nf90_inquire_dimension (ncid, time_dimid, len = ghg_no_years))
 
     ALLOCATE (ghg_years(ghg_no_years))
     ALLOCATE (ghg_co2(ghg_no_years))
@@ -91,26 +93,39 @@ CONTAINS
     ALLOCATE (ghg_cfc(ghg_no_years,ghg_no_cfc))
     !$ACC ENTER DATA PCREATE(ghg_years, ghg_co2, ghg_ch4, ghg_n2o, ghg_cfc, ghg_cfcmmr, ghg_cfcvmr)
 
-    CALL nf_check(p_nf_inq_varid(ncid, 'time', nvarid))
-    CALL nf_check(p_nf_get_var_double (ncid, nvarid, ghg_years))
+    CALL nf_check(p_nf90_inq_varid (ncid, 'time', nvarid))
+    CALL nf_check(p_nf90_get_var (ncid, nvarid, ghg_years))
       
-    CALL nf_check(p_nf_inq_varid (ncid, 'CO2', nvarid))
-    CALL nf_check(p_nf_get_var_double (ncid, nvarid, ghg_co2))
+    CALL nf_check(p_nf90_inq_varid (ncid, 'CO2', nvarid))
+    ! Find the time dimension in the variable and initialize 'var_count' as the
+    ! 'count' argument of the 'p_nf90_get_var' function:
+    CALL nf_check(p_nf90_inquire_variable(ncid, nvarid, &
+                                        & ndims = var_ndims, &
+                                        & dimids = var_dimids))
+    var_count(:) = 1
+    DO i = 1, var_ndims
+      IF (var_dimids(i) == time_dimid) THEN
+        var_count(i) = ghg_no_years
+        EXIT
+      ENDIF
+    ENDDO
+    CALL nf_check(p_nf90_get_var (ncid, nvarid, ghg_co2, count = var_count))
       
-    CALL nf_check(p_nf_inq_varid (ncid, 'CH4', nvarid))
-    CALL nf_check(p_nf_get_var_double (ncid, nvarid, ghg_ch4))
+    ! Assume that the rest of the variables have the same dimensions:
+    CALL nf_check(p_nf90_inq_varid (ncid, 'CH4', nvarid))
+    CALL nf_check(p_nf90_get_var (ncid, nvarid, ghg_ch4, count = var_count))
       
-    CALL nf_check(p_nf_inq_varid (ncid, 'N2O', nvarid))
-    CALL nf_check(p_nf_get_var_double (ncid, nvarid, ghg_n2o))
+    CALL nf_check(p_nf90_inq_varid (ncid, 'N2O', nvarid))
+    CALL nf_check(p_nf90_get_var (ncid, nvarid, ghg_n2o, count = var_count))
       
     DO i = 1, ghg_no_cfc
-      CALL nf_check(p_nf_inq_varid (ncid, TRIM(ghg_cfc_names(i)), nvarid))
-      CALL nf_check(p_nf_get_var_double (ncid, nvarid, ghg_cfc(:,i)))
+      CALL nf_check(p_nf90_inq_varid (ncid, TRIM(ghg_cfc_names(i)), nvarid))
+      CALL nf_check(p_nf90_get_var (ncid, nvarid, ghg_cfc(:,i), count = var_count))
     ENDDO
-      
+
     bc_greenhouse_gases_file_read = .TRUE.
 
-    CALL nf_check(p_nf_close(ncid))
+    CALL nf_check(p_nf90_close(ncid))
 
     ghg_base_year = ghg_years(1)
 

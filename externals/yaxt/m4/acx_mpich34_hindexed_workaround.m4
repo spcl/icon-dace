@@ -4,7 +4,7 @@ dnl hindexed datatype creation
 dnl
 dnl Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
 dnl
-dnl Keywords: configure configure.ac autoconf MPI mpirun mpiexec OpenMPI
+dnl Keywords: configure configure.ac autoconf MPI mpirun mpiexec MPICH 3.4
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
 dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
@@ -50,18 +50,21 @@ dnl and checks if linking with those fixes the issue.
 dnl See ACX_MPI_DEFECTS for further description of tests.
 AC_DEFUN([ACX_MPICH34_DT_WORKAROUND],
   [AC_LANG_PUSH([C])
-   dnl 1. detect Open MPI version
+   dnl 1. detect MPICH version
    is_affected_mpich=:
    acx_saved_CPPFLAGS=$CPPFLAGS
    acx_saved_LIBS=$LIBS
    while : ; do
-   AC_COMPUTE_INT([acx_mpich_numversion],[MPICH_NUMVERSION],[AC_INCLUDES_DEFAULT
+   AC_COMPUTE_INT([acx_mpich_numversion],[MPICH_NUMVERSION],
+     [AC_INCLUDES_DEFAULT
 @%:@include <mpi.h>],
      [is_affected_mpich=false ; break])
-   $is_affected_mpich || break
-   AS_IF([expr "$acx_mpich_version >= 30400300 & $acx_mpich_version <= 40000000" >/dev/null],,[is_affected_mpich=false ; break])
+   AS_IF([expr "$acx_mpich_numversion >= 30400300 dnl
+& $acx_mpich_numversion <= 40000000" >/dev/null],,
+     [is_affected_mpich=false ; break])
    dnl 2.a. download header files
-   acx_yaksa_add_workaround=m4_default([$5],[config/workarounds/mpich34_yaksa_patch])
+   acx_yaksa_add_workaround=m4_default([$5],
+      [config/workarounds/mpich34_yaksa_patch])
    AS_IF([test -r "$acx_yaksa_add_workaround/xt_yaksa_indexed.c"],,
      [AC_CHECK_PROGS([DL_CMD], [wget curl],[/bin/false])
       AS_CASE([`$DL_CMD --version`],
@@ -87,7 +90,8 @@ acx_fn_downloader()
         [is_affected_mpich=false ; break])
       $MKDIR_P "$acx_yaksa_add_workaround"
       cd "$acx_yaksa_add_workaround"
-      acx_temp='https://raw.githubusercontent.com/pmodels/yaksa/78739ed61c835a68991a34cff581b59b35be310e/'
+      acx_temp='78739ed61c835a68991a34cff581b59b35be310e'
+      acx_temp="https://raw.githubusercontent.com/pmodels/yaksa/$acx_temp/"
       _AC_RUN_LOG([acx_fn_downloader \
      "$acx_temp"'src/frontend/types/yaksa_indexed.c' \
      "$acx_temp"'src/frontend/include/yaksi.h' \
@@ -118,14 +122,14 @@ acx_fn_downloader()
 extern pthread_mutex_t yaksui_atomic_mutex;],
      [pthread_mutex_lock(&yaksui_atomic_mutex);])],
      [echo "" >"$acx_yaksa_add_workaround/yaksa_config.h"],
-     [echo "@%:@define HAVE_C11_ATOMICS 1" >"$acx_yaksa_add_workaround/yaksa_config.h"])
+     [echo "@%:@define HAVE_C11_ATOMICS 1" dnl
+>"$acx_yaksa_add_workaround/yaksa_config.h"])
    dnl 3. build fixed yaksa_indexed.c
    patch -p5 -d "$acx_yaksa_add_workaround" -o "$ac_pwd/conftest.c" \
      < "$srcdir/config/checkpatch/mpich_3.4_yaksa_hindexed.patch" \
      || { is_affected_mpich=false ; break ; }
    AC_COMPILE_IFELSE(,
-     [acx_yaksa_add_workaround="$acx_yaksa_add_workaround/xt_yaksa_indexed.c"
-      mv conftest.c "$acx_yaksa_add_workaround"
+     [mv conftest.c "$acx_yaksa_add_workaround/xt_yaksa_indexed.c"
       ACX_MV_OBJ([conftest],[mpich_workaround])],
      [is_affected_mpich=false
       rm -f core conftest.err conftest.$ac_objext conftest.$ac_ext
@@ -133,7 +137,7 @@ extern pthread_mutex_t yaksui_atomic_mutex;],
    dnl 4. verify listed tests now succeed
    CPPFLAGS=$acx_saved_CPPFLAGS
    LIBS="mpich_workaround.$ac_objext $LIBS"
-   acx_mpich_check_dir=`echo "acx_mpi_check_src_" | sed -e 's@/@<:@^/@:>@*$[]@@'`
+   acx_mpich_check_dir=`echo "acx_mpi_check_src_" | sed 's@/@<:@^/@:>@*$[]@@'`
    ACX_MPI_DEFECTS([$acx_mpich_check_dir],, [is_affected_mpich=false], [$2])
    rm -f "mpich_workaround."*
    break
@@ -144,7 +148,8 @@ extern pthread_mutex_t yaksui_atomic_mutex;],
    AS_IF([$is_affected_mpich],[$3],
      [ASX_VAR_UNSET([acx_yaksa_add_workaround])
       m4_default([$4],
-        [AC_MSG_FAILURE([Cannot apply MPICH 3.4-3.4.2 datatype bug work-around.])])])
+        [AC_MSG_FAILURE(
+           [Cannot apply MPICH 3.4-3.4.3 datatype bug work-around.])])])
 
    AC_LANG_POP([C])])
 dnl

@@ -61,21 +61,9 @@ MODULE mo_latitude_interpolation
                                                       ! ATTENTION: they must contain the poles 
                                                       ! r_lat_clim(0)=+-Pi/2, r_lat_clim(nlat_clim+1)=+-Pi/2
 
-    INTEGER                           :: jl, jcs_true, jce, rl_start, rl_end, i_nchdom, i_startblk, i_endblk
     REAL(wp)                          :: zlat(kbdim)
-    
-    ! get true jcs (jcs_true):
-    rl_start   = grf_bdywidth_c+1
-    rl_end     = min_rlcell_int
-    i_nchdom   = MAX(1,p_patch(jg)%n_childdom)
-    i_startblk = p_patch(jg)%cells%start_blk(rl_start,1)
-    i_endblk   = p_patch(jg)%cells%end_blk(rl_end,i_nchdom)
-    CALL get_indices_c(p_patch(jg), krow, i_startblk, i_endblk, jcs_true,jce, rl_start, rl_end)
 
     zlat(jcs:kproma)=p_patch(jg)%cells%center(jcs:kproma,krow)%lat
-
-    ! if we are on a shifted block (see shift_and_call_psrad_interface_onBlock), shift zlat accordingly
-    IF (jcs_true > jcs) zlat(jcs:kproma-jcs_true+jcs) = zlat(jcs_true:kproma)
 
     inmw1_lat(jcs:kproma)=MAX(INT(n_order*(zlat(jcs:kproma)-p_lat_shift)*p_rdeltalat+1),0)
     inmw2_lat(jcs:kproma)=inmw1_lat(jcs:kproma)+1

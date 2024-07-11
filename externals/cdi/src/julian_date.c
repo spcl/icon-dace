@@ -8,17 +8,17 @@ decode_julday(int calendar, int64_t julianDay,  // Julian day number to convert
               int *mon,                         // Gregorian month (1-12) (out)
               int *day)                         // Gregorian day (1-31) (out)
 {
-  const int64_t a = julianDay;
+  int64_t a = julianDay;
 
-  const double b = floor((a - 1867216.25) / 36524.25);
+  double b = floor((a - 1867216.25) / 36524.25);
   double c = a + b - floor(b / 4) + 1525;
 
   if (calendar == CALENDAR_STANDARD || calendar == CALENDAR_GREGORIAN)
     if (a < 2299161) c = a + 1524;
 
-  const double d = floor((c - 122.1) / 365.25);
-  const double e = floor(365.25 * d);
-  const double f = floor((c - e) / 30.6001);
+  double d = floor((c - 122.1) / 365.25);
+  double e = floor(365.25 * d);
+  double f = floor((c - e) / 30.6001);
 
   *day = (int) (c - e - floor(30.6001 * f));
   *mon = (int) (f - 1 - 12 * floor(f / 14));
@@ -29,8 +29,8 @@ decode_julday(int calendar, int64_t julianDay,  // Julian day number to convert
 static int64_t
 encode_julday(int calendar, int year, int month, int day)
 {
-  const int iy = (month <= 2) ? year - 1 : year;
-  const int im = (month <= 2) ? month + 12 : month;
+  int iy = (month <= 2) ? year - 1 : year;
+  int im = (month <= 2) ? month + 12 : month;
   int ib = (iy < 0) ? ((iy + 1) / 400 - (iy + 1) / 100) : (iy / 400 - iy / 100);
 
   if (calendar == CALENDAR_STANDARD || calendar == CALENDAR_GREGORIAN)
@@ -75,7 +75,7 @@ time_to_sec(int time)
   int hour, minute, second;
   cdiDecodeTime(time, &hour, &minute, &second);
 
-  const int seconds = hour * 3600 + minute * 60 + second;
+  int seconds = hour * 3600 + minute * 60 + second;
 
   return seconds;
 }
@@ -83,9 +83,9 @@ time_to_sec(int time)
 int
 sec_to_time(int secofday)
 {
-  const int hour = secofday / 3600;
-  const int minute = secofday / 60 - hour * 60;
-  const int second = secofday - hour * 3600 - minute * 60;
+  int hour = secofday / 3600;
+  int minute = secofday / 60 - hour * 60;
+  int second = secofday - hour * 3600 - minute * 60;
 
   return cdiEncodeTime(hour, minute, second);
 }
@@ -93,9 +93,9 @@ sec_to_time(int secofday)
 double
 secofday_encode(CdiTime time)
 {
-  const int hour = time.hour;
-  const int minute = time.minute;
-  const int second = time.second;
+  int hour = time.hour;
+  int minute = time.minute;
+  int second = time.second;
   return hour * 3600 + minute * 60 + second + time.ms / 1000.0;
 }
 
@@ -107,11 +107,11 @@ secofday_decode(double secondOfDay)
   double secondOfDayIntegral;
   time.ms = lround(modf(secondOfDay, &secondOfDayIntegral) * 1000);
 
-  const int fullSeconds = lrint(secondOfDayIntegral);
+  int fullSeconds = lrint(secondOfDayIntegral);
 
-  const int hour = fullSeconds / 3600;
-  const int minute = fullSeconds / 60 - hour * 60;
-  const int second = fullSeconds - hour * 3600 - minute * 60;
+  int hour = fullSeconds / 3600;
+  int minute = fullSeconds / 60 - hour * 60;
+  int second = fullSeconds - hour * 3600 - minute * 60;
 
   time.hour = hour;
   time.minute = minute;
@@ -121,9 +121,9 @@ secofday_decode(double secondOfDay)
 }
 
 static int64_t
-calDay_encode(int calendar, CdiDate date)
+calendarDay_encode(int calendar, CdiDate date)
 {
-  const int dpy = calendar_dpy(calendar);
+  int dpy = calendar_dpy(calendar);
 
   if (dpy == 360 || dpy == 365 || dpy == 366)
     return encode_calday(dpy, date.year, date.month, date.day);
@@ -132,10 +132,10 @@ calDay_encode(int calendar, CdiDate date)
 }
 
 static CdiDate
-calDay_decode(int calendar, int64_t julday)
+calendarDay_decode(int calendar, int64_t julday)
 {
   int year, month, day;
-  const int dpy = calendar_dpy(calendar);
+  int dpy = calendar_dpy(calendar);
 
   if (dpy == 360 || dpy == 365 || dpy == 366)
     decode_calday(dpy, julday, &year, &month, &day);
@@ -155,7 +155,7 @@ julianDate_encode(int calendar, CdiDateTime dt)
 {
   JulianDate julianDate;
 
-  julianDate.julianDay = calDay_encode(calendar, dt.date);
+  julianDate.julianDay = calendarDay_encode(calendar, dt.date);
   julianDate.secondOfDay = secofday_encode(dt.time);
 
   return julianDate;
@@ -166,7 +166,7 @@ julianDate_decode(int calendar, JulianDate julianDate)
 {
   CdiDateTime dt;
 
-  dt.date = calDay_decode(calendar, julianDate.julianDay);
+  dt.date = calendarDay_decode(calendar, julianDate.julianDay);
   dt.time = secofday_decode(julianDate.secondOfDay);
 
   return dt;
@@ -175,7 +175,7 @@ julianDate_decode(int calendar, JulianDate julianDate)
 static void
 adjust_seconds(JulianDate *julianDate)
 {
-  const double SecondsPerDay = 86400.0;
+  double SecondsPerDay = 86400.0;
 
   while (julianDate->secondOfDay >= SecondsPerDay)
     {

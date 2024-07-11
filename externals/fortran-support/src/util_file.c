@@ -136,7 +136,6 @@ int createSymlink(const char *targetPath, const char *linkName) {
     }
 
     // At this point we know that there is no file at linkName.
-    errno = 0;
-    symlink(targetPath, linkName);
-    return errno;
+    int err = symlink(targetPath, linkName);
+    return err != 0 ? errno : err;
 }

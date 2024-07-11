@@ -159,8 +159,6 @@ CONTAINS
       END DO COLFIND_LOOP
     END FUNCTION get_column_index
 
-    !> @return Set table entry in the given row and for a given column.
-    !
     SUBROUTINE set_table_entry(table, irow, column_title, entry_str)
       TYPE(t_table), INTENT(INOUT) :: table
       INTEGER, INTENT(IN)    :: irow

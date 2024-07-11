@@ -115,9 +115,10 @@ cdiFallbackIterator_serialize(CdiIterator *super)
   CdiFallbackIterator *me = (CdiFallbackIterator *) (void *) super;
 
   char *escapedPath = cdiEscapeSpaces(me->path);
-  char *result = (char *) Malloc(strlen(escapedPath) + 7 * (3 * sizeof(int) * CHAR_BIT / 8 + 1) + 1);
-  sprintf(result, "%s %d %d %d %d %d %d %d", escapedPath, me->variableCount, me->curVariable, me->curLevelCount, me->curLevel,
-          me->curSubtypeCount, me->curSubtype, me->curTimestep);
+  size_t len = strlen(escapedPath) + 7 * (3 * sizeof(int) * CHAR_BIT / 8 + 1) + 1;
+  char *result = (char *) Malloc(len);
+  snprintf(result, len, "%s %d %d %d %d %d %d %d", escapedPath, me->variableCount, me->curVariable, me->curLevelCount, me->curLevel,
+           me->curSubtypeCount, me->curSubtype, me->curTimestep);
   Free(escapedPath);
   return result;
 }
@@ -243,8 +244,9 @@ cdiFallbackIterator_inqTime(CdiIterator *super, CdiTimeType timeType)
   int year, month, day, hour, minute, second;
   cdiDecodeDate(date, &year, &month, &day);
   cdiDecodeTime(time, &hour, &minute, &second);
-  char *result = (char *) Malloc(4 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 4 + 1);
-  sprintf(result, "%04d-%02d-%02dT%02d:%02d:%02d.000", year, month, day, hour, minute, second);
+  size_t len = 4 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 1 + 2 + 4 + 1;
+  char *result = (char *) Malloc(len);
+  snprintf(result, len, "%04d-%02d-%02dT%02d:%02d:%02d.000", year, month, day, hour, minute, second);
   return result;
 }
 
@@ -401,21 +403,21 @@ cdiFallbackIterator_copyVariableName(CdiIterator *super)
 }
 
 void
-cdiFallbackIterator_readField(CdiIterator *super, double *buffer, size_t *nmiss)
+cdiFallbackIterator_readField(CdiIterator *super, double *buffer, size_t *numMissVals)
 {
   CdiFallbackIterator *me = (CdiFallbackIterator *) (void *) super;
   SizeType missingValues = 0;
   streamReadVarSlice(me->streamId, me->curVariable, me->curLevel, buffer, &missingValues);
-  if (nmiss) *nmiss = (size_t) missingValues;
+  if (numMissVals) *numMissVals = (size_t) missingValues;
 }
 
 void
-cdiFallbackIterator_readFieldF(CdiIterator *super, float *buffer, size_t *nmiss)
+cdiFallbackIterator_readFieldF(CdiIterator *super, float *buffer, size_t *numMissVals)
 {
   CdiFallbackIterator *me = (CdiFallbackIterator *) (void *) super;
   SizeType missingValues = 0;
   streamReadVarSliceF(me->streamId, me->curVariable, me->curLevel, buffer, &missingValues);
-  if (nmiss) *nmiss = (size_t) missingValues;
+  if (numMissVals) *numMissVals = (size_t) missingValues;
 }
 
 /*

@@ -53,6 +53,7 @@
 
 #define VERBOSE
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_xmap_common.h"
 
 static void
@@ -64,10 +65,10 @@ test_xmap2(xmap_constructor new_xmap, MPI_Comm comm);
 static int my_rank;
 
 int
-xt_xmap_self_test_main(xmap_constructor new_xmap)
+xt_xmap_self_test_main(int *argc, char ***argv,
+                       xmap_constructor new_xmap)
 {
-  // init mpi
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(argc, argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 
@@ -85,6 +86,7 @@ xt_xmap_self_test_main(xmap_constructor new_xmap)
     test_xmap2(new_xmap, comms[i]);
   }
 
+  MPI_Comm_free(&comms[1]);
   xt_finalize();
   MPI_Finalize();
 

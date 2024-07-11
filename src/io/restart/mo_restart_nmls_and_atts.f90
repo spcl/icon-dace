@@ -120,7 +120,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: root_pe, comm, ncid
     CHARACTER(*), PARAMETER :: routine = modname//":restartAttributeList_read"
     INTEGER :: natt, i, aType, aLen, namLen, iTmp(1)
-    CHARACTER(NF_MAX_NAME) :: aName
+    CHARACTER(NF90_MAX_NAME) :: aName
     REAL(wp) :: dTmp(1)
     CHARACTER(:), ALLOCATABLE :: aTxt
 
@@ -131,26 +131,26 @@ CONTAINS
     IF (p_comm_rank(comm) == root_pe) THEN
       CALL gAttributeStore%init(.true.)
       ALLOCATE(CHARACTER(LEN=4096) :: aTxt)
-      CALL nf(nf_inq_natts(ncid, natt), routine)
+      CALL nf(nf90_inquire(ncid, nAttributes = natt), routine)
       DO i = 1, natt
-        CALL nf(nf_inq_attname(ncid, NF_GLOBAL, i, aName), routine)
+        CALL nf(nf90_inq_attname(ncid, NF90_GLOBAL, i, aName), routine)
         namLen = LEN_TRIM(aName)
-        CALL nf(nf_inq_att(ncid, NF_GLOBAL, aName(1:namLen), aType, aLen), routine)
+        CALL nf(nf90_inquire_attribute(ncid, NF90_GLOBAL, aName(1:namLen), xtype = aType, len = aLen), routine)
         SELECT CASE(aType)
-        CASE(NF_DOUBLE)
-          CALL nf(nf_get_att_double(ncid, NF_GLOBAL, aName(1:namLen), dTmp), routine)
+        CASE(NF90_DOUBLE)
+          CALL nf(nf90_get_att(ncid, NF90_GLOBAL, aName(1:namLen), dTmp), routine)
           CALL gAttributeStore%put(aName(1:namLen), dTmp(1))
-        CASE(NF_INT)
-          CALL nf(nf_get_att_int(ncid, NF_GLOBAL, aName(1:namLen), iTmp), routine)
+        CASE(NF90_INT)
+          CALL nf(nf90_get_att(ncid, NF90_GLOBAL, aName(1:namLen), iTmp), routine)
           IF ('bool_' == aName(1:MIN(5,namLen))) THEN
             CALL gAttributeStore%put(aName(6:namLen), iTmp(1) .NE. 0)
           ELSE
             CALL gAttributeStore%put(aName(1:namLen), iTmp(1))
           END IF
-        CASE(NF_CHAR)
+        CASE(NF90_CHAR)
           IF (aLen .GT. LEN(aTxt)) DEALLOCATE(aTxt)
           IF (.NOT.ALLOCATED(aTxt)) ALLOCATE(CHARACTER(LEN=aLen) :: aTxt)
-          CALL nf(nf_get_att_text(ncid, NF_GLOBAL, aName(1:namLen), aTxt(1:aLen)), routine)
+          CALL nf(nf90_get_att(ncid, NF90_GLOBAL, aName(1:namLen), aTxt(1:aLen)), routine)
           CALL gAttributeStore%put(aName(1:namLen), aTxt(1:aLen))
         END SELECT
       ENDDO
@@ -187,18 +187,18 @@ CONTAINS
       SELECT TYPE(curVal)
 #ifdef __PGI
       TYPE IS(t_char_workaround)
-        CALL nf(nf_put_att_text(ncid, NF_GLOBAL, ccKey, LEN(curVal%c), curVal%c), routine)
+        CALL nf(nf90_put_att(ncid, NF90_GLOBAL, ccKey, curVal%c), routine)
 #else
       TYPE IS(CHARACTER(*))
-        CALL nf(nf_put_att_text(ncid, NF_GLOBAL, ccKey, LEN(curVal), curVal), routine)
+        CALL nf(nf90_put_att(ncid, NF90_GLOBAL, ccKey, curVal), routine)
 #endif
       TYPE IS(REAL(wp))
-        CALL nf(nfx_put_att(ncid, NF_GLOBAL, ccKey, NF_DOUBLE, curVal), routine)
+        CALL nf(nf90_put_att(ncid, NF90_GLOBAL, ccKey, curVal), routine)
       TYPE IS(INTEGER)
-        CALL nf(nfx_put_att(ncid, NF_GLOBAL, ccKey, NF_INT, curVal), routine)
+        CALL nf(nf90_put_att(ncid, NF90_GLOBAL, ccKey, curVal), routine)
       TYPE IS(LOGICAL)
         ccTmp = 'bool_'//ccKey
-        CALL nf(nfx_put_att(ncid, NF_GLOBAL, ccTmp, NF_INT, curVal), routine)
+        CALL nf(nf90x_put_att_converted(ncid, NF90_GLOBAL, ccTmp, curVal), routine)
       CLASS DEFAULT
         CALL finish(routine, "val: invalid type")
       END SELECT

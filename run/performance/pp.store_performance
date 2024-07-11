@@ -20,6 +20,7 @@ performance_root="${icon_data_rootFolder}/buildbot_data/performance"
 # If you want to test locally, use this instead (need to have local tolerance_reference):
 # performance_root="${basedir}/performance_test"
 
+builder=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]')
 date=$(date '+%Y-%m-%d_%H-%M-%S')
 git_commit=$( (git rev-parse HEAD) | cut -c 1-12 )
 
@@ -32,8 +33,8 @@ mkdir -p "${performance_root}/${folder_name}" || exit 1
 echo "Storing LOG file and performance data in ${performance_root}/${folder_name}"
 cp -f "${basedir}/run/LOG.check.${exp}.run."* "${performance_root}/${folder_name}" || exit 1
 chmod u=rwx,g=rx,o=rx "${performance_root}/${folder_name}/LOG.check.${exp}.run."*
-mv -f "${basedir}/${exp}_balfrin_gpu_nvidia_mixed_"* "${performance_root}/${folder_name}" || exit 1
-chmod u=rwx,g=rx,o=rx "${performance_root}/${folder_name}/${exp}_balfrin_gpu_nvidia_mixed_"*
+mv -f "${basedir}/${exp}_${builder}_"* "${performance_root}/${folder_name}" || exit 1
+chmod u=rwx,g=rx,o=rx "${performance_root}/${folder_name}/${exp}_${builder}_"*
 
 # exit 0 on success (and don't execute any appended scripts)
 exit 0

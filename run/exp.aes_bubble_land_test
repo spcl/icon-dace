@@ -52,7 +52,7 @@ num_columns=20 # Number of columns in y-direction
 #
 atmo_dyn_grids="'${grid_name}.nc',"
 
-modelTimeStep="PT30S"
+modelTimeStep="PT20S"
 radiationTimeStep="PT2M"
 
 # start and end date+time
@@ -77,9 +77,10 @@ output_atm_3d="yes"   # 1 file
 output_lnd="yes"      # 1 file
 
 # determine the number of io processes
-nproma=160
-nproma_sub=160
+nproma=40
+nproma_sub=40
 num_io_procs=1
+nblocks_c=0
 
 # namelist files
 atmo_namelist=NAMELIST_${EXPNAME}_atm
@@ -96,7 +97,7 @@ cat > ${atmo_namelist} << EOF
  nproma            = ${nproma}
  num_io_procs      = ${num_io_procs}
  nproma_sub        = ${nproma_sub}
- nblocks_c         = ${nblocks_c}
+ nblocks_c         = 0
  io_process_stride = 6
 /
 &grid_nml
@@ -215,9 +216,8 @@ cat > ${atmo_namelist} << EOF
  aes_cop_config(1)%cn1sea     =  50.0
  aes_cop_config(1)%cn2sea     = 100.0
  aes_cop_config(1)%cinhomi    =   1.0
- aes_cop_config(1)%cinhoml1   =   1.0
- aes_cop_config(1)%cinhoml2   =   1.0
- aes_cop_config(1)%cinhoml3   =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml   =   1.0
 /
 &aes_cov_nml
  aes_cov_config(1)%cqx        = 1.e-6
@@ -232,6 +232,7 @@ cat > ${jsbach_namelist} << EOF
   use_lakes               = .FALSE.
   use_glacier             = .FALSE.
   fract_filename          = 'bc_land_frac.nc'
+  enforce_water_budget    = .TRUE.      ! True: stop in case of water conservation problem
 /
 &jsb_seb_nml
   bc_filename             = 'bc_land_phys.nc'
@@ -291,8 +292,8 @@ EOF
 # model files
 #
 # Radiation:
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
 # Two Moment scheme input
@@ -414,8 +415,9 @@ if [[ "$output_atm_2d" == "yes" ]]; then
                     'hfls'    , 'hfss'    , 'evspsbl' ,
                     'prlr'    , 'prls'    , 'cptgzvi' ,
                     'pr_rain' , 'pr_snow' , 'pr_grpl' , 'pr_ice'  ,
-!                    'uphyvi'  , 'udynvi'  , 'evap_tsa',
-!                    'shfl_qsa', 'rsfl_tsa', 'ssfl_tsa',
+!                    'udynvi_gmean' , 'duphyvi_gmean' , 'uphybal_gmean' ,
+!                    'ufts_gmean'   , 'ufvs_gmean'    , 'ufcs_gmean' , 'kedisp_gmean' ,
+!                    'radtop_gmean' , 'radbot_gmean'  , 'radbal_gmean'
 /
 EOF
 fi
@@ -434,9 +436,9 @@ if [[ "$output_lnd" == "yes" ]]; then
  output_interval  = "${output_interval_2d}"
  file_interval    = "${file_interval_2d}"
  include_last     = .FALSE.
- ml_varlist       = 'pheno_lai_box'         , 'pheno_fract_fpc_veg'         , 'hydro_fract_water_box' ,
-                    'hydro_fract_snow_box'  , 'hydro_w_skin_box'            , 'hydro_w_snow_box'      ,
-                    'hydro_w_soil_column_box'
+ ml_varlist       = 'pheno_lai_box'         , 'pheno_fract_fpc_veg'         , 'hydro_fract_wet_box' ,
+                    'hydro_fract_snow_box'  , 'hydro_wtr_skin_box'          , 'hydro_weq_snow_box'  ,
+                    'hydro_wtr_rootzone_box'
 /
 EOF
 fi

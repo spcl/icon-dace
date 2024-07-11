@@ -47,14 +47,14 @@ cat > $namelist_filename << EOF
  dtime       = 300          ! [s] timestep
  output="none",
 /
-&dynamics_nml
- iequations      = -3
-/
 &ocean_dynamics_nml
 ! 20 unevenly spaced levels used by MPIOM/GR60, limited to 700m at bottom
   n_zlev             =   20      ! number of vertical levels and (dzlev_m) thicknesses
   dzlev_m(1:20)      =   20.0,   20.0,   20.0,   30.0,   40.0,   50.0,   70.0,   90.0,  120.0,  150.0,
                         180.0,  210.0,  250.0,  300.0,  400.0,  500.0,  600.0,  700.0,  700.0,  700.0
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
 /
 EOF
 }

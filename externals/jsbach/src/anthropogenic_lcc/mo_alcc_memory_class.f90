@@ -1,4 +1,4 @@
-!> alcc (anthropogenic lcc) memory class 
+!> alcc (anthropogenic lcc) memory class
 !>
 !> ICON-Land
 !>
@@ -22,7 +22,7 @@ MODULE mo_alcc_memory_class
   USE mo_jsb_class,              ONLY: Get_model
   USE mo_jsb_memory_class,       ONLY: t_jsb_memory
   USE mo_jsb_var_class,          ONLY: t_jsb_var_real3d
-  USE mo_jsb_varlist,            ONLY: FULL 
+  USE mo_jsb_varlist,            ONLY: FULL
 
   ! Use of processes in this module
   ! dsl4jsb_Use_processes ALCC_
@@ -39,7 +39,7 @@ MODULE mo_alcc_memory_class
 
   TYPE, EXTENDS(t_jsb_memory) :: t_alcc_memory
 
-    TYPE(t_jsb_var_real3d) :: cf_current_year 
+    TYPE(t_jsb_var_real3d) :: cf_current_year
     !< this years target cfs derived from annually read land use data file. [-]
 
   CONTAINS
@@ -73,7 +73,7 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Init_alcc_memory'
     ! -------------------------------------------------------------------------------------------------- !
-    
+
     model => Get_model(model_id)
 
     table = tables(1)
@@ -87,14 +87,14 @@ CONTAINS
     !JN-TODO: if changes are to be done on a daily basis maybe other field more interesting?
     !           e.g. target_cf ? or better remember something else e.g. "required_cf_change"?
     !         then also change out_level to BASIC and lrestart to TRUE
-    CALL mem%Add_var('cf_current_year', mem%cf_current_year,                 &
-      & hgrid, pft_vgrid,                                                                            &
+    CALL mem%Add_var('cf_current_year', mem%cf_current_year,                              &
+      & hgrid, pft_vgrid,                                                                 &
       & t_cf('This years target cfs derived from an annually read land use data file.'),  &
-      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
-      & prefix, suffix,                                                                              &
-      & output_level=FULL,                                                                          &
+      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                &
+      & prefix, suffix,                                                                   &
+      & output_level=FULL,                                                                &
       & loutput=.FALSE., lrestart=.FALSE., initval_r=-0.1_wp)
-      
+
   END SUBROUTINE Init_alcc_memory
 
 #endif

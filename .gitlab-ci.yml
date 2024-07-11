@@ -8,16 +8,49 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ---------------------------------------------------------------
 
-stages:
-  - lint
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "web"
 
-Check OpenACC Style:
+stages:
+  - basic
+  - test
+
+.colorized:
+  variables:
+    DEFAULT: '\033[0m'
+    RED: '\033[0;31m'
+
+Licenses:
+  stage: basic
+
+  variables:
+    GIT_DEPTH: 1
+    GIT_SUBMODULE_STRATEGY: none
+
+  before_script:
+    - python3 -m pip install --upgrade pip
+    - python3 -m pip install reuse
+    - reuse --version
+
+  script:
+    - reuse lint
+
+  tags:
+    - sphinx
+
+  interruptible: true
+
+OpenACC Style:
+  stage: basic
+
+  extends: .colorized
+
   variables:
     BEAUTIFIER_TAG: "v0.3.0"
     BEAUTIFIER_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/dwd-sw/icon-openacc-beautifier.git"
     GIT_SUBMODULE_STRATEGY: none
-
-  stage: lint
 
   before_script:
     - git clone --branch "${BEAUTIFIER_TAG}" --depth 1 "${BEAUTIFIER_REPO}"
@@ -26,19 +59,19 @@ Check OpenACC Style:
     # Apply beautifier:
     - python3 icon-openacc-beautifier/main.py src/
     # Build git patch:
-    - git diff --patch-with-raw > acc_style.patch
-    # Test if patching is necessary:
-    - test ! -s acc_style.patch || ( echo "There are ACC style errors. Please check
-      your code. You might want to run the ACC beautifier or \`git apply acc_style.patch\`
-      (see artifacts)." && false )
+    - git diff --ignore-submodules --patch-with-raw > acc_style.patch
+    - |
+      # Test if patching is necessary:
+      test ! -s acc_style.patch || {
+        printf "${RED}ERROR: There are ACC style errors. Please check your \
+      code. You might want to run the ACC beautifier or \`git apply acc_style.patch\` \
+      (see artifacts).${DEFAULT}\n" >&2
+        exit 1
+      }
 
   tags:
     # Choose python capable runner:
     - sphinx
-
-  # Run only for branches that are part of a merge request:
-  rules:
-    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
 
   artifacts:
     paths:
@@ -47,11 +80,11 @@ Check OpenACC Style:
     expose_as: 'OpenACC Style Git Patch'
     when: on_failure
 
-Check Style:
+General Style:
+  stage: basic
+
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-
-  stage: lint
 
   script:
     # TODO: we should check all ICON source files, as well as all source files
@@ -66,11 +99,95 @@ Check Style:
     - ./scripts/ci_scripts/check_src_noexec.sh 'src' 'support'
     - ./scripts/ci_scripts/check_omp_sentinels.sh 'src' 'support' 'externals/jsbach' 'externals/emvorado' 'externals/art'
     - ./scripts/ci_scripts/check_license.sh
+    - ./scripts/ci_scripts/check_granule_encapsulation.sh
 
   tags:
     # Choose a runner with GNU find, GNU grep and bash:
     - conda
 
-  # Run only for branches that are part of a merge request:
+Autoreconf:
+  stage: basic
+
+  extends: .colorized
+
+  variables:
+    AUTOCONF_VERSION: "2.69"
+    AUTOCONF_SHA256: 954bd69b391edc12d6a4a51a2dd1476543da5c6bbf05a95b59dc0dd6fd4c2969
+    GIT_SUBMODULE_STRATEGY: none
+
+  before_script:
+    - apk add --no-cache automake curl git m4 make perl
+    - |
+      # Installing Autoconf
+      (
+        set -x
+        mkdir autoconf && \
+        cd autoconf && \
+        curl -OL https://ftpmirror.gnu.org/gnu/autoconf/autoconf-${AUTOCONF_VERSION}.tar.gz && \
+        echo "${AUTOCONF_SHA256} autoconf-${AUTOCONF_VERSION}.tar.gz" | sha256sum -c && \
+        tar xfz autoconf-${AUTOCONF_VERSION}.tar.gz --strip-components=1 && \
+        ./configure && \
+        make -j4 install
+      ) || {
+        printf "${RED}ERROR: failed to install Autoconf ${AUTOCONF_VERSION}${DEFAULT}\n"
+        exit 1
+      }
+
+  script:
+    - autoreconf -fvi
+    - git diff --ignore-submodules --patch-with-raw > autoreconf.patch
+    - |
+      # Checking the consistency
+      test ! -s autoreconf.patch || {
+        printf "${RED}ERROR: the automatically generated Autotools files \
+      (e.g. 'configure') are inconsistent with 'configure.ac' and/or \
+      Autoconf ${AUTOCONF_VERSION} (see artifacts)${DEFAULT}\n"
+        exit 1
+      }
+
+  tags:
+    - alpine
+
+  artifacts:
+    paths:
+      - autoreconf.patch
+    expire_in: 1 week
+    expose_as: 'Autoreconf Git Patch'
+    when: on_failure
+
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - .gitlab-ci.yml
+        - config.h.in
+        - configure
+        - configure.ac
+        - m4/**/*
+        - utils/config.guess
+        - utils/config.sub
+        - utils/install-sh
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+
+  interruptible: true
+
+Granules:
+  stage: test
+
+  trigger:
+    include: .gitlab/ci/granules.yml
+    strategy: depend
+
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - .gitlab-ci.yml
+        - .gitlab/ci/granules.yml
+        - externals/fortran-support
+        - externals/probtest
+        - src/atm_phy_schemes/mo_lookup_tables_constants.f90
+        - src/atm_phy_schemes/mo_satad.f90
+        - src/granules/microphysics_1mom_schemes/**/*
+        - test/microphysics_1mom_schemes/**/*
+    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+
+  allow_failure: true

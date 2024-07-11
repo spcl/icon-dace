@@ -116,6 +116,9 @@ CONTAINS
        IF (aes_vdf_config(jg)% use_tmx) THEN
         CALL print_value('    aes_vdf_config('//TRIM(cg)//')% solver_type    ',aes_vdf_config(jg)% solver_type   )
         CALL print_value('    aes_vdf_config('//TRIM(cg)//')% energy_type    ',aes_vdf_config(jg)% energy_type   )
+        CALL print_value('    aes_vdf_config('//TRIM(cg)//')% dissipation_factor',aes_vdf_config(jg)% dissipation_factor)
+        CALL print_value('    aes_vdf_config('//TRIM(cg)//')% use_louis     ',aes_vdf_config(jg)% use_louis      )
+        CALL print_value('    aes_vdf_config('//TRIM(cg)//')% louis_constant_b',aes_vdf_config(jg)% louis_constant_b)
        END IF
        CALL print_value('    aes_vdf_config('//TRIM(cg)//')% smag_constant  ',aes_vdf_config(jg)% smag_constant  )
        CALL print_value('    aes_vdf_config('//TRIM(cg)//')% turb_prandtl   ',aes_vdf_config(jg)% turb_prandtl   )

@@ -96,7 +96,7 @@ CONTAINS !......................................................................
 
   !>
   !! Initialize logical 1d-array.
-  !! (Introduced, because 'src/shared/mo_fortran_tools: init_contiguous_l' 
+  !! (Introduced, because 'externals/fortran-support/src/mo_fortran_tools: init_contiguous_l' 
   !! does not suit our purposes.)
   !!
   SUBROUTINE init_logical_1d( variable,   & !inout
@@ -420,7 +420,7 @@ CONTAINS !......................................................................
 
   !***************************************************************
 
-  ! Conceptual copy of 'src/shared/mo_fortran_tools: swap_init':
+  ! Conceptual copy of 'externals/fortran-support/src/mo_fortran_tools: swap_init':
 
   SUBROUTINE t_varstate_swap( varstate,         & !class
     &                         optFinal,         & !optin

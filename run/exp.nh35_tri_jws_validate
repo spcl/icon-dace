@@ -109,7 +109,6 @@ cat > ${atmo_namelist} << EOF
  profiling_output = 3
 /
 &dynamics_nml
- iequations       = 3                ! 3: non-hydrost. atm.
  divavg_cntrwgt   = 0.50
 /
 &nh_testcase_nml

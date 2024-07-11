@@ -1,10 +1,10 @@
 ! This file was automatically generated, don't edit!
 !
-! Fortran interface for CDI library version 2.2.4
+! Fortran interface for CDI library version 2.4.0
 !
 ! Author:
 ! -------
-! Uwe Schulzweida, MPI-MET, Hamburg,   August 2023
+! Uwe Schulzweida, MPI-MET, Hamburg,   April 2024
 !
 
 !
@@ -647,6 +647,11 @@
 !                                    (INTEGER         streamID)
       EXTERNAL        streamInqByteorder
 
+!                     streamDefShuffle
+!                                    (INTEGER         streamID,
+!                                     INTEGER         shuffle)
+      EXTERNAL        streamDefShuffle
+
 !                     streamDefFilter
 !                                    (INTEGER         streamID,
 !                                     INTEGER         filterId,
@@ -709,28 +714,28 @@
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVar
 
 !                     streamWriteVarF
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVarF
 
 !                     streamReadVar
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadVar
 
 !                     streamReadVarF
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadVarF
 
 !                     streamWriteVarSlice
@@ -738,7 +743,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         levelID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVarSlice
 
 !                     streamWriteVarSliceF
@@ -746,7 +751,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         levelID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVarSliceF
 
 !                     streamReadVarSlice
@@ -754,7 +759,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         levelID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadVarSlice
 
 !                     streamReadVarSliceF
@@ -762,7 +767,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         levelID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadVarSliceF
 
 !                     streamWriteVarChunk
@@ -770,7 +775,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         rect(2,*),
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVarChunk
 
 !                     streamWriteVarChunkF
@@ -778,7 +783,7 @@
 !                                     INTEGER         varID,
 !                                     INTEGER         rect(2,*),
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteVarChunkF
 
 !
@@ -799,25 +804,25 @@
 !                     streamWriteRecord
 !                                    (INTEGER         streamID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteRecord
 
 !                     streamWriteRecordF
 !                                    (INTEGER         streamID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamWriteRecordF
 
 !                     streamReadRecord
 !                                    (INTEGER         streamID,
 !                                     DOUBLEPRECISION data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadRecord
 
 !                     streamReadRecordF
 !                                    (INTEGER         streamID,
 !                                     REAL            data(*),
-!                                     INTEGER         nmiss)
+!                                     INTEGER         numMissVals)
       EXTERNAL        streamReadRecordF
 
 !                     streamCopyRecord

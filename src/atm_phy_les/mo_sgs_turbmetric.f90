@@ -151,18 +151,18 @@ MODULE mo_sgs_turbmetric
     !Initialize
 
 !$OMP PARALLEL
-    CALL init(km_iv(:,:,:))
-    CALL init(km_c(:,:,:))
-    CALL init(km_ie(:,:,:))
+    CALL init(km_iv(:,:,:), lacc=.TRUE.)
+    CALL init(km_c(:,:,:), lacc=.TRUE.)
+    CALL init(km_ie(:,:,:), lacc=.TRUE.)
 
     IF(p_test_run)THEN
-     CALL init(u_vert(:,:,:))
-     CALL init(v_vert(:,:,:))
-     CALL init(w_vert(:,:,:))
-     CALL init(u_iv(:,:,:))
-     CALL init(v_iv(:,:,:))
-     CALL init(vn_ie(:,:,:))
-     CALL init(vt_ie(:,:,:))
+     CALL init(u_vert(:,:,:), lacc=.TRUE.)
+     CALL init(v_vert(:,:,:), lacc=.TRUE.)
+     CALL init(w_vert(:,:,:), lacc=.TRUE.)
+     CALL init(u_iv(:,:,:), lacc=.TRUE.)
+     CALL init(v_iv(:,:,:), lacc=.TRUE.)
+     CALL init(vn_ie(:,:,:), lacc=.TRUE.)
+     CALL init(vt_ie(:,:,:), lacc=.TRUE.)
     END IF
 !$OMP END PARALLEL
 
@@ -208,7 +208,7 @@ MODULE mo_sgs_turbmetric
       CALL prognostic_tke(p_nh_prog, p_nh_prog_now_rcf, p_nh_prog_rcf, p_nh_diag,                 &
                           p_nh_metrics, p_patch, p_int, prm_diag, dt, D_11_ie, D_12_ie, D_13_ie)
     ELSE
-      CALL brunt_vaisala_freq(p_patch, p_nh_metrics, theta_v, prm_diag%bruvais, lacc=.TRUE.)
+      CALL brunt_vaisala_freq(p_patch, p_nh_metrics, nproma, theta_v, prm_diag%bruvais, lacc=.TRUE.)
 
       CALL smagorinsky_model(p_nh_prog, p_nh_metrics, p_patch, p_int, prm_diag%tkvh,              &
                              prm_diag%mech_prod, prm_diag%tkvm, prm_diag%bruvais,                 &
@@ -242,8 +242,8 @@ MODULE mo_sgs_turbmetric
 #endif
 
 !$OMP PARALLEL
-      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqv))
-      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqc))
+      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqv), lacc=.TRUE.)
+      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqc), lacc=.TRUE.)
 !$OMP END PARALLEL
     END IF
 
@@ -319,10 +319,10 @@ MODULE mo_sgs_turbmetric
     !Initialize
     IF(p_test_run)THEN
 !$OMP PARALLEL
-      CALL init(kh_ic)
-      CALL init(shear)
-      CALL init(div_of_stress)
-      CALL init(div_c)
+      CALL init(kh_ic, lacc=.TRUE.)
+      CALL init(shear, lacc=.TRUE.)
+      CALL init(div_of_stress, lacc=.TRUE.)
+      CALL init(div_c, lacc=.TRUE.)
 !$OMP END PARALLEL
     END IF
 
@@ -1226,11 +1226,12 @@ MODULE mo_sgs_turbmetric
     !$ACC DATA CREATE(inv_rhoe, vn_new, unew, vnew, tot_tend, a, b, c, rhs, var_new, outvar)
 
 !$OMP PARALLEL
-    CALL init(a); CALL init(c)
-    CALL init(tot_tend)
-    CALL copy(p_nh_prog%vn, vn_new)
+    CALL init(a, lacc=.TRUE.)
+    CALL init(c, lacc=.TRUE.)
+    CALL init(tot_tend, lacc=.TRUE.)
+    CALL copy(p_nh_prog%vn, vn_new, lacc=.TRUE.)
     IF (p_test_run) THEN
-      CALL init(inv_rhoe)
+      CALL init(inv_rhoe, lacc=.TRUE.)
     END IF
 !$OMP END PARALLEL
 
@@ -1876,9 +1877,9 @@ MODULE mo_sgs_turbmetric
 #endif
 
 !$OMP PARALLEL PRIVATE(rl_start, rl_end, i_startblk, i_endblk)
-      CALL init(unew(:,:,:))
-      CALL init(vnew(:,:,:))
-      CALL init(vn_new(:,:,:))
+      CALL init(unew(:,:,:), lacc=.TRUE.)
+      CALL init(vnew(:,:,:), lacc=.TRUE.)
+      CALL init(vn_new(:,:,:), lacc=.TRUE.)
 !$OMP BARRIER
 
       rl_start   = grf_bdywidth_e+1
@@ -2027,10 +2028,11 @@ MODULE mo_sgs_turbmetric
 
     !Some initializations
 !$OMP PARALLEL
-    CALL init(a(:,:)); CALL init(c(:,:))
+    CALL init(a(:,:), lacc=.TRUE.)
+    CALL init(c(:,:), lacc=.TRUE.)
     IF(p_test_run)THEN
-      CALL init(tot_tend)
-      CALL init(hor_tend)
+      CALL init(tot_tend, lacc=.TRUE.)
+      CALL init(hor_tend, lacc=.TRUE.)
     END IF
 !$OMP END PARALLEL
 
@@ -2534,12 +2536,12 @@ MODULE mo_sgs_turbmetric
     !1) First set exner local vars to 1 for other scalars
     !   Soon get different routines for different scalars
 !$OMP PARALLEL
-    CALL init(exner_me(:,:,:),1._wp)
-    CALL init(exner_ie(:,:,:),1._wp)
-    CALL init(exner_ic(:,:,:),1._wp)
-    CALL init(a(:,:))
-    CALL init(c(:,:))
-    CALL init(var_ic(:,:,:))
+    CALL init(exner_me(:,:,:),1._wp, lacc=.TRUE.)
+    CALL init(exner_ie(:,:,:),1._wp, lacc=.TRUE.)
+    CALL init(exner_ic(:,:,:),1._wp, lacc=.TRUE.)
+    CALL init(a(:,:), lacc=.TRUE.)
+    CALL init(c(:,:), lacc=.TRUE.)
+    CALL init(var_ic(:,:,:), lacc=.TRUE.)
 !$OMP END PARALLEL
 
     !2) Calculate exner at edge for horizontal diffusion
@@ -3247,8 +3249,8 @@ MODULE mo_sgs_turbmetric
     i_endblk   = p_patch%cells%end_block(rl_end)
 
 !$OMP PARALLEL
-    CALL init(a(:,:))
-    CALL init(c(:,:))
+    CALL init(a(:,:), lacc=.FALSE.)
+    CALL init(c(:,:), lacc=.FALSE.)
 
 !$OMP DO PRIVATE(jk,je,jb,i_startidx,i_endidx)
       DO jb = i_startblk,i_endblk

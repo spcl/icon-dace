@@ -26,7 +26,7 @@ MODULE mo_ice_init_thermo
   USE mo_kind,                ONLY: wp
   USE mo_parallel_config,     ONLY: nproma
   USE mo_dynamics_config,     ONLY: nold
-  USE mo_coupling_config,     ONLY: is_coupled_run
+  USE mo_coupling_config,     ONLY: is_coupled_to_atmo
   USE mo_model_domain,        ONLY: t_patch, t_patch_3D !, t_patch_vert
   USE mo_exception,           ONLY: finish, message
   USE mo_impl_constants,      ONLY: success, max_char_length, sea_boundary
@@ -762,66 +762,39 @@ CONTAINS
     __acc_attach(atmos_fluxes%rpreci)
 
     ! Coupling fluxes must go into restart file:
-    IF (is_coupled_run()) THEN
-
     CALL add_var(ocean_restart_list, 'atmos_fluxes_stress_x', atmos_fluxes%stress_x,                  &
       &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
       &          t_cf_var('surface_downward_eastward_stress', 'Pa',   'atmos_fluxes_stress_x', datatype_flt),  &
       &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
       &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"),                      &
-      &          lrestart=.TRUE.)
+      &          lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
 
     CALL add_var(ocean_restart_list, 'atmos_fluxes_stress_y', atmos_fluxes%stress_y,                  &
       &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
       &          t_cf_var('surface_downward_northward_stress', 'Pa',   'atmos_fluxes_stress_y', datatype_flt),  &
       &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
       &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"),                      &
-      &          lrestart=.TRUE.)
+      &          lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
 
     CALL add_var(ocean_restart_list, 'atmos_fluxes_stress_xw', atmos_fluxes%stress_xw,                &
       &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
       &          t_cf_var('surface_downward_eastward_stress', 'Pa',   'atmos_fluxes_stress_xw', datatype_flt),&
       &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
       &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"),                      &
-      &          lrestart=.TRUE.)
+      &          lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
 
     CALL add_var(ocean_restart_list, 'atmos_fluxes_stress_yw', atmos_fluxes%stress_yw,                &
       &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
       &          t_cf_var('surface_downward_northward_stress', 'Pa',   'atmos_fluxes_stress_yw', datatype_flt),&
       &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
       &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"),                      &
-      &          lrestart=.TRUE.)
+      &          lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
 
-    ELSE
-
-    CALL add_var(ocean_default_list, 'atmos_fluxes_stress_x', atmos_fluxes%stress_x,                  &
-      &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
-      &          t_cf_var('surface_downward_eastward_stress', 'Pa',   'atmos_fluxes_stress_x', datatype_flt),  &
-      &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
-      &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"), lopenacc=.TRUE.)
-    __acc_attach(atmos_fluxes%stress_x)
-
-    CALL add_var(ocean_default_list, 'atmos_fluxes_stress_y', atmos_fluxes%stress_y,                  &
-      &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
-      &          t_cf_var('surface_downward_northward_stress', 'Pa',   'atmos_fluxes_stress_y', datatype_flt),  &
-      &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
-      &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"), lopenacc=.TRUE.)
-    __acc_attach(atmos_fluxes%stress_y)
-
-    CALL add_var(ocean_default_list, 'atmos_fluxes_stress_xw', atmos_fluxes%stress_xw,                &
-      &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
-      &          t_cf_var('surface_downward_eastward_stress', 'Pa',   'atmos_fluxes_stress_xw', datatype_flt),&
-      &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
-      &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"), lopenacc=.TRUE.)
-    __acc_attach(atmos_fluxes%stress_xw)
-
-    CALL add_var(ocean_default_list, 'atmos_fluxes_stress_yw', atmos_fluxes%stress_yw,                &
-      &          GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                                                  &
-      &          t_cf_var('surface_downward_northward_stress', 'Pa',   'atmos_fluxes_stress_yw', datatype_flt),&
-      &          grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),             &
-      &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups("ice_diag"), lopenacc=.TRUE.)
-    __acc_attach(atmos_fluxes%stress_yw)
-
+    IF (.NOT.is_coupled_to_atmo()) THEN
+      __acc_attach(atmos_fluxes%stress_x)
+      __acc_attach(atmos_fluxes%stress_y)
+      __acc_attach(atmos_fluxes%stress_xw)
+      __acc_attach(atmos_fluxes%stress_yw)
     END IF  !  coupled
 
 !fixme check if this can be avoided

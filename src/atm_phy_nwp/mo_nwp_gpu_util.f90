@@ -12,8 +12,6 @@
 MODULE mo_nwp_gpu_util
 
   USE mo_ext_data_types,          ONLY: t_external_data
-  USE mo_nwp_phy_types,           ONLY: t_nwp_phy_diag
-  USE mo_model_domain,            ONLY: t_patch
   USE mo_dynamics_config,         ONLY: nnow, nnew, nnow_rcf, nnew_rcf
   USE mo_intp_data_strc,          ONLY: t_int_state
   USE mo_nwp_parameters,          ONLY: t_phy_params
@@ -22,11 +20,10 @@ MODULE mo_nwp_gpu_util
   USE mo_art_config,              ONLY: art_config
 #endif
   USE mo_nonhydrostatic_config,   ONLY: kstart_moist, kstart_tracer
-  USE mo_grid_config,             ONLY: n_dom
-  USE mo_nwp_phy_state,           ONLY: phy_params, prm_diag
+  USE mo_nwp_phy_types,           ONLY: t_nwp_phy_diag
   USE mo_run_config,              ONLY: iqv, iqc, iqi, iqg, iqr, iqs, ldass_lhn
   USE mo_nonhydro_state,          ONLY: p_nh_state
-  USE mo_nwp_lnd_state,           ONLY: p_lnd_state
+  USE mo_nwp_lnd_types,           ONLY: t_lnd_state
   USE mo_atm_phy_nwp_config,      ONLY: t_atm_phy_nwp_config
   USE mo_fortran_tools,           ONLY: assert_acc_device_only
 #ifdef _OPENACC
@@ -66,6 +63,7 @@ MODULE mo_nwp_gpu_util
     !$ACC   HOST(ext_data%atm%z0_lcc, ext_data%atm%z0_lcc_min, ext_data%atm%plcovmax_lcc) &
     !$ACC   HOST(ext_data%atm%laimax_lcc, ext_data%atm%rootdmax_lcc, ext_data%atm%stomresmin_lcc) &
     !$ACC   HOST(ext_data%atm%snowalb_lcc, ext_data%atm%snowtile_lcc, ext_data%atm%t_cl, ext_data%atm%lc_frac_t) &
+    !$ACC   HOST(ext_data%atm%frac_t, ext_data%atm%sai_t) &
     !$ACC   ASYNC(1) IF(PRESENT(ext_data))
 
     !$ACC UPDATE HOST(p_int%lsq_high, p_int%lsq_lin) &
@@ -175,6 +173,7 @@ MODULE mo_nwp_gpu_util
     !$ACC   DEVICE(ext_data%atm%z0_lcc, ext_data%atm%z0_lcc_min, ext_data%atm%plcovmax_lcc) &
     !$ACC   DEVICE(ext_data%atm%laimax_lcc, ext_data%atm%rootdmax_lcc, ext_data%atm%stomresmin_lcc) &
     !$ACC   DEVICE(ext_data%atm%snowalb_lcc, ext_data%atm%snowtile_lcc, ext_data%atm%t_cl, ext_data%atm%lc_frac_t) &
+    !$ACC   DEVICE(ext_data%atm%frac_t, ext_data%atm%sai_t) &
     !$ACC   ASYNC(1) IF(PRESENT(ext_data))
 
     !$ACC UPDATE DEVICE(p_int%lsq_high, p_int%lsq_lin) &
@@ -248,7 +247,7 @@ MODULE mo_nwp_gpu_util
       !$ACC   DEVICE(a%mu_rain, a%mu_snow, a%rain_n0_factor, a%qi0, a%qc0, a%icpl_aero_gscp, a%ustart_raylfric) &
       !$ACC   DEVICE(a%efdt_min_raylfric, a%latm_above_top, a%icalc_reff, a%icpl_rad_reff, a%luse_clc_rad, a%ithermo_water) &
       !$ACC   DEVICE(a%lupatmo_phy, a%lenabled, a%lcall_phy, a%lcalc_acc_avg) &
-      !$ACC   DEVICE(a%lcalc_extra_avg, a%lhave_graupel, a%l2moment, a%lhydrom_read_from_fg, a%lhydrom_read_from_ana) &
+      !$ACC   DEVICE(a%lcalc_extra_avg, a%lhave_graupel, a%l2moment, a%lsbm, a%lhydrom_read_from_fg, a%lhydrom_read_from_ana) &
 #ifndef __NO_ICON_LES__
       !$ACC   DEVICE(a%is_les_phy) &
 #endif
@@ -358,10 +357,12 @@ MODULE mo_nwp_gpu_util
 
   END SUBROUTINE hostcpy_nwp
 
-  SUBROUTINE gpu_d2h_dace(jg, atm_phy_nwp_config)
+  SUBROUTINE gpu_d2h_dace(jg, atm_phy_nwp_config, prm_diag, p_lnd_state)
 
     INTEGER, INTENT(IN) :: jg
-    TYPE(t_atm_phy_nwp_config), INTENT(in) :: atm_phy_nwp_config
+    TYPE(t_atm_phy_nwp_config), INTENT(in)   :: atm_phy_nwp_config
+    TYPE(t_nwp_phy_diag),       INTENT(inout):: prm_diag
+    TYPE(t_lnd_state),          INTENT(inout):: p_lnd_state
 
     LOGICAL :: lqr, lqs, lqg
 
@@ -393,32 +394,32 @@ MODULE mo_nwp_gpu_util
     ENDIF
 
     !$ACC UPDATE &
-    !$ACC   HOST(prm_diag(jg)%gz0) &
-    !$ACC   HOST(prm_diag(jg)%t_2m) &
-    !$ACC   HOST(prm_diag(jg)%td_2m) &
-    !$ACC   HOST(prm_diag(jg)%rh_2m) &
-    !$ACC   HOST(prm_diag(jg)%u_10m) &
-    !$ACC   HOST(prm_diag(jg)%v_10m) &
-    !$ACC   HOST(prm_diag(jg)%clct) &
-    !$ACC   HOST(prm_diag(jg)%clcl) &
-    !$ACC   HOST(prm_diag(jg)%clcm) &
-    !$ACC   HOST(prm_diag(jg)%clch) &
+    !$ACC   HOST(prm_diag%gz0) &
+    !$ACC   HOST(prm_diag%t_2m) &
+    !$ACC   HOST(prm_diag%td_2m) &
+    !$ACC   HOST(prm_diag%rh_2m) &
+    !$ACC   HOST(prm_diag%u_10m) &
+    !$ACC   HOST(prm_diag%v_10m) &
+    !$ACC   HOST(prm_diag%clct) &
+    !$ACC   HOST(prm_diag%clcl) &
+    !$ACC   HOST(prm_diag%clcm) &
+    !$ACC   HOST(prm_diag%clch) &
     !$ACC   ASYNC(1)
 
     !$ACC UPDATE &
-    !$ACC   HOST(p_lnd_state(jg)% prog_lnd(nnow_rcf(jg))%t_g) &
-    !$ACC   HOST(p_lnd_state(jg)%diag_lnd%h_snow) &
-    !$ACC   HOST(p_lnd_state(jg)%diag_lnd%fr_seaice) &
+    !$ACC   HOST(p_lnd_state%prog_lnd(nnow_rcf(jg))%t_g) &
+    !$ACC   HOST(p_lnd_state%diag_lnd%h_snow) &
+    !$ACC   HOST(p_lnd_state%diag_lnd%fr_seaice) &
     !$ACC   ASYNC(1)
 
     IF (atm_phy_nwp_config%luse_clc_rad) THEN
-      !$ACC UPDATE HOST(prm_diag(jg)%clc_rad) ASYNC(1)
+      !$ACC UPDATE HOST(prm_diag%clc_rad) ASYNC(1)
     ELSE
-      !$ACC UPDATE HOST(prm_diag(jg)%clc) ASYNC(1)
+      !$ACC UPDATE HOST(prm_diag%clc) ASYNC(1)
     END IF
     IF (atm_phy_nwp_config% icalc_reff /= 0) THEN
-      !$ACC UPDATE HOST(prm_diag(jg)%reff_qc) ASYNC(1)
-      !$ACC UPDATE HOST(prm_diag(jg)%reff_qi) ASYNC(1)
+      !$ACC UPDATE HOST(prm_diag%reff_qc) ASYNC(1)
+      !$ACC UPDATE HOST(prm_diag%reff_qi) ASYNC(1)
     END IF
 
     ! Not sure why this is needed

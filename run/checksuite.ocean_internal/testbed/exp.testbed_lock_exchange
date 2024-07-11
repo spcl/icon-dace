@@ -61,7 +61,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations           = -1           ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds
@@ -134,6 +133,9 @@ cat > ${ocean_namelist} << EOF
 
 &ocean_physics_nml
   eos_type                        =  5            ! equation of state type 
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
 /
 &ocean_forcing_nml
   iforc_oce                       = 10            ! ocean forcing

@@ -211,7 +211,6 @@ CONTAINS
 
   !> Point query in octree data structure.
   !
-  !  @return no. of objects contained in traversed octree boxes.
   INTEGER FUNCTION octree_count_point(octree, p)
     TYPE(t_range_octree), INTENT(IN) :: octree !< octree data structure
     REAL(wp), INTENT(IN) :: p(3) !< point to insert
@@ -255,7 +254,6 @@ CONTAINS
 
   !> Point query in octree data structure.
   !
-  !  @return list of objects contained in traversed octree boxes.
   SUBROUTINE octree_query_point(octree, p, obj_list)
     TYPE(t_range_octree), INTENT(IN)    :: octree !< octree data structure
     REAL(wp), INTENT(IN)    :: p(3) !< point to insert

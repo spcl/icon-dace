@@ -23,21 +23,18 @@ MODULE mo_grid_config
   USE mo_mpi,                ONLY: my_process_is_stdio
   USE mo_util_string,        ONLY: t_keyword_list, associate_keyword, with_keywords
   USE mo_netcdf_errhandler,  ONLY: nf
+  USE mo_netcdf, ONLY: &
+    nf90_nowrite, nf90_global, nf90_noerr, nf90_strerror
 #ifndef NOMPI
 ! The USE statement below lets this module use the routines from
 ! mo_netcdf_parallel where only 1 processor is reading and
 ! broadcasting the results
-USE mo_netcdf_parallel, ONLY:                     &
-   nf_nowrite, nf_global, nf_noerr, nf_strerror,  &
-   nf_open            => p_nf_open,               &
-   nf_close           => p_nf_close,              &
-   nf_get_att_int     => p_nf_get_att_int ,       &
-   nf_get_att_double  => p_nf_get_att_double
+USE mo_netcdf_parallel, ONLY:     &
+   nf90_open    => p_nf90_open,   &
+   nf90_close   => p_nf90_close,  &
+   nf90_get_att => p_nf90_get_att
 #else
-  USE mo_netcdf, ONLY: &
-      & nf_nowrite, nf_global, nf_noerr, nf_strerror, nf_open, nf_close, &
-      & nf_get_att_int => nfx_get_att, &
-      & nf_get_att_double => nfx_get_att
+  USE mo_netcdf, ONLY: nf90_open, nf90_close, nf90_get_att
 #endif
 
   IMPLICIT NONE
@@ -185,11 +182,11 @@ CONTAINS
     IF (no_of_dynamics_grids > 1) CALL message(routine,'Warning: You are using one nproma for multiple grids!')
 
     ! get here the nroot, eventually it should be moved into the patch info
-    CALL nf(nf_open(dynamics_grid_filename(1), nf_nowrite, ncid), routine)
+    CALL nf(nf90_open(dynamics_grid_filename(1), nf90_nowrite, ncid), routine)
     CALL get_gridfile_root_level(ncid, nroot, start_lev)
 !     CALL get_gridfile_sphere_radius(ncid, grid_sphere_radius)
     grid_sphere_radius = earth_radius ! the grid-based radious is not used
-    CALL nf(nf_close(ncid), routine)
+    CALL nf(nf90_close(ncid), routine)
 
     ! domain geometric properties
     IF ( grid_rescale_factor <= 0.0_wp ) grid_rescale_factor = 1.0_wp
@@ -228,8 +225,8 @@ CONTAINS
     INTEGER,    INTENT(inout)  :: grid_root, grid_level
     CHARACTER(*), PARAMETER :: routine = modname//":get_gridfile_root_level"
 
-    CALL nf(nf_get_att_int(ncid, nf_global, 'grid_root', grid_root), routine)
-    CALL nf(nf_get_att_int(ncid, nf_global, 'grid_level', grid_level), routine)
+    CALL nf(nf90_get_att(ncid, nf90_global, 'grid_root', grid_root), routine)
+    CALL nf(nf90_get_att(ncid, nf90_global, 'grid_level', grid_level), routine)
 
   END SUBROUTINE get_gridfile_root_level
   !-------------------------------------------------------------------------
@@ -241,9 +238,9 @@ CONTAINS
 
     INTEGER :: netcd_status
 
-    netcd_status = nf_get_att_double(ncid, nf_global,'sphere_radius', &
-        & sphere_radius )
-    IF (netcd_status /= nf_noerr) sphere_radius = earth_radius
+    netcd_status = nf90_get_att(ncid, nf90_global, 'sphere_radius', &
+        & sphere_radius)
+    IF (netcd_status /= nf90_noerr) sphere_radius = earth_radius
 
   END SUBROUTINE get_gridfile_sphere_radius
   !-------------------------------------------------------------------------
@@ -265,9 +262,9 @@ CONTAINS
     CHARACTER(*), PARAMETER :: routine = modname//":get_grid_root"
     INTEGER :: ncid, grid_root
 
-    CALL nf(nf_open(TRIM(patch_file), nf_nowrite, ncid), routine)
-    CALL nf(nf_get_att_int(ncid, nf_global, 'grid_root', grid_root), routine)
-    CALL nf(nf_close(ncid), routine)
+    CALL nf(nf90_open(TRIM(patch_file), nf90_nowrite, ncid), routine)
+    CALL nf(nf90_get_att(ncid, nf90_global, 'grid_root', grid_root), routine)
+    CALL nf(nf90_close(ncid), routine)
     get_grid_root = grid_root
   END FUNCTION get_grid_root
   !-------------------------------------------------------------------------

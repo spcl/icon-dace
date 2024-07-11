@@ -5,7 +5,7 @@
 ! Contact: https://jblevins.org/mirror/amiller/
 !          https://www.acm.org/publications
 ! This software is not licensed for commercial use.
-! SPDX-License-Identifier: NONE
+! SPDX-License-Identifier: LicenseRef-ACM
 ! ---------------------------------------------------------------
 ! Code has been modified
 ! ---------------------------------------------------------------

@@ -38,7 +38,7 @@ author_list="Marco Giorgetta, Sebastian Mueller, Sebastian Rast, MPIM"
 # icon_data_poolFolder          = base directory, where grids/, input/ and setup/ exist
 # nproma                        = blocking length for array dimensioning and inner loop lengths
 
-icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/grids/private/mpim/icon_preprocessing/source"
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/grids/public/mpim/"
 
 #--------------------------------------------------------------------------------------------------
 
@@ -46,10 +46,10 @@ icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/grids/private/mpi
 
 # horizontal grid(s)
 #
-grids_folder=${icon_data_poolFolder}/grids
 #
 # domain globe
-grid_id=0005
+grid_id=0013
+grids_folder=${icon_data_poolFolder}/${grid_id}
 grid_refinement=R02B04
 grid_label=G
 grid_name=icon_grid_${grid_id}_${grid_refinement}_${grid_label}
@@ -162,7 +162,7 @@ cat > ${atmo_namelist} << EOF
 ! domain 1
 ! --------
 !
- aes_rad_config(1)%isolrad    =  2
+ aes_rad_config(1)%isolrad    =  5
  aes_rad_config(1)%l_orbvsop87= .FALSE.
  aes_rad_config(1)%cecc       = 0.0
  aes_rad_config(1)%cobld      = 0.0
@@ -192,8 +192,8 @@ EOF
 
 # model files
 #
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
 
@@ -215,11 +215,11 @@ start_year=$(( ${start_date%%-*} - 1 ))
 end_year=$(( ${end_date%%-*} + 1 ))
 #
 # - well mixed greenhouse gases
-datadir=${icon_data_poolFolder}/greenhouse_gases
+datadir=${icon_data_poolFolder}/independent/greenhouse_gases
 add_link_file $datadir/greenhouse_historical_plus.nc                    ./bc_greenhouse_gases.nc
 #
 # - ozone
-datadir=${icon_data_poolFolder}/ozone/ape/${grid_refinement}_${grid_label}
+datadir=${icon_data_poolFolder}/${grid_id}/ozone/r0002/
 add_link_file ${datadir}/bc_ozone_ape.nc                                ./bc_ozone.nc
 
 #--------------------------------------------------------------------------------------------------

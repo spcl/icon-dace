@@ -36,7 +36,7 @@ NETCDF_LIBS="-L${NETCDF_LIB_ROOT} -lnetcdff -lnetcdf"
 # Assume that eccodes resides under the GLOBAL_LIB_ROOT:
 ECCODES_LIB_ROOT=${GLOBAL_LIB_ROOT}
 ECCODES_INCLUDE="${ECCODES_LIB_ROOT}/include"
-ECCODES_LIBS="-L${ECCODES_LIB_ROOT} -lgrib_api_f90 -lgrib_api -laec"
+ECCODES_LIBS="-L${ECCODES_LIB_ROOT} -leccodes_f90 -leccodes"
 
 # Assume that lapack and blas reside under the GLOBAL_LIB_ROOT:
 BLAS_LAPACK_LIBS="-llapack -lblas"

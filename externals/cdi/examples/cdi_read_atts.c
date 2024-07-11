@@ -10,7 +10,7 @@ int
 main(void)
 {
   int taxisID, vlistID, varID1, varID2, streamID;
-  size_t nmiss;
+  size_t numMissVals;
   double var1[nlon * nlat];
   double var2[nlon * nlat * nlev];
 
@@ -63,8 +63,8 @@ main(void)
       int vtime = taxisInqVtime(taxisID);
 
       // Read var1 and var2
-      streamReadVar(streamID, varID1, var1, &nmiss);
-      streamReadVar(streamID, varID2, var2, &nmiss);
+      streamReadVar(streamID, varID1, var1, &numMissVals);
+      streamReadVar(streamID, varID2, var2, &numMissVals);
     }
 
   // Close the input stream

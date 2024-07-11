@@ -10,18 +10,18 @@ The values are converted to the external data type of the variable, if necessary
 
 \begin{verbatim}
     SUBROUTINE streamWriteVar(INTEGER streamID, INTEGER varID, REAL*8 data, 
-                              INTEGER nmiss)
+                              INTEGER numMissVals)
 \end{verbatim}
 
 \hspace*{4mm}\begin{minipage}[]{15cm}
-\begin{deflist}{\texttt{streamID}\ }
+\begin{deflist}{\texttt{numMissVals}\ }
 \item[\texttt{streamID}]
 Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
 \item[\texttt{varID}]
 Variable identifier.
 \item[\texttt{data}]
 Pointer to a block of double precision floating point data values to be written.
-\item[\texttt{nmiss}]
+\item[\texttt{numMissVals}]
 Number of missing values.
 
 \end{deflist}
@@ -38,18 +38,18 @@ The values are converted to the external data type of the variable, if necessary
 
 \begin{verbatim}
     SUBROUTINE streamWriteVarF(INTEGER streamID, INTEGER varID, REAL*4 data, 
-                               INTEGER nmiss)
+                               INTEGER numMissVals)
 \end{verbatim}
 
 \hspace*{4mm}\begin{minipage}[]{15cm}
-\begin{deflist}{\texttt{streamID}\ }
+\begin{deflist}{\texttt{numMissVals}\ }
 \item[\texttt{streamID}]
 Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
 \item[\texttt{varID}]
 Variable identifier.
 \item[\texttt{data}]
 Pointer to a block of single precision floating point data values to be written.
-\item[\texttt{nmiss}]
+\item[\texttt{numMissVals}]
 Number of missing values.
 
 \end{deflist}
@@ -66,11 +66,11 @@ The values are converted to the external data type of the variable, if necessary
 
 \begin{verbatim}
     SUBROUTINE streamWriteVarSlice(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                   REAL*8 data, INTEGER nmiss)
+                                   REAL*8 data, INTEGER numMissVals)
 \end{verbatim}
 
 \hspace*{4mm}\begin{minipage}[]{15cm}
-\begin{deflist}{\texttt{streamID}\ }
+\begin{deflist}{\texttt{numMissVals}\ }
 \item[\texttt{streamID}]
 Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
 \item[\texttt{varID}]
@@ -79,7 +79,7 @@ Variable identifier.
 Level identifier.
 \item[\texttt{data}]
 Pointer to a block of double precision floating point data values to be written.
-\item[\texttt{nmiss}]
+\item[\texttt{numMissVals}]
 Number of missing values.
 
 \end{deflist}
@@ -96,11 +96,11 @@ The values are converted to the external data type of the variable, if necessary
 
 \begin{verbatim}
     SUBROUTINE streamWriteVarSliceF(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                    REAL*4 data, INTEGER nmiss)
+                                    REAL*4 data, INTEGER numMissVals)
 \end{verbatim}
 
 \hspace*{4mm}\begin{minipage}[]{15cm}
-\begin{deflist}{\texttt{streamID}\ }
+\begin{deflist}{\texttt{numMissVals}\ }
 \item[\texttt{streamID}]
 Stream ID, from a previous call to {\htmlref{\texttt{streamOpenWrite}}{streamOpenWrite}}.
 \item[\texttt{varID}]
@@ -109,7 +109,7 @@ Variable identifier.
 Level identifier.
 \item[\texttt{data}]
 Pointer to a block of single precision floating point data values to be written.
-\item[\texttt{nmiss}]
+\item[\texttt{numMissVals}]
 Number of missing values.
 
 \end{deflist}

@@ -76,7 +76,7 @@ int extInqRecord(stream_t *streamptr, int *varID, int *levelID)
 */
 
 static void
-ext_read_recordSP(stream_t *streamptr, float *data, size_t *nmiss)
+ext_read_recordSP(stream_t *streamptr, float *data, size_t *numMissVals)
 {
   int vlistID = streamptr->vlistID;
   int fileID = streamptr->fileID;
@@ -100,15 +100,15 @@ ext_read_recordSP(stream_t *streamptr, float *data, size_t *nmiss)
   size_t size = gridInqSize(vlistInqVarGrid(vlistID, varID));
 
   if (vlistInqVarNumber(vlistID, varID) == CDI_REAL)
-    *nmiss = get_num_missvalsSP(size, data, missval);
+    *numMissVals = get_num_missvalsSP(size, data, missval);
   else
-    *nmiss = get_cplx_num_missvalsSP(size, data, missval);
+    *numMissVals = get_cplx_num_missvalsSP(size, data, missval);
 
   streamptr->numvals += size;
 }
 
 static void
-ext_read_recordDP(stream_t *streamptr, double *data, size_t *nmiss)
+ext_read_recordDP(stream_t *streamptr, double *data, size_t *numMissVals)
 {
   int vlistID = streamptr->vlistID;
   int fileID = streamptr->fileID;
@@ -132,20 +132,20 @@ ext_read_recordDP(stream_t *streamptr, double *data, size_t *nmiss)
   size_t size = gridInqSize(vlistInqVarGrid(vlistID, varID));
 
   if (vlistInqVarNumber(vlistID, varID) == CDI_REAL)
-    *nmiss = get_num_missvalsDP(size, data, missval);
+    *numMissVals = get_num_missvalsDP(size, data, missval);
   else
-    *nmiss = get_cplx_num_missvalsDP(size, data, missval);
+    *numMissVals = get_cplx_num_missvalsDP(size, data, missval);
 
   streamptr->numvals += size;
 }
 
 void
-ext_read_record(stream_t *streamptr, int memtype, void *data, size_t *nmiss)
+ext_read_record(stream_t *streamptr, int memtype, void *data, size_t *numMissVals)
 {
   if (memtype == MEMTYPE_DOUBLE)
-    ext_read_recordDP(streamptr, (double *) data, nmiss);
+    ext_read_recordDP(streamptr, (double *) data, numMissVals);
   else
-    ext_read_recordSP(streamptr, (float *) data, nmiss);
+    ext_read_recordSP(streamptr, (float *) data, numMissVals);
 }
 
 void
@@ -550,7 +550,7 @@ extInqTimestep(stream_t *streamptr, int tsID)
 }
 
 void
-extReadVarSliceDP(stream_t *streamptr, int varID, int levID, double *data, size_t *nmiss)
+extReadVarSliceDP(stream_t *streamptr, int varID, int levID, double *data, size_t *numMissVals)
 {
   if (CDI_Debug) Message("streamID = %d  varID = %d  levID = %d", streamptr->self, varID, levID);
 
@@ -576,13 +576,13 @@ extReadVarSliceDP(stream_t *streamptr, int varID, int levID, double *data, size_
   fileSetPos(fileID, currentfilepos, SEEK_SET);
 
   if (vlistInqVarNumber(vlistID, varID) == CDI_REAL)
-    *nmiss = get_num_missvalsDP(gridsize, data, missval);
+    *numMissVals = get_num_missvalsDP(gridsize, data, missval);
   else
-    *nmiss = get_cplx_num_missvalsDP(gridsize, data, missval);
+    *numMissVals = get_cplx_num_missvalsDP(gridsize, data, missval);
 }
 
 void
-extReadVarDP(stream_t *streamptr, int varID, double *data, size_t *nmiss)
+extReadVarDP(stream_t *streamptr, int varID, double *data, size_t *numMissVals)
 {
   if (CDI_Debug) Message("streamID = %d  varID = %d", streamptr->self, varID);
 
@@ -590,7 +590,8 @@ extReadVarDP(stream_t *streamptr, int varID, double *data, size_t *nmiss)
   size_t gridsize = gridInqSize(vlistInqVarGrid(vlistID, varID));
   size_t nlevs = (size_t) streamptr->vars[varID].recordTable[0].nlevs;
 
-  for (size_t levID = 0; levID < nlevs; levID++) extReadVarSliceDP(streamptr, varID, (int) levID, &data[levID * gridsize], nmiss);
+  for (size_t levID = 0; levID < nlevs; levID++)
+    extReadVarSliceDP(streamptr, varID, (int) levID, &data[levID * gridsize], numMissVals);
 }
 
 void

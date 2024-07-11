@@ -21,7 +21,7 @@ MODULE mo_art_psc_chemistry
   USE mo_parallel_config,               ONLY: nproma
   USE mo_run_config,                    ONLY: iqi
   USE mo_physical_constants,            ONLY: argas, avo, amw
-  USE mo_math_constants,                ONLY: pi
+  USE mo_math_constants,                ONLY: pi, sqrt2
 ! ART
   USE mo_art_psc_types,                 ONLY: t_art_psc
   USE messy_mecca_kpp_global,           ONLY: ihs_N2O5_H2O , ihs_HOCl_HCl, ihs_ClNO3_HCl, &
@@ -66,7 +66,7 @@ SUBROUTINE art_psc_calc_k_het(PSC,p_tracer_now,temp,pres,jb,i_startidx,i_endidx)
   DO jk = PSC%kstart, PSC%kend
     DO jc = i_startidx, i_endidx
       PSC%v_th(jc,jk) = SQRT(8._wp * temp(jc,jk,jb) * argas / pi * 1.e3_wp)
-      PSC%mean_free_path(jc,jk) = 1._wp / (SQRT(2._wp) * pi * pres(jc,jk,jb)   &
+      PSC%mean_free_path(jc,jk) = 1._wp / (sqrt2 * pi * pres(jc,jk,jb)   &
              &                  / argas / temp(jc,jk,jb) * avo * 3.7e-10_wp**2)
     END DO
   END DO

@@ -27,10 +27,10 @@ MODULE mo_newcld_optics
   USE mo_math_constants,     ONLY: pi
   USE mo_physical_constants, ONLY: rhoh2o
 
-  USE mo_netcdf_parallel,    ONLY: p_nf_open, p_nf_close, &
-    &                              p_nf_inq_varid,        &
-    &                              p_nf_get_vara_double,  &
-    &                              nf_read, nf_noerr
+  USE mo_netcdf,             ONLY: nf90_nowrite, nf90_noerr
+  USE mo_netcdf_parallel,    ONLY: p_nf90_open, p_nf90_close, &
+    &                              p_nf90_inq_varid,          &
+    &                              p_nf90_get_var
 
   IMPLICIT NONE
   PRIVATE
@@ -103,44 +103,44 @@ CONTAINS
     zinhomi = 0.80_wp
 
     l_variable_inhoml = .FALSE.
-    nf_status = p_nf_open (TRIM(data_filename), nf_read, nf_file_id)
+    nf_status = p_nf90_open (TRIM(data_filename), nf90_nowrite, nf_file_id)
     !
-    IF (nf_status /= nf_noerr) THEN
+    IF (nf_status /= nf90_noerr) THEN
       CALL finish('mo_newcld_optics/setup_newcld_optics',      &
         &         'File '//TRIM(data_filename)//' cannot be opened')
     END IF
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'wavenumber', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1/),(/n_mdl_bnds/), wavenumber)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'wavenumber', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, wavenumber, (/1/),(/n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'wavelength', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1/),(/n_mdl_bnds/), wavelength)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'wavelength', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, wavelength, (/1/),(/n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 're_droplet', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1/),(/n_sizes/), re_droplet)
+    nf_status = p_nf90_inq_varid(nf_file_id, 're_droplet', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, re_droplet, (/1/),(/n_sizes/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 're_crystal', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1/),(/n_sizes/), re_crystal)
+    nf_status = p_nf90_inq_varid(nf_file_id, 're_crystal', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, re_crystal, (/1/),(/n_sizes/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'extinction_per_mass_droplet', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_ext_l)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'extinction_per_mass_droplet', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_ext_l, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'co_albedo_droplet', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_coa_l)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'co_albedo_droplet', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_coa_l, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'asymmetry_factor_droplet', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_asy_l)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'asymmetry_factor_droplet', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_asy_l, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'extinction_per_mass_crystal', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_ext_i)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'extinction_per_mass_crystal', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_ext_i, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'co_albedo_crystal', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_coa_i)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'co_albedo_crystal', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_coa_i, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_inq_varid      (nf_file_id, 'asymmetry_factor_crystal', nf_var_id)
-    nf_status = p_nf_get_vara_double(nf_file_id, nf_var_id, (/1,1/),(/n_sizes,n_mdl_bnds/),z_asy_i)
+    nf_status = p_nf90_inq_varid(nf_file_id, 'asymmetry_factor_crystal', nf_var_id)
+    nf_status = p_nf90_get_var  (nf_file_id, nf_var_id, z_asy_i, (/1,1/),(/n_sizes,n_mdl_bnds/))
 
-    nf_status = p_nf_close (nf_file_id)
+    nf_status = p_nf90_close (nf_file_id)
 
     reimin = MINVAL(re_crystal)
     reimax = MAXVAL(re_crystal)

@@ -431,11 +431,11 @@ vlistInqVarName(int vlistID, int varID, char *name)
           int code = pnum;
           int tableID = varptr->tableID;
           tableInqEntry(tableID, code, -1, name, NULL, NULL);
-          if (!name[0]) sprintf(name, "var%d", code);
+          if (!name[0]) snprintf(name, 8, "var%d", code);
         }
       else
         {
-          sprintf(name, "param%d.%d.%d", pnum, pcat, pdis);
+          snprintf(name, CDI_MAX_NAME, "param%d.%d.%d", pnum, pcat, pdis);
         }
     }
 }
@@ -480,14 +480,16 @@ vlistCopyVarName(int vlistID, int varID)
       else
         {
           // No luck, fall back to outputting a name of the format "var<num>".
-          result = (char *) Malloc(3 + 3 * sizeof(int) * CHAR_BIT / 8 + 2);
-          sprintf(result, "var%d", number);
+          size_t len = 3 + 3 * sizeof(int) * CHAR_BIT / 8 + 2;
+          result = (char *) Malloc(len);
+          snprintf(result, len, "var%d", number);
         }
     }
   else
     {
-      result = (char *) Malloc(5 + 2 + 3 * (3 * sizeof(int) * CHAR_BIT + 1) + 1);
-      sprintf(result, "param%d.%d.%d", number, category, discipline);
+      size_t len = 5 + 2 + 3 * (3 * sizeof(int) * CHAR_BIT + 1) + 1;
+      result = (char *) Malloc(len);
+      snprintf(result, len, "param%d.%d.%d", number, category, discipline);
     }
   // Finally, we fall back to outputting a name of the format "param<num>.<cat>.<dis>".
   return result;

@@ -148,20 +148,20 @@ MODULE mo_jsb_lctlib_class
     REAL(wp) :: CanopyResistanceMin  !< Minimum canopy resistance (optional, only used in VIC scheme
                                                  !< and if BETHY is not used)
     REAL(wp) :: StemArea             !< Area of stems and branches of woody plants
-    
+
     ! --- QUINCY model parameters (MPI-BGC Jena) ---------------------------------------------------------------------------------
-    INTEGER  :: growthform 
+    INTEGER  :: growthform
     INTEGER  :: ps_pathway
     INTEGER  :: phenology_type
-    REAL(wp) :: sla                 
-    REAL(wp) :: sigma_vis 
-    REAL(wp) :: sigma_nir 
-    REAL(wp) :: omega_clumping 
-    REAL(wp) :: crown_shape_factor 
-    REAL(wp) :: cn_leaf             
+    REAL(wp) :: sla
+    REAL(wp) :: sigma_vis
+    REAL(wp) :: sigma_nir
+    REAL(wp) :: omega_clumping
+    REAL(wp) :: crown_shape_factor
+    REAL(wp) :: cn_leaf
     REAL(wp) :: cn_leaf_min
     REAL(wp) :: cn_leaf_max
-    REAL(wp) :: np_leaf  
+    REAL(wp) :: np_leaf
     REAL(wp) :: np_leaf_min
     REAL(wp) :: np_leaf_max
     REAL(wp) :: k0_fn_struc
@@ -169,7 +169,8 @@ MODULE mo_jsb_lctlib_class
     REAL(wp) :: t_jmax_opt
     REAL(wp) :: t_jmax_omega
     REAL(wp) :: g0
-    REAL(wp) :: g1
+    REAL(wp) :: g1_medlyn
+    REAL(wp) :: g1_bberry
     REAL(wp) :: gmin
 
     ! turnover times
@@ -183,7 +184,7 @@ MODULE mo_jsb_lctlib_class
                 tau_seed_est      , &
                 tau_mycorrhiza
 
-    ! N uptake parameters    
+    ! N uptake parameters
     REAL(wp) :: vmax_uptake_n     , &
                 vmax_uptake_p     , &
                 bnf_base
@@ -191,7 +192,8 @@ MODULE mo_jsb_lctlib_class
     ! Vegetation dynamics parameters
     REAL(wp) :: lambda_est_light  , &
                 k_est_light       , &
-                seed_size
+                seed_size         , &
+                k1_mort_greff
 
     ! Phenology parameters
     REAL(wp) :: beta_soil_flush       , &
@@ -217,14 +219,14 @@ MODULE mo_jsb_lctlib_class
                 fstore_target
 
     ! Soil
-    REAL(wp) :: k_root_dist    
+    REAL(wp) :: k_root_dist
     ! --- END QUINCY model parameters (MPI-BGC Jena) -----------------------------------------------------------------------------
-    
+
   END TYPE t_lctlib_element
 
 CONTAINS
 
-  FUNCTION Read_lctlib(lctlib_file_name, use_quincy) RESULT(return_value)
+  FUNCTION Read_lctlib(lctlib_file_name, model_scheme_char, usecase) RESULT(return_value)
     !
     ! Get landcover library, i.e. lookup table for landcover types
     !
@@ -261,15 +263,22 @@ CONTAINS
     !
     ! The file can contain more keywords than needed --- therefore the same file can be used by several model components.
     !
+#ifndef __NO_QUINCY__
+#ifdef __QUINCY_STANDALONE__
+    USE mo_util,        ONLY: tolower
+#endif
     USE mo_util_string, ONLY: tolower
-
     ! USE statements necessary for modifying QUINCY model input values of lctlib parameters
     USE mo_jsb_math_constants,      ONLY: one_day, one_year
-    USE mo_jsb_physical_constants,  ONLY: molar_mass_C, molar_mass_N, molar_mass_P, Dwv, Dco2, tmelt 
+    USE mo_jsb_physical_constants,  ONLY: molar_mass_C, molar_mass_N, molar_mass_P, Dwv, Dco2, Tzero
     USE mo_veg_constants,           ONLY: carbon_per_dryweight_leaf, sm2lm_grass, igrass, itree
+#else
+    USE mo_util_string, ONLY: tolower
+#endif
 
     CHARACTER(len=*), INTENT(in) :: lctlib_file_name
-    LOGICAL,          INTENT(in) :: use_quincy
+    CHARACTER(len=*), INTENT(in) :: model_scheme_char
+    CHARACTER(len=*), INTENT(in) :: usecase
     TYPE(t_lctlib_element), POINTER    :: return_value(:)
 
     TYPE(t_lctlib_element), ALLOCATABLE :: lctlib(:)
@@ -282,7 +291,10 @@ CONTAINS
     INTEGER            :: pos,length
     CHARACTER(len=2)   :: blank_set = " "//achar(9) !< the blank characters: BLANK and TAB
     INTEGER,ALLOCATABLE:: itmp(:)                   !< temporary array used for input of logicals
-    INTEGER            :: apu  ! THT 30.10.2012
+    INTEGER            :: apu
+
+    INTEGER :: i
+    INTEGER :: nlct, npft
 
     LOGICAL            :: exist_LctNumber              = .FALSE.
     LOGICAL            :: exist_LctName                = .FALSE.
@@ -356,7 +368,7 @@ CONTAINS
     LOGICAL            :: exists_woodlit_coef             = .FALSE.
     LOGICAL            :: exists_leaflit_coef             = .FALSE.
     LOGICAL            :: exists_litveg_coef              = .FALSE.
-    ! quincy
+    ! quincy model - start
     LOGICAL            :: exists_growthform = .FALSE.
     LOGICAL            :: exists_ps_pathway = .FALSE.
     LOGICAL            :: exists_phenology_type = .FALSE.
@@ -376,7 +388,8 @@ CONTAINS
     LOGICAL            :: exists_t_jmax_opt = .FALSE.
     LOGICAL            :: exists_t_jmax_omega = .FALSE.
     LOGICAL            :: exists_g0 = .FALSE.
-    LOGICAL            :: exists_g1 = .FALSE.
+    LOGICAL            :: exists_g1_medlyn = .FALSE.
+    LOGICAL            :: exists_g1_bberry = .FALSE.
     LOGICAL            :: exists_gmin = .FALSE.
     LOGICAL            :: exists_tau_leaf = .FALSE.
     LOGICAL            :: exists_tau_fine_root = .FALSE.
@@ -393,6 +406,7 @@ CONTAINS
     LOGICAL            :: exists_lambda_est_light = .FALSE.
     LOGICAL            :: exists_k_est_light = .FALSE.
     LOGICAL            :: exists_seed_size = .FALSE.
+    LOGICAL            :: exists_k1_mort_greff = .FALSE.
     LOGICAL            :: exists_beta_soil_flush = .FALSE.
     LOGICAL            :: exists_beta_soil_senescence = .FALSE.
     LOGICAL            :: exists_gdd_req_max = .FALSE.
@@ -413,16 +427,10 @@ CONTAINS
     LOGICAL            :: exists_c0_allom = .FALSE.
     LOGICAL            :: exists_fstore_target = .FALSE.
     LOGICAL            :: exists_k_root_dist = .FALSE.
-    
-    ! quincy end
-    INTEGER            :: i
+    ! quincy model - end
 
-    INTEGER :: nlct, npft
-
-    ! Determine name of landcover library file
-
-    ! Read lctlib data and eventually allocate also memory for lctlib data on io-processor
-
+    !> Read lctlib data and eventually allocate also memory for lctlib data on io-processor
+    !>
     IF (my_process_is_stdio()) THEN
 
        OPEN(unit=lctlib_file_unit, file=lctlib_file_name, form='FORMATTED', status='OLD', iostat=read_status)
@@ -499,6 +507,7 @@ CONTAINS
 
           IF(TRIM(key) == "nlct") CYCLE ! nlct already read above
 
+          ! read the JSBACH lctLib parameter
           SELECT CASE (TRIM(key))
           CASE ('lctnumber')
             READ(line(pos:length),*) lctlib(1:nlct)%LctNumber
@@ -770,9 +779,9 @@ CONTAINS
           CASE default
             ! nothing to do
           END SELECT
-           ! ------------------------------------------------------------------
-          ! quincy
-          IF (use_quincy) THEN
+          ! ------------------------------------------------------------------
+          ! read the quincy lctLib parameter
+          IF (model_scheme_char == "quincy") THEN
             SELECT CASE (TRIM(key))
             CASE ('growthform')
               READ(line(pos:length),*) lctlib(1:nlct)%growthform
@@ -831,9 +840,12 @@ CONTAINS
             CASE ('g0')
               READ(line(pos:length),*) lctlib(1:nlct)%g0
               exists_g0 = .TRUE.
-            CASE ('g1')
-              READ(line(pos:length),*) lctlib(1:nlct)%g1
-              exists_g1 = .TRUE.
+            CASE ('g1_medlyn')
+              READ(line(pos:length),*) lctlib(1:nlct)%g1_medlyn
+              exists_g1_medlyn = .TRUE.
+            CASE ('g1_bberry')
+              READ(line(pos:length),*) lctlib(1:nlct)%g1_bberry
+              exists_g1_bberry = .TRUE.
             CASE ('gmin')
               READ(line(pos:length),*) lctlib(1:nlct)%gmin
               exists_gmin = .TRUE.
@@ -885,6 +897,9 @@ CONTAINS
             CASE ('seed_size')
               READ(line(pos:length),*) lctlib(1:nlct)%seed_size
               exists_seed_size = .TRUE.
+            CASE ('k1_mort_greff')
+              READ(line(pos:length),*) lctlib(1:nlct)%k1_mort_greff
+              exists_k1_mort_greff = .TRUE.
 
             CASE ('beta_soil_flush')
               READ(line(pos:length),*) lctlib(1:nlct)%beta_soil_flush
@@ -946,17 +961,21 @@ CONTAINS
               exists_fstore_target = .TRUE.
 
             CASE ('k_root_dist')
-              READ(line(pos:length),*) lctlib(1:nlct)%k_root_dist          
+              READ(line(pos:length),*) lctlib(1:nlct)%k_root_dist
               exists_k_root_dist = .TRUE.
             CASE default
               ! nothing to do
             END SELECT
-         END IF
-        ! quincy end
-        ! ------------------------------------------------------------------
+          END IF
+          ! quincy end
+          ! ------------------------------------------------------------------
        END DO
        DEALLOCATE(itmp)
 
+       !> Test if the lctLib parameter could be read, if not finish()
+       !>
+
+       ! Three main parameters
        IF(.NOT. exist_LctNumber) &
             CALL finish('init_lctlib','No data for LctNumber found in '//TRIM(lctlib_file_name))
        IF(.NOT. exist_LctName) &
@@ -965,150 +984,164 @@ CONTAINS
             lctlib%LctName = "undefined"
        IF(.NOT. exist_LandcoverClass) &
             CALL finish('init_lctlib','No data for LandcoverClass found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowVisMin) &
-            CALL finish('init_lctlib','No data for AlbedoSnowVisMin found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowVisMax) &
-            CALL finish('init_lctlib','No data for AlbedoSnowVisMax found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowNirMin) &
-            CALL finish('init_lctlib','No data for AlbedoSnowNirMin found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowNirMax) &
-            CALL finish('init_lctlib','No data for AlbedoSnowNirMax found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowMin) &
-            CALL finish('init_lctlib','No data for AlbedoSnowMin found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoSnowMax) &
-            CALL finish('init_lctlib','No data for AlbedoSnowMax found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoCanopyVIS) &
-            CALL finish('init_lctlib','No data for AlbedoCanopyVIS found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoCanopyNIR) &
-            CALL finish('init_lctlib','No data for albedoCanopyNIR found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoLitterVis) &
-            CALL finish('init_lctlib','No data for AlbedoLitterVis found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_AlbedoLitterNir) &
-            CALL finish('init_lctlib','No data for AlbedoLitterNir found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_nitrogenScalingFlag) &
-            CALL finish('init_lctLib','No data for NitrogenScalingFlag found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_C4flag) &
-            CALL finish('init_lctLib','No data for C4flag found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_CarboxRate) &
-            CALL finish('init_lctLib','No data for CarboxRate found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_ETransport) &
-            CALL finish('init_lctLib','No data for ETransport found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_VegHeight) &
-            CALL finish('init_lctLib','No data for VegHeight found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_VegRoughness) &
-            CALL finish('init_lctLib','No data for VegRoughness found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_MinVegRoughness) &
-            CALL finish('init_lctLib','No data for MinVegRoughness found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_MaxVegRoughness) &
-            CALL finish('init_lctLib','No data for MaxVegRoughness found in '//TRIM(lctLib_file_name))
-       IF(.NOT. exist_PhenologyType) &
-            CALL finish('init_lctlib','No data for PhenologyType found in '//TRIM(lctlib_file_name))
-       IF (.NOT. exist_CanopyResistanceMin) &
-            lctlib%CanopyResistanceMin = -1.0_wp
-       IF(.NOT. exist_MaxLAI) &
-            CALL finish('init_lctlib','No data for MaxLAI found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_StemArea) &
-            CALL finish('init_lctlib','No data for StemArea found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_specificLeafArea_C) &
-            CALL finish('init_lctlib','No data for specificLeafArea_C found in '//TRIM(lctlib_file_name))
 
-       IF(.NOT. exist_alpha_nr_ind) &
-            CALL finish('init_lctlib','No data for alpha_nr_ind found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_beta_nr_ind) &
-            CALL finish('init_lctlib','No data for beta_nr_ind found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_alpha_leaf) &
-            CALL finish('init_lctlib','No data for alpha_leaf found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_beta_leaf) &
-            CALL finish('init_lctlib','No data for beta_leaf found in '//TRIM(lctlib_file_name))
+       ! model scheme: jsbach
+       IF (model_scheme_char == "jsbach") THEN
+         IF(.NOT. exist_AlbedoSnowVisMin) &
+              CALL finish('init_lctlib','No data for AlbedoSnowVisMin found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoSnowVisMax) &
+              CALL finish('init_lctlib','No data for AlbedoSnowVisMax found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoSnowNirMin) &
+              CALL finish('init_lctlib','No data for AlbedoSnowNirMin found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoSnowNirMax) &
+              CALL finish('init_lctlib','No data for AlbedoSnowNirMax found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoSnowMin) &
+              CALL finish('init_lctlib','No data for AlbedoSnowMin found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoSnowMax) &
+              CALL finish('init_lctlib','No data for AlbedoSnowMax found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoCanopyVIS) &
+              CALL finish('init_lctlib','No data for AlbedoCanopyVIS found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoCanopyNIR) &
+              CALL finish('init_lctlib','No data for albedoCanopyNIR found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoLitterVis) &
+              CALL finish('init_lctlib','No data for AlbedoLitterVis found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_AlbedoLitterNir) &
+              CALL finish('init_lctlib','No data for AlbedoLitterNir found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_nitrogenScalingFlag) &
+              CALL finish('init_lctLib','No data for NitrogenScalingFlag found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_C4flag) &
+              CALL finish('init_lctLib','No data for C4flag found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_CarboxRate) &
+              CALL finish('init_lctLib','No data for CarboxRate found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_ETransport) &
+              CALL finish('init_lctLib','No data for ETransport found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_VegHeight) &
+              CALL finish('init_lctLib','No data for VegHeight found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_VegRoughness) &
+              CALL finish('init_lctLib','No data for VegRoughness found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_MinVegRoughness) &
+              CALL finish('init_lctLib','No data for MinVegRoughness found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_MaxVegRoughness) &
+              CALL finish('init_lctLib','No data for MaxVegRoughness found in '//TRIM(lctLib_file_name))
+         IF(.NOT. exist_PhenologyType) &
+              CALL finish('init_lctlib','No data for PhenologyType found in '//TRIM(lctlib_file_name))
+         IF (.NOT. exist_CanopyResistanceMin) &
+              lctlib%CanopyResistanceMin = -1.0_wp
+         IF(.NOT. exist_MaxLAI) &
+              CALL finish('init_lctlib','No data for MaxLAI found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_StemArea) &
+              CALL finish('init_lctlib','No data for StemArea found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_specificLeafArea_C) &
+              CALL finish('init_lctlib','No data for specificLeafArea_C found in '//TRIM(lctlib_file_name))
 
-      IF(.NOT. exist_knorr_tau_w) &
-        CALL finish('init_lctlib','No data for knorr_Tau_w found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_t_phi) &
-        CALL finish('init_lctlib','No data for knorr_T_phi found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_t_r) &
-        CALL finish('init_lctlib','No data for knorr_T_rfound in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_day_c) &
-        CALL finish('init_lctlib','No data for knorr_Day_c found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_day_r) &
-        CALL finish('init_lctlib','No data for knorr_Day_r found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_k_l) &
-        CALL finish('init_lctlib','No data for knorr_k_l found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_max_lai) &
-        CALL finish('init_lctlib','No data for knorr_max_lai found in '//TRIM(lctlib_file_name))
-      IF(.NOT. exist_knorr_leaf_growth_rate) &
-        CALL finish('init_lctlib','No data for leaf_growth_rate found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_alpha_nr_ind) &
+              CALL finish('init_lctlib','No data for alpha_nr_ind found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_beta_nr_ind) &
+              CALL finish('init_lctlib','No data for beta_nr_ind found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_alpha_leaf) &
+              CALL finish('init_lctlib','No data for alpha_leaf found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_beta_leaf) &
+              CALL finish('init_lctlib','No data for beta_leaf found in '//TRIM(lctlib_file_name))
 
-       IF(.NOT. exist_reserveC2leafC) &
-            CALL finish('init_lctlib','No data for reserveC2leafC found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_fract_npp_2_woodPool) &
-            CALL finish('init_lctlib','No data for fract_npp_2_woodPool found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_fract_npp_2_reservePool) &
-            CALL finish('init_lctlib','No data for fract_npp_2_reservePool found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_fract_npp_2_exudates) &
-            CALL finish('init_lctlib','No data for fract_npp_2_exudates found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_fract_green_2_herbivory) &
-            CALL finish('init_lctlib','No data for fract_green_2_herbivory found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_tau_c_woods) &
-            CALL finish('init_lctlib','No data for tau_c_woods found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_LAI_shed_constant) &
-            CALL finish('init_lctlib','No data for LAI_shed_constant found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_Max_C_content_woods) &
-            CALL finish('init_lctlib','No data for Max_C_content_woods found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exist_ClumpinessFactor) &
-            CALL finish('init_lctlib','No data for ClupinessFactor found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_dynamic_PFT) &
-            CALL finish('init_lctlib','No data for DYNAMIC_PFT found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_woody_PFT) &
-            CALL finish('init_lctlib','No data for WOODY_PFT found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_pasture_PFT) &
-            CALL finish('init_lctlib','No data for PASTURE_PFT found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bclimit_min_cold_mmtemp) &
-            CALL finish('init_lctlib','No data for BCLIMIT_MIN_COLD_MMTEMP found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bclimit_max_cold_mmtemp) &
-            CALL finish('init_lctlib','No data for BCLIMIT_MAX_COLD_MMTEMP found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bclimit_max_warm_mmtemp) &
-            CALL finish('init_lctlib','No data for BCLIMIT_MAX_WARM_MMTEMP found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bclimit_min_temprange ) &
-            CALL finish('init_lctlib','No data for BCLIMIT_MIN_TEMPRANGE found in '//TRIM(lctlib_file_name))
-       IF(.NOT.exists_bclimit_min_gdd ) &
-            CALL finish('init_lctlib','No data for BCLIMIT_MIN_GDD found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_gdd_base) &
-            CALL finish('init_lctlib','No data for GDD_BASE found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_upper_tlim) &
-            CALL finish('init_lctlib','No data for UPPER_TLIM found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_fract_wood_2_onSite) &
-            CALL finish('init_lctlib','No data for FRACT_WOOD_2_ONSITE found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_fract_wood_2_paper) &
-            CALL finish('init_lctlib','No data for FRACT_WOOD_2_PAPER found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_fract_wood_2_construction) &
-            CALL finish('init_lctlib','No data for FRACT_WOOD_2_CONSTRUCTION found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_moist_extinction) &
-            CALL finish('init_lctlib','No data for moisture of extinction found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_fuel_dens) &
-            CALL finish('init_lctlib','No data for bulk fuel density found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_flame_length_f) &
-            CALL finish('init_lctlib','No data for flame length f found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_crown_length) &
-            CALL finish('init_lctlib','No data for crown length found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bark_par1) &
-            CALL finish('init_lctlib','No data for bark_par1 found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_bark_par2) &
-            CALL finish('init_lctlib','No data for bark_par2 found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_RCK) &
-            CALL finish('init_lctlib','No data for RCK (resistance to crown damage) found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_mort_prob) &
-            CALL finish('init_lctlib','No data for mortality probability found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_woodlittersize_coef) &
-            CALL finish('init_lctlib','No data for WOODLITTERSIZE found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_woodlit_coef) &
-            CALL finish('init_lctlib','No data for WOODLIT_COEF found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_leaflit_coef) &
-            CALL finish('init_lctlib','No data for LEAFLIT_COEF found in '//TRIM(lctlib_file_name))
-       IF(.NOT. exists_litveg_coef) &
-            CALL finish('init_lctlib','No data for LITVEG_COEF found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_tau_w) &
+           CALL finish('init_lctlib','No data for knorr_Tau_w found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_t_phi) &
+           CALL finish('init_lctlib','No data for knorr_T_phi found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_t_r) &
+           CALL finish('init_lctlib','No data for knorr_T_rfound in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_day_c) &
+           CALL finish('init_lctlib','No data for knorr_Day_c found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_day_r) &
+           CALL finish('init_lctlib','No data for knorr_Day_r found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_k_l) &
+           CALL finish('init_lctlib','No data for knorr_k_l found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_max_lai) &
+           CALL finish('init_lctlib','No data for knorr_max_lai found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_knorr_leaf_growth_rate) &
+           CALL finish('init_lctlib','No data for leaf_growth_rate found in '//TRIM(lctlib_file_name))
 
-       ! quincy
-       IF (use_quincy) THEN
+         IF(.NOT. exist_reserveC2leafC) &
+              CALL finish('init_lctlib','No data for reserveC2leafC found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_fract_npp_2_woodPool) &
+              CALL finish('init_lctlib','No data for fract_npp_2_woodPool found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_fract_npp_2_reservePool) &
+              CALL finish('init_lctlib','No data for fract_npp_2_reservePool found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_fract_npp_2_exudates) &
+              CALL finish('init_lctlib','No data for fract_npp_2_exudates found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_fract_green_2_herbivory) &
+              CALL finish('init_lctlib','No data for fract_green_2_herbivory found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_tau_c_woods) &
+              CALL finish('init_lctlib','No data for tau_c_woods found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_LAI_shed_constant) &
+              CALL finish('init_lctlib','No data for LAI_shed_constant found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_Max_C_content_woods) &
+              CALL finish('init_lctlib','No data for Max_C_content_woods found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exist_ClumpinessFactor) &
+              CALL finish('init_lctlib','No data for ClupinessFactor found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_dynamic_PFT) &
+              CALL finish('init_lctlib','No data for DYNAMIC_PFT found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_woody_PFT) &
+              CALL finish('init_lctlib','No data for WOODY_PFT found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_pasture_PFT) &
+              CALL finish('init_lctlib','No data for PASTURE_PFT found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bclimit_min_cold_mmtemp) &
+              CALL finish('init_lctlib','No data for BCLIMIT_MIN_COLD_MMTEMP found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bclimit_max_cold_mmtemp) &
+              CALL finish('init_lctlib','No data for BCLIMIT_MAX_COLD_MMTEMP found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bclimit_max_warm_mmtemp) &
+              CALL finish('init_lctlib','No data for BCLIMIT_MAX_WARM_MMTEMP found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bclimit_min_temprange ) &
+              CALL finish('init_lctlib','No data for BCLIMIT_MIN_TEMPRANGE found in '//TRIM(lctlib_file_name))
+         IF(.NOT.exists_bclimit_min_gdd ) &
+              CALL finish('init_lctlib','No data for BCLIMIT_MIN_GDD found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_gdd_base) &
+              CALL finish('init_lctlib','No data for GDD_BASE found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_upper_tlim) &
+              CALL finish('init_lctlib','No data for UPPER_TLIM found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_fract_wood_2_onSite) &
+              CALL finish('init_lctlib','No data for FRACT_WOOD_2_ONSITE found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_fract_wood_2_paper) &
+              CALL finish('init_lctlib','No data for FRACT_WOOD_2_PAPER found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_fract_wood_2_construction) &
+              CALL finish('init_lctlib','No data for FRACT_WOOD_2_CONSTRUCTION found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_moist_extinction) &
+              CALL finish('init_lctlib','No data for moisture of extinction found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_fuel_dens) &
+              CALL finish('init_lctlib','No data for bulk fuel density found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_flame_length_f) &
+              CALL finish('init_lctlib','No data for flame length f found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_crown_length) &
+              CALL finish('init_lctlib','No data for crown length found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bark_par1) &
+              CALL finish('init_lctlib','No data for bark_par1 found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_bark_par2) &
+              CALL finish('init_lctlib','No data for bark_par2 found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_RCK) &
+              CALL finish('init_lctlib','No data for RCK (resistance to crown damage) found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_mort_prob) &
+              CALL finish('init_lctlib','No data for mortality probability found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_woodlittersize_coef) &
+              CALL finish('init_lctlib','No data for WOODLITTERSIZE found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_woodlit_coef) &
+              CALL finish('init_lctlib','No data for WOODLIT_COEF found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_leaflit_coef) &
+              CALL finish('init_lctlib','No data for LEAFLIT_COEF found in '//TRIM(lctlib_file_name))
+         IF(.NOT. exists_litveg_coef) &
+              CALL finish('init_lctlib','No data for LITVEG_COEF found in '//TRIM(lctlib_file_name))
+         !------------------------------------------------------------------------------------------
+         ! kalle, 151004
+         ! Set carbox rate to  [Mol(CO2)/m^2/s]
+         ! SET e-transport rate to [Mol(CO2)/m^2/s]
+         DO i=1,nlct
+           lctLib(i)%ETransport=lctLib(i)%ETransport * 1.e-06_wp
+           lctlib(i)%CarboxRate=lctlib(i)%CarboxRate * 1.e-06_wp
+         END DO
+         !------------------------------------------------------------------------------------------
+       END IF
+
+#ifndef __NO_QUINCY__
+       ! model scheme: quincy
+       IF (model_scheme_char == "quincy") THEN
         IF(.NOT. exists_growthform) &
           CALL finish('init_lctlib','No data for growthform found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_ps_pathway) &
@@ -1147,8 +1180,10 @@ CONTAINS
           CALL finish('init_lctlib','No data for t_jmax_omega found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_g0) &
           CALL finish('init_lctlib','No data for g0 found in '//TRIM(lctlib_file_name))
-        IF(.NOT. exists_g1) &
-          CALL finish('init_lctlib','No data for g1 found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_g1_medlyn) &
+          CALL finish('init_lctlib','No data for g1_medlyn found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_g1_bberry) &
+          CALL finish('init_lctlib','No data for g1_bberry found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_gmin) &
           CALL finish('init_lctlib','No data for gmin found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_tau_leaf) &
@@ -1181,6 +1216,8 @@ CONTAINS
           CALL finish('init_lctlib','No data for k_est_light found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_seed_size) &
           CALL finish('init_lctlib','No data for seed_size found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_k1_mort_greff) &
+          CALL finish('init_lctlib','No data for k1_mort_greff found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_beta_soil_flush) &
           CALL finish('init_lctlib','No data for beta_soil_flush found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_beta_soil_senescence) &
@@ -1223,107 +1260,102 @@ CONTAINS
           CALL finish('init_lctlib','No data for k_root_dist found in '//TRIM(lctlib_file_name))
        END IF
        ! quincy end
+#endif
 
        CLOSE(unit=lctlib_file_unit) ! Closing access to lctlib file
 
+#ifndef __NO_QUINCY__
        !------------------------------------------------------------------------------------------
-       ! kalle, 151004
-       ! Set carbox rate to  [Mol(CO2)/m^2/s]
-       ! SET e-transport rate to [Mol(CO2)/m^2/s]
-       DO i=1,nlct
-         lctLib(i)%ETransport=lctLib(i)%ETransport * 1.e-06_wp
-         lctlib(i)%CarboxRate=lctlib(i)%CarboxRate * 1.e-06_wp
-       END DO
-       !------------------------------------------------------------------------------------------
-
-       !------------------------------------------------------------------------------------------
-       !> Modify the input values of some quincy lctlib parameters
-       ! quincy
-       ! the below calculations are applied to vegetation only; the lct = 1 is glacier (and has no values, i.e. is 0, in the quincy lctlib party)!
-
-       IF (use_quincy) THEN
+       !>Modify the input values of some quincy lctlib parameters
+       !>
+       !>  TODO QUINCY: calculations may not need to be applied for
+       !>               bare soil and urban area in usecases quincy_11_pfts / quincy_14_pfts
+       !>  TODO - is there any reason why you have an own loop for each parameter?
+       !>
+       IF (model_scheme_char == "quincy") THEN
        ! sla
-         DO i=2,nlct
+         DO i = 1,nlct
              lctlib(i)%sla = 1._wp / carbon_per_dryweight_leaf / 1000.0_wp * molar_mass_C * lctlib(i)%sla
          END DO
        ! cn_leaf
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%cn_leaf = carbon_per_dryweight_leaf * 1000._wp * molar_mass_N / molar_mass_C / lctlib(i)%cn_leaf
          END DO
        ! cn_leaf_min
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%cn_leaf_min = carbon_per_dryweight_leaf * 1000._wp * molar_mass_N / molar_mass_C / lctlib(i)%cn_leaf_min
          END DO
        ! cn_leaf_max
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%cn_leaf_max = carbon_per_dryweight_leaf * 1000._wp * molar_mass_N / molar_mass_C / lctlib(i)%cn_leaf_max
          END DO
        ! np_leaf
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%np_leaf = carbon_per_dryweight_leaf * 1000._wp * molar_mass_P / molar_mass_C / lctlib(i)%cn_leaf / &
                                 lctlib(i)%np_leaf
          END DO
        ! np_leaf_min
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%np_leaf_min = carbon_per_dryweight_leaf * 1000._wp * molar_mass_P / molar_mass_C / lctlib(i)%cn_leaf / &
                                    lctlib(i)%np_leaf_min
          END DO
        ! np_leaf_max
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%np_leaf_max = carbon_per_dryweight_leaf * 1000._wp * molar_mass_P / molar_mass_C / lctlib(i)%cn_leaf / &
                                    lctlib(i)%np_leaf_max
          END DO
        ! fn_oth_min
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%fn_oth_min = lctlib(i)%k0_fn_struc - 5.0_wp/molar_mass_n * 0.5_wp * 1.e3_wp * 71.4_wp * molar_mass_N / 1.e6_wp
          END DO
        ! tau_leaf
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%tau_leaf = lctlib(i)%tau_leaf / 12.0_wp
          END DO
        ! bnf_base
-         DO i=2,nlct
+         DO i = 1,nlct
           lctlib(i)%bnf_base = lctlib(i)%bnf_base / molar_mass_N / one_day / one_year * 1.e6_wp
          END DO
        ! t_air_senescence
-         DO i=2,nlct
-           lctlib(i)%t_air_senescence = lctlib(i)%t_air_senescence + tmelt
+         DO i = 1,nlct
+           lctlib(i)%t_air_senescence = lctlib(i)%t_air_senescence + Tzero
          END DO
        ! wood_density
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%wood_density = lctlib(i)%wood_density * 1.e6_wp/ molar_mass_C
          END DO
        ! k_root
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%k_root = lctlib(i)%k_root * molar_mass_C * 1.e-10_wp
          END DO
        ! k_sapwood
-         DO i=2,nlct
+         DO i = 1,nlct
            lctlib(i)%k_sapwood = 1.e-3_wp * lctlib(i)%k_sapwood
-        END DO
+         END DO
         ! k_rtos
-        DO i=2,nlct
+         DO i = 1,nlct
            IF(lctlib(i)%growthform /= igrass) THEN
               lctlib(i)%k_rtos = 1.75_wp * (lctlib(4)%sla * lctlib(i)%wood_density) / lctlib(i)%k_latosa
-              !lctlib(i)%k_rtos = SQRT(lctlib(i)%k_root / lctlib(i)%k_sapwood * & 
+              !lctlib(i)%k_rtos = SQRT(lctlib(i)%k_root / lctlib(i)%k_sapwood * &
               !     lctlib(i)%tau_sap_wood / lctlib(i)%tau_fine_root * lctlib(i)%wood_density)
            ELSE
               lctlib(i)%k_rtos = 0.5_wp / sm2lm_grass
            END IF
-        END DO
-       ! c0_allom
-         DO i=2,nlct
+         END DO
+         ! c0_allom
+         DO i = 1,nlct
            IF(lctlib(i)%growthform == itree) THEN
-             lctlib(i)%c0_allom = SQRT(lctlib(i)%k_root / lctlib(i)%k_sapwood * & 
-                                       lctlib(i)%tau_sap_wood / lctlib(i)%tau_fine_root * lctlib(i)%wood_density) * & 
+             lctlib(i)%c0_allom = SQRT(lctlib(i)%k_root / lctlib(i)%k_sapwood * &
+                                       lctlib(i)%tau_sap_wood / lctlib(i)%tau_fine_root * lctlib(i)%wood_density) * &
                                   lctlib(i)%tau_fine_root / lctlib(i)%tau_sap_wood
            ELSE
              lctlib(i)%c0_allom = 0.0_wp
            END IF
          END DO
-       END IF
-       ! quincy ------------------------------------------------------------------------------------------
+       END IF ! (model_scheme_char == "quincy")
+#endif
 
+       !------------------------------------------------------------------------------------------
 
        ! --- translate landcover class information into landcover class flags
 
@@ -1364,12 +1396,12 @@ CONTAINS
 
        npft = 0
        DO i=1,nlct
-          IF(lctlib(i)%naturalVegFlag .OR. lctlib(i)%cropFlag .OR. lctlib(i)%PastureFlag) THEN
+         IF(lctlib(i)%naturalVegFlag .OR. lctlib(i)%cropFlag .OR. lctlib(i)%PastureFlag) THEN
 
-             npft = npft + 1 ! count PFTs
+           npft = npft + 1 ! count PFTs
 
-
-             ! Check consistency with PhenologyTypes
+           ! Check consistency with PhenologyTypes (only for jsbach usecases)
+           IF (usecase == 'jsbach_lite' .OR. usecase == 'jsbach_pfts') THEN
              IF(lctlib(i)%naturalVegFlag .AND. &
                   (lctlib(i)%PhenologyType .LE.0 .OR. lctlib(i)%PhenologyType > 4) ) THEN
                 CALL finish('init_lctlib',&
@@ -1379,119 +1411,124 @@ CONTAINS
                 CALL finish('init_lctlib',&
                      'Inconsistent entries for LandcoverClass "crops" and PhenologyType in '//TRIM(lctlib_file_name))
              END IF
+           END IF
+         END IF
 
-          END IF
+         ! --- check consistency between landcover classes and specifications for the dynamic vegetation (only for jsbach usecases)
+         IF (usecase == 'jsbach_lite' .OR. usecase == 'jsbach_pfts') THEN
+           IF (lctlib(i)%dynamic_pft  .AND. .NOT. lctlib(i)%NaturalVegFlag) THEN
+              CALL finish('init_lctlib',&
+                    'Inconsistent entries: Every DYNAMIC_PFT must belong to LandcoverClass "natural" in '//TRIM(lctlib_file_name))
+           END IF
 
-          ! --- check consistency between landcover classes and specifications for the dynamic vegetation
+           IF(lctlib(i)%woody_pft .AND. .NOT. lctlib(i)%NaturalVegFlag) THEN
+              CALL finish('init_lctlib',&
+                      'Inconsistent entries: Every WOODY_PFT must belong to LandcoverClass "natural" in '//TRIM(lctlib_file_name))
+           END IF
 
-          IF (lctlib(i)%dynamic_pft  .AND. .NOT. lctlib(i)%NaturalVegFlag) THEN
-             CALL finish('init_lctlib',&
-                     'Inconsistent entries: Every DYNAMIC_PFT must belong to LandcoverClass "natural" in '//TRIM(lctlib_file_name))
-          END IF
-
-          IF(lctlib(i)%woody_pft .AND. .NOT. lctlib(i)%NaturalVegFlag) THEN
-             CALL finish('init_lctlib',&
-                     'Inconsistent entries: Every WOODY_PFT must belong to LandcoverClass "natural" in '//TRIM(lctlib_file_name))
-          END IF
-
-          IF( lctlib(i)%GrassFlag .NEQV. (lctlib(i)%dynamic_pft .AND. .NOT. lctlib(i)%woody_PFT )) THEN
-             CALL finish('init_lctlib',&
-                  'Combination of DYNAMIC_PFT and WOODY_PFT is not consistent with LandcoverClass "grasses" in '//&
-                                                                                                     TRIM(lctlib_file_name))
-          END IF
+           IF( lctlib(i)%GrassFlag .NEQV. (lctlib(i)%dynamic_pft .AND. .NOT. lctlib(i)%woody_PFT )) THEN
+              CALL finish('init_lctlib',&
+                   'Combination of DYNAMIC_PFT and WOODY_PFT is not consistent with LandcoverClass "grasses" in '//&
+                                                                                                      TRIM(lctlib_file_name))
+           END IF
+         END IF
        END DO
-
     END IF !p_parallel_io
 
 
     IF(my_process_is_mpi_parallel()) THEN
-       CALL p_bcast(npft, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%LctNumber, p_io, mpi_comm)
-       DO i=1,nlct
-          CALL p_bcast(lctlib(i)%LctName, p_io, mpi_comm)
-       ENDDO
-       CALL p_bcast(lctlib(:)%LandcoverClass, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%NaturalVegFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%ForestFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%GrassFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%CropFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%PastureFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%LakeFlag, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%GlacierFlag, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%BareSoilFlag, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowVisMin, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowVisMax, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowNirMin, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowNirMax, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowMin, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoSnowMax, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoCanopyVIS, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoCanopyNIR, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoLitterVis, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%AlbedoLitterNir, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%NitrogenScalingFlag,p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%C4flag, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%CarboxRate, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%ETransport, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%VegHeight, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%VegRoughness, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%MinVegRoughness, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%MaxVegRoughness, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%PhenologyType, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%CanopyResistanceMin, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%MaxLAI, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%StemArea, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%specificLeafArea_C, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%alpha_nr_ind, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%beta_nr_ind, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%alpha_leaf, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%beta_leaf, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_Tau_w, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_T_phi, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_T_r, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_Day_c, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_Day_r, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_k_l, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_leaf_growth_rate, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%knorr_max_lai, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%reserveC2leafC, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_npp_2_woodPool, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_npp_2_reservePool, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_npp_2_exudates, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_green_2_herbivory, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%tau_c_woods, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%LAI_shed_constant, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%Max_C_content_woods, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%ClumpinessFactor, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%dynamic_pft, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%woody_pft, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%pasture_pft, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bclimit_min_cold_mmtemp, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bclimit_max_cold_mmtemp, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bclimit_max_warm_mmtemp, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bclimit_min_temprange, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bclimit_min_gdd, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%gdd_base, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%upper_tlim, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_wood_2_onSite, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_wood_2_paper, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fract_wood_2_construction, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%moist_extinction, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%fuel_dens, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%flame_length_f, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%crown_length, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bark_par1, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%bark_par2, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%RCK, p_io, mpi_comm)
-       CALL p_bcast(lctlib(:)%mort_prob, p_io, mpi_comm)
-       DO i=1,5
-         CALL p_bcast(lctlib(:)%LitVeg_coef(i), p_io, mpi_comm)
-         CALL p_bcast(lctlib(:)%LeafLit_coef(i), p_io, mpi_comm)
-         CALL p_bcast(lctlib(:)%WoodLit_coef(i), p_io, mpi_comm)
-       END DO
-       CALL p_bcast(lctlib(:)%WoodLitterSize, p_io, mpi_comm)
-       ! quincy
-       IF (use_quincy) THEN
+      ! general parameters
+      CALL p_bcast(npft, p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%LctNumber, p_io, mpi_comm)
+      DO i=1,nlct
+         CALL p_bcast(lctlib(i)%LctName, p_io, mpi_comm)
+      ENDDO
+      CALL p_bcast(lctlib(:)%LandcoverClass, p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%NaturalVegFlag,p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%ForestFlag,p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%GrassFlag,p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%CropFlag,p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%PastureFlag,p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%LakeFlag, p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%GlacierFlag, p_io, mpi_comm)
+      CALL p_bcast(lctlib(:)%BareSoilFlag, p_io, mpi_comm)
+      ! model scheme: jsbach
+      IF (model_scheme_char == "jsbach") THEN
+        CALL p_bcast(lctlib(:)%AlbedoSnowVisMin, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoSnowVisMax, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoSnowNirMin, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoSnowNirMax, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoSnowMin, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoSnowMax, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoCanopyVIS, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoCanopyNIR, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoLitterVis, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%AlbedoLitterNir, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%NitrogenScalingFlag,p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%C4flag, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%CarboxRate, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%ETransport, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%VegHeight, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%VegRoughness, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%MinVegRoughness, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%MaxVegRoughness, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%PhenologyType, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%CanopyResistanceMin, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%MaxLAI, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%StemArea, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%specificLeafArea_C, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%alpha_nr_ind, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%beta_nr_ind, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%alpha_leaf, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%beta_leaf, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_Tau_w, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_T_phi, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_T_r, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_Day_c, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_Day_r, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_k_l, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_leaf_growth_rate, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%knorr_max_lai, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%reserveC2leafC, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_npp_2_woodPool, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_npp_2_reservePool, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_npp_2_exudates, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_green_2_herbivory, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%tau_c_woods, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%LAI_shed_constant, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%Max_C_content_woods, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%ClumpinessFactor, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%dynamic_pft, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%woody_pft, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%pasture_pft, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bclimit_min_cold_mmtemp, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bclimit_max_cold_mmtemp, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bclimit_max_warm_mmtemp, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bclimit_min_temprange, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bclimit_min_gdd, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%gdd_base, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%upper_tlim, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_wood_2_onSite, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_wood_2_paper, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fract_wood_2_construction, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%moist_extinction, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%fuel_dens, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%flame_length_f, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%crown_length, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bark_par1, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%bark_par2, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%RCK, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%mort_prob, p_io, mpi_comm)
+        DO i=1,5
+          CALL p_bcast(lctlib(:)%LitVeg_coef(i), p_io, mpi_comm)
+          CALL p_bcast(lctlib(:)%LeafLit_coef(i), p_io, mpi_comm)
+          CALL p_bcast(lctlib(:)%WoodLit_coef(i), p_io, mpi_comm)
+        END DO
+        CALL p_bcast(lctlib(:)%WoodLitterSize, p_io, mpi_comm)
+      END IF
+#ifndef __NO_QUINCY__
+      ! model schmeme: quincy
+      IF (model_scheme_char == "quincy") THEN
         CALL p_bcast(lctlib(:)%growthform, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%ps_pathway, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%phenology_type, p_io, mpi_comm)
@@ -1511,7 +1548,8 @@ CONTAINS
         CALL p_bcast(lctlib(:)%t_jmax_opt, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%t_jmax_omega, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%g0, p_io, mpi_comm)
-        CALL p_bcast(lctlib(:)%g1, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%g1_medlyn, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%g1_bberry, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%gmin, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%tau_leaf, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%tau_fine_root, p_io, mpi_comm)
@@ -1528,6 +1566,7 @@ CONTAINS
         CALL p_bcast(lctlib(:)%lambda_est_light, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%k_est_light, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%seed_size, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%k1_mort_greff, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%beta_soil_flush, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%beta_soil_senescence, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%gdd_req_max, p_io, mpi_comm)
@@ -1549,14 +1588,27 @@ CONTAINS
         CALL p_bcast(lctlib(:)%fstore_target, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%k_root_dist, p_io, mpi_comm)
       END IF
+#endif
     END IF
 
-    IF(npft>nlct) CALL finish('init_lctlib','npft larger than nlct: '//int2string(npft)//' > '//int2string(nlct))
+    IF(npft > nlct) CALL finish('init_lctlib','npft larger than nlct: '//int2string(npft)//' > '//int2string(nlct))
 
-    ! Throw away values for glacier (first column)
-    nlct = nlct - 1
-    ALLOCATE(return_value(nlct))
-    return_value(1:nlct) = lctlib(2:nlct+1)
+    !> Throw away values for glacier (first column) for jsbach model usecases (mo_jsb_usecases)
+    !>
+    SELECT CASE (usecase)
+#ifndef __NO_QUINCY__
+    ! quincy model with 8 / 11 PFT tiles
+    CASE ('quincy_eight_pfts', 'quincy_11_pfts')
+      ALLOCATE(return_value(nlct))
+      return_value(1:nlct) = lctlib(1:nlct)
+#endif
+    ! jsbach_lite & jsbach_pfts
+    CASE DEFAULT
+      nlct = nlct - 1
+      ALLOCATE(return_value(nlct))
+      return_value(1:nlct) = lctlib(2:nlct+1)
+    END SELECT
+
 
   END FUNCTION Read_lctlib
 

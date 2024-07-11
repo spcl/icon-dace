@@ -42,8 +42,8 @@ CONTAINS
   !> Intialize soil process (after memory has been set up)
   !
   SUBROUTINE seb_init(tile)
-    USE mo_jsb_time,        ONLY: timestep_in_days
-    USE mo_pheno_constants, ONLY: PhenoParam
+    USE mo_jsb_time,          ONLY: timestep_in_days
+    USE mo_pheno_parameters,  ONLY: pheno_param_jsbach
 
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
 
@@ -70,10 +70,10 @@ CONTAINS
       dsl4jsb_Get_var2D_onDomain(SEB_, N_pseudo_soil_temp) ! OUT
       dsl4jsb_Get_var2D_onDomain(SEB_, F_pseudo_soil_temp) ! OUT
 
-      F_pseudo_soil_temp = EXP(- timestep_in_days(model_id=tile%owner_model_id)/PhenoParam%EG_SG%tau_pseudo_soil)
+      F_pseudo_soil_temp = EXP(- timestep_in_days(model_id=tile%owner_model_id)/pheno_param_jsbach%EG_SG%tau_pseudo_soil)
       N_pseudo_soil_temp = 1._wp / (1._wp - F_pseudo_soil_temp)
 
-      !$ACC UPDATE DEVICE(F_pseudo_soil_temp, N_pseudo_soil_temp)
+      !$ACC UPDATE DEVICE(F_pseudo_soil_temp, N_pseudo_soil_temp) ASYNC(1)
     END IF
 
   END SUBROUTINE seb_init
@@ -116,7 +116,7 @@ CONTAINS
     ! Get seb config
     ! dsl4jsb_Get_config(SEB_)
 
-    ! IF (.NOT. dsl4jsb_Config(SEB_)%active) RETURN
+    ! IF (.NOT. model%Is_process_enabled(SEB_)) RETURN
 
     ! Get seb memory of the tile
     !dsl4jsb_Get_memory(SEB_)

@@ -1642,37 +1642,37 @@ CONTAINS
       ! check if we can write to the file
       lreadonly = .NOT. util_file_is_writable(filename)
       IF (lreadonly)  CALL finish(routine, "NetCDF file exists and is read-only!")
-      CALL nf(nf_open(TRIM(filename), NF_WRITE, ncfileid), routine)
+      CALL nf(nf90_open(TRIM(filename), NF90_WRITE, ncfileid), routine)
       ! check if the dimension and variable already exist:
-      has_id = nf_inq_dimid(ncfileid, dimname1, dimID1)
-      IF (has_id == nf_noerr)  CALL finish(routine, "Dimension 1 seems to exist!")
-      has_id = nf_inq_dimid(ncfileid, dimname2, dimID2)
-      IF (has_id == nf_noerr)  CALL finish(routine, "Dimension 2 seems to exist!")
-      has_var = nf_inq_varid(ncfileid, varname, varID)
-      IF (has_var == nf_noerr)  CALL finish(routine, "Variable seems to exist!")
+      has_id = nf90_inq_dimid(ncfileid, dimname1, dimID1)
+      IF (has_id == nf90_noerr)  CALL finish(routine, "Dimension 1 seems to exist!")
+      has_id = nf90_inq_dimid(ncfileid, dimname2, dimID2)
+      IF (has_id == nf90_noerr)  CALL finish(routine, "Dimension 2 seems to exist!")
+      has_var = nf90_inq_varid(ncfileid, varname, varID)
+      IF (has_var == nf90_noerr)  CALL finish(routine, "Variable seems to exist!")
     ELSE
       ! create file from scratch
-      CALL nf(nf_create(TRIM(filename), NF_CLOBBER, ncfileid), routine)
+      CALL nf(nf90_create(TRIM(filename), NF90_CLOBBER, ncfileid), routine)
     END IF
 
     ! define necessary dimension
-    CALL nf(nf_redef(ncfileid), routine)
-    CALL nf(nf_def_dim(ncfileid, dimname1, tri%nentries, dimID1), routine)    
-    CALL nf(nf_def_dim(ncfileid, dimname2,            3, dimID2), routine)    
-    CALL nf(nf_def_var(ncfileid, varname, NF_INT, 2, (/ dimID1, dimID2 /), varID), routine)    
+    CALL nf(nf90_redef(ncfileid), routine)
+    CALL nf(nf90_def_dim(ncfileid, dimname1, tri%nentries, dimID1), routine)    
+    CALL nf(nf90_def_dim(ncfileid, dimname2,            3, dimID2), routine)    
+    CALL nf(nf90_def_var(ncfileid, varname, NF90_INT, (/ dimID1, dimID2 /), varID), routine)    
     ! leave define mode
-    CALL nf(nf_enddef(ncfileid), routine)
+    CALL nf(nf90_enddef(ncfileid), routine)
     
     ALLOCATE(tri_data(0:(tri%nentries-1), 3), stat=ierrstat)
     IF (ierrstat /= SUCCESS)  CALL finish(routine, "ALLOCATE failed!")
     DO i=0,(tri%nentries-1)
       tri_data(i,:) = tri%a(i)%p(:)
     END DO
-    CALL nf(nf_put_var_int(ncfileid, varid, tri_data), routine)
+    CALL nf(nf90_put_var(ncfileid, varid, tri_data), routine)
     DEALLOCATE(tri_data, stat=ierrstat)
     IF (ierrstat /= SUCCESS)  CALL finish(routine, "DEALLOCATE failed!")
 
-    CALL nf(nf_close(ncfileid), routine)  ! close NetCDF file
+    CALL nf(nf90_close(ncfileid), routine)  ! close NetCDF file
   END SUBROUTINE write_netcdf_triangulation
 
 
@@ -1697,24 +1697,24 @@ CONTAINS
     IF (.NOT. lexist)  CALL finish(routine, "File '"//TRIM(filename)//"' not found!")
 
     ! open file in read-only mode:
-    CALL nf(nf_open(TRIM(filename), NF_NOWRITE, ncfileid), routine)
+    CALL nf(nf90_open(TRIM(filename), NF90_NOWRITE, ncfileid), routine)
 
     ! check if the dimension and variable exist:
-    has_id1 = nf_inq_dimid(ncfileid, dimname1, dimID1)
-    has_id2 = nf_inq_dimid(ncfileid, dimname2, dimID2)
-    has_var = nf_inq_varid(ncfileid, varname, varID)
-    IF ((has_id1 /= nf_noerr) .OR. (has_id2 /= nf_noerr) .OR. (has_var /= nf_noerr)) THEN
+    has_id1 = nf90_inq_dimid(ncfileid, dimname1, dimID1)
+    has_id2 = nf90_inq_dimid(ncfileid, dimname2, dimID2)
+    has_var = nf90_inq_varid(ncfileid, varname, varID)
+    IF ((has_id1 /= nf90_noerr) .OR. (has_id2 /= nf90_noerr) .OR. (has_var /= nf90_noerr)) THEN
 
       read_netcdf_triangulation = -1
 
     ELSE
 
-      CALL nf(nf_inq_dimlen(ncfileid, dimID1, dimlen), routine)
+      CALL nf(nf90_inquire_dimension(ncfileid, dimID1, len = dimlen), routine)
       CALL tri%resize(dimlen)
 
       ALLOCATE(tri_data(0:(tri%nentries-1), 3), stat=ierrstat)
       IF (ierrstat /= SUCCESS)  CALL finish(routine, "ALLOCATE failed!")
-      CALL nf(nf_get_var_int(ncfileid, varid, tri_data), routine)
+      CALL nf(nf90_get_var(ncfileid, varid, tri_data), routine)
       DO i=0,(tri%nentries-1)
         ! note that we shift the point indices st. they are suitable for
         ! 0-based arrays.
@@ -1724,7 +1724,7 @@ CONTAINS
       IF (ierrstat /= SUCCESS)  CALL finish(routine, "DEALLOCATE failed!")
 
     END IF
-    CALL nf(nf_close(ncfileid), routine)  ! close NetCDF file
+    CALL nf(nf90_close(ncfileid), routine)  ! close NetCDF file
   END FUNCTION read_netcdf_triangulation
 
 

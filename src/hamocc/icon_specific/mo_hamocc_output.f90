@@ -2269,7 +2269,7 @@
     TYPE(t_patch), TARGET, INTENT(in) :: patch_2d
     CHARACTER(:), ALLOCATABLE :: model_name
 
-    model_name = TRIM(get_my_process_name())
+    model_name = get_my_process_name()
     
     CALL vlr_add(hamocc_restart_list, 'hamocc_restart_list',   &
       & patch_id=patch_2d%id, lrestart=.TRUE., loutput=.TRUE., &

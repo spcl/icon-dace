@@ -29,7 +29,7 @@ INFILE="JS045_restart_atm_19870201T000000Z.nc"
 OUTFILE="ic_land_carbon.nc"
 
 PROCESS="carbon"
-VARNAME_LIST="c_green    c_woods     c_reserve 
+VARNAME_LIST="c_green    c_woods     c_reserve
               c_acid_ag1 c_water_ag1 c_ethanol_ag1 c_nonsoluble_ag1
               c_acid_bg1 c_water_bg1 c_ethanol_bg1 c_nonsoluble_bg1 c_humus_1
               c_acid_ag2 c_water_ag2 c_ethanol_ag2 c_nonsoluble_ag2
@@ -42,7 +42,7 @@ if [ -f  ${OUTFILE} ];then
    echo "RETURN =File will be deleted."
    echo "XXX    =Every other input stops this script here."
    read y
-   if [ ! ${y} ] ; then 
+   if [ ! ${y} ] ; then
       rm ${OUTFILE}
       echo "The existing file ${OUTFILE} was deleted."
       echo ""
@@ -74,7 +74,7 @@ ncrename -d ncells_2,ncells ${OUTFILE}                 # This needs a recent nco
 rm ZWERG1  ZWERG2  ZWERG3
 
 ### Finish
-echo -e "\033[00;31;48m" 
+echo -e "\033[00;31;48m"
 echo ""
 echo "Script reached the end without interruption !"
 echo ""

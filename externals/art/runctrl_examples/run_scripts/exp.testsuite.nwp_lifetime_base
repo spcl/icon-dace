@@ -22,7 +22,6 @@ ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/atmos_std.dat         ${OUTDIR}/
 ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/atmos_h2och4.dat      ${OUTDIR}/atmos_h2och4.dat
 
 ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_j2j_extended.dat          ${OUTDIR}/FJX_j2j_extended.dat
-ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec_extended.dat ${OUTDIR}/FJX_spec_extended.dat
 ln -sf ${ARTFOLDER}/runctrl_examples/photo_ctrl/FJX_spec_extended_lyman.dat ${OUTDIR}/FJX_spec_extended_lyman.dat
 
 

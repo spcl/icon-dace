@@ -62,6 +62,7 @@
 
 #define VERBOSE
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_xmap_common.h"
 
 /* If we're not using GNU C, elide __attribute__ */
@@ -86,9 +87,8 @@ xmap_new_fail3(Xt_idxlist src_idxlist, Xt_idxlist dst_idxlist, MPI_Comm comm);
 
 int main(int argc, char **argv) {
 
-   // init mpi
   MPI_Comm comm = MPI_COMM_WORLD;
-  xt_mpi_call(MPI_Init(NULL, NULL), comm);
+  test_init_mpi(&argc, &argv, comm);
 
   xt_initialize(comm);
 

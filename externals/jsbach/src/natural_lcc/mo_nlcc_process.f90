@@ -57,7 +57,7 @@ CONTAINS
     LOGICAL, INTENT(in) :: new_year ! first time step in a year
     REAL(wp), INTENT(in) :: delta_time ! time step length [s]
     REAL(wp), INTENT(in) :: t_air ! air temperature of lowest atmosphere level [K]
-    REAL(wp), INTENT(inout) :: seconds_day ! sum of seconds till new_day 
+    REAL(wp), INTENT(inout) :: seconds_day ! sum of seconds till new_day
     REAL(wp), INTENT(inout) :: seconds_month ! sum of seconds till new_month
     REAL(wp), INTENT(inout) :: temp_sum_day
     REAL(wp), INTENT(inout) :: temp_sum_month
@@ -130,12 +130,12 @@ CONTAINS
 
 ! input
     LOGICAL,  INTENT(in)  :: is_dynamic        ! mask indicating whether a PFT is subject to vegetation dynamics
-    REAL(WP), INTENT(in)  :: lct_tcmin         ! PFT-specific minimum coldest-month temperature limit [C]
-    REAL(WP), INTENT(in)  :: lct_tcmax         ! PFT-specific maximum coldest-month temperature limit [C]
-    REAL(WP), INTENT(in)  :: lct_twmax         ! PFT-specific maximum warmest-month temperature limit [C]
-    REAL(WP), INTENT(in)  :: lct_min_temprange ! PFT-specific minimum difference of 20-year average warme st
+    REAL(wp), INTENT(in)  :: lct_tcmin         ! PFT-specific minimum coldest-month temperature limit [C]
+    REAL(wp), INTENT(in)  :: lct_tcmax         ! PFT-specific maximum coldest-month temperature limit [C]
+    REAL(wp), INTENT(in)  :: lct_twmax         ! PFT-specific maximum warmest-month temperature limit [C]
+    REAL(wp), INTENT(in)  :: lct_min_temprange ! PFT-specific minimum difference of 20-year average warme st
                                                ! minus coldest month temperature [C]
-    REAL(WP), INTENT(in)  :: lct_gddmin        ! PFT-specific minimum GDD limit
+    REAL(wp), INTENT(in)  :: lct_gddmin        ! PFT-specific minimum GDD limit
     REAL(wp), INTENT(in)  :: min_mmtemp20      ! Minimum monthly mean temp. (20yr climatology) [K]
     REAL(wp), INTENT(in)  :: max_mmtemp20      ! Maximum monthly mean temp. (20yr climatology) [K]
     REAL(wp), INTENT(in)  :: gdd_prev_year     ! GDD of previous year
@@ -150,7 +150,7 @@ CONTAINS
     IF (is_dynamic .AND. (min_mmtemp20 - tmelt < lct_tcmin .OR. min_mmtemp20 - tmelt > lct_tcmax  &
        .OR. gdd_prev_year < lct_gddmin .OR. max_mmtemp20 - tmelt > lct_twmax                      &
        .OR. (max_mmtemp20 - min_mmtemp20) < lct_min_temprange)) bio_exist = 0._wp
-      
+
   END SUBROUTINE bioclim_limits
 
 
@@ -179,7 +179,7 @@ CONTAINS
 ! local variables
     INTEGER           :: i, itile
     REAL(wp)          :: sum_npp(nidx)
-      
+
 ! summing up NPP
     sum_npp(:) = 0._wp
 
@@ -287,7 +287,7 @@ CONTAINS
 !
 ! In runs with land use transitions, the transitions from natural forests or grass lands to crops and pastures are predefined.
 ! It is not wanted, that the dynamic vegetation interferes with these transitions by e.g. re-establishing forests where they
-! had just been removed. Thus the changes in forest fraction calculated by the dynamic vegetation are not instantanously 
+! had just been removed. Thus the changes in forest fraction calculated by the dynamic vegetation are not instantanously
 ! applied. This results in an imbalance between actual cover_fractions and the ones the dynamic vegetation calculates for
 ! instantanous establishement of crops and pasture (cover_fract_inst).
 ! The final cover_fractions are based on cover_fract_inst with the exception, that the forest fraction is based on the forest
@@ -329,7 +329,7 @@ CONTAINS
                                                 ! instantaneous establishment of crop land and pasture
     REAL(wp)  :: sum_woody_fract_act(nidx)      ! fraction of the vegetated part of the grid box covered by woody plants
     REAL(wp)  :: sum_grass_fract_act(nidx)      ! fraction of the vegetated part of the grid box covered by grasses
-    REAL(wp)  :: delta_woody(nidx)              ! deviation of the fraction of the vegetated part of the grid box covered 
+    REAL(wp)  :: delta_woody(nidx)              ! deviation of the fraction of the vegetated part of the grid box covered
                                                 ! by woody plants from the fraction that would result from an instantaneous
                                                 !  establishment of crop land and pasture
 
@@ -463,8 +463,8 @@ CONTAINS
     CALL scale_cover_fract(nidx, ntiles, is_dynamic(:,:), cover_fract(:,:))
 
     !-- Stop simulation, if sum of cover fractions is not equal to 1 or a cover fraction is smaller than fract_small
-    IF (ANY(SUM(cover_fract(:,:),DIM=2) > 1._wp + REAL(ntiles) * EPSILON(1._wp)) .OR. &
-        ANY(SUM(cover_fract(:,:),DIM=2) < 1._wp - REAL(ntiles) * EPSILON(1._wp))) THEN
+    IF (ANY(SUM(cover_fract(:,:),DIM=2) > 1._wp + REAL(ntiles,wp) * EPSILON(1._wp)) .OR. &
+        ANY(SUM(cover_fract(:,:),DIM=2) < 1._wp - REAL(ntiles,wp) * EPSILON(1._wp))) THEN
        WRITE (message_text,*) 'sum of cover_fract /= 1: ', &
             MINVAL(SUM(cover_fract(:,:),DIM=2)), MAXVAL(SUM(cover_fract(:,:),DIM=2)), &
             MAXLOC(SUM(cover_fract(:,:),DIM=2))
@@ -550,10 +550,10 @@ CONTAINS
                 sum_act_fpc(i) = sum_act_fpc(i) + act_fpc(i,itile) * (1._wp + bare_fpc(i) / sum_grass_fpc(i))
              ELSE
                 sum_green_bio(i) = sum_green_bio(i) +                                              &
-                 MAX(0._wp, (bare_fpc(i) / REAL(n_grass_pft(i))) * (1._wp -                        &
+                 MAX(0._wp, (bare_fpc(i) / REAL(n_grass_pft(i),wp)) * (1._wp -                        &
                  exp(-desert_extend * ((max_green_bio(i,itile) * sla(i,itile)) ** desert_margin) / &
                  (3._wp ** (desert_margin - 1._wp)))))
-                sum_act_fpc(i) = sum_act_fpc(i) + (bare_fpc(i) / REAL(n_grass_pft(i)))
+                sum_act_fpc(i) = sum_act_fpc(i) + (bare_fpc(i) / REAL(n_grass_pft(i),wp))
              END IF
           END IF
        END DO
@@ -649,7 +649,7 @@ CONTAINS
 !!$                          dynamic_pft(:) .OR. (dist_opts%lburn_pasture .AND. lctlib%pasture_pft(:)), with_yasso, &
 !!$                          act_fpc,veg_fract_correction,surf,cbal,climbuf,burned_frac,burned_frac_diag,fuel)
 !!$      CALL disturbed_frac(lctlib, nidx,kidx0,kidx1,ntiles,DIST_WINDBREAK,woody_pft(:) .AND. dynamic_pft(:), with_yasso, &
-!!$                          act_fpc,veg_fract_correction,surf,cbal,climbuf,damaged_frac) 
+!!$                          act_fpc,veg_fract_correction,surf,cbal,climbuf,damaged_frac)
 !!$    END IF
 
     !-- dynamic equation for act_fpc, woody types
@@ -789,7 +789,7 @@ CONTAINS
        END DO
     END DO
 
-    sum_fpc(:) = sum_fpc(:) + REAL(nsparce(:)) * fract_small
+    sum_fpc(:) = sum_fpc(:) + REAL(nsparce(:),wp) * fract_small
 
     ! scaling of bare_fpc
     WHERE (sum_fpc(:) <= 1._wp - EPSILON(1._wp))
@@ -848,7 +848,7 @@ CONTAINS
     REAL(wp), INTENT(in)  :: cover_fract_pot(:,:)  ! potential cover fractions (without land use)
     REAL(wp), INTENT(in)  :: cover_fract(:,:)  ! cover fraction within jsbach
 
-! output 
+! output
     REAL(wp), INTENT(out) :: cover_fract_inst(:,:) ! cover fraction within jsbach resulting from an
                                                    ! instantaneous establishment of crop land and pasture
 ! local variables
@@ -922,8 +922,8 @@ CONTAINS
 
     CALL scale_cover_fract (nidx, ntiles, is_dynamic(:,:), cover_fract_inst(:,:))
 
-    IF (ANY(SUM(cover_fract_inst(:,:),DIM=2) > 1._wp + REAL(ntiles) * EPSILON(1._wp)) .OR. &
-        ANY(SUM(cover_fract_inst(:,:),DIM=2) < 1._wp - REAL(ntiles) * EPSILON(1._wp))) THEN
+    IF (ANY(SUM(cover_fract_inst(:,:),DIM=2) > 1._wp + REAL(ntiles,wp) * EPSILON(1._wp)) .OR. &
+        ANY(SUM(cover_fract_inst(:,:),DIM=2) < 1._wp - REAL(ntiles,wp) * EPSILON(1._wp))) THEN
        WRITE (message_text,*) 'sum of cover_fract_inst /= 1: ', &
             MINVAL(SUM(cover_fract_inst(:,:),DIM=2)), MAXVAL(SUM(cover_fract_inst(:,:),DIM=2)), &
             MAXLOC(SUM(cover_fract_inst(:,:),DIM=2))
@@ -959,7 +959,7 @@ SUBROUTINE scale_cover_fract (nidx, ntiles, is_dynamic, cover_fract)
     LOGICAL,  INTENT(in)  :: is_dynamic(:,:)    ! mask for land surface treated by jsbach
 !
 ! !IN- and OUTPUT PARAMETERS:
-! 
+!
     REAL(wp), INTENT(inout) :: cover_fract(:,:) ! vegetated fraction
 
 ! !LOCAL VARIABLES:

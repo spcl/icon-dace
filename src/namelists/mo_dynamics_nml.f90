@@ -23,7 +23,6 @@ MODULE mo_dynamics_nml
 
   USE mo_kind,                ONLY: wp
   USE mo_exception,           ONLY: finish, message, message_text
-  USE mo_impl_constants,      ONLY: INH_ATMOSPHERE
   USE mo_physical_constants,  ONLY: grav
   USE mo_io_units,            ONLY: nnml, nnml_output
   USE mo_namelist,            ONLY: position_nml, positioned, open_nml, close_nml
@@ -70,10 +69,10 @@ CONTAINS
     !------------------------------------------------------------
     ! Set up the default values
     !------------------------------------------------------------
-    iequations     = INH_ATMOSPHERE
+    iequations     = -999
     divavg_cntrwgt = 0.5_wp
     lcoriolis      = .TRUE.
-    lmoist_thdyn   = .FALSE.
+    lmoist_thdyn   = .TRUE.
     ldeepatmo      = .FALSE.
 
     !------------------------------------------------------------------------
@@ -105,6 +104,11 @@ CONTAINS
     END SELECT
     CALL close_nml
 
+    ! Temporary sanity check, until iequations gets removed completely
+    IF (iequations /= -999) THEN
+      WRITE(message_text,'(a)') 'WARNING: The Namelist variable iequations is obsolete and will be removed soon.'
+      CALL message(routine, message_text)
+    ENDIF
 
     !-----------------------------------------------------
     ! 4. Store the namelist for restart
@@ -122,7 +126,6 @@ CONTAINS
     ! 5. Fill configuration state
     !-----------------------------------------------------
 
-    config_iequations     = iequations
     config_divavg_cntrwgt = divavg_cntrwgt
     config_lcoriolis      = lcoriolis
     config_lmoist_thdyn   = lmoist_thdyn

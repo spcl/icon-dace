@@ -11,7 +11,7 @@
 
 /* Portable CPU-timer (User + Sys); also WALL CLOCK-timer */
 
-// Fortan interface to the following functions is
+// Fortran interface to the following functions is
 // implemented in ../src/shared/mo_util_timer.f90
 
 #include <unistd.h>

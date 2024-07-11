@@ -1,15 +1,3 @@
-! ===============================================================================================================================
-! === THIS IS A TEMPLATE. PLEASE REPLACE ...                                                                                  ===
-! === ... <FIRST NAME LAST NAME>    with your name e.g. "Martin Mustermann"                                                   ===
-! === ... <DATE>                    with the present date in YYYY-MM-DD format e.g. "2016-04-30"                              ===
-! === ... <PROCESS_NAME_LOWER_CASE> with your process name e.g. "seb" for surface energy balance                              ===
-! ===                                                                                                                         ===
-! === Then go through the code line by line to adapt it to your needs:                                                        ===
-! === !X marks lines with examples (e.g:), templates (if necessary:) and implementation points (Implementation:) that you     ===
-! === have to adapt to your process.                                                                                          ===
-! ===                                                                                                                         ===
-! === Finally delete this header.                                                                                             ===
-! ===============================================================================================================================
 !> Contains structures and methods for <PROCESS_NAME_LOWER_CASE> config
 !>
 !> ICON-Land
@@ -23,18 +11,30 @@
 !> SPDX-License-Identifier: BSD-3-Clause
 !> ---------------------------------------
 !>
+! ===============================================================================================================================
+! === THIS IS A TEMPLATE. PLEASE REPLACE ...                                                                                  ===
+! === ... <PROCESS_NAME_LOWER_CASE> with your process name e.g. "seb" for surface energy balance                              ===
+! ===                                                                                                                         ===
+! === Then go through the code line by line to adapt it to your needs:                                                        ===
+! === !X marks lines with examples (e.g:), templates (if necessary:) and implementation points (Implementation:) that you     ===
+! === have to adapt to your process.                                                                                          ===
+! ===                                                                                                                         ===
+! === Finally delete this header section.                                                                                     ===
+! ===============================================================================================================================
+!>#### Contains namelist information of <PROCESS_NAME_LOWER_CASE>
+!>
 MODULE mo_<PROCESS_NAME_LOWER_CASE>_config_class
 #ifndef __NO_JSBACH__
   ! -------------------------------------------------------------------------------------------------------
   ! Used variables of module
-  
+
   USE mo_exception,         ONLY: message_text, message, finish
   USE mo_io_units,          ONLY: filename_max
   USE mo_kind,              ONLY: wp
   USE mo_jsb_config_class,  ONLY: t_jsb_config
 
   ! -------------------------------------------------------------------------------------------------------
-  ! Module variables 
+  ! Module variables
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: t_<PROCESS_NAME_LOWER_CASE>_config
@@ -52,8 +52,6 @@ CONTAINS
   ! -------------------------------------------------------------------------------------------------------
   !> Initialize <PROCESS_NAME_LOWER_CASE> process
   !!
-  !! @param[inout]     config     Configuration type of process (t_<PROCESS_NAME_LOWER_CASE>_config)
-  !!  
   SUBROUTINE Init_<PROCESS_NAME_LOWER_CASE>_config(config)
 
     USE mo_jsb_namelist_iface, ONLY: open_nml, POSITIONED, position_nml, close_nml
@@ -93,7 +91,7 @@ CONTAINS
     config%ic_filename         = ic_filename
     config%bc_filename         = bc_filename
     !X e.g: config%use_alb_veg_simple        = use_alb_veg_simple
-    
+
   END SUBROUTINE Init_<PROCESS_NAME_LOWER_CASE>_config
 
 #endif

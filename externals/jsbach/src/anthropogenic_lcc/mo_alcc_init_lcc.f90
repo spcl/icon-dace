@@ -20,8 +20,10 @@ MODULE mo_alcc_init_lcc
   USE mo_jsb_control,         ONLY: debug_on
   USE mo_jsb_tile_class,      ONLY: t_jsb_tile_abstract
   USE mo_jsb_impl_constants,  ONLY: SHORT_NAME_LEN
-  USE mo_jsb_lcc,             ONLY: init_lcc
-  USE mo_jsb_cqt_class,       ONLY: LIVE_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE
+  USE mo_jsb_lcc,             ONLY: init_lcc, count_descendants_for_up_to_2layers, &
+    &                               collect_names_of_descendant_leaves_up_to_2layers
+  USE mo_jsb_cqt_class,       ONLY: LIVE_CARBON_CQ_TYPE, AG_DEAD_C_CQ_TYPE, &
+    &                               BG_DEAD_C_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE, FLUX_C_CQ_TYPE
 
   IMPLICIT NONE
   PRIVATE
@@ -30,9 +32,9 @@ MODULE mo_alcc_init_lcc
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_alcc_init_lcc_class'
   CHARACTER(len=*), PARAMETER :: procname = 'alcc'
-  
-  INTEGER, PARAMETER :: nr_of_active_cqts = 1 
-  INTEGER, PARAMETER :: nr_of_passive_cqts = 2
+
+  INTEGER, PARAMETER :: nr_of_active_cqts = 1
+  INTEGER, PARAMETER :: nr_of_passive_cqts = 4
 
 CONTAINS
 
@@ -47,38 +49,34 @@ CONTAINS
     ! -------------------------------------------------------------------------------------------------- !
     CHARACTER(len=*), PARAMETER :: routine = modname//':alcc_init_lcc'
 
-    CLASS(t_jsb_tile_abstract),  POINTER :: current_tile
     INTEGER :: active_cqts(nr_of_active_cqts)
     INTEGER :: passive_cqts(nr_of_passive_cqts)
-    INTEGER :: nr_of_involved_tiles, i_tile
+    INTEGER :: nr_of_descendants
 
-    CHARACTER(len=SHORT_NAME_LEN), ALLOCATABLE :: involved_child_tiles(:)
+    CHARACTER(len=SHORT_NAME_LEN), ALLOCATABLE :: involved_tiles(:)
     ! -------------------------------------------------------------------------------------------------- !
-    
+
     ! JN-TODO: reconsider what to define here and how
     IF (.NOT. tile%name .EQ. 'veg') RETURN
 
     IF (debug_on()) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
     active_cqts = (/ LIVE_CARBON_CQ_TYPE /)
-    passive_cqts = (/ PRODUCT_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE /)
+    passive_cqts = (/ PRODUCT_CARBON_CQ_TYPE, AG_DEAD_C_CQ_TYPE, BG_DEAD_C_CQ_TYPE, FLUX_C_CQ_TYPE /)
 
-    ! for alcc all child tiles of the veg tile are involved
+    ! alcc runs on the leave tiles
+    IF (tile%Has_children()) THEN
+      CALL count_descendants_for_up_to_2layers(tile, nr_of_descendants)
+      ALLOCATE(involved_tiles(nr_of_descendants))
+      CALL collect_names_of_descendant_leaves_up_to_2layers(tile, involved_tiles)
+    ELSE
+      ALLOCATE(involved_tiles(1))
+      involved_tiles(1) = tile%name
+    END IF
 
-    nr_of_involved_tiles = tile%Get_no_of_children()
-    ALLOCATE(involved_child_tiles(nr_of_involved_tiles))
+    CALL init_lcc(procname, tile, active_cqts, passive_cqts, involved_tiles)
 
-    current_tile => tile%Get_first_child_tile()
-    i_tile = 0
-    DO WHILE (ASSOCIATED(current_tile))
-      i_tile = i_tile + 1
-      involved_child_tiles(i_tile) = current_tile%name
-      current_tile => current_tile%Get_next_sibling_tile()
-    ENDDO
-
-    CALL init_lcc(procname, tile, active_cqts, passive_cqts, involved_child_tiles)
-
-    DEALLOCATE(involved_child_tiles)
+    DEALLOCATE(involved_tiles)
 
   END SUBROUTINE alcc_init_lcc
 

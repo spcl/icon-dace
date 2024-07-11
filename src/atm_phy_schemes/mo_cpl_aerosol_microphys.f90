@@ -16,7 +16,6 @@ MODULE mo_cpl_aerosol_microphys
 
 
   USE mo_kind,               ONLY: ireals=>wp, iintegers=>i4
-  USE gscp_data,             ONLY: r2_fix, lsigs_fix, r2_lsigs_are_fixed, lincloud
   USE mo_exception,          ONLY: finish
 
   IMPLICIT NONE
@@ -24,8 +23,13 @@ MODULE mo_cpl_aerosol_microphys
   PRIVATE
 
   PUBLIC  :: lookupcreate_segalkhain, specccn_segalkhain, specccn_segalkhain_simple, &
-             ncn_from_tau_aerosol_speccnconst
+             ncn_from_tau_aerosol_speccnconst, ncn_from_tau_aerosol_speccnconst_dust, &
+             ice_nucleation
 
+  INTERFACE ice_nucleation
+    MODULE PROCEDURE ice_nucleation_demott
+    MODULE PROCEDURE ice_nucleation_cooper
+  END INTERFACE ice_nucleation
 
 
 ! Type declaration for a general 2D equidistant lookup table:
@@ -66,6 +70,17 @@ END TYPE lookupt_4D
 
 TYPE(lookupt_4D) :: ltab4D
 TYPE(lookupt_2D) :: ltab2D
+
+! Parameters for Segal-Khain parameterization (aerosol-microphysics coupling)
+! ---------------------------------------------------------------------------
+
+REAL(KIND=ireals), PARAMETER ::       &
+  r2_fix    = 0.03_ireals,            & ! Parameters for simplified lookup table computation; 
+  lsigs_fix = 0.3_ireals                ! relevant for r2_lsigs_are_fixed = .TRUE.
+
+LOGICAL,       PARAMETER ::       &
+  r2_lsigs_are_fixed = .TRUE. ,   & !
+  lincloud           = .FALSE.      ! ignore in-cloud nucleation
 
 CONTAINS
 
@@ -1171,6 +1186,169 @@ SUBROUTINE ncn_from_tau_aerosol_speccnconst ( ie, ke, istart, iend, kstart, kend
   END DO
 
 END SUBROUTINE ncn_from_tau_aerosol_speccnconst
+
+!===========================================================================================
+
+! Same as ncn_from_tau_aerosol_speccnconst but only for dust
+
+SUBROUTINE ncn_from_tau_aerosol_speccnconst_dust ( hhl,hhl1, aer_dust, ncn_dust )
+  !$ACC ROUTINE SEQ
+  IMPLICIT NONE
+
+  !-------------------------------------------------------------------------------------------
+  !.. Inputs:
+
+  REAL(KIND=ireals), INTENT(in)   :: hhl, hhl1
+  REAL(KIND=ireals), INTENT(in)   :: aer_dust
+
+
+  !-------------------------------------------------------------------------------------------
+  !.. Outputs:
+
+  REAL(KIND=ireals), INTENT(out)  :: ncn_dust
+
+  !-------------------------------------------------------------------------------------------
+  !.. Local variables:
+
+  REAL(KIND=ireals)       :: z, z0, rho_air_0, nscale
+
+  !-------------------------------------------------------------------------------------------
+  !.. Local parameters:
+
+  REAL(KIND=ireals), PARAMETER :: pi = 3.141592653589793
+
+  !   Assumptions on the specific extinction coefficient:
+  REAL(KIND=ireals),    PARAMETER :: &
+       beta_ext_dust = 1.5e3_ireals      ! m^2/kg Tegen et al. (1997), Table 1
+
+  !   Estimated value of the aerosol number concentation,
+  !    assuming a certain mean mass radius of the aerosols and a certain bulk density:
+  REAL(KIND=ireals),    PARAMETER :: &
+       rho_dust = 2500.0_ireals, &    ! aerosol bulk density kg/m^3 for dust Linke et al. (2006)
+       r_dust   = 1.0e-6_ireals       ! aerosol mean mass radius in m for dust Wong et al. (2021)
+  
+  !   Parameters of assumed vertical exponential profile of qcn:
+  !    ztrans = transition height in m, constant value below, expon. profile above
+  !    z1oe = 1/e - height of expon. decrease above z0
+  REAL(KIND=ireals),    PARAMETER :: &
+       ztrans = 3000.0_ireals, &
+       z1oe   = 2000.0_ireals, &
+       zmax   = 12000.0_ireals
+
+  !   Parameters of assumed vertical exponential profile of rho_air:
+  !    z12 = 1/2 - height of expon. decrease of air density
+  REAL(KIND=ireals),    PARAMETER :: &
+       z12   = 6000.0_ireals, &
+       z1oe_rho = z12 / 0.693147180559945286    ! = z12/LOG(2)
+
+  !  Derived parameters for the vertical profile computations:
+  REAL(KIND=ireals),    PARAMETER :: &
+       z1oe_eff    = (z1oe*z1oe_rho) / (z1oe+z1oe_rho), &
+       rho_air_msl = 1.225_ireals
+
+  !-------------------------------------------------------------------------------------------
+
+  ! In the parameterization of Tegen et al.,
+  ! aer_org (organics) contains aer_bc (black carbon), so that
+  ! only aer_org is used in the following.
+
+  ! Total vertically integral aerosol number per m^2 from the optical thicknesses,
+  !  assuming that the mean mass radius of each species is a constant everywhere:
+
+  nscale = 3.0 / (4.0*pi) * (aer_dust/(beta_ext_dust*rho_dust*r_dust**3) )
+        
+  ! From that, compute the value of the specific aerosol number (n/rho_air, unit 1/kg) in the surface layer,
+  !  which serves as a scaling parameter in the vertical distribution:
+  !  This value is computed under the assumptions that:
+  !  - the vertical profile of the specific aerosol number is constant in a
+  !    surface layer up to 3000 m MSL and decreases exponentially above,
+  !  - the aerosols in the Tegen climatology are confined within the height layer from the ground
+  !    to a zmax, which we assume to be 12 km,
+  !  - the air density has the standard profile (bisection every 6000 m)
+
+  z0 = MAX(ztrans, hhl)
+  rho_air_0 = rho_air_msl * EXP(-z0/z1oe_rho)
+
+  nscale = nscale / ( rho_air_0 * ( z1oe_rho*(EXP((z0-hhl)/z1oe_rho) - 1.0_ireals) + z1oe_eff*(1.0_ireals - EXP((z0-zmax)/z1oe_eff)) ) )
+  ! Now compute ncn in 1/m^3 as function of height from nscale (1/kg) and the vertical profile of
+  !  the specific aerosol number:
+
+      z = 0.5 * (hhl + hhl1)
+      IF (z <= z0) THEN
+        ncn_dust = nscale * rho_air_msl * EXP(-z/z1oe_rho)
+      ELSE
+        ncn_dust = nscale * EXP((z0-z)/z1oe-z/z1oe_rho) * rho_air_msl
+      END IF
+
+      ! units are [1/m^3] BUT we want to convert to cm^-3 to use in demott formula so we multiply by 10^-6
+      ncn_dust = MAX(MIN(1.0E-6_ireals*ncn_dust,1.0E5_ireals),1.0_ireals)
+
+END SUBROUTINE ncn_from_tau_aerosol_speccnconst_dust
+
+!===========================================================================================
+
+! Calculate ice nucleation based on cooper (1987) parametrizations
+! Input for cooper is only Temperature
+
+SUBROUTINE ice_nucleation_cooper ( t, znin )
+  !$ACC ROUTINE SEQ
+  IMPLICIT NONE
+
+  !-------------------------------------------------------------------------------------------
+  !.. Inputs:
+
+  REAL(KIND=ireals),       INTENT(in)           :: t             ! temperature (K)
+
+  !-------------------------------------------------------------------------------------------
+  !.. Outputs:
+
+  REAL(KIND=ireals), INTENT(out)                :: znin          !< number of cloud ice crystals at nucleation
+
+  !-------------------------------------------------------------------------------------------
+  !.. Local parameters:
+
+  REAL(KIND=ireals), PARAMETER :: t0 = 273.15_ireals
+  REAL(KIND=ireals), PARAMETER :: a = 5.0E+0_ireals
+  REAL(KIND=ireals), PARAMETER :: b = 0.304_ireals
+
+  znin  = a * EXP(b * (t0 - t))
+
+END SUBROUTINE ice_nucleation_cooper
+
+!===========================================================================================
+
+! Calculate ice nucleation based on demott (2015) parametrizations
+! Input for demott is dust number concentration and Temperature
+
+SUBROUTINE ice_nucleation_demott ( t, aerncn , znin )
+  !$ACC ROUTINE SEQ
+  IMPLICIT NONE
+
+  !-------------------------------------------------------------------------------------------
+  !.. Inputs:
+
+  REAL(KIND=ireals),       INTENT(in)           :: t             ! temperature (K)
+  REAL(KIND=ireals),       INTENT(in)           :: aerncn        ! dust number concentrations (cm^-3)
+
+  !-------------------------------------------------------------------------------------------
+  !.. Outputs:
+
+  REAL(KIND=ireals), INTENT(out)                :: znin          !< number of cloud ice crystals at nucleation
+
+  !-------------------------------------------------------------------------------------------
+  !.. Local parameters:
+
+  REAL(KIND=ireals), PARAMETER :: t0 = 273.15_ireals
+  REAL(KIND=ireals), PARAMETER :: alpha = 1.0E3_ireals
+  REAL(KIND=ireals), PARAMETER :: beta = 1.25_ireals
+  REAL(KIND=ireals), PARAMETER :: gama = 0.46_ireals
+  REAL(KIND=ireals), PARAMETER :: delta = -11.6_ireals
+
+  znin = alpha * (aerncn**beta) * (EXP(gama * (t0 - t)+delta))  
+
+  znin = MAX(MIN(znin,1.0E7_ireals),1.0E-7_ireals)
+
+END SUBROUTINE ice_nucleation_demott
 
 END MODULE mo_cpl_aerosol_microphys
 

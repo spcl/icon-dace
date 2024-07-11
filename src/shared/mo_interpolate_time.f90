@@ -41,6 +41,8 @@ MODULE mo_interpolate_time
   PRIVATE
 
   PUBLIC :: t_time_intp
+  PUBLIC :: intModeLinearMonthlyClim
+  PUBLIC :: intModeLinear
 
   TYPE t_time_intp
     TYPE(julianday), ALLOCATABLE :: times(:)

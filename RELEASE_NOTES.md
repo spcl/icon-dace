@@ -1,4 +1,170 @@
-# Release notes for patch icon-2024.01-1
+# Release notes for icon-2024.07
+
+These are the release notes of the ICON model.
+Below the main changes as compared to the previous ICON release.
+
+### ICON-Atmo
+
+DyCore:
+
+- Improve adaptive CFL reduction at model start
+- Update and extend diagnostics in supervise_total_integrals_nh
+- Fix OpenACC loops in vertical advection
+
+NWP Physics:
+
+- Improvements to adaptive parameter tuning
+- Implemented option for Cloud droplet number from MODIS climatology
+- RUC (Rapid Update Cycle) diagnostics, fixes and testcases
+- DeMott ice nucleation parametrization
+- New output variables: diagnostic tot_pr_max; surface radiative fluxes without islope_rad corrections
+- changed random normal values generation in Stochastically Perturbed Physics Tendencies (SPPT) 
+- Gust diagnosis option for large-eddy permitting configurations
+- Option for moisture diffusion (water vapor and cloud water)
+- 2-moment-microphysics: new hail/graupel shedding and limitation of graupel production
+- Tuning parameters for TERRA-URB (Soil parameterization) and wind gusts
+- fix atmospheric water budget issues
+- Optimize emvorado compile time, bugfix and new namelist parameters
+- Aerosol optical depth (AOD) output from Kinne and enabling fr_glac
+- Computation of instantaneous grid scale precipitation rate at every physics time step
+- Include parametrization of wave breaking into the ICON-waves physics
+- GPU Port of the `ldass_lhn` switch for the two-moment microphysics scheme
+- Fix for atmo-wave roughness length coupling
+- Wave-dependent sea surface roughness in icon-nwp
+- Fix initialisation of aerosol fields in case of Kinne/CAMS Aerosol
+
+Modifications by the CLM Community:
+
+- CDNC scaling for climate projections
+- Removed the alteration of Modis Cdnc
+- Add namelist parameter (rat_lam,rsmin_fac) to enhance tuning capabilities
+- Added correction for albedo dependent on soil moisture for soil types 3 to 6
+
+Various bug fixes:
+
+- Several bug fixes for OpenACC and Cray compiler
+- Make limited-area model (LAM) and nested grids work on CPU
+- Add fixes to graupel microphysics (synchronize with granule)
+- Surface net longwave radiation flux
+- init call with OpenMP in aes-ocean coupling
+- nextGEMS prefinal
+- Forgot loop indices in OpenMP PRIVATE statement for one loop in TMX turbulence package
+- Removed inconsistency for turbulent diffusion coefficients between TTE and Smagorinsky schemes for VDIFF and TMX turbulence packages
+- Replace two ACC KERNELS constructs with explicit loops to improve performance in TMX turbulence package
+- Make sensible heat flux in surface energy balance consistent with atmosphere when using TMX turbulence package
+- Remove ACC TILE constructs from single (not nested) loops in TMX turbulence package
+- Performance fixes for OpenACC and fixes for OpenMP in TMX turbulence package
+- Fixed some potentially non-contiguous OpenACC transfers in coupling code plus removed some OpenACC KERNELS constructs in VDIFF
+
+New features and other modifications:
+
+- Replace `lrad_yac` for coupling O3 and aerosols via python processes
+- Add namelist parameter for lower tropospheric stability correction
+- Add output diagnostic for relative humidity
+- Expose `output_nml` variables via YAC
+- Add diagnostic for 2m specific humidity in TMX turbulence package
+- Add tuning options in TMX turbulence package (kinetic energy dissipation and stability correction) and change cloud droplet number concentration from 200 to 50
+- Consistently apply the physical tendencies at constant mass and volume in the cloud microphysics (mig), the radiant energy transfer (rad) and the  turbulent mixing (vdf/tmx)
+- Updates for energetics with TMX turbulence package - consistently use internal energy and account for the energetic contributions of temperature-varying phase change energy
+- Various fixes and updates for TMX turbulence package (diffusion of internal energy, diffusion of u/v velocities)
+- Added a cloud inhomogeneity factor for snow and clean-up of factors for cloud liquid water
+- Remove unused code in the RTE-RRTMGP interface
+- Change setup for Sapphire base/nextGEMS prefinal
+
+
+### ICON-ART
+
+- Changed initialization of chemtracers for init_gas=0 in ART (now sets tracers to 0)
+- INAS ice nucleation scheme preparation, dusty cirrus, meteogram output
+- Repair ICON-ART standard cases
+- New plume rise model implementation as option...
+- Clean-up of constants and adding emissions into wet air
+- Remove usage of RRTM in ART
+- Avoid double execution of the phenology update...
+- Fix exponent sign bug in Hande et al 2016 CCN activation
+- Fix for double allocation of some variables
+- Bugfix for wrong pressure unit in PSC scheme in ART
+- Water content computation of sea salt aerosol
+- Refactored and GPU-ported OEM (Online Emission Module) code
+
+
+### ICON-Ocean
+
+- New feature: Add diagnostic for ocean bottom pressure
+- New Feature: Add ocean potential temperature in Kelvin as optional output
+- New feature: Add diagnostic age tracer and age tracer squared
+- Bugfix: Enable sea-ice drag on ocean as default
+- Bugfix: Reintroduce missing coupling fields in ocean restart files
+- Refactoring: Improve initialization of 2D variables
+- Call interface_aes_ocean only if coupled_to_ocean
+
+### ICON-Land
+
+- Adapted ICON-Land to the interface change of init and copy functions of mo_fortran_tools
+- Bugfix: Fixed restartability of offline model
+- New feature: Ported offline model to GPU
+- Bugfix: Fixed an indexing bug in phenology 
+- Remove hard-coded number of soil layers in JSBACH and get it from input data instead
+- New feature: Implementation of QUINCY biogeochemistry model
+- Update of inline documentation and code cleaning
+- Added various pre-processing scripts for ICON-Land/JSBACH
+- New feature: Implemented ponds in JSBACH
+- Replaced copyrighted code for solver of tridiagonal linear equation system
+- New feature: Updates for ICON-Land offline simulations (filter for surface drag computation, refactor of driver)
+- New feature: Ported (internal) Hydrologic Discharge (HD) model to GPU
+- Bugfix: Fixed wrong vector assignment inside loop
+- Use new versions of JSBACH input data for NextGEMS atmosphere-only experiments
+- New feature: Improvements for JSBACH soil hydrology (soil organic matter, soil freezing and thawing, soil moisture, new solver for vertical water transport) plus cleanup of code and variable names
+- Updates to the bookkeeping of how processes in ICON-Land run on different tiles
+- New feature: Implementation of forest age classes
+- Refactoring and fixes for the LCC (land cover change) framework including the processes for disturbances (wind/fire), fuel/carbon and anthropogenic land cover change
+- OpenACC updates and fixes: use of ASYNCs and other changes to follow ICON OpenACC programming guidelines; remove some ACC WAITs for optimization
+
+### Externals
+
+- Updates to ecRad: gas model split & spectral weights; fixes from ecrad master
+- CAMS forecasted aerosol as an option for ecRad radiation
+- Update ComIn to version 0.1.1
+- Update libfortran-support to version 1.2.0
+- Update YAXT to version 0.10.2
+- Update to CDI version 2.4.0
+- Update to RTE+RRTMGP version 1.7
+
+
+### Infrastructure
+
+Several bug and technical fixes, below the most relevant ones:
+
+- 1mom-microphysics granule: Build and Testing Infrastructure
+- Extensions of the action feature, which is used in ICON to reinitialize variables at regular intervals
+- Configure: try to find python3 before python
+- Fixes bug in mo_communication_yaxt
+- Fix for array bound violation in src/atm_phy_nwp/mo_nwp_phy_init.f90
+- Improve configure for use with external comin
+- Fix the time and date exposure when ComIn is enabled
+- Fix abort_mpi: exit with a non-zero exit code on error
+- Switch to NetCDF Fortran 90 interface
+
+And some modifications to coupling:
+
+- Moved coupler initialisation
+- Refactoring of coupling
+- Hd (Hydrological Discharge) updates
+- Coupled TERRA - HD through YAC
+- Online diagnose of global sum runoffs before and after the YAC coupling
+- Correct calculation of Qtop and re-enable LSM patching in NWP-Ocean coupling
+
+
+### GPU
+
+- GPU performance fixes and workarounds for NVIDIA and AMD GPUs
+- Removing majority of i_am_accel_node instances (deprecated debugging feature)
+- Adding nblocks_e namelist option + updated logic for nproma, nblocks_c
+- Cuda graph : activation through logicals + testing infrastructure
+- Added WAITS for bit reproducibility on GPU
+
+
+# Release notes for icon-2024.01-1
 
 A workaround for the NVIDIA compiler has been implemented to be able to compile yac.
 

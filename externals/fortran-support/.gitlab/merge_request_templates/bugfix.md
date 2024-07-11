@@ -27,7 +27,10 @@ _Describe important implementation details of the bugfix._
 - [ ] Mark the merge request as ready by removing `Draft:`
 
 ## Mandatory steps before merge
+- [ ] Test coverage does not decrease
 - [ ] Reviewed by a maintainer
 - [ ] Incorporate review suggestions
+- [ ] Prior to merging, please remove any boilerplate from the MR description, retaining only the _What is the bug_ and _How do you fix it_ section to maintain 
+- [ ] Remember to edit the commit message and select the proper changelog category (feature/bugfix/other)
 
 **You are not supposed to merge this request by yourself, the maintainers of fortan-support take care of this action!**

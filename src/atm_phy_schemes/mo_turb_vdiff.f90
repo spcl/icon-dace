@@ -335,7 +335,7 @@ CONTAINS
 
     REAL(wp) :: u_vert(kbdim,klev,nblks_v), v_vert(kbdim,klev,nblks_v)
     REAL(wp) :: div_c(kbdim,klev,nblks_c)
-    REAL(wp) :: rho_ic(kbdim,klevp1,nblks_c)
+    REAL(wp) :: inv_rho_ic(kbdim,klev,nblks_c) !not necessary to allocate for nlev+1
     REAL(wp) :: w_vert(kbdim,klevp1,nblks_v)
     REAL(wp) :: w_ie(kbdim,klevp1,nblks_e)
 
@@ -543,7 +543,7 @@ CONTAINS
     CASE ( VDIFF_TURB_3DSMAGORINSKY )
 
       !$ACC DATA &
-      !$ACC   CREATE(kh_ic, km_ic, km_c, km_iv, km_ie, vn, u_vert, v_vert, w_vert, rho_ic, div_c, w_ie)
+      !$ACC   CREATE(kh_ic, km_ic, km_c, km_iv, km_ie, vn, u_vert, v_vert, w_vert, inv_rho_ic, div_c, w_ie)
       CALL atm_exchange_coeff3d ( kbdim, nblks_c,                                     &! in
                             & klev, klevm1, klevp1,                                   &! in
                             & ksfc_type, idx_lnd,                                     &! in
@@ -572,7 +572,7 @@ CONTAINS
                             & km_ic(:,:,:), kh_ic(:,:,:),                             &! out,
                             & zfactor(:,:,:),                                         &! out
                             & u_vert(:,:,:), v_vert(:,:,:), div_c(:,:,:),             &! out, for "sfc_exchange_coeff"
-                            & rho_ic(:,:,:), w_vert(:,:,:), w_ie(:,:,:),              &! out
+                            & inv_rho_ic(:,:,:), w_vert(:,:,:), w_ie(:,:,:),          &! out, required by diffuse_vert_velocity
                             & vn(:,:,:),                                              &! out,
                             & pch_tile(:,:,:),                                        &! out, for "nsurf_diag"
                             & pbn_tile(:,:,:), pbhn_tile(:,:,:),                      &! out
@@ -589,7 +589,7 @@ CONTAINS
 
       CALL diffuse_vert_velocity( kbdim,                                            &
                                 & patch,                                            &
-                                & rho_ic(:,:,:), w_vert(:,:,:), w_ie(:,:,:),        &
+                                & inv_rho_ic(:,:,:), w_vert(:,:,:), w_ie(:,:,:),    &
                                 & km_c(:,:,:), km_iv(:,:,:), km_ic(:,:,:),          &
                                 & u_vert(:,:,:), v_vert(:,:,:), div_c(:,:,:),       &
                                 & pum1(:,:,:), pvm1(:,:,:), pwm1(:,:,:), vn(:,:,:), &

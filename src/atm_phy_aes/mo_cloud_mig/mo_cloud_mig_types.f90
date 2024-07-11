@@ -58,8 +58,6 @@ MODULE mo_cloud_mig_types
      REAL(wp), POINTER :: dz        (:,:,:)=>NULL() !< [m]      cell thickness
      REAL(wp), POINTER :: rho       (:,:,:)=>NULL() !< [kg/m3]  air density
      REAL(wp), POINTER :: pf        (:,:,:)=>NULL() !< [Pa]     air pressure
-     REAL(wp), POINTER :: cpair     (:,:,:)=>NULL() !< [J/K/kg] isobaric specific heat of air
-     REAL(wp), POINTER :: cvair     (:,:,:)=>NULL() !< [J/K/kg] isometric specific heat of air
      REAL(wp), POINTER :: ta        (:,:,:)=>NULL() !< [K]      air temperature
      REAL(wp), POINTER :: qv        (:,:,:)=>NULL() !< [kg/kg]  specific humidity
      REAL(wp), POINTER :: qc        (:,:,:)=>NULL() !< [kg/kg]  mass fraction of cloud water in air
@@ -87,6 +85,7 @@ MODULE mo_cloud_mig_types
      REAL(wp), POINTER :: tend_qg_mig (:,:,:)=>NULL() !< [1/s] tendency of mass fraction of graupel     in air
      !
      ! fluxes at the surface
+     REAL(wp), POINTER :: pr_eflx     (:,  :)=>NULL() !< [W/m2] sfc rain energy flux
      REAL(wp), POINTER :: pr_rain     (:,  :)=>NULL() !< [kg/m2/s] sfc rain    flux
      REAL(wp), POINTER :: pr_ice      (:,  :)=>NULL() !< [kg/m2/s] sfc ice     flux
      REAL(wp), POINTER :: pr_snow     (:,  :)=>NULL() !< [kg/m2/s] sfc snow    flux

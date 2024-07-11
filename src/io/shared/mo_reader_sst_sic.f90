@@ -75,7 +75,7 @@ CONTAINS
 
     IF (.NOT. this%lopened) THEN
       IF (my_process_is_mpi_workroot()) THEN
-        CALL nf(nf_open(this%filename, nf_nowrite, this%fileid), routine)
+        CALL nf(nf90_open(this%filename, nf90_nowrite, this%fileid), routine)
       ENDIF
       this%dist_fileid = distrib_nf_open(TRIM(this%filename))
       this%lopened = .TRUE.
@@ -89,7 +89,7 @@ CONTAINS
     TYPE(julianday), ALLOCATABLE, INTENT(  out) :: times(:)
 
     INTEGER                       :: tvid, tdid
-    CHARACTER(len=NF_MAX_NAME)    :: cf_timeaxis_string
+    CHARACTER(len=NF90_MAX_NAME)    :: cf_timeaxis_string
     CHARACTER(len=:), ALLOCATABLE :: epoch
     CHARACTER(len=:), ALLOCATABLE :: base_timeaxis_unit
     TYPE(datetime), POINTER       :: epoch_datetime
@@ -104,14 +104,14 @@ CONTAINS
 
     IF (my_process_is_mpi_workroot()) THEN
 
-      CALL nf(nf_inq_varid(this%fileid, "time", tvid), routine)
-      CALL nf(nf_inq_dimid(this%fileid, "time", tdid), routine)
-      CALL nf(nf_inq_dimlen(this%fileid, tdid, ntimes), routine)
+      CALL nf(nf90_inq_varid(this%fileid, "time", tvid), routine)
+      CALL nf(nf90_inq_dimid(this%fileid, "time", tdid), routine)
+      CALL nf(nf90_inquire_dimension(this%fileid, tdid, len = ntimes), routine)
 
       ALLOCATE(times_read(ntimes))
 
-      CALL nf(nf_get_var_double(this%fileid, tvid, times_read), routine)
-      CALL nf(nf_get_att_text(this%fileid,   tvid, "units",cf_timeaxis_string), routine)
+      CALL nf(nf90_get_var(this%fileid, tvid, times_read), routine)
+      CALL nf(nf90_get_att(this%fileid,   tvid, "units",cf_timeaxis_string), routine)
 
     ENDIF
 
@@ -223,7 +223,7 @@ CONTAINS
     IF (ASSOCIATED(this%p_patch)) NULLIFY(this%p_patch)
     IF (this%lopened) THEN
       IF (my_process_is_mpi_workroot()) THEN
-        CALL nf(nf_close(this%fileid), routine)
+        CALL nf(nf90_close(this%fileid), routine)
       END IF
       CALL distrib_nf_close(this%dist_fileid)
     END IF

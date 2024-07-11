@@ -55,6 +55,10 @@
 #include <stdio.h>
 
 #include <mpi.h>
+#ifdef _OPENMP
+#include <omp.h>
+#endif
+
 #include "core/core.h"
 #include "core/ppm_xfuncs.h"
 #include "xt/xt_core.h"
@@ -321,53 +325,101 @@ xt_mpi_generate_datatype(int const * displacements, int count,
 #endif
 }
 
+size_t
+xt_disp2ext_count(size_t disp_len, const int *disp)
+{
+  if (!disp_len) return 0;
+  size_t i = 0;
+  int cur_stride = 1, cur_size = 1;
+  int last_disp = disp[0];
+  for (size_t p = 1; p < disp_len; ++p) {
+    int new_disp = disp[p];
+    int new_stride = new_disp - last_disp;
+    if (cur_size == 1) {
+      cur_stride = new_stride;
+      cur_size = 2;
+    } else if (new_stride == cur_stride) {
+      // cur_size >= 2:
+      cur_size++;
+    } else if (cur_size > 2 || (cur_size == 2 && cur_stride == 1) ) {
+      // we accept small contiguous vectors (nstrides==2, stride==1)
+      i++;
+      cur_stride = 1;
+      cur_size = 1;
+    } else { // cur_size == 2, next offset doesn't match current stride
+      // break up trivial vec:
+      i++;
+      cur_size = 2;
+      cur_stride = new_stride;
+    }
+    last_disp = new_disp;
+  }
+  // tail cases:
+  if (cur_size > 2 || (cur_size == 2 && cur_stride == 1)) {
+    i++;
+  } else if (cur_size == 2) {
+    i+=2;
+  } else { // cur_size == 1
+    i++;
+  }
 
-static size_t
-scan_stripe(const int *disp, size_t disp_len, struct Xt_offset_ext *restrict v)
+  return i;
+}
+
+size_t
+xt_disp2ext(size_t disp_len, const int *disp,
+            struct Xt_offset_ext *restrict v)
 {
   if (disp_len<1) return 0;
 
-  struct Xt_offset_ext x = (struct Xt_offset_ext){ disp[0], 1, 1 };
+  int cur_start = disp[0], cur_stride = 1, cur_size = 1;
+  int last_disp = cur_start;
   size_t i = 0;
   for (size_t p = 1; p < disp_len; ++p) {
-    int new_stride = disp[p] - disp[p-1];
-    if (x.size == 1) {
-      x.stride = new_stride;
-      x.size = 2;
-    } else if (new_stride == x.stride) {
-      // x.size >= 2:
-      x.size++;
-    } else if (x.size > 2 || (x.size == 2 && x.stride == 1) ) {
+    int new_disp = disp[p];
+    int new_stride = new_disp - last_disp;
+    if (cur_size == 1) {
+      cur_stride = new_stride;
+      cur_size = 2;
+    } else if (new_stride == cur_stride) {
+      // cur_size >= 2:
+      cur_size++;
+    } else if (cur_size > 2 || (cur_size == 2 && cur_stride == 1) ) {
       // we accept small contiguous vectors (nstrides==2, stride==1)
-      v[i]= x;
+      v[i] = (struct Xt_offset_ext){ .start = cur_start, .stride = cur_stride,
+                                     .size = cur_size };
       i++;
-      x = (struct Xt_offset_ext){ disp[p], 1, 1 };
-    } else { // x.size == 2, next offset doesn't match current stride
+      cur_start = new_disp;
+      cur_stride = 1;
+      cur_size = 1;
+    } else { // cur_size == 2, next offset doesn't match current stride
       // break up trivial vec:
-      v[i].start = x.start;
+      v[i].start = cur_start;
       v[i].size = 1;
       v[i].stride = 1;
       i++;
-      x.start += x.stride;
-      x.size = 2;
-      x.stride = new_stride;
+      cur_start += cur_stride;
+      cur_size = 2;
+      cur_stride = new_stride;
     }
+    last_disp = new_disp;
   }
   // tail cases:
-  if (x.size > 2 || (x.size == 2 && x.stride == 1)) {
-    v[i] = x;
+  if (cur_size > 2 || (cur_size == 2 && cur_stride == 1)) {
+    v[i] = (struct Xt_offset_ext){ .start = cur_start, .stride = cur_stride,
+                                   .size = cur_size };
     i++;
-  } else if (x.size == 2) {
-    v[i].start = x.start;
+  } else if (cur_size == 2) {
+    v[i].start = cur_start;
     v[i].size = 1;
     v[i].stride = 1;
     i++;
-    v[i].start = x.start + x.stride;
+    v[i].start = cur_start + cur_stride;
     v[i].size = 1;
     v[i].stride = 1;
     i++;
-  } else { // x.size == 1
-    v[i].start = x.start;
+  } else { // cur_size == 1
+    v[i].start = cur_start;
     v[i].size = 1;
     v[i].stride = 1;
     i++;
@@ -376,299 +428,56 @@ scan_stripe(const int *disp, size_t disp_len, struct Xt_offset_ext *restrict v)
   return i;
 }
 
-static bool
-match_simple_vec(size_t *pstart_, const struct Xt_offset_ext *v, size_t vlen,
-                 MPI_Datatype old_type, MPI_Aint old_type_extent,
-                 MPI_Aint *disp, MPI_Datatype *dt,
-                 MPI_Comm comm) {
-  // we only accept non-trivial matches (nsteps>2) with stride /= 1
-  // using only one vector from v
-  size_t p = *pstart_;
-  if (p >= vlen) return false;
-  int nstrides = v[p].size;
-  int stride = v[p].stride;
-  if (nstrides < 2 || stride == 1 ) return false;
+#define XT_MPI_STRP_PRS_PREFIX
+#define XT_MPI_STRP_PRS_UNITSTRIDE 1
+#define XT_MPI_STRP_PRS_AOFS_TYPE int
+#define XT_MPI_STRP_PRS_DISP_ADJUST(val) ((val) * old_type_extent)
+#define XT_MPI_STRP_PRS_BLOCK_VEC_CREATE MPI_Type_vector
+#define XT_MPI_STRP_PRS_INDEXED_BLOCK_CREATE MPI_Type_create_indexed_block
+#define XT_MPI_STRP_PRS_INDEXED_CREATE MPI_Type_indexed
+#define XT_MPI_STRP_PRS_FALLBACK_NEEDS_OLD_TYPE_EXTENT
+#include "xt_mpi_stripe_parse.c"
+#undef XT_MPI_STRP_PRS_PREFIX
+#undef XT_MPI_STRP_PRS_UNITSTRIDE
+#undef XT_MPI_STRP_PRS_AOFS_TYPE
+#undef XT_MPI_STRP_PRS_DISP_ADJUST
+#undef XT_MPI_STRP_PRS_BLOCK_VEC_CREATE
+#undef XT_MPI_STRP_PRS_INDEXED_BLOCK_CREATE
+#undef XT_MPI_STRP_PRS_INDEXED_CREATE
+#undef XT_MPI_STRP_PRS_FALLBACK_NEEDS_OLD_TYPE_EXTENT
 
-  *pstart_ = p + 1;
-
-  int disp_ = vlen > 1 ? v[p].start : 0;
-  *disp = disp_ * old_type_extent;
-
-  xt_mpi_call(MPI_Type_vector(nstrides, 1, stride, old_type, dt), comm);
-
-  int start = v[p].start - disp_;
-  if (start) {
-    MPI_Datatype dt1 = *dt;
-
-    // (start != 0) => add offset:
-    MPI_Aint displacement = start * old_type_extent;
-    xt_mpi_call(MPI_Type_create_hindexed(1, &(int){1}, &displacement, dt1, dt),
-                comm);
-    xt_mpi_call(MPI_Type_free(&dt1), comm);
+#if MPI_VERSION < 3
+static inline int
+XtMPI_Type_create_hindexed_block(int count, int blocklength,
+                                 const MPI_Aint array_of_displacements[],
+                                 MPI_Datatype oldtype, MPI_Datatype *newtype)
+{
+  size_t count_ = count > 0 ? (size_t)count : 0;
+  MPI_Datatype *restrict oldtypes = xmalloc(count_ * sizeof (*oldtypes)
+                                   + count_ * sizeof (int));
+  int *restrict blocklengths = (int *)(oldtypes + count_);
+  for (size_t i = 0; i < count_; ++i) {
+    blocklengths[i] = blocklength;
+    oldtypes[i] = oldtype;
   }
-  return nstrides != 0;
+  int rc = MPI_Type_create_struct(count, blocklengths,
+                                  CAST_MPI_SEND_BUF(array_of_displacements),
+                                  oldtypes, newtype);
+  free(oldtypes);
+  return rc;
 }
 
-/**
- * @return true if matched, false if not matched
- */
-static bool
-match_block_vec(size_t *pstart_, const struct Xt_offset_ext *v, size_t vlen,
-                MPI_Datatype old_type, MPI_Aint old_type_extent,
-                MPI_Aint *disp, MPI_Datatype *dt,
-                MPI_Comm comm) {
-  // using at least 3 vectors
-  size_t p = *pstart_, pstart = p;
-  if (p+2 >= vlen || v[p].stride != 1 || v[p+1].stride != 1 ) return false;
-  int bl = v[p].size;
-  assert(bl > 0);
-  if (v[p+1].size != bl) return false;
-
-  int vstride = v[p+1].start - v[p].start;
-
-  p += 2;
-  while( p < vlen && v[p].stride == 1 && v[p].size == bl &&
-         v[p].start - v[p-1].start == vstride ) {
-    p++;
-  }
-  size_t n = p - pstart;
-  if (n<3) return false;
-  *pstart_ = p;
-
-  int disp_ = n == vlen ? 0 : v[pstart].start;
-  *disp = disp_ * old_type_extent;
-
-  xt_mpi_call(MPI_Type_vector((int)n, bl, vstride, old_type, dt), comm);
-
-  int start = v[pstart].start - disp_;
-
-  if (start) {
-    MPI_Datatype dt1 = *dt;
-    // (start != 0) => add offset:
-    MPI_Aint displacement = start * old_type_extent;
-    xt_mpi_call(MPI_Type_create_hindexed(1, &(int){1}, &displacement, dt1, dt),
-                comm);
-    xt_mpi_call(MPI_Type_free(&dt1), comm);
-  }
-  return n != 0;
-}
-
-static bool
-match_contiguous(size_t *pstart_, const struct Xt_offset_ext *v, size_t vlen,
-                 MPI_Datatype old_type, MPI_Aint old_type_extent,
-                 MPI_Aint *restrict disp, MPI_Datatype *dt,
-                 MPI_Comm comm) {
-  size_t p = *pstart_;
-  if (p >= vlen || v[p].stride != 1 || v[p].size < 2) return false;
-
-  int disp_ = vlen > 1 ? v[p].start : 0;
-  *disp = disp_ * old_type_extent;
-  int d = v[p].start - disp_;
-
-  if (!d)
-    xt_mpi_call(MPI_Type_contiguous(v[p].size, old_type, dt), comm) ;
-  else
-    xt_mpi_call(MPI_Type_create_indexed_block(1, v[p].size, &d, old_type, dt),
-                comm);
-
-  *pstart_ = p+1;
-  return v[p].size != 0;
-}
-
-static bool
-match_indexed(size_t *pstart_, const struct Xt_offset_ext *v, size_t vlen,
-              MPI_Datatype old_type, MPI_Aint old_type_extent,
-              MPI_Aint *disp, MPI_Datatype *dt,
-              MPI_Comm comm) {
-  // we only accept non-trivial matches
-  size_t p = *pstart_, pstart = p;
-  if (p >= vlen || v[p].stride != 1 || v[p].size < 2) return false;
-
-  do
-    ++p;
-  while (p < vlen && v[p].stride == 1);
-
-  size_t n = p - pstart;
-
-  if (n < 2) return false;
-  *pstart_ = p;
-
-  int start = n == vlen ? 0 : v[pstart].start;
-  *disp = start * old_type_extent;
-  int *restrict bl = xmalloc(2 * n * sizeof (*bl)),
-    *restrict d = bl + n;
-  bool hom_bl = true;
-  d[0] = v[pstart].start - start;
-  int bl0 = bl[0] = v[pstart].size;
-  for (size_t i = 1; i < n; i++) {
-    size_t iv = pstart + i;
-    d[i] = v[iv].start - start;
-    bl[i] = v[iv].size;
-    hom_bl &= (bl[i] == bl0);
-  }
-
-  if (hom_bl) {
-    xt_mpi_call(MPI_Type_create_indexed_block((int)n, bl0, d, old_type, dt),
-                comm);
-  } else {
-    xt_mpi_call(MPI_Type_indexed((int)n, bl, d, old_type, dt), comm);
-  }
-
-  free(bl);
-  return n != 0;
-}
-
-static void
-gen_fallback_type(size_t set_start, size_t set_end,
-                  const struct Xt_offset_ext *v, size_t vlen,
-                  MPI_Datatype old_type, MPI_Aint old_type_extent,
-                  MPI_Aint *disp,
-                  MPI_Datatype *dt, MPI_Comm comm) {
-  size_t ia = set_start;
-  size_t ib = set_end;
-  if (ib <= ia || ib > vlen) return;
-
-  int n = 0;
-  for (size_t i=ia; i < ib; i++)
-    n += v[i].size;
-
-  /* todo: given the guarantees for v that fceb584 introduced,
-   * this check should never fire */
-  assert(n>0);
-
-  // generate absolute datatype if ia == 0 && ib == vlen,
-  // else generate relative datatype that gets embedded by the caller
-  int start = (ia == 0 && ib == vlen) ? 0 : v[ia].start;
-
-  *disp = start * old_type_extent;
-
-  int *restrict d = xmalloc(sizeof (*d) * (size_t)n);
-  size_t p=0;
-#ifndef NDEBUG
-  /* did any element of v have non-positive size? */
-  bool found_np = false;
+#define MPI_Type_create_hindexed_block XtMPI_Type_create_hindexed_block
 #endif
 
-  for (size_t i=ia; i < ib; i++) {
-#ifndef NDEBUG
-    found_np |= v[i].size <= 0;
-#endif
-    size_t v_i_size = (size_t)(v[i].size > 0 ? v[i].size : 0);
-    for (size_t k=0; k < v_i_size; k++) {
-      d[p] = v[i].start + (int)k * v[i].stride - start;
-      p++;
-    }
-  }
-  assert(!found_np);
-
-  if (n==1 && d[0] == 0) {
-    *dt = old_type;
-  } else {
-    xt_mpi_call(MPI_Type_create_indexed_block(n, 1, d, old_type, dt),
-                comm);
-  }
-  free(d);
-}
-
-static MPI_Datatype
-parse_stripe(const struct Xt_offset_ext *v, size_t vlen, MPI_Datatype old_type,
-             MPI_Comm comm)
-{
-  /* [set_start,set_end) describes the prefix of non-matching
-   * elements in v that then need to be handled with gen_fallback_type */
-  size_t set_start = 0, set_end = 0;
-  MPI_Aint old_type_lb, old_type_extent;
-  xt_mpi_call(MPI_Type_get_extent(old_type, &old_type_lb,
-                                  &old_type_extent), comm);
-  MPI_Aint *restrict wdisp
-    = xmalloc(sizeof(MPI_Datatype) * (size_t)vlen
-              + sizeof (MPI_Aint) * (size_t)vlen);
-  MPI_Datatype *restrict wdt = (MPI_Datatype *)(wdisp + vlen);
-  /* [p,vlen) is the part of v that still needs matching performed */
-  /* m is the index of the next datatype and displacements to write
-   * to wdt and wdisp respectively */
-  size_t p = 0, m = 0;
-  while (p<vlen) {
-    /* depending on whether there is a non-empty prefix, the datatype
-     * and displacement corresponding to a match need to be written
-     * to wdt[m+1] and wdisp[m+1] or wdt[m] and wdisp[m] respectively */
-    size_t mm = m + (set_start < set_end);
-    if (match_block_vec(&p, v, vlen, old_type, old_type_extent,
-                        wdisp+mm, wdt+mm, comm)
-        || match_indexed(&p, v, vlen, old_type, old_type_extent,
-                         wdisp+mm, wdt+mm, comm)
-        || match_simple_vec(&p, v, vlen, old_type, old_type_extent,
-                            wdisp+mm, wdt+mm, comm)
-        || match_contiguous(&p, v, vlen, old_type, old_type_extent,
-                            wdisp+mm, wdt+mm, comm) ) {
-      /* in case a match is found, generate fallback datatype for
-       * non-matching, preceding extents */
-      if (set_start < set_end) {
-        gen_fallback_type(set_start, set_end, v, vlen, old_type,
-                          old_type_extent, wdisp+m, wdt+m, comm);
-        m++;
-      }
-      m++;
-      set_start = p;
-    } else {
-      /* assign ext investigated last to prefix */
-      set_end = ++p;
-    }
-  }
-  if (set_start <  set_end) {
-    gen_fallback_type(set_start, set_end, v, vlen, old_type, old_type_extent,
-                      wdisp+m, wdt+m, comm);
-    m++;
-  }
-  size_t wlen = m;
-  MPI_Datatype result_dt;
-  if (wlen == 1 ) {
-    assert(wdisp[0] == 0);
-    if (wdt[0] == old_type)
-      xt_mpi_call(MPI_Type_dup(old_type, wdt), comm);
-    result_dt = wdt[0];
-  } else {
-    int *restrict wblocklength
-      = wlen * sizeof (int) <= (vlen - wlen) * sizeof (*wdt)
-      ? (void *)(wdt + wlen) : xmalloc(wlen * sizeof (*wblocklength));
-    for(size_t i=0; i<wlen; i++)
-      wblocklength[i] = 1;
-    xt_mpi_call(MPI_Type_create_struct((int)wlen, wblocklength, wdisp,
-                                       wdt, &result_dt), comm);
-    if (wlen * sizeof (int) > (vlen - wlen) * sizeof (*wdt))
-      free(wblocklength);
-    for (size_t i = 0; i < wlen; i++)
-      if (wdt[i] != old_type)
-        xt_mpi_call(MPI_Type_free(wdt+i), comm);
-  }
-  xt_mpi_call(MPI_Type_commit(&result_dt), comm);
-  free(wdisp);
-  return result_dt;
-}
-
-MPI_Datatype
-xt_mpi_generate_datatype_stripe(const struct Xt_offset_ext *v,
-                                int count, MPI_Datatype old_type,
-                                MPI_Comm comm)
-{
-  size_t count_ = (size_t)0;
-  for (int i=0; i<count; ++i)
-    count_ += (size_t)(v[i].size > 0);
-  if (count_ < 1) return MPI_DATATYPE_NULL;
-  struct Xt_offset_ext *v_comp;
-  if ((size_t)count != count_) {
-    v_comp = xmalloc(count_ * sizeof (*v_comp));
-    for (size_t i=0, j=0; i<(size_t)count; ++i) {
-      v_comp[j] = v[i];
-      j+= v[i].size > 0;
-    }
-  } else
-    v_comp = (struct Xt_offset_ext *)v;
-  MPI_Datatype dt = parse_stripe(v_comp, count_, old_type, comm);
-  if ((size_t)count != count_)
-    free(v_comp);
-  return dt;
-}
+#define XT_MPI_STRP_PRS_PREFIX a
+#define XT_MPI_STRP_PRS_UNITSTRIDE old_type_extent
+#define XT_MPI_STRP_PRS_AOFS_TYPE MPI_Aint
+#define XT_MPI_STRP_PRS_DISP_ADJUST(val) (val)
+#define XT_MPI_STRP_PRS_BLOCK_VEC_CREATE MPI_Type_create_hvector
+#define XT_MPI_STRP_PRS_INDEXED_BLOCK_CREATE MPI_Type_create_hindexed_block
+#define XT_MPI_STRP_PRS_INDEXED_CREATE MPI_Type_create_hindexed
+#include "xt_mpi_stripe_parse.c"
 
 
 static MPI_Datatype
@@ -700,15 +509,16 @@ xt_mpi_generate_compact_datatype(const int *disp, int disp_len,
 {
   if (disp_len < 1) return MPI_DATATYPE_NULL;
 
-  struct Xt_offset_ext *v = xmalloc(sizeof(*v) * (size_t)disp_len);
-  size_t vlen = scan_stripe(disp, (size_t)disp_len, v);
+  size_t vlen = xt_disp2ext_count((size_t)disp_len, disp);
+  struct Xt_offset_ext *v = xmalloc(sizeof(*v) * vlen);
+  xt_disp2ext((size_t)disp_len, disp, v);
   MPI_Datatype dt = parse_stripe(v, vlen, old_type, comm);
   free(v);
   return dt;
 }
 
 /* functions to handle optimizations on communicators */
-static int xt_mpi_comm_internal_keyval;
+static int xt_mpi_comm_internal_keyval = MPI_KEYVAL_INVALID;
 
 typedef unsigned long used_map_elem;
 
@@ -760,6 +570,7 @@ static int xt_mpi_tag_ub_val;
 
 void
 xt_mpi_init(void) {
+  assert(xt_mpi_comm_internal_keyval == MPI_KEYVAL_INVALID);
   xt_mpi_call(MPI_Comm_create_keyval(xt_mpi_comm_internal_keyval_copy,
                                      xt_mpi_comm_internal_keyval_delete,
                                      &xt_mpi_comm_internal_keyval, NULL),
@@ -774,6 +585,7 @@ xt_mpi_init(void) {
 
 void
 xt_mpi_finalize(void) {
+  assert(xt_mpi_comm_internal_keyval != MPI_KEYVAL_INVALID);
   xt_mpi_call(MPI_Comm_free_keyval(&xt_mpi_comm_internal_keyval),
               Xt_default_comm);
 }
@@ -783,6 +595,7 @@ xt_mpi_comm_get_internal_attr(MPI_Comm comm)
 {
   int attr_found;
   void *attr_val;
+  assert(xt_mpi_comm_internal_keyval != MPI_KEYVAL_INVALID);
   xt_mpi_call(MPI_Comm_get_attr(comm, xt_mpi_comm_internal_keyval,
                                 &attr_val, &attr_found),
               comm);
@@ -869,6 +682,7 @@ xt_mpi_comm_smart_dup(MPI_Comm comm, int *tag_offset)
         new_comm_xt_attr_val->used_map[i] = comm_xt_attr_val->used_map[i];
       new_comm_xt_attr_val->used_map[used_map_size] = 1U;
       position *= used_map_elem_bits;
+      assert(xt_mpi_comm_internal_keyval != MPI_KEYVAL_INVALID);
       xt_mpi_call(MPI_Comm_set_attr(comm_dest, xt_mpi_comm_internal_keyval,
                                     new_comm_xt_attr_val), comm_dest);
     } else {
@@ -886,6 +700,7 @@ xt_mpi_comm_smart_dup(MPI_Comm comm, int *tag_offset)
     comm_attr->used_map_size = 1;
     comm_attr->used_map[0] = 1U;
     xt_mpi_call(MPI_Comm_dup(comm, &comm_dest), comm);
+    assert(xt_mpi_comm_internal_keyval != MPI_KEYVAL_INVALID);
     xt_mpi_call(MPI_Comm_set_attr(comm_dest, xt_mpi_comm_internal_keyval,
                                   comm_attr), comm_dest);
   }
@@ -917,6 +732,7 @@ xt_mpi_comm_mark_exclusive(MPI_Comm comm) {
   comm_attr->refcount = 1;
   comm_attr->used_map_size = 1;
   comm_attr->used_map[0] = 1U;
+  assert(xt_mpi_comm_internal_keyval != MPI_KEYVAL_INVALID);
   xt_mpi_call(MPI_Comm_set_attr(comm, xt_mpi_comm_internal_keyval,
                                 comm_attr), comm);
 }
@@ -929,7 +745,7 @@ xt_mpi_test_some(int *restrict num_req,
   int done_count;
   size_t num_req_ = (size_t)*num_req;
 
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
   /* GCC 11 has no means to specify that the special value pointer
    * MPI_STATUSES_IGNORE does not need to point to something of size > 0 */
 #pragma GCC diagnostic push
@@ -938,7 +754,7 @@ xt_mpi_test_some(int *restrict num_req,
 #endif
   xt_mpi_call(MPI_Testsome(*num_req, req, &done_count, ops_completed,
                            MPI_STATUSES_IGNORE), comm);
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
 #pragma GCC diagnostic pop
 #endif
 
@@ -959,6 +775,55 @@ xt_mpi_test_some(int *restrict num_req,
   *num_req = (int)num_req_;
   return num_req_ == 0;
 }
+
+#ifdef _OPENMP
+bool
+xt_mpi_test_some_mt(int *restrict num_req,
+                    MPI_Request *restrict req,
+                    int *restrict ops_completed, MPI_Comm comm)
+{
+  int done_count;
+  size_t num_req_ = (size_t)*num_req;
+
+  size_t num_threads = (size_t)omp_get_num_threads(),
+    tid = (size_t)omp_get_thread_num();
+  size_t start_req = (num_req_ * tid) / num_threads,
+    nreq_ = (num_req_ * (tid+1)) / num_threads - start_req;
+
+  for (size_t i = start_req; i < start_req + nreq_; ++i)
+    ops_completed[i] = -1;
+#if __GNUC__ >= 11 && __GNUC__ <= 13
+  /* GCC 11 has no means to specify that the special value pointer
+   * MPI_STATUSES_IGNORE does not need to point to something of size > 0 */
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wstringop-overflow"
+#pragma GCC diagnostic ignored "-Wstringop-overread"
+#endif
+  xt_mpi_call(MPI_Testsome((int)nreq_, req+start_req, &done_count,
+                           ops_completed+start_req, MPI_STATUSES_IGNORE), comm);
+#if __GNUC__ >= 11 && __GNUC__ <= 13
+#pragma GCC diagnostic pop
+#endif
+  if (done_count == MPI_UNDEFINED)
+    done_count = 0;
+#pragma omp barrier
+#pragma omp atomic
+  *num_req -= done_count;
+#pragma omp barrier
+  done_count = (int)num_req_ - *num_req;
+#pragma omp single
+  {
+    if (num_req_ > (size_t)done_count) {
+      for (size_t i = 0, j = 0; i < num_req_; ++i)
+        if (req[i] != MPI_REQUEST_NULL)
+          req[j++] = req[i];
+    }
+    *num_req = (int)num_req_ - done_count;
+  }
+  num_req_ -= (size_t)done_count;
+  return num_req_ == 0;
+}
+#endif
 
 
 /*

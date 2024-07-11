@@ -205,14 +205,14 @@ SUBROUTINE art_tracer(defcase,jg,nblks_c,this_list,vname_prefix,                
 
       !Get mode information to combine final tracer names
       CALL key_value_storage_as_string(storage,'mode',c_tmp,ierror)
-      IF (ierror /= SUCCESS) CALL finish(TRIM(routine)//':art_tracer_def_wrapper',                &
+      IF (ierror /= SUCCESS) CALL finish(TRIM(routine)//':art_tracer', &
                                &  'Required aerosol metadata mode not present:'//TRIM(tracer_name))
       WRITE(mode,'(A)') TRIM(c_tmp)                         
 
       ! Get labels information for tracer_mode-combination (optional)
       CALL key_value_storage_as_string(storage,'label',c_tmp,ierror)
       IF (ierror /= SUCCESS) THEN
-        CALL message(TRIM(routine)//':art_tracer_def_wrapper',                &
+        CALL message(TRIM(routine)//':art_tracer', &
           &          'No label-Tag given for:'//TRIM(tracer_name))
         c_tmp = ""
       END IF

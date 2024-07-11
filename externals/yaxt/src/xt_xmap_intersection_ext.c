@@ -73,7 +73,7 @@
 
 /* unfortunately GCC 11 cannot handle the literal constants used for
  * MPI_STATUSES_IGNORE by MPICH */
-#if __GNUC__ == 11 && defined MPICH
+#if __GNUC__ >= 11 && __GNUC__ <= 13 && defined MPICH
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overread"
 #pragma GCC diagnostic ignored "-Wstringop-overflow"

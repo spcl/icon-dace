@@ -63,9 +63,6 @@ MODULE mo_test_communication
     & testbed_iterations, calculate_iterations, test_gather_communication, &
     & test_exchange_communication, test_bench_exchange_data_mult
   USE mo_grid_config, ONLY: n_dom_start
-#ifdef _OPENACC
-USE mo_mpi,                  ONLY: i_am_accel_node
-#endif
 
 !-------------------------------------------------------------------------
 IMPLICIT NONE
@@ -1051,9 +1048,15 @@ CONTAINS
       &                      out_array_sp_4d(:,:,:,:), &
       &                      add_array_sp_4d(:,:,:,:), &
       &                      ref_out_array_sp_4d(:,:,:,:)
-
+    LOGICAL :: lzacc
     CHARACTER(*), PARAMETER :: method_name = &
       "mo_test_communication:exchange_communication_testbed"
+
+    IF (PRESENT(test_gpu)) THEN ! enable test on GPU if requested, and compiled with openACC
+      lzacc = test_gpu
+    ELSE
+      lzacc = .FALSE.
+    END IF
 
     ! generate communication pattern
     local_size_src = 10 * nproma
@@ -1868,103 +1871,61 @@ CONTAINS
       LOGICAL, INTENT(IN) ::  ref_out_array_l_2d(:,:), ref_out_array_l_3d(:,:,:)
       CLASS(t_comm_pattern), POINTER, INTENT(INOUT) :: comm_pattern
 
-#ifdef _OPENACC
-    IF (PRESENT(test_gpu)) THEN
-      i_am_accel_node = test_gpu
-    ELSE
-      i_am_accel_node = .FALSE.
-    END IF
-#endif
-
-      !$ACC DATA COPYIN(add_array_r_2d) &
-      !$ACC   IF(present(add_array_r_2d) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array_r_2d) &
-      !$ACC   IF(present(in_array_r_2d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_r_2d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_r_2d, &
+      !$ACC DATA COPYIN(add_array_r_2d, in_array_r_2d) COPY(out_array_r_2d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_r_2d, &
         &                send=in_array_r_2d, add=add_array_r_2d, &
         &                l_recv_exists=.TRUE.)
-      !$ACC END DATA
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_r_2d /= ref_out_array_r_2d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result r_2d"
         CALL finish(method_name, message_text)
       END IF
 
-      !$ACC DATA COPYIN(add_array_r_3d) &
-      !$ACC   IF(present(add_array_r_3d) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array_r_3d) &
-      !$ACC   IF(present(in_array_r_3d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_r_3d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_r_3d, &
+      !$ACC DATA COPYIN(add_array_r_3d, in_array_r_3d) COPY(out_array_r_3d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_r_3d, &
         &                send=in_array_r_3d, add=add_array_r_3d)
-      !$ACC END DATA
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_r_3d /= ref_out_array_r_3d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result r_3d"
         CALL finish(method_name, message_text)
       END IF
 
-      !$ACC DATA COPYIN(add_array_i_2d) &
-      !$ACC   IF(present(add_array_i_2d) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array_i_2d) &
-      !$ACC   IF(present(in_array_i_2d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_i_2d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_i_2d, &
+      !$ACC DATA COPYIN(add_array_i_2d, in_array_i_2d) COPY(out_array_i_2d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_i_2d, &
         &                send=in_array_i_2d, add=add_array_i_2d, &
         &                l_recv_exists=.TRUE.)
-      !$ACC END DATA
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_i_2d /= ref_out_array_i_2d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result i_2d"
         CALL finish(method_name, message_text)
       END IF
 
-      !$ACC DATA COPYIN(add_array_i_3d) &
-      !$ACC   IF(present(add_array_i_3d) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array_i_3d) &
-      !$ACC   IF(present(in_array_i_3d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_i_3d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_i_3d, &
+      !$ACC DATA COPYIN(add_array_i_3d, in_array_i_3d) COPY(out_array_i_3d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_i_3d, &
         &                send=in_array_i_3d, add=add_array_i_3d)
-      !$ACC END DATA
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_i_3d /= ref_out_array_i_3d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result i_3d"
         CALL finish(method_name, message_text)
       END IF
 
-      !$ACC DATA COPYIN(in_array_l_2d) &
-      !$ACC   IF(present(in_array_l_2d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_l_2d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_l_2d, &
+      !$ACC DATA COPYIN(in_array_l_2d) COPY(out_array_l_2d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_l_2d, &
         &                send=in_array_l_2d, l_recv_exists=.TRUE.)
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_l_2d .NEQV. ref_out_array_l_2d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result l_2d"
         CALL finish(method_name, message_text)
       END IF
 
-      !$ACC DATA COPYIN(in_array_l_3d) &
-      !$ACC   IF(present(in_array_l_3d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array_l_3d) IF(i_am_accel_node)
-      CALL exchange_data(p_pat=comm_pattern, recv=out_array_l_3d, &
+      !$ACC DATA COPYIN(in_array_l_3d) COPY(out_array_l_3d) IF(lzacc)
+      CALL exchange_data(p_pat=comm_pattern, lacc=lzacc, recv=out_array_l_3d, &
         &                send=in_array_l_3d)
-      !$ACC END DATA
       !$ACC END DATA
       IF (ANY(out_array_l_3d .NEQV. ref_out_array_l_3d)) THEN
         WRITE(message_text,'(a,i0)') "Wrong exchange result l_3d"
         CALL finish(method_name, message_text)
       END IF
-
-#ifdef _OPENACC
-    i_am_accel_node = .FALSE.
-#endif
 
     END SUBROUTINE check_exchange
 
@@ -1981,16 +1942,8 @@ CONTAINS
       nfields = SIZE(out_array, 1)
       ndim2tot = nfields * SIZE(out_array, 3)
 
-#ifdef _OPENACC
-    IF (PRESENT(test_gpu)) THEN
-      i_am_accel_node = test_gpu
-    ELSE
-      i_am_accel_node = .FALSE.
-    END IF
-#endif
-
-      !$ACC DATA COPY(out_array) COPYIN(in_array) IF(i_am_accel_node)
-      CALL exchange_data_4de1(comm_pattern, nfields, ndim2tot, out_array, &
+      !$ACC DATA COPY(out_array) COPYIN(in_array) IF(lzacc)
+      CALL exchange_data_4de1(comm_pattern, lzacc, nfields, ndim2tot, out_array, &
         &                     in_array)
       !$ACC END DATA
 
@@ -1998,10 +1951,6 @@ CONTAINS
         WRITE(message_text,'(a,i0)') "Wrong exchange result 4de1"
         CALL finish(method_name, message_text)
       END IF
-
-#ifdef _OPENACC
-    i_am_accel_node = .FALSE.
-#endif
 
     END SUBROUTINE check_exchange_4de1
 
@@ -2205,7 +2154,6 @@ CONTAINS
       INTEGER, OPTIONAL, INTENT(IN) :: nshift
       CLASS(t_comm_pattern), POINTER, INTENT(INOUT) :: comm_pattern
 
-
       REAL(dp), ALLOCATABLE ::  &
         tmp_out_array1(:,:,:), tmp_out_array2(:,:,:), tmp_out_array3(:,:,:), &
         tmp_out_array4(:,:,:), tmp_out_array5(:,:,:), tmp_out_array6(:,:,:), &
@@ -2284,33 +2232,15 @@ CONTAINS
         END IF
       END IF
 
-#ifdef _OPENACC
-    IF (PRESENT(test_gpu)) THEN
-      i_am_accel_node = test_gpu
-    ELSE
-      i_am_accel_node = .FALSE.
-    END IF
-#endif
-
-      !$ACC DATA COPYIN(in_array1) IF(present(in_array1) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array2) IF(present(in_array2) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array3) IF(present(in_array3) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4) IF(present(in_array4) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array5) IF(present(in_array5) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array6) IF(present(in_array6) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array7) IF(present(in_array7) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4d) IF(present(in_array4d) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array1) IF(present(out_array1) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array2) IF(present(out_array2) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array3) IF(present(out_array3) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4) IF(present(out_array4) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array5) IF(present(out_array5) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array6) IF(present(out_array6) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array7) IF(present(out_array7) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4d) IF(present(out_array4d) .AND. i_am_accel_node)
+      !$ACC DATA COPYIN(in_array1, in_array2, in_array3, in_array4) &
+      !$ACC   COPYIN(in_array5, in_array6, in_array7, in_array4d) &
+      !$ACC   COPY(out_array1, out_array2, out_array3, out_array4) &
+      !$ACC   COPY(out_array5, out_array6, out_array7, out_array4d) &
+      !$ACC   IF(lzacc)
       IF (nfields > 0) THEN
         CALL exchange_data_mult( &
-          p_pat=comm_pattern, nfields=nfields, ndim2tot=ndim2tot, &
+          p_pat=comm_pattern, lacc=lzacc, &
+          nfields=nfields, ndim2tot=ndim2tot, &
           recv1=out_array1, send1=in_array1, &
           recv2=out_array2, send2=in_array2, &
           recv3=out_array3, send3=in_array3, &
@@ -2322,25 +2252,6 @@ CONTAINS
           nshift=kshift)
       END IF
       !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-
-#ifdef _OPENACC
-    i_am_accel_node = .FALSE.
-#endif
 
       IF (PRESENT(out_array1)) THEN
         IF (ANY(out_array1 /= ref_out_array1)) THEN
@@ -2977,41 +2888,15 @@ CONTAINS
         END IF
       END IF
 
-#ifdef _OPENACC
-    IF (PRESENT(test_gpu)) THEN
-      i_am_accel_node = test_gpu
-    ELSE
-      i_am_accel_node = .FALSE.
-    END IF
-#endif
-
-      !$ACC DATA COPYIN(in_array1_dp) IF(present(in_array1_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array2_dp) IF(present(in_array2_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array3_dp) IF(present(in_array3_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4_dp) IF(present(in_array4_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array5_dp) IF(present(in_array5_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4d_dp) IF(present(in_array4d_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array1_dp) IF(present(out_array1_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array2_dp) IF(present(out_array2_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array3_dp) IF(present(out_array3_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4_dp) IF(present(out_array4_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array5_dp) IF(present(out_array5_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4d_dp) IF(present(out_array4d_dp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array1_sp) IF(present(in_array1_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array2_sp) IF(present(in_array2_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array3_sp) IF(present(in_array3_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4_sp) IF(present(in_array4_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array5_sp) IF(present(in_array5_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPYIN(in_array4d_sp) IF(present(in_array4d_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array1_sp) IF(present(out_array1_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array2_sp) IF(present(out_array2_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array3_sp) IF(present(out_array3_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4_sp) IF(present(out_array4_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array5_sp) IF(present(out_array5_sp) .AND. i_am_accel_node)
-      !$ACC DATA COPY(out_array4d_sp) IF(present(out_array4d_sp) .AND. i_am_accel_node)
+      !$ACC DATA COPYIN(in_array1_dp, in_array2_dp, in_array3_dp, in_array4_dp, in_array5_dp, in_array4d_dp) &
+      !$ACC   COPY(out_array1_dp, out_array2_dp, out_array3_dp, out_array4_dp, out_array5_dp, out_array4d_dp) &
+      !$ACC   COPYIN(in_array1_sp, in_array2_sp, in_array3_sp, in_array4_sp, in_array5_sp, in_array4d_sp) &
+      !$ACC   COPY(out_array1_sp, out_array2_sp, out_array3_sp, out_array4_sp, out_array5_sp, out_array4d_sp) &
+      !$ACC   IF(lzacc)
       IF ((nfields_dp > 0) .OR. (nfields_sp > 0)) THEN
         CALL exchange_data_mult_mixprec( &
-          p_pat=comm_pattern, nfields_dp=nfields_dp, ndim2tot_dp=ndim2tot_dp, &
+          p_pat=comm_pattern, lacc=lzacc, &
+          nfields_dp=nfields_dp, ndim2tot_dp=ndim2tot_dp, &
           recv1_dp=out_array1_dp, send1_dp=in_array1_dp, &
           recv2_dp=out_array2_dp, send2_dp=in_array2_dp, &
           recv3_dp=out_array3_dp, send3_dp=in_array3_dp, &
@@ -3028,33 +2913,6 @@ CONTAINS
           nshift=kshift)
       END IF
       !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-      !$ACC END DATA
-
-#ifdef _OPENACC
-    i_am_accel_node = .FALSE.
-#endif
 
       IF (PRESENT(out_array1_dp)) THEN
         IF (ANY(out_array1_dp /= ref_out_array1_dp)) THEN
@@ -3158,6 +3016,13 @@ CONTAINS
     TYPE(t_glb2loc_index_lookup) :: send_glb2loc_index
     TYPE(t_p_comm_pattern) :: comm_pattern(4)
     CLASS(t_comm_pattern_collection), POINTER :: comm_pattern_collection
+    LOGICAL :: lzacc
+
+    IF (PRESENT(test_gpu)) THEN  ! enable test on GPU if requested, and compiled with openACC
+      lzacc = test_gpu
+    ELSE
+      lzacc = .FALSE.
+    END IF
 
     REAL(wp) :: recv1(nproma,2,18), recv2(nproma,4,18), &
       &         recv3(nproma,6,18), recv4(nproma,8,18), &
@@ -3374,13 +3239,6 @@ CONTAINS
 
       INTEGER :: nfields, ndim2tot, i
 
-#ifdef _OPENACC
-    IF (PRESENT(test_gpu)) THEN
-      i_am_accel_node = test_gpu
-    ELSE
-      i_am_accel_node = .FALSE.
-    END IF
-#endif
 
       ALLOCATE(tmp_recv1(SIZE(recv1,1),SIZE(recv1,2),SIZE(recv1,3)), &
         &      tmp_recv2(SIZE(recv2,1),SIZE(recv2,2),SIZE(recv2,3)), &
@@ -3406,8 +3264,8 @@ CONTAINS
       nfields = 1
       ndim2tot = SIZE(recv1, 2)
       recv1 = tmp_recv1
-      !$ACC DATA COPY(recv1) COPYIN(send1) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC DATA COPY(recv1) COPYIN(send1) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1)
       !$ACC END DATA
       IF (ANY(recv1 /= ref_recv1)) THEN
@@ -3420,8 +3278,8 @@ CONTAINS
       ndim2tot = SIZE(recv1, 2) + SIZE(recv2, 2)
       recv1 = tmp_recv1
       recv2 = tmp_recv2
-      !$ACC DATA COPY(recv1, recv2) COPYIN(send1, send2) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC DATA COPY(recv1, recv2) COPYIN(send1, send2) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1, &
         &                    recv2=recv2, send2=send2)
       !$ACC END DATA
@@ -3437,8 +3295,8 @@ CONTAINS
       recv2 = tmp_recv2
       recv3 = tmp_recv3
       !$ACC DATA COPY(recv1, recv2, recv3) &
-      !$ACC   COPYIN(send1, send2, send3) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC   COPYIN(send1, send2, send3) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1, &
         &                    recv2=recv2, send2=send2, recv3=recv3, &
         &                    send3=send3)
@@ -3458,8 +3316,8 @@ CONTAINS
       recv3 = tmp_recv3
       recv4 = tmp_recv4
       !$ACC DATA COPY(recv1, recv2, recv3, recv4) &
-      !$ACC   COPYIN(send1, send2, send3, send4) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC   COPYIN(send1, send2, send3, send4) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1, &
         &                    recv2=recv2, send2=send2, recv3=recv3, &
         &                    send3=send3, recv4=recv4, send4=send4)
@@ -3480,8 +3338,8 @@ CONTAINS
       recv4 = tmp_recv4
       recv5 = tmp_recv5
       !$ACC DATA COPY(recv1, recv2, recv3, recv4, recv5) &
-      !$ACC   COPYIN(send1, send2, send3, send4, send5) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC   COPYIN(send1, send2, send3, send4, send5) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1, &
         &                    recv2=recv2, send2=send2, recv3=recv3, &
         &                    send3=send3, recv4=recv4, send4=send4, &
@@ -3505,8 +3363,8 @@ CONTAINS
       recv5 = tmp_recv5
       recv6 = tmp_recv6
       !$ACC DATA COPY(recv1, recv2, recv3, recv4, recv5, recv6) &
-      !$ACC   COPYIN(send1, send2, send3, send4, send5, send6) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC   COPYIN(send1, send2, send3, send4, send5, send6) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv1=recv1, send1=send1, &
         &                    recv2=recv2, send2=send2, recv3=recv3, &
         &                    send3=send3, recv4=recv4, send4=send4, &
@@ -3524,8 +3382,8 @@ CONTAINS
       nfields = SIZE(recv4d1, 4)
       ndim2tot = SIZE(recv4d1, 4) * SIZE(recv4d1, 2)
       recv4d1 = tmp_recv4d1
-      !$ACC DATA COPY(recv4d1) COPYIN(send4d1) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC DATA COPY(recv4d1) COPYIN(send4d1) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv4d1=recv4d1, &
         &                    send4d1=send4d1)
       !$ACC END DATA
@@ -3540,8 +3398,8 @@ CONTAINS
         &        SIZE(recv4d2, 4) * SIZE(recv4d2, 2)
       recv4d1 = tmp_recv4d1
       recv4d2 = tmp_recv4d2
-      !$ACC DATA COPY(recv4d1, recv4d2) COPYIN(send4d1, send4d2) IF(i_am_accel_node)
-      CALL exchange_data_grf(p_pat_coll=p_pat_coll, nfields=nfields, &
+      !$ACC DATA COPY(recv4d1, recv4d2) COPYIN(send4d1, send4d2) IF(lzacc)
+      CALL exchange_data_grf(p_pat_coll=p_pat_coll, lacc=lzacc, nfields=nfields, &
         &                    ndim2tot=ndim2tot, recv4d1=recv4d1, &
         &                    send4d1=send4d1, recv4d2=recv4d2, send4d2=send4d2)
       !$ACC END DATA
@@ -4395,7 +4253,7 @@ CONTAINS
     nfields = 2
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2)
     END DO
     CALL work_mpi_barrier()
@@ -4403,7 +4261,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2)
     END DO
     CALL work_mpi_barrier()
@@ -4413,7 +4271,7 @@ CONTAINS
     nfields = 3
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3)
     END DO
     CALL work_mpi_barrier()
@@ -4421,7 +4279,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3)
     END DO
     CALL work_mpi_barrier()
@@ -4431,7 +4289,7 @@ CONTAINS
     nfields = 4
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4)
     END DO
     CALL work_mpi_barrier()
@@ -4439,7 +4297,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4)
     END DO
     CALL work_mpi_barrier()
@@ -4449,7 +4307,7 @@ CONTAINS
     nfields = 5
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5)
     END DO
     CALL work_mpi_barrier()
@@ -4457,7 +4315,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5)
     END DO
     CALL work_mpi_barrier()
@@ -4467,7 +4325,7 @@ CONTAINS
     nfields = 6
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6)
     END DO
     CALL work_mpi_barrier()
@@ -4475,7 +4333,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6)
     END DO
     CALL work_mpi_barrier()
@@ -4485,7 +4343,7 @@ CONTAINS
     nfields = 7
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6, recv7=var7)
     END DO
     CALL work_mpi_barrier()
@@ -4493,7 +4351,7 @@ CONTAINS
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6, recv7=var7)
     END DO
     CALL work_mpi_barrier()
@@ -4504,14 +4362,14 @@ CONTAINS
     ! warm-up
     nfields = 1
     DO i = 1, 16
-      CALL exchange_data(comm_pattern, var1)
+      CALL exchange_data(p_pat=comm_pattern, lacc=.FALSE., recv=var1)
     END DO
     CALL work_mpi_barrier()
     CALL timer_start(timer_1var_b)
     ! benchmarking
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
-      CALL exchange_data(comm_pattern, var1)
+      CALL exchange_data(p_pat=comm_pattern, lacc=.FALSE., recv=var1)
     END DO
     CALL work_mpi_barrier()
     CALL timer_stop(timer_1var_b)
@@ -4520,7 +4378,7 @@ CONTAINS
     nfields = 2
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2)
     END DO
     CALL work_mpi_barrier()
@@ -4529,7 +4387,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2)
     END DO
     CALL work_mpi_barrier()
@@ -4539,7 +4397,7 @@ CONTAINS
     nfields = 3
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3)
     END DO
     CALL work_mpi_barrier()
@@ -4548,7 +4406,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3)
     END DO
     CALL work_mpi_barrier()
@@ -4558,7 +4416,7 @@ CONTAINS
     nfields = 4
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4)
     END DO
     CALL work_mpi_barrier()
@@ -4567,7 +4425,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4)
     END DO
     CALL work_mpi_barrier()
@@ -4577,7 +4435,7 @@ CONTAINS
     nfields = 5
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5)
     END DO
     CALL work_mpi_barrier()
@@ -4586,7 +4444,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5)
     END DO
     CALL work_mpi_barrier()
@@ -4596,7 +4454,7 @@ CONTAINS
     nfields = 6
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6)
     END DO
     CALL work_mpi_barrier()
@@ -4605,7 +4463,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6)
     END DO
     CALL work_mpi_barrier()
@@ -4615,7 +4473,7 @@ CONTAINS
     nfields = 7
     DO i = 1, 16
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6, recv7=var7)
     END DO
     CALL work_mpi_barrier()
@@ -4624,7 +4482,7 @@ CONTAINS
     DO i = 1, testbed_iterations
       CALL work_mpi_barrier()
       CALL exchange_data_mult( &
-        p_pat=comm_pattern, nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
+        p_pat=comm_pattern, lacc=.FALSE., nfields=nfields, ndim2tot=nfields*nlev, recv1=var1, &
         recv2=var2, recv3=var3, recv4=var4, recv5=var5, recv6=var6, recv7=var7)
     END DO
     CALL work_mpi_barrier()

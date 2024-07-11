@@ -58,9 +58,7 @@ CONTAINS
 
     nc = SIZE(lai)
 
-    !$ACC DATA PRESENT(lai, lat, scaling_fact_cl)
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR &
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
     !$ACC   PRIVATE(cos_zenith_noon, k12)
     DO ic=1,nc
 
@@ -87,13 +85,12 @@ CONTAINS
       END IF
 
     END DO
-    !$ACC END PARALLEL
-    !$ACC END DATA
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE calc_assimilation_scaling_factors
 
 
-  !> ! Coomputes canopy conductance per canopy layer for water-unlimited case
+  !> ! Computes canopy conductance per canopy layer for water-unlimited case
   REAL(wp) FUNCTION calc_assimilation_waterunlimited( &
     & C4Flag,                                            & ! in
     & CarboxRate,                                        & ! in
@@ -164,7 +161,6 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':calc_assimilation_waterunlimited'
 
     ! Prepare CO2_conc_leaf_cl
-    ! R: siehe mo_bethy.f90, Zeile 709
     IF (C4Flag) THEN ! landcover type is C4 plants
       CO2_conc_leaf_cl = FCI1C4 * CO2_mol_mixing_ratio
     ELSE       ! landcover type is C3 plants
@@ -204,10 +200,6 @@ CONTAINS
       KC = KC0 * EXP(EC / R_gas * T0 * T1**(-1) * t_air**(-1))  ! Division "/T1 /t_air" are expressed strange here (and in the
                                                                 ! following) because if this subroutine is not used as elemental
                                                                 ! (e.g. for tests) it makes accuracy of calculation much better!
-                                                                ! R: Abweichungen des Ergebnisses im Vergl. zu JSBACH3 ab 14. 
-                                                                !    Stelle nach dem Komma, obwohl Inputs (R_gas, T0, T1, t_air)
-                                                                !    genau gleich. Ursache: epsilon ist 2.22E-16 (JSBACH3
-                                                                !    und JSBACH4) und EXP verstärkt Fehler.
       KO = KO0 * EXP(EO / R_gas * T0 * T1**(-1)  * t_air**(-1)) ! see above
 
       !---------------------------------------------------------------------------------!
@@ -236,8 +228,7 @@ CONTAINS
       ! ?????????????????????/ minOfMaxCarboxrate=1E-12 vielleicht etwas gering
       !---------------------------------------------------------------------------------
       JMAX = ETransport * N_scaling_factors * TC/25._wp
-      JMAX = MAX(JMAX,minOfMaxCarboxrate) ! R: Abweichungen des Ergebnisses im Vergl. zu JSBACH3 ab 21. Stelle nach
-                                          !    Komma. Ursache: epsilon ist 2.22E-16 (JSBACH3 und JSBACH4).
+      JMAX = MAX(JMAX,minOfMaxCarboxrate)
 
       !---------------------------------------------------------------------------------
       !
@@ -255,23 +246,18 @@ CONTAINS
       !---------------------------------------------------------------------------------
       IF (JMAX .GT. minOfMaxCarboxrate) THEN
         J1 =   ALPHA * apar_per_lai_cl * JMAX &
-          &  / SQRT(JMAX**2 + (ALPHA * apar_per_lai_cl)**2)  ! R: Abweichungen des Ergebnisses im Verg. zu JSBACH3 ab 15./16. Stelle
-      ELSE                                                   !    nach Komma obwohl ALPHA, apar_per_lai_cl, JMAX genau gleich.
+          &  / SQRT(JMAX**2 + (ALPHA * apar_per_lai_cl)**2)
+      ELSE
         J1 = 0._wp
       END IF
 
-      JE = J1 * (CO2_conc_leaf_cl - GAM) / 4._wp / (CO2_conc_leaf_cl + 2._wp * GAM) ! R: keine Abweichung wenn Input gleich
+      JE = J1 * (CO2_conc_leaf_cl - GAM) / 4._wp / (CO2_conc_leaf_cl + 2._wp * GAM)
 
       JC =   VCMAX * (CO2_conc_leaf_cl - GAM) &
-        &  / ( CO2_conc_leaf_cl + KC * (1._wp + OX * KO**(-1)) ) ! R: obwohl CO2_conc_leaf_cl, GAM, KC, OX, KO genau gleich
-                                                                 !    Abweichung ab 15. Stelle nach Komma. Wenn man OX-Parameter
-                                                                 !    mit 0.21_wp ersetzt, dann ist die Abweichung gleich Null.
-                                                                 !    Grund: epsilon Abweichung entsteht durch das usen von OX
-                                                                 !    auch wenn dasselbe OX verwendet wird. Wahrscheinlich nimmt
-                                                                 !    Kompiler einen Kopiervorgang vor.
+        &  / ( CO2_conc_leaf_cl + KC * (1._wp + OX * KO**(-1)) )
 
-      HITINHIB = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) ) ! R: bei gleichem Input keine Abweichung (22 Stell nach Komma)
-      GASS = MIN (JE, JC) * HITINHIB                                 ! R: Bei gleichem Input keine Abweichung (22 Stell nach Komma)
+      HITINHIB = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )
+      GASS = MIN (JE, JC) * HITINHIB
 
       !---------------------------------------------------------------------------------
       !
@@ -283,14 +269,11 @@ CONTAINS
       ! PVM at 25C, therefore RD = const * PVM, but the temperature dependance goes with
       ! ER (for respiration) and not with EV (for PVM)
       !---------------------------------------------------------------------------------
-      DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol,0.0_wp)) ! R: bei gleichem Input keine Abweichung (22 Stellen
-                                                                             !    nach Komma)
+      DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol,0.0_wp))
 
       DARK_RESP =   FRDC3 * CarboxRate * N_scaling_factors         &
                 & * EXP(ER * T0 / R_gas  * T1**(-1) * t_air**(-1)) &
-                & * HITINHIB * DARKINHIB                          ! R: auch wenn FRDC3, CarboxRate, N_scaling_factors, ER, T0,
-                                                                  !    T1, R_gas, t_air, HITINHIB, DARKINHIB gleich sind
-                                                                  !    entstehen ab der 16. Stelle nach Komma Abweichungen wg. EXP.
+                & * HITINHIB * DARKINHIB
 
       !---------------------------------------------------------------------------------
       ! Diffusion equation Flux = (CA - CI) / resistence, rs
@@ -308,9 +291,7 @@ CONTAINS
       !---------------------------------------------------------------------------------
       canopy_cond_cl = MAX ( &
         & 1.6_wp * (GASS - DARK_RESP) / (CO2_mol_mixing_ratio - CO2_conc_leaf_cl) * R_gas * t_air * press_srf**(-1), &
-        & minStomaConductance)          ! R: bei gleichem Input keine Abweichung (22 Stellen nach Komma).
-                                        !    Mit Abweichung die von DARK_RESP kommt ist die Maximal-Abweichung dann schon
-                                        !    ab 12. Stelle nach dem Komma.
+        & minStomaConductance)
 
     ELSE IF (C4Flag) THEN
 
@@ -345,23 +326,22 @@ CONTAINS
       ! K scales of course with EK
       !---------------------------------------------------------------------------------
       K =   ETransport * 1.E3_wp * N_scaling_factors &
-        & * EXP(EK * T0 / R_gas * T1**(-1) * t_air**(-1)) ! R: Abweichung ab der 16. Stelle nach dem Komma also im Bereich EPSILON
+        & * EXP(EK * T0 / R_gas * T1**(-1) * t_air**(-1))
 
       !---------------------------------------------------------------------------------
       ! same as C3
       !---------------------------------------------------------------------------------
       VCMAX =   CarboxRate * N_scaling_factors &
-            & * EXP(EV / R_gas * T0 * T1**(-1) * t_air**(-1))  ! R: Abw. ab der 19. Stelle nach dem Komma also im Bereich EPSILON
+            & * EXP(EV / R_gas * T0 * T1**(-1) * t_air**(-1))
 
       !---------------------------------------------------------------------------------
       !  same as C3, just the 25 degree Celsius proportional factor is different
       !    0.011 for C3,  0.0042 for C4
       !---------------------------------------------------------------------------------
-      DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol,0.0_wp)) ! R: keine Abweichung
-      HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )        ! R: keine Abweichung
+      DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol,0.0_wp))
+      HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )
       DARK_RESP =    FRDC4 * CarboxRate * N_scaling_factors &
-                & *  EXP(ER * T0 / R_gas * T1**(-1) * t_air**(-1)) * HITINHIB * DARKINHIB ! R: Abweichung ab der 15. Stelle nach
-                                                                                          ! dem Komma also im Bereich EPSILON
+                & *  EXP(ER * T0 / R_gas * T1**(-1) * t_air**(-1)) * HITINHIB * DARKINHIB
 
       !---------------------------------------------------------------------------------
       !
@@ -379,15 +359,15 @@ CONTAINS
       !   = sqrt (J0^2 - PVM*Ji/Theta)
       !---------------------------------------------------------------------------------
       JE =   J0 - SQRT (J0**2 - VCMAX &
-        &  * ALC4 * apar_per_lai_cl / THETA) ! R: Abweichung ab der 13. Stelle nach dem Komma
+        &  * ALC4 * apar_per_lai_cl / THETA)
       !---------------------------------------------------------------------------------
       !         see above
       !---------------------------------------------------------------------------------
-      JC = K * CO2_conc_leaf_cl ! R: Abweichung ab der 20. Stelle nach dem Komma also im Bereich EPSILON
+      JC = K * CO2_conc_leaf_cl
       !---------------------------------------------------------------------------------
       ! same as C3, Farquhar Assimilation
       !---------------------------------------------------------------------------------
-      GASS = MIN(JE, JC) * HITINHIB ! R: Abweichung ab der 14. Stelle nach dem Komma also im Bereich EPSILON
+      GASS = MIN(JE, JC) * HITINHIB
       !---------------------------------------------------------------------------------
       !
       !   C4     COMPUTE PHOTORESPIRATION, STOMATAL CONDUCTANCE
@@ -397,7 +377,7 @@ CONTAINS
       !---------------------------------------------------------------------------------
       canopy_cond_cl =   1.6_wp * (GASS - DARK_RESP) / (CO2_mol_mixing_ratio &
         &              - CO2_conc_leaf_cl) * R_gas * t_air * press_srf**(-1)
-      canopy_cond_cl = MAX(canopy_cond_cl, minStomaConductance) ! R: Abweichung ab der 10. Stelle nach dem Komma
+      canopy_cond_cl = MAX(canopy_cond_cl, minStomaConductance)
 
     END IF  ! C3/C4
 
@@ -427,7 +407,7 @@ CONTAINS
     !-----------------------------------------------------------------------
     !  DECLARATIONS
     USE mo_assimi_constants                                      ! we need all of them, except of f_aut_leaf and cCost.
-    USE mo_physical_constants, ONLY: tmelt, R_gas => argas       ! tmelt =273.15_wp;  argas =Universal gas constant [J/(mole*K)]
+    USE mo_jsb_physical_constants, ONLY: tmelt, R_gas => argas   ! tmelt =273.15_wp;  argas =Universal gas constant [J/(mole*K)]
 
     !-----------------------------------------------------------------------
     !  ARGUMENTS
@@ -513,13 +493,9 @@ CONTAINS
 
     nc = SIZE(apar_per_lai_cl)
 
-    !$ACC DATA &
-    !$ACC   PRESENT(t_air, press_srf, par_down_mol, apar_per_lai_cl, co2_mol_mixing_ratio, n_scaling_factors) &
-    !$ACC   PRESENT(canopy_cond_cl, co2_conc_leaf_cl, gross_assimilation_cl, dark_respiration_cl, carbox_rate_max_cl) &
-    !$ACC   PRESENT(e_transport_rate_max_cl, carbox_rate_cl, e_transport_rate_cl)
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR
 
+    !$ACC LOOP GANG VECTOR
     DO ic=1,nc
 
       T1 =  25._wp + tmelt   ! 25 degress Celsius expressed in Kelvin
@@ -545,28 +521,20 @@ CONTAINS
         !   C3     DETERMINE TEMPERATURE-DEPENDENT RATES AND COMPENSATION POINT
         !           And 'DARK' RESPIRATION
         !---------------------------------------------------------------------------------
-        KC = KC0 * EXP(EC / R_gas * T0 * T1**(-1) * t_air(ic)**(-1) )  ! R: Abweichung ab der 13. Stelle nach dem Komma,
-                                                                  !    obwohl T0 und T1 und t_air genau gleich. Ursache:
-                                                                  !    epsilon ist 2.22E-16 (JSBACH3 und JSBACH4) und EXP verstärkt
-                                                                  !    Fehler.
-        KO = KO0 * EXP(EO / R_gas * T0 * T1**(-1) * t_air(ic)**(-1) )  ! R: Abweichung ab der 9. Stelle nach dem Komma, obwohl T0 und T1
-                                                                  !    und t_air genau gleich. (Grund warum hier Abweichung größer
-                                                                  !    als oben: KO0 ist um Faktor 3 größer als KC0.)
-        GAM = MAX (1.7E-6_wp * TC, 0._wp)                          ! R: Keine Abweichungen
+        KC = KC0 * EXP(EC / R_gas * T0 * T1**(-1) * t_air(ic)**(-1) )
+        KO = KO0 * EXP(EO / R_gas * T0 * T1**(-1) * t_air(ic)**(-1) )
+        GAM = MAX (1.7E-6_wp * TC, 0._wp)
         VCMAX = CarboxRate * N_scaling_factors(ic) &
                   * EXP(EV * T0 / R_gas * T1**(-1) * t_air(ic)**(-1) ) ! PVM=PVM0*N_scaling_factors*EXP(Energy scaled relative 25C)
-                                                                  ! R: Abweichung ab der 17. Stelle nach dem Komma
 
-        DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol(ic),0.0_wp)) ! R: keine Abweichungen
-        HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )        ! R: keine Abweichungen
+        DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol(ic),0.0_wp))
+        HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )
         DARK_RESP = FRDC3 * CarboxRate * N_scaling_factors(ic)          &     ! RD=RD0*N_scaling_factors*EXP(Energy scaled relative 25C)
                   * EXP(ER * T0  / R_gas * T1**(-1) * t_air(ic)**(-1) ) &            ! with RD0 proportional PVM0 at 25C
-                  * HITINHIB * DARKINHIB                                         ! R: Abweichung ab der 15. Stelle nach dem Komma
+                  * HITINHIB * DARKINHIB
         JMAX = ETransport * N_scaling_factors(ic)       &  ! PJM=PJM0*N_scaling_factors*EXP(Energy scaled relative 25C)
-                  * TC / 25._wp                        ! R: bis hierher keinerlei Abweichung. N_scaling_factors und ETransport genau
-                                                      !    gleich.
-        JMAX = MAX(JMAX, minOfMaxCarboxrate) ! R: Abweichung nur für Fall minOfmaxCarboxrate und dann ab der 13. Stelle nach dem
-                                            !    Komma weil minOfMaxCarboxrate = 1.0e-12 ist
+                  * TC / 25._wp
+        JMAX = MAX(JMAX, minOfMaxCarboxrate)
 
         !---------------------------------------------------------------------------------
         !
@@ -583,7 +551,7 @@ CONTAINS
         !---------------------------------------------------------------------------------
         IF (JMAX .GT. minOfMaxCarboxrate) THEN
           J1 = ALPHA * apar_per_lai_cl(ic) * JMAX &
-                    / SQRT(JMAX**2 + (ALPHA * apar_per_lai_cl(ic))**2) ! R: Abweichung ab der 15. Stelle nach dem Komma.
+                    / SQRT(JMAX**2 + (ALPHA * apar_per_lai_cl(ic))**2)
         ELSE
           J1 = 0._wp
         END IF
@@ -600,9 +568,7 @@ CONTAINS
         !---------------------------------------------------------------------------------
         !if (R_gas < 0.1 .OR. t_air < 0.1 .OR. press_srf < 0.1) &
         !print*,iGP,R_gas,t_air,press_srf
-        G0 = canopy_cond_cl(ic) / 1.6_wp / R_gas * t_air(ic)**(-1) * press_srf(ic) ! R: Die folgenden Berechnungen führen zu keinen Abweichungen
-                                                                      !    im Ergebnis CO2_conc_leaf_cl und bei GASS zu einer
-                                                                      !    Abweichung ab der 16. Stelle nach Komma
+        G0 = canopy_cond_cl(ic) / 1.6_wp / R_gas * t_air(ic)**(-1) * press_srf(ic)
         !---------------------------------------------------------------------------------
         ! A = min{JC, JE} - RD
         ! => A = JC - RD ^ A = JE - RD
@@ -639,7 +605,7 @@ CONTAINS
         !  but here A = Gross Photosynthesis = iGPP
         !  => A = min{JC, JE}
         !---------------------------------------------------------------------------------
-        GASS = MIN(JE, JC) * HITINHIB ! R: Abweichung ab der 16. Stelle nach Komma
+        GASS = MIN(JE, JC) * HITINHIB
         !---------------------------------------------------------------------------------
         !
         !   C3     COMPUTE PHOTORESPIRATION AND INTER STOMATE CO2 CONCENTRATION
@@ -654,7 +620,7 @@ CONTAINS
         !   result for the actual canopy layer goes back to update_bethy as bethy%CO2_conc_leaf has no canopy layers.
         !   Therefore bethy%CO2_conc_leaf_acc is calculated inside the canopy loop!
         CO2_conc_leaf_cl(ic) = CO2_mol_mixing_ratio(ic) - &
-          & MAX((GASS - DARK_RESP) / MAX(G0, 1.E-6_wp), 0._wp) ! R: keine Abweichung auch nicht aus der Summe aus Abweichungen oben
+          & MAX((GASS - DARK_RESP) / MAX(G0, 1.E-6_wp), 0._wp)
         !---------------------------------------------------------------------------------
         ! Photorespiration
         ! Carboxylilation controlled assimilation:
@@ -696,10 +662,10 @@ CONTAINS
         K = ETransport * 1.E3_wp * N_scaling_factors(ic)          &      ! K=K0*N_scaling_factors*EXP(Energie scaled relative 25C)
                 * EXP(EK * T0 / R_gas * T1**(-1) * t_air(ic)**(-1) )     ! in mmol CO2 Pecase for C4.
         VCMAX = CarboxRate * N_scaling_factors(ic) &                     ! PVM=PVM0*N_scaling_factors*EXP(Energie
-                  * EXP(EV * T0 / R_gas * T1**(-1) * t_air(ic)**(-1) )  ! R: Abweichung an der 22. Stelle.
+                  * EXP(EV * T0 / R_gas * T1**(-1) * t_air(ic)**(-1) )
 
-        DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol(ic),0.0_wp)) ! R: keine Abweichungen
-        HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )        ! R: keine Abweichungen
+        DARKINHIB = 0.5_wp + 0.5_wp * EXP(-2.e5_wp * MAX(par_down_mol(ic),0.0_wp))
+        HITINHIB  = 1._wp / ( 1._wp + EXP( 1.3_wp * ( TC - 55._wp ) ) )
         DARK_RESP = FRDC4 * CarboxRate * N_scaling_factors(ic)  &           ! DARK_RESP=RD0*N_scaling_factors*EXP(Energie scaled relative
                   * EXP(ER * T0 / R_gas * T1**(-1) * t_air(ic)**(-1) )   & !  25C) with RD0 proportional PVM0 at 25C
                   * HITINHIB * DARKINHIB                               ! Abweichung ab der 16. Stelle nach dem Komma
@@ -719,15 +685,15 @@ CONTAINS
         !---------------------------------------------------------------------------------
         !  JE = J0 - sqrt( J0^2 - PVM*alphai*PAR/Theta)
         !---------------------------------------------------------------------------------
-        JE = J0 - SQRT (J0**2 - VCMAX * ALC4 * apar_per_lai_cl(ic) / THETA) ! R: Abweichung ab der 13. Stelle.
+        JE = J0 - SQRT (J0**2 - VCMAX * ALC4 * apar_per_lai_cl(ic) / THETA)
         !---------------------------------------------------------------------------------
         !  JC = (G0*CA + RD) / (1 + G0/K)
         !---------------------------------------------------------------------------------
-        JC = (G0 * CO2_mol_mixing_ratio(ic) + DARK_RESP) / (1._wp + G0 / K) ! R: Abweichung ab der 16. Stelle.
+        JC = (G0 * CO2_mol_mixing_ratio(ic) + DARK_RESP) / (1._wp + G0 / K)
         !---------------------------------------------------------------------------------
         !  A = min{JC, JE} - RD, but here: A = iGPP
         !---------------------------------------------------------------------------------
-        GASS = MIN(JE, JC) * HITINHIB ! R: Abweichung ab der 14. Stelle (?sollte aber 13. sein wg. JE. ?)
+        GASS = MIN(JE, JC) * HITINHIB
         !---------------------------------------------------------------------------------
         !   C4     COMPUTE PHOTORESPIRATION AND INTER STOMATE CO2 CONCENTRATION
         !---------------------------------------------------------------------------------
@@ -737,7 +703,7 @@ CONTAINS
         !    result for the actual canopy layer goes back to update_bethy as bethy%CO2_conc_leaf has no canopy layers.
         !    Therefore bethy%CO2_conc_leaf_acc is calculated inside the canopy loop!
         CO2_conc_leaf_cl(ic) = CO2_mol_mixing_ratio(ic) - &
-                MAX((GASS-DARK_RESP) / MAX(G0, 1.E-6_wp), 0._wp)  ! R: Keine Abweichungen
+                MAX((GASS-DARK_RESP) / MAX(G0, 1.E-6_wp), 0._wp)
         !---------------------------------------------------------------------------------
         ! No Photorespiration with C4 plants
         !---------------------------------------------------------------------------------
@@ -758,7 +724,6 @@ CONTAINS
 
     END DO
     !$ACC END PARALLEL
-    !$ACC END DATA
 
   END SUBROUTINE calc_assimilation_waterlimited
 
@@ -797,17 +762,14 @@ CONTAINS
 
     nc = SIZE(gross_assimilation_ca)
 
-    !$ACC DATA PRESENT(gross_assimilation_ca, dark_respiration_ca, npp_pot_rate_ca)
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR &
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
     !$ACC   PRIVATE(growthRespiration, maintenanceRespiration)
     DO ic=1,nc
       maintenanceRespiration = dark_respiration_ca(ic) / f_aut_leaf
       growthRespiration = max(0._wp,hlp * (gross_assimilation_ca(ic) - maintenanceRespiration))
       NPP_pot_rate_ca(ic) = gross_assimilation_ca(ic) - maintenanceRespiration - growthRespiration
     END DO
-    !$ACC END PARALLEL
-    !$ACC END DATA
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE calc_NPP_pot_rate
 
@@ -826,7 +788,7 @@ CONTAINS
     REAL(wp), INTENT(in)    :: delta_time         ! time step length [s]
     REAL(wp), INTENT(in)    :: NPP                ! potential NPP [mol(C)m-2(canopy)s-1]
     REAL(wp), INTENT(inout) :: seconds_year       ! sum of seconds till new_year
-    REAL(wp), INTENT(inout) :: NPP_sum_year       ! 
+    REAL(wp), INTENT(inout) :: NPP_sum_year       !
     REAL(wp), INTENT(inout) :: NPP_mean_5year     ! NPP
 
 !   local variables

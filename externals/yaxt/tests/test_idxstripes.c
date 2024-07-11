@@ -61,6 +61,7 @@
 
 #include "core/ppm_xfuncs.h"
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_idxlist_utils.h"
 
 static void
@@ -120,11 +121,9 @@ check_pos_ext(size_t num_stripes, const struct Xt_stripe stripes[num_stripes],
               int single_match_only, int ref_unmatched,
               const char *test_desc);
 
-int main(void) {
+int main(int argc, char **argv) {
 
-  // init mpi
-
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 

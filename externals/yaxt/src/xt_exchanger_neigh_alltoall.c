@@ -223,7 +223,7 @@ xt_exchanger_neigh_alltoall_new(int nsend, int nrecv,
       team_share->displs[i] = 0;
     }
     enum { no_reorder = 0 }; // no reordering of ranks in new comm
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
     /* GCC 11 has no means to specify that the special value pointer
      * MPI_UNWEIGHTED does not need to point to something of size > 0 */
 #pragma GCC diagnostic push
@@ -234,7 +234,7 @@ xt_exchanger_neigh_alltoall_new(int nsend, int nrecv,
         comm, nrecv, team_share->ranks + nsend, MPI_UNWEIGHTED, nsend,
         team_share->ranks, MPI_UNWEIGHTED, MPI_INFO_NULL, no_reorder,
         &team_share->nb_comm), comm);
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
 #pragma GCC diagnostic pop
 #endif
   }
@@ -280,7 +280,7 @@ xt_exchanger_neigh_alltoall_copy(Xt_exchanger exchanger,
   /* MPICH up to version 3.4.2 at least cannot do MPI_Comm_dup
    * for topology communicators */
   enum { no_reorder = 0 }; // no reordering of ranks in new comm
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
   /* GCC 11 has no means to specify that the special value pointer
    * MPI_UNWEIGHTED does not need to point to something of size > 0 */
 #pragma GCC diagnostic push
@@ -291,7 +291,7 @@ xt_exchanger_neigh_alltoall_copy(Xt_exchanger exchanger,
       new_comm, (int)nrecv, team_share_copy->ranks + nsend, MPI_UNWEIGHTED,
       (int)nsend, team_share_copy->ranks, MPI_UNWEIGHTED, MPI_INFO_NULL,
       no_reorder, &team_share_copy->nb_comm), new_comm);
-#if __GNUC__ == 11
+#if __GNUC__ >= 11 && __GNUC__ <= 13
 #pragma GCC diagnostic pop
 #endif
 #endif

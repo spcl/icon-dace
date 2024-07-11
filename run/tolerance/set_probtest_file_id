@@ -85,21 +85,21 @@ case $EXPERIMENT in
         --file-id NetCDF "*atm_3d_pl*.nc"
         )
         ;;
-    *mch_dev_icon-ch2_small*)
-        probtest_file_id=(
-        --file-id NetCDF "*atm_3d_ml*.nc"
-        --file-id NetCDF "*iaf*"
-        --file-id NetCDF "*lfff0*"
-        --file-id NetCDF_no_time_dim "*lfff_ml*"
-        )
-        ;;
-    *mch_kenda-ch1_small*)
+    *mch_kenda-ch1_*)
         probtest_file_id=(
         --file-id NetCDF "*atm_3d_ml*.nc"
         --file-id NetCDF "*iaf*"
         --file-id NetCDF "*lfff0*"
         --file-id NetCDF_no_time_dim "*lfff_ml*"
         --file-id dace "*fofTEMP*.nc"
+        )
+        ;;
+    *mch_icon-ch1_small*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*lfff0*c"
+        --file-id NetCDF "*lfff0*p"
+        --file-id NetCDF "*lfff0*z"
         )
         ;;
     *mch_icon-ch2_small*)
@@ -179,6 +179,17 @@ case $EXPERIMENT in
         --file-id NetCDF "iglo_fc_DOM02_0001.nc"
         --file-id latlon "iga_fg_latlon_DOM01_ML_0000000.nc"
         --file-id latlon "iga_fg_latlon_DOM01_PL_0000000.nc"
+        )
+        ;;
+    *art_oem*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d_ml*.nc"
+        --file-id NetCDF "*CH4_ml*.nc"
+        )
+        ;;
+    *c2sm*)
+        probtest_file_id=(
+        --file-id NetCDF "*atm_3d*.nc"
         )
         ;;
     *)

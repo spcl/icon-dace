@@ -10,6 +10,7 @@
 // ---------------------------------------------------------------
 
 #include <gtest/gtest.h>
+#include <cmath>
 
 #include <util_arithmetic_expr.h>
 
@@ -24,9 +25,36 @@ class UtilArithmeticExprTest : public ::testing::Test {
     const char *op_multiplication = "*";
     const char *op_power = "^";
 
-    void EXPECT_FCT_EQ(char *string, const char *fct) {
-        EXPECT_PRED2([](auto string, auto fct) { return strcpy(string, fct); },
-                     string, fct);
+    void EXPECT_T_ITEM_VAL_EQ(t_item item, double val) {
+        EXPECT_PRED2([](auto item,
+                        auto val) { return item.type == 1 && item.val == val; },
+                     item, val);
+    }
+
+    void EXPECT_T_ITEM_OP_EQ(t_item item, char op) {
+        EXPECT_PRED2(
+            [](auto item, auto op) { return item.type == 2 && item.op == op; },
+            item, op);
+    }
+
+    void EXPECT_T_ITEM_FCT_EQ(t_item item, fct_type fct) {
+        EXPECT_PRED2([](auto item,
+                        auto fct) { return item.type == 3 && item.fct == fct; },
+                     item, fct);
+    }
+
+    void EXPECT_T_ITEM_VAR_EQ(t_item item, char *field) {
+        EXPECT_PRED2(
+            [](auto item, auto field) {
+                return item.type == 0 && strcpy(item.field, field);
+            },
+            item, field);
+    }
+
+    void EXPECT_FCT_NAME_EQ(char *string, const char *fct_name) {
+        EXPECT_PRED2(
+            [](auto string, auto fct_name) { return strcpy(string, fct_name); },
+            string, fct_name);
     }
 };
 
@@ -70,20 +98,79 @@ TEST_F(UtilArithmeticExprTest, CanDoParseInfix) {
 }
 
 TEST_F(UtilArithmeticExprTest, ParseInfixIsCorrect) {
-    std::string expression = "20*10/20";
+    std::string expression = "20 * 10 / 20";
     const char *char_array = expression.c_str();
 
     t_list queue;
 
     do_parse_infix(char_array, &queue);
 
-    // TODO: add more concrete examples for do_parse_infix
-    EXPECT_EQ(queue.list[2].op, '*');
-    EXPECT_EQ(queue.list[4].op, '/');
+    // Reverse Polish notation: 20 10 * 20 /
+    EXPECT_T_ITEM_VAL_EQ(queue.list[0], 20);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[1], 10);
+    EXPECT_T_ITEM_OP_EQ(queue.list[2], '*');
+    EXPECT_T_ITEM_VAL_EQ(queue.list[3], 20);
+    EXPECT_T_ITEM_OP_EQ(queue.list[4], '/');
+}
 
-    EXPECT_EQ(queue.list[0].val, 20);
-    EXPECT_EQ(queue.list[1].val, 10);
-    EXPECT_EQ(queue.list[3].val, 20);
+TEST_F(UtilArithmeticExprTest, ParseInfixIsCorrect2) {
+    std::string expression = "3 + 4 * 2 / (1 - 5) ^ 2 ^ 3";
+    const char *char_array = expression.c_str();
+
+    t_list queue;
+
+    do_parse_infix(char_array, &queue);
+
+    // Reverse Polish notation: 3 4 2 * 1 5 - 2 ^ 3 ^ / +
+    EXPECT_T_ITEM_VAL_EQ(queue.list[0], 3);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[1], 4);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[2], 2);
+    EXPECT_T_ITEM_OP_EQ(queue.list[3], '*');
+    EXPECT_T_ITEM_VAL_EQ(queue.list[4], 1);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[5], 5);
+    EXPECT_T_ITEM_OP_EQ(queue.list[6], '-');
+    EXPECT_T_ITEM_VAL_EQ(queue.list[7], 2);
+    EXPECT_T_ITEM_OP_EQ(queue.list[8], '^');
+    EXPECT_T_ITEM_VAL_EQ(queue.list[9], 3);
+    EXPECT_T_ITEM_OP_EQ(queue.list[10], '^');
+    EXPECT_T_ITEM_OP_EQ(queue.list[11], '/');
+    EXPECT_T_ITEM_OP_EQ(queue.list[12], '+');
+}
+
+TEST_F(UtilArithmeticExprTest, ParseInfixIsCorrect3) {
+    std::string expression = "sin ( max ( 2, 3 ) / 3 * pi )";
+    const char *char_array = expression.c_str();
+
+    t_list queue;
+
+    do_parse_infix(char_array, &queue);
+
+    // Reverse Polish notation: 2 3 max 3 / pi * sin
+    EXPECT_T_ITEM_VAL_EQ(queue.list[0], 2);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[1], 3);
+    EXPECT_T_ITEM_FCT_EQ(queue.list[2], MAX);
+    EXPECT_T_ITEM_VAL_EQ(queue.list[3], 3);
+    EXPECT_T_ITEM_OP_EQ(queue.list[4], '/');
+    EXPECT_T_ITEM_VAL_EQ(queue.list[5], M_PI);
+    EXPECT_T_ITEM_OP_EQ(queue.list[6], '*');
+    EXPECT_T_ITEM_FCT_EQ(queue.list[7], SIN);
+}
+
+TEST_F(UtilArithmeticExprTest, ParseInfixIsCorrect4) {
+    std::string expression = "if([z_sfc] > 2, [z_sfc], 0)";
+    const char *char_array = expression.c_str();
+
+    t_list queue;
+
+    do_parse_infix(char_array, &queue);
+
+    // Reverse Polish notation: z_sfc 2 > z_sfc 0 if
+    EXPECT_T_ITEM_VAR_EQ(queue.list[0], (char *) "z_sfc");
+    EXPECT_T_ITEM_VAL_EQ(queue.list[1], 2);
+    EXPECT_T_ITEM_OP_EQ(queue.list[2], '>');
+    EXPECT_T_ITEM_VAR_EQ(queue.list[3], (char *) "z_sfc");
+    EXPECT_T_ITEM_VAL_EQ(queue.list[4], 0);
+    EXPECT_T_ITEM_FCT_EQ(queue.list[5], IF);
 }
 
 TEST_F(UtilArithmeticExprTest, CanGetFCTName) {
@@ -102,7 +189,7 @@ TEST_F(UtilArithmeticExprTest, GetFCTNameIsCorrect) {
     for (int i = 0; i < NUM_FCT; ++i) {
         ierr = get_fctname(i, string);
         EXPECT_EQ(ierr, 0);
-        EXPECT_FCT_EQ(string, fct_name[i]);
+        EXPECT_FCT_NAME_EQ(string, fct_name[i]);
     }
 }
 

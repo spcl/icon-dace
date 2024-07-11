@@ -45,4 +45,8 @@
   psl                pres_msl
   pfull              pres
   phalf              pres_ifc
+  hus2m              qv2m
+  hus2m_wtr          qv2m_wtr
+  hus2m_ice          qv2m_ice
+  hus2m_lnd          qv2m_lnd
 #

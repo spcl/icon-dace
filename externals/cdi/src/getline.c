@@ -32,6 +32,10 @@
 #include <string.h>
 #include <limits.h>
 
+#ifndef SSIZE_MAX
+#define SSIZE_MAX LONG_MAX
+#endif
+
 /* read until end of line or end of file */
 ssize_t
 getline(char **linebuf, size_t *linebuf_size, FILE *fp)

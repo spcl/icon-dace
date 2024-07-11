@@ -6,7 +6,7 @@ dnl Version: 1.0
 dnl Keywords:
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
-dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
+dnl URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are  permitted provided that the following conditions are
@@ -99,10 +99,10 @@ AC_DEFUN([TJ_FIND_TYPE],
                [extern $1 foo; extern $try_type foo;])],
              [AS_VAR_SET([tj_type_equiv],[$try_type]); break])])])
        AC_LANG_POP([C])])
+   m4_ifval([$2],[AS_VAR_COPY([$2],[tj_type_equiv])])
    AS_VAR_SET_IF([tj_type_equiv],
      [$5],
-     [AC_MSG_ERROR([Cannot find matching typedef for $1.])])
-   m4_ifval([$2],[AS_VAR_COPY([$2],[tj_type_equiv])])
+     [m4_ifval([$6],[$6],[AC_MSG_ERROR([Cannot find matching typedef for $1.])])])
    AS_VAR_POPDEF([tj_type_equiv])])
 dnl
 dnl
@@ -111,10 +111,11 @@ dnl Like above, but the list of types to try is pre-specified.
 dnl
 AC_DEFUN([TJ_FIND_INTEGRAL_TYPE],
   [TJ_FIND_TYPE([$1], [$2], [$3],
-	[int 'unsigned int' long 'unsigned long' short 'unsigned short' char 'unsigned char' 'long long' 'unsigned long long'])])
+     [int 'unsigned int' long 'unsigned long' short 'unsigned short' char 'unsigned char' 'long long' 'unsigned long long'],
+     [$4],[$5])])
 dnl
 dnl Local Variables:
 dnl mode: autoconf
-dnl license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+dnl license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 dnl license-default: "bsd"
 dnl End:

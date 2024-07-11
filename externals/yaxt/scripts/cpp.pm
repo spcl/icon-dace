@@ -1,4 +1,4 @@
-# cpp.pm.in --- routines to emulate C preprocessor
+# cpp.pm --- routines to emulate C preprocessor
 #
 # Copyright  (C)  2012  Thomas Jahns <jahns@dkrz.de>
 #
@@ -6,7 +6,7 @@
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Keywords:
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -1971,6 +1971,6 @@ sub whoami  { (caller(1))[3] }
 # Local Variables:
 # mode: cperl
 # cperl-indent-level: 2
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:

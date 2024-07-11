@@ -20,6 +20,7 @@ MODULE mo_cloud_gas_profiles
   USE mo_aes_phy_config,       ONLY: aes_phy_config
   USE mo_aes_cov_config,       ONLY: aes_cov_config
   USE mo_aes_rad_config,       ONLY: aes_rad_config
+  USE mo_coupling_config,      ONLY: is_coupled_to_o3
   USE mo_run_config,           ONLY: iqv, iqc, iqi, iqs, ico2, io3
   USE mo_bc_greenhouse_gases,  ONLY: ghg_co2vmr, ghg_ch4vmr, ghg_n2ovmr, ghg_cfcvmr
   USE mo_bc_ozone,             ONLY: ext_ozone
@@ -116,9 +117,9 @@ CONTAINS
       gas(5,jg)%itrac= MIN(io3,ntracer)
       gas(5,jg)%frad = aes_rad_config(jg)% frad_o3
       gas(5,jg)%mmr2vmr = amd/amo3
-      IF (aes_rad_config(jg)% lrad_yac .AND. &
+      IF (is_coupled_to_o3() .AND. &
         (gas(5,jg)%irad == 5 .OR. gas(5,jg)%irad == 6)) &
-         gas(5,jg)%irad = 4 ! one time step from yac
+         gas(5,jg)%irad = 4 ! one time step from coupler
 !   N2O
       gas(6,jg)%name = 'n2o  '
       gas(6,jg)%irad = aes_rad_config(jg)% irad_n2o

@@ -36,7 +36,7 @@ BmaxV=10.
 BintV=1.
 mytitle="nondef"
 lmount="no"
-MountD="/e/uhome/mripodas/icon-dev/scripts/postprocessing/tools/MRW_mountain/"
+MountD="/pool/data/ICON/releases/2.6.4/scripts/postprocessing/tools/MRW_mountain/"
 ScriptD="/e/uhome/mripodas/icon-dev/scripts/postprocessing/tools/"
 
 while getopts hd:f:v:l:t:o:b:m:M:I:T:R:D: option ; do

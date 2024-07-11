@@ -29,7 +29,7 @@
 #include <sys/systemcfg.h>
 #endif
 
-/* funcion implemetations */
+/* function implementations */
 
 void util_user_name(char *name, int *actual_len) {
     struct passwd *current;
@@ -133,8 +133,6 @@ void util_node_name(char *name, int *actual_len) {
 /* Get the maximum resident set size used, in kilobytes. That is, the maximum
  * number of kilobytes of physical memory that processes used
  * simultaneously.
- *
- * 11/2011 : F. Prill, DWD
  */
 void util_get_maxrss(int *maxrss) {
 #if defined HAVE_GETRUSAGE

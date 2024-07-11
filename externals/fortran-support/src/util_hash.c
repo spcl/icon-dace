@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ---------------------------------------------------------------
 
-/* lookup3 by Bob Jekins, May 2006, Public Domain.
+/* lookup3 by Bob Jenkins, May 2006, Public Domain.
  * Original version downloaded from: http://burtleburtle.net/bob/
  * -------------------------------------------------------------------------------
  * lookup3.c, by Bob Jenkins, May 2006, Public Domain.
@@ -93,7 +93,7 @@
 
 #else
 
-#error "Couldn't determine endianess."
+#error "Couldn't determine endianness."
 
 #endif
 
@@ -273,7 +273,7 @@ uint32_t util_hashword(const void *key, size_t length, uint32_t initval) {
          * rest of the string.  Every machine with memory protection I've seen
          * does it on word boundaries, so is OK with this.  But VALGRIND will
          * still catch it and complain.  The masking trick does make the hash
-         * noticably faster for short strings (like English words).
+         * noticeably faster for short strings (like English words).
          */
 #ifndef VALGRIND
 
@@ -487,7 +487,7 @@ uint32_t util_hashword(const void *key, size_t length, uint32_t initval) {
          * rest of the string.  Every machine with memory protection I've seen
          * does it on word boundaries, so is OK with this.  But VALGRIND will
          * still catch it and complain.  The masking trick does make the hash
-         * noticably faster for short strings (like English words).
+         * noticeably faster for short strings (like English words).
          */
 #ifndef VALGRIND
 

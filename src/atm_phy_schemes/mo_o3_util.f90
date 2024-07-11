@@ -1174,7 +1174,7 @@ CONTAINS
     !$ACC   IF(lacc)
 
 #ifdef _OPENACC
-    CALL init(zviozo, opt_acc_async=.TRUE.)
+    CALL init(zviozo, lacc=lacc, opt_acc_async=.TRUE.)
 #endif
 
     !Time index. Taken from su_ghgclim.F90 of ECMWF's IFS (37r2).

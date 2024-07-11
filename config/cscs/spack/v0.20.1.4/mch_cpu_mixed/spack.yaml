@@ -11,11 +11,11 @@
 spack:
   specs:
   - cosmo-eccodes-definitions@2.25.0.2
-  - icon @develop %nvhpc +grib2 +eccodes-definitions +ecrad +emvorado +art +dace +acm-license ~aes ~jsbach ~ocean ~coupling ~rte-rrtmgp ~loop-exchange ~async-io-rma +mixed-precision
+  - icon @develop %nvhpc +grib2 +eccodes-definitions +ecrad +emvorado +art +dace ~aes ~jsbach ~ocean ~coupling ~rte-rrtmgp ~loop-exchange ~async-io-rma +mixed-precision
   view: true
   concretizer:
     unify: true
   develop:
     icon:
       path: ../../../../..
-      spec: icon @develop %nvhpc +grib2 +eccodes-definitions +ecrad +emvorado +art +dace +acm-license ~aes ~jsbach ~ocean ~coupling ~rte-rrtmgp ~loop-exchange ~async-io-rma +mixed-precision
+      spec: icon @develop %nvhpc +grib2 +eccodes-definitions +ecrad +emvorado +art +dace ~aes ~jsbach ~ocean ~coupling ~rte-rrtmgp ~loop-exchange ~async-io-rma +mixed-precision

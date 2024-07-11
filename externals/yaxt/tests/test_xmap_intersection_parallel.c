@@ -55,6 +55,7 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "xt/xt_xmap_intersection.h"
 #include "xt/xt_xmap.h"
 #include "core/ppm_xfuncs.h"
@@ -84,9 +85,7 @@ parse_options(int *argc, char ***argv);
 
 int main(int argc, char **argv)
 {
-
-  // init mpi
-  xt_mpi_call(MPI_Init(&argc, &argv), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 

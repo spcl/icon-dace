@@ -42,8 +42,7 @@
 MODULE mo_satad
 
 
-USE mo_kind,               ONLY: ireals=>wp     , &
-                                 iintegers=>i4
+USE, INTRINSIC :: iso_fortran_env, ONLY: ireals => real64, iintegers =>  int32
 USE mo_physical_constants, ONLY: r_v   => rv    , & !> gas constant for water vapour
                                rvd_m_o => vtmpc1 , & !! rv/rd-1._wp
                                  o_m_rdv        , & !! 1 - r_d/r_v
@@ -55,7 +54,8 @@ USE mo_physical_constants, ONLY: r_v   => rv    , & !> gas constant for water va
                                  b3    => tmelt , & !!
                                  tmelt
 
-USE mo_convect_tables,     ONLY: b1    => c1es  , & !! constants for computing the sat. vapour
+USE mo_lookup_tables_constants, ONLY:  &
+                                 b1    => c1es  , & !! constants for computing the sat. vapour
                                  b2w   => c3les , & !! pressure over water (l) and ice (i)
                                  b2i   => c3ies , & !!               -- " --
                                  b4w   => c4les , & !!               -- " --

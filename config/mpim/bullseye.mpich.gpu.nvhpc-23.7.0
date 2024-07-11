@@ -32,7 +32,7 @@ else
   # installation of RTTOV if you want to build ICON with it but do not have read
   # access to the installation in ${sw_root}:
   # RTTOV_ROOT='/path/to/rttov'
-  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV}/include"
+  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV_ROOT}/include"
   # RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
   # RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
 fi
@@ -50,30 +50,27 @@ CXXFLAGS='-g -O2'
 CPPFLAGS="-I${sw_root}/include -I${sw_root}/include/libxml2"
 
 FC='mpif90'
-FCFLAGS="-I${sw_root}/include ${RTTOV_FCFLAGS-} -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=accel,inline -acc=gpu,verystrict"
+FCFLAGS="${RTTOV_FCFLAGS-} -I${sw_root}/include -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=accel,inline -acc=gpu,verystrict -gpu=cuda11.8"
+
+ICON_FCFLAGS='-O2'
 
 # Also generate parallel CPU code to make the executable runnable on machines
 # that do not have GPUs (note that in order to run the CPU code, you might need
 # to set the NVCOMPILER_ACC_DEVICE_TYPE environment variable to MULTICORE before
 # running ICON, additionally, it make sense to limit the number of parallel
 # threads per MPI process with the ACC_NUM_CORES environment variable):
-FCFLAGS+=' -acc=multicore'
+ICON_FCFLAGS+=' -acc=multicore'
 
-ICON_FCFLAGS='-O2'
-
-# The compiler fails to process some of the EMVORADO and DACE source files with
-# the default optimization level:
-ICON_WORKAROUND1_FCFLAGS='-O1'
-ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:externals/emvorado/src_iface_icon/radar_interface.f90'
+# The compiler fails to process the following file with the -acc=multicore
+# flag:
+ICON_WORKAROUND1_FCFLAGS='-O2 -acc=host'
+ICON_WORKAROUND1_PATH='src/lnd_phy_nwp/mo_nwp_sfc_utils.f90'
 
 # CUDA compiler must be from the same prefix as the Fortran compiler:
-CUDACXX="$(dirname "$(eval "${BUILD_ENV}" >/dev/null; $FC -show | sed 's: .*$::')")/nvcc"
+CUDACXX="$(cd "$(dirname "$(eval "${BUILD_ENV}" >/dev/null; ${FC} -show | sed 's: .*$::')")/../.."; pwd)/cuda/11.8/bin/nvcc"
 CUDAFLAGS='-g -O3'
 
-# Make FC and CUDACXX agree on the CUDA version (installation) to use:
-BUILD_ENV+=" export NVHPC_CUDA_HOME=\"$(cd "$(dirname "${CUDACXX}")/../../cuda"; pwd)\";"
-
-LDFLAGS="-c++libs -cuda -L${sw_root}/lib ${RTTOV_LDFLAGS-}"
+LDFLAGS="-c++libs -cuda ${RTTOV_LDFLAGS-} -L${sw_root}/lib"
 # The configure scripts of some of the bundled libraries (e.g. SCT) are
 # generated using original (non-patched) Libtool macros, which are not aware of
 # NVidia HPC compilers. As a result, their libtool scripts do not keep the

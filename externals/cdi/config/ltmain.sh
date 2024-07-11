@@ -7952,7 +7952,7 @@ func_mode_link ()
 
 	  # Additionally convert " -pthread" to " -Wl,-pthread" for nagfor
 	  if test yes = "$with_nagfor" ; then
-	    tmp_inherited_linker_flags=`$ECHO " $tmp_inherited_linker_flags" | $SED 's/ -pthread\b/ -Wl,-pthread/g'`
+	    tmp_inherited_linker_flags=`$ECHO " $tmp_inherited_linker_flags " | $SED 's/ -pthread[[:blank:]]/ -Wl,-pthread /g'`
 	  fi
 
 	  for tmp_inherited_linker_flag in $tmp_inherited_linker_flags; do
@@ -9600,7 +9600,7 @@ EOF
       # lines.
 
       if test yes = "$with_nagfor" ; then
-        new_inherited_linker_flags=`$ECHO " $new_inherited_linker_flags" | $SED 's/ -Wl,-pthread\b/ -pthread/g;s/^ *//'`
+        new_inherited_linker_flags=`$ECHO " $new_inherited_linker_flags " | $SED 's/ -Wl,-pthread / -pthread /g;s/^ *//;s/ *$//'`
       fi
 
       # move library search paths that coincide with paths to not yet

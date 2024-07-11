@@ -71,7 +71,7 @@
 
 /* unfortunately GCC 11 cannot handle the literal constants used for
  * MPI_STATUSES_IGNORE by MPICH */
-#if __GNUC__ == 11 && defined MPICH
+#if __GNUC__ >= 11 && __GNUC__ <= 13 && defined MPICH
 #pragma GCC diagnostic push
 #pragma GCC diagnostic ignored "-Wstringop-overread"
 #pragma GCC diagnostic ignored "-Wstringop-overflow"
@@ -873,16 +873,20 @@ static void reorder_transfer_pos(
   free(out.counts);
   free(in.counts);
 
-  free(out_msg->transfer_pos_ext_cache);
-  free(in_msg->transfer_pos_ext_cache);
-  out_msg->transfer_pos_ext_cache = NULL;
-  in_msg->transfer_pos_ext_cache = NULL;
-  out_msg->num_transfer_pos_ext =
-    (int)count_pos_ext(
-      (size_t)out_msg->num_transfer_pos, out_msg->transfer_pos);
-  in_msg->num_transfer_pos_ext =
-    (int)count_pos_ext(
-      (size_t)in_msg->num_transfer_pos, in_msg->transfer_pos);
+  for (int i = 0; i < n_out; ++i) {
+    free(out_msg[i].transfer_pos_ext_cache);
+    out_msg[i].transfer_pos_ext_cache = NULL;
+    out_msg[i].num_transfer_pos_ext =
+      (int)count_pos_ext(
+        (size_t)out_msg[i].num_transfer_pos, out_msg[i].transfer_pos);
+  }
+  for (int i = 0; i < n_in; ++i) {
+    free(in_msg[i].transfer_pos_ext_cache);
+    in_msg[i].transfer_pos_ext_cache = NULL;
+    in_msg[i].num_transfer_pos_ext =
+      (int)count_pos_ext(
+        (size_t)in_msg[i].num_transfer_pos, in_msg[i].transfer_pos);
+  }
 }
 
 static Xt_xmap

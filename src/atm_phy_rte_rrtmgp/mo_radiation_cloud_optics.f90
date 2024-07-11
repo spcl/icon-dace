@@ -26,8 +26,11 @@ MODULE mo_radiation_cloud_optics
   USE mo_physical_constants, ONLY: rhoh2o
   USE mo_radiation_general, ONLY: nbndsw, nbndlw
 
-  USE mo_radiation_io, ONLY: radiation_io_open, radiation_io_close, &
-    radiation_io_copy_double
+  USE mo_netcdf, ONLY: nf90_nowrite
+  USE mo_netcdf_parallel, ONLY: p_nf90_open, p_nf90_close, &
+                              & p_nf90_inq_varid, &
+                              & p_nf90_get_var
+  USE mo_netcdf_errhandler, ONLY: nf
 
   IMPLICIT NONE
   PRIVATE
@@ -92,7 +95,11 @@ CONTAINS
   SUBROUTINE setup_cloud_optics(scale, zinhoml1_, zinhoml2_, &
     zinhoml3_, zinhomi_)
     REAL(wp), INTENT(IN) :: scale, zinhoml1_, zinhoml2_, zinhoml3_, zinhomi_
-    INTEGER :: fid
+
+    INTEGER :: fid, vid
+    CHARACTER(LEN=*), PARAMETER :: routine = &
+    & "mo_radiation_cloud_optics::setup_cloud_optics"
+
     ! Variable liquid cloud inhomogeneity is not used:
     l_variable_inhoml = .FALSE.
 
@@ -101,37 +108,43 @@ CONTAINS
     zinhoml3 = zinhoml3_
     zinhomi  = zinhomi_
 
-!!$    IF (p_parallel_io) THEN
-!!$      CALL io_open ('ECHAM6_CldOptProps.nc', optical_tbl, io_read)
-    CALL radiation_io_open('ECHAM6_CldOptProps.nc', fid)
-    !IF (fid == 0) THEN
-    !  CALL finish('mo_radiation_cloud_optics/setup_cloud_optics', 'File ECHAM6_CldOptProps.nc cannot be opened')
-    !END IF
+    CALL nf(p_nf90_open("ECHAM6_CldOptProps.nc", nf90_nowrite, fid), routine)
 
-    CALL radiation_io_copy_double(fid, "wavenumber", &
-      (/1/), (/n_mdl_bnds/), wavenumber)
-    CALL radiation_io_copy_double(fid, "wavelength", &
-      (/1/), (/n_mdl_bnds/), wavelength)
-    CALL radiation_io_copy_double(fid, "re_droplet", &
-      (/1/), (/n_sizes/), re_droplet)
-    CALL radiation_io_copy_double(fid, "re_crystal", &
-      (/1/), (/n_sizes/), re_crystal)
+    CALL nf(p_nf90_inq_varid(fid, "wavenumber", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, wavenumber, (/1/), (/n_mdl_bnds/)), routine)
 
-    CALL radiation_io_copy_double(fid, "extinction_per_mass_droplet", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_ext_l)
-    CALL radiation_io_copy_double(fid, "co_albedo_droplet", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_coa_l)
-    CALL radiation_io_copy_double(fid, "asymmetry_factor_droplet", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_asy_l)
+    CALL nf(p_nf90_inq_varid(fid, "wavelength", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, wavelength, (/1/), (/n_mdl_bnds/)), routine)
 
-    CALL radiation_io_copy_double(fid, "extinction_per_mass_crystal", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_ext_i)
-    CALL radiation_io_copy_double(fid, "co_albedo_crystal", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_coa_i)
-    CALL radiation_io_copy_double(fid, "asymmetry_factor_crystal", &
-      (/1,1/), (/n_sizes,n_mdl_bnds/), z_asy_i)
+    CALL nf(p_nf90_inq_varid(fid, "re_droplet", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, re_droplet, (/1/), (/n_sizes/)), routine)
 
-    CALL radiation_io_close(fid)
+    CALL nf(p_nf90_inq_varid(fid, "re_crystal", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, re_crystal, (/1/), (/n_sizes/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "extinction_per_mass_droplet", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_ext_l, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "co_albedo_droplet", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_coa_l, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "asymmetry_factor_droplet", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_asy_l, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "extinction_per_mass_crystal", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_ext_i, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "co_albedo_crystal", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_coa_i, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+    CALL nf(p_nf90_inq_varid(fid, "asymmetry_factor_crystal", vid), routine)
+    CALL nf(p_nf90_get_var(fid, vid, z_asy_i, (/1,1/), (/n_sizes,n_mdl_bnds/)), routine)
+
+!FIXME: bug on Aurora testbed
+#ifndef __NEC__
+    CALL nf(p_nf90_close(fid), routine)
+#endif
+
     reimin = MINVAL(re_crystal)
     reimax = MAXVAL(re_crystal)
     del_rei= (re_crystal(2) - re_crystal(1))

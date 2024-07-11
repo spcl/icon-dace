@@ -591,13 +591,13 @@ DO jg = n_dom_start+1, n_dom
 
   IF(my_process_is_mpi_parallel()) THEN
     DO j = 1, 4
-      CALL exchange_data(p_pp%comm_pat_c, p_grfp%fbk_wgt_aw(:,:,j))
+      CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=.FALSE., recv=p_grfp%fbk_wgt_aw(:,:,j))
     ENDDO
     DO j = 1, 4
-      CALL exchange_data(p_pp%comm_pat_c, p_grfp%fbk_wgt_bln(:,:,j))
+      CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=.FALSE., recv=p_grfp%fbk_wgt_bln(:,:,j))
     ENDDO
     DO j = 1, 6
-      CALL exchange_data(p_pp%comm_pat_e, p_grfp%fbk_wgt_e(:,:,j))
+      CALL exchange_data(p_pat=p_pp%comm_pat_e, lacc=.FALSE., recv=p_grfp%fbk_wgt_e(:,:,j))
     ENDDO
   ENDIF
 

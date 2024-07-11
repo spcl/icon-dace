@@ -319,7 +319,7 @@ CONTAINS
 
 SUBROUTINE cubasen &
  & ( kidia,    kfdia,  klon,  ktdia, klev, njkt1, njkt2,  &
- & entrorg, entstpc1, entstpc2, rdepths, texc, qexc,      &
+ & entrorg, fac_entrorg, entstpc1, entstpc2, rdepths, texc, qexc,      &
  & lgrz_deepconv, mtnmask, ldland, ldlake,                &
  & ptenh,  pqenh, pgeoh, paph,  pqhfl, pahfs,             &
 !& PSSTRU,   PSSTRV,                                      &
@@ -495,6 +495,7 @@ REAL(KIND=JPRB)   ,INTENT(in)    :: pqsen(klon,klev)
 REAL(KIND=jprb)   ,INTENT(in)    :: pgeo(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(in)    :: puen(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(in)    :: pven(klon,klev) 
+REAL(KIND=jprb)   ,INTENT(in)    :: fac_entrorg(klon)
 REAL(KIND=jprb)   ,INTENT(inout) :: ptu(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(inout) :: pqu(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(inout) :: plu(klon,klev) 
@@ -582,7 +583,7 @@ IF (lhook) CALL dr_hook('CUBASEN',0,zhook_handle)
 !$ACC DATA &
 !$ACC   PRESENT(mtnmask, ldland, ldlake, ptenh, pqenh, pgeoh, paph, pqhfl, pahfs) &
 !$ACC   PRESENT(pten, pqen, pqsen, pgeo, puen, pven, ptu, pqu, plu, puu, pvu) &
-!$ACC   PRESENT(pwubase, klab, ldcum, kcbot, kctop, kdpl, pcape, pvervel650) &
+!$ACC   PRESENT(pwubase, klab, ldcum, kcbot, kctop, kdpl, pcape, pvervel650, fac_entrorg) &
 
 !$ACC   CREATE(ldsc, kbotsc, ictop, icbot, ibotsc, ilab, idpl, ll_ldbase, llgo_on) &
 !$ACC   CREATE(lldeep, lldcum, lldsc, llfirst, llresetjl, ldocean, zsenh, zqenh) &
@@ -867,7 +868,7 @@ DO jkk=klev,MAX(ktdia,jkt1),-1 ! Big external loop for level testing:
 !         zmix(jl)=2.0_JPRB*0.8E-4_JPRB*zdz(jl)*(paph(jl,jk)/paph(jl,klev+1))**3
 !         ZMIX(JL)=0.4_JPRB*ENTRORG*ZDZ(JL)*MIN(1.0_JPRB,(PQSEN(JL,JK)/PQSEN(JL,KLEV))**3)
           ZMIX(JL)=MERGE(0.3_JPRB, 1.3_JPRB - MIN(1.0_JPRB,PQEN(JL,JK)/PQSEN(JL,JK)), ldocean(jl)) &
-         &  * ENTRORG*ZDZ(JL)*MAX(0.2_JPRB,MIN(1.0_JPRB,(PQSEN(JL,JK)/PQSEN(JL,KLEV))**2))
+         &  * ENTRORG*fac_entrorg(jl)*ZDZ(JL)*MAX(0.2_JPRB,MIN(1.0_JPRB,(PQSEN(JL,JK)/PQSEN(JL,KLEV))**2))
           ! Limitation to avoid trouble at very coarse vertical resolution
           zmix(jl) = MIN(1.0_jprb,zmix(jl))
           zqu(jl,jk)= zqu(jl,jk+1)*(1.0_JPRB-zmix(jl))+ zqf*zmix(jl)

@@ -20,10 +20,11 @@
 #include "fsel.inc"
 MODULE mo_convect_tables
 
-  USE mo_kind,               ONLY: wp
-  USE mo_physical_constants, ONLY: alv, als, cpd, rd, rv, tmelt, vtmpc1
-  USE mo_model_domain,       ONLY: p_patch  ! for debugging only
-  USE mo_math_constants,     ONLY: rad2deg  ! for debugging only
+  USE mo_kind,                    ONLY: wp
+  USE mo_physical_constants,      ONLY: alv, als, cpd, rd, rv, tmelt, vtmpc1
+  USE mo_model_domain,            ONLY: p_patch  ! for debugging only
+  USE mo_math_constants,          ONLY: rad2deg  ! for debugging only
+  USE mo_lookup_tables_constants, ONLY: c3les, c3ies, c4les, c4ies, c5les, c5ies
 
   IMPLICIT NONE
 
@@ -47,9 +48,6 @@ MODULE mo_convect_tables
   PUBLIC :: flookupoverflow
 
   PUBLIC :: cthomi, csecfrl
-
-  PUBLIC :: c1es, c2es, c3les, c3ies, c4les, c4ies, c5les, c5ies, &
-    &       c5alvcp, c5alscp, alvdcp, alsdcp
 
   ! subroutines public
 
@@ -85,24 +83,6 @@ MODULE mo_convect_tables
       INTEGER, INTENT(IN) :: jl
     END SUBROUTINE
   END INTERFACE
-
-  ! Constants used for the computation of lookup tables of the saturation
-  ! mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
-  !
-  REAL (wp), PARAMETER :: c1es  = 610.78_wp              !
-  REAL (wp), PARAMETER :: c2es  = c1es*rd/rv             !
-  REAL (wp), PARAMETER :: c3les = 17.269_wp              !
-  REAL (wp), PARAMETER :: c3ies = 21.875_wp              !
-  REAL (wp), PARAMETER :: c4les = 35.86_wp               !
-  REAL (wp), PARAMETER :: c4ies = 7.66_wp                !
-  REAL (wp), PARAMETER :: c5les = c3les*(tmelt-c4les)    !
-  REAL (wp), PARAMETER :: c5ies = c3ies*(tmelt-c4ies)    !
-  REAL (wp), PARAMETER :: c5alvcp = c5les*alv/cpd        !
-  REAL (wp), PARAMETER :: c5alscp = c5ies*als/cpd        !
-  REAL (wp), PARAMETER :: alvdcp  = alv/cpd              !
-  REAL (wp), PARAMETER :: alsdcp  = als/cpd              !
-  !$ACC DECLARE COPYIN(c1es, c2es, c3les, c3ies, c4les, c4ies, c5les, c5ies) &
-  !$ACC   COPYIN(c5alvcp, c5alscp, alvdcp, alsdcp)
 
   INTEGER, PARAMETER :: jptlucu1 =  50000  ! lookup table lower bound
   INTEGER, PARAMETER :: jptlucu2 = 400000  ! lookup table upper bound

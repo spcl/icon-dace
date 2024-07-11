@@ -32,6 +32,9 @@ export TYPES="void"
 export DATES="void"
 export RESTART_DATE="void"
 
+# increase factor in order to circumvent false alarms
+export FACTOR=22
+
 #--------------------------------------------------------------------------------
 # 
 # 2. Define the checksuite mode

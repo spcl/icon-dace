@@ -52,17 +52,15 @@ MODULE mo_ser_manually
 
   CONTAINS
 
-  SUBROUTINE ser_manually(abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain)
+  SUBROUTINE ser_manually(abs_threshold, rel_threshold, ser_mode, domain)
     INTEGER, INTENT(IN) :: abs_threshold
     INTEGER, INTENT(IN) :: rel_threshold
-    LOGICAL, INTENT(IN) :: lupdate_cpu
     INTEGER, INTENT(IN) :: ser_mode
     INTEGER, INTENT(IN) :: domain
     TYPE(t_ser_options) :: o
 
     o%abs_threshold = abs_threshold
     o%rel_threshold = rel_threshold
-    o%lupdate_cpu = lupdate_cpu
     o%lopenacc = .TRUE. ! all variables tested here should be available on GPU
     o%ser_mode = ser_mode
     o%domain = domain
@@ -191,7 +189,6 @@ MODULE mo_ser_manually
 
     o%abs_threshold = 8
     o%rel_threshold = 8
-    o%lupdate_cpu = .TRUE.
     o%lopenacc = .TRUE.
 
     p_test%int = 23

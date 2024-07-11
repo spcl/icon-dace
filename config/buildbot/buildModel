@@ -44,7 +44,7 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
       exit 1
     fi
     ;;
-  balfrin*) # balfrin
+  balfrin*|tasna*|alps_mch*) # alps_mch
     cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
     if test 0 -ne "$?" ; then
       exit 1
@@ -76,8 +76,8 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
     fi
     ;;
   horeka_*)
-    # KIT horeka
-    sbatch --wait -A hk-project-glori-init -p dev_cpuonly -t 60  -n ${MAKE_PROCS} -o ${LOGFILE} -D ${PWD} ${ICON_DIR}/config/buildbot/buildModel.sbatch
+    # KIT horeka: use quarter of a shared node
+    sbatch --wait -A hk-project-glori-init -p dev_cpuonly -t 60 -N 1 -n 19 -o ${LOGFILE} -D ${PWD} ${ICON_DIR}/config/buildbot/buildModel.sbatch
     #cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
     if test 0 -ne "$?" ; then
       exit 1

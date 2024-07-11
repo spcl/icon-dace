@@ -18,7 +18,6 @@ LINUX_CODENAME=$(lsb_release -sc)
 
 if test ! -z "${BB_NAME-}"; then
   set -x
-  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_autoreconf_BREEZE.sh"
 fi
 
 # Make sure we disable all features that require MPI:

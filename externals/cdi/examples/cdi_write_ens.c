@@ -19,7 +19,7 @@ main(void)
   int tsID;
   int levelID;
   int vlistID, taxisID;
-  SizeType nmiss;
+  SizeType numMissVals;
 
   int instID;
 
@@ -111,7 +111,7 @@ main(void)
 
       for (varID = 0; varID < nvars; varID++)
         {
-          streamReadVar(streamID1, varID, data, &nmiss);
+          streamReadVar(streamID1, varID, data, &numMissVals);
 
           /* int code     =  */ vlistInqVarCode(vlistID, varID);
           gridID = vlistInqVarGrid(vlistID, varID);
@@ -127,7 +127,7 @@ main(void)
               /* int offset = gridsize*levelID; */
             }
 
-          streamWriteVar(streamID2, varID, data, nmiss);
+          streamWriteVar(streamID2, varID, data, numMissVals);
         }
       tsID++;
     }

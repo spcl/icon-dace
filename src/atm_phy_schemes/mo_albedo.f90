@@ -34,7 +34,8 @@ MODULE mo_albedo
   USE mo_radiation_config,     ONLY: rad_csalbw, direct_albedo, direct_albedo_water, albedo_whitecap
   USE mo_lnd_nwp_config,       ONLY: ntiles_total, ntiles_water, ntiles_lnd, lterra_urb, lurbalb,  &
     &                                lseaice, lprog_albsi, llake, isub_water, isub_lake,           &
-    &                                isub_seaice
+    &                                isub_seaice 
+  USE mo_nwp_tuning_config,    ONLY: tune_albedo_wso
   USE mo_extpar_config,        ONLY: itype_vegetation_cycle
   USE sfc_terra_data,          ONLY: csalb, csalb_snow_fe, csalb_snow_fd,     &
     &                                csalb_snow_min, csalb_snow_max, csalb_p, csalb_snow, &
@@ -46,6 +47,7 @@ MODULE mo_albedo
   USE mo_impl_constants,       ONLY: min_rlcell_int, LSS_JSBACH, LSS_TERRA
   USE sfc_seaice,              ONLY: alb_seaice_equil
   USE mo_initicon_config,      ONLY: icpl_da_snowalb
+  USE mo_math_constants,       ONLY: pi_2
 
   IMPLICIT NONE
 
@@ -603,6 +605,7 @@ CONTAINS
 
     ! Local scalars:
     REAL(wp):: snow_frac               !< snow cover fraction
+    REAL(wp):: plcov                   !< plant cover
     REAL(wp):: zminsnow_alb            !< temperature-dependent minimum snow albedo
     REAL(wp):: zmaxsnow_alb            !< maximum snow albedo depending on landuse class
     REAL(wp):: zlimsnow_alb            !< upper limit snow albedo depending on snow depth and roughness length
@@ -617,6 +620,12 @@ CONTAINS
     REAL(wp):: wc_albedo               !< whitecap albedo
 
     REAL(wp):: zsnow_alb(nproma,ntiles_total) !< snow albedo
+
+    ! parameters for applying correction of albedo dependending on soil moisture for soil types 3 to 6
+    REAL(wp):: alb_dif_hlp
+    REAL(wp):: albuv_dif_hlp(nproma)
+    REAL(wp):: albni_dif_hlp(nproma)
+    REAL(wp):: alb_corr, w_so_l, w_so_r
 
     ! Auxiliaries for tile-specific calculation of direct beam albedo
     REAL(wp):: zalbvisdir_t(nproma,ntiles_total+ntiles_water)
@@ -653,14 +662,16 @@ CONTAINS
     i_startblk = pt_patch%cells%start_blk(rl_start,1)
     i_endblk   = pt_patch%cells%end_blk(rl_end,i_nchdom)
     
+    w_so_l = 0.001_wp ! left boundary of w_so for tune_albedo_wso
+    w_so_r = 0.002_wp ! right boundary of w_so for tune_albedo_wso
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,jt,jc,ic,i_startidx,i_endidx,ist,snow_frac,t_fac,               &
+!$OMP DO PRIVATE(jb,jt,jc,ic,i_startidx,i_endidx,ist,snow_frac,plcov,t_fac,         &
 !$OMP            zurb_isa,zsnowfree_albdif,zsnowfree_albvisdif,zsnowfree_albnirdif, &
 !$OMP            zsnow_alb,ilu,i_count_lnd,i_count_sea,i_count_flk,                 &
 !$OMP            i_count_seaice,zminsnow_alb,zmaxsnow_alb,zlimsnow_alb,zsnowalb_lu, &
 !$OMP            zalbvisdir_t,zalbnirdir_t,zsnowfrac, wc_fraction, wc_albedo,       &
-!$OMP            lfrozenwater)                                                      &
+!$OMP            lfrozenwater,alb_dif_hlp,albuv_dif_hlp,albni_dif_hlp,alb_corr)     &
 !$OMP            ICON_OMP_DEFAULT_SCHEDULE
 
     DO jb = i_startblk, i_endblk
@@ -679,7 +690,6 @@ CONTAINS
 
       IF ( atm_phy_nwp_config(jg)%inwp_surface == LSS_TERRA ) THEN
 
-
         !
         ! 1. Consider land points (may have tiles)
         !
@@ -688,7 +698,8 @@ CONTAINS
         !   of active tiles (1<=ntiles<=ntiles_total). Therefore each tile has a 
         !   separate index list.
         ! 
-        !$ACC DATA COPYIN(zalbvisdir_t, zalbnirdir_t) CREATE(zsnowfrac, zsnow_alb) IF(lacc)
+        !$ACC DATA COPYIN(zalbvisdir_t, zalbnirdir_t) &
+        !$ACC   CREATE(zsnowfrac, zsnow_alb, albuv_dif_hlp, albni_dif_hlp) IF(lacc)
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
         !$ACC LOOP SEQ
@@ -700,8 +711,8 @@ CONTAINS
 
 !$NEC ivdep 
           !$ACC LOOP GANG VECTOR &
-          !$ACC   PRIVATE(jc, snow_frac, t_fac, ilu) &
-          !$ACC   PRIVATE(zminsnow_alb, zmaxsnow_alb, zlimsnow_alb, zsnowalb_lu) &
+          !$ACC   PRIVATE(jc, snow_frac, t_fac, ilu, alb_corr, plcov) &
+          !$ACC   PRIVATE(zminsnow_alb, zmaxsnow_alb, zlimsnow_alb, zsnowalb_lu, alb_dif_hlp) &
           !$ACC   PRIVATE(zurb_isa, zsnowfree_albdif, zsnowfree_albvisdif, zsnowfree_albnirdif)
           DO ic = 1, i_count_lnd
 
@@ -769,6 +780,45 @@ CONTAINS
             ! snow cover fraction
             snow_frac = lnd_diag%snowfrac_t(jc,jb,jt)
 
+            ! for tune_albedo_wso > 0: update ext_data%atm%alb_dif, albuv_dif, albni_dif
+            ! as a function of soil type and soil moisture.
+            alb_dif_hlp       = ext_data%atm%alb_dif(jc,jb)
+            albuv_dif_hlp(jc) = ext_data%atm%albuv_dif(jc,jb)
+            albni_dif_hlp(jc) = ext_data%atm%albni_dif(jc,jb)
+
+            IF ( ANY(tune_albedo_wso /= 0._wp) ) THEN
+              ! sand, sand-loam, loam, clay-loam
+              IF ( ext_data%atm%soiltyp(jc,jb) >= 3 .AND. ext_data%atm%soiltyp(jc,jb) <= 6 ) THEN
+
+                ! albedo correction added over dry soil
+                IF (lnd_prog%w_so_t(jc,1,jb,jt) .LT. w_so_l ) THEN  ! 1 kg/m2=0.001mH2O
+                  alb_corr = tune_albedo_wso(1)
+                ! albedo correction added over wet soil
+                ELSE IF (lnd_prog%w_so_t(jc,1,jb,jt) .GT. w_so_r ) THEN
+                  alb_corr = tune_albedo_wso(2)
+                ELSE
+                  ! smooth transition between max and min
+                  alb_corr = tune_albedo_wso(2) + (tune_albedo_wso(1) - tune_albedo_wso(2)) *   &
+                     &       SIN(pi_2*(lnd_prog%w_so_t(jc,1,jb,jt) +                            &
+                     &           3._wp*w_so_r-4._wp*w_so_l)/(w_so_r-w_so_l))**2
+                END IF
+
+                albuv_dif_hlp(jc) = albuv_dif_hlp(jc) + alb_corr * albuv_dif_hlp(jc)/alb_dif_hlp
+                albni_dif_hlp(jc) = albni_dif_hlp(jc) + alb_corr * albni_dif_hlp(jc)/alb_dif_hlp
+                alb_dif_hlp       = alb_dif_hlp + alb_corr
+              END IF
+
+              alb_dif_hlp       = MIN(0.9_wp, MAX(0.05_wp,alb_dif_hlp) )
+              albuv_dif_hlp(jc) = MIN(0.9_wp, MAX(0.02_wp,albuv_dif_hlp(jc)) )
+              albni_dif_hlp(jc) = MIN(0.9_wp, MAX(0.08_wp,albni_dif_hlp(jc)) )
+
+              ! weighting with plant cover (wso-dependent correction is only valid for bare soil)
+              plcov = ext_data%atm%plcov_t(jc,jb,jt)
+              alb_dif_hlp       = plcov * ext_data%atm%alb_dif(jc,jb)   + (1 - plcov) * alb_dif_hlp
+              albuv_dif_hlp(jc) = plcov * ext_data%atm%albuv_dif(jc,jb) + (1 - plcov) * albuv_dif_hlp(jc)
+              albni_dif_hlp(jc) = plcov * ext_data%atm%albni_dif(jc,jb) + (1 - plcov) * albni_dif_hlp(jc)
+
+            END IF
             !
             ! TERRA_URB: Set urban albedo by modifying background albedo (of snow-free fraction)
             !
@@ -778,19 +828,20 @@ CONTAINS
 
               zsnowfree_albdif    = zurb_isa * ext_data%atm%urb_alb_so_t(jc,jb,jt)      &
                                   ! * ext_data%atm%urb_alb_red_t(jc,jb,jt)  & Multiplication already made in mo_ext_data_init.f90
-                &                 + (1._wp - zurb_isa) * ext_data%atm%alb_dif(jc,jb)
+                &                 + (1._wp - zurb_isa) * alb_dif_hlp
 
               zsnowfree_albvisdif = zurb_isa * ext_data%atm%urb_alb_so_t(jc,jb,jt)      &
                                   ! * ext_data%atm%urb_alb_red_t(jc,jb,jt)  & Multiplication already made in mo_ext_data_init.f90
-                &                 + (1._wp - zurb_isa) * ext_data%atm%albuv_dif(jc,jb)
+                &                 + (1._wp - zurb_isa) * albuv_dif_hlp(jc)
 
               zsnowfree_albnirdif = zurb_isa * ext_data%atm%urb_alb_so_t(jc,jb,jt)      &
                                   ! * ext_data%atm%urb_alb_red_t(jc,jb,jt)  & Multiplication already made in mo_ext_data_init.f90
-                &                 + (1._wp - zurb_isa) * ext_data%atm%albni_dif(jc,jb)
+                &                 + (1._wp - zurb_isa) * albni_dif_hlp(jc)
+
             ELSE
-              zsnowfree_albdif    = ext_data%atm%alb_dif(jc,jb)
-              zsnowfree_albvisdif = ext_data%atm%albuv_dif(jc,jb)
-              zsnowfree_albnirdif = ext_data%atm%albni_dif(jc,jb)
+              zsnowfree_albdif    = alb_dif_hlp
+              zsnowfree_albvisdif = albuv_dif_hlp(jc)
+              zsnowfree_albnirdif = albni_dif_hlp(jc)
             END IF
 
             !
@@ -903,7 +954,7 @@ CONTAINS
                 &                                          ext_data%atm%sso_stdh_raw(jc,jb))   &
                 &                 + (1._wp-snow_frac)                                          &
                 &                 * sfc_albedo_dir_yang(prm_diag%cosmu0(jc,jb),                &
-                &                                       ext_data%atm%albuv_dif(jc,jb))
+                &                                       albuv_dif_hlp(jc))
 
               zalbnirdir_t(jc,jt) = snow_frac                                                  &
                 &                 * sfc_albedo_dir_zaengl (prm_diag%cosmu0(jc,jb),             &
@@ -912,7 +963,7 @@ CONTAINS
                 &                                          ext_data%atm%sso_stdh_raw(jc,jb))   &
                 &                 + (1._wp-snow_frac)                                          &
                 &                 * sfc_albedo_dir_yang(prm_diag%cosmu0(jc,jb),                &
-                &                                       ext_data%atm%albni_dif(jc,jb))
+                &                                       albni_dif_hlp(jc))
 
             ELSE IF ( direct_albedo == 4 ) THEN  ! Briegleb and Ramanathan (1992)
               zalbvisdir_t(jc,jt) = snow_frac                                                  &
@@ -922,7 +973,7 @@ CONTAINS
                 &                                          ext_data%atm%sso_stdh_raw(jc,jb))   &
                 &                 + (1._wp-snow_frac)                                          &
                 &                 * sfc_albedo_dir_briegleb(prm_diag%cosmu0(jc,jb),            &
-                &                                       ext_data%atm%albuv_dif(jc,jb),         &
+                &                                       albuv_dif_hlp(jc),                  &
                 &                                       ext_data%atm%z0_lcc(ilu))
 
               zalbnirdir_t(jc,jt) = snow_frac                                                  &
@@ -932,7 +983,7 @@ CONTAINS
                 &                                          ext_data%atm%sso_stdh_raw(jc,jb))   &
                 &                 + (1._wp-snow_frac)                                          &
                 &                 * sfc_albedo_dir_briegleb(prm_diag%cosmu0(jc,jb),            &
-                &                                       ext_data%atm%albni_dif(jc,jb),         &
+                &                                       albni_dif_hlp(jc),                  &
                 &                                       ext_data%atm%z0_lcc(ilu))
             ENDIF
 

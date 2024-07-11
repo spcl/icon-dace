@@ -10,7 +10,7 @@ main(void)
 {
   int gridID, zaxisID1, zaxisID2;
   int vlistID, varID1, varID2, streamID;
-  size_t i, nmiss = 0;
+  size_t i, numMissVals = 0;
   double lons[nlon] = { 0, 30, 60, 90, 120, 150, 180, 210, 240, 270, 300, 330 };
   double lats[nlat] = { -75, -45, -15, 15, 45, 75 };
   double levs[nlev] = { 101300, 92500, 85000, 50000, 20000 };
@@ -71,8 +71,8 @@ main(void)
   for (i = 0; i < nlon * nlat * nlev; i++) var2[i] = 2.2;
 
   // Write var1 and var2
-  streamWriteVar(streamID, varID1, var1, nmiss);
-  streamWriteVar(streamID, varID2, var2, nmiss);
+  streamWriteVar(streamID, varID1, var1, numMissVals);
+  streamWriteVar(streamID, varID2, var2, numMissVals);
 
   // Close the output stream
   streamClose(streamID);

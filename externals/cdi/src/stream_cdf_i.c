@@ -33,12 +33,14 @@ enum AxisType
   T_AXIS = 5,
 };
 
+static int axisTypeChar[] = { '?', 'X', 'Y', 'Z', 'E', 'T' };
+
 typedef struct
 {
-  int dimid;
-  int ncvarid;
-  int dimtype;
-  size_t len;
+  int dimid;    // NetCDF dim ID
+  int ncvarid;  // NetCDF var ID
+  int dimtype;  // AxisType
+  size_t len;   // Dimension size
   char name[CDI_MAX_NAME];
 } ncdim_t;
 
@@ -98,8 +100,8 @@ typedef struct
   int gmapid;
   int positive;
   int ndims;
-  int dimids[MAX_DIMS_CDF];
-  int dimtype[MAX_DIMS_CDF];
+  int dimids[MAX_DIMS_CDF];    // Netcdf dimension IDs
+  int dimtypes[MAX_DIMS_CDF];  // AxisType
   size_t chunks[MAX_DIMS_CDF];
   bool isChunked;
   int chunkType;
@@ -633,7 +635,7 @@ init_ncvars(int nvars, ncvar_t *ncvars, int ncid)
       ncvar->positive = 0;
       ncvar->ndims = 0;
       for (int i = 0; i < MAX_DIMS_CDF; ++i) ncvar->dimids[i] = CDI_UNDEFID;
-      for (int i = 0; i < MAX_DIMS_CDF; ++i) ncvar->dimtype[i] = CDI_UNDEFID;
+      for (int i = 0; i < MAX_DIMS_CDF; ++i) ncvar->dimtypes[i] = CDI_UNDEFID;
       for (int i = 0; i < MAX_DIMS_CDF; ++i) ncvar->chunks[i] = 0;
       ncvar->isChunked = false;
       ncvar->chunkType = CDI_UNDEFID;
@@ -687,13 +689,13 @@ cdf_set_var(ncvar_t *ncvar, int varStatus)
 static void
 cdf_set_dim(ncvar_t *ncvar, int dimid, int dimtype)
 {
-  if (ncvar->dimtype[dimid] != CDI_UNDEFID && ncvar->dimtype[dimid] != dimtype)
+  if (ncvar->dimtypes[dimid] != CDI_UNDEFID && ncvar->dimtypes[dimid] != dimtype)
     {
-      Warning("Inconsistent dimension definition for %s! dimid = %d;  type = %d;  newtype = %d", ncvar->name, dimid,
-              ncvar->dimtype[dimid], dimtype);
+      Warning("Inconsistent dimension definition for %s! dimid=%d  type=%c  newtype=%c", ncvar->name, dimid,
+              axisTypeChar[ncvar->dimtypes[dimid]], axisTypeChar[dimtype]);
     }
 
-  ncvar->dimtype[dimid] = dimtype;
+  ncvar->dimtypes[dimid] = dimtype;
 }
 
 static void
@@ -816,7 +818,7 @@ isHybridSigmaPressureCoordinate(int ncid, int ncvarid, ncvar_t *ncvars, const nc
               int dimid2 = ncvars[avarid2].dimids[0];
               size_t dimlen2 = ncdims[dimid2].len;
 
-              if ((ndims2 == 2 && dimid == ncvars[avarid2].dimids[0]) || (ndims2 == 1 && dimlen == dimlen2 - 1))
+              if ((ndims2 == 2 && dimid == dimid2) || (ndims2 == 1 && dimlen == dimlen2 - 1))
                 {
                   double px = 1;
                   if (p0varid1 != -1 && p0varid1 == p0varid2) cdf_get_var_double(ncid, p0varid2, &px);
@@ -924,12 +926,12 @@ cdf_print_vars(const ncvar_t *ncvars, int nvars, const char *oname)
           axis[ndim++] = ':';
           for (int i = 0; i < ncvar->ndims; i++)
             {
-              if      (ncvar->dimtype[i] == T_AXIS) axis[ndim++] = TAXIS;
-              else if (ncvar->dimtype[i] == Z_AXIS) axis[ndim++] = ZAXIS;
-              else if (ncvar->dimtype[i] == E_AXIS) axis[ndim++] = EAXIS;
-              else if (ncvar->dimtype[i] == Y_AXIS) axis[ndim++] = YAXIS;
-              else if (ncvar->dimtype[i] == X_AXIS) axis[ndim++] = XAXIS;
-              else                                  axis[ndim++] = '?';
+              if      (ncvar->dimtypes[i] == T_AXIS) axis[ndim++] = TAXIS;
+              else if (ncvar->dimtypes[i] == Z_AXIS) axis[ndim++] = ZAXIS;
+              else if (ncvar->dimtypes[i] == E_AXIS) axis[ndim++] = EAXIS;
+              else if (ncvar->dimtypes[i] == Y_AXIS) axis[ndim++] = YAXIS;
+              else if (ncvar->dimtypes[i] == X_AXIS) axis[ndim++] = XAXIS;
+              else                                   axis[ndim++] = '?';
             }
         }
       else
@@ -988,26 +990,24 @@ cdfScanAttrAxis(ncvar_t *ncvars, ncdim_t *ncdims, int ncvarid, const char *attst
         case 'Z':
           ncvar->zdim = dimidsp[attlen];
           dimtype = Z_AXIS;
-
-          setVar = ncvar->ndims == 1;
+          setVar = (ncvar->ndims == 1);
           break;
         case 'y':
         case 'Y':
           ncvar->ydim = dimidsp[attlen];
           dimtype = Y_AXIS;
-
-          setVar = ncvar->ndims == 1;
+          setVar = (ncvar->ndims == 1);
           break;
         case 'x':
         case 'X':
           ncvar->xdim = dimidsp[attlen];
           dimtype = X_AXIS;
-
-          setVar = ncvar->ndims == 1;
+          setVar = (ncvar->ndims == 1);
           break;
         default: continue;
         }
       cdf_set_dim(ncvar, attlen, dimtype);
+
       if (setVar)
         {
           cdf_set_var(ncvar, CoordVar);
@@ -1057,7 +1057,7 @@ set_extra_attr(char *buf, int nvdims, const size_t *chunks)
   pos += sizeof(prefix) - 1;
   for (int i = nvdims - 1; i >= 0; --i)
     {
-      pos += (size_t) (sprintf(buf + pos, "%zu%s", chunks[i], i > 0 ? "x" : ""));
+      pos += (size_t) (snprintf(buf + pos, CDI_MAX_NAME - pos, "%zu%s", chunks[i], i > 0 ? "x" : ""));
     }
   buf[pos] = ' ';
   buf[pos + 1] = 0;
@@ -1105,7 +1105,7 @@ cdfScanVarAttr(int nvars, ncvar_t *ncvars, int ndims, ncdim_t *ncdims, int timed
             }
       strcpy(ncvar->name, name);
 
-      for (int ncdimid = 0; ncdimid < nvdims; ncdimid++) ncvar->dimtype[ncdimid] = -1;
+      for (int ncdimid = 0; ncdimid < nvdims; ncdimid++) ncvar->dimtypes[ncdimid] = -1;
 
       ncvar->xtype = xtype;
       ncvar->ndims = nvdims;
@@ -1616,7 +1616,7 @@ cdf_set_chunk_info(stream_t *streamptr, int nvars, ncvar_t *ncvars)
               size_t chunkSize = ncvar->chunks[i];
               if (chunkSize > 1)
                 {
-                  int dimType = ncvar->dimtype[i];
+                  int dimType = ncvar->dimtypes[i];
                   // clang-format off
                   if      (dimType == T_AXIS && chunkSize > streamptr->chunkSizeTdim) streamptr->chunkSizeTdim = chunkSize;
                   else if (dimType == Z_AXIS && chunkSize > streamptr->chunkSizeZdim) streamptr->chunkSizeZdim = chunkSize;
@@ -1694,7 +1694,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           if (CDI_Debug)
             {
               Message("var %d %s", ncvarid, ncvar->name);
-              for (int i = 0; i < ndims; i++) printf("  dim%d type=%d  ", i, ncvar->dimtype[i]);
+              for (int i = 0; i < ndims; i++) printf("  dim%d type=%d  ", i, ncvar->dimtypes[i]);
               printf("\n");
             }
         }
@@ -1710,7 +1710,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           int ndims = ncvar->ndims;
           for (int i = 0; i < ndims; i++)
             {
-              int dimtype = ncvar->dimtype[i];
+              int dimtype = ncvar->dimtypes[i];
               lxdim |= (dimtype == X_AXIS);
               lydim |= (dimtype == Y_AXIS);
               lzdim |= (dimtype == Z_AXIS);
@@ -1726,7 +1726,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           if (lxdim && (lydim || ncvar->gridtype == GRID_UNSTRUCTURED))
             for (int i = ndims - 1; i >= 0; i--)
               {
-                if (ncvar->dimtype[i] == -1 && !lzdim)
+                if (ncvar->dimtypes[i] == -1 && !lzdim)
                   {
                     if (lcdim)
                       {
@@ -1750,7 +1750,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
       int ndims = ncvar->ndims;
       for (int i = 0; i < ndims; i++)
         {
-          if (ncvar->dimtype[i] == CDI_UNDEFID)
+          if (ncvar->dimtypes[i] == CDI_UNDEFID)
             {
               int ncdimid = ncvar->dimids[i];
               if (ncdims[ncdimid].dimtype == Z_AXIS)
@@ -1772,7 +1772,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           int ndims = ncvar->ndims;
           for (int i = 0; i < ndims; i++)
             {
-              int dimtype = ncvar->dimtype[i];
+              int dimtype = ncvar->dimtypes[i];
               lxdim |= (dimtype == X_AXIS);
               lydim |= (dimtype == Y_AXIS);
               lzdim |= (dimtype == Z_AXIS);
@@ -1788,7 +1788,7 @@ cdf_set_dimtype(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           //   if ( ndims > 1 )
           for (int i = ndims - 1; i >= 0; i--)
             {
-              if (ncvar->dimtype[i] == -1)
+              if (ncvar->dimtypes[i] == -1)
                 {
                   int dimtype;
                   if (!lxdim)
@@ -2198,19 +2198,19 @@ cdf_copy_grid_axis_attr(ncvar_t *ncvar, struct gridaxis_t *gridaxis)
 }
 
 static int
-cdf_get_xydimid(int ndims, int *dimids, int *dimtype, int *xdimid, int *ydimid)
+cdf_get_xydimid(int ndims, int *dimids, int *dimtypes, int *xdimid, int *ydimid)
 {
   int nxdims = 0, nydims = 0;
   int xdimids[2] = { -1, -1 }, ydimids[2] = { -1, -1 };
 
   for (int i = 0; i < ndims; i++)
     {
-      if (dimtype[i] == X_AXIS && nxdims < 2)
+      if (dimtypes[i] == X_AXIS && nxdims < 2)
         {
           xdimids[nxdims] = dimids[i];
           nxdims++;
         }
-      else if (dimtype[i] == Y_AXIS && nydims < 2)
+      else if (dimtypes[i] == Y_AXIS && nydims < 2)
         {
           ydimids[nydims] = dimids[i];
           nydims++;
@@ -2755,9 +2755,9 @@ cdf_read_coordinates(stream_t *streamptr, struct cdfLazyGrid *lazyGrid, ncvar_t 
   if (grid->size == 0)
     {
       int ndims = ncvar->ndims;
-      int *dimtype = ncvar->dimtype;
-      if (ndims == 0 || (ndims == 1 && dimtype[0] == T_AXIS) || (ndims == 1 && dimtype[0] == Z_AXIS)
-          || (ndims == 2 && dimtype[0] == T_AXIS && dimtype[1] == Z_AXIS))
+      int *dimtypes = ncvar->dimtypes;
+      if (ndims == 0 || (ndims == 1 && dimtypes[0] == T_AXIS) || (ndims == 1 && dimtypes[0] == Z_AXIS)
+          || (ndims == 2 && dimtypes[0] == T_AXIS && dimtypes[1] == Z_AXIS))
         {
           grid->type = GRID_GENERIC;
           grid->size = 1;
@@ -2779,7 +2779,7 @@ static bool
 cdf_set_unstructured_par(ncvar_t *ncvar, grid_t *grid, int *xdimid, int *ydimid, GridInfo *gridInfo, bool readPart)
 {
   int ndims = ncvar->ndims;
-  int *dimtype = ncvar->dimtype;
+  int *dimtypes = ncvar->dimtypes;
 
   int zdimid = CDI_UNDEFID;
   int xdimidx = CDI_UNDEFID, ydimidx = CDI_UNDEFID;
@@ -2787,9 +2787,9 @@ cdf_set_unstructured_par(ncvar_t *ncvar, grid_t *grid, int *xdimid, int *ydimid,
   for (int i = 0; i < ndims; i++)
     {
       // clang-format off
-      if      (dimtype[i] == X_AXIS) xdimidx = i;
-      else if (dimtype[i] == Y_AXIS) ydimidx = i;
-      else if (dimtype[i] == Z_AXIS) zdimid = ncvar->dimids[i];
+      if      (dimtypes[i] == X_AXIS) xdimidx = i;
+      else if (dimtypes[i] == Y_AXIS) ydimidx = i;
+      else if (dimtypes[i] == Z_AXIS) zdimid = ncvar->dimids[i];
       // clang-format on
     }
 
@@ -2797,14 +2797,14 @@ cdf_set_unstructured_par(ncvar_t *ncvar, grid_t *grid, int *xdimid, int *ydimid,
     {
       if (grid->x.size > grid->y.size && grid->y.size < 1000)
         {
-          dimtype[ydimidx] = Z_AXIS;
+          dimtypes[ydimidx] = Z_AXIS;
           *ydimid = CDI_UNDEFID;
           grid->size = grid->x.size;
           grid->y.size = 0;
         }
       else if (grid->y.size > grid->x.size && grid->x.size < 1000)
         {
-          dimtype[xdimidx] = Z_AXIS;
+          dimtypes[xdimidx] = Z_AXIS;
           *xdimid = *ydimid;
           *ydimid = CDI_UNDEFID;
           grid->size = grid->y.size;
@@ -2855,22 +2855,22 @@ cdf_set_grid_to_similar_vars(ncvar_t *ncvar1, ncvar_t *ncvar2, int gridtype, int
       int xdimid2 = CDI_UNDEFID, ydimid2 = CDI_UNDEFID, zdimid2 = CDI_UNDEFID;
       int xdimidx = CDI_UNDEFID, ydimidx = CDI_UNDEFID;
 
-      const int *dimtype2 = ncvar2->dimtype;
+      const int *dimtypes2 = ncvar2->dimtypes;
       const int *dimids2 = ncvar2->dimids;
       int ndims2 = ncvar2->ndims;
       for (int i = 0; i < ndims2; i++)
         {
-          if (dimtype2[i] == X_AXIS)
+          if (dimtypes2[i] == X_AXIS)
             {
               xdimid2 = dimids2[i];
               xdimidx = i;
             }
-          else if (dimtype2[i] == Y_AXIS)
+          else if (dimtypes2[i] == Y_AXIS)
             {
               ydimid2 = dimids2[i];
               ydimidx = i;
             }
-          else if (dimtype2[i] == Z_AXIS)
+          else if (dimtypes2[i] == Z_AXIS)
             {
               zdimid2 = dimids2[i];
             }
@@ -2882,13 +2882,13 @@ cdf_set_grid_to_similar_vars(ncvar_t *ncvar1, ncvar_t *ncvar2, int gridtype, int
             {
               if (xdimid == xdimid2 && ydimid2 != CDI_UNDEFID && zdimid2 == CDI_UNDEFID)
                 {
-                  ncvar2->dimtype[ydimidx] = Z_AXIS;
+                  ncvar2->dimtypes[ydimidx] = Z_AXIS;
                   ydimid2 = CDI_UNDEFID;
                 }
 
               if (xdimid == ydimid2 && xdimid2 != CDI_UNDEFID && zdimid2 == CDI_UNDEFID)
                 {
-                  ncvar2->dimtype[xdimidx] = Z_AXIS;
+                  ncvar2->dimtypes[xdimidx] = Z_AXIS;
                   xdimid2 = ydimid2;
                   ydimid2 = CDI_UNDEFID;
                 }
@@ -2945,11 +2945,11 @@ cdf_define_all_grids(stream_t *streamptr, ncgrid_t *ncgrid, int vlistID, ncdim_t
           GridPart gridPart;
           gridpart_init(&gridPart);
           int ndims = ncvar->ndims;
-          int *dimtype = ncvar->dimtype;
+          int *dimtypes = ncvar->dimtypes;
           int vdimid = CDI_UNDEFID;
           struct addIfNewRes projAdded = { .Id = CDI_UNDEFID, .isNew = 0 }, gridAdded = { .Id = CDI_UNDEFID, .isNew = 0 };
           int xdimid = CDI_UNDEFID, ydimid = CDI_UNDEFID;
-          int nydims = cdf_get_xydimid(ndims, ncvar->dimids, dimtype, &xdimid, &ydimid);
+          int nydims = cdf_get_xydimid(ndims, ncvar->dimids, dimtypes, &xdimid, &ydimid);
 
           int xaxisid = (xdimid != CDI_UNDEFID) ? ncdims[xdimid].ncvarid : CDI_UNDEFID;
           int yaxisid = (ydimid != CDI_UNDEFID) ? ncdims[ydimid].ncvarid : CDI_UNDEFID;
@@ -3177,7 +3177,7 @@ cdf_define_all_zaxes(stream_t *streamptr, int vlistID, ncdim_t *ncdims, int nvar
             {
               for (int i = 0; i < ndims; i++)
                 {
-                  if (ncvar->dimtype[i] == Z_AXIS) zdimid = ncvar->dimids[i];
+                  if (ncvar->dimtypes[i] == Z_AXIS) zdimid = ncvar->dimids[i];
                 }
 
               if (zdimid != CDI_UNDEFID)
@@ -3228,7 +3228,7 @@ cdf_define_all_zaxes(stream_t *streamptr, int vlistID, ncdim_t *ncdims, int nvar
                 }
 #endif
 
-              if (zaxisType == ZAXIS_HYBRID && ncvars[zvarid].vct)
+              if ((zaxisType == ZAXIS_HYBRID || zaxisType == ZAXIS_HYBRID_HALF) && ncvars[zvarid].vct)
                 {
                   vct = ncvars[zvarid].vct;
                   vctsize = ncvars[zvarid].vctsize;
@@ -3356,7 +3356,7 @@ cdf_define_all_zaxes(stream_t *streamptr, int vlistID, ncdim_t *ncdims, int nvar
                 ndims = ncvars[ncvarid2].ndims;
                 for (int i = 0; i < ndims; i++)
                   {
-                    if (ncvars[ncvarid2].dimtype[i] == Z_AXIS) zdimid2 = ncvars[ncvarid2].dimids[i];
+                    if (ncvars[ncvarid2].dimtypes[i] == Z_AXIS) zdimid2 = ncvars[ncvarid2].dimids[i];
                   }
 
                 if (zdimid == zdimid2 /* && zvarid == zvarid2 */)
@@ -3495,8 +3495,8 @@ cdf_xtype_to_numbytes(int xtype)
   else if (xtype == NC_FLOAT )  numBytes = 4;
 #ifdef HAVE_NETCDF4
   else if (xtype == NC_UBYTE )  numBytes = 1;
-  else if (xtype == NC_LONG  )  numBytes = 4;
   else if (xtype == NC_USHORT)  numBytes = 2;
+  else if (xtype == NC_LONG  )  numBytes = 4;
   else if (xtype == NC_UINT  )  numBytes = 4;
 #endif
   // clang-format on
@@ -3511,12 +3511,14 @@ calc_chunk_cache_size(int timedimid, ncvar_t *ncvar)
 
   chunkCacheSize *= (ncvar->dimids[0] == timedimid) ? ncvar->chunks[0] : 1;
 
-  int zdimid = CDI_UNDEFID;
   for (int i = 0; i < ncvar->ndims; i++)
     {
-      if (ncvar->dimtype[i] == Z_AXIS) zdimid = ncvar->dimids[i];
+      if (ncvar->dimtypes[i] == Z_AXIS)
+        {
+          chunkCacheSize *= ncvar->chunks[i];
+          break;
+        }
     }
-  if (zdimid != CDI_UNDEFID) chunkCacheSize *= ncvar->chunks[zdimid];
 
   chunkCacheSize *= cdf_xtype_to_numbytes(ncvar->xtype);
 
@@ -3622,7 +3624,7 @@ cdf_define_all_vars(stream_t *streamptr, int vlistID, int instID, int modelID, i
       const int *dimids = ncvar->dimids;
 
       int ixyz = 0;
-      if (gridInqType(gridID) == GRID_UNSTRUCTURED && ndims - iodim <= 2 && (ydimid == xdimid || ydimid == CDI_UNDEFID))
+      if ((ndims - iodim) <= 2 && (ydimid == xdimid || ydimid == CDI_UNDEFID))
         {
           ixyz = (xdimid == ncdims[dimids[ndims - 1]].dimid) ? 321 : 213;
         }
@@ -3632,9 +3634,9 @@ cdf_define_all_vars(stream_t *streamptr, int vlistID, int instID, int modelID, i
             {
               int dimid = ncdims[dimids[idim]].dimid;
               // clang-format off
-              if      (xdimid == dimid) ixyz += 1*ipow10[ndims-idim-1];
-              else if (ydimid == dimid) ixyz += 2*ipow10[ndims-idim-1];
-              else if (zdimid == dimid) ixyz += 3*ipow10[ndims-idim-1];
+              if      (xdimid == dimid) ixyz += 1 * ipow10[ndims - idim - 1];
+              else if (ydimid == dimid) ixyz += 2 * ipow10[ndims - idim - 1];
+              else if (zdimid == dimid) ixyz += 3 * ipow10[ndims - idim - 1];
               // clang-format on
             }
         }
@@ -3650,9 +3652,10 @@ cdf_define_all_vars(stream_t *streamptr, int vlistID, int instID, int modelID, i
       */
       if (ncvar->numberOfForecastsInEnsemble != -1)
         {
-          cdiDefKeyInt(vlistID, varID, CDI_KEY_TYPEOFENSEMBLEFORECAST, ncvar->typeOfEnsembleForecast);
           cdiDefKeyInt(vlistID, varID, CDI_KEY_NUMBEROFFORECASTSINENSEMBLE, ncvar->numberOfForecastsInEnsemble);
           cdiDefKeyInt(vlistID, varID, CDI_KEY_PERTURBATIONNUMBER, ncvar->perturbationNumber);
+          if (ncvar->numberOfForecastsInEnsemble != -1)
+            cdiDefKeyInt(vlistID, varID, CDI_KEY_TYPEOFENSEMBLEFORECAST, ncvar->typeOfEnsembleForecast);
         }
 
       if (ncvar->extra[0] != 0) cdiDefKeyString(vlistID, varID, CDI_KEY_CHUNKS, ncvar->extra);
@@ -4195,11 +4198,11 @@ cdfVerifyVars(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           for (int i = 0; i < ncvar->ndims; ++i)
             {
               // clang-format off
-              if      (ncvar->dimtype[i] == T_AXIS) ndims++;
-              else if (ncvar->dimtype[i] == E_AXIS) ndims++;
-              else if (ncvar->dimtype[i] == Z_AXIS) ndims++;
-              else if (ncvar->dimtype[i] == Y_AXIS) ndims++;
-              else if (ncvar->dimtype[i] == X_AXIS) ndims++;
+              if      (ncvar->dimtypes[i] == T_AXIS) ndims++;
+              else if (ncvar->dimtypes[i] == E_AXIS) ndims++;
+              else if (ncvar->dimtypes[i] == Z_AXIS) ndims++;
+              else if (ncvar->dimtypes[i] == Y_AXIS) ndims++;
+              else if (ncvar->dimtypes[i] == X_AXIS) ndims++;
               // clang-format on
             }
 
@@ -4212,7 +4215,7 @@ cdfVerifyVars(int nvars, ncvar_t *ncvars, ncdim_t *ncdims)
           int zdimid = -1;
           for (int i = 0; i < ncvar->ndims; ++i)
             {
-              if (ncvar->dimtype[i] == Z_AXIS) zdimid = ncvar->dimids[i];
+              if (ncvar->dimtypes[i] == Z_AXIS) zdimid = ncvar->dimids[i];
             }
 
           int zaxisID = ncvar->zaxisID;
@@ -4246,10 +4249,18 @@ wrf_read_timestep(int fileID, int nctimevarid, int tsID)
 }
 
 static double
-get_timevalue(int fileID, int nctimevarid, size_t ncStepIndex)
+get_timevalue(int fileID, int nctimevarid, size_t ncStepIndex, double *timevarBuffer)
 {
   double timevalue = 0.0;
-  cdf_get_var1_double(fileID, nctimevarid, &ncStepIndex, &timevalue);
+
+  if (timevarBuffer)
+    {
+      timevalue = timevarBuffer[ncStepIndex];
+    }
+  else
+    {
+      cdf_get_var1_double(fileID, nctimevarid, &ncStepIndex, &timevalue);
+    }
 
   if (timevalue >= NC_FILL_DOUBLE || timevalue < -NC_FILL_DOUBLE) timevalue = 0.0;
 
@@ -4292,8 +4303,11 @@ cdf_read_timesteps(int numTimesteps, stream_t *streamptr, taxis_t *taxis0)
             }
           else
             {
+              double *timevarBuffer = (double *) malloc(numTimesteps * sizeof(double));
+              cdf_get_var_double(fileID, nctimevarid, timevarBuffer);
               for (int tsID = 0; tsID < numTimesteps; ++tsID)
-                vDateTimeList[tsID] = cdi_decode_timeval(get_timevalue(fileID, nctimevarid, tsID), taxis0);
+                vDateTimeList[tsID] = cdi_decode_timeval(get_timevalue(fileID, nctimevarid, tsID, timevarBuffer), taxis0);
+              if (timevarBuffer) free(timevarBuffer);
             }
         }
 
@@ -4364,7 +4378,7 @@ cdf_read_timesteps(int numTimesteps, stream_t *streamptr, taxis_t *taxis0)
                 {
                   size_t ncStepIndex = streamptr->tsteps[tsID].ncStepIndex;
                   taxis_t *taxis = &streamptr->tsteps[tsID].taxis;
-                  cdi_set_forecast_period(get_timevalue(fileID, leadtimeid, ncStepIndex), taxis);
+                  cdi_set_forecast_period(get_timevalue(fileID, leadtimeid, ncStepIndex, NULL), taxis);
                 }
             }
         }

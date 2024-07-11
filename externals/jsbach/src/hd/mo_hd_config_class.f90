@@ -88,7 +88,7 @@ CONTAINS
     fract_filename          = 'bc_land_frac.nc'
     debug_hd                = .FALSE.
     diag_water_budget       = .TRUE.
-    enforce_water_budget    = .TRUE.
+    enforce_water_budget    = config%model_config%enforce_water_budget
     routing_scheme          = 'full'
     read_initial_reservoirs = .FALSE.
     use_bifurcated_rivers   = .FALSE.
@@ -112,6 +112,10 @@ CONTAINS
     config%use_bifurcated_rivers     = use_bifurcated_rivers
 
     IF (.NOT. active) RETURN
+
+    IF (.NOT. enforce_water_budget) THEN
+      CALL message(TRIM(routine), 'WARNING: Model will not stop due to river routing water balance violation.')
+    END IF
 
     hd_o  => new_vgrid('hd_nres_overlflow', ZAXIS_DEPTH_BELOW_LAND, 1, levels=(/1._wp/), units='')
     CALL Register_vgrid(hd_o)

@@ -77,14 +77,20 @@ MODULE xt_config_f
   PUBLIC :: xt_config_f2c
   PUBLIC :: xt_exchanger_id_by_name
   PUBLIC :: xt_config_get_exchange_method, xt_config_set_exchange_method
-  PUBLIC :: xt_config_get_idxvec_autoconvert_size, &
-       xt_config_set_idxvec_autoconvert_size
   INTEGER, PUBLIC, PARAMETER :: &
        xt_exchanger_irecv_send = 0, &
        xt_exchanger_irecv_isend = 1, &
        xt_exchanger_irecv_isend_packed = 2, &
        xt_exchanger_mix_isend_irecv = 3, &
-       xt_exchanger_neigh_alltoall = 4
+       xt_exchanger_neigh_alltoall = 4, &
+       xt_exchanger_irecv_isend_ddt_packed = 5
+  PUBLIC :: xt_config_get_idxvec_autoconvert_size, &
+       xt_config_set_idxvec_autoconvert_size
+  PUBLIC :: xt_config_get_redist_mthread_mode, &
+       xt_config_set_redist_mthread_mode
+  INTEGER, PUBLIC, PARAMETER :: &
+       XT_MT_NONE = 0, &
+       XT_MT_OPENMP = 1
 
   CHARACTER(len=*), PARAMETER :: filename = 'xt_config_f.f90'
 
@@ -200,6 +206,39 @@ CONTAINS
     cnvsize_c = INT(cnvsize, c_int)
     CALL xt_config_set_idxvec_autoconvert_size_c(config%cptr, cnvsize_c)
   END SUBROUTINE xt_config_set_idxvec_autoconvert_size
+
+  FUNCTION xt_config_get_redist_mthread_mode(config) RESULT(mt_mode)
+    TYPE(xt_config), INTENT(in) :: config
+    INTEGER :: mt_mode
+    INTERFACE
+      FUNCTION xt_config_get_redist_mthread_mode_c(config) RESULT(mt_mode) &
+           BIND(c, name='xt_config_get_redist_mthread_mode')
+        IMPORT :: c_int, c_ptr
+        TYPE(c_ptr), VALUE :: config
+        INTEGER(c_int) :: mt_mode
+      END FUNCTION xt_config_get_redist_mthread_mode_c
+    END INTERFACE
+    mt_mode = INT(xt_config_get_redist_mthread_mode_c(config%cptr))
+  END FUNCTION xt_config_get_redist_mthread_mode
+
+  SUBROUTINE xt_config_set_redist_mthread_mode(config, mt_mode)
+    TYPE(xt_config), INTENT(inout) :: config
+    INTEGER, INTENT(in) :: mt_mode
+    INTEGER(c_int) :: mt_mode_c
+    INTERFACE
+      SUBROUTINE xt_config_set_redist_mthread_mode_c(config, mt_mode) &
+           BIND(c, name='xt_config_set_redist_mthread_mode')
+        IMPORT :: c_int, c_ptr
+        TYPE(c_ptr), VALUE :: config
+        INTEGER(c_int), VALUE :: mt_mode
+      END SUBROUTINE xt_config_set_redist_mthread_mode_c
+    END INTERFACE
+    IF (mt_mode > HUGE(1_c_int) .OR. mt_mode < 0) &
+      CALL xt_abort("invalid multi-threading mode", filename, __LINE__)
+
+    mt_mode_c = INT(mt_mode, c_int)
+    CALL xt_config_set_redist_mthread_mode_c(config%cptr, mt_mode_c)
+  END SUBROUTINE xt_config_set_redist_mthread_mode
 
 END MODULE xt_config_f
 !

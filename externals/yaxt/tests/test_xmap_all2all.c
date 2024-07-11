@@ -53,9 +53,9 @@
 
 #include "test_xmap_common.h"
 
-int main(void)
+int main(int argc, char **argv)
 {
-  return xt_xmap_self_test_main(xt_xmap_all2all_new);
+  return xt_xmap_self_test_main(&argc, &argv, xt_xmap_all2all_new);
 }
 
 /*

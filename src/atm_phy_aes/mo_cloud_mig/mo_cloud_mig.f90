@@ -20,12 +20,13 @@ MODULE mo_cloud_mig
        &                            timer_sat, timer_grp
 
   USE mo_aes_thermo          ,ONLY: saturation_adjustment
-  USE gscp_data              ,ONLY: cloud_num
-  USE mo_aes_graupel         ,ONLY: graupel
+  USE mo_aes_graupel         ,ONLY: graupel_run
 
   IMPLICIT NONE
   PRIVATE
   PUBLIC  :: cloud_mig
+
+  REAL(wp), PARAMETER ::  cloud_num =  50.00e+06_wp   ! cloud droplet number concentration
 
 CONTAINS
 
@@ -34,8 +35,6 @@ CONTAINS
        &                     dz         ,&
        &                     rho        ,&
        &                     pf         ,&
-       &                     cpair      ,&
-       &                     cvair      ,&
        &                     ta         ,&
        &                     qv         ,&
        &                     qc         ,&
@@ -53,7 +52,8 @@ CONTAINS
        &                     pr_rain    ,&
        &                     pr_ice     ,&
        &                     pr_snow    ,&
-       &                     pr_grpl    )
+       &                     pr_grpl    ,&
+       &                     pr_eflx    )
 
     ! Arguments
     !
@@ -63,8 +63,6 @@ CONTAINS
     REAL(wp), INTENT(in)  :: dz      (:,:) !< vertical layer thickness
     REAL(wp), INTENT(in)  :: rho     (:,:) !< density
     REAL(wp), INTENT(in)  :: pf      (:,:) !< pressure
-    REAL(wp), INTENT(in)  :: cpair   (:,:) !< isobaric specific heat of air
-    REAL(wp), INTENT(in)  :: cvair   (:,:) !< isometric specific heat of air
     !
     REAL(wp), INTENT(in)  :: ta      (:,:) !< temperature
     REAL(wp), INTENT(in)  :: qv      (:,:) !< sp humidity
@@ -86,6 +84,7 @@ CONTAINS
     REAL(wp), INTENT(out) :: pr_ice  (:)   !< precip rate ice
     REAL(wp), INTENT(out) :: pr_snow (:)   !< precip rate snow
     REAL(wp), INTENT(out) :: pr_grpl (:)   !< precip rate graupel
+    REAL(wp), INTENT(out) :: pr_eflx (:)   !< energy flux from precip
 
     ! Local variables
     !
@@ -106,10 +105,11 @@ CONTAINS
     REAL(wp) :: zqrsflux (SIZE(dz,1),SIZE(dz,2))
     !
     REAL(wp) :: zdtr ! reciprocal of timestep
+    REAL(wp), PARAMETER :: cloud_num = 200.00e+06_wp
 
-    !$ACC DATA PRESENT(dz, rho, pf, cpair, cvair, ta, qv, qc, qi, qr, qs, qg) &
+    !$ACC DATA PRESENT(dz, rho, pf, ta, qv, qc, qi, qr, qs, qg) &
     !$ACC   PRESENT(tend_ta, tend_qv, tend_qc, tend_qi, tend_qr, tend_qs, tend_qg) &
-    !$ACC   PRESENT(pr_ice, pr_rain, pr_snow, pr_grpl) &
+    !$ACC   PRESENT(pr_ice, pr_rain, pr_snow, pr_grpl, pr_eflx) &
     !$ACC   CREATE(zqnc, zta, zqv, zqc, zqi, zqr, zqs, zqg, total_ice, zqrsflux)
 
     nproma = SIZE(dz,1)
@@ -165,7 +165,7 @@ CONTAINS
     !
     IF (ltimer) call timer_start(timer_grp)
     !
-    CALL graupel( nvec    = nproma        ,& !< in
+    CALL graupel_run( nvec= nproma        ,& !< in
          &        ke      = jke           ,& !< in
          &        ivstart = jcs           ,& !< in
          &        ivend   = jce           ,& !< in
@@ -188,7 +188,8 @@ CONTAINS
          &        prr_gsp = pr_rain (:)   ,& !<   out: precip rate rain
          &        pri_gsp = pr_ice  (:)   ,& !<   out: precip rate cloud ice
          &        prs_gsp = pr_snow (:)   ,& !<   out: precip rate snow
-         &        prg_gsp = pr_grpl (:)   )  !<   out: precip rate graupel
+         &        prg_gsp = pr_grpl (:)   ,& !<   out: precip rate graupel
+         &        pre_gsp = pr_eflx (:)   )  !<   out: precip energy flux
     !
     IF (ltimer) call timer_stop(timer_grp)
 
@@ -217,7 +218,7 @@ CONTAINS
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = jks,jke
        DO jc = jcs,jce
-          tend_ta(jc,jk) =     (zta(jc,jk)-ta(jc,jk))*zdtr*cvair(jc,jk)/cpair(jc,jk)
+          tend_ta(jc,jk) =     (zta(jc,jk)-ta(jc,jk))*zdtr
           tend_qv(jc,jk) = MAX((zqv(jc,jk)-qv(jc,jk))*zdtr,-qv(jc,jk)*zdtr)
           tend_qc(jc,jk) = MAX((zqc(jc,jk)-qc(jc,jk))*zdtr,-qc(jc,jk)*zdtr)
           tend_qi(jc,jk) = MAX((zqi(jc,jk)-qi(jc,jk))*zdtr,-qi(jc,jk)*zdtr)

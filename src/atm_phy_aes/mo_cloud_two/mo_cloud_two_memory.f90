@@ -17,10 +17,10 @@ MODULE mo_cloud_two_memory
 
   USE mo_exception               ,ONLY: message, finish
   USE mtime                      ,ONLY: timedelta, OPERATOR(>)
-
+  USE mo_master_control,          ONLY: get_my_process_name
   USE mo_model_domain            ,ONLY: t_patch
   USE mo_parallel_config         ,ONLY: nproma
-  USE mo_time_config             ,ONLY: get_dynamics_timestep
+  USE mo_time_config             ,ONLY: time_config
   USE mo_aes_phy_config          ,ONLY: aes_phy_tc, dt_zero
   USE mo_io_config               ,ONLY: lnetcdf_flt64_output
   USE mo_name_list_output_config ,ONLY: is_variable_in_output
@@ -100,7 +100,7 @@ CONTAINS
           !
           nlev   = patch_array(jg)%nlev
           nblks  = patch_array(jg)%nblks_c
-          dt_dyn = get_dynamics_timestep(patch_array(jg))
+          dt_dyn = time_config%get_model_timestep_td(patch_array(jg)%nest_level)
           !
           CALL construct_cloud_two_list( jg,                  &
                &                         nproma, nlev, nblks, &
@@ -208,7 +208,8 @@ CONTAINS
          &        patch_id  = jg                  ,&
          &        loutput   = .TRUE.              ,&
          &        lrestart  = .FALSE.             ,&
-         &        linitial  = .FALSE. )
+         &        linitial  = .FALSE.             ,&
+         &        model_type= get_my_process_name())
 
     ! Input parameters
     ! ----------------
@@ -393,30 +394,6 @@ CONTAINS
             &                             vert_intp_method = vintp_method_lin)              ,&
             &        lopenacc    =.TRUE.                                                    )
        __acc_attach(cloud_two_input%pf)
-    END IF
-    !
-    IF ( is_variable_in_output(var_name='cpair_two') ) THEN
-       CALL add_var( this_list   = cloud_two_list                                           ,&
-            &        varname     = 'cpair_two'                                              ,&
-            &        ptr         = cloud_two_input%cpair                                    ,&
-            &        hgrid       = grid_unstructured_cell                                   ,&
-            &        vgrid       = za_reference                                             ,&
-            &        ldims       = shape3d                                                  ,&
-            &        cf          = t_cf_var ('air_specific_heat',                            &
-            &                                'J/K/kg',                                       &
-            &                                'specific heat of air at constant pressure '//  &
-            &                                '(cloud_two input)',                            &
-            &                                datatype_flt)                                  ,&
-            &        grib2       = grib2_var(0,0,255,                                        &
-            &                                datatype_grb,                                   &
-            &                                grid_unstructured,                              &
-            &                                grid_cell)                                     ,&
-            &        isteptype   = tstep_instant                                            ,&
-            &        vert_interp = create_vert_interp_metadata(                              &
-            &                             vert_intp_type   = vintp_types("P","Z","I"),       &
-            &                             vert_intp_method = vintp_method_lin)              ,&
-            &        lopenacc    =.TRUE.                                                    )
-       __acc_attach(cloud_two_input%cpair)
     END IF
     !
     ! Input fields (2)

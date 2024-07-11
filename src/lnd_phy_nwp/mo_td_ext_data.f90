@@ -32,6 +32,7 @@ MODULE mo_td_ext_data
   USE mo_dynamics_config,     ONLY: nnow_rcf, nnew_rcf
   USE mo_read_interface,      ONLY: openInputFile, closeFile, on_cells, &
     &                               t_stream_id, read_2D_1time
+  USE mo_nwp_phy_types,       ONLY: t_nwp_phy_diag
   USE mo_ext_data_types,      ONLY: t_external_data
   USE mo_nonhydro_types,      ONLY: t_nh_state
   USE mo_nwp_lnd_types,       ONLY: t_lnd_state
@@ -49,6 +50,7 @@ MODULE mo_td_ext_data
   USE mo_bcs_time_interpolation, ONLY: t_time_interpolation_weights,         &
     &                                  calculate_time_interpolation_weights
   USE mo_dynamics_config,     ONLY: nnow_rcf
+  USE mo_nwp_phy_init,        ONLY: clim_cdnc
 
   IMPLICIT NONE
 
@@ -71,6 +73,7 @@ CONTAINS
   !! seaice fraction        : fr_seaice
   !! normalized difference vegetation index ratio: ndviratio
   !! modis albedo           : alb_dif, albuv_dif, albni_dif
+  !! climatological cloud droplet number         : cdnc
   !!
   !! Update of aerosol fields, which is based on a monthly climatology 
   !! happens in mo_nwp_rrtm_interface:nwp_aerosol.
@@ -79,13 +82,14 @@ CONTAINS
   !! are updated as well, in order to have a consistent state.
   !! Prominent examples are the sea index lists, t_g, t_s, plcov, sai, tai.
   !!
-  SUBROUTINE update_nwp_phy_bcs (p_patch, ext_data, p_lnd_state, p_nh_state, &
+  SUBROUTINE update_nwp_phy_bcs (p_patch, ext_data, p_lnd_state, p_nh_state, prm_diag, &
     &                                ref_datetime, target_datetime, mtime_old )
 
     TYPE(t_patch)         , INTENT(IN)    :: p_patch
     TYPE(t_external_data) , INTENT(INOUT) :: ext_data
     TYPE(t_lnd_state)     , INTENT(INOUT) :: p_lnd_state
     TYPE(t_nh_state)      , INTENT(IN)    :: p_nh_state
+    TYPE(t_nwp_phy_diag)  , INTENT(INOUT) :: prm_diag        
     TYPE(datetime)        , INTENT(IN)    :: ref_datetime     !< reference date for computation 
                                                               ! of climatological SST increments
     TYPE(datetime)        , INTENT(IN)    :: target_datetime  !< target date for temporal interpolation
@@ -212,6 +216,10 @@ CONTAINS
         &                        ext_data%atm_td%lw_emiss,  &! in
         &                        ext_data%atm%emis_rad      )! out
 
+    ENDIF
+    ! Interpolate monthly cdnc climatology
+    IF (atm_phy_nwp_config(jg)%icpl_aero_gscp == 3) THEN
+      CALL clim_cdnc(target_datetime, p_patch, ext_data, prm_diag)
     ENDIF
 
   END SUBROUTINE update_nwp_phy_bcs

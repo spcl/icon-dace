@@ -76,7 +76,6 @@ output_atm_2d="yes"   # 1 file
 output_atm_3d="yes"   # 1 file
 
 # determine the number of io processes
-nproma=160
 nproma_sub=160
 num_io_procs=1
 
@@ -95,7 +94,7 @@ cat > ${atmo_namelist} << EOF
  nproma            = ${nproma}
  num_io_procs      = ${num_io_procs}
  nproma_sub        = ${nproma_sub}
- nblocks_c         = ${nblocks_c}
+ nblocks_c         = 0
  io_process_stride = 6
 /
 &grid_nml
@@ -216,9 +215,8 @@ cat > ${atmo_namelist} << EOF
  aes_cop_config(1)%cn1sea     =  50.0
  aes_cop_config(1)%cn2sea     = 100.0
  aes_cop_config(1)%cinhomi    =   1.0
- aes_cop_config(1)%cinhoml1   =   1.0
- aes_cop_config(1)%cinhoml2   =   1.0
- aes_cop_config(1)%cinhoml3   =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml    =   1.0
 /
 &aes_cov_nml
  aes_cov_config(1)%cqx        = 1.e-6
@@ -232,8 +230,8 @@ EOF
 # model files
 #
 # Radiation:
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
 # Two Moment scheme input
@@ -345,8 +343,9 @@ if [[ "$output_atm_2d" == "yes" ]]; then
                     'hfls'    , 'hfss'    , 'evspsbl' ,
                     'prlr'    , 'prls'    , 'cptgzvi' ,
                     'pr_rain' , 'pr_snow' , 'pr_grpl' , 'pr_ice'  ,
-!                    'uphyvi'  , 'udynvi'  , 'evap_tsa',
-!                    'shfl_qsa', 'rsfl_tsa', 'ssfl_tsa',
+!                    'udynvi_gmean' , 'duphyvi_gmean' , 'uphybal_gmean' ,
+!                    'ufts_gmean'   , 'ufvs_gmean'    , 'ufcs_gmean' , 'kedisp_gmean' ,
+!                    'radtop_gmean' , 'radbot_gmean'  , 'radbal_gmean'
 /
 EOF
 fi

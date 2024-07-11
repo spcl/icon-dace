@@ -27,7 +27,7 @@ if [[ $GIT_ROOT != $PWD ]]; then
     exit 1
 fi
 
-SPACK_VERSION=$(cat $SCRIPT_DIR/SPACK_TAG_DAINT)
+SPACK_VERSION=$(cat $SCRIPT_DIR/SPACK_TAG_C2SM)
 
 GIT_REMOTE='https://github.com/C2SM/spack-c2sm.git'
 

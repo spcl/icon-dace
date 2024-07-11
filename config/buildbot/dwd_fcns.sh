@@ -41,20 +41,21 @@ build_dwd() {
     )
   fi
 
-  # create vector host binary
-  (
-    mkdir "${BUILD_DIR_VH}" && cd "${BUILD_DIR_VH}"
-    "${ICON_DIR}/config/dwd/rcl.VH.bb-${DWD_BUILDER}"
-    make -j "${MAKE_PROCS}"
-  )
-
-  # create vector engine binary
-  (
-    mkdir "${BUILD_DIR_VE}" && cd "${BUILD_DIR_VE}"
-    "${ICON_DIR}/config/dwd/rcl.VE.bb-${DWD_BUILDER}"
-    make -j "${MAKE_PROCS}"
-  )
-
+  # create vector and host binaries in parallel using make
+  make --no-print-directory --output-sync=line --jobs="${MAKE_PROCS}" -f - <<_EOF
+.PHONY: all host vector
+all: host vector
+host:
+	@mkdir -p ${BUILD_DIR_VH}
+	# configuring host
+	cd ${BUILD_DIR_VH} && ${ICON_DIR}/config/dwd/rcl.VH.bb-${DWD_BUILDER}
+	\$(MAKE) -C ${BUILD_DIR_VH}
+vector:
+	@mkdir -p ${BUILD_DIR_VE}
+	# configuring vector
+	cd ${BUILD_DIR_VE} && ${ICON_DIR}/config/dwd/rcl.VE.bb-${DWD_BUILDER}
+	\$(MAKE) -C ${BUILD_DIR_VE}
+_EOF
 
   # Post-processing
 

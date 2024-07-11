@@ -366,7 +366,6 @@ cat > ${atmo_namelist} << EOF
 /
 &dynamics_nml
  divavg_cntrwgt = 0.50
- iequations     = 3
  lcoriolis      = .true.
 /
 &transport_nml

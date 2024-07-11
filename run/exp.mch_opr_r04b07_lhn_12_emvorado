@@ -12,12 +12,13 @@
 
 # ===========================================================================
 # 
-# Name: exp.mch_opr_r04b07.run
+# Name: exp.mch_opr_r04b07_lhn_12_emvorado.run
 #
 # Purpose: Run script for ICON at on a domain similar to the current COSMO-1E domain
-#          This is a low resolution version used for development purpose.
+#          This is a low resolution version used for a technical test at MeteoSwiss
+#          This setup includes EMVORADO (radar forward operator).
 #
-# Author: Sascha Bellaire (MeteoSwiss)
+# Created by: Fabian Gessler (MeteoSwiss)
 #
 # =========================================================================== 
 
@@ -173,7 +174,6 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /

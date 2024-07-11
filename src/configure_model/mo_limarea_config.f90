@@ -61,6 +61,7 @@ MODULE mo_limarea_config
     CHARACTER(LEN=filename_max)     :: latbc_filename      ! prefix of latbc files
     CHARACTER(LEN=MAX_CHAR_LENGTH)  :: latbc_path          ! directory containing external latbc files
     LOGICAL                         :: latbc_contains_qcqi ! latbc data contain qc and qi (=T) or not (=F)
+    LOGICAL                         :: latbc_contains_hus  ! latbc data uses the hus/clw/cli denominations for qv/qc/qi
     CHARACTER(LEN=FILENAME_MAX)     :: latbc_boundary_grid ! grid file defining the lateral boundary
     LOGICAL                         :: init_latbc_from_fg  ! take initial lateral boundary conditions from first guess
     LOGICAL                         :: nudge_hydro_pres    ! use hydrostatic pressure for lateral boundary nudging

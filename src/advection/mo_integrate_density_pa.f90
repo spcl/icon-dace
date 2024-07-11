@@ -327,8 +327,8 @@ CONTAINS
           &                 advection_config(pid)%itype_hlimit(1),         &! in
           &                 z_rho_e,                                       &! inout
           &                 opt_lout_edge=.TRUE.,                          &! in
-          &                 opt_rlstart  = 5,                              &! in
-          &                 opt_rlend    = i_rlend,                        &! in
+          &                 opt_rlstart_e= 5,                              &! in
+          &                 opt_rlend_e  = i_rlend,                        &! in
           &                 opt_slev     = 1,                              &! in
           &                 opt_elev     = p_patch%nlev                    )! in
 

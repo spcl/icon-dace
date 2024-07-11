@@ -119,7 +119,7 @@ CONTAINS
 
     jbs = p_patch%cells%start_blk( grf_bdywidth_c+1,1 )
 !$OMP PARALLEL
-    CALL init(ddt_temp(:,:,:))
+    CALL init(ddt_temp(:,:,:), lacc=.TRUE.)
 !$OMP BARRIER
 !$OMP DO PRIVATE(jb,is,ie,jk,z_ekin,zlat) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = jbs,nblks_c

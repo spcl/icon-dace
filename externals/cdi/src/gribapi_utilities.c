@@ -584,6 +584,7 @@ gribapiGetGridType(grib_handle *gh)
     case GRIB2_GTYPE_SPECTRAL: return GRID_SPECTRAL;
     case GRIB2_GTYPE_GME: return GRID_GME;
     case GRIB2_GTYPE_UNSTRUCTURED: return GRID_UNSTRUCTURED;
+    case GRIB2_GTYPE_HEALPIX: return CDI_PROJ_HEALPIX;
     default:
       {
         static bool lwarn = true;
@@ -781,6 +782,12 @@ gribapiGetGridProj(grib_handle *gh, grid_t *grid, size_t numberOfPoints)
 }
 
 static void
+gribapiGetGridHealpix(grib_handle *gh, grid_t *grid, size_t numberOfPoints)
+{
+  grid->size = numberOfPoints;
+}
+
+static void
 gribapiGetGridSpectral(grib_handle *gh, grid_t *grid, size_t datasize)
 {
   size_t len = 256;
@@ -829,7 +836,7 @@ gribapiGetGridUnstructured(grib_handle *gh, grid_t *grid, size_t numberOfPoints)
         if ( grib_get_string(gh, "gridDescriptionFile", reference_link, &len) == 0 )
         {
         if ( strncmp(reference_link, "file://", 7) == 0 )
-        grid->reference = strdupx(reference_link);
+        grid->reference = strdup(reference_link);
         }
       */
       size_t len = (size_t) CDI_UUID_SIZE;
@@ -859,7 +866,7 @@ gribapiGetGrid(grib_handle *gh, grid_t *grid)
   long editionNumber = gribEditionNumber(gh);
   int gridtype = gribapiGetGridType(gh);
   int projtype = (gridtype == GRID_PROJECTION && gribapiGetIsRotated(gh)) ? CDI_PROJ_RLL : CDI_UNDEFID;
-  if (gridtype == CDI_PROJ_LCC || gridtype == CDI_PROJ_STERE)
+  if (gridtype == CDI_PROJ_LCC || gridtype == CDI_PROJ_STERE || gridtype == CDI_PROJ_HEALPIX)
     {
       projtype = gridtype;
       gridtype = GRID_PROJECTION;
@@ -897,6 +904,10 @@ gribapiGetGrid(grib_handle *gh, grid_t *grid)
     {
       gribapiGetGridProj(gh, grid, numberOfPoints);
     }
+  else if (projtype == CDI_PROJ_HEALPIX)
+    {
+      gribapiGetGridHealpix(gh, grid, numberOfPoints);
+    }
   else if (gridtype == GRID_SPECTRAL)
     {
       gribapiGetGridSpectral(gh, grid, datasize);
@@ -918,7 +929,8 @@ gribapiGetGrid(grib_handle *gh, grid_t *grid)
       Error("Unsupported grid type: %s", gridNamePtr(gridtype));
     }
 
-  if (gridtype == GRID_GAUSSIAN || gridtype == GRID_LONLAT || projtype == CDI_PROJ_RLL || projtype == CDI_PROJ_LCC)
+  if (gridtype == GRID_GAUSSIAN || gridtype == GRID_LONLAT || projtype == CDI_PROJ_RLL || projtype == CDI_PROJ_LCC
+      || projtype == CDI_PROJ_HEALPIX)
     {
       long temp = 0;
       GRIB_CHECK(grib_get_long(gh, "uvRelativeToGrid", &temp), 0);
@@ -926,7 +938,7 @@ gribapiGetGrid(grib_handle *gh, grid_t *grid)
       uvRelativeToGrid = (bool) temp;
     }
 
-  if (gridtype == GRID_GAUSSIAN || gridtype == GRID_LONLAT || gridtype == GRID_PROJECTION)
+  if (gridtype == GRID_GAUSSIAN || gridtype == GRID_LONLAT || (gridtype == GRID_PROJECTION && projtype != CDI_PROJ_HEALPIX))
     {
       long iScansNegatively, jScansPositively, jPointsAreConsecutive;
       GRIB_CHECK(grib_get_long(gh, "iScansNegatively", &iScansNegatively), 0);

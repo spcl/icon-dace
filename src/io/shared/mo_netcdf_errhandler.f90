@@ -33,11 +33,11 @@ CONTAINS
     END IF
     lwarnonly = .FALSE.
     IF(PRESENT(warnonly)) lwarnonly = .TRUE.
-    IF (errstat .NE. nf_noerr) THEN
+    IF (errstat .NE. nf90_noerr) THEN
       IF (lwarnonly) THEN
-        CALL warning(TRIM(routine)//' netCDF error', nf_strerror(errstat))
+        CALL warning(TRIM(routine)//' netCDF error', nf90_strerror(errstat))
       ELSE
-        CALL finish(TRIM(routine)//' netCDF error', nf_strerror(errstat))
+        CALL finish(TRIM(routine)//' netCDF error', nf90_strerror(errstat))
       ENDIF
     ENDIF
   END SUBROUTINE nf

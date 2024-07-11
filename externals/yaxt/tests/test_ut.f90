@@ -51,8 +51,8 @@ PROGRAM test_ut
        xt_xmap_all2all_new, xt_redist, xt_redist_p2p_new, &
        xt_redist_p2p_off_new, xt_redist_s_exchange, xt_idxlist_delete, &
        xt_xmap_delete, xt_redist_delete, xt_int_kind, xt_initialize
-  USE ftest_common, ONLY: finish_mpi, icmp, id_map, factorize, regular_deco, &
-       test_abort
+  USE ftest_common, ONLY: icmp, id_map, factorize, regular_deco, &
+       init_mpi, finish_mpi, test_abort
   USE test_redist_common, ONLY: xt_redist_s_exchange
 #ifdef __PGI
   ! PGI up to at least 15.4 has a bug that prevents proper import of
@@ -184,9 +184,7 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: context = 'init_all: '
     INTEGER :: ierror
 
-    CALL MPI_INIT(ierror)
-    IF (ierror /= MPI_SUCCESS) CALL test_abort(context//'MPI_INIT failed', &
-         filename, __LINE__)
+    CALL init_mpi
 
     CALL MPI_COMM_SIZE(MPI_COMM_WORLD, nprocs, ierror)
     IF (ierror /= MPI_SUCCESS) CALL test_abort(context//'MPI_COMM_SIZE failed', &

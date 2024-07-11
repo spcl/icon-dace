@@ -226,8 +226,8 @@ echo "#undef malloc"  >>  ${PROG}
 echo "#undef calloc"  >>  ${PROG}
 echo "#undef free"    >>  ${PROG}
 echo "#undef DOUBLE_PRECISION" >>  ${PROG}
-cat $srcdir/cfortran.h   >>  ${PROG}
+cat `if test -f cfortran.h; then echo cfortran.h; else echo $srcdir/cfortran.h; fi;` >> ${PROG}
 echo "#endif" >>  ${PROG}
-cat $srcdir/cdiFortran.c >>  ${PROG}
+cat `if test -f cdiFortran.c; then echo cdiFortran.c; else echo $srcdir/cdiFortran.c; fi;` >> ${PROG}
 
 exit

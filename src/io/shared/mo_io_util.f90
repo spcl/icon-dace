@@ -19,6 +19,7 @@ MODULE mo_io_util
   USE mo_util_string,           ONLY: tolower
   USE mo_netcdf_errhandler,     ONLY: nf
   USE mo_netcdf
+  USE mo_name_list_output_types, ONLY: FILETYPE_YAC
 
   IMPLICIT NONE
   PRIVATE
@@ -90,6 +91,12 @@ CONTAINS
       CALL finish(routine,'GRIB1 not supported')
     CASE (FILETYPE_GRB2)
       extn = '.grb'
+    CASE (FILETYPE_YAC)
+#ifdef YAC_coupling
+      extn = ''
+#else
+      CALL finish(routine,'using yac-coupled output but yac coupling is disabled')
+#endif
     CASE default
       CALL finish(routine,'unknown output_type')
     END SELECT
@@ -124,23 +131,23 @@ CONTAINS
     IF (.NOT. l_exist) THEN
       CALL finish(routine, 'file "'//TRIM(filename)//'" not found!')
     END IF
-    CALL nf(nf_open(TRIM(FILENAME), NF_NOWRITE, ncfileID), routine)
+    CALL nf(nf90_open(TRIM(FILENAME), NF90_NOWRITE, ncfileID), routine)
 
     ! ----------------------
     ! --- variable "var1"
     ! ----------------------
 
     ! --- find out about variable dimensions:
-    CALL nf(nf_inq_varid(ncfileID, TRIM(varname1), varid), routine)
-    CALL nf(nf_inq_varndims(ncfileID, varID, ndims), routine)
+    CALL nf(nf90_inq_varid(ncfileID, TRIM(varname1), varid), routine)
+    CALL nf(nf90_inquire_variable(ncfileID, varID, ndims = ndims), routine)
     IF (ndims /= 1)  CALL finish(routine, "Variable '"//TRIM(varname1)//"' has more than one dimension!")
-    CALL nf(nf_inq_vardimid(ncfileID, varID, dimids), routine)
+    CALL nf(nf90_inquire_variable(ncfileID, varID, dimids = dimids), routine)
     dim_aux = dimids(1)
-    CALL nf(nf_inq_dimlen(ncfileID, dim_aux, dimlen), routine)
+    CALL nf(nf90_inquire_dimension(ncfileID, dim_aux, len = dimlen), routine)
 
     ! --- allocate output variable, read data
     ALLOCATE(var1(dimlen))
-    CALL nf(nf_get_var_int(ncfileID, varID, var1), routine)
+    CALL nf(nf90_get_var(ncfileID, varID, var1), routine)
 
     ! -------------------------
     ! --- variable "opt_var2"
@@ -149,16 +156,16 @@ CONTAINS
     IF (PRESENT(opt_var2)) THEN
 
       ! --- find out about variable dimensions:
-      CALL nf(nf_inq_varid(ncfileID, TRIM(opt_varname2), varid), routine)
-      CALL nf(nf_inq_varndims(ncfileID, varID, ndims), routine)
+      CALL nf(nf90_inq_varid(ncfileID, TRIM(opt_varname2), varid), routine)
+      CALL nf(nf90_inquire_variable(ncfileID, varID, ndims = ndims), routine)
       IF (ndims /= 1)  CALL finish(routine, "Variable '"//TRIM(opt_varname2)//"' has more than one dimension!")
-      CALL nf(nf_inq_vardimid(ncfileID, varID, dimids), routine)
+      CALL nf(nf90_inquire_variable(ncfileID, varID, dimids = dimids), routine)
       dim_aux = dimids(1)
-      CALL nf(nf_inq_dimlen(ncfileID, dim_aux, dimlen), routine)
+      CALL nf(nf90_inquire_dimension(ncfileID, dim_aux, len = dimlen), routine)
       
       ! --- allocate output variable, read data
       ALLOCATE(opt_var2(dimlen))
-      CALL nf(nf_get_var_int(ncfileID, varID, opt_var2), routine)
+      CALL nf(nf90_get_var(ncfileID, varID, opt_var2), routine)
 
     END IF
 
@@ -170,15 +177,15 @@ CONTAINS
 
       DO i=1,SIZE(opt_att)
         IF (LEN_TRIM(opt_att(i)%var_name) > 0) THEN
-          CALL nf(nf_inq_varid(ncfileID, TRIM(opt_att(i)%var_name), varid), routine)
+          CALL nf(nf90_inq_varid(ncfileID, TRIM(opt_att(i)%var_name), varid), routine)
         ELSE
-          varid = NF_GLOBAL
+          varid = NF90_GLOBAL
         END IF
 
-        iret = nfx_get_att(ncfileID, varID, TRIM(opt_att(i)%att_name), optval)
+        iret = nf90_get_att(ncfileID, varID, TRIM(opt_att(i)%att_name), optval)
 
         ! Only overwrite previous value if the attribute exists.
-        IF (iret == nf_noerr) THEN
+        IF (iret == nf90_noerr) THEN
           opt_att(i)%value = optval
         END IF
       END DO
@@ -186,7 +193,7 @@ CONTAINS
     END IF
 
     ! --- close NetCDF file
-    CALL nf(nf_close(ncfileID), routine)
+    CALL nf(nf90_close(ncfileID), routine)
 
   END SUBROUTINE read_netcdf_int_1d
 

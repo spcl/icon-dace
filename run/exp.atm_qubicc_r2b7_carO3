@@ -321,9 +321,8 @@ cat >> ${atmo_namelist} << EOF
  aes_cop_config(1)%cn1sea     =  50.0
  aes_cop_config(1)%cn2sea     = 100.0
  aes_cop_config(1)%cinhomi    =   1.0
- aes_cop_config(1)%cinhoml1   =   1.0
- aes_cop_config(1)%cinhoml2   =   1.0
- aes_cop_config(1)%cinhoml3   =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml    =   1.0
 /
 EOF
 #
@@ -466,8 +465,8 @@ if [ x${dt_rad} != x ]
 then
 #
 # - constants for gas optical properties
-ln -s ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc ${expdir}/coefficients_lw.nc
-ln -s ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc ${expdir}/coefficients_sw.nc
+ln -s ${basedir}/data/rrtmgp-gas-lw-g128.nc ${expdir}/coefficients_lw.nc
+ln -s ${basedir}/data/rrtmgp-gas-sw-g112.nc ${expdir}/coefficients_sw.nc
 #
 # - constants for cloud optical properties
 ln -s ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc ${expdir}/rrtmgp-cloud-optics-coeffs-lw.nc

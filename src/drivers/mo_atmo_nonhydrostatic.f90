@@ -21,6 +21,7 @@ USE mo_impl_constants,       ONLY: SUCCESS, max_dom, inwp, iaes, LSS_JSBACH
 USE mo_timer,                ONLY: timers_level, timer_start, timer_stop, timer_init_latbc, &
   &                                timer_model_init, timer_init_icon, timer_read_restart, timer_init_dace
 USE mo_master_config,        ONLY: isRestart, getModelBaseDir
+USE mo_master_control,       ONLY: get_my_process_name
 USE mo_time_config,          ONLY: t_time_config, time_config
 USE mo_load_restart,         ONLY: read_restart_files
 USE mo_key_value_store,      ONLY: t_key_value_store
@@ -108,6 +109,7 @@ USE mo_sppt_state,           ONLY: construct_sppt_state, destruct_sppt_state
 USE mo_sppt_config,          ONLY: sppt_config, configure_sppt
 USE mo_nwp_phy_cleanup,      ONLY: cleanup_nwp_phy
 USE mo_nwp_ww,               ONLY: configure_ww
+USE mo_nwp_vdiff_interface,  ONLY: nwp_vdiff_setup
 #endif
 #ifdef __ICON_ART
 ! ICON-ART
@@ -148,7 +150,8 @@ USE mo_upatmo_phy_setup,    ONLY: finalize_upatmo_phy_nwp
 
 USE mo_util_mtime,          ONLY: getElapsedSimTimeInSeconds
 USE mo_output_event_types,  ONLY: t_sim_step_info
-USE mo_action,              ONLY: ACTION_RESET, reset_act
+USE mo_action_types,        ONLY: ACTION_RESET
+USE mo_action,              ONLY: reset_act
 USE mo_turb_vdiff_params,   ONLY: VDIFF_TURB_3DSMAGORINSKY
 USE mo_limarea_config,      ONLY: latbc_config
 USE mo_async_latbc_types,   ONLY: t_latbc_data
@@ -170,12 +173,18 @@ USE mo_icon2dace,           ONLY: init_dace, finish_dace
   USE mo_impl_constants,      ONLY: pio_type_cdipio
   USE mo_parallel_config,     ONLY: pio_type
   USE mo_cdi,                 ONLY: namespaceGetActive, namespaceSetActive
-  USE mo_cdi_pio_interface,         ONLY: nml_io_cdi_pio_namespace
+  USE mo_cdi_pio_interface,   ONLY: nml_io_cdi_pio_namespace
 #endif
 
+  ! coupling
+  USE mo_timer,               ONLY: ltimer, timer_start, timer_stop, &
+    &                               timer_coupling
+  USE mo_coupling_config,     ONLY: is_coupled_run
+  USE mo_atmo_coupling_frame, ONLY: construct_atmo_coupling, &
+    &                               destruct_atmo_coupling
+
 #ifndef __NO_ICON_COMIN__
-  USE comin_host_interface, ONLY: comin_callback_context_call,        &
-    &                             EP_SECONDARY_CONSTRUCTOR,           &
+  USE comin_host_interface, ONLY: EP_SECONDARY_CONSTRUCTOR,           &
     &                             EP_ATM_INIT_FINALIZE,               &
     &                             EP_DESTRUCTOR,                      &
     &                             comin_var_list_finalize,            &
@@ -185,7 +194,8 @@ USE mo_icon2dace,           ONLY: init_dace, finish_dace
   USE mo_comin_adapter,     ONLY: icon_append_comin_variables,        &
     &                             icon_append_comin_tracer_variables, &
     &                             icon_append_comin_tracer_phys_tend, &
-    &                             icon_expose_variables
+    &                             icon_expose_variables,              &
+    &                             icon_call_callback
 #endif
 
 
@@ -199,9 +209,9 @@ PUBLIC :: construct_atmo_nonhydrostatic, destruct_atmo_nonhydrostatic
 CONTAINS
 
   !---------------------------------------------------------------------
-  SUBROUTINE atmo_nonhydrostatic(latbc)
-    TYPE(t_latbc_data)           :: latbc   !< data structure for async latbc prefetching
+  SUBROUTINE atmo_nonhydrostatic()
 
+    TYPE(t_latbc_data)           :: latbc   !< data structure for async latbc prefetching
     INTEGER                      :: iter
     TYPE(t_time_config), TARGET  :: time_config_iau
     TYPE(t_time_config), POINTER :: ptr_time_config  => NULL()
@@ -211,11 +221,24 @@ CONTAINS
     CHARACTER(*), PARAMETER :: routine = "atmo_nonhydrostatic"
     INTEGER :: ierr
 
+
+    ! construct the atmospheric nonhydrostatic model
+    CALL construct_atmo_nonhydrostatic(latbc)
+
+    !---------------------------------------------------------------------
+    ! construct the coupler
+    !---------------------------------------------------------------------
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL construct_atmo_coupling(p_patch(1:), ext_data(1:))
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    ENDIF
+
     !------------------------------------------------------------------
     ! Now start the time stepping:
     !------------------------------------------------------------------
 
-    restartDescriptor => createRestartDescriptor("atm")
+    restartDescriptor => createRestartDescriptor(get_my_process_name())
 
     ! for iterative IAU, perform_nh_stepping is called twice with distinct
     ! model stop dates.
@@ -264,7 +287,7 @@ CONTAINS
     CALL deleteRestartDescriptor(restartDescriptor)
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_DESTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_DESTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
 
     CALL comin_var_list_finalize(ierr)
     IF (ierr /= 0) STOP
@@ -273,6 +296,15 @@ CONTAINS
     CALL comin_setup_finalize(ierr)
     IF (ierr /= 0) STOP
 #endif
+
+    !---------------------------------------------------------------------
+    ! construct the coupler
+    !---------------------------------------------------------------------
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL destruct_atmo_coupling()
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    ENDIF
 
     !---------------------------------------------------------------------
     ! Integration finished. Clean up.
@@ -293,7 +325,6 @@ CONTAINS
     TYPE(t_sim_step_info) :: sim_step_info  
     REAL(wp) :: sim_time
     TYPE(t_key_value_store), POINTER :: restartAttributes
-    LOGICAL :: lrestart
     CHARACTER(LEN=filename_max) :: model_base_dir
     INTEGER :: seed_size, i
     INTEGER, ALLOCATABLE :: seed(:)
@@ -327,7 +358,7 @@ CONTAINS
       CALL init_index_lists (p_patch(1:), ext_data)
 #endif
 
-      CALL configure_atm_phy_nwp(n_dom, p_patch(1:), dtime)
+      CALL configure_atm_phy_nwp(n_dom, p_patch(1:), time_config)
 
       CALL configure_synsat()
 
@@ -388,6 +419,11 @@ CONTAINS
     IF (iforcing == inwp) THEN
 #ifndef __NO_NWP__
       CALL construct_nwp_phy_state( p_patch(1:), var_in_output)
+
+      IF (ANY(atm_phy_nwp_config(:)%inwp_surface == LSS_JSBACH)) THEN
+        CALL nwp_vdiff_setup( p_patch(1:), atm_phy_nwp_config(:)%inwp_surface == LSS_JSBACH )
+      END IF
+
       CALL construct_nwp_lnd_state( p_patch(1:), p_lnd_state, var_in_output(:)%smi, n_timelevels=2 )
 
       ! Construct SPPT state
@@ -411,7 +447,6 @@ CONTAINS
 ! Upper atmosphere
 
     model_base_dir = getModelBaseDir()
-    lrestart       = isRestart()
 
     CALL configure_upatmo( n_dom_start, n_dom, p_patch(n_dom_start:), isRestart(), atm_phy_nwp_config(:)%lupatmo_phy,      &
       &                    init_mode, iforcing, time_config%tc_exp_startdate, time_config%tc_exp_stopdate, start_time(:),  & 
@@ -432,7 +467,7 @@ CONTAINS
     ! loop over the total list of additional requested variables and
     ! perform `add_var` / `add_ref` operations needed.
     ! remark: variables are added to a separate variable list.
-    CALL icon_append_comin_tracer_variables(p_patch(1:))
+    CALL icon_append_comin_tracer_variables(p_patch(1:), p_nh_state, p_nh_state_lists)
     CALL icon_append_comin_tracer_phys_tend(p_patch(1:))
     CALL icon_append_comin_variables(p_patch(1:))
 
@@ -443,7 +478,7 @@ CONTAINS
     ! call to secondary constructor
     !   third party modules retrieve pointers to data arrays, telling
     !   ICON ComIn about the context where these will be accessed.
-    CALL comin_callback_context_call(EP_SECONDARY_CONSTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_SECONDARY_CONSTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
     ! ----------------------------------------------------------
 #endif
 
@@ -672,7 +707,7 @@ CONTAINS
           ! CO2 tracer
           IF ( iqt <= ico2 .AND. ico2 <= ntracer) THEN
 !$OMP PARALLEL
-            CALL init(p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,ico2),aes_rad_config(jg)% vmr_co2*amco2/amd)
+            CALL init(p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,ico2),aes_rad_config(jg)% vmr_co2*amco2/amd, lacc=.FALSE.)
 !$OMP END PARALLEL
             CALL print_value('CO2 tracer initialized with constant vmr', &
               &              aes_rad_config(jg)% vmr_co2*amco2/amd,    &
@@ -691,7 +726,7 @@ CONTAINS
               CALL message(routine,'o3 tracer is initialized by the Cariolle lin. o3 scheme')
             ELSE
 !$OMP PARALLEL
-              CALL init(p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,io3),0.0_wp)
+              CALL init(p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,io3),0.0_wp, lacc=.FALSE.)
 !$OMP END PARALLEL
               CALL message(routine,'o3 tracer is initialized to zero, check setup')
             END IF
@@ -714,7 +749,7 @@ CONTAINS
       !
       ! read external data for real case
       IF (.NOT. ltestcase) THEN 
-        CALL init_aes_phy_external( p_patch(1:)                   ,&
+        CALL init_aes_phy_external( p_patch(1:), ext_data(1:)     ,&
            &                          time_config%tc_current_date )
       END IF
       !
@@ -794,7 +829,7 @@ CONTAINS
       sim_step_info%run_start = time_config%tc_startdate
       sim_step_info%restart_time = time_config%tc_stopdate
 
-      sim_step_info%dtime      = dtime
+      sim_step_info%dtime  = time_config%get_model_timestep_sec(p_patch(1)%nest_level)
       sim_step_info%jstep0 = 0
 
       CALL getAttributesForRestarting(restartAttributes)
@@ -819,7 +854,7 @@ CONTAINS
           ELSE
             CALL meteogram_init(meteogram_output_config(jg), jg, p_patch(jg), &
               &                ext_data(jg), p_nh_state(jg), prm_diag(jg),    &
-              &                p_lnd_state(jg), prm_nwp_tend(jg), iforcing,                     &
+              &                p_lnd_state(jg), prm_nwp_tend(jg), iforcing,   &
               &                grid_uuid=p_patch(jg)%grid_uuid,               &
               &                number_of_grid_used=number_of_grid_used(jg) )
           END IF
@@ -832,13 +867,11 @@ CONTAINS
 
     ! tmx
 #ifndef __NO_AES__
-    IF (aes_vdf_config(1)%use_tmx) THEN
-      IF (n_dom == 1) THEN
-        CALL init_tmx(p_patch(1), dtime)
-      ELSE
-        CALL finish(routine, 'Only one domain supported currently for new tmx')
+    DO jg =1,n_dom
+      IF (aes_vdf_config(jg)%use_tmx) THEN
+        CALL init_tmx(p_patch(jg), dtime)
       END IF
-    END IF
+    END DO
 #endif
 
 #ifdef MESSY
@@ -847,7 +880,7 @@ CONTAINS
 #endif
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_INIT_FINALIZE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INIT_FINALIZE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
     ! Determine if temporally averaged vertically integrated moisture quantities need to be computed
 

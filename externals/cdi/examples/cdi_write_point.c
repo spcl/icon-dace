@@ -10,7 +10,7 @@ main(void)
 {
   int gridID, zaxisID1, zaxisID2, taxisID;
   int vlistID, varID1, varID2, streamID;
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
   double levs[nlev] = { 101300, 92500, 85000, 50000, 20000 };
   double var1;
   double var2[nlev];
@@ -68,8 +68,8 @@ main(void)
       for (size_t i = 0; i < nlev; i++) var2[i] = 2.2;
 
       // Write var1 and var2
-      streamWriteVar(streamID, varID1, &var1, nmiss);
-      streamWriteVar(streamID, varID2, var2, nmiss);
+      streamWriteVar(streamID, varID1, &var1, numMissVals);
+      streamWriteVar(streamID, varID2, var2, numMissVals);
     }
 
   // Close the output stream

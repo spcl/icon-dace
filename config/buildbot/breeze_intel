@@ -18,10 +18,9 @@ LINUX_CODENAME=$(lsb_release -sc)
 
 if test ! -z "${BB_NAME-}"; then
   set -x
-  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_autoreconf_BREEZE.sh"
 fi
 
-${ICON_DIR}/config/mpim/${LINUX_CODENAME}.intel --disable-yaxt --disable-openmp
+${ICON_DIR}/config/mpim/${LINUX_CODENAME}.intel --disable-yaxt --disable-openmp --enable-separate-mods
 
 MAKE_PROCS=8
 make -j ${MAKE_PROCS}

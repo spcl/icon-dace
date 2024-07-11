@@ -28,25 +28,41 @@ MODULE mo_sse_config_class
 
   TYPE, EXTENDS(t_jsb_config) :: t_sse_config
     INTEGER  :: nsnow           !< Maximum number of snow layers
-    LOGICAL  :: l_snow          !< T: Consider snow layers in soil thermal calculations
-    ! l_dynsnow, l_heat_cap_dyn and l_heat_cond_dyn are only effective for l_snow=.true.
-    LOGICAL  :: l_dynsnow       !< T: Calculate snow parameters heat cond. and heat cap. dynamically (depending on snow density)
-    LOGICAL  :: l_heat_cap_dyn  !< T: Use dynamic calculation of soil heat capacity, F: use mineral soil map
-    LOGICAL  :: l_heat_cond_dyn !< T: Use dynamic calculation of soil heat conductivity, F: use mineral soil map
+    LOGICAL  :: l_snow          !< T: Use multi-layer snow scheme;
+                                !  Note: This affects thermal snow and soil properties:
+                                !  l_dynsnow, l_heat_cap_dyn and l_heat_cond_dyn are only effective if l_snow=.true.
+    LOGICAL  :: l_dynsnow       !< T: Calculate snow heat cond. and heat cap. dynamically depending on snow density
+    LOGICAL  :: l_heat_cap_dyn  !< T: Dynamic calculation of soil heat capacity;
+                                !  F: Static map or FAO data, depending on l_heat_cap_map
+    LOGICAL  :: l_heat_cond_dyn !< T: Dynamic calculation of soil heat conductivity;
+                                !  F: Static map or FAO data, depending on l_heat_cond_map
     !
     LOGICAL  :: l_heat_cap_map  !< T: Use soil heat capacity from input map, F: derive from FAO
-    LOGICAL  :: l_heat_cond_map !< T: USe soil heat conductivity from input map, F: derive from heat cap. and FAO thermal diff.
-    LOGICAL  :: l_soil_texture  !< T: Deduce soil thermal parameters from soil texture
-    LOGICAL  :: l_freeze        !< T: Consider freezing and thawing in thermal soil calculations
+    LOGICAL  :: l_heat_cond_map !< T: Use soil heat conductivity from input map, F: derive from heat cap. and FAO thermal diff.
+    LOGICAL  :: l_soil_texture  !< T: Deduce mineral soil thermal parameters from soil texture
+    LOGICAL  :: l_freeze        !< T: Consider freezing and thawing of soil water
     LOGICAL  :: l_supercool     !< T: Allow for supercooled soil water
     REAL(wp) :: w_soil_critical !< Critical water/ice content in upper soil layer for correction of new surface
                                 !! temperature for freezing/melting [m water equivalent]
+    !! quincy
+    ! INTEGER       :: nsoil_energy         !< number of soil layers for soil energy calculations   ! depreciated feature, but needed for now, see quincy-trac ticket #521
+    ! INTEGER       :: nsoil_water          !< number of soil layers for soil moisture calculations ! depreciated feature, but needed for now, see quincy-trac ticket #521
+    REAL(wp)      :: soil_depth           !< actual soil and rooting depth
+    REAL(wp)      :: wsr_capacity         !< Water holding capacity of ground skin reservoir [m water equivalent]
+    REAL(wp)      :: wsn_capacity         !< Water holding capacity of ground snow reservoir (max snow depth) [m water equivalent]
+    REAL(wp)      :: soil_awc_prescribe, &
+                     soil_theta_prescribe
+    REAL(wp)      :: soil_sand            !< soil sand proportion - site specific from forcing info file
+    REAL(wp)      :: soil_silt            !< soil silt proportion - site specific from forcing info file
+    REAL(wp)      :: soil_clay            !< soil clay proportion - recalculated from: clay = 1.0 -sand -silt
+    REAL(wp)      :: bulk_density
 
   CONTAINS
     PROCEDURE :: Init => Init_sse_config
   END TYPE t_sse_config
 
   INTEGER, PARAMETER :: max_snow_layers = 20
+  INTEGER, PARAMETER :: max_soil_layers = 20
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_sse_config_class'
 
@@ -54,17 +70,18 @@ CONTAINS
 
   SUBROUTINE Init_sse_config(config)
 
-    USE mo_sse_constants,      ONLY: snow_depth_min
     USE mo_jsb_namelist_iface, ONLY: open_nml, POSITIONED, position_nml, close_nml
     USE mo_jsb_grid_class,     ONLY: t_jsb_vgrid, new_vgrid
     USE mo_jsb_grid,           ONLY: Register_vgrid
     USE mo_jsb_io,             ONLY: ZAXIS_DEPTH_BELOW_LAND, ZAXIS_GENERIC
     USE mo_jsb_io_netcdf,      ONLY: t_input_file, jsb_netcdf_open_input
+    USE mo_sse_constants,      ONLY: snow_depth_min
+    USE mo_jsb_math_constants, ONLY: eps8
 
     CLASS(t_sse_config), INTENT(inout) :: config
 
-    LOGICAL  :: active, l_snow, l_dynsnow, l_heat_cap_dyn, l_heat_cond_dyn, l_heat_cap_map, l_heat_cond_map, l_soil_texture
-    LOGICAL  :: l_freeze, l_supercool
+    LOGICAL  :: active, l_snow, l_dynsnow, l_heat_cap_dyn, l_heat_cond_dyn, l_heat_cap_map, l_heat_cond_map
+    LOGICAL  :: l_freeze, l_supercool, l_soil_texture
     REAL(wp) :: w_soil_critical
     INTEGER  :: nsnow
     REAL(wp) :: dz_snow(max_snow_layers)
@@ -103,8 +120,8 @@ CONTAINS
     l_heat_cap_map   = .FALSE.
     l_heat_cond_map  = .FALSE.
     l_soil_texture   = .FALSE.
-    l_freeze         = .FALSE.
-    l_supercool      = .FALSE.
+    l_freeze         = .TRUE.
+    l_supercool      = .TRUE.
     w_soil_critical  = 5.85036E-3_wp
     ic_filename      = 'ic_land_soil.nc'
     bc_filename      = 'bc_land_soil.nc'

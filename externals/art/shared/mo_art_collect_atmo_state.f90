@@ -17,10 +17,11 @@
 MODULE mo_art_collect_atmo_state
   USE mo_kind,                          ONLY: wp
   USE mo_grid_config,                   ONLY: nroot
+  USE mo_run_config,                    ONLY: msg_level
   USE mo_var,                           ONLY: t_var
   USE mo_var_list,                      ONLY: t_var_list_ptr, find_tracer_by_index
   USE mo_var_groups,                    ONLY: var_groups_dyn
-  USE mo_impl_constants,                ONLY: min_rlcell_int, inwp, iaes
+  USE mo_impl_constants,                ONLY: SUCCESS, min_rlcell_int, inwp, iaes
   USE mo_impl_constants_grf,            ONLY: grf_bdywidth_c
   USE mo_physical_constants,            ONLY: grav, amo3, amd, amch4
   USE mo_nonhydro_types,                ONLY: t_nh_state, t_nh_prog
@@ -35,14 +36,6 @@ MODULE mo_art_collect_atmo_state
   USE mo_nwp_phy_types,                 ONLY: t_nwp_phy_diag
 
   USE mo_atm_phy_nwp_config,            ONLY: atm_phy_nwp_config
-  USE mo_newcld_optics,                 ONLY: rrtm_reimax => reimax,  &
-                                          &   rrtm_reimin => reimin,  &
-                                          &   rrtm_relmin => relmin,  &
-                                          &   rrtm_relmax => relmax
-  USE mo_radiation_cloud_optics,        ONLY: rte_rrtmgp_reimax => reimax,  &
-                                          &   rte_rrtmgp_reimin => reimin,  &
-                                          &   rte_rrtmgp_relmin => relmin,  &
-                                          &   rte_rrtmgp_relmax => relmax
 #ifndef __NO_AES__
   USE mo_aes_phy_memory,                ONLY: prm_field
 #endif
@@ -83,7 +76,7 @@ MODULE mo_art_collect_atmo_state
 
   PRIVATE
 
-  CHARACTER(len=*), PARAMETER :: routine = 'mo_art_collect_atmo_state'
+  CHARACTER(len=*), PARAMETER :: modname = 'mo_art_collect_atmo_state'
 
   PUBLIC :: art_collect_atmo_state_nwp, art_update_atmo_state_nwp
   PUBLIC :: art_collect_atmo_state_aes, art_update_atmo_state_aes
@@ -186,10 +179,8 @@ SUBROUTINE art_collect_atmo_state(jg,p_nh_state)
 
   ALLOCATE(p_art_data(jg)%atmo%sza(art_atmo%nproma,art_atmo%nblks))
   ALLOCATE(p_art_data(jg)%atmo%sza_deg(art_atmo%nproma,art_atmo%nblks))
-  ALLOCATE(p_art_data(jg)%atmo%ptropo(art_atmo%nproma, art_atmo%nblks))
   ALLOCATE(p_art_data(jg)%atmo%ktrpwmop1(art_atmo%nproma, art_atmo%nblks))
   ALLOCATE(p_art_data(jg)%atmo%ktrpwmo(art_atmo%nproma, art_atmo%nblks))
-  ALLOCATE(p_art_data(jg)%atmo%ktrpwmop1_real(art_atmo%nproma, art_atmo%nblks))
 
   ALLOCATE(p_art_data(jg)%atmo%swflxsfc(art_atmo%nproma,art_atmo%nblks))
   ALLOCATE(p_art_data(jg)%atmo%t_2m(art_atmo%nproma,art_atmo%nblks))
@@ -214,8 +205,8 @@ SUBROUTINE art_collect_atmo_state(jg,p_nh_state)
   art_atmo%v        => p_nh_state%diag%v
   art_atmo%vor      => p_nh_state%diag%vor
 
-  !$ACC ENTER DATA CREATE(p_art_data(jg)%atmo%gz0, p_art_data(jg)%atmo%ktrpwmop1_real, p_art_data(jg)%atmo%ktrpwmop1) &
-  !$ACC   CREATE(p_art_data(jg)%atmo%ktrpwmo, p_art_data(jg)%atmo%llsm, p_art_data(jg)%atmo%ptropo) &
+  !$ACC ENTER DATA CREATE(p_art_data(jg)%atmo%gz0, p_art_data(jg)%atmo%ktrpwmop1) &
+  !$ACC   CREATE(p_art_data(jg)%atmo%ktrpwmo, p_art_data(jg)%atmo%llsm) &
   !$ACC   CREATE(p_art_data(jg)%atmo%rh_2m, p_art_data(jg)%atmo%swflxsfc, p_art_data(jg)%atmo%swflx_par_sfc) &
   !$ACC   CREATE(p_art_data(jg)%atmo%sza, p_art_data(jg)%atmo%sza_deg, p_art_data(jg)%atmo%theta) &
   !$ACC   CREATE(p_art_data(jg)%atmo%t_2m)
@@ -285,30 +276,12 @@ SUBROUTINE art_collect_radiation_properties(iforcing, jg)
 
   art_atmo => p_art_data(jg)%atmo
 
-  IF (iforcing == inwp) THEN
-    SELECT CASE (atm_phy_nwp_config(jg)%inwp_radiation)
-      CASE(1)
-        art_atmo%relmin = rrtm_relmin
-        art_atmo%relmax = rrtm_relmax
-        art_atmo%reimin = rrtm_reimin
-        art_atmo%reimax = rrtm_reimax
-      CASE(3)
-        art_atmo%relmin = rte_rrtmgp_relmin
-        art_atmo%relmax = rte_rrtmgp_relmax
-        art_atmo%reimin = rte_rrtmgp_reimin
-        art_atmo%reimax = rte_rrtmgp_reimax
-    END SELECT
-  ENDIF
 
   IF (iforcing == iaes) THEN
 #ifdef __NO_AES__
     CALL finish('mo_art_collect_atmo_state:art_collect_radiation_properties', &
               & ' For AES support remove --disable-aes and reconfigure')
 #else
-    art_atmo%relmin = rte_rrtmgp_relmin
-    art_atmo%relmax = rte_rrtmgp_relmax
-    art_atmo%reimin = rte_rrtmgp_reimin
-    art_atmo%reimax = rte_rrtmgp_reimax
 #endif
   ENDIF
 
@@ -689,12 +662,6 @@ SUBROUTINE art_deallocate_atmo_state(jg)
   !$ACC EXIT DATA DELETE(art_atmo%sza_deg)
   DEALLOCATE(art_atmo%sza_deg)
   NULLIFY(art_atmo%sza_deg)
-  !$ACC EXIT DATA DELETE(art_atmo%ptropo)
-  DEALLOCATE(art_atmo%ptropo)
-  NULLIFY(art_atmo%ptropo)
-  !$ACC EXIT DATA DELETE(art_atmo%ktrpwmop1_real)
-  DEALLOCATE(art_atmo%ktrpwmop1_real)
-  NULLIFY(art_atmo%ktrpwmop1_real)
   !$ACC EXIT DATA DELETE(art_atmo%ktrpwmop1)
   DEALLOCATE(art_atmo%ktrpwmop1)
   NULLIFY(art_atmo%ktrpwmop1)
@@ -787,13 +754,11 @@ SUBROUTINE art_init_tracer_values(jg, tracer, p_prog_list)
   INTEGER                     :: &
     &  grp_id, jsp, tr_idx, ierror
 
+  CHARACTER(len=*), PARAMETER :: routine = modname//':art_init_tracer_values'
+
   art_atmo => p_art_data(jg)%atmo
 
   IF (art_config(jg)%lart_chem) THEN
-
-    IF (art_config(jg)%lart_chemtracer) THEN
-      CALL art_init_chemtracer(jg, tracer)
-    END IF
 
     IF (art_config(jg)%lart_mecca) THEN
 #ifdef __ART_GPL
@@ -807,7 +772,11 @@ SUBROUTINE art_init_tracer_values(jg, tracer, p_prog_list)
     SELECT CASE(art_config(jg)%iart_init_gas)
       CASE(0)
         ! Nothing to do here, tracers are initialized with 0.0_wp automatically
+        CALL message('', 'ART: Initializing chemical tracers with 0.0_wp')
+        CALL message('', 'Warning: This can cause problems in some chemistry schemes')
       CASE(1)
+        CALL message('', 'ART: Initializing some chemical tracers with climatological gas profiles')
+        CALL art_init_chemtracer(jg, tracer)
         ! At this point climatological gas profiles may be included as a standard initialization
       CASE(4)
         CALL message('', 'ART: Initializing chemical tracers using method given by .xml')
@@ -858,7 +827,7 @@ SUBROUTINE art_init_tracer_values(jg, tracer, p_prog_list)
                 WRITE (message_text,'(3A,E12.5,A)') 'iart_init_aero is 0: mode ',TRIM(fields%name), &
                   &                     ' is initialized with a fix number concentration of ',      &
                   &                     fields%info%init_nmb_conc, ' #/kg'
-                CALL message (TRIM(routine)//':art_init', message_text)
+                CALL message (TRIM(routine), TRIM(message_text))
 
                 ! write number concentration to tracer field
                 tracer(:,:,:,fields%itr0) = fields%info%init_nmb_conc
@@ -954,15 +923,47 @@ SUBROUTINE art_init_tracer_values(jg, tracer, p_prog_list)
         CALL message('','ART: Initializing aerosol with echam-ham climatology')
 
         CALL art_init_aero(jg, p_prog_list, tracer, use_echam_climatology=.true.)
-        
+
       CASE DEFAULT
         CALL finish('mo_art_init:art_init', &
           &      'Unknown initialization action for aerosol.')
     END SELECT
+
+    ! Initialize dust tracer indices for dusty cirrus parameterization
+    IF (art_config(jg)%lart_dusty_cirrus) THEN
+      CALL p_art_data(jg)%dict_tracer%get('dust_insol_acc', art_atmo%idust_insol_acc, ierror)
+      IF (ierror /= SUCCESS) THEN
+        CALL p_art_data(jg)%dict_tracer%get('dusta', art_atmo%idust_insol_acc, ierror)
+        IF (ierror /= SUCCESS) CALL finish (routine, 'dust_insol_acc (resp. dusta) not found in dictionary.')
+      END IF
+      CALL p_art_data(jg)%dict_tracer%get('dust_insol_coa', art_atmo%idust_insol_coa, ierror)
+      IF (ierror /= SUCCESS) THEN
+        CALL p_art_data(jg)%dict_tracer%get('dustb', art_atmo%idust_insol_coa, ierror)
+        IF (ierror /= SUCCESS) CALL finish (routine, 'dust_insol_coa (resp. dustb) not found in dictionary.')
+      END IF
+      CALL p_art_data(jg)%dict_tracer%get('dust_giant', art_atmo%idust_giant, ierror)
+      IF (ierror /= SUCCESS) THEN
+        CALL p_art_data(jg)%dict_tracer%get('dustc', art_atmo%idust_giant, ierror)
+        IF (ierror /= SUCCESS) CALL finish (routine, 'dust_giant     (resp. dustc) not found in dictionary.')
+      END IF
+
+      IF (msg_level > 5) THEN
+        CALL message(TRIM(routine), " Found the three dust modes for dusty cirrus scheme.")
+      END IF
+      IF (msg_level > 15) THEN
+        WRITE(message_text,'(A,I5)') "  idust_insol_acc (resp. idusta) = ", art_atmo%idust_insol_acc
+        CALL message(TRIM(routine), TRIM(message_text))
+        WRITE(message_text,'(A,I5)') "  idust_insol_coa (resp. idustb) = ", art_atmo%idust_insol_coa
+        CALL message(TRIM(routine), TRIM(message_text))
+        WRITE(message_text,'(A,I5)') "  idust_giant     (resp. idustc) = ", art_atmo%idust_giant
+        CALL message(TRIM(routine), TRIM(message_text))
+      END IF
+    END IF
+
   ENDIF !lart_aerosol
 
   NULLIFY(art_atmo)
-  
+
 END SUBROUTINE art_init_tracer_values
 
 !!
@@ -1006,7 +1007,7 @@ SUBROUTINE art_init_tracer_values_nwp(jg, tracer, current_date, p_prog_list)
       CALL calc_o3_gems_linoz(p_patch(jg),current_date,art_atmo%o3_clim)
     END IF
 
-    IF (art_indices%iTRO3  /= 0) THEN
+    IF (art_indices%iTRO3  /= 0 .AND. art_config(jg)%iart_init_gas/=0) THEN
       tracer(:,:,:,art_indices%iTRO3) = art_atmo%o3_clim(:,:,:) * amd / amo3
     ENDIF
 
@@ -1018,7 +1019,7 @@ SUBROUTINE art_init_tracer_values_nwp(jg, tracer, current_date, p_prog_list)
     ! (ATTENTION: only valid for this initialisation time!)
     ! Values are valid for 90 level version of ICON
 
-    IF (art_indices%iTRCH4   /=0) THEN
+    IF (art_indices%iTRCH4   /=0 .AND. art_config(jg)%iart_init_gas/=0) THEN
       CALL art_set_init_tracer_trop_strat(jg,                             &
                       &                   tracer(:,:,:,art_indices%iTRCH4),  &
                       &                   1.67e-06_wp,                    &
@@ -1166,7 +1167,7 @@ SUBROUTINE art_init_tracer_values_aes(jg, tracer, current_date, p_prog_list)
   END IF
 
   CALL art_init_tracer_values(jg,tracer,p_prog_list)
-#endif 
+#endif
 
 END SUBROUTINE art_init_tracer_values_aes
 

@@ -26,11 +26,11 @@ MODULE mo_restart
 #endif
   USE mo_restart_descriptor, ONLY: t_RestartDescriptor
   USE mo_sync_restart, ONLY: t_SyncRestartDescriptor
-#ifdef YAC_coupling
   USE mo_coupling_config, ONLY: is_coupled_run
-  USE mo_io_coupling_frame, ONLY: construct_io_coupling, destruct_io_coupling
-#endif
-  USE mo_timer, ONLY: print_timer, timer_stop, timer_model_init, ltimer
+  USE mo_dummy_coupling_frame, ONLY: construct_dummy_coupling, &
+    &                                destruct_dummy_coupling
+  USE mo_timer, ONLY: print_timer, timer_start, timer_stop, timer_model_init, &
+    &                 ltimer, timer_coupling
 
   IMPLICIT NONE
   PRIVATE
@@ -97,11 +97,13 @@ CONTAINS
     CALL finish(routine, 'no MPI-support -> no restart procs -> go away!')
 #else
     ! Actually detach the restart processes.
-#ifdef YAC_coupling
-    ! The initialisation of YAC needs to be called by all (!) MPI processes
+    ! The initialisation of coupling needs to be called by all (!) MPI processes
     ! in MPI_COMM_WORLD. Thus we do it here for the restart processes.
-    IF ( is_coupled_run() ) CALL construct_io_coupling ( "dummy" )
-#endif
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL construct_dummy_coupling ( "restart" )
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
     IF (timer_started) CALL timer_stop(timer_model_init)
     CALL restartWritingParameters(opt_restartModule = restartModule)
     SELECT CASE(restartModule)
@@ -112,9 +114,12 @@ CONTAINS
     CASE(kMultifileRestartModule)
       CALL multifileRestart_mainLoop()
     END SELECT
-#ifdef YAC_coupling
-    IF ( is_coupled_run() ) CALL destruct_io_coupling ( "dummy" )
-#endif
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL destruct_dummy_coupling ( "restart" )
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
+
     ! This is the end of all things!
     IF(ltimer) CALL print_timer
     CALL stop_mpi

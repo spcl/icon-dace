@@ -49,7 +49,6 @@ USE iso_c_binding, ONLY: c_int, c_loc, c_ptr, c_null_ptr
 USE mo_communication_types, ONLY: t_comm_pattern, t_p_comm_pattern, &
   & t_comm_pattern_collection, xfer_list
 #ifdef _OPENACC
-USE mo_mpi,                 ONLY: i_am_accel_node
 USE iso_c_binding,          ONLY: c_size_t
 USE mo_openacc
 #endif
@@ -1004,9 +1003,10 @@ END SUBROUTINE delete_comm_pattern_collection
 !================================================================================================
 ! REAL SECTION ----------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_r3d(p_pat, recv, send, add)
+SUBROUTINE exchange_data_r3d(p_pat, lacc, recv, send, add)
 
    CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    REAL(dp), INTENT(INOUT), TARGET :: recv(:,:,:)
    REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
    REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
@@ -1033,12 +1033,10 @@ SUBROUTINE exchange_data_r3d(p_pat, recv, send, add)
 
 #ifdef _OPENACC
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    !$ACC UPDATE HOST(recv) ASYNC(1) IF(i_am_accel_node)
-    !$ACC UPDATE HOST(send) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(send))
-    !$ACC UPDATE HOST(add) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(add))
+    !$ACC UPDATE HOST(recv, send, add) ASYNC(1) IF(lacc)
     !$ACC WAIT(1)
 #endif
 #endif
@@ -1102,7 +1100,7 @@ SUBROUTINE exchange_data_r3d(p_pat, recv, send, add)
    END IF
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
 #endif
 
    stop_sync_timer(timer_exch_data)
@@ -1173,9 +1171,10 @@ CONTAINS
 
 END SUBROUTINE exchange_data_r3d
 
-SUBROUTINE exchange_data_s3d(p_pat, recv, send, add)
+SUBROUTINE exchange_data_s3d(p_pat, lacc, recv, send, add)
 
    CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    REAL(sp), INTENT(INOUT), TARGET :: recv(:,:,:)
    REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
    REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
@@ -1202,12 +1201,10 @@ SUBROUTINE exchange_data_s3d(p_pat, recv, send, add)
 
 #ifdef _OPENACC
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    !$ACC UPDATE HOST(recv) ASYNC(1) IF(i_am_accel_node)
-    !$ACC UPDATE HOST(send) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(send))
-    !$ACC UPDATE HOST(add) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(add))
+    !$ACC UPDATE HOST(recv, send, add) ASYNC(1) IF(lacc)
     !$ACC WAIT(1)
 #endif
 #endif
@@ -1272,7 +1269,7 @@ SUBROUTINE exchange_data_s3d(p_pat, recv, send, add)
    END IF
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
 #endif
 
    stop_sync_timer(timer_exch_data)
@@ -1346,9 +1343,10 @@ END SUBROUTINE exchange_data_s3d
 !================================================================================================
 ! INTEGER SECTION -------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_i3d(p_pat, recv, send, add)
+SUBROUTINE exchange_data_i3d(p_pat, lacc, recv, send, add)
 
    CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    INTEGER, INTENT(INOUT), TARGET :: recv(:,:,:)
    INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
    INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
@@ -1375,12 +1373,10 @@ SUBROUTINE exchange_data_i3d(p_pat, recv, send, add)
 
 #ifdef _OPENACC
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    !$ACC UPDATE HOST(recv) ASYNC(1) IF(i_am_accel_node)
-    !$ACC UPDATE HOST(send) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(send))
-    !$ACC UPDATE HOST(add) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(add))
+    !$ACC UPDATE HOST(recv, send, add) ASYNC(1) IF(lacc)
     !$ACC WAIT(1)
 #endif
 #endif
@@ -1444,7 +1440,7 @@ SUBROUTINE exchange_data_i3d(p_pat, recv, send, add)
    END IF
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
 #endif
 
    stop_sync_timer(timer_exch_data)
@@ -1518,9 +1514,10 @@ END SUBROUTINE exchange_data_i3d
 !================================================================================================
 ! LOGICAL SECTION -------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_l3d(p_pat, recv, send)
+SUBROUTINE exchange_data_l3d(p_pat, lacc, recv, send)
 
    CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    LOGICAL, INTENT(INOUT), TARGET :: recv(:,:,:)
    LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
 
@@ -1545,11 +1542,10 @@ SUBROUTINE exchange_data_l3d(p_pat, recv, send)
 
 #ifdef _OPENACC
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    !$ACC UPDATE HOST(recv) ASYNC(1) IF(i_am_accel_node)
-    !$ACC UPDATE HOST(send) ASYNC(1) IF((i_am_accel_node) .AND. PRESENT(send))
+    !$ACC UPDATE HOST(recv, send) ASYNC(1) IF(lacc)
     !$ACC WAIT(1)
 #endif
 #endif
@@ -1580,7 +1576,7 @@ SUBROUTINE exchange_data_l3d(p_pat, recv, send)
    ENDIF
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+   !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
 #endif
 
    stop_sync_timer(timer_exch_data)
@@ -1664,21 +1660,23 @@ END SUBROUTINE exchange_data_l3d
 
 !! Does data exchange according to a communication pattern (in p_pat).
 !!
-SUBROUTINE exchange_data_mult_dp(p_pat, ndim2tot, recv, send, nshift)
+SUBROUTINE exchange_data_mult_dp(p_pat, lacc, ndim2tot, recv, send, nshift)
 
   CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
 
+  LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
   TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(:)
   TYPE(t_ptr_3d), OPTIONAL, PTR_INTENT(in) :: send(:)
 
   INTEGER, INTENT(IN)           :: ndim2tot
   INTEGER, OPTIONAL, INTENT(IN) :: nshift
-  CALL exchange_data_mult_dp_top(p_pat, ndim2tot, recv, send, nshift)
+  CALL exchange_data_mult_dp_top(p_pat, lacc, ndim2tot, recv, send, nshift)
 END SUBROUTINE exchange_data_mult_dp
 
-SUBROUTINE exchange_data_mult_dp_top(p_pat, ndim2tot, recv, send, nshift)
+SUBROUTINE exchange_data_mult_dp_top(p_pat, lacc, ndim2tot, recv, send, nshift)
 
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT) :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
 
    TYPE(t_ptr_3d), TARGET, PTR_INTENT(in) :: recv(:)
    TYPE(t_ptr_3d), TARGET, OPTIONAL, PTR_INTENT(in) :: send(:)
@@ -1757,7 +1755,7 @@ SUBROUTINE exchange_data_mult_dp_top(p_pat, ndim2tot, recv, send, nshift)
    IF (nproma_mismatch_found) &
      CALL finish(routine, "inconsistent array shapes detected")
 
-   CALL exchange_data_mult_dp_bottom(p_pat, cpy_size, nlev, needs_cpy, &
+   CALL exchange_data_mult_dp_bottom(p_pat, lacc, cpy_size, nlev, needs_cpy, &
         recv, send_, nshift)
 
    stop_sync_timer(timer_exch_data)
@@ -1766,11 +1764,12 @@ END SUBROUTINE exchange_data_mult_dp_top
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_mult_dp_bottom(p_pat, cpy_size, nlev, needs_cpy, &
+  SUBROUTINE exchange_data_mult_dp_bottom(p_pat, lacc, cpy_size, nlev, needs_cpy, &
     recv, send, nshift)
 
     CLASS(t_comm_pattern_yaxt), INTENT(INOUT) :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(:)
     TYPE(t_ptr_3d), POINTER, PTR_INTENT(in) :: send(:)
 
@@ -1791,7 +1790,7 @@ END SUBROUTINE exchange_data_mult_dp_top
     TYPE(c_ptr) :: device_cpy
     LOGICAL :: lzacc
 
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #endif
 
     lsend = ASSOCIATED(send)
@@ -1942,11 +1941,12 @@ END SUBROUTINE exchange_data_mult_dp_top
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_mult_sp(p_pat, ndim2tot, &
+  SUBROUTINE exchange_data_mult_sp(p_pat, lacc, ndim2tot, &
    recv, send, nshift)
 
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT) :: p_pat
 
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    TYPE(t_ptr_3d_sp), TARGET, PTR_INTENT(in) :: recv(:)
    TYPE(t_ptr_3d_sp), TARGET, OPTIONAL, PTR_INTENT(in) :: send(:)
 
@@ -2019,7 +2019,7 @@ END SUBROUTINE exchange_data_mult_dp_top
    IF (nproma_mismatch_found) &
      CALL finish(routine, "inconsistent array shapes detected")
 
-   CALL exchange_data_mult_sp_bottom(p_pat, cpy_size, nlev, needs_cpy, &
+   CALL exchange_data_mult_sp_bottom(p_pat, lacc, cpy_size, nlev, needs_cpy, &
         recv, send_, nshift)
 
    stop_sync_timer(timer_exch_data)
@@ -2028,11 +2028,12 @@ END SUBROUTINE exchange_data_mult_sp
 
   !! Does data exchange according to a communication pattern (in p_pat).
   !!
-  SUBROUTINE exchange_data_mult_sp_bottom(p_pat, cpy_size, nlev, needs_cpy, &
+  SUBROUTINE exchange_data_mult_sp_bottom(p_pat, lacc, cpy_size, nlev, needs_cpy, &
     recv, send, nshift)
 
     CLASS(t_comm_pattern_yaxt), INTENT(INOUT) :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     TYPE(t_ptr_3d_sp), PTR_INTENT(in) :: recv(:)
     TYPE(t_ptr_3d_sp), POINTER, PTR_INTENT(in) :: send(:)
 
@@ -2053,7 +2054,7 @@ END SUBROUTINE exchange_data_mult_sp
     TYPE(c_ptr) :: device_cpy
     LOGICAL :: lzacc
 
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #endif
 
     lsend = ASSOCIATED(send)
@@ -2204,11 +2205,12 @@ END SUBROUTINE exchange_data_mult_sp
 
 !! Does data exchange according to a communication pattern (in p_pat).
 !!
-SUBROUTINE exchange_data_mult_mixprec(p_pat, nfields_dp, ndim2tot_dp, &
+SUBROUTINE exchange_data_mult_mixprec(p_pat, lacc, nfields_dp, ndim2tot_dp, &
      nfields_sp, ndim2tot_sp, recv_dp, send_dp, recv_sp, send_sp, nshift)
 
   CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
 
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: recv_dp(:)
     TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: send_dp(:)
     TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: recv_sp(:)
@@ -2219,12 +2221,12 @@ SUBROUTINE exchange_data_mult_mixprec(p_pat, nfields_dp, ndim2tot_dp, &
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
 
   IF (nfields_dp > 0) THEN
-    CALL exchange_data_mult_dp(p_pat=p_pat, &
+    CALL exchange_data_mult_dp(p_pat=p_pat, lacc=lacc, &
       ndim2tot=ndim2tot_dp, recv=recv_dp, send=send_dp, nshift=nshift)
   END IF
 
   IF (nfields_sp > 0) THEN
-    CALL exchange_data_mult_sp(p_pat=p_pat, &
+    CALL exchange_data_mult_sp(p_pat=p_pat, lacc=lacc, &
       ndim2tot=ndim2tot_sp, recv=recv_sp, send=send_sp, nshift=nshift)
   END IF
 
@@ -2232,10 +2234,11 @@ END SUBROUTINE exchange_data_mult_mixprec
 
 !! Does data exchange according to a communication pattern (in p_pat).
 !!
-SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
+SUBROUTINE exchange_data_4de1(p_pat, lacc, nfields, ndim2tot, recv, send)
 
    CLASS(t_comm_pattern_yaxt), TARGET, INTENT(INOUT) :: p_pat
 
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    REAL(dp), INTENT(INOUT)           :: recv(:,:,:,:)
    REAL(dp), INTENT(IN   ), OPTIONAL :: send(:,:,:,:)
 
@@ -2256,14 +2259,11 @@ SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
    LOGICAL :: lzacc
 
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    IF (i_am_accel_node) THEN
-      !$ACC UPDATE HOST(recv) ASYNC(1)
-      !$ACC UPDATE HOST(send) ASYNC(1) IF(PRESENT(send))
-      !$ACC WAIT(1)
-    END IF
+    !$ACC UPDATE HOST(recv, send) ASYNC(1) IF(lacc)
+    !$ACC WAIT(1)
 #endif
 #endif
 
@@ -2306,7 +2306,7 @@ SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
          !$ACC END PARALLEL
          !$ACC WAIT(1)
 
-         CALL exchange_data_r3d(p_pat, recv_buffer, send_buffer)
+         CALL exchange_data_r3d(p_pat, lacc, recv_buffer, send_buffer)
 
          !$ACC PARALLEL ASYNC(1) IF(lzacc)
          !$ACC LOOP GANG VECTOR COLLAPSE(3)
@@ -2337,7 +2337,7 @@ SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
          !$ACC END PARALLEL
          !$ACC WAIT(1)
 
-         CALL exchange_data_r3d(p_pat, recv_buffer)
+         CALL exchange_data_r3d(p_pat, lacc, recv_buffer)
 
          !$ACC PARALLEL ASYNC(1) IF(lzacc)
          !$ACC LOOP GANG VECTOR COLLAPSE(3)
@@ -2355,8 +2355,8 @@ SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
      END IF
      DEALLOCATE(recv_buffer)
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-     IF (i_am_accel_node) THEN
-      !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+     IF (lacc) THEN
+      !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
      END IF
 #endif
      RETURN
@@ -2393,8 +2393,8 @@ SUBROUTINE exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
    ENDIF
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-   IF (i_am_accel_node) THEN
-    !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(i_am_accel_node)
+   IF (lacc) THEN
+    !$ACC UPDATE DEVICE(recv) ASYNC(1) IF(lacc)
    END IF
 #endif
 
@@ -2467,11 +2467,11 @@ END SUBROUTINE exchange_data_4de1
 
 !! Does data exchange according to a communication pattern (in p_pat).
 !!
-SUBROUTINE exchange_data_grf(p_pat_coll, nfields, ndim2tot, recv, send)
+SUBROUTINE exchange_data_grf(p_pat_coll, lacc, nfields, ndim2tot, recv, send)
 
    CLASS(t_comm_pattern_collection_yaxt), TARGET, INTENT(INOUT) :: p_pat_coll
 
-
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    !> total number of input fields
    INTEGER, INTENT(IN)           :: nfields
    !> sum of vertical levels of input fields
@@ -2491,10 +2491,10 @@ SUBROUTINE exchange_data_grf(p_pat_coll, nfields, ndim2tot, recv, send)
     LOGICAL :: lzacc
 
 #ifdef __USE_G2G
-    lzacc = i_am_accel_node
+    lzacc = lacc
 #else
     lzacc = .FALSE.
-    IF (i_am_accel_node) THEN
+    IF (lacc) THEN
       DO i = 1, nfields
         p => recv(i)%p
         !$ACC UPDATE HOST(p) ASYNC(1)
@@ -2541,10 +2541,10 @@ SUBROUTINE exchange_data_grf(p_pat_coll, nfields, ndim2tot, recv, send)
 
    CALL exchange_data_grf_bottom(redist_coll, cpy_size, nfields, ndim2tot,&
      &                           npats, src_fsize4d, dst_fsize4d, needs_cpy, &
-     &                           recv, send)
+     &                           recv, send, lacc)
 
 #if defined(_OPENACC) && ! defined(__USE_G2G)
-    IF (i_am_accel_node) THEN
+    IF (lacc) THEN
       DO i = 1, nfields
         p => recv(i)%p
         !$ACC UPDATE DEVICE(p) ASYNC(1)
@@ -2559,7 +2559,7 @@ SUBROUTINE exchange_data_grf(p_pat_coll, nfields, ndim2tot, recv, send)
 END SUBROUTINE exchange_data_grf
 
   SUBROUTINE exchange_data_grf_bottom(redist_coll, cpy_size, nfields, ndim2tot,&
-       npats, src_fsize4d, dst_fsize4d, needs_cpy, recv, send)
+       npats, src_fsize4d, dst_fsize4d, needs_cpy, recv, send, lacc)
     TYPE(xt_redist), INTENT(IN) :: redist_coll
 
     !> size of copy array needed for contiguous buffering
@@ -2575,6 +2575,7 @@ END SUBROUTINE exchange_data_grf
 
     ! recv itself is intent(in), but the pointed to data will be modified
     TYPE(t_ptr_3d), PTR_INTENT(in) :: recv(nfields), send(nfields)
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
 
     REAL(dp), TARGET :: cpy_buf(cpy_size)
     REAL(dp), POINTER :: cpy(:,:,:)
@@ -2582,6 +2583,16 @@ END SUBROUTINE exchange_data_grf
     TYPE(c_ptr), TARGET :: src_data_cptr(npats*nfields), &
          dst_data_cptr(npats*nfields)
     TYPE(c_ptr), POINTER :: src_cptr(:,:), dst_cptr(:,:)
+
+#ifdef _OPENACC
+    LOGICAL :: lzacc
+
+#ifdef __USE_G2G
+    lzacc = lacc
+#else
+    lzacc = .FALSE.
+#endif
+#endif
 
     ! create C pointers to (contiguous) data
     src_cptr(1:npats, 1:nfields) => src_data_cptr
@@ -2606,7 +2617,7 @@ END SUBROUTINE exchange_data_grf
       END IF
       IF (incr > 0) THEN
 #ifdef _OPENACC
-        IF (lzacc) THEN ! FIXME: lzacc is undefined here (even before ACC clean-up 24c5f97e)
+        IF (lzacc) THEN
           dst_cptr(:, i) = acc_deviceptr(C_LOC(cpy(1,1,1)))
         ELSE
 #endif
@@ -2662,9 +2673,10 @@ END SUBROUTINE exchange_data_grf
 !================================================================================================
 ! REAL SECTION ----------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_r2d(p_pat, recv, send, add, l_recv_exists)
+SUBROUTINE exchange_data_r2d(p_pat, lacc, recv, send, add, l_recv_exists)
    !
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT), TARGET :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    REAL(dp), INTENT(INOUT), TARGET        :: recv(:,:)
    REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
    REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
@@ -2686,23 +2698,24 @@ SUBROUTINE exchange_data_r2d(p_pat, recv, send, add, l_recv_exists)
 
    IF (PRESENT(send)) THEN
       IF (PRESENT(add)) THEN
-         CALL exchange_data_r3d(p_pat, recv3d, send=send3d, add=add3d)
+         CALL exchange_data_r3d(p_pat, lacc, recv3d, send=send3d, add=add3d)
       ELSE
-         CALL exchange_data_r3d(p_pat, recv3d, send=send3d)
+         CALL exchange_data_r3d(p_pat, lacc, recv3d, send=send3d)
       ENDIF
    ELSE
       IF (PRESENT(add)) THEN
-         CALL exchange_data_r3d(p_pat, recv3d, add=add3d)
+         CALL exchange_data_r3d(p_pat, lacc, recv3d, add=add3d)
       ELSE
-         CALL exchange_data_r3d(p_pat, recv3d)
+         CALL exchange_data_r3d(p_pat, lacc, recv3d)
       ENDIF
    ENDIF
 
 END SUBROUTINE exchange_data_r2d
 
-SUBROUTINE exchange_data_s2d(p_pat, recv, send, add, l_recv_exists)
+SUBROUTINE exchange_data_s2d(p_pat, lacc, recv, send, add, l_recv_exists)
    !
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT), TARGET :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    REAL(sp), INTENT(INOUT), TARGET        :: recv(:,:)
    REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
    REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
@@ -2724,15 +2737,15 @@ SUBROUTINE exchange_data_s2d(p_pat, recv, send, add, l_recv_exists)
 
    IF (PRESENT(send)) THEN
       IF (PRESENT(add)) THEN
-         CALL exchange_data_s3d(p_pat, recv3d, send=send3d, add=add3d)
+         CALL exchange_data_s3d(p_pat, lacc, recv3d, send=send3d, add=add3d)
       ELSE
-         CALL exchange_data_s3d(p_pat, recv3d, send=send3d)
+         CALL exchange_data_s3d(p_pat, lacc, recv3d, send=send3d)
       ENDIF
    ELSE
       IF (PRESENT(add)) THEN
-         CALL exchange_data_s3d(p_pat, recv3d, add=add3d)
+         CALL exchange_data_s3d(p_pat, lacc, recv3d, add=add3d)
       ELSE
-         CALL exchange_data_s3d(p_pat, recv3d)
+         CALL exchange_data_s3d(p_pat, lacc, recv3d)
       ENDIF
    ENDIF
 
@@ -2741,9 +2754,10 @@ END SUBROUTINE exchange_data_s2d
 !================================================================================================
 ! INTEGER SECTION -------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_i2d(p_pat, recv, send, add, l_recv_exists)
+SUBROUTINE exchange_data_i2d(p_pat, lacc, recv, send, add, l_recv_exists)
    !
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT), TARGET :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    INTEGER, INTENT(INOUT), TARGET        :: recv(:,:)
    INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
    INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:)
@@ -2765,15 +2779,15 @@ SUBROUTINE exchange_data_i2d(p_pat, recv, send, add, l_recv_exists)
 
    IF (PRESENT(send)) THEN
       IF (PRESENT(add)) THEN
-         CALL exchange_data_i3d(p_pat, recv3d, send=send3d, add=add3d)
+         CALL exchange_data_i3d(p_pat, lacc, recv3d, send=send3d, add=add3d)
       ELSE
-         CALL exchange_data_i3d(p_pat, recv3d, send=send3d)
+         CALL exchange_data_i3d(p_pat, lacc, recv3d, send=send3d)
       ENDIF
    ELSE
       IF (PRESENT(add)) THEN
-         CALL exchange_data_i3d(p_pat, recv3d, add=add3d)
+         CALL exchange_data_i3d(p_pat, lacc, recv3d, add=add3d)
       ELSE
-         CALL exchange_data_i3d(p_pat, recv3d)
+         CALL exchange_data_i3d(p_pat, lacc, recv3d)
       ENDIF
    ENDIF
 
@@ -2782,9 +2796,10 @@ END SUBROUTINE exchange_data_i2d
 !================================================================================================
 ! LOGICAL SECTION -------------------------------------------------------------------------------
 !
-SUBROUTINE exchange_data_l2d(p_pat, recv, send, l_recv_exists)
+SUBROUTINE exchange_data_l2d(p_pat, lacc, recv, send, l_recv_exists)
    !
    CLASS(t_comm_pattern_yaxt), INTENT(INOUT), TARGET :: p_pat
+   LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
    LOGICAL, INTENT(INOUT), TARGET        :: recv(:,:)
    LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
    LOGICAL, OPTIONAL :: l_recv_exists
@@ -2802,9 +2817,9 @@ SUBROUTINE exchange_data_l2d(p_pat, recv, send, l_recv_exists)
    IF (PRESENT(send)) CALL insert_dimension(send3d, send, 2)
 
    IF (PRESENT(send)) THEN
-      CALL exchange_data_l3d(p_pat, recv3d, send=send3d)
+      CALL exchange_data_l3d(p_pat, lacc, recv3d, send=send3d)
    ELSE
-      CALL exchange_data_l3d(p_pat, recv3d)
+      CALL exchange_data_l3d(p_pat, lacc, recv3d)
    ENDIF
 
 END SUBROUTINE exchange_data_l2d

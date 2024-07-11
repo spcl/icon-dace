@@ -18,7 +18,7 @@ CONTAINS
 
   SUBROUTINE TEST_expression_simple
     TYPE(expression) :: formula
-    REAL(wp), TARGET :: val
+    REAL(wp), TARGET :: val, x
     REAL(wp), POINTER :: ptr_val
     REAL(wp) :: ref
 
@@ -47,6 +47,258 @@ CONTAINS
     ref = REAL(5 - 1 + 3, wp)
     CALL formula%evaluate(ptr_val)
     CALL ASSERT_ALMOST_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_exp_erf")
+    formula = expression("exp(1.) + erf(0.76)")
+    ref = EXP(1._wp) + ERF(0.76_wp)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_ALMOST_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_max")
+    formula = expression("max(1., 0.)")
+    ref = 1._wp
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_min")
+    formula = expression("min(1., 0.)")
+    ref = 0._wp
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_gt")
+    formula = expression("if(1 > 0, 1, 0)")
+    ref = 1._wp
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_lt")
+    formula = expression("if(1 < 0, 1, 0)")
+    ref = 0._wp
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_sqrt")
+    formula = expression("sqrt(2.) + sqrt(3.)")
+    ref = SQRT(2._wp) + SQRT(3._wp)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_ALMOST_EQUAL(val, ref)
+
+    CALL TAG_TEST("TEST_link")
+    CALL RANDOM_NUMBER(x)
+    formula = expression("[x]")
+    CALL formula%link("x", x)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_ALMOST_EQUAL(val, x)
+
+  END SUBROUTINE
+
+  SUBROUTINE TEST_expression_2D()
+
+    REAL(wp), PARAMETER :: TOL = 5.e-6
+    TYPE(expression) :: formula
+    REAL(wp), TARGET :: val(5, 5)
+    REAL(wp), POINTER :: ptr_val(:, :)
+    REAL(wp), TARGET :: x(5, 5), y(5, 5), z(5, 5)
+    REAL(wp) :: ref(5, 5)
+    LOGICAL :: logl(5, 5)
+
+    ptr_val => val
+
+    CALL RANDOM_NUMBER(x)
+    CALL RANDOM_NUMBER(y)
+    CALL RANDOM_NUMBER(z)
+
+    CALL TAG_TEST("TEST_plus_minus_2D")
+    formula = expression("[x] - [y] + [z]")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    CALL formula%link("z", z)
+    ref = x - y + z
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_arithmetic_2D")
+    formula = expression("[x] * 10 + [y] / 5 - [z]")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    CALL formula%link("z", z)
+    ref = x*10 + y/5 - z
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_log_pow_2D")
+    formula = expression("log([x]) ^ 2")
+    CALL formula%link("x", x)
+    ref = LOG(x)**2
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_exp_erf_2D")
+    formula = expression("exp([x]) + erf([y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = EXP(x) + ERF(y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_sin_cos_2D")
+    formula = expression("sin([x]) + cos([y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = SIN(x) + COS(y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_sqrt_2D")
+    formula = expression("sqrt([x])")
+    CALL formula%link("x", x)
+    ref = SQRT(x)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_max_2D")
+    formula = expression("max([x] - 0.5, 0)")
+    CALL formula%link("x", x)
+    ref = MAX(x - 0.5_wp, 0.0_wp)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_min_2D")
+    formula = expression("min([x], [y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = MIN(x, y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_gt_2D")
+    formula = expression("[x] > 0.5")
+    CALL formula%link("x", x)
+    ref = REAL(ABS(FLOOR(0.5_wp - x)), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_lt_2D")
+    formula = expression("[x] < 0.3")
+    CALL formula%link("x", x)
+    ref = REAL(1 + FLOOR(0.3_wp - x), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_if_2D")
+    formula = expression("if([x] > [y], 1.0, 0.0)")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = REAL(ABS(FLOOR(y - x)), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL formula%finalize()
+
+  END SUBROUTINE
+
+  SUBROUTINE TEST_expression_3D()
+
+    REAL(wp), PARAMETER :: TOL = 5.e-6
+    TYPE(expression) :: formula
+    REAL(wp), TARGET :: val(3, 3, 3)
+    REAL(wp), POINTER :: ptr_val(:, :, :)
+    REAL(wp), TARGET :: x(3, 3, 3), y(3, 3, 3), z(3, 3, 3)
+    REAL(wp) :: ref(3, 3, 3)
+
+    ptr_val => val
+
+    CALL RANDOM_NUMBER(x)
+    CALL RANDOM_NUMBER(y)
+    CALL RANDOM_NUMBER(z)
+
+    CALL TAG_TEST("TEST_plus_minus_3D")
+    formula = expression("[x] - [y] + [z]")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    CALL formula%link("z", z)
+    ref = x - y + z
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_arithmetic_3D")
+    formula = expression("[x] * 10 + [y] / 5 - [z]")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    CALL formula%link("z", z)
+    ref = x*10 + y/5 - z
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_log_pow_3D")
+    formula = expression("log([x]) ^ 2")
+    CALL formula%link("x", x)
+    ref = LOG(x)**2
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_exp_erf_3D")
+    formula = expression("exp([x]) + erf([y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = EXP(x) + ERF(y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_sin_cos_3D")
+    formula = expression("sin([x]) + cos([y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = SIN(x) + COS(y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_sqrt_3D")
+    formula = expression("sqrt([x])")
+    CALL formula%link("x", x)
+    ref = SQRT(x)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_max_3D")
+    formula = expression("max([x] - 0.5, 0)")
+    CALL formula%link("x", x)
+    ref = MAX(x - 0.5_wp, 0.0_wp)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_min_3D")
+    formula = expression("min([x], [y])")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = MIN(x, y)
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_GREATER_THAN(TOL, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_gt_3D")
+    formula = expression("[x] > 0.5")
+    CALL formula%link("x", x)
+    ref = REAL(ABS(FLOOR(0.5_wp - x)), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_lt_3D")
+    formula = expression("[x] < 0.3")
+    CALL formula%link("x", x)
+    ref = REAL(1 + FLOOR(0.3_wp - x), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL TAG_TEST("TEST_if_3D")
+    formula = expression("if([x] > [y], 1.0, 0.0)")
+    CALL formula%link("x", x)
+    CALL formula%link("y", y)
+    ref = REAL(ABS(FLOOR(y - x)), KIND(REAL(wp)))
+    CALL formula%evaluate(ptr_val)
+    CALL ASSERT_EQUAL(0.0_wp, MAXVAL(ABS(val - ref)))
+
+    CALL formula%finalize()
 
   END SUBROUTINE
 
@@ -83,7 +335,7 @@ CONTAINS
     DO i = 1, 3
       WRITE (label, '(A,I1)') 'TEST_exp_sin_z_sfc_', i
       CALL TAG_TEST(label)
-      CALL ASSERT_EQUAL(.TRUE., ALL(SIN(z(:, 1, :)*z_sfc) == val_3D(:, 1, :)))
+      CALL ASSERT_EQUAL(.TRUE., ALL(SIN(z(:, i, :)*z_sfc) == val_3D(:, i, :)))
     END DO
 
     ! clean-up

@@ -279,11 +279,8 @@ MODULE mo_intp_data_strc
     !------------------------------------------------------------------------------
     REAL(wp), ALLOCATABLE :: pos_on_tplane_e(:,:,:,:)  ! positions of various points on local plane
                                                        ! tangential to the edge midpoint.
-                                                       ! currently: (nproma,nblks_e,8,2)
-    REAL(wp), ALLOCATABLE :: tplane_e_dotprod(:,:,:,:) ! Dot product between unit vectors at inner
-                                                       ! edge midpoint and edge midpoints of
-                                                       ! corresponding quadrilateral cell.
-                                                       ! (nproma,nblks_e,4,4)
+                                                       ! (nproma,4,2,nblks_e)
+
     TYPE(t_geographical_coordinates), ALLOCATABLE ::  &! positions of vertices and butterfly
       &  pos_on_tplane_c_edge(:,:,:,:)                 ! neighbors on local plane tangential to the
                                                        ! cell circumcenter.
@@ -307,51 +304,6 @@ MODULE mo_intp_data_strc
     ! k) Quadrature points and weights for integration over triangular element
     !--------------------------------------------------------------------------
     TYPE(t_gauss_quad) ::gquad
-  
-    ! m) Ocean variables
-    ! This will be transfered into an separate variable AFTER we got it running in parallel
-    ! The following two arrays are required for the reconstruction process that
-    ! is used within the ocean model. Once the new version is implemented this
-    ! could eventually be shifted to the edge/vertex datatypes. It is currently
-    ! placed here to reduce interference with the atmospheric code (P.K.).
-    !
-    ! Vector pointing from cell circumcenter to edge midpoint. In the associated
-    ! cell2edge_weight-array the cell2edge_vec is multiplied by some other geometric
-    ! quantities (edge-length, cell area). The weight is used in the reconstruction
-    ! the vector is used in the transposed reconstruction.
-    ! index=1,nproma, index2=1,nblks_c, index3=1,3
-    ! other choice would be index2=1,nblks_e, index3=1,2
-    ! Eventually switch to other second indexing if this is more appropriate
-  
-    ! Vector pointing from vertex (dual center) to midpoint of dual edge
-    ! (/= midpoint of primal edge).
-    ! In the associated vertex2dualedge_mid_weight-array the vertex2dualedge_mid_vec
-    ! is multiplied by some other geometric quantities (dual edge-length, dual cell
-    ! area). The weight is used in the reconstruction the vector is used in the
-    ! transposed reconstruction.
-    ! index=1,nproma, index2=1,nblks_v, index3=1,6
-    ! other choice index2=1,nblks_e, index3=1,2
-    ! Eventually switch to other second indexing if this is more appropriate
-    ! new constructs for mimetic core:
-    TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2cell_coeff_cc(:,:,:)
-    TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2cell_coeff_cc_t(:,:,:)
-  
-  
-    !REAL(wp),                      ALLOCATABLE :: edge2vert_coeff(:,:,:,:)
-    !TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2vert_coeff_t(:,:,:)
-  
-    TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2vert_coeff_cc(:,:,:)
-    TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2vert_coeff_cc_t(:,:,:)
-    TYPE(t_cartesian_coordinates), ALLOCATABLE :: edge2vert_vector_cc(:,:,:)
-  
-    REAL(wp), ALLOCATABLE :: fixed_vol_norm(:,:)
-    REAL(wp), ALLOCATABLE :: variable_vol_norm(:,:,:)
-    REAL(wp), ALLOCATABLE :: variable_dual_vol_norm(:,:,:)
-  
-  
-    ! Location of midpoint of dual edge
-    ! Cartesian distance from vertex1 to vertex2 via dual edge midpoint
-    REAL(wp), ALLOCATABLE :: dist_cell2edge(:,:,:)
 
     ! index list for neighbouring cells within a certain radius
     TYPE(t_cell_environ) :: cell_environ

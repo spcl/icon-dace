@@ -1,3 +1,13 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
 if [ "${BASH_SOURCE-}" = "$0" ]; then
     echo "You must source this script in bash: \$ source $0" >&2
     exit 33
@@ -18,17 +28,23 @@ fi
 EXPERIMENT="$1"
 
 case $EXPERIMENT in
-    mch_opr_r19b07_2m)
-        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,39
-        ;;
-    mch_opr_r19b07_2m_expl)
-        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,16
+    *c2sm*)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,12,13,18,32,40
         ;;
     mch_icon-ch2_small)
         probtest_ensemble_num=1,2,3,4,5,6,7,8,9,12
         ;;
     *lhn_00*)
         probtest_ensemble_num=1,2,3,4,5,6,7,8,9,10,20
+        ;;
+    dwd_run_ICON_09_R2B4N5_EPS)
+        probtest_ensemble_num=4,7,8,9,15,18,19,38,48,58,59,64,82
+        ;;
+    mch_kenda-ch1_*)
+        probtest_ensemble_num=1,2,3,4,5,6,7,18,21,34
+        ;;
+    *art_oem*)
+        probtest_ensemble_num=1,2,3,4,5,6,7,8,9,14
         ;;
     *)
         probtest_ensemble_num=10

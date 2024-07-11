@@ -14,7 +14,7 @@
 # Maintainer: Jörg Behrens <behrens@dkrz.de>
 #             Moritz Hanke <hanke@dkrz.de>
 #             Thomas Jahns <jahns@dkrz.de>
-# URL: http://https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: http://https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -53,7 +53,7 @@ scripts/reconfigure
 # Local Variables:
 # mode: sh
 # coding: utf-8
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:
 #

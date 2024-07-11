@@ -19,7 +19,7 @@ ln -sf $INDIR/$EXP/igaf20190622000000.grb dwdana_R2B06_DOM01.grb
 ln -sf /scratch/b/b380956/ICON-OUTPUT/24_test_allaeronorad/input/ana_varnames_map_file.txt map_file.ana
 
 ln -sf $INDIR/$EXP/igfff00000000_dust.nc ART_IAE_iconR2B06-grid_TCNR.nc
-ln -sf $INDIR/$EXP/icon_grid_0024_R02B06_G.nc ART_STY_iconR2B06-grid_TCNR.nc
+ln -sf $INDIR/$EXP/ART_STY_iconR2B06-grid_TCNR.nc ART_STY_iconR2B06-grid_TCNR.nc
 
 # the namelist filename
 atmo_namelist=NAMELIST_${EXP}
@@ -48,10 +48,6 @@ model_equations=3             # equation system
 #                     3=non-hydrost. atm.,
 #                     0=shallow water model
 #                    -1=hydrost. ocean
-#-----------------------------------------------------------------------------
-# the grid parameters
-atmo_dyn_grids="'iconR2B06-DOM01.nc','iconR2B07-DOM02.nc'"
-#atmo_rad_grids="iconR2B04-grid.nc"
 #-----------------------------------------------------------------------------
 
 iconv="1,1"
@@ -100,18 +96,6 @@ EOF
 # ------------------------
 # For a complete list see Namelist_overview and Namelist_overview.pdf
 #
-# ------------------------
-# reconstrcuct the grid parameters in namelist form
-# dynamics_grid_filename=""
-# for gridfile in ${atmo_dyn_grids}; do
-  # dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
-# done
-# radiation_grid_filename=""
-# for gridfile in ${atmo_rad_grids}; do
-  # radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
-# done
-
-
 # ------------------------
 
 cat > ${atmo_namelist} << EOF
@@ -350,7 +334,7 @@ cat > ${atmo_namelist} << EOF
  cart_modes_xml  = '${INDIR}/${EXP}/modes_dustrad.xml'
  cart_coag_xml   = '${INDIR}/${EXP}/coagulate_dustrad.xml'
  cart_aero_emiss_xml = '${INDIR}/${EXP}/aero_emiss_dustrad.xml'
- cart_diagnostics_xml = '{INDIR}/${EXP}/diagnostics_aerosol_with_grib2.xml'
+ cart_diagnostics_xml = '${INDIR}/${EXP}/diagnostics_aerosol_with_grib2.xml'
 /
 EOF
 

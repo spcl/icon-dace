@@ -25,7 +25,7 @@ MODULE mo_io_units
 
   PUBLIC
 
-! This paramter is taken from /usr/include/stdio.h (ANSI C standard). If problems
+! This parameter is taken from /usr/include/stdio.h (ANSI C standard). If problems
 ! with filename length appear, check the before mentioned file.
 
   INTEGER, PARAMETER :: filename_max = 1024
@@ -55,7 +55,7 @@ CONTAINS
   !
   FUNCTION find_next_free_unit(istart, istop) RESULT(iunit)
     INTEGER :: iunit
-    INTEGER, INTENT(in) :: istart, istop
+    INTEGER, INTENT(IN) :: istart, istop
     !
     INTEGER :: kstart, kstop
     LOGICAL :: lfound, lopened

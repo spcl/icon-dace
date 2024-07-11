@@ -1,4 +1,16 @@
 #!/bin/bash
+
+# ICON-Land
+#
+# ---------------------------------------
+# Copyright (C) 2013-2024, MPI-M, MPI-BGC
+#
+# Contact: icon-model.org
+# Authors: AUTHORS.md
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------
+
 #############################################################################################################################
 ### This Programm converts the landcover map files (LUH2) readable by JSBACH3 to corresponding files readable by JSBACH4. ###
 ### The Program  gauss_to_icon.ksh  in  jsbach/scripts/preprocessing/attic/  provides other infiles for the model.        ###
@@ -16,7 +28,7 @@
 #          glacier    (vegetation)
 #                     /    |    \
 #                    pft1 pft2  pft3
-# 
+#
 #   In JS4 the following tile structure of the grid box is assumed:
 #                 box
 #                 /  \
@@ -29,7 +41,7 @@
 # Note, in the LUH2 file:
 # * The cover_fracts sum up to 1 on the grid box. Not only for the 11 pfts but also over glacier, ocean or see areas!
 # * The cover_fracts are relative to the grid box - as there are no parent tiles.
-# * Glacier and pfts are disjunct. Thus a gridbox has either a glacier fract of 1 or 0. 
+# * Glacier and pfts are disjunct. Thus a gridbox has either a glacier fract of 1 or 0.
 # * There are no lake fractions. Instead there are pfts (even on the Caspian and Black Sea).
 # * At the borders of the continents we have missing values (9.9e+36)!
 # * Glacier cover_fracts are together with tropical trees on the 1. tile! The differentiation is given by the 1. cover_type.
@@ -48,7 +60,7 @@
 # Level  8: C4 grass
 # Level  9: C3 pasture
 # Level 10: C4 pasture
-# Level 11: C3 and C4 crop 
+# Level 11: C3 and C4 crop
 
 ######################
 ### User Interface ###
@@ -67,11 +79,11 @@ Y_END="2014"    # End year of LUH2-MAPs-files that will be converted. cover_frac
 
 
 MAKE_JS4_FRACTIONS_FILE="yes" # yes = the input map file are converted in a JS4 useable format. This does not mean that their grid is changed!
-                              #       Only the cover_fracts are converted. This means C3 and C4 crops and tropical trees and glacier tiles are 
+                              #       Only the cover_fracts are converted. This means C3 and C4 crops and tropical trees and glacier tiles are
                               #       splitted and put in separate records. Furthermore the variable names are adapted that JS4 can read them.
 MAPS_LSM_PATH="/pool/data/JSBACH/input/r0010/T63" # Land-Sea-Mask that is used by the infiles.
                                                   # E.g. /pool/data/JSBACH/input/r0010/T63/
-MAPS_LSM_FILE="bc_land_frac_11pfts_${INFILES_GRID}GR15_1976.nc" # The lsm-file that was used for the LUH2 maps. This is not necessarily the same 
+MAPS_LSM_FILE="bc_land_frac_11pfts_${INFILES_GRID}GR15_1976.nc" # The lsm-file that was used for the LUH2 maps. This is not necessarily the same
                                                                 # as in the BC_LAND_FRAC_SOURCE_FILE.
                                                                 # E.g. bc_land_frac_11pfts_T63GR15_1976.nc
 SEPARATE_CROPS="no"    # yes for separating C3 and C4 crops as given in cover_type of the input file. Standard is no.
@@ -83,19 +95,19 @@ MAKE_REMAPPED_FILE="yes" # yes = convert maps to the grid given in NEW_GRID_FILE
 BC_LAND_FRAC_SOURCE_FILE="/pool/data/ICON/grids/private/mpim/icon_preprocessing/source/preliminary_land/r0002/R02B04_G/land/bc_land_frac_11pfts_1976.nc"
                          # File that defines the LSM of the remapped output files including possible additional grid cells after remapping the maps-files
                          # Nevertheless, this file should use the grid defined under NEW_GRID_FILE below
-                         # coupled ocean:   e.g. /pool/data/ICON/coupled_input_temp/aloy_pre04.ff/Land/r0002/bc_land_frac_11pfts_1976.nc 
+                         # coupled ocean:   e.g. /pool/data/ICON/coupled_input_temp/aloy_pre04.ff/Land/r0002/bc_land_frac_11pfts_1976.nc
                          # uncoupled ocean: e.g. /pool/data/ICON/grids/private/mpim/icon_preprocessing/source/preliminary_land/r0002/R02B04_G/land/bc_land_frac_11pfts_1976.nc
-T255_DEBUG_FILES="no"    # yes = t255grid files for debugging are created. You can use them to regard the fields with ncview. Time-consuming. 
+T255_DEBUG_FILES="no"    # yes = t255grid files for debugging are created. You can use them to regard the fields with ncview. Time-consuming.
                          # Note, differences may also occur from the remapping!
 SOURCE_GRID="${INFILES_GRID}grid"   # For remapping: Name of the Grid of the LUH2 Map-Infiles
 NEW_GRID_FILE="/pool/data/ICON/grids/private/mpim/icon_preprocessing/source/grids/icon_grid_0005_R02B04_G.nc"                       # for AMIP
 # NEW_GRID_FILE="/pool/data/ICON/coupled_input_temp/aloy_pre04.ff/ATMOOCEANINP_pre04_OceWithCoast_158km_editSLOHH2017_G.cdo172.nc"    # for old coupled runs aloi_pre04.ff
 # NEW_GRID_FILE="/pool/data/ICON/grids/private/rene/mpim/0013/icon_grid_0013_R02B04_G.nc"                                               # for new coupled ruby runs
-            # For remapping: Grid file that defines the grid for the remapped maps-files 
+            # For remapping: Grid file that defines the grid for the remapped maps-files
             # E.g. /pool/data/ICON/coupled_input_temp/aloy_pre04.ff/ATMOOCEANINP_pre04_OceWithCoast_158km_editSLOHH2017_G.cdo172.nc  for R2B4 for ocean coupled run
             # E.g. /pool/data/ICON/grids/private/mpim/icon_preprocessing/source/grids/icon_grid_0005_R02B04_G.nc                     for R2B4 for ocean uncoupled run
 OUT_GRID_NAME="R2B4" # Just for the filenames after remapping. E.g. R2B4
-REMAPPING="SCRIP"    # NN for nearest neighbor else SRIP remapping is used. Results are very similar. However, SCRIP remapping is recommended. 
+REMAPPING="SCRIP"    # NN for nearest neighbor else SRIP remapping is used. Results are very similar. However, SCRIP remapping is recommended.
 
 
 
@@ -120,7 +132,7 @@ else
    echo "YES =overwrite it, delete existing folder"
    echo "zzz =every other input keeps the folder and writes in it"
    read y
-   if [ "${y}" == "YES" ] ; then 
+   if [ "${y}" == "YES" ] ; then
       echo "YES used, therefore delete folder..."
       rm -r ${OUT_DIR}
       mkdir ${OUT_DIR}
@@ -137,7 +149,7 @@ mkdir -p tempfiles
 
 if [ ${AUTO_LIST} == "yes" ] ; then
   for YY in $(seq ${Y_START} ${Y_END});   do   # if a infile list shall be generated instead of explicitly name them
-    YY=$(printf "%04d" ${YY}) 
+    YY=$(printf "%04d" ${YY})
     LIST_INFILE_NAME="${LIST_INFILE_NAME} cover_fract_${INFILES_GRID}_11tiles_${YY}.nc"
   done
 fi
@@ -166,8 +178,8 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
      ${CDO} -splitlevel  INFILE_MAPS.nc   MAPS_L_
 
      # Replace differentiation of tiles (levels to variable names) and split into single records
-     for LL in $(seq 1 ${NUMBER_OF_PFTS});  do 
-        LL=$(printf "%02d" ${LL}) 
+     for LL in $(seq 1 ${NUMBER_OF_PFTS});  do
+        LL=$(printf "%02d" ${LL})
         echo ${LL}
         ${CDO}  -chname,cover_fract,fract_pft${LL}  -chname,cover_type,cover_type_pft${LL}   -setlevel,0     MAPS_L_0000${LL}.nc       MAPS_L_renamed_0000${LL}.nc
         ${CDO}  -splitrec  MAPS_L_renamed_0000${LL}.nc          MAPS_L_renamed_0000${LL}_
@@ -205,9 +217,9 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
   fi
 
 
-  # Remap the JS4-format-MAPS-file to the horizontal output grid of JS4. 
+  # Remap the JS4-format-MAPS-file to the horizontal output grid of JS4.
   # The LSM of the LUH-MAPS-files do (normaly) not match with the LSM used by JS4.
-  # As a consequence of the grids missmatch, grid cells may appear where we do not have values from the LUH-MAPS-files. There we put grass.  
+  # As a consequence of the grids missmatch, grid cells may appear where we do not have values from the LUH-MAPS-files. There we put grass.
   if [ ${MAKE_REMAPPED_FILE} == "yes" ] ; then
     # Remap the JS4-format-MAP-file
     if [ ${REMAPPING} == "NN" ] ; then
@@ -259,7 +271,7 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
     ncks   -C -x -v ntiles      MAPS_${INFILE_NAME_BASE}_JS4-format_ADDITIONAL_GP_${OUT_GRID_NAME}.nc       ZWERG7
     ncwa   -O -a    ntiles      ZWERG7                                                                      ZWERG8
     rm ZWERG7
-    
+
     # Sum all tiles up as a control file (should be 1 on each land grid box).
     ${CDO}  -expr,'summe=fract_pft01+fract_pft02+fract_pft03+fract_pft04+fract_pft05+fract_pft06+fract_pft07+fract_pft08+fract_pft09+fract_pft10+fract_pft11+fract_glac'    ZWERG8     MAPS_${INFILE_NAME_BASE}_JS4-format_NewSum_${OUT_GRID_NAME}.nc
 
@@ -270,7 +282,7 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
     else
       cp ZWERG8    REMAPPED_cover_fract_from_${INFILE_NAME_BASE}
     fi
-    
+
    # Clean up
     mv  remap_weights  ZWERG3    MAPS_${INFILE_NAME_BASE}_JS4-FORMAT_SUM.nc   MAPS_${INFILE_NAME_BASE}_JS4-format_NewSum_${OUT_GRID_NAME}.nc   BC_NOTSEA.nc    tempfiles/
   fi
@@ -278,14 +290,14 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
 
   # JS4 reads the cover fractions at the beginning from the bc_land_fract file. This file additionally includes the fractions for:
   # notsea, sea, fract_lake, fract_land, veg_ratio_max, land, lake, glac, fract_veg.
-  # fract_veg has to be summed up from the new pft fractions. Note, in JS4 pft fractions are read in as relative to the veg tile. 
+  # fract_veg has to be summed up from the new pft fractions. Note, in JS4 pft fractions are read in as relative to the veg tile.
   # The pft fractions sum um to 1 on the veg fraction. Glacier and veg fractions are disjunct. In JS4 fract_glac and fract_veg is used
   # realtive to the land and not to the box tile (as in the LUH2-infile)!
   # However, this is perfect. As we have lakes in JS4 we want to scale them down to the land tile.
   if [ ${MAKE_BC_LAND_FRAC_FILE} == "yes" ] ; then
     # Missing values should normaly be handeled by jsbach, but it is not in the moment
     ${CDO}  -setmisstoc,0.0000000000   ZWERG8    ZWERG9
-  
+
     # Calculate new fract_veg
     ${CDO}  -expr,'fract_veg=fract_pft01+fract_pft02+fract_pft03+fract_pft04+fract_pft05+fract_pft06+fract_pft07+fract_pft08+fract_pft09+fract_pft10+fract_pft11'    ZWERG9    MAPS_${INFILE_NAME_BASE}_fract_veg_${OUT_GRID_NAME}.nc
               [ ${T255_DEBUG_FILES} == "yes" ] && ${CDO}  -remapycon,t255grid    MAPS_${INFILE_NAME_BASE}_fract_veg_${OUT_GRID_NAME}.nc     MAPS_${INFILE_NAME_BASE}_fract_veg_T255.nc
@@ -307,7 +319,7 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
 
 
   # Simple check by remapping pft 2 of the infile and/or the outfile. pft 2 is unchanged in the program, only remapped.
-  # As the interpolation error should be larger at the borders of the pft the differences should be largest there 
+  # As the interpolation error should be larger at the borders of the pft the differences should be largest there
   if [ ${CHECK} == "yes" ] ; then
     # Remap both to t255grid
     ${CDO} -remapycon,t255grid -selvar,fract_pft02                                              ${BC_LAND_FRAC_OUT_FILE}__from_${INFILE_NAME}  CHECK_out_fract_pft02
@@ -331,7 +343,7 @@ for INFILE_NAME in ${LIST_INFILE_NAME} ; do
     # Remap the outfile back to the input grid e.g. to t63grid
 #    ${CDO} -remapycon,${INFILES_GRID}grid -selvar,fract_pft02              ${BC_LAND_FRAC_OUT_FILE}__from_${INFILE_NAME}  CHECK_out_fract_pft02
 #    ${CDO} -setrtoc,-0.0000001,0.0000001,0.0  -selvar,cover_fract   -sellevel,2  ${INFILE_NAME}                                 CHECK_in_cover_fract_level2
-#    ${CDO} -sub    CHECK_out_fract_pft02    CHECK_in_cover_fract_level2   CHECK_diff_fract_pft02__from_${INFILE_NAME}  
+#    ${CDO} -sub    CHECK_out_fract_pft02    CHECK_in_cover_fract_level2   CHECK_diff_fract_pft02__from_${INFILE_NAME}
 #    ${CDO} -div  -mulc,100.0    CHECK_diff_fract_pft02__from_${INFILE_NAME}   CHECK_in_cover_fract_level2     CHECK_diff_fract_pft02__from_${INFILE_NAME}_in_percent.nc
 
 

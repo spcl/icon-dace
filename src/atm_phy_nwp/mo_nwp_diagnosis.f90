@@ -39,18 +39,19 @@ MODULE mo_nwp_diagnosis
   USE mo_math_divrot,        ONLY: rot_vertex
   USE mo_intp,               ONLY: verts2cells_scalar
   USE mo_parallel_config,    ONLY: nproma, proc0_offloading
-  USE mo_lnd_nwp_config,     ONLY: nlev_soil, ntiles_total
+  USE mo_lnd_nwp_config,     ONLY: nlev_soil, ntiles_total, ntiles_water, isub_water
   USE mo_nwp_lnd_types,      ONLY: t_lnd_diag, t_wtr_prog, t_lnd_prog
   USE mo_physical_constants, ONLY: tmelt, grav, cpd, vtmpc1, dtdz_standardatm
   USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config
   USE mo_advection_config,   ONLY: advection_config
-  USE mo_io_config,          ONLY: lflux_avg, uh_max_zmin, uh_max_zmax, &
+  USE mo_io_config,          ONLY: lflux_avg, uh_max_zmin, uh_max_zmax, ff10m_interval, &
     &                              luh_max_out, uh_max_nlayer, var_in_output, &
     &                              itype_dursun, itype_convindices, itype_hzerocl, t_var_in_output
   USE mo_sync,               ONLY: global_max, global_min
   USE mo_vertical_coord_table,  ONLY: vct_a
   USE mo_satad,              ONLY: sat_pres_water, spec_humi
   USE mo_nh_diagnose_pres_temp, ONLY: diagnose_pres_temp
+  USE mo_util_phys,            ONLY: nwp_dyn_gust
   USE mo_opt_nwp_diagnostics,ONLY: calsnowlmt, cal_cape_cin, cal_cape_cin_mu, cal_cape_cin_mu_COSMO, &    
                                    cal_si_sli_swiss, cal_cloudtop, &
                                    maximize_field_lpi, compute_field_tcond_max, &
@@ -65,14 +66,13 @@ MODULE mo_nwp_diagnosis
   USE mo_exception,          ONLY: finish
   USE mo_math_constants,     ONLY: pi
   USE mo_statistics,         ONLY: time_avg, levels_horizontal_mean
-  USE mo_ext_data_state,     ONLY: ext_data
   USE mo_ext_data_types,     ONLY: t_external_data
   USE mo_nwp_parameters,     ONLY: t_phy_params
   USE mo_time_config,        ONLY: time_config
-  USE mo_nwp_tuning_config,  ONLY: lcalib_clcov, max_calibfac_clcl
+  USE mo_nwp_tuning_config,  ONLY: lcalib_clcov, max_calibfac_clcl, itune_gust_diag, tune_gustlim_fac
   USE mo_mpi,                ONLY: p_io, p_comm_work, p_bcast
   USE mo_fortran_tools,      ONLY: assert_acc_host_only, set_acc_host_or_device, assert_acc_device_only
-  USE mo_radiation_config,   ONLY: decorr_pole, decorr_equator
+  USE mo_radiation_config,   ONLY: decorr_pole, decorr_equator, islope_rad
 
   IMPLICIT NONE
 
@@ -95,6 +95,7 @@ MODULE mo_nwp_diagnosis
 
 CONTAINS
 
+  
   !>
   !! Computation of time averages, accumulated variables and vertical integrals
   !!
@@ -169,6 +170,9 @@ CONTAINS
     i_startblk = pt_patch%cells%start_block(rl_start)
     i_endblk   = pt_patch%cells%end_block(rl_end)
     
+    IF (itune_gust_diag == 4) THEN
+      CALL calc_filtered_gusts( dt_phy_jg, p_sim_time, ext_data, pt_patch, p_metrics, pt_diag, prm_diag, lacc)
+    ENDIF
 
     ! Calculate vertical integrals of moisture quantities and cloud cover
     ! Anurag Dipankar, MPIM (2015-08-01): always call this routine
@@ -199,6 +203,7 @@ CONTAINS
     !-----------
     ! - total precipitation amount
     ! - time averaged precipitation rates (total, grid-scale, convective)
+    ! - time maximum total precipitation rate
     !
     ! soil
     !-----
@@ -225,7 +230,41 @@ CONTAINS
     ! - surface shortwave direct downward radiation
     ! - surface downward photosynthetically active flux
 
+
+    !
+    ! Calculation of total (gsp+con) instantaneous precipitation rate:
+    !
 !$OMP PARALLEL
+!$OMP DO PRIVATE(jb,jc,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = i_startblk, i_endblk
+      !
+      CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
+        & i_startidx, i_endidx, rl_start, rl_end)
+
+      !
+      ! calculate total (gsp+con) instantaneous precipitation rate
+      !
+      IF (atm_phy_nwp_config(jg)%inwp_convection > 0) THEN
+        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        DO jc =  i_startidx, i_endidx
+          ! grid scale + convective
+          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb) &
+            &                           + prm_diag%rain_con_rate_corr(jc,jb) &
+            &                           + prm_diag%snow_con_rate_corr(jc,jb)
+        ENDDO
+        !$ACC END PARALLEL LOOP
+      ELSE
+        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        DO jc =  i_startidx, i_endidx
+          ! grid scale only
+          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb)
+        ENDDO
+        !$ACC END PARALLEL LOOP
+      END IF
+      
+    END DO
+!$OMP END DO
+
     IF ( p_sim_time <= 1.e-6_wp) THEN
 
       ! ensure that extreme value fields are equal to instantaneous fields 
@@ -251,6 +290,16 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
 
+        IF (var_in_output(jg)%tot_pr_max) THEN
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+          !$ACC LOOP GANG VECTOR
+          DO jc = i_startidx, i_endidx
+            ! set to instantaneous values
+            prm_diag%tot_pr_max(jc,jb)  = prm_diag%tot_prec_rate(jc,jb)
+          ENDDO
+          !$ACC END PARALLEL
+        END IF
+        
       ENDDO  ! jb
 !$OMP END DO
 
@@ -291,10 +340,20 @@ CONTAINS
         ENDDO  ! jc
         !$ACC END PARALLEL
 
+        IF (var_in_output(jg)%tot_pr_max) THEN
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+          !$ACC LOOP GANG VECTOR
+          DO jc = i_startidx, i_endidx
+            ! time max total precipitation rate
+            prm_diag%tot_pr_max(jc,jb)  = MAX ( prm_diag%tot_pr_max(jc,jb), prm_diag%tot_prec_rate(jc,jb) )
+          ENDDO
+          !$ACC END PARALLEL
+        END IF
+
         IF (lcall_phy_jg(itsfc)) THEN
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
-          DO jt=1,ntiles_total
+          DO jt=1,ntiles_total + ntiles_water
 !DIR$ IVDEP
             DO jc = i_startidx, i_endidx
               lnd_diag%runoff_s_t(jc,jb,jt) = lnd_diag%runoff_s_t(jc,jb,jt) + lnd_diag%runoff_s_inst_t(jc,jb,jt)
@@ -501,14 +560,64 @@ CONTAINS
             ENDDO
             !$ACC END PARALLEL
 
+            ! Additional fields for slope-corrected radiation
+            IF (islope_rad(jg) > 0) THEN
+              !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+              !$ACC LOOP GANG VECTOR
+              DO jc = i_startidx, i_endidx
+
+                ! time averaged shortwave net flux at surface with shading
+                prm_diag%swflxsfc_a_os(jc,jb) = time_avg(prm_diag%swflxsfc_a_os(jc,jb), &
+                  &                                   prm_diag%swflxsfc_os  (jc,jb), &
+                  &                                   t_wgt)
+
+                ! time averaged shortwave net flux at surface with shading and slope correction
+                prm_diag%swflxsfc_a_tan_os(jc,jb) = time_avg(prm_diag%swflxsfc_a_tan_os(jc,jb), &
+                  &                                   prm_diag%swflxsfc_tan_os  (jc,jb), &
+                  &                                   t_wgt)
+
+                ! time averaged shortwave diffuse upward flux at surface with shading
+                prm_diag%asodifu_s_os(jc,jb) = time_avg(prm_diag%asodifu_s_os  (jc,jb), &
+                  &                                   prm_diag%swflx_up_sfc_os(jc,jb), &
+                  &                                   t_wgt)
+
+                ! time averaged shortwave diffuse upward flux at surface with shading and slope correction
+                prm_diag%asodifu_s_tan_os(jc,jb) = time_avg(prm_diag%asodifu_s_tan_os  (jc,jb), &
+                  &                                   prm_diag%swflx_up_sfc_tan_os(jc,jb), &
+                  &                                   t_wgt)
+
+                ! time averaged shortwave direct downward flux at surface with shading
+                prm_diag%asodird_s_os (jc,jb) = MAX(0._wp, prm_diag%swflxsfc_a_os(jc,jb) &
+                  &                        -            prm_diag%asodifd_s (jc,jb) &
+                  &                        +            prm_diag%asodifu_s_os(jc,jb) )
+
+                ! time averaged shortwave direct downward flux at surface with shading and slope correction
+                prm_diag%asodird_s_tan_os (jc,jb) = MAX(0._wp, prm_diag%swflxsfc_a_tan_os(jc,jb) &
+                  &                        -            prm_diag%asodifd_s (jc,jb) &
+                  &                        +            prm_diag%asodifu_s_tan_os(jc,jb) )
+
+                ! time averaged downward solar radiation uncorrected = sum of direct + diffuse uncorrected
+                prm_diag%asod_s_os(jc,jb) = prm_diag%asodifd_s(jc,jb) + prm_diag%asodird_s_os(jc,jb)
+
+                ! time averaged downward solar radiation uncorrected = sum of direct + diffuse uncorrected
+                prm_diag%asod_s_tan_os(jc,jb) = prm_diag%asodifd_s(jc,jb) + prm_diag%asodird_s_tan_os(jc,jb)
+
+                ! time averaged downward photosynthetically active flux at surface with shading and slope correction
+                prm_diag%aswflx_par_sfc_tan_os(jc,jb) = time_avg(prm_diag%aswflx_par_sfc_tan_os(jc,jb), &
+                  &                                              prm_diag%swflx_par_sfc_tan_os(jc,jb),  &
+                  &                                              t_wgt)
+              ENDDO
+              !$ACC END PARALLEL
+            ENDIF ! slope_rad
+
           ENDIF  ! lcall_phy_jg(itradheat)
 
         ELSEIF (.NOT. lflux_avg) THEN
 
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
           IF (lcall_phy_jg(itturb)) THEN
 
 !DIR$ IVDEP
+            !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
             !$ACC LOOP GANG(STATIC: 1) VECTOR
             DO jc = i_startidx, i_endidx
               ! ATTENTION:
@@ -584,11 +693,13 @@ CONTAINS
 
             ENDIF  ! lcalc_extra_avg
 
+          !$ACC END PARALLEL
           ENDIF  ! inwp_turb > 0
 
 
           IF ( lcall_phy_jg(itradheat) ) THEN
 !DIR$ IVDEP
+            !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
             !$ACC LOOP GANG(STATIC: 1) VECTOR
             DO jc = i_startidx, i_endidx
 
@@ -662,8 +773,59 @@ CONTAINS
                 &                            * dt_phy_jg(itfastphy)
 
             END DO
+            !$ACC END PARALLEL
+
+            IF (islope_rad(jg) > 0) THEN
+              !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+              !$ACC LOOP GANG(STATIC: 1) VECTOR
+              DO jc = i_startidx, i_endidx
+
+                ! accumulated shortwave net flux at surface with shading
+                prm_diag%swflxsfc_a_os(jc,jb) = prm_diag%swflxsfc_a_os(jc,jb) &
+              &                         + prm_diag%swflxsfc_os(jc,jb)     &
+              &                         * dt_phy_jg(itfastphy)
+                ! accumulated shortwave net flux at surface with shading and slope correction
+                prm_diag%swflxsfc_a_tan_os(jc,jb) = prm_diag%swflxsfc_a_tan_os(jc,jb) &
+              &                         + prm_diag%swflxsfc_tan_os(jc,jb)     &
+              &                         * dt_phy_jg(itfastphy)
+
+                ! accumulated shortwave diffuse upward flux at surface with shading
+                prm_diag%asodifu_s_os(jc,jb) = prm_diag%asodifu_s_os  (jc,jb)  &
+              &                           + prm_diag%swflx_up_sfc_os(jc,jb)  &
+              &                           * dt_phy_jg(itfastphy)
+
+                ! accumulated shortwave diffuse upward flux at surface with shading and slope correction
+                prm_diag%asodifu_s_tan_os(jc,jb) = prm_diag%asodifu_s_tan_os  (jc,jb)  &
+              &                           + prm_diag%swflx_up_sfc_tan_os(jc,jb)  &
+              &                           * dt_phy_jg(itfastphy)
+
+                ! accumulated shortwave direct downward flux at surface with shading
+                prm_diag%asodird_s_os (jc,jb) = MAX(0._wp, prm_diag%swflxsfc_a_os(jc,jb) &
+                  &                        -            prm_diag%asodifd_s (jc,jb) &
+                  &                        +            prm_diag%asodifu_s_os(jc,jb) )
+
+                ! accumulated shortwave direct downward flux at surface with shading and slope correction
+                prm_diag%asodird_s_tan_os (jc,jb) = MAX(0._wp, prm_diag%swflxsfc_a_tan_os(jc,jb) &
+                  &                        -            prm_diag%asodifd_s (jc,jb) &
+                  &                        +            prm_diag%asodifu_s_tan_os(jc,jb) )
+
+                ! accumulated downward solar radiation uncorrected = sum of direct + diffuse uncorrected
+                prm_diag%asod_s_os(jc,jb) = prm_diag%asodifd_s(jc,jb) + prm_diag%asodird_s_os(jc,jb)
+
+                ! accumulated downward solar radiation uncorrected = sum of direct + diffuse uncorrected
+                prm_diag%asod_s_tan_os(jc,jb) = prm_diag%asodifd_s(jc,jb) + prm_diag%asodird_s_tan_os(jc,jb)
+
+
+                ! accumulated downward photosynthetically active flux at surface
+                prm_diag%aswflx_par_sfc_tan_os(jc,jb) = prm_diag%aswflx_par_sfc_tan_os(jc,jb)  &
+                  &                            + prm_diag%swflx_par_sfc_tan_os(jc,jb)   &
+                  &                            * dt_phy_jg(itfastphy)
+
+              END DO
+              !$ACC END PARALLEL
+            ENDIF ! slope_rad
+
           ENDIF  ! lcall_phy_jg(itradheat)
-          !$ACC END PARALLEL
 
         ENDIF  ! lflux_avg
 
@@ -678,6 +840,148 @@ CONTAINS
 
   END SUBROUTINE nwp_statistics
 
+  !>
+  !! Computation of time-averaged 10-m winds and wind gusts building upon these time-averaged winds
+  !! Relevant for turbulence-permitting model resolutions in order to avoid double-counting of resolved
+  !! and parameterized gusts
+  !!
+  SUBROUTINE calc_filtered_gusts( dt_phy_jg, p_sim_time, ext_data, pt_patch, p_metrics, pt_diag, prm_diag, lacc)
+                            
+    LOGICAL, OPTIONAL,  INTENT(IN)   :: lacc            !< initialization flag
+    REAL(wp),           INTENT(IN)   :: dt_phy_jg(:)    !< time interval for all physics
+                                                        !< packages on domain jg
+    REAL(wp),           INTENT(IN)   :: p_sim_time
+
+    TYPE(t_patch),      INTENT(IN)   :: pt_patch    !<grid/patch info.
+    TYPE(t_nh_diag),    INTENT(IN)   :: pt_diag     !<the diagnostic variables
+
+    TYPE(t_nh_metrics), INTENT(IN)   :: p_metrics
+    TYPE(t_external_data),INTENT(IN) :: ext_data    !< external data
+
+    TYPE(t_nwp_phy_diag), INTENT(INOUT):: prm_diag
+
+
+    INTEGER :: rl_start, rl_end
+    INTEGER :: i_startblk, i_endblk    !> blocks
+    INTEGER :: i_startidx, i_endidx    !< slices
+
+    REAL(wp):: t_wgt                   !< weight for running time average
+    REAL(wp):: ff10m
+
+    INTEGER :: jc,jb,jg      ! indices
+    LOGICAL :: lzacc         ! OpenACC flag
+    INTEGER :: nlev, jk_gust(nproma)
+    LOGICAL :: lcalc_gusts
+
+
+  !-----------------------------------------------------------------
+
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+    jg        = pt_patch%id
+    nlev      = pt_patch%nlev
+
+    ! exclude nest boundary interpolation zone
+    rl_start = grf_bdywidth_c+1
+    rl_end   = min_rlcell_int
+
+    i_startblk = pt_patch%cells%start_block(rl_start)
+    i_endblk   = pt_patch%cells%end_block(rl_end)
+
+
+    ! time average weight
+    t_wgt = dt_phy_jg(itfastphy)/MAX(1.e-6_wp, p_sim_time - prm_diag%prev_v10mavg_reset)
+
+    ! calculate gusts when averaging interval is completed
+    lcalc_gusts = p_sim_time - prm_diag%prev_v10mavg_reset + 0.5_wp*dt_phy_jg(itfastphy) >= ff10m_interval(jg)
+
+    !$ACC DATA CREATE(jk_gust) ASYNC(1) IF(lzacc)
+
+!$OMP PARALLEL
+    IF ( p_sim_time <= 1.e-6_wp) THEN ! first part of IAU phase
+
+!$OMP DO PRIVATE(jc,jb,i_startidx,i_endidx,jk_gust,ff10m) ICON_OMP_DEFAULT_SCHEDULE
+      DO jb = i_startblk, i_endblk
+
+        CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
+          & i_startidx, i_endidx, rl_start, rl_end)
+
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        !$ACC LOOP GANG VECTOR
+        DO jc = i_startidx, i_endidx
+            prm_diag%u_10m_a(jc,jb) =  prm_diag%u_10m(jc,jb)
+            prm_diag%v_10m_a(jc,jb) = prm_diag%v_10m(jc,jb)
+            prm_diag%tcm_a(jc,jb)   = prm_diag%tcm(jc,jb)
+        ENDDO
+        !$ACC END PARALLEL
+
+      ENDDO
+!$OMP END DO
+
+    ELSE  ! regular time steps
+  
+!$OMP DO PRIVATE(jc,jb,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
+      DO jb = i_startblk, i_endblk
+        !
+        CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
+          & i_startidx, i_endidx, rl_start, rl_end)
+
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        !$ACC LOOP GANG VECTOR
+        DO jc = i_startidx, i_endidx
+          prm_diag%u_10m_a(jc,jb) = time_avg(prm_diag%u_10m_a(jc,jb), prm_diag%u_10m(jc,jb), t_wgt)
+          prm_diag%v_10m_a(jc,jb) = time_avg(prm_diag%v_10m_a(jc,jb), prm_diag%v_10m(jc,jb), t_wgt)
+          prm_diag%tcm_a(jc,jb)   = time_avg(prm_diag%tcm_a(jc,jb), prm_diag%tcm(jc,jb), t_wgt)
+        ENDDO
+        !$ACC END PARALLEL
+
+        IF (lcalc_gusts) THEN
+
+          IF (atm_phy_nwp_config(jg)%inwp_sso > 0) THEN
+            !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+            !$ACC LOOP GANG VECTOR
+            DO jc = i_startidx, i_endidx
+              jk_gust(jc) = MERGE(prm_diag%ktop_envel(jc,jb)-1, nlev, prm_diag%ktop_envel(jc,jb) < nlev)
+            ENDDO
+            !$ACC END PARALLEL
+          ELSE
+            !$ACC KERNELS ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+            jk_gust(:) = nlev
+            !$ACC END KERNELS
+          ENDIF
+
+          !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+          !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(ff10m)
+          DO jc = i_startidx, i_endidx
+
+            prm_diag%dyn_gust(jc,jb) = nwp_dyn_gust (prm_diag%u_10m_a(jc,jb), prm_diag%v_10m_a(jc,jb), prm_diag%tcm_a(jc,jb),   &
+                                                     pt_diag%u(jc,nlev,jb), pt_diag%v(jc,nlev,jb),                              &
+                                                     pt_diag%u(jc,jk_gust(jc),jb), pt_diag%v(jc,jk_gust(jc),jb),                &
+                                                     ext_data%atm%lc_frac_t(jc,jb,isub_water), p_metrics%mask_mtnpoints_g(jc,jb))
+
+            IF (tune_gustlim_fac(jg) > 0._wp) THEN
+
+              ff10m = SQRT(prm_diag%u_10m_a(jc,jb)**2 + prm_diag%v_10m_a(jc,jb)**2)
+              prm_diag%dyn_gust(jc,jb) = MIN(prm_diag%dyn_gust(jc,jb),                                      &
+                                             ff10m + tune_gustlim_fac(jg)*(prm_diag%gust_lim(jc,jb) - ff10m))
+
+            ENDIF
+          ENDDO
+          !$ACC END PARALLEL
+
+        ENDIF
+
+      ENDDO ! nblks
+!$OMP END DO NOWAIT
+
+    END IF  ! p_sim_time
+
+!$OMP END PARALLEL  
+
+    !$ACC END DATA
+
+  END SUBROUTINE calc_filtered_gusts
 
   !>
   !! Computation of vertical integrals of moisture and cloud cover
@@ -715,7 +1019,7 @@ CONTAINS
     INTEGER :: jt               ! tracer loop index
 
     REAL(wp):: clearsky(nproma)
-    REAL(wp):: ccmax, ccran, alpha(nproma,pt_patch%nlev), clcl_mod, clcm_mod, clct_fac, zlat,zcos_lat
+    REAL(wp):: ccmax, ccran, alpha(nproma,pt_patch%nlev), clcl_mod, clcm_mod, clct_fac, zcos_lat
     LOGICAL :: lland
     LOGICAL :: lzacc ! non-optional version of lacc
 
@@ -765,7 +1069,7 @@ CONTAINS
 !$OMP PARALLEL
     IF ( atm_phy_nwp_config(jg)%lenabled(itccov) ) THEN
 
-!$OMP DO PRIVATE(jc,jk,jb,z_help,i_startidx,i_endidx,clearsky,ccmax,ccran,alpha,clcl_mod,clcm_mod,clct_fac,lland,zdecorr,zlat,zcos_lat)
+!$OMP DO PRIVATE(jc,jk,jb,z_help,i_startidx,i_endidx,clearsky,ccmax,ccran,alpha,clcl_mod,clcm_mod,clct_fac,lland,zdecorr,zcos_lat)
       DO jb = i_startblk, i_endblk
         !
         CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
@@ -1046,9 +1350,6 @@ CONTAINS
 
   END SUBROUTINE calc_moist_integrals
 
-
-
-
   !>
   !! Diagnostics which are only required for output
   !!
@@ -1160,7 +1461,7 @@ CONTAINS
                             & pt_diag, prm_diag,          & !inout
                             & lacc=lzacc                  ) !in
 
-
+      
     ! time difference since last call of ww_diagnostics
     time_diff => newTimedelta("PT0S")
     time_diff =  getTimeDeltaFromDateTime(mtime_current, ww_datetime(jg))
@@ -1172,72 +1473,6 @@ CONTAINS
       CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
         & i_startidx, i_endidx, rl_start, rl_end)
 
-      !
-      ! Calculation of grid scale (gsp) and total (gsp+con) instantaneous precipitation rates:
-      !
-      SELECT CASE (atm_phy_nwp_config(jg)%inwp_gscp)
-      CASE(4,5,6,7,8)
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc =  i_startidx, i_endidx
-          prm_diag%prec_gsp_rate(jc,jb) = prm_diag%rain_gsp_rate(jc,jb)  &
-               &                        + prm_diag%ice_gsp_rate(jc,jb)   &
-               &                        + prm_diag%snow_gsp_rate(jc,jb)  &
-               &                        + prm_diag%hail_gsp_rate(jc,jb)  &
-               &                        + prm_diag%graupel_gsp_rate(jc,jb)
-          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-      CASE(2)
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc =  i_startidx, i_endidx
-          prm_diag%prec_gsp_rate(jc,jb) = prm_diag%rain_gsp_rate(jc,jb)  &
-               ! not sure what to do with ice. To be consistent to prm_diag%prec_gsp, where ice is neglected
-               ! because it predominantly is made of blowing snow, we neglect it also here:
-!               &                        + prm_diag%ice_gsp_rate(jc,jb)   &
-               &                        + prm_diag%snow_gsp_rate(jc,jb)  &
-               &                        + prm_diag%graupel_gsp_rate(jc,jb)
-          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-      CASE (1)
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc =  i_startidx, i_endidx
-          prm_diag%prec_gsp_rate(jc,jb) = prm_diag%rain_gsp_rate(jc,jb)  &
-               ! not sure what to do with ice. To be consistent to prm_diag%prec_gsp, where ice is neglected
-               ! because it predominantly is made of blowing snow, we neglect it also here:
-!               &                        + prm_diag%ice_gsp_rate(jc,jb)   &
-               &                        + prm_diag%snow_gsp_rate(jc,jb)
-          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-      CASE (9)
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc =  i_startidx, i_endidx
-          prm_diag%prec_gsp_rate(jc,jb) = prm_diag%rain_gsp_rate(jc,jb)
-          prm_diag%tot_prec_rate(jc,jb) = prm_diag%prec_gsp_rate(jc,jb)
-        ENDDO
-        !$ACC END PARALLEL LOOP
-      CASE default
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc =  i_startidx, i_endidx
-          prm_diag%prec_gsp_rate(jc,jb) = 0.0_wp
-          prm_diag%tot_prec_rate(jc,jb) = 0.0_wp
-        ENDDO
-        !$ACC END PARALLEL LOOP
-      END SELECT
-      !
-      ! Add convective contributions to the total precipitation rate:
-      !
-      IF (atm_phy_nwp_config(jg)%inwp_convection > 0) THEN
-        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        DO jc = i_startidx, i_endidx
-          prm_diag%tot_prec_rate(jc,jb) = prm_diag%tot_prec_rate(jc,jb) + prm_diag%rain_con_rate(jc,jb) + &
-               &                          prm_diag%snow_con_rate(jc,jb)
-        ENDDO  ! jc
-        !$ACC END PARALLEL LOOP
-      END IF
-
-   
       IF (atm_phy_nwp_config(jg)%lenabled(itconv))THEN !convection parameterization switched on
         !
         ! height of convection base and top, hbas_con, htop_con
@@ -1784,15 +2019,16 @@ CONTAINS
   !!
   !! Moved from nh_stepping for better code structure
   !!
-  SUBROUTINE nwp_opt_diagnostics(p_patch, p_patch_lp, p_int_lp, p_nh, p_int, prm_diag, &
+  SUBROUTINE nwp_opt_diagnostics(p_patch, p_patch_lp, p_int_lp, ext_data, p_nh, p_int, prm_diag, &
      l_output, nnow, nnow_rcf, &
      lpi_max_Event, celltracks_Event, dbz_Event, hail_max_Event, mtime_current,  plus_slack, lacc)
 
-    TYPE(t_patch)       ,INTENT(IN)   :: p_patch(:), p_patch_lp(:)  ! patches and their local parents
-    TYPE(t_int_state)   ,INTENT(IN)   :: p_int_lp(:)                ! interpolation state for local parents
-    TYPE(t_nh_state)    ,INTENT(INOUT):: p_nh(:)                    ! nonhydro state
-    TYPE(t_int_state)   ,INTENT(IN)   :: p_int(:)                   ! interpolation state
-    TYPE(t_nwp_phy_diag),INTENT(INOUT):: prm_diag(:)                ! physics diagnostics
+    TYPE(t_patch)        ,INTENT(IN)   :: p_patch(:), p_patch_lp(:)  ! patches and their local parents
+    TYPE(t_int_state)    ,INTENT(IN)   :: p_int_lp(:)                ! interpolation state for local parents
+    TYPE(t_external_data),INTENT(IN)   :: ext_data(:)                ! external data state
+    TYPE(t_nh_state)     ,INTENT(INOUT):: p_nh(:)                    ! nonhydro state
+    TYPE(t_int_state)    ,INTENT(IN)   :: p_int(:)                   ! interpolation state
+    TYPE(t_nwp_phy_diag) ,INTENT(INOUT):: prm_diag(:)                ! physics diagnostics
 
     TYPE(event),     POINTER, INTENT(INOUT) :: lpi_max_Event, celltracks_Event, dbz_Event, hail_max_Event
     TYPE(datetime),  POINTER, INTENT(IN   ) :: mtime_current  !< current_datetime
@@ -1984,6 +2220,7 @@ CONTAINS
     INTEGER                                     :: jg
     LOGICAL                                     :: l_present_dursun_m, l_present_dursun_r
     REAL(wp), DIMENSION(nproma,p_patch%nblks_c) :: twater
+    REAL(wp), POINTER                           :: swflxsfc_slope_rad(:,:),swflx_up_sfc_slope_rad(:,:)
     LOGICAL :: lzacc             ! OpenACC flag 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -1999,16 +2236,25 @@ CONTAINS
 
     jg = p_patch%id
 
+
     IF (var_in_output(jg)%dursun .AND. (p_sim_time > 0._wp) ) THEN
+      IF ( islope_rad(jg) > 0) THEN
+        swflxsfc_slope_rad => prm_diag%swflxsfc_os
+        swflx_up_sfc_slope_rad => prm_diag%swflx_up_sfc_os
+      ELSE
+        swflxsfc_slope_rad => prm_diag%swflxsfc
+        swflx_up_sfc_slope_rad => prm_diag%swflx_up_sfc
+      ENDIF
       IF (l_present_dursun_m .OR. l_present_dursun_r) THEN
-      CALL compute_field_twater( p_patch, p_metrics%ddqz_z_full, p_prog%rho,               &
-          &                      p_prog_rcf%tracer, advection_config(jg)%trHydroMass%list, &
-          &                      twater, lacc=lzacc )
+
+        CALL compute_field_twater( p_patch, p_metrics%ddqz_z_full, p_prog%rho,               &
+            &                      p_prog_rcf%tracer, advection_config(jg)%trHydroMass%list, &
+            &                      twater, lacc=lzacc )
       ENDIF
       IF (itype_dursun == 0) THEN
         ! WMO sunshine duration is an accumulative value like precipitation or runoff
         CALL compute_field_dursun(p_patch, dt_phy, prm_diag%dursun,         &
-             &                    prm_diag%swflxsfc, prm_diag%swflx_up_sfc, &
+             &                    swflxsfc_slope_rad, swflx_up_sfc_slope_rad, &
              &                    prm_diag%swflx_dn_sfc_diff, cosmu0,       &
              &                    120.0_wp, 0.01_wp,                        &
              &                    prm_diag%dursun_m, prm_diag%dursun_r,     &
@@ -2017,7 +2263,7 @@ CONTAINS
       ELSEIF (itype_dursun == 1) THEN
         ! MeteoSwiss sunshine duration with a 200 W/m^2 threshold
         CALL compute_field_dursun(p_patch, dt_phy, prm_diag%dursun,         &
-             &                    prm_diag%swflxsfc, prm_diag%swflx_up_sfc, &
+             &                    swflxsfc_slope_rad, swflx_up_sfc_slope_rad, &
              &                    prm_diag%swflx_dn_sfc_diff, cosmu0,       &
              &                    200.0_wp, 60.0_wp,                        &
              &                    prm_diag%dursun_m, prm_diag%dursun_r,     &
@@ -2621,4 +2867,3 @@ CONTAINS
   END SUBROUTINE nwp_diag_global
 
 END MODULE mo_nwp_diagnosis
-

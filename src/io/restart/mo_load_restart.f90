@@ -108,9 +108,9 @@ CONTAINS
     INTEGER :: ncid
     CHARACTER(*), PARAMETER :: routine = modname//":readRestartAttributeFile"
 
-    IF(my_process_is_mpi_workroot()) CALL nf(nf_open(attributeFile, NF_NOWRITE, ncid), routine)
+    IF(my_process_is_mpi_workroot()) CALL nf(nf90_open(attributeFile, NF90_NOWRITE, ncid), routine)
     CALL restartAttributeList_read(0, p_comm_work, ncid=ncid)
-    IF(my_process_is_mpi_workroot()) CALL nf(nf_close(ncid), routine)
+    IF(my_process_is_mpi_workroot()) CALL nf(nf90_close(ncid), routine)
     CALL message(routine, "read namelists and attributes from restart file")
   END SUBROUTINE readRestartAttributeFile
 

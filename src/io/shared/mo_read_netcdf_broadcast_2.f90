@@ -130,7 +130,7 @@ MODULE mo_read_netcdf_broadcast_2
     MODULE PROCEDURE netcdf_read_REAL_3D_extdim
   END INTERFACE netcdf_read_3D_extdim
 
-  INTEGER, PARAMETER :: MAX_VAR_DIMS = 16 ! NF_MAX_VAR_DIMS
+  INTEGER, PARAMETER :: MAX_VAR_DIMS = 16 ! NF90_MAX_VAR_DIMS
 
 CONTAINS
 
@@ -157,7 +157,7 @@ CONTAINS
       CALL netcdf_inq_var(file_id, variable_name, varid, var_type, var_dims, &
         &                 var_size, var_dim_name)
 
-      CALL nf(nf_get_att_int(file_id, varid, attribute_name, zlocal(:)), &
+      CALL nf(nf90_get_att(file_id, varid, attribute_name, zlocal(:)), &
               attribute_name)
     ENDIF
 
@@ -181,12 +181,12 @@ CONTAINS
       'mo_read_netcdf_broadcast_2:netcdf_read_inq_varexists'
 
     IF( my_process_is_mpi_workroot()  ) THEN
-      err = nf_inq_varid(file_id, variable_name, varid)
+      err = nf90_inq_varid(file_id, variable_name, varid)
     ENDIF
 
     CALL p_bcast(err, process_mpi_root_id, p_comm_work)
 
-    ret = (err == nf_noerr)
+    ret = (err == nf90_noerr)
   END FUNCTION netcdf_read_inq_varexists
   !-------------------------------------------------------------------------
 
@@ -212,7 +212,7 @@ CONTAINS
       CALL netcdf_inq_var(file_id, variable_name, varid, var_type, var_dims, &
         &                 var_size, var_dim_name)
 
-      CALL nf(nf_get_var_double(file_id, varid, zlocal(:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, zlocal(:)), variable_name)
     ENDIF
 
     ! broadcast...
@@ -245,7 +245,7 @@ CONTAINS
       CALL netcdf_inq_var(file_id, variable_name, varid, var_type, var_dims, &
         &                 var_size, var_dim_name)
 
-      CALL nf(nf_get_var_int(file_id, varid, zlocal(:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, zlocal(:)), variable_name)
     ENDIF
 
     ! broadcast...
@@ -309,7 +309,7 @@ CONTAINS
       CALL warning(method_name, "allocated size > var_size")
 
     IF( my_process_is_mpi_workroot()) THEN
-      CALL nf(nf_get_var_double(file_id, varid, res(:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, res(:)), variable_name)
     ENDIF
 
     ! broadcast...
@@ -414,8 +414,8 @@ CONTAINS
     IF( my_process_is_mpi_workroot()) THEN
       start_read_index = (/1,1,start_time/)
       count_read_index = (/var_size(1),var_size(2),time_steps/)
-      CALL nf(nf_get_vara_double(file_id, varid, start_read_index, &
-        &                        count_read_index, res(:,:,:)), &
+      CALL nf(nf90_get_var(file_id, varid, res(:,:,:), &
+        &                  start_read_index, count_read_index), &
         &     variable_name)
     ENDIF
 
@@ -520,8 +520,8 @@ CONTAINS
     IF( my_process_is_mpi_workroot()) THEN
       start_read_index = (/1,1,1,start_time/)
       count_read_index = (/var_size(1),var_size(2),var_size(3),time_steps/)
-      CALL nf(nf_get_vara_double(file_id, varid, start_read_index, &
-        &                        count_read_index, res(:,:,:,:)), &
+      CALL nf(nf90_get_var(file_id, varid, res(:,:,:,:), &
+        &                  start_read_index, count_read_index), &
         &     variable_name)
     ENDIF
 
@@ -621,8 +621,8 @@ CONTAINS
     IF( my_process_is_mpi_workroot()) THEN
       start_read_index = (/start_dim1,1,1,1/)
       count_read_index = (/dim1_steps,var_size(2),var_size(3),var_size(4)/)
-      CALL nf(nf_get_vara_double(file_id, varid, start_read_index, &
-        &                        count_read_index, res(:,:,:,:)), &
+      CALL nf(nf90_get_var(file_id, varid, res(:,:,:,:), &
+        &                  start_read_index, count_read_index), &
         &     variable_name)
     ENDIF
 
@@ -700,7 +700,7 @@ CONTAINS
         CALL finish(method_name, "Dimensions mismatch")
       ENDIF
 
-      IF (var_type /= NF_INT) CALL finish(method_name, "invalid var_type")
+      IF (var_type /= NF90_INT) CALL finish(method_name, "invalid var_type")
 
     ENDIF
 
@@ -709,7 +709,7 @@ CONTAINS
     IF (return_status /= success) CALL finish(method_name,'ALLOCATE(tmp_array)')
 
     IF( my_process_is_mpi_workroot()) &
-      CALL nf(nf_get_var_int(file_id, varid, tmp_array(:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, tmp_array(:)), variable_name)
 
     DO i = 1, n_vars
       IF (PRESENT(fill_arrays)) THEN
@@ -786,7 +786,7 @@ CONTAINS
       CALL warning(method_name, "allocated size > var_size")
 
     IF( my_process_is_mpi_workroot()) THEN
-      CALL nf(nf_get_var_double(file_id, varid, res(:,:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, res(:,:)), variable_name)
     ENDIF
 
     ! broadcast...
@@ -870,12 +870,12 @@ CONTAINS
 
     IF( my_process_is_mpi_workroot()) THEN
       SELECT CASE(var_type(1))
-        CASE(NF_DOUBLE)
+        CASE(NF90_DOUBLE)
           ALLOCATE(tmp_array_dp(n_g), stat=return_status )
-          CALL nf(nf_get_var_double(file_id, varid, tmp_array_dp), variable_name)
-        CASE(NF_FLOAT, NF_INT)
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_dp), variable_name)
+        CASE(NF90_FLOAT, NF90_INT)
           ALLOCATE(tmp_array_sp(n_g), stat=return_status )
-          CALL nf(nf_get_var_real(file_id, varid, tmp_array_sp), variable_name)
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_sp), variable_name)
         CASE default
           CALL finish(method_name, "incompatible var_type")
       END SELECT
@@ -897,7 +897,7 @@ CONTAINS
         res(i)%p(:,:) = 0.0_wp
       ENDIF
 
-      IF (var_type(1) == NF_DOUBLE) THEN
+      IF (var_type(1) == NF90_DOUBLE) THEN
         CALL scatter_patterns(i)%p%distribute(tmp_array_dp, res(i)%p, .FALSE.)
       ELSE
         CALL scatter_patterns(i)%p%distribute(tmp_array_sp, res(i)%p, .FALSE.)
@@ -1072,9 +1072,9 @@ CONTAINS
 
     IF( my_process_is_mpi_workroot()) THEN
       SELECT CASE(var_type(1))
-        CASE(NF_DOUBLE)
+        CASE(NF90_DOUBLE)
           ALLOCATE(tmp_array_dp(n_g), stat=return_status )
-        CASE(NF_FLOAT, NF_INT)
+        CASE(NF90_FLOAT, NF90_INT)
           ALLOCATE(tmp_array_sp(n_g), stat=return_status )
         CASE default
           CALL finish(method_name, "incompatible var_type")
@@ -1089,14 +1089,14 @@ CONTAINS
 
         start_read_index = (/ 1, start_time+t-1 /)
         count_read_index = (/ n_g, 1/)
-        IF (var_type(1) == NF_DOUBLE) THEN
-          CALL nf(nf_get_vara_double(file_id, varid, start_read_index, &
-            &                        count_read_index, tmp_array_dp(:)), &
-            &                        variable_name)
+        IF (var_type(1) == NF90_DOUBLE) THEN
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_dp(:), &
+            &                  start_read_index, count_read_index), &
+            &     variable_name)
         ELSE
-          CALL nf(nf_get_vara_real(file_id, varid, start_read_index, &
-            &                      count_read_index, tmp_array_sp(:)), &
-            &                      variable_name)
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_sp(:), &
+            &                  start_read_index, count_read_index), &
+            &     variable_name)
         END IF
       ENDIF
 
@@ -1106,7 +1106,7 @@ CONTAINS
         ! this is needed by PGI, it causes an internal compiler error if
         ! scatter_patterns(i)%p is used directly
         scatter_pattern_ => scatter_patterns(i)%p
-        IF (var_type(1) == NF_DOUBLE) THEN
+        IF (var_type(1) == NF90_DOUBLE) THEN
           CALL scatter_pattern_%distribute(tmp_array_dp, tmp_res, .FALSE.)
         ELSE
           CALL scatter_pattern_%distribute(tmp_array_sp, tmp_res, .FALSE.)
@@ -1258,8 +1258,9 @@ CONTAINS
 
         start_read_index = (/ 1, start_time + t - 1 /)
         count_read_index = (/ n_g, 1 /)
-        CALL nf(nf_get_vara_int(file_id, varid, start_read_index, &
-          &                     count_read_index, tmp_array(:)), variable_name)
+        CALL nf(nf90_get_var(file_id, varid, tmp_array(:), &
+          &                  start_read_index, count_read_index), &
+          &     variable_name)
       ENDIF
 
       DO i = 1, n_vars
@@ -1332,7 +1333,7 @@ CONTAINS
       CALL warning(method_name, "allocated size > var_size")
 
     IF( my_process_is_mpi_workroot()) THEN
-      CALL nf(nf_get_var_double(file_id, varid, res(:,:,:)), variable_name)
+      CALL nf(nf90_get_var(file_id, varid, res(:,:,:)), variable_name)
     ENDIF
 
     ! broadcast...
@@ -1414,9 +1415,9 @@ CONTAINS
 
     IF( my_process_is_mpi_workroot()) THEN
       SELECT CASE(var_type(1))
-        CASE(NF_DOUBLE)
+        CASE(NF90_DOUBLE)
           ALLOCATE(tmp_array_dp(n_g), stat=return_status )
-        CASE(NF_FLOAT, NF_INT)
+        CASE(NF90_FLOAT, NF90_INT)
           ALLOCATE(tmp_array_sp(n_g), stat=return_status )
         CASE default
           CALL finish(method_name, "incompatible var_type")
@@ -1432,17 +1433,19 @@ CONTAINS
 
     DO i = 1, file_vertical_levels
       IF( my_process_is_mpi_workroot()) THEN
-        IF (var_type(1) == NF_DOUBLE) THEN
-          CALL nf(nf_get_vara_double(file_id, varid, (/1,i/), (/n_g,1/), &
-            &                        tmp_array_dp(:)), variable_name)
+        IF (var_type(1) == NF90_DOUBLE) THEN
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_dp(:), &
+            &                  (/1,i/), (/n_g,1/)), &
+            &     variable_name)
         ELSE
-          CALL nf(nf_get_vara_real(file_id, varid, (/1,i/), (/n_g,1/), &
-            &                      tmp_array_sp(:)), variable_name)
+          CALL nf(nf90_get_var(file_id, varid, tmp_array_sp(:), &
+            &                  (/1,i/), (/n_g,1/)), &
+            &     variable_name)
         END IF
       ENDIF
 
       res_level => res(:,i,:)
-      IF (var_type(1) == NF_DOUBLE) THEN
+      IF (var_type(1) == NF90_DOUBLE) THEN
         CALL scatter_pattern%distribute(tmp_array_dp, res_level, .FALSE.)
       ELSE
         CALL scatter_pattern%distribute(tmp_array_sp, res_level, .FALSE.)
@@ -1568,9 +1571,9 @@ CONTAINS
 
     IF( my_process_is_mpi_workroot()) THEN
       SELECT CASE(var_type(1))
-        CASE(NF_DOUBLE)
+        CASE(NF90_DOUBLE)
           ALLOCATE(tmp_array_dp(n_g), stat=return_status )
-        CASE(NF_FLOAT, NF_INT)
+        CASE(NF90_FLOAT, NF90_INT)
           ALLOCATE(tmp_array_sp(n_g), stat=return_status )
         CASE default
           CALL finish(method_name, "incompatible var_type")
@@ -1604,19 +1607,19 @@ CONTAINS
         IF( my_process_is_mpi_workroot()) THEN
           start_read_index = (/ 1, i, tt + start_time - 1 /)
           count_read_index      = (/ n_g, 1, 1 /)
-          IF (var_type(1) == NF_DOUBLE) THEN
-            CALL nf(nf_get_vara_double(file_id, varid, start_read_index, &
-              &                        count_read_index, tmp_array_dp(:)),  &
+          IF (var_type(1) == NF90_DOUBLE) THEN
+            CALL nf(nf90_get_var(file_id, varid, tmp_array_dp(:), &
+              &                  start_read_index, count_read_index), &
               &     variable_name)
           ELSE
-            CALL nf(nf_get_vara_real(file_id, varid, start_read_index, &
-              &                      count_read_index, tmp_array_sp(:)),  &
+            CALL nf(nf90_get_var(file_id, varid, tmp_array_sp(:), &
+              &                  start_read_index, count_read_index), &
               &     variable_name)
           END IF
         ENDIF
         
         res_level => res(:,i,:,LBOUND(res, 4)+tt-1)
-        IF (var_type(1) == NF_DOUBLE) THEN
+        IF (var_type(1) == NF90_DOUBLE) THEN
           CALL scatter_pattern%distribute(tmp_array_dp, res_level, .FALSE.)
         ELSE
           CALL scatter_pattern%distribute(tmp_array_sp, res_level, .FALSE.)
@@ -1635,7 +1638,7 @@ CONTAINS
     INTEGER :: file_id
 
     IF( my_process_is_mpi_workroot()  ) THEN
-      CALL nf(nf_open(TRIM(filename), nf_nowrite, file_id), TRIM(filename))
+      CALL nf(nf90_open(TRIM(filename), nf90_nowrite, file_id), TRIM(filename))
     ELSE
       file_id = -1 ! set it to an invalid value
     ENDIF
@@ -1652,7 +1655,7 @@ CONTAINS
 
     netcdf_close = -1
     IF( my_process_is_mpi_workroot()  ) THEN
-        netcdf_close = nf_close(file_id)
+        netcdf_close = nf90_close(file_id)
     ENDIF
 
   END FUNCTION netcdf_close
@@ -1676,14 +1679,14 @@ CONTAINS
 
     IF ( .NOT. my_process_is_mpi_workroot() ) RETURN
 
-    CALL nf(nf_inq_varid(file_id, name, varid), name)
-    CALL nf(nf_inq_var(file_id, varid, check_var_name, var_type, var_dims, &
-      &                var_dims_reference, number_of_attributes), &
+    CALL nf(nf90_inq_varid(file_id, name, varid), name)
+    CALL nf(nf90_inquire_variable(file_id, varid, check_var_name, var_type, var_dims, &
+      &                           var_dims_reference, number_of_attributes), &
       &     check_var_name)
     DO i=1, var_dims
-      CALL nf(nf_inq_dimlen (file_id, var_dims_reference(i), var_size(i)), &
+      CALL nf(nf90_inquire_dimension (file_id, var_dims_reference(i), len = var_size(i)), &
         &     check_var_name)
-      CALL nf(nf_inq_dimname(file_id, var_dims_reference(i), var_dim_name(i)), &
+      CALL nf(nf90_inquire_dimension(file_id, var_dims_reference(i), name = var_dim_name(i)), &
         &     check_var_name)
     ENDDO
 !     write(0,*) " Read var_dims, var_size:",  var_dims, var_size
@@ -1707,11 +1710,11 @@ CONTAINS
     IF( my_process_is_mpi_workroot()  ) THEN
  
       ! write(0,*) "netcdf_get_missValue...", TRIM(variable_name) 
-      CALL nf(nf_inq_varid(file_id, variable_name, varid), variable_name)
+      CALL nf(nf90_inq_varid(file_id, variable_name, varid), variable_name)
       ! write(0,*) TRIM(variable_name), " id=", varid
   
-      return_status = nfx_get_att(file_id, varid, "missing_value", readMissValue)
-      IF (return_status == nf_noerr) THEN
+      return_status = nf90_get_att(file_id, varid, "missing_value", readMissValue)
+      IF (return_status == nf90_noerr) THEN
         has_missValue = .true.
         broadcastValue(1) = 1.0_wp
       ELSE

@@ -69,8 +69,8 @@ MODULE mo_art_psc_sts
   ! ICON
   USE mo_kind,                    ONLY: wp
   USE mo_parallel_config,         ONLY: nproma
-  USE mo_math_constants,          ONLY: pi
-  USE mo_physical_constants,      ONLY: argas, amw, avo
+  USE mo_math_constants,          ONLY: pi, ln10
+  USE mo_physical_constants,      ONLY: argas, amw, avo, p0sl_bg
   ! ART
   USE mo_art_psc_types,           ONLY: t_art_psc,  &
                                     &   mol_weight_H2SO4
@@ -175,7 +175,6 @@ SUBROUTINE art_psc_aerosol (PSC, jb, kstart,kend, i_startidx, i_endidx, &
      &   a, b, c, cbar,    &   !< a,b,c: parameters for ternary solution;
                                !  cbar: parameter for uptake coefficient
      &   logvon760,        &   !< logarithms of numbers
-     &   logvon10,         &   !  ...
      &   g0, gs, gcalc,    &   !< g0: uptake coefficient for ClONO2 + H2O without HCl present; 
                                !  gs: uptake coeff due to surface reactions;  
                                !  gcalc: uptake coeff due to bulk reactions
@@ -209,7 +208,6 @@ SUBROUTINE art_psc_aerosol (PSC, jb, kstart,kend, i_startidx, i_endidx, &
     &  ksfit = (/-21.661_wp, 2724.2_wp, 51.81_wp, -15732._wp, 47.004_wp,  -6969._wp, -4.6183_wp/)
 
   logvon760 = log(760.0_wp)
-  logvon10  = log(10.0_wp)
 
   DO jk = kstart,kend
     DO jc = i_startidx,i_endidx
@@ -228,42 +226,42 @@ SUBROUTINE art_psc_aerosol (PSC, jb, kstart,kend, i_startidx, i_endidx, &
 
       ! 2.e-5 mb = 2.e-3 Pa and 2.e-3 mb = 2.e-1 Pa
       PSC%pw(jc,jk)     = min(max(PSC%H2O_Nconc_g(jc,jk) * Nconc2p,   &
-                       &      2.e-3_wp),2.e-1_wp)/101325._wp
+                       &      2.e-3_wp),2.e-1_wp)/p0sl_bg
 
 
       HNO3_max_Nconc = 2.0e-8_wp * pres(jc,jk,jb) * avo / argas / temp(jc,jk,jb) * 1.e-6_wp
       IF (PSC%HNO3_Nconc_g(jc,jk) > HNO3_max_Nconc) THEN
-        PSC%pn0(jc,jk)    =  HNO3_max_Nconc*Nconc2p/101325._wp
+        PSC%pn0(jc,jk)    =  HNO3_max_Nconc*Nconc2p/p0sl_bg
       ELSE
-        PSC%pn0(jc,jk)    =  PSC%HNO3_Nconc_g(jc,jk)*Nconc2p/101325._wp
+        PSC%pn0(jc,jk)    =  PSC%HNO3_Nconc_g(jc,jk)*Nconc2p/p0sl_bg
       END IF
 
       IF (PSC%iTRHCl /= 0) THEN
-        PSC%phcl0(jc,jk)  =  p_tracer_now(jc,jk,jb,PSC%iTRHCl)*Nconc2p/101325._wp
+        PSC%phcl0(jc,jk)  =  p_tracer_now(jc,jk,jb,PSC%iTRHCl)*Nconc2p/p0sl_bg
       ELSE
         PSC%phcl0(jc,jk)  = 0.0_wp
       END IF
 
       IF (PSC%iTRHBr /= 0) THEN
-        PSC%phbr0(jc,jk)  =  p_tracer_now(jc,jk,jb,PSC%iTRHBr)*Nconc2p/101325._wp
+        PSC%phbr0(jc,jk)  =  p_tracer_now(jc,jk,jb,PSC%iTRHBr)*Nconc2p/p0sl_bg
       ELSE
         PSC%phbr0(jc,jk)  = 0.0_wp
       END IF
 
       IF (PSC%iTRHOCl /= 0) THEN
-        PSC%phocl0(jc,jk) =  p_tracer_now(jc,jk,jb,PSC%iTRHOCl)*Nconc2p/101325._wp
+        PSC%phocl0(jc,jk) =  p_tracer_now(jc,jk,jb,PSC%iTRHOCl)*Nconc2p/p0sl_bg
       ELSE
         PSC%phocl0(jc,jk)  = 0.0_wp
       END IF
 
       IF (PSC%iTRHOBr /= 0) THEN
-        PSC%phobr0(jc,jk) =  p_tracer_now(jc,jk,jb,PSC%iTRHOBr)*Nconc2p/101325._wp
+        PSC%phobr0(jc,jk) =  p_tracer_now(jc,jk,jb,PSC%iTRHOBr)*Nconc2p/p0sl_bg
       ELSE
         PSC%phobr0(jc,jk)  = 0.0_wp
       END IF
 
       PSC%logpw(jc,jk)    = log(PSC%pw(jc,jk))
-      logkorr   = (PSC%logpw(jc,jk)+logvon760)/logvon10
+      logkorr   = (PSC%logpw(jc,jk)+logvon760)/ln10
       PSC%tice(jc,jk)     = 2668.7_wp / ( 10.431_wp - logkorr)
 
       PSC%internal_temp(jc,jk) = temp(jc,jk,jb)
@@ -287,8 +285,8 @@ SUBROUTINE art_psc_aerosol (PSC, jb, kstart,kend, i_startidx, i_endidx, &
       ! low numbers were one degree higher, high numbers one degree lower in new iexception
       IF (PSC%internal_temp(jc,jk) < 185._wp     &
              &   .OR. PSC%internal_temp(jc,jk) < PSC%tice(jc,jk)-3._wp   &
-       &    .OR. PSC%internal_temp(jc,jk) > 240._wp .OR. PSC%pw(jc,jk)*1013.25_wp < 2.e-5_wp      &
-       &    .OR. PSC%pw(jc,jk)*1013.25_wp > 2.e-3_wp                                              &
+       &    .OR. PSC%internal_temp(jc,jk) > 240._wp .OR. PSC%pw(jc,jk)*p0sl_bg/100._wp < 2.e-5_wp      &
+       &    .OR. PSC%pw(jc,jk)*p0sl_bg/100._wp > 2.e-3_wp                                              &
        &    .OR. ( PSC%internal_temp(jc,jk) >= 209._wp                                            &
        &    .AND. PSC%internal_temp(jc,jk) <= 215._wp                                             &
        &    .AND. PSC%internal_temp(jc,jk) >= (203.25_wp + 2.5e+05_wp*PSC%pn0(jc,jk) )            &
@@ -712,7 +710,7 @@ SUBROUTINE art_psc_aerosol (PSC, jb, kstart,kend, i_startidx, i_endidx, &
         ! water activity
         ! remark: in EMAC 1013.25 is air pressure, but in Hanson and Ravishankara (1994), 
         !         1013.25 is used for stratospheric conditions
-        ah2o = 1013.25_wp * PSC%pw(jc,jk)                                              &
+        ah2o = p0sl_bg/100._wp * PSC%pw(jc,jk)                                              &
                &  / (10_wp**(9.217_wp-2190.0_wp/(PSC%internal_temp(jc,jk)-12.70_wp)))
         g0=1.18e-4_wp+9.1e-3_wp*ah2o+0.50_wp*ah2o**2
         gs=ah2o*ksur*chclliq

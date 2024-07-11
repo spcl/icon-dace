@@ -26,13 +26,13 @@ MODULE mo_rte_rrtmgp_setup
 
   TYPE(ty_gas_optics_rrtmgp) :: k_dist_lw, k_dist_sw
   TYPE(ty_cloud_optics)      :: cloud_optics_lw, cloud_optics_sw
-  REAL(wp)                   :: inhoml, inhomi
+  REAL(wp)                   :: inhoml, inhomi, inhoms
 
   PUBLIC :: rte_rrtmgp_basic_setup
   PUBLIC :: k_dist_lw, k_dist_sw
   PUBLIC :: cloud_optics_lw, cloud_optics_sw
   PUBLIC :: stop_on_err
-  PUBLIC :: inhoml, inhomi
+  PUBLIC :: inhoml, inhomi, inhoms
 
 CONTAINS
 
@@ -48,7 +48,7 @@ CONTAINS
 
   SUBROUTINE rte_rrtmgp_basic_setup(nproma, nlev, &
     pressure_scale_, droplet_scale_, &
-    zinhoml1_, zinhoml2_, zinhoml3_, zinhomi_)
+    zinhoml_, zinhomi_, zinhoms_)
 
 !!    USE mo_radiation_cloud_optics, ONLY: setup_cloud_optics
 
@@ -56,7 +56,7 @@ CONTAINS
 
     INTEGER, INTENT(IN) :: nproma, nlev
     REAL(wp), INTENT(IN) :: pressure_scale_, droplet_scale_, &
-      zinhoml1_, zinhoml2_, zinhoml3_, zinhomi_
+      zinhoml_, zinhomi_, zinhoms_
     INTEGER :: i
     REAL(wp) :: log_factor
     INTEGER, PARAMETER :: n_gas_names = 8
@@ -70,8 +70,9 @@ CONTAINS
 
 !!    CALL setup_cloud_optics(droplet_scale_, &
 !!      zinhoml1_, zinhoml2_, zinhoml3_, zinhomi_)
-    inhoml = zinhoml1_
+    inhoml = zinhoml_
     inhomi = zinhomi_
+    inhoms = zinhoms_
 
     ! Turn off error checking
     CALL rte_config_checks(LOGICAL(.FALSE.,wl))  ! Dressing to please gfortran

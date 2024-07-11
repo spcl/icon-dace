@@ -33,16 +33,16 @@ MODULE mo_intp_state
 !
 USE mo_kind,                ONLY: wp
 USE mo_exception,           ONLY: message, finish
-USE mo_impl_constants,      ONLY: SUCCESS, MAX_CHAR_LENGTH, ihs_ocean
+USE mo_impl_constants,      ONLY: SUCCESS, MAX_CHAR_LENGTH
 USE mo_model_domain,        ONLY: t_patch
 USE mo_grid_config,         ONLY: n_dom, n_dom_start, lplane, l_limited_area
 USE mo_parallel_config,     ONLY: nproma
-USE mo_run_config,          ONLY: ltransport, ldynamics
-USE mo_dynamics_config,     ONLY: iequations
+USE mo_run_config,          ONLY: ldynamics
 USE mo_interpol_config,     ONLY: rbf_vec_dim_c, rbf_c2grad_dim,                &
   &                               rbf_vec_dim_v, rbf_vec_dim_e, lsq_lin_set,    &
   &                               lsq_high_set
 USE mo_initicon_config,     ONLY: icpl_da_seaice, icpl_da_snowalb
+USE mo_lnd_nwp_config,      ONLY: lterra_urb
 USE mo_intp_data_strc,      ONLY: t_int_state
 USE mo_intp_rbf_coeffs,     ONLY: rbf_vec_index_cell, rbf_vec_index_edge,                &
   &                               rbf_vec_index_vertex, rbf_vec_compute_coeff_cell,      &
@@ -51,23 +51,21 @@ USE mo_intp_rbf_coeffs,     ONLY: rbf_vec_index_cell, rbf_vec_index_edge,       
   &                               rbf_compute_coeff_c2grad, gen_index_list_radius
 USE mo_intp_coeffs,         ONLY: init_cellavg_wgt,                                    &
   &                               init_geo_factors, complete_patchinfo, init_tplane_e, &
-  &                               init_tplane_c,   tri_quadrature_pts,                 &
-  &                               init_nudgecoeffs, tri_quadrature_pts
-  !                               init_geo_factors_oce, par_init_scalar_product_oce
+  &                               init_tplane_c, tri_quadrature_pts,                   &
+  &                               init_nudgecoeffs
 USE mo_intp_coeffs_lsq_bln, ONLY: lsq_stencil_create, lsq_compute_coeff_cell,          &
   &                               scalar_int_coeff, bln_int_coeff_e2c
 USE mo_sync,                ONLY: SYNC_C, SYNC_E, SYNC_V
 USE mo_communication,       ONLY: t_comm_pattern, blk_no, idx_no, idx_1d, &
   &                               delete_comm_pattern, exchange_data
   USE mo_communication_factory, ONLY: setup_comm_pattern
-! USE mo_ocean_nml,           ONLY: idisc_scheme
 USE mo_decomposition_tools, ONLY: t_grid_domain_decomp_info, get_valid_local_index
 USE mo_dist_dir,            ONLY: dist_dir_get_owners
 USE mo_update_dyn_scm ,     ONLY: rbf_coeff_scm
 USE mo_grid_config,         ONLY: l_scm_mode
 USE mo_name_list_output_config, ONLY: is_variable_in_output
 USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
-USE mo_master_control,      ONLY: get_my_process_type, wave_process
+USE mo_master_control,      ONLY: my_process_is_waves
 #ifdef SERIALIZE
 USE mo_ser_rbf_coefficients, ONLY: ser_rbf_coefficients
 USE mo_ser_nml,             ONLY: ser_rbf
@@ -112,14 +110,15 @@ SUBROUTINE allocate_int_state( ptr_patch, ptr_int)
   TYPE(t_int_state), INTENT(inout) :: ptr_int
 
   INTEGER :: nblks_c, nblks_e, nblks_v
-  INTEGER :: ist,ie
+  INTEGER :: ist
   INTEGER :: idummy
-  LOGICAL :: lsdi         = .FALSE. ,&
-             llpi         = .FALSE. ,&
-             llpim        = .FALSE. ,&
-             llsc         = .FALSE. ,&
-             llsd         = .FALSE. ,&
-             llde         = .FALSE.
+  LOGICAL :: lsdi   ,&  ! deleted the former expl. init with .FALSE.
+             llpi   ,&  ! to avoid the implicit SAVE attribute, which
+             llpim  ,&  ! would be dangerous for subsequent calls
+             llsc   ,&
+             llsd   ,&
+             llde   ,&
+             lmconv
 
 !-----------------------------------------------------------------------
 
@@ -337,17 +336,23 @@ SUBROUTINE allocate_int_state( ptr_patch, ptr_int)
       &            'allocation for rbf_vec_coeff_e failed')
     ENDIF
 
+    lsdi         = .FALSE.
+    llpi         = .FALSE.
+    llpim        = .FALSE.
+    lmconv       = .FALSE.
+
     ! GZ: offloading 'is_variable_in_output' to vector hosts requires separate calls in order to
     !     avoid an MPI deadlock in p_bcast
-                            lsdi         = is_variable_in_output(var_name="sdi2")
-    IF (.NOT. lsdi)         llpi         = is_variable_in_output(var_name="lpi")
-    IF (.NOT. llpi)         llpim        = is_variable_in_output(var_name="lpi_max")
-    IF (.NOT. llpim)        llsc         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_expl 
-    IF (.NOT. llsc)         llsd         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_sde
-    IF (.NOT. llsd)         llde         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_deep
+                    lsdi         = is_variable_in_output(var_name="sdi2")
+    IF (.NOT.lsdi)  llpi         = is_variable_in_output(var_name="lpi")
+    IF (.NOT.llpi)  llpim        = is_variable_in_output(var_name="lpi_max")
+    IF (.NOT.llpim) lmconv       = is_variable_in_output(var_name="mconv")
+    llsc         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_expl 
+    llsd         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_sde
+    llde         = atm_phy_nwp_config(MAX(1,ptr_patch%id))%lstoch_deep
     
-    ptr_int%cell_environ%is_used = lsdi .OR. llpi .OR. llpim .OR. llsc .OR. llsd .OR. llde .OR. &
-                                   icpl_da_seaice >= 2 .OR. icpl_da_snowalb >= 2
+    ptr_int%cell_environ%is_used = lsdi .OR. llpi .OR. llpim .OR. lmconv .OR. llsc .OR. llsd .OR. llde .OR. &
+                                   icpl_da_seaice >= 2 .OR. icpl_da_snowalb >= 2 .OR. lterra_urb
 
     IF ( ptr_int%cell_environ%is_used ) THEN
       !
@@ -384,395 +389,214 @@ SUBROUTINE allocate_int_state( ptr_patch, ptr_int)
 
   ENDIF
 
-  IF( ltransport .OR. iequations == 3) THEN
-    !
-    ! pos_on_tplane_e
-    !
-    ALLOCATE (ptr_int%pos_on_tplane_e(nproma, nblks_e, 8, 2), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-      &            'allocation for pos_on_tplane_e failed')
-    ENDIF
-    !
-    ! tplane_e_dotprod
-    !
-    ALLOCATE (ptr_int%tplane_e_dotprod(nproma, nblks_e, 4, 4), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-      &            'allocation for tplane_e_dotprod failed')
-    ENDIF
 
-    IF (ptr_patch%geometry_info%cell_type == 3) THEN
-      !
-      ! pos_on_tplane_c_edge
-      !
-      ALLOCATE (ptr_int%pos_on_tplane_c_edge(nproma, nblks_e, 2, 5), STAT=ist )
-      IF (ist /= SUCCESS) THEN
-        CALL finish ('mo_interpolation:construct_int_state',&
-        &            'allocation for pos_on_tplane_c_edge failed')
-      ENDIF
-    ENDIF
+  !
+  ! pos_on_tplane_e
+  !
+  ALLOCATE (ptr_int%pos_on_tplane_e(nproma, 4, 2, nblks_e), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+    &            'allocation for pos_on_tplane_e failed')
+  ENDIF
 
+  IF (ptr_patch%geometry_info%cell_type == 3) THEN
     !
-    ! Least squares reconstruction
+    ! pos_on_tplane_c_edge
     !
-    ! *** linear ***
-    !
-    !
-    ! lsq_dim_stencil
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_dim_stencil(nproma, nblks_c), STAT=ist )
+    ALLOCATE (ptr_int%pos_on_tplane_c_edge(nproma, nblks_e, 2, 5), STAT=ist )
     IF (ist /= SUCCESS) THEN
       CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_dim_stencil failed')
+      &            'allocation for pos_on_tplane_c_edge failed')
     ENDIF
-    !
-    ! lsq_idx_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_idx_c(nproma, nblks_c, lsq_lin_set%dim_c),          &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_blk_c(nproma, nblks_c, lsq_lin_set%dim_c),          &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_weights_c(nproma, lsq_lin_set%dim_c, nblks_c),      &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_qtmat_c(nproma, lsq_lin_set%dim_unk, lsq_lin_set%dim_c, &
-      &       nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_rmat_rdiag_c(nproma, lsq_lin_set%dim_unk, nblks_c), &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    idummy=(lsq_lin_set%dim_unk*lsq_lin_set%dim_unk - lsq_lin_set%dim_unk)/2
-    ALLOCATE (ptr_int%lsq_lin%lsq_rmat_utri_c(nproma, idummy, nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_pseudoinv(nproma, lsq_lin_set%dim_unk,              &
-      &       lsq_lin_set%dim_c, nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_moments(nproma, nblks_c, lsq_lin_set%dim_unk),      &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_moments_hat(nproma, nblks_c, lsq_lin_set%dim_c,     &
-      &       lsq_lin_set%dim_unk), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_moments_hat failed')
-    ENDIF
+  ENDIF
 
-    ! *** higher order ***
-    !
-    !
-    ! lsq_dim_stencil
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_dim_stencil(nproma, nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_dim_stencil failed')
-    ENDIF
-    !
-    ! lsq_idx_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_idx_c(nproma, nblks_c, lsq_high_set%dim_c),        &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_blk_c(nproma, nblks_c, lsq_high_set%dim_c),        &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_weights_c(nproma, lsq_high_set%dim_c, nblks_c),    &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_qtmat_c(nproma, lsq_high_set%dim_unk, lsq_high_set%dim_c, &
-      &       nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_rmat_rdiag_c(nproma, lsq_high_set%dim_unk, nblks_c), &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    idummy=(lsq_high_set%dim_unk*lsq_high_set%dim_unk - lsq_high_set%dim_unk)/2
-    ALLOCATE (ptr_int%lsq_high%lsq_rmat_utri_c(nproma, idummy, nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_pseudoinv(nproma, lsq_high_set%dim_unk,            &
-      &       lsq_high_set%dim_c, nblks_c), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_moments(nproma, nblks_c, lsq_high_set%dim_unk),    &
-      &       STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_moments_hat(nproma, nblks_c, lsq_high_set%dim_c,   &
-      &       lsq_high_set%dim_unk), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                            &
-        &             'allocation for lsq_moments_hat failed')
-    ENDIF
+  !
+  ! Least squares reconstruction
+  !
+  ! *** linear ***
+  !
+  !
+  ! lsq_dim_stencil
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_dim_stencil(nproma, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_dim_stencil failed')
+  ENDIF
+  !
+  ! lsq_idx_c
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_idx_c(nproma, nblks_c, lsq_lin_set%dim_c),          &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_idx_c failed')
+  ENDIF
+  !
+  ! lsq_blk_c
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_blk_c(nproma, nblks_c, lsq_lin_set%dim_c),          &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_blk_c failed')
+  ENDIF
+  !
+  ! lsq_weights_c
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_weights_c(nproma, lsq_lin_set%dim_c, nblks_c),      &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_weights_c failed')
+  ENDIF
+  !
+  ! lsq_qtmat_c
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_qtmat_c(nproma, lsq_lin_set%dim_unk, lsq_lin_set%dim_c, &
+    &       nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_qtmat_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_rdiag_c
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_rmat_rdiag_c(nproma, lsq_lin_set%dim_unk, nblks_c), &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_rmat_rdiag_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_utri_c
+  !
+  idummy=(lsq_lin_set%dim_unk*lsq_lin_set%dim_unk - lsq_lin_set%dim_unk)/2
+  ALLOCATE (ptr_int%lsq_lin%lsq_rmat_utri_c(nproma, idummy, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_rmat_utri_c failed')
+  ENDIF
+  !
+  ! lsq_pseudoinv
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_pseudoinv(nproma, lsq_lin_set%dim_unk,              &
+    &       lsq_lin_set%dim_c, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_pseudoinv failed')
+  ENDIF
+  !
+  ! lsq_moments
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_moments(nproma, nblks_c, lsq_lin_set%dim_unk),      &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_moments failed')
+  ENDIF
+  !
+  ! lsq_moments_hat
+  !
+  ALLOCATE (ptr_int%lsq_lin%lsq_moments_hat(nproma, nblks_c, lsq_lin_set%dim_c,     &
+    &       lsq_lin_set%dim_unk), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_moments_hat failed')
+  ENDIF
 
-  ELSE
+  ! *** higher order ***
+  !
+  !
+  ! lsq_dim_stencil
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_dim_stencil(nproma, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_dim_stencil failed')
+  ENDIF
+  !
+  ! lsq_idx_c
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_idx_c(nproma, nblks_c, lsq_high_set%dim_c),        &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_idx_c failed')
+  ENDIF
+  !
+  ! lsq_blk_c
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_blk_c(nproma, nblks_c, lsq_high_set%dim_c),        &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_blk_c failed')
+  ENDIF
+  !
+  ! lsq_weights_c
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_weights_c(nproma, lsq_high_set%dim_c, nblks_c),    &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_weights_c failed')
+  ENDIF
+  !
+  ! lsq_qtmat_c
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_qtmat_c(nproma, lsq_high_set%dim_unk, lsq_high_set%dim_c, &
+    &       nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_qtmat_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_rdiag_c
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_rmat_rdiag_c(nproma, lsq_high_set%dim_unk, nblks_c), &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_rmat_rdiag_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_utri_c
+  !
+  idummy=(lsq_high_set%dim_unk*lsq_high_set%dim_unk - lsq_high_set%dim_unk)/2
+  ALLOCATE (ptr_int%lsq_high%lsq_rmat_utri_c(nproma, idummy, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',&
+      &          'allocation for lsq_rmat_utri_c failed')
+  ENDIF
+  !
+  ! lsq_pseudoinv
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_pseudoinv(nproma, lsq_high_set%dim_unk,            &
+    &       lsq_high_set%dim_c, nblks_c), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_pseudoinv failed')
+  ENDIF
+  !
+  ! lsq_moments
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_moments(nproma, nblks_c, lsq_high_set%dim_unk),    &
+    &       STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_moments failed')
+  ENDIF
+  !
+  ! lsq_moments_hat
+  !
+  ALLOCATE (ptr_int%lsq_high%lsq_moments_hat(nproma, nblks_c, lsq_high_set%dim_c,   &
+    &       lsq_high_set%dim_unk), STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                            &
+      &             'allocation for lsq_moments_hat failed')
+  ENDIF
 
-    !
-    ! Least squares reconstruction
-    !
-
-    ! *** lin ***
-    !
-    !
-    ! lsq_dim_stencil
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_dim_stencil(0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_dim_stencil failed')
-    ENDIF
-    !
-    ! lsq_idx_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_idx_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_blk_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_weights_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_qtmat_c(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_rmat_rdiag_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_rmat_utri_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_pseudoinv(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                       &
-        &             'allocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_moments(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                       &
-        &             'allocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    ALLOCATE (ptr_int%lsq_lin%lsq_moments_hat(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                       &
-        &             'allocation for lsq_moments_hat failed')
-    ENDIF
-
-    ! *** higher order ***
-    !
-    !
-    ! lsq_dim_stencil
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_dim_stencil(0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_dim_stencil failed')
-    ENDIF
-    !
-    ! lsq_idx_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_idx_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_blk_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_weights_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_qtmat_c(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_rmat_rdiag_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_rmat_utri_c(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',&
-        &          'allocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_pseudoinv(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                     &
-        &             'allocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_moments(0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                     &
-        &             'allocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    ALLOCATE (ptr_int%lsq_high%lsq_moments_hat(0, 0, 0, 0), STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                     &
-        &             'allocation for lsq_moments_hat failed')
-    ENDIF
-
-  END IF
 
   IF (ptr_patch%geometry_info%cell_type == 3) THEN
     ALLOCATE (ptr_int%geofac_grdiv(nproma, 5, nblks_e), STAT=ist )
@@ -864,90 +688,6 @@ SUBROUTINE allocate_int_state( ptr_patch, ptr_int)
   ENDIF
 
 
-  IF ( iequations == ihs_ocean) THEN
-    !
-    ! arrays that are required for #slo OLD# reconstruction
-    !
-    ALLOCATE(ptr_int%dist_cell2edge(nproma,nblks_e,2),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating dist_cell2edge failed')
-    ENDIF
-
-    !
-    ! arrays that are required for setting up the scalar product
-    !
-    !coefficients for edge to cell mapping, one half of the scalar product.
-    !Dimension: nproma,nblks_c encode number of cells, 1:3 corresponds to number
-    !of edges per cell, 1:2 is for u and v component of cell vector
-    !     ALLOCATE(ptr_int%edge2cell_coeff(nproma,nblks_c,1:3, 1:2),STAT=ist)
-    !     IF (ist /= SUCCESS) THEN
-    !       CALL finish ('allocating edge2cell_coeff failed')
-    !     ENDIF
-    ALLOCATE(ptr_int%edge2cell_coeff_cc(nproma,nblks_c,1:3),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating edge2cell_coeff_cc failed')
-    ENDIF
-
-    !coefficients for transposed of edge to cell mapping, second half of the scalar product.
-    !Dimension: nproma,nblks_e encode number of edges, 1:2 is for cell neighbors of an edge
-    ALLOCATE(ptr_int%edge2cell_coeff_cc_t(nproma,nblks_e,1:2),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating transposed edge2cell_coeff failed')
-    ENDIF
-
-    !
-    !coefficients for edge to vertex mapping.
-    !
-    !Dimension: nproma,nblks_v encode number of vertices,
-    !1:6 is number of edges of a vertex,
-    !1:2 is for u and v component of vertex vector
-    ALLOCATE(ptr_int%edge2vert_coeff_cc(nproma,nblks_v,1:6),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating edge2vert_coeff failed')
-    ENDIF
-
-    ALLOCATE(ptr_int%edge2vert_coeff_cc_t(nproma,nblks_e,1:2),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating edge2vert_coeff failed')
-    ENDIF
-    ALLOCATE(ptr_int%edge2vert_vector_cc(nproma,nblks_v,1:6),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating edge2vert_vector failed')
-    ENDIF
-
-    !
-    !normalizing factors for edge to cell mapping.
-    !
-    !Either by fixed volume or by variable one taking the surface elevation
-    !into account. The later one depends on time and space.
-    ALLOCATE(ptr_int%fixed_vol_norm(nproma,nblks_c),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating fixed_vol_norm failed')
-    ENDIF
-    ALLOCATE(ptr_int%variable_vol_norm(nproma,nblks_c,1:3),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating variable_vol_norm failed')
-    ENDIF
-
-    ALLOCATE(ptr_int%variable_dual_vol_norm(nproma,nblks_v,1:6),STAT=ist)
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('allocating variable_dual_vol_norm failed')
-    ENDIF
-    DO ie = 1,3
-      ptr_int%edge2cell_coeff_cc%x(ie)   = 0._wp
-      ptr_int%edge2cell_coeff_cc_t%x(ie) = 0._wp
-      ptr_int%edge2vert_coeff_cc%x(ie)   = 0._wp
-      ptr_int%edge2vert_coeff_cc_t%x(ie) = 0._wp
-      ptr_int%edge2vert_vector_cc%x(ie)  = 0._wp
-    END DO
-
-    ptr_int%fixed_vol_norm         = 0._wp
-    ptr_int%variable_vol_norm      = 0._wp
-    ptr_int%variable_dual_vol_norm = 0._wp
-
-    ptr_int%dist_cell2edge = 0._wp
-  ENDIF
-
   !
   ! initialize all components
   !
@@ -987,38 +727,34 @@ SUBROUTINE allocate_int_state( ptr_patch, ptr_int)
     ptr_int%rbf_vec_coeff_e   = 0._wp
   ENDIF
 
-  IF( ltransport .OR. iequations == 3) THEN
+  ptr_int%pos_on_tplane_e     = 0._wp
 
-    ptr_int%pos_on_tplane_e           = 0._wp
-    ptr_int%tplane_e_dotprod          = 0._wp
+  IF (ptr_patch%geometry_info%cell_type == 3) THEN
+    ptr_int%pos_on_tplane_c_edge(:,:,:,:)%lon = 0._wp
+    ptr_int%pos_on_tplane_c_edge(:,:,:,:)%lat = 0._wp
+  ENDIF
 
-    IF (ptr_patch%geometry_info%cell_type == 3) THEN
-      ptr_int%pos_on_tplane_c_edge(:,:,:,:)%lon = 0._wp
-      ptr_int%pos_on_tplane_c_edge(:,:,:,:)%lat = 0._wp
-    ENDIF
+  ptr_int%lsq_lin%lsq_dim_stencil   = 0
+  ptr_int%lsq_lin%lsq_idx_c         = 0
+  ptr_int%lsq_lin%lsq_blk_c         = 0
+  ptr_int%lsq_lin%lsq_weights_c     = 0._wp
+  ptr_int%lsq_lin%lsq_qtmat_c       = 0._wp
+  ptr_int%lsq_lin%lsq_rmat_rdiag_c  = 0._wp
+  ptr_int%lsq_lin%lsq_rmat_utri_c   = 0._wp
+  ptr_int%lsq_lin%lsq_pseudoinv     = 0._wp
+  ptr_int%lsq_lin%lsq_moments       = 0._wp
+  ptr_int%lsq_lin%lsq_moments_hat   = 0._wp
 
-    ptr_int%lsq_lin%lsq_dim_stencil   = 0
-    ptr_int%lsq_lin%lsq_idx_c         = 0
-    ptr_int%lsq_lin%lsq_blk_c         = 0
-    ptr_int%lsq_lin%lsq_weights_c     = 0._wp
-    ptr_int%lsq_lin%lsq_qtmat_c       = 0._wp
-    ptr_int%lsq_lin%lsq_rmat_rdiag_c  = 0._wp
-    ptr_int%lsq_lin%lsq_rmat_utri_c   = 0._wp
-    ptr_int%lsq_lin%lsq_pseudoinv     = 0._wp
-    ptr_int%lsq_lin%lsq_moments       = 0._wp
-    ptr_int%lsq_lin%lsq_moments_hat   = 0._wp
-
-    ptr_int%lsq_high%lsq_dim_stencil  = 0
-    ptr_int%lsq_high%lsq_idx_c        = 0
-    ptr_int%lsq_high%lsq_blk_c        = 0
-    ptr_int%lsq_high%lsq_weights_c    = 0._wp
-    ptr_int%lsq_high%lsq_qtmat_c      = 0._wp
-    ptr_int%lsq_high%lsq_rmat_rdiag_c = 0._wp
-    ptr_int%lsq_high%lsq_rmat_utri_c  = 0._wp
-    ptr_int%lsq_high%lsq_pseudoinv    = 0._wp
-    ptr_int%lsq_high%lsq_moments      = 0._wp
-    ptr_int%lsq_high%lsq_moments_hat  = 0._wp
-  END IF
+  ptr_int%lsq_high%lsq_dim_stencil  = 0
+  ptr_int%lsq_high%lsq_idx_c        = 0
+  ptr_int%lsq_high%lsq_blk_c        = 0
+  ptr_int%lsq_high%lsq_weights_c    = 0._wp
+  ptr_int%lsq_high%lsq_qtmat_c      = 0._wp
+  ptr_int%lsq_high%lsq_rmat_rdiag_c = 0._wp
+  ptr_int%lsq_high%lsq_rmat_utri_c  = 0._wp
+  ptr_int%lsq_high%lsq_pseudoinv    = 0._wp
+  ptr_int%lsq_high%lsq_moments      = 0._wp
+  ptr_int%lsq_high%lsq_moments_hat  = 0._wp
 
   IF (ptr_patch%geometry_info%cell_type ==3) THEN
     ptr_int%geofac_grdiv = 0._wp
@@ -1091,9 +827,9 @@ DO jg = n_dom_start, n_dom
   CALL init_geo_factors(ptr_patch(jg), ptr_int_state(jg))
   IF (ptr_patch(jg)%geometry_info%cell_type==3)THEN
 
-    ! !!! TEMPORAL HACK !!!
     ! CALL of init_cellavg_wgt is skipped for the wave model
-    IF (get_my_process_type() /= wave_process) THEN
+    !
+    IF (.NOT.my_process_is_waves()) THEN
       !
       ! not needed for the wave model.
       ! Running this routine for the wave model with the NAG compiler
@@ -1146,29 +882,27 @@ DO jg = n_dom_start, n_dom
   ENDIF
 
   !
-  ! - Initialization of tangential plane (at edge midpoints) for calculation
+  ! - Initialization of a tangential plane at edge midpoints for the calculation
   !   of backward trajectories.
-  ! - Initialization of tangential plane (at cell centers) - for triangular
-  !   grid only
+  ! - Initialization of a tangential plane at cell centers
   ! - stencil generation
-  ! - initialization of coefficients for least squares gradient
-  ! reconstruction at cell centers
+  ! - initialization of coefficients for least squares polynomial
+  !   reconstruction at cell centers
   !
-  IF ( (ltransport .OR. iequations == 3) .AND. (.NOT. lplane)) THEN
+  IF (.NOT. lplane) THEN
 
     CALL init_tplane_e(ptr_patch(jg), ptr_int_state(jg))
 
-    IF (ptr_patch(jg)%geometry_info%cell_type==3) THEN
-      !
-      CALL init_tplane_c(ptr_patch(jg), ptr_int_state(jg))
+    CALL init_tplane_c(ptr_patch(jg), ptr_int_state(jg))
 
-      CALL lsq_stencil_create( ptr_patch(jg), ptr_int_state(jg)%lsq_lin,      &
-        &                      lsq_lin_set%dim_c )
-      CALL lsq_compute_coeff_cell( ptr_patch(jg), ptr_int_state(jg)%lsq_lin,  &
-        &                      lsq_lin_set%l_consv, lsq_lin_set%dim_c,        &
-        &                      lsq_lin_set%dim_unk, lsq_lin_set%wgt_exp )
-    ENDIF
+    ! 3-point stencil
+    CALL lsq_stencil_create( ptr_patch(jg), ptr_int_state(jg)%lsq_lin,      &
+      &                      lsq_lin_set%dim_c )
+    CALL lsq_compute_coeff_cell( ptr_patch(jg), ptr_int_state(jg)%lsq_lin,  &
+      &                      lsq_lin_set%l_consv, lsq_lin_set%dim_c,        &
+      &                      lsq_lin_set%dim_unk, lsq_lin_set%wgt_exp )
 
+    ! 9 or 12-point stencil for higher order reconstruction
     CALL lsq_stencil_create( ptr_patch(jg), ptr_int_state(jg)%lsq_high,     &
       &                   lsq_high_set%dim_c )
     CALL lsq_compute_coeff_cell( ptr_patch(jg), ptr_int_state(jg)%lsq_high, &
@@ -1176,19 +910,11 @@ DO jg = n_dom_start, n_dom
       &                       lsq_high_set%dim_unk, lsq_high_set%wgt_exp )
   ENDIF
 
-!  IF ( iequations == ihs_ocean) THEN
-!    IF (idisc_scheme==1) THEN
-!      CALL par_init_scalar_product_oce(ptr_patch(jg), ptr_int_state(jg))
-!    ENDIF
-!    CALL init_geo_factors_oce(ptr_patch(jg), ptr_int_state(jg))
-!  ENDIF
 
   ! SCM initialization of RBF coefficients
-
+  !
   IF ( l_scm_mode .and. (.not.ldynamics) ) THEN
-
     CALL rbf_coeff_scm( ptr_patch(jg), ptr_int_state(jg) )
-
   ENDIF
 
 ENDDO
@@ -1217,11 +943,11 @@ SUBROUTINE xfer_var_r2(typ, pos_nproma, pos_nblks, p_p, p_lp, arri, arro)
   ! local variables
 
   IF(typ == SYNC_C) THEN
-    CALL exchange_data(comm_pat_glb_to_loc_c, RECV=arro, SEND=arri)
+    CALL exchange_data(p_pat=comm_pat_glb_to_loc_c, lacc=.false., RECV=arro, SEND=arri)
   ELSEIF(typ == SYNC_E) THEN
-    CALL exchange_data(comm_pat_glb_to_loc_e, RECV=arro, SEND=arri)
+    CALL exchange_data(p_pat=comm_pat_glb_to_loc_e, lacc=.false., RECV=arro, SEND=arri)
   ELSEIF(typ == SYNC_V) THEN
-    CALL exchange_data(comm_pat_glb_to_loc_v, RECV=arro, SEND=arri)
+    CALL exchange_data(p_pat=comm_pat_glb_to_loc_v, lacc=.false., RECV=arro, SEND=arri)
   ELSE
     CALL finish ('mo_interpolation:xfer_var','Illegal type for sync')
   ENDIF
@@ -1849,204 +1575,194 @@ INTEGER :: ist
   END IF
 
 
-  IF( ltransport .OR. iequations == 3) THEN
-    !
-    ! pos_on_tplane_e
-    !
-    DEALLOCATE (ptr_int%pos_on_tplane_e, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                      &
-        &             'deallocation for pos_on_tplane_e failed')
-    ENDIF
-    !
-    ! tplane_e_dotprod
-    !
-    DEALLOCATE (ptr_int%tplane_e_dotprod, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                      &
-        &             'deallocation for tplane_e_dotprod failed')
-    ENDIF
+  !
+  ! pos_on_tplane_e
+  !
+  DEALLOCATE (ptr_int%pos_on_tplane_e, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                      &
+      &             'deallocation for pos_on_tplane_e failed')
+  ENDIF
 
-    !
-    ! pos_on_tplane_c_edge
-    !
-    DEALLOCATE (ptr_int%pos_on_tplane_c_edge, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                      &
-        &             'deallocation for pos_on_tplane_c_edge failed')
-    ENDIF
+  !
+  ! pos_on_tplane_c_edge
+  !
+  DEALLOCATE (ptr_int%pos_on_tplane_c_edge, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                      &
+      &             'deallocation for pos_on_tplane_c_edge failed')
+  ENDIF
 
-    !
-    ! Least squares reconstruction
-    !
+  !
+  ! Least squares reconstruction
+  !
 
-    !
-    ! *** linear ***
-    !
-    ! lsq_dim_stencil
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_dim_stencil, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_dim_stencil failed')
-    ENDIF
-    !
-    ! lsq_idx_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_idx_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_blk_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_weights_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_qtmat_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_rmat_rdiag_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_rmat_utri_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_pseudoinv, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_moments, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    DEALLOCATE (ptr_int%lsq_lin%lsq_moments_hat, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_moments_hat failed')
-    ENDIF
+  !
+  ! *** linear ***
+  !
+  ! lsq_dim_stencil
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_dim_stencil, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_dim_stencil failed')
+  ENDIF
+  !
+  ! lsq_idx_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_idx_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_idx_c failed')
+  ENDIF
+  !
+  ! lsq_blk_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_blk_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_blk_c failed')
+  ENDIF
+  !
+  ! lsq_weights_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_weights_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_weights_c failed')
+  ENDIF
+  !
+  ! lsq_qtmat_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_qtmat_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_qtmat_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_rdiag_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_rmat_rdiag_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_rmat_rdiag_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_utri_c
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_rmat_utri_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_rmat_utri_c failed')
+  ENDIF
+  !
+  ! lsq_pseudoinv
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_pseudoinv, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_pseudoinv failed')
+  ENDIF
+  !
+  ! lsq_moments
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_moments, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_moments failed')
+  ENDIF
+  !
+  ! lsq_moments_hat
+  !
+  DEALLOCATE (ptr_int%lsq_lin%lsq_moments_hat, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_moments_hat failed')
+  ENDIF
 
-    !
-    ! *** higher order ***
-    !
-    !
-    ! lsq_dim_stencil
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_dim_stencil, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_dim_stencil failed')
-    ENDIF
-    !
-    ! lsq_idx_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_idx_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_idx_c failed')
-    ENDIF
-    !
-    ! lsq_blk_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_blk_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:construct_int_state',                   &
-        &          'deallocation for lsq_blk_c failed')
-    ENDIF
-    !
-    ! lsq_weights_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_weights_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_weights_c failed')
-    ENDIF
-    !
-    ! lsq_qtmat_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_qtmat_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_qtmat_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_rdiag_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_rmat_rdiag_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_rmat_rdiag_c failed')
-    ENDIF
-    !
-    ! lsq_rmat_utri_c
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_rmat_utri_c, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_rmat_utri_c failed')
-    ENDIF
-    !
-    ! lsq_pseudoinv
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_pseudoinv, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_pseudoinv failed')
-    ENDIF
-    !
-    ! lsq_moments
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_moments, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_moments failed')
-    ENDIF
-    !
-    ! lsq_moments_hat
-    !
-    DEALLOCATE (ptr_int%lsq_high%lsq_moments_hat, STAT=ist )
-    IF (ist /= SUCCESS) THEN
-      CALL finish ('mo_interpolation:destruct_int_state',                    &
-        &          'deallocation for lsq_moments_hat failed')
-    ENDIF
-  END IF
+  !
+  ! *** higher order ***
+  !
+  !
+  ! lsq_dim_stencil
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_dim_stencil, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_dim_stencil failed')
+  ENDIF
+  !
+  ! lsq_idx_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_idx_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_idx_c failed')
+  ENDIF
+  !
+  ! lsq_blk_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_blk_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:construct_int_state',                   &
+      &          'deallocation for lsq_blk_c failed')
+  ENDIF
+  !
+  ! lsq_weights_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_weights_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_weights_c failed')
+  ENDIF
+  !
+  ! lsq_qtmat_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_qtmat_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_qtmat_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_rdiag_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_rmat_rdiag_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_rmat_rdiag_c failed')
+  ENDIF
+  !
+  ! lsq_rmat_utri_c
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_rmat_utri_c, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_rmat_utri_c failed')
+  ENDIF
+  !
+  ! lsq_pseudoinv
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_pseudoinv, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_pseudoinv failed')
+  ENDIF
+  !
+  ! lsq_moments
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_moments, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_moments failed')
+  ENDIF
+  !
+  ! lsq_moments_hat
+  !
+  DEALLOCATE (ptr_int%lsq_high%lsq_moments_hat, STAT=ist )
+  IF (ist /= SUCCESS) THEN
+    CALL finish ('mo_interpolation:destruct_int_state',                    &
+      &          'deallocation for lsq_moments_hat failed')
+  ENDIF
 
   DEALLOCATE (ptr_int%geofac_grdiv, STAT=ist )
   IF (ist /= SUCCESS) THEN

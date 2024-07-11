@@ -134,7 +134,7 @@ modelRun(MPI_Comm commModel)
   for (i = 0; i < nStreams; i++)
     {
       memset(filename, 0, 1024);
-      sprintf(&filename[0], "%s%c_%d.grb", nameExp, asciiA + i, tfID);
+      snprintf(&filename[0], sizeof(filename), "%s%c_%d.grb", nameExp, asciiA + i, tfID);
       streamID[i] = streamOpenWrite(filename, filetype);
       xassert(streamID[i] >= 0);
       streamDefVlist(streamID[i], vlistID[i]);
@@ -151,7 +151,7 @@ modelRun(MPI_Comm commModel)
           for (i = 0; i < nStreams; i++)
             {
               streamClose(streamID[i]);
-              sprintf(&filename[0], "%s%c_%d.grb", nameExp, asciiA + i, tfID);
+              snprintf(&filename[0], sizeof(filename), "%s%c_%d.grb", nameExp, asciiA + i, tfID);
               streamID[i] = streamOpenWrite(filename, filetype);
               xassert(streamID[i] >= 0);
               streamDefVlist(streamID[i], vlistID[i]);

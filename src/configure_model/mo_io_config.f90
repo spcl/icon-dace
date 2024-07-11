@@ -36,6 +36,7 @@ MODULE mo_io_config
   LOGICAL :: lkeep_in_sync              ! if .true., sync stream after each timestep
   REAL(wp):: dt_diag                    ! diagnostic output timestep [seconds]
   REAL(wp):: gust_interval(max_dom)     ! time interval [seconds] over which maximum wind gusts are taken
+  REAL(wp):: ff10m_interval(max_dom)    ! time interval [seconds] over which ff10m is averaged
   REAL(wp):: celltracks_interval(max_dom)  ! time interval [seconds] over which extrema of cell track vars are taken
                                            !  (LPI_MAX, UH_MAX, VORW_CTMAX, W_CTMAX, DBZ_CTMAX)
   CHARACTER(len=max_timedelta_str_len) :: precip_interval(max_dom)   ! time interval over which precipitation variables are accumulated
@@ -155,7 +156,9 @@ MODULE mo_io_config
     LOGICAL :: wshear_u     = .FALSE. !< Flag. TRUE if computation of vertical U wind shear components is desired
     LOGICAL :: wshear_v     = .FALSE. !< Flag. TRUE if computation of vertical V wind shear components is desired
     LOGICAL :: lapserate    = .FALSE. !< Flag. TRUE if computation of T(500hPa) - T(850hPa) is desired
+    LOGICAL :: mconv        = .FALSE. !< Flag. TRUE if computation of low level moisture convergence is desired
     LOGICAL :: srh          = .FALSE. !< Flag. TRUE if computation of storm relative helicity (SRH) is desired
+    LOGICAL :: tot_pr_max   = .FALSE. !< Flag. TRUE if computation of time max precipitation rate is desired
     LOGICAL :: cloudtop     = .FALSE. !< Flag. TRUE if computation of CLOUDTOP is desired
     LOGICAL :: si           = .FALSE. !< Flag. TRUE if computation of SI is desired
     LOGICAL :: sli          = .FALSE. !< Flag. TRUE if computation of SLI is desired
@@ -164,6 +167,7 @@ MODULE mo_io_config
     LOGICAL :: cape_mu      = .FALSE. !< Flag. TRUE if computation of most unstable CAPE is desired
     LOGICAL :: cin_mu       = .FALSE. !< Flag. TRUE if computation of most unstable convective inhibition MU is desired
     LOGICAL :: hpbl         = .FALSE. !< Flag. TRUE if computation of boundary layer height is desired
+    LOGICAL :: aod_550nm    = .FALSE. !< Flag. TRUE if computation of aerosol optical depth at 550 nm is desired
     LOGICAL :: cape_3km     = .FALSE. !< Flag. TRUE if computation of CAPE 3KM is desired
     LOGICAL :: lfc_ml       = .FALSE. !< Flag. TRUE if computation of the Level of Free Convection is desired
     LOGICAL :: lcl_ml       = .FALSE. !< Flag. TRUE if computation of the Lifted Condensation Level is desired
@@ -328,7 +332,9 @@ CONTAINS
         var_in_output(jg)%wshear_u    = is_variable_in_output_dom(var_name="wshear_u", jg=jg)
         var_in_output(jg)%wshear_v    = is_variable_in_output_dom(var_name="wshear_v", jg=jg)
         var_in_output(jg)%lapserate   = is_variable_in_output_dom(var_name="lapse_rate", jg=jg)
+        var_in_output(jg)%mconv       = is_variable_in_output_dom(var_name="mconv", jg=jg)
         var_in_output(jg)%srh         = is_variable_in_output_dom(var_name="srh", jg=jg)
+        var_in_output(jg)%tot_pr_max  = is_variable_in_output_dom(var_name="tot_pr_max", jg=jg)
         var_in_output(jg)%cape_mu     = is_variable_in_output_dom(var_name="cape_mu", jg=jg)
         var_in_output(jg)%cin_mu      = is_variable_in_output_dom(var_name="cin_mu", jg=jg)
         var_in_output(jg)%cape_3km    = is_variable_in_output_dom(var_name="cape_3km", jg=jg)
@@ -340,8 +346,9 @@ CONTAINS
         var_in_output(jg)%swiss00     = is_variable_in_output_dom(var_name="swiss00", jg=jg)
         var_in_output(jg)%cloudtop    = is_variable_in_output_dom(var_name="cloudtop", jg=jg)
         var_in_output(jg)%hpbl        = is_variable_in_output_dom(var_name="hpbl", jg=jg)
+        var_in_output(jg)%aod_550nm   = is_variable_in_output_dom(var_name="aod_550nm", jg=jg)
 
-        ! add vars for global mean claclulations
+        ! add vars for global mean calculations
         var_in_output(jg)%tas_gmean   = is_variable_in_output_dom(var_name="tas_gmean", jg=jg)
         var_in_output(jg)%rsdt_gmean  = is_variable_in_output_dom(var_name="rsdt_gmean", jg=jg)
         var_in_output(jg)%rsut_gmean  = is_variable_in_output_dom(var_name="rsut_gmean", jg=jg)

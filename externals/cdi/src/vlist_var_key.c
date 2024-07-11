@@ -40,7 +40,7 @@ vlistDefVarIntKey(int vlistID, int varID, const char *name, int value)
       vlistptr->vars[varID].opt_grib_kvpair[idx].int_val = value;
       vlistptr->vars[varID].opt_grib_kvpair[idx].update = true;
       if (name)
-        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdupx(name);
+        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdup(name);
       else
         Error("Internal error, name undefined!");
     }
@@ -103,7 +103,7 @@ vlistDefVarDblKey(int vlistID, int varID, const char *name, double value)
       vlistptr->vars[varID].opt_grib_kvpair[idx].dbl_val = value;
       vlistptr->vars[varID].opt_grib_kvpair[idx].update = true;
       if (name)
-        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdupx(name);
+        vlistptr->vars[varID].opt_grib_kvpair[idx].keyword = strdup(name);
       else
         Error("Internal error, name undefined!");
     }
@@ -151,7 +151,7 @@ cdiDefAdditionalKey(const char *name)
   cdiNAdditionalGRIBKeys++;
   if (idx >= MAX_OPT_GRIB_ENTRIES) Error("Too many additional keywords!");
   if (name)
-    cdiAdditionalGRIBKeys[idx] = strdupx(name);
+    cdiAdditionalGRIBKeys[idx] = strdup(name);
   else
     Error("Internal error!");
 #else

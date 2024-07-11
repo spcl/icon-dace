@@ -52,6 +52,7 @@ MODULE mo_var_metadata_types
   INTEGER, PARAMETER, PUBLIC   :: POST_OP_LUC       =  3  !< convert landuse classes from internal values 
                                                           !< to GRIB2 values (table 4.243) and vice versa. 
   INTEGER, PARAMETER, PUBLIC   :: POST_OP_LIN2DBZ   =  4  !< convert linear values to dbz: dbzval = 10*log10(val)
+  INTEGER, PARAMETER, PUBLIC   :: POST_OP_OFFSET    =  5  !< add offset value arg1
 
   ! list of available variable classes
   INTEGER, PARAMETER, PUBLIC :: CLASS_DEFAULT       = 0

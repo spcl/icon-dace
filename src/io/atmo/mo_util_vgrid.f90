@@ -147,7 +147,7 @@ CONTAINS
       !
 
       ! Perform topography smoothing and feedback
-      IF (n_dom > 1) CALL topo_blending_and_fbk(1)
+      IF (n_dom > 1) CALL topo_blending_and_fbk(jg=1, ext_data=ext_data(:))
 
       DO jg = 1,n_dom
         nlevp1   = p_patch(jg)%nlev + 1

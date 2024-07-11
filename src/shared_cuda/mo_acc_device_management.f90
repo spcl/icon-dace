@@ -51,6 +51,16 @@ USE mpi
 USE mo_kind,      ONLY: wp
 USE mo_mpi,       ONLY: p_comm_work, p_comm_rank, num_work_procs, p_max
 USE mo_exception, ONLY: message, message_text
+
+#ifdef ICON_USE_CUDA_GRAPH
+#if (__NVCOMPILER_MAJOR__ == 23 && __NVCOMPILER_MINOR__ <= 9) || (__NVCOMPILER_MAJOR__ == 99 && __NVCOMPILER_PATCHLEVEL__ <= 239500)
+#define USE_OLD_GRAPH_INTERFACE
+USE openacc, ONLY: accGraph => accgraph,    accx_begin_capture,       accx_end_capture,       accx_graph_exec,   accx_graph_delete
+#else
+USE openacc, ONLY: accGraph => acc_graph_t, accx_async_begin_capture, accx_async_end_capture, accx_graph_launch, accx_graph_delete
+#endif
+#endif
+
 !------------------------------------------------------------------------------
 
 IMPLICIT NONE
@@ -67,6 +77,9 @@ PRIVATE
 ! Global (i.e. public) Declarations:
 
 PUBLIC :: initAccDevice, checkAccDevice, finalizeAccDevice, printGPUMem
+#ifdef ICON_USE_CUDA_GRAPH
+PUBLIC :: accGraph, accBeginCapture, accEndCapture, accGraphLaunch, accGraphDelete
+#endif
 
 
 !==============================================================================
@@ -786,7 +799,70 @@ SUBROUTINE printGPUMem(mtag)
 END SUBROUTINE printGPUMem
 
 !==============================================================================
+  
+!==============================================================================
+!+ Module procedures for the graphs. Needed due to interface change in
+!+ NVHPC 23.11
+!------------------------------------------------------------------------------
+#ifdef ICON_USE_CUDA_GRAPH
 
+SUBROUTINE accBeginCapture(queue)
+  IMPLICIT NONE
+
+  INTEGER, INTENT(IN) :: queue
+
+#ifndef USE_OLD_GRAPH_INTERFACE
+  CALL accx_async_begin_capture(queue)
+#else
+  CALL accx_begin_capture(queue)
+#endif
+
+END SUBROUTINE accBeginCapture
+
+
+SUBROUTINE accEndCapture(queue, graph)
+  IMPLICIT NONE
+
+  INTEGER,        INTENT(IN)  :: queue
+  TYPE(accGraph), INTENT(OUT) :: graph
+
+#ifndef USE_OLD_GRAPH_INTERFACE
+  CALL accx_async_end_capture(queue, graph)
+#else
+  CALL accx_end_capture(graph, queue)
+#endif
+
+END SUBROUTINE accEndCapture
+
+
+SUBROUTINE accGraphLaunch(graph, queue)
+  IMPLICIT NONE
+
+  TYPE(accGraph), INTENT(IN) :: graph
+  INTEGER,        INTENT(IN) :: queue
+
+#ifndef USE_OLD_GRAPH_INTERFACE
+  CALL accx_graph_launch(graph, queue)
+#else
+  CALL accx_graph_exec(graph, queue)
+#endif
+
+END SUBROUTINE accGraphLaunch
+
+
+SUBROUTINE accGraphDelete(graph)
+  IMPLICIT NONE
+
+  TYPE(accGraph), INTENT(IN) :: graph
+
+  CALL accx_graph_delete(graph)
+
+END SUBROUTINE accGraphDelete
+
+! ICON_USE_CUDA_GRAPH
+#endif
+
+! _OPENACC
 #endif
 
 END MODULE mo_acc_device_management

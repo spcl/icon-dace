@@ -1,4 +1,4 @@
-!> Contains the interfaces to the phenlogy processes
+!> Contains the interfaces to the phenology processes
 !>
 !> ICON-Land
 !>
@@ -22,43 +22,28 @@
 MODULE mo_pheno_interface
 #ifndef __NO_JSBACH__
 
-  ! -------------------------------------------------------------------------------------------------------
-  ! Used variables of module
-
-  ! Use of basic structures
-  USE mo_jsb_control,     ONLY: debug_on
-  USE mo_kind,            ONLY: wp
-  USE mo_exception,       ONLY: message, finish
-
+  USE mo_jsb_control,        ONLY: debug_on
+  USE mo_kind,               ONLY: wp
+  USE mo_exception,          ONLY: message, finish
   USE mo_jsb_model_class,    ONLY: t_jsb_model
   USE mo_jsb_class,          ONLY: Get_model
   USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract, t_jsb_aggregator
   USE mo_jsb_process_class,  ONLY: t_jsb_process
   USE mo_jsb_task_class,     ONLY: t_jsb_process_task, t_jsb_task_options
 
-  ! Use of processes in this module (USE mo_jsb_process_class, ONLY: )
   dsl4jsb_Use_processes SEB_, A2L_, HYDRO_, ASSIMI_, PHENO_, CARBON_, VEG_
 
-  ! Use of process configurations (t_<process>_config)
   dsl4jsb_Use_config(PHENO_)
-
-  ! Use of process memories (t_<process>_memory)
+  dsl4jsb_Use_memory(PHENO_)
   dsl4jsb_Use_memory(A2L_)
   dsl4jsb_Use_memory(SEB_)
   dsl4jsb_Use_memory(HYDRO_)
-  dsl4jsb_Use_memory(PHENO_)
   dsl4jsb_Use_memory(ASSIMI_)
   dsl4jsb_Use_memory(CARBON_)
-  dsl4jsb_Use_memory(VEG_)
-
-  ! -------------------------------------------------------------------------------------------------------
-  ! Module variables
 
   IMPLICIT NONE
   PRIVATE
-  PUBLIC :: Register_pheno_tasks, global_phenology_diagnostics
-
-  CHARACTER(len=*), PARAMETER :: modname = 'mo_pheno_interface'
+  PUBLIC :: Register_pheno_tasks, global_phenology_diagnostics, merge_pheno_variables_upon_ageing
 
   !> Type definition for update_phenology task
   TYPE, EXTENDS(t_jsb_process_task) ::   tsk_phenology
@@ -68,11 +53,13 @@ MODULE mo_pheno_interface
   END TYPE   tsk_phenology
 
   !> Constructor interface for update_phenology task
+  !>
   INTERFACE   tsk_phenology
     PROCEDURE Create_task_phenology         !< Constructor function for task
   END INTERFACE   tsk_phenology
 
   !> Type definition for foliage_projected_cover task
+  !>
   TYPE, EXTENDS(t_jsb_process_task) :: tsk_foliage_projected_cover
   CONTAINS
     PROCEDURE, NOPASS :: Integrate => update_fpc
@@ -80,44 +67,18 @@ MODULE mo_pheno_interface
   END TYPE tsk_foliage_projected_cover
 
   !> Constructor interface for foliage_projected_cover task
+  !>
   INTERFACE tsk_foliage_projected_cover
     PROCEDURE Create_task_foliage_projected_cover
   END INTERFACE tsk_foliage_projected_cover
 
-  !> Type definition for update_phenology_q_ QUINCY task
-  TYPE, EXTENDS(t_jsb_process_task) ::   tsk_phenology_q_
-  CONTAINS
-    PROCEDURE, NOPASS :: Integrate => update_phenology_q_    !< Advances task computation for one timestep
-    PROCEDURE, NOPASS :: Aggregate => aggregate_phenology_q_ !< Aggregates computed task variables
-  END TYPE   tsk_phenology_q_
-
-  !> Constructor interface for update_phenology task
-  INTERFACE   tsk_phenology_q_
-    PROCEDURE Create_task_phenology_q_         !< Constructor function for task
-  END INTERFACE   tsk_phenology_q_
-
-  !> Type definition for time_average_phenology task
-  TYPE, EXTENDS(t_jsb_process_task) ::   tsk_time_average_phenology
-  CONTAINS
-    PROCEDURE, NOPASS :: Integrate => update_time_average_phenology    !< Advances task computation for one timestep
-    PROCEDURE, NOPASS :: Aggregate => aggregate_time_average_phenology !< Aggregates computed task variables
-  END TYPE   tsk_time_average_phenology
-
-  !> Constructor interface for time_average_phenology task
-  INTERFACE   tsk_time_average_phenology
-    PROCEDURE Create_task_time_average_phenology         !< Constructor function for task
-  END INTERFACE   tsk_time_average_phenology
-
+  CHARACTER(len=*), PARAMETER :: modname = 'mo_pheno_interface'
 
 CONTAINS
-  ! ================================================================================================================================
-  !! Constructors for tasks
 
-  !> Constructor for update_phenology task
-  !!
-  !! @param[in]     model_id     Model id
-  !! @return        return_ptr   Instance of process task "update_phenology"
-  !!
+  ! ======================================================================================================= !
+  !> Constructor for phenology task
+  !>
   FUNCTION Create_task_phenology(model_id) RESULT(return_ptr)
 
     INTEGER,                   INTENT(in) :: model_id
@@ -128,12 +89,9 @@ CONTAINS
 
   END FUNCTION Create_task_phenology
 
-  ! -------------------------------------------------------------------------------------------------------
+  ! ======================================================================================================= !
   !> Constructor for foliage_projected_cover task
-  !!
-  !! @param[in]     model_id     Model id
-  !! @return        return_ptr   Instance of process task "foliage_projected_cover"
-  !!
+  !>
   FUNCTION Create_task_foliage_projected_cover(model_id) RESULT(return_ptr)
 
     INTEGER,                   INTENT(in) :: model_id
@@ -144,71 +102,34 @@ CONTAINS
 
   END FUNCTION Create_task_foliage_projected_cover
 
-  !-----------------------------------------------------------------------------------------------------
-  !> Constructor: the QUINCY update_phenology_q_ task
-  !! 
-  !-----------------------------------------------------------------------------------------------------
-  FUNCTION Create_task_phenology_q_(model_id) RESULT(return_ptr)
-
-    INTEGER,                   INTENT(in) :: model_id
-    CLASS(t_jsb_process_task), POINTER    :: return_ptr
-
-    ALLOCATE(tsk_phenology_q_::return_ptr)
-    CALL return_ptr%Construct(name='phenology_q_', process_id=PHENO_, owner_model_id=model_id)
-
-  END FUNCTION Create_task_phenology_q_
-
-  !-----------------------------------------------------------------------------------------------------
-  !> Constructor: time_average_phenology task
-  !! 
-  !-----------------------------------------------------------------------------------------------------
-  FUNCTION Create_task_time_average_phenology(model_id) RESULT(return_ptr)
-
-    INTEGER,                   INTENT(in) :: model_id
-    CLASS(t_jsb_process_task), POINTER    :: return_ptr
-
-
-    ALLOCATE(tsk_time_average_phenology::return_ptr)
-    CALL return_ptr%Construct(name='time_average_phenology', process_id=PHENO_, owner_model_id=model_id)
-
-  END FUNCTION Create_task_time_average_phenology
-
-
-  ! =======================================================================================================
+  ! ======================================================================================================= !
   !> Register tasks for pheno process
-  !!
-  !! @param[in,out] this      Instance of pheno process class
-  !! @param[in]     model_id  Model id
-  !!
+  !>
   SUBROUTINE Register_pheno_tasks(this, model_id)
-
-    USE mo_jsb_model_class,   ONLY: t_jsb_model
-    USE mo_jsb_class,         ONLY: Get_model
-
     CLASS(t_jsb_process), INTENT(inout) :: this
     INTEGER,              INTENT(in) :: model_id
 
-    ! local
-    TYPE(t_jsb_model), POINTER :: model
-
-    ! get var / objects 
-    model   => Get_model(model_id)
-
-
-    ! different PHENO_ tasks depending on the "use_quincy" flag
-    IF (.NOT. model%config%use_quincy) THEN
-      CALL this%Register_task(tsk_phenology(model_id))
-      CALL this%Register_task(tsk_foliage_projected_cover(model_id))
-    ELSEIF (model%config%use_quincy) THEN    ! quincy
-      CALL this%Register_task(tsk_phenology_q_(model_id))
-      CALL this%Register_task(tsk_time_average_phenology(model_id))
-      ! jsbach4 Task needed
-      CALL this%Register_task(tsk_foliage_projected_cover(model_id))  ! calc fract_fpc
-    ENDIF
-
+    CALL this%Register_task(tsk_phenology(model_id))
+    CALL this%Register_task(tsk_foliage_projected_cover(model_id))
   END SUBROUTINE Register_pheno_tasks
 
-  ! ================================================================================================================================
+  ! ======================================================================================================= !
+  !>Implementation of "update" of the "phenology" task
+  !>
+  !>  calls a model specific routine
+  !>
+  SUBROUTINE update_phenology(tile, options)
+    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
+    TYPE(t_jsb_task_options),   INTENT(in)    :: options
+    ! ----------------------------------------------------------------------------------------------------- !
+    CHARACTER(len=*), PARAMETER :: routine = modname//':update_phenology'
+    ! ----------------------------------------------------------------------------------------------------- !
+    IF (.NOT. tile%Is_process_calculated(PHENO_)) RETURN
+
+    CALL update_phenology_jsbach(tile, options)
+  END SUBROUTINE update_phenology
+
+  ! ======================================================================================================= !
   !>
   !> Implementation to update the phenology state
   !! Task "phenology" calculates the phenology state of plants.
@@ -216,7 +137,10 @@ CONTAINS
   !! @param[in,out] tile    Tile for which routine is executed.
   !! @param[in]     options Additional run-time parameters.
   !
-  SUBROUTINE update_phenology(tile, options)
+  SUBROUTINE update_phenology_jsbach(tile, options)
+
+    USE mo_jsb_model_class,         ONLY: t_jsb_model
+    USE mo_jsb_class,               ONLY: Get_model
 
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
     TYPE(t_jsb_task_options),   INTENT(in)    :: options
@@ -224,9 +148,8 @@ CONTAINS
     TYPE(t_jsb_model), POINTER             :: model
     dsl4jsb_Def_config(PHENO_)
 
-    CHARACTER(len=*), PARAMETER :: routine = modname//':update_phenology'
+    CHARACTER(len=*), PARAMETER :: routine = modname//':update_phenology_jsbach'
 
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
     model => Get_model(tile%owner_model_id)
     dsl4jsb_Get_config(PHENO_)
 
@@ -243,44 +166,9 @@ CONTAINS
         CALL finish('Invalid scheme for phenology')
       END SELECT
     END IF
+  END SUBROUTINE update_phenology_jsbach
 
-  END SUBROUTINE update_phenology
-
-
-  !-----------------------------------------------------------------------------------------------------
-  !> QUINCY phenology 
-  !! 
-  !! determine onset and end of the growing season
-  !! 
-  !! covers temporarily also:     n\
-  !!  update leaf C:N:P pools     n\
-  !!  calc lai                    n\
-  !!  calc_canopy_layers()
-  !!
-  !-----------------------------------------------------------------------------------------------------
-  SUBROUTINE update_phenology_q_(tile, options)
-
-    USE mo_pheno_update_phenology,      ONLY: update_phenology_quincy
-
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
-    TYPE(t_jsb_task_options),   INTENT(in)    :: options
-
-    TYPE(t_jsb_model), POINTER             :: model
-
-    CHARACTER(len=*), PARAMETER :: routine = modname//':update_phenology_q_'
-
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
-    model => Get_model(tile%owner_model_id)
-
-    ! only if the present tile is a pft
-    IF (tile%lcts(1)%lib_id /= 0)  THEN
-      CALL update_phenology_quincy(tile, options)
-    END IF
-
-  END SUBROUTINE update_phenology_q_
-
-
-  ! ================================================================================================================================
+  ! ======================================================================================================= !
   !>
   !> Implementation of 'LOGROP' phenology scheme
   !!
@@ -291,17 +179,18 @@ CONTAINS
   SUBROUTINE update_phenology_logrop(tile, options)
 
     ! Declarations
-    USE mo_carbon_interface,     ONLY: rescale_carbon_upon_reference_area_change, &
-      &                                calculate_current_c_ta_state_sum, check_carbon_conservation
-    USE mo_pheno_process,        ONLY: calc_summergreen_phenology, calc_evergreen_phenology, &
-      &                                calc_crop_phenology, calc_raingreen_phenology, calc_grass_phenology,         &
-      &                                track_max_green_pool, derive_maxlai_according_to_allometric_relationships
-    USE mo_jsb_time_iface,       ONLY: get_year_day
-    USE mo_jsb_time,             ONLY: is_newyear, is_newday, timestep_in_days
-    USE mo_pheno_constants,      ONLY: PhenoParam
-    USE mo_jsb_grid_class,       ONLY: t_jsb_grid
-    USE mo_jsb_grid,             ONLY: Get_grid
-    USE mo_physical_constants,   ONLY: tmelt
+    USE mo_carbon_interface,       ONLY: rescale_carbon_upon_reference_area_change, &
+      &                                  calculate_current_c_ta_state_sum, check_carbon_conservation, &
+      &                                  recalc_carbon_per_tile_vars
+    USE mo_pheno_process,          ONLY: calc_summergreen_phenology, calc_evergreen_phenology, &
+      &                                  calc_crop_phenology, calc_raingreen_phenology, calc_grass_phenology,         &
+      &                                  track_max_green_pool, derive_maxlai_according_to_allometric_relationships
+    USE mo_jsb_time_iface,         ONLY: get_year_day
+    USE mo_jsb_time,               ONLY: is_newyear, is_newday, timestep_in_days
+    USE mo_pheno_parameters,       ONLY: pheno_param_jsbach
+    USE mo_jsb_grid_class,         ONLY: t_jsb_grid
+    USE mo_jsb_grid,               ONLY: Get_grid
+    USE mo_jsb_physical_constants, ONLY: tmelt
 
     ! Arguments
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
@@ -314,7 +203,6 @@ CONTAINS
     INTEGER :: day_of_year
 
     REAL(wp), DIMENSION(options%nc) :: &
-      & w_soil_filling,                &
       & t_air_in_Celcius,              &
       & LaiMax_corrected,              &
       & veg_fract_correction_old,      &
@@ -340,7 +228,7 @@ CONTAINS
 
     dsl4jsb_Real2D_onChunk :: t_air
     dsl4jsb_Real2D_onChunk :: NPP_pot_rate_ca
-    dsl4jsb_Real2D_onChunk :: w_soil_rel
+    dsl4jsb_Real2D_onChunk :: wtr_rootzone_rel
     dsl4jsb_Real2D_onChunk :: lat
     dsl4jsb_Real2D_onChunk :: heat_sum_SG
     dsl4jsb_Real2D_onChunk :: heat_sum_EG
@@ -404,17 +292,16 @@ CONTAINS
     ice     = options%ice
     nc      = options%nc
 
-    ! If process is not active on this tile, do nothing
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
+    ! If process is not to be calculated on this tile, do nothing
+    IF (.NOT. tile%Is_process_calculated(PHENO_)) RETURN
 
-    IF ( .NOT. tile%Is_process_active(ASSIMI_)) THEN
+    IF (.NOT. tile%Is_process_calculated(ASSIMI_)) THEN
       CALL finish(routine, 'The LOGROP phenology model depends on the assimilation process being activated, too')
     ENDIF
 
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
-    !$ACC DATA &
-    !$ACC   CREATE(w_soil_filling, t_air_in_Celcius, LaiMax_corrected) &
+    !$ACC DATA CREATE(t_air_in_Celcius, LaiMax_corrected) &
     !$ACC   CREATE(veg_fract_correction_old, old_c_state_sum_ta, dummy_flux)
 
     ! Set model
@@ -447,7 +334,7 @@ CONTAINS
     IF (dsl4jsb_Config(PHENO_)%l_forestRegrowth) THEN
 
       !ASSERTION: l_forestRegrowth only possible when the CARBON process is active
-      IF ( .NOT. tile%Is_process_active(CARBON_)) THEN
+      IF (.NOT. tile%Has_process_memory(CARBON_)) THEN
         CALL finish(TRIM(routine), 'Forest regrowth can only be switched on when the CARBON process is active, too')
       ENDIF
 
@@ -470,7 +357,7 @@ CONTAINS
     ! Set pointers to variables in memory
     dsl4jsb_Get_var2D_onChunk(A2L_,      t_air)                  ! in
     dsl4jsb_Get_var2D_onChunk(ASSIMI_,   NPP_pot_rate_ca)        ! in
-    dsl4jsb_Get_var2D_onChunk(HYDRO_,    w_soil_rel)             ! in
+    dsl4jsb_Get_var2D_onChunk(HYDRO_,    wtr_rootzone_rel)       ! in
 
     dsl4jsb_Get_var2D_onChunk(SEB_,      previous_day_temp_mean) ! in
     dsl4jsb_Get_var2D_onChunk(SEB_,      previous_day_temp_min)  ! in
@@ -503,8 +390,6 @@ CONTAINS
     ! ---------------------------
     ! Go
 
-    ! R: NUR ZUR SICHERHEIT:
-    !    Diese Abfrage sollte unnötig sein, da der Prozess Phänologie nur für veg tiles aufgerufen werden sollte.
     IF (.NOT. tile%is_vegetation) THEN
        CALL finish(TRIM(routine), 'The programm tries to calculate phenology on a non vegetated tile...')
     END IF
@@ -517,9 +402,6 @@ CONTAINS
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
     DO ic=1,nc
       t_air_in_Celcius(ic) = t_air(ic) - tmelt  ! convert Kelvin in Celcius
-      w_soil_filling(ic) = w_soil_rel(ic)  ! Initialization of w_soil_filling for crops and raingreen
-                                         ! R: As in JS3 all soil layers are set to the same relative_moisture(GP,tile) and only the average
-                                         !    over all layers or the uppermost layer is used, we do not need soil layers in the phenology.
     END DO
     !$ACC END PARALLEL LOOP
 
@@ -529,11 +411,6 @@ CONTAINS
 
     ! R: While the time issue is independent of the model or block, some calculations should not be done for each tile but only
     !    once for the whole hsm (tile%name == 'box'):
-    ! R: Die Berechnungen von update_previous_day_variables in JSBACH3 muß man bis auf NPP nicht für jedes Tile machen. Daher
-    !    habe ich die Berechnungen von NPP von den anderen Berechnungen in update_previous_day_variables für JSBACH4 getrennt.
-    !    Die Berechnungen die nicht für jedes Tile gemacht werden müssen sind in calc_previous_day_variables und die NPP-
-    !    Berechnungen werden im Folgenden vorgenommen. Außerdem ist calc_previous_day_variables nun dem SEB Prozess zugeordnet.
-    !    calc_pseudo_soil_temp habe ich auch dem SEB Prozess zugeordnet.
 
     ! day_NPP_sum contains the accumulated sum of NPP_pot_rate_ca and is computed in update_assimilation each time step
     ! after this routine. At the start of a new day, we here divide the sum by the day length to get
@@ -554,7 +431,7 @@ CONTAINS
       ! from the available biomass via allometric relationships
       ! The maxLai gets updated at the beginning of each year with the biomass at the maximum green pool
       IF(is_newyear(options%current_datetime, options%dtime)) THEN
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
         DO ic=1,nc
           veg_fract_correction_old(ic) = veg_fract_correction(ic)
 
@@ -576,9 +453,10 @@ CONTAINS
         END DO
         !$ACC END PARALLEL LOOP
 
-        ! redistribute
+        CALL recalc_carbon_per_tile_vars(tile, options)
         CALL calculate_current_c_ta_state_sum(tile, options, old_c_state_sum_ta(:))
 
+        ! redistribute
         CALL rescale_carbon_upon_reference_area_change(tile, options, veg_fract_correction_old, veg_fract_correction)
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
@@ -587,15 +465,16 @@ CONTAINS
         END DO
         !$ACC END PARALLEL LOOP
         ! todo: adapt for GPU
-        !$ACC UPDATE HOST(old_c_state_sum_ta)
+        !$ACC UPDATE HOST(old_c_state_sum_ta) ASYNC(1)
+        !$ACC WAIT(1)
         CALL check_carbon_conservation(tile, options, old_c_state_sum_ta(:), &
           & dummy_flux(:), cconservation_allom(:))
-        !$ACC UPDATE DEVICE(cconservation_allom)
+        !$ACC UPDATE DEVICE(cconservation_allom) ASYNC(1)
       END IF
 
       ! carbon dynamics are only calculated on a day by day basis, thus update only required once a day
       IF(is_newday(options%current_datetime, options%dtime)) THEN
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
         DO ic=1,nc
           CALL track_max_green_pool(       &
             & c_green(ic),                 & ! in
@@ -622,8 +501,8 @@ CONTAINS
     !       laiMax_stat(...) CALL update_maximum_lai(lat(...),laiMax_stat(...),lai(...)) )
     !
     !    Therefore I replaced laiMax_dyn with LaiMax_corrected, which is not dynamic and only used to secure that
-    !    the maximum lai is at least PhenoParam%all%LAI_negligible if lctlib%LaiMax < PhenoParam%all%LAI_negligible
-    !    However, as lctlib%LaiMax will always be higher than PhenoParam%all%LAI_negligible we could skip this part. But to remind
+    !    the maximum lai is at least pheno_param_jsbach%all%LAI_negligible if lctlib%LaiMax < pheno_param_jsbach%all%LAI_negligible
+    !    However, as lctlib%LaiMax will always be higher than pheno_param_jsbach%all%LAI_negligible we could skip this part. But to remind
     !    us that we should think about reimplementing a dynamic lai I keep this part in a way making reimplementation easy...
     !
     ! Set initially the dynamical maximum LAI to the static maximum LAI
@@ -647,21 +526,20 @@ CONTAINS
     IF (dsl4jsb_Config(PHENO_)%l_forestRegrowth) THEN
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO ic=1,nc
-       LaiMax_corrected(:) = maxLAI_allom(ic)
+       LaiMax_corrected(ic) = maxLAI_allom(ic)
       END DO
       !$ACC END PARALLEL LOOP
     ELSE
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO ic=1,nc
-       LaiMax_corrected(:) = MaxLAI_param
+       LaiMax_corrected(ic) = MaxLAI_param
       END DO
       !$ACC END PARALLEL LOOP
     END IF
 
-    ! R: wird jedes mal (d.h. für jedes Tile) aufgerufen, wobei automatisch der Tile spezifische Wert aus dem lctlib genommen wird:
     ! Secure minimum Max-LAI
 
-    LAI_negligible_tmp = PhenoParam%all%LAI_negligible
+    LAI_negligible_tmp = pheno_param_jsbach%all%LAI_negligible
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
     DO i = 1, nc
       IF (LaiMax_corrected(i) < LAI_negligible_tmp) THEN
@@ -723,7 +601,6 @@ CONTAINS
 
     ! none: 0; evergreen: 1; summergreen: 2; raingreen: 3; grasses: 4; crops: 5
     IF (dsl4jsb_Lctlib_param(PhenologyType) ==  5) THEN
-       ! R: (Abweichungen zu JSBACH3 nur beim LAI und dort erst nach 9. Stelle nach Komma.)
       IF (debug_on() .AND. iblk == 1) CALL message('     ','... crop ...')
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
       DO ic = 1, nc
@@ -736,7 +613,7 @@ CONTAINS
           & pseudo_soil_temp(ic),             & ! in
           & LaiMax_corrected(ic),             & ! in
           & previous_day_NPP_pot_rate_ca(ic), & ! in
-          & w_soil_filling(ic),               & ! in
+          & wtr_rootzone_rel(ic),             & ! in
           & previous_day_temp_min(ic),        & ! in
           & previous_day_temp_max(ic),        & ! in
           & specificLeafArea_C_param,         & ! in
@@ -745,6 +622,7 @@ CONTAINS
           & growth_phase_CRP(ic),             & ! inout
           & lai(ic)                           & ! inout
           & )
+
       END DO
       !$ACC END PARALLEL LOOP
     END IF
@@ -757,11 +635,12 @@ CONTAINS
       DO ic = 1, nc
         CALL calc_raingreen_phenology(        &
           & timestep,                         & ! in
-          & w_soil_filling(ic),               & ! in
+          & wtr_rootzone_rel(ic),             & ! in
           & LaiMax_corrected(ic),             & ! in
           & previous_day_NPP_pot_rate_ca(ic), & ! in
           & lai(ic)                           & ! inout
           & )
+
       END DO
       !$ACC END PARALLEL LOOP
     END IF
@@ -774,7 +653,7 @@ CONTAINS
         CALL calc_grass_phenology(            &
           & t_air_in_Celcius(ic),             & ! in
           & timestep,                         & ! in
-          & w_soil_filling(ic),               & ! in
+          & wtr_rootzone_rel(ic),             & ! in
           & LaiMax_corrected(ic),             & ! in
           & previous_day_NPP_pot_rate_ca(ic), & ! in
           & lai(ic)                           & ! inout
@@ -793,8 +672,8 @@ CONTAINS
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
+    !$ACC WAIT(1)
     !$ACC END DATA
-    !$ACC WAIT
 
    END SUBROUTINE update_phenology_logrop
 
@@ -832,8 +711,8 @@ CONTAINS
     ice     = options%ice
     nc      = options%nc
 
-    ! If process is not active on this tile, do nothing
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
+    ! If process is not to be calculated on this tile, do nothing
+    IF (.NOT. tile%Is_process_calculated(PHENO_)) RETURN
 
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
@@ -854,13 +733,9 @@ CONTAINS
 
   END SUBROUTINE update_phenology_climatology
 
-  ! -------------------------------------------------------------------------------------------------------
+  ! ======================================================================================================= !
+  !> Implementation of "aggregate" of the "phenology" task
   !>
-  !! Implementation of "aggregate" for task "phenology"
-  !!
-  !! @param[in,out] tile    Tile for which routine is executed.
-  !! @param[in]     options Additional run-time parameters.
-  !!
   SUBROUTINE aggregate_phenology(tile, options)
 
     USE mo_jsb_time,             ONLY: is_newyear
@@ -906,78 +781,18 @@ CONTAINS
         ! and other processes (NPP alloc of carbon) aggregate them
       ENDIF
     ENDIF
-
     !X Implementation: Start your process scheme here...
-    !R: Das ist ein Provisorium bisher. Es muss noch festgelegt werden ob u. wie die einzeln. pheno Tasks aggregiert werden sollen.
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
-
   END SUBROUTINE aggregate_phenology
 
-  !-----------------------------------------------------------------------------------------------------
-  !> Implementation of "aggregate": phenology_q_ task
-  !! 
-  !-----------------------------------------------------------------------------------------------------
-  SUBROUTINE aggregate_phenology_q_(tile, options)
-
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
-    TYPE(t_jsb_task_options),   INTENT(in)    :: options
-
-    ! Locals
-    TYPE(t_jsb_model), POINTER                :: model
-    dsl4jsb_Def_memory(PHENO_)
-    dsl4jsb_Def_memory(VEG_)
-    CLASS(t_jsb_aggregator),  POINTER         :: weighted_by_fract
-    INTEGER                                   :: iblk, ics, ice
-    CHARACTER(len=*), PARAMETER :: routine = modname//':aggregate_phenology_q_'
-
-    ! Get local variables from options argument
-    iblk    = options%iblk
-    ics     = options%ics
-    ice     = options%ice
-
-    IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
-
-    model => Get_model(tile%owner_model_id)
-    dsl4jsb_Get_memory(PHENO_)
-    dsl4jsb_Get_memory(VEG_)
-
-    weighted_by_fract => tile%Get_aggregator("weighted_by_fract")
-
-    dsl4jsb_Aggregate_onChunk(PHENO_, growing_season              ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(PHENO_, gdd                         ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(PHENO_, nd_dormance                 ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(PHENO_, lai                         ,    weighted_by_fract)
-    ! VEG_
-    dsl4jsb_Aggregate_onChunk(VEG_, growth_req_n_tlabile_mavg  ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, growth_req_p_tlabile_mavg  ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, veg_pool_leaf_carbon       ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, veg_pool_leaf_nitrogen     ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, veg_pool_leaf_phosphorus   ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, veg_growth_leaf_carbon     ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, veg_litterfall_leaf_carbon ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, lai_cl                     ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, cumm_lai_cl                ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, leaf_nitrogen_cl           ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, mean_leaf_age              ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, fn_chl_cl                  ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, fn_et_cl                   ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, fn_rub_cl                  ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, fn_pepc_cl                 ,    weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, fn_oth_cl                  ,    weighted_by_fract)
-    !dsl4jsb_Aggregate_onChunk(VEG_, ppfd_sunlit_tfrac_mavg_cl  ,    weighted_by_fract)
-    !dsl4jsb_Aggregate_onChunk(VEG_, ppfd_shaded_tfrac_mavg_cl  ,    weighted_by_fract)
-    !dsl4jsb_Aggregate_onChunk(VEG_, fleaf_sunlit_tfrac_mavg_cl ,    weighted_by_fract)
-
-    IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
-
-  END SUBROUTINE aggregate_phenology_q_
-
-
+  ! ======================================================================================================= !
+  !>update foliage projected cover
+  !>
   SUBROUTINE update_fpc(tile, options)
 
-    USE mo_pheno_process, ONLY: get_foliage_projected_cover
-    USE mo_jsb_time,      ONLY: get_time_interpolation_weights
+    USE mo_pheno_process,     ONLY: get_foliage_projected_cover
+    USE mo_jsb_time,          ONLY: get_time_interpolation_weights
 
     ! Arguments
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
@@ -1009,7 +824,7 @@ CONTAINS
     ice  = options%ice
     nc   = options%nc
 
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
+    IF (.NOT. tile%Is_process_calculated(PHENO_)) RETURN
 
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
@@ -1043,7 +858,7 @@ CONTAINS
         END DO
         !$ACC END PARALLEL LOOP
       END IF
-    ELSE        
+    ELSE
       ! We have PFTs and %scheme /= climatology
       ClumpinessFactor = dsl4jsb_Lctlib_param(ClumpinessFactor) ! Do a copy to avoid deep copy on accelerator
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
@@ -1053,7 +868,7 @@ CONTAINS
       !$ACC END PARALLEL LOOP
     END IF
 
-    !$ACC WAIT
+    !$ACC WAIT(1)
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
@@ -1088,215 +903,87 @@ CONTAINS
 
   END SUBROUTINE aggregate_fpc
 
-  !-----------------------------------------------------------------------------------------------------
-  !> calculate time moving averages for PHENO_
-  !!
-  !! variable-specific averaging period, previous to the current timestep
-  !-----------------------------------------------------------------------------------------------------
-  SUBROUTINE update_time_average_phenology(tile, options)
 
-    USE mo_jsb_tile_class,          ONLY: t_jsb_tile_abstract
-    USE mo_jsb_task_class,          ONLY: t_jsb_task_options
-    !USE mo_jsb_model_class,         ONLY: t_jsb_model
-    !USE mo_jsb_class,               ONLY: Get_model
-    !USE mo_jsb_lctlib_class,        ONLY: t_lctlib_element
-    USE mo_jsb_control,             ONLY: debug_on
-    USE mo_kind,                    ONLY: wp
-    USE mo_jsb_math_constants,      ONLY: eps8
-    USE mo_jsb_physical_constants,  ONLY: tmelt
-    USE mo_time_averages,           ONLY: calc_time_mavg, mavg_period_tphen, mavg_period_weekly, mavg_period_monthly, &
-                                          mavg_period_tlabile, mavg_period_tsoa
+  ! ====================================================================================================== !
+  !
+  !> Handles merging for those pheno variables which need to be merged upon ageing (FAGE process)
+  !
+  SUBROUTINE merge_pheno_variables_upon_ageing(target, source, options, moved_area)
 
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile               !< one tile with data structure for one lct
-    TYPE(t_jsb_task_options),   INTENT(in)    :: options            !< model options
+    USE mo_fage_process,     ONLY : weighted_avg_var_upon_area_movement, &
+      &                             weighted_avg_per_canopy_var_upon_area_movement
+    USE mo_carbon_interface, ONLY : rescale_carbon_vars_upon_ageing_induced_ref_area_change
+    ! -------------------------------------------------------------------------------------------------- !
+    CLASS(t_jsb_tile_abstract),      INTENT(inout) :: target     !< target age class
+    CLASS(t_jsb_tile_abstract),      INTENT(inout) :: source     !< source age class
+    TYPE(t_jsb_task_options),        INTENT(in)    :: options    !< Additional run-time parameters
+    REAL(wp), DIMENSION(options%nc), INTENT(in)    :: moved_area !< area moved from source to target ac
+    ! -------------------------------------------------------------------------------------------------- !
+    INTEGER  :: iblk, ics, ice
 
-    ! Locals
-    !TYPE(t_jsb_model), POINTER :: model                !< instance of the model
-    INTEGER                     :: iblk, ics, ice, nc
+    dsl4jsb_Def_memory_tile(PHENO_, target)
+    dsl4jsb_Def_memory_tile(PHENO_, source)
 
-    CHARACTER(len=*), PARAMETER :: routine = modname//':update_time_average_phenology'
+    dsl4jsb_Real2D_onChunk :: veg_fract_correction_source
+    dsl4jsb_Real2D_onChunk :: veg_fract_correction_target
+    dsl4jsb_Real2D_onChunk :: lai_source
+    dsl4jsb_Real2D_onChunk :: lai_target
+    dsl4jsb_Real2D_onChunk :: day_npp_sum_source
+    dsl4jsb_Real2D_onChunk :: day_npp_sum_target
 
-    dsl4jsb_Def_memory(A2L_)                        
-    dsl4jsb_Def_memory(ASSIMI_)                     
-    dsl4jsb_Def_memory(VEG_)         
-             
-    ! Declare pointers to variables in memory
-    ! A2L_
-    dsl4jsb_Real2D_onChunk      :: t_air
-    ! ASSIMI_
-    dsl4jsb_Real2D_onChunk      :: gross_assimilation
-    dsl4jsb_Real2D_onChunk      :: beta_soil_gs
-    dsl4jsb_Real2D_onChunk      :: beta_soil_gs_tphen_mavg
-    dsl4jsb_Real2D_onChunk      :: beta_soa
-    dsl4jsb_Real2D_onChunk      :: beta_soa_tphen_mavg
-    dsl4jsb_Real2D_onChunk      :: soa_tsoa_mavg
-    ! VEG_
-    dsl4jsb_Real2D_onChunk      :: t_air_tphen_mavg
-    dsl4jsb_Real2D_onChunk      :: t_air_week_mavg
-    dsl4jsb_Real2D_onChunk      :: t_air_month_mavg
-    dsl4jsb_Real2D_onChunk      :: gpp_tlabile_mavg
-    dsl4jsb_Real2D_onChunk      :: maint_respiration_tlabile_mavg
-    dsl4jsb_Real2D_onChunk      :: growth_req_n_tlabile_mavg
-    dsl4jsb_Real2D_onChunk      :: growth_req_p_tlabile_mavg
-    dsl4jsb_Real2D_onChunk      :: maint_respiration_pot
-    dsl4jsb_Real2D_onChunk      :: growth_req_n
-    dsl4jsb_Real2D_onChunk      :: growth_req_p
+    REAL(wp), DIMENSION(options%nc) :: old_veg_fract_correction_target, target_fract
 
-    ! Get local variables from options argument
-    iblk    = options%iblk
-    ics     = options%ics
-    ice     = options%ice
-    nc      = options%nc
+    CHARACTER(len=*), PARAMETER :: routine = modname//':merge_pheno_variables_upon_ageing'
+    ! -------------------------------------------------------------------------------------------------- !
+    iblk = options%iblk
+    ics  = options%ics
+    ice  = options%ice
 
-    IF (.NOT. tile%Is_process_active(PHENO_)) RETURN
+    IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'For target '//TRIM(target%name)//' ...')
 
-    IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
+    CALL target%Get_fraction(ics, ice, iblk, fract=target_fract(:))
 
-    !model         => Get_model(tile%owner_model_id)
-    !lctlib        => model%lctlib(tile%lcts%lib_id)
-    !
-    dsl4jsb_Get_memory(A2L_)
-    dsl4jsb_Get_memory(ASSIMI_)
-    dsl4jsb_Get_memory(VEG_)
+    dsl4jsb_Get_memory_tile(PHENO_, source)
+    dsl4jsb_Get_memory_tile(PHENO_, target)
 
-    dsl4jsb_Get_var2D_onChunk(A2L_, t_air)
-    ! ---------------------------
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, gross_assimilation)
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, beta_soil_gs)
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, beta_soil_gs_tphen_mavg)    
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, beta_soa)
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, beta_soa_tphen_mavg)
-    dsl4jsb_Get_var2D_onChunk(ASSIMI_, soa_tsoa_mavg)
-    ! ---------------------------
-    dsl4jsb_Get_var2D_onChunk(VEG_, t_air_tphen_mavg)              
-    dsl4jsb_Get_var2D_onChunk(VEG_, t_air_week_mavg)               
-    dsl4jsb_Get_var2D_onChunk(VEG_, t_air_month_mavg)              
-    dsl4jsb_Get_var2D_onChunk(VEG_, gpp_tlabile_mavg)              
-    dsl4jsb_Get_var2D_onChunk(VEG_, maint_respiration_tlabile_mavg)
-    dsl4jsb_Get_var2D_onChunk(VEG_, growth_req_n_tlabile_mavg)     
-    dsl4jsb_Get_var2D_onChunk(VEG_, growth_req_p_tlabile_mavg)     
-    dsl4jsb_Get_var2D_onChunk(VEG_, maint_respiration_pot)
-    dsl4jsb_Get_var2D_onChunk(VEG_, growth_req_n)
-    dsl4jsb_Get_var2D_onChunk(VEG_, growth_req_p)
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, veg_fract_correction, source)
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, veg_fract_correction, target)
 
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, lai, source)
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, lai, target)
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, day_npp_sum, source)
+    dsl4jsb_Get_var2d_onChunk_tile_name(PHENO_, day_npp_sum, target)
 
-    ! ------------------------------------------------------------------------------------------------------------
-    ! Go science
-    ! ------------------------------------------------------------------------------------------------------------
+    ! There are pheno variables that need to be merged upon ageing
+    ! because they are used for bookkeeping by various processes but are not conserved
+    ! (i.e. they are not automatically dealed with by pplcc and the lcc framework)
+    ! For the pheno process these are lai and the day_npp_sum
+    ! [According to the specifications in Reick et al. (2021) the LAI is to be interpreted as leaf area
+    ! "per canopy area", where canopy area is defined as area covered by a hypothetical tile without canopy gaps.]
+    CALL weighted_avg_per_canopy_var_upon_area_movement(target_fract(:), moved_area(:), &
+      &  veg_fract_correction_source(:), veg_fract_correction_target(:), lai_source(:), lai_target(:))
+    CALL weighted_avg_per_canopy_var_upon_area_movement(target_fract(:), moved_area(:), &
+      &  veg_fract_correction_source(:), veg_fract_correction_target(:), day_npp_sum_source(:), day_npp_sum_target(:))
 
+    ! Upon ageing also the veg_fract_correction which accounts for gaps in the canopy in JSBACH needs to be merged
+    old_veg_fract_correction_target(:) = veg_fract_correction_target(:)
+    CALL weighted_avg_var_upon_area_movement( target_fract(:), moved_area(:), &
+      &                                       veg_fract_correction_source(:), veg_fract_correction_target(:))
 
+    ! This change in reference area, however, induces changes in those per canopy variables that need
+    ! to be merged upon ageing because they are used for bookkeeping by various processes
+    ! but are not conserved (i.e. not automatically dealed with by pplcc and the lcc framework)
+    ! As stated above, for the pheno process these are lai and the day_npp_sum
+    lai_target(:)          = lai_target(:)          &
+      &                      * (old_veg_fract_correction_target(:) / veg_fract_correction_target(:))
+    day_npp_sum_target(:)  = day_npp_sum_target(:)  &
+      &                      * (old_veg_fract_correction_target(:) / veg_fract_correction_target(:))
 
-    !> 1.0 run average calculations for several timescales
-    !!
-    !!----- docu
-    !! calc_time_mavg(current average, new value, length of avg_period, 
-    !!                do_calc=LOGICAL, avg_period_unit='day')
-    !!                RETURN(new current average)
-    !! 
-    !! note: the unit of the averaging period is 'day' by default but can also be 'week' or 'year'
-    !!       avg_period_unit='day'
-    !!       avg_period_unit='week'
-    !!       avg_period_unit='year'
-    !!----------
+    ! And for carbon these are also several
+    CALL rescale_carbon_vars_upon_ageing_induced_ref_area_change(target, options, &
+      &                                                        old_veg_fract_correction_target(:))
 
-    !> 1.1 weekly, monthly timescale
-    !!
-    t_air_week_mavg(:)       = calc_time_mavg(t_air_week_mavg(:), t_air(:), mavg_period_weekly)
-    t_air_month_mavg(:)      = calc_time_mavg(t_air_month_mavg(:), t_air(:), mavg_period_monthly)
-    
-    !> 1.2 labile pool timescale
-    !! 
-    gpp_tlabile_mavg(:)                = calc_time_mavg(gpp_tlabile_mavg(:), gross_assimilation(:), &
-                                                    mavg_period_tlabile)
-    maint_respiration_tlabile_mavg(:)  = calc_time_mavg(maint_respiration_tlabile_mavg(:), maint_respiration_pot(:), &
-                                                    mavg_period_tlabile)
-    growth_req_n_tlabile_mavg(:)       = calc_time_mavg(growth_req_n_tlabile_mavg(:), growth_req_n(:), &
-                                                    mavg_period_tlabile, do_calc=(growth_req_n(:) > eps8))
-    growth_req_p_tlabile_mavg(:)       = calc_time_mavg(growth_req_p_tlabile_mavg(:), growth_req_p(:), &
-                                                    mavg_period_tlabile, do_calc=(growth_req_p(:) > eps8))
-
-    !> 1.3 phenology timescale
-    !! 
-    t_air_tphen_mavg(:)           = calc_time_mavg(t_air_tphen_mavg(:), t_air(:), mavg_period_tphen)
-    beta_soil_gs_tphen_mavg(:)    = calc_time_mavg(beta_soil_gs_tphen_mavg(:), beta_soil_gs(:), mavg_period_tphen)
-    beta_soa_tphen_mavg(:)        = calc_time_mavg(beta_soa_tphen_mavg(:), beta_soa(:), mavg_period_tphen)
-    
-    !> 1.4 soa timescale
-    soa_tsoa_mavg(:)              = calc_time_mavg(soa_tsoa_mavg(:), t_air(:) - tmelt, mavg_period_tsoa)
-    
-
-  END SUBROUTINE update_time_average_phenology
-
-
-  !-----------------------------------------------------------------------------------------------------
-  !> Implementation of "aggregate": time_average_phenology task
-  !! 
-  !-----------------------------------------------------------------------------------------------------
-  SUBROUTINE aggregate_time_average_phenology(tile, options)
-
-    USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract, t_jsb_aggregator
-    USE mo_jsb_task_class,     ONLY: t_jsb_task_options
-
-    ! ---------------------------
-    ! 0.1 InOut
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
-    TYPE(t_jsb_task_options),   INTENT(in)    :: options
-    ! ---------------------------
-    ! 0.2 Local
-    !TYPE(t_jsb_model),        POINTER         :: model
-    CLASS(t_jsb_aggregator),  POINTER         :: weighted_by_fract
-    INTEGER                                   :: iblk, ics, ice
-    !X if necessary: REAL(wp) :: dtime, steplen
-    CHARACTER(len=*),         PARAMETER       :: routine = TRIM(modname)//':aggregate_time_average_phenology'
-    ! ---------------------------
-    ! 0.3 Declare Memory
-    ! Declare process configuration and memory Pointers
-    dsl4jsb_Def_memory(ASSIMI_)
-    dsl4jsb_Def_memory(VEG_)
-    ! Get local variables from options argument
-    iblk    = options%iblk
-    ics     = options%ics
-    ice     = options%ice
-    !X if necessary: dtime   = options%dtime
-    !X if necessary: steplen = options%steplen
-    ! ---------------------------
-    ! 0.4 Process Activity, Debug Option
-    IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
-    ! ---------------------------
-    ! 0.5 Get Memory
-    ! Get process variables (Set pointers to variables in memory)
-    !model => Get_model(tile%owner_model_id)
-    ! Get process config
-    ! Get process memories
-    dsl4jsb_Get_memory(ASSIMI_)
-    dsl4jsb_Get_memory(VEG_)
-
-
-    ! ------------------------------------------------------------------------------------------------------------
-    ! Go aggregate
-    ! ------------------------------------------------------------------------------------------------------------
-    
-
-    weighted_by_fract => tile%Get_aggregator("weighted_by_fract")
-
-    dsl4jsb_Aggregate_onChunk(VEG_, t_air_week_mavg                   , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, t_air_month_mavg                  , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, gpp_tlabile_mavg                  , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, maint_respiration_tlabile_mavg    , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, growth_req_n_tlabile_mavg         , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, growth_req_p_tlabile_mavg         , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(VEG_, t_air_tphen_mavg                  , weighted_by_fract)
-    ! ---------------------------
-    dsl4jsb_Aggregate_onChunk(ASSIMI_, beta_soil_gs_tphen_mavg           , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(ASSIMI_, beta_soa_tphen_mavg               , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(ASSIMI_, soa_tsoa_mavg                     , weighted_by_fract)
-
-    !X Implementation: Start your process scheme here...
-    !R: Das ist ein Provisorium bisher. Es muss noch festgelegt werden ob und wie die einzelnen pheno Tasks aggregiert werden sollen.
-
-    IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
-
-  END SUBROUTINE aggregate_time_average_phenology
+  END SUBROUTINE merge_pheno_variables_upon_ageing
 
   !-----------------------------------------------------------------------------------------------------
   !> Calculations of diagnostic global land mean phenology output
@@ -1344,7 +1031,6 @@ CONTAINS
     REAL(wp), ALLOCATABLE  :: in_domain (:,:)   ! 1: cell in domain, 0: halo cell
     REAL(wp), ALLOCATABLE  :: scaling (:,:)
     REAL(wp)               :: global_land_area
-
 
     dsl4jsb_Get_memory(PHENO_)
     dsl4jsb_Get_var2D_onDomain(PHENO_,  lai_ta)             ! in

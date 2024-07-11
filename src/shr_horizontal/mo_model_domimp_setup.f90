@@ -95,10 +95,10 @@ CONTAINS
 
     ! Initialize array elements along nest boundaries with zero
     IF (patch%id > 1) THEN
-      CALL init(patch%edges%quad_area(:,1:i_startblk))
-      CALL init(patch%edges%quad_idx(:,1:i_startblk,1:4))
-      CALL init(patch%edges%quad_blk(:,1:i_startblk,1:4))
-      CALL init(patch%edges%quad_orientation(:,1:i_startblk,1:4))
+      CALL init(patch%edges%quad_area(:,1:i_startblk), lacc=.FALSE.)
+      CALL init(patch%edges%quad_idx(:,1:i_startblk,1:4), lacc=.FALSE.)
+      CALL init(patch%edges%quad_blk(:,1:i_startblk,1:4), lacc=.FALSE.)
+      CALL init(patch%edges%quad_orientation(:,1:i_startblk,1:4), lacc=.FALSE.)
 !$OMP BARRIER
     ENDIF
 
@@ -339,8 +339,8 @@ CONTAINS
 
     ! Initialize array elements along nest boundaries with zero
     IF (patch%id > 1) THEN
-      CALL init(patch%edges%butterfly_idx(:,1:i_startblk,:,:))
-      CALL init(patch%edges%butterfly_blk(:,1:i_startblk,:,:))
+      CALL init(patch%edges%butterfly_idx(:,1:i_startblk,:,:), lacc=.FALSE.)
+      CALL init(patch%edges%butterfly_blk(:,1:i_startblk,:,:), lacc=.FALSE.)
 !$OMP BARRIER
     ENDIF
 
@@ -618,8 +618,8 @@ CONTAINS
 
     IF (is_traditional) THEN
 !$OMP PARALLEL
-      CALL init(patch%edges%fn_e)
-      CALL init(patch%edges%ft_e)
+      CALL init(patch%edges%fn_e, lacc=.FALSE.)
+      CALL init(patch%edges%ft_e, lacc=.FALSE.)
 !$OMP END PARALLEL
     ENDIF
 

@@ -195,5 +195,3 @@ fi
 echo "EXIT_STATUS: $EXIT_STATUS"
 echo $EXPDIR
 exit $EXIT_STATUS
-
-

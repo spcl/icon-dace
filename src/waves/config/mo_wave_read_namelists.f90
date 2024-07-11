@@ -31,6 +31,7 @@ MODULE mo_wave_read_namelists
   USE mo_wave_nml,              ONLY: read_wave_namelist
   USE mo_interpol_nml,          ONLY: read_interpol_namelist
   USE mo_energy_propagation_nml,ONLY: read_energy_propagation_nml
+  USE mo_advection_nml,         ONLY: read_transport_namelist
 
   IMPLICIT NONE
 
@@ -69,6 +70,8 @@ CONTAINS
     CALL init_grid_configuration()
 
     CALL read_energy_propagation_nml  (wave_namelist_filename(1:tlen))
+    ! temporary hack as long as llsq_svd is used directly from advecton_config
+    CALL read_transport_namelist      (wave_namelist_filename(1:tlen))
 
     CALL read_wave_namelist           (wave_namelist_filename(1:tlen))
 

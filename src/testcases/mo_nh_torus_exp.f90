@@ -922,14 +922,14 @@ MODULE mo_nh_torus_exp
     CALL message(TRIM(routine), 'READING FROM SOUNDING!')
     
     !open netcdf 
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (profile)') 
 
-    CALL nf (nf_inq_dimid(fileid, 'lev', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, klev), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = klev), routine)
 
-    CALL nf (nf_inq_dimid(fileid, 'nt', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, nt) , routine)
+    CALL nf (nf90_inq_dimid(fileid, 'nt', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt) , routine)
 
     WRITE(message_text,'(a,i6,a,i6)') 'SCM read_ext_profile_nc: klev, ', klev, ', nt ', nt
     CALL message (routine,message_text)
@@ -956,37 +956,37 @@ MODULE mo_nh_torus_exp
     psurfs = 0._wp
     o3s    = 0._wp
 
-    CALL nf (nf_inq_varid     (fileid, 'height', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf)   , routine)
+    CALL nf (nf90_inq_varid (fileid, 'height', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf)   , routine)
     zs=tempf(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'uIN', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf), routine)
+    CALL nf (nf90_inq_varid (fileid, 'uIN', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     us=tempf(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'vIN', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf), routine)
+    CALL nf (nf90_inq_varid (fileid, 'vIN', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     vs=tempf(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'tkeIN', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf1) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'tkeIN', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf1, count = [klev, nt]), routine)
     tkes=tempf1(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'qvIN', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'qvIN', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf) , routine)
     qvs=tempf(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'qcIN', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'qcIN', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf) , routine)
     qcs=tempf(:,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'psurf', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, psurfs) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'psurf', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, psurfs) , routine)
     psfc_in=psurfs(1)
 
-    nf_status  = nf_inq_varid     (fileid, 'o3IN', varid)
-    nf_status2 = nf_get_var_double(fileid, varid , tempf)
-    IF (nf_status /= nf_noerr) THEN
+    nf_status  = nf90_inq_varid (fileid, 'o3IN', varid)
+    nf_status2 = nf90_get_var   (fileid, varid , tempf)
+    IF (nf_status /= nf90_noerr) THEN
       CALL message (routine,'O3 not available in init_SCM.nc.  It will be set to 0.')
       o3s=0.0_wp
     ELSE
@@ -995,34 +995,34 @@ MODULE mo_nh_torus_exp
 
     !read input variables specific to ICON4SCM
     IF (lscm_icon_ini) THEN
-      CALL nf (nf_inq_varid     (fileid, 'height_ifc', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid, tempf1)      , routine)
+      CALL nf (nf90_inq_varid (fileid, 'height_ifc', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf1, count = [klev, nt]), routine)
       zs_ifc = tempf1(:,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'wIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf1), routine)
+      CALL nf (nf90_inq_varid (fileid, 'wIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf1, count = [klev, nt]), routine)
       ws     = tempf1(:,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'qiIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)  , routine)
+      CALL nf (nf90_inq_varid (fileid, 'qiIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf)  , routine)
       qis    = tempf(:,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'thvIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)   , routine)
+      CALL nf (nf90_inq_varid (fileid, 'thvIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf)   , routine)
       thvs   = tempf(:,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'exnerIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)     , routine)
+      CALL nf (nf90_inq_varid (fileid, 'exnerIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf)     , routine)
       exners = tempf(:,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'rhoIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)   , routine)
+      CALL nf (nf90_inq_varid (fileid, 'rhoIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf)   , routine)
       rhos   = tempf(:,1)
     ELSE
       zs_ifc = zs
 
-      CALL nf (nf_inq_varid     (fileid, 'thIN', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)  , routine)
+      CALL nf (nf90_inq_varid (fileid, 'thIN', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid,tempf)  , routine)
       ths    = tempf(:,1)
     END IF
 
@@ -1073,7 +1073,7 @@ MODULE mo_nh_torus_exp
     DEALLOCATE(zs, ths, thvs, exners, rhos, qvs, qcs, qis, us, vs, ws, tkes, &
     & psurfs, o3s, tempf, tempf1)
   
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
 
     CALL read_latlon_scm_nc(lat_scm,lon_scm)
   
@@ -1124,23 +1124,23 @@ MODULE mo_nh_torus_exp
     CALL message(TRIM(routine), 'READING FROM SOUNDING!')
     
     !open netcdf 
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (profile)') 
 
-    CALL nf (nf_inq_dimid(fileid, 'lev', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, klev), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = klev), routine)
 
-    CALL nf (nf_inq_dimid(fileid, 'lat', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, lat) , routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lat', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = lat) , routine)
 
-    CALL nf (nf_inq_dimid(fileid, 'lon', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, lon) , routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lon', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = lon) , routine)
 
-    CALL nf (nf_inq_dimid(fileid, 't0', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, t0) , routine)
+    CALL nf (nf90_inq_dimid(fileid, 't0', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = t0) , routine)
 
-    CALL nf (nf_inq_dimid(fileid, 'time', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, nt)   , routine)
+    CALL nf (nf90_inq_dimid(fileid, 'time', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt)   , routine)
     WRITE(message_text,'(a,i5,a,i5,a,i5)') 'SCM read_ext_profile_nc_uf: klev, ', klev, ', nt ', nt, ', t0 ', t0
     CALL message (routine,message_text)
 
@@ -1166,33 +1166,33 @@ MODULE mo_nh_torus_exp
     psfc_in= 0._wp
     o3s    = 0._wp
 
-    CALL nf (nf_inq_varid     (fileid, 'height', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf)   , routine)
+    CALL nf (nf90_inq_varid (fileid, 'height', varid), routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf)   , routine)
     zs=tempf(1,1,klev:1:-1,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'u', varid)  , routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf), routine)
+    CALL nf (nf90_inq_varid (fileid, 'u', varid)  , routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     us=tempf(1,1,klev:1:-1,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'v', varid)  , routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf), routine)
+    CALL nf (nf90_inq_varid (fileid, 'v', varid)  , routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     vs=tempf(1,1,klev:1:-1,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'qv', varid)  , routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'qv', varid) , routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     qvs=tempf(1,1,klev:1:-1,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'ql', varid)  , routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf) , routine)
+    CALL nf (nf90_inq_varid (fileid, 'ql', varid) , routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
     qcs=tempf(1,1,klev:1:-1,1)
 
-    CALL nf (nf_inq_varid     (fileid, 'ps', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tempf_s)  , routine)
+    CALL nf (nf90_inq_varid (fileid, 'ps', varid)   , routine)
+    CALL nf (nf90_get_var   (fileid, varid, tempf_s), routine)
     psfc_in=tempf_s(1,1,1)
 
-    nf_status  = nf_inq_varid     (fileid, 'o3', varid)
-    nf_status2 = nf_get_var_double(fileid, varid , tempf)
-    IF (nf_status /= nf_noerr) THEN
+    nf_status  = nf90_inq_varid (fileid, 'o3', varid)
+    nf_status2 = nf90_get_var   (fileid, varid , tempf)
+    IF (nf_status /= nf90_noerr) THEN
       CALL message (routine,'O3 not available in init_SCM.nc.  It will be set to 0.')
       o3s=0.0_wp
     ELSE
@@ -1203,39 +1203,39 @@ MODULE mo_nh_torus_exp
     IF (lscm_icon_ini) THEN
       zs_ifc=zs
 
-      CALL nf (nf_inq_varid     (fileid, 'w', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf1) , routine)
+      CALL nf (nf90_inq_varid (fileid, 'w', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf1, count = [klev, nt]), routine)
       ws     = tempf1(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'qi', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)  , routine)
+      CALL nf (nf90_inq_varid (fileid, 'qi', varid), routine)
+      CALL nf (nf90_get_var(fileid, varid, tempf), routine)
       qis    = tempf(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'thetav', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)   , routine)
+      CALL nf (nf90_inq_varid (fileid, 'thetav', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
       thvs   = tempf(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'exner', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)     , routine)
+      CALL nf (nf90_inq_varid (fileid, 'exner', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
       exners = tempf(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'rho', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)   , routine)
+      CALL nf (nf90_inq_varid (fileid, 'rho', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf), routine)
       rhos   = tempf(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'tke', varid)  , routine)
-      CALL nf (nf_get_var_double(fileid, varid, tempf1) , routine)
+      CALL nf (nf90_inq_varid (fileid, 'tke', varid), routine)
+      CALL nf (nf90_get_var   (fileid, varid, tempf1, count = [klev, nt]), routine)
       tkes   = tempf1(1,1,klev:1:-1,1)
 
     ELSE
       zs_ifc = zs
 
-      CALL nf (nf_inq_varid     (fileid, 'theta', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid,tempf)   , routine)
+      CALL nf (nf90_inq_varid (fileid, 'theta', varid), routine)
+      CALL nf (nf90_get_var (fileid, varid,tempf), routine)
       ths    = tempf(1,1,klev:1:-1,1)
 
-      CALL nf (nf_inq_varid     (fileid, 'tke', varid) , routine)
-      CALL nf (nf_get_var_double(fileid, varid, tempf) , routine)
+      CALL nf (nf90_inq_varid (fileid, 'tke', varid), routine)
+      CALL nf (nf90_get_var (fileid, varid, tempf), routine)
       tkes(1:klev) = tempf(1,1,klev:1:-1,1)
 
     END IF
@@ -1287,7 +1287,7 @@ MODULE mo_nh_torus_exp
     DEALLOCATE(zs, ths, thvs, exners, rhos, qvs, qcs, qis, us, vs, ws, tkes, &
     & o3s, tempf, tempf1, tempf_s)
 
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
   
     CALL read_latlon_scm_nc_uf(lat_scm,lon_scm)
 
@@ -1660,18 +1660,18 @@ MODULE mo_nh_torus_exp
 
     CALL message(TRIM(routine), 'READING INITIAL SOIL PROFILE!')
  
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (soil)') 
 
-    CALL nf (nf_inq_dimid(fileid, 'nt', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, nt), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'nt', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt), routine)
 
     IF (PRESENT(w_so_in) .or. PRESENT(t_so_in)) THEN  
-      CALL nf (nf_inq_dimid(fileid, 'levTsoil', dimid), routine)
-      CALL nf (nf_inq_dimlen(fileid, dimid, levTsoil), routine)
+      CALL nf (nf90_inq_dimid(fileid, 'levTsoil', dimid), routine)
+      CALL nf (nf90_inquire_dimension(fileid, dimid, len = levTsoil), routine)
 
-      CALL nf (nf_inq_dimid(fileid, 'levWsoil', dimid), routine)
-      CALL nf (nf_inq_dimlen(fileid, dimid, levWsoil), routine)
+      CALL nf (nf90_inq_dimid(fileid, 'levWsoil', dimid), routine)
+      CALL nf (nf90_inquire_dimension(fileid, dimid, len = levWsoil), routine)
 
 !     WRITE(*,*) 'SCM read_soil_profile_nc: levTsoil ', levTsoil, ' levWsoil ', levWsoil, ' nt ', nt
 
@@ -1682,8 +1682,8 @@ MODULE mo_nh_torus_exp
     IF (PRESENT(t_so_in)) THEN
       IF ( levTsoil == (nlev_soil+1) ) THEN
         ALLOCATE(tempf(levTsoil,nt))
-        CALL nf (nf_inq_varid(fileid, 'T_SO', varid), routine)
-        CALL nf (nf_get_var_double(fileid, varid,tempf), routine)
+        CALL nf (nf90_inq_varid(fileid, 'T_SO', varid), routine)
+        CALL nf (nf90_get_var(fileid, varid,tempf), routine)
         t_so_in   = tempf(:,1)
 !       write(*,*) 't_so_in', t_so_in
         DEALLOCATE(tempf)
@@ -1697,8 +1697,8 @@ MODULE mo_nh_torus_exp
     IF (PRESENT(w_so_in)) THEN
       IF ( levWsoil == nlev_soil ) THEN
         ALLOCATE(tempf(levWsoil,nt))
-        CALL nf (nf_inq_varid(fileid, 'W_SO', varid), routine)
-        CALL nf (nf_get_var_double(fileid, varid,tempf), routine)
+        CALL nf (nf90_inq_varid(fileid, 'W_SO', varid), routine)
+        CALL nf (nf90_get_var(fileid, varid,tempf), routine)
         w_so_in   = tempf(:,1)
 !       write(*,*) 'w_so_in', w_so_in
         DEALLOCATE(tempf)
@@ -1711,14 +1711,14 @@ MODULE mo_nh_torus_exp
 
     IF (PRESENT(t_g_in)) THEN
       ALLOCATE(tempg(nt))
-      CALL nf (nf_inq_varid(fileid, 'tg', varid), routine)
-      CALL nf (nf_get_var_double(fileid, varid, tempg), routine)
+      CALL nf (nf90_inq_varid(fileid, 'tg', varid), routine)
+      CALL nf (nf90_get_var(fileid, varid, tempg), routine)
       t_g_in    = tempg(1)
 !     write(*,*) 't_g_in', t_g_in
       DEALLOCATE(tempg)
     ENDIF
 
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
 
   END SUBROUTINE read_soil_profile_nc
 
@@ -1762,21 +1762,21 @@ MODULE mo_nh_torus_exp
     !--------------------------------------------------
     CALL message(TRIM(routine), 'READING lat/lon FOR SCM')
  
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (lat/lon)') 
 
-    CALL nf (nf_inq_varid(fileid, 'latitude', varid) , routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'latitude', varid) , routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
     lat_scm = tmp_nf(1)
 
-    CALL nf (nf_inq_varid(fileid, 'longitude', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid,tmp_nf) , routine)
+    CALL nf (nf90_inq_varid(fileid, 'longitude', varid), routine)
+    CALL nf (nf90_get_var(fileid, varid,tmp_nf) , routine)
     lon_scm = tmp_nf(1)
 
     WRITE(message_text,'(a,f7.4,a,f7.4)') 'lat_scm, ', lat_scm, ', lon_scm, ',lon_scm
     CALL message (routine,message_text)
 
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
 
   END SUBROUTINE read_latlon_scm_nc
 
@@ -1803,29 +1803,29 @@ MODULE mo_nh_torus_exp
 
     CALL message(TRIM(routine), 'READING lat/lon FOR SCM')
  
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (lat/lon)') 
 
-    CALL nf (nf_inq_dimid(fileid, 'lat', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, lat), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lat', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = lat), routine)
 
-    CALL nf (nf_inq_dimid(fileid, 'lon', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, lon), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'lon', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = lon), routine)
 
     ALLOCATE(lats(lat),lons(lon))
 
-    CALL nf (nf_inq_varid(fileid, 'lat', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid,lats), routine)
+    CALL nf (nf90_inq_varid(fileid, 'lat', varid), routine)
+    CALL nf (nf90_get_var(fileid, varid,lats), routine)
     lat_scm=lats(1)
 
-    CALL nf (nf_inq_varid(fileid, 'lon', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid,lons), routine)
+    CALL nf (nf90_inq_varid(fileid, 'lon', varid), routine)
+    CALL nf (nf90_get_var(fileid, varid,lons), routine)
     lon_scm=lons(1)
 
     WRITE(message_text,'(a,f7.4,a,f7.4)') 'lat_scm, ', lat_scm, ', lon_scm, ',lon_scm
     CALL message (routine,message_text)
 
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
     DEALLOCATE(lats,lons)
 
   END SUBROUTINE read_latlon_scm_nc_uf
@@ -1865,50 +1865,50 @@ MODULE mo_nh_torus_exp
     CALL message(TRIM(routine), 'READING EXTERNAL DATA FOR SCM')
     lctype_scm=""
 
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (external)') 
 
-    CALL nf (nf_inq_dimid(fileid, 'nclass_lu', dimid), routine)
-    CALL nf (nf_inq_dimlen(fileid, dimid, nCLU), routine)
+    CALL nf (nf90_inq_dimid(fileid, 'nclass_lu', dimid), routine)
+    CALL nf (nf90_inquire_dimension(fileid, dimid, len = nCLU), routine)
 
     IF (nCLU .NE. num_lcc) THEN
       CALL finish( 'testcases/mo_nh_torus_exp.f90',&
       'Number of LU classes in init_SCM.nc does not match num_lcc')
     ENDIF
 
-    CALL nf (nf_inq_varid(fileid, 'FR_LAND',   varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'FR_LAND',   varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      fr_land_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'FR_LAND',   varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'FR_LAND',   varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      fr_land_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'PLCOV_MX',  varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'PLCOV_MX',  varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      plcov_mx_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'LAI_MX',    varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'LAI_MX',    varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      lai_mx_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'ROOTDP',    varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'ROOTDP',    varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      rootdp_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'RSMIN',     varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'RSMIN',     varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      rsmin_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'SOILTYP',   varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'SOILTYP',   varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      soiltyp_scm=INT(tmp_nf(1))
-    CALL nf (nf_inq_varid(fileid, 'Z0',        varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'Z0',        varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      z0_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'TOPO',      varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'TOPO',      varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      topo_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'EMIS_RAD',  varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid, tmp_nf), routine)
+    CALL nf (nf90_inq_varid(fileid, 'EMIS_RAD',  varid), routine)
+    CALL nf (nf90_get_var(fileid, varid, tmp_nf), routine)
      emis_rad_scm = tmp_nf(1)
-    CALL nf (nf_inq_varid(fileid, 'LU_CLASS_FRACTION', varid), routine)
-    CALL nf (nf_get_var_double(fileid, varid,lu_class_fr), routine)
-    CALL nf (nf_get_att_text(fileid, varid,'lctype',lctype_scm), routine)
+    CALL nf (nf90_inq_varid(fileid, 'LU_CLASS_FRACTION', varid), routine)
+    CALL nf (nf90_get_var(fileid, varid,lu_class_fr), routine)
+    CALL nf (nf90_get_att(fileid, varid, 'lctype', lctype_scm), routine)
   
     IF ( get_my_global_mpi_id() == 0 ) THEN
       print *,TRIM(routine),'  printing external surface parameters for SCM'
@@ -1925,7 +1925,7 @@ MODULE mo_nh_torus_exp
       print *,'  nCLU        =',   nCLU
     END IF
   
-    CALL nf (nf_close(fileid), routine)
+    CALL nf (nf90_close(fileid), routine)
 
   END SUBROUTINE read_ext_scm_nc
 
@@ -1969,14 +1969,14 @@ MODULE mo_nh_torus_exp
 !    z0_scm    = 0.035_wp
 
 
-    CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+    CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
       & TRIM(routine)//'   File init_SCM.nc cannot be opened (external)') 
 
-    CALL nf (nf_inq_attid(fileid, varid, 'z0',    attid   ), routine)
-    CALL nf (nfx_get_att (fileid, varid, 'z0',    z0_scm  ), routine)
+    CALL nf (nf90_inquire_attribute(fileid, varid, 'z0', attnum = attid), routine)
+    CALL nf (nf90_get_att(fileid, varid, 'z0', z0_scm), routine)
 
-    CALL nf (nf_inq_attid(fileid, varid, 'zorog', attid   ), routine)
-    CALL nf (nfx_get_att (fileid, varid, 'zorog', topo_scm), routine)
+    CALL nf (nf90_inquire_attribute(fileid, varid, 'zorog', attnum = attid), routine)
+    CALL nf (nf90_get_att(fileid, varid, 'zorog', topo_scm), routine)
 
 
     IF ( get_my_global_mpi_id() == 0 ) THEN

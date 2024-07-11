@@ -29,6 +29,9 @@ MODULE mo_ensemble_pert_config
     &                        tune_box_liq_asy, tune_thicklayfac, tune_gkdrag_enh
   USE mo_turbdiff_config,    ONLY: turbdiff_config
   USE mo_gribout_config,     ONLY: gribout_config
+#ifdef __ICON_ART
+  USE mo_art_config,         ONLY: art_config
+#endif
   USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config  ! Also to prepare perturbations of 2mom parameters;
                                                        ! these are in container atm_phy_nwp_config(jg) % cfg_2mom
   USE mo_assimilation_config,ONLY: assimilation_config
@@ -40,13 +43,15 @@ MODULE mo_ensemble_pert_config
   USE mo_nwp_phy_types,      ONLY: t_nwp_phy_diag
   USE mo_nwp_parameters,     ONLY: t_phy_params
   USE data_gwd,              ONLY: gfluxlaun
-  USE gscp_data,             ONLY: zvz0i
+  USE microphysics_1mom_schemes, ONLY:  &
+                                  get_terminal_fall_velocity_ice, &
+                                  set_terminal_fall_velocity_ice
   USE mo_ext_data_types,     ONLY: t_external_data
   USE mo_extpar_config,      ONLY: nclass_lu
   USE mo_exception,          ONLY: message_text, message, finish
   USE mtime,                 ONLY: datetime, getDayOfYearFromDateTime
   USE mo_mpi,                ONLY: p_io, p_comm_work, p_bcast
-  USE mo_run_config,         ONLY: ldass_lhn
+  USE mo_run_config,         ONLY: lart, ldass_lhn
 #ifdef _OPENACC
   USE ISO_C_BINDING,         ONLY: C_SIZEOF
   USE openacc,               ONLY: acc_is_present
@@ -64,7 +69,8 @@ MODULE mo_ensemble_pert_config
             range_rprcon, range_qexc, range_turlen, range_a_hshr, range_rain_n0fac, range_box_liq_asy,  &
             itype_pert_gen, timedep_pert, range_a_stab, range_c_diff, range_q_crit, range_thicklayfac,  &
             box_liq_sv, thicklayfac_sv, box_liq_asy_sv, range_lhn_coef, range_lhn_artif_fac,            &
-            range_fac_lhn_down, range_fac_lhn_up, range_fac_ccqc
+            range_fac_lhn_down, range_fac_lhn_up, range_fac_ccqc, range_rmfdeps, range_entrorg_mult,    &
+            range_dustyci_crit, range_dustyci_rhi
 
   !!--------------------------------------------------------------------------
   !! Basic configuration setup for ensemble perturbations
@@ -93,8 +99,14 @@ MODULE mo_ensemble_pert_config
   REAL(wp) :: &                    !< Entrainment parameter for deep convection valid at dx=20 km 
     &  range_entrorg, rnd_entrorg
 
+  REAL(wp) :: &                    !< Multiplicative perturbation of Entrainment parameter for deep convection valid at dx=20 km 
+    &  range_entrorg_mult, rnd_entrorg_mult
+
   REAL(wp) :: &                    !< Maximum shallow convection depth 
     &  range_rdepths, rnd_rdepths
+
+  REAL(wp) :: &                    !< Factor for fraction of initial downdraft mass flux 
+    &  range_rmfdeps, rnd_rmfdeps
 
   REAL(wp) :: &                    !< Entrainment parameter for deep convection valid at dx=20 km 
     &  range_rprcon, rnd_rprcon
@@ -201,6 +213,12 @@ MODULE mo_ensemble_pert_config
   REAL(wp) :: &                    !< Maximum leaf area index related to land-cover class
     &  range_laimax
 
+  REAL(wp) :: &                    !< Dust specific mass concentration threshold for dusty cirrus
+    &  range_dustyci_crit, rnd_dustyci_crit
+
+  REAL(wp) :: &                    !< Ice saturation ratio threshold for dusty cirrus
+    &  range_dustyci_rhi, rnd_dustyci_rhi
+
   REAL(wp) :: &                    !< Standard deviation of SST perturbations specified in SST analysis (K)
     &  stdev_sst_pert              !  this switch controls the correction term sst_pert_corrfac, compensating the systematic
                                    !  increase of evaporation related to the SST perturbations
@@ -226,6 +244,10 @@ MODULE mo_ensemble_pert_config
                                     q_crit_sv, alpha0_sv, alpha0_max_sv, lhn_coef_sv, lhn_artif_fac_sv, fac_lhn_down_sv,    &
                                     fac_lhn_up_sv, gkdrag_enh_sv
 
+#ifdef __ICON_ART
+  ! Dusty Cirrus
+  REAL(wp), DIMENSION(1:max_dom) :: dustyci_crit_sv, dustyci_rhi_sv
+#endif
 
 
   CONTAINS
@@ -348,12 +370,20 @@ MODULE mo_ensemble_pert_config
 
       ENDDO
 
-      !$ACC ENTER DATA COPYIN(rnd_tkred_sfc, rnd_fac_ccqc)
+      CALL RANDOM_NUMBER(rnd_num)
+      rnd_entrorg_mult = rnd_num
+
+      CALL RANDOM_NUMBER(rnd_num)
+      rnd_rmfdeps = rnd_num
+
+      !$ACC ENTER DATA COPYIN(rnd_tkred_sfc, rnd_fac_ccqc, rnd_entrorg_mult, rnd_rmfdeps)
 
       ! Ensure that perturbations on VH and VE cores are the same
 #if defined (__SX__) || defined (__NEC_VH__)
       CALL p_bcast(rnd_tkred_sfc, p_io, p_comm_work)
       CALL p_bcast(rnd_fac_ccqc, p_io, p_comm_work)
+      CALL p_bcast(rnd_entrorg_mult, p_io, p_comm_work)
+      CALL p_bcast(rnd_rmfdeps, p_io, p_comm_work)
 #endif
 
       DEALLOCATE(rnd_seed)
@@ -443,6 +473,13 @@ MODULE mo_ensemble_pert_config
     fac_lhn_down_sv(1:max_dom)  = assimilation_config(1:max_dom)%fac_lhn_down
     fac_lhn_up_sv(1:max_dom)    = assimilation_config(1:max_dom)%fac_lhn_up
 
+#ifdef __ICON_ART
+    ! Dusty Cirrus
+    IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
+      dustyci_crit_sv(1:max_dom) = art_config(1:max_dom)%rart_dustyci_crit
+      dustyci_rhi_sv(1:max_dom)  = art_config(1:max_dom)%rart_dustyci_rhi
+    ENDIF ! lart, lart_dusty_cirrus
+#endif
 
   END SUBROUTINE save_unperturbed_params
 
@@ -454,7 +491,7 @@ MODULE mo_ensemble_pert_config
     LOGICAL, INTENT(in) :: lprint ! print control output
     LOGICAL, INTENT(in) :: lacc ! If true, update data on device
 
-    REAL(wp) :: rnd_fac, rnd_num, tkfac
+    REAL(wp) :: rnd_fac, rnd_num, tkfac, zvz0i
     INTEGER :: jg
 #ifdef _OPENACC
     INTEGER :: nbytes
@@ -603,6 +640,17 @@ MODULE mo_ensemble_pert_config
     rnd_fac = range_cwimax_ml**(2._wp*(rnd_num-0.5_wp))
     cwimax_ml = cwimax_ml_sv * rnd_fac
 
+#ifdef __ICON_ART
+    ! Dusty Cirrus
+    IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
+      CALL random_gen(rnd_dustyci_crit, rnd_num)
+      art_config(1:max_dom)%rart_dustyci_crit = dustyci_crit_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_dustyci_crit
+      CALL random_gen(rnd_dustyci_rhi, rnd_num)
+      art_config(1:max_dom)%rart_dustyci_rhi  = dustyci_rhi_sv(1:max_dom)  + 2._wp*(rnd_num-0.5_wp)*range_dustyci_rhi
+    ENDIF ! lart, lart_dusty_cirrus
+#endif
+
+
 #ifdef _OPENACC
     IF(acc_is_present(tune_gkdrag)) CALL finish("set_scalar_ens_pert", & 
         "Internal error. `tune_gkdrag` is supposed to be on CPU only.")
@@ -706,6 +754,7 @@ MODULE mo_ensemble_pert_config
     IF (lprint) THEN
 
       ! control output
+      CALL get_terminal_fall_velocity_ice(zvz0i)
       WRITE(message_text,'(4f8.4,e11.4,2f8.4)') tune_gkwake(1), tune_gkdrag(1), tune_gkdrag_enh(1), tune_gfrcrit(1), &
         tune_gfluxlaun, tune_zvz0i, atm_phy_nwp_config(1)%rain_n0_factor
       CALL message('Perturbed values, gkwake, gkdrag, gkdrag_enh, gfrcrit, gfluxlaun, zvz0i, rain_n0fac', TRIM(message_text))
@@ -730,6 +779,14 @@ MODULE mo_ensemble_pert_config
 
       WRITE(message_text,'(2f8.4,e11.4)') tune_minsnowfrac, c_soil, cwimax_ml
       CALL message('Perturbed values, minsnowfrac, c_soil, cwimax_ml', TRIM(message_text))
+
+#ifdef __ICON_ART
+      ! Dusty Cirrus
+      IF (lart .AND. art_config(1)%lart_dusty_cirrus) THEN
+        WRITE(message_text,'(2f8.4)') art_config(1)%rart_dustyci_crit, art_config(1)%rart_dustyci_rhi
+        CALL message('Perturbed values, dustyci_crit, dustyci_rhi', TRIM(message_text))
+      ENDIF ! lart, lart_dusty_cirrus
+#endif
 
     ENDIF
 
@@ -805,12 +862,15 @@ MODULE mo_ensemble_pert_config
     INTEGER  :: jg, jb, jc, jt, ilu, iyr
     INTEGER  :: rl_start, rl_end, i_startblk, i_endblk, i_startidx, i_endidx
     REAL(wp) :: wrnd_num(nproma), wrnd_num2(nproma), log_range_tkred, log_range_ccqc, phaseshift, phaseshift2
+    REAL(wp) :: log_range_entrorg, log_range_rmfdeps, phaseshift_entrorg, phaseshift_rmfdeps
 
     rl_start = grf_bdywidth_c+1
     rl_end   = min_rlcell_int
 
-    log_range_tkred = LOG(range_tkred_sfc)
-    log_range_ccqc  = LOG(range_fac_ccqc)
+    log_range_tkred   = LOG(range_tkred_sfc)
+    log_range_ccqc    = LOG(range_fac_ccqc)
+    log_range_entrorg = LOG(range_entrorg_mult)
+    log_range_rmfdeps = LOG(range_rmfdeps)
 
     ! ssny = seconds since New Year
     ssny = (getDayOfYearFromDateTime(mtime_date)-1)*86400._wp + mtime_date%time%hour*3600._wp + &
@@ -826,6 +886,10 @@ MODULE mo_ensemble_pert_config
     phaseshift = phaseshift - INT(phaseshift)
     phaseshift2 = 250._wp*ssny/secyr
     phaseshift2 = phaseshift2 - INT(phaseshift2)
+    phaseshift_entrorg = 125._wp*ssny/secyr
+    phaseshift_entrorg = phaseshift_entrorg - INT(phaseshift_entrorg)
+    phaseshift_rmfdeps = 175._wp*ssny/secyr
+    phaseshift_rmfdeps = phaseshift_rmfdeps - INT(phaseshift_rmfdeps)
 
 
 !$OMP PARALLEL PRIVATE(jg,i_startblk,i_endblk)
@@ -866,9 +930,16 @@ MODULE mo_ensemble_pert_config
             prm_diag(jg)%tkred_sfc(jc,jb) = EXP(log_range_tkred*SIN(pi2*(wrnd_num(jc)+phaseshift)))
             prm_diag(jg)%fac_ccqc(jc,jb)  = EXP(log_range_ccqc*SIN(pi2*(wrnd_num2(jc)+phaseshift2)+&
               4._wp*p_patch(jg)%cells%center(jc,jb)%lon+8._wp*p_patch(jg)%cells%center(jc,jb)%lat))
+            prm_diag(jg)%fac_entrorg(jc,jb)  = EXP(log_range_entrorg*SIN(pi2*(rnd_entrorg_mult+phaseshift_entrorg)+&
+              4._wp*p_patch(jg)%cells%center(jc,jb)%lon+8._wp*p_patch(jg)%cells%center(jc,jb)%lat))
+            prm_diag(jg)%fac_entrorg(jc,jb)  = MAX(prm_diag(jg)%fac_entrorg(jc,jb),(prm_diag(jg)%fac_entrorg(jc,jb))**0.25_wp)
+            prm_diag(jg)%fac_rmfdeps(jc,jb)  = EXP(log_range_rmfdeps*SIN(pi2*(rnd_rmfdeps+phaseshift_rmfdeps)+&
+              4._wp*p_patch(jg)%cells%center(jc,jb)%lon+8._wp*p_patch(jg)%cells%center(jc,jb)%lat))
           ELSE
             prm_diag(jg)%tkred_sfc(jc,jb) = 1._wp
             prm_diag(jg)%fac_ccqc(jc,jb)  = 1._wp
+            prm_diag(jg)%fac_entrorg(jc,jb) = 1._wp
+            prm_diag(jg)%fac_rmfdeps(jc,jb) = 1._wp
           ENDIF
         ENDDO
         !$ACC END PARALLEL
@@ -904,7 +975,7 @@ MODULE mo_ensemble_pert_config
         ENDDO
         ! in addition, GWD and microphysics parameters need to be updated
         gfluxlaun = tune_gfluxlaun
-        zvz0i     = tune_zvz0i
+        CALL set_terminal_fall_velocity_ice(tune_zvz0i)
       ENDIF
     ENDIF
 

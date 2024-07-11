@@ -33,7 +33,7 @@ else
   # installation of RTTOV if you want to build ICON with it but do not have read
   # access to the installation in ${sw_root}:
   # RTTOV_ROOT='/path/to/rttov'
-  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV}/include"
+  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV_ROOT}/include"
   # RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
   # RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
 fi
@@ -51,11 +51,11 @@ CXXFLAGS='-g -O2'
 CPPFLAGS="-I${sw_root}/include -I${sw_root}/include/libxml2"
 
 FC='nvfortran'
-FCFLAGS="-I${sw_root}/include ${RTTOV_FCFLAGS-} -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline"
+FCFLAGS="${RTTOV_FCFLAGS-} -I${sw_root}/include -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline"
 
 ICON_FCFLAGS='-O2'
 
-LDFLAGS="-L${sw_root}/lib ${RTTOV_LDFLAGS-}"
+LDFLAGS="${RTTOV_LDFLAGS-} -L${sw_root}/lib"
 # The configure scripts of some of the bundled libraries (e.g. SCT) are
 # generated using original (non-patched) Libtool macros, which are not aware of
 # NVidia HPC compilers. As a result, their libtool scripts do not keep the
@@ -65,7 +65,7 @@ LDFLAGS="-L${sw_root}/lib ${RTTOV_LDFLAGS-}"
 # are meant for the linker only via ICON_LDFLAGS so that they are not passed to
 # any libtool script:
 ICON_LDFLAGS='-Wl,--disable-new-dtags -Wl,--as-needed'
-LIBS="-lxml2 -lSerialboxFortran -leccodes_f90 -leccodes ${RTTOV_LIBS-} -llapack -lblas -lnetcdff -lnetcdf -lhdf5_hl_fortran -lhdf5_fortran -lhdf5 -lz"
+LIBS="-lxml2 -lSerialboxFortran -leccodes ${RTTOV_LIBS-} -llapack -lblas -lnetcdff -lnetcdf -lhdf5_hl_fortran -lhdf5_fortran -lhdf5"
 
 EXTRA_CONFIG_ARGS='--enable-loop-exchange --enable-grib2 --disable-mpi --disable-coupling'
 

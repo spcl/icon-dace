@@ -12,24 +12,24 @@
 # ---------------------------------------
 
 #----------------------------------------------------------------------------------------------
-# 
+#
 # Script to set the amount of carbon in the YASSO humus pools closer to equilibrium.
 #
 # Depending on the simulation set-up the script uses different aggregation levels of the in- and output
-# to the humus pool: for a simulation without natural land cover changes the values per pft are used, 
-# for a simulation with natural land cover changes the box value is used.   
+# to the humus pool: for a simulation without natural land cover changes the values per pft are used,
+# for a simulation with natural land cover changes the box value is used.
 #
-# NOTE: script has only been tested for a limited number of configurations 
-#       (annual output, jsbach standalone in ECHAM and ICON environment) 
-#       and it is well possible that file-name structures or the like need to be further adapted 
+# NOTE: script has only been tested for a limited number of configurations
+#       (annual output, jsbach standalone in ECHAM and ICON environment)
+#       and it is well possible that file-name structures or the like need to be further adapted
 #       for other setups -- or even generalise handling of timestamps in restartfile names etc.
 #
-# Note: 
-# - uses ta variables, not per canopy variables to avoid numerical issues when applying natural LCC  
+# Note:
+# - uses ta variables, not per canopy variables to avoid numerical issues when applying natural LCC
 #  (+ in addition an average over the pfts is used when applying natural LCC -- using an aggregated
-#     variable from an upper layer of the tile hierarchy might catch potential numeric instabilities 
+#     variable from an upper layer of the tile hierarchy might catch potential numeric instabilities
 #     potentially caused by fractional changes and resulting implicit scaling)
-# - works on the pft level - not yet below! 
+# - works on the pft level - not yet below!
 # - The other carbon pools need to be close to equilibrium before ${year_start}.
 # - Read and write permission in the restart directory of ${exp} (see end of script) are required.
 # - This script needs 4 digit year dates.
@@ -41,7 +41,7 @@
 
 # parameters that need to be adapted
 
-#----- tested in echam env 
+#----- tested in echam env
 exp=run_for_pft_normalMaxLAI_eqhumus_branch # experiment ID
 mod=jsb #model short
 restartPrefix=restart_${exp}_${mod}_carbon_
@@ -50,7 +50,7 @@ path_restart=./ # the path, where the simulation stores the restart files
 
 #----- tested in icon env
 #exp=jsbalone_R2B4_carbon_setting_as_in_echam_runs
-#mod=jsbalone 
+#mod=jsbalone
 #restartPrefix=${exp}_restart_${mod}_
 #restartSuffix=0101T000000Z
 #path_restart=./
@@ -83,7 +83,7 @@ ${cp} ${restartToModify} ${work}/tmp_restart.nc
 for ipft in ${pfts[@]}; do
   echo "pft${ipft}"
 
-  # loop over years in the period to determine average flux to humus pools and average decomposition rate 
+  # loop over years in the period to determine average flux to humus pools and average decomposition rate
   if [[ ${with_nat_LCC} == true ]]; then
     # if with natural LCC: collect the information only once and for the veg tile
     fortile=veg
@@ -143,9 +143,9 @@ for ipft in ${pfts[@]}; do
   ${rm} ${work}/tmp_restart.nc
   ${cdo} -replace ${work}/tmp2_restart.nc ${work}/c_H2_eq.nc ${work}/tmp_restart.nc
   ${rm} ${work}/tmp2_restart.nc
-  
+
   # clean
-  ${rm} ${work}/c_H?_eq.nc ${work}/c_H?.nc 
+  ${rm} ${work}/c_H?_eq.nc ${work}/c_H?.nc
 
   if [[ ${with_nat_LCC} == false ]]; then
     ${rm} ${work}/factor_humus_?.nc

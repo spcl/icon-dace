@@ -461,7 +461,7 @@ CONTAINS
   END SUBROUTINE pre_radiation_nwp_steps
 
   SUBROUTINE pre_radiation_nwp(kbdim,p_inc_rad,p_sim_time,pt_patch,zsmu0,zsct,&
-    &                          slope_ang,slope_azi,horizon,cosmu0_slp,lacc)
+    &                          slope_ang,slope_azi,horizon,cosmu0_slp,shading_mask,lacc)
 
     INTEGER, INTENT(IN)   :: &
       & kbdim
@@ -475,9 +475,9 @@ CONTAINS
     REAL(wp), INTENT(OUT), OPTIONAL   :: zsct                  ! solar constant (at time of year)
     REAL(wp), INTENT(OUT)             :: zsmu0(kbdim,pt_patch%nblks_c)   ! Cosine of zenith angle
     ! Optional fields for slope-dependent surface radiation: slope angle, slope azimuth, and slope-dependent cosine of zenith angle
-    REAL(wp), INTENT(IN),  OPTIONAL, DIMENSION(kbdim,pt_patch%nblks_c) :: slope_ang,slope_azi
-    REAL(wp), INTENT(IN),  OPTIONAL, DIMENSION(kbdim,pt_patch%nblks_c,nhori) :: horizon
-    REAL(wp), INTENT(OUT), OPTIONAL, DIMENSION(kbdim,pt_patch%nblks_c) :: cosmu0_slp
+    REAL(wp), INTENT(IN), DIMENSION(kbdim,pt_patch%nblks_c) :: slope_ang,slope_azi
+    REAL(wp), INTENT(IN), DIMENSION(kbdim,pt_patch%nblks_c,nhori) :: horizon
+    REAL(wp), INTENT(OUT),DIMENSION(kbdim,pt_patch%nblks_c) :: cosmu0_slp, shading_mask
     LOGICAL, OPTIONAL,           INTENT(in)   :: lacc            !< GPU flag
 
 ! Local arrays
@@ -498,10 +498,10 @@ CONTAINS
       & zdeksin,zdekcos
 
     INTEGER :: &
-      & k, ii, jc, jj, itaja, jb, ie, shadow, jg
+      & k, ii, jc, jj, itaja, jb, ie, jg
 
     LOGICAL :: &
-      & lshade, lslope_aspect, lzacc      !switches
+      & lslope_aspect, lzacc      !switches
     LOGICAL :: l_tsi_recalculated
 
 !------------------------------------------------------------------------------
@@ -528,10 +528,6 @@ CONTAINS
     ! just on the first radiation step of the day.
     l_tsi_recalculated = .FALSE.
     IF (isolrad==2) l_tsi_recalculated = .TRUE.
-
-    IF (islope_rad(jg) > 0 .AND. .NOT. (PRESENT(slope_ang) .AND. PRESENT(slope_azi) .AND. PRESENT(cosmu0_slp)) ) THEN
-      CALL finish('pre_radiation_nwp','I/O fields for slope-dependent radiation are missing')
-    ENDIF
 
     ! SCM: read lat/lon for horizontally uniform zenith angle
     IF (l_scm_mode) THEN
@@ -663,18 +659,8 @@ CONTAINS
           zsct = zsct_save
         ENDIF
 
-        lshade        = .TRUE.
         lslope_aspect = .TRUE.
 
-        IF (islope_rad(jg) > 0 .AND. .NOT. (PRESENT(slope_ang) .AND. &
-              PRESENT(slope_azi) .AND. PRESENT(cosmu0_slp)) ) THEN
-          CALL finish('pre_radiation_nwp','I/O fields for slope-dependent radiation are missing')
-        ENDIF
-
-        IF (islope_rad(jg) >= 2 .AND. .NOT. PRESENT(horizon)) THEN
-            ! we need horizon
-          CALL finish('pre_radiation_nwp', 'I/O field horizon for shading is missing')
-        ENDIF
 
         IF (islope_rad(jg) >= 2) zihor = REAL(INT(360.0_wp/nhori),wp)
 
@@ -723,15 +709,15 @@ CONTAINS
               zha_sun(jc) = (horizon(jc,jb,k+1) *(rad2deg*zphi_sun(jc)-zihor*ii) +     &
                              horizon(jc,jb,ii+1)*(zihor*(ii+1)-rad2deg*zphi_sun(jc))) / zihor
 
-              ! apply shading
-              IF (zha_sun(jc) > rad2deg*ztheta_sun(jc)) cosmu0_slp(jc,jb) = 0._wp
+              ! compute shading mask
+              shading_mask(jc,jb) = MERGE(0._wp, 1._wp, zha_sun(jc) > rad2deg*ztheta_sun(jc))
             ENDDO
             !$ACC END PARALLEL
           ENDIF
 
           IF (islope_rad(jg) == 2) THEN
             !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-            !$ACC LOOP GANG VECTOR PRIVATE(x1, x2, ii, k, shadow)
+            !$ACC LOOP GANG VECTOR PRIVATE(x1, x2, ii, k)
             DO jc = 1, ie
               szra(jc)  = SIN(zeitrad(jc))
 
@@ -778,11 +764,8 @@ CONTAINS
                 &            zihor
 
               ! compute shadowmask
-              shadow = 1
-              IF (rad2deg*ztheta_sun(jc) < zha_sun(jc) .AND. lshade) THEN
-                shadow = 0
-              ENDIF
-
+              shading_mask(jc,jb) = MERGE(0._wp, 1._wp, zha_sun(jc) > rad2deg*ztheta_sun(jc))
+ 
               ! compute correction factor and multiply by sin(ztheta_sun) to get cosmu0_slp
               ! slope angle and aspect switched off
               IF (.NOT. lslope_aspect) THEN
@@ -794,11 +777,11 @@ CONTAINS
               IF (ztheta_sun(jc) > 0.01_wp) THEN
               ! Mueller and Scherer (2005) formula (MWR)
               ! New formula (lower correction, theoretically correct derived)
-                cosmu0_slp(jc,jb) = SIN(ztheta_sun(jc)) * REAL(shadow, wp) * &
+                cosmu0_slp(jc,jb) = SIN(ztheta_sun(jc)) *                    &
                   ( COS(ztheta(jc)) + (SIN(ztheta(jc))/TAN(ztheta_sun(jc)))* &
                                         COS(zphi_sun(jc) - slope_azi(jc,jb)) )
               ELSE
-                cosmu0_slp(jc,jb) = SIN(ztheta_sun(jc)) * REAL(shadow, wp)
+                cosmu0_slp(jc,jb) = SIN(ztheta_sun(jc))
               ENDIF
 
               ! Consistency check to avoid negative corrections:
@@ -837,6 +820,18 @@ CONTAINS
       ENDIF
   
     ENDIF
+
+    ! Avoid uninitialized output fields
+    DO jb = 1, pt_patch%nblks_c
+      ie = MERGE(kbdim, pt_patch%npromz_c, jb /= pt_patch%nblks_c)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+      !$ACC LOOP GANG VECTOR
+      DO jc = 1, ie
+        IF (islope_rad(jg) <= 1) shading_mask(jc,jb) = 1._wp
+        IF (islope_rad(jg) == 0) cosmu0_slp(jc,jb) = 0._wp ! not used
+      ENDDO
+      !$ACC END PARALLEL
+    ENDDO
 
     IF (l_scm_mode) THEN
       DEALLOCATE(scm_center)
@@ -1840,6 +1835,7 @@ CONTAINS
     &                 idx_lst_t,       & ! optional: index list of land points per tile
     &                 cosmu0,          & ! optional: cosine of zenith angle
     &                 cosmu0_slp,      & ! optional: slope-dependent cosine of zenith angle
+    &                 shading_mask,    & ! optional: orographic shading mask
     &                 skyview,         & ! optional: skyview factor for islope_rad=2
     &                 opt_nh_corr   ,  & ! optional: switch for applying corrections for NH model
     &                 use_trsolclr_sfc,& ! optional: use clear-sky surface transmissivity passed on input
@@ -1848,6 +1844,8 @@ CONTAINS
     &                 pdtdtradsw    ,  &
     &                 pdtdtradlw    ,  &
     &                 pflxsfcsw     ,  &
+    &                 pflxsfcsw_os   ,  &
+    &                 pflxsfcsw_tan_os   ,  &
     &                 pflxsfclw     ,  &
     &                 pflxsfcsw_t   ,  &
     &                 pflxsfclw_t   ,  &
@@ -1856,9 +1854,12 @@ CONTAINS
     &                 lwflx_up_sfc  ,  &
     &                 swflx_up_toa  ,  &
     &                 swflx_up_sfc  ,  &
+    &                 swflx_up_sfc_os,  &
+    &                 swflx_up_sfc_tan_os,  &
     &                 swflx_nir_sfc ,  &
     &                 swflx_vis_sfc ,  &
     &                 swflx_par_sfc ,  &
+    &                 swflx_par_sfc_tan_os,  &
     &                 swflx_clr_sfc ,  &
     &                 swflx_dn_sfc_diff, &
     &                 lacc             )
@@ -1887,6 +1888,7 @@ CONTAINS
                                        ! dim: (kbdim,,ntiles+ntiles_wtr)
       &     cosmu0    (kbdim),       & ! cosine of solar zenith angle (w.r.t. plain surface)
       &     cosmu0_slp(kbdim),       & ! slope-dependent cosine of solar zenith angle
+      &     shading_mask(kbdim),     & ! shading mask
       &     skyview   (:),           & ! skyview factor for islope_rad=2
       &     albedo    (kbdim),       & ! grid-box average albedo
       &     albedo_t  (:,:),         & ! tile-specific albedo
@@ -1923,6 +1925,8 @@ CONTAINS
 
     REAL(wp), INTENT(inout), OPTIONAL :: &
       &     pflxsfcsw (kbdim),       & ! shortwave surface net flux [W/m2]
+      &     pflxsfcsw_os (kbdim),     & ! shortwave surface net flux uncorr. [W/m2]
+      &     pflxsfcsw_tan_os (kbdim),     & ! shortwave surface net flux uncorr. [W/m2]
       &     pflxsfclw (kbdim),       & ! longwave  surface net flux [W/m2]
       &     pflxsfcsw_t(:,:),        & ! tile-specific shortwave surface net flux [W/m2]
                                        ! dim: (kbdim,ntiles+ntiles_wtr)
@@ -1933,9 +1937,12 @@ CONTAINS
       &     lwflx_up_sfc(kbdim), &     ! longwave upward flux at surface [W/m2]
       &     swflx_up_toa(kbdim), &     ! shortwave upward flux at the top of the atmosphere [W/m2]
       &     swflx_up_sfc(kbdim), &     ! shortwave upward flux at the surface [W/m2]
+      &     swflx_up_sfc_os(kbdim), &  ! shortwave upward flux at the surface [W/m2] incl. orographic shading
+      &     swflx_up_sfc_tan_os(kbdim), & ! shortwave upward flux at the surface [W/m2] incl. slope-dependent and orographic shading
       &     swflx_nir_sfc(kbdim), &    ! near-infrared downward flux at the surface [W/m2]
       &     swflx_vis_sfc(kbdim), &    ! visible downward flux at the surface [W/m2]
       &     swflx_par_sfc(kbdim), &    ! photosynthetically active downward flux at the surface [W/m2]
+      &     swflx_par_sfc_tan_os(kbdim), &    ! photosynthetically active downward flux at the surface [W/m2]
       &     swflx_clr_sfc(kbdim), &    ! clear-sky net shortwave flux at the surface [W/m2]
       &     swflx_dn_sfc_diff(kbdim)   ! shortwave diffuse downward radiative flux at the surface [W/m2]
 
@@ -1956,7 +1963,7 @@ CONTAINS
       &     intcli (kbdim,klevp1), &
       &     dlwflxall_o_dtg(kbdim,klevp1)
 
-    REAL(wp) :: dflxsw_o_dalb(kbdim), trsolclr(kbdim), logtqv, slope_corr(kbdim)
+    REAL(wp) :: dflxsw_o_dalb(kbdim), trsolclr(kbdim), logtqv, shading_corr(kbdim), slopeshade_corr(kbdim)
 
     ! local scalars
     REAL(wp) :: dpresg, pfaclw, intqctot, dlwflxclr_o_dtg, solrad, angle_ratio, &
@@ -1972,7 +1979,7 @@ CONTAINS
 !DIR$ ATTRIBUTES ALIGN : 64 :: zflxsw,zflxlw,zconv,tqv
 !DIR$ ATTRIBUTES ALIGN : 64 :: dlwem_o_dtg,lwfac1,lwfac2,intclw,intcli
 !DIR$ ATTRIBUTES ALIGN : 64 :: dlwflxall_o_dtg,dflxsw_o_dalb
-!DIR$ ATTRIBUTES ALIGN : 64 :: trsolclr,slope_corr
+!DIR$ ATTRIBUTES ALIGN : 64 :: trsolclr,shading_corr,slopeshade_corr
 #endif
     IF ( PRESENT(opt_nh_corr) ) THEN
       l_nh_corr = opt_nh_corr
@@ -1988,12 +1995,18 @@ CONTAINS
       CALL finish('radheat', 'I/O field skyview is missing')
     ENDIF
 
+    IF ( (islope_rad(jg)> 0).AND. .NOT. &
+        (PRESENT(pflxsfcsw_os)    .AND. PRESENT(pflxsfcsw_tan_os) .AND. PRESENT(swflx_par_sfc_tan_os) .AND. &
+         PRESENT(swflx_up_sfc_os) .AND. PRESENT(swflx_up_sfc_tan_os)) ) THEN
+      CALL finish('radheat', 'output fields for slope-dependent shortwave fluxes are missing')
+    ENDIF
+
     CALL set_acc_host_or_device(lzacc, lacc)
 
     !$ACC DATA CREATE(zflxsw, zflxlw, zconv, tqv, dlwem_o_dtg) &
     !$ACC   CREATE(lwfac1, lwfac2, intclw, intcli, dlwflxall_o_dtg) &
     !$ACC   CREATE(dflxsw_o_dalb, trsolclr) &
-    !$ACC   CREATE(slope_corr) IF(lzacc)
+    !$ACC   CREATE(shading_corr, slopeshade_corr) IF(lzacc)
 
     lcalc_trsolclr = .TRUE.
     IF (PRESENT(use_trsolclr_sfc) .AND. PRESENT(trsol_clr_sfc)) THEN
@@ -2020,7 +2033,8 @@ CONTAINS
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP GANG VECTOR
     DO jc = jcs, jce
-      slope_corr(jc) = 1._wp
+      shading_corr(jc) = 1._wp
+      slopeshade_corr(jc) = 1._wp
     ENDDO
     !$ACC END PARALLEL
 
@@ -2044,24 +2058,15 @@ CONTAINS
 
     IF (l_nh_corr) THEN !
 
-      IF (islope_rad(jg) == 1 .OR. islope_rad(jg) == 3) THEN
+      IF (islope_rad(jg) >= 1) THEN
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         !$ACC LOOP GANG VECTOR PRIVATE(solrad, angle_ratio)
         DO jc = jcs, jce
           solrad = MAX(0.1_wp,ptrmsw(jc,klevp1)/(1._wp-albedo(jc)),trsol_dn_sfc_diff(jc))
           angle_ratio = MIN(10._wp,cosmu0_slp(jc)/MAX(1.e-5_wp,cosmu0(jc)))
-          slope_corr(jc) = (trsol_dn_sfc_diff(jc) + (solrad-trsol_dn_sfc_diff(jc))*angle_ratio)/solrad
-        ENDDO
-        !$ACC END PARALLEL
-      ELSEIF (islope_rad(jg) == 2) THEN ! with correction of horizon and skyview
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG VECTOR PRIVATE(solrad, angle_ratio)
-        DO jc = jcs, jce
-          solrad = MAX(0.1_wp,ptrmsw(jc,klevp1)/(1._wp-albedo(jc)),trsol_dn_sfc_diff(jc))
-          angle_ratio = MIN(10._wp,cosmu0_slp(jc)/MAX(1.e-5_wp,cosmu0(jc)))
-          slope_corr(jc) = (trsol_dn_sfc_diff(jc) + (solrad-trsol_dn_sfc_diff(jc))*angle_ratio)/solrad
-        ! skyview is not used but should have an impact in the following form:
-        ! slope_corr(jc) = (trsol_dn_sfc_diff(jc)*skyview(jc) + (1._wp-skyview(jc))*(solrad-trsol_dn_sfc_diff(jc))*angle_ratio)/solrad
+
+          shading_corr(jc)    = (trsol_dn_sfc_diff(jc) + (solrad-trsol_dn_sfc_diff(jc))*shading_mask(jc))/solrad
+          slopeshade_corr(jc) = (trsol_dn_sfc_diff(jc) + (solrad-trsol_dn_sfc_diff(jc))*angle_ratio*shading_mask(jc))/solrad
         ENDDO
         !$ACC END PARALLEL
       ENDIF
@@ -2071,13 +2076,26 @@ CONTAINS
       !$ACC LOOP GANG VECTOR
       DO jc = jcs, jce
         swflx_up_toa(jc)      = pi0(jc)*trsol_up_toa(jc)
-        swflx_up_sfc(jc)      = pi0(jc)*trsol_up_sfc(jc) * slope_corr(jc)
+        swflx_up_sfc(jc)      = pi0(jc)*trsol_up_sfc(jc)
         swflx_dn_sfc_diff(jc) = pi0(jc)*trsol_dn_sfc_diff(jc)
-        swflx_nir_sfc(jc)     = pi0(jc)*trsol_nir_sfc(jc) * slope_corr(jc)
-        swflx_vis_sfc(jc)     = pi0(jc)*trsol_vis_sfc(jc) * slope_corr(jc)
-        swflx_par_sfc(jc)     = pi0(jc)*trsol_par_sfc(jc) * slope_corr(jc)
+        swflx_nir_sfc(jc)     = pi0(jc)*trsol_nir_sfc(jc)
+        swflx_vis_sfc(jc)     = pi0(jc)*trsol_vis_sfc(jc)
+        swflx_par_sfc(jc)     = pi0(jc)*trsol_par_sfc(jc)
       ENDDO
       !$ACC END PARALLEL
+
+
+      IF (islope_rad(jg)> 0) THEN
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        !$ACC LOOP GANG VECTOR
+        DO jc = jcs, jce
+          swflx_up_sfc_os(jc)      = pi0(jc)*trsol_up_sfc(jc)*shading_corr(jc)
+          swflx_up_sfc_tan_os(jc)  = pi0(jc)*trsol_up_sfc(jc)*slopeshade_corr(jc)
+          swflx_par_sfc_tan_os(jc) = pi0(jc)*trsol_par_sfc(jc)*slopeshade_corr(jc)
+        ENDDO
+        !$ACC END PARALLEL
+      ENDIF
+
 
       IF (lcalc_clrflx) THEN
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
@@ -2176,7 +2194,7 @@ CONTAINS
           !$ACC LOOP GANG VECTOR PRIVATE(jc)
           DO ic = 1, gp_count_t(jt)
             jc = idx_lst_t(ic,jt)
-            pflxsfcsw_t(jc,jt) = slope_corr(jc) * MAX(0.1_wp*zflxsw(jc,klevp1), zflxsw(jc,klevp1) + &
+            pflxsfcsw_t(jc,jt) = slopeshade_corr(jc) * MAX(0.1_wp*zflxsw(jc,klevp1), zflxsw(jc,klevp1) + &
                                  dflxsw_o_dalb(jc)*(albedo_t(jc,jt)-albedo(jc)))
             pflxsfclw_t(jc,jt) = zflxlw(jc,klevp1) + dlwflxall_o_dtg(jc,klevp1)* &
                                  (ptsfc_t(jc,jt)-ptsfc(jc))
@@ -2229,7 +2247,7 @@ CONTAINS
         !$ACC LOOP GANG VECTOR PRIVATE(jc)
         DO ic = 1, list_land_count
           jc = list_land_idx(ic)
-          pflxsfcsw_t(jc,1) = slope_corr(jc) * zflxsw(jc,klevp1)
+          pflxsfcsw_t(jc,1) = slopeshade_corr(jc) * zflxsw(jc,klevp1)
           pflxsfclw_t(jc,1) = zflxlw(jc,klevp1)
         ENDDO
         !$ACC END PARALLEL
@@ -2291,10 +2309,21 @@ CONTAINS
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR
       DO jc = jcs, jce
-        pflxsfcsw(jc) = slope_corr(jc) * zflxsw(jc,klevp1)
+        pflxsfcsw(jc) = zflxsw(jc,klevp1)
       ENDDO
       !$ACC END PARALLEL
     ENDIF
+
+    IF (islope_rad(jg)> 0) THEN
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+      !$ACC LOOP GANG VECTOR
+      DO jc = jcs, jce
+        pflxsfcsw_os(jc)     = shading_corr(jc) * zflxsw(jc,klevp1)
+        pflxsfcsw_tan_os(jc) = slopeshade_corr(jc) * zflxsw(jc,klevp1)
+      ENDDO
+      !$ACC END PARALLEL
+    ENDIF
+
     IF ( PRESENT(pflxsfclw) ) THEN
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       !$ACC LOOP GANG VECTOR

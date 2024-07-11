@@ -98,8 +98,9 @@ cat > ${atmo_namelist} << EOF
 !
 &parallel_nml
  nproma            = ${nproma}
+ nblocks_c         = 0
  num_io_procs      = ${num_io_procs}
- nproma_sub        = 8000
+ nproma_sub        = ${nproma_sub}
  io_process_stride = 6
 /
 &grid_nml
@@ -212,7 +213,7 @@ cat > ${atmo_namelist} << EOF
  aes_vdf_config(1)%use_tmx     = .TRUE.
  aes_vdf_config(1)%turb        = 2 ! 1: TTE, 2: Smagorinsky (only 2 for use_tmx=true)
  aes_vdf_config(1)%solver_type = 2 ! for tmx only; 1: explicit solver, 2: implicit solver
- aes_vdf_config(1)%energy_type = 1 ! for tmx only; use 1: dry static energy, 2: internal energy for thermal vert. diffusion
+ aes_vdf_config(1)%energy_type = 2 ! for tmx only; use 1: dry static energy, 2: internal energy for thermal vert. diffusion
 /
 &aes_cop_nml
  aes_cop_config(1)%cn1lnd     =  50.0
@@ -220,9 +221,8 @@ cat > ${atmo_namelist} << EOF
  aes_cop_config(1)%cn1sea     =  50.0
  aes_cop_config(1)%cn2sea     = 100.0
  aes_cop_config(1)%cinhomi    =   1.0
- aes_cop_config(1)%cinhoml1   =   1.0
- aes_cop_config(1)%cinhoml2   =   1.0
- aes_cop_config(1)%cinhoml3   =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml    =   1.0
 /
 &aes_cov_nml
  aes_cov_config(1)%cqx        = 1.e-6
@@ -297,8 +297,8 @@ EOF
 # model files
 #
 # Radiation:
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
 # Two Moment scheme input
@@ -420,11 +420,12 @@ if [[ "$output_atm_2d" == "yes" ]]; then
                     'qrvi'    , 'qsvi'    , 'qgvi'    , 
                     'hfls'    , 'hfss'    , 'evspsbl' ,
                     'prlr'    , 'prls'    , 'cptgzvi' , 
-                    'uphyvi'  , 'udynvi'  , 'utmxvi', 'tend_utmxvi',
+!                    'udynvi_gmean' , 'duphyvi_gmean' , 'uphybal_gmean' ,
+!                    'ufts_gmean'   , 'ufvs_gmean'    , 'ufcs_gmean' , 'kedisp_gmean' ,
+!                    'radtop_gmean' , 'radbot_gmean'  , 'radbal_gmean'
 EOF
 if [[ x${dt_mig} != x ]]; then
   cat >> ${atmo_namelist} << EOF
-                    'evap_tsa', 'shfl_qsa', 'rsfl_tsa', 'ssfl_tsa',
                     'pr_rain' , 'pr_snow' , 'pr_grpl' , 'pr_ice'  , 
 EOF
 fi

@@ -9,10 +9,12 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ---------------------------------------------------------------
 
+# cmake-format: off
 # list_sources(<var>
 #              [DIRECTORY <dir>]
 #              [INCLUDE_REGEX <include_regex>]
 #              [EXCLUDE_GENERATED])
+# cmake-format: on
 # ------------------------------------------------------------------------------
 # Sets <var> to a list of absolute paths to the source files of all targets in
 # all subdirectories of <dir> (defaults to the current source directory). The
@@ -25,18 +27,22 @@
 # are excluded from the result.
 #
 function(list_sources var)
-  cmake_parse_arguments(PARSE_ARGV 1 ARG
-    "EXCLUDE_GENERATED"
-    "DIRECTORY;INCLUDE_REGEX"
-    ""
-  )
+  cmake_parse_arguments(PARSE_ARGV 1 ARG "EXCLUDE_GENERATED"
+                        "DIRECTORY;INCLUDE_REGEX" "")
 
   if(ARG_EXCLUDE_GENERATED AND "${CMAKE_VERSION}" VERSION_LESS "3.18")
-    message(AUTHOR_WARNING
-      "The generated source files can be automatically excluded only with CMake 3.18 or newer.")
+    message(
+      AUTHOR_WARNING
+        "The generated source files can be automatically excluded only with CMake 3.18 or newer."
+    )
     set(ARG_EXCLUDE_GENERATED FALSE)
   endif()
 
+  # list_sources_recurse(<var> <dir>)
+  # ----------------------------------------------------------------------------
+  # This is a local function that finds the sources recursively. Do not use this
+  # function directly. Use list_sources instead.
+  #
   function(list_sources_recurse var dir)
     get_directory_property(dir_path DIRECTORY ${dir} SOURCE_DIR)
     get_directory_property(targets DIRECTORY ${dir} BUILDSYSTEM_TARGETS)
@@ -54,7 +60,8 @@ function(list_sources var)
       if(sources)
         foreach(source ${sources})
           if(${ARG_EXCLUDE_GENERATED})
-            get_source_file_property(source_generated ${source} DIRECTORY ${dir} GENERATED)
+            get_source_file_property(source_generated ${source} DIRECTORY
+                                     ${dir} GENERATED)
             if(source_generated)
               continue()
             endif()
@@ -69,7 +76,9 @@ function(list_sources var)
       list_sources_recurse(subdir_sources ${subdir} ${ARG_EXCLUDE_GENERATED})
       list(APPEND result ${subdir_sources})
     endforeach()
-    set(${var} ${result} PARENT_SCOPE)
+    set(${var}
+        ${result}
+        PARENT_SCOPE)
   endfunction()
 
   if(NOT ARG_DIRECTORY)
@@ -83,5 +92,7 @@ function(list_sources var)
   endif()
 
   list(REMOVE_DUPLICATES result)
-  set(${var} ${result} PARENT_SCOPE)
+  set(${var}
+      ${result}
+      PARENT_SCOPE)
 endfunction()

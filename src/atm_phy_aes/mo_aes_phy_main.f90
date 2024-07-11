@@ -35,9 +35,8 @@ MODULE mo_aes_phy_main
   USE mo_aes_vdf_config      ,ONLY: aes_vdf_config
   USE mo_aes_phy_diag        ,ONLY: surface_fractions, &
     &                               droplet_number,    &
-    &                               cpair_cvair_qconv, &
-    &                               initialize,        &
-    &                               finalize
+    &                               get_cvair,         &
+    &                               initialize
 
   USE mo_aes_diagnostics     ,ONLY: aes_global_diagnostics
 #if defined( _OPENACC )
@@ -92,7 +91,6 @@ CONTAINS
     !-------------------------------------------------------------------
     !
     CALL omp_block_loop_cell(patch, initialize)        ! initialize q_phy and q_phy_vi
-    CALL omp_block_loop_cell(patch, cpair_cvair_qconv) ! cp, cv and W/m2 -> K/s
     CALL omp_block_loop_cell(patch, surface_fractions) ! surface fractions
 
     !-------------------------------------------------------------------
@@ -111,6 +109,7 @@ CONTAINS
        CALL omp_block_loop_cell(patch, interface_cloud_mig)
        !
     END IF
+    CALL omp_block_loop_cell(patch, get_cvair)       
 
     !--------------------------------------------------------------------
     ! two-moment cloud microphysics (two) by Seifert and Beheng (2006)
@@ -250,18 +249,11 @@ CONTAINS
     END IF
 
     !-------------------------------------------------------------------
-    ! Finish physics
-    !-------------------------------------------------------------------
-    !
-    CALL omp_block_loop_cell(patch,finalize)           ! dT/dt|phy,const.pressure -> dT/dt|phy,const.volume
-
-    !-------------------------------------------------------------------
     ! Output diagnostics
     !-------------------------------------------------------------------
     !
     CALL omp_block_loop_cell(patch, diagnose_cov)      ! cloud cover
     CALL omp_block_loop_cell(patch, interface_aes_wmo) ! WMO tropopause height
-    CALL aes_global_diagnostics(patch)                 ! global mean diagnostics
 
   END SUBROUTINE aes_phy_main
   !---------------------------------------------------------------------

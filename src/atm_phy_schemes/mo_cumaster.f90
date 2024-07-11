@@ -69,7 +69,7 @@ SUBROUTINE cumastrn &
  & ptenq,    ptenrhoq, ptenrhol, ptenrhoi,       &
  & ptenrhor, ptenrhos,                           &
  & ldcum,      ktype , kcbot,    kctop,          &
- & LDSHCV,                                       &
+ & LDSHCV,   fac_entrorg, fac_rmfdeps,           &
  & pmfu,     pmfd,                               &
  & pmfude_rate,        pmfdde_rate,              &
  & ptu,      pqu,      plu,  pcore,              &
@@ -330,6 +330,7 @@ REAL(KIND=jprb)   ,INTENT(in)    :: pqhfl(klon,klev+1)
 REAL(KIND=jprb)   ,INTENT(in)    :: pahfs(klon,klev+1) 
 REAL(KIND=jprb)   ,INTENT(in)    :: shfl_s(klon) 
 REAL(KIND=jprb)   ,INTENT(in)    :: qhfl_s(klon)
+REAL(KIND=jprb)   ,INTENT(in)    :: fac_entrorg(klon), fac_rmfdeps(klon)
 REAL(KIND=jprb)   ,INTENT(in)    :: pap(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(in)    :: paph(klon,klev+1)
 REAL(KIND=jprb)   ,INTENT(in)    :: zdph(klon,klev)
@@ -508,7 +509,7 @@ REAL(KIND=jprb) :: msee(klon,klev)
 !$ACC   PRESENT(ptenrhos, ptenu, ptenv, ldcum, ktype, kcbot, kctop, ldshcv, ptu, pqu) &
 !$ACC   PRESENT(plu, pmflxr, pmflxs, pdtke_con, prain, pmfu, pmfd, pmfude_rate) &
 !$ACC   PRESENT(pmfdde_rate, pcape, pvddraf, phy_params, zdph, shfl_s, qhfl_s, pcore) &
-!$ACC   PRESENT(ptenta, ptenqa, k700, plen, pien, peis) &
+!$ACC   PRESENT(ptenta, ptenqa, k700, plen, pien, peis, fac_entrorg, fac_rmfdeps) &
 
 !$ACC   CREATE(pwmean, plude, penth, pqsen, psnde, ztenq_sv, ztenh, zqenh, zqsenh) &
 !$ACC   CREATE(ztd, zqd, zmfus, zmfds, zmfuq, zmfdq, zdmfup, zdmfdp, zmful, zrfl) &
@@ -694,7 +695,7 @@ ENDIF
 
 CALL cubasen &
   & ( kidia,    kfdia,    klon,   ktdia,    klev, &
-  & phy_params%kcon1, phy_params%kcon2, phy_params%entrorg, &
+  & phy_params%kcon1, phy_params%kcon2, phy_params%entrorg,fac_entrorg, &
   & phy_params%entstpc1, phy_params%entstpc2, phy_params%rdepths, &
   & phy_params%texc, phy_params%qexc, phy_params%lgrayzone_deepconv, mtnmask, ldland, ldlake, &
   & ztenh,    zqenh,    pgeoh,    paph,&
@@ -881,7 +882,7 @@ ENDDO
 
 CALL cuascn &
   & ( kidia,    kfdia,    klon,   ktdia,   klev, phy_params%mfcfl, &
-  & phy_params%entrorg, phy_params%detrpen, phy_params%rprcon, phy_params%lmfmid,      &
+  & phy_params%entrorg, fac_entrorg, phy_params%detrpen, phy_params%rprcon, phy_params%lmfmid,      &
   & phy_params%lgrayzone_deepconv, ptsphy, paer_ss,                &
   & ztenh,    zqenh,&
   & ptenq, &
@@ -979,7 +980,7 @@ IF(lmfdd) THEN
 
   CALL cudlfsn &
     & ( kidia,    kfdia,    klon,   ktdia,    klev,&
-    & kcbot,    kctop,    ldcum,&
+    & kcbot,    kctop,    ldcum, fac_rmfdeps, &
     & ztenh,    zqenh,         &
     & pten,     pqsen,    pgeo,&
     & pgeoh,    paph,     ptu,      pqu, &
@@ -1067,7 +1068,8 @@ DO jl = kidia, kfdia
     ikd = idpl(jl)
     ikb = kcbot(jl)
     ik  = kctop(jl)
-    ztau(jl) = (pgeoh(jl,ik)-pgeoh(jl,ikb))/((2.0_jprb+MIN(15.0_jprb,pwmean(jl)))*rg)*phy_params%tau
+    ztau(jl) = (pgeoh(jl,ik)-pgeoh(jl,ikb))/((2.0_jprb+MIN(15.0_jprb,pwmean(jl)))*rg)*phy_params%tau/ &
+               MAX(1._jprb,fac_entrorg(jl)**2)
     llo1 = (paph(jl,klev+1)-paph(jl,ikd)) < 50.e2_jprb
     IF (llo1 .AND. ldland(jl)) THEN
       ! Use PBL CAPE for diurnal cycle correction, including a reduction term for low-CAPE situations
@@ -1516,7 +1518,7 @@ IF(lmfit) THEN
 
   CALL cuascn &
     & ( kidia,    kfdia,    klon,   ktdia,   klev, phy_params%mfcfl, &
-    & phy_params%entrorg, phy_params%detrpen,phy_params%rprcon, phy_params%lmfmid, &
+    & phy_params%entrorg, fac_entrorg, phy_params%detrpen,phy_params%rprcon, phy_params%lmfmid, &
     & phy_params%lgrayzone_deepconv, ptsphy, paer_ss,&
     & ztenh,    zqenh,    &
     & ptenq,            &

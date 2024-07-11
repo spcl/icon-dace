@@ -56,13 +56,13 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_idxlist_utils.h"
 #include "core/ppm_xfuncs.h"
 
-int main(void) {
-
-  // init:
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+int main(int argc, char **argv)
+{
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
   xt_initialize(MPI_COMM_WORLD);
 
   { // idxvec modifier

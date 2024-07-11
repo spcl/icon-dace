@@ -130,8 +130,8 @@ CONTAINS
 !$OMP END DO NOWAIT
 
     IF (p_test_run) THEN ! Reset also halo points to zero
-      CALL init(p_vn_traj    (:,:,i_endblk+1:p_patch%nblks_e))
-      CALL init(p_mass_flx_me(:,:,i_endblk+1:p_patch%nblks_e))
+      CALL init(p_vn_traj    (:,:,i_endblk+1:p_patch%nblks_e), lacc=lzacc)
+      CALL init(p_mass_flx_me(:,:,i_endblk+1:p_patch%nblks_e), lacc=lzacc)
 !$OMP BARRIER
     ENDIF
 
@@ -175,7 +175,7 @@ CONTAINS
 !$OMP END DO
 
     IF (p_test_run) THEN ! Reset also halo points to zero
-      CALL init(p_mass_flx_ic(:,:,i_endblk+1:p_patch%nblks_c))
+      CALL init(p_mass_flx_ic(:,:,i_endblk+1:p_patch%nblks_c), lacc=lzacc)
 !$OMP BARRIER
     ENDIF
 !$OMP END PARALLEL

@@ -29,7 +29,7 @@ MODULE mo_ocean_solve_subset_transfer
     & solve_trans_compact, solve_cell, solve_edge, solve_vert
   USE mo_model_domain, ONLY: t_patch
   USE mo_mpi, ONLY: p_n_work, p_pe_work, p_comm_work, p_sum, p_int, &
-    & p_bcast, my_process_is_mpi_parallel
+    & p_bcast, my_process_is_mpi_parallel, i_am_accel_node
   USE mo_parallel_config, ONLY: nproma
   USE mo_timer, ONLY: timer_start, timer_stop, new_timer
   USE mo_run_config, ONLY: ltimer
@@ -183,7 +183,7 @@ CONTAINS
     n_core_cl = (this%nblk_l - 1) * this%nidx_l + this%nidx_e_l
     n_glb = p_sum(n_core_cl, comm=p_comm_work)
     IF (my_process_is_mpi_parallel()) &
-      & CALL exchange_data(cpat_sync_c, gID_tmp)
+      & CALL exchange_data(p_pat=cpat_sync_c, lacc=i_am_accel_node, recv=gID_tmp)
     this%ngid_a_l = COUNT(gID_tmp(:,:) .NE. -1)
     NULLIFY(this%glb_idx_loc)
     ALLOCATE(this%glb_idx_loc(this%ngid_a_l))
@@ -208,7 +208,7 @@ CONTAINS
       gID_tmp(1:this%nidx_l, iblk) = -1
     ENDDO
     IF (my_process_is_mpi_parallel()) &
-      & CALL exchange_data(cpat_sync_c, gID_tmp)
+      & CALL exchange_data(p_pat=cpat_sync_c, lacc=i_am_accel_node, recv=gID_tmp)
     ALLOCATE(tmp_owners_cl(this%ngid_a_l))
     done = .FALSE.
     DO iblk = 1, this%nblk_a_l
@@ -449,7 +449,7 @@ CONTAINS
 #endif
 
     IF (ltimer) CALL timer_start(this%timer_in(tt))
-    CALL exchange_data(this%cpat_in, data_out, data_in)
+    CALL exchange_data(p_pat=this%cpat_in, lacc=lzacc, recv=data_out, send=data_in)
     IF (ltimer) CALL timer_stop(this%timer_in(tt))
   END SUBROUTINE subset_transfer_into_2d_wp
 
@@ -485,7 +485,7 @@ CONTAINS
     END DO
 !ICON_OMP END PARALLEL DO
     IF (this%is_solver_pe) to(:, 1, SIZE(do1, 2), :) = 0._wp
-    CALL exchange_data_mult(this%cpat_in, 2, 2, recv4d=to, send4d=ti)
+    CALL exchange_data_mult(p_pat=this%cpat_in, lacc=lzacc, nfields=2, ndim2tot=2, recv4d=to, send4d=ti)
     IF (this%is_solver_pe) THEN
 #ifdef _OPENMP
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
@@ -531,7 +531,7 @@ CONTAINS
     n3 = SIZE(data_in, 3)
     ALLOCATE(to(this%nidx, 1, this%nblk, n3))
     IF (this%is_solver_pe) to(:, 1, this%nblk, :) = 0._wp
-    CALL exchange_data_mult(this%cpat_in2, n3, n3, recv4d=to, send4d= &
+    CALL exchange_data_mult(p_pat=this%cpat_in2, lacc=lzacc, nfields=n3, ndim2tot=n3, recv4d=to, send4d= &
       & RESHAPE(data_in, (/SIZE(data_in, 1), 1, SIZE(data_in, 2), n3/)))
     IF (this%is_solver_pe) THEN
 #ifdef _OPENMP
@@ -584,7 +584,7 @@ CONTAINS
       END DO
 !ICON_OMP END PARALLEL DO
       glb_in(this%nidx_e_l + 1:, this%nblk_l) = -1
-      CALL exchange_data(this%cpat_in2, glb_out, glb_in)
+      CALL exchange_data(p_pat=this%cpat_in2, lacc=lzacc, recv=glb_out, send=glb_in)
       IF (this%is_solver_pe) THEN
 #ifdef _OPENMP
 !$OMP PARALLEL DO SCHEDULE(GUIDED) PRIVATE(iidx, jblk, jidx, gid, found, notfound)
@@ -634,7 +634,7 @@ CONTAINS
 #endif
 
     IF (ltimer) CALL timer_start(this%timer_out)
-    CALL exchange_data(this%cpat_out, data_out, data_in)
+    CALL exchange_data(p_pat=this%cpat_out, lacc=lzacc, recv=data_out, send=data_in)
     IF (ltimer) CALL timer_stop(this%timer_out)
   END SUBROUTINE subset_transfer_out_2d_wp
 
@@ -687,8 +687,13 @@ CONTAINS
     REAL(KIND=wp), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: data_inout
 
     IF (ltimer) CALL timer_start(this%timer_sync)
-    IF (my_process_is_mpi_parallel()) &
-      & CALL exchange_data(this%cpat_sync, data_inout)
+    IF (my_process_is_mpi_parallel()) THEN
+#ifdef _OPENACC
+      CALL finish("subset_transfer_sync_2d_wp is not tested with OPENACC")
+      ! TODO: lacc=.flase. or .true.?
+#endif
+      CALL exchange_data(p_pat=this%cpat_sync, lacc=i_am_accel_node, recv=data_inout)
+    END IF
     IF (ltimer) CALL timer_stop(this%timer_sync)
   END SUBROUTINE subset_transfer_sync_2d_wp
 
@@ -697,8 +702,13 @@ CONTAINS
     REAL(KIND=sp), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: data_inout
 
     IF (ltimer) CALL timer_start(this%timer_sync)
-    IF (my_process_is_mpi_parallel()) &
-      & CALL exchange_data(this%cpat_sync, data_inout)
+    IF (my_process_is_mpi_parallel()) THEN
+#ifdef _OPENACC
+      CALL finish("subset_transfer_sync_2d_sp is not tested with OPENACC")
+      ! TODO: lacc=.flase. or .true.?
+#endif
+      CALL exchange_data(p_pat=this%cpat_sync, lacc=i_am_accel_node, recv=data_inout)
+    END IF
     IF (ltimer) CALL timer_stop(this%timer_sync)
   END SUBROUTINE subset_transfer_sync_2d_sp
 

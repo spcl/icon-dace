@@ -32,6 +32,8 @@ MODULE mo_ensemble_pert_nml
     &                               config_range_zvz0i     => range_zvz0i,     &
     &                               config_range_rain_n0fac => range_rain_n0fac, &
     &                               config_range_entrorg   => range_entrorg,   &  
+    &                               config_range_entrorg_mult  => range_entrorg_mult,  &
+    &                               config_range_rmfdeps   => range_rmfdeps,   &
     &                               config_range_rdepths   => range_rdepths,   &  
     &                               config_range_rprcon    => range_rprcon,    &  
     &                               config_range_capdcfac_et => range_capdcfac_et, &  
@@ -66,6 +68,8 @@ MODULE mo_ensemble_pert_nml
     &                               config_range_rootdp    => range_rootdp,    &
     &                               config_range_rsmin     => range_rsmin,     &
     &                               config_range_laimax    => range_laimax,    &
+    &                               config_range_dustyci_crit => range_dustyci_crit, &
+    &                               config_range_dustyci_rhi => range_dustyci_rhi, &
     &                               config_stdev_sst_pert  => stdev_sst_pert,  &
     &                               config_itype_pert_gen  => itype_pert_gen,  &
     &                               config_timedep_pert    => timedep_pert,    &
@@ -103,8 +107,14 @@ MODULE mo_ensemble_pert_nml
   REAL(wp) :: &                    !< Entrainment parameter for deep convection valid at dx=20 km 
     &  range_entrorg
 
-  REAL(wp) :: &                    !< Maximum shallow convection depth 
+  REAL(wp) :: &                    !< Entrainment parameter for deep convection valid at dx=20 km 
+    &  range_entrorg_mult          !  multiplicative perturbation with compensating change of adjustment time scale
+
+  REAL(wp) :: &                    !< Maximum shallow convection depth
     &  range_rdepths
+
+  REAL(wp) :: &                    !< Factor for fraction of initial downdraft mass flux 
+    &  range_rmfdeps
 
   REAL(wp) :: &                    !< Entrainment parameter for deep convection valid at dx=20 km 
     &  range_rprcon
@@ -205,6 +215,12 @@ MODULE mo_ensemble_pert_nml
   REAL(wp) :: &                    !< Maximum leaf area index related to land-cover class
     &  range_laimax
 
+  REAL(wp) :: &                    !< Dust specific mass concentration threshold for dusty cirrus
+    &  range_dustyci_crit
+
+  REAL(wp) :: &                    !< Ice saturation ratio threshold for dusty cirrus
+    &  range_dustyci_rhi
+
   REAL(wp) :: &                    !< Standard deviation of SST perturbations specified in SST analysis (K)
     &  stdev_sst_pert              !  this switch controls a correction term compensating the systematic
                                    !  increase of evaporation related to the SST perturbations
@@ -222,7 +238,8 @@ MODULE mo_ensemble_pert_nml
     &                         timedep_pert, range_a_stab, range_c_diff, range_q_crit, range_box_liq_asy,   &
     &                         range_rdepths, range_turlen, range_rain_n0fac, range_a_hshr, range_qexc,     &
     &                         range_rprcon, range_thicklayfac, range_lhn_coef, range_lhn_artif_fac,        &
-    &                         range_fac_lhn_down, range_fac_lhn_up, range_fac_ccqc
+    &                         range_fac_lhn_down, range_fac_lhn_up, range_fac_ccqc, range_rmfdeps,         &
+    &                         range_entrorg_mult, range_dustyci_crit, range_dustyci_rhi
 
 
 CONTAINS
@@ -270,8 +287,10 @@ CONTAINS
     !
     ! convection
     range_entrorg    = 0.2e-3_wp    ! entrainment parameter for deep convection
+    range_entrorg_mult = 1._wp      ! multipicative perturbation of entrainment parameter for deep convection
     range_rdepths    = 5.e3_wp      ! maximum allowed shallow convection depth (Pa)
     range_rprcon     = 0.25e-3_wp   ! Coefficient for conversion of cloud water into precipitation
+    range_rmfdeps    = 1._wp        ! factor for fraction of initial downdraft mass at LFS
     range_capdcfac_et = 0.75_wp     ! fraction of CAPE diurnal cycle correction applied in the extratropics
     range_capdcfac_tr = 0.75_wp     ! fraction of CAPE diurnal cycle correction applied in the tropics
     range_lowcapefac = 0.5_wp       ! Tuning factor for reducing the diurnal cycle correction in low-cape situations
@@ -321,6 +340,11 @@ CONTAINS
     range_rootdp   = 0.2_wp         ! Root depth
     range_rsmin    = 0.2_wp         ! Minimum stomata resistance
     range_laimax   = 0.15_wp        ! Leaf area index
+
+    ! Dusty Cirrus
+    range_dustyci_crit = 20.0_wp    ! Dust specific mass concentration threshold for dusty cirrus
+    range_dustyci_rhi  = 0.1_wp     ! Ice saturation ratio threshold for dusty cirrus
+
 
     use_ensemble_pert = .FALSE.     ! Usage of ensemble perturbations must be turned on explicitly
     itype_pert_gen    = 1           ! Type of ensemble perturbation generation:
@@ -380,8 +404,10 @@ CONTAINS
     config_range_zvz0i        = range_zvz0i
     config_range_rain_n0fac   = range_rain_n0fac
     config_range_entrorg      = range_entrorg
+    config_range_entrorg_mult = range_entrorg_mult
     config_range_rdepths      = range_rdepths
     config_range_rprcon       = range_rprcon
+    config_range_rmfdeps      = range_rmfdeps
     config_range_capdcfac_et  = range_capdcfac_et
     config_range_capdcfac_tr  = range_capdcfac_tr
     config_range_lowcapefac   = range_lowcapefac
@@ -414,6 +440,8 @@ CONTAINS
     config_range_rootdp       = range_rootdp
     config_range_rsmin        = range_rsmin
     config_range_laimax       = range_laimax
+    config_range_dustyci_crit = range_dustyci_crit
+    config_range_dustyci_rhi  = range_dustyci_rhi
     config_stdev_sst_pert     = stdev_sst_pert
     config_use_ensemble_pert  = use_ensemble_pert
     config_itype_pert_gen     = itype_pert_gen

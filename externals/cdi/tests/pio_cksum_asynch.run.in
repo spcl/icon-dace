@@ -1,7 +1,8 @@
 #!@SHELL@
 
 pio_write_args="-p PIO_ASYNCH -w 3"
-mpi_task_num=7
+#mpi_task_num=7
+mpi_task_num=6
 
 . ./pio_write.run
 ( . ./pio_write_dist_array.run ) || test $? -eq 77

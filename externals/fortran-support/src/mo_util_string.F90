@@ -77,6 +77,8 @@ MODULE mo_util_string
     MODULE PROCEDURE charArray_equal_char
   END INTERFACE charArray_equal
 
+  PUBLIC :: new_list
+
   INTERFACE add_to_list
     MODULE PROCEDURE add_to_list, add_to_list_1
   END INTERFACE add_to_list
@@ -127,10 +129,10 @@ CONTAINS
   ! Conversion: Uppercase -> Lowercase
   !
   PURE FUNCTION tolower(uppercase)
-    CHARACTER(len=*), INTENT(in) :: uppercase
+    CHARACTER(len=*), INTENT(IN) :: uppercase
     CHARACTER(len=LEN_TRIM(uppercase)) :: tolower
     !
-    INTEGER, PARAMETER :: idel = ICHAR('a') - ICHAR('A')
+    INTEGER, PARAMETER :: idiff = ICHAR('a') - ICHAR('A')
     INTEGER, PARAMETER :: ia = ICHAR('A')
     INTEGER, PARAMETER :: iz = ICHAR('Z')
     INTEGER :: i, ic
@@ -138,7 +140,7 @@ CONTAINS
     DO i = 1, LEN_TRIM(uppercase)
       ic = ICHAR(uppercase(i:i))
       IF (ic >= ia .AND. ic <= iz) THEN
-        tolower(i:i) = CHAR(ic + idel)
+        tolower(i:i) = CHAR(ic + idiff)
       ELSE
         tolower(i:i) = uppercase(i:i)
       END IF
@@ -150,8 +152,8 @@ CONTAINS
   !> convert string to lower case in-place, i.e. destructively
   !!
   ELEMENTAL SUBROUTINE lowcase(s)
-    CHARACTER(len=*), INTENT(inout) :: s
-    INTEGER, PARAMETER :: idel = ICHAR('a') - ICHAR('A')
+    CHARACTER(len=*), INTENT(INOUT) :: s
+    INTEGER, PARAMETER :: idiff = ICHAR('a') - ICHAR('A')
     INTEGER, PARAMETER :: ia = ICHAR('A')
     INTEGER, PARAMETER :: iz = ICHAR('Z')
     INTEGER :: i, ic, n
@@ -159,7 +161,7 @@ CONTAINS
     n = LEN_TRIM(s)
     DO i = 1, n
       ic = ICHAR(s(i:i))
-      s(i:i) = CHAR(ic + MERGE(idel, 0, ic >= ia .AND. ic <= iz))
+      s(i:i) = CHAR(ic + MERGE(idiff, 0, ic >= ia .AND. ic <= iz))
     END DO
   END SUBROUTINE lowcase
   !------------------------------------------------------------------------------------------------
@@ -167,10 +169,10 @@ CONTAINS
   ! Conversion: Lowercase -> Uppercase
   !
   PURE FUNCTION toupper(lowercase)
-    CHARACTER(len=*), INTENT(in) :: lowercase
+    CHARACTER(len=*), INTENT(IN) :: lowercase
     CHARACTER(len=LEN_TRIM(lowercase)) :: toupper
     !
-    INTEGER, PARAMETER :: idel = ICHAR('A') - ICHAR('a')
+    INTEGER, PARAMETER :: idiff = ICHAR('A') - ICHAR('a')
     INTEGER, PARAMETER :: ia = ICHAR('a')
     INTEGER, PARAMETER :: iz = ICHAR('z')
     INTEGER :: i, ic
@@ -178,7 +180,7 @@ CONTAINS
     DO i = 1, LEN_TRIM(lowercase)
       ic = ICHAR(lowercase(i:i))
       IF (ic >= ia .AND. ic <= iz) THEN
-        toupper(i:i) = CHAR(ic + idel)
+        toupper(i:i) = CHAR(ic + idiff)
       ELSE
         toupper(i:i) = lowercase(i:i)
       END IF
@@ -192,7 +194,7 @@ CONTAINS
   ! leading spaces.
   !
   PURE SUBROUTINE tocompact(string)
-    CHARACTER(len=*), INTENT(inout) :: string
+    CHARACTER(len=*), INTENT(INOUT) :: string
     ! local variables
     INTEGER   :: offset, i, i_max
     CHARACTER :: char
@@ -234,8 +236,8 @@ CONTAINS
   !
   PURE FUNCTION int2string(n, opt_fmt)
     CHARACTER(len=11) :: int2string ! result
-    INTEGER, INTENT(in) :: n
-    CHARACTER(len=*), INTENT(in), OPTIONAL :: opt_fmt
+    INTEGER, INTENT(IN) :: n
+    CHARACTER(len=*), INTENT(IN), OPTIONAL :: opt_fmt
     !
     CHARACTER(len=11) :: fmt
 
@@ -254,8 +256,8 @@ CONTAINS
   !
   PURE FUNCTION float2string(n, opt_fmt)
     CHARACTER(len=32) :: float2string ! result
-    REAL, INTENT(in) :: n
-    CHARACTER(len=*), INTENT(in), OPTIONAL :: opt_fmt
+    REAL, INTENT(IN) :: n
+    CHARACTER(len=*), INTENT(IN), OPTIONAL :: opt_fmt
     !
     CHARACTER(len=10) :: fmt
     !
@@ -271,8 +273,8 @@ CONTAINS
   !
   PURE FUNCTION double2string(n, opt_fmt)
     CHARACTER(len=32) :: double2string ! result
-    DOUBLE PRECISION, INTENT(in) :: n
-    CHARACTER(len=*), INTENT(in), OPTIONAL :: opt_fmt
+    DOUBLE PRECISION, INTENT(IN) :: n
+    CHARACTER(len=*), INTENT(IN), OPTIONAL :: opt_fmt
     !
     CHARACTER(len=10) :: fmt
     !
@@ -291,7 +293,7 @@ CONTAINS
   !
   PURE FUNCTION logical2string(n)
     CHARACTER(len=10) :: logical2string ! result
-    LOGICAL, INTENT(in) :: n
+    LOGICAL, INTENT(IN) :: n
     !
     WRITE (logical2string, '(l10)') n
     logical2string = ADJUSTL(logical2string)
@@ -514,7 +516,7 @@ CONTAINS
   !==============================================================================
   !+ Remove duplicate entries from a list of strings.
   !
-  ! @note This is a very crude implementation, quadratic complexity.
+  ! This is a very crude implementation, quadratic complexity.
   !
   SUBROUTINE remove_duplicates(str_list, nitems)
     CHARACTER(len=*), INTENT(INOUT) :: str_list(:)
@@ -545,7 +547,7 @@ CONTAINS
   !==============================================================================
   !+ Remove entries from a list of strings which occur in a second list.
   !
-  ! @note This is a very crude implementation, quadratic complexity.
+  ! This is a very crude implementation, quadratic complexity.
   !
   SUBROUTINE difference(str_list1, nitems1, str_list2, nitems2)
     CHARACTER(len=*), INTENT(INOUT) :: str_list1(:)
@@ -576,26 +578,58 @@ CONTAINS
   END SUBROUTINE difference
 
   !==============================================================================
+  !> Create a new empty string list
+  !!
+  !! Allocates space for 8 strings initially. Size doubles every time the list
+  !! has to be expanded, so adding to the list is constant amortized time.
+  SUBROUTINE new_list(str_list, nitems)
+    CHARACTER(len=*), ALLOCATABLE, INTENT(OUT) :: str_list(:)
+    INTEGER, INTENT(OUT) :: nitems
+
+    ALLOCATE (str_list(8))
+    nitems = 0
+
+  END SUBROUTINE new_list
+
+  !==============================================================================
   !+ Add entries from list 2 to list 1, if they are not already present
   !+ in list 1.
   !
-  ! @note This is a very crude implementation, quadratic complexity.
+  ! This is a very crude implementation, quadratic complexity.
   !
   SUBROUTINE add_to_list(str_list1, nitems1, str_list2, nitems2)
-    CHARACTER(len=*), INTENT(INOUT) :: str_list1(:)
+    CHARACTER(len=*), ALLOCATABLE, INTENT(INOUT) :: str_list1(:)
     INTEGER, INTENT(INOUT) :: nitems1
-    CHARACTER(len=*), INTENT(IN)    :: str_list2(:)
-    INTEGER, INTENT(IN)    :: nitems2
+    CHARACTER(len=*), INTENT(IN) :: str_list2(:)
+    INTEGER, OPTIONAL, INTENT(IN) :: nitems2
     ! local variables
-    INTEGER :: iread, i
+    INTEGER :: iread, i, nitems2_
+    CHARACTER(len=LEN(str_list1)), ALLOCATABLE :: tmp(:)
+
+    IF (.NOT. ALLOCATED(str_list1)) THEN
+      CALL new_list(str_list1, nitems1)
+    END IF
+
+    IF (PRESENT(nitems2)) THEN
+      nitems2_ = nitems2
+    ELSE
+      nitems2_ = SIZE(str_list2)
+    END IF
 
     ! Loop over all items that should potentially be added
-    item_add_loop: DO iread = 1, nitems2
+    item_add_loop: DO iread = 1, nitems2_
       ! Loop over all items in the target list (list 1) to
       ! check if item is already in string list 1:
       DO i = 1, nitems1
         IF (str_list1(i) == str_list2(iread)) CYCLE item_add_loop
       END DO
+
+      IF (nitems1 >= SIZE(str_list1)) THEN
+        ALLOCATE (tmp(2*SIZE(str_list1)))
+        tmp(1:nitems1) = str_list1(1:nitems1)
+        CALL MOVE_ALLOC(tmp, str_list1)
+      END IF
+
       nitems1 = nitems1 + 1
       str_list1(nitems1) = str_list2(iread)
     END DO item_add_loop
@@ -603,17 +637,29 @@ CONTAINS
   END SUBROUTINE add_to_list
 
   SUBROUTINE add_to_list_1(str_list, nitems, str)
-    CHARACTER(len=*), INTENT(INOUT) :: str_list(:)
+    CHARACTER(len=*), ALLOCATABLE, INTENT(INOUT) :: str_list(:)
     INTEGER, INTENT(INOUT) :: nitems
     CHARACTER(len=*), INTENT(IN)    :: str
     ! local variables
-    INTEGER :: iread, i
+    INTEGER :: i
+    CHARACTER(len=LEN(str_list)), ALLOCATABLE :: tmp(:)
+
+    IF (.NOT. ALLOCATED(str_list)) THEN
+      CALL new_list(str_list, nitems)
+    END IF
 
     ! Loop over all items in the target list to
     ! check if item is already in that list
     DO i = 1, nitems
       IF (str_list(i) == str) RETURN
     END DO
+
+    IF (nitems >= SIZE(str_list)) THEN
+      ALLOCATE (tmp(2*SIZE(str_list)))
+      tmp(1:nitems) = str_list(1:nitems)
+      CALL MOVE_ALLOC(tmp, str_list)
+    END IF
+
     nitems = nitems + 1
     str_list(nitems) = str
 
@@ -648,7 +694,6 @@ CONTAINS
     CHARACTER(len=*), INTENT(IN)   :: in_str
     CHARACTER(len=MAX_CHAR_LENGTH) :: result_str, subst, keyword
 
-    ! note: we don't call "finish" to avoid circular dep
     IF (LEN_TRIM(in_str) > MAX_CHAR_LENGTH) &
       & CALL finish(modname, "with_keywords: string too long")
     result_str = in_str
@@ -667,12 +712,6 @@ CONTAINS
   ! then we can use this function to replace a keyword that denotes a
   ! whole group of variables (like "tracers"), for example by
   ! group_list="Q1", "Q2", etc.
-  !
-  ! @param[inout]  varlist    original array of strings (variable names)
-  ! @param[in]  group_name substitution keyword (i.e. variable group name)
-  ! @param[in]  group_list array of strings that will be inserted
-  !
-  ! @return     contents of @p varlist where @p group_name has been replaced.
   !------------------------------------------------------------------------------
   SUBROUTINE insert_group(varlist, nused, group_name, group_list, ninserted)
     CHARACTER(LEN=*), INTENT(INOUT) :: varlist(:)
@@ -865,7 +904,7 @@ CONTAINS
   !> Remove all white space from a string (also between "words").
   !
   FUNCTION remove_whitespace(in_str)
-    CHARACTER(len=*), INTENT(in)    :: in_str
+    CHARACTER(len=*), INTENT(IN)    :: in_str
     CHARACTER(len=LEN_TRIM(in_str)) :: remove_whitespace
     ! local variables
     INTEGER   :: i, j, ichar
@@ -913,8 +952,8 @@ CONTAINS
   END FUNCTION toCharacter
 
   SUBROUTINE c2f_char(c, s)
-    CHARACTER(LEN=:), INTENT(out), ALLOCATABLE :: c
-    CHARACTER(KIND=c_char), INTENT(in) :: s(:)
+    CHARACTER(LEN=:), INTENT(OUT), ALLOCATABLE :: c
+    CHARACTER(KIND=c_char), INTENT(IN) :: s(:)
     INTEGER :: i, ierror, slen
 
     CHARACTER(LEN=*), PARAMETER :: routine = modName//":toCharacter"

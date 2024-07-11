@@ -77,13 +77,11 @@
     &                                 makeInputParameters, deleteInputParameters
     USE mo_util_file,           ONLY: util_filesize
     USE mo_master_config,       ONLY: isRestart
-    USE mo_fortran_tools,       ONLY: copy, init
+    USE mo_fortran_tools,       ONLY: copy, init, assert_acc_device_only
     USE mo_util_string,         ONLY: tolower
     USE mo_util_sysinfo,        ONLY: check_file_exists
     USE mo_dictionary,          ONLY: t_dictionary
-#if defined( _OPENACC )
     USE mo_mpi,                 ONLY: i_am_accel_node, my_process_is_work
-#endif
 
     IMPLICIT NONE
     PRIVATE
@@ -204,7 +202,7 @@
                &      STAT=ierrstat)
              ! initialize with zero to simplify implementation of sparse lateral boundary condition mode
 !$OMP PARALLEL
-             CALL init(latbc%latbc_data(tlev)%atm_in%tracer(idx)%field)
+             CALL init(latbc%latbc_data(tlev)%atm_in%tracer(idx)%field, lacc=.FALSE.)
 !$OMP END PARALLEL
            END IF
          END DO
@@ -224,20 +222,20 @@
 
         ! initialize with zero to simplify implementation of sparse lateral boundary condition mode
 !$OMP PARALLEL
-        CALL init(latbc%latbc_data(tlev)%atm_in%pres)
-        CALL init(latbc%latbc_data(tlev)%atm_in%temp)
-        CALL init(latbc%latbc_data(tlev)%atm_in%u)
-        CALL init(latbc%latbc_data(tlev)%atm_in%v)
-        CALL init(latbc%latbc_data(tlev)%atm_in%w)
-        CALL init(latbc%latbc_data(tlev)%atm_in%qv)
-        CALL init(latbc%latbc_data(tlev)%atm_in%qc)
-        CALL init(latbc%latbc_data(tlev)%atm_in%qi)
-        CALL init(latbc%latbc_data(tlev)%atm_in%qr)
-        CALL init(latbc%latbc_data(tlev)%atm_in%qs)
-        CALL init(latbc%latbc_data(tlev)%atm_in%vn)
+        CALL init(latbc%latbc_data(tlev)%atm_in%pres, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%temp, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%u, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%v, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%w, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qv, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qc, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qi, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qr, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qs, lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%vn, lacc=.FALSE.)
         IF (latbc%buffer%lread_theta_rho) THEN
-          CALL init(latbc%latbc_data(tlev)%atm_in%rho)
-          CALL init(latbc%latbc_data(tlev)%atm_in%theta_v)
+          CALL init(latbc%latbc_data(tlev)%atm_in%rho, lacc=.FALSE.)
+          CALL init(latbc%latbc_data(tlev)%atm_in%theta_v, lacc=.FALSE.)
         ENDIF
 !$OMP END PARALLEL
 
@@ -267,20 +265,20 @@
         !$ACC   CREATE(latbc%latbc_data(tlev)%atm%qr, latbc%latbc_data(tlev)%atm%qs)
 
 !$OMP PARALLEL 
-         CALL init(latbc%latbc_data(tlev)%atm%vn(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%u(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%v(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%w(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%temp(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%exner(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%pres(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%rho(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%theta_v(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%qv(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%qc(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%qi(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%qr(:,:,:))
-         CALL init(latbc%latbc_data(tlev)%atm%qs(:,:,:))
+         CALL init(latbc%latbc_data(tlev)%atm%vn(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%u(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%v(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%w(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%temp(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%exner(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%pres(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%rho(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%theta_v(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%qv(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%qc(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%qi(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%qr(:,:,:), lacc=.FALSE.)
+         CALL init(latbc%latbc_data(tlev)%atm%qs(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
 
         !$ACC UPDATE DEVICE(latbc%latbc_data(tlev)%atm%pres, latbc%latbc_data(tlev)%atm%temp) &
@@ -298,7 +296,7 @@
              ALLOCATE(latbc%latbc_data(tlev)%atm%tracer(idx)%field(nproma,nlev,nblks_c), &
                &      STAT=ierrstat)
 !$OMP PARALLEL
-             CALL init(latbc%latbc_data(tlev)%atm%tracer(idx)%field(:,:,:))
+             CALL init(latbc%latbc_data(tlev)%atm%tracer(idx)%field(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
            END IF
          END DO
@@ -330,14 +328,14 @@
                          STAT=ierrstat)
                 IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
 !$OMP PARALLEL 
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%vn  (:,:,:))
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%vn  (:,:,:), lacc=.FALSE.)
                 ! Initialization with non-zero values is necessary in order to 
                 ! avoid a division by zero in limarea_nudging_upbdy. 
                 ! This is becase some of the accessed halo cells that at the same time 
                 ! belong to the lateral boundary are undefined otherwise.
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%temp(:,:,:), 250._wp)
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%pres(:,:,:), 1.e4_wp)
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%qv  (:,:,:))
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%temp(:,:,:), 250._wp, lacc=.FALSE.)
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%pres(:,:,:), 1.e4_wp, lacc=.FALSE.)
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%qv  (:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
               ELSE  ! nudging_config(jg)%thermdyn_type == ithermdyn_type%nonhydrostatic
                 !
@@ -349,9 +347,9 @@
                 IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
 
 !$OMP PARALLEL 
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%vn     (:,:,:))
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%theta_v(:,:,:))
-                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%rho    (:,:,:))
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%vn     (:,:,:), lacc=.FALSE.)
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%theta_v(:,:,:), lacc=.FALSE.)
+                CALL init(latbc%latbc_data(tlev)%atm_child(jg)%rho    (:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
               ENDIF  ! IF (nudging_config(jg)%thermdyn_type == hydrostatic)
 
@@ -563,14 +561,15 @@
       IF (nudging_config(1)%nudge_type==indg_type%ubn .AND. p_patch(1)%n_childdom > 0) THEN
         !
         prev_latbc_tlev = 3 - timelev
-        ! 
+        !
+        CALL assert_acc_device_only("read_init_latbc_data", i_am_accel_node)
         DO jn = 1, p_patch(1)%n_childdom
           CALL intp_nestubc_nudging (p_patch     = p_patch(1:),               &
             &                        latbc_data  = latbc%latbc_data(timelev), &
-            &                        jg          = p_patch(1)%child_id(jn) )
+            &                        jg          = p_patch(1)%child_id(jn), lacc=.TRUE. )
           CALL intp_nestubc_nudging (p_patch     = p_patch(1:),                       &
             &                        latbc_data  = latbc%latbc_data(prev_latbc_tlev), &
-            &                        jg          = p_patch(1)%child_id(jn) )
+            &                        jg          = p_patch(1)%child_id(jn), lacc=.TRUE. )
         ENDDO
       ENDIF
 
@@ -759,16 +758,25 @@
 
       ! in async mode: copy the variable values from prefetch buffer to the respective allocated variable
       ! in init mode: read the variables synchronously from input file
-
       ! Read parameters QV, QC and QI
-      CALL get_data(latbc, 'qv', latbc%latbc_data(tlev)%atm_in%qv, read_params(icell))
+      IF (latbc_config%latbc_contains_hus) THEN
+        CALL get_data(latbc, 'hus', latbc%latbc_data(tlev)%atm_in%qv, read_params(icell))
+      ELSE
+        CALL get_data(latbc, 'qv', latbc%latbc_data(tlev)%atm_in%qv, read_params(icell))
+      ENDIF
+
       IF ( latbc_config%latbc_contains_qcqi ) THEN ! get qc, qi from latbc data
-        CALL get_data(latbc, 'qc', latbc%latbc_data(tlev)%atm_in%qc, read_params(icell))
-        CALL get_data(latbc, 'qi', latbc%latbc_data(tlev)%atm_in%qi, read_params(icell))
+        IF (latbc_config%latbc_contains_hus) THEN
+          CALL get_data(latbc, 'clw', latbc%latbc_data(tlev)%atm_in%qc, read_params(icell))
+          CALL get_data(latbc, 'cli', latbc%latbc_data(tlev)%atm_in%qi, read_params(icell))
+        ELSE
+          CALL get_data(latbc, 'qc', latbc%latbc_data(tlev)%atm_in%qc, read_params(icell))
+          CALL get_data(latbc, 'qi', latbc%latbc_data(tlev)%atm_in%qi, read_params(icell))
+        ENDIF
       ELSE  ! initialize qc, qi with 0
 !$OMP PARALLEL
-        CALL init(latbc%latbc_data(tlev)%atm_in%qc(:,:,:))
-        CALL init(latbc%latbc_data(tlev)%atm_in%qi(:,:,:))
+        CALL init(latbc%latbc_data(tlev)%atm_in%qc(:,:,:), lacc=.FALSE.)
+        CALL init(latbc%latbc_data(tlev)%atm_in%qi(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
       ENDIF
 
@@ -777,7 +785,7 @@
         CALL get_data(latbc, 'qr', latbc%latbc_data(tlev)%atm_in%qr, read_params(icell))
       ELSE
 !$OMP PARALLEL
-        CALL init(latbc%latbc_data(tlev)%atm_in%qr(:,:,:))
+        CALL init(latbc%latbc_data(tlev)%atm_in%qr(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
       ENDIF
 
@@ -786,7 +794,7 @@
         CALL get_data(latbc, 'qs', latbc%latbc_data(tlev)%atm_in%qs, read_params(icell))
       ELSE
 !$OMP PARALLEL
-        CALL init(latbc%latbc_data(tlev)%atm_in%qs(:,:,:))
+        CALL init(latbc%latbc_data(tlev)%atm_in%qs(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
       ENDIF
 
@@ -883,7 +891,7 @@
            CALL get_data(latbc, 'w', omega, read_params(icell))
          ELSE
 !$OMP PARALLEL
-           CALL init(omega(:,:,:))
+           CALL init(omega(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
          ENDIF
 
@@ -919,7 +927,7 @@
 !$OMP END PARALLEL DO
          ELSE
 !$OMP PARALLEL
-           CALL init(latbc%latbc_data(tlev)%atm_in%w(:,:,:))
+           CALL init(latbc%latbc_data(tlev)%atm_in%w(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
          ENDIF
       ENDIF
@@ -1346,7 +1354,7 @@
         DO jn = 1, p_patch(1)%n_childdom
           CALL intp_nestubc_nudging (p_patch     = p_patch(1:),            &
             &                        latbc_data  = latbc%latbc_data(tlev), &
-            &                        jg          = p_patch(1)%child_id(jn) )
+            &                        jg          = p_patch(1)%child_id(jn), lacc=.FALSE. )
         ENDDO
       ENDIF
 
@@ -1380,23 +1388,23 @@
       INTEGER            :: idx
 
 !$OMP PARALLEL
-      CALL copy(p_nh%prog(nnow(jg))%vn,      latbc_data(tlev)%atm%vn)
-      CALL copy(p_nh%prog(nnow(jg))%w,       latbc_data(tlev)%atm%w)
-      CALL copy(p_nh%prog(nnow(jg))%rho,     latbc_data(tlev)%atm%rho)
-      CALL copy(p_nh%prog(nnow(jg))%theta_v, latbc_data(tlev)%atm%theta_v)
-      CALL copy(p_nh%diag%pres,              latbc_data(tlev)%atm%pres)
-      CALL copy(p_nh%diag%temp,              latbc_data(tlev)%atm%temp)
-      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqv), latbc_data(tlev)%atm%qv)
-      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqc), latbc_data(tlev)%atm%qc)
-      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqi), latbc_data(tlev)%atm%qi)
-      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqr), latbc_data(tlev)%atm%qr)
-      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqs), latbc_data(tlev)%atm%qs)
+      CALL copy(p_nh%prog(nnow(jg))%vn,      latbc_data(tlev)%atm%vn, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow(jg))%w,       latbc_data(tlev)%atm%w, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow(jg))%rho,     latbc_data(tlev)%atm%rho, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow(jg))%theta_v, latbc_data(tlev)%atm%theta_v, lacc=.FALSE.)
+      CALL copy(p_nh%diag%pres,              latbc_data(tlev)%atm%pres, lacc=.FALSE.)
+      CALL copy(p_nh%diag%temp,              latbc_data(tlev)%atm%temp, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqv), latbc_data(tlev)%atm%qv, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqc), latbc_data(tlev)%atm%qc, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqi), latbc_data(tlev)%atm%qi, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqr), latbc_data(tlev)%atm%qr, lacc=.FALSE.)
+      CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,iqs), latbc_data(tlev)%atm%qs, lacc=.FALSE.)
 
       ! Copy additional tracer variables
       DO idx=1, ntracer
         IF (ASSOCIATED(latbc_data(tlev)%atm%tracer(idx)%field)) THEN
           CALL copy(p_nh%prog(nnow_rcf(jg))%tracer(:,:,:,idx_tracer(idx)), &
-            &       latbc_data(tlev)%atm%tracer(idx)%field)
+            &       latbc_data(tlev)%atm%tracer(idx)%field, lacc=.FALSE.)
         ENDIF
       END DO
 !$OMP END PARALLEL

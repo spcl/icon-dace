@@ -1050,8 +1050,7 @@ SUBROUTINE art_add_emission_to_tracers(p_tracer_now,emiss,p_patch,dtime,mtime_cu
             DO i = istart,iend
               CALL art_convert_emission_to_mmr(emiss_mmr(:),                        &
                       &                        tracer_emission%bioonl%cbio(i,jb),   &
-                      &                        art_atmo%temp(i,:,jb),               &
-                      &                        art_atmo%pres(i,:,jb),               &
+                      &                        art_atmo%rho(i,:,jb),                &
                       &                        art_atmo%dz(i,:,jb),                 &
                       &                        dtime,                               &
                       &                        tracer_emission%bioonl%num_emiss_lev,&
@@ -1078,8 +1077,7 @@ SUBROUTINE art_add_emission_to_tracers(p_tracer_now,emiss,p_patch,dtime,mtime_cu
                 DO i = istart, iend
                   CALL art_convert_emission_to_mmr(emiss_mmr(:),                     &
                                  &                 tracer_emission%std%val,          &
-                                 &                 art_atmo%temp(i,:,jb),            &
-                                 &                 art_atmo%pres(i,:,jb),            &
+                                 &                 art_atmo%rho(i,:,jb),             &
                                  &                 art_atmo%dz(i,:,jb),              &
                                  &                 dtime,                            &
                                  &                 tracer_emission%std%num_emiss_lev,&
@@ -1117,8 +1115,7 @@ SUBROUTINE art_add_emission_to_tracers(p_tracer_now,emiss,p_patch,dtime,mtime_cu
               DO i = istart, iend
                 CALL art_convert_emission_to_mmr(emiss_mmr(:),                               &
                                 &                tracer_emission%types(j)%emiss_2d(i,jb,2),  &
-                                &                art_atmo%temp(i,:,jb),                      &
-                                &                art_atmo%pres(i,:,jb),                      &
+                                &                art_atmo%rho(i,:,jb),                       &
                                 &                art_atmo%dz(i,:,jb),                        &
                                 &                dtime,                                      &
                                 &                tracer_emission%types(j)%num_emiss_lev,     &
@@ -1152,7 +1149,7 @@ END SUBROUTINE art_add_emission_to_tracers
 !!
 !!-------------------------------------------------------------------------
 !!
-SUBROUTINE art_convert_emission_to_mmr(emiss_mmr,emiss_kgm2s1,temp,pres,height_layers, &
+SUBROUTINE art_convert_emission_to_mmr(emiss_mmr,emiss_kgm2s1,rho,height_layers, &
   &                                    dtime,num_emiss_lev, nlev,emiss_3d)
 !<
 ! SUBROUTINE art_convert emission to mmr
@@ -1167,7 +1164,7 @@ SUBROUTINE art_convert_emission_to_mmr(emiss_mmr,emiss_kgm2s1,temp,pres,height_l
   REAL(wp), INTENT(INOUT) :: emiss_mmr(:)   !< emission in units of kg kg-1
   REAL(wp), INTENT(IN)  ::  &
     & emiss_kgm2s1,         &             !< emission in units of kg m-2 s-1
-    & temp(:), pres(:),     &             !< temperature and pressure
+    & rho(:),               &             !< density
     & height_layers(:),     &             !< height of the model layers
     & dtime                               !< time step
   REAL(wp), INTENT(IN), OPTIONAL :: &
@@ -1184,7 +1181,7 @@ SUBROUTINE art_convert_emission_to_mmr(emiss_mmr,emiss_kgm2s1,temp,pres,height_l
   kg_air    = 0.0_wp
 
   DO jk = 1,nlev
-    kg_air(jk) = pres(jk) * height_layers(jk) / argas / temp(jk) * amd / 1000._wp
+    kg_air(jk) = rho(jk) * height_layers(jk)
 
     IF (PRESENT(emiss_3d)) THEN
       emiss_mmr(jk) = emiss_3d(jk) * dtime  / kg_air(jk)

@@ -31,7 +31,7 @@ class SlurmJob(BatchJob):
         print("submitting slurm job: '{}'".format(" ".join(submit_cmd)))
         sp = subprocess.Popen(submit_cmd, shell=False, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=self.cwd, encoding="UTF-8")
         try:
-            self.jobid = re.findall(r"\d{5,100}", sp.stdout.readline())[0]
+            self.jobid = re.findall(r"\d+", sp.stdout.readline())[0]
         except:
             for line in sp.stderr.readlines():
                 print(line)

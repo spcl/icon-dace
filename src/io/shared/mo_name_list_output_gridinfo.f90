@@ -822,21 +822,21 @@ CONTAINS
     ! This is just for safety and could be skipped, of course.
 
     tlen = LEN_TRIM(patch_info%grid_filename)
-    CALL nf(nf_open(patch_info%grid_filename(1:tlen), NF_NOWRITE, ncid))
+    CALL nf(nf90_open(patch_info%grid_filename(1:tlen), NF90_NOWRITE, ncid))
 
-    CALL nf(nf_inq_dimid(ncid, 'nv', dimid))
-    CALL nf(nf_inq_dimlen(ncid, dimid, max_cell_connectivity))
-    CALL nf(nf_inq_dimid(ncid, 'ne', dimid))
-    CALL nf(nf_inq_dimlen(ncid, dimid, max_verts_connectivity))
+    CALL nf(nf90_inq_dimid(ncid, 'nv', dimid))
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = max_cell_connectivity))
+    CALL nf(nf90_inq_dimid(ncid, 'ne', dimid))
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = max_verts_connectivity))
     !
-    CALL nf(nf_inq_dimid(ncid, 'cell', dimid))
-    CALL nf(nf_inq_dimlen(ncid, dimid, i_nc))
+    CALL nf(nf90_inq_dimid(ncid, 'cell', dimid))
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = i_nc))
     !
-    CALL nf(nf_inq_dimid(ncid, 'edge', dimid))
-    CALL nf(nf_inq_dimlen(ncid, dimid, i_ne))
+    CALL nf(nf90_inq_dimid(ncid, 'edge', dimid))
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = i_ne))
     !
-    CALL nf(nf_inq_dimid(ncid, 'vertex', dimid))
-    CALL nf(nf_inq_dimlen(ncid, dimid, i_nv))
+    CALL nf(nf90_inq_dimid(ncid, 'vertex', dimid))
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = i_nv))
 
     IF(i_nc /= patch_info%grid_info(icell)%n_log) &
       CALL finish(routine,'Number of cells differs in '//patch_info%grid_filename(1:tlen))
@@ -847,18 +847,18 @@ CONTAINS
     !
     !---------------------------------------------------------------------------
     ! cell grid
-    CALL nf(nf_inq_varid(ncid, 'clon', varid))
+    CALL nf(nf90_inq_varid(ncid, 'clon', varid))
     ALLOCATE(clon(i_nc))
-    CALL nf(nf_get_var_double(ncid, varid, clon))
+    CALL nf(nf90_get_var(ncid, varid, clon))
     CALL reorder1(patch_info%grid_info(icell)%log_dom_starts, &
       &           patch_info%grid_info(icell)%log_dom_counts,clon)
     CALL gridDefXvals(of%cdiCellGridID, clon)
     DEALLOCATE(clon)
 
 
-    CALL nf(nf_inq_varid(ncid, 'clat', varid))
+    CALL nf(nf90_inq_varid(ncid, 'clat', varid))
     ALLOCATE(clat(i_nc))
-    CALL nf(nf_get_var_double(ncid, varid, clat))
+    CALL nf(nf90_get_var(ncid, varid, clat))
     CALL reorder1(patch_info%grid_info(icell)%log_dom_starts, &
       &           patch_info%grid_info(icell)%log_dom_counts,clat)
 
@@ -866,9 +866,9 @@ CONTAINS
     DEALLOCATE(clat)
 
 
-    CALL nf(nf_inq_varid(ncid, 'clon_vertices', varid))
+    CALL nf(nf90_inq_varid(ncid, 'clon_vertices', varid))
     ALLOCATE(clonv(max_cell_connectivity, i_nc))
-    CALL nf(nf_get_var_double(ncid, varid, clonv))
+    CALL nf(nf90_get_var(ncid, varid, clonv))
     CALL reorder2(patch_info%grid_info(icell)%log_dom_starts, &
       &           patch_info%grid_info(icell)%log_dom_counts,clonv)
 
@@ -876,9 +876,9 @@ CONTAINS
     DEALLOCATE(clonv)
 
 
-    CALL nf(nf_inq_varid(ncid, 'clat_vertices', varid))
+    CALL nf(nf90_inq_varid(ncid, 'clat_vertices', varid))
     ALLOCATE(clatv(max_cell_connectivity, i_nc))
-    CALL nf(nf_get_var_double(ncid, varid, clatv))
+    CALL nf(nf90_get_var(ncid, varid, clatv))
     CALL reorder2(patch_info%grid_info(icell)%log_dom_starts, &
       &           patch_info%grid_info(icell)%log_dom_counts,clatv)
 
@@ -889,8 +889,8 @@ CONTAINS
     ! edge grid
 
     ALLOCATE(elon(i_ne))
-    CALL nf(nf_inq_varid(ncid, 'elon', varid))
-    CALL nf(nf_get_var_double(ncid, varid, elon))
+    CALL nf(nf90_inq_varid(ncid, 'elon', varid))
+    CALL nf(nf90_get_var(ncid, varid, elon))
     CALL reorder1(patch_info%grid_info(iedge)%log_dom_starts, &
       &           patch_info%grid_info(iedge)%log_dom_counts,elon)
 
@@ -898,8 +898,8 @@ CONTAINS
     DEALLOCATE(elon)
 
     ALLOCATE(elat(i_ne))
-    CALL nf(nf_inq_varid(ncid, 'elat', varid))
-    CALL nf(nf_get_var_double(ncid, varid, elat))
+    CALL nf(nf90_inq_varid(ncid, 'elat', varid))
+    CALL nf(nf90_get_var(ncid, varid, elat))
     CALL reorder1(patch_info%grid_info(iedge)%log_dom_starts, &
       &           patch_info%grid_info(iedge)%log_dom_counts,elat)
 
@@ -907,8 +907,8 @@ CONTAINS
     DEALLOCATE(elat)
 
     ALLOCATE(elonv(4, i_ne))
-    CALL nf(nf_inq_varid(ncid, 'elon_vertices', varid))
-    CALL nf(nf_get_var_double(ncid, varid, elonv))
+    CALL nf(nf90_inq_varid(ncid, 'elon_vertices', varid))
+    CALL nf(nf90_get_var(ncid, varid, elonv))
     CALL reorder2(patch_info%grid_info(iedge)%log_dom_starts, &
       &           patch_info%grid_info(iedge)%log_dom_counts,elonv)
 
@@ -916,8 +916,8 @@ CONTAINS
     DEALLOCATE(elonv)
 
     ALLOCATE(elatv(4, i_ne))
-    CALL nf(nf_inq_varid(ncid, 'elat_vertices', varid))
-    CALL nf(nf_get_var_double(ncid, varid, elatv))
+    CALL nf(nf90_inq_varid(ncid, 'elat_vertices', varid))
+    CALL nf(nf90_get_var(ncid, varid, elatv))
     CALL reorder2(patch_info%grid_info(iedge)%log_dom_starts, &
       &           patch_info%grid_info(iedge)%log_dom_counts,elatv)
 
@@ -926,36 +926,36 @@ CONTAINS
 
     !-------------------------------------------------------------------------
     ! vertex grid
-    CALL nf(nf_inq_varid(ncid, 'vlon', varid))
+    CALL nf(nf90_inq_varid(ncid, 'vlon', varid))
     ALLOCATE(vlon(i_nv))
-    CALL nf(nf_get_var_double(ncid, varid, vlon))
+    CALL nf(nf90_get_var(ncid, varid, vlon))
     CALL reorder1(patch_info%grid_info(ivert)%log_dom_starts, &
       &           patch_info%grid_info(ivert)%log_dom_counts,vlon)
 
     CALL gridDefXvals(of%cdiVertGridID, vlon)
     DEALLOCATE(vlon)
 
-    CALL nf(nf_inq_varid(ncid, 'vlat', varid))
+    CALL nf(nf90_inq_varid(ncid, 'vlat', varid))
     ALLOCATE(vlat(i_nv))
-    CALL nf(nf_get_var_double(ncid, varid, vlat))
+    CALL nf(nf90_get_var(ncid, varid, vlat))
     CALL reorder1(patch_info%grid_info(ivert)%log_dom_starts, &
       &           patch_info%grid_info(ivert)%log_dom_counts,vlat)
 
     CALL gridDefYvals(of%cdiVertGridID, vlat)
     DEALLOCATE(vlat)
 
-    CALL nf(nf_inq_varid(ncid, 'vlon_vertices', varid))
+    CALL nf(nf90_inq_varid(ncid, 'vlon_vertices', varid))
     ALLOCATE(vlonv(max_verts_connectivity, i_nv))
-    CALL nf(nf_get_var_double(ncid, varid, vlonv))
+    CALL nf(nf90_get_var(ncid, varid, vlonv))
     CALL reorder2(patch_info%grid_info(ivert)%log_dom_starts, &
       &           patch_info%grid_info(ivert)%log_dom_counts,vlonv)
 
     CALL gridDefXbounds(of%cdiVertGridID, vlonv)
     DEALLOCATE(vlonv)
 
-    CALL nf(nf_inq_varid(ncid, 'vlat_vertices', varid))
+    CALL nf(nf90_inq_varid(ncid, 'vlat_vertices', varid))
     ALLOCATE(vlatv(max_verts_connectivity, i_nv))
-    CALL nf(nf_get_var_double(ncid, varid, vlatv))
+    CALL nf(nf90_get_var(ncid, varid, vlatv))
     CALL reorder2(patch_info%grid_info(ivert)%log_dom_starts, &
       &           patch_info%grid_info(ivert)%log_dom_counts, vlatv)
 
@@ -965,7 +965,7 @@ CONTAINS
     !-------------------------------------------------------------------------
 
     ! Close NetCDF file, it is not needed any more
-    CALL nf(nf_close(ncid))
+    CALL nf(nf90_close(ncid))
 
   CONTAINS
 

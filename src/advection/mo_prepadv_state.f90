@@ -19,6 +19,7 @@ MODULE mo_prepadv_state
 
   USE mo_impl_constants,          ONLY: SUCCESS, MAX_CHAR_LENGTH, vname_len
   USE mo_exception,               ONLY: message, finish
+  USE mo_master_control,          ONLY: get_my_process_name
   USE mo_model_domain,            ONLY: t_patch
   USE mo_prepadv_types,           ONLY: t_prepare_adv, t_step_adv
   USE mo_parallel_config,         ONLY: nproma
@@ -175,6 +176,7 @@ CONTAINS
     !------------------------------
     NULLIFY(prep_adv%mass_flx_me, &
       &     prep_adv%mass_flx_ic, &
+      &     prep_adv%vol_flx_ic,  &
       &     prep_adv%vn_traj,     &
       &     prep_adv%q_int,       &
       &     prep_adv%q_ubc        )
@@ -182,7 +184,8 @@ CONTAINS
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(prep_adv_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(prep_adv_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
 
     ! mass_flx_me      prep_adv%mass_flx_me(nproma,nlev,nblks_e)
@@ -207,6 +210,17 @@ CONTAINS
                 & ldims=shape3d_chalf, loutput=.FALSE.,                            &
                 & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
     __acc_attach(prep_adv%mass_flx_ic)
+
+    ! vol_flx_ic      prep_adv%vol_flx_ic(nproma,nlevp1,nblks_c)
+    cf_desc    = t_cf_var('vol_flx_ic', 'm s-1', &
+      &                   'vertical volume flux (averaged over dynamics substeps)',  &
+      &                   datatype_flt)
+    grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var( prep_adv_list, 'vol_flx_ic', prep_adv%vol_flx_ic,               &
+                & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE_HALF, cf_desc, grib2_desc,  &
+                & ldims=shape3d_chalf, loutput=.FALSE.,                            &
+                & isteptype=TSTEP_INSTANT, lopenacc=.TRUE. )
+    __acc_attach(prep_adv%vol_flx_ic)
 
 
     ! vn_traj          prep_adv%vn_traj(nproma,nlev,nblks_e)

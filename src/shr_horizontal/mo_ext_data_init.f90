@@ -34,16 +34,16 @@ MODULE mo_ext_data_init
                                    frlndtile_thrhld, frlake_thrhld, frsea_thrhld, isub_water,       &
                                    isub_seaice, isub_lake, sstice_mode, sst_td_filename,            &
                                    ci_td_filename, itype_lndtbl, c_soil, c_soil_urb, cskinc,        &
-                                   lterra_urb, itype_eisa, cr_bsmin, itype_evsl
+                                   lterra_urb, itype_eisa, cr_bsmin, itype_evsl, itype_ahf, rsmin_fac
   USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config, iprog_aero
   USE mo_extpar_config,      ONLY: itopo, itype_lwemiss, extpar_filename, generate_filename,    &
     &                              generate_td_filename, extpar_varnames_map_file,              &
     &                              n_iter_smooth_topo, i_lctype, nclass_lu, nhori, nmonths_ext, &
     &                              itype_vegetation_cycle, read_nc_via_cdi, pp_sso
-  USE mo_initicon_config,    ONLY: icpl_da_sfcevap, dt_ana, icpl_da_skinc, icpl_da_seaice, icpl_da_snowalb
+  USE mo_initicon_config,    ONLY: icpl_da_sfcevap, dt_ana, icpl_da_seaice, icpl_da_snowalb
   USE mo_radiation_config,   ONLY: irad_o3, albedo_type, islope_rad,    &
-    &                              irad_aero, iRadAeroTegen, iRadAeroART
-  USE mo_process_topo,       ONLY: smooth_topo_real_data, postproc_sso, smooth_frland
+    &                              irad_aero, iRadAeroTegen, iRadAeroART, iRadAeroCAMSclim, iRadAeroCAMStd
+  USE mo_process_topo,       ONLY: smooth_topo_real_data, postproc_sso, smooth_frland, smooth_urbfrac
   USE mo_model_domain,       ONLY: t_patch
   USE mo_exception,          ONLY: message, message_text, finish
   USE mo_grid_config,        ONLY: n_dom, nroot
@@ -53,15 +53,15 @@ MODULE mo_ext_data_init
     &                              p_comm_work_test, p_comm_work, my_process_is_mpi_workroot
   USE mo_sync,               ONLY: global_sum_array
   USE mo_parallel_config,    ONLY: p_test_run, nproma
-  USE mo_ext_data_types,     ONLY: t_external_data
   USE mo_nonhydro_types,     ONLY: t_nh_diag
+  USE mo_ext_data_types,     ONLY: t_external_data
   USE mo_ext_data_state,     ONLY: construct_ext_data, levelname, cellname, o3name, o3unit, &
     &                              nlev_o3, nmonths
   USE mo_master_config,      ONLY: getModelBaseDir
   USE mo_time_config,        ONLY: time_config
   USE mo_io_config,          ONLY: default_read_method
   USE mo_read_interface,     ONLY: openInputFile, closeFile, on_cells, t_stream_id, &
-    &                              read_2D, read_2D_int, read_3D_extdim, read_2D_extdim
+    &                              read_2D, read_2D_int, read_3D_extdim, read_2D_extdim, read_inq_varexists
   USE mo_netcdf_errhandler,  ONLY: nf
   USE mo_netcdf
   USE turb_data,             ONLY: c_lnd, c_sea
@@ -72,7 +72,7 @@ MODULE mo_ext_data_init
   USE mo_util_uuid_types,    ONLY: t_uuid, uuid_string_length
   USE mo_util_uuid,          ONLY: OPERATOR(==), uuid_unparse
   USE mo_dictionary,         ONLY: t_dictionary
-  USE mo_nwp_tuning_config,  ONLY: itune_albedo
+  USE mo_nwp_tuning_config,  ONLY: itune_albedo, tune_urbahf, tune_urbisa
   USE mo_cdi,                ONLY: FILETYPE_GRB2, streamOpenRead, streamInqFileType, &
     &                              streamInqVlist, vlistInqVarZaxis, zaxisInqSize,   &
     &                              vlistNtsteps, vlistInqVarGrid, cdiInqAttTxt,    &
@@ -192,11 +192,14 @@ CONTAINS
 
     ! top-level procedure for building data structures for
     ! external data.
-    
+
     IF (i_scm_netcdf > 0) THEN
       nclass_lu = num_lcc ! 3rd dim of lu_class_fraction, has to agree with num_lcc
     ENDIF
-   
+
+    ! Note that construct_ext_data must be called after inquire_external_files!
+    ! The latter routine retrieves the constants nlev_o3 and nmonths, which are used
+    ! by construct_ext_data, when constructing the state vector ext_atm_td.
     CALL construct_ext_data(p_patch, ext_data)
 
     !-------------------------------------------------------------------------
@@ -268,7 +271,6 @@ CONTAINS
 !
             ext_data(jg)%atm%urb_isa(:,:)     = 0._wp       ! impervious surface area fraction of the urban canopy
             IF (lterra_urb) THEN
-              ext_data(jg)%atm%fr_paved(:,:)    = 0._wp       ! impervious surface area (ISA) fraction
               ext_data(jg)%atm%urb_ai(:,:)      = 2._wp       ! surface area index of the urban canopy
               ext_data(jg)%atm%urb_alb_red(:,:) = 0.9_wp      ! albedo reduction factor for the urban canopy
               ext_data(jg)%atm%urb_fr_bld(:,:)  = 0.667_wp    ! building area fraction with respect to urban tile
@@ -369,6 +371,12 @@ CONTAINS
                &                 ext_data(jg)%atm%fr_land,   &
                &                 ext_data(jg)%atm%fr_land_smt)
            ENDIF
+           IF (lterra_urb) THEN
+             CALL smooth_urbfrac (p_patch(jg),                &
+               &                 p_int_state(jg),             &
+               &                 ext_data(jg)%atm%lu_class_fraction(:,:,ext_data(jg)%atm%i_lc_urban),  &
+               &                 ext_data(jg)%atm%fr_urb_smt)
+           ENDIF
          ENDIF
 
          ! calculate gradient of orography for resolved surface drag
@@ -436,6 +444,16 @@ CONTAINS
           ENDDO
         ENDIF  ! lwemiss
 
+        ! cloud droplet climatology
+        IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
+          DO jg = 1, n_dom
+            CALL interpol_monthly_mean(p_patch(jg),                      &! in
+                 &                     assumePrevMidnight(this_datetime),&! in
+                 &                     ext_data(jg)%atm_td%cdnc,         &! in
+                 &                     ext_data(jg)%atm%cdnc             )! out
+          ENDDO
+        ENDIF
+        
         ! clean up
         CALL deallocateDatetime(this_datetime)
 
@@ -644,6 +662,15 @@ CONTAINS
           CALL finish(routine,'SST climatology missing in '//TRIM(extpar_filename))
         ENDIF
       ENDIF
+      
+      IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
+        ! Check whether external parameter file contains cloud droplet number climatology
+        IF ( test_cdi_varID(cdi_extpar_id, 'cdnc')  == -1 ) THEN
+          CALL finish(routine,'icpl_aero_gscp=3 but cloud droplet number climatology missing in '//TRIM(extpar_filename))
+        ELSE
+          CALL message(routine,'Found cloud droplet number in extpar file' )
+        ENDIF
+      ENDIF
 
       ! Search for glacier fraction in Extpar file
       !
@@ -765,14 +792,14 @@ CONTAINS
           !
           ! open file
           !
-          CALL nf(nf_open(TRIM(ozone_file), NF_NOWRITE, ncid), routine)
+          CALL nf(nf90_open(TRIM(ozone_file), NF90_NOWRITE, ncid), routine)
           WRITE(0,*)'open ozone file'
 
           !
           ! get number of cells
           !
-          CALL nf(nf_inq_dimid (ncid, TRIM(cellname), dimid), routine)
-          CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+          CALL nf(nf90_inq_dimid (ncid, TRIM(cellname), dimid), routine)
+          CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
           WRITE(0,*)'number of cells are', no_cells
 
           !
@@ -786,8 +813,8 @@ CONTAINS
           !
           ! check the time structure
           !
-          CALL nf(nf_inq_dimid (ncid, 'time', dimid), routine)
-          CALL nf(nf_inq_dimlen(ncid, dimid, nmonths), routine)
+          CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
+          CALL nf(nf90_inquire_dimension(ncid, dimid, len = nmonths), routine)
           WRITE(message_text,'(A,I4)')  &
             & 'Number of months in ozone file = ', nmonths
           CALL message(routine,message_text)
@@ -795,8 +822,8 @@ CONTAINS
           !
           ! check the vertical structure
           !
-          CALL nf(nf_inq_dimid (ncid,TRIM(levelname), dimid), routine)
-          CALL nf(nf_inq_dimlen(ncid, dimid, nlev_o3), routine)
+          CALL nf(nf90_inq_dimid (ncid,TRIM(levelname), dimid), routine)
+          CALL nf(nf90_inquire_dimension(ncid, dimid, len = nlev_o3), routine)
 
           WRITE(message_text,'(A,I4)')  &
             & 'Number of pressure levels in ozone file = ', nlev_o3
@@ -805,7 +832,7 @@ CONTAINS
           !
           ! close file
           !
-          CALL nf(nf_close(ncid), routine)
+          CALL nf(nf90_close(ncid), routine)
 
         END IF IF_IO ! pe
 
@@ -864,8 +891,10 @@ CONTAINS
 
     TYPE(t_inputParameters) :: parameters
     LOGICAL :: is_mpi_workroot
+    LOGICAL :: do_patch_land_sea_mask
 
     is_mpi_workroot = my_process_is_mpi_workroot()
+    do_patch_land_sea_mask = .FALSE.
 
 !                    z0         pcmx      laimx rd      rsmin      snowalb snowtile skinc
 !
@@ -1162,10 +1191,8 @@ CONTAINS
         ! Urban canopy parameters
         DO ilu = 1, num_lcc
           IF (ilu == ext_data(jg)%atm%i_lc_urban) THEN
-            ext_data(jg)%atm%fr_paved_lcc(ilu) = 1._wp        ! Impervious surface area (ISA) fraction for urban land use class
-            ext_data(jg)%atm%ahf_lcc(ilu)      = 15._wp       ! Anthropogenic heat flux for urban land use class
+            ext_data(jg)%atm%ahf_lcc(ilu)      = tune_urbahf(1) ! Anthropogenic heat flux for urban land use class
           ELSE
-            ext_data(jg)%atm%fr_paved_lcc(ilu) = 0._wp
             ext_data(jg)%atm%ahf_lcc(ilu)      = 0._wp
           ENDIF
         ENDDO
@@ -1209,16 +1236,24 @@ CONTAINS
         !--------------------------------------------------------------------
         CALL read_extdata('topography_c', ext_data(jg)%atm%topography_c)
 
-        ! If ocean coupling and TERRA is used, then read the land sea masks
+        ! If ocean coupling is used, then try to read the land sea masks. If no LSM is present
+        ! in the extpar file, we assume that the file fits the ocean LSM.
 
-        IF ( is_coupled_to_ocean() .AND. atm_phy_nwp_config(jg)%inwp_surface == LSS_TERRA ) THEN
+        IF (is_coupled_to_ocean()) THEN
+          IF (read_netcdf_parallel) THEN
+            do_patch_land_sea_mask = read_inq_varexists(stream_id, 'cell_sea_land_mask')
+          ELSE
+            do_patch_land_sea_mask = parameters%inqVarId('cell_sea_land_mask') >= 0
+          END IF
 
           ! --- option NWP grids for coupling: Read fraction of land (land-sea mask) from
           ! interpolated ocean grid (ocean: integer 0/1 lsm). lsm_ctr_c is the fraction of land.
           ! 0.0 is ocean, 1.0 is land, fractions on coasts (lakes are land).
           ! Used in routine lsm_ocean_atmo.
 
-          CALL read_extdata('cell_sea_land_mask', ext_data(jg)%atm%lsm_ctr_c)
+          IF (do_patch_land_sea_mask) THEN
+            CALL read_extdata('cell_sea_land_mask', ext_data(jg)%atm%lsm_ctr_c)
+          END IF
 
         ENDIF
 
@@ -1313,7 +1348,7 @@ CONTAINS
             CALL read_extdata('emi_so2', arr2d=ext_data(jg)%atm%emi_so2)
           ENDIF
           ! Read time dependent data
-          IF ( irad_aero == iRadAeroTegen .OR. irad_aero == iRadAeroART) THEN
+          IF (ANY (irad_aero == (/iRadAeroTegen, iRadAeroART, iRadAeroCAMSclim, iRadAeroCAMStd/))) THEN
             CALL read_extdata('AER_SS',   arr3d=ext_data(jg)%atm_td%aer_ss)
             CALL read_extdata('AER_DUST', arr3d=ext_data(jg)%atm_td%aer_dust)
             CALL read_extdata('AER_ORG',  arr3d=ext_data(jg)%atm_td%aer_org)
@@ -1330,6 +1365,15 @@ CONTAINS
             CALL read_extdata('T_2M_CLIM', arr3d=ext_data(jg)%atm_td%t2m_m)
             CALL read_extdata('TOPO_CLIM',   ext_data(jg)%atm%topo_t2mclim)
           ENDIF
+
+          IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
+            ! cloud droplet climatology (time dependent monthly means)
+            CALL read_extdata('cdnc',   arr3d=ext_data(jg)%atm_td%cdnc)
+!$OMP PARALLEL
+            ! cdnc climatology is in cm**-3, here is the conversion to m**-3
+            CALL var_scale(ext_data(jg)%atm_td%cdnc, 1.0e6_wp, lacc=.FALSE.)
+!$OMP END PARALLEL
+          END IF
 
           !--------------------------------
           ! If MODIS albedo is used
@@ -1349,9 +1393,9 @@ CONTAINS
 
 !$OMP PARALLEL
             ! Scale from [%] to [1]
-            CALL var_scale(ext_data(jg)%atm_td%alb_dif(:,:,:), 1._wp/100._wp)
-            CALL var_scale(ext_data(jg)%atm_td%albuv_dif(:,:,:), 1._wp/100._wp)
-            CALL var_scale(ext_data(jg)%atm_td%albni_dif(:,:,:), 1._wp/100._wp)
+            CALL var_scale(ext_data(jg)%atm_td%alb_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
+            CALL var_scale(ext_data(jg)%atm_td%albuv_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
+            CALL var_scale(ext_data(jg)%atm_td%albni_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
 !$OMP BARRIER
 
 
@@ -1418,10 +1462,15 @@ CONTAINS
         ! land sea mask at cell centers (LOGICAL)
         !
 
-        ! adjust atmo LSM to ocean LSM for coupled simulation and initialize new land points (TERRA only)
+        ! adjust atmo LSM to ocean LSM for coupled simulation and initialize new land points
 
-        IF ( is_coupled_to_ocean() .AND. atm_phy_nwp_config(jg)%inwp_surface == LSS_TERRA ) THEN
-          CALL lsm_ocean_atmo ( p_patch(jg), ext_data(jg) )
+        IF ( is_coupled_to_ocean() ) THEN
+          IF (do_patch_land_sea_mask) THEN
+            CALL message(routine, 'Modifying LSM and soil properties from external parameters to fit provided ocean LSM.')
+            CALL lsm_ocean_atmo ( p_patch(jg), ext_data(jg) )
+          ELSE
+            CALL message(routine, 'Using unmodified LSM from external parameters in ocean-coupled simulation.')
+          END IF
         ENDIF
 
         i_nchdom  = MAX(1,p_patch(jg)%n_childdom)
@@ -1470,11 +1519,11 @@ CONTAINS
         IF(my_process_is_stdio()) THEN
           ! open file
           !
-          CALL nf(nf_open(TRIM(ozone_file), NF_NOWRITE, ncid), routine)
+          CALL nf(nf90_open(TRIM(ozone_file), NF90_NOWRITE, ncid), routine)
           WRITE(0,*)'read ozone levels'
-          CALL nf(nf_inq_varid(ncid, TRIM(levelname), varid), routine)
-          CALL nf(nf_get_var_double(ncid, varid, zdummy_o3lev(:)), routine)
-          CALL nf(nf_close(ncid), routine)
+          CALL nf(nf90_inq_varid(ncid, TRIM(levelname), varid), routine)
+          CALL nf(nf90_get_var(ncid, varid, zdummy_o3lev(:)), routine)
+          CALL nf(nf90_close(ncid), routine)
           !
         ENDIF ! pe
 
@@ -1741,12 +1790,13 @@ CONTAINS
                ! Urban Canopy Parameters (UCPs)
                !
                ! impervious surface area fraction of the urban canopy
-               ext_data(jg)%atm%urb_isa_t(jc,jb,1)       = ext_data(jg)%atm%fr_paved_lcc(ext_data(jg)%atm%lc_class_t(jc,jb,1))
+               IF (lterra_urb .AND. lhave_urban) THEN
+                 ext_data(jg)%atm%urb_isa_t(jc,jb,1)  =  MIN(tune_urbisa(2), MAX(tune_urbisa(1), ext_data(jg)%atm%fr_urb_smt(jc,jb)))
+               ELSE
+                 ext_data(jg)%atm%urb_isa_t(jc,jb,1)  = 0._wp
+               ENDIF
 
                IF (lterra_urb) THEN
-                 ! impervious surface area (ISA) fraction
-                 ext_data(jg)%atm%fr_paved_t(jc,jb,1)    = ext_data(jg)%atm%fr_paved_lcc(ext_data(jg)%atm%lc_class_t(jc,jb,1))
-
                  ! building area fraction with respect to urban tile
                  ext_data(jg)%atm%urb_fr_bld_t(jc,jb,1)  = 0.667_wp
 
@@ -1825,7 +1875,7 @@ CONTAINS
                ext_data(jg)%atm%skinc_t(jc,jb,1)    = ext_data(jg)%atm%skinc_lcc(ext_data(jg)%atm%lc_class_t(jc,jb,1))
 
                ! minimum stomatal resistance
-               ext_data(jg)%atm%rsmin2d_t(jc,jb,1)  = ext_data(jg)%atm%rsmin(jc,jb)
+               ext_data(jg)%atm%rsmin2d_t(jc,jb,1)  = ext_data(jg)%atm%rsmin(jc,jb) * rsmin_fac
 
                ! soil type
                ext_data(jg)%atm%soiltyp_t(jc,jb,1)  = ext_data(jg)%atm%soiltyp(jc,jb)
@@ -1979,12 +2029,13 @@ CONTAINS
                  ! Urban Canopy Parameters (UCPs)
                  !
                  ! impervious surface area fraction of the urban canopy
-                 ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu)       = ext_data(jg)%atm%fr_paved_lcc(lu_subs)
+                 IF (lterra_urb .AND. lu_subs == ext_data(jg)%atm%i_lc_urban) THEN
+                   ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu)  =  MIN(tune_urbisa(2), MAX(tune_urbisa(1), ext_data(jg)%atm%fr_urb_smt(jc,jb)))
+                 ELSE
+                   ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu)  = 0._wp
+                 ENDIF
 
                  IF (lterra_urb) THEN
-                   ! impervious surface area (ISA) fraction
-                   ext_data(jg)%atm%fr_paved_t(jc,jb,i_lu)    = ext_data(jg)%atm%fr_paved_lcc(lu_subs)
-
                    ! building area fraction with respect to urban tile
                    ext_data(jg)%atm%urb_fr_bld_t(jc,jb,i_lu)  = 0.667_wp
 
@@ -2046,13 +2097,15 @@ CONTAINS
 
                  ! evaporative soil area index
                  IF (icpl_da_sfcevap >= 4 .OR. itype_evsl == 5) THEN
-                   ext_data(jg)%atm%eai_t (jc,jb,i_lu)   = MERGE(0.75_wp,2.0_wp,lu_subs == ext_data(jg)%atm%i_lc_urban)
+                   ext_data(jg)%atm%eai_t (jc,jb,i_lu)   = MERGE(0.75_wp,2.0_wp,lu_subs == ext_data(jg)%atm%i_lc_urban &
+                                                                .AND. .NOT. lterra_urb)
                    ext_data(jg)%atm%r_bsmin(jc,jb)       = cr_bsmin
                    ! on non-urban tiles, the eai is reduced only if no urban tile is present on the grid point
                    IF (.NOT. lhave_urban) ext_data(jg)%atm%eai_t(jc,jb,i_lu) =                                             &
                                           2.0_wp - 1.25_wp*tile_frac(ext_data(jg)%atm%i_lc_urban)
                  ELSE
-                   ext_data(jg)%atm%eai_t (jc,jb,i_lu)   = MERGE(c_soil_urb,c_soil,lu_subs == ext_data(jg)%atm%i_lc_urban)
+                   ext_data(jg)%atm%eai_t (jc,jb,i_lu)   = MERGE(c_soil_urb,c_soil,lu_subs == ext_data(jg)%atm%i_lc_urban &
+                                                                .AND. .NOT. lterra_urb)
                    ext_data(jg)%atm%r_bsmin(jc,jb)       = 50._wp ! previously hard-coded in TERRA
                  ENDIF
 
@@ -2071,7 +2124,7 @@ CONTAINS
                  ENDIF
 
                  ! minimum stomatal resistance
-                 ext_data(jg)%atm%rsmin2d_t(jc,jb,i_lu)  = ext_data(jg)%atm%stomresmin_lcc(lu_subs)
+                 ext_data(jg)%atm%rsmin2d_t(jc,jb,i_lu)  = ext_data(jg)%atm%stomresmin_lcc(lu_subs) * rsmin_fac
 
                  ! soil type
                  ext_data(jg)%atm%soiltyp_t(jc,jb,i_lu)  = ext_data(jg)%atm%soiltyp(jc,jb)
@@ -2264,7 +2317,6 @@ CONTAINS
 !
                ext_data(jg)%atm%urb_isa_t(jc,jb,jt)     = ext_data(jg)%atm%urb_isa_t(jc,jb,jt_in)
                IF (lterra_urb) THEN
-                 ext_data(jg)%atm%fr_paved_t(jc,jb,jt)    = ext_data(jg)%atm%fr_paved_t(jc,jb,jt_in)
                  ext_data(jg)%atm%urb_ai_t(jc,jb,jt)      = ext_data(jg)%atm%urb_ai_t(jc,jb,jt_in)
                  ext_data(jg)%atm%urb_alb_red_t(jc,jb,jt) = ext_data(jg)%atm%urb_alb_red_t(jc,jb,jt_in)
                  ext_data(jg)%atm%urb_fr_bld_t(jc,jb,jt)  = ext_data(jg)%atm%urb_fr_bld_t(jc,jb,jt_in)
@@ -2436,7 +2488,6 @@ CONTAINS
 !
       ext_data%atm%urb_isa    (i_startidx:i_endidx,jb) = 0._wp
       IF (lterra_urb) THEN
-        ext_data%atm%fr_paved   (i_startidx:i_endidx,jb) = 0._wp
         ext_data%atm%urb_ai     (i_startidx:i_endidx,jb) = 0._wp
         ext_data%atm%urb_alb_red(i_startidx:i_endidx,jb) = 0._wp
         ext_data%atm%urb_fr_bld (i_startidx:i_endidx,jb) = 0._wp
@@ -2476,10 +2527,6 @@ CONTAINS
               &              + ext_data%atm%urb_isa_t(jc,jb,jt) * area_frac
 
           IF (lterra_urb) THEN
-            ! impervious surface area (ISA) fraction (aggregated)
-            ext_data%atm%fr_paved(jc,jb) = ext_data%atm%fr_paved(jc,jb)       &
-              &              + ext_data%atm%fr_paved_t(jc,jb,jt) * area_frac
-
             ! surface area index of the urban canopy (aggregated)
             ext_data%atm%urb_ai(jc,jb) = ext_data%atm%urb_ai(jc,jb)           &
               &              + ext_data%atm%urb_ai_t(jc,jb,jt) * area_frac
@@ -2683,13 +2730,12 @@ CONTAINS
     INTEGER  :: i_startblk, i_endblk,i_startidx, i_endidx
     INTEGER  :: i_count,ilu
 
-    REAL(wp) :: t2mclim_hc(nproma),t_asyfac(nproma),tdiff_norm,wfac,dtdz_clim,trans_width,trh_bias, &
-                skinc_fac,lat,scal,dtfac_skinc
+    REAL(wp) :: t2mclim_hc(nproma),t_asyfac(nproma),tdiff_norm,wfac,dtdz_clim,trans_width,ahf_heat,ahf_cool
     REAL(wp), DIMENSION(num_lcc) :: laimin,threshold_temp,temp_asymmetry,rd_fac
 
     INTEGER, PARAMETER :: nparam = 4  ! Number of parameters used in lookup table 
 
-    REAL(wp), DIMENSION(num_lcc*nparam), TARGET :: vege_table ! < lookup table with control parameter specifications
+    REAL(wp), DIMENSION(num_lcc*nparam) :: vege_table ! < lookup table with control parameter specifications
 
     !-------------------------------------------------------------------------
 
@@ -2738,8 +2784,6 @@ CONTAINS
     ! transition width for temperature-dependent tai limitation
     trans_width = 2.0_wp
 
-    ! adaptation factor to analysis interval for adaptive skin conductivity
-    dtfac_skinc = (10800._wp/dt_ana)**(2._wp/3._wp)
 
     ! exclude the boundary interpolation zone of nested domains
     rl_start = grf_bdywidth_c+1
@@ -2749,7 +2793,7 @@ CONTAINS
     i_endblk   = p_patch%cells%end_block(rl_end)
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,jt,ic,i_startidx,i_endidx,i_count,jc,ilu,t2mclim_hc,t_asyfac,tdiff_norm,wfac,trh_bias,skinc_fac,lat,scal)
+!$OMP DO PRIVATE(jb,jt,ic,i_startidx,i_endidx,i_count,jc,ilu,t2mclim_hc,t_asyfac,tdiff_norm,wfac,ahf_heat,ahf_cool)
     DO jb = i_startblk, i_endblk
 
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
@@ -2821,63 +2865,10 @@ CONTAINS
             ext_data%atm%rootdp_t(jc,jb,jt) = ext_data%atm%rootdp_t(jc,jb,jt)*(wfac + (1._wp-wfac)/rd_fac(ilu))
           ENDIF
 
-          IF (icpl_da_sfcevap >= 3 .AND. icpl_da_skinc >= 1) THEN
-            trh_bias = 10800._wp/dt_ana*(125._wp*nh_diag%rh_avginc(jc,jb) - &
-              4._wp*(nh_diag%t_avginc(jc,jb)-0.5_wp*nh_diag%t_wgt_avginc(jc,jb)))
-          ELSE IF (icpl_da_sfcevap >= 3) THEN
-            trh_bias = 10800._wp/dt_ana*(100._wp*nh_diag%rh_avginc(jc,jb)-4._wp*nh_diag%t_avginc(jc,jb))
-          ELSE IF (icpl_da_sfcevap >= 2) THEN
-            trh_bias = nh_diag%t2m_bias(jc,jb) + 100._wp*10800._wp/dt_ana*nh_diag%rh_avginc(jc,jb)
-          ELSE IF (icpl_da_sfcevap == 1) THEN
-            trh_bias = nh_diag%t2m_bias(jc,jb)
-          ELSE
-            trh_bias = 0._wp
-          ENDIF
-
-          IF (icpl_da_sfcevap >= 4) THEN
-            IF (trh_bias < 0._wp) THEN
-              ext_data%atm%rsmin2d_t(jc,jb,jt) = ext_data%atm%stomresmin_lcc(ilu)*(1._wp-0.75_wp*trh_bias)
-              ext_data%atm%r_bsmin(jc,jb)      = cr_bsmin*(1._wp-trh_bias)
-            ELSE
-              ext_data%atm%rsmin2d_t(jc,jb,jt) = ext_data%atm%stomresmin_lcc(ilu)/(1._wp+0.75_wp*trh_bias)
-              ext_data%atm%r_bsmin(jc,jb)      = cr_bsmin/(1._wp+trh_bias)
-            ENDIF
-          ELSE IF (icpl_da_sfcevap >= 1) THEN
-            IF (trh_bias < 0._wp) THEN
-              ext_data%atm%rsmin2d_t(jc,jb,jt) = ext_data%atm%stomresmin_lcc(ilu)*(1._wp-0.5_wp*trh_bias)
-              ext_data%atm%eai_t(jc,jb,jt)     = MERGE(c_soil_urb,c_soil,ilu == ext_data%atm%i_lc_urban) /     &
-                                                 (1._wp-0.25_wp*trh_bias)
-            ELSE
-              ext_data%atm%rsmin2d_t(jc,jb,jt) = ext_data%atm%stomresmin_lcc(ilu)/(1._wp+0.5_wp*trh_bias)
-              ext_data%atm%eai_t(jc,jb,jt)     = MIN(MERGE(c_soil_urb,c_soil,ilu == ext_data%atm%i_lc_urban) * &
-                                                 (1._wp+0.25_wp*trh_bias), 2._wp)
-            ENDIF
-
-            IF (lterra_urb .AND. ((itype_eisa == 2) .OR. (itype_eisa == 3))) THEN
-              ext_data%atm%eai_t(jc,jb,jt)     = ext_data%atm%eai_t(jc,jb,jt)                                  &
-                                               * (1.0_wp - ext_data%atm%urb_isa_t(jc,jb,jt))
-            END IF
-
-          ELSE
-            ext_data%atm%rsmin2d_t(jc,jb,jt) = ext_data%atm%stomresmin_lcc(ilu)
-          ENDIF
-
-          ! Tuning factor for skin conductivity
-          IF (icpl_da_skinc >= 1) THEN
-            scal = MERGE(4._wp, 2.5_wp, icpl_da_skinc == 1)
-            IF (nh_diag%t_wgt_avginc(jc,jb) < 0._wp) THEN
-              skinc_fac = MAX(0.1_wp,1._wp+dtfac_skinc*scal*nh_diag%t_wgt_avginc(jc,jb))
-            ELSE
-              skinc_fac = 1._wp/MAX(0.1_wp,1._wp-dtfac_skinc*scal*nh_diag%t_wgt_avginc(jc,jb))
-            ENDIF
-
-            lat = p_patch%cells%center(jc,jb)%lat*rad2deg
-            IF (itype_lndtbl == 4 .AND. lat > -10._wp .AND. lat < 42.5_wp) THEN
-              ext_data%atm%skinc_t(jc,jb,jt) = skinc_fac*MIN(200._wp,ext_data%atm%skinc_lcc(ilu)*          &
-                                               (1._wp+MIN(1._wp,0.4_wp*(42.5_wp-lat),0.4_wp*(lat+10._wp))) )
-            ELSE
-              ext_data%atm%skinc_t(jc,jb,jt) = skinc_fac*ext_data%atm%skinc_lcc(ilu)
-            ENDIF
+          IF (lterra_urb .AND. itype_ahf == 2 .AND. ilu == ext_data%atm%i_lc_urban) THEN
+            ahf_heat = tune_urbahf(2)*MAX(0._wp,288.15_wp-t2mclim_hc(jc))
+            ahf_cool = tune_urbahf(3)*MAX(0._wp,t2mclim_hc(jc)-293.15_wp)
+            ext_data%atm%ahf_t(jc,jb,jt) = MIN(tune_urbahf(1) + MAX(ahf_heat,ahf_cool), tune_urbahf(4))
           ENDIF
 
         ENDDO

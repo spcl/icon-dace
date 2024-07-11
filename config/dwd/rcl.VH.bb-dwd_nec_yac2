@@ -13,20 +13,10 @@
 #
 # configure wrapper which is used for buildbot builder dwd_nec_yac2 (VH)
 #
-if ((RH_VERSION !=8 )); then
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-2.22_oper \
-    --enable-ocean \
-    --enable-waves \
-    --enable-ecrad \
-    --enable-coupling \
-    --enable-fcgroup-OCEAN \
-    "$@"
-else
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-3.5_oper_RH8 \
-    --enable-ocean \
-    --enable-waves \
-    --enable-ecrad \
-    --enable-coupling \
-    --enable-fcgroup-OCEAN \
-    "$@"
-fi
+"$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-3.5_oper \
+  --enable-ocean \
+  --enable-waves \
+  --enable-ecrad \
+  --enable-coupling \
+  --enable-fcgroup-OCEAN \
+  "$@"

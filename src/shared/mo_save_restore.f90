@@ -118,7 +118,7 @@ CONTAINS
 
     TYPE(t_vl_register_iter) :: iter
     INTEGER :: group_id
-    CHARACTER(len=vname_len) :: savedGroup(1000)
+    CHARACTER(len=vname_len), ALLOCATABLE :: savedGroup(:)
     INTEGER :: savedGroupSize
     INTEGER :: i, jg
 #if defined(__PGI) || defined(__FLANG)
@@ -249,7 +249,7 @@ CONTAINS
     INTEGER :: group_id
 
     INTEGER :: i, jg
-    CHARACTER(len=vname_len) :: savedGroup(1000)
+    CHARACTER(len=vname_len), ALLOCATABLE :: savedGroup(:)
     INTEGER :: savedGroupSize
 
     IF (.NOT. p_patch%ldom_active) RETURN
@@ -359,7 +359,7 @@ CONTAINS
     TYPE(t_vl_register_iter) :: iter
     INTEGER :: group_id
     INTEGER :: i, jg
-    CHARACTER(len=vname_len) :: savedGroup(1000)
+    CHARACTER(len=vname_len), ALLOCATABLE :: savedGroup(:)
     INTEGER :: savedGroupSize
 
     IF (.NOT. p_patch%ldom_active) RETURN
@@ -425,13 +425,13 @@ CONTAINS
 
       SELECT CASE (var%info%data_type)
       CASE (REAL_T)
-        CALL init(var%r_ptr, var%info%initval%rval)
+        CALL init(var%r_ptr, var%info%initval%rval, lacc=.FALSE.)
       CASE (SINGLE_T)
-        CALL init(var%s_ptr, var%info%initval%sval)
+        CALL init(var%s_ptr, var%info%initval%sval, lacc=.FALSE.)
       CASE (INT_T)
-        CALL init(var%i_ptr, var%info%initval%ival)
+        CALL init(var%i_ptr, var%info%initval%ival, lacc=.FALSE.)
       CASE (BOOL_T)
-        CALL init(var%l_ptr, var%info%initval%lval)
+        CALL init(var%l_ptr, var%info%initval%lval, lacc=.FALSE.)
       END SELECT
 
     END SUBROUTINE reinit
@@ -459,7 +459,7 @@ CONTAINS
     IF (ierrstat /= SUCCESS) CALL finish('t_saved_field%put_r', 'Allocation failed for self%r')
     !
     !$OMP PARALLEL
-    CALL copy(r,self%r)
+    CALL copy(r,self%r, lacc=.FALSE.)
     !$OMP END PARALLEL
   END SUBROUTINE t_saved_field_put_r
 
@@ -475,7 +475,7 @@ CONTAINS
     IF (ierrstat /= SUCCESS) CALL finish('t_saved_field%put_s', 'Allocation failed for self%s')
     !
     !$OMP PARALLEL
-    CALL copy(s,self%s)
+    CALL copy(s,self%s, lacc=.FALSE.)
     !$OMP END PARALLEL
   END SUBROUTINE t_saved_field_put_s
 
@@ -491,7 +491,7 @@ CONTAINS
     IF (ierrstat /= SUCCESS) CALL finish('t_saved_field%put_i', 'Allocation failed for self%i')
     !
     !$OMP PARALLEL
-    CALL copy(i,self%i)
+    CALL copy(i,self%i, lacc=.FALSE.)
     !$OMP END PARALLEL
   END SUBROUTINE t_saved_field_put_i
 
@@ -507,7 +507,7 @@ CONTAINS
     IF (ierrstat /= SUCCESS) CALL finish('t_saved_field%put_l', 'Allocation failed for self%l')
     !
     !$OMP PARALLEL
-    CALL copy(l,self%l)
+    CALL copy(l,self%l, lacc=.FALSE.)
     !$OMP END PARALLEL
   END SUBROUTINE t_saved_field_put_l
 
@@ -521,7 +521,7 @@ CONTAINS
     IF (.NOT. self%is_allocated()) CALL finish(procedure_name, 'Field is not in use.')
     IF (.NOT. ALLOCATED(self%r)) CALL finish(procedure_name, 'Wrong data type.')
 
-    CALL copy(self%r, r)
+    CALL copy(self%r, r, lacc=.FALSE.)
   END SUBROUTINE t_saved_field_get_r
 
   !> Retrieve a double-precision field from the saved field.
@@ -534,7 +534,7 @@ CONTAINS
     IF (.NOT. self%is_allocated()) CALL finish(procedure_name, 'Field is not in use.')
     IF (.NOT. ALLOCATED(self%s)) CALL finish(procedure_name, 'Wrong data type.')
 
-    CALL copy(self%s, s)
+    CALL copy(self%s, s, lacc=.FALSE.)
   END SUBROUTINE t_saved_field_get_s
 
   !> Retrieve an integer field from the saved field.
@@ -542,7 +542,7 @@ CONTAINS
     CLASS(t_saved_field), INTENT(IN) :: self
     INTEGER, INTENT(OUT) :: i(:,:,:,:,:)
 
-    CALL copy(self%i, i)
+    CALL copy(self%i, i, lacc=.FALSE.)
   END SUBROUTINE t_saved_field_get_i
 
   !> Retrieve a logical field from the saved field.
@@ -555,7 +555,7 @@ CONTAINS
     IF (.NOT. self%is_allocated()) CALL finish(procedure_name, 'Field is not in use.')
     IF (.NOT. ALLOCATED(self%l)) CALL finish(procedure_name, 'Wrong data type.')
 
-    CALL copy(self%l, l)
+    CALL copy(self%l, l, lacc=.FALSE.)
   END SUBROUTINE t_saved_field_get_l
 
 END MODULE mo_save_restore

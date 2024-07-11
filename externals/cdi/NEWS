@@ -1,9 +1,20 @@
 CDI NEWS
 --------
 
-Version 2.3.0 (23 October 2023):
+Version 2.4.0 (22 February 2024):
 
    New features:
+     * Add experimental interface to FDB5
+     * Add global option CDI_Threadsafe to lock non thread-safe netCDF4/HDF5 calls
+   Fixed bugs:
+     * improve support for time units second [Bug #11740]
+     * calc_chunk_cache_size: wrong result for 3D data (bug fix)
+     * netCDF: write of y-coordinates failed for Gaussian reduced grids (bug fix)
+
+Version 2.3.0 (18 October 2023):
+
+   New features:
+     * Add GRIB2 HEALPix support (available with eccodes-2.32.0)
      * Add support for NetCDF attribute type NC_INT64
      * Add interface function streamInqNumSteps() to inquire number of time steps
      * gribapi decode: add support for single precision float interface (available since ecCodes-2.30.0)
@@ -14,7 +25,7 @@ Version 2.3.0 (23 October 2023):
      * gribapiDefGridLCC: store DxInMetres/DyInMetres as double
      * NetCDF4: use chunkSize only if it is less than gridsize
      * cdfDefineAttributes: check filetype for unsigned int attributes
-     * time information missing if the stream contains only constant time fields
+     * time information missing if the stream contains fields constant in time only
 
 Version 2.2.0 (23 February 2023):
 

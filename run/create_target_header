@@ -31,6 +31,7 @@
 set -eu
 
 BB_SYSTEM=${BB_SYSTEM:=""}
+BB_NAME=${BB_NAME:=""}
 
 add_free_var()
 {
@@ -100,9 +101,10 @@ export OMP_STACKSIZE=${use_omp_stacksize:-200M}
 #
 # MPI variables
 # -------------
-no_of_nodes=${use_nodes}
+: \${no_of_nodes:=${use_nodes}} \${mpi_procs_pernode:=${use_mpi_procs_pernode}}
+export no_of_nodes
+export mpi_procs_pernode
 num_io_procs=${use_num_io_procs}
-mpi_procs_pernode=$use_mpi_procs_pernode
 ((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
 #
 # blocking length
@@ -139,10 +141,10 @@ EOF
         i=$((i+1));
     done
 
-    if [[ -n "$use_load_profile" ]]
-    then
-        profile_filename=`echo $use_load_profile | cut -d ' ' -f2`
-        cat >> "$output_script" << EOF
+    # load addition profiles
+    if [[ -n "$use_load_profile" ]]; then
+      profile_filename=`echo $use_load_profile | cut -d ' ' -f2`
+      cat >> "$output_script" << EOF
 # load profile
 # ------------
 if [[ -a "$profile_filename" ]]
@@ -152,8 +154,18 @@ fi
 EOF
     fi
 
-    if [[ -n "$use_load_profile" && -n "$use_load_modules" ]]; then
-        cat >> "$output_script" << EOF
+    # clean the module system
+    if [[ -n "$use_purge_modules" ]]; then
+      cat >> "$output_script" << EOF
+#=============================================================================
+# clean the module environment
+${use_purge_modules}
+EOF
+      fi
+
+    # load user defined modules
+    if [[ -n "$use_load_modules" ]]; then
+      cat >> "$output_script" << EOF
 #=============================================================================
 # load modules
 loadmodule="$use_load_modules"
@@ -162,7 +174,6 @@ module list
 #=============================================================================
 EOF
     fi
-
 
     cat >> "$output_script" << EOF
 
@@ -423,7 +434,7 @@ set_run_target_bullx_gpu()
 {
     icon_data_rootFolder=${icon_data_rootFolder:=/pool/data/ICON}
 
-    set_default use_nproma 8000
+    set_default use_nproma 0
     set_default use_nproma_sub 8000
     set_default use_nblocks_c 1
     set_default use_nodes 1
@@ -604,10 +615,145 @@ set_run_target_mpipc()
 }
 
 #=============================================================================
-set_run_target_lumi()
+set_run_target_lumi_gpu()
 {
     # LUMI at CSC
-    set_run_target_default
+    icon_data_rootFolder=${icon_data_rootFolder:=/appl/local/climatedt/pool/data/ICON}
+
+    set_default use_nproma 14080
+    set_default use_nproma_sub 7040
+    set_default use_nblocks_c 0
+    set_default use_prefetch_procs 0
+    set_default use_account_no "project_465000454"
+    set_default use_nodes 1
+    set_default use_queue "ju-standard-g"
+
+    use_OMP_SCHEDULE="static,1"
+
+    is_serial_run="no"
+
+    set_default use_mpi_procs_pernode $((8+use_prefetch_procs))
+    set_default use_openmp_threads 1
+
+    job_type=parallel
+    tasks_per_node=$use_mpi_procs_pernode
+    SBATCH_nodes="SBATCH --nodes=$use_nodes"
+    SBATCH_ntasks_per_node="SBATCH --ntasks-per-node=${tasks_per_node}"
+    cpu_bind='map_cpu:49,57,17,25,1,9,33,41'
+
+    # ------------------------------------
+    job_log_name=""
+    if [[ "x$BB_SYSTEM" != "x" ]]
+    then
+	# this buildbot, do not use job id
+	job_log_name="LOG.$job_name"
+        # do not bind cpus
+        cpu_bind=
+    else
+	job_log_name="LOG.$job_name.%j"
+    fi
+    # ------------------------------------
+    s_cpu_time="00:30:00"
+    if [[ "x$use_cpu_time" != "x" ]]
+    then
+      s_cpu_time="$use_cpu_time"
+    fi
+    # ------------------------------------
+
+    cat >> $output_script << EOF
+#=============================================================================
+
+# LUMI gpu batch job parameters
+# ------------------------------
+#SBATCH --job-name=$job_name
+#SBATCH --account=$use_account_no
+#SBATCH --output=$output_folder/$job_log_name.o
+#SBATCH --error=$output_folder/$job_log_name.o
+#$SBATCH_nodes
+#$SBATCH_ntasks_per_node
+#SBATCH --gpus-per-node=${tasks_per_node}
+#SBATCH --time=${s_cpu_time}
+#SBATCH --partition=${use_queue}
+EOF
+
+    start_header
+    cat >>$output_script <<EOF
+
+export FI_MR_CACHE_MONITOR=memhooks
+export MPICH_OFI_NIC_POLICY=GPU
+export MPICH_GPU_SUPPORT_ENABLED=1
+export LD_PRELOAD=/appl/local/climatedt/sw/wtf/libpreload-me.so
+${cpu_bind:+"export SLURM_CPU_BIND='${cpu_bind}'"}
+EOF
+}
+
+#=============================================================================
+set_run_target_lumi_cpu()
+{
+    # LUMI at CSC
+    icon_data_rootFolder=${icon_data_rootFolder:=/appl/local/climatedt/pool/data/ICON}
+
+    set_default use_nproma 32
+    set_default use_nblocks_c 0
+    set_default use_account_no "project_465000454"
+    set_default use_nodes 1
+    set_default use_queue "standard"
+
+    use_OMP_SCHEDULE="static,1"
+
+    is_serial_run="no"
+
+    set_default use_mpi_procs_pernode 32
+    set_default use_openmp_threads 4
+
+    job_type=parallel
+    tasks_per_node=$use_mpi_procs_pernode
+    SBATCH_nodes="SBATCH --nodes=$use_nodes"
+    SBATCH_ntasks_per_node="SBATCH --ntasks-per-node=${tasks_per_node}"
+    SBATCH_cpus_per_task="SBATCH --cpus-per-task=${use_openmp_threads}"
+
+    use_openmp_threads=\$SLURM_CPUS_PER_TASK
+
+    # ------------------------------------
+    job_log_name=""
+    if [[ "x$BB_SYSTEM" != "x" ]]
+    then
+	# this buildbot, do not use job id
+	job_log_name="LOG.$job_name"
+    else
+	job_log_name="LOG.$job_name.%j"
+    fi
+    # ------------------------------------
+    s_cpu_time="00:30:00"
+    if [[ "x$use_cpu_time" != "x" ]]
+    then
+      s_cpu_time="$use_cpu_time"
+    fi
+    # ------------------------------------
+
+    cat >> $output_script << EOF
+#=============================================================================
+
+# LUMI cpu batch job parameters
+# ------------------------------
+#SBATCH --job-name=$job_name
+#SBATCH --account=$use_account_no
+#SBATCH --output=$output_folder/$job_log_name.o
+#SBATCH --error=$output_folder/$job_log_name.o
+#$SBATCH_nodes
+#$SBATCH_ntasks_per_node
+#$SBATCH_cpus_per_task
+#SBATCH --time=${s_cpu_time}
+#SBATCH --partition=${use_queue}
+EOF
+
+    start_header
+    cat >>$output_script <<EOF
+
+export OMP_PLACES=cores
+export FI_MR_CACHE_MONITOR=memhooks
+export LD_PRELOAD=/appl/local/climatedt/sw/wtf/libpreload-me.so
+EOF
 }
 
 #=============================================================================
@@ -1248,7 +1394,7 @@ set_run_target_daint_gpu()
     rootFolder_prefix=/users/icontest
     icon_data_rootFolder=${icon_data_rootFolder:=${rootFolder_prefix}/pool/data/ICON}
 
-    set_default use_nproma 8000
+    set_default use_nproma 0
     set_default use_nproma_sub 800
     set_default use_nblocks_c 1
     set_default use_prefetch_procs 0
@@ -1353,21 +1499,15 @@ EOF
 }
 
 #=============================================================================
-set_run_target_balfrin_gpu()
+set_run_target_alps_mch_gpu()
 {
     rootFolder_prefix=/scratch/mch/jenkins/icon
     icon_data_rootFolder=${icon_data_rootFolder:=${rootFolder_prefix}/pool/data/ICON}
 
     set_default use_nodes 1
-    set_default use_nproma 8000
+    set_default use_nproma 0
     set_default use_nblocks_c 1
     set_default use_prefetch_procs 0
-    set_default use_account_no "$(id -gn)"
-    if [[ "x$BB_SYSTEM" != "x" ]]
-    then
-        # this buildbot, do not use job id
-        use_account_no="d56"
-    fi
     use_OMP_SCHEDULE="static,1"
 
     is_serial_run="no"
@@ -1402,7 +1542,7 @@ set_run_target_balfrin_gpu()
     if [[ "x$BB_SYSTEM" != "x" ]]
     then
         # this is buldbot, do not run more than 80 minutes
-        limit="01:20:00"
+        limit="02:00:00"
         default="00:15:00"
         limit_time_bb # sets use_cpu_time
         s_cpu_time="SBATCH --time=$use_cpu_time"
@@ -1416,7 +1556,7 @@ set_run_target_balfrin_gpu()
     cat >> "$output_script" << EOF
 #=============================================================================
 
-# balfrin gpu batch job parameters
+# alps_mch gpu batch job parameters
 # ------------------------------
 #SBATCH --job-name=$job_name
 #SBATCH --output=$output_folder/$job_log_name.o
@@ -1429,16 +1569,11 @@ EOF
 
     start_header
     cat >> "$output_script" <<EOF
-export CRAY_CUDA_MPS=1
-export MPICH_GPU_SUPPORT_ENABLED=1
-export MPICH_RDMA_ENABLED_CUDA=1
-export NVCOMPILER_ACC_DEFER_UPLOADS=1
-export NVCOMPILER_TERM=trace
 EOF
 }
 
 #=============================================================================
-set_run_target_balfrin_cpu()
+set_run_target_alps_mch_cpu()
 {
     rootFolder_prefix=/scratch/mch/jenkins/icon
     icon_data_rootFolder=${icon_data_rootFolder:=${rootFolder_prefix}/pool/data/ICON}
@@ -1446,13 +1581,6 @@ set_run_target_balfrin_cpu()
     set_default use_nproma 16
     set_default use_nblocks_c 0
     set_default use_nodes 1
-    # use_OMP_SCHEDULE="static,1"
-    set_default use_account_no "$(id -gn)"
-    if [[ "x$BB_SYSTEM" != "x" ]]
-    then
-        # this is buildbot, do not use job id
-        use_account_no="d56"
-    fi
     use_OMP_SCHEDULE="static,12"
 
     is_serial_run="no"
@@ -1484,7 +1612,7 @@ set_run_target_balfrin_cpu()
     fi
     if [[ "x$BB_SYSTEM" != "x" ]]
     then
-        # this is buldbot, do not run more than 15 minutes on Daint (SLURM delays)
+        # this is buldbot, do not run more than 15 minutes on Alps (SLURM delays)
         limit="00:15:00"
         default=${limit}
         limit_time_bb # sets use_cpu_time
@@ -1495,16 +1623,23 @@ set_run_target_balfrin_cpu()
     use_nodes=${use_nodes}
     use_mpi_procs_pernode=${use_mpi_procs_pernode}
 
+    # check if pp-short partition exists
+    pp_short_nodes=`sinfo -p pp-short -h`
+    partition=${pp_short_nodes%% *}
+
+    if test -z $partition; then
+        partition="normal"
+    fi
+
     cat >> "$output_script" << EOF
 #=============================================================================
 
-# balfrin cpu batch job parameters
+# alps_mch cpu batch job parameters
 # ------------------------------
-#SBATCH --account=$use_account_no
 #SBATCH --job-name=$job_name
 #SBATCH --output=$output_folder/$job_log_name.o
 #SBATCH --error=$output_folder/$job_log_name.o
-#SBATCH --partition=pp-short
+#SBATCH --partition=$partition
 #SBATCH --exclusive
 #SBATCH --hint=nomultithread
 #$SBATCH_nodes
@@ -1515,7 +1650,6 @@ EOF
   start_header
 
   cat >> "$output_script" << EOF
-export NVCOMPILER_TERM=trace
 EOF
 }
 
@@ -1818,7 +1952,7 @@ set_run_target_hk()
 {
     icon_data_rootFolder=${icon_data_rootFolder:=/hkfs/home/dataset/datasets/icon/pool/data/ICON}
 
-    set_default use_nproma 8
+    set_default use_nproma 32
     set_default use_nproma_sub 8
     set_default use_nblocks_c 0
     set_default use_nodes 1
@@ -1856,7 +1990,7 @@ set_run_target_hk()
 #SBATCH --error=$output_folder/$job_log_name.o
 #SBATCH --job-name=$job_name
 #SBATCH --nodes=${use_nodes}
-#SBATCH --partition=dev_cpuonly
+#SBATCH --partition=cpuonly
 #SBATCH --account=hk-project-glori-init
 #SBATCH --ntasks-per-node=$use_mpi_procs_pernode
 #SBATCH --time=$use_cpu_time
@@ -1865,8 +1999,8 @@ EOF
     start_header
 
     cat >> "$output_script" << EOF
-export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0-rev1/bin:\${PATH}
-export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions
+export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.4.0/bin:\${PATH}
+export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/bacy_data/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/bacy_data/definitions/2.32.0-2/definitions
 export NVCOMPILER_TERM=trace
 export OMPI_MCA_btl=self,tcp
 EOF
@@ -1914,7 +2048,7 @@ set_run_target_hk_gpu()
 #SBATCH --output=$output_folder/$job_log_name.o
 #SBATCH --error=$output_folder/$job_log_name.o
 #SBATCH --job-name=$job_name
-#SBATCH --partition=dev_accelerated
+#SBATCH --partition=accelerated
 #SBATCH --account=hk-project-glori-init
 #SBATCH --ntasks-per-node=$use_mpi_procs_pernode
 #SBATCH --gres=gpu:4
@@ -1924,9 +2058,165 @@ EOF
     start_header
 
     cat >> "$output_script" << EOF
-export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.3.0-rev1/bin:\${PATH}
-export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/sw/definitions/2.32.0-2/definitions
+export PATH=/hkfs/home/dataset/datasets/icon/sw/cdo-2.4.0/bin:\${PATH}
+export ECCODES_DEFINITION_PATH=/hkfs/home/dataset/datasets/icon/bacy_data/definitions/2.32.0-2/definitions.edzw:/hkfs/home/dataset/datasets/icon/bacy_data/definitions/2.32.0-2/definitions
 export NVCOMPILER_TERM=trace
+EOF
+}
+#=============================================================================
+set_run_target_juwels()
+{
+    icon_data_rootFolder=${icon_data_rootFolder:=/p/fastdata/slmet/slmet111/model_data/ICON-BB}
+
+    set_default use_nproma 8
+    set_default use_nproma_sub 8
+    set_default use_nblocks_c 0
+    set_default use_nodes 1
+    set_default use_num_io_procs 1
+    set_default use_cpu_time 01:00:00
+
+    if [[ $use_mpi == "yes" ]]; then
+        set_default use_mpi_procs_pernode 48
+	use_mpi_startrun="srun --label --ntasks=\${mpi_total_procs}"
+    fi
+    if [[ $use_openmp == "yes" ]]; then
+        set_default use_openmp_threads 2
+	use_mpi_startrun+=" --cpus-per-task=\${OMP_NUM_THREADS}"
+    else
+        set_default use_openmp_threads 1
+    fi
+
+
+    if [[ -n "$BB_SYSTEM" ]]; then
+    # this buildbot, do not use job id
+        job_log_name="LOG.$job_name"
+    else
+        job_log_name="LOG.$job_name.%j"
+    fi
+
+    if [[ -n "$BB_SYSTEM" ]]; then
+        # this is bildbot, do not run more than 45 minutes
+        use_cpu_time="00:15:00"
+    fi
+
+
+    use_purge_modules='module --force purge'
+    add_free_var USERINSTALLATIONS "/p/usersoftware/slmet/easybuild/stages/2023/"
+    login_node_number=$(hostname | sed 's/[^0-9]*//g' | sed 's/^0*//')
+
+    if [ "$login_node_number" -gt 12 ]; then
+      partition='booster'
+      use_nblocks_c=1
+      use_nproma=0
+
+      # Default GPU builder is booster_nvhpc_psmpi
+      use_load_modules="Stages/2023 NVHPC/23.1 netCDF-Fortran ecCodes libfyaml CMake/3.26.3"
+      case "${BB_NAME}" in
+        *booster*ompi)
+        use_load_modules+=" OpenMPI"
+        ;;
+        *)
+        use_load_modules+=" ParaStationMPI/5.8.0-1"
+        ;;
+      esac
+    else
+      partition='batch'
+
+      # Default CPU builder is cluster_intel_psmpi
+      use_load_modules="Stages/2023 GCCcore/.11.3.0 CMake/3.26.3 netCDF-Fortran ecCodes libfyaml ParaStationMPI/5.8.0-1"
+      case "${BB_NAME}" in
+        cluster_intel_psmpi)
+        use_load_modules+=" imkl/2022.1.0 Intel/2022.1.0"
+        ;;
+        cluster_nvhpc_psmpi)
+        use_load_modules+=" NVHPC/23.1"
+        ;;
+      esac
+    fi
+
+    cdo='cdo'
+    cdo_diff='diffn'
+
+    cat >> "$output_script" << EOF
+#SBATCH --output=$output_folder/$job_log_name.o
+#SBATCH --error=$output_folder/$job_log_name.o
+#SBATCH --job-name=$job_name
+#SBATCH --nodes=${use_nodes}
+#SBATCH --partition=${partition}
+#SBATCH --account=exaww
+#SBATCH --ntasks-per-node=$use_mpi_procs_pernode
+#SBATCH --time=$use_cpu_time
+EOF
+
+    start_header
+
+}
+
+#=============================================================================
+set_run_target_leo()
+{
+    icon_data_rootFolder=${icon_data_rootFolder:=/leonardo_work/DE360_GLORI/pool/data/ICON/}
+
+    if [[ "$use_gpu" == "yes" ]]; then
+        set_default use_nproma 8192
+        set_default use_nproma_sub 512
+        set_default use_ecrad_isolver 2 # McICA for OpenACC
+        if [[ $use_mpi == "yes" ]]; then
+            set_default use_mpi_procs_pernode 4
+        fi
+    else
+        set_default use_nproma 8
+        set_default use_nproma_sub 8
+        if [[ $use_mpi == "yes" ]]; then
+            set_default use_mpi_procs_pernode 32
+        fi
+        if [[ $use_openmp == "yes" ]]; then
+            set_default use_openmp_threads 2
+        else
+            set_default use_openmp_threads 1
+        fi
+    fi
+    set_default use_nblocks_c 0
+    set_default use_nodes 1
+    set_default use_num_io_procs 1
+    set_default use_cpu_time 01:00:00
+
+
+    if [[ -n "$BB_SYSTEM" ]]; then
+        # this buildbot, do not use job id and do not run more than 45 minutes
+        job_log_name="LOG.$job_name"
+        limit="00:45:00"
+        limit_time_bb # sets use_cpu_time
+    else
+        job_log_name="LOG.$job_name.%j"
+    fi
+
+    cdo='cdo'
+    cdo_diff='diffn'
+
+    cat >> "$output_script" << EOF
+#SBATCH --output=$output_folder/$job_log_name.o
+#SBATCH --error=$output_folder/$job_log_name.o
+#SBATCH --job-name=$job_name
+#SBATCH --nodes=${use_nodes}
+#SBATCH --partition=boost_usr_prod
+#SBATCH --account=DE360_GLORI
+#SBATCH --ntasks-per-node=$use_mpi_procs_pernode
+#SBATCH --time=$use_cpu_time
+EOF
+    if [[ "$use_gpu" == "yes" ]]; then
+    cat >> "$output_script" << EOF
+#SBATCH --gres=gpu:4
+EOF
+    fi
+
+    start_header
+
+    cat >> "$output_script" << EOF
+export PATH=/leonardo/prod/spack/03/install/0.19/linux-rhel8-icelake/gcc-11.3.0/cdo-2.1.0-2ltng25xbm7yakxoon4dyehxev5ynaw2/bin/:\$PATH
+export ECCODES_DEFINITION_PATH=/leonardo_scratch/fast/DE360_GLORI/definitions/2.32.0-2/definitions.edzw:/leonardo_scratch/fast/DE360_GLORI/definitions/2.32.0-2/definitions
+export NVCOMPILER_TERM=trace
+export OMPI_MCA_btl=self,tcp
 EOF
 }
 
@@ -1952,32 +2242,66 @@ create_target_header()
  	case $job_name in
         *dwd_run_ICON_09_R2B4N5_EPS.run*|*dwd_run_ICON_09_R2B4N5_EPS_member_id*)
             case $use_target in
-                balfrin_gpu*)
+                daint_gpu*)
+                    use_nproma=8000
+		    use_nblocks_c=0
+                ;;
+                alps_mch_gpu*)
                     use_nodes=1
                     use_mpi_procs_pernode=4
+                    use_nproma=8000
+		    use_nblocks_c=0
                 ;;
             esac
             ;;
         *mch_ch_lowres.run|*mch_ch_lowres_member_id*)
             case $use_target in
-                balfrin_gpu*)
+                alps_mch_gpu*)
                     use_nodes=1
                     use_mpi_procs_pernode=4
                 ;;
             esac
             ;;
-        *mch_kenda-ch1_small.run|*mch_kenda-ch1_small_member_id*)
+        *mch_*_small.run|*mch_*_small_member_id*)
             case $use_target in
-                balfrin_gpu*)
+                alps_mch_gpu*)
                     use_nodes=1
                     use_mpi_procs_pernode=4
+                ;;
+            esac
+            ;;
+        *atm_ape*.run|*atm_heldsuarez*.run) # for nproma test
+            case $use_target in
+                daint_gpu*|balfrin_gpu*)
+                    use_nproma=8000
+		    use_nblocks_c=0
+                ;;
+            esac
+            ;;
+        *atm_qubicc_nc_test*.run|*atm_qubicc_nc_test_nofor*.run|*atm_qubicc_nc_test_onlyfor*.run) # for nproma test
+            case $use_target in
+                daint_gpu*|balfrin_gpu*)
+                    use_nproma=8000
+		    use_nblocks_c=0
+                ;;
+            esac
+            ;;
+	*atm_tracer_Hadley*)
+            case $use_target in
+                bullx_gpu*)
+                    use_nproma=8000
+		    use_nblocks_c=0
                 ;;
             esac
             ;;
         *mch_opr_r04b07.run|*mch_opr_r04b07_member_id*.run)
             use_nodes=1
             use_mpi_procs_pernode=3
-            use_nproma=4250
+            case $use_target in
+                *_cpu*)
+                    use_nproma=4250
+                ;;
+            esac
             ;;
         *mch_opr_r04b07_lhn_00.run|*mch_opr_r04b07_lhn_00_member_id*.run)
             use_nodes=2
@@ -2001,16 +2325,9 @@ create_target_header()
                 ;;
             esac
             ;;
-        *mch_bench_r19b07_dev_sppt.run|*mch_bench_r19b07_dev_sppt_member_id*.run)
-            case $use_target in
-                daint_gpu*)
-                    use_mpi_procs_pernode=4
-                ;;
-            esac
-            ;;
         *mch_icon-ch1.run)
             case $use_target in
-                balfrin_gpu*)
+                alps_mch_gpu*)
                     use_nodes=2
                     use_mpi_procs_pernode=5
                     use_nproma_sub=6054
@@ -2019,7 +2336,7 @@ create_target_header()
             ;;
         *mch_kenda-ch1.run)
             case $use_target in
-                balfrin_gpu*)
+                alps_mch_gpu*)
                     use_nodes=1
                     use_mpi_procs_pernode=6
                     use_nproma_sub=1128
@@ -2028,7 +2345,7 @@ create_target_header()
             ;;
         *mch_icon-ch2.run)
             case $use_target in
-                balfrin_gpu*)
+                alps_mch_gpu*)
                     use_nodes=1
                     use_mpi_procs_pernode=6
                     use_nproma_sub=17757
@@ -2041,12 +2358,12 @@ create_target_header()
                 daint*)
                     use_mpi_procs_pernode=12 # Use 12 procs pernode for GPU as well until bug is fixed
                     ;;
-                balfrin*)
+                alps_mch*)
                     use_mpi_procs_pernode=4 # Use 4 procs pernode for GPU as well until bug is fixed
                     ;;
             esac
             ;;
-        *mch_*)
+        *mch_*|*c2sm*)
             case $use_target in
                 daint*)
                     use_nodes=4
@@ -2063,6 +2380,14 @@ create_target_header()
             esac
             ;;
 
+	*ocean_omip_R2B4_V*)
+            case $use_target in
+                bullx_gpu*)
+                    use_nproma=8000
+		    use_nblocks_c=0
+                ;;
+            esac
+            ;;
         *run_ICON_01_R3B9_lam*)
             case $use_target in
                 daint*)
@@ -2262,7 +2587,7 @@ create_target_header()
                     ;;
             esac
             ;;
-        *run_ICON_16_R2B6_mvstream*)
+        *run_ICON_27_R2B6_mvstream_qbudget*)
             case $use_target in
                 daint*)
                     use_nodes=10
@@ -2331,10 +2656,59 @@ create_target_header()
                     ;;
             esac
 	    ;;
+	*run_ICON_24_R19B7_RUC_ass*)
+            case $use_target in
+                daint*)
+                    use_nodes=10
+                    ;;
+                rcl)
+                    use_nodes=6
+                    use_venum_lhost=3
+                    use_cpunum_job=5
+                    ;;
+            esac
+            ;;
+
+	*run_ICON_25_R19B7_RUC_fc*)
+            case $use_target in
+                daint*)
+                    use_nodes=10
+                    ;;
+                rcl)
+                    use_nodes=6
+                    use_venum_lhost=3
+                    use_cpunum_job=5
+                    ;;
+            esac
+            ;;
+	
+        *run_ICON_26_R2B4_R2B6_AO-HD_coupled*)
+            case $use_target in
+                rcl)
+                    use_nodes=4
+                    use_venum_lhost=2
+                    use_cpunum_job=6 # 2x proc0 + 2x2 IO
+                    ;;
+            esac
+            ;;
+
         *atm_nwp_jsbach_test*)
             use_memory="18gb"
             ;;
-    esac
+        *art_oem*.run)
+            use_nodes=4
+            case $use_target in
+                *_cpu*)
+                    use_mpi_procs_pernode=12
+                    use_nproma=16
+                ;;
+                *_gpu*)
+                    use_mpi_procs_pernode=1
+                    # no nproma needed since this uses nlbocks_c anyway
+                ;;
+            esac
+            ;;    
+        esac
 
     # set more default values
     set_default use_shell "/bin/bash"

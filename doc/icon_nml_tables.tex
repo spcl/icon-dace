@@ -190,24 +190,14 @@ R & 0.8 & &
 ice cloud inhomogeneity factor &
 \tabularnewline
 
-aes\_cop\_config(jg)\% cinhoml1 &
+aes\_cop\_config(jg)\% cinhoms &
 R & 0.8 & &
-liquid cloud inhomogeneity factor, \newline
-ktype = 0 = stratiform clouds &
+snow cloud inhomogeneity factor, \newline
 \tabularnewline
 
-aes\_cop\_config(jg)\% cinhoml2 &
+aes\_cop\_config(jg)\% cinhoml &
 R & 0.4 & &
 liquid cloud inhomogeneity factor, \newline
-ktype = 4 = shallow conv. (cf. clwprat) &
-\tabularnewline
-
-aes\_cop\_config(jg)\% cinhoml3 &
-R & 0.8 & &
-liquid cloud inhomogeneity factor, \newline
-ktype = 1 = deep convection and \newline
-ktype = 2 = shallow conv. (cf. clwprat) and \newline
-ktype = 3 = mid-level conv. &
 \tabularnewline
 
 aes\_cop\_config(jg)\% cthomi &
@@ -564,11 +554,6 @@ Selects source of aerosol types\\
 18: Kinne background aerosols (of natural origin, 1850) are set and Stenchikov's
 volcanic aerosols are added to Kinne background and Simple plumes are added \\
 aes\_phy\_config(jg)\% dt\_rad > 0.000s \tabularnewline
-%
-aes\_rad\_config(jg)\% lrad\_yac & L & .FALSE. & &
-.TRUE.: O3 and Kinne Aerosol is coupled via yac for \\
-irad\_aero 13, 15, 18, 19  and \\
-irad\_o3 4,5,6, \tabularnewline
 \end{longtab}
 
 %------------------------------------------------------------------------------
@@ -1180,6 +1165,22 @@ L &
 \tabularnewline
 
 %\hline
+coupled\_to\_aero &
+L &
+.FALSE. &  &
+.TRUE.: Activates the coupling of aes atmosphere to Kinne aerosole input files. \newline 
+        Kinne aerosol input is taken from python processes rather than direct reading from pre-processed input files. rte-rrtmgp radiation supported only. In this case yac coupling routines are called.&
+\tabularnewline
+
+%\hline
+coupled\_to\_o3 &
+L &
+.FALSE. &  &
+.TRUE.: Activates the coupling of aes atmosphere to o3 input files. \newline 
+        O3 input is taken from python processes rather than direct reading from pre-processed input files. In this case yac coupling routines are called.&
+\tabularnewline
+
+%\hline
 coupled\_to\_river &
 L &
 .FALSE. &  &
@@ -1200,10 +1201,12 @@ L &
 .FALSE. &  &
 .TRUE.: ?? &
 \tabularnewline
+
 coupled\_to\_output &
 L &
 .FALSE. & &
 enables the output coupling - All suitable variables in the varlist are defined in the coupler for coupling with external output components.
+\tabularnewline
 \end{longtab}
 
 Defined and used in: \verb+src/namelists/mo_coupling_nml.f90+
@@ -1231,6 +1234,12 @@ Diffusion on the horizontal wind field&
 \textbf{lhdiff\_w}&
 L& .TRUE. & &
 Diffusion on the vertical wind field&
+\tabularnewline
+
+%\hline
+\textbf{lhdiff\_q}&
+L& .FALSE. & &
+Diffusion on QV and QC (water vapor and cloud water)&
 \tabularnewline
 
 %\hline
@@ -1264,7 +1273,7 @@ finer than 500 m if the LES turbulence scheme is not used)& hdiff\_order=5; lhdi
 I& 1 & &
 Reconstruction method used for Smagorinsky diffusion: \\
 1: u/v reconstruction at vertices only \\
-2: u/v reconstruction at cells and vertices& iequations=3, hdiff\_order=5
+2: u/v reconstruction at cells and vertices& hdiff\_order=5
 \tabularnewline
 
 %\hline
@@ -1272,7 +1281,7 @@ Reconstruction method used for Smagorinsky diffusion: \\
 I& 2 & &
 Discretization of temperature diffusion: \\
 1: $K_h \nabla^2 T$ \\
-2: $\nabla \cdot (K_h \nabla T)$  & iequations=3, hdiff\_order=5
+2: $\nabla \cdot (K_h \nabla T)$  & hdiff\_order=5
 \tabularnewline
 
 
@@ -1286,13 +1295,13 @@ a 3 time level time stepping scheme) (values above 30 are recommended when using
 %\hline
 \textbf{hdiff\_w\_efdt\_ratio}&
 R& 15.0  & &
-ratio of e-folding time to time step for diffusion on vertical wind speed & iequations=3
+ratio of e-folding time to time step for diffusion on vertical wind speed & 
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_min\_efdt\_ratio}&
 R& 1.0 & &
-minimum value of hdiff\_efdt\_ratio near model top & iequations=3  .AND. hdiff\_order=4
+minimum value of hdiff\_efdt\_ratio near model top & hdiff\_order=4
 \tabularnewline
 
 %\hline
@@ -1312,56 +1321,48 @@ n\_dom$>$1\tabularnewline
 \textbf{hdiff\_smag\_faci}&
 R& 0.015 & &
 Scaling factor for Smagorinsky diffusion at height \(hdiff\_smag\_z\) and below. \(hdiff\_smag\_fac \geq 0\). &
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_fac2}&
 R& \(2\cdot10^{-6}\cdot(1600+25000+\sqrt(1600\cdot(1600+50000))) \approx 0.071\)& &
 Scaling factor for Smagorinsky diffusion at height \(hdiff\_smag\_z2\). \(hdiff\_smag\_fac2 \geq 0\). Between \(hdiff\_smag\_z\) and \(hdiff\_smag\_z2\) the scaling factor changes linearly from \(hdiff\_smag\_fac\) to \(hdiff\_smag\_fac2\). &
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_fac3}&
 R& 0. & &
 Scaling factor for Smagorinsky diffusion at height \(hdiff\_smag\_z3\). \(hdiff\_smag\_fac3 \geq 0\). The three points \((hdiff\_smag\_z2, hdiff\_smag\_fac2)\), \((hdiff\_smag\_z3, hdiff\_smag\_fac3)\),  and  \((hdiff\_smag\_z4, hdiff\_smag\_fac4)\) determine the quadratic function for the scaling factor between \(hdiff\_smag\_z2\) and \(hdiff\_smag\_z4\). &
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_fac4}&
 R& 1.0 & &
 Scaling factor for Smagorinsky diffusion at height \(hdiff\_smag\_z4\) and higher. \(hdiff\_smag\_fac4 \geq 0\). &
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_z}&
 R& 32500. & m&
 Height up to which \(hdiff\_smag\_fac\) is used, and where the linear profile up to height \(hdiff\_smag\_z2\) starts.&
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_z2}&
 R& \(1600+50000+\sqrt(1600\cdot(1600+50000)) \approx 60686\) & m&
 Height with scaling factor \(hdiff\_smag\_fac2\) where the linear profile starting at \(hdiff\_smag\_z\) ends, and where the quadratic profile up to \(hdiff\_smag\_z4\) starts. \(hdiff\_smag\_z < hdiff\_smag\_z2 < hdiff\_smag\_z4\).&
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_z3} &
 R& 50000.& m&
 Height with scaling factor \(hdiff\_smag\_fac3\). Needed to determine the quadratic function between \(hdiff\_smag\_z2\) and \(hdiff\_smag\_z4\). \(hdiff\_smag\_z3 \neq hdiff\_smag\_z2 \land hdiff\_smag\_z3 \neq hdiff\_smag\_z4\).&
-iequations=3
 \tabularnewline
 
 %\hline
 \textbf{hdiff\_smag\_z4} &
 R& 90000.& m&
 Height from which \(hdiff\_smag\_fac4\) is used.  \(hdiff\_smag\_z4 > hdiff\_smag\_z2\).&
-iequations=3
 \tabularnewline
 
 \end{longtab}
@@ -1376,16 +1377,6 @@ Defined and used in: \verb+src/namelists/mo_diffusion_nml.f90+
 This namelist is relevant if run\_nml:ldynamics=.TRUE.
 
 \begin{longtab}
-
-%\hline
-\textbf{iequations}&
-I& 3& &
-Equations and prognostic variables. Use positive indices for the atmosphere
-and negative indices for the ocean.&\tabularnewline
-&&&&3: non-hydrostatic atmosphere&\tabularnewline
-&&&&-1: hydrostatic ocean&
-\tabularnewline
-
 
 %\hline
 divavg\_cntrwgt&
@@ -1408,15 +1399,14 @@ commonly referred to as ``the dynamical core'') is modified for the deep atmosph
 Irreversible dynamics of any kind (largely coincident with what is commonly referred to as 
 ``the physics'') are not explicitly modified.\\
 Neither are artificial numerical measures for stabilizing, smoothing and the like modified explicitly.] &
-iequations = 3 \\
 iforcing = 0, 2, 3 \\
 is\_plane\_torus = .FALSE.
 \tabularnewline
 
 %\hline
 lmoist\_thdyn &
-L & .FALSE.& &
-include moisture terms in first law&
+L & .TRUE.& &
+Include moisture-dependence of atmospheric heat capacities in thermodynamic equation (automatically reset to .FALSE. in dry model configurations)&
 \tabularnewline
 
 \end{longtab}
@@ -1522,7 +1512,19 @@ range\_entrorg&
 R&
 0.2e-3&
 1/m&
-Variability range for entrainment parameter in convection scheme &
+Variability range (additive) for entrainment parameter in convection scheme &
+inwp\_convection = 1
+\tabularnewline
+
+\hline
+range\_entrorg\_mult&
+R&
+1&
+&
+Asymmetric-multiplicative variation for entrainment parameter in convection scheme, combined with a
+quadratic reduction of the convective adjustment time scale for positive perturbations. Should be used
+alternatively to the additive perturbation described above, i.e. setting a factor
+above 1 shall be combined with range\_entrorg = 0.&
 inwp\_convection = 1
 \tabularnewline
 
@@ -1532,6 +1534,16 @@ R&
 5.e3&
 Pa&
 Variability range for maximum allowed shallow convection depth &
+inwp\_convection = 1
+\tabularnewline
+
+\hline
+range\_rmfdeps&
+R&
+1&
+&
+Multiplicative variation of the rmfdeps parameter, i.e. the fraction of the updraft mass flux
+that is used as a start value for the downdraft calculation at the level of free sinking&
 inwp\_convection = 1
 \tabularnewline
 
@@ -2464,6 +2476,13 @@ tuning of bare-soil evaporation &
 init\_mode=5
 \tabularnewline
 
+smi\_relax\_timescale&
+R & 20. & days &
+Relaxation time scale for ICON-internal soil moisture adjustment, referring to a filtered RH increment of 1\%.
+Setting the time scale to zero turns off the soil moisture adjustment. &
+icpl\_da\_sfcevap $>=$ 2
+\tabularnewline
+
 icpl\_da\_snowalb&
 I & 0 & &
 Coupling between temperature bias inferred from data assimilation and snow albedo\\
@@ -2503,6 +2522,14 @@ parts of Russia where the assimilation of 10m winds is blacklisted in the operat
 init\_mode=5
 \tabularnewline
 
+
+scalfac\_da\_sfcfric&
+R & 2.5 & &
+Scaling factor for adaptive surface friction (see eqns. 3 and 4 in \texttt{https://doi.org/10.1002/qj.4535}) &
+icpl\_da\_sfcfric $>$ 0
+\tabularnewline
+
+
 icpl\_da\_tkhmin&
 I & 0 & &
 Coupling between data assimilation and near-surface reduction profile for minimum vertical diffusion of heat \\
@@ -2527,7 +2554,7 @@ lconsistency\_checks&
 L & .TRUE.& &
 If .FALSE., consistency checks for Analysis and First Guess fields are skipped. On default, checks are performed for
 \emph{uuidOfHGrid} and \emph{validity time}. &
-init\_mode=1,3,4,5,6
+init\_mode=1,3,4,5,6,7
 \tabularnewline
 
 %\hline
@@ -2557,14 +2584,14 @@ ltile\_init&
 L & .FALSE.& &
 True: initialize tiled surface fields from a first guess coming from a run without tiles. \\
 Along coastlines and lake shores, a neighbor search is executed to fill the variables on previously non-existing
-land or water points with reasonable values. Should be combined with ltile\_coldstart = .TRUE. & init\_mode=1,5,6
+land or water points with reasonable values. Should be combined with ltile\_coldstart = .TRUE. & init\_mode=1,5,6,7
 \tabularnewline
 
 %\hline
 ltile\_coldstart&
 L & .FALSE.& &
 If true, tiled surface fields are initialized with tile-averaged fields from a previous run with tiles. \\
-A neighbor search is applied to subgrid-scale ocean points for SST and sea-ice fraction. & init\_mode=1,5,6
+A neighbor search is applied to subgrid-scale ocean points for SST and sea-ice fraction. & init\_mode=1,5,6,7
 \tabularnewline
 
 %\hline
@@ -2603,7 +2630,7 @@ Filename of DWD first-guess input file, default
 ''\texttt{<path>dwdFG\_R<nroot>B<jlev>\_DOM <idom>.nc}''.
 May contain the keywords \texttt{<path>} which will be substituted by
 \texttt{model\_base\_dir}, as well as \texttt{nroot}, \texttt{nroot0}, \texttt{jlev},
-and \texttt{idom} defining the current patch. & init\_mode=1,3,5,6
+and \texttt{idom} defining the current patch. & init\_mode=1,3,5,6,7
 \tabularnewline
 
 %\hline
@@ -2638,7 +2665,7 @@ they become mandatory for domain \texttt{jg}, such that the model aborts if any 
 This list may include a subset of the optional first guess fields, or even the entire set of first
 guess fields. On default this list is empty, such that optional fields experience a cold-start
 initialization if they are missing and the model does not abort.
-& init\_mode=1,5,6
+& init\_mode=1,5,6,7
 \tabularnewline
 
 %\hline
@@ -2870,14 +2897,12 @@ inextra\_2d&
 I &
 0&&
 Number of extra 2D Fields for diagnostic/debugging output. &
-dynamics\_nml:iequations = 3
 \tabularnewline
 %\hline
 inextra\_3d&
 I &
 0&&
 Number of extra 3D Fields for diagnostic/debugging output. &
-dynamics\_nml:iequations = 3
 \tabularnewline
 
 %\hline
@@ -2888,7 +2913,6 @@ if .FALSE. the output fluxes are accumulated  \\
 if .TRUE. the output fluxes are average values\\
  from the beginning of the run, except of     \\
  TOT\_PREC that would be accumulated &
-iequations=3\\
 iforcing=3
 \tabularnewline
 
@@ -2932,10 +2956,16 @@ Interval over which wind gusts are maximized &
 iforcing=3
 \tabularnewline
 
+ff10m\_interval&
+R(n\_dom)& 600. & s&
+Interval over which 10-m winds are averaged (and used as basis for the gust diagnosis) &
+itune\_gust\_diag=4
+\tabularnewline
+
 %\hline
 celltracks\_interval&
 R(n\_dom)& 3600. & s&
-Interval over which celltrack variables are maximized (lpi\_max, uh\_max, vorw\_ctmax, w\_ctmax, tcond\_max, tcond10\_max, dbz\_ctmax) &
+Interval over which celltrack variables are maximized (lpi\_max, uh\_max, vorw\_ctmax, w\_ctmax, tcond\_max, tcond10\_max, dbz\_ctmax, tot\_pr\_max) &
 iforcing=3
 \tabularnewline
 
@@ -3276,6 +3306,10 @@ ceiling & ceiling height & m & iforcing = inwp & 2d & - &  [2]
 \tabularnewline
 %
 
+vis & near-surface horizontal visibility & m & iforcing = inwp & 2d & - &  [2]
+\tabularnewline
+%
+
 hbas\_sc & cloud base above msl, shallow convection & m & iforcing = inwp & 2d & - & [2]
 \tabularnewline
 %
@@ -3358,8 +3392,18 @@ kg m-2 & iforcing = inwp & 2d & totprec\_d\_interval & [1], [4], [5]
 \tabularnewline
 %
 
+tot\_pr\_max &  maximum total precipitation rate during prescribed time interval &
+kg m-2 s-1 & iforcing = inwp & 2d & celltracks\_interval & [4]
+\tabularnewline
+%
+
 lapse\_rate & temperature gradient between 500 and 850 hPa  &
 K m-1 & iforcing = inwp & 2d & - & [2]
+\tabularnewline
+%
+
+mconv & low level horizontal moisture convergence averaged over 0-1000\,m AGL layer based on specific humidity, $\frac{1}{1\,\text{km}}\int_{0}^{1\,\text{km AGL}}\nabla_h\cdot(q_v\vec v_h)\,dz$&
+s-1 & iforcing = inwp & 2d & - & [2]
 \tabularnewline
 %
 
@@ -3987,8 +4031,11 @@ lurbalb &
 L & .TRUE. &  & If .TRUE., use urban albedo and emissivity (Wouters et al.\ 2016) & lterra\_urb = .TRUE.
 \tabularnewline
 
-lurbahf &
-L & .TRUE. &  & If .TRUE., use urban anthropogenic heat flux (Wouters et al.\ 2016) & lterra\_urb = .TRUE.
+itype\_ahf &
+I & 2 &  & If $\ge$1, use urban anthropogenic heat flux (Wouters et al.\ 2016) \\
+1: constant value given by the first entry in tuning\_nml:tune\_urbahf \\
+2: variable value depending on climatological T2M as specified in tuning\_nml:tune\_urbahf \\
+3: to be implemented (variable value depending on time-filtered predicted T2M) & lterra\_urb = .TRUE.
 \tabularnewline
 
 itype\_kbmo &
@@ -4042,6 +4089,11 @@ allowed range: 0 -- 2 & itype\_evsl = 2,3,4
 cr\_bsmin &
 R & 110. & s/m & minimum bare soil evaporation resistance (see Schulz and Vogel 2020) \\
 Note: c\_soil and c\_soil\_urb are ignored in this case & itype\_evsl = 5 or icpl\_da\_sfcevap = 4
+\tabularnewline
+
+%\hline
+rsmin\_fac &
+R & 1. &  & scaling factor for rsmin.
 \tabularnewline
 
 %\hline
@@ -4112,7 +4164,6 @@ means\\
 4: SST and sea ice fraction are updated daily, based on actual monthly means\\
 5: SST and sea ice fraction are updated daily, based on actual daily means (\textcolor{red}{not yet implemented}) \\
 6: SST and sea ice fraction are updated with user-defined interval &
-iequations=3\\
 iforcing=3
 \tabularnewline
 
@@ -4153,6 +4204,14 @@ Default is "$<$path$>$CI\_$<$year$>$\_$<$month$>$\_$<$gridfile$>$". May contain
 the keyword $<$path$>$ which will be substituted by model\_base\_dir \newline
 In case sstice\_mode=6, sea ice data for all time steps in the current simulation should be prepared in one single file, variable should be named SIC in this file. &
 sstice\_mode=3,4,5,6
+\tabularnewline
+%\hline
+lcuda\_graph\_lnd &
+L&
+.FALSE.&
+&
+Activate cuda graphs for the land scheme. Automatically set to .FALSE. if not compiled with the ICON\_USE\_CUDA\_GRAPH cpp key.&
+ICON\_USE\_CUDA\_GRAPH activated
 \tabularnewline
 \end{longtab}
 
@@ -4508,7 +4567,7 @@ Defined and used in: \verb+src/namelists/mo_mtgrm_nml.f90+
 %-----------------------------------------------------------------------------
 % nonhydrostatic_nml:
 %-----------------------------------------------------------------------------
-\subsection{nonhydrostatic\_nml (relevant if run\_nml:iequations=3)}
+\subsection{nonhydrostatic\_nml}
 
 \begin{longtab}
 
@@ -4522,7 +4581,6 @@ Options for predictor-corrector time-stepping scheme:& \tabularnewline
 5: Contravariant vertical velocity is computed in both substeps (beneficial for numerical
    stability in very-high resolution setups with extremely steep slops, otherwise no significant impact)\\
 6: As 5, but velocity tendencies are also computed in both substeps (no apparent benefit, but more expensive) &
-iequations=3
 \tabularnewline
 
 %\hline
@@ -4611,6 +4669,14 @@ vcfl\_threshold&
 R& 1.05& &
 Threshold for vertical advection CFL number at which the adaptive time step reduction 
 (increase of ndyn\_substeps w.r.t. the fixed fast-physics time step) is triggered.
+ &
+\tabularnewline
+
+nlev\_hcfl&
+I(max\_dom)& 0& &
+Number of model levels (counted from the top) for which the horizontal CFL number is evaluated in addition and
+used for an adaptive dynamics time step reduction. In practice, doing this for the upper 10--15 levels is sufficient
+with a model top of 75 km.
  &
 \tabularnewline
 
@@ -5000,8 +5066,8 @@ cloud microphysics and precipitation\\
 1: hydci (COSMO-EU microphysics, 2-cat ice: cloud ice, snow)\\
 2: hydci\_gr (COSMO-DE microphysics, 3-cat ice: cloud ice, snow, graupel)\\
 3: as 1, but with improved ice nucleation scheme by C. Koehler\\
-4: Two-moment microphysics by A. Seifert, further configuration possible in namelist \texttt{/twomom\_mcrph\_nml/}\\
-
+4,5,6,7: Two-moment microphysics by A. Seifert, further configuration possible in namelist \texttt{/twomom\_mcrph\_nml/}\\
+8: Spectral Bin Microphysics (SBM) by A. Khain\\
 9: Kessler scheme &
 run\_nml:iforcing = inwp
 \tabularnewline
@@ -5053,9 +5119,28 @@ I&
 0&
  &
 0: off \\
-1: simple coupling between autoconversion and Tegen aerosol climatology; requires irad\_aero=6 \\
+1: simple coupling between autoconversion and Tegen aerosol climatology; requires irad\_aero=6, 7 or 9 \\
+3: use cloud-droplet number climatology from external parameter file. External parameter files containing cloud-droplet number climatology can be generated with extpar code from version rc\_5.14 \\
 More advanced options are in preparation&
 currently only for inwp\_gscp = 1
+\tabularnewline
+
+lscale\_cdnc&
+L&
+.FALSE.&
+&
+.TRUE.: scaling of external (MODIS) cdnc with a time varying 2-dimensional factor derived from the simple plume scheme. It is advisable to turn the scaling off at least for the years 2000-2020. &
+climate projections using\\
+icpl\_aero\_gscp = 3\\
+irad\_aero = 18,19
+\tabularnewline
+
+icpl\_aero\_ice&
+I&
+0&
+ &
+0: ice nucleating particles concentration defined by temperature using Cooper (1987) formula \\
+1: ice nucleating particles concentration defined by temperature and dust concentration using DeMott (2015) formula; requires irad\_aero=6, 7 or 8 \\
 \tabularnewline
 
 %\hline
@@ -5176,7 +5261,7 @@ I&
 0&
  &
 0: off \\
-1: simple coupling between autoconversion and Tegen aerosol climatology; requires irad\_aero=6 &
+1: simple coupling between autoconversion and Tegen aerosol climatology; requires irad\_aero=6 or 7 &
 \tabularnewline
 
 
@@ -5461,6 +5546,15 @@ run\_nml:iforcing = inwp \\
 init\_mode $<$ 4 \\
 inwp\_turb $>$ 0 \\
 inwp\_radiation $>$ 0
+\tabularnewline
+
+%\hline
+lcuda\_graph\_turb\_tran &
+L&
+.FALSE.&
+&
+Activate cuda graphs for turbulent transfers. Automatically set to .FALSE. if not compiled with the ICON\_USE\_CUDA\_GRAPH cpp key.&
+ICON\_USE\_CUDA\_GRAPH activated
 \tabularnewline
 
 \end{longtab}
@@ -5932,9 +6026,31 @@ Method of SSO blocking correction used in the gust diagnostics\\
 1: Use level above ``SSO envelope top'' for gust enhancement over mountains \\
 2: Use ``SSO envelope top'' level for gust enhancement over mountains, combined with an adjusted nonlinearity factor
 (recommended for global configurations with MERIT/REMA orography) \\
-3: Variant of option 1, recommended for ICON-D2 with subgrid-scale condensation (do not use with ntiles=1) &
-run\_nml:iforcing = inwp
+3: Variant of option 1, recommended for ICON-D2 with subgrid-scale condensation (do not use with ntiles=1) \\
+4: As 3, but using time-averaged 10-m wind speeds as input with additional limitation to resolved bouldary-layer wind speeds &
+run\_nml:iforcing = inwp; related switches are tune\_gustlim\_agl and tune\_gustlim\_fac
 \tabularnewline
+
+\hline
+tune\_gustlim\_agl&
+R(max\_dom)&
+1500.0&
+m&
+Height range above ground, within which the maximum resolved wind speed is determined for gust limitation &
+itune\_gust\_diag = 4
+\tabularnewline
+
+\hline
+tune\_gustlim\_fac&
+R(max\_dom)&
+0.0&
+ &
+Tuning factor for gust limitation. The default value of zero means that the limitation is turned off. Otherwise, the difference
+between the 10-m wind speed and the maximum speed found below tune\_gustlim\_agl times tune\_gustlim\_fac is used to limit
+the excess gust speed &
+itune\_gust\_diag = 4
+\tabularnewline
+
 
 \hline
 itune\_albedo&
@@ -5947,6 +6063,18 @@ MODIS albedo tuning\\
 2: dimmed sahara + brightened Antarctic (by $5\%$)&
 run\_nml:iforcing = inwp\\
 albedo\_type=2
+\tabularnewline
+
+\hline
+tune\_albedo\_wso&
+R(2)&
+0.0, 0.0&
+-&
+Add a correction to MODIS albedo over [dry,wet] soil for soil types 3-6. Valid range: [-0.03, 0.03]. Supposed to be negative for wet soil. &
+run\_nml:iforcing = inwp\\
+nwp\_phy\_nml:inwp\_surface = 1\\
+itype\_albedo = 2\\
+direct\_albedo = 3,4
 \tabularnewline
 
 \hline
@@ -6006,6 +6134,27 @@ Tuning factor for direct solar irradiance in sunshine duration diagnostic to acc
 delta-Eddington scaling in ecRad and other possible biases (e.g. liquid/ice water path) &
 \tabularnewline
 
+\hline
+tune\_urbahf&
+R(4)&
+0., 2., 2., 50.& W m$^{-2}$
+&
+Tuning factors for specifying the anthropogenic heat flux (AHF) depending on climatological T2M. \\
+first value: constant base value independent of temperature \\
+second value: gradient per K below T2M = 15$^\circ$C for heating \\
+third value: gradient per K above T2M = 20$^\circ$C for cooling \\
+fourth value: upper limit for AHF & lterra\_urb=.TRUE.
+\tabularnewline
+
+\hline
+tune\_urbisa&
+R(2)&
+0.6, 1.0&
+&
+Lower and upper bound for variable ISA parameterization (fraction of impervious surface area on urban tiles) 
+depending on smoothed urban fraction & lterra\_urb=.TRUE.
+\tabularnewline
+
 
 \hline
 \hline
@@ -6043,7 +6192,7 @@ There are for sure parameters which could be optimized for different resolutions
 
 %\hline
 i2mom\_solver &
-I& 1 & &
+I& 1 & - &
 Type of numerical time integration scheme for the two-moment scheme:\\
 0: explicit Euler-forward\\
 1: semi-implicit solver similar to that of the standard one-moment schemes &
@@ -6051,19 +6200,35 @@ iforcing=3, inwp\_gscp=4
 \tabularnewline
 
 ccn\_type &
-I& Depends on \mbox{inwp\_gscp}:\\for 4,7: 7\\ for 5: 8 & &
+I& Depends on \mbox{inwp\_gscp}:\\for 4,7: 7\\ for 5: 8 & - &
 Choice of the aerosol scenario for cloud nucleation (CCN):\\
 6: ``low CCN'' (``maritime'')\\
 7: ``intermediate CCN'' \\
 8: ``high CCN'' (``continental'')\\
 9: ``very high CCN'' (``polluted'')\\
-If applied together with the ART aerosol physics \textbf{inwp\_gscp=6}, this parameter has no effect.
+If applied together with the ART aerosol physics \textbf{inwp\_gscp=6, this parameter has no effect.}
 &
-iforcing=3, inwp\_gscp=4,5,6,7
+iforcing=3, inwp\_gscp=4,5,7
+\tabularnewline
+
+ccn\_Ncn0 &
+R & -999.99 & m$^{-3}$ &
+CN concentration near ground. A value of < -900 indicates that the hardcoded value associated with the ccn\_type will be used.
+If applied together with the ART aerosol physics \textbf{inwp\_gscp=6, this parameter has no effect.}
+&
+iforcing=2,3 inwp\_gscp=4,5,7
+\tabularnewline
+
+ccn\_wcb\_min &
+R & 0.1 & m$^{-3}$ &
+Minimum updraft speed for Segal\&Khain cloud nucleation parameterization.
+If applied together with the ART aerosol physics \textbf{inwp\_gscp=6, this parameter has no effect.}
+&
+iforcing=2,3 inwp\_gscp=4,5,7
 \tabularnewline
 
 iicephase &
-I& 1 & &
+I& 1 & - &
 Turning on/off mixed phase processes in the two-moment scheme:\\
 0: warm phase processes only\\
 1: mixed phase processes&
@@ -6071,7 +6236,7 @@ iforcing=3, inwp\_gscp=4,5,6,7
 \tabularnewline
 
 alpha\_spacefilling &
-R& 0.01 & &
+R& 0.01 & - &
 Parameter in conversion of snow or cloud ice to graupel by riming: degree of void filling by frozen supercooled droples within the ice particle skeleton, above which the particle is converted to the graupel class. Smaller values lead to faster conversion. 0.01 means very fast conversion to graupel. A value of 0.68 is the theoretical limit for densest sphere packing and leads to rather slow conversion.  &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
@@ -6101,14 +6266,14 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 rain\_cmu0 &
-R&  6.0 & &
+R&  6.0 & - &
 Parameter of the $\mu$-$D$-relation in the rain size distribution for evaporation and sedimentation below cloud base:\\
 asymptotic $\mu$-value for spectra with small mean diameter.  &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 rain\_cmu1 &
-R& 30.0 & &
+R& 30.0 & - &
 Parameter of the $\mu$-$D$-relation in the rain size distribution for evaporation and sedimentation below cloud base:\\
 asymptotic $\mu$-value for spectra with large mean diameter.  &
 iforcing=2,3 inwp\_gscp=4,5,6,7
@@ -6122,14 +6287,108 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 rain\_cmu4 &
-R& 1.0 & &
+R& 1.0 & - &
 Parameter of the $\mu$-$D$-relation in the rain size distribution for evaporation and sedimentation below cloud base:\\
-base value.  &
+base value of $\mu$.  &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+in\_fact &
+R& 1.0 &  &
+Factor to tune the IN concentration for heterogeneous ice nucleation &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+nu\_i &
+R& -999.99 & - &
+Shape parameter $\nu$ for cloud ice in the PSD\\
+$f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
+A value of < -900  indicates that the background value $\nu=0.0$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+mu\_i &
+R& -999.99 & - &
+Shape parameter $\mu$ for cloud ice in the PSD\\
+$f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
+A value of < -900  indicates that the background value $\mu=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+ageo\_i &
+R& -999.99 & &
+Prefactor of the assumed size-mass-relation for cloud ice $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
+A value of < -900  indicates that the background value $a_{geo}=0.835$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+bgeo\_i &
+R& -999.99 & - &
+Exponent of the assumed size-mass-relation for cloud ice $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
+A value of < -900  indicates that the background value $b_{geo}=0.39$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+avel\_i &
+R& -999.99 & &
+Prefactor of the assumed fallspeed-mass-relation for cloud ice $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
+A value of < -900  indicates that the background value $a_{vel}=27.7$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+bvel\_i &
+R& -999.99 & - &
+Exponent of the assumed fallspeed-mass-relation for cloud ice $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
+A value of < -900  indicates that the background value $b_{vel}=0.21579$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+nu\_s &
+R& -999.99 & - &
+Shape parameter $\nu$ for snow in the PSD\\
+$f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
+A value of < -900  indicates that the background value $\nu=0.0$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+mu\_s &
+R& -999.99 & - &
+Shape parameter $\mu$ for snow in the PSD\\
+$f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
+A value of < -900  indicates that the background value $\mu=0.5$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+ageo\_s &
+R& -999.99 & &
+Prefactor of the assumed size-mass-relation for snow $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
+A value of < -900  indicates that the background value $a_{geo}=5.13$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+bgeo\_s &
+R& -999.99 & - &
+Exponent of the assumed size-mass-relation for snow $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
+A value of < -900  indicates that the background value $b_{geo}=1/2$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+avel\_s &
+R& -999.99 &  &
+Prefactor of the assumed fallspeed-mass-relation for snow $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
+A value of < -900  indicates that the background value $a_{vel}=400.0$ from mo\_2mom\_mcrph\_main.f90 is used. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+bvel\_s &
+R& -999.99 & - &
+Exponent of the assumed fallspeed-mass-relation for snow $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
+A value of < -900  indicates that the background value $b_{vel}=0.35$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 nu\_r &
-R& -999.99 & &
+R& -999.99 & - &
 Shape parameter $\nu$ of the rain mass distribution inside clouds. Refers to the generalized gamma distribution with respect to mass $x$:\\
 $f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
 A value < -900 indicates that the background value $\nu=0.0$ from mo\_2mom\_mcrph\_main.f90 is used. &
@@ -6137,7 +6396,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 nu\_g &
-R& -999.99 & &
+R& -999.99 & - &
 Shape parameter $\nu$ for graupel in the PSD\\
 $f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
 A value of < -900  indicates that the background value $\nu=1.0$ from mo\_2mom\_mcrph\_main.f90 is used. &
@@ -6145,10 +6404,10 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 mu\_g &
-R& -999.99 & &
+R& -999.99 & - &
 Shape parameter $\mu$ for graupel in the PSD\\
 $f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
-A value of < -900  indicates that the background value $\nu=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
+A value of < -900  indicates that the background value $\mu=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
@@ -6160,7 +6419,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 bgeo\_g &
-R& -999.99 & &
+R& -999.99 & - &
 Exponent of the assumed size-mass-relation for graupel $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
 A value of < -900  indicates that the background value $b_{geo}=0.314$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
@@ -6174,7 +6433,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 bvel\_g &
-R& -999.99 & &
+R& -999.99 & - &
 Exponent of the assumed fallspeed-mass-relation for graupel $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
 A value of < -900  indicates that the background value $b_{vel}=0.34$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
@@ -6189,10 +6448,10 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 mu\_h &
-R& -999.99 & &
+R& -999.99 & - &
 Shape parameter $\mu$ for hail in the PSD\\
 $f(x)=N_{0}x^{\nu}\exp(-\lambda x^{\mu})$\\
-A value of < -900  indicates that the background value $\nu=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
+A value of < -900  indicates that the background value $\mu=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
@@ -6204,7 +6463,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 bgeo\_h &
-R& -999.99 & &
+R& -999.99 & - &
 Exponent of the assumed size-mass-relation for hail $D=a_{geo}x^{b_{geo}}$ for $x$ in kg and $D$ in m.\\
 A value of < -900  indicates that the background value $b_{geo}=1/3$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
@@ -6218,7 +6477,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 bvel\_h &
-R& -999.99 & &
+R& -999.99 & - &
 Exponent of the assumed fallspeed-mass-relation for hail $v=a_{vel}x^{b_{vel}}$ for $x$ in kg and $v$ in m/s.\\
 A value of < -900  indicates that the background value $b_{vel}=1/6$ from mo\_2mom\_mcrph\_main.f90 is used. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
@@ -6226,13 +6485,13 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 
 
 melt\_h\_tune\_fac &
-R& 1.0 & &
+R& 1.0 & - &
 Tuning factor for the hail melting rate. Values larger than 1.0 enhance the hail melting, smaller values slow down the melting. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 melt\_g\_tune\_fac &
-R& 1.0 & &
+R& 1.0 & - &
 Tuning factor for the graupel melting rate. Values larger than 1.0 enhance the graupel melting, smaller values slow down the melting. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
@@ -6256,7 +6515,7 @@ iforcing=2,3 inwp\_gscp=4,5,6,7 lturb\_enhc=.TRUE.
 \tabularnewline
 
 iice\_stick &
-I& 10 &  &
+I& 10 & - &
 Optional choice of the sticking efficiency parameterization for ice-ice-collisions as function of temperature:\\
 1: $e = \min(\exp(0.09 (T-T_3)),1.0)$ from Lin et al. (1983)\\
 2: $e = \min(\exp(0.025 (T-T_3)),1.0)$, even larger as option 1\\
@@ -6274,14 +6533,14 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 isnow\_stick &
-I& 5 &  &
+I& 5 & -  &
 Optional choice of the sticking efficiency parameterization for snow-snow collisions as function of temperature.\\
 Same choices as for \texttt{iice\_stick}. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 iparti\_stick &
-I& 5 &  &
+I& 5 & -  &
 Optional choice of the sticking. efficiency parameterization for other frozen category collisions as function of temperature.\\
 Same choices as for \texttt{iice\_stick}.\\
 Does not apply for graupel selfcollection. There, the below \texttt{ecoll\_gg}, \texttt{ecoll\_gg\_wet} and \texttt{Tcoll\_gg\_wet} apply. &
@@ -6289,13 +6548,13 @@ iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 ecoll\_gg &
-R& 0.1 &  &
+R& 0.1 & - &
 Collision efficiency for graupel autoconversion (dry graupel). Value between 0 and 1. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
 ecoll\_gg\_wet &
-R& 0.4 &  &
+R& 0.4 & - &
 Collision efficiency for graupel autoconversion (wet graupel). Value between 0 and 1. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
@@ -6306,8 +6565,14 @@ Temperature limit above which graupel autoconversion is considered to be for wet
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
+cap\_ice &
+R& -999.99 & - &
+Capacitance for clould ice depositional growth. A value < -900 indicates the usage of the code-internal backgroud value 3.0. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
 cap\_snow &
-R& -999.99 &  &
+R& -999.99 & - &
 Capacitance for snow depositional growth. A value < -900 indicates the usage of the code-internal backgroud value 3.0. &
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
@@ -6318,6 +6583,42 @@ Maximum allowed spectral mean sedimentation velocity of snow at sea level. A val
 iforcing=2,3 inwp\_gscp=4,5,6,7
 \tabularnewline
 
+itype\_shedding\_gh &
+I& 0 & - &
+Choice of shedding parameterization for graupel and hail during collision processes with water droplets: 0=no shedding, 1=simpe, 2=more physical.
+If applied together with the ART aerosol physics \textbf{inwp\_gscp=6, only options~0 and 1 are currently supported.}
+&
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+D\_shed\_gh &
+R& 0.009 & m &
+Critical graupel/hail particle diameter for shedding during riming (wet growth) and melting. Shedding happens if: \\
+itype\_shedding\_gh = 1: $D_{meanmass}>$D\_shed\_gh \\
+itype\_shedding\_gh = 2: in the spectral PSD-part where $D>\max(D_{wetgr},\text{D\_shed\_gh})$ - that is for wet growth but not below a stable diameter, e.g., 9\,mm after Rasmussen and Heymfield &
+itype\_shedding\_gh=1,2 iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+llim\_gr\_prod\_rain\_riming &
+L& .FALSE. & - &
+If .TRUE., limit the graupel production by rain riming of ice/snow by
+a bulk-density-based criterion on the mean-mass-particles of the collision partners. &
+iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+wgt\_D\_coll\_limgrprod &
+R& 0.5 & - &
+Weight $\in [0,1]$ for the collided mean-mass-particle's diameter $D_{coll}$: how much does the
+smaller collision partner contribute to the overall diameter? &
+\squeezeme{llim\_gr\_prod\_rain\_riming=.TRUE.} iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
+
+wgt\_rho\_coll\_limgrprod &
+R& 0.5 & - &
+Weight $\in [0,1]$ for the limit of the collided mean-mass-particle's bulk density:
+how near should it be to the bulk density of graupel in order to convert it to graupel? &
+\squeezeme{llim\_gr\_prod\_rain\_riming=.TRUE.} iforcing=2,3 inwp\_gscp=4,5,6,7
+\tabularnewline
 
 
 \end{longtab}
@@ -6894,26 +7195,33 @@ variable rather than the name of the corresponding tile container (i.e.\ in the 
 %\hline
 \textbf{nproma} &
 I & 1& &
-chunk length. &
+Loop chunk length. Only one of (\emph{nproma}, \emph{nblocks\_c}, \emph{nblocks\_e}) may be specified in the namelist (>0) at any time. \\
 \tabularnewline
 
 %\hline
 \textbf{nblocks\_c} &
 I & 0& &
-Number of looping chunks used for cells. For values <= 0 this is ignored. For bigger values, this overwrites \textbf{nproma}. &
+Number of looping chunks used for cells. For values > 0, \emph{nproma} is recomputed according to the specified \emph{nblocks\_c}.  \\   &
+\tabularnewline
+
+%\hline
+\textbf{nblocks\_e} &
+I & 0& &
+Number of looping chunks used for edges. For values > 0, \emph{nproma} is recomputed according to the specified \emph{nblocks\_e}. \\ &
 \tabularnewline
 
 %\hline
 nproma\_sub &
 I & nproma & &
 Chunk size of subblocks used for example by ecRad or rrtmgp, which is needed for the GPU
-port to reduce the memory footprint. \\ &
+port to reduce the memory footprint. \\ May only specify one of (\emph{nproma\_sub}, \emph{nblocks\_sub}) in the namelist (>0) at any time. \\ &
 \tabularnewline
 
 %\hline
 nblocks\_sub &
 I & 1 & &
-Number of looping chunks used for subblocking. For values <= 0 this is ignored. For bigger values, this overwrites \emph{nproma\_sub}. &
+Number of looping chunks used for subblocking. For values <= 0 this is ignored. For bigger values, this overwrites \emph{nproma\_sub}.
+\\ For reduced-grid radiation, we suggest explicitly specifying \emph{nproma\_sub} instead of using \emph{nblocks\_sub}.	&
 \tabularnewline
 
 %\hline
@@ -7033,7 +7341,7 @@ the COSMO web page (\mbox{www.cosmo-model.org} $\rightarrow$ Documentation $\rig
 emvorado submodule \verb+./externals/emvorado/DOC/TEX/emvorado_userguide.pdf+.\par
 If \texttt{num\_io\_procs\_radar}=0, a subset of the worker processors (=number of radar stations)
 are doing the I/O tasks, which may slow down the model considerably.
-& luse\_radarfwo(<idom>) =.TRUE., iequations=3,  iforcing=3
+& luse\_radarfwo(<idom>) =.TRUE., iforcing=3
 \tabularnewline
 
 % \hline
@@ -7211,7 +7519,7 @@ Slope correction for surface radiation:\\
 (Remark: sky-view correction not yet activated) \\
 3: Slope correction for direct solar radiation including shading, but no further consideration
 of sky-view factor effects.
-&
+& 2 and 3 require the additional field HORIZON to be present in the extpar data
 \tabularnewline
 
 
@@ -7374,7 +7682,8 @@ Aerosols\\
 2: global constant\\
 3: externally specified\\
 6: Tegen aerosol climatology {\color{red}for run\_nml/iforcing = 3 (NWP) .AND. itopo =1 }\\
-7: CAMS 3D aerosol climatology, the filename can be specified via cams\_clim\_filename in \&radiation\_nml\\
+7: CAMS 3D aerosol climatology, the filename can be specified via cams\_aero\_filename in \&radiation\_nml\\
+8: CAMS 3D forecasted aerosol, the filename can be specified via cams\_aero\_filename in \&radiation\_nml\\
 9: ART online aerosol radiation interaction, uses Tegen for aerosols not chosen to be represented in ART {\color{red}for run\_nml/iforcing = 3 (NWP) .AND. itopo =1 .AND. lart=TRUE .AND. iart\_ari=1}\\
 12: tropospheric 'Kinne' aerosols, constant in time\\
 13: total tropospheric 'Kinne' aerosols, time dependent from file \\
@@ -7409,16 +7718,16 @@ Path to the folder containing ecRad optical properties files.
 \tabularnewline
 
 %\hline
-cams\_clim\_filename &
+cams\_aero\_filename &
 C&
-"CAMS\_clim\_ \\
+"CAMS\_aero\_ \\
 R<nroot0>B<jlev>\_ \\
 DOM<idom>.nc"&
 &
-Path to the file containing CAMS 3D climatology data\\
-Data can be prepared using the script scripts/preprocessing/ \\ make\_camsclim\_onICONgrid.sh 
+Path to the file containing CAMS 3D data\\
+Climatology data can be prepared using the script scripts/preprocessing/ \\ make\_camsclim\_onICONgrid.sh 
 & inwp\_radiation=4 (ecRad)\\
-irad\_aero=7 (CAMS 3D climatology)
+irad\_aero=7 or 8 (CAMS 3D climatology or forecasted aerosols)
 \tabularnewline
 
 %\hline
@@ -7573,7 +7882,7 @@ calculating time steps.&
 %\hline
 \textbf{dtime} &
 R & 600.0& s&
-time step.\\
+model time step\\
 For real case runs the maximum allowable time step can be estimated as\\
  $1.8 \cdot \mathrm{ndyn\_substeps} \cdot \overline{\Delta x}\,\mathrm{s\, km^{-1}}$,\\
 where $\overline{\Delta x}$ is the average resolution in $\mathrm{km}$ and
@@ -7582,6 +7891,17 @@ nonhydrostatic\_nml.  ndyn\_substeps should not be increased beyond the
 default value $5$.&
 \tabularnewline
 
+%\hline
+\textbf{modelTimeStep} &
+C & ''& ISO8601 formatted string&
+model time step (\textbf{should be preferred over the concurrent namelist parameter dtime})\\
+For real case runs the maximum allowable time step can be estimated as\\
+ $1.8 \cdot \mathrm{ndyn\_substeps} \cdot \overline{\Delta x}\,\mathrm{s\, km^{-1}}$,\\
+where $\overline{\Delta x}$ is the average resolution in $\mathrm{km}$ and
+$\mathrm{ndyn\_substeps}$ is the number of dynamics substeps set in
+nonhydrostatic\_nml.  ndyn\_substeps should not be increased beyond the
+default value $5$.&
+\tabularnewline
 
 %\hline
 \textbf{ltestcase} &
@@ -7749,7 +8069,7 @@ EMVORADO needs its own namelist(s) for each radar-active model domain in a separ
 namelist input file \verb+RADARSIM_PARAMS+. More details can be found in the \textcolor{red}{EMVORADO User's Guide} available from
 the COSMO web page (\mbox{www.cosmo-model.org} $\rightarrow$ Documentation $\rightarrow$ EMVORADO) or from the
 submodule \verb+./externals/emvorado/DOC/TEX/emvorado_userguide.pdf+.
-& iequations=3,  iforcing=3, \\ICON configure'd with \verb+--enable-emvorado+
+& iforcing=3, \\ICON configure'd with \verb+--enable-emvorado+
 \tabularnewline
 
 \hline
@@ -8660,6 +8980,12 @@ Scaling factor of the laminar boundary layer for heat (scalars). The larger rlam
 \tabularnewline
 
 %\hline
+rat\_lam &
+R                &     1.0     & 1 &
+Ratio of laminar scaling factors for vapour and heat. The larger rat\_lam, the larger is the laminar resistance for evaporation compared to sensible heat. &
+\tabularnewline
+
+%\hline
 rat\_sea &
 R                &     0.8     & 1 &
 Ratio of laminar scaling factors for scalars over sea and land. The larger rat\_sea, the larger is the laminar resistance
@@ -9233,7 +9559,7 @@ initial conditions and boundary conditions are computed internally.
 %-------------------------------------------------------------------------------
 % nh_testcase_nml:
 %-------------------------------------------------------------------------------
-\subsection{nh\_testcase\_nml (Scope: ltestcase=.TRUE. and iequations=3 in run\_nml)}
+\subsection{nh\_testcase\_nml (Scope: ltestcase=.TRUE. in run\_nml)}
 
 \begin{longtab}
 

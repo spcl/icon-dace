@@ -25,6 +25,7 @@ MODULE mo_upatmo_state
     &                                iUpatmoTendId, iUpatmoGrpId, iUpatmoGasId,   &
     &                                iUpatmoTracerId, iUpatmoPrcId,               &
     &                                iUpatmoExtdatStat, itmr_thr
+  USE mo_master_control,       ONLY: get_my_process_name
   USE mo_model_domain,         ONLY: t_patch
   USE mo_upatmo_types,         ONLY: t_upatmo_diag, t_upatmo_tend, t_upatmo
   USE mo_upatmo_config,        ONLY: t_upatmo_config
@@ -450,7 +451,8 @@ CONTAINS
 
     ! Register the field list and apply default settings
     ! The fields in 'prm_upatmo_diag' are required for restart, in general
-    CALL vlr_add(diag_list, listname, patch_id=jg, lrestart=.TRUE.)
+    CALL vlr_add(diag_list, listname, patch_id=jg, lrestart=.TRUE., &
+      &          model_type=get_my_process_name())
 
     ! Please note that apart from a few exceptions (e.g., ozone) 
     ! GRIB2 triplets (discipline, category, number) do net (yet) exist 
@@ -715,7 +717,8 @@ CONTAINS
     ! for the special way the total tendencies are computed in 
     ! 'mo_nwp_upatmo_interface: nwp_upatmo_interface' alone
 
-    CALL vlr_add(tend_list, listname, patch_id=jg, lrestart=.TRUE.)
+    CALL vlr_add(tend_list, listname, patch_id=jg, lrestart=.TRUE., &
+      &          model_type=get_my_process_name())
 
     ! Please note that for most of the tendencies, which we allocate here, 
     ! either a GRIB2 triplet (discipline, category, number) does not (yet) exist 

@@ -4,7 +4,7 @@
 size_t
 get_num_missvalsSP(size_t size, float *data, float missval)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
 
   if (DBL_IS_NAN(missval))
     {
@@ -12,7 +12,7 @@ get_num_missvalsSP(size_t size, float *data, float missval)
         if (DBL_IS_EQUAL(data[i], missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
   else
@@ -21,17 +21,17 @@ get_num_missvalsSP(size_t size, float *data, float missval)
         if (IS_EQUAL(data[i], missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
 
-  return nmiss;
+  return numMissVals;
 }
 
 size_t
 get_num_missvalsDP(size_t size, double *data, double missval)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
 
   if (DBL_IS_NAN(missval))
     {
@@ -39,7 +39,7 @@ get_num_missvalsDP(size_t size, double *data, double missval)
         if (DBL_IS_EQUAL(data[i], missval) || DBL_IS_EQUAL(data[i], (float) missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
   else
@@ -48,17 +48,17 @@ get_num_missvalsDP(size_t size, double *data, double missval)
         if (IS_EQUAL(data[i], missval) || IS_EQUAL(data[i], (float) missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
 
-  return nmiss;
+  return numMissVals;
 }
 
 size_t
 get_cplx_num_missvalsSP(size_t size, float *data, float missval)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
 
   if (DBL_IS_NAN(missval))
     {
@@ -66,7 +66,7 @@ get_cplx_num_missvalsSP(size_t size, float *data, float missval)
         if (DBL_IS_EQUAL(data[i], missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
   else
@@ -75,17 +75,17 @@ get_cplx_num_missvalsSP(size_t size, float *data, float missval)
         if (IS_EQUAL(data[i], missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
 
-  return nmiss;
+  return numMissVals;
 }
 
 size_t
 get_cplx_num_missvalsDP(size_t size, double *data, double missval)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
 
   if (DBL_IS_NAN(missval))
     {
@@ -93,7 +93,7 @@ get_cplx_num_missvalsDP(size_t size, double *data, double missval)
         if (DBL_IS_EQUAL(data[i], missval) || DBL_IS_EQUAL(data[i], (float) missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
   else
@@ -102,9 +102,9 @@ get_cplx_num_missvalsDP(size_t size, double *data, double missval)
         if (IS_EQUAL(data[i], missval) || IS_EQUAL(data[i], (float) missval))
           {
             data[i] = missval;
-            nmiss++;
+            numMissVals++;
           }
     }
 
-  return nmiss;
+  return numMissVals;
 }

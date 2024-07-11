@@ -19,7 +19,7 @@
                 "NetCDF_no_time_dim": { "format": "netcdf", "time_dim": null, "horizontal_dims": ["ncells"] },
                 "total_integrals": { "format": "csv", "parser_args": {
                     "delimiter": "\\s+",
-                    "skiprows": 1,
+                    "skiprows": 4,
                     "index_col": 0,
                     "names": ["timestep", "m", "mdry", "e", "kine", "inne", "pote", "msp"]
                   }},
@@ -27,7 +27,7 @@
                     "delimiter": "\\s+",
                     "skiprows": 1,
                     "index_col": [0,2],
-                    "names": ["timestep", "time_hr", "tracer_nr", "total", "relative_error_to_previous", "relative_error_to_1"]
+                    "names": ["timestep", "time_hr", "tracer_nr", "total", "relative_error_to_1"]
                   }}
             }],
             "savedir": "{{codebase_install}}/experiments/{{experiment_name}}"
@@ -78,7 +78,7 @@
             "lhs": ["pinit_seed", "pinit_amplitude"],
             "rhs_new": ["{seed}", "{{perturb_amplitude}}"],
             "rhs_old": [null, null],
-            "submit_command": "sbatch --wait --account=g110",
+            "submit_command": "sbatch --wait",
             "parallel": true,
             "dry": false
         }

@@ -33,7 +33,9 @@ MODULE mo_nwp_phy_nml
     &                               config_cldopt_filename => cldopt_filename, &
     &                               config_icpl_aero_conv  => icpl_aero_conv,  &
     &                               config_iprog_aero      => iprog_aero,      &
-    &                               config_icpl_o3_tp      => icpl_o3_tp
+    &                               config_icpl_o3_tp      => icpl_o3_tp,      &
+    &                               config_icpl_aero_ice   => icpl_aero_ice,   &
+    &                               config_lcuda_graph_turb_tran => lcuda_graph_turb_tran
 
   USE mo_nml_annotate,        ONLY: temp_defaults, temp_settings
   USE mo_cuparameters,        ONLY: icapdcycl
@@ -81,6 +83,8 @@ MODULE mo_nwp_phy_nml
 
   INTEGER  :: itype_z0           !! type of roughness length data
   INTEGER  :: icpl_aero_gscp     !! type of aerosol-microphysics coupling
+  LOGICAL  :: lscale_cdnc        !! switch to activate the scaling of external CDNCs
+  INTEGER  :: icpl_aero_ice      !! type of aerosol-ice nucleation coupling
   INTEGER  :: icpl_aero_conv     !! type of coupling between aerosols and convection scheme
   INTEGER  :: iprog_aero         !! type of prognostic aerosol
   INTEGER  :: icpl_o3_tp         !! type of ozone-tropopause coupling
@@ -99,6 +103,8 @@ MODULE mo_nwp_phy_nml
   INTEGER  :: icpl_rad_reff(max_dom) !! coupling radiation and effective radius
   INTEGER  :: ithermo_water(max_dom) !! thermodynamic of water
 
+  LOGICAL  :: lcuda_graph_turb_tran  !! Activate CUDA GRAPH in turbulent transfer
+
   !> NetCDF file containing longwave absorption coefficients and other data
   !> for RRTMG_LW k-distribution model ('rrtmg_lw.nc')
   CHARACTER(LEN=filename_max) :: lrtm_filename
@@ -111,7 +117,7 @@ MODULE mo_nwp_phy_nml
     &                    inwp_gscp, inwp_satad,                      &
     &                    inwp_turb, inwp_surface,                    &
     &                    dt_conv, dt_rad, dt_sso, dt_gwd, dt_ccov,   &
-    &                    qi0, qc0, icpl_aero_gscp,                   &
+    &                    qi0, qc0, icpl_aero_gscp, icpl_aero_ice,    &
     &                    ustart_raylfric, efdt_min_raylfric,         &
     &                    latm_above_top, itype_z0, mu_rain,          &
     &                    mu_snow, icapdcycl, icpl_aero_conv,         &
@@ -123,7 +129,8 @@ MODULE mo_nwp_phy_nml
     &                    ldetrain_conv_prec, rain_n0_factor,         &
     &                    icalc_reff, lupatmo_phy, icpl_rad_reff,     &
     &                    lgrayzone_deepconv, ithermo_water,          &
-    &                    lsbm_warm_full
+    &                    lsbm_warm_full, lcuda_graph_turb_tran,      &
+    &                    lscale_cdnc
 
 CONTAINS
 
@@ -234,6 +241,15 @@ CONTAINS
     icpl_aero_gscp = 0  ! 0 = none
                         ! 1 = simple coupling with aerosol climatology disregarding the dependency of aerosol activation on vertical wind speed
                         ! 2 = more accurate coupling with aerosol climatology as a function of vertical wind speed
+                        ! 3 = like 1 but using the cdnc from external parameter 
+
+    ! scaling of external CDNCs (only for icpl_aero_gscp = 3), mainly for climate projections
+    lscale_cdnc = .FALSE.  ! FALSE - no scaling
+                           ! TRUE  - scaling according to the temporal evolution of the simple plumes
+
+    ! coupling between aersols and ice nucleation
+    icpl_aero_ice = 0   ! 0 = Cooper (1986)
+                        ! 1 = DeMott (2015) with CAMS/Tegen dust concentration
 
     ! coupling between aersols and convection scheme
     icpl_aero_conv = 0  ! 0 = none
@@ -262,7 +278,9 @@ CONTAINS
 
     ithermo_water(:)=  ithermo_water_def ! 0   = Latent heats (LH) constant in microphysics
                                          ! 1   = LH as function of temperature in microphysics
-                               
+
+    lcuda_graph_turb_tran = .FALSE.   ! cuda graph deactivated by default
+
     IF (my_process_is_stdio()) THEN
       iunit = temp_defaults()
       WRITE(iunit, nwp_phy_nml)   ! write defaults to temporary text file
@@ -466,6 +484,10 @@ CONTAINS
 
     ENDDO
 
+    ! deactivate cuda graph if no cpp key => make sure ACC WAIT is activated where needed
+#ifndef ICON_USE_CUDA_GRAPH
+    lcuda_graph_turb_tran = .FALSE.
+#endif
 
 
     !----------------------------------------------------
@@ -513,17 +535,20 @@ CONTAINS
       atm_phy_nwp_config(jg)%rain_n0_factor  = rain_n0_factor
       atm_phy_nwp_config(jg)%mu_snow         = mu_snow
       atm_phy_nwp_config(jg)%icpl_aero_gscp  = icpl_aero_gscp
+      atm_phy_nwp_config(jg)%lscale_cdnc     = lscale_cdnc
       atm_phy_nwp_config(jg)%icalc_reff      = icalc_reff (jg)
       atm_phy_nwp_config(jg)%icpl_rad_reff   = icpl_rad_reff (jg)
       atm_phy_nwp_config(jg)%ithermo_water   = ithermo_water(jg)
       atm_phy_nwp_config(jg)%lsbm_warm_full  = lsbm_warm_full
     ENDDO
 
-    config_lrtm_filename   = TRIM(lrtm_filename)
-    config_cldopt_filename = TRIM(cldopt_filename)
-    config_icpl_aero_conv  = icpl_aero_conv
-    config_iprog_aero      = iprog_aero
-    config_icpl_o3_tp      = icpl_o3_tp
+    config_lrtm_filename         = TRIM(lrtm_filename)
+    config_cldopt_filename       = TRIM(cldopt_filename)
+    config_icpl_aero_conv        = icpl_aero_conv
+    config_iprog_aero            = iprog_aero
+    config_icpl_o3_tp            = icpl_o3_tp
+    config_lcuda_graph_turb_tran = lcuda_graph_turb_tran
+    config_icpl_aero_ice         = icpl_aero_ice
 
     !-----------------------------------------------------
     ! 6. Store the namelist for restart

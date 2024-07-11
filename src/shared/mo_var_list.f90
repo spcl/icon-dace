@@ -51,7 +51,7 @@ MODULE mo_var_list
     CHARACTER(len=vlname_len) :: vlname = ''
     INTEGER(i8) :: memory_used = 0_i8
     CHARACTER(len=8) :: post_suf = '', rest_suf = '', init_suf = '', &
-      & model_type = 'atm' ! model type (default is 'atm' for reasons)
+      & model_type = ''
     INTEGER :: patch_id = -1, nvars = 0, vlevel_type = level_type_ml, &
       & output_type = -1, restart_type = -1, compression_type = -1
     LOGICAL :: loutput = .TRUE., lrestart = .FALSE., linitial = .FALSE., &

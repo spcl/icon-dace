@@ -35,9 +35,8 @@ USE mo_parallel_config,     ONLY: nproma, cpu_min_nproma
 USE mo_communication,       ONLY: exchange_data_grf
 
 USE mo_grf_intp_data_strc
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: i_am_accel_node
-#endif
+USE mo_fortran_tools,       ONLY: assert_acc_device_only
+
 
 IMPLICIT NONE
 
@@ -52,7 +51,7 @@ CONTAINS
 !! Performs RBF-based interpolation from parent edges to child edges
 !! for the upper boundary condition needed for vertical nesting
 !!
-SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
+SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out, lacc)
   !
   TYPE(t_patch), INTENT(in) :: p_pp
   TYPE(t_patch), INTENT(inout) :: p_pc
@@ -66,6 +65,7 @@ SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
   ! reconstructed edge-normal wind component
   REAL(wp),INTENT(INOUT) :: p_vn_out(:,:,:)
 
+  LOGICAL, INTENT(IN) :: lacc
 
   INTEGER :: jb, je, jk                    ! loop indices
   INTEGER :: nproma_ubcintp, nblks_ubcintp, npromz_ubcintp, nlen, nshift
@@ -76,6 +76,8 @@ SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
   INTEGER,  DIMENSION(:,:),   POINTER :: iidx, iblk
 
   !-----------------------------------------------------------------------
+  CALL assert_acc_device_only("interpol_vec_ubc", lacc)
+
   ! Set pointers to index lists
   iidx    => p_grf%idxlist_ubcintp_e
   iblk    => p_grf%blklist_ubcintp_e
@@ -90,7 +92,7 @@ SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
     npromz_ubcintp = nproma_ubcintp
   ENDIF
 
-  !$ACC DATA CREATE(vn_aux) IF(i_am_accel_node)
+  !$ACC DATA CREATE(vn_aux) IF(SIZE(vn_aux) > 0)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE (jb,je,nlen,nshift) ICON_OMP_DEFAULT_SCHEDULE
@@ -98,7 +100,7 @@ SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
     nlen = MERGE(nproma_ubcintp, npromz_ubcintp, jb /= nblks_ubcintp)
     nshift = (jb-1)*nproma_ubcintp
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_pp%edges%refin_ctrl) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_pp%edges%refin_ctrl) IF(SIZE(vn_aux) > 0)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO je = nshift+1, nshift+nlen
       DO jk = 1,2
@@ -165,7 +167,8 @@ SUBROUTINE interpol_vec_ubc(p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
 
   ! Store results in p_vn_out
 
-  CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_ubc,1,2, &
+  CALL exchange_data_grf(p_pat_coll=p_pc%comm_pat_coll_interpol_vec_ubc, &
+    &                    lacc=.TRUE., nfields=1, ndim2tot=2, &
     &                    RECV1=p_vn_out,SEND1=vn_aux)
 
   !$ACC WAIT
@@ -179,7 +182,7 @@ END SUBROUTINE interpol_vec_ubc
 !! Performs interpolation of scalar upper boundary condition fields from parent 
 !! cells to child cells using the 2D gradient at the cell center.
 !!
-SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
+SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg, lacc)
 
   !
   TYPE(t_patch), INTENT(inout) :: p_pc
@@ -199,6 +202,8 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
   ! interpolated scalar output fields
   REAL(wp), INTENT(INOUT) :: f3dout(:,:,:)
 
+  LOGICAL, INTENT(IN) :: lacc
+
   INTEGER :: jb, jc, jn        ! loop indices
   INTEGER :: nproma_ubcintp, nblks_ubcintp, npromz_ubcintp, nlen, nshift
 
@@ -215,6 +220,7 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
   INTEGER, DIMENSION(:,:),   POINTER :: iidx, iblk
 
 !-----------------------------------------------------------------------
+  CALL assert_acc_device_only("interpol_scal_ubc", lacc)
 
   ! Check if gradient limiting is required
   IF (PRESENT(llimit_nneg)) THEN
@@ -241,7 +247,7 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
   iidx => p_grf%idxlist_ubcintp_c
   iblk => p_grf%blklist_ubcintp_c
 
-  !$ACC DATA CREATE(grad_x, grad_y, maxval_neighb, minval_neighb, val_ctr, h_aux) IF(i_am_accel_node)
+  !$ACC DATA CREATE(grad_x, grad_y, maxval_neighb, minval_neighb, val_ctr, h_aux)
 !$OMP PARALLEL
 
 !$OMP DO PRIVATE (jb,nlen,nshift,jn,jc,limfac1,limfac2,limfac,min_expval,max_expval, &
@@ -255,7 +261,7 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
     ENDIF
     nshift = (jb-1)*nproma_ubcintp
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
     DO jc = nshift+1, nshift+nlen
@@ -432,7 +438,8 @@ SUBROUTINE interpol_scal_ubc(p_pc, p_grf, nfields, f3din, f3dout, llimit_nneg)
 
   ! Store results in p_out
 
-  CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_ubc,1,nfields, &
+  CALL exchange_data_grf(p_pat_coll=p_pc%comm_pat_coll_interpol_scal_ubc, &
+    &                    lacc=.TRUE., nfields=1, ndim2tot=nfields, &
     &                    RECV1=f3dout,SEND1=h_aux)
 
   !$ACC WAIT

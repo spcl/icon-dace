@@ -48,6 +48,7 @@ MODULE mo_name_list_output_types
   PUBLIC :: msg_io_shutdown
   PUBLIC :: IRLON, IRLAT, ILATLON
   PUBLIC :: ICELL, IEDGE, IVERT
+  PUBLIC :: FILETYPE_YAC
   PUBLIC :: GRP_PREFIX
   PUBLIC :: TILE_PREFIX
   PUBLIC :: GRB2_GRID_INFO_NAME, GRB2_GRID_INFO
@@ -96,6 +97,8 @@ MODULE mo_name_list_output_types
   INTEGER, PARAMETER :: ICELL                 = 1
   INTEGER, PARAMETER :: IEDGE                 = 2
   INTEGER, PARAMETER :: IVERT                 = 3
+
+  INTEGER, PARAMETER :: FILETYPE_YAC          = 999
 
   ! The following parameter decides whether physical or logical patches are output
   ! and thus whether the domain number in output name lists pertains to physical

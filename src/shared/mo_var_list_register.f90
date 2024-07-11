@@ -39,13 +39,14 @@ CONTAINS
   !------------------------------------------------------------------------------------------------
   ! Create a new memory buffer / output var_list
   ! Get a pointer to the new var_list
-  SUBROUTINE vlr_add(list, vlname, output_type, restart_type,    &
-    & post_suf, rest_suf, init_suf, loutput, lrestart, linitial, patch_id,          &
-    & vlevel_type, model_type, filename, compression_type)
+  SUBROUTINE vlr_add(list, vlname, model_type, output_type, restart_type,    &
+    & post_suf, rest_suf, init_suf, loutput, lrestart, linitial, patch_id,   &
+    & vlevel_type, filename, compression_type)
     TYPE(t_var_list_ptr), INTENT(OUT) :: list    ! anchor
     CHARACTER(*), INTENT(IN) :: vlname         ! name of output var_list
+    CHARACTER(*), INTENT(IN) :: model_type
     INTEGER, INTENT(IN), OPTIONAL :: output_type, restart_type, patch_id, vlevel_type, compression_type
-    CHARACTER(*), INTENT(IN), OPTIONAL :: post_suf, rest_suf, init_suf, model_type, filename
+    CHARACTER(*), INTENT(IN), OPTIONAL :: post_suf, rest_suf, init_suf, filename
     LOGICAL, INTENT(IN), OPTIONAL :: loutput, lrestart, linitial  ! in standard output/restart/initial file
     INTEGER :: vln_len, ivl
     TYPE(t_var_list_ptr), ALLOCATABLE :: tmp_stor(:)
@@ -63,10 +64,11 @@ CONTAINS
     last_id = last_id + 1
     CALL map%put(vlname, last_id)
     ! set default list characteristics
-    list%p%vlname   = vlname(1:vln_len)
-    list%p%post_suf = '_'//vlname(1:vln_len)
-    list%p%rest_suf = list%p%post_suf
-    list%p%init_suf = list%p%post_suf
+    list%p%vlname     = vlname(1:vln_len)
+    list%p%model_type = model_type
+    list%p%post_suf   = '_'//vlname(1:vln_len)
+    list%p%rest_suf   = list%p%post_suf
+    list%p%init_suf   = list%p%post_suf
     ! set non-default list characteristics
     list%p%restart_type = restart_file_type
     IF (PRESENT(output_type))      list%p%output_type      = output_type
@@ -81,7 +83,6 @@ CONTAINS
     IF (PRESENT(vlevel_type))      list%p%vlevel_type      = vlevel_type
     IF (PRESENT(filename))         list%p%filename         = filename
     IF (PRESENT(compression_type)) list%p%compression_type = compression_type
-    IF (PRESENT(model_type))       list%p%model_type       = model_type
     IF (SIZE(storage) .LT. last_id) THEN
       CALL MOVE_ALLOC(storage, tmp_stor)
       ALLOCATE(storage(SIZE(tmp_stor) + 8))

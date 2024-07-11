@@ -270,35 +270,36 @@ CONTAINS
 
     INTEGER :: netcd_status
     CHARACTER(*), PARAMETER :: method_name = "read_subset_range"
+    INTEGER :: logical_buf
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.start_block', subset_range%start_block)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.start_block', subset_range%start_block)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read start_block")
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.start_index', subset_range%start_index)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.start_index', subset_range%start_index)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read start_index")
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.end_block', subset_range%end_block)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.end_block', subset_range%end_block)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read end_block")
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.end_index', subset_range%end_index)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.end_index', subset_range%end_index)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read end_index")
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.block_size', subset_range%block_size)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.block_size', subset_range%block_size)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read block_size")
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.entity_location', subset_range%entity_location)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.entity_location', subset_range%entity_location)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read entity_type")
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.no_of_holes', subset_range%no_of_holes)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90_get_att(ncid, nf90_global,TRIM(subset_range%name)//'.no_of_holes', subset_range%no_of_holes)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read no_of_holes")
 
-    netcd_status = nfx_get_att(ncid, nf_global,TRIM(subset_range%name)//'.is_in_domain', subset_range%is_in_domain)
-    IF (netcd_status /= nf_noerr) &
+    netcd_status = nf90x_get_att_converted(ncid, nf90_global,TRIM(subset_range%name)//'.is_in_domain', subset_range%is_in_domain)
+    IF (netcd_status /= nf90_noerr) &
       & CALL finish(method_name, "Could not read is_in_domain")
 
     subset_range%patch => patch
@@ -313,26 +314,26 @@ CONTAINS
 
     CHARACTER(*), PARAMETER :: method_name = "write_subset_range"
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.start_block', nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.start_block', &
       &  subset_range%start_block), method_name)
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.start_index', nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.start_index', &
       &  subset_range%start_index), method_name)
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.end_block',   nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.end_block', &
       & subset_range%end_block), method_name)
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.end_index',   nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.end_index', &
       & subset_range%end_index), method_name)
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.block_size',  nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.block_size', &
       & subset_range%block_size), method_name)
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.entity_location', nf_int, &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.entity_location', &
       & subset_range%entity_location), method_name)
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.no_of_holes', nf_int,     &
+    CALL nf(nf90_put_att(ncid, nf90_global,TRIM(subset_range%name)//'.no_of_holes', &
       & subset_range%no_of_holes), method_name)
 
-    CALL nf(nfx_put_att(ncid, nf_global,TRIM(subset_range%name)//'.is_in_domain',nf_int,     &
+    CALL nf(nf90x_put_att_converted(ncid, nf90_global,TRIM(subset_range%name)//'.is_in_domain', &
       & subset_range%is_in_domain), method_name)
 
   END SUBROUTINE write_subset

@@ -57,7 +57,7 @@ CONTAINS
 !! Interpolation methods are as in interpol2_vec_grf
 !!
 SUBROUTINE interpol_vec_nudging (ptr_pp, ptr_pc, ptr_int, ptr_grf,    &
-  &                              nshift, istart_blk, p_vn_in, p_vn_out)
+  &                              nshift, istart_blk, p_vn_in, p_vn_out, lacc)
 
 TYPE(t_patch), TARGET, INTENT(in) :: ptr_pp
 TYPE(t_patch), TARGET, INTENT(in) :: ptr_pc
@@ -71,6 +71,8 @@ REAL(wp), INTENT(IN) :: p_vn_in(:,:,istart_blk:) ! dim: (nproma,nlev,nblks_e)
 ! Indices of source points and interpolation coefficients
 TYPE(t_gridref_single_state),   TARGET, INTENT(IN)    :: ptr_grf
 TYPE(t_int_state),              TARGET, INTENT(IN)    :: ptr_int
+
+LOGICAL, INTENT(IN) :: lacc
 
 ! number of levels by which vertical shifting between input and output fields is needed
 INTEGER, INTENT(IN) :: nshift
@@ -138,7 +140,7 @@ nlev_c = ptr_pc%nlev
 ! Shift parameter
 js = nshift
 
-!$ACC DATA CREATE(vn_aux, u_vert, v_vert) IF(i_am_accel_node)
+!$ACC DATA CREATE(vn_aux, u_vert, v_vert) IF(lacc)
 
 !$OMP PARALLEL PRIVATE (i_startblk,i_endblk)
 
@@ -153,7 +155,7 @@ DO jb = i_startblk, i_endblk
   CALL get_indices_v(ptr_pp, jb, i_startblk, i_endblk, &
    i_startidx, i_endidx, grf_nudgintp_start_c, min_rlvert_int)
 
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
   !$ACC LOOP COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
   DO jv = i_startidx, i_endidx
@@ -196,7 +198,7 @@ DO jb =  i_startblk, i_endblk
    i_startidx, i_endidx, grf_nudgintp_start_e, min_rledge_int)
 
 ! child edges 1 and 2
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
   !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
   DO je = i_startidx, i_endidx
@@ -286,7 +288,7 @@ DO jb =  i_startblk, i_endblk
   CALL get_indices_e(ptr_pc, jb, i_startblk, i_endblk, &
     i_startidx, i_endidx, grf_nudge_start_e, min_rledge_int)
 
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
   !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
   DO je = i_startidx, i_endidx
@@ -594,7 +596,7 @@ LOGICAL :: l_limit_nneg(nfields)
 REAL(wp):: r_limval(nfields)
 
 ! Auxiliary fields
-REAL(wp) :: h_aux(nproma,MAX(32,ptr_pp%nlevp1), 4,                    &
+REAL(wp) :: h_aux(nproma,MAX(35,ptr_pp%nlevp1), 4,                    &
                   ptr_pp%cells%start_block(grf_nudgintp_start_c):     &
                   MAX(ptr_pp%cells%start_block(grf_nudgintp_start_c), &
                       ptr_pp%cells%end_block(min_rlcell_int)),        &

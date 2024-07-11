@@ -1756,7 +1756,7 @@ CONTAINS
     REAL(wp), POINTER :: var3(:,:,:)
     
     CALL vlr_add(varnameCheckList, 'varnameCheck_list', patch_id=patch_2d%id, &
-      & lrestart=.TRUE., loutput=.TRUE., model_type=TRIM(get_my_process_name()))
+      & lrestart=.TRUE., loutput=.TRUE., model_type=get_my_process_name())
 
     alloc_cell_blocks = patch_2d%alloc_cell_blocks
     call add_var(varnamechecklist,'h',var0,grid_unstructured_cell, za_depth_below_sea_half, &

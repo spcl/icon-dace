@@ -303,7 +303,7 @@ cdiPioStreamDefDecomposedVlist(int streamID, int vlistID, const Xt_idxlist partD
 }
 
 static void
-cdiPioClientStreamWriteVar_(int streamID, int varID, int memtype, const void *data, size_t nmiss)
+cdiPioClientStreamWriteVar_(int streamID, int varID, int memtype, const void *data, size_t numMissVals)
 {
   struct partDescPreset clientDeco = cdiPioGetStreamPartDescPreset(streamID);
   int vlistID = streamInqVlist(streamID);
@@ -316,7 +316,7 @@ cdiPioClientStreamWriteVar_(int streamID, int varID, int memtype, const void *da
     xabort("data type does not match pre-declared conversion for stream %d,"
            " variable ID %d!",
            streamID, varID);
-  cdiPioStreamWriteVarPart_(streamID, varID, memtype, data, nmiss, clientDeco.lists[varID]);
+  cdiPioStreamWriteVarPart_(streamID, varID, memtype, data, numMissVals, clientDeco.lists[varID]);
 }
 
 static struct cdiPioIdxlistCache *clientIdxlistCache;
@@ -324,7 +324,7 @@ static size_t neededClientIdxlistCacheSize;
 static struct idList seenStreamWriteVarChunk;
 
 static void
-cdiPioClientStreamWriteVarChunk_(int streamID, int varID, int memtype, const int rect[][2], const void *data, size_t nmiss)
+cdiPioClientStreamWriteVarChunk_(int streamID, int varID, int memtype, const int rect[][2], const void *data, size_t numMissVals)
 {
   if (memtype != MEMTYPE_DOUBLE && memtype != MEMTYPE_FLOAT) Error("Writing of type data %d not implemented!", memtype);
   int vlistID = streamInqVlist(streamID);
@@ -357,7 +357,7 @@ cdiPioClientStreamWriteVarChunk_(int streamID, int varID, int memtype, const int
                              const int sliceShape[])
       = (ndims == 3) ? cdiPioIdxlistCacheAddSection3D : cdiPioIdxlistCacheAddSection2D;
   Xt_idxlist chunkDesc = cacheSection(clientIdxlistCache, varShapeXt, origin, chunkShape);
-  cdiPioBufferPartData(streamID, varID, memtype, data, nmiss, chunkDesc);
+  cdiPioBufferPartData(streamID, varID, memtype, data, numMissVals, chunkDesc);
 }
 
 #if defined HAVE_LIBNETCDF

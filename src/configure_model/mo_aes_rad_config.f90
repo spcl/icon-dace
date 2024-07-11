@@ -22,6 +22,8 @@ MODULE mo_aes_rad_config
   USE mo_run_config           ,ONLY: iqt, ico2, io3, ntracer, lart
   USE mo_parallel_config      ,ONLY: nproma
 
+  USE mo_vertical_coord_table ,ONLY: vct_a
+
   IMPLICIT NONE
 
   PRIVATE
@@ -101,7 +103,6 @@ MODULE mo_aes_rad_config
      INTEGER  :: irad_cfc11     !< CFC 11
      INTEGER  :: irad_cfc12     !< CFC 12
      INTEGER  :: irad_aero      !< aerosols
-     LOGICAL  :: lrad_yac       !< kinne aerosol coupling
      !
      ! --- Volume mixing ratios - 1990 values (CMIP5)
      !
@@ -129,7 +130,10 @@ MODULE mo_aes_rad_config
      !
      LOGICAL  :: lclearsky
      !
-
+! For stratocumulus calculations
+     INTEGER  :: k_lts      ! first level > 3.2km
+     LOGICAL  :: inhom_lts
+     REAL(wp) :: inhom_lts_max
      !
   END TYPE t_aes_rad_config
 
@@ -175,7 +179,6 @@ CONTAINS
     aes_rad_config(:)% irad_cfc11     = 2
     aes_rad_config(:)% irad_cfc12     = 2
     aes_rad_config(:)% irad_aero      = 2
-    aes_rad_config(:)% lrad_yac       = .FALSE.
     !
     ! Default volume mixing ratios: 1990 values (CMIP5)
     aes_rad_config(:)% vmr_co2        =  348.0e-06_wp
@@ -196,6 +199,10 @@ CONTAINS
     !
     aes_rad_config(:)% lclearsky      = .TRUE.
     !
+    aes_rad_config(:)% inhom_lts      = .FALSE.
+    aes_rad_config(:)% inhom_lts_max  = 0.8_wp
+    aes_rad_config(:)% k_lts          = 73            ! preliminary, unused
+    !
   END SUBROUTINE init_aes_rad_config
 
   !----
@@ -215,13 +222,13 @@ CONTAINS
     ! Shortcuts to components of aes_rad_config
     !
     LOGICAL , POINTER :: l_orbvsop87, l_sph_symm_irr, ldiur, lyr_perp
-    INTEGER , POINTER :: isolrad, nmonth, yr_perp
+    INTEGER , POINTER :: isolrad, nmonth, yr_perp, k_lts
     REAL(wp), POINTER :: fsolrad, cecc, cobld, clonp
     INTEGER , POINTER :: irad_h2o, irad_co2, irad_ch4, irad_n2o, irad_o3, irad_o2, irad_cfc11, irad_cfc12, irad_aero
     REAL(wp), POINTER ::            vmr_co2,  vmr_ch4,  vmr_n2o,           vmr_o2,  vmr_cfc11,  vmr_cfc12
     REAL(wp), POINTER :: frad_h2o, frad_co2, frad_ch4, frad_n2o, frad_o3, frad_o2
-    LOGICAL , POINTER :: lrad_yac
-    LOGICAL , POINTER :: lclearsky
+    LOGICAL , POINTER :: lclearsky, inhom_lts
+    REAL(wp), POINTER :: inhom_lts_max
     REAL(wp), POINTER :: frad_cfc11, frad_cfc12
 
     CALL message    ('','')
@@ -257,7 +264,6 @@ CONTAINS
        irad_cfc11 => aes_rad_config(jg)% irad_cfc11
        irad_cfc12 => aes_rad_config(jg)% irad_cfc12
        irad_aero  => aes_rad_config(jg)% irad_aero
-       lrad_yac   => aes_rad_config(jg)% lrad_yac
        !
        vmr_co2    => aes_rad_config(jg)% vmr_co2
        vmr_ch4    => aes_rad_config(jg)% vmr_ch4
@@ -277,6 +283,10 @@ CONTAINS
        !
        lclearsky  => aes_rad_config(jg)% lclearsky
        !
+       inhom_lts  => aes_rad_config(jg)% inhom_lts
+       inhom_lts_max  => aes_rad_config(jg)% inhom_lts_max
+       k_lts      => aes_rad_config(jg)% k_lts
+
        WRITE(cg,'(i0)') jg
        !
        CALL message   ('','For domain '//cg)
@@ -513,9 +523,6 @@ CONTAINS
           CALL message('','No aerosol in radiation')
        END SELECT
        !
-       IF ( lrad_yac ) CALL message('','aerosol and ozone coupling via YAC')
-       !
-       !
        ! --- Check scaling factors
        !
        CALL message('','')
@@ -643,7 +650,6 @@ CONTAINS
        CALL print_value('    aes_rad_config('//TRIM(cg)//')% irad_cfc11    ',aes_rad_config(jg)% irad_cfc11    )
        CALL print_value('    aes_rad_config('//TRIM(cg)//')% irad_cfc12    ',aes_rad_config(jg)% irad_cfc12    )
        CALL print_value('    aes_rad_config('//TRIM(cg)//')% irad_aero     ',aes_rad_config(jg)% irad_aero     )
-       CALL print_value('    aes_rad_config('//TRIM(cg)//')% lrad_yac      ',aes_rad_config(jg)% lrad_yac      )
        CALL message    ('','')
        CALL print_value('    aes_rad_config('//TRIM(cg)//')% vmr_co2       ',aes_rad_config(jg)% vmr_co2       )
        CALL print_value('    aes_rad_config('//TRIM(cg)//')% vmr_ch4       ',aes_rad_config(jg)% vmr_ch4       )

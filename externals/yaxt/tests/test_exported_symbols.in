@@ -13,7 +13,7 @@
 # Maintainer: Jörg Behrens <behrens@dkrz.de>
 #             Moritz Hanke <hanke@dkrz.de>
 #             Thomas Jahns <jahns@dkrz.de>
-# URL: http://https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://dkrz-sw.gitlab-pages.dkrz.de/yaxt/
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -72,8 +72,8 @@ if [ x"$lt_cv_nm_interface" = x"BSD nm" ]; then
 /^${exp_sym_prefix}__*e{0,1}data/b
 /^${exp_sym_prefix}__*end/b
 /^${exp_sym_prefix}__*bss_start/b
-# ignore symbols nagfor injects into our shared objects
-/^${exp_sym_prefix}(__NAGf90_|f90_)/b
+# ignore COMMON symbols nagfor injects into our shared objects
+/^[0-9a-fA-F]*[ 	][ 	]*B[ 	]${acx_symprfx}__NAGf90_procref/b
 # ignore symbols pgfortran/pgcc injects into our shared objects
 /^${exp_sym_prefix}(__get_xmmreg|__pgdbg_stub|__pgi_trace|__set_xmmreg|__pgi_data_section_start|_mp_preinit)/b
 # skip symbols that conform to name prefix xt_ or Fortran yaxt module
@@ -89,8 +89,10 @@ if [ x"$lt_cv_nm_interface" = x"BSD nm" ]; then
 /^${exp_sym_prefix}.*\\\$.*/b
 # skip internal symbols for stubs created by xlf
 /^${exp_sym_prefix}.*\\\*__xt.*/b
-# skip symboles introduced by gcov
+# skip symbols introduced by gcov
 /^${exp_sym_prefix}__gcov_*/b
+# skip symbols introduced by gcc -fprofile-arcs -ftest-coverage
+/^${exp_sym_prefix}mangle_path*/b
 p
 }")
   if [ -n "$badsyms" ]; then

@@ -21,7 +21,7 @@ else
   MAKE_PROCS=8
 fi
 
-${ICON_DIR}/config/csc/lumi.container_wrapper.cce bash -i - <<EOF
+${ICON_DIR}/config/csc/exec.lumi.container.cce bash -i - <<EOF
 set -eu
 ${ICON_DIR}/config/csc/lumi.cpu.cce
 make -j ${MAKE_PROCS} V=1

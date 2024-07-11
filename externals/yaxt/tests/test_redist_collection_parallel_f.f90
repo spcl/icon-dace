@@ -345,7 +345,8 @@ CONTAINS
   END SUBROUTINE test_rr_exchange
 
   SUBROUTINE rr_exchange(redist, src_indices_, ref_dst_indices_)
-#if defined __GNUC__ && __GNUC__ >= 5 && __GNUC__ <= 8
+#if defined __GNUC__ && __GNUC__ >= 5 && ( __GNUC__ <= 7 \
+    || __GNUC__ == 8 && __GNUC_MINOR__ < 4 )
     ! gcc versions 5.x to 8.x have a bug that lets them evaluate the
     ! ANY test too early if results never gets passed to some external
     ! routine directly, 9.x is not only fixed again, but requires to

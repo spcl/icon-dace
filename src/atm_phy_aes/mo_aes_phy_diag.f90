@@ -22,8 +22,8 @@ MODULE mo_aes_phy_diag
     &                               t_aes_phy_tend,  prm_tend,      &
     &                               cdimissval
 
-  USE mo_physical_constants,  ONLY: cpd, cpv, cvd, cvv, Tf, tmelt
-  USE mo_run_config,          ONLY: iqv
+  USE mo_physical_constants,  ONLY: cvd, cvv, clw, ci, Tf, tmelt
+  USE mo_run_config,          ONLY: iqv, iqc, iqr, iqi, iqs, iqg
   USE mo_aes_cop_config,      ONLY: aes_cop_config
   USE mo_aes_vdf_config,      ONLY: aes_vdf_config
   USE mo_aes_sfc_indices,     ONLY: nsfc_type, iwtr, iice, ilnd
@@ -32,9 +32,8 @@ MODULE mo_aes_phy_diag
   PRIVATE
   PUBLIC :: surface_fractions, &
        &    droplet_number,    &
-       &    cpair_cvair_qconv, &
-       &    initialize,        &
-       &    finalize
+       &    get_cvair,         &
+       &    initialize
 
 CONTAINS
 
@@ -214,7 +213,7 @@ CONTAINS
   !---------------------------------------------------------------------
 
   !---------------------------------------------------------------------
-  SUBROUTINE cpair_cvair_qconv(jg, jb, jcs, jce)
+  SUBROUTINE get_cvair(jg, jb, jcs, jce)
 
     ! Arguments
     !
@@ -223,6 +222,7 @@ CONTAINS
     ! Local variables
     !
     INTEGER :: nlev
+    REAL(wp) :: cv, qtot, qvap, qliq, qice
     !
     TYPE(t_aes_phy_field), POINTER :: field
     !
@@ -233,13 +233,15 @@ CONTAINS
     field  => prm_field(jg)
     
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
+    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(qliq, qice, qvap, qtot, cv)
     DO jk = 1,nlev
       DO jc=jcs,jce
-        field%cpair(jc,jk,jb) = cpd+(cpv-cpd)*field%qtrc_phy(jc,jk,jb,iqv)
-        field%cvair(jc,jk,jb) = cvd+(cvv-cvd)*field%qtrc_phy(jc,jk,jb,iqv)
-        !
-        field%qconv(jc,jk,jb) = 1._wp/(field%mair(jc,jk,jb)*field%cpair(jc,jk,jb))
+        qliq = field%qtrc_phy(jc,jk,jb,iqc) + field%qtrc_phy(jc,jk,jb,iqr)
+        qice = field%qtrc_phy(jc,jk,jb,iqi) + field%qtrc_phy(jc,jk,jb,iqs) + field%qtrc_phy(jc,jk,jb,iqg)
+        qvap = field%qtrc_phy(jc,jk,jb,iqv)
+        qtot = qvap + qice + qliq
+        cv   = cvd*(1.0_wp - qtot) + cvv*qvap + clw*qliq + ci*qice
+        field%cvair(jc,jk,jb) = cv*field%mair(jc,jk,jb)
       END DO
     END DO
     !$ACC END PARALLEL
@@ -248,7 +250,7 @@ CONTAINS
     
     NULLIFY(field)
 
-  END SUBROUTINE cpair_cvair_qconv
+  END SUBROUTINE get_cvair
   !---------------------------------------------------------------------
 
   !---------------------------------------------------------------------
@@ -294,51 +296,6 @@ CONTAINS
     NULLIFY(field)
 
   END SUBROUTINE initialize
-  !---------------------------------------------------------------------
-
-  !---------------------------------------------------------------------
-  SUBROUTINE finalize     (jg, jb, jcs, jce)
-
-    ! Arguments
-    !
-    INTEGER, INTENT(in) :: jg, jb, jcs, jce
-
-    ! Local variables
-    !
-    INTEGER :: nlev
-    !
-    TYPE(t_aes_phy_field), POINTER :: field
-    TYPE(t_aes_phy_tend) , POINTER :: tend
-    !
-    INTEGER :: jc, jk
-
-    nlev  = aes_phy_dims(jg)%nlev
-
-    field => prm_field(jg)
-    tend  => prm_tend (jg)
-
-    !$ACC DATA PRESENT(tend%ta_phy, field%cpair, field%cvair)
-
-    IF (.NOT. aes_vdf_config(jg)%use_tmx) THEN
-      ! convert the temperature tendency from physics, as computed for constant pressure conditions,
-      ! to constant volume conditions, as needed for the coupling to the dynamics
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2)
-      DO jk = 1,nlev
-        DO jc=jcs,jce
-          tend% ta_phy(jc,jk,jb) = tend% ta_phy(jc,jk,jb) * field% cpair(jc,jk,jb) / field% cvair(jc,jk,jb)
-        END DO
-      END DO
-      !$ACC END PARALLEL
-    END IF
-
-    !$ACC END DATA
-    !$ACC WAIT(1)
-
-    NULLIFY(field)
-    NULLIFY(tend )
-
-  END SUBROUTINE finalize
   !---------------------------------------------------------------------
 
 END MODULE mo_aes_phy_diag

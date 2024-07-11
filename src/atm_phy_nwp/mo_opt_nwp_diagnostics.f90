@@ -32,13 +32,12 @@ MODULE mo_opt_nwp_diagnostics
     &                                 tmelt, earth_radius, &
     &                                 alvdcp, rd_o_cpd, &
     &                                 rhoh2o, rhoice, K_w_0, K_i_0
-  USE mo_convect_tables,        ONLY: c1es, c3les, c4les
-  USE gscp_data,                ONLY: cloud_num
+  USE mo_lookup_tables_constants,ONLY: c1es, c3les, c4les
   USE mo_nh_diagnose_pres_temp, ONLY: calc_qsum
   USE mo_opt_nwp_reflectivity,  ONLY: compute_field_dbz_1mom, compute_field_dbz_2mom
   USE mo_exception,             ONLY: finish, message, warning
   USE mo_fortran_tools,         ONLY: assign_if_present, set_acc_host_or_device, assert_acc_host_only, &
-    &                                 assert_acc_device_only, init
+    &                                 assert_acc_device_only, init, copy
   USE mo_impl_constants,        ONLY: min_rlcell_int, min_rledge_int, &
     &                                 min_rlcell, grf_bdywidth_c
   USE mo_impl_constants_grf,    ONLY: grf_bdyintp_start_c,  &
@@ -73,6 +72,7 @@ MODULE mo_opt_nwp_diagnostics
   USE mo_diag_hailcast,         ONLY: hailstone_driver
   USE mo_util_phys,             ONLY: inversion_height_index  
   USE mo_nwp_tuning_config,     ONLY: tune_dursun_scaling
+  USE microphysics_1mom_schemes,ONLY: get_cloud_number, get_snow_temperature
 #ifdef HAVE_RADARFWO
   USE radar_data_mie,             ONLY: ldebug_dbz, T0C_emvorado => T0C_fwo
   USE radar_interface,            ONLY: initialize_tmax_atomic_1mom, &
@@ -86,7 +86,6 @@ MODULE mo_opt_nwp_diagnostics
     &                                   radar_rayleigh_oguchi_2mom_vec
   USE mo_synradar_config,         ONLY: synradar_meta, ydir_mielookup_read, ydir_mielookup_write
   USE mo_mpi,                     ONLY: get_my_mpi_work_comm_size
-  USE gscp_data,                  ONLY: isnow_n0temp
 #endif
 
   IMPLICIT NONE
@@ -124,6 +123,7 @@ MODULE mo_opt_nwp_diagnostics
   PUBLIC :: compute_field_echotopinm
   PUBLIC :: compute_field_wshear
   PUBLIC :: compute_field_lapserate  
+  PUBLIC :: compute_field_mconv
   PUBLIC :: compute_field_srh
   PUBLIC :: compute_field_visibility
   PUBLIC :: compute_field_inversion_height
@@ -977,14 +977,9 @@ CONTAINS
   
     ! --- Exchange of these fields on the parent grid
 
-    CALL exchange_data( p_pp%comm_pat_c, recv=p_vmean )
+    CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=lzacc, recv=p_vmean )
 
     ! --- Average over the neighbouring parent grid cells
-
-    ! consistency check
-    IF ( p_int%cell_environ%max_nmbr_iter /= 1 ) THEN
-      CALL finish( modname//':compute_field_sdi', "cell_environ is not built with the right number of iterations" )
-    END IF
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,jc,p_mean,  &
@@ -1261,14 +1256,6 @@ CONTAINS
                  &    ( SQRT( q_i * q_g  ) / MAX( q_i + q_g, 1.0e-20_wp) +  &
                  &      SQRT( q_s * q_g  ) / MAX( q_s + q_g, 1.0e-20_wp) )
 
-            q_solid = q_g *                                                 &
-                 &    ( SQRT( q_i * q_g  ) / MAX( q_i + q_g, 1.0e-20_wp) +  &
-                 &      SQRT( q_s * q_g  ) / MAX( q_s + q_g, 1.0e-20_wp) )
-
-            q_solid = q_g *                                                 &
-                 &    ( SQRT( q_i * q_g  ) / MAX( q_i + q_g, 1.0e-20_wp) +  &
-                 &      SQRT( q_s * q_g  ) / MAX( q_s + q_g, 1.0e-20_wp) )
-
             epsw = 2.0_wp * SQRT( q_liqu * q_solid ) / MAX( q_liqu + q_solid, 1.0e-20_wp)
 
             ! 'updraft-criterion' in the LPI integral
@@ -1414,7 +1401,7 @@ CONTAINS
 !$OMP END PARALLEL
 
     ! --- Exchange of these fields on the parent grid
-    CALL exchange_data( p_pp%comm_pat_c, recv=p_nmbr_w )
+    CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=lzacc, recv=p_nmbr_w )
 
     ! --- Average over the neighbouring parent grid cells
 
@@ -1854,7 +1841,7 @@ CONTAINS
 
 
 !$OMP PARALLEL
-    CALL init(twater(:,:))
+    CALL init(twater(:,:), lacc=lzacc)
 
 !$OMP DO PRIVATE(jc,jk,jb,i_startidx,i_endidx,q_water), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
@@ -1930,7 +1917,7 @@ CONTAINS
     i_startblk = ptr_patch%cells%start_block( i_rlstart )
     i_endblk   = ptr_patch%cells%end_block  ( i_rlend   )
 !$OMP PARALLEL
-    CALL init(q_sedim( :, :, 1:i_startblk-1 ))
+    CALL init(q_sedim( :, :, 1:i_startblk-1 ), lacc=lzacc)
 
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
@@ -1982,6 +1969,198 @@ CONTAINS
   END SUBROUTINE compute_field_q_sedim
 
 
+  !>
+  !! Calculate the low level (mean over 0-1000 m AGL) moisture convergence,
+  !! assuming flat surface for simplicity. Any metrical terms due to
+  !! terrain following height coordinates are neglected.
+  !!
+  !! Adapted from the COSMO-implementation by Uli Blahak.
+  !!
+  !!
+  SUBROUTINE compute_field_mconv( ptr_patch, p_int,   &
+                                  p_metrics, p_prog, p_prog_rcf, &
+                                  z_low, z_up, mconv )
+
+    ! Input/output variables:
+    TYPE(t_patch),      INTENT(IN), TARGET  :: ptr_patch     !< patch on which computation is performed
+    TYPE(t_int_state),  INTENT(IN), TARGET  :: p_int
+    TYPE(t_nh_metrics), INTENT(IN)          :: p_metrics
+    TYPE(t_nh_prog),    INTENT(IN), TARGET  :: p_prog, p_prog_rcf
+    REAL(wp),           INTENT(IN)          :: z_low         !< Lower height AGL for mconv averaging [m AGL]
+    REAL(wp),           INTENT(IN)          :: z_up          !< Upper height AGL for mconv averaging [m AGL]
+
+    REAL(wp),           INTENT(OUT)         :: mconv(:,:)    !> output variable, dim: (nproma,nblks_c)
+
+    ! Local variables:
+    CHARACTER(len=*), PARAMETER :: routine = modname//': compute_field_mconv'
+    INTEGER, POINTER            :: ieidx(:,:,:), ieblk(:,:,:)
+    REAL(wp)                    :: qv_e(nproma,ptr_patch%nlev,ptr_patch%nblks_e) !< qv interpolated to edges
+    REAL(wp), POINTER           :: vn_e(:,:,:), geofac_e(:,:,:)
+    REAL(wp)                    :: div_qvv_layer(nproma,ptr_patch%nlev)
+    REAL(wp), DIMENSION(nproma) :: div_qvv_mean, p_conv_sum, p_conv_wgt
+
+    INTEGER               :: i_rlstart,  i_rlend
+    INTEGER               :: i_startblk, i_endblk
+    INTEGER               :: i_startidx, i_endidx
+    INTEGER               :: jb, jc, jk, k_start, k_start_vec(nproma), &
+                              iex(3), ieb(3), l, jc2, jb2, iter
+
+    REAL(wp)              :: wgt_loc, area_norm
+    REAL(wp)              :: mconv_smth(SIZE(mconv,dim=1),SIZE(mconv,dim=2))
+
+    ! Parameters for smoothing filter:
+    INTEGER, PARAMETER :: niter_smooth = 1 ! number of successive filter applications
+
+    ! Linear interpolation of qv to cell edges:
+    CALL cells2edges_scalar(p_prog_rcf%tracer(:,:,:,iqv), ptr_patch, p_int%c_lin_e, qv_e, lacc=.FALSE.)
+
+    ieidx    => ptr_patch%cells%edge_idx
+    ieblk    => ptr_patch%cells%edge_blk
+    vn_e     => p_prog%vn
+    geofac_e => p_int%geofac_div
+    
+    ! without halo or boundary  points:
+    i_rlstart = grf_bdywidth_c + 1
+    i_rlend   = min_rlcell_int
+
+    i_startblk = ptr_patch%cells%start_block( i_rlstart )
+    i_endblk   = ptr_patch%cells%end_block  ( i_rlend   )
+
+!$OMP PARALLEL
+    CALL init(mconv, 0.0_wp)
+!$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,k_start,k_start_vec, &
+!$OMP            div_qvv_layer, &
+!$OMP            div_qvv_mean,iex,ieb), ICON_OMP_RUNTIME_SCHEDULE
+    DO jb = i_startblk, i_endblk
+
+      CALL get_indices_c( ptr_patch, jb, i_startblk, i_endblk,     &
+                          i_startidx, i_endidx, i_rlstart, i_rlend)
+
+      ! Determine the lowermost height level (highest index) which is
+      !  everywhere just above the maximum height considered
+      !  for the following vertical averages and integrals,
+      !  and use this as starting level for all vertical loops to save computing time.
+      ! We do a bottom-up search for the level just below z_up and subtract 1 to get one level above:
+      k_start_vec(:) = ptr_patch%nlev
+      DO jk = ptr_patch%nlev, 2, -1
+        DO jc = i_startidx, i_endidx
+          IF (p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_ifc(jc,ptr_patch%nlev+1,jb) < z_up) THEN
+            k_start_vec(jc) = jk - 1 
+          END IF
+        END DO
+      END DO
+      ! k_start_vec contains the max height index in each column. The overall k_start index
+      ! is the smallest among them:
+      k_start = MINVAL(k_start_vec(i_startidx:i_endidx))
+
+      div_qvv_layer(:,:) = 0.0_wp
+      DO jk = k_start, ptr_patch%nlev
+        DO jc = i_startidx, i_endidx
+
+          iex(1:3) = ieidx(jc,jb,1:3)
+          ieb(1:3) = ieblk(jc,jb,1:3)
+
+          ! Horizontal divergence by Gauss' theorem:
+          ! sum of oriented outward edge-normal qv fluxes throuth the side faces of the cell
+          ! divided by the cell volume, assuming flat orography. We neglect any metrical terms
+          ! due to the terrain-following vertical coordinates.
+          ! The geofac_e for each edge is the edge length times orientation factor (+ or -1) divided by cell area
+          div_qvv_layer(jc,jk) = &
+               vn_e(iex(1),jk,ieb(1)) * qv_e(iex(1),jk,ieb(1)) * geofac_e(jc,1,jb) + &
+               vn_e(iex(2),jk,ieb(2)) * qv_e(iex(2),jk,ieb(2)) * geofac_e(jc,2,jb) + &
+               vn_e(iex(3),jk,ieb(3)) * qv_e(iex(3),jk,ieb(3)) * geofac_e(jc,3,jb)
+
+        END DO
+      END DO
+
+      ! average div_qvv of z_low-z_up AGL:
+      CALL vert_integral_vec_1d ( i_startidx, i_endidx, k_start,    &
+           &                      hhl  = p_metrics % z_ifc(:,:,jb), &
+           &                      f    = div_qvv_layer(:,:),        &
+           &                      zlow = z_low,                     &
+           &                      zup  = z_up,                      &
+           &                      fint = div_qvv_mean(:),           &
+           &                      l_agl= .TRUE.,                    &
+           &                      l_calc_mean = .TRUE.,             &
+           &                      l_rescale_to_full_thickness = .FALSE. &
+           &                      )
+
+      DO jc = i_startidx, i_endidx
+        mconv(jc,jb) = -div_qvv_mean(jc)
+      END DO
+      
+    END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
+
+    !-------------------------------------------------------------------
+    !
+    ! Spatial smoothing over neighbouring points
+    !
+    !-------------------------------------------------------------------
+
+
+    ! Apply approximate binomial smoother niter_smooth times:
+    iterloop: DO iter=1, niter_smooth
+      
+      ! --- Exchange of mconv for reproducible results:
+      CALL sync_patch_array(SYNC_C, ptr_patch, mconv)
+
+      ! --- Weighted average over the neighbouring grid cells:
+!$OMP PARALLEL
+      CALL init(mconv_smth, 0.0_wp)    
+!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jc,  &
+!$OMP            p_conv_sum,p_conv_wgt,wgt_loc,area_norm, &
+!$OMP            l,jc2,jb2), ICON_OMP_DEFAULT_SCHEDULE
+      DO jb = i_startblk, i_endblk
+
+        CALL get_indices_c( ptr_patch, jb, i_startblk, i_endblk,     &
+                            i_startidx, i_endidx, i_rlstart, i_rlend)
+
+        DO jc = i_startidx, i_endidx
+          p_conv_sum(jc)  = 0.0_wp
+          p_conv_wgt(jc)  = 0.0_wp
+        END DO
+
+        DO l=1, p_int%cell_environ%max_nmbr_nghbr_cells
+
+          IF (l == 1) THEN
+            ! This is the center cell, which gets the most weight in the average
+            wgt_loc = 1.0_wp
+          ELSE
+            ! These are the direct neighbours of order 1, which get a lower weight
+            wgt_loc = 0.333_wp
+          END IF
+          
+          DO jc = i_startidx, i_endidx
+            
+            jc2 = p_int%cell_environ%idx( jc, jb, l)
+            jb2 = p_int%cell_environ%blk( jc, jb, l)
+            area_norm = p_int%cell_environ%area_norm( jc, jb, l)
+            IF ( area_norm > 1.0e-7_wp ) THEN
+              p_conv_sum(jc) = p_conv_sum(jc) + mconv(jc2,jb2)*wgt_loc*area_norm
+              p_conv_wgt(jc) = p_conv_wgt(jc) + wgt_loc*area_norm
+            END IF
+          END DO
+        END DO
+        
+        DO jc = i_startidx, i_endidx
+          IF (p_conv_wgt(jc) > 1e-20_wp) THEN
+            mconv_smth(jc,jb) = p_conv_sum(jc) / p_conv_wgt(jc)
+          END IF
+        END DO
+        
+      END DO
+!$OMP END DO
+      ! Copy back the smoothed field to the output variable:
+      CALL copy(mconv_smth, mconv)
+!$OMP END PARALLEL
+
+
+    END DO iterloop
+    
+  END SUBROUTINE compute_field_mconv
+  
   !>
   !! Calculate 
   !!     TCOND_MAX   (total column-integrated condensate, max. during the last hour)
@@ -3862,9 +4041,9 @@ CONTAINS
 
     ! local variables
     CHARACTER(len=*), PARAMETER :: routine = modname//': compute_field_dbz3d_lin'
-    REAL(wp) :: rho, qnc_s(nproma,ptr_patch%nblks_c)
+    REAL(wp) :: rho, qnc_s(nproma,ptr_patch%nblks_c), cloud_num
     INTEGER  :: i_rlstart, i_rlend, i_startblk, i_endblk, i_startidx, i_endidx, i_startidx_1, i_endidx_2, &
-         &      jc, jk, jb, ilow, iup, jlow, jup, klow, kup, itype_gscp_emvo
+         &      jc, jk, jb, ilow, iup, jlow, jup, klow, kup, itype_gscp_emvo, isnow_n0temp
 
     REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: Tmax_i, Tmax_s, Tmax_g, Tmax_h, Tmin_g, Tmin_h
     REAL(wp), ALLOCATABLE, DIMENSION(:,:,:), TARGET :: dummy0
@@ -3896,10 +4075,11 @@ CONTAINS
       SELECT CASE ( atm_phy_nwp_config(jg)%inwp_gscp )
       CASE ( 1,3 )
 
+        CALL get_cloud_number(cloud_num)
         IF (atm_phy_nwp_config(jg)%icpl_aero_gscp == 2) THEN
           ! Not yet implemented in microphysics! We give a dummy value here.
           qnc_s(:,:) = cloud_num               ! 1/kg
-        ELSE IF (atm_phy_nwp_config(jg)%icpl_aero_gscp == 1) THEN
+        ELSE IF ( ANY ( atm_phy_nwp_config(jg)%icpl_aero_gscp == (/1, 3/) ) ) THEN
           qnc_s(:,:) = prm_diag%cloud_num(:,:) ! neglect difference of 1/m^3 and 1/kg for this near-surface value
         ELSE
           qnc_s(:,:) = cloud_num               ! 1/kg
@@ -3935,6 +4115,7 @@ CONTAINS
 
       CASE ( 2 )
 
+        CALL get_cloud_number(cloud_num)
         IF (atm_phy_nwp_config(jg)%icpl_aero_gscp == 2) THEN
           ! Not yet implemented in microphysics! We give a dummy value here.
           qnc_s(:,:) = cloud_num               ! 1/kg
@@ -3974,9 +4155,7 @@ CONTAINS
              lacc      = lzacc                             )
 
       CASE ( 4, 5, 6, 8 )
-#ifdef _OPENACC
-        CALL finish(routine, 'compute_field_dbz_2mom is supported by OpenACC, but never tested.')
-#endif
+
         CALL compute_field_dbz_2mom( npr       = nproma,                           &
              nlev      = ptr_patch%nlev,                   &
              nblks     = ptr_patch%nblks_c,                &
@@ -4125,6 +4304,7 @@ CONTAINS
           Tmin_g = synradar_meta%Tmeltbegin_g
         END IF
 
+        CALL get_snow_temperature(isnow_n0temp)
         SELECT CASE ( synradar_meta%itype_refl )
         CASE ( 1, 5, 6 )
           ! Mie- or T-matrix scattering from EMVORADO:
@@ -4186,6 +4366,8 @@ CONTAINS
                linterp_mode_dualpol = (synradar_meta%itype_refl >= 5), &
                ydir_lookup_read     = TRIM(ydir_mielookup_read), &
                ydir_lookup_write    = TRIM(ydir_mielookup_write), &
+               ext_tune_fac_pure    = synradar_meta%ext_tune_fac_pure, &
+               ext_tune_fac_melt    = synradar_meta%ext_tune_fac_melt, &
                zh_radar             = dbz3d_lin(:,:,:), &
                lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
                )
@@ -4372,6 +4554,8 @@ CONTAINS
                luse_muD_relation_rain  = atm_phy_nwp_config(jg)%cfg_2mom%luse_mu_Dm_rain, &
                ydir_lookup_read  = TRIM(ydir_mielookup_read), &
                ydir_lookup_write = TRIM(ydir_mielookup_write), &
+               ext_tune_fac_pure    = synradar_meta%ext_tune_fac_pure, &
+               ext_tune_fac_melt    = synradar_meta%ext_tune_fac_melt, &
                zh_radar          = dbz3d_lin(:,:,:), &
                lhydrom_choice_testing = synradar_meta%lhydrom_choice_testing &
                )
@@ -4483,7 +4667,7 @@ CONTAINS
     most_negative_value = -HUGE(1.0_wp)
 
 !$OMP PARALLEL
-    CALL init(dbz_cmax(:,i_startblk:i_endblk), most_negative_value)
+    CALL init(dbz_cmax(:,i_startblk:i_endblk), most_negative_value, lacc=lzacc)
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
 
@@ -4604,7 +4788,7 @@ CONTAINS
     i_endblk   = ptr_patch%cells%end_block  ( i_rlend   )
 
 !$OMP PARALLEL
-    CALL init(dbz_850(:,i_startblk:i_endblk))
+    CALL init(dbz_850(:,i_startblk:i_endblk), lacc=lzacc)
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
 
@@ -4682,7 +4866,7 @@ CONTAINS
     i_endblk   = ptr_patch%cells%end_block  ( i_rlend   )
 
 !$OMP PARALLEL
-    CALL init(dbzlmx(:,i_startblk:i_endblk))
+    CALL init(dbzlmx(:,i_startblk:i_endblk), lacc=lzacc)
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,zml), ICON_OMP_RUNTIME_SCHEDULE
     DO jb = i_startblk, i_endblk
 
@@ -5099,8 +5283,8 @@ CONTAINS
 
     !$ACC DATA CREATE(wdur_prev, wup_mask_prev, my_neighbor_idx, my_neighbor_blk)
 
-    CALL init(wup_mask_prev)
-    CALL init(wdur_prev)
+    CALL init(wup_mask_prev, lacc=.TRUE.)
+    CALL init(wdur_prev, lacc=.TRUE.)
 
     dt = dtime
     !------------------------------------------------------------------------------ 
@@ -5471,12 +5655,10 @@ CONTAINS
     i_startblk = ptr_patch%cells%start_block( i_rlstart )
     i_endblk   = ptr_patch%cells%end_block  ( i_rlend   )
 
-    srh(:,:,:) = 0.0_wp
-
-
     max_height = MAXVAL([MAXVAL(z_up_srh(:)), z_up_meanwind, z_up_shear+dz_shear*0.5_wp, z_low_shear+dz_shear*0.5_wp]) ! m AGL
 
 !$OMP PARALLEL
+    CALL init(srh(:,:,:), 0.0_wp)
 !$OMP DO PRIVATE(jb,jc,lev_srh,i_startidx,i_endidx,k_start,k_start_vec, &
 !$OMP            speed_shear,u_mean,v_mean,u_shear,v_shear,u_storm,v_storm, &
 !$OMP            u_shear_up,u_shear_low,v_shear_up,v_shear_low,r_or_left_fac, &
@@ -5486,20 +5668,22 @@ CONTAINS
       CALL get_indices_c( ptr_patch, jb, i_startblk, i_endblk,     &
            i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      ! Determine the lowest height level (highest index) which is
+      ! Determine the lowermost height level (highest index) which is
       !  everywhere just above the maximum height considered
       !  for the following vertical averages and integrals,
-      !  and use this as starting level for all vertical loops to save computing time:
-      k_start_vec(:) = 1
-      DO jk = 1, ptr_patch%nlev
+      !  and use this as starting level for all vertical loops to save computing time.
+      ! We do a bottom-up search for the level just below z_up and subtract 1 to get one level above:
+      k_start_vec(:) = ptr_patch%nlev
+      DO jk = ptr_patch%nlev, 2, -1
         DO jc = i_startidx, i_endidx
-          IF (p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_ifc(jc,ptr_patch%nlev+1,jb) > max_height .AND. &
-               jk > k_start_vec(jc)) THEN
-            k_start_vec(jc) = jk
+          IF (p_metrics%z_ifc(jc,jk,jb) - p_metrics%z_ifc(jc,ptr_patch%nlev+1,jb) < max_height) THEN
+            k_start_vec(jc) = jk - 1 
           END IF
         END DO
       END DO
-      k_start = MAXVAL(k_start_vec)
+      ! k_start_vec contains the max height index in each column. The overall k_start index
+      ! is the smallest among them:
+      k_start = MINVAL(k_start_vec(i_startidx:i_endidx))
 
       ! mean U-component of 0-z_up_meanwind AGL:
       CALL vert_integral_vec_1d ( i_startidx, i_endidx, k_start,    &
@@ -5631,6 +5815,7 @@ CONTAINS
   !!  full layer thickness in case one or both layers are below the surface or above the model top.
   !!  Re-scaling means that voids are filled with the average of the present heights in the integral.
   !!
+  !! NOTE: if kstart is > 1, it must be small enough so that hhl(kstart) is above zup everywhere!
   
   SUBROUTINE vert_integral_vec_1d (istart, iend, kstart, hhl, f, zlow, zup, fint, &
                                    l_agl, l_calc_mean, l_rescale_to_full_thickness)
@@ -5650,7 +5835,7 @@ CONTAINS
     INTEGER  :: i, k, nlev
     REAL(wp) :: h_offset(SIZE(f, DIM=1)) ! offset for height to discriminate AGL and MSL
     REAL(wp) :: dz_layer(SIZE(f, DIM=1)) ! total layer thickness for integration
-    REAL(wp) :: dz_loc                         ! contribution of the actual layer to dz_layer
+    REAL(wp) :: dz_loc                   ! contribution of the actual layer to dz_layer
 
     nlev = SIZE(f, DIM=2)
 
@@ -5665,7 +5850,7 @@ CONTAINS
     DO k = kstart, nlev
       DO i = istart, iend
     
-        ! Parts of the grid boy are within the bounds, integrate over the exact bounds [zlow,zup]:
+        ! Parts of the grid box are within the bounds, integrate over the exact bounds [zlow,zup]:
         !  (It also works if the integration layer is so narrow that the bounds are in the same grid box)
         IF ( ( hhl(i,k+1)-h_offset(i) <= zup ) .AND. ( hhl(i,k)-h_offset(i)   >= zlow ) ) THEN
 

@@ -198,16 +198,16 @@ CONTAINS
     IF (rfids%isinit) DEALLOCATE(rfids%layids, rfids%nlays)
     rfids%nlayids = 0
     ALLOCATE(rfids%layids(32), rfids%nlays(32))
-    CALL nf(nf_def_dim(rfids%ncid, "time", 1, rfids%ftid), routine)
-    CALL nf(nf_def_var(rfids%ncid, "time", NF_DOUBLE, 1, [rfids%ftid], tvid), routine)
-    CALL nf(nf_put_att_text(rfids%ncid, tvid, "axis", 1, "T"), routine)
-    CALL nf(nf_put_att_text(rfids%ncid, tvid, "units", 16, "day as %Y%m%d.%f"), routine)
-    CALL nf(nf_def_dim(rfids%ncid, "cells", nelem(1), rfids%gids(1)), routine)
-    CALL nf(nf_def_var(rfids%ncid, "cells", NF_INT, 1, [rfids%gids(1)], dummy), routine)
-    CALL nf(nf_def_dim(rfids%ncid, "verts", nelem(2), rfids%gids(2)), routine)
-    CALL nf(nf_def_var(rfids%ncid, "verts", NF_INT, 1, [rfids%gids(2)], dummy), routine)
-    CALL nf(nf_def_dim(rfids%ncid, "edges", nelem(3), rfids%gids(3)), routine)
-    CALL nf(nf_def_var(rfids%ncid, "edges", NF_INT, 1, [rfids%gids(3)], dummy), routine)
+    CALL nf(nf90_def_dim(rfids%ncid, "time", 1, rfids%ftid), routine)
+    CALL nf(nf90_def_var(rfids%ncid, "time", NF90_DOUBLE, rfids%ftid, tvid), routine)
+    CALL nf(nf90_put_att(rfids%ncid, tvid, "axis", "T"), routine)
+    CALL nf(nf90_put_att(rfids%ncid, tvid, "units", "day as %Y%m%d.%f"), routine)
+    CALL nf(nf90_def_dim(rfids%ncid, "cells", nelem(1), rfids%gids(1)), routine)
+    CALL nf(nf90_def_var(rfids%ncid, "cells", NF90_INT, rfids%gids(1), dummy), routine)
+    CALL nf(nf90_def_dim(rfids%ncid, "verts", nelem(2), rfids%gids(2)), routine)
+    CALL nf(nf90_def_var(rfids%ncid, "verts", NF90_INT, rfids%gids(2), dummy), routine)
+    CALL nf(nf90_def_dim(rfids%ncid, "edges", nelem(3), rfids%gids(3)), routine)
+    CALL nf(nf90_def_var(rfids%ncid, "edges", NF90_INT, rfids%gids(3), dummy), routine)
     rfids%isinit = .TRUE.
   END SUBROUTINE rfids_init
 
@@ -225,11 +225,11 @@ CONTAINS
     dids(1) = rfids%gids(gid)
     SELECT CASE(ci%data_type)
     CASE(REAL_T)
-      dtid = NF_DOUBLE
+      dtid = NF90_DOUBLE
     CASE(SINGLE_T)
-      dtid = NF_REAL
+      dtid = NF90_REAL
     CASE(INT_T)
-      dtid = NF_INT
+      dtid = NF90_INT
     END SELECT
     SELECT CASE(nd)
     CASE(2)
@@ -253,21 +253,21 @@ CONTAINS
         rfids%nlayids = rfids%nlayids + 1
         rfids%nlays(rfids%nlayids) = ci%used_dimensions(2)
         WRITE(layname, "(a,i0)") "layers_", rfids%nlays(rfids%nlayids)
-        CALL nf(nf_def_dim(rfids%ncid, TRIM(layname), rfids%nlays(rfids%nlayids), &
+        CALL nf(nf90_def_dim(rfids%ncid, TRIM(layname), rfids%nlays(rfids%nlayids), &
           & rfids%layids(rfids%nlayids)), routine)
-        CALL nf(nf_def_var(rfids%ncid, TRIM(layname), NF_INT, 1, &
-          &                rfids%layids(rfids%nlayids:rfids%nlayids), dummy), routine)
-        CALL nf(nf_put_att_text(rfids%ncid, dummy, "axis", 1, "z"), routine)
+        CALL nf(nf90_def_var(rfids%ncid, TRIM(layname), NF90_INT, &
+          &                  rfids%layids(rfids%nlayids:rfids%nlayids), dummy), routine)
+        CALL nf(nf90_put_att(rfids%ncid, dummy, "axis", "z"), routine)
         ivid = rfids%nlayids
       END IF
       dids(2) = rfids%layids(ivid)
       dids(3) = rfids%ftid
     END SELECT
-    CALL nf(nf_def_var(rfids%ncid, TRIM(ci%name), dtid, nd, dids(:nd), ci%cdiVarId), routine)
+    CALL nf(nf90_def_var(rfids%ncid, TRIM(ci%name), dtid, dids(:nd), ci%cdiVarId), routine)
     la = LEN_TRIM(ci%cf%units)
-    CALL nf(nf_put_att_text(rfids%ncid, ci%cdiVarId, "units", la, ci%cf%units(1:la)), routine)
+    CALL nf(nf90_put_att(rfids%ncid, ci%cdiVarId, "units", ci%cf%units(1:la)), routine)
     la = LEN_TRIM(ci%cf%long_name)
-    CALL nf(nf_put_att_text(rfids%ncid, ci%cdiVarId, "long_name", la, ci%cf%long_name(1:la)), routine)
+    CALL nf(nf90_put_att(rfids%ncid, ci%cdiVarId, "long_name", ci%cf%long_name(1:la)), routine)
   END SUBROUTINE rfids_def_ncdfvar
 
   SUBROUTINE check_for_checkpoint(lready_for_checkpoint, lchkp_allowed, lstop_on_demand)

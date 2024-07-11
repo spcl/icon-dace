@@ -95,20 +95,20 @@ contains
     if (.not.exists) then ! Write the header of the file, and ensure we're in data mode
 
       call date_and_time(date,time)
-      iret = nf_create(trim(fname),nf_noclobber,ncid)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      iret = nf90_create(trim(fname),nf90_noclobber,ncid)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       iret = putatt_nc(ncid, 'title', trim(fname))
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       iret = putatt_nc(ncid,'history','Created on '//date(1:8)//' at '//trim(time))
       ldef = ensuredata_nc(ncid)
 
     else ! If the file exists, only the record number needs to be set
 
-      iret  = nf_open (trim(fname), NF_WRITE, ncid)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
-      iret  = nf_inq_unlimdim(ncid, RecordDimID)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
-      iret  = nf_inq_dimlen(ncid, RecordDimID, nrec)
+      iret  = nf90_open (trim(fname), NF90_WRITE, ncid)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
+      iret  = nf90_inquire(ncid, unlimitedDimId = RecordDimID)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
+      iret  = nf90_inquire_dimension(ncid, RecordDimID, len = nrec)
 
       ncall = nrec
 
@@ -116,7 +116,7 @@ contains
     end if
 
     if (present(nrec)) nrec = ncall
-    iret = nf_sync(ncid)
+    iret = nf90_sync(ncid)
 
   end subroutine open_nc
 
@@ -127,11 +127,11 @@ contains
     integer, intent(in) :: ncid !< NetCDF file number
     integer :: iret
     ensuredefine_nc = .false.
-    iret = nf_redef(ncid)
+    iret = nf90_redef(ncid)
     select case(iret)
-    case(nf_noerr)
+    case(nf90_noerr)
       ensuredefine_nc = .false.
-    case(nf_eindefine)
+    case(nf90_eindefine)
       ensuredefine_nc = .true.
     case default
       call nchandle_error(ncid, iret)
@@ -145,11 +145,11 @@ contains
     integer, intent(in) :: ncid !< NetCDF file number
     integer :: iret
     ensuredata_nc = .false.
-    iret = nf_enddef(ncid)
+    iret = nf90_enddef(ncid)
     select case(iret)
-    case(nf_noerr)
+    case(nf90_noerr)
       ensuredata_nc = .true.
-    case(nf_enotindefine)
+    case(nf90_enotindefine)
       ensuredata_nc = .false.
     case default
       call nchandle_error(ncid, iret)
@@ -161,8 +161,8 @@ contains
   subroutine enddefine_nc(ncid)
     integer, intent(in) :: ncid !< NetCDF file number
     integer :: iret
-    iret = nf_enddef(ncid)
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_enddef(ncid)
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
   end subroutine enddefine_nc
 
 !-------------------------------------------------------------------------
@@ -170,10 +170,10 @@ contains
   subroutine close_nc(ncid)
     integer, intent(in) :: ncid !< NetCDF file number
     integer :: iret, iformat
-    iret = nf_inq_format(ncid, iformat)
-    if (iret /= nf_noerr) return
-    iret = nf_close(ncid)
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_inquire(ncid, formatNum = iformat)
+    if (iret /= nf90_noerr) return
+    iret = nf90_close(ncid)
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
   end subroutine close_nc
 
 !-------------------------------------------------------------------------
@@ -221,20 +221,20 @@ contains
       end if
     end do
 
-    iret=nf_inq_varid(ncid,trim(validate(name)),varid)
+    iret=nf90_inq_varid(ncid,trim(validate(name)),varid)
 
-    if (iret /= nf_noerr) then ! If the inquiry fails, the variable needs to be created
+    if (iret /= nf90_noerr) then ! If the inquiry fails, the variable needs to be created
 
       select case (icomp)
       case(icomp_int)
-        datatype = nf_int
+        datatype = nf90_int
       case(icomp_dbl)
-        datatype = nf_double
+        datatype = nf90_double
       case default
         CALL finish('mo_write_netcdf:addvar_nc','wrong datatype!')
       end select
 
-      iret=nf_def_var(ncID, trim(validate(name)), datatype, nrdim, ncdim,VarID)
+      iret=nf90_def_var(ncID, trim(validate(name)), datatype, ncdim, VarID)
 
       if (iret/=0) then
         write (*,*) 'Variable ',trim(name), ncdim
@@ -242,18 +242,18 @@ contains
       end if
 
       iret = putatt_nc(ncID, 'longname', lname, trim(name))
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
       iret = putatt_nc(ncID, 'units', unit, trim(name))
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
       select case (icomp)
       case (icomp_int)
         iret = putatt_nc(ncID, '_FillValue', fillvalue_int, trim(name))
-        if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+        if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       case (icomp_dbl)
         iret = putatt_nc(ncID, '_FillValue', fillvalue_double, trim(name))
-        if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+        if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       end select
 
     end if
@@ -290,24 +290,24 @@ contains
     end if
 
     iret = 0
-    iret = nf_inq_dimid(ncid, trim(validate(dimname)), inqdimid_nc)
+    iret = nf90_inq_dimid(ncid, trim(validate(dimname)), inqdimid_nc)
 
     if (iret == 0) then !If the dimension already exists....
 
       if (.not. ltime) then
-        iret = nf_inq_dimlen(ncID, inqdimid_nc, dimsize)
+        iret = nf90_inquire_dimension(ncID, inqdimid_nc, len = dimsize)
 
         allocate(dimvar(dimsize))
 
         if (dimsize == size(dimvalues)) then ! Check whether the number of points along this dimension is correct
           ldef = ensuredata_nc(ncid)
-          iret =  nf_inq_varid(ncid, trim(validate(dimname)), varid)
-          iret  = nf_get_var_double(ncid,varid,dimvar)
+          iret =  nf90_inq_varid(ncid, trim(validate(dimname)), varid)
+          iret  = nf90_get_var(ncid,varid,dimvar)
           ldef = ensuredefine_nc(ncid)
           ! Check whether dimension in file matches with the desired values
           if (any((abs((dimvar - dimvalues)/(dimvar+epsilon(1.)))) > 1e-4)) then
             iret = getatt_nc(ncid,'title', fname)
-            if (iret /= nf_noerr) fname = ''
+            if (iret /= nf90_noerr) fname = ''
             print *, 'NetCDF error in file ' // trim(fname)
             print *, 'For dimension ', trim(dimname)
             print *, "Inqdimid_nc: Dimensions don't match with what's already in the file"
@@ -315,7 +315,7 @@ contains
           end if
         else
           iret = getatt_nc(ncid, 'title', fname)
-          if (iret /= nf_noerr)  fname = ''
+          if (iret /= nf90_noerr)  fname = ''
           print *, 'NetCDF error in file ' // trim(fname)
           print *, 'For dimension ', trim(dimname)
           print *, "Number of points doesn't fit"
@@ -328,9 +328,9 @@ contains
     else !If the dimension does not exist yet, we need to create it.
 
       if (ltime) then
-        iret = nf_def_dim(ncID, trim(validate(dimname)), NF_UNLIMITED, inqdimid_nc)
+        iret = nf90_def_dim(ncID, trim(validate(dimname)), NF90_UNLIMITED, inqdimid_nc)
       else
-        iret = nf_def_dim(ncID, trim(validate(dimname)), size(dimvalues), inqdimid_nc)
+        iret = nf90_def_dim(ncID, trim(validate(dimname)), size(dimvalues), inqdimid_nc)
       endif
 
       if (iret/=0) then
@@ -338,18 +338,18 @@ contains
         call nchandle_error(ncid, iret)
       end if
 
-      iret = nf_def_var(ncID,trim(validate(dimname)), nf_double, 1, [inqdimid_nc], VarID)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      iret = nf90_def_var(ncID, trim(validate(dimname)), nf90_double, inqdimid_nc, VarID)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       iret = putatt_nc(ncID, 'longname', dimlongname, dimname)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       iret = putatt_nc(ncID, 'units', dimunit, dimname)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
       iret = putatt_nc(ncID, '_FillValue', fillvalue_double, dimname)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
      if (.not. ltime) then !Fill the dimension-values for any dimension but time
         ldef = ensuredata_nc(ncid)
-        iret = nf_put_var_double(ncid, varID, dimvalues)
+        iret = nf90_put_var(ncid, varID, dimvalues)
         if (iret/=0) then
           print *,'For dimension ',trim(dimname)
           call nchandle_error(ncid, iret)
@@ -371,15 +371,15 @@ contains
     integer :: iret,varid, udimid, loc(1)
     character(len=20) :: udimname
 
-    iret = nf_inq_varid(ncid, trim(validate(ncname)), VarID)
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_inq_varid(ncid, trim(validate(ncname)), VarID)
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
     if (present(nrec)) then
-      iret = nf_inq_unlimdim(ncid,udimid)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      iret = nf90_inquire(ncid, unlimitedDimId = udimid)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
-      iret = nf_inq_dimname(ncid,udimid,udimname)
-      if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+      iret = nf90_inquire_dimension(ncid,udimid,name=udimname)
+      if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
       if(trim(ncname)==trim(udimname)) nrec = nrec+1
       loc = nrec
@@ -387,8 +387,8 @@ contains
       loc = 1
     end if
 
-    iret = nf_put_var1_double(ncid, VarID, loc, var)
-    if (iret /= nf_noerr .and. iret /= nf_erange) call nchandle_error(ncid, iret)
+    iret = nf90_put_var(ncid, VarID, var, loc)
+    if (iret /= nf90_noerr .and. iret /= nf90_erange) call nchandle_error(ncid, iret)
 
     iret = sync_nc(ncid)
 
@@ -408,14 +408,14 @@ contains
 
     dimsize(2) = 1 !The time dimension has size 1
 
-    iret = nf_inq_varid(ncid, trim(validate(ncname)), varid)
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_inq_varid(ncid, trim(validate(ncname)), varid)
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
-    iret = nf_inq_vardimid(ncid,varid,dimids)
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_inquire_variable(ncid,varid,dimids=dimids)
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
-    iret = nf_inq_dimlen(ncid,dimids(1),dimsize(1))
-    if (iret /= nf_noerr) call nchandle_error(ncid, iret)
+    iret = nf90_inquire_dimension(ncid,dimids(1),len=dimsize(1))
+    if (iret /= nf90_noerr) call nchandle_error(ncid, iret)
 
     loc(1) = 1
     IF (PRESENT(nrec)) THEN
@@ -425,9 +425,9 @@ contains
       nd = 1
     END IF
 
-    iret = nf_put_vara_double(ncid, VarID, loc(1:nd), dimsize, var(1:dimsize(1)))
+    iret = nf90_put_var(ncid, VarID, var(1:dimsize(1)), loc(1:nd), dimsize)
 
-    if (iret /= nf_noerr .and. iret /= nf_erange) call nchandle_error(ncid, iret)
+    if (iret /= nf90_noerr .and. iret /= nf90_erange) call nchandle_error(ncid, iret)
     iret = sync_nc(ncid)
 
   end subroutine writevar1D_nc
@@ -443,11 +443,11 @@ contains
 
     ldef = ensuredefine_nc(ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    putatt_str_nc = nf_put_att_text(ncid, varid, validate(attrname), len(trim(attrval)), trim(attrval))
+    putatt_str_nc = nf90_put_att(ncid, varid, validate(attrname), trim(attrval))
 
     if (ldef .eqv. .false.) then
       ldef = ensuredata_nc(ncid)
@@ -465,11 +465,11 @@ contains
 
     ldef = ensuredefine_nc(ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    putatt_single_nc = nfx_put_att(ncid, varid, validate(attrname), nf_float, attrval)
+    putatt_single_nc = nf90_put_att(ncid, varid, validate(attrname), attrval)
     if (ldef .eqv. .false.) then
       ldef = ensuredata_nc(ncid)
     end if
@@ -486,11 +486,11 @@ contains
 
     ldef = ensuredefine_nc(ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    putatt_double_nc = nfx_put_att(ncid, varid, validate(attrname), nf_double, attrval)
+    putatt_double_nc = nf90_put_att(ncid, varid, validate(attrname), attrval)
     if (ldef .eqv. .false.) then
       ldef = ensuredata_nc(ncid)
     end if
@@ -507,11 +507,11 @@ contains
 
     ldef = ensuredefine_nc(ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    putatt_int_nc = nfx_put_att(ncid, varid, validate(attrname), nf_int, attrval)
+    putatt_int_nc = nf90_put_att(ncid, varid, validate(attrname), attrval)
     if (ldef .eqv. .false.) then
       ldef = ensuredata_nc(ncid)
     end if
@@ -528,11 +528,11 @@ contains
 
     ldef = ensuredefine_nc(ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    putatt_short_nc = nfx_put_att(ncid, varid, validate(attrname), nf_short, attrval)
+    putatt_short_nc = nf90_put_att(ncid, varid, validate(attrname), attrval)
     if (ldef .eqv. .false.) then
       ldef = ensuredata_nc(ncid)
     end if
@@ -547,11 +547,11 @@ contains
     integer :: iret, varid
 
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_str_nc = nf_get_att_text(ncid, varid, validate(attrname), attrval)
+    getatt_str_nc = nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_str_nc
 
 !-------------------------------------------------------------------------
@@ -563,11 +563,11 @@ contains
     integer :: iret, varid
 
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_single_nc= nfx_get_att(ncid, varid, validate(attrname), attrval)
+    getatt_single_nc= nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_single_nc
 
 !-------------------------------------------------------------------------
@@ -579,11 +579,11 @@ contains
     integer :: iret, varid
 
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_double_nc= nfx_get_att(ncid, varid, validate(attrname), attrval)
+    getatt_double_nc= nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_double_nc
 
 !-------------------------------------------------------------------------
@@ -595,11 +595,11 @@ contains
     integer :: iret, varid
 
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_int_nc= nfx_get_att(ncid, varid, validate(attrname), attrval)
+    getatt_int_nc= nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_int_nc
 
 !-------------------------------------------------------------------------
@@ -611,11 +611,11 @@ contains
     integer :: iret, varid
 
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_short_nc= nfx_get_att(ncid, varid, validate(attrname), attrval)
+    getatt_short_nc= nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_short_nc
 
 !-------------------------------------------------------------------------
@@ -626,13 +626,13 @@ contains
     character(len=*), intent(in), optional :: varname
     integer :: iret, varid, ncid
 
-    iret = nf_open(trim(fname), NF_NOWRITE, ncid)
+    iret = nf90_open(trim(fname), NF90_NOWRITE, ncid)
     if (present(varname)) then
-      iret  = nf_inq_varid(ncid,validate(varname),varid)
+      iret  = nf90_inq_varid(ncid,validate(varname),varid)
     else
-      varid = nf_global
+      varid = nf90_global
     end if
-    getatt_str_fname_nc = nf_get_att_text(ncid, varid, validate(attrname), attrval)
+    getatt_str_fname_nc = nf90_get_att(ncid, varid, validate(attrname), attrval)
   end function getatt_str_fname_nc
 
 !-------------------------------------------------------------------------
@@ -657,7 +657,7 @@ contains
   integer function sync_nc(ncid)
     integer, intent(in) :: ncid            !< Netcdf file number
     sync_nc = 1
-    if (lsync) sync_nc = nf_sync(ncid)
+    if (lsync) sync_nc = nf90_sync(ncid)
   end function sync_nc
 
 !-------------------------------------------------------------------------
@@ -667,11 +667,11 @@ contains
     integer, intent(in) :: status !< NetCDF error code
     integer       :: iret
     character(80) :: fname
-    if(status /= nf_noerr) then
+    if(status /= nf90_noerr) then
       iret = getatt_nc(ncid, 'title', fname)
-      if (iret /= nf_noerr) fname = ''
+      if (iret /= nf90_noerr) fname = ''
       print *, 'NetCDF error in file ' // trim(fname)
-      print *, status, trim(nf_strerror(status))
+      print *, status, trim(nf90_strerror(status))
       call finish('mo_write_netcdf:','stoppping!')
     end if
   end subroutine nchandle_error

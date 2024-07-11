@@ -132,6 +132,16 @@ CONTAINS
         &  'incorrect settings for itype_limit. Must be 0, 3, or 4')
     ENDIF
 
+    IF ( itype_limit == 3 ) THEN
+      CALL finish(routine,                                     &
+        &  'incorrect settings for itype_limit. Monotonic limiter not yet available.')
+    ENDIF
+
+    IF ( ANY((/2,3/) == igrad_c_miura) ) THEN
+      CALL finish(routine,                                     &
+        &  'incorrect settings for igrad_c_miura. Options 2 and 3 not yet available.')
+    ENDIF
+
     ! setting default names for tracers
     !
     CALL message(routine,'Setting default names for tracers: q<no>')

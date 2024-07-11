@@ -52,9 +52,7 @@ MODULE mo_nh_feedback
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config, iprog_aero
   USE mo_radar_data_types,    ONLY: t_lhn_diag
   USE mo_fortran_tools,       ONLY: t_ptr_3d
-#ifdef _OPENACC
   USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -500,7 +498,11 @@ CONTAINS
     ENDIF
 !$OMP END PARALLEL
 
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 4, 3*nlev_c+2,        &
+    CALL exchange_data_mult(                                &
+      p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,                 &
+      lacc=.FALSE.,                                         &
+      nfields=4,                                            &
+      ndim2tot=3*nlev_c+2,                                  &
       RECV1=p_parent_prog%rho,     SEND1=feedback_rho_tend, &
       RECV2=p_parent_prog%theta_v, SEND2=feedback_thv_tend, &
       RECV3=p_parent_prog%w,       SEND3=feedback_w_tend,   &
@@ -508,15 +510,23 @@ CONTAINS
       nshift=nshift )
 
 
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_e_fbk, 1, nlev_c, &
+    CALL exchange_data_mult(                     &
+      p_pat=p_pp%comm_pat_loc_to_glb_e_fbk,      &
+      lacc=.FALSE.,                              &
+      nfields=1,                                 &
+      ndim2tot=nlev_c,                           &
       RECV1=p_parent_prog%vn, SEND1=feedback_vn, &
       nshift=nshift)
 
     IF (ltransport) THEN
 
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, ntracer, ntracer*nlev_c, &
-        &                     RECV4D=p_parent_prog_rcf%tracer,                         &
-        &                     SEND4D=feedback_tracer_mass, nshift=nshift)
+      CALL exchange_data_mult(                &
+        p_pat=p_pp%comm_pat_loc_to_glb_c_fbk, &
+        lacc=.FALSE.,                         &
+        nfields=ntracer,                      &
+        ndim2tot=ntracer*nlev_c,              &
+        RECV4D=p_parent_prog_rcf%tracer,      &
+        SEND4D=feedback_tracer_mass, nshift=nshift)
 
     ENDIF
 
@@ -1096,41 +1106,41 @@ CONTAINS
 !$OMP END PARALLEL
 #endif
 #ifdef __MIXED_PRECISION
-    CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, 0, 0, 3, 3*nlev_c, &
+    CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, 0, 0, 3, 3*nlev_c, &
       RECV1_SP=parent_rho,     SEND1_SP=feedback_rho,      &
       RECV2_SP=parent_thv,     SEND2_SP=feedback_thv,      &
       RECV3_SP=parent_w,       SEND3_SP=feedback_w         )
 
 
-    CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_e_fbk, 0, 0, 1, nlev_c, &
+    CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_e_fbk, i_am_accel_node, 0, 0, 1, nlev_c, &
       RECV1_SP=parent_vn, SEND1_SP=feedback_vn )
 
     IF (ltransport .AND. lprog_aero) THEN
 
-      CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, 0, 0, trFeedback%len+1, trFeedback%len*nlev_c+nclass_aero, &
+      CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, 0, 0, trFeedback%len+1, trFeedback%len*nlev_c+nclass_aero, &
         RECV1_SP=parent_aero,     SEND1_SP=feedback_aero,                    &
         RECV4D_SP=parent_rhoqx(:,:,:,1:trFeedback%len), SEND4D_SP=feedback_rhoqx)
     ELSE IF (ltransport) THEN
-      CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, 0, 0, trFeedback%len, trFeedback%len*nlev_c, &
+      CALL exchange_data_mult_mixprec(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, 0, 0, trFeedback%len, trFeedback%len*nlev_c, &
         RECV4D_SP=parent_rhoqx(:,:,:,1:trFeedback%len), SEND4D_SP=feedback_rhoqx)
     ENDIF
 #else
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 3, 3*nlev_c, &
+    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, 3, 3*nlev_c, &
       RECV1=parent_rho,     SEND1=feedback_rho,      &
       RECV2=parent_thv,     SEND2=feedback_thv,      &
       RECV3=parent_w,       SEND3=feedback_w         )
 
 
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_e_fbk, 1, nlev_c, &
+    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_e_fbk, i_am_accel_node, 1, nlev_c, &
       RECV1=parent_vn, SEND1=feedback_vn )
 
     IF (ltransport .AND. lprog_aero) THEN
 
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, trFeedback%len+1, trFeedback%len*nlev_c+nclass_aero, &
+      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, trFeedback%len+1, trFeedback%len*nlev_c+nclass_aero, &
         RECV1=parent_aero,     SEND1=feedback_aero,                    &
         RECV4D=parent_rhoqx(:,:,:,1:trFeedback%len), SEND4D=feedback_rhoqx)
     ELSE IF (ltransport) THEN
-      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, trFeedback%len, trFeedback%len*nlev_c, &
+      CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, i_am_accel_node, trFeedback%len, trFeedback%len*nlev_c, &
         RECV4D=parent_rhoqx(:,:,:,1:trFeedback%len), SEND4D=feedback_rhoqx)
     ENDIF
 #endif
@@ -1690,7 +1700,9 @@ CONTAINS
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
-    CALL exchange_data_mult(p_pp%comm_pat_loc_to_glb_c_fbk, 2, 2*nlev_c, &
+    CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,        &
+                            lacc=.FALSE.,                                &
+                            nfields=2,           ndim2tot=2*nlev_c,      &
                             RECV1=parent_temp,   SEND1=feedback_temp,    &
                             RECV2=parent_qv,     SEND2=feedback_qv       )
 

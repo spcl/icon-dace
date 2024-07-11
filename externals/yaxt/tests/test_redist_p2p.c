@@ -57,13 +57,15 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_redist_common.h"
+
+static void
+check_offset_extents(MPI_Comm comm, Xt_config config);
 
 int main(int argc, char **argv) {
 
-  // init mpi
-
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
   Xt_config config = redist_exchanger_option(&argc, &argv);
@@ -171,25 +173,40 @@ int main(int argc, char **argv) {
     xt_idxlist_delete(dst_idxlist);
   }
 
-  // check offset extents
+  check_offset_extents(MPI_COMM_WORLD, config);
+
+  xt_config_delete(config);
+  xt_finalize();
+  MPI_Finalize();
+
+  return TEST_EXIT_CODE;
+}
+
+static void
+check_offset_extents_redist(Xt_redist redist, size_t src_num, size_t dst_num,
+                            MPI_Comm comm);
+
+static void
+check_offset_extents(MPI_Comm comm, Xt_config config)
+{
+  // source index list
+  static const Xt_int src_index_list[] = {5,67,4,5,13,9,2,1,0,96,13,12,1,3};
+  enum { src_num = sizeof(src_index_list) / sizeof(src_index_list[0]) };
+
+  Xt_idxlist src_idxlist = xt_idxvec_new(src_index_list, src_num);
+
+  // destination index list
+  static const Xt_int dst_index_list[] = {5,4,3,96,1,5,4,5,4,3,13,2,1};
+  enum { dst_num = sizeof(dst_index_list) / sizeof(dst_index_list[0]) };
+
+  Xt_idxlist dst_idxlist = xt_idxvec_new(dst_index_list, dst_num);
+
+  // xmap
+  Xt_xmap xmap
+    = xt_xmap_all2all_new(src_idxlist, dst_idxlist, comm);
+
+  // redist_p2p with extents of offsets
   {
-    // source index list
-    static const Xt_int src_index_list[] = {5,67,4,5,13,9,2,1,0,96,13,12,1,3};
-    enum { src_num = sizeof(src_index_list) / sizeof(src_index_list[0]) };
-
-    Xt_idxlist src_idxlist = xt_idxvec_new(src_index_list, src_num);
-
-    // destination index list
-    static const Xt_int dst_index_list[] = {5,4,3,96,1,5,4,5,4,3,13,2,1};
-    enum { dst_num = sizeof(dst_index_list) / sizeof(dst_index_list[0]) };
-
-    Xt_idxlist dst_idxlist = xt_idxvec_new(dst_index_list, dst_num);
-
-    // xmap
-    Xt_xmap xmap
-      = xt_xmap_all2all_new(src_idxlist, dst_idxlist, MPI_COMM_WORLD);
-
-    // redist_p2p with extents of offsets
     static const struct Xt_offset_ext
       src_pos[1] = { { .start = 0, .size = src_num, .stride =  1 } },
       dst_pos[1] = { { .start = dst_num - 1, .size = dst_num, .stride = -1 } };
@@ -198,37 +215,52 @@ int main(int argc, char **argv) {
       xmap, sizeof (src_pos)/sizeof (src_pos[0]), src_pos,
       sizeof (dst_pos)/sizeof (dst_pos[0]), dst_pos, MPI_LONG, config);
 
-    // test communicator of redist
+    check_offset_extents_redist(redist, src_num, dst_num, comm);
+  }
+  {
+    static const struct Xt_aoffset_ext
+      src_pos[1] = { { .start = (MPI_Aint)0,
+                       .size = src_num, .stride =  (MPI_Aint)sizeof (long) } },
+      dst_pos[1] = { { .start = (MPI_Aint)((dst_num - 1)*sizeof (long)),
+                       .size = dst_num, .stride = -(MPI_Aint)(sizeof (long)) }};
 
-    if (!communicators_are_congruent(xt_redist_get_MPI_Comm(redist),
-                                     MPI_COMM_WORLD))
-      PUT_ERR("error in xt_redist_get_MPI_Comm\n");
+    Xt_redist redist = xt_redist_p2p_aext_custom_new(
+      xmap, sizeof (src_pos)/sizeof (src_pos[0]), src_pos,
+      sizeof (dst_pos)/sizeof (dst_pos[0]), dst_pos, MPI_LONG, config);
 
-    // test exchange
-    static const long src_data[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13};
-    assert(sizeof(src_data)/sizeof(src_data[0]) == src_num);
-    static const long ref_dst_data[] = {7,6,4,13,2,0,2,0,7,9,13,2,0};
-    long dst_data[dst_num];
-    check_redist(redist, src_data, dst_num, dst_data,
-                 fill_array_long, NULL, ref_dst_data, MPI_LONG, MPI_LONG);
-    Xt_redist redist_copy = xt_redist_copy(redist);
-    xt_redist_delete(redist);
-    check_redist(redist_copy, src_data, dst_num, dst_data,
-                 fill_array_long, NULL, ref_dst_data, MPI_LONG, MPI_LONG);
-
-    // clean up
-    xt_redist_delete(redist_copy);
-    xt_xmap_delete(xmap);
-    xt_idxlist_delete(src_idxlist);
-    xt_idxlist_delete(dst_idxlist);
+    check_offset_extents_redist(redist, src_num, dst_num, comm);
   }
 
-  xt_config_delete(config);
-  xt_finalize();
-  MPI_Finalize();
-
-  return TEST_EXIT_CODE;
+  // clean up
+  xt_xmap_delete(xmap);
+  xt_idxlist_delete(src_idxlist);
+  xt_idxlist_delete(dst_idxlist);
 }
+
+static void
+check_offset_extents_redist(Xt_redist redist, size_t src_num, size_t dst_num,
+                            MPI_Comm comm)
+{
+  // test communicator of redist
+  if (!communicators_are_congruent(xt_redist_get_MPI_Comm(redist),
+                                   comm))
+    PUT_ERR("error in xt_redist_get_MPI_Comm\n");
+
+  // test exchange
+  static const long src_data[] = {0,1,2,3,4,5,6,7,8,9,10,11,12,13};
+  assert(sizeof(src_data)/sizeof(src_data[0]) == src_num);
+  static const long ref_dst_data[] = {7,6,4,13,2,0,2,0,7,9,13,2,0};
+  assert(sizeof(ref_dst_data)/sizeof(ref_dst_data[0]) == dst_num);
+  long dst_data[sizeof(ref_dst_data)/sizeof(ref_dst_data[0])];
+  check_redist(redist, src_data, dst_num, dst_data,
+               fill_array_long, NULL, ref_dst_data, MPI_LONG, MPI_LONG);
+  Xt_redist redist_copy = xt_redist_copy(redist);
+  xt_redist_delete(redist);
+  check_redist(redist_copy, src_data, dst_num, dst_data,
+               fill_array_long, NULL, ref_dst_data, MPI_LONG, MPI_LONG);
+  xt_redist_delete(redist_copy);
+}
+
 
 /*
  * Local Variables:

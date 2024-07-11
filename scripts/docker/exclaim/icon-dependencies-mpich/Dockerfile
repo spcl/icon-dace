@@ -1,4 +1,15 @@
 # syntax=docker/dockerfile:1.2
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
 FROM nvcr.io/nvidia/nvhpc:21.3-devel-cuda11.2-ubuntu20.04
 ENV SPACK_PREFIX=/root/c2sm-spack
 ENV SPACK_SYSTEM_CONFIG_PATH=/root/c2sm-spack/sysconfigs/unknown

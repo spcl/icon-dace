@@ -23,6 +23,7 @@ MODULE mo_radiation_forcing_memory
   USE mo_impl_constants,      ONLY: SUCCESS, MAX_CHAR_LENGTH
   USE mo_cdi_constants,       ONLY: GRID_UNSTRUCTURED_CELL, GRID_CELL
   USE mo_exception,           ONLY: message, finish
+  USE mo_master_control,      ONLY: get_my_process_name
   USE mo_parallel_config,     ONLY: nproma
   USE mo_io_config,           ONLY: lnetcdf_flt64_output
   USE mo_model_domain,        ONLY: t_patch
@@ -246,7 +247,9 @@ CONTAINS
 
     ! Register a field list and apply default settings
 
-    CALL vlr_add( field_list, TRIM(listname), patch_id=k_jg, lrestart=.TRUE. )
+    CALL vlr_add( field_list, TRIM(listname), patch_id=k_jg, lrestart=.TRUE., &
+      &           model_type=get_my_process_name() )
+
     ! Auxiliary flux variables
     IF (lradforcing(2)) THEN
     cf_desc    = t_cf_var('emter_for', 'W m-2', 'thermal radiation flux', datatype_flt)

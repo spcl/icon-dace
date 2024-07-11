@@ -797,35 +797,35 @@ buildVarSlicesIdxList(int vlistID, int varID, int startLvl, int numLvl, const st
 static inline size_t
 countMemMissingDouble(size_t n, const double *restrict data, double missVal)
 {
-  size_t nmiss = 0;
-  for (size_t i = 0; i < n; ++i) nmiss += (data[i] == missVal);
-  return nmiss;
+  size_t numMissVals = 0;
+  for (size_t i = 0; i < n; ++i) numMissVals += (data[i] == missVal);
+  return numMissVals;
 }
 
 static inline size_t
 countMemMissingFloat(size_t n, const float *restrict data, double missVal)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
   float missValF = (float) missVal;
   if (missValF == missVal)
-    for (size_t i = 0; i < n; ++i) nmiss += (data[i] == missValF);
-  return nmiss;
+    for (size_t i = 0; i < n; ++i) numMissVals += (data[i] == missValF);
+  return numMissVals;
 }
 
 static size_t
 countVarChunkMissingVals(int vlistID, int varID, struct streamMapping *mapping, size_t chunkLen, int conversion,
                          const void *restrict data)
 {
-  size_t nmiss = 0;
+  size_t numMissVals = 0;
   if (mapping->hasMissing[varID])
     {
       double missVal = vlistInqVarMissval(vlistID, varID);
       if (conversion == DATA_HEADER_DOUBLE)
-        nmiss = countMemMissingDouble(chunkLen, data, missVal);
+        numMissVals = countMemMissingDouble(chunkLen, data, missVal);
       else
-        nmiss = countMemMissingFloat(chunkLen, data, missVal);
+        numMissVals = countMemMissingFloat(chunkLen, data, missVal);
     }
-  return nmiss;
+  return numMissVals;
 }
 
 static inline void
@@ -956,13 +956,13 @@ writeNetCDFStreamParallel(size_t streamIdx, struct streamMapping *mapping, void 
 
         {
           /* count missing values if appropriate */
-          size_t nmiss
+          size_t numMissVals
               = countVarChunkMissingVals(vlistID, varID, mapping, (size_t) (PPM_extents_size(3, varChunk)), conversion, data);
           /* write chunk */
           if (conversion == DATA_HEADER_DOUBLE)
-            streamWriteVarChunk(streamID, varID, (const int(*)[2]) myChunk, data, (int) nmiss);
+            streamWriteVarChunk(streamID, varID, (const int(*)[2]) myChunk, data, (int) numMissVals);
           else
-            streamWriteVarChunkF(streamID, varID, (const int(*)[2]) myChunk, data, (int) nmiss);
+            streamWriteVarChunkF(streamID, varID, (const int(*)[2]) myChunk, data, (int) numMissVals);
         }
       }
 }
@@ -1090,11 +1090,11 @@ writeNetCDFStreamSerial(size_t streamIdx, struct streamMapping *mapping, void **
         if (!conf->cacheRedists) xt_redist_delete(gatherRedist);
         if (writerRank == collRank)
           {
-            size_t nmiss = countVarChunkMissingVals(vlistID, varID, mapping, varSize, conversion, data);
+            size_t numMissVals = countVarChunkMissingVals(vlistID, varID, mapping, varSize, conversion, data);
             if (conversion == DATA_HEADER_DOUBLE)
-              streamWriteVar(streamID, varID, data, (int) nmiss);
+              streamWriteVar(streamID, varID, data, (int) numMissVals);
             else
-              streamWriteVarF(streamID, varID, data, (int) nmiss);
+              streamWriteVarF(streamID, varID, data, (int) numMissVals);
           }
       }
 }
@@ -1164,7 +1164,7 @@ streamMappingNew(size_t streamIdx, const struct winHeaderEntry *winDict, const s
       /* FIXME: this could better be ensured on client */
       xassert(varID < numVars && varID >= 0 && varMap[varID] == 0);
       varMap[varID] = headerIdx;
-      hasMissing[varID] += winDict[headerIdx].specific.dataRecord.nmiss;
+      hasMissing[varID] += winDict[headerIdx].specific.dataRecord.numMissVals;
     }
   /* set numLvlsW[i] to 1 if varMap[i] != 0 on any collector,
    * also sets hasMissing_[i] to global reduction of hasMissing[i] */
@@ -1533,11 +1533,13 @@ writeGribStream(size_t streamIdx, struct streamMapping *mapping, void **data_, s
               int conversion = winDict[headerIdx].id;
               size_t elemSize = conversion == DATA_HEADER_FLOAT ? sizeof(float) : sizeof(double);
               size_t nvals = recordSize / elemSize;
-              size_t nmiss = countVarChunkMissingVals(vlistID, varID, mapping, nvals, conversion, data + recordDataOfs);
+              size_t numMissVals = countVarChunkMissingVals(vlistID, varID, mapping, nvals, conversion, data + recordDataOfs);
               if (conversion == DATA_HEADER_DOUBLE)
-                streamWriteVarSlice(streamID, varID, level, (const double *) (const void *) (data + recordDataOfs), (int) nmiss);
+                streamWriteVarSlice(streamID, varID, level, (const double *) (const void *) (data + recordDataOfs),
+                                    (int) numMissVals);
               else
-                streamWriteVarSliceF(streamID, varID, level, (const float *) (const void *) (data + recordDataOfs), (int) nmiss);
+                streamWriteVarSliceF(streamID, varID, level, (const float *) (const void *) (data + recordDataOfs),
+                                     (int) numMissVals);
               recordDataOfs += recordSize;
             }
           aggBufFlush(streamID, fileID, cdiPioFileWrite);

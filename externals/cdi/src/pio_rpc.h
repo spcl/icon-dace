@@ -54,7 +54,7 @@ struct headerSize
 
 struct dataRecord
 {
-  int varID, nmiss;
+  int varID, numMissVals;
 };
 
 union funcArgs

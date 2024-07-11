@@ -46,7 +46,7 @@ dnl Basic autotools settings.
 dnl ######################################################################
 AC_PREREQ([2.64])
 dnl Update the corresponding entry in doc/Doxyfile when changing this
-AC_INIT([yaxt],[0.9.3.1],[hanke@dkrz.de],,
+AC_INIT([yaxt],[0.10.2],[hanke@dkrz.de],,
   [http://www.dkrz.de/redmine/projects/yaxt])
 AC_CONFIG_SRCDIR([src/xt_idxlist.c])
 AC_CONFIG_AUX_DIR([config])
@@ -59,19 +59,42 @@ AM_MAINTAINER_MODE
 dnl ######################################################################
 dnl Diagnose incompatible tool versions
 dnl ######################################################################
-m4_if(m4_version_compare(AC_AUTOCONF_VERSION,[2.67]),1,
-  [m4_if(m4_version_compare(LT_PACKAGE_VERSION,[2.4.2]),[-1],[m4_fatal([autoconf versions 2.68 and newer require using libtool 2.4.2 or newer])])])
+m4_ifdef([LT_PACKAGE_VERSION],
+  [m4_if(m4_version_compare(AC_AUTOCONF_VERSION,[2.67]),1,
+    [m4_if(m4_version_compare(LT_PACKAGE_VERSION,[2.4.2]),[-1],
+      [m4_fatal([autoconf versions 2.68 and newer require using libtool 2.4.2 or newer])])])],
+  [m4_warn([syntax],[Please run 'libtoolize --install' before continuing.])])
 dnl ######################################################################
 dnl Checks for programs.
 dnl ######################################################################
+CHECK_GNU_MAKE
+dnl we prefer GNU make because the System V make on many commercial
+dnl platforms is slow
+AC_CHECK_PROGS([MAKE], [$_cv_gnu_make_command gmake gnumake make])
+dnl maintainers need GNU make for the regeneration rules, so enforce that
+dnl
+AS_IF([test "x${_cv_gnu_make_command}x$USE_MAINTAINER_MODE" = xxyes],
+  [AC_MSG_FAILURE([maintainers need to use GNU make or compatible])])
+dnl Only substitute MAKE in Makefiles if actually needed
+AC_PROG_MAKE_SET
+AM_SUBST_NOTMAKE([MAKE])
 dnl Require an ISO C99 compliant C compiler
-m4_pushdef([_AC_PROG_CC_C89],
-  [_AC_PROG_CC_C99(,[AC_MSG_FAILURE([CC=$CC is not an ISO C99 compiler])])])
-m4_pushdef([_AM_PROG_CC_C_O],m4_bpatsubst(m4_dquote(m4_defn([_AM_PROG_CC_C_O])),
-  [rm -f\(.* conftest\*.*\)], [rm -rf\1]))dnl
+m4_pushdef(m4_case(m4_version_compare(AC_AUTOCONF_VERSION,[2.70]),
+     [-1],[[_AC_PROG_CC_C89]],
+     [0],[[_AC_PROG_CC_C11]],
+     [1],[[_AC_PROG_CC_STDC_EDITION]]),
+  [rm -rf conftest.dSYM # needed when configured on MacOS with CFLAGS='-g'
+   m4_case(m4_cmp(m4_version_compare(AC_AUTOCONF_VERSION,[2.71]),[-1]),
+     [0],[_AC_PROG_CC_C99(,[AC_MSG_FAILURE([CC=$CC is not an ISO C99 compiler])])],
+     [1],[ac_prog_cc_stdc=no
+_AC_PROG_CC_STDC_EDITION_TRY([99])
+AS_IF([test "x$ac_prog_cc_stdc" != xc99],
+  [AC_MSG_FAILURE([CC=$CC is not an ISO C99 compiler])])])])dnl
 AC_PROG_CC([mpicc mpiicc mpxlc_r mpixlc_r gcc cc])
-m4_popdef([_AM_PROG_CC_C_O])
-m4_popdef([_AC_PROG_CC_C89])
+m4_popdef(m4_case(m4_version_compare(AC_AUTOCONF_VERSION,[2.70]),
+  [-1],[[_AC_PROG_CC_C89]],
+  [0],[[_AC_PROG_CC_C11]],
+  [1],[[_AC_PROG_CC_STDC_EDITION]]))dnl
 
 AX_PTHREAD([AC_DEFINE([HAVE_PTHREAD],1,[Define if you have POSIX threads libraries and header files.])
    LIBS="$PTHREAD_LIBS $LIBS"
@@ -117,7 +140,9 @@ AM_PROG_CC_C_O
 # Set up libtool.
 ACX_USE_LIBTOOL_CONFIGURATION
 AC_SUBST([lt_cv_nm_interface])
-AC_SUBST([acx_symprfx],[$ac_symprfx])
+acx_symprfx=`expr "$lt_cv_sys_global_symbol_pipe" : '.* prfx=\^\(@<:@_@:>@\{0,1\}\)@S|@'` \
+  || acx_symprfx=`expr "$lt_cv_sys_global_symbol_pipe" : '.*\\\\1 \(@<:@_@:>@\{0,1\}\)\\\\2'`
+AC_SUBST([acx_symprfx])
 dnl ######################################################################
 dnl Properties of the compiler
 dnl ######################################################################
@@ -157,6 +182,9 @@ ACX_FC_HAVE_C_LOC_OF_SLICE([HAVE_FC_C_LOC_OF_SLICE=yes
   XT_FC_FEATURE_DEFS="$XT_FC_FEATURE_DEFS
 @%:@define HAVE_FC_C_LOC_OF_SLICE"
   AC_DEFINE([HAVE_FC_C_LOC_OF_SLICE],[1])])
+ACX_FC_INTEGER_EXP_IS_PRECISE(
+  [XT_FC_FEATURE_DEFS="$XT_FC_FEATURE_DEFS
+@%:@define HAVE_FC_PRECISE_INTEGER_EXPONENTIATION"])
 fi
 AM_CONDITIONAL([FC_MOD_UPPERCASE],
   [test x$ac_fc_mod_uppercase = xyes])
@@ -253,6 +281,11 @@ AC_DEFINE_UNQUOTED([HAVE_DECL___LZCNT64],
   [`test "$acx_cv_have_decl___lzcnt64" = yes ; expr 1 - $?`],
   [PGI/Nvidia style __lzcnt64 is available])
 dnl
+AC_CACHE_CHECK([whether __builtin_complex is available],
+  [acx_cv_have_decl___builtin_complex],
+  [AC_LINK_IFELSE([AC_LANG_PROGRAM([@%:@include <complex.h>],[   long double _Complex c =  __builtin_complex(1.0L, -2.5L)])],
+     [AS_VAR_SET([acx_cv_have_decl___builtin_complex],[yes])],
+     [AS_VAR_SET([acx_cv_have_decl___builtin_complex],[no])])])
 dnl ######################################################################
 dnl Test whether cfortran.h works correctly
 dnl ######################################################################
@@ -268,8 +301,23 @@ dnl ######################################################################
 dnl Checks for header files.
 dnl ######################################################################
 dnl
-AC_HEADER_STDC
-
+while : ; do[]m4_pushdef([cuda_includes],[AC_INCLUDES_DEFAULT
+@%:@include <cuda.h>])m4_pushdef([no_cuda],[AC_MSG_NOTICE([$1, not building CUDA component])
+acx_cuda_version=0 ; break])
+AC_CHECK_HEADER([cuda.h],
+  [AC_CHECK_DECL([CUDA_VERSION],
+     [AC_COMPUTE_INT([acx_cuda_version],
+        [CUDA_VERSION],[cuda_includes],[no_cuda([Cannot determine CUDA version])])
+      AC_CHECK_HEADERS([dlfcn.h],,
+        [no_cuda([cuda.h found but dlsym is unavailable])])],
+     [no_cuda([CUDA_VERSION definition not found])],[cuda_includes])],
+  [no_cuda([cuda header not found])])
+  break
+done[]m4_popdef([no_cuda])m4_popdef([cuda_includes])
+AS_IF([test "$acx_cuda_version" -ge 6050],
+  [AC_DEFINE([HAVE_CUDA],[1],
+     [defined to 1 iff a cuda header of the 6.5 or newer version was found])])
+AM_CONDITIONAL([HAVE_CUDA],[test "$acx_cuda_version" -ge 6050])
 #  ----------------------------------------------------------------------
 # Compile with MPI support
 dnl
@@ -289,7 +337,7 @@ ACX_F90_PACKAGE([MPI],[mpi],,,
 ],[(1, req, stat, ierror)])
 fi
 
-save_CFLAGS=$CFLAGS
+saved_CFLAGS=$CFLAGS
 CFLAGS="$CFLAGS $MPI_C_INCLUDE"
 TJ_FIND_INTEGRAL_TYPE([MPI_Fint],[MPI_FINT],[@%:@include <mpi.h>])
 ACX_MPI_SEND_CONST_VOID_P_BUF_ARG([CAST_MPI_SEND_BUF="(buf)"
@@ -309,8 +357,7 @@ AS_IF([test $ac_cv_sizeof_MPI_Datatype -eq 0],
   [AC_MSG_FAILURE([Could not detect size of MPI_Datatype!])])
 AC_COMPUTE_INT([MPI_VERSION], [MPI_VERSION], [@%:@include <mpi.h>],
   [AC_MSG_ERROR([cannot determine MPI version!])])
-AM_CONDITIONAL([USE_MPI3],[test $MPI_VERSION -ge 3])
-CFLAGS=$save_CFLAGS
+CFLAGS=$saved_CFLAGS
 AS_CASE(["$MPI_FINT"],
   [int],[XT_MPI_FINT_MAX=INT_MAX XT_MPI_FINT_FC_KIND=c_int],
   [long],[XT_MPI_FINT_MAX=LONG_MAX XT_MPI_FINT_FC_KIND=c_long],
@@ -356,22 +403,54 @@ re-configure with --without-regard-for-quality in case you must use the
 given MPI implementation, but some tests might fail])],
      [AC_MSG_NOTICE([ignoring failed test for known defect $acx_subtestname,
 because configure option --without-regard-for-quality is active])])])
+AC_CONFIG_LIBOBJ_DIR([src/mpi-workarounds])
+xt_disable_nb_a2a=no
+m4_pushdef([AC_LANG(Fortran)],m4_bpatsubst(m4_dquote(m4_defn([AC_LANG(Fortran)])),
+  [\(ac_link='.*\)\$LIBS],[\1$XT_LIBS4FC]))
+XT_LIBS4FC="$LIBS $MPI_FC_LIB"
 ACX_MPI_DEFECTS(,,
-  [ACX_MPI_DEFECTS_DOCUMENT
+  [ACX_MPI_DEFECTS_DOCUMENT([${acx_subtestname}])
    AS_CASE(["$acx_subtestname"],
      [openmpi_datatype],
      [AC_MSG_WARN([known OpenMPI 2.0.3-4.0.1 problem detected, attempting interpositioning work-around!])
       ACX_OMPI_DT_WORKAROUND(,[openmpi_datatype.c],
         [xt_mpi_workaround_LIBS=$ac_cv_search_opal_output
-         extrasub="${extrasub+$extrasub$as_nl}/^\# skip internal symbols for stubs created by xlf/i \\\\${as_nl}\# ignore opal symbols overriden by us\\\\${as_nl}/"'^\${exp_sym_prefix}'"${acx_symprfx}"'opal_datatype_(commit|add)/b'],
+         extrasub="${extrasub+$extrasub$as_nl}/^\# skip internal symbols for stubs created by xlf/i \\\\${as_nl}\# ignore opal symbols overriden by us\\\\${as_nl}/"'^\${exp_sym_prefix}'"${acx_symprfx}"'opal_datatype_(commit|add)/b'
+         AS_CASE([$acx_opal_datatype_add_workaround],
+           [*/xt_opal_datatype_optimize.c],
+           [AC_LIBOBJ([xt_opal_datatype_optimize_wrap])
+            XT_WORKAROUND_MPI_SYMBIND="${XT_WORKAROUND_MPI_SYMBIND+$XT_WORKAROUND_MPI_SYMBIND }XT_SYM(opal_datatype_commit)"],
+           [*/xt_opal_datatype_add.c],
+           [AC_LIBOBJ([xt_opal_datatype_add_wrap])
+            XT_WORKAROUND_MPI_SYMBIND="${XT_WORKAROUND_MPI_SYMBIND+$XT_WORKAROUND_MPI_SYMBIND }XT_SYM(opal_datatype_commit)"],
+           [AC_MSG_WARN([Unexpected Open MPI datatype bug work-around.])
+            mpi_defect_fail_action])
+         xt_temp=`expr "${acx_opal_datatype_add_workaround}" : '\(.*\)/@<:@^/@:>@*\.c$'`
+         XT_WORKAROUND_MPI_CFLAGS=$OMPI_BUILD_CFLAGS
+         XT_WORKAROUND_MPI_CPPFLAGS="-I$xt_temp $OMPI_MCA_C_INCLUDE ${XT_WORKAROUND_MPI_CPPFLAGS-$CPPFLAGS}"],
         [AC_MSG_WARN([Cannot apply Open MPI datatype bug work-around.])
          mpi_defect_fail_action])],
      [mpich_3.4_yaksa_hindexed],
-     [AC_MSG_WARN([known MPICH 3.4-3.4.2 problem detected, attempting interpositioning work-around!])
+     [AC_MSG_WARN([known MPICH 3.4-3.4.3 problem detected, attempting interpositioning work-around!])
       ACX_MPICH34_DT_WORKAROUND(,[mpich_3.4_yaksa_hindexed.c],
-        [extrasub="${extrasub+$extrasub$as_nl}/^\# skip internal symbols for stubs created by xlf/i \\\\${as_nl}\# ignore opal symbols overriden by us\\\\${as_nl}/"'^\${exp_sym_prefix}'"${acx_symprfx}"'yaks[ai]_type_create_h?indexed/b'],
+        [extrasub="${extrasub+$extrasub$as_nl}/^\# skip internal symbols for stubs created by xlf/i \\\\${as_nl}\# ignore yaksa symbols overriden by us\\\\${as_nl}/"'^\${exp_sym_prefix}'"${acx_symprfx}"'yaks[ai]_type_create_h?indexed/b'
+         AC_LIBOBJ([xt_yaksa_indexed_wrap])dnl
+         XT_WORKAROUND_MPI_SYMBIND="${XT_WORKAROUND_MPI_SYMBIND+$XT_WORKAROUND_MPI_SYMBIND }XT_SYM(yaksa_type_create_indexed)"
+         XT_WORKAROUND_MPI_CFLAGS=$CFLAGS
+         XT_WORKAROUND_MPI_CPPFLAGS="-I$ac_pwd/$acx_yaksa_add_workaround ${XT_WORKAROUND_MPI_CPPFLAGS-$CPPFLAGS}"],
         [AC_MSG_WARN([Cannot apply MPICH YAKSA datatype bug work-around.])
          mpi_defect_fail_action])],
+     [mpi_fortran_startup],
+     [workaround_successful=false
+      AC_MSG_WARN([known problem detected, attempting work-around!])
+      ACX_LIBXML2_WORKAROUND(,[mpi_fortran_startup.f90],
+        [AC_LIBOBJ([xt_xmlXPathInit])
+         workaround_successful=:],
+        [AC_MSG_NOTICE(
+           [Could not apply libxml2 SIGFPE bug work-around.])])
+      AS_IF([$workaround_successful],,
+        [ACX_XCODE_COMMONS_WORKAROUND(,[mpi_fortran_startup.f90],
+          [LDFLAGS="${LDFLAGS+$LDFLAGS }${acx_workaround}"])])],
      [mpich_unweighted_topo_comm_dup],
      [AC_MSG_WARN([known MPICH 3.0-3.4.2 problem detected, activating work-around!])
       AC_DEFINE([NEED_MPICH_UNWEIGHTED_COMM_DUP_WORKAROUND],,
@@ -386,24 +465,44 @@ Consider getting a better MPI/batch scheduler.])
         [grep -v -i 'mpi_abort(@<:@^,()@:>@*, 2)' conftest.error_exit.txt >/dev/null],
         [AC_MSG_NOTICE([Implementing very fragile work-around for tests!])
          AC_DEFINE([XT_NEED_MPI_ABORT_WORK_AROUND],[2])])],
+     [mpich_neighbor_alltoallw],
+     [AC_MSG_WARN([known MPICH 4.0-4.0.2 problem detected, disabling use of MPI_Neighbor_alltoall!])
+      xt_disable_nb_a2a=yes
+      mpi_defect_fail_action],
+     [mpich_zero_size_contiguous],
+     [AC_MSG_WARN([known MPICH 3.4.3, 4.0-4.0.2 problem detected, disabling tests of zero size datatypes!])
+      AC_DEFINE([XT_CANNOT_SUPPORT_ZERO_SIZE_DT],[1],
+        [defined to 1 if this MPI does not support zero-size datatypes])
+      mpi_defect_fail_action],
      [mpi_defect_fail_action])])
+m4_popdef([AC_LANG(Fortran)])dnl
 m4_popdef([_AC_RUN_LOG_LIMIT])m4_popdef([_AC_LINK_IFELSE])dnl
 rm -f conftest.err conftest.error_exit.txt
 AC_SUBST([xt_mpi_workaround_LIBS])
-AM_CONDITIONAL([OMPI_DT_WORKAROUND],
-  [test x${acx_opal_datatype_add_workaround+set} = xset])
-AS_IF([test x${acx_opal_datatype_add_workaround+set} = xset],
-  [acx_opal_datatype_add_workaround=`perl -e "use Cwd abs_path; print abs_path('$acx_opal_datatype_add_workaround')"`
-  xt_mpi_workaround_sources="${xt_mpi_workaround_sources+$xt_mpi_workaround_sources }ompi_workaround.c"])
-AC_SUBST([acx_opal_datatype_add_workaround])
-AM_CONDITIONAL([MPICH_DT_WORKAROUND],
-  [test x${acx_yaksa_add_workaround+set} = xset])
-AS_IF([test x${acx_yaksa_add_workaround+set} = xset],
-  [acx_yaksa_add_workaround=`perl -e "use Cwd abs_path; print abs_path('$acx_yaksa_add_workaround')"`
-   xt_mpi_workaround_sources="${xt_mpi_workaround_sources+$xt_mpi_workaround_sources }mpich_workaround.c"])
-AC_SUBST([acx_yaksa_add_workaround])
-AM_CONDITIONAL([MPI_DT_WORKAROUND],
-  [test x${xt_mpi_workaround_sources+set} = xset])
+AC_SUBST([XT_WORKAROUND_MPI_CFLAGS])
+AC_SUBST([XT_WORKAROUND_MPI_CPPFLAGS])
+AM_CONDITIONAL([USE_NB_A2A],[test $MPI_VERSION -ge 3 && test x"$xt_disable_nb_a2a" = xno])
+AS_IF([test $MPI_VERSION -ge 3 && test x"$xt_disable_nb_a2a" = xno],
+  [AC_DEFINE([XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL],[1],
+     [defined if MPI_Neighbor_alltoall functions are actually working])])
+AM_CONDITIONAL([XT_ADD_MPI_WORKAROUND],
+  [test x${acx_opal_datatype_add_workaround+set} = xset \
+     -o x${acx_yaksa_add_workaround+set} = xset])
+AS_IF([test x${acx_opal_datatype_add_workaround+set} = xset \
+         -o x${acx_yaksa_add_workaround+set} = xset],
+  [AC_DEFINE_UNQUOTED([XT_WORKAROUND_MPI_SYMBIND],
+     [$XT_WORKAROUND_MPI_SYMBIND],
+     [symbols to add a dependency on for correct static builds])])
+dnl
+dnl test if MPI_INT16_T is available
+AC_CHECK_DECL([MPI_INT16_T],,
+  [TJ_FIND_INTEGRAL_TYPE([int16_t],[xt_mpi_dt_int16_t],[AC_INCLUDES_DEFAULT
+@%:@include <mpi.h>],
+    [XT_MPI_INT16_T=MPI_[]AS_TR_CPP([$xt_mpi_dt_int16_t])
+     AC_MSG_NOTICE([adding macro definition of MPI_INT16_T as $XT_MPI_INT16_T])
+     AC_DEFINE_UNQUOTED([MPI_INT16_T],[$XT_MPI_INT16_T],[work around missing define in older MPI implementations])],[:])],
+  [AC_INCLUDES_DEFAULT
+@%:@include <mpi.h>])
 MPI_LAUNCH=$saved_MPI_LAUNCH
 FCFLAGS=$saved_FCFLAGS
 CFLAGS=$saved_CFLAGS
@@ -447,7 +546,7 @@ m4_define([vartype_setq],[$1][_MPIDT=$4
 dnl
 dnl test if MPI_INTEGER[248] are available
 if test_with_fortran ; then
-save_FCFLAGS=$FCFLAGS
+saved_FCFLAGS=$FCFLAGS
 AC_LANG_PUSH([Fortran])
 FCFLAGS="$MPI_FC_MOD $FCFLAGS"
 for mpi_int2test in MPI_INTEGER2 MPI_INTEGER4 MPI_INTEGER8; do
@@ -462,7 +561,7 @@ for mpi_int2test in MPI_INTEGER2 MPI_INTEGER4 MPI_INTEGER8; do
     [AC_MSG_RESULT([no])
      ASX_VAR_UNSET([HAVE_FC_$mpi_int2test])])
 done
-FCFLAGS=$save_FCFLAGS
+FCFLAGS=$saved_FCFLAGS
 AC_LANG_POP([Fortran])
 fi
 
@@ -559,7 +658,10 @@ AS_IF([test x"$acx_cv_XT_SHORT" != 'x(unavailable)'],
 AC_DEFINE_UNQUOTED([XT_INT],[$XT_INT],[Type to use for enumeration of distributed elements.])
 AC_DEFINE_UNQUOTED([XT_INT_MPIDT],[$XT_INT_MPIDT],[MPI Datatype for type for enumeration of distributed elements.])
 AC_DEFINE_UNQUOTED([XT_UINT_MPIDT],[$XT_UINT_MPIDT],[MPI Datatype for type for counts of distributed elements.])
-
+dnl
+dnl checks needed for tests only
+AC_CHECK_TYPES([long double _Complex])
+dnl
 AC_ARG_WITH([on-demand-check-programs],
   [AS_HELP_STRING([--with-on-demand-check-programs],
      [only build test programs when calling make check (default: build during make all)])],
@@ -614,7 +716,7 @@ AC_ARG_VAR([BUILD_FC],
 AC_CONFIG_COMMANDS_PRE([AS_IF([test x"$BUILD_FC" != x],
   [FC=$BUILD_FC])])
 
-AC_CONFIG_HEADER([include/config.h])
+AC_CONFIG_HEADERS([include/config.h])
 AC_SUBST([XT_FC_FEATURE_DEFS])
 AM_SUBST_NOTMAKE([XT_FC_FEATURE_DEFS])
 AC_CONFIG_FILES([include/fc_feature_defs.inc])
@@ -659,12 +761,13 @@ AC_CONFIG_FILES([						\
         tests/test_yaxt_run					\
 	tests/test_mpi_generate_datatype_run			\
 	tests/test_mpi_smartdedup_run				\
+	tests/test_ddt_run					\
 	examples/rrobin_run					\
 	examples/row2col_run					\
 	examples/tr_gp2fs_run					\
 	examples/unstruct_halo_exchange_run			\
 	util/serialrun],[chmod a+x "$ac_file"])
-AC_CONFIG_FILES([Makefile src/Makefile tests/Makefile examples/Makefile \
+AC_CONFIG_FILES([Makefile src/Makefile src/mpi-workarounds/Makefile tests/Makefile examples/Makefile \
   inst_headers/Makefile inst_headers/f90/Makefile \
   src/pkgconfig/yaxt.pc src/pkgconfig/yaxt_c.pc perf/Makefile])
 # edit out the am--include-marker that's required for automake 1.16

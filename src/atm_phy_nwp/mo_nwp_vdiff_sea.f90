@@ -48,6 +48,10 @@ MODULE mo_nwp_vdiff_sea
   USE sfc_terra_data, ONLY: csalb, ist_seawtr, ist_seaice
   USE sfc_seaice, ONLY: alb_seaice_equil, seaice_init_nwp, seaice_timestep_nwp
 
+#ifdef __NVCOMPILER
+  USE mo_coupling_config, ONLY: is_coupled_to_ocean
+#endif
+
   IMPLICIT NONE
   PRIVATE
 
@@ -83,7 +87,7 @@ CONTAINS
         & t_bcoef_wtr, q_acoef_wtr, q_bcoef_wtr, t_acoef_ice, t_bcoef_ice, q_acoef_ice, &
         & q_bcoef_ice, prog_wtr_now, diag_lnd, t_wtr, t_ice, s_wtr, s_ice, qsat_wtr, qsat_ice, &
         & evapo_wtr, evapo_ice, latent_hflx_wtr, latent_hflx_ice, sensible_hflx_wtr, &
-        & sensible_hflx_ice, conductive_hflx_ice, alb, prog_wtr_new &
+        & sensible_hflx_ice, conductive_hflx_ice, melt_potential_ice, alb, prog_wtr_new &
       )
 
     !> Current block index.
@@ -184,7 +188,9 @@ CONTAINS
     !> Sensible heat flux into ice surface (mixed time) [W/m**2].
     REAL(wp), INTENT(INOUT) :: sensible_hflx_ice(:)
     !> Conductive heat flux at ice-ocean boundary [W/m**2].
-    REAL(wp), INTENT(INOUT) :: conductive_hflx_ice(:)
+    REAL(wp), OPTIONAL, INTENT(INOUT) :: conductive_hflx_ice(:)
+    !> Melt potential at ice-atmosphere boundary [W/m**2].
+    REAL(wp), OPTIONAL, INTENT(INOUT) :: melt_potential_ice(:)
 
     !> Albedos at time `t+1` sets sea water and ice indices [1].
     TYPE(t_nwp_vdiff_albedos), INTENT(INOUT) :: alb
@@ -233,9 +239,13 @@ CONTAINS
     REAL(wp) :: tsnow_n(SIZE(t_acoef_wtr)) !< Snow temperature on ice (time `t+1`) [K].
     REAL(wp) :: hsnow_n(SIZE(t_acoef_wtr)) !< Snow thickness on ice (time `t+1`) [m].
     REAL(wp) :: condhf(SIZE(t_acoef_wtr)) !< Conductive heat flux at ice-ocean boundary [W/m**2].
+    REAL(wp) :: meltpot(SIZE(t_acoef_wtr)) !< Melt potential at ice-atmosphere boundary [W/m**2].
     REAL(wp) :: albsi_n(SIZE(t_acoef_wtr)) !< Sea-ice albedo (time `t+1`) [1].
 
     REAL(wp) :: alb_nir_dir, alb_nir_dif, alb_vis_dir, alb_vis_dif
+
+    LOGICAL :: have_conductive_hflx_ice
+    LOGICAL :: have_melt_potential_ice
 
     ! Asynchronous data regions are a too recent feature. We have to resort to unstructured ones.
     ! This crutch ensures that we don't forget to delete any variable.
@@ -260,8 +270,22 @@ CONTAINS
         tsnow_n, \
         hsnow_n, \
         condhf, \
+        meltpot, \
         albsi_n
     !$ACC ENTER DATA ASYNC(1) CREATE(LIST_CREATE)
+
+#ifdef __NVCOMPILER
+    ! nvfortran does not understand passing a NULL pointer to an optional (Fortran 2008) :(
+    have_conductive_hflx_ice = is_coupled_to_ocean()
+    have_melt_potential_ice = is_coupled_to_ocean()
+#else
+    have_conductive_hflx_ice = PRESENT(conductive_hflx_ice)
+    have_melt_potential_ice = PRESENT(melt_potential_ice)
+#endif
+
+    !$ACC DATA PRESENT(conductive_hflx_ice) IF(have_conductive_hflx_ice)
+    !$ACC DATA PRESENT(melt_potential_ice) IF(have_melt_potential_ice)
+    !$ACC DATA NO_CREATE(conductive_hflx_ice, melt_potential_ice)
 
     IF (lseaice) THEN
 
@@ -316,6 +340,7 @@ CONTAINS
           & tsnow_n=tsnow_n(:), & ! DUMMY: not used yet
           & hsnow_n=hsnow_n(:), & ! DUMMY: not used yet
           & condhf=condhf(:), &
+          & meltpot=meltpot(:), &
           & albsi_n=albsi_n(:) &
         )
     END IF
@@ -327,7 +352,10 @@ CONTAINS
         t_ice(ic) = tf_fresh
         t_wtr(ic) = tf_salt
 
-        conductive_hflx_ice(ic) = 0._wp
+        IF (have_conductive_hflx_ice) &
+            & conductive_hflx_ice(ic) = 0._wp
+        IF (have_melt_potential_ice) &
+            & melt_potential_ice(ic) = 0._wp
 
         prog_wtr_new%t_ice(ic,iblk) = tf_fresh
         prog_wtr_new%t_snow_si(ic,iblk) = tf_fresh
@@ -355,7 +383,10 @@ CONTAINS
           IF (hice_n(ic) >= hice_min) THEN
             t_ice(jc) = tice_n(ic)
 
-            conductive_hflx_ice(jc) = condhf(ic)
+            IF (have_conductive_hflx_ice) &
+                & conductive_hflx_ice(jc) = condhf(ic)
+            IF (have_melt_potential_ice) &
+                & melt_potential_ice(jc) = meltpot(ic)
 
             prog_wtr_new%t_ice(jc,iblk) = t_ice(jc)
             prog_wtr_new%h_ice(jc,iblk) = hice_n(ic)
@@ -375,9 +406,9 @@ CONTAINS
     ! We need a parallel region around these orphaned routines because we are in a parallel region
     ! ourselves.
     !$OMP PARALLEL
-      CALL init (alb%alb_vis_dif(ics:ice,iblk,SFT_SWTR), csalb(ist_seawtr), opt_acc_async=.TRUE.)
-      CALL init (alb%lw_emissivity(ics:ice,iblk,SFT_SWTR), zemiss_def, opt_acc_async=.TRUE.)
-      CALL init (alb%lw_emissivity(ics:ice,iblk,SFT_SICE), lw_emissivity_ice, opt_acc_async=.TRUE.)
+      CALL init (alb%alb_vis_dif(ics:ice,iblk,SFT_SWTR), csalb(ist_seawtr), lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init (alb%lw_emissivity(ics:ice,iblk,SFT_SWTR), zemiss_def, lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init (alb%lw_emissivity(ics:ice,iblk,SFT_SICE), lw_emissivity_ice, lacc=.TRUE., opt_acc_async=.TRUE.)
     !$OMP END PARALLEL
 
     IF (lprog_albsi) THEN
@@ -385,6 +416,7 @@ CONTAINS
         CALL copy ( &
             & prog_wtr_new%alb_si(ics:ice,iblk), &
             & alb%alb_vis_dif(ics:ice,iblk,SFT_SICE), &
+            & lacc=.TRUE., &
             & opt_acc_async=.TRUE. &
           )
       !$OMP END PARALLEL
@@ -431,11 +463,13 @@ CONTAINS
       CALL copy ( &
           & alb%alb_vis_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & alb%alb_nir_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
       CALL copy ( &
           & alb%alb_vis_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & alb%alb_nir_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
 
@@ -443,26 +477,31 @@ CONTAINS
       CALL copy ( &
           & alb%alb_nir_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & sea_state%alb_nir_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
       CALL copy ( &
           & alb%alb_nir_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & sea_state%alb_nir_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
       CALL copy ( &
           & alb%alb_vis_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & sea_state%alb_vis_dir(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
       CALL copy ( &
           & alb%alb_vis_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & sea_state%alb_vis_dif(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
       CALL copy ( &
           & alb%lw_emissivity(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
           & sea_state%lw_emissivity(ics:ice,iblk,SFT_SWTR:SFT_SICE), &
+          & lacc=.TRUE., &
           & opt_acc_async=.TRUE. &
         )
     !$OMP END PARALLEL
@@ -524,6 +563,9 @@ CONTAINS
     !$ACC END PARALLEL
 
     !$ACC WAIT(1)
+    !$ACC END DATA ! NO_CREATE(conductive_hflx_ice, melt_potential_ice)
+    !$ACC END DATA ! PRESENT(melt_potential_ice)
+    !$ACC END DATA ! PRESENT(conductive_hflx_ice)
     !$ACC EXIT DATA DELETE(LIST_CREATE)
 #   undef LIST_CREATE
 
@@ -668,8 +710,8 @@ CONTAINS
 
   SUBROUTINE sea_model_couple_ocean ( &
         & patch, list_sea, fr_sft, alb, flx_rad, pres_sfc, t_eff_sft, evapo_sft, flx_heat_latent_sft, &
-        & flx_heat_sensible_sft, condhf_ice, co2_concentration_srf, rain_srf, snow_srf, umfl_sft, &
-        & vmfl_sft, sp_10m, t_seasfc, fr_seaice, h_ice, sea_state &
+        & flx_heat_sensible_sft, condhf_ice, meltpot_ice, co2_concentration_srf, rain_srf, snow_srf, &
+        & umfl_sft, vmfl_sft, sp_10m, t_seasfc, fr_seaice, h_ice, sea_state &
       )
 
     TYPE(t_patch), INTENT(IN) :: patch !< Current patch.
@@ -692,6 +734,8 @@ CONTAINS
     REAL(wp), CONTIGUOUS, TARGET, INTENT(IN) :: flx_heat_sensible_sft(:,:,:)
     !> Conductive heat flux at ice bottom [W/m**2] (nproma, nblks_c).
     REAL(wp), CONTIGUOUS, TARGET, INTENT(IN) :: condhf_ice(:,:)
+    !> Melt potential at ice top [W/m**2] (nproma, nblks_c).
+    REAL(wp), CONTIGUOUS, TARGET, INTENT(IN) :: meltpot_ice(:,:)
 
     !> Surface CO2 concentration [kg(CO2)/kg(air)] (nproma, nblks_c).
     REAL(wp), TARGET, INTENT(IN) :: co2_concentration_srf(:,:)
@@ -771,6 +815,7 @@ CONTAINS
     !$OMP END PARALLEL
 
     tx%chfl_i => condhf_ice(:,:)
+    tx%meltpot_i => meltpot_ice(:,:)
     tx%frac_w => fr_sft(:,:,SFT_SWTR)
     tx%frac_i => fr_sft(:,:,SFT_SICE)
     tx%lhfl_s_i => lhfl_s_i(:,:)

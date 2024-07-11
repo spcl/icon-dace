@@ -432,7 +432,7 @@ cdfLazyGridInitOnce(void)
 #else
   */
   cdfPendingLoad = (double *) &cdfPendingLoad;
-  //#endif
+  // #endif
   atexit(cdfLazyGridDestroyOnce);
 #ifndef HAVE_LIBPTHREAD
   cdfLazyInitialized = true;

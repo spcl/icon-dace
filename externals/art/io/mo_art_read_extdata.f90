@@ -431,7 +431,7 @@ SUBROUTINE art_read_biomBurndata(jg,p_biomBurn_prop, input_folder)
 
   CALL art_open_cdi(jg,biomBurndataset,cdi_artdataset_id,cdi_param)
 
-  vname = 'bcfire'
+  vname = 'ocfire' ! read ocfire instead of bcfire for better emissions
   CALL message(TRIM(routine)//':art_read_biomBurndata',                               &
     &          'Reading flux of black carbon as wildfire locations: '//TRIM(vname))
   CALL art_read(jg, cdi_artdataset_id, cdi_param, TRIM(vname),         &

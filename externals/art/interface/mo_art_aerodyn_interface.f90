@@ -46,6 +46,7 @@ MODULE mo_art_aerodyn_interface
   USE mo_art_nucl_aero,                 ONLY: art_nucl_kw
   USE mo_art_cond_aero,                 ONLY: art_prepare_cond_so4, art_finalize_cond_so4
   USE mo_art_aerosol_utilities,         ONLY: art_calc_number_from_mass
+  USE mo_art_seas_watercont,            ONLY: art_watercont
 
   IMPLICIT NONE
 
@@ -96,7 +97,10 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
     &  rh(:,:),              & !< Relative humidty (%)
     &  totmasscond(:,:,:),   & !< Mass change of mode due to condensation
 !    &  ch2so4(:,:),          & !< TEMP! concentration of H2SO4
-    &  nucmass(:,:)            !< Nucleated sulfate mass (mug kg-1)
+    &  nucmass(:,:),         & !< Nucleated sulfate mass (mug kg-1)
+    &  vseas(:,:,:),         & !< Nacl concentration of mode i
+    &  vso4seas(:,:,:),      & !< so4 concentration of mode i
+    &  vh2oseas(:,:,:)         !< h2o water content of mode i
   REAL(wp)                :: &
     &  nucnmb                  !< Nucleated sulfate number (kg-1)
   INTEGER                 :: &
@@ -108,6 +112,7 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
     &  i_nchdom,             & !< Number of child domains
     &  kstart,               & !< top level for all aerosol processes (transport, dynamics, ...)
     &  nlev,                 & !< Number of levels (equals index of lowest full level)
+    &  tindex,               & !< Index of tracer
     &  ierror                  !< Error return value
   INTEGER                 :: &
     &  iTRH2SO4,             & !< index H2SO4
@@ -116,6 +121,8 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
     &  iTRHCL
   REAL(wp), PARAMETER     :: &
     &  mwh2so4  = 0.09807354_wp      !< Molecular weight of H2SO4 (kg mol-1)
+
+  CHARACTER(LEN=20)       :: sname
 
   TYPE(t_mode), POINTER   :: this_mode
 
@@ -141,13 +148,13 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
 
     IF (art_config(jg)%lart_chem) THEN
       CALL p_art_data(jg)%dict_tracer%get('TRH2SO4',iTRH2SO4,ierror)
-        IF (ierror /= SUCCESS) iTRH2SO4    = 0
+      IF (ierror /= SUCCESS) iTRH2SO4    = 0
       CALL p_art_data(jg)%dict_tracer%get('TRNH3',iTRNH3,ierror)
-        IF (ierror /= SUCCESS) iTRNH3    = 0
+      IF (ierror /= SUCCESS) iTRNH3    = 0
       CALL p_art_data(jg)%dict_tracer%get('TRHNO3',iTRHNO3,ierror)
-        IF (ierror /= SUCCESS) iTRHNO3    = 0
+      IF (ierror /= SUCCESS) iTRHNO3    = 0
       CALL p_art_data(jg)%dict_tracer%get('TRHCL',iTRHCL,ierror)
-        IF (ierror /= SUCCESS) iTRHCL    = 0
+      IF (ierror /= SUCCESS) iTRHCL    = 0
     ENDIF
 
     IF (art_config(jg)%lart_aerosol) THEN
@@ -156,10 +163,13 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
       ALLOCATE(totmasscond(nproma,nlev,p_patch%nblks_c))
       ALLOCATE(nucmass(nproma,nlev))
 !      ALLOCATE(ch2so4(nproma,nlev))  ! TEMP
+      ALLOCATE(vseas(nproma,nlev,p_patch%nblks_c))            
+      ALLOCATE(vso4seas(nproma,nlev,p_patch%nblks_c))             
+      ALLOCATE(vh2oseas(nproma,nlev,p_patch%nblks_c))                   
 
       !$ACC ENTER DATA CREATE(rh, totmasscond) IF(lzacc)
-      CALL init(rh, opt_acc_async=.TRUE.)
-      CALL init(totmasscond, opt_acc_async=.TRUE.)
+      CALL init(rh, lacc=lzacc, opt_acc_async=.TRUE.)
+      CALL init(totmasscond, lacc=lzacc, opt_acc_async=.TRUE.)
       kstart = MINVAL(kstart_tracer(jg,p_art_data(jg)%aero%itr_start:p_art_data(jg)%aero%itr_end))
 
       ! ISORROPIA
@@ -170,6 +180,51 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
              &                      i_startblk, i_endblk, i_rlstart, i_rlend,      &
              &                      kstart, nlev, p_diag, p_prog, p_patch)
       ENDIF
+
+      IF (art_config(jg)%iart_seas_water > 0) THEN
+! water content of seasalt aerosol
+        NULLIFY(this_mode)
+        this_mode => p_mode_state(jg)%p_mode_list%p%first_mode
+
+        DO WHILE(ASSOCIATED(this_mode))
+          ! Select type of mode
+          SELECT TYPE (fields=>this_mode%fields)
+            TYPE IS (t_fields_2mom)
+                  
+              IF(fields%info%l_watercont) THEN
+                vseas = 1.e-19_wp
+                vso4seas = 1.e-19_wp
+                vh2oseas = 1.e-19_wp
+
+                sname = TRIM("nacl"//'_'//fields%name)
+                CALL p_art_data(jg)%dict_tracer%get(sname,tindex,ierror)
+                IF (ierror == SUCCESS) vseas = tracer(:,:,:,tindex)
+                sname = TRIM("so4"//'_'//fields%name)
+                CALL p_art_data(jg)%dict_tracer%get(sname,tindex,ierror)
+                IF (ierror == SUCCESS) vso4seas = tracer(:,:,:,tindex)
+
+                DO jb = i_startblk, i_endblk
+                  CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
+                    &                istart, iend, i_rlstart, i_rlend)
+                  rh(:,:) = rel_hum(p_diag%temp(:,:,jb), tracer(:,:,jb,iqv), &
+                      &                 p_prog%exner(:,:,jb))
+
+                  CALL art_watercont(rh,p_diag%temp(:,:,jb),p_prog%rho(:,:,jb),vseas(:,:,jb),    &
+                    &                   vso4seas(:,:,jb),vh2oseas(:,:,jb),                       &
+                    &                   istart,iend,kstart,nlev)
+
+                ENDDO !jb
+
+                sname = TRIM("h2o"//'_'//fields%name)
+                CALL p_art_data(jg)%dict_tracer%get(sname,tindex,ierror)
+                IF (ierror == SUCCESS) tracer(:,:,:,tindex) = vh2oseas(:,:,:)
+            END IF
+          END SELECT
+          this_mode => this_mode%next_mode
+        ENDDO !associated(this_mode)
+
+      ENDIF
+
 
 ! Preparation routines
       NULLIFY(this_mode)
@@ -334,6 +389,9 @@ SUBROUTINE art_aerodyn_interface( p_patch,p_dtime,p_prog_list,p_prog, &
       DEALLOCATE(rh)
       DEALLOCATE(totmasscond)
       DEALLOCATE(nucmass)
+      DEALLOCATE(vseas)
+      DEALLOCATE(vso4seas)
+      DEALLOCATE(vh2oseas)
 
     ENDIF !lart_aerosol
 

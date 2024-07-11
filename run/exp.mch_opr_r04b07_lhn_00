@@ -12,12 +12,13 @@
 
 # ===========================================================================
 # 
-# Name: exp.mch_opr_r04b07.run
+# Name: exp.mch_opr_r04b07_lhn_00.run
 #
 # Purpose: Run script for ICON at on a domain similar to the current COSMO-1E domain
-#          This is a low resolution version used for development purpose.
+#          This is a low resolution version used for a technical test at MeteoSwiss.
+#          This setup includes lhn and starting the run at midnight.
 #
-# Author: Sascha Bellaire (MeteoSwiss)
+# Created by: Remo Dietlicher (MeteoSwiss)
 #
 # =========================================================================== 
 
@@ -159,9 +160,9 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
+ lmoist_thdyn                =                      .FALSE.
 /
 
 ! extpar_nml: external data --------------------------------------------------
@@ -392,9 +393,9 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
   'ddt_temp_pconv','ddt_u_turb','ddt_u_sso','ddt_u_pconv','ddt_v_turb','ddt_v_sso',
   'ddt_qv_turb','ddt_qc_turb','ddt_qv_conv','ddt_qc_conv','ddt_tke','ddt_tke_pconv','ddt_tke_hsh','qv_s',
   'runoff_g','plantevap','t_snow','rho_snow','h_snow','freshsnow','ddt_vn_adv','ddt_vn_pgr','exner',
-  'dursun', 'dursun_m', 'dursun_r', 'twater', 'cape_mu', 'cin_mu', 'ceiling', 'dbz', 'dbz_cmax', 'dbz_ctmax', 
+  'dursun', 'dursun_m', 'dursun_r', 'twater', 'cin_mu', 'ceiling', 'dbz', 'dbz_cmax', 'dbz_ctmax',
   'dbz_850', 'dbzlmx_low', 'echotop', 'echotopinm'
-
+  ! May 2024: removed cape_mu due to false positive tolerance check on balfrin_gpu_nvidia_mixed.
 /
 
 ! radiation_nml: radiation scheme ---------------------------------------------

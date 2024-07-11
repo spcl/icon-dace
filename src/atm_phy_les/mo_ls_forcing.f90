@@ -137,23 +137,23 @@ MODULE mo_ls_forcing
 
         IF (i_scm_netcdf == 2) THEN
 
-          CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+          CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
             & TRIM(routine)//'   File init_SCM.nc cannot be opened')
 
-          CALL nf (nf_inq_dimid (fileid, 'lev', dimid), TRIM(routine)//' lev')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nk)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), TRIM(routine)//' lev')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nk), routine)
 
-          CALL nf (nf_inq_dimid(fileid, 'lat', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, lat), routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lat', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = lat), routine)
 
-          CALL nf (nf_inq_dimid(fileid, 'lon', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, lon), routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lon', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = lon), routine)
 
-          CALL nf (nf_inq_dimid(fileid, 't0', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, t0), routine)
+          CALL nf (nf90_inq_dimid(fileid, 't0', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = t0), routine)
 
-          CALL nf (nf_inq_dimid (fileid, 'time', dimid) , TRIM(routine)//' nt')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nt)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'time', dimid), TRIM(routine)//' nt')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt), routine)
           
           WRITE(message_text,'(a,i6,a,i6)') 'SCM LS forcing input file: nk, ', nk, ', nt ', nt
           CALL message (routine,message_text)
@@ -175,20 +175,20 @@ MODULE mo_ls_forcing
           bnd_sfc_lat_flx=0.0_wp; bnd_sfc_sens_flx=0.0_wp; bnd_ts=0.0_wp; bnd_qvs=0.0_wp
           bnd_Ch=0.0_wp; bnd_Cm=0.0_wp;bnd_Cq=0.0_wp; bnd_ustar=0.0_wp;bnd_tg=0.0_wp
 
-          CALL nf (nf_inq_varid     (fileid, 'height_forc', varid), TRIM(routine)//' height')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_f)    , routine)
+          CALL nf (nf90_inq_varid(fileid, 'height_forc', varid), TRIM(routine)//' height')
+          CALL nf (nf90_get_var(fileid, varid, tempf_f), routine)
           zz_nc=tempf_f(1,1,nk:1:-1,:)
           !Check if the file is written in descending order
           IF(zz_nc(1,1) < zz_nc(nk,1)) CALL finish ( routine, 'Write LS forcing data in descending order!')
 
-          CALL nf(nf_inq_varid         (fileid, 'time', varid),  TRIM(routine)//' time')
-          CALL nf(nf_get_var_double    (fileid, varid, time_nc), routine)
+          CALL nf(nf90_inq_varid(fileid, 'time', varid), TRIM(routine)//' time')
+          CALL nf(nf90_get_var(fileid, varid, time_nc), routine)
           time_unit = ''               !necessary for formatting
-          CALL nf(nf_get_att_text      (fileid, varid, 'units', time_unit), TRIM(routine)//' units')
+          CALL nf(nf90_get_att(fileid, varid, 'units', time_unit), TRIM(routine)//' units')
 
           time_unit_short = time_unit(1:INDEX(time_unit,"since")-2)  ! e.g. "minutes since 2020-1-1 00:00:00"
           IF ( get_my_global_mpi_id() == 0 ) THEN
-            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ',  TRIM(time_unit_short), &
+            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ', TRIM(time_unit_short), &
               & '     times: ', time_nc
           END IF
 
@@ -218,10 +218,10 @@ MODULE mo_ls_forcing
             END DO
           ENDIF
 
-          nf_status = nf_inq_varid     (fileid, 'wsub', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_f)
-          !CALL nf (nf_get_var_double(fileid, varid,zw_nc) , routine)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'wsub', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          !CALL nf (nf90_get_var(fileid, varid, zw_nc), routine)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'wsub not available in init_SCM.nc.  It will be set to 0.')
             zw_nc=0.0_wp
           ELSE
@@ -229,17 +229,17 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'wLS',zw_nc(:,1)
 
-          CALL nf (nf_inq_varid     (fileid, 'ug', varid)  , TRIM(routine)//' ug')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_f), routine)
+          CALL nf (nf90_inq_varid(fileid, 'ug', varid), TRIM(routine)//' ug')
+          CALL nf (nf90_get_var(fileid, varid, tempf_f), routine)
           zu_nc=tempf_f(1,1,nk:1:-1,:)
 
-          CALL nf (nf_inq_varid     (fileid, 'vg', varid)  , TRIM(routine)//' vg')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_f), routine)
+          CALL nf (nf90_inq_varid(fileid, 'vg', varid), TRIM(routine)//' vg')
+          CALL nf (nf90_get_var(fileid, varid, tempf_f), routine)
           zv_nc=tempf_f(1,1,nk:1:-1,:)
 
-          nf_status = nf_inq_varid     (fileid, 'temp_adv', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_f)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'temp_adv', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'z_dt_temp_adv_nc not available in init_SCM.nc.  It will be set to 0.')
             z_dt_temp_adv_nc=0.0_wp
           ELSE
@@ -247,9 +247,9 @@ MODULE mo_ls_forcing
           END IF
           !write(*,*) 'dTadv',z_dt_temp_adv_nc(:,1)
 
-          nf_status = nf_inq_varid     (fileid, 'temp_rad', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_f)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'temp_rad', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'z_dt_temp_rad_nc not available in init_SCM.nc.  It will be set to 0.')
             z_dt_temp_rad_nc=0.0_wp
           ELSE
@@ -257,22 +257,22 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'dTrad',z_dt_temp_rad_nc(:,1)
 
-          nf_status = nf_inq_varid    (fileid, 'qv_adv',varid)
-          nf_status2 = nf_get_var_double(fileid,varid,tempf_f)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'qv_adv', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'z_dt_qv_adv_nc not available in init_SCM.nc It will be set to 0.')
             z_dt_qv_adv_nc=0.0_wp
           ELSE
             z_dt_qv_adv_nc=tempf_f(1,1,nk:1:-1,:)
           END IF
-          !CALL nf (nf_inq_varid     (fileid, 'qv_adv', varid), TRIM(routine)//' qv_adv')
-          !CALL nf (nf_get_var_double(fileid, varid,tempf_f)  , routine)
+          !CALL nf (nf90_inq_varid(fileid, 'qv_adv', varid), TRIM(routine)//' qv_adv')
+          !CALL nf (nf90_get_var(fileid, varid, tempf_f), routine)
           !z_dt_qv_adv_nc=tempf_f(1,1,nk:1:-1,:)
 !         write(*,*) 'dQVadv',z_dt_qv_adv_nc(:,1)
 
-          nf_status = nf_inq_varid     (fileid, 'u_adv', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_f)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'u_adv', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'z_dt_u_adv_nc not available in init_SCM.nc.  It will be set to 0.')
             z_dt_u_adv_nc=0.0_wp
           ELSE
@@ -280,9 +280,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'dUadv',z_dt_u_adv_nc(:,1)
 
-          nf_status = nf_inq_varid     (fileid, 'v_adv', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_f)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'v_adv', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_f)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'z_dt_v_adv_nc not available in init_SCM.nc.  It will be set to 0.')
             z_dt_v_adv_nc=0.0_wp
           ELSE
@@ -290,24 +290,24 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'dVadv',z_dt_v_adv_nc(:,1)
 
-          CALL nf (nf_inq_varid     (fileid, 'sfc_lat_flx', varid) , TRIM(routine)//' sfc_lat_flx')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_sf), routine)
+          CALL nf (nf90_inq_varid(fileid, 'sfc_lat_flx', varid), TRIM(routine)//' sfc_lat_flx')
+          CALL nf (nf90_get_var(fileid, varid, tempf_sf), routine)
           bnd_sfc_lat_flx=tempf_sf(1,1,:)
 !         write(*,*) 'bnd_sfc_lat_flx',bnd_sfc_lat_flx(:)
 
-          CALL nf (nf_inq_varid     (fileid, 'sfc_sens_flx', varid) , TRIM(routine)//' sfc_sens_flx')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_sf), routine)
+          CALL nf (nf90_inq_varid(fileid, 'sfc_sens_flx', varid), TRIM(routine)//' sfc_sens_flx')
+          CALL nf (nf90_get_var(fileid, varid, tempf_sf), routine)
           bnd_sfc_sens_flx=tempf_sf(1,1,:)
 !         write(*,*) 'bnd_sfc_sens_flx',bnd_sfc_sens_flx(:)
 
-          CALL nf (nf_inq_varid     (fileid, 'ts', varid) , TRIM(routine)//' ts')
-          CALL nf (nf_get_var_double(fileid, varid,tempf_sf), routine)
+          CALL nf (nf90_inq_varid(fileid, 'ts', varid), TRIM(routine)//' ts')
+          CALL nf (nf90_get_var(fileid, varid, tempf_sf), routine)
           bnd_ts=tempf_sf(1,1,:)
 !         write(*,*) 'bnd_ts',bnd_ts(:)
 
-          nf_status = nf_inq_varid     (fileid, 'tg', varid) 
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'tg', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'bnd_tg not available in init_SCM.nc.  It will be set to 300.')
             bnd_tg=300.0_wp
           ELSE
@@ -315,9 +315,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_tg',bnd_tg(:)
 
-          nf_status = nf_inq_varid     (fileid, 'qvs', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'qvs', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'qvs not available in init_SCM.nc.  It will be set to 0.')
             bnd_qvs=0.0_wp
           ELSE
@@ -325,9 +325,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_qvs',bnd_qvs(:)
 
-          nf_status = nf_inq_varid     (fileid, 'Ch', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'Ch', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'Ch not available in init_SCM.nc.  It will be set to 0.')
             bnd_Ch=0.0_wp
           ELSE
@@ -335,9 +335,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_Ch',bnd_Ch(:)
 
-          nf_status = nf_inq_varid     (fileid, 'Cm', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'Cm', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'Cm not available in init_SCM.nc.  It will be set to 0.')
             bnd_Cm=0.0_wp
           ELSE
@@ -345,9 +345,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_Cm',bnd_Cm(:)
 
-          nf_status = nf_inq_varid     (fileid, 'Cq', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'Cq', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'Cq not available in init_SCM.nc.  It will be set to 0.')
             bnd_Cq=0.0_wp
           ELSE
@@ -355,9 +355,9 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_Cq',bnd_Cq(:)
 
-          nf_status  = nf_inq_varid     (fileid, 'ustar', varid)
-          nf_status2 = nf_get_var_double(fileid, varid,tempf_sf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status  = nf90_inq_varid(fileid, 'ustar', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf_sf)
+          IF (nf_status /= nf90_noerr) THEN
             CALL message(routine,'ustar not available in init_SCM.nc.  It will be set to 0.')
             bnd_ustar=0.0_wp
           ELSE
@@ -365,7 +365,7 @@ MODULE mo_ls_forcing
           END IF
 !         write(*,*) 'bnd_ustar',bnd_ustar(:)
 
-          CALL nf (nf_close(fileid), routine)
+          CALL nf (nf90_close(fileid), routine)
 
 
           DO n = 1 , nt
@@ -392,14 +392,14 @@ MODULE mo_ls_forcing
 
         ELSE
 
-          CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+          CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
             & TRIM(routine)//'   File init_SCM.nc cannot be opened')
     
-          CALL nf (nf_inq_dimid (fileid, 'lev', dimid), TRIM(routine)//' lev')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nk)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), TRIM(routine)//' lev')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nk), routine)
     
-          CALL nf (nf_inq_dimid (fileid, 'nt', dimid) , TRIM(routine)//' nt')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nt)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'nt', dimid), TRIM(routine)//' nt')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt), routine)
 
           WRITE(message_text,'(a,i6,a,i6)') 'SCM LS forcing input file: nk, ', nk, ', nt ', nt
           CALL message (routine,message_text)
@@ -420,21 +420,21 @@ MODULE mo_ls_forcing
           bnd_sfc_lat_flx=0.0_wp; bnd_sfc_sens_flx=0.0_wp; bnd_ts=0.0_wp; bnd_qvs=0.0_wp
           bnd_Ch=0.0_wp; bnd_Cm=0.0_wp;bnd_Cq=0.0_wp; bnd_ustar=0.0_wp;bnd_tg=0.0_wp
     
-          CALL nf (nf_inq_varid     (fileid, 'height', varid), TRIM(routine)//' height')
-          CALL nf (nf_get_var_double(fileid, varid,zz_nc)    , routine)
+          CALL nf (nf90_inq_varid(fileid, 'height', varid), TRIM(routine)//' height')
+          CALL nf (nf90_get_var(fileid, varid, zz_nc), routine)
          !write(*,*) 'zz_nc',zz_nc
           !Check if the file is written in descending order
           IF(zz_nc(1,1) < zz_nc(nk,1)) CALL finish ( routine, 'Write LS forcing data in descending order!')
     
     
-          CALL nf(nf_inq_varid         (fileid, 'time', varid),  TRIM(routine)//' time')
-          CALL nf(nf_get_var_double    (fileid, varid, time_nc), routine)
+          CALL nf(nf90_inq_varid(fileid, 'time', varid), TRIM(routine)//' time')
+          CALL nf(nf90_get_var(fileid, varid, time_nc), routine)
           time_unit = ''               !necessary for formatting
-          CALL nf(nf_get_att_text      (fileid, varid, 'units', time_unit), TRIM(routine)//' units')
+          CALL nf(nf90_get_att(fileid, varid, 'units', time_unit), TRIM(routine)//' units')
     
           time_unit_short = time_unit(1:INDEX(time_unit,"since")-2)  ! e.g. "minutes since 2020-1-1 00:00:00"
           IF ( get_my_global_mpi_id() == 0 ) THEN
-            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ',  TRIM(time_unit_short), &
+            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ', TRIM(time_unit_short), &
               & '     times: ', time_nc
           END IF
         
@@ -464,75 +464,75 @@ MODULE mo_ls_forcing
             END DO
           ENDIF
     
-          CALL nf (nf_inq_varid     (fileid, 'wLS', varid), TRIM(routine)//' wLS')
-          CALL nf (nf_get_var_double(fileid, varid,zw_nc) , routine)
+          CALL nf (nf90_inq_varid(fileid, 'wLS', varid), TRIM(routine)//' wLS')
+          CALL nf (nf90_get_var(fileid, varid,zw_nc), routine)
          !write(*,*) 'wLS',zw_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'uGEO', varid), TRIM(routine)//' uGEO')
-          CALL nf (nf_get_var_double(fileid, varid,zu_nc)  , routine)
+          CALL nf (nf90_inq_varid(fileid, 'uGEO', varid), TRIM(routine)//' uGEO')
+          CALL nf (nf90_get_var(fileid, varid,zu_nc), routine)
          !write(*,*) 'uGEO',zu_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'vGEO', varid), TRIM(routine)//' vGEO')
-          CALL nf (nf_get_var_double(fileid, varid,zv_nc)  , routine)
+          CALL nf (nf90_inq_varid(fileid, 'vGEO', varid), TRIM(routine)//' vGEO')
+          CALL nf (nf90_get_var(fileid, varid,zv_nc), routine)
          !write(*,*) 'vGEO',zv_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'dTadv', varid)        , TRIM(routine)//' dTadv')
-          CALL nf (nf_get_var_double(fileid, varid,z_dt_temp_adv_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'dTadv', varid), TRIM(routine)//' dTadv')
+          CALL nf (nf90_get_var(fileid, varid,z_dt_temp_adv_nc), routine)
          !write(*,*) 'dTadv',z_dt_temp_adv_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'dTrad', varid)        , TRIM(routine)//' dTrad')
-          CALL nf (nf_get_var_double(fileid, varid,z_dt_temp_rad_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'dTrad', varid), TRIM(routine)//' dTrad')
+          CALL nf (nf90_get_var(fileid, varid,z_dt_temp_rad_nc), routine)
          !write(*,*) 'dTrad',z_dt_temp_rad_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'dQVadv', varid)     , TRIM(routine)//' dQVadv')
-          CALL nf (nf_get_var_double(fileid, varid,z_dt_qv_adv_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'dQVadv', varid), TRIM(routine)//' dQVadv')
+          CALL nf (nf90_get_var(fileid, varid,z_dt_qv_adv_nc), routine)
          !write(*,*) 'dQVadv',z_dt_qv_adv_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'dUadv', varid)     , TRIM(routine)//' dUadv')
-          CALL nf (nf_get_var_double(fileid, varid,z_dt_u_adv_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'dUadv', varid), TRIM(routine)//' dUadv')
+          CALL nf (nf90_get_var(fileid, varid,z_dt_u_adv_nc), routine)
          !write(*,*) 'dUadv',z_dt_u_adv_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'dVadv', varid)     , TRIM(routine)//' dVadv')
-          CALL nf (nf_get_var_double(fileid, varid,z_dt_v_adv_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'dVadv', varid), TRIM(routine)//' dVadv')
+          CALL nf (nf90_get_var(fileid, varid,z_dt_v_adv_nc), routine)
          !write(*,*) 'dVadv',z_dt_v_adv_nc(:,1)
     
-          CALL nf (nf_inq_varid     (fileid, 'sfc_lat_flx', varid) , TRIM(routine)//' sfc_lat_flx')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_sfc_lat_flx), routine)
+          CALL nf (nf90_inq_varid(fileid, 'sfc_lat_flx', varid), TRIM(routine)//' sfc_lat_flx')
+          CALL nf (nf90_get_var(fileid, varid, bnd_sfc_lat_flx), routine)
          !write(*,*) 'bnd_sfc_lat_flx',bnd_sfc_lat_flx(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'sfc_sens_flx', varid) , TRIM(routine)//' sfc_sens_flx')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_sfc_sens_flx), routine)
+          CALL nf (nf90_inq_varid(fileid, 'sfc_sens_flx', varid), TRIM(routine)//' sfc_sens_flx')
+          CALL nf (nf90_get_var(fileid, varid, bnd_sfc_sens_flx), routine)
          !write(*,*) 'bnd_sfc_sens_flx',bnd_sfc_sens_flx(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'ts', varid) , TRIM(routine)//' ts')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_ts), routine)
+          CALL nf (nf90_inq_varid(fileid, 'ts', varid), TRIM(routine)//' ts')
+          CALL nf (nf90_get_var(fileid, varid, bnd_ts), routine)
          !write(*,*) 'bnd_ts',bnd_ts(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'tg', varid) , TRIM(routine)//' tg')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_tg), routine)
+          CALL nf (nf90_inq_varid(fileid, 'tg', varid), TRIM(routine)//' tg')
+          CALL nf (nf90_get_var(fileid, varid, bnd_tg), routine)
          !write(*,*) 'bnd_tg',bnd_tg(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'qvs', varid) , TRIM(routine)//' qvs')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_qvs), routine)
+          CALL nf (nf90_inq_varid(fileid, 'qvs', varid), TRIM(routine)//' qvs')
+          CALL nf (nf90_get_var(fileid, varid, bnd_qvs), routine)
          !write(*,*) 'bnd_qvs',bnd_qvs(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'Ch', varid) , TRIM(routine)//' Ch')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_Ch), routine)
+          CALL nf (nf90_inq_varid(fileid, 'Ch', varid), TRIM(routine)//' Ch')
+          CALL nf (nf90_get_var(fileid, varid, bnd_Ch), routine)
          !write(*,*) 'bnd_Ch',bnd_Ch(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'Cm', varid) , TRIM(routine)//' Cm')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_Cm), routine)
+          CALL nf (nf90_inq_varid(fileid, 'Cm', varid), TRIM(routine)//' Cm')
+          CALL nf (nf90_get_var(fileid, varid, bnd_Cm), routine)
          !write(*,*) 'bnd_Cm',bnd_Cm(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'Cq', varid) , TRIM(routine)//' Cq')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_Cq), routine)
+          CALL nf (nf90_inq_varid(fileid, 'Cq', varid), TRIM(routine)//' Cq')
+          CALL nf (nf90_get_var(fileid, varid, bnd_Cq), routine)
          !write(*,*) 'bnd_Cq',bnd_Cq(:)
     
-          CALL nf (nf_inq_varid     (fileid, 'ustar', varid) , TRIM(routine)//' ustar')
-          CALL nf (nf_get_var_double(fileid, varid,bnd_ustar), routine)
+          CALL nf (nf90_inq_varid(fileid, 'ustar', varid), TRIM(routine)//' ustar')
+          CALL nf (nf90_get_var(fileid, varid, bnd_ustar), routine)
          !write(*,*) 'bnd_ustar',bnd_ustar(:)
     
-          CALL nf (nf_close(fileid), routine)
+          CALL nf (nf90_close(fileid), routine)
     
      
           DO n = 1 , nt
@@ -657,23 +657,23 @@ MODULE mo_ls_forcing
 !------------------------------------------------------------------------------
 ! Nudging with unified NETCDF file
 
-          CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+          CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
             & TRIM(routine)//'   File init_SCM.nc cannot be opened')
    
-          CALL nf (nf_inq_dimid (fileid, 'lev', dimid), TRIM(routine)//' lev')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nk)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), TRIM(routine)//' lev')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nk), routine)
   
-          CALL nf (nf_inq_dimid(fileid, 'lat', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, lat), routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lat', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = lat), routine)
   
-          CALL nf (nf_inq_dimid(fileid, 'lon', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, lon), routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lon', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = lon), routine)
  
-          CALL nf (nf_inq_dimid(fileid, 't0', dimid), routine)
-          CALL nf (nf_inq_dimlen(fileid, dimid, t0), routine)
+          CALL nf (nf90_inq_dimid(fileid, 't0', dimid), routine)
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = t0), routine)
     
-          CALL nf (nf_inq_dimid (fileid, 'nt', dimid), TRIM(routine)//' nt')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nt)  , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'nt', dimid), TRIM(routine)//' nt')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt), routine)
 
           WRITE(message_text,'(a,i5,a,i5)') 'SCM nudging input: nk', nk, '  nt', nt
           CALL message (routine,message_text)
@@ -685,20 +685,20 @@ MODULE mo_ls_forcing
           ALLOCATE( u_nudg(nlev,nt), v_nudg(nlev,nt), theta_nudg(nlev,nt), qv_nudg(nlev,nt) )
           u_nudg=0.0_wp ; v_nudg=0.0_wp ; theta_nudg=0.0_wp ; qv_nudg=0.0_wp
     
-          CALL nf (nf_inq_varid     (fileid, 'height', varid), TRIM(routine)//' height')
-          CALL nf (nf_get_var_double(fileid, varid,zz_nc)    , routine)
+          CALL nf (nf90_inq_varid(fileid, 'height', varid), TRIM(routine)//' height')
+          CALL nf (nf90_get_var(fileid, varid, zz_nc), routine)
 !         write(*,*) 'zz_nc',zz_nc
           !Check if the file is written in descending order
           IF(zz_nc(1,1) < zz_nc(nk,1)) CALL finish ( routine, 'Write LS forcing data in descending order!')
     
-          CALL nf(nf_inq_varid         (fileid, 'time', varid),  TRIM(routine)//' time')
-          CALL nf(nf_get_var_double    (fileid, varid, time_nc), routine)
+          CALL nf(nf90_inq_varid(fileid, 'time', varid), TRIM(routine)//' time')
+          CALL nf(nf90_get_var(fileid, varid, time_nc), routine)
           time_unit = ''               !necessary for formatting
-          CALL nf(nf_get_att_text      (fileid, varid, 'units',time_unit), TRIM(routine)//' units')
+          CALL nf(nf90_get_att(fileid, varid, 'units', time_unit), TRIM(routine)//' units')
     
           time_unit_short = time_unit(1:INDEX(time_unit,"since")-2)  ! e.g. "minutes since 2020-1-1 00:00:00"
           IF ( get_my_global_mpi_id() == 0 ) THEN
-            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ',  TRIM(time_unit_short), &
+            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ', TRIM(time_unit_short), &
               & '     times: ', time_nc
           END IF
         
@@ -729,42 +729,42 @@ MODULE mo_ls_forcing
           ENDIF
      
           IF ( dt_relax <= 0.0_wp ) THEN   ! dt_relax not defined by namelist input
-            CALL nf (nf_inq_varid     (fileid, 'dt_relax', varid), TRIM(routine)//' dt_relax')
-            CALL nf (nf_get_var_double(fileid, varid, temp_nf), routine)
+            CALL nf (nf90_inq_varid(fileid, 'dt_relax', varid), TRIM(routine)//' dt_relax')
+            CALL nf (nf90_get_var(fileid, varid, temp_nf), routine)
             dt_relax = temp_nf(1)
             write(*,*) 'dt_relax [s]: ', dt_relax
           END IF
     
-          nf_status = nf_inq_varid     (fileid, 'u_nudging',  varid)
-          nf_status2 = nf_get_var_double(fileid, varid, tempf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'u_nudging', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf)
+          IF (nf_status /= nf90_noerr) THEN
            write(*,*) 'u_nudging not available in init_SCM.nc.  It will be set to 0.'
            zu_nc=0.0_wp
           ELSE
            zu_nc=tempf(1,1,:,:)
           END IF
  
-          nf_status = nf_inq_varid     (fileid, 'v_nudging',  varid)
-          nf_status2 = nf_get_var_double(fileid, varid, tempf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'v_nudging',  varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf)
+          IF (nf_status /= nf90_noerr) THEN
            CALL message(routine,'v_nudging not available in init_SCM.nc.  It will be set to 0.')
            zv_nc=0.0_wp
           ELSE
            zv_nc=tempf(1,1,:,:)
           END IF
   
-          nf_status = nf_inq_varid     (fileid, 'theta_nudging',  varid)
-          nf_status2 = nf_get_var_double(fileid, varid, tempf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'theta_nudging', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf)
+          IF (nf_status /= nf90_noerr) THEN
            CALL message(routine,'theta_nudging not available in init_SCM.nc.  It will be set to 0.')
            ztheta_nc=0.0_wp
           ELSE
            ztheta_nc=tempf(1,1,:,:)
           END IF
    
-          nf_status = nf_inq_varid     (fileid, 'qv_nudging',  varid)
-          nf_status2 = nf_get_var_double(fileid, varid, tempf)
-          IF (nf_status /= nf_noerr) THEN
+          nf_status = nf90_inq_varid(fileid, 'qv_nudging', varid)
+          nf_status2 = nf90_get_var(fileid, varid, tempf)
+          IF (nf_status /= nf90_noerr) THEN
            CALL message(routine,'qv_nudging not available in init_SCM.nc.  It will be set to 0.')
            z_qv_nc=0.0_wp
           ELSE
@@ -776,7 +776,7 @@ MODULE mo_ls_forcing
 !         write(*,*) 'qvLS',z_qv_nc(:,1)
 !         write(*,*) 'thLS',ztheta_nc(:,1)
     
-          CALL nf (nf_close(fileid), routine)
+          CALL nf (nf90_close(fileid), routine)
     
           DO n = 1 , nt
             !Now perform interpolation to grid levels assuming:
@@ -797,14 +797,14 @@ MODULE mo_ls_forcing
 
         ELSE
 
-          CALL nf (nf_open('init_SCM.nc', NF_NOWRITE, fileid), &
+          CALL nf (nf90_open('init_SCM.nc', NF90_NOWRITE, fileid), &
             & TRIM(routine)//'   File init_SCM.nc cannot be opened')
   
-          CALL nf (nf_inq_dimid (fileid, 'lev', dimid), TRIM(routine)//' lev')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nk)   , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'lev', dimid), TRIM(routine)//' lev')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nk), routine)
    
-          CALL nf (nf_inq_dimid (fileid, 'nt', dimid), TRIM(routine)//' nt')
-          CALL nf (nf_inq_dimlen(fileid, dimid, nt)  , routine)
+          CALL nf (nf90_inq_dimid(fileid, 'nt', dimid), TRIM(routine)//' nt')
+          CALL nf (nf90_inquire_dimension(fileid, dimid, len = nt), routine)
 
           WRITE(message_text,'(a,i5,a,i5)') 'SCM nudging input: nk', nk, '  nt', nt
           CALL message(routine,message_text)
@@ -815,20 +815,20 @@ MODULE mo_ls_forcing
           ALLOCATE( u_nudg(nlev,nt), v_nudg(nlev,nt), theta_nudg(nlev,nt), qv_nudg(nlev,nt) )
           u_nudg=0.0_wp ; v_nudg=0.0_wp ; theta_nudg=0.0_wp ; qv_nudg=0.0_wp
     
-          CALL nf (nf_inq_varid     (fileid, 'height', varid), TRIM(routine)//' height')
-          CALL nf (nf_get_var_double(fileid, varid,zz_nc)    , routine)
+          CALL nf (nf90_inq_varid(fileid, 'height', varid), TRIM(routine)//' height')
+          CALL nf (nf90_get_var(fileid, varid, zz_nc), routine)
 !         write(*,*) 'zz_nc',zz_nc
           !Check if the file is written in descending order
           IF(zz_nc(1,1) < zz_nc(nk,1)) CALL finish ( routine, 'Write LS forcing data in descending order!')
     
-          CALL nf(nf_inq_varid         (fileid, 'time', varid),  TRIM(routine)//' time')
-          CALL nf(nf_get_var_double    (fileid, varid, time_nc), routine)
+          CALL nf(nf90_inq_varid(fileid, 'time', varid), TRIM(routine)//' time')
+          CALL nf(nf90_get_var(fileid, varid, time_nc), routine)
           time_unit = ''               !necessary for formatting
-          CALL nf(nf_get_att_text      (fileid, varid, 'units',time_unit), TRIM(routine)//' units')
+          CALL nf(nf90_get_att(fileid, varid, 'units', time_unit), TRIM(routine)//' units')
     
           time_unit_short = time_unit(1:INDEX(time_unit,"since")-2)  ! e.g. "minutes since 2020-1-1 00:00:00"
           IF ( get_my_global_mpi_id() == 0 ) THEN
-            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ',  TRIM(time_unit_short), &
+            WRITE(*,*) 'time unit in init_SCM.nc, long: ', TRIM(time_unit), '   short: ', TRIM(time_unit_short), &
               & '     times: ', time_nc
           END IF
         
@@ -859,30 +859,30 @@ MODULE mo_ls_forcing
           ENDIF
    
           IF ( dt_relax <= 0.0_wp ) THEN   ! dt_relax not defined by namelist input
-            CALL nf (nf_inq_varid     (fileid, 'dt_relax', varid), TRIM(routine)//' dt_relax')
-            CALL nf (nf_get_var_double(fileid, varid, temp_nf), routine)
+            CALL nf (nf90_inq_varid(fileid, 'dt_relax', varid), TRIM(routine)//' dt_relax')
+            CALL nf (nf90_get_var(fileid, varid, temp_nf), routine)
             dt_relax = temp_nf(1)
             write(*,*) 'dt_relax [s]: ', dt_relax
           END IF
     
-          CALL nf (nf_inq_varid     (fileid, 'uIN',  varid), TRIM(routine)//' uIN')
-          CALL nf (nf_get_var_double(fileid, varid,zu_nc) , routine)
+          CALL nf (nf90_inq_varid(fileid, 'uIN',  varid), TRIM(routine)//' uIN')
+          CALL nf (nf90_get_var(fileid, varid, zu_nc), routine)
     
-          CALL nf (nf_inq_varid     (fileid, 'vIN',  varid), TRIM(routine)//' vIN')
-          CALL nf (nf_get_var_double(fileid, varid,zv_nc) , routine)
+          CALL nf (nf90_inq_varid(fileid, 'vIN',  varid), TRIM(routine)//' vIN')
+          CALL nf (nf90_get_var(fileid, varid, zv_nc), routine)
     
-          CALL nf (nf_inq_varid     (fileid, 'qvIN', varid), TRIM(routine)//' qvIN')
-          CALL nf (nf_get_var_double(fileid, varid,z_qv_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'qvIN', varid), TRIM(routine)//' qvIN')
+          CALL nf (nf90_get_var(fileid, varid, z_qv_nc), routine)
     
-          CALL nf (nf_inq_varid     (fileid, 'thIN', varid), TRIM(routine)//' thIN')
-          CALL nf (nf_get_var_double(fileid, varid,ztheta_nc), routine)
+          CALL nf (nf90_inq_varid(fileid, 'thIN', varid), TRIM(routine)//' thIN')
+          CALL nf (nf90_get_var(fileid, varid, ztheta_nc), routine)
     
 !         write(*,*) 'uLS',zu_nc(:,1)
 !         write(*,*) 'vLS',zv_nc(:,1)
 !         write(*,*) 'qvLS',z_qv_nc(:,1)
 !         write(*,*) 'thLS',ztheta_nc(:,1)
     
-          CALL nf (nf_close(fileid), routine)
+          CALL nf (nf90_close(fileid), routine)
     
           DO n = 1 , nt
             !Now perform interpolation to grid levels assuming:
@@ -1056,8 +1056,10 @@ MODULE mo_ls_forcing
 
     !0) Initialize all passed ddt's to 0
 !$OMP PARALLEL
-    CALL init(ddt_u_ls); CALL init(ddt_v_ls);  CALL init(ddt_temp_ls)
-    call init(ddt_qv_ls)
+    CALL init(ddt_u_ls, lacc=.FALSE.)
+    CALL init(ddt_v_ls, lacc=.FALSE.)
+    CALL init(ddt_temp_ls, lacc=.FALSE.)
+    call init(ddt_qv_ls, lacc=.FALSE.)
 
     !use theta instead of temperature for subsidence (Anurag, Christopher)
 !$OMP BARRIER

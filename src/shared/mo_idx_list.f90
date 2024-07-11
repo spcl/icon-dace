@@ -114,7 +114,8 @@ CONTAINS
     obj%idx(:) = -1
     obj%ncount = 0
 
-    !$ACC ENTER DATA COPYIN(obj%idx, obj%ncount) IF(obj%lopenacc)
+    !$ACC ENTER DATA COPYIN(obj) IF(obj%lopenacc)
+    !$ACC ENTER DATA COPYIN(obj%idx) IF(obj%lopenacc)
 
   END SUBROUTINE idx_list1D__construct
 
@@ -129,6 +130,9 @@ CONTAINS
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
       &  routine = 'mo_idx_list: idx_list1D__finalize'
   !----------------------------------------------------------
+
+    !$ACC EXIT DATA DELETE(obj%idx) IF(obj%lopenacc)
+    !$ACC EXIT DATA DELETE(obj) IF(obj%lopenacc)
 
     CALL DO_DEALLOCATE(obj%idx)
     obj%ncount = 0
@@ -197,7 +201,7 @@ CONTAINS
     obj%idx(:,:)  = -1
     obj%ncount(:) = 0
 
-    !$ACC ENTER DATA COPYIN(obj%idx, obj%ncount) IF(obj%lopenacc)
+    !$ACC ENTER DATA CREATE(obj) COPYIN(obj%idx, obj%ncount) IF(obj%lopenacc)
 
   END SUBROUTINE idx_list_blocked__construct
 
@@ -213,6 +217,9 @@ CONTAINS
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
       &  routine = 'mo_idx_list: finalize'
   !----------------------------------------------------------
+
+    !$ACC EXIT DATA DELETE(obj%idx, obj%ncount) IF(obj%lopenacc)
+    !$ACC EXIT DATA DELETE(obj) IF(obj%lopenacc)
 
     CALL DO_DEALLOCATE(obj%idx)
     CALL DO_DEALLOCATE(obj%ncount)
@@ -251,6 +258,7 @@ CONTAINS
       ENDDO 
     ENDDO
     list1D%ncount = cnt
+
   END SUBROUTINE idx_list_blocked__get_list1D
 
 

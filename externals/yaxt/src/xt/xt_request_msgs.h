@@ -61,6 +61,21 @@
 Xt_request xt_request_msgs_new(int n, const MPI_Request requests[n],
                                MPI_Comm comm);
 
+/**
+ * constructor for message request handle, customizable
+ * @param[in] n        number of entries in requests
+ * @param[in] requests array containg MPI requests
+ * @param[in] comm     MPI communicator
+ * @param[in] config   custom parameters
+ * @remark ownership of the MPI requests is passed to the Xt_request object,
+ *         however the caller remains the owner of the requests array
+ */
+Xt_request
+xt_request_msgs_custom_new(int n,
+                           const MPI_Request requests[n],
+                           MPI_Comm comm,
+                           Xt_config config);
+
 #endif // XT_REQUEST_MSGS_H
 
 /*

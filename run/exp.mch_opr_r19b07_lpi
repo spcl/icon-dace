@@ -15,9 +15,9 @@
 # Name: exp.mch_opr_r19b07_lpi.run
 #
 # Purpose: Run script for ICON at on a domain similar to the current COSMO-1E domain
-#          This is a low resolution version used for development purpose.
+#          This is a low resolution version used for a technical test at MeteoSwiss including LPI.
 #
-# Author: Sascha Bellaire (MeteoSwiss)
+# Created by: Jonas Jucker (C2SM)
 #
 # =========================================================================== 
 
@@ -154,9 +154,9 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
+ lmoist_thdyn                =                      .FALSE.
 /
 
 ! extpar_nml: external data --------------------------------------------------

@@ -46,11 +46,10 @@ MODULE mo_time_management
     &                                    set_tc_dt_model, calendar_index2string
   USE mo_run_config,               ONLY: dtime, mtime_modelTimeStep => modelTimeStep
   USE mo_master_control,           ONLY: atmo_process, get_my_process_type
-  USE mo_impl_constants,           ONLY: max_dom, inh_atmosphere,                          &
+  USE mo_impl_constants,           ONLY: max_dom,                                          &
     &                                    dtime_proleptic_gregorian => proleptic_gregorian, &
     &                                    dtime_cly360              => cly360,              &
     &                                    dtime_julian_gregorian    => julian_gregorian
-  USE mo_dynamics_config,          ONLY: iequations
   USE mo_exception,                ONLY: message, message_text, finish
   USE mo_grid_config,              ONLY: patch_weight, grid_rescale_factor, n_dom,         &
     &                                    start_time, lrescale_timestep
@@ -362,8 +361,7 @@ CONTAINS
     mtime_0h => newTimedelta("PT0S")
     IF (mtime_dt_checkpoint /= mtime_0h) THEN
       mtime_2_5h => newTimedelta("PT02H30M")
-      IF ((iequations == inh_atmosphere) .AND. &
-        & (divdamp_order == 24) .AND. .NOT. isRestart() .AND. &
+      IF ((divdamp_order == 24) .AND. .NOT. isRestart() .AND. &
         & (mtime_dt_checkpoint < mtime_2_5h)) THEN
         WRITE(message_text,'(a)') &
              &  'dt_checkpoint < 2.5 hours not allowed in combination with divdamp_order = 24'

@@ -56,8 +56,9 @@
 
 void xt_request_wait(Xt_request *request) {
   assert(request);
-  if (*request != XT_REQUEST_NULL) {
-    (*request)->vtable->wait(*request);
+  Xt_request req = *request;
+  if (req != XT_REQUEST_NULL) {
+    req->vtable->wait(req);
     *request = XT_REQUEST_NULL;
   }
 }

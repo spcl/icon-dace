@@ -29,10 +29,11 @@ module mo_load_coefficients
   use mo_gas_concentrations, only: ty_gas_concs
   use mo_gas_optics_rrtmgp,  only: ty_gas_optics_rrtmgp
   use mo_cloud_optics,       only: ty_cloud_optics
-  use mo_netcdf_parallel, only: p_nf_open, p_nf_close, &
-    p_nf_inq_varid, p_nf_inq_dimid, p_nf_inq_dimlen, &
-    p_nf_get_vara_double, p_nf_get_vara_int, &
-    p_nf_get_vara_text, nf_read, nf_noerr
+  use mo_netcdf,             only: nf90_nowrite, nf90_noerr
+  use mo_netcdf_parallel,    only: &
+    p_nf90_open, p_nf90_close, p_nf90_inq_varid, &
+    p_nf90_inq_dimid, p_nf90_inquire_dimension, &
+    p_nf90_get_var
 
   ! --------------------------------------------------
   implicit none
@@ -112,7 +113,7 @@ contains
     ! How big are the various arrays?
     !
     call open_file(trim(fileName), nf_status)
-    if(nf_status /= nf_noerr) then
+    if(nf_status /= nf90_noerr) then
       call stop_on_err("load_and_init(): can't open file " // trim(fileName))
     endif
     ntemps            = get_dim_size('temperature')
@@ -302,7 +303,7 @@ subroutine load_and_init_cloud_optics_rrtmgp(cloud_spec, cld_coeff_file)
   ! -----------------
   ! Open cloud optical property coefficient file
   call open_file(trim(cld_coeff_file), nf_status)
-  if(nf_status /= nf_noerr) then
+  if(nf_status /= nf90_noerr) then
     call stop_on_err("load_and_init(): can't open file " // trim(cld_coeff_file))
   endif
 
@@ -353,12 +354,12 @@ end subroutine load_and_init_cloud_optics_rrtmgp
     character(len=*), intent(in) :: filename
     integer, intent(out) :: status
 
-    status = p_nf_open(trim(filename), nf_read, fid)
+    status = p_nf90_open(trim(filename), nf90_nowrite, fid)
   end subroutine open_file
   ! --------------------------------------------------
   subroutine close_file(status)
     integer, intent(inout) :: status
-    status = p_nf_close(fid)
+    status = p_nf90_close(fid)
   end subroutine close_file
   ! --------------------------------------------------
   function var_exists(name)
@@ -366,7 +367,7 @@ end subroutine load_and_init_cloud_optics_rrtmgp
     logical :: var_exists
 
     integer :: dummy
-    var_exists = (p_nf_inq_varid(fid, trim(name), dummy) == nf_noerr)
+    var_exists = (p_nf90_inq_varid(fid, trim(name), dummy) == nf90_noerr)
   end function var_exists
   ! --------------------------------------------------
   function get_dim_size(name) result (ret)
@@ -375,12 +376,12 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: dimid, status
 
-    status = p_nf_inq_dimid(fid, trim(name), dimid)
-    if (status /= nf_noerr) then
+    status = p_nf90_inq_dimid(fid, trim(name), dimid)
+    if (status /= nf90_noerr) then
       ret = 0
     else
-      status = p_nf_inq_dimlen(fid, dimid, ret)
-      if (status /= nf_noerr) then
+      status = p_nf90_inquire_dimension(fid, dimid, len = ret)
+      if (status /= nf90_noerr) then
         ret = 0
       endif
     endif
@@ -396,11 +397,11 @@ end subroutine load_and_init_cloud_optics_rrtmgp
     character(len=string_len), allocatable :: tmp(:)
     character(len=string_len) :: hold
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx))
     allocate(tmp(nx))
-    status = p_nf_get_vara_text(fid, varid, [1,1], [string_len,nx], tmp)
+    status = p_nf90_get_var(fid, varid, tmp, [1,1], [string_len,nx])
 
     do i = 1, nx
       l = len(trim(tmp(i)))
@@ -419,9 +420,9 @@ end subroutine load_and_init_cloud_optics_rrtmgp
     integer :: varid
     real(wp) :: tmp(1)
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
-    status = p_nf_get_vara_double(fid, varid, [1], [1], tmp)
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
+    status = p_nf90_get_var(fid, varid, tmp, [1], [1])
     ret = tmp(1)
 
   end subroutine read_double_0
@@ -434,10 +435,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx))
-    status = p_nf_get_vara_double(fid, varid, [1], [nx], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1], [nx])
 
   end subroutine read_double_1
   ! --------------------------------------------------
@@ -449,10 +450,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx,ny))
-    status = p_nf_get_vara_double(fid, varid, [1,1], [nx,ny], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1,1], [nx,ny])
 
   end subroutine read_double_2
   ! --------------------------------------------------
@@ -464,10 +465,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx,ny,nz))
-    status = p_nf_get_vara_double(fid, varid, [1,1,1], [nx,ny,nz], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1,1,1], [nx,ny,nz])
 
   end subroutine read_double_3
   ! --------------------------------------------------
@@ -479,10 +480,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx,ny,nz,nt))
-    status = p_nf_get_vara_double(fid, varid, [1,1,1,1], [nx,ny,nz,nt], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1,1,1,1], [nx,ny,nz,nt])
 
   end subroutine read_double_4
   ! --------------------------------------------------
@@ -494,10 +495,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx))
-    status = p_nf_get_vara_int(fid, varid, [1], [nx], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1], [nx])
 
   end subroutine read_int_1
   ! --------------------------------------------------
@@ -509,10 +510,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx,ny))
-    status = p_nf_get_vara_int(fid, varid, [1,1], [nx,ny], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1,1], [nx,ny])
 
   end subroutine read_int_2
   ! --------------------------------------------------
@@ -524,10 +525,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
     allocate(ret(nx,ny,nz))
-    status = p_nf_get_vara_int(fid, varid, [1,1,1], [nx,ny,nz], ret)
+    status = p_nf90_get_var(fid, varid, ret, [1,1,1], [nx,ny,nz])
 
   end subroutine read_int_3
   ! --------------------------------------------------
@@ -540,10 +541,10 @@ end subroutine load_and_init_cloud_optics_rrtmgp
 
     integer :: varid
 
-    status = p_nf_inq_varid(fid, trim(name), varid)
-    if (status /= nf_noerr) return
-    status = p_nf_get_vara_int(fid, varid, [1], [nx], tmp)
-    if (status /= nf_noerr) return
+    status = p_nf90_inq_varid(fid, trim(name), varid)
+    if (status /= nf90_noerr) return
+    status = p_nf90_get_var(fid, varid, tmp, [1], [nx])
+    if (status /= nf90_noerr) return
     allocate(ret(nx))
     ret = .false.
     where (tmp /= 0) ret = .true.

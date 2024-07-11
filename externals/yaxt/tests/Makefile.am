@@ -72,7 +72,8 @@ check_PROGRAMS = 						\
 	test_xmap_intersection_parallel				\
 	test_initialized_finalized				\
 	test_sort						\
-	test_uid
+	test_uid						\
+	test_ddt
 
 check_LTLIBRARIES = libtestutil.la
 
@@ -121,6 +122,7 @@ endif
 
 libtestutil_la_SOURCES = tests.c \
 	cksum.c cksum.h \
+	ctest_common.c ctest_common.h \
 	test_idxlist_utils.c \
 	test_xmap_common.c test_xmap_common.h \
 	test_xmap_common_parallel.c \
@@ -160,23 +162,34 @@ test_arithmetic_long_SOURCES = test_arithmetic_long.c
 test_arithmetic_long_LDADD = libtestutil.la
 test_exchanger_parallel_SOURCES = test_exchanger_parallel.c tests.h
 test_exchanger_parallel_LDADD =  libtestutil.la \
+	../src/xt_gpu.lo \
+	../src/xt_ddt.lo \
 	../src/xt_config.lo \
 	../src/xt_exchanger_irecv_isend.lo \
 	../src/xt_exchanger_irecv_send.lo \
 	../src/xt_exchanger_irecv_isend_packed.lo \
+	../src/xt_exchanger_irecv_isend_ddt_packed.lo \
 	../src/xt_exchanger_mix_isend_irecv.lo \
 	../src/xt_exchanger_simple_base.lo
-if USE_MPI3
+if USE_NB_A2A
 test_exchanger_parallel_LDADD += ../src/xt_exchanger_neigh_alltoall.lo
+endif
+if HAVE_CUDA
+test_exchanger_parallel_LDADD += ../src/xt_cuda.lo
 endif
 test_exchanger_parallel_LDADD += ../src/xt_exchanger.lo \
 	../src/xt_redist_msg.lo \
 	../src/xt_request_msgs.lo \
+	../src/xt_request_msgs_ebuf.lo \
 	../src/xt_request_msgs_packed.lo \
+	../src/xt_request_msgs_ddt_packed.lo \
 	../src/xt_request.lo \
 	../src/xt_mpi.lo \
 	../src/core/xmalloc.lo \
 	../src/core/core.lo $(MPI_C_LIB)
+
+@ifGNUmake@../src/%.lo: ../src/%.c
+@ifGNUmake@	$(MAKE) -C ../src $(notdir $@)
 
 test_idxempty_SOURCES = test_idxempty.c tests.h test_idxlist_utils.h
 test_idxempty_f_SOURCES = test_idxempty_f.f90
@@ -282,7 +295,13 @@ test_mpi_generate_datatype_SOURCES = test_mpi_generate_datatype.c tests.h
 test_mpi_smartdedup_SOURCES = test_mpi_smartdedup.c tests.h
 test_mpi_smartdedup_LDADD =  libtestutil.la ../src/xt_mpi.lo \
 	../src/core/xmalloc.lo ../src/core/core.lo $(MPI_C_LIB)
-
+test_ddt_SOURCES = test_ddt.c tests.h
+test_ddt_LDADD = libtestutil.la ../src/xt_ddt.lo ../src/xt_gpu.lo
+if HAVE_CUDA
+test_ddt_LDADD += ../src/xt_cuda.lo
+endif
+test_ddt_LDADD += ../src/xt_mpi.lo \
+	../src/core/xmalloc.lo ../src/core/core.lo $(MPI_C_LIB)
 AM_CPPFLAGS = -I../inst_headers -I$(top_srcdir)/include $(MPI_C_INCLUDE)
 AM_FCFLAGS = $(FC_MOD_FLAG)../inst_headers/f90 \
 	$(FPP_INCOPT)../include $(MPI_FC_MOD)
@@ -330,7 +349,8 @@ TESTS = 							\
 	test_sort_run						\
 	test_uid_run						\
 	test_yaxt_run						\
-	test_xmap_all2all_fail_run
+	test_xmap_all2all_fail_run				\
+	test_ddt_run
 
 AUTOMAKE_OPTIONS = color-tests
 

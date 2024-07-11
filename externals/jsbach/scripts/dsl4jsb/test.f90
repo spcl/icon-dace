@@ -1,13 +1,13 @@
-! ICON-Land
-!
-! ---------------------------------------
-! Copyright (C) 2013-2024, MPI-M, MPI-BGC
-!
-! Contact: icon-model.org
-! Authors: AUTHORS.md
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------
+!> ICON-Land
+!>
+!> ---------------------------------------
+!> Copyright (C) 2013-2024, MPI-M, MPI-BGC
+!>
+!> Contact: icon-model.org
+!> Authors: AUTHORS.md
+!> See LICENSES/ for license information
+!> SPDX-License-Identifier: BSD-3-Clause
+!> ---------------------------------------
 
 PROGRAM example
 
@@ -51,6 +51,15 @@ PROGRAM example
   dsl4jsb_Get_var3D_onDomain(SOIL_,ws_l)
   dsl4jsb_var3D_onDomain(SOIL_,ws_l)
   dsl4jsb_Aggregate_onChunk(SOIL_,ws, aggregator)
+
+  dsl4jsb_Def_pool(t_basic_pool) :: green
+  dsl4jsb_Get_pool(CARBON_, pools%plant%green, green)
+  dsl4jsb_pool(CARBON_, pools%plant%green)%carbon
+  dsl4jsb_Get_pool_var2d_onChunk(CARBON_, pools%soil, soil_respiration)
+
+  dsl4jsb_Def_mt2L2D :: veg_pool_mt
+  dsl4jsb_Get_mt2L2D(VEG_BGCM_LITTERFALL_ID, veg_litterfall_mt)
+  ! veg_litterfall_mt => bgcm_store%Get_matrix_from_store_2l(VEG_BGCM_LITTERFALL_ID, ics, ice, iblk, tile%name)
 
   ! Test abort on error
   dsl4jsb_Def_menory(SOIL_)

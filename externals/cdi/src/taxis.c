@@ -1089,9 +1089,24 @@ datetime2rtimeval(CdiDateTime vDateTime, const taxis_t *taxis)
   return value;
 }
 
+// convert absolute seconds to CdiDateTime
+static CdiDateTime
+seconds2datetime(double timevalue)
+{
+  int calendar = CALENDAR_STANDARD;
+  int64_t seconds = (int64_t) timevalue;
+
+  CdiDateTime datetime0;
+  datetime0.date = cdiDate_encode(1, 1, 1);
+  datetime0.time = cdiTime_encode(0, 0, 0, 0);
+  JulianDate julianDate = julianDate_encode(calendar, datetime0);
+
+  return julianDate_decode(calendar, julianDate_add_seconds(julianDate, seconds));
+}
+
 // convert absolute time value to CdiDateTime
 static CdiDateTime
-atimeval2datetime(double timevalue)
+absTimeval2datetime(double timevalue)
 {
   int64_t vdate = (int64_t) timevalue;
   double tmpval = (timevalue - vdate) * 86400.0;
@@ -1120,17 +1135,16 @@ split_timevalue(double timevalue, int timeunit)
 
   if (timeunit == TUNIT_SECOND)
     {
-      timevalue /= 86400;
-      datetime = atimeval2datetime(timevalue);
+      datetime = seconds2datetime(timevalue);
     }
   else if (timeunit == TUNIT_HOUR)
     {
       timevalue /= 24;
-      datetime = atimeval2datetime(timevalue);
+      datetime = absTimeval2datetime(timevalue);
     }
   else if (timeunit == TUNIT_DAY)
     {
-      datetime = atimeval2datetime(timevalue);
+      datetime = absTimeval2datetime(timevalue);
     }
   else if (timeunit == TUNIT_MONTH)
     {
@@ -1267,6 +1281,23 @@ cdi_decode_timeval(double timevalue, const taxis_t *taxis)
   return (taxis->type == TAXIS_ABSOLUTE) ? split_timevalue(timevalue, taxis->unit) : rtimeval2datetime(timevalue, taxis);
 }
 
+static int64_t
+datetime2seconds(CdiDateTime datetime)
+{
+  int calendar = CALENDAR_STANDARD;
+
+  CdiDateTime datetime0;
+  datetime0.date = cdiDate_encode(1, 1, 1);
+  datetime0.time = cdiTime_encode(0, 0, 0, 0);
+  JulianDate julianDate0 = julianDate_encode(calendar, datetime0);
+  JulianDate julianDate = julianDate_encode(calendar, datetime);
+
+  int64_t days = julianDate.julianDay - julianDate0.julianDay;
+  int64_t seconds = days * 86400 + julianDate.secondOfDay;
+
+  return seconds;
+}
+
 double
 cdi_encode_timeval(CdiDateTime datetime, taxis_t *taxis)
 {
@@ -1285,9 +1316,7 @@ cdi_encode_timeval(CdiDateTime datetime, taxis_t *taxis)
         }
       else if (taxis->unit == TUNIT_SECOND)
         {
-          int hour, minute, second, ms;
-          cdiTime_decode(datetime.time, &hour, &minute, &second, &ms);
-          timeValue = hour * 3600 + minute * 60 + second;
+          timeValue = datetime2seconds(datetime);
         }
       else
         {

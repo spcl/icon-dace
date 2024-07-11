@@ -166,6 +166,7 @@ FCALLSCFUN1 (INT, streamInqVlist, STREAMINQVLIST, streaminqvlist, INT)
 FCALLSCFUN1 (INT, streamInqFiletype, STREAMINQFILETYPE, streaminqfiletype, INT)
 FCALLSCSUB2 (streamDefByteorder, STREAMDEFBYTEORDER, streamdefbyteorder, INT, INT)
 FCALLSCFUN1 (INT, streamInqByteorder, STREAMINQBYTEORDER, streaminqbyteorder, INT)
+FCALLSCSUB2 (streamDefShuffle, STREAMDEFSHUFFLE, streamdefshuffle, INT, INT)
 FCALLSCSUB4 (streamDefFilter, STREAMDEFFILTER, streamdeffilter, INT, INT, INT, PINT)
 FCALLSCSUB2 (streamDefCompType, STREAMDEFCOMPTYPE, streamdefcomptype, INT, INT)
 FCALLSCFUN1 (INT, streamInqCompType, STREAMINQCOMPTYPE, streaminqcomptype, INT)
@@ -187,66 +188,66 @@ FCALLSCFUN1 (INT, streamInqNvars, STREAMINQNVARS, streaminqnvars, INT)
 
 /*  STREAM var I/O routines (random access)  */
 
-static void streamWriteVar_fwrap(int streamID, int varID, const double data[], int nmiss)
+static void streamWriteVar_fwrap(int streamID, int varID, const double data[], int numMissVals)
 {
-  streamWriteVar(streamID, varID, data, (SizeType)nmiss);
+  streamWriteVar(streamID, varID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB4 (streamWriteVar_fwrap, STREAMWRITEVAR, streamwritevar, INT, INT, DOUBLEV, INT)
-static void streamWriteVarF_fwrap(int streamID, int varID, const float data[], int nmiss)
+static void streamWriteVarF_fwrap(int streamID, int varID, const float data[], int numMissVals)
 {
-  streamWriteVarF(streamID, varID, data, (SizeType)nmiss);
+  streamWriteVarF(streamID, varID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB4 (streamWriteVarF_fwrap, STREAMWRITEVARF, streamwritevarf, INT, INT, FLOATV, INT)
-static void streamReadVar_fwrap(int streamID, int varID, double data[], int *nmiss)
+static void streamReadVar_fwrap(int streamID, int varID, double data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadVar(streamID, varID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadVar(streamID, varID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB4 (streamReadVar_fwrap, STREAMREADVAR, streamreadvar, INT, INT, DOUBLEV, PINT)
-static void streamReadVarF_fwrap(int streamID, int varID, float data[], int *nmiss)
+static void streamReadVarF_fwrap(int streamID, int varID, float data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadVarF(streamID, varID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadVarF(streamID, varID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB4 (streamReadVarF_fwrap, STREAMREADVARF, streamreadvarf, INT, INT, FLOATV, PINT)
-static void streamWriteVarSlice_fwrap(int streamID, int varID, int levelID, const double data[], int nmiss)
+static void streamWriteVarSlice_fwrap(int streamID, int varID, int levelID, const double data[], int numMissVals)
 {
-  streamWriteVarSlice(streamID, varID, levelID, data, (SizeType)nmiss);
+  streamWriteVarSlice(streamID, varID, levelID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB5 (streamWriteVarSlice_fwrap, STREAMWRITEVARSLICE, streamwritevarslice, INT, INT, INT, DOUBLEV, INT)
-static void streamWriteVarSliceF_fwrap(int streamID, int varID, int levelID, const float data[], int nmiss)
+static void streamWriteVarSliceF_fwrap(int streamID, int varID, int levelID, const float data[], int numMissVals)
 {
-  streamWriteVarSliceF(streamID, varID, levelID, data, (SizeType)nmiss);
+  streamWriteVarSliceF(streamID, varID, levelID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB5 (streamWriteVarSliceF_fwrap, STREAMWRITEVARSLICEF, streamwritevarslicef, INT, INT, INT, FLOATV, INT)
-static void streamReadVarSlice_fwrap(int streamID, int varID, int levelID, double data[], int *nmiss)
+static void streamReadVarSlice_fwrap(int streamID, int varID, int levelID, double data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadVarSlice(streamID, varID, levelID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadVarSlice(streamID, varID, levelID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB5 (streamReadVarSlice_fwrap, STREAMREADVARSLICE, streamreadvarslice, INT, INT, INT, DOUBLEV, PINT)
-static void streamReadVarSliceF_fwrap(int streamID, int varID, int levelID, float data[], int *nmiss)
+static void streamReadVarSliceF_fwrap(int streamID, int varID, int levelID, float data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadVarSliceF(streamID, varID, levelID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadVarSliceF(streamID, varID, levelID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB5 (streamReadVarSliceF_fwrap, STREAMREADVARSLICEF, streamreadvarslicef, INT, INT, INT, FLOATV, PINT)
-static void streamWriteVarChunk_fwrap(int streamID, int varID, const int rect[][2], const double data[], int nmiss)
+static void streamWriteVarChunk_fwrap(int streamID, int varID, const int rect[][2], const double data[], int numMissVals)
 {
-  streamWriteVarChunk(streamID, varID, rect, data, (SizeType)nmiss);
+  streamWriteVarChunk(streamID, varID, rect, data, (SizeType)numMissVals);
 }
 FCALLSCSUB5 (streamWriteVarChunk_fwrap, STREAMWRITEVARCHUNK, streamwritevarchunk, INT, INT, INTVV, DOUBLEV, INT)
-static void streamWriteVarChunkF_fwrap(int streamID, int varID, const int rect[][2], const float data[], int nmiss)
+static void streamWriteVarChunkF_fwrap(int streamID, int varID, const int rect[][2], const float data[], int numMissVals)
 {
-  streamWriteVarChunkF(streamID, varID, rect, data, (SizeType)nmiss);
+  streamWriteVarChunkF(streamID, varID, rect, data, (SizeType)numMissVals);
 }
 FCALLSCSUB5 (streamWriteVarChunkF_fwrap, STREAMWRITEVARCHUNKF, streamwritevarchunkf, INT, INT, INTVV, FLOATV, INT)
 
@@ -254,30 +255,30 @@ FCALLSCSUB5 (streamWriteVarChunkF_fwrap, STREAMWRITEVARCHUNKF, streamwritevarchu
 
 FCALLSCSUB3 (streamDefRecord, STREAMDEFRECORD, streamdefrecord, INT, INT, INT)
 FCALLSCSUB3 (streamInqRecord, STREAMINQRECORD, streaminqrecord, INT, PINT, PINT)
-static void streamWriteRecord_fwrap(int streamID, const double data[], int nmiss)
+static void streamWriteRecord_fwrap(int streamID, const double data[], int numMissVals)
 {
-  streamWriteRecord(streamID, data, (SizeType)nmiss);
+  streamWriteRecord(streamID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB3 (streamWriteRecord_fwrap, STREAMWRITERECORD, streamwriterecord, INT, DOUBLEV, INT)
-static void streamWriteRecordF_fwrap(int streamID, const float data[], int nmiss)
+static void streamWriteRecordF_fwrap(int streamID, const float data[], int numMissVals)
 {
-  streamWriteRecordF(streamID, data, (SizeType)nmiss);
+  streamWriteRecordF(streamID, data, (SizeType)numMissVals);
 }
 FCALLSCSUB3 (streamWriteRecordF_fwrap, STREAMWRITERECORDF, streamwriterecordf, INT, FLOATV, INT)
-static void streamReadRecord_fwrap(int streamID, double data[], int *nmiss)
+static void streamReadRecord_fwrap(int streamID, double data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadRecord(streamID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadRecord(streamID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB3 (streamReadRecord_fwrap, STREAMREADRECORD, streamreadrecord, INT, DOUBLEV, PINT)
-static void streamReadRecordF_fwrap(int streamID, float data[], int *nmiss)
+static void streamReadRecordF_fwrap(int streamID, float data[], int *numMissVals)
 {
-  SizeType nmiss_SizeType;
-  streamReadRecordF(streamID, data, &nmiss_SizeType);
-  assert(nmiss_SizeType < INT_MAX);
-  *nmiss = nmiss_SizeType;
+  SizeType numMissVals_SizeType;
+  streamReadRecordF(streamID, data, &numMissVals_SizeType);
+  assert(numMissVals_SizeType < INT_MAX);
+  *numMissVals = numMissVals_SizeType;
 }
 FCALLSCSUB3 (streamReadRecordF_fwrap, STREAMREADRECORDF, streamreadrecordf, INT, FLOATV, PINT)
 FCALLSCSUB2 (streamCopyRecord, STREAMCOPYRECORD, streamcopyrecord, INT, INT)

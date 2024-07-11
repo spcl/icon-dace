@@ -11,7 +11,7 @@ main(void)
     nlev = 5,   // Number of levels
     nts = 3,    // Number of time steps
   };
-  SizeType nmiss;
+  SizeType numMissVals;
   double var1[nlon * nlat];
   double var2[nlon * nlat * nlev];
 
@@ -45,8 +45,8 @@ main(void)
       printf("read timestep %d:  date=%d  time=%d\n", tsID + 1, vdate, vtime);
 
       // Read var1 and var2
-      streamReadVar(streamID, varID1, var1, &nmiss);
-      streamReadVar(streamID, varID2, var2, &nmiss);
+      streamReadVar(streamID, varID1, var1, &numMissVals);
+      streamReadVar(streamID, varID2, var2, &numMissVals);
     }
 
   // Close the input stream

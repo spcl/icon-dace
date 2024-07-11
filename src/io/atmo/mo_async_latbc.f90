@@ -23,6 +23,9 @@
 ! - "W" is optional and read if available in the input data (note that "W" may in fact contain OMEGA).
 ! - "QV", "QC", "QI" are always read
 ! - "QR", "QS" are read if available
+! - Other tracer fields (such as ART tracers) are read, if available AND contained in the variable group 
+!   LATBC_PREFETCH_VARS. This allows to skip the read-in of individual fields, if their latbc entry in tracers.xml is 
+!   empty.
 !
 ! The other fields for the lateral boundary conditions are read
 ! from file, based on the following decision tree.  Note that the
@@ -211,6 +214,7 @@ MODULE mo_async_latbc
   USE mo_var_list_register,         ONLY: t_vl_register_iter
   USE mo_var_metadata,              ONLY: get_var_name
   USE mo_var,                       ONLY: t_var
+  USE mo_var_groups,                ONLY: var_groups_dyn
   USE mo_limarea_config,            ONLY: latbc_config
   USE mo_dictionary,                ONLY: t_dictionary
   USE mo_util_string,               ONLY: add_to_list, tolower
@@ -225,10 +229,11 @@ MODULE mo_async_latbc
        &                                  cdi_max_name
   USE mo_io_util,                   ONLY: read_netcdf_int_1d, t_netcdf_att_int
   USE mo_util_cdi,                  ONLY: test_cdi_varID
-#ifdef YAC_coupling
+  USE mo_timer,                     ONLY: ltimer, timer_start, timer_stop, &
+    &                                     timer_coupling
   USE mo_coupling_config,           ONLY: is_coupled_run
-  USE mo_io_coupling_frame,         ONLY: construct_io_coupling, destruct_io_coupling
-#endif
+  USE mo_dummy_coupling_frame,      ONLY: construct_dummy_coupling, &
+    &                                     destruct_dummy_coupling
 
   IMPLICIT NONE
   PRIVATE
@@ -288,14 +293,18 @@ CONTAINS
 
     ! call to initalize the prefetch processor with grid data
     CALL init_prefetch(latbc)
-#ifdef YAC_coupling
-    ! The initialisation of YAC needs to be called by all (!) MPI processes
+
+    ! The initialisation of coupling needs to be called by all (!) MPI processes
     ! in MPI_COMM_WORLD.
     ! construct_io_coupling needs to be called before init_name_list_output
     ! due to calling sequence in subroutine atmo_model for other atmosphere
     ! processes
-    IF ( is_coupled_run() ) CALL construct_io_coupling ( "dummy" )
-#endif
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL construct_dummy_coupling("async_latbc")
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
+
     ! Enter prefetch loop
     done = .FALSE.
     DO WHILE(.NOT.done)
@@ -312,9 +321,13 @@ CONTAINS
     CALL close_prefetch()
     ! clean up
     CALL latbc%finalize()
-#ifdef YAC_coupling
-      IF ( is_coupled_run() ) CALL destruct_io_coupling ( "dummy" )
-#endif
+
+    IF ( is_coupled_run() ) THEN
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL destruct_dummy_coupling("async_latbc")
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
+
     CALL stop_mpi
   END SUBROUTINE prefetch_main_proc
 #endif
@@ -710,7 +723,7 @@ CONTAINS
 
 #ifndef NOMPI
     CHARACTER(*), PARAMETER                   :: routine = modname//"::read_init_file"
-    LOGICAL,      PARAMETER                   :: ldebug  = .FALSE.
+    LOGICAL,      PARAMETER                   :: ldebug  = .TRUE.
     ! local variables
     CHARACTER(LEN=vname_len), ALLOCATABLE :: grp_vars(:), grp_vars_lc(:)
     ! dictionary which maps prefetch variable names onto
@@ -722,25 +735,6 @@ CONTAINS
     CHARACTER(LEN=CDI_MAX_NAME)             :: name, name_lc
 
     is_work = my_process_is_work()
-    ! allocating buffers containing name of variables
-    ALLOCATE(grp_vars(MAX_NUM_GRPVARS))
-
-    !!!! FIXME !!!
-    ! Strictly speaking, the group LATBC_PREFETCH_VARS is no longer necessary.
-    ! Currently, the group size is used below for allocating nlev, mapped_name, ... (see below).
-    ! A better way to do this, is to count the total number of 'lreads' in check_variables.
-    ! This would give the exact number of necessary buffers (rather than an upper bound).
-    ! The corresponding ALLOCATE (latbc%buffer%nlev ...) then must be performed after the call
-    ! to check_variables.
-    ! In addition the group LATBC_PREFETCH_VARS is used for determining the internal names
-    ! of the variables to be read. If we decide to remove LATBC_PREFETCH_VARS, an alternative
-    ! way of getting the names is required (e.g. getting them somehow from check_variables).
-    ! For optional variables, e.g. the additional (ART) tracers, this change would require a
-    ! different way to specify which of these tracers are to be used as lateral boundary.
-    !
-    !>Looks for variable groups ("group:xyz") and collects
-    ! them to map prefetch variable names onto
-    ! GRIB2 shortnames or NetCDF var names.
 
     ! loop over all variables and collects the variables names
     ! corresponding to the group "LATBC_PREFETCH_VARS"
@@ -765,7 +759,7 @@ CONTAINS
 
       ! adding the variable 'GEOSP' to the list by add_to_list
       ! as the variable cannot be found in metadata variable list
-      CALL add_to_list( grp_vars, ngrp_prefetch_vars, (/latbc%buffer%geop_ml_var/) , 1)
+      CALL add_to_list( grp_vars, ngrp_prefetch_vars, latbc%buffer%geop_ml_var)
 
       ALLOCATE(grp_vars_lc(ngrp_prefetch_vars), stat=ierrstat)
       IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
@@ -909,6 +903,7 @@ CONTAINS
     CHARACTER(:), ALLOCATABLE :: cur_name     !< name of current tracer
     INTEGER :: cur_idx, iv, idx, numlbc_tracer
     TYPE(t_var), POINTER :: cur_var
+    INTEGER :: latbc_prefetch_vars_grp_id
 
        ! --- CHECK WHICH VARIABLES ARE AVAILABLE IN THE DATA SET ---
        ! Check if rain water (QR) is provided as input
@@ -920,6 +915,9 @@ CONTAINS
        buffer%name_tracer(:) = ''
        buffer%idx_tracer(:) = -1
        numlbc_tracer = 0
+
+       latbc_prefetch_vars_grp_id = var_groups_dyn%group_id('LATBC_PREFETCH_VARS')
+
        ! Loop through the p_tracer_list
        DO iv = 1, p_nh_state_lists(1)%tracer_list(1)%p%nvars
          cur_var => p_nh_state_lists(1)%tracer_list(1)%p%vl(iv)%p
@@ -930,8 +928,15 @@ CONTAINS
          IF (cur_idx > iqs) THEN
            numlbc_tracer = numlbc_tracer + 1
            ! Check if additional tracer variables are provided as input
-           buffer%lread_tracer(numlbc_tracer) = &
-             &  (test_cdi_varID(fileID_latbc, cur_name, latbc_dict) /= -1)
+           IF (.NOT. cur_var%info%in_group(latbc_prefetch_vars_grp_id)) THEN
+             ! Force lread_tracer to .FALSE. for additional (mainly for ART pollen) tracers that are not part of 
+             ! LATBC_PREFETCH_VARS, i.e. their latbc entry in tracers.xml is empty. Also see variable c_latbc in 
+             ! art_tracer_def_wrapper in mo_art_tracer_def_wrapper.f90.
+             buffer%lread_tracer(numlbc_tracer) = .FALSE.
+           ELSE
+             buffer%lread_tracer(numlbc_tracer) = &
+               &  (test_cdi_varID(fileID_latbc, cur_name, latbc_dict) /= -1)
+           ENDIF
            ! Save plain variable name and index
            buffer%name_tracer(numlbc_tracer) = cur_name
            buffer%idx_tracer(numlbc_tracer)  = cur_idx

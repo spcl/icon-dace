@@ -64,6 +64,8 @@
 /** \example test_exchanger_parallel.c
  */
 
+typedef struct Xt_exchanger_omp_share_ *Xt_exchanger_omp_share;
+
 typedef struct Xt_exchanger_ *Xt_exchanger;
 
 struct xt_exchanger_vtable {
@@ -77,6 +79,7 @@ struct xt_exchanger_vtable {
   void (*team_share_default_init)(void *share);
   void (*team_share_destroy)(void *share);
   size_t team_share_size;
+  Xt_exchanger_omp_share (*create_omp_share)(Xt_exchanger);
 };
 
 struct Xt_exchanger_ {
@@ -244,6 +247,17 @@ xt_exchanger_team_share_destroy(Xt_exchanger exchanger, void *share);
 PPM_DSO_INTERNAL void
 xt_exchanger_new_team_share_destroy(Xt_exchanger_new exchanger_new,
                                     void *share);
+
+
+/**
+ * Given an exchanger, create an object holding shared data for
+ * multi-threaded invocation.
+ *
+ * @param[in] exchanger exchanger to prepare the shared data for.
+ */
+PPM_DSO_INTERNAL Xt_exchanger_omp_share
+xt_exchanger_create_omp_share(Xt_exchanger exchanger);
+
 
 
 

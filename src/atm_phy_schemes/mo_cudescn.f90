@@ -46,7 +46,7 @@ CONTAINS
 
   SUBROUTINE cudlfsn &
     & (kidia,    kfdia,    klon,    ktdia,  klev,&
-    & kcbot,    kctop,     ldcum,&
+    & kcbot,    kctop,     ldcum, fac_rmfdeps, &
     & ptenh,    pqenh,   &
     & pten,     pqsen,    pgeo,&
     & pgeoh,    paph,     ptu,      pqu,  &
@@ -176,6 +176,7 @@ CONTAINS
     REAL(KIND=jprb)   ,INTENT(in)    :: pqu(klon,klev)
 !    REAL(KIND=jprb)                  :: plu(klon,klev) ! Argument NOT used
     REAL(KIND=jprb)   ,INTENT(in)    :: pmfub(klon)
+    REAL(KIND=jprb)   ,INTENT(in)    :: fac_rmfdeps(klon)
     REAL(KIND=jprb)   ,INTENT(inout) :: prfl(klon)
     REAL(KIND=jprb)   ,INTENT(inout) :: ptd(klon,klev)
     REAL(KIND=jprb)   ,INTENT(inout) :: pqd(klon,klev)
@@ -212,7 +213,7 @@ CONTAINS
     !$ACC DATA &
     !$ACC   PRESENT(kcbot, kctop, ptenh, pqenh, pten, pqsen, pgeo, pgeoh, paph, ptu) &
     !$ACC   PRESENT(pqu, pmfub, prfl, ptd, pqd, pmfd, pmfds, pmfdq, pdmfdp, kdtop) &
-    !$ACC   PRESENT(ldland, ldlake, lddraf, ldcum) &
+    !$ACC   PRESENT(ldland, ldlake, lddraf, ldcum, fac_rmfdeps) &
 
     !$ACC   CREATE(ikhsmin, ztenwb, zqenwb, zcond, zph, zhsmin, llo2) &
     !$ACC   IF(lacc)
@@ -353,7 +354,7 @@ CONTAINS
             zbuo=zttest*(1.0_JPRB+retv  *zqtest)-&
               & ptenh(jl,jk)*(1.0_JPRB+retv  *pqenh(jl,jk))
             zcond(jl)=pqenh(jl,jk)-zqenwb(jl,jk)
-            zmftop=-MERGE(rmfdeps,rmfdeps_ocean,ldland(jl).OR.ldlake(jl))*pmfub(jl)
+            zmftop=-fac_rmfdeps(jl)*MERGE(rmfdeps,rmfdeps_ocean,ldland(jl).OR.ldlake(jl))*pmfub(jl)
             IF(zbuo < 0.0_JPRB.AND.prfl(jl) > 10._jprb*zmftop*zcond(jl)) THEN
               kdtop(jl)=jk
               lddraf(jl)=.TRUE.

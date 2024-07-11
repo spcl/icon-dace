@@ -17,8 +17,10 @@ extern "C" {
 #endif
 
 int util_islink(char *path);
+int util_create_tmpfile(char *filename, const int max_len);
 long int util_filesize(char *filename);
 int util_file_is_writable(char *filename);
+int createSymlink(const char *targetPath, const char *linkName);
 
 #ifdef __cplusplus
 }

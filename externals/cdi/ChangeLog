@@ -1,3 +1,59 @@
+2024-02-22  Uwe Schulzweida
+
+	* Version 2.4.0 released
+
+2024-02-19  Uwe Schulzweida
+
+	* netCDF: use timevar buffer
+
+2024-02-05  Uwe Schulzweida
+
+	* fdb5 interface: update to release 5.11.29
+
+2024-02-02  Uwe Schulzweida
+
+	* improve support for time units second [Bug #11740]
+
+2024-01-10  Uwe Schulzweida
+
+	* cgribex: check gridsize when creating the inventory
+
+2024-01-04  Uwe Schulzweida
+
+	* define SSIZE_MAX to LONG_MAX, if undefined
+
+2023-12-29  Uwe Schulzweida
+
+	* Add global option CDI_Threadsafe to lock non thread-safe netCDF4/HDF5 calls
+
+2023-12-28  Uwe Schulzweida
+
+	* Add environment variable CDI_LOCK_IO to lock IO access
+
+2023-11-22  Uwe Schulzweida
+
+	* calc_chunk_cache_size: wrong result for 3D data (bug fix)
+
+2023-11-21  Uwe Schulzweida
+
+	* vlist_generate_zaxis: init query.lbounds and query.ubounds (bug fix)
+
+2023-11-16  Uwe Schulzweida
+
+	* netCDF: write of y-coordinates failed for Gaussian reduced grids (bug fix)
+
+2023-10-18  Uwe Schulzweida
+
+	* Version 2.3.0 released
+
+2023-10-06  Uwe Schulzweida
+
+	* Add GRIB2 HEALPix support (available with eccodes-2.32.0)
+
+2023-09-29  Uwe Schulzweida
+
+	* Add interface function streamDefShuffle()
+
 2023-08-15  Uwe Schulzweida
 
 	* Version 2.2.4 released
@@ -159,13 +215,13 @@
 
 2022-10-17  Uwe Schulzweida
 
-        * Added environment variable CDI_SHUFFLE to set shuffle option to NetCDF4 deflation compression
+        * Add environment variable CDI_SHUFFLE to set shuffle option to NetCDF4 deflation compression
 
 2022-10-16  Uwe Schulzweida
 
-	* Improved read performance of temporal chunked NetCDF4 data
-        * Added environment variable CDI_CHUNK_CACHE to set the NetCDF4 chunk cache size
-        * Added environment variable CDI_CHUNK_CACHE_MAX to set the maximum chunk cache size
+	* Improve read performance of temporal chunked NetCDF4 data
+        * Add environment variable CDI_CHUNK_CACHE to set the NetCDF4 chunk cache size
+        * Add environment variable CDI_CHUNK_CACHE_MAX to set the maximum chunk cache size
 
 2022-10-14  Uwe Schulzweida
 

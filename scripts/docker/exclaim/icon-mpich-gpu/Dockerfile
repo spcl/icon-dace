@@ -1,4 +1,15 @@
 # syntax=docker/dockerfile:1.2
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
 FROM c2sm/nvhpc:21.3-devel-cuda11.2-ubuntu20.04-icon-mpich-dependencies as builder
 ENV ICON_SPEC="icon@container_build%nvhpc gpu=60 +mpi +ecrad ^netlib-lapack ~external-blas"
 

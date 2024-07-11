@@ -234,9 +234,9 @@ SUBROUTINE art_init_OH_chem(jg,OH_chem_meta)
 
 
 !  CALL init(OH_chem_meta%OH_Nconc)
-  CALL init(OH_chem_meta%ozone_Nconc)
-  CALL init(OH_chem_meta%k_CH4_OH)
-  CALL init(OH_chem_meta%k_CO_OH)
+  CALL init(OH_chem_meta%ozone_Nconc, lacc=.FALSE.)
+  CALL init(OH_chem_meta%k_CH4_OH, lacc=.FALSE.)
+  CALL init(OH_chem_meta%k_CO_OH, lacc=.FALSE.)
   OH_chem_meta%level_CH4_gt_1ppm(:,:) = art_atmo%nlev
 
   OH_chem_meta%is_init = .TRUE.

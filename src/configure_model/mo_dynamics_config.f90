@@ -34,7 +34,7 @@ MODULE mo_dynamics_config
 
     ! namelist variables
 
-    INTEGER  :: iequations      !< Choice of governing equation set
+    INTEGER  :: iequations
     REAL(wp) :: divavg_cntrwgt  !< Weight of central cell for divergence averaging
     LOGICAL  :: lcoriolis       !< if .TRUE., Coriolis force is switched on   
     LOGICAL  :: lmoist_thdyn    !< if .TRUE., include moisture terms in first law

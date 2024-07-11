@@ -16,7 +16,6 @@ MODULE mo_jsb_var_class
 
   USE mo_kind,              ONLY: wp, dp
   USE mo_exception,         ONLY: finish, message
-  USE mo_hermetic,          ONLY: t_hermetic
   USE mo_jsb_varlist_iface, ONLY: VARNAME_LEN
   USE mo_jsb_subset,        ONLY: t_subset, ON_DOMAIN, ON_CHUNK
 
@@ -53,15 +52,14 @@ MODULE mo_jsb_var_class
     CHARACTER(len=:), ALLOCATABLE :: unit
     INTEGER                       :: type                      ! REAL1D / REAL2D / REAL3D
     INTEGER                       :: subset_type               ! ON_DOMAIN / ON_CHUNK
-    CHARACTER(len=:), ALLOCATABLE :: element_name              ! 
+    CHARACTER(len=:), ALLOCATABLE :: element_name              !
     CHARACTER(len=:), ALLOCATABLE :: element_shortname         ! Short name of element
-    INTEGER                       :: element_id                ! 
-    INTEGER                       :: owner_model_id            ! 
-    INTEGER                       :: owner_proc_id = -1        ! 
-    INTEGER, ALLOCATABLE          :: owner_tile_path(:)        ! 
-    INTEGER, ALLOCATABLE          :: child_idx(:)              ! Position-numbers of same variable for for the child tiles 
-                                                               ! (according to mem%vars(:)).
-    !! TYPE(t_subset), POINTER     :: sub  <= not needed; because it is available via: sub = var%Get_subset() !!
+    INTEGER                       :: element_id                !
+    INTEGER                       :: owner_model_id            !
+    INTEGER                       :: owner_proc_id = -1        !
+    INTEGER, ALLOCATABLE          :: owner_tile_path(:)        !
+    INTEGER, ALLOCATABLE          :: child_idx(:)
+      !< Position-numbers of the same var (as this var) on the children of the current tile (i.e. within mem%vars(:) of that child).
     REAL(dp)                      :: missval
     LOGICAL                       :: l_aggregate_all = .FALSE. ! When aggregating, consider fractions of all child tiles even
                                                                ! of those where variable doesn't exist
@@ -72,7 +70,19 @@ MODULE mo_jsb_var_class
   CONTAINS
     PROCEDURE :: Get_subset         => t_jsb_var_get_subset         ! get chunk and block information for the var and thread
     PROCEDURE :: force_finalization => t_jsb_var_force_finalization ! finalization after operator overload avoiding memory leaks
+    PROCEDURE(associate_pointers_iface), DEFERRED :: Associate_pointers
   END TYPE t_jsb_var
+
+  ABSTRACT INTERFACE
+    SUBROUTINE Associate_pointers_iface(this,ic_start,ic_end,iblk_start,iblk_end)
+      IMPORT t_jsb_var
+      CLASS(t_jsb_var), INTENT(inout), TARGET :: this
+      INTEGER,          INTENT(in)    :: ic_start
+      INTEGER,          INTENT(in)    :: ic_end
+      INTEGER,          INTENT(in)    :: iblk_start
+      INTEGER,          INTENT(in)    :: iblk_end
+    END SUBROUTINE
+  END INTERFACE
 
 !#pragma GCC diagnostic push
 !#pragma GCC diagnostic ignored "-Wsurprising"
@@ -88,6 +98,8 @@ MODULE mo_jsb_var_class
       ! 1d stream elements are not supported with ECHAM
       :: ptr(:,:) => NULL()
 #endif
+  CONTAINS
+    PROCEDURE :: Associate_pointers => t_jsb_var_real1d_associate_pointers
   END TYPE t_jsb_var_real1d
 
   !================================================================================================================================
@@ -104,51 +116,51 @@ MODULE mo_jsb_var_class
     PROCEDURE               :: Associate_pointers => t_jsb_var_real2d_associate_pointers
     !! operator overload
     ! +
-    PROCEDURE                 :: Add_real2d_and_scalar            ! var_real2d = var_real2d + scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE, PASS(var2)     :: Add_scalar_and_real2d            ! var_real2d = scalar     + var_real2d | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Add_real2d_and_field1d           ! var_real2d = var_real2d + field1d    | ON_CHUNK
-    PROCEDURE, PASS(var2)     :: Add_field1d_and_real2d           ! var_real2d = field1d    + var_real2d | ON_CHUNK
-    PROCEDURE                 :: Add_real2d_and_field2d           ! var_real2d = var_real2d + field2d    | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE                 :: Add_real2d_and_real2d            ! var_real2d = var_real2d + var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Add_real2d_and_scalar            !< var_real2d = var_real2d + scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE, PASS(var2)     :: Add_scalar_and_real2d            !< var_real2d = scalar     + var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Add_real2d_and_field1d           !< var_real2d = var_real2d + field1d    | ON_CHUNK
+    PROCEDURE, PASS(var2)     :: Add_field1d_and_real2d           !< var_real2d = field1d    + var_real2d | ON_CHUNK
+    PROCEDURE                 :: Add_real2d_and_field2d           !< var_real2d = var_real2d + field2d    | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
+    PROCEDURE                 :: Add_real2d_and_real2d            !< var_real2d = var_real2d + var_real2d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(+) => Add_real2d_and_scalar,  Add_scalar_and_real2d, &
       &                                         Add_real2d_and_field1d, Add_field1d_and_real2d, &
       &                                         Add_real2d_and_field2d, &
       &                                         Add_real2d_and_real2d
     ! -
-    PROCEDURE                 :: Subtract_real2d_minus_scalar     ! var_real2d = var_real2d - scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Subtract_real2d_minus_field1d    ! var_real2d = var_real2d - field1d    | ON_CHUNK
-    PROCEDURE                 :: Subtract_real2d_minus_field2d    ! var_real2d = var_real2d - field2d    | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE                 :: Subtract_real2d_minus_real2d     ! var_real2d = var_real2d - var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Subtract_real2d_minus_scalar     !< var_real2d = var_real2d - scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Subtract_real2d_minus_field1d    !< var_real2d = var_real2d - field1d    | ON_CHUNK
+    PROCEDURE                 :: Subtract_real2d_minus_field2d    !< var_real2d = var_real2d - field2d    | ON_CHUNK & ON_DOMAIN ! field2d(:,1) & field2d(:,:)
+    PROCEDURE                 :: Subtract_real2d_minus_real2d     !< var_real2d = var_real2d - var_real2d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(-) => Subtract_real2d_minus_scalar, &
       &                                         Subtract_real2d_minus_field1d, &
       &                                         Subtract_real2d_minus_field2d, &
       &                                         Subtract_real2d_minus_real2d
     ! *
-    PROCEDURE                 :: Multiply_real2d_with_scalar      ! var_real2d = var_real2d * scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE, PASS(var2)     :: Multiply_scalar_with_real2d      ! var_real2d = scalar     * var_real2d | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Multiply_real2d_with_field1d     ! var_real2d = var_real2d * field1d    | ON_CHUNK
-    PROCEDURE, PASS(var2)     :: Multiply_field1d_with_real2d     ! var_real2d = field1d    * var_real2d | ON_CHUNK
-    PROCEDURE                 :: Multiply_real2d_with_field2d     ! var_real2d = var_real2d * field2d    | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE, PASS(var2)     :: Multiply_field2d_with_real2d     ! var_real2d = field2d    * var_real2d | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE                 :: Multiply_real2d_with_real2d      ! var_real2d = var_real2d * var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Multiply_real2d_with_scalar      !< var_real2d = var_real2d * scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE, PASS(var2)     :: Multiply_scalar_with_real2d      !< var_real2d = scalar     * var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Multiply_real2d_with_field1d     !< var_real2d = var_real2d * field1d    | ON_CHUNK
+    PROCEDURE, PASS(var2)     :: Multiply_field1d_with_real2d     !< var_real2d = field1d    * var_real2d | ON_CHUNK
+    PROCEDURE                 :: Multiply_real2d_with_field2d     !< var_real2d = var_real2d * field2d    | ON_CHUNK & ON_DOMAIN ! field2d(:,1) & field2d(:,:)
+    PROCEDURE, PASS(var2)     :: Multiply_field2d_with_real2d     !< var_real2d = field2d    * var_real2d | ON_CHUNK & ON_DOMAIN ! field2d(:,1) & field2d(:,:)
+    PROCEDURE                 :: Multiply_real2d_with_real2d      !< var_real2d = var_real2d * var_real2d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(*) => Multiply_real2d_with_scalar,  Multiply_scalar_with_real2d, &
       &                                         Multiply_real2d_with_field1d, Multiply_field1d_with_real2d, &
       &                                         Multiply_real2d_with_field2d, Multiply_field2d_with_real2d, &
       &                                         Multiply_real2d_with_real2d
     ! /
-    PROCEDURE                 :: Div_real2d_by_scalar             ! var_real2d = var_real2d / scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Div_real2d_by_field1d            ! var_real2d = var_real2d / field1d    | ON_CHUNK
-    PROCEDURE                 :: Div_real2d_by_field2d            ! var_real2d = var_real2d / field2d    | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE                 :: Div_real2d_by_real2d             ! var_real2d = var_real2d / var_real2d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Div_real2d_by_scalar             !< var_real2d = var_real2d / scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Div_real2d_by_field1d            !< var_real2d = var_real2d / field1d    | ON_CHUNK
+    PROCEDURE                 :: Div_real2d_by_field2d            !< var_real2d = var_real2d / field2d    | ON_CHUNK & ON_DOMAIN ! field2d(:,1) & field2d(:,:)
+    PROCEDURE                 :: Div_real2d_by_real2d             !< var_real2d = var_real2d / var_real2d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(/) => Div_real2d_by_scalar, &
       &                                         Div_real2d_by_field1d, &
       &                                         Div_real2d_by_field2d, &
       &                                         Div_real2d_by_real2d
     ! =
-    PROCEDURE                 :: Assign_scalar_to_var_real2d      ! var_real2d = scalar       | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Assign_field1d_to_var_real2d     ! var_real2d = field1d(:)   | ON_CHUNK
-    PROCEDURE                 :: Assign_field2d_to_var_real2d     ! var_real2d = field2d(:,:) | ON_CHUNK & ON_DOMAIN | field2d(:,1) & field2d(:,:)
-    PROCEDURE                 :: Assign_var_real2d_to_var_real2d  ! var_real2d = var_real2d   | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Assign_scalar_to_var_real2d      !< var_real2d = scalar       | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Assign_field1d_to_var_real2d     !< var_real2d = field1d(:)   | ON_CHUNK
+    PROCEDURE                 :: Assign_field2d_to_var_real2d     !< var_real2d = field2d(:,:) | ON_CHUNK & ON_DOMAIN ! field2d(:,1) & field2d(:,:)
+    PROCEDURE                 :: Assign_var_real2d_to_var_real2d  !< var_real2d = var_real2d   | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: ASSIGNMENT(=) => Assign_scalar_to_var_real2d, &
       &                                           Assign_field1d_to_var_real2d, &
       &                                           Assign_field2d_to_var_real2d, &
@@ -167,51 +179,51 @@ MODULE mo_jsb_var_class
     PROCEDURE :: Associate_pointers => t_jsb_var_real3d_associate_pointers
     !! operator overload
     ! +
-    PROCEDURE                 :: Add_real3d_and_scalar            ! var_real3d = var_real3d + scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE, PASS(var2)     :: Add_scalar_and_real3d            ! var_real3d = scalar     + var_real3d | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Add_real3d_and_field2d           ! var_real3d = var_real3d + field2d    | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE, PASS(var2)     :: Add_field2d_and_real3d           ! var_real3d = field2d    + var_real3d | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE                 :: Add_real3d_and_field3d           ! var_real3d = var_real3d + field3d    | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Add_real3d_and_real3d            ! var_real3d = var_real3d + var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Add_real3d_and_scalar            !< var_real3d = var_real3d + scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE, PASS(var2)     :: Add_scalar_and_real3d            !< var_real3d = scalar     + var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Add_real3d_and_field2d           !< var_real3d = var_real3d + field2d    | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE, PASS(var2)     :: Add_field2d_and_real3d           !< var_real3d = field2d    + var_real3d | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE                 :: Add_real3d_and_field3d           !< var_real3d = var_real3d + field3d    | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Add_real3d_and_real3d            !< var_real3d = var_real3d + var_real3d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(+) => Add_real3d_and_scalar,  Add_scalar_and_real3d, &
                                                 Add_real3d_and_field2d, Add_field2d_and_real3d, &
                                                 Add_real3d_and_field3d, &
                                                 Add_real3d_and_real3d
     ! -
-    PROCEDURE                 :: Subtract_real3d_minus_scalar     ! var_real3d = var_real3d - scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Subtract_real3d_minus_field2d    ! var_real3d = var_real3d - field2d    | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE                 :: Subtract_real3d_minus_field3d    ! var_real3d = var_real3d - field3d    | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Subtract_real3d_minus_real3d     ! var_real3d = var_real3d - var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Subtract_real3d_minus_scalar     !< var_real3d = var_real3d - scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Subtract_real3d_minus_field2d    !< var_real3d = var_real3d - field2d    | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE                 :: Subtract_real3d_minus_field3d    !< var_real3d = var_real3d - field3d    | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Subtract_real3d_minus_real3d     !< var_real3d = var_real3d - var_real3d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(-) => Subtract_real3d_minus_scalar, &
                                                 Subtract_real3d_minus_field2d, &
                                                 Subtract_real3d_minus_field3d, &
                                                 Subtract_real3d_minus_real3d
     ! *
-    PROCEDURE                 :: Multiply_real3d_with_scalar      ! var_real3d = var_real3d * scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE, PASS(var2)     :: Multiply_scalar_with_real3d      ! var_real3d = scalar     * var_real3d | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Multiply_real3d_with_field2d     ! var_real3d = var_real3d * field2d    | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE, PASS(var2)     :: Multiply_field2d_with_real3d     ! var_real3d = field2d    * var_real3d | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE                 :: Multiply_real3d_with_field3d     ! var_real3d = var_real3d * field3d    | ON_CHUNK & ON_DOMAIN
-    PROCEDURE, PASS(var2)     :: Multiply_field3d_with_real3d     ! var_real3d = field3d    * var_real3d | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Multiply_real3d_with_real3d      ! var_real3d = var_real3d * var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Multiply_real3d_with_scalar      !< var_real3d = var_real3d * scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE, PASS(var2)     :: Multiply_scalar_with_real3d      !< var_real3d = scalar     * var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Multiply_real3d_with_field2d     !< var_real3d = var_real3d * field2d    | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE, PASS(var2)     :: Multiply_field2d_with_real3d     !< var_real3d = field2d    * var_real3d | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE                 :: Multiply_real3d_with_field3d     !< var_real3d = var_real3d * field3d    | ON_CHUNK & ON_DOMAIN
+    PROCEDURE, PASS(var2)     :: Multiply_field3d_with_real3d     !< var_real3d = field3d    * var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Multiply_real3d_with_real3d      !< var_real3d = var_real3d * var_real3d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(*) => Multiply_real3d_with_scalar,  Multiply_scalar_with_real3d, &
                                                 Multiply_real3d_with_field2d, Multiply_field2d_with_real3d, &
                                                 Multiply_real3d_with_field3d, Multiply_field3d_with_real3d, &
                                                 Multiply_real3d_with_real3d
     ! /
-    PROCEDURE                 :: Div_real3d_by_scalar             ! var_real3d = var_real3d / scalar     | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Div_real3d_by_field2d            ! var_real3d = var_real3d / field2d    | ON_CHUNK             | field2d(nc,vgrid)
-    PROCEDURE                 :: Div_real3d_by_field3d            ! var_real3d = var_real3d / field3d    | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Div_real3d_by_real3d             ! var_real3d = var_real3d / var_real3d | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Div_real3d_by_scalar             !< var_real3d = var_real3d / scalar     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Div_real3d_by_field2d            !< var_real3d = var_real3d / field2d    | ON_CHUNK             ! field2d(nc,vgrid)
+    PROCEDURE                 :: Div_real3d_by_field3d            !< var_real3d = var_real3d / field3d    | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Div_real3d_by_real3d             !< var_real3d = var_real3d / var_real3d | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: OPERATOR(/) => Div_real3d_by_scalar, &
                                                 Div_real3d_by_field2d, &
                                                 Div_real3d_by_field3d, &
                                                 Div_real3d_by_real3d
     ! =
-    PROCEDURE                 :: Assign_scalar_to_var_real3d      ! var_real3d = scalar         | ON_CHUNK & ON_DOMAIN
-    PROCEDURE                 :: Assign_field2d_to_var_real3d     ! var_real3d = field2d(:,:)   | ON_CHUNK field2d(:,:)   | ON_DOMAIN / finish /
-    PROCEDURE                 :: Assign_field3d_to_var_real3d     ! var_real3d = field3d(:,:,:) | ON_CHUNK field3d(:,:,1) | ON_DOMAIN field3d(:,:,:)
-    PROCEDURE                 :: Assign_var_real3d_to_var_real3d  ! var_real3d = var_real3d     | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Assign_scalar_to_var_real3d      !< var_real3d = scalar         | ON_CHUNK & ON_DOMAIN
+    PROCEDURE                 :: Assign_field2d_to_var_real3d     !< var_real3d = field2d(:,:)   | ON_CHUNK field2d(:,:)   | ON_DOMAIN / finish /
+    PROCEDURE                 :: Assign_field3d_to_var_real3d     !< var_real3d = field3d(:,:,:) | ON_CHUNK field3d(:,:,1) | ON_DOMAIN field3d(:,:,:)
+    PROCEDURE                 :: Assign_var_real3d_to_var_real3d  !< var_real3d = var_real3d     | ON_CHUNK & ON_DOMAIN
     GENERIC                   :: ASSIGNMENT(=) => Assign_scalar_to_var_real3d, &
       &                                           Assign_field2d_to_var_real3d, &
       &                                           Assign_field3d_to_var_real3d, &
@@ -228,10 +240,6 @@ MODULE mo_jsb_var_class
   TYPE t_jsb_var_p
     CLASS(t_jsb_var), POINTER :: p => NULL()
   END TYPE t_jsb_var_p
-
-!!$  INTERFACE t_jsb_var
-!!$    PROCEDURE :: Create_jsb_var
-!!$  END INTERFACE t_jsb_var
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_jsb_var_class'
 
@@ -260,6 +268,20 @@ CONTAINS
   ! var_real2d & var_real3d
   ! called for each timestep in the mo_jsb_interface "CALL model%Associate_var_pointers(ics, ice, iblk, iblk)"
   !================================================================================================================================
+  SUBROUTINE t_jsb_var_real1d_associate_pointers(this,ic_start,ic_end,iblk_start,iblk_end)
+
+    CLASS(t_jsb_var_real1d), INTENT(inout), TARGET :: this
+    INTEGER,                 INTENT(in)    :: ic_start
+    INTEGER,                 INTENT(in)    :: ic_end
+    INTEGER,                 INTENT(in)    :: iblk_start
+    INTEGER,                 INTENT(in)    :: iblk_end
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':t_jsb_var_real1d_associate_pointers'
+
+    ! Do nothing for 1d variables
+
+  END SUBROUTINE t_jsb_var_real1d_associate_pointers
+
   SUBROUTINE t_jsb_var_real2d_associate_pointers(this,ic_start,ic_end,iblk_start,iblk_end)
 
     CLASS(t_jsb_var_real2d), INTENT(inout), TARGET :: this
@@ -401,7 +423,7 @@ CONTAINS
   ! var_real2d = field1d(:)
   !   ON_CHUNK   field1d(:)
   !   ON_DOMAIN  / finish /
-  !-----------------------------------------------------------------------------------------------------  
+  !-----------------------------------------------------------------------------------------------------
   SUBROUTINE Assign_field1d_to_var_real2d(lhs, rhs)
 
     CLASS(t_jsb_var_real2d), INTENT(inout) :: lhs
@@ -426,7 +448,7 @@ CONTAINS
   ! var_real2d = field2d(:,:)
   !   ON_CHUNK   field2d(:,1)
   !   ON_DOMAIN  field2d(:,:)
-  !-----------------------------------------------------------------------------------------------------  
+  !-----------------------------------------------------------------------------------------------------
   SUBROUTINE Assign_field2d_to_var_real2d(lhs, rhs)
 
     CLASS(t_jsb_var_real2d), INTENT(inout) :: lhs
@@ -618,19 +640,19 @@ CONTAINS
   ! var_real2d(:,:) = scalar + var_real2d | ON_CHUNK & ON_DOMAIN
   !-----------------------------------------------------------------------------------------------------
   FUNCTION Add_scalar_and_real2d(scalar, var2) RESULT(var3)
-  
+
     REAL(wp),                INTENT(in) :: scalar
     CLASS(t_jsb_var_real2d), INTENT(in) :: var2
     TYPE(t_jsb_var_real2d),  TARGET     :: var3
-  
+
     TYPE(t_subset) :: sub
     INTEGER        :: ics, ice, iblk, nb, nc
-  
+
     CHARACTER(len=*), PARAMETER :: routine = modname//':Add_scalar_and_real2d'
-  
+
     sub = var2%Get_subset()
     ics = sub%ics ; ice = sub%ice ; iblk = sub%iblk ; nb = sub%nb ; nc = sub%nc
-  
+
     var3%name             = var2%name
     var3%full_name        = var2%full_name
     var3%owner_proc_id    = var2%owner_proc_id
@@ -638,15 +660,15 @@ CONTAINS
     var3%owner_tile_path  = var2%owner_tile_path
     var3%missval          = var2%missval
     ALLOCATE(var3%ptr2d, source=var2%ptr2d)
-  
+
     IF (sub%type == ON_CHUNK) THEN
       var3%ptr2d(ics:ice,iblk) = scalar + var2%ptr2d(ics:ice,iblk)
     ELSE
       var3%ptr2d(:,:)          = scalar + var2%ptr2d(:,:)
     END IF
-  
+
     var3%ptr => var3%ptr2d(:,:)
-  
+
   END FUNCTION Add_scalar_and_real2d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,iblk) = var_real2d(:,iblk) + field1d
@@ -681,7 +703,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Add_real2d_and_field1d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,iblk) = field1d + var_real2d(:,iblk)
@@ -716,7 +738,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Add_field1d_and_real2d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d + field2d
@@ -753,13 +775,13 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Add_real2d_and_field2d
   !-----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d + var_real2d | ON_CHUNK & ON_DOMAIN
   !-----------------------------------------------------------------------------------------------------
   FUNCTION Add_real2d_and_real2d(var1, var2) RESULT(var3)
-  
+
     CLASS(t_jsb_var_real2d), INTENT(in) :: var1, var2
     TYPE(t_jsb_var_real2d),  TARGET     :: var3
 
@@ -786,7 +808,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-  
+
   END FUNCTION Add_real2d_and_real2d
 
   !-----------------------------------------------------------------------------------------------------
@@ -1079,7 +1101,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Subtract_real2d_minus_field1d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d - field2d
@@ -1116,13 +1138,13 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Subtract_real2d_minus_field2d
   !-----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d - var_real2d | ON_CHUNK & ON_DOMAIN
   !-----------------------------------------------------------------------------------------------------
   FUNCTION Subtract_real2d_minus_real2d(var1, var2) RESULT(var3)
-  
+
     CLASS(t_jsb_var_real2d), INTENT(in) :: var1, var2
     TYPE(t_jsb_var_real2d),  TARGET     :: var3
 
@@ -1149,7 +1171,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-  
+
   END FUNCTION Subtract_real2d_minus_real2d
 
   !-----------------------------------------------------------------------------------------------------
@@ -1405,7 +1427,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Multiply_real2d_with_field1d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,iblk) = field1d * var_real2d(:,iblk)
@@ -1440,7 +1462,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Multiply_field1d_with_real2d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d * field2d
@@ -1477,7 +1499,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Multiply_real2d_with_field2d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = field2d * var_real2d
@@ -1514,13 +1536,13 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Multiply_field2d_with_real2d
   !-----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d * var_real2d | ON_CHUNK & ON_DOMAIN
   !-----------------------------------------------------------------------------------------------------
   FUNCTION Multiply_real2d_with_real2d(var1, var2) RESULT(var3)
-  
+
     CLASS(t_jsb_var_real2d), INTENT(in) :: var1, var2
     TYPE(t_jsb_var_real2d),  TARGET     :: var3
 
@@ -1547,7 +1569,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-  
+
   END FUNCTION Multiply_real2d_with_real2d
 
   !-----------------------------------------------------------------------------------------------------
@@ -1880,7 +1902,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Div_real2d_by_field1d
   ! -----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d / field2d
@@ -1917,13 +1939,13 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-    
+
   END FUNCTION Div_real2d_by_field2d
   !-----------------------------------------------------------------------------------------------------
   ! var_real2d(:,:) = var_real2d / var_real2d | ON_CHUNK & ON_DOMAIN
   !-----------------------------------------------------------------------------------------------------
   FUNCTION Div_real2d_by_real2d(var1, var2) RESULT(var3)
-  
+
     CLASS(t_jsb_var_real2d), INTENT(in) :: var1, var2
     TYPE(t_jsb_var_real2d),  TARGET     :: var3
 
@@ -1950,7 +1972,7 @@ CONTAINS
     END IF
 
     var3%ptr => var3%ptr2d(:,:)
-  
+
   END FUNCTION Div_real2d_by_real2d
 
   !-----------------------------------------------------------------------------------------------------
@@ -2099,6 +2121,6 @@ CONTAINS
     var3%ptr => var3%ptr3d(:,:,:)
 
   END FUNCTION Div_real3d_by_real3d
-  
+
 #endif
 END MODULE mo_jsb_var_class

@@ -271,6 +271,7 @@ module mo_cdi
   public :: streamInqFiletype
   public :: streamDefByteorder
   public :: streamInqByteorder
+  public :: streamDefShuffle
   public :: streamDefCompType
   public :: streamInqCompType
   public :: streamDefCompLevel
@@ -882,6 +883,13 @@ module mo_cdi
       integer(c_int) :: f_result
     end function streamInqByteorder
 
+    subroutine streamDefShuffle(streamID_dummy, shuffle_dummy) bind(c, name =&
+    & 'streamDefShuffle')
+      import c_int
+      integer(c_int), value :: streamID_dummy
+      integer(c_int), value :: shuffle_dummy
+    end subroutine streamDefShuffle
+
     subroutine streamDefCompType(streamID_dummy, comptype_dummy) bind(c, name =&
     & 'streamDefCompType')
       import c_int
@@ -948,99 +956,99 @@ module mo_cdi
     end function streamInqNvars
 
     subroutine streamWriteVar(streamID_dummy, varID_dummy, data_dummy,&
-    & nmiss_dummy) bind(c, name = 'streamWriteVar')
+    & numMissVals_dummy) bind(c, name = 'streamWriteVar')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       real(c_double), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVar
 
     subroutine streamWriteVarF(streamID_dummy, varID_dummy, data_dummy,&
-    & nmiss_dummy) bind(c, name = 'streamWriteVarF')
+    & numMissVals_dummy) bind(c, name = 'streamWriteVarF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       real(c_float), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVarF
 
     subroutine streamReadVar(streamID_dummy, varID_dummy, data_dummy,&
-    & nmiss_dummy) bind(c, name = 'streamReadVar')
+    & numMissVals_dummy) bind(c, name = 'streamReadVar')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       real(c_double), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadVar
 
     subroutine streamReadVarF(streamID_dummy, varID_dummy, data_dummy,&
-    & nmiss_dummy) bind(c, name = 'streamReadVarF')
+    & numMissVals_dummy) bind(c, name = 'streamReadVarF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       real(c_float), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadVarF
 
     subroutine streamWriteVarSlice(streamID_dummy, varID_dummy, levelID_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamWriteVarSlice')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamWriteVarSlice')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), value :: levelID_dummy
       real(c_double), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVarSlice
 
     subroutine streamWriteVarSliceF(streamID_dummy, varID_dummy, levelID_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamWriteVarSliceF')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamWriteVarSliceF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), value :: levelID_dummy
       real(c_float), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVarSliceF
 
     subroutine streamReadVarSlice(streamID_dummy, varID_dummy, levelID_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamReadVarSlice')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamReadVarSlice')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), value :: levelID_dummy
       real(c_double), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadVarSlice
 
     subroutine streamReadVarSliceF(streamID_dummy, varID_dummy, levelID_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamReadVarSliceF')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamReadVarSliceF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), value :: levelID_dummy
       real(c_float), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadVarSliceF
 
     subroutine streamWriteVarChunk(streamID_dummy, varID_dummy, rect_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamWriteVarChunk')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamWriteVarChunk')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), intent(in) :: rect_dummy(2, *)
       real(c_double), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVarChunk
 
     subroutine streamWriteVarChunkF(streamID_dummy, varID_dummy, rect_dummy,&
-    & data_dummy, nmiss_dummy) bind(c, name = 'streamWriteVarChunkF')
+    & data_dummy, numMissVals_dummy) bind(c, name = 'streamWriteVarChunkF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       integer(c_int), value :: varID_dummy
       integer(c_int), intent(in) :: rect_dummy(2, *)
       real(c_float), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteVarChunkF
 
     subroutine streamDefRecord(streamID_dummy, varID_dummy, levelID_dummy)&
@@ -1059,36 +1067,36 @@ module mo_cdi
       integer(c_int), intent(inout) :: levelID_dummy
     end subroutine streamInqRecord
 
-    subroutine streamWriteRecord(streamID_dummy, data_dummy, nmiss_dummy)&
+    subroutine streamWriteRecord(streamID_dummy, data_dummy, numMissVals_dummy)&
     & bind(c, name = 'streamWriteRecord')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       real(c_double), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteRecord
 
-    subroutine streamWriteRecordF(streamID_dummy, data_dummy, nmiss_dummy)&
-    & bind(c, name = 'streamWriteRecordF')
+    subroutine streamWriteRecordF(streamID_dummy, data_dummy,&
+    & numMissVals_dummy) bind(c, name = 'streamWriteRecordF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       real(c_float), intent(in) :: data_dummy(*)
-      integer(c_int), value :: nmiss_dummy
+      integer(c_int), value :: numMissVals_dummy
     end subroutine streamWriteRecordF
 
-    subroutine streamReadRecord(streamID_dummy, data_dummy, nmiss_dummy)&
+    subroutine streamReadRecord(streamID_dummy, data_dummy, numMissVals_dummy)&
     & bind(c, name = 'streamReadRecord')
       import c_double, c_int
       integer(c_int), value :: streamID_dummy
       real(c_double), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadRecord
 
-    subroutine streamReadRecordF(streamID_dummy, data_dummy, nmiss_dummy)&
+    subroutine streamReadRecordF(streamID_dummy, data_dummy, numMissVals_dummy)&
     & bind(c, name = 'streamReadRecordF')
       import c_float, c_int
       integer(c_int), value :: streamID_dummy
       real(c_float), intent(inout) :: data_dummy(*)
-      integer(c_int), intent(inout) :: nmiss_dummy
+      integer(c_int), intent(inout) :: numMissVals_dummy
     end subroutine streamReadRecordF
 
     subroutine streamCopyRecord(streamIDdest_dummy, streamIDsrc_dummy) bind(c,&
@@ -3729,42 +3737,42 @@ contains
     f_result = lib_cdiIterator_inqGridId(me_dummy%ptr)
   end function cdiIterator_inqGridId
 
-  subroutine cdiIterator_readField(me_dummy, data_dummy, nmiss)
+  subroutine cdiIterator_readField(me_dummy, data_dummy, numMissVals)
     type(t_CdiIterator), intent(in) :: me_dummy
     real(c_double), intent(inout) :: data_dummy(*)
-    integer(c_int), optional, target, intent(inout) :: nmiss
-    type(c_ptr) :: nmiss_cptr
+    integer(c_int), optional, target, intent(inout) :: numMissVals
+    type(c_ptr) :: numMissVals_cptr
     interface
-      subroutine lib_cdiIterator_readField(me_dummy, data_dummy, nmiss) bind(c,&
-      & name = 'cdiIterator_readField')
+      subroutine lib_cdiIterator_readField(me_dummy, data_dummy, numMissVals)&
+      & bind(c, name = 'cdiIterator_readField')
         import c_double, c_ptr
         type(c_ptr), value :: me_dummy
         real(c_double), intent(inout) :: data_dummy(*)
-        type(c_ptr), value :: nmiss
+        type(c_ptr), value :: numMissVals
       end subroutine lib_cdiIterator_readField
     end interface
-    nmiss_cptr = c_null_ptr
-    if(present(nmiss)) nmiss_cptr = c_loc(nmiss)
-    call lib_cdiIterator_readField(me_dummy%ptr, data_dummy, nmiss_cptr)
+    numMissVals_cptr = c_null_ptr
+    if(present(numMissVals)) numMissVals_cptr = c_loc(numMissVals)
+    call lib_cdiIterator_readField(me_dummy%ptr, data_dummy, numMissVals_cptr)
   end subroutine cdiIterator_readField
 
-  subroutine cdiIterator_readFieldF(me_dummy, data_dummy, nmiss)
+  subroutine cdiIterator_readFieldF(me_dummy, data_dummy, numMissVals)
     type(t_CdiIterator), intent(in) :: me_dummy
     real(c_float), intent(inout) :: data_dummy(*)
-    integer(c_int), optional, target, intent(inout) :: nmiss
-    type(c_ptr) :: nmiss_cptr
+    integer(c_int), optional, target, intent(inout) :: numMissVals
+    type(c_ptr) :: numMissVals_cptr
     interface
-      subroutine lib_cdiIterator_readFieldF(me_dummy, data_dummy, nmiss)&
+      subroutine lib_cdiIterator_readFieldF(me_dummy, data_dummy, numMissVals)&
       & bind(c, name = 'cdiIterator_readFieldF')
         import c_float, c_ptr
         type(c_ptr), value :: me_dummy
         real(c_float), intent(inout) :: data_dummy(*)
-        type(c_ptr), value :: nmiss
+        type(c_ptr), value :: numMissVals
       end subroutine lib_cdiIterator_readFieldF
     end interface
-    nmiss_cptr = c_null_ptr
-    if(present(nmiss)) nmiss_cptr = c_loc(nmiss)
-    call lib_cdiIterator_readFieldF(me_dummy%ptr, data_dummy, nmiss_cptr)
+    numMissVals_cptr = c_null_ptr
+    if(present(numMissVals)) numMissVals_cptr = c_loc(numMissVals)
+    call lib_cdiIterator_readFieldF(me_dummy%ptr, data_dummy, numMissVals_cptr)
   end subroutine cdiIterator_readFieldF
 
   function cdiGribIterator_clone(me_dummy) result(f_result)

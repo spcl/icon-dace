@@ -115,15 +115,14 @@ MODULE mo_art_atmo_data
       &  nlevp1,               & !< number of vertical levels plus 1
       &  i_startblk, i_endblk    !< loop indices for blocks
 
-    REAL(wp) ::   &
-      &  relmin,  &  !< min liquid effective radius (microns)
-      &  relmax,  &  !< max liquid effective radius (microns)
-      &  reimin,  &  !< min ice effective radius (microns)
-      &  reimax      !< max ice effective radius (microns)
-
     REAL(wp), POINTER ::       &
       &  sza(:,:) => NULL(),   &   !< cosine of solar zenith angle
       &  sza_deg(:,:) => NULL()    !< solar zenith angle in degrees
+
+    INTEGER ::                 &
+      &  idust_insol_acc,      &   !< tracer index for insoluble dust in accumulation mode
+      &  idust_insol_coa,      &   !< tracer index for insoluble dust in coarse       mode
+      &  idust_giant               !< tracer index for           dust in giant        mode
 
   END TYPE t_art_atmo
 

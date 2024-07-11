@@ -1,7 +1,7 @@
 #! /usr/bin/env bash
 #
 # This script contains all the necessary steps to recreate the
-# autotools files to build PPM/YAXT.
+# autotools files to build the project.
 #
 # Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
 #
@@ -9,7 +9,7 @@
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Keywords: autotools autogen autoconf libtool automake
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -40,17 +40,24 @@
 #
 set -e
 
-case $(uname -s) in
-  Darwin)
-    libtoolize=glibtoolize
-    if [[ -z "${SED+set}" ]] && command -v gsed >/dev/null 2>&1; then
-      SED=gsed
-    fi
-    ;;
-  *)
-    libtoolize=libtoolize
-    ;;
-esac
+# this should guarantee reproducible results from automake runs
+export PERL_HASH_SEED=0
+
+if [[ -z "${LIBTOOLIZE:-}" ]]; then
+  case $(uname -s) in
+    Darwin)
+      LIBTOOLIZE=glibtoolize
+      if [[ -z "${SED+set}" ]] && command -v gsed >/dev/null; then
+        SED=gsed
+      fi
+      ;;
+    *)
+      LIBTOOLIZE=libtoolize
+      ;;
+  esac
+  # make sure autoreconf calls the same libtoolize:
+  export LIBTOOLIZE
+fi
 
 SED=${SED-sed}
 if sed_version=$($SED --version 2>/dev/null) && [[ $sed_version = *GNU\ sed* ]]; then
@@ -65,29 +72,35 @@ else
   exit 1
 fi
 
-$libtoolize --force --copy
-#todo: escape / in $libtoolize
-libtoolversion=$($libtoolize --version \
-                      | ${SED} -e 's/^'"$libtoolize"' \(([^)]*) \)\{0,1\}\([0-9.]*\)/\2/;q')
+$LIBTOOLIZE --force --copy
+autoreconf -i --force
+libtoolversion=$($LIBTOOLIZE --version \
+                      | ${SED} -e 's/^'"${LIBTOOLIZE##*/}"' \(([^)]*) \)\{0,1\}\([0-9.]*\)/\2/;q')
 declare -a patches
 case "$libtoolversion" in
-  (2.4.6)
-    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.6.patch \
+  (2.4.6|2.4.7)
+    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool-${libtoolversion}.patch \
       contrib/01aix-deplib-rpath-patch/aix-deplib-libtool.patch \
       contrib/03ltmain-ld-groups-patch/ltmain-ld-groups-libtool-2.4.6.patch \
       contrib/04ltmain-xlinker-patch/ltmain-xlinker-patch.patch \
       contrib/05macos-nagfor-patch/macos-nagfor.patch \
       contrib/06ltmain_nag_pthread-patch/ltmain_nag_pthread.patch \
-      contrib/07ltmain-early-xcompile-patch/ltmain-early-xcompile-libtool-2.4.6.patch)
+      contrib/07ltmain-early-xcompile-patch/ltmain-early-xcompile-libtool-2.4.6.patch \
+      contrib/08ltmain-parallel-printf-patch/ltmain-parallel-printf-libtool-2.4.6.patch \
+      contrib/09debian-no-overlink-patch/deplib_binary.patch \
+      contrib/09debian-no-overlink-patch/link_all_deplibs.patch)
     ;;
   (2.4.2)
-    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool.patch \
+    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.2.patch \
       contrib/01aix-deplib-rpath-patch/aix-deplib-libtool.patch \
       contrib/02nagfor53-shared-patch/nagfor53-shared.patch \
       contrib/03ltmain-ld-groups-patch/ltmain-ld-groups-libtool-2.4.2.patch \
       contrib/04ltmain-xlinker-patch/ltmain-xlinker-patch.patch \
-      contrib/05macos-nagfor-patch/macos-nagfor.patch \
-      contrib/06ltmain_nag_pthread-patch/ltmain_nag_pthread.patch)
+      contrib/05macos-nagfor-patch/macos-nagfor-libtool-2.4.2.patch \
+      contrib/06ltmain_nag_pthread-patch/ltmain_nag_pthread-libtool-2.4.2.patch \
+      contrib/08ltmain-parallel-printf-patch/ltmain-parallel-printf-libtool-2.4.2.patch \
+      contrib/09debian-no-overlink-patch/deplib_binary-libtool-2.4.2.patch \
+      contrib/09debian-no-overlink-patch/link_all_deplibs-libtool-2.4.2.patch)
     ;;
 esac
 for patch in "${patches[@]}"; do
@@ -95,6 +108,8 @@ for patch in "${patches[@]}"; do
   patch -p1 <$patch
 done
 autoreconf -i
+# fix timestamps of the header templates
+${AUTOHEADER-autoheader} --force
 find . -name Makefile.in -exec $SED "${sed_inplace_options[@]}" \
   -e 's/[	 ][	 ]*$//' \{\} +
 \rm -f config/ltmain.sh.orig m4/libtool.m4.orig
@@ -116,13 +131,13 @@ fi
 
 #
 # to test if this succeeded, one can run
-# diff -x autom4te.cache -x .git -ur orig/yaxt new/yaxt 2>&1 |less
-# if a known good checkout is at orig/yaxt and a newly reconfigured
-# tree is at new/yaxt
+# diff -x autom4te.cache -x .git -ur orig/<project> new/<project> 2>&1 | less
+# if a known good checkout is at orig/<project> and a newly reconfigured
+# tree is at new/<project>
 #
 # Local Variables:
 # mode: sh
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:
 #

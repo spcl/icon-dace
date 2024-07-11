@@ -20,7 +20,7 @@ MODULE mo_art_simnoy
 
   ! ICON
   USE mo_kind,                 ONLY: wp
-  USE mo_math_constants,       ONLY: pi
+  USE mo_math_constants,       ONLY: pi, pi_2
   USE mtime,                   ONLY: datetime
   
   ! ART
@@ -78,7 +78,7 @@ SUBROUTINE art_simnoy_get_tab_values(current_date,lat,z_mc,nlev, jcs, jce, &
     DO jk=1,nlev
 
       ! nearest neighbour for lat
-      ik = INT( (lat(jc) + pi/2.) / pi * kparm ) + 1  
+      ik = INT( (lat(jc) + pi_2) / pi * kparm ) + 1  
 
       ! linear interpolation for lev
       il = INT( (z_mc(jc,jk)/1000. - lp) / lparm_dist)

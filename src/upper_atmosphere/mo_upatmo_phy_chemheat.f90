@@ -132,7 +132,7 @@ CONTAINS
     CHARACTER(len=max_char_length) :: vn, temp, levname, varname, units, message_text
     INTEGER :: mpi_comm, ncid, nvars, id, ian, dimid_time, dimid_lat, dimid_lev, ntimestep, ndims, dimlen
     INTEGER, ALLOCATABLE :: dimids(:)
-    CHARACTER(LEN=NF_MAX_NAME) :: attname
+    CHARACTER(LEN=NF90_MAX_NAME) :: attname
     INTEGER                    :: natts, iatt
 
     !---------------------------------------------------------
@@ -158,43 +158,43 @@ CONTAINS
         INQUIRE(FILE=TRIM(filename), EXIST=file_exists)  
         IF (.NOT. file_exists) CALL finish(routine, "input file " // TRIM(filename) // " does not exist")
         
-        CALL nf(nf_open(TRIM(filename), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(filename), NF90_NOWRITE, ncid), routine)
         
         ! check dimensions - time
-        CALL nf(nf_inq_dimid(ncid, 'time', dimid_time), routine) 
+        CALL nf(nf90_inq_dimid(ncid, 'time', dimid_time), routine) 
         IF (dimid_time < 0) CALL finish(routine, "input file " // TRIM(filename) // " does not have a time dimension")
-        CALL nf(nf_inq_dimlen(ncid, dimid_time, ntimestep), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid_time, len = ntimestep), routine)
         IF (ntimestep /= ntime) CALL finish(routine, "input file " // TRIM(filename) // " must have 12 timesteps")
-        CALL nf(nf_inq_varid(ncid, 'time', varid_time), routine)
+        CALL nf(nf90_inq_varid(ncid, 'time', varid_time), routine)
         
         ! check dimensions - latitude
-        CALL nf(nf_inq_dimid(ncid, 'lat', dimid_lat), routine) 
+        CALL nf(nf90_inq_dimid(ncid, 'lat', dimid_lat), routine) 
         IF (dimid_lat < 0) THEN
-          CALL nf(nf_inq_dimid(ncid, 'latitude', dimid_lat), routine) 
+          CALL nf(nf90_inq_dimid(ncid, 'latitude', dimid_lat), routine) 
           IF (dimid_lat < 0) CALL finish(routine, "input file " // TRIM(filename) // " does not have a latitude dimension")
         END IF
-        CALL nf(nf_inq_dimlen(ncid, dimid_lat, nlat), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid_lat, len = nlat), routine)
         WRITE(temp, *)nlat
         CALL message(routine, "input file " // TRIM(filename) // " has " // TRIM(ADJUSTL(temp)) // " latitudes")
         
         ! check dimensions - level
-        CALL nf(nf_inq_dimid(ncid, 'lev', dimid_lev), routine) 
+        CALL nf(nf90_inq_dimid(ncid, 'lev', dimid_lev), routine) 
         IF (dimid_lev < 0) THEN
-          CALL nf(nf_inq_dimid(ncid, 'level', dimid_lev), routine) 
+          CALL nf(nf90_inq_dimid(ncid, 'level', dimid_lev), routine) 
           IF (dimid_lev < 0) CALL finish(routine, "input file " // TRIM(filename) // " does not have a level dimension")
         END IF
-        CALL nf(nf_inq_dimlen(ncid, dimid_lev, nlev), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid_lev, len = nlev), routine)
         WRITE(temp, *)nlev
         CALL message(routine, "input file " // TRIM(filename) // " has " // TRIM(ADJUSTL(temp)) // " levels")
         
         ! check variables
-        CALL nf(nf_inq_nvars(ncid, nvars), routine)
+        CALL nf(nf90_inquire(ncid, nVariables = nvars), routine)
         
         varid_lev = -1
         varid_lat = -1
         varid_ch = -1
         DO id = 1, nvars
-          CALL nf(nf_inq_varname(ncid, id, vn), routine)
+          CALL nf(nf90_inquire_variable(ncid, id, name = vn), routine)
           
           IF (varid_lev == -1) THEN
             DO ian = 1, SIZE(acceptable_names_lev)
@@ -232,11 +232,11 @@ CONTAINS
         CALL message(routine, "variable " // TRIM(vn) // " found in input file " // TRIM(filename))
         
         ! check variable dimensionality
-        CALL nf(nf_inq_varndims(ncid, varid_ch, ndims), routine)
+        CALL nf(nf90_inquire_variable(ncid, varid_ch, ndims = ndims), routine)
         IF (ndims < 3) CALL finish(routine, "variable " // TRIM(varname) // " in input file " // TRIM(filename) // &
           & " is defined on less than 3 dimensions")
         ALLOCATE(dimids(ndims))
-        CALL nf(nf_inq_vardimid(ncid, varid_ch, dimids), routine)
+        CALL nf(nf90_inquire_variable(ncid, varid_ch, dimids = dimids), routine)
         IF (dimids(ndims) /= dimid_time) CALL finish(routine, "the 1st dimension of variable " // TRIM(varname) // &
           & " in input file " // TRIM(filename) // " must be time")
         IF (dimids(ndims - 1) /= dimid_lev) CALL finish(routine, "the 2nd dimension of variable " // TRIM(varname) // &
@@ -244,19 +244,19 @@ CONTAINS
         IF (dimids(ndims - 2) /= dimid_lat) CALL finish(routine, "the 3rd dimension of variable " // TRIM(varname) // &
           & " in input file " // TRIM(filename) // " must be latitude")
         DO id = ndims - 3, 1, -1
-          CALL nf(nf_inq_dimlen(ncid, dimids(id), dimlen), routine)
+          CALL nf(nf90_inquire_dimension(ncid, dimids(id), len = dimlen), routine)
           IF (dimlen /= 1) CALL finish(routine, "variable " // TRIM(varname) // " in input file " // TRIM(filename) // &
             & " has non-singleton dimensions other than time, level, and latitude")
         END DO
         DEALLOCATE(dimids)
         
         ! get unit of chemical heating variable
-        CALL nf(nf_inq_varnatts(ncid, varid_ch, natts), routine)
+        CALL nf(nf90_inquire_variable(ncid, varid_ch, nAtts = natts), routine)
         units = ''
         DO iatt = 1, natts
-          CALL nf(nf_inq_attname(ncid, varid_ch, iatt, attname), routine)
+          CALL nf(nf90_inq_attname(ncid, varid_ch, iatt, attname), routine)
           IF (TRIM(attname) == 'units') THEN
-            CALL nf(nf_get_att_text(ncid, varid_ch, 'units', units), routine)
+            CALL nf(nf90_get_att(ncid, varid_ch, 'units', units), routine)
           END IF
         END DO
         scl_ch = heating2kps_scl(units)
@@ -272,12 +272,12 @@ CONTAINS
         END IF
         
         ! get type and unit of level variable
-        CALL nf(nf_inq_varnatts(ncid, varid_lev, natts), routine)
+        CALL nf(nf90_inquire_variable(ncid, varid_lev, nAtts = natts), routine)
         units = ''
         DO iatt = 1, natts
-          CALL nf(nf_inq_attname(ncid, varid_lev, iatt, attname), routine)
+          CALL nf(nf90_inq_attname(ncid, varid_lev, iatt, attname), routine)
           IF (TRIM(attname) == 'units') THEN
-            CALL nf(nf_get_att_text(ncid, varid_lev, 'units', units), routine)
+            CALL nf(nf90_get_att(ncid, varid_lev, 'units', units), routine)
           END IF
         END DO
         scl_lev = length2meter_scl(units)      ! try height level (convert to m)
@@ -291,7 +291,7 @@ CONTAINS
             & " doesn't have a recognizable unit attribute: assuming m")
         END IF
         
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       END IF
       
       CALL p_bcast(filename, p_io, mpi_comm)
@@ -350,31 +350,31 @@ CONTAINS
       
       IF (my_process_is_stdio()) THEN
         ! open
-        CALL nf(nf_open(TRIM(filename), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(filename), NF90_NOWRITE, ncid), routine)
         
         ! get level
-        CALL nf(nf_get_var_double(ncid, varid_lev, levclim), routine)
+        CALL nf(nf90_get_var(ncid, varid_lev, levclim), routine)
         levclim = levclim * scl_lev       ! unit conversion to m
         minlev = MINVAL(levclim)
         maxlev = MAXVAL(levclim)
         levinc = levclim(1) < levclim(2)
         
         ! get latitude
-        CALL nf(nf_get_var_double(ncid, varid_lat, latclim), routine)
+        CALL nf(nf90_get_var(ncid, varid_lat, latclim), routine)
         latclim = latclim * deg2rad       ! convert from degree to radian
         minlat = MINVAL(latclim)
         maxlat = MAXVAL(latclim)
         latinc = latclim(1) < latclim(2)
 
         ! get time
-        CALL nf(nf_get_var_double(ncid, varid_time, timeclim), routine)
+        CALL nf(nf90_get_var(ncid, varid_time, timeclim), routine)
         
         ! get chemical heating
-        CALL nf(nf_get_var_double(ncid, varid_ch, chclim), routine)
+        CALL nf(nf90_get_var(ncid, varid_ch, chclim), routine)
         chclim = chclim * scl_ch          ! unit conversion to K/s
         
         ! close
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       END IF
       
       CALL p_bcast(minlev, p_io, mpi_comm)

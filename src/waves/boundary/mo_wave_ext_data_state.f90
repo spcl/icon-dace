@@ -20,6 +20,7 @@
 
 MODULE mo_wave_ext_data_state
 
+  USE mo_master_control,      ONLY: get_my_process_name
   USE mo_exception,           ONLY: message, finish
   USE mo_model_domain,        ONLY: t_patch
   USE mo_wave_ext_data_types, ONLY: t_external_wave
@@ -162,7 +163,8 @@ CONTAINS
     shape2d_c = (/ nproma, nblks_c /)
     shape2d_e = (/ nproma, nblks_e /)
 
-    CALL vlr_add(ext_data_wave_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(ext_data_wave_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE., &
+      &          model_type=get_my_process_name())
 
     ! bathymetric height at cell center
     cf_desc    = t_cf_var('Model bathymetry at cell center', 'm', &

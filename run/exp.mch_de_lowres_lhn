@@ -8,6 +8,19 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
+# ===========================================================================
+# 
+# Name: exp.mch_de_lowres_lhn.run
+#
+# Purpose: Run script for ICON on a very low resolution grid on 
+#          switzerland and germany
+#          It is used for a technical test at MeteoSwiss.
+#          This experiment is not tested!
+#
+# Created by: Remo Dietlicher (MeteoSwiss), Marek Jacob (DWD)
+#
+# =========================================================================== 
+
 # ----------------------------------------------------------------------
 # Latent heat nudging experiment from the DWD testsuite
 # ----------------------------------------------------------------------
@@ -352,7 +365,6 @@ cat > ${atmo_namelist} << EOF
 /
 &dynamics_nml
  divavg_cntrwgt = 0.50
- iequations     = 3
  lcoriolis      = .true.
 /
 &transport_nml

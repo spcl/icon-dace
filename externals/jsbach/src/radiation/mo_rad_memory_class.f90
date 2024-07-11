@@ -14,16 +14,12 @@
 MODULE mo_rad_memory_class
 #ifndef __NO_JSBACH__
 
-  USE mo_kind, ONLY: wp
-  USE mo_util, ONLY: One_of
-
-  USE mo_jsb_model_class,  ONLY: t_jsb_model
-  USE mo_jsb_class,        ONLY: Get_model
+  USE mo_kind,             ONLY: wp
+  USE mo_util,             ONLY: One_of
   USE mo_jsb_memory_class, ONLY: t_jsb_memory
   USE mo_jsb_var_class,    ONLY: t_jsb_var_real2d, t_jsb_var_real3d
   USE mo_jsb_lct_class,    ONLY: BARE_TYPE, VEG_TYPE, LAND_TYPE, GLACIER_TYPE, LAKE_TYPE
 
-  ! Use of processes in this module
   dsl4jsb_Use_processes SEB_
   dsl4jsb_Use_config(SEB_)
 
@@ -37,19 +33,22 @@ MODULE mo_rad_memory_class
   TYPE, EXTENDS(t_jsb_memory) :: t_rad_memory
 
     TYPE(t_jsb_var_real2d)  :: &
-      & sw_srf_net,            & !< net shortwave radiation at surface
-      & swvis_srf_net,         & !< net shortwave radiation at surface in visible range
-      & swnir_srf_net,         & !< net shortwave radiation at surface in NIR range
-      & lw_srf_net,            & !< net longwave radiation at surface
-      & rad_srf_net              !< net radiation at surface
+      & sw_srf_net,            & !< net shortwave radiation at surface [W m-2]
+      & swvis_srf_net,         & !< net shortwave radiation at surface in visible range [W m-2]
+      & swnir_srf_net,         & !< net shortwave radiation at surface in NIR range [W m-2]
+      & lw_srf_net,            & !< net longwave radiation at surface [W m-2]
+      & rad_srf_net              !< net radiation at surface [W m-2]
 
     TYPE(t_jsb_var_real2d) :: &
-      & alb_background,       & ! Background albedo (without snow or canopy) of tile
-                                ! Note, alb_background is ONLY used for FUNCTION get_surface_albedo_simple.
-      & alb_vis,              & ! Albedo of the whole tile in the VIS (visible) range
-      & alb_nir,              & ! Albedo of the whole tile in the NIR (near-infrared) range
-      & alb_vis_snow,         & ! Albedo of snow in the VIS range
-      & alb_nir_snow            ! Albedo of snow in the NIR range
+      & alb_background,        & !< Background albedo (without snow or canopy) of tile
+                                 !< Note, alb_background is ONLY used for FUNCTION get_surface_albedo_simple
+      & alb_vis,               & !< Albedo of the whole tile in the VIS (visible) range [unitless]
+      & alb_nir,               & !< Albedo of the whole tile in the NIR (near-infrared) range [unitless]
+      & alb_vis_snow,          & !< Albedo of snow in the VIS range [unitless]
+      & alb_nir_snow,          & !< Albedo of snow in the NIR range [unitless]
+      & alb_vis_pond,          & !< Albedo of ponds in the VIS range [unitless]
+      & alb_nir_pond             !< Albedo of ponds in the NIR range [unitless]
+
 
     !
     ! Additional variables for soil
@@ -69,7 +68,7 @@ MODULE mo_rad_memory_class
       ! R: Albedo of mineral soil is needed when Freya scheme is used. Not in the bc_lnd_phy.nc file yet!
       & alb_vis_mineralsoil,  & !< Albedo of soil without carbon or litter.
                                 !! from bc_land_phys.nc file, necessary when use_albedo_soil_scheme = .TRUE.
-                                !! for SOC-dependend albedo calculation
+                                !! for SOC-dependent albedo calculation
       & alb_nir_mineralsoil,  & ! from bc_land_phys.nc file, necessary when use_albedo_soil_scheme = .TRUE. for
                                 ! SOC dependend albedo calculation
       & alb_vis_lnd,          & ! Albedo on the non-lake part of tile in the VIS (visible) range
@@ -118,65 +117,6 @@ MODULE mo_rad_memory_class
       & albedo_lwtr,          & !< Albedo of open water on lake
       & albedo_lice             !< Albedo of ice on lake
 
-
-    !! quincy (info: the '_q_' variables are present in jsb4, but also output from quincy)
-    TYPE(t_jsb_var_real2d)  :: &
-    !   & sw_srf_net_q_,            & !< net shortwave radiation at surface [W m-2]
-    !   & swvis_srf_net_q_,         & !< net shortwave radiation at surface in visible range [W m-2]
-    !   & swnir_srf_net_q_,         & !< net shortwave radiation at surface in NIR range [W m-2]
-    !   & lw_srf_net_q_,            & !< net longwave radiation at surface [W m-2]
-    !   & rad_srf_net_q_,           & !< net radiation at surface [W m-2]
-      & net_radiation               !< net radiation at surface [W m-2]
-
-    TYPE(t_jsb_var_real2d)  :: & 
-      ! & alb_vis_q_,               & !< Albedo of the whole tile in the VIS (visible) range [unitless]
-      ! & alb_nir_q_,               & !< Albedo of the whole tile in the NIR (near-infrared) range [unitless]
-      ! & alb_vis_snow_q_,          & !< Albedo of snow in the VIS range [unitless]
-      ! & alb_nir_snow_q_,          & !< Albedo of snow in the NIR range [unitless]
-      & albedo                      !< total surface albedo [unitless]
-
-    ! Additional variables for soil
-    TYPE(t_jsb_var_real2d)  :: &
-      ! & alb_vis_soil_q_,          & !< Albedo in VIS range of soil [unitless]
-      ! & alb_nir_soil_q_,          & !< Albedo in VIS range of soil [unitless]
-      & arad_vis_soil,         & !< radiation in VIS range absorbed by the soil [W m-2]
-      & arad_nir_soil            !< radiation in NIR range absorbed by the soil [W m-2]
-
-    ! Additional variables for vegetation
-    TYPE(t_jsb_var_real2d)  ::      &
-      ! & alb_vis_can_q_,                & !< Albedo of canopy (without snow cover) in VIS range [unitless]
-      ! & alb_nir_can_q_,                & !< Albedo of canopy (without snow cover) in NIR range [unitless]
-      & arad_vis_can,               & !< radiation in VIS range absorbed by the canopy [W m-2]
-      & arad_nir_can,               & !< radiation in NIR range absorbed by the canopy [W m-2]
-      & appfd,                      & !< absorbed Photosynthetically Active Photon Flux Density [µmol m-2 s-1]
-      & rfr_ratio_boc,              & !< red to far-red ratio at the bottom of the canopy [unitless]
-      & rfr_ratio_boc_tvegdyn_mavg    !< red to far-red ratio at the bottom of the canopy [unitless]
-
-    TYPE(t_jsb_var_real3d)  :: &   ! DIMENSION(ncanopy)
-                            ppfd_sunlit_cl              , & !< Photosynthetically Active Photon Flux Density on sunlit leaves [µmol m-2 s-1]
-                            ppfd_shaded_cl              , & !< Photosynthetically Active Photon Flux Density on shaded leaves [µmol m-2 s-1]
-                            ppfd_sunlit_daytime_cl      , & !< average PPFD on sunlit leaves of the previous day [µmol m-2 s-1]
-                            ppfd_shaded_daytime_cl      , & !< average PPFD on shaded leaves of the previous day [µmol m-2 s-1]
-                            ppfd_sunlit_daytime_dacc_cl , & !< daily accumulated PPFD on sunlit leaves [µmol m-2 d-1] 
-                            ppfd_shaded_daytime_dacc_cl , & !< daily accumulated PPFD on shaded leaves of the previous day [µmol m-2 d-1]
-                            ppfd_sunlit_tfrac_mavg_cl   , & !< average PPFD on sunlit leaves at tfrac-timescale [µmol m-2 s-1] 
-                            ppfd_shaded_tfrac_mavg_cl   , & !< average PPFD on shaded leaves at tfrac-timescale [µmol m-2 s-1]
-                            ppfd_sunlit_tcnl_mavg_cl    , & !< average PPFD on sunlit leaves at tcnl-timescale [µmol m-2 s-1]
-                            ppfd_shaded_tcnl_mavg_cl        !< average PPFD on shaded leaves at tcnl-timescale [µmol m-2 s-1]
-
-    TYPE(t_jsb_var_real3d)  :: &   ! DIMENSION(ncanopy)
-                            arad_sunlit_vis_cl   , & !< absorbed radiation in visible band on sunlit leaves [W m-2]
-                            arad_shaded_vis_cl   , & !< absorbed radiation in visible band on shaded leaves [W m-2]
-                            fleaf_sunlit_vis_cl  , & !< fraction of leaves that are sunlit in VIS band [unitless]
-                            arad_sunlit_nir_cl   , & !< absorbed radiation in NIR band on sunlit leaves [W m-2]
-                            arad_shaded_nir_cl   , & !< absorbed radiation in NIR band on shaded leaves [W m-2]
-                            fleaf_sunlit_nir_cl      !< fraction of leaves that are sunlit in NIR band [unitless]
-
-    ! ! 3D Radiative transfer variables (appended by _sp for spectral_bands)
-    ! TYPE(t_jsb_var_real3d)  :: &   ! DIMENSION(nspec)
-    !                         canopy_reflectance_sp    !< top of the canopy directional reflectance factor [unitless]
-
-
   CONTAINS
     PROCEDURE :: Init => Init_rad_memory
   END TYPE t_rad_memory
@@ -185,41 +125,40 @@ MODULE mo_rad_memory_class
 
 CONTAINS
 
+  ! ======================================================================================================= !
+  !> initialize memory (variables) for the process: radiation
+  !>
   SUBROUTINE Init_rad_memory(mem, prefix, suffix, lct_ids, model_id)
-
-    USE mo_jsb_varlist,       ONLY: BASIC, MEDIUM !, FULL
-    USE mo_jsb_io,            ONLY: grib_bits, t_cf, t_grib1, t_grib2, &
-                                    TSTEP_CONSTANT, tables
+    USE mo_jsb_varlist,       ONLY: BASIC, MEDIUM, FULL
+    USE mo_jsb_io,            ONLY: grib_bits, t_cf, t_grib1, t_grib2, tables, TSTEP_CONSTANT
     USE mo_jsb_grid_class,    ONLY: t_jsb_grid, t_jsb_vgrid
     USE mo_jsb_grid,          ONLY: Get_grid, Get_vgrid
-
+    USE mo_jsb_model_class,   ONLY: t_jsb_model
+    USE mo_jsb_class,         ONLY: Get_model
     USE mo_rad_constants,     ONLY: AlbedoLakeWater, AlbedoLakeIceMin
 
     CLASS(t_rad_memory), INTENT(inout), TARGET :: mem
-    CHARACTER(len=*),    INTENT(in)    :: prefix
-    CHARACTER(len=*),    INTENT(in)    :: suffix
-    INTEGER,             INTENT(in)    :: lct_ids(:)
-    INTEGER,             INTENT(in)    :: model_id
+    CHARACTER(len=*),    INTENT(in)            :: prefix
+    CHARACTER(len=*),    INTENT(in)            :: suffix
+    INTEGER,             INTENT(in)            :: lct_ids(:)
+    INTEGER,             INTENT(in)            :: model_id
 
     dsl4jsb_Def_config(SEB_)
 
-    TYPE(t_jsb_model), POINTER :: model
-    TYPE(t_jsb_grid),  POINTER :: hgrid                        ! Horizontal grid
-    TYPE(t_jsb_vgrid), POINTER :: surface, canopy_layer        ! Vertical grid
-    TYPE(t_jsb_vgrid), POINTER :: vgrid_canopy                 ! Vertical grid
-    INTEGER :: table
+    TYPE(t_jsb_model), POINTER  :: model                        !< model
+    TYPE(t_jsb_grid),  POINTER  :: hgrid                        !< Horizontal grid
+    TYPE(t_jsb_vgrid), POINTER  :: surface, canopy_layer        !< Vertical grids
+    INTEGER                     :: table                        !< ...
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Init_rad_memory'
+
     IF (model_id > 0) CONTINUE ! avoid compiler warning about dummy argument not being used
 
-    model => Get_model(model_id)
-
-    table = tables(1)
-
+    model        => Get_model(model_id)
+    table        = tables(1)
     hgrid        => Get_grid(mem%grid_id)
     surface      => Get_vgrid('surface')
     canopy_layer => Get_vgrid('canopy_layer')
-    vgrid_canopy => Get_vgrid('canopy_layer_q_')  !! quincy
 
     dsl4jsb_Get_config(SEB_)
 
@@ -334,7 +273,7 @@ CONTAINS
         & output_level=MEDIUM, &
         & initval_r=0.0_wp )
 
-    END IF
+    END IF ! land
 
     ! Additional variables for soil
     IF ( (One_of(BARE_TYPE, lct_ids(:)) > 0 .OR. One_of(VEG_TYPE, lct_ids(:)) > 0 &
@@ -372,6 +311,22 @@ CONTAINS
         & prefix, suffix,                                                    &
         & output_level=MEDIUM,                                               &
         & loutput=.TRUE., lrestart=.TRUE., initval_r=0.0_wp)
+
+      CALL mem%Add_var( 'alb_vis_pond', mem%alb_vis_pond,                    &
+        & hgrid, surface,                                                    &
+        & t_cf('alb_vis_pond', '', ''),                       &
+        & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix,                                                    &
+        & lrestart=.TRUE.,                                                   &
+        & initval_r=0.0_wp )
+
+      CALL mem%Add_var( 'alb_nir_pond', mem%alb_nir_pond,                    &
+        & hgrid, surface,                                                    &
+        & t_cf('alb_nir_pond', '', ''),                       &
+        & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix,                                                    &
+        & lrestart=.TRUE.,                                                   &
+        & initval_r=0.0_wp )
     END IF
 
     ! Additional variables for vegetation
@@ -531,7 +486,7 @@ CONTAINS
         & prefix, suffix,                                                     &
         & output_level=MEDIUM,                                                &
         & loutput=.TRUE., lrestart=.TRUE., initval_r=AlbedoLakeWater )
-      
+
       IF (dsl4jsb_Config(SEB_)%l_ice_on_lakes) THEN
 
         CALL mem%Add_var( 'rad_net_lice', mem%rad_net_lice,                     &
@@ -551,366 +506,8 @@ CONTAINS
           & output_level=MEDIUM,                                                &
           & loutput=.TRUE., lrestart=.TRUE., initval_r=AlbedoLakeIceMin )
 
-      END IF
-
-    END IF
-
-    IF (.NOT. model%config%use_quincy) RETURN
-
-    !! quincy 
-    IF ( One_of(LAND_TYPE, lct_ids(:)) > 0 .OR. &
-         One_of(VEG_TYPE,  lct_ids(:)) > 0) THEN
-      ! CALL mem%Add_var('sw_srf_net_q_', mem%sw_srf_net_q_, &
-      !       hgrid, surface, &
-      !       t_cf('sw_srf_net_q_', 'W m-2', 'net shortwave radiation at surface'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('swvis_srf_net_q_', mem%swvis_srf_net_q_, &
-      !       hgrid, surface, &
-      !       t_cf('swvis_srf_net_q_', 'W m-2', 'net shortwave radiation at surface in visible range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('swnir_srf_net_q_', mem%swnir_srf_net_q_, &
-      !       hgrid, surface, &
-      !       t_cf('swnir_srf_net_q_', 'W m-2', 'net shortwave radiation at surface in NIR range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('lw_srf_net_q_', mem%lw_srf_net_q_, &
-      !       hgrid, surface, &
-      !       t_cf('lw_srf_net_q_', 'W m-2', 'net longwave radiation at surface'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('rad_srf_net_q_', mem%rad_srf_net_q_, &
-      !       hgrid, surface, &
-      !       t_cf('rad_srf_net_q_', 'W m-2', 'net radiation at surface'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      CALL mem%Add_var('net_radiation', mem%net_radiation, &
-            hgrid, surface, &
-            t_cf('net_radiation', 'W m-2', 'net radiation at surface'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-      
-      ! CALL mem%Add_var('alb_vis_q_', mem%alb_vis_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_vis_q_', 'unitless', 'Albedo of the whole tile in the VIS (visible) range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('alb_nir_q_', mem%alb_nir_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_nir_q_', 'unitless', 'Albedo of the whole tile in the NIR (near-infrared) range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('alb_vis_snow_q_', mem%alb_vis_snow_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_vis_snow_q_', 'unitless', 'Albedo of snow in the VIS range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('alb_nir_snow_q_', mem%alb_nir_snow_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_nir_snow_q_', 'unitless', 'Albedo of snow in the NIR range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      
-      CALL mem%Add_var('albedo', mem%albedo, &
-            hgrid, surface, &
-            t_cf('albedo', 'unitless', 'total surface albedo'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp )
-      
-      ! CALL mem%Add_var('alb_vis_soil_q_', mem%alb_vis_soil_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_vis_soil_q_', 'unitless', 'Albedo in VIS range of soil'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('alb_nir_soil_q_', mem%alb_nir_soil_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_nir_soil_q_', 'unitless', 'Albedo in VIS range of soil'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('arad_vis_soil', mem%arad_vis_soil, &
-            hgrid, surface, &
-            t_cf('arad_vis_soil', 'W m-2', 'radiation in VIS range absorbed by the soil'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('arad_nir_soil', mem%arad_nir_soil, &
-            hgrid, surface, &
-            t_cf('arad_nir_soil', 'W m-2', 'radiation in NIR range absorbed by the soil'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      ! CALL mem%Add_var('alb_vis_can_q_', mem%alb_vis_can_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_vis_can_q_', 'unitless', 'Albedo of canopy (without snow cover) in VIS range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-      ! 
-      ! CALL mem%Add_var('alb_nir_can_q_', mem%alb_nir_can_q_, &
-      !       hgrid, surface, &
-      !       t_cf('alb_nir_can_q_', 'unitless', 'Albedo of canopy (without snow cover) in NIR range'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('arad_vis_can', mem%arad_vis_can, &
-            hgrid, surface, &
-            t_cf('arad_vis_can', 'W m-2', 'radiation in VIS range absorbed by the canopy'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('arad_nir_can', mem%arad_nir_can, &
-            hgrid, surface, &
-            t_cf('arad_nir_can', 'W m-2', 'radiation in NIR range absorbed by the canopy'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('appfd', mem%appfd, &
-            hgrid, surface, &
-            t_cf('appfd', 'µmol m-2 s-1', 'absorbed Photosynthetically Active Photon Flux Density'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('rfr_ratio_boc', mem%rfr_ratio_boc, &
-            hgrid, surface, &
-            t_cf('rfr_ratio_boc', 'unitless', 'red to far-red ratio at the bottom of the canopy'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('rfr_ratio_boc_tvegdyn_mavg', mem%rfr_ratio_boc_tvegdyn_mavg, &
-            hgrid, surface, &
-            t_cf('rfr_ratio_boc_tvegdyn_mavg', 'unitless', 'red to far-red ratio at the bottom of the canopy'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_sunlit_cl', mem%ppfd_sunlit_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_sunlit_cl', 'µmol m-2 s-1', 'Photosynthetically Active Photon Flux Density on sunlit leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_shaded_cl', mem%ppfd_shaded_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_shaded_cl', 'µmol m-2 s-1', 'Photosynthetically Active Photon Flux Density on shaded leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_sunlit_daytime_cl', mem%ppfd_sunlit_daytime_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_sunlit_daytime_cl', 'µmol m-2 s-1', 'average PPFD on sunlit leaves of the previous day'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_shaded_daytime_cl', mem%ppfd_shaded_daytime_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_shaded_daytime_cl', 'µmol m-2 s-1', 'average PPFD on shaded leaves of the previous day'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_sunlit_daytime_dacc_cl', mem%ppfd_sunlit_daytime_dacc_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_sunlit_daytime_dacc_cl', 'µmol m-2 d-1', 'daily accumulated PPFD on sunlit leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_shaded_daytime_dacc_cl', mem%ppfd_shaded_daytime_dacc_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_shaded_daytime_dacc_cl', 'µmol m-2 d-1', 'daily accumulated PPFD on shaded leaves of the previous day'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_sunlit_tfrac_mavg_cl', mem%ppfd_sunlit_tfrac_mavg_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_sunlit_tfrac_mavg_cl', 'µmol m-2 s-1', 'average PPFD on sunlit leaves at tfrac-timescale'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_shaded_tfrac_mavg_cl', mem%ppfd_shaded_tfrac_mavg_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_shaded_tfrac_mavg_cl', 'µmol m-2 s-1', 'average PPFD on shaded leaves at tfrac-timescale'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_sunlit_tcnl_mavg_cl', mem%ppfd_sunlit_tcnl_mavg_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_sunlit_tcnl_mavg_cl', 'µmol m-2 s-1', 'average PPFD on sunlit leaves at tcnl-timescale'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-  
-      CALL mem%Add_var('ppfd_shaded_tcnl_mavg_cl', mem%ppfd_shaded_tcnl_mavg_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('ppfd_shaded_tcnl_mavg_cl', 'µmol m-2 s-1', 'average PPFD on shaded leaves at tcnl-timescale'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('arad_sunlit_vis_cl', mem%arad_sunlit_vis_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('arad_sunlit_vis_cl', 'W m-2', 'absorbed radiation in visible band on sunlit leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('arad_shaded_vis_cl', mem%arad_shaded_vis_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('arad_shaded_vis_cl', 'W m-2', 'absorbed radiation in visible band on shaded leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('fleaf_sunlit_vis_cl', mem%fleaf_sunlit_vis_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('fleaf_sunlit_vis_cl', 'unitless', 'fraction of leaves that are sunlit in VIS band'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('arad_sunlit_nir_cl', mem%arad_sunlit_nir_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('arad_sunlit_nir_cl', 'W m-2', 'absorbed radiation in NIR band on sunlit leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('arad_shaded_nir_cl', mem%arad_shaded_nir_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('arad_shaded_nir_cl', 'W m-2', 'absorbed radiation in NIR band on shaded leaves'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      CALL mem%Add_var('fleaf_sunlit_nir_cl', mem%fleaf_sunlit_nir_cl, &
-            hgrid, vgrid_canopy, &
-            t_cf('fleaf_sunlit_nir_cl', 'unitless', 'fraction of leaves that are sunlit in NIR band'), &
-            t_grib1(table, 255, grib_bits), &
-            t_grib2(255, 255, 255, grib_bits), &
-            prefix, suffix, &
-            loutput=.TRUE., lrestart=.TRUE., &
-            initval_r=0.0_wp) ! initvalue
-
-      ! CALL mem%Add_var('canopy_reflectance_sp', mem%canopy_reflectance_sp, &
-      !       hgrid, vgrid_spectral, &
-      !       t_cf('canopy_reflectance_sp', 'unitless', 'top of the canopy directional reflectance factor'), &
-      !       t_grib1(table, 255, grib_bits), &
-      !       t_grib2(255, 255, 255, grib_bits), &
-      !       prefix, suffix, &
-      !       loutput=.TRUE., lrestart=.TRUE., &
-      !       initval_r=0.0_wp) ! initvalue
-    END IF
+      END IF ! l_ice_on_lakes
+    END IF ! lakes
 
   END SUBROUTINE Init_rad_memory
 

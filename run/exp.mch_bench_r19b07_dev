@@ -17,8 +17,9 @@
 # Purpose: Run script for ICON on the R19B07 grid (ICON-2) on 
 #          a small Alpine region over CH/IT. 
 #          It is used for a technical benchmark at MeteoSwiss.
+#          This experiment is not tested!
 #
-# Author: Sascha Bellaire (MeteoSwiss)
+# Created by: Fabian Gessler (MeteoSwiss)
 #
 # =========================================================================== 
 
@@ -183,7 +184,6 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /

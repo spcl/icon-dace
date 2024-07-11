@@ -551,7 +551,6 @@ scripts/postprocessing/testcases/icoham_ape_postpro.ksh -text
 scripts/postprocessing/testcases/iconam_ape_postpro.ksh -text
 scripts/postprocessing/testcases/oce_parallel_postpro_driver.bash -text
 scripts/postprocessing/tools/.hluresfile -text
-scripts/postprocessing/tools/MRW_mountain/MRW_mountain_R2B04.nc -text
 scripts/postprocessing/tools/NH_scripts/gravity_wave.ncl -text
 scripts/postprocessing/tools/PLOT_examples/README -text
 scripts/postprocessing/tools/PLOT_examples/icon_triangle_polygons.ncl -text
@@ -1052,7 +1051,6 @@ src/shared/mo_derived_variable_handling.f90 -text
 src/shared/mo_dictionary.f90 -text
 src/shared/mo_event_manager.f90 -text
 src/shared/mo_fast_math_lib.f90 svneol=native#text/plain
-src/shared/mo_fortran_tools.f90 -text
 src/shared/mo_gnat_gridsearch.f90 -text
 src/shared/mo_grid_subset.f90 -text
 src/shared/mo_impl_constants.f90 -text
@@ -1065,8 +1063,6 @@ src/shared/mo_math_constants.f90 -text
 src/shared/mo_math_types.f90 -text
 src/shared/mo_math_utilities.f90 -text
 src/shared/mo_math_utility_solvers.f90 -text
-src/shared/mo_namelist.f90 -text
-src/shared/mo_octree.f90 -text
 src/shared/mo_orbit.f90 -text
 src/shared/mo_physical_constants.f90 -text
 src/shared/mo_random_util.f90 -text

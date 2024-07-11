@@ -70,7 +70,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = -1       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 900               ! model timestep in seconds
@@ -151,6 +150,7 @@ cat > ${ocean_namelist} << EOF
 &sea_ice_nml
   i_ice_therm   = 1              !  0: not allowed, 1=zero-layer, 2=Winton
   i_ice_dyn     = 0              !  1/0=switch on/off AWI ice dynamics
+  stress_ice_zero = .true.
 /
 &ocean_forcing_nml
   iforc_oce                   = 10       ! ocean forcing

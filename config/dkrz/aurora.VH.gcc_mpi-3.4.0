@@ -51,14 +51,14 @@ XML2_LIBS='-lxml2'
 BUILD_ENV=". ${MODULESHOME}/init/sh; module purge; save_CC=\$CC; save_CXX=\$CXX; save_FC=\$FC; save_F77=\$F77; module load ${modules}; CC=\$save_CC; CXX=\$save_CXX; FC=\$save_FC; F77=\$save_F77; export LD_LIBRARY_PATH=\"${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${BLAS_LAPACK_ROOT}/lib:${ECCODES_ROOT}/lib:${FYAML_ROOT}/lib:\${LD_LIBRARY_PATH-}\";"
 
 CC='mpincc -vh'
-CFLAGS='-g -march=native -mpc64'
+CFLAGS='-g1 -march=native -mpc64'
 ICON_CFLAGS='-O3'
 ICON_BUNDLED_CFLAGS='-O2'
 
 CPPFLAGS="-I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${FYAML_ROOT}/include ${XML2_CPPFLAGS}"
 
 FC='mpinfort -vh'
-FCFLAGS="-I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -g -fbacktrace -march=native -mpc64 -O2 -fmodule-private -fimplicit-none -fno-range-check -fmax-identifier-length=63 -fall-intrinsics -Wall -Wcharacter-truncation -Wunderflow -Wunused-parameter -Wno-surprising"
+FCFLAGS="-I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -g1 -fbacktrace -march=native -mpc64 -O2 -fmodule-private -fimplicit-none -fno-range-check -fmax-identifier-length=63 -fall-intrinsics -Wall -Wcharacter-truncation -Wunderflow -Wunused-parameter -Wno-surprising"
 
 ICON_FCFLAGS='-D__COMM_OPT__ -D__BLOCK_GET__ -D__NEC_VH__ -std=f2008 -fallow-argument-mismatch'
 

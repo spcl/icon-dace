@@ -270,7 +270,7 @@ CONTAINS
       IF(lIsWriteProcess) THEN
         CALL create_restart_file_link(fname, TRIM(rArgs%modelType), &
           & desc%id, opt_ndom=desc%opt_ndom)
-        CALL nf(nf_close(rfids%ncid), routine)
+        CALL nf(nf90_close(rfids%ncid), routine)
       END IF
     END DO
     IF (ALLOCATED(rAttribs)) CALL rAttribs%destruct()
@@ -290,10 +290,10 @@ CONTAINS
       SELECT CASE(pData%restartType)
       CASE(FILETYPE_NC2)
         WRITE(0,*) "Write netCDF2 restart for: "//TRIM(datetimeString)
-        CALL nf(nf_create(fname, NF_64BIT_OFFSET, ncid), routine)
+        CALL nf(nf90_create(fname, NF90_64BIT_OFFSET, ncid), routine)
       CASE(FILETYPE_NC4)
         WRITE(0,*) "Write netCDF4 restart for: "//TRIM(datetimeString)
-        CALL nf(nf_create(fname, NF_NETCDF4, ncid), routine)
+        CALL nf(nf90_create(fname, NF90_NETCDF4, ncid), routine)
       CASE default
         CALL finish(routine, "file format for restart variables must be NetCDF")
       END SELECT
@@ -310,9 +310,9 @@ CONTAINS
         IF(has_valid_time_level(ci, desc%id, desc%nnow, desc%nnow_rcf)) &
           & CALL rfids%def_ncdfvar(ci, desc%hmap(ci%hgrid))
       ENDDO
-      CALL nf(nf_set_fill(ncid, NF_NOFILL, i), routine)
-      CALL nf(nf_enddef(ncid), routine)
-      CALL nf(nf_put_var1_real(ncid, tvid, [1], REAL(date_dayas)), routine)
+      CALL nf(nf90_set_fill(ncid, NF90_NOFILL, i), routine)
+      CALL nf(nf90_enddef(ncid), routine)
+      CALL nf(nf90_put_var(ncid, tvid, REAL(date_dayas), [1]), routine)
     END SUBROUTINE restartfile_open
   END SUBROUTINE restartDescriptor_writeFiles
 

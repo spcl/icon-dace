@@ -10,4 +10,4 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-./config/cscs/balfrin.cpu.nvidia
+./config/cscs/alps_mch.cpu.nvidia

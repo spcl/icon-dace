@@ -1056,7 +1056,7 @@ CONTAINS
     !-------------------------------------------------------------------------
     all_cells => patch_2D%cells%ALL
 
-    IF(no_tracer==2)THEN
+    IF(no_tracer >= 2)THEN
 
 !ICON_OMP_PARALLEL
 !ICON_OMP_DO PRIVATE(start_index, end_index, jc, jk) ICON_OMP_DEFAULT_SCHEDULE
@@ -1156,7 +1156,7 @@ CONTAINS
     all_cells => patch_2D%cells%ALL
 
     !NOTE: here we use the Boussinesq approximation
-    IF(no_tracer==2)THEN
+    IF(no_tracer >= 2)THEN
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc, levels, z_p) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, start_index, end_index)
@@ -1270,7 +1270,7 @@ CONTAINS
 
     !  tracer 1: potential temperature
     !  tracer 2: salinity
-    IF (no_tracer == 2) THEN
+    IF (no_tracer >= 2) THEN
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc, levels, z_p) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, start_index, end_index)
@@ -1320,7 +1320,7 @@ CONTAINS
       !$ACC WAIT(1)
 !ICON_OMP_END_PARALLEL_DO
 
-    ENDIF ! no_tracer==2
+    ENDIF ! no_tracer >= 2
 
     !$ACC END DATA
 
@@ -1353,7 +1353,7 @@ CONTAINS
 
     !  tracer 1: potential temperature
     !  tracer 2: salinity
-    IF (no_tracer == 2) THEN
+    IF (no_tracer >= 2) THEN
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc, levels, z_p, jk) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, start_index, end_index)
@@ -1411,7 +1411,7 @@ CONTAINS
       !$ACC WAIT(1)
 !ICON_OMP_END_PARALLEL_DO
 
-    ENDIF ! no_tracer==2
+    ENDIF ! no_tracer >= 2
 
 
     CALL dbg_print('calculate_density_mpiom_vec: rho', rho , "" ,5, patch_2D%cells%in_domain)
@@ -1459,7 +1459,7 @@ CONTAINS
 
     !  tracer 1: potential temperature
     !  tracer 2: salinity
-    IF (no_tracer == 2) THEN
+    IF (no_tracer >= 2) THEN
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc, levels, z_p) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = all_cells%start_block, all_cells%end_block
         CALL get_index_range(all_cells, jb, start_index, end_index)
@@ -1510,7 +1510,7 @@ CONTAINS
       !$ACC WAIT(1)
 !ICON_OMP_END_PARALLEL_DO
 
-    ENDIF ! no_tracer==2
+    ENDIF ! no_tracer >= 2
 
     !$ACC END DATA
 
@@ -2156,7 +2156,7 @@ CONTAINS
 
     !  tracer 1: potential temperature
     !  tracer 2: salinity
-    IF(no_tracer==2)THEN
+    IF(no_tracer >= 2)THEN
 !ICON_OMP_PARALLEL
 !ICON_OMP_DO PRIVATE(start_index, end_index, jc, jk) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = all_cells%start_block, all_cells%end_block

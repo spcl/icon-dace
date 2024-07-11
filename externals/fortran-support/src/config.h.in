@@ -9,10 +9,10 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ---------------------------------------------------------------
 
-#cmakedefine HAVE_EXECINFO_H 1
+#cmakedefine HAVE_EXECINFO_H @HAVE_EXECINFO_H@
 
-#cmakedefine HAVE_LINK_H 1
+#cmakedefine HAVE_LINK_H @HAVE_LINK_H@
 
-#cmakedefine HAVE_UNWIND_H 1
+#cmakedefine HAVE_UNWIND_H @HAVE_UNWIND_H@
 
-#cmakedefine HAVE_PTHREAD_H 1
+#cmakedefine HAVE_GETRUSAGE @HAVE_GETRUSAGE@

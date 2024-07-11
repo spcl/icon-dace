@@ -41,6 +41,7 @@ MODULE mo_tmx_process_class
     CHARACTER(LEN=:),      ALLOCATABLE :: name         !< Process name
     TYPE(t_domain),        POINTER     :: domain       !< Spatial domain
     REAL(wp)                           :: dt           !< Time step
+    LOGICAL                            :: is_initial_time
     TYPE(t_tmx_field_list)             :: states       !< State variables
     TYPE(t_variable_list)              :: tendencies   !< Tendency variables
     TYPE(t_variable_list)              :: new_states   !< New state variables
@@ -102,6 +103,7 @@ CONTAINS
     TYPE(t_domain),       POINTER,    OPTIONAL :: domain
 
     this%dt = dt
+    this%is_initial_time = .TRUE.
 
     IF (PRESENT(name)) THEN
       this%name = name
@@ -237,11 +239,11 @@ CONTAINS
     CALL allocate_variable(tv)
 !$OMP PARALLEL
     IF (ndims == 2) THEN
-      CALL init(tv%r2d)
+      CALL init(tv%r2d, lacc=.FALSE.)
     ELSE IF (ndims == 3) THEN
-      CALL init(tv%r3d)
+      CALL init(tv%r3d, lacc=.FALSE.)
     ELSE IF (ndims == 4) THEN
-      CALL init(tv%r4d)
+      CALL init(tv%r4d, lacc=.FALSE.)
     ELSE
       CALL finish(routine, 'ERROR')
     END IF
@@ -254,11 +256,11 @@ CONTAINS
     CALL allocate_variable(tv)
 !$OMP PARALLEL
     IF (ndims == 2) THEN
-      CALL init(tv%r2d)
+      CALL init(tv%r2d, lacc=.FALSE.)
     ELSE IF (ndims == 3) THEN
-      CALL init(tv%r3d)
+      CALL init(tv%r3d, lacc=.FALSE.)
     ELSE IF (ndims == 4) THEN
-      CALL init(tv%r4d)
+      CALL init(tv%r4d, lacc=.FALSE.)
     ELSE
       CALL finish(routine, 'ERROR')
     END IF
@@ -301,7 +303,7 @@ CONTAINS
     IF (tv%bound) CALL finish(routine, 'new_state variable for '//name//' should not be bound to outside variable')
     CALL allocate_variable(tv)
 !$OMP PARALLEL
-    CALL init(tv%r2d)
+    CALL init(tv%r2d, lacc=.FALSE.)
 !$OMP END PARALLEL
 
     ! Add variable to tendencies varlist with the same attributes as state
@@ -310,7 +312,7 @@ CONTAINS
     IF (tv%bound) CALL finish(routine, 'Tendency variable for '//name//' should not be bound to outside variable')
     CALL allocate_variable(tv)
 !$OMP PARALLEL
-    CALL init(tv%r2d)
+    CALL init(tv%r2d, lacc=.FALSE.)
 !$OMP END PARALLEL
 
     tv => this%states%search(name)
@@ -356,7 +358,7 @@ CONTAINS
     IF (tv%bound) CALL finish(routine, 'new_states variable for '//name//' should not be bound to outside variable')
     CALL allocate_variable(tv)
 !$OMP PARALLEL
-    CALL init(tv%r3d)
+    CALL init(tv%r3d, lacc=.FALSE.)
 !$OMP END PARALLEL
 
     ! Add variable to tendencies varlist with the same attributes as state
@@ -365,7 +367,7 @@ CONTAINS
     IF (tv%bound) CALL finish(routine, 'Tendency variable for '//name//' should not be bound to outside variable')
     CALL allocate_variable(tv)
 !$OMP PARALLEL
-    CALL init(tv%r3d)
+    CALL init(tv%r3d, lacc=.FALSE.)
 !$OMP END PARALLEL
 
     tv => this%states%search(name)

@@ -29,25 +29,416 @@ MODULE mo_reff_main
 
   USE mo_kind              ,   ONLY: wp, i4
   USE mo_math_constants    ,   ONLY: pi
-  USE mo_physical_constants,   ONLY: rhoh2o     ! Water density  
+  USE mo_physical_constants,   ONLY: rhoh2o, t0 => tmelt, rhoi
   USE mo_exception,            ONLY: message, message_text, finish
-
   USE mo_reff_types,           ONLY: t_reff_calc
   USE mo_2mom_mcrph_driver,    ONLY: two_mom_reff_coefficients 
-  USE gscp_data,               ONLY: one_mom_reff_coefficients,                   &
-                                   & one_mom_calculate_ncn,                       &
-                                   & cloud_num
   USE mo_parallel_config,      ONLY: nproma
+  USE mo_radiation_config,     ONLY: irad_aero, iRadAeroTegen, iRadAeroCAMSclim, iRadAeroCAMStd
+  USE mo_cpl_aerosol_microphys,ONLY: ncn_from_tau_aerosol_speccnconst_dust, ice_nucleation
+  USE microphysics_1mom_schemes, ONLY: get_params_for_ncn_calculation, get_params_for_reff_coefficients, get_cloud_number
+  USE mo_index_list,           ONLY: generate_index_list_batched
+
 
   IMPLICIT NONE
   PRIVATE
   
-  PUBLIC:: init_reff_calc, mapping_indices,calculate_ncn,calculate_reff,set_max_reff,combine_reff 
+  PUBLIC:: init_reff_calc, mapping_indices, calculate_ncn, calculate_reff, set_max_reff, combine_reff
 
 
   CONTAINS
 
 ! ------------------------------------------------------------------------------------------
+
+  ! Subroutine that provides coefficients for the effective radius calculations
+  ! consistent with microphysics
+  SUBROUTINE one_mom_reff_coefficients( reff_calc ,return_fct)
+    TYPE(t_reff_calc), INTENT(INOUT)  :: reff_calc           ! Structure with options and coefficiencts
+    LOGICAL,           INTENT(INOUT)  :: return_fct          ! Return code of the subroutine
+
+    ! Parameters used in the paramaterization of reff (the same for all)
+    REAL(wp)                          :: a_geo, b_geo        ! Geometrical factors x =a_geo D**[b_geo]
+    REAL(wp)                          :: mu,nu,N0            ! Parameters if the gamma distribution      
+    REAL(wp)                          :: bf, bf2             ! Broadening factors of reff
+    REAL(wp)                          :: x_min,x_max         ! Maximum and minimum mass of particles (kg)
+    LOGICAL                           :: monodisperse        ! .true. for monodisperse DSD assumption
+
+    REAL(wp) :: zami, zmi0, zmimax, zn0r, mu_rain, ageo_snow, zbms, zmsmin
+
+    CHARACTER(len=*), PARAMETER :: routine = 'one_mom_reff_coefficients'
+    
+    N0 = -1.0_wp
+
+    ! Check input return_fct
+    IF (.NOT. return_fct) THEN
+      WRITE (message_text,*) 'Reff: Function one_mom_provide_reff_coefficients (1mom) entered with previous error'
+      CALL message('',message_text)
+      RETURN
+    END IF
+
+    CALL get_params_for_reff_coefficients(zami_arg=zami, &
+                                          zmi0_arg=zmi0, &
+                                          zmimax_arg=zmimax, &
+                                          zn0r_arg=zn0r, &
+                                          mu_rain_arg=mu_rain, &
+                                          ageo_snow_arg=ageo_snow, &
+                                          zbms_arg=zbms, &
+                                          zmsmin_arg=zmsmin)
+
+    ! Default values
+    x_min           = reff_calc%x_min
+    x_max           = reff_calc%x_max
+
+    ! Extract parameterization parameters
+    SELECT CASE ( reff_calc%hydrometeor ) ! Select Hydrometeor
+    CASE (0)                              ! Cloud water
+      a_geo         = pi/6.0_wp * rhoh2o
+      b_geo         = 3.0_wp
+      monodisperse  = .true.              ! Monodisperse assumption by default
+    CASE (1)                              ! Ice
+      a_geo         = zami
+      b_geo         = 3.0_wp              ! According to COSMO Documentation
+      monodisperse  = .true.              ! Monodisperse assumption by default
+      x_min         = zmi0                ! Limits to crystal mass set by the scheme
+      x_max         = zmimax 
+    CASE (2)                              ! Rain
+      a_geo         = pi/6.0_wp * rhoh2o  ! Assume spherical rain
+      b_geo         = 3.0_wp
+      monodisperse  = .false.  
+      N0            = zn0r 
+      nu            = mu_rain             ! This is right, there are different mu/nu notations
+      mu            = 1.0   
+    CASE (3)                              ! Snow
+      a_geo         = ageo_snow 
+      b_geo         = zbms
+      monodisperse  = .false.  
+      N0            = 1.0_wp              ! Complex dependency for N0 (set in calculate_ncn)
+      nu            = 0.0_wp              ! Marshall Palmer distribution (exponential)
+      mu            = 1.0_wp
+      x_min         = zmsmin  
+    CASE (4)                              ! Graupel: values from Documentation (not in micro. code)
+      a_geo         = 169.6_wp   
+      b_geo         = 3.1_wp
+      monodisperse  = .false.  
+      N0            = 4.0E6_wp 
+      nu            = 0.0_wp              ! Marshall Palmer distribution (exponential)
+      mu            = 1.0_wp
+    CASE DEFAULT
+      CALL finish(TRIM(routine),'wrong value for reff_calc%hydrometeor')      
+    END SELECT
+
+    ! Set values if changed
+    reff_calc%x_min = x_min
+    reff_calc%x_max = x_max
+
+    ! Overwrite dsd options if they are provided
+    IF ( reff_calc%dsd_type /= 0) THEN
+      ! Overwrite monodisperse/polydisperse according to options
+      SELECT CASE (reff_calc%dsd_type)
+      CASE (1)
+        monodisperse  = .true.
+      CASE (2)
+        monodisperse  = .false.
+      CASE DEFAULT
+        CALL finish(TRIM(routine),'wrong value for reff_calc%dsd_type')      
+      END SELECT
+     
+      IF ( reff_calc%dsd_type == 2) THEN    ! Overwrite mu and nu coefficients
+        mu            = reff_calc%mu
+        nu            = reff_calc%nu
+      END IF
+    END IF
+
+    ! Calculate parameters to calculate effective radius
+    SELECT CASE ( reff_calc%reff_param )  ! Select Parameterization
+    CASE(0)                               ! Spheroids  Dge = c1 * x**[c2], which x = mean mass
+      ! First calculate monodisperse
+      reff_calc%reff_coeff(1) = a_geo**(-1.0_wp/b_geo)
+      reff_calc%reff_coeff(2) = 1.0_wp/b_geo
+
+      ! Broadening for not monodisperse
+      IF ( .NOT. monodisperse ) THEN 
+        bf =  GAMMA( (nu + 4.0_wp)/ mu) / GAMMA( (nu + 3.0_wp)/ mu) * &
+          & ( GAMMA( (nu + 1.0_wp)/ mu) / GAMMA( (b_geo + nu + 1.0_wp)/ mu) )**(1.0_wp/b_geo)
+        reff_calc%reff_coeff(1) = reff_calc%reff_coeff(1)*bf
+      END IF       
+     
+    CASE (1) ! Fu Random Hexagonal needles:  Dge = 1/(c1 * x**[c2] + c3 * x**[c4])
+             ! Parameterization based on Fu, 1996; Fu et al., 1998; Fu ,2007
+
+      ! First calculate monodisperse
+      reff_calc%reff_coeff(1) = SQRT( 3.0_wp *SQRT(3.0_wp) * rhoi / 8.0_wp ) *a_geo**(-1.0_wp/2.0_wp/b_geo)
+      reff_calc%reff_coeff(2) = (1.0_wp-b_geo)/2.0_wp/b_geo
+      reff_calc%reff_coeff(3) = SQRT(3.0_wp)/4.0_wp*a_geo**(1.0_wp/b_geo)
+      reff_calc%reff_coeff(4) = -1.0_wp/b_geo
+
+      ! Broadening for not monodisperse. Generalized gamma distribution
+      IF ( .NOT. monodisperse ) THEN 
+        bf  =  GAMMA( ( b_geo + 2.0_wp * nu + 3.0_wp)/ mu/2.0_wp ) / GAMMA( (b_geo + nu + 1.0_wp)/ mu) * &
+           & ( GAMMA( (nu + 1.0_wp)/ mu) / GAMMA( (b_geo + nu + 1.0_wp)/ mu) )**( (1.0_wp-b_geo)/2.0_wp/b_geo)
+
+        bf2 =  GAMMA( (b_geo + nu )/ mu ) / GAMMA( (b_geo + nu + 1.0_wp)/ mu) * &
+           & ( GAMMA( (nu + 1.0_wp)/ mu ) / GAMMA( (b_geo + nu + 1.0_wp)/ mu) )**( -1.0_wp/b_geo)
+
+        reff_calc%reff_coeff(1) = reff_calc%reff_coeff(1)*bf
+        reff_calc%reff_coeff(3) = reff_calc%reff_coeff(3)*bf2
+      END IF
+
+    CASE DEFAULT
+      CALL finish(TRIM(routine),'wrong value for reff_calc%reff_param')      
+    END SELECT
+
+    ! Calculate coefficients to calculate n from qn, in case N0 is available
+    IF ( N0 > 0.0_wp) THEN 
+      reff_calc%ncn_coeff(1) =  GAMMA ( ( nu + 1.0_wp)/mu) / a_geo / GAMMA (( b_geo + nu + 1.0_wp)/mu) * & 
+           &( a_geo * N0 / mu * GAMMA ( (b_geo + nu + 1.0_wp)/mu) ) ** ( b_geo / (nu + b_geo +1.0_wp)) 
+      reff_calc%ncn_coeff(2) = (nu +1.0_wp)/(nu + b_geo + 1.0_wp)  
+      ! Scaling coefficent of N0 (only for snow)
+      reff_calc%ncn_coeff(3) = b_geo/(nu + b_geo + 1.0_wp)         
+    END IF
+    
+  END SUBROUTINE one_mom_reff_coefficients
+
+  ! This function provides the number concentration of hydrometoers consistent with the
+  ! one moment scheme. 
+  ! It contains copied code from the 1 moment scheme, because many functions are hard-coded.
+  SUBROUTINE one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start,             &
+       &                           k_end, indices, n_ind,                            &
+       &                           icpl_aero_ice, cams5, cams6, z_ifc, aer_dust,     &
+       &                           q, t, rho, surf_cloud_num)
+
+    REAL(wp)         , INTENT(INOUT)     ::  ncn(:,:)           ! Number concentration
+    LOGICAL          , INTENT(INOUT)     ::  return_fct         ! Return code of the subroutine
+    TYPE(t_reff_calc), INTENT(IN)        ::  reff_calc          ! Structure with options and coefficiencts
+    INTEGER          , INTENT(IN)        ::  k_start, k_end     ! Start, end total indices    
+    INTEGER (KIND=i4), INTENT(IN)        ::  indices(:,:)       ! Mapping for going through array
+    INTEGER (KIND=i4), INTENT(IN)        ::  n_ind(:)
+
+    INTEGER, INTENT(IN)                          :: icpl_aero_ice   ! aerosols ice nucleation scheme
+    REAL(wp),INTENT(IN), POINTER, DIMENSION(:,:) :: cams5, cams6    ! CAMS dust mixing ratios
+    REAL(wp),INTENT(IN), DIMENSION(:,:)          :: z_ifc           ! height at interface levels
+    REAL(wp),INTENT(IN), POINTER, DIMENSION(:)   :: aer_dust        ! Tegen dust total column mass
+    REAL(wp),INTENT(IN), POINTER, DIMENSION(:,:) :: q               ! Mixing ratio of hydrometeor
+    
+    REAL(wp), OPTIONAL, INTENT(IN)            ::  t(:,:)             ! Temperature
+    REAL(wp), OPTIONAL, INTENT(IN)            ::  rho(:,:)           ! Mass density of air
+
+
+    REAL(wp), OPTIONAL, INTENT(IN)       ::  surf_cloud_num(:)  ! Number concentration at surface
+                                                                !CALL WITH prm_diag%cloud_num(is:ie,:) 
+    ! --- End of input/output variables.
+
+    INTEGER                              ::  jc, k, ic          ! Running indices
+    ! Indices array vectorization 
+    LOGICAL                              ::  well_posed         ! Logical that indicates if enough data for calculations
+
+    ! Variables for Ice parameterization 
+    REAL(wp)                             ::  znimax, znimix     ! Maximum and minimum of ice concentration
+    REAL(wp)                             ::  aerncn             ! CAMS dust aerosols number concentration
+
+    ! This is constant in both cloudice and graupel
+    LOGICAL                              ::  lsuper_coolw = .true.   
+
+    ! Variables for snow parameterization
+    REAL(wp)                             ::  ztc, zn0s, nnr, hlp, alf, bet, m2s, m3s, zlog_10
+
+    REAL(wp)            :: ageo_snow, zn0s1, zn0s2, &
+                             znimax_Thom, mma(10),  &
+                             mmb(10), dummy
+    INTEGER             :: isnow_n0temp
+    REAL(wp)            :: cloud_num
+
+    zlog_10 = LOG(10._wp) ! logarithm of 10
+
+    ! Check input return_fct
+
+    IF (.NOT. return_fct) THEN
+      WRITE (message_text,*) 'Reff: Function one_mom_calculate_ncn in mo_reff_main entered with previous error'
+      CALL message('',message_text)
+      RETURN
+    END IF
+
+    CALL get_params_for_ncn_calculation(isnow_n0temp_arg=isnow_n0temp, &
+                                        ageo_snow_arg=ageo_snow,&
+                                        zn0s1_arg=zn0s1, &
+                                        zn0s2_arg=zn0s2, &
+                                        znimax_Thom_arg=znimax_Thom, &
+                                        mma_arg=mma, &
+                                        mmb_arg=mmb)
+      
+    SELECT CASE ( reff_calc%hydrometeor )   ! Select Hydrometeor
+    CASE (0)   ! Cloud water from surface field cloud_num field or fixed
+
+#ifdef _OPENACC
+      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=0 not available on GPU')
+#endif
+
+      IF (PRESENT(surf_cloud_num)) THEN
+        
+        DO k = k_start,k_end          
+          DO ic  = 1,n_ind(k)
+            jc =  indices(ic,k)
+            ncn(jc,k) = surf_cloud_num(jc) ! Notice no vertical dependency
+          END DO
+        END DO
+        
+      ELSE
+        
+        CALL get_cloud_number(cloud_num)
+        DO k = k_start,k_end
+          DO ic  = 1,n_ind(k)
+            jc = indices(ic,k)
+            ncn(jc,k) = cloud_num ! Set constant value
+          END DO
+        END DO
+      
+      ENDIF
+
+    CASE (1)   ! Ice
+      IF (icpl_aero_ice == 1) THEN
+        SELECT CASE(irad_aero)
+          CASE (iRadAeroCAMSclim, iRadAeroCAMStd)! use DeMott with CAMS dust aerosols
+            !$ACC DATA PRESENT(n_ind, indices, ncn, rho, t, cams5, cams6)
+            !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_start, k_end)
+            !$ACC LOOP SEQ
+            DO k = k_start,k_end
+              !$ACC LOOP GANG VECTOR PRIVATE(jc, aerncn, dummy)
+              DO ic  = 1,n_ind(k)
+                jc        = indices(ic,k)
+                aerncn = 1.0E-6_wp*rho(jc,k)*( cams5(jc,k)/4.72911E-16_wp + cams6(jc,k)/1.55698E-15_wp )
+                CALL ice_nucleation ( t(jc,k), aerncn=aerncn , znin=dummy )
+                ncn(jc,k) = dummy
+              ENDDO
+            ENDDO
+            !$ACC END PARALLEL
+            !$ACC END DATA
+          CASE (iRadAeroTegen) ! use Tegen dust with DeMott formula
+            !$ACC DATA PRESENT(n_ind, indices, ncn, t, z_ifc, aer_dust)
+            !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_start, k_end)
+            !$ACC LOOP SEQ
+            DO k = k_start,k_end
+              !$ACC LOOP GANG VECTOR PRIVATE(jc, aerncn, dummy)
+              DO ic  = 1,n_ind(k)
+                jc        = indices(ic,k)
+                CALL ncn_from_tau_aerosol_speccnconst_dust (z_ifc(jc,k), z_ifc(jc,k+1), aer_dust(jc), aerncn)
+                CALL ice_nucleation ( t(jc,k), aerncn=aerncn , znin=dummy )
+                ncn(jc,k) = dummy
+              ENDDO
+            ENDDO
+            !$ACC END PARALLEL
+            !$ACC END DATA
+          CASE DEFAULT
+            CALL finish('mo_reff_main', 'icpl_aero_ice = 1 only available for irad_aero = 6,7,8.')
+        END SELECT
+      ELSE ! FR: Cooper (1986) used by Greg Thompson(2008)
+        ! Some constant coefficients
+        IF( lsuper_coolw) THEN
+          znimax = znimax_Thom         !znimax_Thom = 250.E+3_wp,
+        ELSE
+          znimax = 150.E+3_wp     ! from previous ICON code
+        END IF
+
+        !$ACC DATA PRESENT(indices, ncn, t, n_ind)
+        !$ACC PARALLEL ASYNC(1)
+        !$ACC LOOP SEQ
+        DO k = k_start,k_end
+          !$ACC LOOP GANG VECTOR PRIVATE(jc, dummy)
+          DO ic  = 1,n_ind(k)
+            jc =  indices(ic,k)
+             CALL ice_nucleation ( t(jc,k), znin=dummy )
+             ncn(jc,k) = MIN(dummy,znimax)
+           END DO
+        END DO
+        !$ACC END PARALLEL
+        !$ACC END DATA
+
+      ENDIF
+
+    CASE (2,4) ! Rain, Graupel done with 1 mom param. w. fixed N0
+
+#ifdef _OPENACC
+      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=2,4 not available on GPU')
+#endif
+
+      well_posed = PRESENT(rho) .AND. ASSOCIATED(q)
+      IF (.NOT. well_posed) THEN
+        WRITE (message_text,*) 'Reff: Rho ans q  needs to be provided to one_mom_calculate_ncn'
+        CALL message('',message_text)
+        return_fct = .false.
+        RETURN
+      END IF
+
+      DO k = k_start,k_end
+        DO ic  = 1,n_ind(k)
+          jc = indices(ic,k)
+          ncn(jc,k) = reff_calc%ncn_coeff(1) * EXP ( reff_calc%ncn_coeff(2) * LOG( rho(jc,k)*q(jc,k)  ) )
+        END DO
+      END DO
+
+    CASE (3) ! Snow, complex parameterization of N0 (copy paste and adapt from graupel)
+
+#ifdef _OPENACC
+      CALL finish('one_moment_calculate_ncn:','CASE hydrometeor=3 not available on GPU')
+#endif
+
+      well_posed = PRESENT(rho) .AND. ASSOCIATED(q) .AND. PRESENT(t)
+      IF (.NOT. well_posed) THEN
+        WRITE (message_text,*) 'Reff: Rho ans q  needs to be provided to one_mom_calculate_ncn->snow'
+        CALL message('',message_text)
+        return_fct = .false.
+        RETURN
+      END IF
+
+      DO k = k_start,k_end
+        DO ic  = 1,n_ind(k)
+          jc = indices(ic,k)
+
+          IF (isnow_n0temp == 1) THEN
+            ! Calculate n0s using the temperature-dependent
+            ! formula of Field et al. (2005)
+            ztc = t(jc,k) - t0
+            ztc = MAX(MIN(ztc,0.0_wp),-40.0_wp)
+            zn0s = zn0s1*EXP(zn0s2*ztc)
+            zn0s = MIN(zn0s,1e9_wp)
+            zn0s = MAX(zn0s,1e6_wp)
+          ELSEIF (isnow_n0temp == 2) THEN
+            ! Calculate n0s using the temperature-dependent moment
+            ! relations of Field et al. (2005)
+            ztc = t(jc,k) - t0
+            ztc = MAX(MIN(ztc,0.0_wp),-40.0_wp)
+
+            nnr  = 3._wp
+            hlp = mma(1) + mma(2)*ztc + mma(3)*nnr + mma(4)*ztc*nnr &
+                 & + mma(5)*ztc**2 + mma(6)*nnr**2 + mma(7)*ztc**2*nnr &
+                 & + mma(8)*ztc*nnr**2 + mma(9)*ztc**3 + mma(10)*nnr**3
+            alf = EXP(hlp*zlog_10) ! 10.0_wp**hlp
+            bet = mmb(1) + mmb(2)*ztc + mmb(3)*nnr + mmb(4)*ztc*nnr &
+                 & + mmb(5)*ztc**2 + mmb(6)*nnr**2 + mmb(7)*ztc**2*nnr &
+                 & + mmb(8)*ztc*nnr**2 + mmb(9)*ztc**3 + mmb(10)*nnr**3
+
+            ! assumes bms=2.0
+            m2s = q(jc,k) * rho(jc,k) / ageo_snow
+            m3s = alf*EXP(bet*LOG(m2s))
+
+            hlp  = zn0s1*EXP(zn0s2*ztc)
+            zn0s = 13.50_wp * m2s * (m2s / m3s) **3
+            zn0s = MAX(zn0s,0.5_wp*hlp)
+            zn0s = MIN(zn0s,1e2_wp*hlp)
+            zn0s = MIN(zn0s,1e9_wp)
+            zn0s = MAX(zn0s,1e6_wp)
+          ELSE
+            ! Old constant n0s
+            zn0s = 8.0e5_wp
+          ENDIF
+
+          ncn(jc,k) =  reff_calc%ncn_coeff(1) * EXP( reff_calc%ncn_coeff(3)*LOG(zn0s)) &
+               & * EXP (  reff_calc%ncn_coeff(2) * LOG( rho(jc,k)*q(jc,k)  ) )
+        END DO
+      END DO
+
+    END SELECT
+
+  END SUBROUTINE one_mom_calculate_ncn
 
 
 ! Init parameters for one effective radius calculation
@@ -330,8 +721,8 @@ MODULE mo_reff_main
       REAL(wp), PARAMETER                ::     qmin = 1E-6  ! Difference between cloud/nocloud in kg/kg
       REAL(wp), PARAMETER                ::     qsub = 1E-6  ! Difference between grid/subgrid in kg/kg
 
-      INTEGER                            ::     k,jc         ! Counters
-      LOGICAL                            ::     llq          ! logical conditions for cloud/no cloud and grid/subgrid
+      INTEGER                            ::     k, jc        ! Counters
+      INTEGER, DIMENSION(ie,k_end)       ::     llq          ! logical conditions for cloud/no cloud and grid/subgrid
 
 
     ! Check input return_fct
@@ -341,25 +732,18 @@ MODULE mo_reff_main
         RETURN
       END IF
 
+      !$ACC ENTER DATA CREATE(llq)
 
       ! Initialize inidices
-      !$ACC DATA PRESENT(indices, n_ind)
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) PRESENT(nproma) FIRSTPRIVATE(k_end)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) FIRSTPRIVATE(k_end, ie)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
       DO k = 1,k_end
-        DO jc = 1,nproma
+        DO jc = 1,ie
           indices(jc,k) = 0
+          llq(jc,k) = 0
         END DO
       END DO
       !$ACC END PARALLEL
-
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_end)
-      !$ACC LOOP GANG VECTOR
-      DO jc = 1,k_end
-        n_ind(jc) = 0
-      END DO
-      !$ACC END PARALLEL
-      !$ACC END DATA
 
       SELECT CASE ( reff_calc%grid_scope )
 
@@ -372,21 +756,18 @@ MODULE mo_reff_main
           q=>reff_calc%p_q(:,:,jb)
         END IF
 
-        !$ACC DATA PRESENT(n_ind, indices, q)
-        !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie, llq)
-        !$ACC LOOP SEQ
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie)
+        !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO k = k_start,k_end
-          !$ACC LOOP SEQ
           DO jc = is, ie
-            llq =  q(jc,k) > qmin
-            IF (llq) THEN
-              n_ind(k)            =  n_ind(k) + 1
-              indices(n_ind(k),k) = jc
-            END IF
+            IF (q(jc,k) > qmin) THEN
+              llq(jc,k) = 1
+            ENDIF
           END DO
         END DO
         !$ACC END PARALLEL
-        !$ACC END DATA
+
+        CALL generate_index_list_batched(llq, indices, 1, ie, n_ind, 1)
 
       CASE (1) ! Only grid scale (with same subgrid/grid criteria as subgrid)
         
@@ -394,21 +775,18 @@ MODULE mo_reff_main
           q_tot=>reff_calc%p_qtot(:,:,jb)
           q=>reff_calc%p_q(:,:,jb)
 
-          !$ACC DATA PRESENT(n_ind, indices, q, q_tot)
-          !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie, llq)
-          !$ACC LOOP SEQ
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie)
+          !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO k = k_start,k_end
-            !$ACC LOOP SEQ
-            DO jc = is, ie            
-              llq =  (q(jc,k) > qsub) .AND. (q_tot(jc,k) > qmin) 
-              IF (llq) THEN
-                n_ind(k)            =  n_ind(k) + 1  
-                indices(n_ind(k),k) = jc                
-              END IF
+            DO jc = is, ie
+              IF ((q(jc,k) > qsub) .AND. (q_tot(jc,k) > qmin)) THEN
+                llq(jc,k) = 1
+              ENDIF
             END DO
           END DO
           !$ACC END PARALLEL
-          !$ACC END DATA
+
+          CALL generate_index_list_batched(llq, indices, 1, ie, n_ind, 1)
 
         ELSE
           WRITE (message_text,*) 'Warning: Reff does not have information for generate inidices for subgrid ncn'
@@ -423,21 +801,18 @@ MODULE mo_reff_main
           q_tot=>reff_calc%p_qtot(:,:,jb)
           q=>reff_calc%p_q(:,:,jb)
 
-          !$ACC DATA PRESENT(n_ind, indices, q, q_tot)
-          !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie, llq)
-          !$ACC LOOP SEQ
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) FIRSTPRIVATE(k_start, k_end, is, ie)
+          !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO k = k_start,k_end
-            !$ACC LOOP SEQ
             DO jc = is, ie
-              llq =   (q_tot(jc,k) > qmin) .AND. (q(jc,k) < qsub)
-              IF (llq) THEN
-                n_ind(k)            =  n_ind(k) + 1
-                indices(n_ind(k),k) = jc
-              END IF
+              IF ((q_tot(jc,k) > qmin) .AND. (q(jc,k) < qsub)) THEN
+                llq(jc,k) = 1
+              ENDIF
             END DO
           END DO
           !$ACC END PARALLEL
-          !$ACC END DATA
+
+          CALL generate_index_list_batched(llq, indices, 1, ie, n_ind, 1)
 
         ELSE
           WRITE (message_text,*) 'Warning: Reff does not have information for generate inidices for subgrid ncn'
@@ -447,7 +822,9 @@ MODULE mo_reff_main
         END IF
 
     END SELECT
-    
+
+    !$ACC WAIT
+    !$ACC EXIT DATA DELETE(llq)
 
   END SUBROUTINE mapping_indices
 
@@ -613,7 +990,9 @@ MODULE mo_reff_main
 
 
   !! Calculte number concentraion of a hydrometeor
-  SUBROUTINE calculate_ncn( ncn, reff_calc, indices, n_ind , k_start, k_end ,jb, return_fct, rho, t )
+  SUBROUTINE calculate_ncn( ncn, reff_calc, indices, n_ind , k_start, k_end ,jb, rho, t,  &
+       &                    icpl_aero_ice, z_ifc, cams5, cams6, aer_dust,                 &
+       &                    return_fct )
 
     REAL(wp)          , INTENT(INOUT), DIMENSION(:,:) :: ncn             ! Number concentration
     TYPE(t_reff_calc) , INTENT(IN)                    :: reff_calc       ! Reff calculation parameters and pointers
@@ -622,12 +1001,17 @@ MODULE mo_reff_main
 
     INTEGER           , INTENT(IN)                    :: k_start, k_end  ! Start, end total indices
     INTEGER           , INTENT(IN)                    :: jb              ! Domain index
+    INTEGER           , INTENT(IN)                    :: icpl_aero_ice   ! aerosols ice nucleation scheme
+
+    REAL(wp), INTENT(IN)        , DIMENSION(:,:)       :: rho             ! Density of air
+    REAL(wp), INTENT(IN)        , DIMENSION(:,:)       :: t               ! Temperature
+    REAL(wp), INTENT(IN), POINTER, DIMENSION(:,:)      :: cams5, cams6    ! CAMS dust mixing ratios
+    REAL(wp), INTENT(IN)        , DIMENSION(:,:)       :: z_ifc           ! height at interface levels
+    REAL(wp), INTENT(IN), POINTER, DIMENSION(:)        :: aer_dust        ! Tegen dust total column mass
+    
     LOGICAL           , INTENT(INOUT)                 :: return_fct      ! Function return. .true. for right
-
-    REAL(wp), OPTIONAL, INTENT(IN)   , DIMENSION(:,:) :: rho             ! Density of air
-    REAL(wp), OPTIONAL, INTENT(IN)   , DIMENSION(:,:) :: t               ! Temperature
-
-
+    
+    
     ! End of subroutine variable declarations
 
     REAL(wp), POINTER                , DIMENSION(:)   :: surf_cloud_num  ! Number concentration at surface (cloud_num)
@@ -635,7 +1019,8 @@ MODULE mo_reff_main
     REAL(wp), POINTER                , DIMENSION(:,:) :: q               ! Mixing ratio of hydrometeor
     INTEGER                                           :: k, ic, jc       ! Counters
     LOGICAL                                           :: well_posed      ! Logical check
-
+!    REAL(wp)                                          :: aerncn          ! CAMS dust aerosols number concentration
+    REAL(wp)                                          :: cloud_num
 
     ! Check input return_fct
     IF (.NOT. return_fct) THEN
@@ -667,6 +1052,7 @@ MODULE mo_reff_main
 #ifdef _OPENACC
       CALL finish('calculate_ncn:','CASE ncn_param=0 not available on GPU')
 #endif
+      CALL get_cloud_number(cloud_num)
       DO k = k_start,k_end
         DO ic  = 1,n_ind(k)
           jc        = indices(ic,k)
@@ -681,23 +1067,29 @@ MODULE mo_reff_main
       CASE (0) ! Cloud water. It currently uses cloud_num 2D for the cloud water.
         IF (ASSOCIATED(reff_calc%p_ncn2D)) THEN
           ! Cloud_num field
-          CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start, k_end, &
-                                   & indices, n_ind, surf_cloud_num = surf_cloud_num )
+          CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start,             &
+               &                      k_end, indices, n_ind,                           &
+               &                      icpl_aero_ice, cams5, cams6, z_ifc, aer_dust, q, &
+                                      surf_cloud_num = surf_cloud_num )
         ELSE
           ! Constant cloud_num
-          CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start, k_end, &
-                                   & indices, n_ind )
+          CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start,              &
+               &                      k_end, indices, n_ind,                            &
+               &                      icpl_aero_ice, cams5, cams6, z_ifc, aer_dust, q)
         END IF
 
       CASE DEFAULT
-        well_posed = ASSOCIATED(reff_calc%p_q) .AND. PRESENT(t) .AND. PRESENT(rho)
+        well_posed = ASSOCIATED(reff_calc%p_q)
         IF (.NOT. well_posed) THEN
           WRITE (message_text,*) 'Reff: Insufficient arguments to call calculate ncn from 1 moment scheme'
           CALL message('',message_text)
           return_fct = .false.
           RETURN
         END IF
-        CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start, k_end, indices, n_ind, q, t, rho )
+        CALL one_mom_calculate_ncn( ncn, return_fct, reff_calc, k_start,             &
+             &                      k_end, indices, n_ind,                           &
+             &                      icpl_aero_ice, cams5, cams6, z_ifc, aer_dust, q, &
+             &                      t = t, rho =rho) 
       END SELECT
 
 

@@ -18,4 +18,4 @@ SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
 
 export HK_GPU_MPIRUN_FLAGS=''
 export HK_GPU_FCFLAGS='-acc=verystrict -gpu=cc80'
-${SCRIPT_DIR}/hk.common.nvhpc-23.9 --enable-gpu --enable-mpi-gpu "$@"
+${SCRIPT_DIR}/hk.common.nvhpc-23.9 --enable-gpu --disable-mpi-gpu "$@" #2024-05-03: temporarily disabled mpi-gpu because of random failures of exp.dwd_run_ICON_09_R2B4N5_EPS 

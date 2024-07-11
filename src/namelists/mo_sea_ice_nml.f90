@@ -78,7 +78,7 @@ MODULE mo_sea_ice_nml
                                                             !  heat content in energy calculations
   LOGICAL, PUBLIC :: use_constant_tfreez         = .TRUE.   !  constant freezing temperature for ocean water (=Tf)
   LOGICAL, PUBLIC :: use_IceInitialization_fromTemperature = .true.
-  LOGICAL, PUBLIC :: stress_ice_zero             = .TRUE.   !  set stress below sea ice to zero
+  LOGICAL, PUBLIC :: stress_ice_zero             = .FALSE.  !  set stress below sea ice to zero
   LOGICAL, PUBLIC :: use_calculated_ocean_stress = .FALSE.  !  calculate ocean stress instead of reading from OMIP
   LOGICAL, PUBLIC :: use_no_flux_gradients       = .TRUE.   !  simplified ice_fast without flux gradients
 
@@ -274,19 +274,18 @@ CONTAINS
       CALL finish(TRIM(routine), 'i_ice_dyn must be either 0, 1 or 2.')
     END IF
 
-    IF (i_ice_dyn > 0 ) THEN
-      IF (i_ice_dyn == 1 ) THEN
-        CALL message(TRIM(routine), 'WARNING: i_ice_dyn is 1 - BUT SEA ICE DYNAMICS INCLUDE ERRORS')
-      ENDIF
-      ! TODO: This can be changed when we start advecting T1 and T2
-   !  CALL message(TRIM(routine), 'WARNING: i_ice_therm set to 1 because i_ice_dyn is 1')
-   !  i_ice_therm = 1   !  no Winton thermodynamics allowed, switched off by default
-
-      ! When using routine ice_ocean_stress, ocean stress below sea ice is considered accordingly
-      CALL message(TRIM(routine), 'WARNING: stress_ice_zero=FALSE because i_ice_dyn is 1 or 2')
-      stress_ice_zero = .TRUE.
+    IF (i_ice_dyn > 0 .AND. stress_ice_zero) THEN
+      CALL message(TRIM(routine), '---')
+      CALL message(TRIM(routine), 'WARNING: sea-ice dynamics are active but stress on ocean is disabled')
+      CALL message(TRIM(routine), 'WARNING: (sea_ice_nml.stress_ice_zero is true)')
+      CALL message(TRIM(routine), '---')
     ENDIF
-
+    IF (i_ice_dyn == 0 .AND. .NOT. stress_ice_zero) THEN
+      CALL message(TRIM(routine), '---')
+      CALL message(TRIM(routine), 'WARNING: sea-ice dynamics are inactive but stress on ocean is enabled')
+      CALL message(TRIM(routine), 'WARNING: (sea_ice_nml.stress_ice_zero is false)')
+      CALL message(TRIM(routine), '---')
+    ENDIF
 
     IF (i_Qio_type < 0 .OR. i_Qio_type > 3) THEN
       CALL finish(TRIM(routine), 'i_Qio_type must be either 0, 1,2 or 3.')

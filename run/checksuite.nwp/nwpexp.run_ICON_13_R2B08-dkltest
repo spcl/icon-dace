@@ -402,7 +402,6 @@ cat > ${atmo_namelist} << EOF
  flat_height                  = 16000.
 /
 &dynamics_nml
- iequations                   = 3
  divavg_cntrwgt               = 0.50
  lcoriolis                    = .TRUE.
 /

@@ -32,7 +32,7 @@ MODULE mo_wave_constants
 
   REAL(wp), PARAMETER :: CDIS = 1.33_wp !! dissipation constant
   REAL(wp), PARAMETER :: DELTA = 0.5_wp !! weight linear, quadratic part
-  REAL(wp), PARAMETER :: CONSD = -CDIS * pi2**9_wp / grav**4_wp !! dissipation constant for deep water
+  REAL(wp), PARAMETER :: CONSD = -CDIS * pi2**9 / grav**4 !! dissipation constant for deep water
   REAL(wp), PARAMETER :: CONSS = -CDIS * pi2 !! dissipation constant for shallow water
 
 

@@ -10,7 +10,7 @@
 
 spack:
   specs:
-  - icon@develop%cce@12.0.3 +ecrad +rte-rrtmgp +acm-license serialization=create +dace fcgroup=DACE.externals/dace_icon.-O1 +grib2 ~coupling
+  - icon@develop%cce@12.0.3 +ecrad +rte-rrtmgp serialization=create +dace fcgroup=DACE.externals/dace_icon.-O1 +grib2 ~coupling
   - eccodes@2.19.0%cce
   - cray-libsci@20.06.1%cce
   - libxml2@2.9.13%gcc
@@ -22,5 +22,5 @@ spack:
     unify: true
   develop:
     icon:
-      spec: icon@develop%cce@12.0.3 +ecrad +rte-rrtmgp +acm-license serialization=create +dace fcgroup=DACE.externals/dace_icon.-O1 +grib2 ~coupling
+      spec: icon@develop%cce@12.0.3 +ecrad +rte-rrtmgp serialization=create +dace fcgroup=DACE.externals/dace_icon.-O1 +grib2 ~coupling
       path: ../../../../../

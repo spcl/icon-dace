@@ -21,6 +21,7 @@ MODULE mo_art_kinetic_constants
   USE mo_art_data,                ONLY: p_art_data
   USE mo_art_atmo_data,           ONLY: t_art_atmo
   USE mo_art_wrapper_routines,    ONLY: art_get_indices_c
+  USE mo_physical_constants,      ONLY: p0sl_bg
 
 
   IMPLICIT NONE
@@ -204,7 +205,7 @@ SUBROUTINE art_get_CO_des_1d(des,pres)
   ! local variables
   REAL(wp) :: pres_alt
 
-  pres_alt = -7000._wp * LOG(pres/101325._wp)
+  pres_alt = -7000._wp * LOG(pres/p0sl_bg)
   des  = (                                                                              &
           &  2.0e-8_wp/(1._wp+EXP( (pres_alt-85.e3_wp)    /(0.4_wp*7000._wp)  ) )       &
           &        + 1.e-7_wp*EXP(-(pres_alt-70.e3_wp)**2._wp/(    7000._wp)**2._wp)    &
@@ -232,7 +233,7 @@ SUBROUTINE art_get_CH4_des_1d(des,pres)
   ! local variables
   REAL(wp) :: pres_alt
 
-  pres_alt = -7000._wp * LOG(pres/101325._wp)
+  pres_alt = -7000._wp * LOG(pres/p0sl_bg)
   des = (                                                                                        &
       &     1.20e-7_wp *          EXP(-(pres_alt - 44.e3_wp )**2._wp /(1.5_wp*7000._wp)**2._wp ) &
       &   + 2.60e-9_wp /( 1._wp + EXP(-(pres_alt - 20.e3_wp )        /7000._wp) )                &

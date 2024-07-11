@@ -173,6 +173,51 @@ xt_redist_p2p_ext_custom_new(Xt_xmap xmap,
 
 /**
  * constructor for a redistribution using point to point
+ * communication for the exchange. Uses default settings.
+ * @param[in] xmap         exchange map
+ * @param[in] num_src_ext  number of source extents
+ * @param[in] src_extents  array of extents describing byte offsets for every
+ *                         element of the index lists composing the xmap,
+ *                         i.e. { 16, 5, 4 } denotes 5 offsets,
+ *                         namely 16, 20, 24, 28, 32
+ * @param[in] num_dst_ext  number of destination extents
+ * @param[in] dst_extents  array of extents analogous to src_extents
+ * @param[in] datatype     MPI datatype of single element
+ *                         in the data to be exchanged
+ */
+Xt_redist xt_redist_p2p_aext_new(Xt_xmap xmap,
+                                 int num_src_ext,
+                                 const struct Xt_aoffset_ext src_extents[],
+                                 int num_dst_ext,
+                                 const struct Xt_aoffset_ext dst_extents[],
+                                 MPI_Datatype datatype);
+
+/**
+ * constructor for a redistribution using point to point
+ * communication for the exchange. Uses custom settings.
+ * @param[in] xmap         exchange map
+ * @param[in] num_src_ext  number of source extents
+ * @param[in] src_extents  array of extents describing byte offsets for every
+ *                         element of the index lists composing the xmap,
+ *                         i.e. { 16, 5, 4 } denotes 5 offsets,
+ *                         namely 16, 20, 24, 28, 32
+ * @param[in] num_dst_ext  number of destination extents
+ * @param[in] dst_extents  array of extents analogous to src_extents
+ * @param[in] datatype     MPI datatype of single element
+ *                         in the data to be exchanged
+ * @param[in] config       configuration object for custom settings
+ */
+Xt_redist
+xt_redist_p2p_aext_custom_new(Xt_xmap xmap,
+                              int num_src_ext,
+                              const struct Xt_aoffset_ext src_extents[],
+                              int num_dst_ext,
+                              const struct Xt_aoffset_ext dst_extents[],
+                              MPI_Datatype datatype,
+                              Xt_config config);
+
+/**
+ * constructor for a redistribution using point to point
  * communication for the exchange, special case: elements (which
  * correspond to each idxlist element) are blocks of variable length
  * with corresponding offsets, therefore src_block_num and

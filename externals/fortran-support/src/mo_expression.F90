@@ -15,7 +15,7 @@
 ! Machine (FSM) and Dijkstra's shunting yard algorithm.
 ! It is possible to include mathematical functions, operators, and
 ! constants, see the LaTeX documentation for this module in the
-! appendix of the namelist documentaion. Besides, Fortran variables
+! appendix of the namelist documentation. Besides, Fortran variables
 ! can be linked to the expression and used in the evaluation. The
 ! implementation supports scalar input variables as well as 2D and 3D
 ! fields, where it is implicitly assumed that 2D fields are embedded
@@ -417,7 +417,7 @@ CONTAINS
 
   SUBROUTINE parse_expression_string(expr_list, string)
     CHARACTER(LEN=*), INTENT(IN)    :: string
-    TYPE(expression), INTENT(out)   :: expr_list
+    TYPE(expression), INTENT(OUT)   :: expr_list
 
     ! local variables
     TYPE(t_list)                      :: cqueue
@@ -442,7 +442,7 @@ CONTAINS
       SELECT CASE (cqueue%list(i)%etype)
       CASE (VALUE)
         ALLOCATE (op_value)
-        op_value%val = REAL(cqueue%list(i)%val)
+        op_value%val = REAL(cqueue%list(i)%val, KIND=real_kind)
         expr_list%list(i)%p => op_value
       CASE (VARIABLE)
         ALLOCATE (op_variable)
@@ -1050,9 +1050,15 @@ CONTAINS
     CLASS(t_op_pow), INTENT(INOUT) :: this
     CLASS(t_result_stack_0D), INTENT(INOUT) :: result_stack
     REAL(real_kind), POINTER :: arg1, arg2
+    INTEGER :: exponent
     CALL result_stack%pop(arg2)
     CALL result_stack%pop(arg1)
-    arg1 = arg1**arg2
+    exponent = NINT(arg2)
+    IF (arg2 == REAL(exponent, real_kind)) THEN
+      arg1 = arg1**exponent
+    ELSE
+      arg1 = arg1**arg2
+    END IF
     CALL result_stack%push(arg1)
     DEALLOCATE (arg2)
   END SUBROUTINE stack_op_pow_eval_0D
@@ -1061,9 +1067,15 @@ CONTAINS
     CLASS(t_op_pow), INTENT(INOUT) :: this
     CLASS(t_result_stack_2D), INTENT(INOUT) :: result_stack
     REAL(real_kind), DIMENSION(:, :), POINTER :: arg1, arg2
+    INTEGER, DIMENSION(:, :), ALLOCATABLE :: exponent
     CALL result_stack%pop(arg2)
     CALL result_stack%pop(arg1)
-    arg1 = arg1**arg2
+    exponent = NINT(arg2)
+    IF (ALL(arg2 == REAL(exponent, real_kind))) THEN
+      arg1 = arg1**exponent
+    ELSE
+      arg1 = arg1**arg2
+    END IF
     CALL result_stack%push(arg1)
     DEALLOCATE (arg2)
   END SUBROUTINE stack_op_pow_eval_2D
@@ -1072,9 +1084,15 @@ CONTAINS
     CLASS(t_op_pow), INTENT(INOUT) :: this
     CLASS(t_result_stack_3D), INTENT(INOUT) :: result_stack
     REAL(real_kind), DIMENSION(:, :, :), POINTER :: arg1, arg2
+    INTEGER, DIMENSION(:, :, :), ALLOCATABLE :: exponent
     CALL result_stack%pop(arg2)
     CALL result_stack%pop(arg1)
-    arg1 = arg1**arg2
+    exponent = NINT(arg2)
+    IF (ALL(arg2 == REAL(exponent, real_kind))) THEN
+      arg1 = arg1**exponent
+    ELSE
+      arg1 = arg1**arg2
+    END IF
     CALL result_stack%push(arg1)
     DEALLOCATE (arg2)
   END SUBROUTINE stack_op_pow_eval_3D

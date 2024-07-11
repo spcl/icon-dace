@@ -19,10 +19,10 @@ listname=clm
 
 ./set_builder_flags Inactive --builders "$(./lslist $listname --builders-only)" --list $listname
 
-./set_builder_flags Active --builders "levante_intel_hybrid levante_gcc_hybrid DWD_nec_hybrid" --list $listname
+./set_builder_flags Active --builders "levante_intel_hybrid levante_intel levante_gcc_hybrid DWD_nec_hybrid" --list $listname
 
-$addexp "checksuite.clm/clmexp.ICON_CLM" --machines "levante" --list $listname --runflags="ntasks=32 queue=shared"
-$addexp "checksuite.clm/clmexp.ICON_CLM" --builders "DWD_nec_hybrid" --list $listname
+$addexp "checksuite.clm/check.ICON_CLM" --builders "levante_intel levante_gcc_hybrid" --list ${listname} --runflags="ntasks=32 queue=shared"
+$addexp "checksuite.clm/check.ICON_CLM" --builders "DWD_nec_hybrid" --list $listname
 
 $addexp "checksuite.clm/clmexp.ICON_CLM_global_mean_no_boundary" --builders "levante_intel_hybrid levante_gcc_hybrid" --list $listname
 

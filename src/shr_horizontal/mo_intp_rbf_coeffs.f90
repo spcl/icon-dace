@@ -40,8 +40,6 @@ USE mo_kind,                ONLY: wp
 USE mo_exception,           ONLY: message, message_text, finish
 USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int
 USE mo_model_domain,        ONLY: t_patch, t_tangent_vectors
-USE mo_grid_config,         ONLY: l_limited_area
-USE mo_dynamics_config,     ONLY: iequations
 USE mo_math_types,          ONLY: t_cartesian_coordinates
 USE mo_math_utilities,      ONLY: gvec2cvec, arc_length_v
 USE mo_math_utility_solvers, ONLY: solve_chol_v, choldec_v
@@ -732,23 +730,6 @@ REAL(wp) :: z_stencil(UBOUND(ptr_int%rbf_vec_stencil_v,1),UBOUND(ptr_int%rbf_vec
   z_stencil(:,:) = REAL(ptr_int%rbf_vec_stencil_v(:,:),wp)
   CALL sync_patch_array(SYNC_V,ptr_patch,z_stencil)
   ptr_int%rbf_vec_stencil_v(:,:) = NINT(z_stencil(:,:))
-
-  jg = ptr_patch%id
-  IF ((.NOT. l_limited_area) .AND. (jg == 1) .AND. (ipent /= 12)) THEN
-!   PRINT *, "ERROR ==>  ipent = ", ipent,  " /= 12 -- no finish (ocean)"
-    IF ( iequations == -1 )  THEN    !  hydrostatic ocean: less than  12 pentagons allowed
-      WRITE(message_text,'(a,i3,a,i3,a)')  &
-        &  modname//':rbf_vec_index_vertex: no of pentagons =',ipent, &
-        &  ' iequations =',iequations,' ==> ok.'
-      CALL message('', TRIM(message_text))
-    ELSE                      !  other cases: may stop the run
-!Please note: This is the normal case for parallel runs!
-      CALL message(modname//':rbf_vec_index_vertex',  &
-        &             'wrong number of detected pentagons')
-!     CALL finish (modname//':rbf_vec_index_vertex',  &
-!       &             'wrong number of detected pentagons')
-    ENDIF
-  ENDIF
 
 END SUBROUTINE rbf_vec_index_vertex
 

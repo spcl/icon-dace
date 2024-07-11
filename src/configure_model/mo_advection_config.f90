@@ -22,6 +22,7 @@ MODULE mo_advection_config
     &                                     iaes, SUCCESS, VNAME_LEN, NO_HADV,       &
     &                                     NO_VADV, vlname_len
   USE mo_exception,                 ONLY: message, message_text, finish
+  USE mo_master_control,            ONLY: get_my_process_name
   USE mo_mpi,                       ONLY: my_process_is_stdio
   USE mo_run_config,                ONLY: msg_level
   USE mo_expression,                ONLY: expression, parse_expression_string
@@ -1073,7 +1074,7 @@ CONTAINS
 
     ! Register a field list and apply default settings
     CALL vlr_add(p_tracer_list, TRIM(listname), patch_id=patch_id, &
-      &          lrestart=.FALSE., loutput =.FALSE.)
+      &          lrestart=.FALSE., loutput =.FALSE., model_type=get_my_process_name())
     ! add references to all tracer fields of the source list (prognostic state)
     DO iv = 1, from_var_list%p%nvars
       ! retrieve information from actual linked list element
@@ -1081,7 +1082,7 @@ CONTAINS
       from_info_dyn => from_var_list%p%vl(iv)%p%info_dyn
       ! Only add tracer fields to the tracer list
       IF (from_info_dyn%tracer%lis_tracer .AND. .NOT.from_info%lcontainer) &
-        & CALL vlr_add_vref(p_tracer_list, from_info%name, from_var_list, in_group=groups())
+        & CALL vlr_add_vref(p_tracer_list, from_info%name, from_var_list)
     END DO
   END SUBROUTINE new_nh_state_tracer_list
 

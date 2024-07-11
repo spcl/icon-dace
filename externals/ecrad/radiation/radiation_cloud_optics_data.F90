@@ -13,6 +13,8 @@
 ! Email:   r.j.hogan@ecmwf.int
 !
 
+#include "ecrad_config.h"
+
 module radiation_cloud_optics_data
 
   use parkind1, only : jprb
@@ -45,11 +47,14 @@ contains
 
   !---------------------------------------------------------------------
   ! Setup cloud optics coefficients by reading them from a file
-  subroutine setup_cloud_optics(this, liq_file_name, ice_file_name, &
-       &                        iverbose)
-
-    use ecradhook,  only : lhook, dr_hook, jphook
-    use easy_netcdf, only : netcdf_file
+  subroutine setup_cloud_optics(this, liq_file_name, ice_file_name, iverbose)
+    
+    use ecradhook,              only : lhook, dr_hook, jphook
+#ifdef EASY_NETCDF_READ_MPI
+    use easy_netcdf_read_mpi, only : netcdf_file
+#else
+    use easy_netcdf,          only : netcdf_file
+#endif
 
     class(cloud_optics_type), intent(inout) :: this
     character(len=*), intent(in)            :: liq_file_name, ice_file_name

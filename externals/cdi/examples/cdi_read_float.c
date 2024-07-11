@@ -10,7 +10,7 @@ int
 main(void)
 {
   int taxisID, vlistID, varID1, varID2, streamID;
-  size_t nmiss;
+  size_t numMissVals;
   float var1[nlon * nlat];
   float var2[nlon * nlat * nlev];
 
@@ -43,8 +43,8 @@ main(void)
       int vtime = taxisInqVtime(taxisID);
 
       // Read var1 and var2
-      streamReadVarF(streamID, varID1, var1, &nmiss);
-      streamReadVarF(streamID, varID2, var2, &nmiss);
+      streamReadVarF(streamID, varID1, var1, &numMissVals);
+      streamReadVarF(streamID, varID2, var2, &numMissVals);
       printf("tsID %d %d %d %g %g\n", tsID, vdate, vtime, var1[0], var2[0]);
     }
 

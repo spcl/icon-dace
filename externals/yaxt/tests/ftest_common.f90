@@ -190,7 +190,13 @@ CONTAINS
   SUBROUTINE init_mpi
     CHARACTER(len=*), PARAMETER :: context = 'init_mpi: '
     INTEGER :: ierror
+#ifndef _OPENMP
     CALL mpi_init(ierror)
+#else
+    INTEGER :: th_provided
+    th_provided = mpi_thread_single
+    CALL mpi_init_thread(mpi_thread_multiple, th_provided, ierror)
+#endif
     IF (ierror /= MPI_SUCCESS) CALL test_abort(context//'MPI_INIT failed', &
          filename, __LINE__)
   END SUBROUTINE init_mpi
@@ -1214,7 +1220,7 @@ CONTAINS
     ! double precision real and gfortran warns about that. For that
     ! reason the below expression limits scale_val to those 1-bits
     ! which can be represented in a double precision constant
-#if ! defined __PGI || __PGIC__ > 21
+#if ! defined __PGI || __PGIC__ > 24
     INTEGER(i8), PARAMETER :: scale_val &
          = IAND(HUGE(a), NOT(ISHFT(1_i8, BIT_SIZE(1_i8) &
          &                               - DIGITS(0.0_c_double))  - 1 ) )
@@ -1224,7 +1230,7 @@ CONTAINS
     REAL(c_double) :: rand_nums(block_len), sc
     n = SIZE(a)
     nb = n/block_len
-#if defined __PGI && __PGIC__ <= 21
+#if defined __PGI && __PGIC__ <= 24
     scale_val &
          = IAND(HUGE(a), NOT(ISHFT(1_i8, BIT_SIZE(1_i8) &
          &                               - DIGITS(0.0_c_double))  - 1 ) )

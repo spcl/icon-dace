@@ -22,9 +22,12 @@ MODULE mo_tmx_surface_interface
   USE mo_exception, ONLY: finish
   USE mo_fortran_tools, ONLY: init
   USE mtime, ONLY: datetime
-  USE mo_physical_constants, ONLY: rgrav, cpd, cvd, tmelt, Tf, stbo, rhos, alv, als, alf
+  USE mo_physical_constants, ONLY: grav, rgrav, tmelt, Tf, stbo, rhos, alf, cvv, clw, ci, vtmpc1, rd
+  USE mo_aes_thermo, ONLY: &
+    & lvc, lsc, &
+    & sat_pres_water, sat_pres_ice, specific_humidity
   USE mo_turb_vdiff_params, ONLY: ckap
-  USE mo_coupling_config,   ONLY: is_coupled_run
+  USE mo_coupling_config,   ONLY: is_coupled_to_ocean
   USE mo_aes_phy_config,    ONLY: aes_phy_config  ! TODO: replace USE
   USE mo_tmx_field_class, ONLY: t_domain, isfc_oce, isfc_ice, isfc_lnd
 
@@ -39,14 +42,14 @@ MODULE mo_tmx_surface_interface
 
   PUBLIC :: update_land, update_sea_ice, &
     & compute_sfc_sat_spec_humidity, compute_sfc_fluxes, compute_sfc_roughness, &
-    & compute_lw_rad_net, compute_sw_rad_net, compute_albedo, &
-    & compute_2m_temperature, compute_10m_wind
+    & compute_lw_rad_net, compute_sw_rad_net, compute_albedo, compute_energy_fluxes, &
+    & compute_2m_temperature, compute_2m_humidity, compute_10m_wind
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_tmx_surface_interface'
   
 CONTAINS
 
-  SUBROUTINE update_land(jg, domain, datetime_old, dtime, cpd, &
+  SUBROUTINE update_land(jg, domain, datetime_old, dtime, cvd, &
     & dz, pres_srf, ptemp, pq, pres_air, rsfl, ssfl, &
     & rlds, rvds_dir, rnds_dir, rpds_dir, rvds_dif, rnds_dif, rpds_dif, &
     & cosmu0, wind, wind10m, rho, co2, &
@@ -63,7 +66,7 @@ CONTAINS
     TYPE(t_domain), INTENT(in), POINTER :: domain
     TYPE(datetime), INTENT(in), POINTER :: datetime_old ! date and time at beginning of this time step
     REAL(wp),       INTENT(in)          :: dtime
-    REAL(wp),       INTENT(in)          :: cpd
+    REAL(wp),       INTENT(in)          :: cvd
     REAL(vp), INTENT(IN) :: &
       & dz        (:,:)     ! reference height in surface layer times 2
     REAL(wp), INTENT(IN) :: &
@@ -110,20 +113,20 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_land'
 
 !$OMP PARALLEL
-    CALL init(tsfc)
-    CALL init(qsat)
+    CALL init(tsfc, lacc=.TRUE.)
+    CALL init(qsat, lacc=.TRUE.)
     IF (PRESENT(km)) THEN
-      CALL init(tsfc_rad)
-      CALL init(tsfc_eff)
-      CALL init(q_snocpymlt)
-      CALL init(alb_vis_dir)
-      CALL init(alb_vis_dif)
-      CALL init(alb_nir_dir)
-      CALL init(alb_nir_dif)
-      CALL init(kh)
-      CALL init(km)
-      CALL init(kh_neutral)
-      CALL init(km_neutral)
+      CALL init(tsfc_rad, lacc=.TRUE.)
+      CALL init(tsfc_eff, lacc=.TRUE.)
+      CALL init(q_snocpymlt, lacc=.TRUE.)
+      CALL init(alb_vis_dir, lacc=.TRUE.)
+      CALL init(alb_vis_dif, lacc=.TRUE.)
+      CALL init(alb_nir_dir, lacc=.TRUE.)
+      CALL init(alb_nir_dif, lacc=.TRUE.)
+      CALL init(kh, lacc=.TRUE.)
+      CALL init(km, lacc=.TRUE.)
+      CALL init(kh_neutral, lacc=.TRUE.)
+      CALL init(km_neutral, lacc=.TRUE.)
     END IF
 !$OMP END PARALLEL
 
@@ -152,7 +155,7 @@ CONTAINS
           fract_par_diffuse(jc) = 0._wp
         END IF
         t_acoef(jc) = 0._wp
-        t_bcoef(jc) = cpd * ptemp(jc,jb) ! dry static energy
+        t_bcoef(jc) = cvd * ptemp(jc,jb) ! dry static energy
         q_acoef(jc) = 0._wp
         q_bcoef(jc) = pq(jc,jb)
       END DO
@@ -254,7 +257,7 @@ CONTAINS
 
   END SUBROUTINE update_land
 
-  SUBROUTINE update_sea_ice(domain, dtime, cpd, &
+  SUBROUTINE update_sea_ice(domain, dtime, &
     & old_tsfc, &
     & lwflx_net, swflx_net, lhflx, shflx, &
     & ssfl, ice_thickness, &
@@ -271,7 +274,6 @@ CONTAINS
   
     TYPE(t_domain), INTENT(in), POINTER :: domain
     REAL(wp), INTENT(in) :: dtime
-    REAL(wp), INTENT(in) :: cpd
     REAL(wp), INTENT(in), DIMENSION(:,:) :: &
       & old_tsfc,       &
       & lwflx_net,      &
@@ -301,23 +303,23 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_sea_ice'
 
+    !$ACC DATA CREATE(Tfw, nonsolar_flux, dnonsolar_flux_dt, T1, T2)
+
 !$OMP PARALLEL
-    CALL init(new_tsfc)
-    CALL init(q_top)
-    CALL init(q_bot)
-    CALL init(albvisdir)
-    CALL init(albvisdif)
-    CALL init(albnirdir)
-    CALL init(albnirdif)
-    CALL init(T1)
-    CALL init(T2)
+    CALL init(new_tsfc, lacc=.TRUE.)
+    CALL init(q_top, lacc=.TRUE.)
+    CALL init(q_bot, lacc=.TRUE.)
+    CALL init(albvisdir, lacc=.TRUE.)
+    CALL init(albvisdif, lacc=.TRUE.)
+    CALL init(albnirdir, lacc=.TRUE.)
+    CALL init(albnirdif, lacc=.TRUE.)
+    CALL init(T1, lacc=.TRUE.)
+    CALL init(T2, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 #ifndef __NO_ICON_OCEAN__
 
     kice = 1
-
-    !$ACC DATA CREATE(Tfw, nonsolar_flux, dnonsolar_flux_dt, T1, T2)
 
 !$OMP PARALLEL DO PRIVATE(jb, jcs, jce, jc, Tfw, nonsolar_flux, dnonsolar_flux_dt) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c,domain%i_endblk_c
@@ -354,7 +356,7 @@ CONTAINS
       ! Update the thickness of snow on ice in atmosphere only simulation.
       ! In coupled experiments this is done by the ocean model in either
       ! ice_growth_zerolayer or ice_growth_winton.
-      IF ( .NOT. is_coupled_run() ) THEN
+      IF ( .NOT. is_coupled_to_ocean() ) THEN
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
         DO jc = jcs, jce
           ! Snowfall on ice - no ice => no snow
@@ -384,12 +386,12 @@ CONTAINS
 
     !$ACC WAIT(1)
 
-    !$ACC END DATA
-
 #else
     CALL finish(routine, "The ice process requires the ICON_OCEAN component")
 #endif
-  
+
+    !$ACC END DATA
+
   END SUBROUTINE update_sea_ice
 
   SUBROUTINE compute_lw_rad_net( &
@@ -425,12 +427,12 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_lw_rad_net'
 
 !$OMP PARALLEL
-    CALL init(lwfl_net)
+    CALL init(lwfl_net, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c,domain%i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
       DO jls = 1, nvalid(jb)
         js = indices(jls,jb)
         lwfl_net(js,jb) = emissivity(js,jb) * (rlds(js,jb) - stbo * tsfc(js,jb)**4)
@@ -486,12 +488,12 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_sw_rad_net'
 
 !$OMP PARALLEL
-    CALL init(swfl_net)
+    CALL init(swfl_net, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c,domain%i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
       DO jls = 1, nvalid(jb)
         js = indices(jls,jb)
         swfl_net(js,jb) = &
@@ -546,8 +548,8 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_sfc_roughness'
 
 !$OMP PARALLEL
-    CALL init(rough_h)
-    CALL init(rough_m)
+    CALL init(rough_h, lacc=.TRUE.)
+    CALL init(rough_m, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jl, jls, js, rough_tmp) ICON_OMP_DEFAULT_SCHEDULE
@@ -580,11 +582,11 @@ CONTAINS
 
     IF (isfc == isfc_lnd) THEN
 #ifndef __NO_JSBACH__
-      CALL jsbach_get_var('turb_rough_m', 1, ptr2d=jsb_rough_m)
-      CALL jsbach_get_var('turb_rough_h', 1, ptr2d=jsb_rough_h)
+      CALL jsbach_get_var('turb_rough_m', domain%patch%id, ptr2d=jsb_rough_m, lacc=.TRUE.)
+      CALL jsbach_get_var('turb_rough_h', domain%patch%id, ptr2d=jsb_rough_h, lacc=.TRUE.)
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = domain%i_startblk_c,domain%i_endblk_c
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR PRIVATE(js) ASYNC(1)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
         DO jls = 1, nvalid(jb)
           js = indices(jls,jb)
           rough_m(js,jb) = jsb_rough_m(js,jb)
@@ -611,8 +613,6 @@ CONTAINS
     & ppsfc, ptsfc,            &
     & qsat                     &
     )
-
-    USE mo_aes_thermo, ONLY: sat_pres_water, sat_pres_ice, specific_humidity
 
     ! Domain information
     TYPE(t_domain),        INTENT(in), POINTER :: domain
@@ -665,7 +665,7 @@ CONTAINS
 
 #ifndef __NO_JSBACH__
     IF (isfc == isfc_lnd .AND. .NOT. linit) THEN
-      CALL jsbach_get_var('seb_qsat_star', 1, ptr2d=jsb_qsat)
+      CALL jsbach_get_var('seb_qsat_star', domain%patch%id, ptr2d=jsb_qsat, lacc=.TRUE.)
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = domain%i_startblk_c,domain%i_endblk_c
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
@@ -690,7 +690,7 @@ CONTAINS
     & domain,                  &
     & isfc,                    &
     & nvalid, indices,         &
-    & cpd, cvd,                &
+    & cvd,                     &
     ! & ua, va, thetam1, qm1, wind, rho, qsat_sfc, theta_sfc, kh, km,  &
     & ua, va, ta, qm1, wind, u_sfc_oce, v_sfc_oce, rho, qsat_sfc, t_sfc, kh, km,  &
     & evapotrans, latent_hflx, sensible_hflx, ustress, vstress  &
@@ -708,7 +708,7 @@ CONTAINS
     INTEGER,  INTENT(in)  :: &
       & nvalid(:),           &
       & indices(:,:)
-    REAL(wp), INTENT(in) :: cpd, cvd
+    REAL(wp), INTENT(in) :: cvd
     REAL(wp), DIMENSION(:,:), INTENT(in) :: &
       & ua, &
       & va, &
@@ -740,11 +740,11 @@ CONTAINS
     ! CALL message(routine, 'Start')
 
 !$OMP PARALLEL
-      CALL init(evapotrans)
-      CALL init(latent_hflx)
-      CALL init(sensible_hflx)
-      CALL init(ustress)
-      CALL init(vstress)
+      CALL init(evapotrans, lacc=.TRUE.)
+      CALL init(latent_hflx, lacc=.TRUE.)
+      CALL init(sensible_hflx, lacc=.TRUE.)
+      CALL init(ustress, lacc=.TRUE.)
+      CALL init(vstress, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     IF (isrfc_type == 1) THEN
@@ -753,7 +753,7 @@ CONTAINS
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
         DO jls = 1, nvalid(jb)
           js = indices(jls,jb)
-          latent_hflx(js,jb)   = -lhflx * alv * rho(js,jb)
+          latent_hflx(js,jb)   = -lhflx * rho(js,jb) * (lvc+(cvv-clw)*t_sfc(js,jb))
           evapotrans(js,jb)    = -lhflx * rho(js,jb)
           sensible_hflx(js,jb) = -shflx * cvd * rho(js,jb)
         END DO
@@ -770,9 +770,9 @@ CONTAINS
 
     IF (isfc == isfc_lnd) THEN
 #ifndef __NO_JSBACH__
-      CALL jsbach_get_var('hydro_evapotrans',  1, ptr2d=jsb_evapotrans_ptr)
-      CALL jsbach_get_var('seb_latent_hflx',   1, ptr2d=jsb_latent_hflx_ptr)
-      CALL jsbach_get_var('seb_sensible_hflx', 1, ptr2d=jsb_sensible_hflx_ptr)
+      CALL jsbach_get_var('hydro_evapotrans',  domain%patch%id, ptr2d=jsb_evapotrans_ptr, lacc=.TRUE.)
+      CALL jsbach_get_var('seb_latent_hflx',   domain%patch%id, ptr2d=jsb_latent_hflx_ptr, lacc=.TRUE.)
+      CALL jsbach_get_var('seb_sensible_hflx', domain%patch%id, ptr2d=jsb_sensible_hflx_ptr, lacc=.TRUE.)
 #endif
     END IF
 
@@ -784,13 +784,13 @@ CONTAINS
         ! TODO: is the treatment of surface ocean current correct (cf. vdiff code)
         IF (isfc == isfc_oce) THEN
           evapotrans(js,jb) = rho(js,jb) * wind(js,jb) * kh(js,jb) * (qm1(js,jb) - qsat_sfc(js,jb))
-          latent_hflx(js,jb) = alv * evapotrans(js,jb)
+          latent_hflx(js,jb) = evapotrans(js,jb) * (lvc+(cvv-clw)*t_sfc(js,jb))
           sensible_hflx(js,jb) = cvd * rho(js,jb) * wind(js,jb) * kh(js,jb) * (ta(js,jb) - t_sfc(js,jb))
           ustress(js,jb) = rho(js,jb) * km(js,jb) * wind(js,jb) * (ua(js,jb) - u_sfc_oce(js,jb))
           vstress(js,jb) = rho(js,jb) * km(js,jb) * wind(js,jb) * (va(js,jb) - v_sfc_oce(js,jb))
         ELSE IF (isfc == isfc_ice) THEN
           evapotrans(js,jb) = rho(js,jb) * wind(js,jb) * kh(js,jb) * (qm1(js,jb) - qsat_sfc(js,jb))
-          latent_hflx(js,jb) = als * evapotrans(js,jb)
+          latent_hflx(js,jb) = evapotrans(js,jb) * (lsc+(cvv-ci)*t_sfc(js,jb))
           sensible_hflx(js,jb) = cvd * rho(js,jb) * wind(js,jb) * kh(js,jb) * (ta(js,jb) - t_sfc(js,jb))
           ustress(js,jb) = rho(js,jb) * km(js,jb) * wind(js,jb) * ua(js,jb)
           vstress(js,jb) = rho(js,jb) * km(js,jb) * wind(js,jb) * va(js,jb)
@@ -813,6 +813,58 @@ CONTAINS
     END IF
 
   END SUBROUTINE compute_sfc_fluxes
+  !
+  !=================================================================
+  !
+  SUBROUTINE compute_energy_fluxes( &
+    & domain,     &
+    & cvv, cvd,   &
+    & shfl,       &
+    & evapotrans, &
+    & ta,         &
+    & rho,        &
+    & ufts,       &
+    & ufvs)
+
+    ! Domain information
+    TYPE(t_domain),  INTENT(in), POINTER :: domain
+    !
+    ! Input variables
+    !
+    REAL(wp), INTENT(in) :: cvv, cvd
+    REAL(wp), DIMENSION(:,:), INTENT(in) :: &
+      & shfl,       &
+      & evapotrans, &
+      & ta,         &
+      & rho
+    !
+    ! Output variables
+    !
+    REAL(wp), DIMENSION(:,:), INTENT(out) :: &
+      & ufts, &
+      & ufvs
+
+    INTEGER :: ic, ib
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':compute_energy_fluxes'
+
+!$OMP PARALLEL
+    CALL init(ufts, lacc=.TRUE.)
+    CALL init(ufvs, lacc=.TRUE.)
+!$OMP END PARALLEL
+
+!$OMP PARALLEL DO PRIVATE(ib, ic) ICON_OMP_DEFAULT_SCHEDULE
+    DO ib = domain%i_startblk_c, domain%i_endblk_c
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      DO ic = domain%i_startidx_c(ib), domain%i_endidx_c(ib)
+        ufts(ic,ib) = shfl(ic,ib)
+        ufvs(ic,ib) = ta(ic,ib) * evapotrans(ic,ib) * (cvv - cvd) 
+      END DO
+      !$ACC END PARALLEL LOOP
+    END DO
+!$OMP END PARALLEL DO
+
+  END SUBROUTINE compute_energy_fluxes
   !
   !=================================================================
   !
@@ -862,12 +914,12 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_albedo'
 
 !$OMP PARALLEL
-    CALL init(albedo)
+    CALL init(albedo, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js, zalbvis, zalbnir, rvds, rnds) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c, domain%i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
       DO jls = 1, nvalid(jb)
         js = indices(jls,jb)
 
@@ -932,9 +984,9 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_10m_wind'
 
 !$OMP PARALLEL
-    CALL init(u10m)
-    CALL init(v10m)
-    CALL init(wind10m)
+    CALL init(u10m, lacc=.TRUE.)
+    CALL init(v10m, lacc=.TRUE.)
+    CALL init(wind10m, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js, zrat, zbm, zcbn, zcbs, zcbu, zmerge, zred) ICON_OMP_DEFAULT_SCHEDULE
@@ -998,7 +1050,7 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//':compute_2m_temperature'
 
 !$OMP PARALLEL
-    CALL init(t2m)
+    CALL init(t2m, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js, zrat, zbm, zbh, zcbn, zcbs, zcbu, zmerge, zred) ICON_OMP_DEFAULT_SCHEDULE
@@ -1026,16 +1078,18 @@ CONTAINS
     ENDDO
 !$OMP END PARALLEL DO
 
+    !$ACC WAIT(1)
+
   END SUBROUTINE compute_2m_temperature
   !
   !=================================================================
   !
-  SUBROUTINE compute_2m_dewpoint(              &
-    & domain, isfc,                               &
-    & nvalid, indices, zf, zh,                    &
-    & tatm, tsfc,                                 &
-    & moist_rich, kh, km, kh_neutral, km_neutral, &
-    & t2m)
+  SUBROUTINE compute_2m_humidity( &
+    & domain, nvalid, indices,    &
+    & patm, psfc,                 &
+    & tatm, t2m,                  &
+    & qv_atm, qc_atm, qi_atm,     &
+    & hus2m)
 
     ! Domain information
     TYPE(t_domain),  INTENT(in), POINTER :: domain
@@ -1044,30 +1098,50 @@ CONTAINS
     !
     INTEGER,  INTENT(in)  :: &
       & nvalid(:),           &
-      & indices(:,:),        &
-      & isfc
+      & indices(:,:)
     REAL(wp), DIMENSION(:,:), INTENT(in) :: &
-      & zf, zh, &
-      & tatm, tsfc, moist_rich, kh, km, kh_neutral, km_neutral
+      & patm, psfc,             & ! pressure in lowest model level and at surface
+      & tatm, t2m,              & ! temperature in lowest model level and at surface
+      & qv_atm, qc_atm, qi_atm    ! water vapor, cloud water and cloud ice in lowest model level
     REAL(wp), DIMENSION(:,:), INTENT(out) :: &
-      & t2m
+      & hus2m                     ! specific humidity at 2 meter
 
     INTEGER :: jb, jls, js
-    REAL(wp) :: zrat, zbm, zbh, zcbn, zcbs, zcbu, zmerge, zred
+    REAL(wp) :: &
+      & qsat_atm, qsat_2m, & ! saturated humidity in lowest model level and at 2 meter
+      & qrel_atm,          & ! relative humidity in lowest model level
+      & pres2m               ! pressure at 2 meter
 
-    CHARACTER(len=*), PARAMETER :: routine = modname//':compute_2m_dewpoint'
+    REAL(wp), PARAMETER :: zephum = 0.05_wp ! epsilon for rel. humidity
+    !$ACC DECLARE COPYIN(zephum)
 
-!$OMP PARALLEL DO PRIVATE(jb, jls, js, zrat, zbm, zbh, zcbn, zcbs, zcbu, zmerge, zred) ICON_OMP_DEFAULT_SCHEDULE
+    CHARACTER(len=*), PARAMETER :: routine = modname//':compute_2m_humidity'
+
+!$OMP PARALLEL
+    CALL init(hus2m, lacc=.TRUE.)
+!$OMP END PARALLEL
+
+    ! Note: Below it is assumed that relative humidity is constant with height. This should
+    ! be revisited, see comments in https://gitlab.dkrz.de/icon/icon-mpim/-/merge_requests/341
+    !
+!$OMP PARALLEL DO PRIVATE(jb, jls, js, qsat_atm, qrel_atm, pres2m, qsat_2m) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c, domain%i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js, zrat, zbm, zcbn, zcbs, zcbu, zmerge, zred)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
+      !$ACC   PRIVATE(js, qsat_atm, qrel_atm, pres2m, qsat_2m)
       DO jls = 1, nvalid(jb)
         js = indices(jls,jb)
+        qsat_atm = specific_humidity(sat_pres_water(tatm(js,jb)),patm(js,jb))
+        qrel_atm = MAX(zephum, qv_atm(js,jb) / qsat_atm)
+        pres2m = psfc(js,jb) * &
+          &  (1._wp - 2._wp * grav / ( rd * t2m(js,jb) * (1._wp + vtmpc1 * qv_atm(js,jb) - qc_atm(js,jb) - qi_atm(js,jb))))
+        qsat_2m = specific_humidity(sat_pres_water(t2m(js,jb)),pres2m)
+        hus2m(js,jb) = qrel_atm * qsat_2m
       END DO
       !$ACC END PARALLEL LOOP
     ENDDO
 !$OMP END PARALLEL DO
 
-  END SUBROUTINE compute_2m_dewpoint
+  END SUBROUTINE compute_2m_humidity
   !
   !=================================================================
   !

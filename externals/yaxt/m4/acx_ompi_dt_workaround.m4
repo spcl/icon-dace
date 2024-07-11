@@ -59,13 +59,11 @@ AC_DEFUN([ACX_OMPI_DT_WORKAROUND],
      [OMPI_MAJOR_VERSION OMPI_MINOR_VERSION OMPI_RELEASE_VERSION],
      [AC_COMPUTE_INT([vvar_macro],[vvar_macro],[AC_INCLUDES_DEFAULT
 @%:@include <mpi.h>],[is_affected_ompi=false ; break])])
-   $is_affected_ompi || break
    acx_ompi_version="$OMPI_MAJOR_VERSION.$OMPI_MINOR_VERSION.$OMPI_RELEASE_VERSION"
    AS_CASE([$acx_ompi_version],
      [2.0.3|2.0.4|2.1.*|3.*|4.0.0|4.0.1], ,
      [1.*|2.0.0|2.0.1|2.0.2],       [is_affected_ompi=false ; break],
      [is_affected_ompi=false ; break])
-   dnl todo: download sources and patch automatically as for mpich3.4
    dnl 2. deduce header location and flags
    ASX_VAR_UNSET([acx_ompi_path])
    AC_ARG_VAR([OMPI_MCA_C_INCLUDE],[flags needed to compile Open MPI MCA modules])
@@ -85,6 +83,13 @@ AC_DEFUN([ACX_OMPI_DT_WORKAROUND],
 s/ \(@<:@^- 	@:>@\|-@<:@^I 	@:>@\)@<:@^ 	@:>@*//g
 s/ -I/ /g
 s/^ *//;s/ *$//'`])
+         AS_CASE([$ac_word],
+           [*mpicc],
+           [acx_ompi_path_candidates="$acx_ompi_path_candidates "`$ac_word --showme:compile \
+ | sed -e 's/ -I \(@<:@^ 	@:>@*\)/ -I\1/g
+s/ \(@<:@^- 	@:>@\|-@<:@^I 	@:>@\)@<:@^ 	@:>@*//g
+s/ -I/ /g
+s/^ *//;s/ *$//'`])
          AS_FOR([incdir],[acx_temp],[$acx_ompi_path_candidates],
            [AS_IF([test -r "incdir/mpi.h" -a -d "incdir/openmpi/opal"],
               [acx_cv_ompi_mca_c_include="-I]incdir[/openmpi" ; break],
@@ -98,35 +103,32 @@ s/^ *//;s/ *$//'`])
    dnl 2.b. establish Open MPI build CFLAGS if possible
    AC_ARG_VAR([OMPI_BUILD_CFLAGS],[C compiler flags matching used Open MPI])
    AS_IF([test x"${OMPI_BUILD_CFLAGS+set}" != xset],
-     [AC_CACHE_CHECK([Open MPI C build flags],[acx_cv_ompi_build_cflags],
-        [# Extract the first word of "$CC", so it can be a program name with args.
-         set dummy $CC; ac_word=$[2]
-         AS_CASE([$ac_word],
-           [/*mpicc],
-           [AS_IF([expr "`$ac_word --showme:version`" : '.* Open MPI '"$acx_ompi_version" >/dev/null],
-              [acx_ompi_path_candidates=`echo "$ac_word" | sed -e 's@/@<:@^/@:>@*mpicc$][@@'`])],
-           [*mpicc],
-           [acx_ompi_path_candidates=`which "$ac_word" 2>/dev/null | sed -e 's@/@<:@^/@:>@*mpicc$][@@'`],
-           [acx_ompi_path_candidates=`echo " $CPPFLAGS $CFLAGS " \
+     [# Extract the first word of "$CC", so it can be a program name with args.
+      set dummy $CC; ac_word=$[2]
+      AS_CASE([$ac_word],
+        [/*mpicc],
+        [AS_IF([expr "`$ac_word --showme:version`" : '.* Open MPI '"$acx_ompi_version" >/dev/null],
+        [acx_ompi_path_candidates=`echo "$ac_word" | sed -e 's@/@<:@^/@:>@*mpicc$][@@'`])],
+        [*mpicc],
+        [acx_ompi_path_candidates=`which "$ac_word" 2>/dev/null | sed -e 's@/@<:@^/@:>@*mpicc$][@@'`],
+        [acx_ompi_path_candidates=`echo " $CPPFLAGS $CFLAGS " \
  | sed -e 's/ -I \(@<:@^ 	@:>@*\)/ -I\1/g
 s/ \(@<:@^- 	@:>@\|-@<:@^I 	@:>@\)@<:@^ 	@:>@*//g
-s/ -I/ /g
-s/^ *//;s/ *$//'`])
-         # from the path candidates derived above, try to find ompi_info
-         AS_FOR([bindir],[acx_temp],[$acx_ompi_path_candidates],
-           [AS_IF([test -x "bindir/ompi_info"],
-              [acx_cv_ompi_build_cflags="bindir/ompi_info" ; break],
-              [test -x "bindir/../bin/ompi_info"],
-              [acx_temp=`echo "bindir" | sed -e 's@/@<:@^/@:>@*$][@@'`
-               AS_IF([test -x "$acx_temp/bin/ompi_info"],
-                 [acx_cv_ompi_build_cflags="$acx_temp/bin/ompi_info"; break])])])
-         AS_IF([test x"${acx_cv_ompi_build_cflags+set}" = xset && expr "`$acx_cv_ompi_build_cflags --version | head -n 1`" : 'Open MPI v'"$acx_ompi_version" >/dev/null],
-          [acx_cv_ompi_build_cflags=`$acx_cv_ompi_build_cflags -c | sed -n -e '/^ *Build CFLAGS:/s/^ *Build CFLAGS: *//p'`])])
-      AS_IF([test x"${acx_cv_ompi_build_cflags+set}" = xset],
-        [OMPI_BUILD_CFLAGS=$acx_cv_ompi_build_cflags],
-        [is_affected_ompi=false ; break])],
-     [AC_MSG_CHECKING([Open MPI C build flags])
-      AC_MSG_RESULT([$OMPI_BUILD_CFLAGS])])
+s/ -I/:/g
+s/^@<:@: 	@:>@*//;s/ *$//'`])
+      # from the path candidates derived above, try to find ompi_info
+      acx_ompi_path_candidates=`echo "$acx_ompi_path_candidates" | sed -e 's@\(@<:@^:@:>@*\)@\1:\1/../bin@g'`
+      AC_MSG_CHECKING([for ompi_info])
+      AC_PATH_PROGS_FEATURE_CHECK([OMPI_INFO],[ompi_info],
+        [AS_IF([expr "`$ac_path_OMPI_INFO --version | head -n 1`" : 'Open MPI v'"$acx_ompi_version" >/dev/null],
+           [ac_cv_path_OMPI_INFO=$ac_path_OMPI_INFO ac_path_OMPI_INFO_found=:])],
+        [AC_MSG_RESULT([cannot find ompi_info matching this Open MPI version])
+         is_affected_ompi=false ; break],
+        ["${acx_ompi_path_candidates+$acx_ompi_path_candidates:}$PATH"])
+      AC_MSG_RESULT([$ac_cv_path_OMPI_INFO])
+      OMPI_BUILD_CFLAGS=`$ac_cv_path_OMPI_INFO -c | sed -n -e '/^ *Build CFLAGS:/s/^ *Build CFLAGS: *//p'`])
+   AC_MSG_CHECKING([Open MPI C build flags])
+   AC_MSG_RESULT([$OMPI_BUILD_CFLAGS])
    dnl 2.c. make sure header matches what compiler uses
    CPPFLAGS="$OMPI_MCA_C_INCLUDE $CPPFLAGS"
    CFLAGS=$OMPI_BUILD_CFLAGS
@@ -145,12 +147,12 @@ s/^ *//;s/ *$//'`])
      [3|4],
      [acx_opal_datatype_add_workaround=opal_datatype_optimize.c])
    acx_temp="m4_default([$5],[config/workarounds/openmpi])/v$acx_ompi_version"
-   AS_IF([test -r "$ac_pwd/$acx_temp/$acx_opal_datatype_add_workaround"],
-     [acx_opal_datatype_add_workaround="$ac_pwd/$acx_temp/$acx_opal_datatype_add_workaround"
+   AS_IF([test -r "$ac_pwd/$acx_temp/xt_$acx_opal_datatype_add_workaround"],
+     [acx_opal_datatype_add_workaround="$ac_pwd/$acx_temp/xt_$acx_opal_datatype_add_workaround"
       cp "$acx_opal_datatype_add_workaround" conftest.c \
         || { is_affected_ompi=false ; break ; }],
-     [test -r "$srcdir/$acx_temp/$acx_opal_datatype_add_workaround"],
-     [acx_opal_datatype_add_workaround="$srcdir/$acx_temp/$acx_opal_datatype_add_workaround"
+     [test -r "$srcdir/$acx_temp/xt_$acx_opal_datatype_add_workaround"],
+     [acx_opal_datatype_add_workaround="$srcdir/$acx_temp/xt_$acx_opal_datatype_add_workaround"
       cp "$acx_opal_datatype_add_workaround" conftest.c \
         || { is_affected_ompi=false ; break ; }],
      [dnl patched source not availabe, download and patch
@@ -185,7 +187,7 @@ acx_fn_downloader()
           <"$srcdir/config/checkpatch/openmpi_datatype.$acx_opal_datatype_add_workaround.patch"],
         [echo "downloading and patching Open MPI source file $acx_opal_datatype_add_workaround"]) \
         || { cd "$ac_pwd" ; is_affected_ompi=false ; break ; }
-      acx_opal_datatype_add_workaround="$ac_pwd/$acx_temp/stage/$acx_opal_datatype_add_workaround"])
+      acx_opal_datatype_add_workaround="$ac_pwd/$acx_temp/stage/xt_$acx_opal_datatype_add_workaround"])
    as_dir=src as_fn_mkdir_p
    AC_COMPILE_IFELSE(,
      [ACX_MV_OBJ([conftest],[ompi_workaround])

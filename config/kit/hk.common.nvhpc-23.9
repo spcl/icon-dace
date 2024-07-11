@@ -49,6 +49,13 @@ NETCDFF_LIBS='-lnetcdff'
 ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_nvidia_23.9'
 ECCODES_LIBS='-leccodes -leccodes_f90'
 
+FYAML_ROOT='/software/all/lib/libfyaml/0.9' # 2024-03-19: coupling not yet supported
+FYAML_LIBS='-lfyaml'
+
+SERIALBOX2_ROOT='/hkfs/home/dataset/datasets/icon/sw/serialbox2-ae5b5a7_nvidia_23.9'
+SERIALBOX2_LIBS='-lSerialboxFortran -lSerialboxC -lSerialboxCore'
+SB2PP="/usr/bin/python2 ${SERIALBOX2_ROOT}/python/pp_ser/pp_ser.py"
+
 # Libraries in /usr/lib{,64}
 XML2_INCLUDE_DIR='/usr/include/libxml2'
 XML2_LIBS='-lxml2'
@@ -56,15 +63,15 @@ ZLIB_LIBS='-lz'
 
 ################################################################################
 
-BUILD_ENV="export LD_LIBRARY_PATH=\"${PGI_ROOT}/lib:${MPI_ROOT}/lib:${CUDA_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:/usr/lib64:/usr/lib\";export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\";"
+BUILD_ENV="export LD_LIBRARY_PATH=\"${PGI_ROOT}/lib:${MPI_ROOT}/lib:${CUDA_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${FYAML_ROOT}/lib:${SERIALBOX2_ROOT}/lib:/usr/lib64:/usr/lib\";export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\"; unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH INCLUDE LIBRARY_PATH;"
 
-LDFLAGS="-L${PGI_ROOT}/lib -L${MPI_ROOT}/lib -L${CUDA_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${ECCODES_ROOT}/lib64"
-LIBS="-Wl,--as-needed ${PGI_LIBS} ${MPI_LIBS} ${CUDA_LIBS} ${HDF5_LIBS} ${NETCDF_LIBS} ${NETCDFF_LIBS} ${ECCODES_LIBS} ${XML2_LIBS} ${ZLIB_LIBS} -lrt"
+LDFLAGS="-L${PGI_ROOT}/lib -L${MPI_ROOT}/lib -L${CUDA_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib -L${SERIALBOX2_ROOT}/lib"
+LIBS="-Wl,--as-needed ${PGI_LIBS} ${MPI_LIBS} ${CUDA_LIBS} ${HDF5_LIBS} ${NETCDF_LIBS} ${NETCDFF_LIBS} ${ECCODES_LIBS} ${FYAML_LIBS} ${SERIALBOX2_LIBS} ${XML2_LIBS} ${ZLIB_LIBS} -lrt"
 
 CUDAFLAGS='--std=c++14 -arch=sm_80 -g -O3'
 # 2023-11-06: currently IAU gives inconsistent results with -O2 in FCFLAGS.
-FCFLAGS="-I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -Mpreprocess -g -Mrecursive -Mallocatable=03 -Minfo=accel,inline -Mstack_arrays ${HK_GPU_FCFLAGS}"
-CFLAGS='-std=c99 -g -O2'
+FCFLAGS="-I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -I${SERIALBOX2_ROOT}/include -Mpreprocess -g -O -Mrecursive -Mallocatable=03 -Minfo=accel,inline -Mstack_arrays ${HK_GPU_FCFLAGS}"
+CFLAGS="-std=c99 -g -O2 -I${FYAML_ROOT}/include"
 CPPFLAGS="-I${MPI_ROOT}/include -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_INCLUDE_DIR}"
 
 # The compiler fails to process some of the EMVORADO and DACE source files with
@@ -74,7 +81,7 @@ ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:src/data_assi
 
 MPI_LAUNCH="${MPI_ROOT}/bin/mpirun ${HK_GPU_MPIRUN_FLAGS}"
 
-EXTRA_CONFIG_ARGS="--disable-loop-exchange --disable-coupling --enable-grib2 --enable-art --enable-ecrad --enable-emvorado --enable-dace"
+EXTRA_CONFIG_ARGS="--disable-loop-exchange --disable-coupling --disable-serialization --enable-grib2 --enable-art --enable-ecrad --enable-emvorado --enable-dace"
 #EXTRA_CONFIG_ARGS+=' --enable-emvorado --enable-dace --enable-fcgroup-WORKAROUND1'
 EXTRA_CONFIG_ARGS+=" --disable-mpi-checks"
 
@@ -95,6 +102,7 @@ LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \
 CUDACXX="$CUDACXX" \
 CUDAFLAGS="$CUDAFLAGS" \
+SB2PP="${SB2PP}" \
 ${EXTRA_CONFIG_ARGS} \
 "$@"
 

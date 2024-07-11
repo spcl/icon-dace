@@ -34,6 +34,7 @@ known_patterns='
 icon_directories='
 src
 support
+test
 '
 
 # ICON ignored patterns (newline-separated list of path patterns relative to the

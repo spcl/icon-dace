@@ -23,6 +23,7 @@ MODULE mo_wave_types
   PRIVATE
 
   PUBLIC :: t_wave_prog
+  PUBLIC :: t_wave_source
   PUBLIC :: t_wave_diag
   PUBLIC :: t_wave_state
   PUBLIC :: t_wave_state_lists
@@ -35,7 +36,23 @@ MODULE mo_wave_types
   END TYPE t_wave_prog
 
 
+  ! source function state vector object
+  !
+  TYPE t_wave_source
+    REAL(wp), POINTER, CONTIGUOUS :: &
+      &  sl(:,:,:),           & ! total source function                    (nproma,nblks_c,ntracer) (-)
+      &  fl(:,:,:)              ! diagonal matrix of functional derivative (nproma,nblks_c,ntracer) (-)
+
+    INTEGER, POINTER, CONTIGUOUS ::  &
+      &  llws(:,:,:)            ! 1 - where sinput is positive (nproma,nblks_c,ntracer) (-)
+
+    TYPE(t_ptr_2d3d), ALLOCATABLE :: sl_ptr(:)   !< pointer array: one pointer for each tracer
+    TYPE(t_ptr_2d3d), ALLOCATABLE :: fl_ptr(:)   !< pointer array: one pointer for each tracer
+  END TYPE t_wave_source
+
+
   ! diagnostic variables state vector
+  !
   TYPE t_wave_diag
     REAL(wp), POINTER, CONTIGUOUS :: &
       &  gv_c(:,:,:),         & ! group velocity                    (nproma,nblks_c,nfreqs)  (m/s)
@@ -62,8 +79,6 @@ MODULE mo_wave_types
       &  xlevtail(:,:),       & ! tail level                                 (nproma,nblks_c) (-)
       &  tauw(:,:),           & ! wave stress                                (nproma,nblks_c) (m/s)^2
       &  phiaw(:,:),          & ! energy flux from wind into waves integrated over the full frequency range  (nproma,nblks_c) (-)
-      &  fl(:,:,:),           & ! diagonal matrix of functional derivative (nproma,nblks_c,ntracer) (-)
-      &  sl(:,:,:),           & ! total source function                    (nproma,nblks_c,ntracer) (-)
       &  enh(:,:),            & ! nonlinear transfer function coefficients for shallow water 
       &  AF11(:),             & ! for discrete approximation of nonlinear transfer (nfreqs+4) (-)
       &  FKLAP(:), FKLAP1(:), & ! --//-- (nfreqs+4) (-)
@@ -81,6 +96,8 @@ MODULE mo_wave_types
       &  tm1(:,:),            & ! total wave m1 period           (nproma,nblks_c) (s)
       &  tm2(:,:),            & ! total wave m2 period           (nproma,nblks_c) (s)
       &  ds(:,:),             & ! total directional wave spread  (nproma,nblks_c) (deg)
+      &  hrms_frac(:,:),      & ! square ratio (Hrms / Hmax)**2  (nproma,nblks_c) (-)
+      &  wbr_frac(:,:),       & ! fraction of breaking waves     (nproma,nblks_c) (-)
       ! wind sea
       &  emean_sea(:,:),      & ! wind sea energy                (nproma,nblks_c) (m^2)
       &  femean_sea(:,:),     & ! wind sea mean frequency energy (nproma,nblks_c) (m^2)
@@ -119,7 +136,6 @@ MODULE mo_wave_types
 
     INTEGER, POINTER, CONTIGUOUS ::  &
       &  last_prog_freq_ind(:,:), & ! last frequency index of the prognostic range (nproma,nblks_c) (-)
-      &  llws(:,:,:),             & ! 1 - where sinput is positive (nproma,nblks_c,ntracer) (-)
       &  swell_mask(:,:),         & ! swell separation mask (nproma,nblks_c) (-)
       &  swell_mask_tr(:,:,:),    & ! swell separation mask (nproma,nblks_c,ntracer) (-)
       &  ikp(:), ikp1(:),         & ! for discrete approximation of nonlinear transfer (nfreqs+4) (-)
@@ -130,21 +146,23 @@ MODULE mo_wave_types
       &  non_lin_tr_ind(:,:,:,:)  & ! tracer index for nonlinear interaction (nfreqs+4,2,ndirs,8) (-)
       &  => NULL()
 
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: freq_ptr(:)       !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d), ALLOCATABLE :: gv_e_freq_ptr(:)  !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d), ALLOCATABLE :: gv_c_freq_ptr(:)  !< pointer array: one pointer for each frequence
     TYPE(t_ptr_2d3d), ALLOCATABLE :: wave_num_c_ptr(:) !< pointer array: one pointer for each frequence
     TYPE(t_ptr_2d3d), ALLOCATABLE :: wave_num_e_ptr(:) !< pointer array: one pointer for each frequence
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: tr_ptr(:)         !< pointer array: one pointer for each tracer
   END type t_wave_diag
 
   TYPE t_wave_state
     !array of prognostic states at different timelevels
     TYPE(t_wave_prog), ALLOCATABLE    :: prog(:)       !< shape: (timelevels)
+    TYPE(t_wave_source)               :: source        !< source function state vector
     TYPE(t_wave_diag)                 :: diag
   END TYPE t_wave_state
 
   TYPE t_wave_state_lists
     ! array of prognostic state lists at different timelevels
     TYPE(t_var_list_ptr), ALLOCATABLE :: prog_list(:)  !< shape: (timelevels)
+    TYPE(t_var_list_ptr)              :: source_list
     TYPE(t_var_list_ptr)              :: diag_list
   END TYPE t_wave_state_lists
 

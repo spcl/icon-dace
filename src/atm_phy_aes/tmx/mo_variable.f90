@@ -566,7 +566,7 @@ CONTAINS
         ! ALLOCATE(tv%i1d(tv%starts(1):tv%starts(1)-1+tv%dims(1)))
         ! !$ACC ENTER DATA CREATE(tv%i1d)
         ! !ICON_OMP PARALLEL
-        ! CALL init(tv%i1d)
+        ! CALL init(tv%i1d, lacc=????)
         ! !ICON_OMP END PARALLEL
         ! !$ACC UPDATE DEVICE(tv%i1d)
       END IF
@@ -574,7 +574,7 @@ CONTAINS
         ALLOCATE(tv%r1d(tv%starts(1):tv%starts(1)-1+tv%dims(1)))
         !$ACC ENTER DATA CREATE(tv%r1d)
         !ICON_OMP PARALLEL
-        CALL init(tv%r1d)
+        CALL init(tv%r1d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "bool") THEN
@@ -589,14 +589,14 @@ CONTAINS
         ALLOCATE(tv%i2d(tv%starts(1):tv%starts(1)-1+tv%dims(1),tv%starts(2):tv%starts(2)-1+tv%dims(2)))
         !$ACC ENTER DATA CREATE(tv%i2d)
         !ICON_OMP PARALLEL
-        CALL init(tv%i2d)
+        CALL init(tv%i2d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "real") THEN
         ALLOCATE(tv%r2d(tv%starts(1):tv%starts(1)-1+tv%dims(1),tv%starts(2):tv%starts(2)-1+tv%dims(2)))
         !$ACC ENTER DATA CREATE(tv%r2d)
         !ICON_OMP PARALLEL
-        CALL init(tv%r2d)
+        CALL init(tv%r2d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "geocoord") THEN
@@ -608,14 +608,14 @@ CONTAINS
         ALLOCATE(tv%i3d(tv%starts(1):tv%starts(1)-1+tv%dims(1),tv%starts(2):tv%starts(2)-1+tv%dims(2),tv%starts(3):tv%starts(3)-1+tv%dims(3)))
         !$ACC ENTER DATA CREATE(tv%i3d)
         !ICON_OMP PARALLEL
-        CALL init(tv%i3d)
+        CALL init(tv%i3d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "real") THEN
         ALLOCATE(tv%r3d(tv%starts(1):tv%starts(1)-1+tv%dims(1),tv%starts(2):tv%starts(2)-1+tv%dims(2),tv%starts(3):tv%starts(3)-1+tv%dims(3)))
         !$ACC ENTER DATA CREATE(tv%r3d)
         !ICON_OMP PARALLEL
-        CALL init(tv%r3d)
+        CALL init(tv%r3d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
 
@@ -625,7 +625,7 @@ CONTAINS
           &      tv%starts(3):tv%starts(3)-1+tv%dims(3),tv%starts(4):tv%starts(4)-1+tv%dims(4)))
         !$ACC ENTER DATA CREATE(tv%i4d)
         !ICON_OMP PARALLEL
-        CALL init(tv%i4d)
+        CALL init(tv%i4d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "real") THEN
@@ -633,7 +633,7 @@ CONTAINS
           &      tv%starts(3):tv%starts(3)-1+tv%dims(3),tv%starts(4):tv%starts(4)-1+tv%dims(4)))
         !$ACC ENTER DATA CREATE(tv%r4d)
         !ICON_OMP PARALLEL
-        CALL init(tv%r4d)
+        CALL init(tv%r4d, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "geocoord") THEN
@@ -648,7 +648,7 @@ CONTAINS
           &      tv%starts(5):tv%starts(5)-1+tv%dims(5)))
         !$ACC ENTER DATA CREATE(tv%i5d)
         !ICON_OMP PARALLEL
-        CALL init(tv%i5d, 0)
+        CALL init(tv%i5d, 0, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
       IF (tv%type_id == "real") THEN
@@ -657,7 +657,7 @@ CONTAINS
           &      tv%starts(5):tv%starts(5)-1+tv%dims(5)))
         !$ACC ENTER DATA CREATE(tv%r5d)
         !ICON_OMP PARALLEL
-        CALL init(tv%r5d, 0._wp)
+        CALL init(tv%r5d, 0._wp, lacc=.TRUE.)
         !ICON_OMP END PARALLEL
       END IF
     CASE DEFAULT

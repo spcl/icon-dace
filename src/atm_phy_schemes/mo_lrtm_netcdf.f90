@@ -35,10 +35,9 @@ MODULE mo_lrtm_netcdf
 
   USE mo_exception,            ONLY: finish
 
-  USE mo_netcdf_parallel, ONLY: p_nf_open, p_nf_close, &
-    &                           p_nf_inq_varid,        &
-    &                           p_nf_get_vara_double,  &
-    &                           nf_read, nf_noerr
+  USE mo_netcdf, ONLY: nf90_nowrite, nf90_noerr
+  USE mo_netcdf_parallel, ONLY: p_nf90_open, p_nf90_close, &
+    &                           p_nf90_inq_varid, p_nf90_get_var
 
   IMPLICIT NONE
 
@@ -120,9 +119,9 @@ CONTAINS
     !> for RRTMG_LW k-distribution model
     CHARACTER (LEN=*), INTENT(IN) :: data_filename
 
-    nf_status = p_nf_open(TRIM(data_filename), nf_read, fileid)
+    nf_status = p_nf90_open(TRIM(data_filename), nf90_nowrite, fileid)
 
-    IF (nf_status /= nf_noerr) THEN
+    IF (nf_status /= nf90_noerr) THEN
       CALL finish('mo_lrtm_netcdf/lrtm_read', 'File '//TRIM(data_filename)//' cannot be opened')
     END IF
 
@@ -143,7 +142,7 @@ CONTAINS
     CALL lw_kgb15
     CALL lw_kgb16
 
-    nf_status = p_nf_close(fileid)
+    nf_status = p_nf90_close(fileid)
 
   END SUBROUTINE lrtm_read
 
@@ -155,53 +154,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no1
 
 
-    nf_status = p_nf_inq_varid(fileid, 'PlanckFractionLowerAtmos', varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid, 'PlanckFractionLowerAtmos', varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos', varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos', varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos', varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos', varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kao_mn2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mn2,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kbo_mn2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mn2,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb01
 
@@ -213,41 +204,35 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no2
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb02
 
@@ -259,53 +244,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no3
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keyupper,1,1/),        &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keyupper,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keyupper,Tdiff,pupper,numGPoints,1,1/), &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keyupper,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                           &
-      &                              kao_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/keyupper,T,numGPoints,1,1,1/),                           &
-      &                              kbo_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/keyupper,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb03
 
@@ -317,41 +294,35 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no4
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keyupper,1,1/),        &
-      &                              fracrefbo(:,1:5))
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo(:,1:5),    &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keyupper,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keyupper,Tdiff,pupper,numGPoints,1,1/), &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keyupper,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb04
 
@@ -363,53 +334,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no5
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keyupper,1,1/),        &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keyupper,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keyupper,Tdiff,pupper,numGPoints,1,1/), &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keyupper,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                          &
-      &                              kao_mo3)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mo3,                                   &
+      &                        (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                              &
-      &                              (/1,1,1,AbsorberIndex('CCL4'),bandNumber,gPointSetNumber/), &
-      &                              (/1,1,numGPoints,1,1,1/),                                   &
-      &                              ccl4o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, ccl4o,                                       &
+      &                        (/1,1,1,AbsorberIndex('CCL4'),bandNumber,gPointSetNumber/), &
+      &                        (/1,1,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb05
 
@@ -421,47 +384,40 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no6
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kao_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                               &
-      &                              (/1,1,1,AbsorberIndex('CFC11'),bandNumber,gPointSetNumber/), &
-      &                              (/1,1,numGPoints,1,1,1/),                                    &
-      &                              cfc11adjo)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, cfc11adjo,                                    &
+      &                        (/1,1,1,AbsorberIndex('CFC11'),bandNumber,gPointSetNumber/), &
+      &                        (/1,1,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                               &
-      &                              (/1,1,1,AbsorberIndex('CFC12'),bandNumber,gPointSetNumber/), &
-      &                              (/1,1,numGPoints,1,1,1/),                                    &
-      &                              cfc12o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, cfc12o,                                       &
+      &                        (/1,1,1,AbsorberIndex('CFC12'),bandNumber,gPointSetNumber/), &
+      &                        (/1,1,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb06
 
@@ -473,53 +429,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no7
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                           &
-      &                              kao_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kbo_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb07
 
@@ -532,83 +480,70 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no8
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kao_mo3)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mo3,                                   &
+      &                        (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kao_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kbo_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kao_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kbo_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                               &
-      &                              (/1,1,1,AbsorberIndex('CFC12'),bandNumber,gPointSetNumber/), &
-      &                              (/1,1,numGPoints,1,1,1/),                                    &
-      &                              cfc12o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, cfc12o,                                       &
+      &                        (/1,1,1,AbsorberIndex('CFC12'),bandNumber,gPointSetNumber/), &
+      &                        (/1,1,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                               &
-      &                              (/1,1,1,AbsorberIndex('CFC22'),bandNumber,gPointSetNumber/), &
-      &                              (/1,1,numGPoints,1,1,1/),                                    &
-      &                              cfc22adjo)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, cfc22adjo,                                    &
+      &                        (/1,1,1,AbsorberIndex('CFC22'),bandNumber,gPointSetNumber/), &
+      &                        (/1,1,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb08
 
@@ -620,53 +555,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no9
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                           &
-      &                              kao_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                  &
-      &                              kbo_mn2o)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mn2o,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2O'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb09
 
@@ -678,41 +605,35 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no10
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,                     &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb10
 
@@ -723,54 +644,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no11
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mo2,                                   &
+      &                        (/1,1,1,AbsorberIndex('O2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('O2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kao_mo2)
-
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('O2'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kbo_mo2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mo2,                                   &
+      &                        (/1,1,1,AbsorberIndex('O2'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb11
 
@@ -782,29 +694,25 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no12
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb12
 
@@ -817,53 +725,45 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no13
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                       &
-      &                              (/1,1,bandNumber,gPointSetNumber/),  &
-      &                              (/numGPoints,1,1,1/),                &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/),  &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
-      &                              (/1,T,numGPoints,1,1,1/),                                 &
-      &                              kbo_mo3)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo_mo3,                                   &
+      &                        (/1,1,1,AbsorberIndex('O3'),bandNumber,gPointSetNumber/), &
+      &                        (/1,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                             &
-      &                              (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                           &
-      &                              kao_mco2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mco2,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO2'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('CO'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                          &
-      &                              kao_mco)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mco,                                   &
+      &                        (/1,1,1,AbsorberIndex('CO'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb13
 
@@ -875,41 +775,35 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no14
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,plower,numGPoints,1,1/),      &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb14
 
@@ -921,35 +815,30 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no15
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                                            &
-      &                              (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
-      &                              (/keylower,T,numGPoints,1,1,1/),                          &
-      &                              kao_mn2)
+    nf_status = p_nf90_inq_varid(fileid,'AbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao_mn2,                                   &
+      &                        (/1,1,1,AbsorberIndex('N2'),bandNumber,gPointSetNumber/), &
+      &                        (/keylower,T,numGPoints,1,1,1/))
 
   END SUBROUTINE lw_kgb15
 
@@ -961,41 +850,35 @@ CONTAINS
     INTEGER, PARAMETER :: numGPoints = no16
 
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,keylower,1,1/),        &
-      &                              fracrefao)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefao,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,keylower,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/numGPoints,1,1,1/),               &
-      &                              fracrefbo)
+    nf_status = p_nf90_inq_varid(fileid,'PlanckFractionUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, fracrefbo,           &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/numGPoints,1,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                            &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/),   &
-      &                              (/keylower,Tdiff,plower,numGPoints,1,1/), &
-      &                              kao)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsLowerAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kao,                       &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/),   &
+      &                        (/keylower,Tdiff,plower,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                          &
-      &                              (/1,1,1,1,bandNumber,gPointSetNumber/), &
-      &                              (/1,Tdiff,pupper,numGPoints,1,1/),      &
-      &                              kbo)
+    nf_status = p_nf90_inq_varid(fileid,'KeySpeciesAbsorptionCoefficientsUpperAtmos',varid)
+    nf_status = p_nf90_get_var(fileid, varid, kbo,                     &
+      &                        (/1,1,1,1,bandNumber,gPointSetNumber/), &
+      &                        (/1,Tdiff,pupper,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tself,numGPoints,1,1/),           &
-      &                              selfrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20SelfAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, selfrefo,            &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tself,numGPoints,1,1/))
 
-    nf_status = p_nf_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
-    nf_status = p_nf_get_vara_double(fileid, varid,                      &
-      &                              (/1,1,bandNumber,gPointSetNumber/), &
-      &                              (/Tforeign,numGPoints,1,1/),        &
-      &                              forrefo)
+    nf_status = p_nf90_inq_varid(fileid,'H20ForeignAbsorptionCoefficients',varid)
+    nf_status = p_nf90_get_var(fileid, varid, forrefo,             &
+      &                        (/1,1,bandNumber,gPointSetNumber/), &
+      &                        (/Tforeign,numGPoints,1,1/))
 
   END SUBROUTINE lw_kgb16
 

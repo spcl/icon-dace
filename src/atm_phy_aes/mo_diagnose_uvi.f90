@@ -48,7 +48,20 @@ CONTAINS
 
     INTEGER, INTENT(in)     :: jg, jb, jcs, jce
 
-    CALL u_vertical_integral  (jg, jb, jcs, jce, prm_field(jg)%uphyvi(:,jb))
+    REAL(wp) :: uphyvi(SIZE(prm_field(jg)%udynvi,1))
+    INTEGER :: jc
+
+    !$ACC DATA CREATE(uphyvi)
+
+    CALL u_vertical_integral  (jg, jb, jcs, jce, uphyvi(:))
+
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+    DO jc = jcs, jce
+      prm_field(jg)%duphyvi(jc,jb) = uphyvi(jc) - prm_field(jg)%udynvi(jc,jb)
+    END DO
+    !$ACC END PARALLEL LOOP
+
+    !$ACC END DATA
 
   END SUBROUTINE diagnose_uvp
 

@@ -5,8 +5,12 @@
 .env
 .idea/
 .vscode
-/doc/html
-/doc/latex
+.DS_Store
+__pycache__
+3rdparty
+doc/html
+doc/graphs
+doc/latex
 /public
 *.clw.d
 *.f90.d

@@ -232,9 +232,9 @@ class TimingTree:
 
         for i_table in range(len(self.data)):
             self.data[i_table], _ = self.data[i_table].align(other.data[i_table])
-            self.data[i_table].loc[
-                (slice(None), other.meta_data["finish_time"]), :
-            ] = other.data[i_table]
+            self.data[i_table].loc[(slice(None), other.meta_data["finish_time"]), :] = (
+                other.data[i_table]
+            )
 
     def add_meta_data(self, other):
         # a single timing file will produce single values in the meta data

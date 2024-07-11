@@ -11,22 +11,27 @@
 # ---------------------------------------------------------------
 
 
-source [file join [file dirname $ModulesCurrentModulefile] .pkg]
-
 set ICON_DIR [file dirname [file dirname [file dirname $ModulesCurrentModulefile]]]
 
-prepend-path-if-exists PATH $ICON_DIR/utils/mkexp
-prepend-path-if-exists PYTHONPATH $ICON_DIR/utils/mkexp
-prepend-path-if-exists MANPATH $ICON_DIR/utils/mkexp/doc
+prepend-path PATH $ICON_DIR/utils/mkexp
+prepend-path PYTHONPATH $ICON_DIR/utils/mkexp
+prepend-path MANPATH $ICON_DIR/utils/mkexp/doc
 
-prepend-path-if-exists PATH $ICON_DIR/utils/plotems
-prepend-path-if-exists MANPATH $ICON_DIR/utils/plotems/man
+prepend-path PATH $ICON_DIR/utils/plotems
+prepend-path MANPATH $ICON_DIR/utils/plotems/man
 
 set build_dir build
 if [info exists env(ICON_BUILD_DIR)] {
     set build_dir $env(ICON_BUILD_DIR)
 }
 
-prepend-path-if-exists MKEXP_PATH $ICON_DIR/run
-prepend-path-if-exists MKEXP_PATH $ICON_DIR/$build_dir/run
+prepend-path MKEXP_PATH $ICON_DIR/run
+prepend-path MKEXP_PATH $ICON_DIR/$build_dir/run
 prepend-path MKEXP_PATH .
+
+set python_dir [exec python -c {import sysconfig; print(sysconfig.get_path('platlib', vars={'platbase':'.'}))}]
+
+prepend-path PATH $ICON_DIR/bin
+prepend-path PATH $ICON_DIR/$build_dir/bin
+prepend-path PYTHONPATH $ICON_DIR/$python_dir
+prepend-path PYTHONPATH $ICON_DIR/$build_dir/$python_dir

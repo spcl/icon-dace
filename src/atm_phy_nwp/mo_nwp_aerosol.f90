@@ -34,16 +34,16 @@ MODULE mo_nwp_aerosol
   USE mo_impl_constants_grf,      ONLY: grf_bdywidth_c
   USE mo_physical_constants,      ONLY: rd, grav, cpd
   USE mo_reader_cams,             ONLY: t_cams_reader
-  USE mo_interpolate_time,        ONLY: t_time_intp
+  USE mo_interpolate_time,        ONLY: t_time_intp, intModeLinearMonthlyClim, intModeLinear
   USE mo_io_units,                ONLY: filename_max
-  USE mo_fortran_tools,           ONLY: set_acc_host_or_device
+  USE mo_fortran_tools,           ONLY: init, set_acc_host_or_device, assert_acc_host_only
   USE mo_util_string,             ONLY: int2string, associate_keyword, t_keyword_list, with_keywords
 ! ICON configuration
   USE mo_atm_phy_nwp_config,      ONLY: atm_phy_nwp_config, iprog_aero, icpl_aero_conv
-  USE mo_radiation_config,        ONLY: irad_aero, iRadAeroConstKinne, iRadAeroKinne, iRadAeroCAMSclim, &
-                                    &   iRadAeroVolc, iRadAeroKinneVolc, iRadAeroART,                   &
-                                    &   iRadAeroKinneVolcSP, iRadAeroKinneSP, iRadAeroTegen,            &
-                                    &   cams_clim_filename
+  USE mo_radiation_config,        ONLY: irad_aero, iRadAeroConstKinne, iRadAeroKinne, iRadAeroCAMSclim,     &
+                                    &   iRadAeroCAMStd, iRadAeroVolc, iRadAeroKinneVolc, iRadAeroART, &
+                                    &   iRadAeroKinneVolcSP, iRadAeroKinneSP, iRadAeroTegen,                &
+                                    &   cams_aero_filename
 ! External infrastruture
   USE mtime,                      ONLY: datetime, timedelta, newDatetime, newTimedelta,       &
                                     &   operator(+), deallocateTimedelta, deallocateDatetime
@@ -54,6 +54,8 @@ MODULE mo_nwp_aerosol
   USE mo_bc_aeropt_splumes,       ONLY: add_bc_aeropt_splumes
   USE mo_bcs_time_interpolation,  ONLY: t_time_interpolation_weights,         &
     &                                   calculate_time_interpolation_weights
+  USE mo_io_config,               ONLY: var_in_output
+
 #ifdef __ICON_ART
   USE mo_aerosol_util,            ONLY: tegen_scal_factors
   USE mo_art_radiation_interface, ONLY: art_rad_aero_interface
@@ -78,34 +80,36 @@ MODULE mo_nwp_aerosol
 CONTAINS
 
   !---------------------------------------------------------------------------------------
-  !! This subroutine uploads CAMS aerosols mixing ratios 3D climatology and updates them once a day
+  !! This subroutine uploads CAMS aerosols and updates them once a day
   SUBROUTINE nwp_aerosol_init(mtime_datetime, p_patch)
 
     TYPE(datetime), POINTER, INTENT(in) :: &
-      &  mtime_datetime                      !< Current datetime
+      &  mtime_datetime                            !< Current datetime
     TYPE(t_patch), INTENT(in)           :: &
       &  p_patch
     ! Local variables
-    INTEGER ::                 &
-      &  jg                                  !< Domain index
-    CHARACTER(LEN=filename_max) :: &
-      &  cams_clim_td_file                   !< CAMS climatology file name
+    INTEGER                             :: &
+      &  jg                                        !< Domain index
+    CHARACTER(LEN=filename_max)         :: &
+      &  cams_aero_td_file                         !< CAMS file names
+
+    jg     = p_patch%id
+
+    cams_aero_td_file = generate_cams_filename(TRIM(cams_aero_filename), nroot, p_patch%level, p_patch%id)
 
     IF (irad_aero == iRadAeroCAMSclim) THEN
-
-      jg     = p_patch%id
-
-      cams_clim_td_file = generate_cams_clim_filename(TRIM(cams_clim_filename), nroot, p_patch%level, p_patch%id)
-      CALL message  ('nwp_aerosol_init opening CAMS 3D climatology file: ', TRIM(cams_clim_td_file))
-
-      CALL cams_reader(jg)%init(p_patch, TRIM(cams_clim_td_file))
-      CALL cams_intp(jg)%init(cams_reader(jg), mtime_datetime, '', 2)
-
+      CALL message  ('nwp_aerosol_init opening CAMS 3D climatology file: ', TRIM(cams_aero_td_file))
+      CALL cams_reader(jg)%init(p_patch, TRIM(cams_aero_td_file))
+      CALL cams_intp(jg)%init(cams_reader(jg), mtime_datetime, '', intModeLinearMonthlyClim)
+    ELSEIF (irad_aero == iRadAeroCAMStd) THEN
+      CALL message  ('nwp_aerosol_init opening CAMS forecast file: ', TRIM(cams_aero_td_file))
+      CALL cams_reader(jg)%init(p_patch, TRIM(cams_aero_td_file))
+      CALL cams_intp(jg)%init(cams_reader(jg), mtime_datetime, '', intModeLinear)
     ENDIF
 
     CONTAINS
 
-      FUNCTION generate_cams_clim_filename(filename_in, nroot, jlev, idom) RESULT(result_str)
+      FUNCTION generate_cams_filename(filename_in, nroot, jlev, idom) RESULT(result_str)
         CHARACTER(filename_max)                 :: result_str
         CHARACTER(LEN=*), INTENT(in)            :: filename_in
         INTEGER,                     INTENT(in) :: nroot, jlev, idom
@@ -118,7 +122,7 @@ CONTAINS
         CALL associate_keyword("<idom>",     TRIM(int2string(idom, "(i2.2)")), keywords)
 
         result_str = TRIM(with_keywords(keywords, TRIM(filename_in)))
-      END FUNCTION generate_cams_clim_filename
+      END FUNCTION generate_cams_filename
 
   END SUBROUTINE nwp_aerosol_init
 
@@ -174,18 +178,22 @@ CONTAINS
       &  jk_vr, jband            !< Loop indices
 #endif
     REAL(wp) ::                &
+      &  cloud_num_fac(nproma),& !< Scaling factor (simple plumes) for CDNC
       &  latitude(nproma),     & !< Geographical latitude
       &  time_weight             !< Weihting for temporal interpolation
     REAL(wp),  ALLOCATABLE ::  &
       &  cams(:,:,:,:)           !< CAMS climatology fields taken from external file 
     INTEGER ::                 &
       &  jk, jc, jb, jt,       &
+      &  jg,                   & !< Domain index
       &  rl_start, rl_end,     &
       &  i_startblk, i_endblk, &
       &  i_startidx, i_endidx, &
       &  istat,                & !< Error code
       &  imo1 , imo2             !< Month index (current and next month)
     LOGICAL :: lzacc
+
+    jg     = pt_patch%id
 
     CALL set_acc_host_or_device(lzacc, lacc)
   
@@ -351,11 +359,21 @@ CONTAINS
 !---------------------------------------------------------------------------------------
       CASE(iRadAeroConstKinne, iRadAeroKinne, iRadAeroVolc, iRadAeroKinneVolc, iRadAeroKinneVolcSP, iRadAeroKinneSP)
 
+!$OMP PARALLEL
+        ! These Tegen climatological aerosol fields are not used here but need to be initialized
+        ! to avoid runtime error in the upscaling to the reduced radiation grid (upscale_rad_input)
+        CALL init(zaeq1(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq2(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq3(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq4(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq5(:,:,:), lacc=.FALSE.)
+!$OMP END PARALLEL
+
         rl_start   = grf_bdywidth_c-1
         rl_end     = min_rlcell_int
         i_startblk = pt_patch%cells%start_block(rl_start)
         i_endblk   = pt_patch%cells%end_block(rl_end)
-      
+
         ! Compatibility checks
 #ifdef __ECRAD
         IF (inwp_radiation /= 4) THEN
@@ -392,17 +410,43 @@ CONTAINS
           IF (i_startidx>i_endidx) CYCLE
 
           CALL nwp_aerosol_kinne(mtime_datetime, zf(:,:,jb), zh(:,:,jb), dz(:,:,jb),   &
-            &                    pt_patch%id, jb, i_endidx, pt_patch%nlev,             &
+            &                    pt_patch%id, jb, i_startidx, i_endidx, pt_patch%nlev, &
             &                    nbands_lw, nbands_sw, wavenum1_sw(:), wavenum2_sw(:), &
             &                    od_lw(:,:,jb,:), od_sw(:,:,jb,:),                     &
-            &                    ssa_sw(:,:,jb,:), g_sw(:,:,jb,:)                      )
+            &                    ssa_sw(:,:,jb,:), g_sw(:,:,jb,:), cloud_num_fac(:)    )
+
+          IF ( atm_phy_nwp_config(pt_patch%id)%lscale_cdnc ) THEN
+            prm_diag%cloud_num_fac(:,jb) = cloud_num_fac(:)
+          ENDIF
+
+          IF ( var_in_output(jg)%aod_550nm ) THEN
+            CALL calc_aod550_kinne(i_startidx, i_endidx, pt_patch%nlev, od_sw(:,:,jb,10), &
+              &                    prm_diag%aod_550nm(:,jb), lacc)
+          END IF
+
+          ! Compute cloud number concentration depending on aerosol climatology
+          ! if aerosol-microphysics or aerosol-convection coupling is turned on
+          IF (atm_phy_nwp_config(pt_patch%id)%icpl_aero_gscp == 3 .OR. icpl_aero_conv == 1) THEN
+            CALL nwp_cpl_aero_gscp_conv(i_startidx, i_endidx, pt_patch%nlev, pt_diag%pres_sfc(:,jb), pt_diag%pres(:,:,jb), &
+              &                         prm_diag%acdnc(:,:,jb), prm_diag%cloud_num(:,jb), lacc)
+          ENDIF
 
         END DO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
 
-      ! CAMS climatology aerosol
-      CASE(iRadAeroCAMSclim)
+      ! CAMS climatology/forecasted aerosols
+      CASE(iRadAeroCAMSclim,iRadAeroCAMStd)
+
+!$OMP PARALLEL
+        ! These Tegen climatological aerosol fields are not used here but need to be initialized
+        ! to avoid runtime error in the upscaling to the reduced radiation grid (upscale_rad_input)
+        CALL init(zaeq1(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq2(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq3(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq4(:,:,:), lacc=.FALSE.)
+        CALL init(zaeq5(:,:,:), lacc=.FALSE.)
+!$OMP END PARALLEL
 
         rl_start   = grf_bdywidth_c+1
         rl_end     = min_rlcell_int
@@ -429,19 +473,81 @@ CONTAINS
             CALL get_indices_c(pt_patch,jb,i_startblk,i_endblk,i_startidx,i_endidx,rl_start,rl_end)
             IF (i_startidx>i_endidx) CYCLE
             pt_diag%camsaermr(:,:,jb,jt) = 0._wp
-            CALL vinterp_cams_aerosols(i_startidx, i_endidx, pt_diag%pres_ifc(:,:,jb),    &
-              &                   cams_pres_in=cams(:,:,jb,n_camsaermr+1), cams=cams(:,:,jb,jt), &
-              &                   nlev=pt_patch%nlev, camsaermr=pt_diag%camsaermr(:,:,jb,jt))
+
+            IF (irad_aero == iRadAeroCAMStd) THEN
+              CALL cams_forecast_prep(i_startidx, i_endidx, cams=cams(:,:,jb,jt),             &
+                &                                 cams_pres_in=cams(:,:,jb,n_camsaermr+1))
+            END IF
+
+            CALL vinterp_cams(i_startidx, i_endidx, pt_diag%pres_ifc(:,:,jb),                &
+              &               cams_pres_in=cams(:,:,jb,n_camsaermr+1), cams=cams(:,:,jb,jt), &
+              &               nlev=pt_patch%nlev, camsaermr=pt_diag%camsaermr(:,:,jb,jt))
+
           END DO
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
         END DO ! jt aerosol loop
+
+        ! This part prepares the coupling between grid scale microphysics / convection and Tegen aerosols
+        ! Start at third row instead of fifth as two rows are needed by the reduced grid aggregation
+        rl_start   = grf_bdywidth_c-1
+        rl_end     = min_rlcell_int
+        i_startblk = pt_patch%cells%start_block(rl_start)
+        i_endblk   = pt_patch%cells%end_block(rl_end)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(jb,i_startidx,i_endidx)  ICON_OMP_DEFAULT_SCHEDULE
+        DO jb = i_startblk,i_endblk
+          CALL get_indices_c(pt_patch,jb,i_startblk,i_endblk,i_startidx,i_endidx,rl_start,rl_end)
+
+          ! Compute cloud number concentration depending on aerosol climatology if 
+          ! aerosol-microphysics or aerosol-convection coupling is turned on
+          IF (atm_phy_nwp_config(pt_patch%id)%icpl_aero_gscp == 1 .OR. icpl_aero_conv == 1) THEN
+            CALL nwp_cpl_aero_gscp_conv(i_startidx, i_endidx, pt_patch%nlev, pt_diag%pres_sfc(:,jb), pt_diag%pres(:,:,jb), &
+              &                         prm_diag%acdnc(:,:,jb), prm_diag%cloud_num(:,jb), lacc)
+          ENDIF
+
+        ENDDO !jb
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
 
       CASE DEFAULT
         ! Currently continue as not all cases are ported to nwp_aerosol_interface yet
     END SELECT
 
   END SUBROUTINE nwp_aerosol_interface
+
+
+  SUBROUTINE calc_aod550_kinne(i_startidx, i_endidx, nlev, od_sw_band10, aod_550nm, lacc)
+
+    INTEGER,  INTENT(in)                :: &
+      &  i_startidx, i_endidx, nlev             !< loop start and end indices (nproma, vertical)
+    REAL(wp), INTENT(in)                :: &
+      &  od_sw_band10(:,:)                      !< Shortwave optical thickness 10th band range (442 - 625nm)
+    REAL(wp), INTENT(inout)             :: &
+      &  aod_550nm(:)                           !< cloud droplet number concentration
+    LOGICAL,  INTENT(in), OPTIONAL      :: &
+      &  lacc                                   !< If true, use openacc
+
+    INTEGER :: jk, jc
+
+    ! Output AOD in SW band 550nm
+    ! 10th band range (442 - 625nm) is used to output aod_550 nm
+    ! due to a lack of spectrally resolved information for a particular wavelength
+
+    CALL assert_acc_host_only("calc_aod550_kinne", lacc)
+
+    DO jc = i_startidx, i_endidx
+      aod_550nm(jc) = 0.0_wp
+    ENDDO
+
+    DO jk = 1, nlev
+      DO jc = i_startidx, i_endidx
+        aod_550nm(jc) = aod_550nm(jc) + od_sw_band10(jc,jk)
+      ENDDO !jc
+    ENDDO !jk
+
+  END SUBROUTINE calc_aod550_kinne
 
   !---------------------------------------------------------------------------------------
   SUBROUTINE nwp_aerosol_daily_update_kinne(mtime_datetime, pt_patch, dt_rad, inwp_radiation, nbands_lw, nbands_sw)
@@ -478,9 +584,9 @@ CONTAINS
   END SUBROUTINE nwp_aerosol_daily_update_kinne
 
   !---------------------------------------------------------------------------------------
-  SUBROUTINE nwp_aerosol_kinne(mtime_datetime, zf, zh, dz, jg, jb, i_endidx, nlev, &
+  SUBROUTINE nwp_aerosol_kinne(mtime_datetime, zf, zh, dz, jg, jb, i_startidx, i_endidx, nlev, &
     &                          nbands_lw, nbands_sw, wavenum1_sw, wavenum2_sw,     &
-    &                          od_lw, od_sw, ssa_sw, g_sw)
+    &                          od_lw, od_sw, ssa_sw, g_sw, cloud_num_fac)
     TYPE(datetime), POINTER, INTENT(in) :: &
       &  mtime_datetime                      !< Current datetime
     REAL(wp), INTENT(in) ::                &
@@ -489,22 +595,28 @@ CONTAINS
       &  wavenum2_sw(:)                      !< Shortwave wavenumber upper band bounds
     INTEGER, INTENT(in) ::                 &
       &  jg, jb,                           & !< Domain and block index
+      &  i_startidx,                       & !< Loop bound
       &  i_endidx,                         & !< Loop bound
       &  nlev,                             & !< Number of vertical levels
       &  nbands_lw, nbands_sw                !< Number of short and long wave bands
     REAL(wp), INTENT(out) ::               &
       &  od_lw(:,:,:), od_sw(:,:,:),       & !< LW/SW optical thickness
-      &  ssa_sw(:,:,:), g_sw(:,:,:)          !< SW asymmetry factor, SW single scattering albedo
+      &  ssa_sw(:,:,:), g_sw(:,:,:),       & !< SW asymmetry factor, SW single scattering albedo
+      &  cloud_num_fac(:)                    !< Scaling factor for Cloud Droplet Number Concentration;
+                                             !< if lscale_cdnc, cloud_num_fac = x_cdnc / x_cdnc_ref
     ! Local variables
+    TYPE(datetime), POINTER ::             &
+      & mtime_2005                           !< local copy of mtime_datetime, used for x_cdnc scaling
     REAL(wp) ::                            &
       &  od_lw_vr (nproma,nlev,nbands_lw), & !< LW optical thickness of aerosols    (vertically reversed)
       &  od_sw_vr (nproma,nlev,nbands_sw), & !< SW aerosol optical thickness        (vertically reversed)
       &  g_sw_vr  (nproma,nlev,nbands_sw), & !< SW aerosol asymmetry factor         (vertically reversed)
       &  ssa_sw_vr(nproma,nlev,nbands_sw)    !< SW aerosol single scattering albedo (vertically reversed)
     REAL(wp) ::                            &
-      &  x_cdnc(nproma)                      !< Scale factor for Cloud Droplet Number Concentration (currently not used)
+      &  x_cdnc(nproma),                   & !< Scale factor for Cloud Droplet Number Concentration
+      &  x_cdnc_ref(nproma)                  !< x_cdnc for the reference year 2005
     INTEGER ::                             &
-      &  jk                                  !< Loop index
+      &  jk, jc                              !< Loop index
 
     od_lw_vr(:,:,:)  = 0.0_wp
     od_sw_vr(:,:,:)  = 0.0_wp
@@ -514,7 +626,7 @@ CONTAINS
     ! Tropospheric Kinne aerosol
     IF (ANY( irad_aero == (/iRadAeroConstKinne,iRadAeroKinne,iRadAeroKinneVolc, &
       &                     iRadAeroKinneVolcSP,iRadAeroKinneSP/) )) THEN
-      CALL set_bc_aeropt_kinne(mtime_datetime, jg, 1, i_endidx, nproma, nlev, jb, &
+      CALL set_bc_aeropt_kinne(mtime_datetime, jg, i_startidx, i_endidx, nproma, nlev, jb, &
         &                      nbands_sw, nbands_lw, zf(:,:), dz(:,:),            &
         &                      od_sw_vr(:,:,:), ssa_sw_vr(:,:,:),                 &
         &                      g_sw_vr (:,:,:), od_lw_vr(:,:,:)                   )
@@ -522,7 +634,7 @@ CONTAINS
 
     ! Volcanic stratospheric aerosols for CMIP6
     IF (ANY( irad_aero == (/iRadAeroVolc,iRadAeroKinneVolc,iRadAeroKinneVolcSP/) )) THEN 
-     CALL add_bc_aeropt_cmip6_volc(mtime_datetime, jg, 1, i_endidx, nproma, nlev, jb, &
+     CALL add_bc_aeropt_cmip6_volc(mtime_datetime, jg, i_startidx, i_endidx, nproma, nlev, jb, &
        &                           nbands_sw, nbands_lw, zf(:,:), dz(:,:),            &
        &                           od_sw_vr(:,:,:), ssa_sw_vr(:,:,:),                 &
        &                           g_sw_vr (:,:,:), od_lw_vr(:,:,:)                   )
@@ -530,12 +642,37 @@ CONTAINS
 
     ! Simple plumes
     IF (ANY( irad_aero == (/iRadAeroKinneVolcSP,iRadAeroKinneSP/) )) THEN
-      CALL add_bc_aeropt_splumes(jg, 1, i_endidx, nproma, nlev, jb,  &
+
+      IF (atm_phy_nwp_config(jg)%lscale_cdnc) THEN
+        ! get x_cdnc_ref; the simple plume scheme uses 2005 as reference year
+        mtime_2005 => newDatetime(mtime_datetime)
+        mtime_2005%date%year = 2005
+        CALL add_bc_aeropt_splumes(jg, 1, i_endidx, nproma, nlev, jb,  &
+          &                        nbands_sw, mtime_2005,              &
+          &                        zf(:,:), dz(:,:), zh(:,nlev+1),     &
+          &                        wavenum1_sw(:), wavenum2_sw(:),     &
+          &                        od_sw_vr(:,:,:), ssa_sw_vr(:,:,:),  &
+          &                        g_sw_vr (:,:,:), x_cdnc_ref(:)     )
+
+        CALL deallocateDatetime(mtime_2005)
+      END IF
+
+      CALL add_bc_aeropt_splumes(jg, i_startidx, i_endidx, nproma, nlev, jb,  &
         &                        nbands_sw, mtime_datetime,          &
         &                        zf(:,:), dz(:,:), zh(:,nlev+1),     &
         &                        wavenum1_sw(:), wavenum2_sw(:),     &
         &                        od_sw_vr(:,:,:), ssa_sw_vr(:,:,:),  &
         &                        g_sw_vr (:,:,:), x_cdnc(:)          )
+
+      IF (atm_phy_nwp_config(jg)%lscale_cdnc) THEN
+        ! apply scaling with safety limits:
+        DO jc = i_startidx, i_endidx
+          cloud_num_fac(jc) = x_cdnc(jc) / MAX(1e-6_wp, x_cdnc_ref(jc))
+          cloud_num_fac(jc) = MIN(MAX(0.1_wp, cloud_num_fac(jc)),3._wp)
+        END DO
+
+      END IF
+
     END IF
 
     ! Vertically reverse the fields:
@@ -561,14 +698,14 @@ CONTAINS
       &  jg                                !< Domain index
     ! Local variables
     REAL(wp), ALLOCATABLE                :: &
-      &  camscl_dat(:,:,:,:)
+      &  cams_dat(:,:,:,:)
 
     ALLOCATE(cams( nproma, cams_reader(jg)%nlev_cams, cams_reader(jg)%p_patch%nblks_c, n_camsaermr+1 ))
     cams(:,:,:,:) = 0.0_wp
 
-    CALL cams_intp(jg)%intp(mtime_datetime, camscl_dat)
+    CALL cams_intp(jg)%intp(mtime_datetime, cams_dat)
 
-    cams(:,:,:,:) = camscl_dat(:,:,:,:)
+    cams(:,:,:,:) = cams_dat(:,:,:,:)
 
   END SUBROUTINE nwp_aerosol_update_cams
 
@@ -603,7 +740,7 @@ CONTAINS
   !!   -------jk+1------
   !!                       -----lmax------
   !!
-  SUBROUTINE vinterp_cams_aerosols(i_startidx, i_endidx, pres, cams_pres_in, cams, nlev, camsaermr )
+  SUBROUTINE vinterp_cams(i_startidx, i_endidx, pres, cams_pres_in, cams, nlev, camsaermr )
 
     REAL(wp),      INTENT(in)      :: &
       &  cams(:,:),                      & !< CAMS fields taken from external file; layer integrated mass [kg/m^2]
@@ -631,7 +768,7 @@ CONTAINS
       &  nk1                               !< number of vertical levels in original CAMS climatology data
 
     CHARACTER(len=*), PARAMETER    :: &
-      &  routine = modname//':vinterp_cams_aerosols'
+      &  routine = modname//':vinterp_cams'
 
     nk1 = size(cams_pres_in,2)  
  
@@ -734,7 +871,7 @@ CONTAINS
 
         ! for checking if all gridpoints have meaningful values
         IF (camsaermr(jc,jk) < 0.0_wp) THEN
-          CALL finish(routine,'mo_nwp_aerosol: vinterp_cams_aerosols failed')
+          CALL finish(routine,'mo_nwp_aerosol: vinterp_cams failed')
         END IF
 
       ENDDO !jk
@@ -743,8 +880,51 @@ CONTAINS
     DEALLOCATE(cams_sigma)
     DEALLOCATE(icon_sigma)
 
-  END SUBROUTINE vinterp_cams_aerosols
+  END SUBROUTINE vinterp_cams
 
+  !---------------------------------------------------------------------------------------
+  !! Convert CAMS forecasted aerosols from mixing ratios to layer integrated mass
+  SUBROUTINE cams_forecast_prep(i_startidx, i_endidx, cams, cams_pres_in)
+
+    REAL(wp),      INTENT(inout)   :: &
+      &  cams(:,:),                   & !< CAMS fields taken from external file; mixing ratios [kg/kg]
+      &  cams_pres_in(:,:)              !< CAMS half level pressure taken from external file [Pa]
+
+    INTEGER,       INTENT(in)      :: &
+      &  i_startidx,                  & !< Loop indices
+      &  i_endidx                       !< Loop indices
+
+    ! local variables
+    REAL(wp)                       :: &
+      &  dp,                          & !< pressure thickness
+      &  layer_mass                     !< mass at specific layer
+    INTEGER                        :: &
+      &  jc, jk,                      & !< Loop indices
+      &  nk                             !< number of vertical levels in original CAMS climatology data
+
+    CHARACTER(len=*), PARAMETER    :: &
+      &  routine = modname//':cams_forecast_prep'
+
+    nk = size(cams_pres_in,2)  
+
+    DO jc = i_startidx, i_endidx ! loop on icon horizontal index
+      DO jk = 1, nk ! loop on icon vertical levels
+ 
+          ! compute pressure thickness at (jc,jk)
+
+          IF ( jk == nk ) THEN
+            dp = 240.0_wp
+          ELSE
+            dp = cams_pres_in(jc,jk+1)-cams_pres_in(jc,jk)
+          ENDIF
+
+          layer_mass  = cams(jc,jk)*dp/grav
+          cams(jc,jk)= layer_mass
+
+      ENDDO !jk
+    ENDDO !jc
+
+  END SUBROUTINE cams_forecast_prep
   !---------------------------------------------------------------------------------------
   SUBROUTINE nwp_aerosol_tegen ( istart, iend, nlev, nlevp1, k850, temp, pres, pres_ifc,                 &
     &                            aer_ss_mo1, aer_org_mo1, aer_bc_mo1, aer_so4_mo1, aer_dust_mo1,         &

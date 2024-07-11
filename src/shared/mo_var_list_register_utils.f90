@@ -19,7 +19,7 @@ MODULE mo_var_list_register_utils
   USE mo_exception,        ONLY: finish
   USE mo_util_string,      ONLY: remove_duplicates, pretty_print_string_list, &
     &                            lowcase, difference, find_trailing_number, &
-    &                            add_to_list
+    &                            new_list, add_to_list
   USE mo_impl_constants,   ONLY: vlname_len, vname_len, SUCCESS
   USE mo_cdi_constants,    ONLY: GRID_UNSTRUCTURED_CELL, GRID_REGULAR_LONLAT
   USE mo_util_sort,        ONLY: quicksort
@@ -74,7 +74,7 @@ CONTAINS
     &                      loutputvars_only, lremap_lonlat, &
     &                      opt_vlevel_type, opt_dom_id, opt_lskip_container)
     CHARACTER(*), INTENT(IN) :: grp_name
-    CHARACTER(LEN=vname_len), INTENT(OUT) :: var_name(:)
+    CHARACTER(LEN=vname_len), ALLOCATABLE, INTENT(OUT) :: var_name(:)
     INTEGER, INTENT(OUT) :: nvars
     LOGICAL, INTENT(IN) :: loutputvars_only, lremap_lonlat
     INTEGER, OPTIONAL, INTENT(IN) :: opt_vlevel_type, opt_dom_id
@@ -91,6 +91,9 @@ CONTAINS
     ELSE
       lskip_container = .TRUE.
     ENDIF
+
+    ! Initialize variable name list
+    CALL new_list(var_name, nvars)
 
     nvars  = 0
     grp_id = var_groups_dyn%group_id(grp_name)
@@ -159,7 +162,7 @@ CONTAINS
     LOGICAL, INTENT(IN), OPTIONAL :: opt_skip_trivial        !< Flag: skip empty of single-entry groups
     CHARACTER(*), PARAMETER :: routine = modname//"::print_group_details"
     CHARACTER(LEN=vname_len), ALLOCATABLE :: grp_names(:), grp_vars(:), grp_vars_out(:)
-    INTEGER :: ngrp, ngrp_vars, ngrp_vars_out, ierrstat, i, j, lx_l
+    INTEGER :: ngrp, ngrp_vars, ngrp_vars_out, i, lx_l
     LOGICAL :: latex_fmt, reduce_trailing_num, skip_trivial
     CHARACTER(LEN=2), PARAMETER :: lx = ' %'
     TYPE(t_vl_register_iter) :: iter
@@ -187,15 +190,7 @@ CONTAINS
     CALL quicksort(grp_names)
     WRITE (0,*) lx(1:lx_l)//"List of groups:"
     CALL pretty_print_string_list(grp_names, opt_prefix=lx(1:lx_l)//"    ")
-    ! temporary variables needed for variable group parsing
-    i = 0
-    DO WHILE(iter%next())
-      DO j = 1, iter%cur%p%nvars
-        i = i + MERGE(0, 1, iter%cur%p%vl(j)%p%info%lcontainer)
-      END DO
-    END DO
-    ALLOCATE(grp_vars(i), grp_vars_out(i), STAT=ierrstat)
-    IF (ierrstat /= SUCCESS) CALL finish (routine, 'ALLOCATE failed.')
+
     DO i = 1, ngrp
       ! for each group we collect the contained variables two times
       ! - the first time we collect *all* model level variables on
@@ -230,8 +225,8 @@ CONTAINS
     SUBROUTINE compose_grp_varlist(grpname, lout, vargrp, nvargrp)
       CHARACTER(*), INTENT(IN) :: grpname
       LOGICAL, INTENT(IN) :: lout
-      CHARACTER(LEN=vname_len), INTENT(INOUT) :: vargrp(:)
-      INTEGER, INTENT(INOUT) :: nvargrp
+      CHARACTER(LEN=vname_len), ALLOCATABLE, INTENT(OUT) :: vargrp(:)
+      INTEGER, INTENT(OUT) :: nvargrp
       INTEGER, ALLOCATABLE :: slen(:)
       INTEGER :: jj, kk
       LOGICAL :: lfound

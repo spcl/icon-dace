@@ -52,16 +52,16 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 
 #include "../src/xt_mpi_internal.h"
 
 static void comms_construct_destruct(MPI_Comm comm_world);
 
 
-int main(void)
+int main(int argc, char **argv)
 {
-  // init mpi
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_mpi_init();
   comms_construct_destruct(MPI_COMM_WORLD);

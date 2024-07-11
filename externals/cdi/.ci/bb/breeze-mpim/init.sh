@@ -28,7 +28,7 @@ init_gcc ()
 {
   init_env
 
-  switch_for_module gcc/12.1.0 mpich/3.4.3-gcc-12.1.0
+  switch_for_module gcc/12.1.0 mpich/4.1.2-gcc-12.1.0
 
   CC=gcc
   CXX=g++
@@ -38,9 +38,9 @@ init_gcc ()
   MPI_LAUNCH="$(which mpirun)"
 
   ECCODES_ROOT='/sw/bullseye-x64/packages/gcc-12.1.0/eccodes-2.26.0'
-  NETCDF_ROOT='/sw/bullseye-x64/packages/gcc-12.1.0/netcdf-c-4.9.0'
-  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.1-gcc-12.1.0'
-  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.9.3.1-gcc-12.1.0'
+  NETCDF_ROOT='/sw/bullseye-x64/packages/gcc-12.1.0/netcdf-c-4.9.2'
+  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.2-mpich-4.1.2-gcc-12.1.0'
+  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.10.0-mpich-4.1.2-gcc-12.1.0'
 
   # The installations of NetCDF and ecCodes libraries do not provide '*.la'
   # files, which would trigger the RPATH injection:
@@ -54,7 +54,7 @@ init_nvhpc ()
 {
   init_env
 
-  switch_for_module nvhpc/22.3 mpich/3.4.3-nvhpc-22.3
+  switch_for_module nvhpc/23.7 mpich/4.1.2-nvhpc-23.7
 
   CC=nvc
   CXX=nvc++
@@ -63,10 +63,10 @@ init_nvhpc ()
   MPIFC=mpif90
   MPI_LAUNCH="$(which mpirun)"
 
-  ECCODES_ROOT='/sw/bullseye-x64/packages/nvhpc-22.3/eccodes-2.26.0'
-  NETCDF_ROOT='/sw/bullseye-x64/packages/nvhpc-22.3/netcdf-c-4.9.0'
-  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.1-nvhpc-22.3'
-  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.9.3.1-nvhpc-22.3'
+  ECCODES_ROOT='/sw/bullseye-x64/packages/nvhpc-23.7/eccodes-2.26.0'
+  NETCDF_ROOT='/sw/bullseye-x64/packages/nvhpc-23.7/netcdf-c-4.9.2'
+  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.2-mpich-4.1.2-nvhpc-23.7'
+  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.10.0-mpich-4.1.2-nvhpc-23.7'
 
   # The installations of NetCDF and ecCodes libraries do not provide '*.la'
   # files, which would trigger the RPATH injection:
@@ -93,9 +93,9 @@ init_clang ()
   MPI_LAUNCH="$(which mpirun) --oversubscribe"
 
   ECCODES_ROOT='/sw/bullseye-x64/packages/clang-14.0.6/eccodes-2.26.0'
-  NETCDF_ROOT='/sw/bullseye-x64/packages/clang-14.0.6/netcdf-c-4.9.0-openmpi-4.1.3'
-  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.1-clang-14.0.6'
-  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.9.3.1-clang-14.0.6'
+  NETCDF_ROOT='/sw/bullseye-x64/packages/clang-14.0.6/netcdf-c-4.9.2-openmpi-4.1.3'
+  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.2-openmpi-4.1.3-clang-14.0.6'
+  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.10.0-openmpi-4.1.3-clang-14.0.6'
 
   # The installations of NetCDF and ecCodes libraries do not provide '*.la'
   # files, which would trigger the RPATH injection:
@@ -112,7 +112,7 @@ init_nag ()
 
   init_env
 
-  switch_for_module nag/7.1 mpich/3.4.3-nag-7.1
+  switch_for_module nag/7.1.7125 mpich/4.1.2-nag-7.1.7125
 
   CC=gcc
   CXX=g++
@@ -121,10 +121,10 @@ init_nag ()
   MPIFC=mpif90
   MPI_LAUNCH="$(which mpirun)"
 
-  ECCODES_ROOT='/sw/bullseye-x64/packages/nag-7.1/eccodes-2.26.0'
-  NETCDF_ROOT='/sw/bullseye-x64/packages/nag-7.1/netcdf-c-4.9.0-mpich-3.4.3'
-  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.1-nag-7.1'
-  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.9.3.1-nag-7.1'
+  ECCODES_ROOT='/sw/bullseye-x64/packages/nag-7.1.7125/eccodes-2.26.0'
+  NETCDF_ROOT='/sw/bullseye-x64/packages/nag-7.1.7125/netcdf-c-4.9.2-mpich-4.1.2'
+  PPM_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/ppm-1.0.8.2-mpich-4.1.2-nag-7.1.7125'
+  YAXT_ROOT='/data/mpi/sclab/sip/m300488/libcdi-ci-sw/yaxt-0.10.0-mpich-4.1.2-nag-7.1.7125'
 
   # The installations of NetCDF and ecCodes libraries do not provide '*.la'
   # files, which would trigger the RPATH injection:

@@ -51,8 +51,8 @@ SUBROUTINE art_shift2mixed(solmass, totmass, tracer,                           &
     &  njsp3,                       & !< Number of species for mass mixing ratios
     &  itr0(:), itr3(:,:)             !< Index pairs to (dim1: shift from/to, dim2: njsp3)
   REAL(wp), INTENT(in)           :: &
-    &  solmass(:,:),                & !< Total soluble mass (mug kg-1)
-    &  totmass(:,:)                   !< Total insoluble mass (mug kg-1)
+    &  solmass(istart:iend,kstart:kend),                & !< Total soluble mass (mug kg-1)
+    &  totmass(istart:iend,kstart:kend)                   !< Total insoluble mass (mug kg-1)
   REAL(wp), INTENT(inout)        :: &
     &  tracer(:,:,:)                  !< Tracer container (nproma,nlev,jsp)
 !Local variables

@@ -34,9 +34,7 @@ USE mo_model_domain,        ONLY: t_patch
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
 USE mo_intp_data_strc,      ONLY: t_int_state
 USE mo_fortran_tools,       ONLY: init
-#ifdef _OPENACC
 USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 IMPLICIT NONE
 
@@ -304,8 +302,8 @@ IF (ptr_patch%id > 1) THEN
   grad_y(:,:,1:i_startblk) = 0._wp
   !$ACC END KERNELS
 #else
-  CALL init(grad_x(:,:,1:i_startblk))
-  CALL init(grad_y(:,:,1:i_startblk))
+  CALL init(grad_x(:,:,1:i_startblk), lacc=i_am_accel_node)
+  CALL init(grad_y(:,:,1:i_startblk), lacc=i_am_accel_node)
 !$OMP BARRIER
 #endif
 ENDIF

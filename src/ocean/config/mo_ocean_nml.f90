@@ -26,7 +26,7 @@ MODULE mo_ocean_nml
   USE mo_param1_bgc,         ONLY: n_bgctra, ntraad
 
 #ifndef __NO_ICON_ATMO__
-  USE mo_coupling_config,    ONLY: is_coupled_run
+  USE mo_coupling_config,    ONLY: is_coupled_to_atmo
 #endif
   IMPLICIT NONE
 
@@ -988,6 +988,11 @@ MODULE mo_ocean_nml
   INTEGER :: agulhas_longer(100)         = -1
   LOGICAL :: diagnose_for_horizontalVelocity = .false.
 
+  ! by_nils age tracer
+  LOGICAL  :: use_age_tracer = .FALSE.            ! switch for age tracer
+  INTEGER  :: n_age_tracer = 1
+  REAL(wp) :: age_tracer_inv_relax_time = 1._wp/864000.0_wp    ! 1 / (10 days)
+  LOGICAL  :: l_relaxage_ice        = .TRUE.     ! TRUE: relax age tracer below sea ice
   
   ! run eddy diagnostics
   LOGICAL  :: eddydiag             = .FALSE.
@@ -1012,6 +1017,10 @@ MODULE mo_ocean_nml
     & eddydiag, &
     & diagnose_for_tendencies, &
     & diagnose_for_heat_content, &
+    & use_age_tracer, & ! by_nils
+    & n_age_tracer, & ! by_nils
+    & age_tracer_inv_relax_time, &
+    & l_relaxage_ice, & ! by_fraser
     & check_total_volume
   ! ------------------------------------------------------------------------
   ! 3.0 Namelist variables and auxiliary parameters for octst_nml
@@ -1348,6 +1357,13 @@ MODULE mo_ocean_nml
         &  'bottom boundary condition for velocity currently not supported: choose = 0, 1, 2')
     ENDIF
 
+    ! Check age tracer settings
+    IF (use_age_tracer .AND. GMRedi_configuration/=0) THEN
+      CALL finish(method_name, &
+        & 'age tracer incompatible with GM parameterisation: choose use_age_tracer=.false. or GMRedi_configuration=0')
+    ENDIF 
+
+
 !      IF(no_tracer == 1 .OR. no_tracer < 0 .OR. no_tracer > 2) THEN
 !        IF(no_tracer == 1) THEN
 !          CALL message(method_name, 'WARNING - You have chosen tracer temperature only')
@@ -1373,7 +1389,7 @@ MODULE mo_ocean_nml
     END IF
 
 #ifndef __NO_ICON_ATMO__
-    IF ( is_coupled_run() ) THEN
+    IF ( is_coupled_to_atmo() ) THEN
       iforc_oce = Coupled_FluxFromAtmo
       CALL message(method_name,'WARNING, iforc_oce set to 14 for coupled experiment')
  !!!  limiters can now be set by namelist

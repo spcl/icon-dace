@@ -56,7 +56,9 @@ MODULE mo_ocean_state
   USE mo_math_types,          ONLY: t_cartesian_coordinates, t_geographical_coordinates
   USE mo_var_list_register,   ONLY: vlr_add, vlr_del
   USE mo_var_list,            ONLY: add_var, add_ref, t_var_list_ptr
-  USE mo_var_metadata,        ONLY: get_timelevel_string
+  USE mo_var_metadata,        ONLY: get_timelevel_string, post_op
+  USE mo_var_metadata_types,  ONLY: POST_OP_OFFSET
+  USE mo_name_list_output_config, ONLY: is_variable_in_output
   USE mo_var_groups,          ONLY: groups, MAX_GROUPS
   USE mo_cf_convention
   USE mo_util_dbg_prnt,       ONLY: dbg_print
@@ -131,7 +133,7 @@ CONTAINS
     TYPE(t_patch), TARGET, INTENT(in) :: patch_2d
     CHARACTER(:), ALLOCATABLE :: model_name
 
-    model_name = TRIM(get_my_process_name())
+    model_name = get_my_process_name()
 
     ! IMO the number of variable lists should be as small as possible
     !
@@ -506,6 +508,18 @@ CONTAINS
             & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
             & in_group=oce_tr_groups)
         END DO
+        ! if temperature in Kelvin is requested
+        IF (is_variable_in_output(var_name="to_k")) THEN
+          CALL add_ref( ocean_restart_list, 'tracers'//var_suffix,   &
+            & 'to_k'//var_suffix, ocean_state_prog%tracer_ptr(1)%p,  &
+            & grid_unstructured_cell, za_depth_below_sea,            &
+            & t_cf_var(TRIM(oce_config%tracer_stdnames(1)), 'K', TRIM(oce_config%tracer_longnames(1)), DATATYPE_FLT, &
+            & 'to_k'), &
+            & grib2_var(10, 4, 18, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell), &
+            & ref_idx=1, &
+            & ldims=(/nproma,n_zlev,alloc_cell_blocks/), tlev_source=TLEV_NNEW, &
+            & in_group=oce_tr_groups, post_op=post_op(ipost_op_type=POST_OP_OFFSET, arg1=273.15_wp))
+        END IF
 
         !--------------------------------------------------------------------------
         ! use of the ocean_tracers structure
@@ -1488,6 +1502,13 @@ CONTAINS
       &          dflt_g2_decl_cell,&
       &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_dde)
 
+    ! bottom pressure
+    CALL add_var(ocean_default_list, 'bottom_pressure', ocean_state_diag%bottom_pressure , grid_unstructured_cell,za_surface, &
+      &          t_cf_var('bottom_pressure', 'Pa', 'ocean bottom pressure', datatype_flt),&
+      &          dflt_g2_decl_cell,&
+      &          ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_diag) !, lopenacc=.TRUE.)
+    !__acc_attach(ocean_state_diag%bottom_pressure)
+
     IF (diagnose_for_heat_content) THEN
 
     CALL add_var(ocean_default_list, 'global_heat_content', ocean_state_diag%monitor%global_heat_content , &
@@ -2105,7 +2126,7 @@ CONTAINS
         & ldims=(/nproma,n_zlev,alloc_cell_blocks/),in_group=groups_oce_nudge)
 !       ocean_state_aux%relax_3dim_coefficient(:,:,:) = 1.0_wp 
     END IF
-    IF (no_tracer==2 .AND. type_3dimrelax_salt >0) THEN
+    IF (no_tracer >= 2 .AND. type_3dimrelax_salt > 0) THEN
       CALL add_var(ocean_default_list,'data_3dimRelax_Salt',ocean_nudge%data_3dimRelax_Salt,&
         & grid_unstructured_cell,&
         & za_depth_below_sea, t_cf_var('data_3dimRelax_Salt','psu','data_3dimRelax_Salt', datatype_flt),&
@@ -2848,7 +2869,8 @@ CONTAINS
     oce_config%tracer_longnames(1)  = 'sea water potential temperature'
     oce_config%tracer_units(1)      = 'C'
     ! discipline=10, parameterCategory=4, parameterNumber=18 encoded in one integer
-    oce_config%tracer_codes(1)      = ISHFT(10,16)+ISHFT(4,8)+18
+    ! Celsius is the wrong unit for GRIB => set to undefined. Use 'to_k' for output in Kelvin with triplet (10,4,18)
+    oce_config%tracer_codes(1)      = ISHFT(255,16)+ISHFT(255,8)+255
 
     oce_config%tracer_shortnames(2) = 'so'
     oce_config%tracer_stdnames(2)   = 'sea_water_salinity'
@@ -2856,6 +2878,18 @@ CONTAINS
     oce_config%tracer_units(2)      = 'psu'
     ! discipline=10, parameterCategory=4, parameterNumber=21 encoded in one integer
     oce_config%tracer_codes(2)      = ISHFT(10,16)+ISHFT(4,8)+21
+
+    oce_config%tracer_shortnames(3) = 'age_tracer'
+    oce_config%tracer_stdnames(3)   = 'age_tracer'
+    oce_config%tracer_longnames(3)  = 'age tracer'
+    oce_config%tracer_units(3)      = 'sec'
+    oce_config%tracer_codes(3)      = 6
+
+    oce_config%tracer_shortnames(4) = 'age_tracer_squared'
+    oce_config%tracer_stdnames(4)   = 'age_tracer_squared'
+    oce_config%tracer_longnames(4)  = 'age tracer squared'
+    oce_config%tracer_units(4)      = 'sec^2'
+    oce_config%tracer_codes(4)      = 7
   END SUBROUTINE setup_tracer_info
 
   SUBROUTINE transfer_ocean_state( patch_3d, operators_coefficients )

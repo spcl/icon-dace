@@ -65,7 +65,8 @@ enum test_idxlist_size {
 };
 
 int
-xt_xmap_self_test_main(xmap_constructor xmap_constructor);
+xt_xmap_self_test_main(int *argc, char ***argv,
+                       xmap_constructor xmap_constructor);
 
 /* note: calls xt_idxlist_delete for src_idxlist and dst_idxlist */
 void
@@ -90,7 +91,8 @@ xt_xmap_parallel_test_main(xmap_constructor xmap_constructor);
 extern MPI_Comm xt_intra_group_comm;
 
 int
-xt_xmap_intercomm_parallel_test_main(xmap_constructor xmap_constructor,
+xt_xmap_intercomm_parallel_test_main(int *argc, char ***argv,
+                                     xmap_constructor xmap_constructor,
                                      bool call_initialize, bool call_finalize);
 
 void

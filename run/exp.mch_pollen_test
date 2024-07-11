@@ -12,14 +12,14 @@
 
 # ===========================================================================
 # 
-# Name: exp.mch_pollen_test
+# Name: exp.mch_pollen_test.run
 #
-# Purpose: Run script for ICON on a domain similar to the current COSMO-1E domain
-#          This is a low resolution version used for development purpose. The
-#          experiment tests ICON together with ART. In particular, the test checks
+# Purpose: Run script for ICON on a domain over Switzerland
+#          This is a low resolution version used for a technical test at MeteoSwiss.
+#          The experiment tests ICON together with ART. In particular, the test checks
 #          the pollen species: betu, cory.
 #
-# Author: Chiristoph Müller (MeteoSwiss)
+# Created by: Christoph Müller (MeteoSwiss), Andreas Pauling (MeteoSwiss)
 #
 # =========================================================================== 
 
@@ -177,7 +177,6 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /

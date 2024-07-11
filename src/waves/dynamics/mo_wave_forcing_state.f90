@@ -14,6 +14,8 @@
 ! ---------------------------------------------------------------
 
 MODULE mo_wave_forcing_state
+
+  USE mo_master_control,       ONLY: get_my_process_name
   USE mo_exception,            ONLY: message, finish
   USE mo_var_list,             ONLY: add_var, t_var_list_ptr
   USE mo_wave_forcing_types,   ONLY: t_wave_forcing
@@ -102,7 +104,8 @@ CONTAINS
       datatype_flt = DATATYPE_FLT32
     ENDIF
 
-    CALL vlr_add(p_forcing_list, listname, patch_id=p_patch%id, lrestart=.TRUE.)
+    CALL vlr_add(p_forcing_list, listname, patch_id=p_patch%id, lrestart=.TRUE., &
+      &          model_type=get_my_process_name())
 
     !forcing group
     !wind 10

@@ -267,7 +267,6 @@ cat > ${atmo_namelist} << EOF
 ! nsteps                  = 5
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /

@@ -12,7 +12,7 @@ AC_PREREQ([2.69])
 
 ACX_POLYMORPHIC_OPTION([enable], [fcgroup-*], [icon_fcgroups])
 
-AC_INIT([icon], [2024.01-1], [], [icon-2024.01-1])
+AC_INIT([icon], [2024.07], [], [icon-2024.07])
 
 AC_CONFIG_MACRO_DIR([m4])
 m4_pattern_forbid([^A[SC]?X_])dnl
@@ -92,6 +92,14 @@ AC_ARG_ENABLE([delayed-config],
   [AS_IF([test x"$enableval" != xno], [enable_delayed_config=yes])],
   [enable_delayed_config=yes])
 
+AC_ARG_ENABLE([separate-mods],
+  [AS_HELP_STRING([--enable-separate-mods],
+     [enable the two-step compilation of the Fortran source files (increases the
+total overhead but potentially reduces the wall clock time for parallel builds
+due to a faster Fortran module generation) @<:@default=no@:>@])],
+  [AS_IF([test x"$enableval" != xno], [enable_separate_mods=yes])],
+  [enable_separate_mods=no])
+
 m4_divert_once([HELP_ENABLE], [[
 Model Features:]])
 
@@ -121,20 +129,27 @@ AC_ARG_ENABLE([ocean],
 
 AC_ARG_ENABLE([jsbach],
   [AS_HELP_STRING([--enable-jsbach],
-     [enable the land component JSBACH @<:@default=yes@:>@])],
+     [enable the land component of ICON (ICON-Land) @<:@default=yes@:>@])],
   [AS_IF([test x"$enableval" != xno], [enable_jsbach=yes])],
   [enable_jsbach=yes])
 
 AC_ARG_ENABLE([jsbach-hd],
   [AS_HELP_STRING([--enable-jsbach-hd],
-     [enable the hydrological discharge scheme of the JSBACH land component
-(JSBACH HD) @<:@default=auto@:>@])],
+     [enable the internal hydrological discharge (HD) scheme of the land
+component @<:@default=auto@:>@])],
   [AS_IF([test x"$enableval" != xno && test x"$enableval" != xauto],
      [enable_jsbach_hd=yes])],
   [enable_jsbach_hd=auto])
 
 AS_VAR_IF([enable_jsbach_hd], [auto],
   [AS_VAR_COPY([enable_jsbach_hd], [enable_jsbach])])
+
+AC_ARG_ENABLE([quincy],
+  [AS_HELP_STRING([--enable-quincy],
+     [enable the QUINCY biogeochemistry model in the land component
+@<:@default=no@:>@])],
+  [AS_IF([test x"$enableval" != xno], [enable_quincy=yes])],
+  [enable_quincy=no])
 
 AC_ARG_ENABLE([waves],
   [AS_HELP_STRING([--enable-waves],
@@ -630,6 +645,14 @@ AC_ARG_WITH([external-fortran-support],
      [with_external_fortran_support=yes])],
   [with_external_fortran_support=no])
 
+AC_ARG_WITH([external-comin],
+  [AS_HELP_STRING([--with-external-comin],
+     [use external ComIn library @<:@default=no@:>@])],
+  [AS_IF([test x"$withval" != xno],
+     [with_external_comin=yes])],
+  [with_external_comin=no])
+
+
 ############################# CODEBASE EXTENSIONS ##############################
 
 AS_VAR_IF([enable_jsbach], [yes],
@@ -777,6 +800,18 @@ ACX_FC_MODULE_NAMING(
   [AC_SUBST([FC_MOD_FILE_UPPER], [$acx_cv_fc_module_naming_upper])
    AC_SUBST([FC_MOD_FILE_EXT], [$acx_cv_fc_module_naming_ext])])
 
+ACX_FC_MODULE_SNAMING(
+  [AC_SUBST([FC_SMOD_FILE_INFIX], [$acx_cv_fc_module_snaming_infix])
+   AC_SUBST([FC_SMOD_FILE_EXT], [$acx_cv_fc_module_snaming_ext])])
+
+ACX_FC_MODULE_ROOT_SMOD(
+  [AC_SUBST([FC_ROOT_SMOD], [$acx_cv_fc_module_root_smod])])
+
+AS_VAR_IF([enable_separate_mods], [yes],
+  [ACX_FC_MODULE_ONLY_FLAG([FC_MOD_ONLY=$acx_cv_fc_module_only_flag])],
+  [FC_MOD_ONLY=])
+AC_SUBST([FC_MOD_ONLY])
+
 ACX_FC_INCLUDE_FLAG(
   [AC_SUBST([FC_INC_FLAG], [$acx_cv_fc_ftn_include_flag])])
 ACX_FC_INCLUDE_ORDER(
@@ -818,10 +853,17 @@ AS_VAR_IF([enable_jsbach_hd], [no],
   [AS_VAR_APPEND([FCFLAGS], [" ${FC_PP_DEF}__NO_JSBACH_HD__"])],
   [AS_VAR_IF([enable_jsbach], [no],
      [AC_MSG_ERROR([unsupported combination of the configure options: you dnl
-are trying to configure with the JSBACH HD scheme but the land component dnl
-JSBACH is disabled: either disable the hydrological discharge scheme of the dnl
-JSBACH land component (--disable-jsbach-hd) or enable the land component dnl
-JSBACH (--enable-jsbach)])])])
+are trying to configure with the internal hydrological discharge (HD) scheme dnl
+but the land component of ICON is disabled: either disable the internal HD dnl
+scheme (--disable-jsbach-hd) or enable the land component (--enable-jsbach)])])])
+
+AS_VAR_IF([enable_quincy], [no],
+  [AS_VAR_APPEND([FCFLAGS], [" ${FC_PP_DEF}__NO_QUINCY__"])],
+  [AS_VAR_IF([enable_jsbach], [no],
+     [AC_MSG_ERROR([unsupported combination of the configure options: you dnl
+are trying to configure with the QUINCY biogeochemistry model but the ICON dnl
+land component is disabled: either disable the QUINCY model dnl
+(--disable-quincy) or enable the ICON land component (--enable-jsbach)])])])
 
 AS_VAR_IF([enable_waves], [no],
   [AS_VAR_APPEND([FCFLAGS], [" ${FC_PP_DEF}__NO_ICON_WAVES__"])])
@@ -1452,7 +1494,7 @@ library (--without-external-rte-rrtmgp), or set FCFLAGS, LDFLAGS and LIBS dnl
 accordingly])])],
 dnl
      [icon_subdir_srcdir="$srcdir/externals/rte-rrtmgp"
-      icon_subdir_unique_file="rte/mo_rte_sw.F90"
+      icon_subdir_unique_file="rte-frontend/mo_rte_sw.F90"
       AS_IF([test ! -r "$icon_subdir_srcdir/$icon_subdir_unique_file"],
         [AC_MSG_ERROR([unable to find sources of the RTE+RRTMGP library dnl
 ($icon_subdir_unique_file) in '$icon_subdir_srcdir': either disable usage of dnl
@@ -1469,14 +1511,24 @@ bundled version of RTE+RRTMGP library @<:@default=$ICON_BUNDLED_FCFLAGS@:>@])dnl
         [BUILD_ENV=*|ICON_*FLAGS=*|CFLAGS=*|FCFLAGS=*],
         [NETCDF_FCFLAGS=*|NETCDF_FCLIBS=*],
         [ACX_SUBDIR_CONFIG_PATTERN_ENABLE([silent-rules])],
+        [ACX_SUBDIR_CONFIG_PATTERN_ENABLE([maintainer-mode])],
+        [ACX_SUBDIR_CONFIG_PATTERN_ENABLE([single-precision])],
         [ACX_SUBDIR_CONFIG_PATTERN_ENABLE([gpu])])
       ACX_SUBDIR_APPEND_ARGS([externals/rte-rrtmgp],
         [FCFLAGS="$subdir_FCFLAGS $ICON_RTE_RRTMGP_FCFLAGS"],
         [NETCDF_FCFLAGS=], [NETCDF_FCLIBS=],
-        [--enable-gpu="$icon_gpu_primary"],
-        [--enable-silent-rules="$enable_silent_rules"])
+        [--enable-silent-rules="$enable_silent_rules"],
+        [--disable-maintainer-mode], [--enable-gpu="$icon_gpu_primary"])
+dnl The tests of the current version of RTE-RRTMGP are known to fail when built
+dnl with OpenACC support. The problem is in the test programs and not in the
+dnl library itself.
+      AS_VAR_IF([icon_gpu_primary], [openacc],
+        [ACX_SUBDIR_REMOVE_ARGS([externals/rte-rrtmgp],
+           [ACX_SUBDIR_CONFIG_PATTERN_ENABLE([tests])])
+         ACX_SUBDIR_APPEND_ARGS([externals/rte-rrtmgp],
+           [--disable-tests])])
       AS_VAR_APPEND([bundled_includes],
-        ["${FC_MOD_IN}externals/rte-rrtmgp/mod "])
+        ["${FC_MOD_IN}externals/rte-rrtmgp "])
       BUNDLED_LIBFILES="externals/rte-rrtmgp/librte.a $BUNDLED_LIBFILES"
       BUNDLED_LIBFILES="externals/rte-rrtmgp/librrtmgp.a $BUNDLED_LIBFILES"])])
 
@@ -2338,44 +2390,61 @@ switch the secondary GPU compiler (e.g. dnl
    ACX_LANG_POP_HIP])
 
 AS_VAR_IF([enable_comin], [yes],
-  [icon_subdir_srcdir="$srcdir/externals/comin"
-   icon_subdir_unique_file="src/comin_setup.F90"
-   AS_IF([test ! -r "$icon_subdir_srcdir/$icon_subdir_unique_file"],
-     [AC_MSG_ERROR([unable to find sources of the bundled version of COMIN dnl
+  [AS_VAR_IF([with_external_comin], [yes],
+    [AC_CACHE_CHECK([whether COMIN library is available],
+       [icon_cv_have_comin],
+       [icon_cv_have_comin=no
+        AC_LINK_IFELSE([AC_LANG_PROGRAM([], [[
+      use comin_host_interface, only: t_comin_setup_version_info, &
+                                    & comin_setup_get_version
+      implicit none
+      type(t_comin_setup_version_info) :: version
+      version = comin_setup_get_version()]])],
+          [icon_cv_have_comin=yes])])
+     AS_VAR_IF([icon_cv_have_comin], [no],
+        [AC_MSG_FAILURE([unable to link a test program using COMIN dnl
+library: either use the bundled version of COMIN dnl
+(--without-external-comin) or set FCFLAGS, LDFLAGS and LIBS dnl
+accordingly])])],
+dnl
+    [icon_subdir_srcdir="$srcdir/externals/comin"
+     icon_subdir_unique_file="src/comin_setup.F90"
+     AS_IF([test ! -r "$icon_subdir_srcdir/$icon_subdir_unique_file"],
+       [AC_MSG_ERROR([unable to find sources of the bundled version of COMIN dnl
 library ($icon_subdir_unique_file) in '$icon_subdir_srcdir'])])
-   AC_ARG_VAR([ICON_COMIN_FCFLAGS],
-     [Fortran compiler flags to be appended to FCFLAGS when configuring the
+     AC_ARG_VAR([ICON_COMIN_FCFLAGS],
+       [Fortran compiler flags to be appended to FCFLAGS when configuring the
 bundled version of COMIN library @<:@default=$ICON_BUNDLED_FCFLAGS@:>@])dnl
-   ICON_COMIN_FCFLAGS=${ICON_COMIN_FCFLAGS-$ICON_BUNDLED_FCFLAGS}
-   AC_ARG_VAR([ICON_COMIN_CFLAGS],
-     [C compiler flags to be appended to CFLAGS when configuring the bundled
+     ICON_COMIN_FCFLAGS=${ICON_COMIN_FCFLAGS-$ICON_BUNDLED_FCFLAGS}
+     AC_ARG_VAR([ICON_COMIN_CFLAGS],
+       [C compiler flags to be appended to CFLAGS when configuring the bundled
 version of COMIN library @<:@default=$ICON_BUNDLED_CFLAGS@:>@])dnl
-   AC_ARG_VAR([ICON_COMIN_CXXFLAGS],
-     [C++ compiler flags to be appended to CXXFLAGS when configuring the bundled
+     AC_ARG_VAR([ICON_COMIN_CXXFLAGS],
+       [C++ compiler flags to be appended to CXXFLAGS when configuring the bundled
 version of COMIN library @<:@default=$ICON_BUNDLED_CXXFLAGS@:>@])dnl
-   ICON_COMIN_CFLAGS=${ICON_COMIN_CFLAGS-$ICON_BUNDLED_CFLAGS}
-   ACX_SUBDIR_INIT_CMAKE([externals/comin], [no-run no-adjust-compilers], [],
-     [AS_ESCAPE(["${CMAKE}"])])
-   ACX_SUBDIR_REMOVE_ARGS([externals/comin],
+     ICON_COMIN_CFLAGS=${ICON_COMIN_CFLAGS-$ICON_BUNDLED_CFLAGS}
+     ACX_SUBDIR_INIT_CMAKE([externals/comin], [no-run no-adjust-compilers], [],
+       [AS_ESCAPE(["${CMAKE}"])])
+     ACX_SUBDIR_REMOVE_ARGS([externals/comin],
 dnl The compiler flags are replaced below:
-     [-DCMAKE_C_FLAGS=*|-DCMAKE_Fortran_FLAGS=*|-DCMAKE_CXX_FLAGS=*],
+       [-DCMAKE_C_FLAGS=*|-DCMAKE_Fortran_FLAGS=*|-DCMAKE_CXX_FLAGS=*],
 dnl The interprocedural optimization is not enabled in the project:
-     [-DCMAKE_*_COMPILER_AR=*|-DCMAKE_*_COMPILER_RANLIB=*])
-   ACX_SUBDIR_APPEND_ARGS([externals/comin],
+       [-DCMAKE_*_COMPILER_AR=*|-DCMAKE_*_COMPILER_RANLIB=*])
+     ACX_SUBDIR_APPEND_ARGS([externals/comin],
 dnl Extend the compiler flags:
-     [-DCMAKE_C_FLAGS="$subdir_CFLAGS $ICON_COMIN_CFLAGS $subdir_CPPFLAGS"],
-     [-DCMAKE_Fortran_FLAGS="$subdir_FCFLAGS $ICON_COMIN_FCFLAGS"],
-     [-DCMAKE_CXX_FLAGS=dnl
+       [-DCMAKE_C_FLAGS="$subdir_CFLAGS $ICON_COMIN_CFLAGS $subdir_CPPFLAGS"],
+       [-DCMAKE_Fortran_FLAGS="$subdir_FCFLAGS $ICON_COMIN_FCFLAGS"],
+       [-DCMAKE_CXX_FLAGS=dnl
 "$subdir_CXXFLAGS $ICON_COMIN_CXXFLAGS $subdir_CPPFLAGS"],
 dnl Build the static version of the library:
-     [-DBUILD_SHARED_LIBS:BOOL=OFF],
+       [-DBUILD_SHARED_LIBS:BOOL=OFF],
 dnl Turn off the examples (only build the static lib)
-     [-DCOMIN_ENABLE_EXAMPLES:BOOL=OFF],
+       [-DCOMIN_ENABLE_EXAMPLES:BOOL=OFF],
 dnl Set non-existing build type to avoid extra compiler flags:
-     [-DCMAKE_BUILD_TYPE:STRING=NOEXTRAFLAGS])
-   AS_VAR_APPEND([bundled_includes],
-     ["${FC_MOD_IN}externals/comin/build/mod "])
-   BUNDLED_LIBFILES="externals/comin/build/libcomin.a $BUNDLED_LIBFILES"])
+       [-DCMAKE_BUILD_TYPE:STRING=NOEXTRAFLAGS])
+     AS_VAR_APPEND([bundled_includes],
+       ["${FC_MOD_IN}externals/comin/build/mod "])
+     BUNDLED_LIBFILES="externals/comin/build/libcomin.a $BUNDLED_LIBFILES"])])
 
 AS_VAR_IF([with_external_fortran_support], [yes],
   [AC_CACHE_CHECK([whether Fortran support library is available],
@@ -2429,6 +2498,10 @@ dnl Extend C and Fortran compiler flags:
      [-DCMAKE_C_FLAGS=dnl
 "$subdir_CFLAGS $ICON_FORTRAN_SUPPORT_CFLAGS $subdir_CPPFLAGS"],
      [-DCMAKE_Fortran_FLAGS="$subdir_FCFLAGS $ICON_FORTRAN_SUPPORT_FCFLAGS"],
+dnl Set up library-specific compiler flags:
+     [-DFS_ENABLE_OMP=$enable_openmp],
+     [-DFS_ENABLE_MIXED_PRECISION=$enable_mixed_precision],
+     [-DFS_ENABLE_OPENACC=`test "x$icon_gpu_primary" = xopenacc && AS_ECHO_N(['ON']) || AS_ECHO_N(['OFF'])`],
 dnl Build the static version of the library and disable the tests:
      [-DBUILD_SHARED_LIBS:BOOL=OFF], [-DBUILD_TESTING:BOOL=OFF],
 dnl Set non-existing build type to avoid extra compiler flags:
@@ -2563,7 +2636,7 @@ AC_ARG_VAR([RANLIB], [archive indexer command])dnl
 AC_PROG_RANLIB
 
 AC_ARG_VAR([PYTHON], [Python interpreter command])dnl
-ACX_PROG_SEARCH([PYTHON], [python python3],
+ACX_PROG_SEARCH([PYTHON], [python3 python],
   [icon_prog_try=dnl
 '$acx_candidate $srcdir/utils/mkhelper/depgen.py -h >/dev/null'
    AC_TRY_EVAL([icon_prog_try])],
@@ -2637,6 +2710,12 @@ AS_VAR_IF([enable_silent_rules], [yes],
 AS_VAR_IF([enable_delayed_config], [yes],
   [AC_SUBST([DELAYED_CONFIG_ENABLED], [''])],
   [AC_SUBST([DELAYED_CONFIG_ENABLED], ['#'])])
+
+AS_VAR_IF([enable_separate_mods], [yes],
+  [AC_SUBST([SEPARATE_MODS_ENABLED], [''])
+   AC_SUBST([SEPARATE_MODS_DISABLED], ['#'])],
+  [AC_SUBST([SEPARATE_MODS_ENABLED], ['#'])
+   AC_SUBST([SEPARATE_MODS_DISABLED], [''])])
 
 AS_VAR_IF([enable_jsbach], [yes],
   [AC_SUBST([JSBACH_ENABLED], [''])],

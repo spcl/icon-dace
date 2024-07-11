@@ -29,7 +29,7 @@ CONTAINS
   !>
   !!
   !!
-  SUBROUTINE surface_fluxes( jcs, kproma, kbdim, ksfc_type,        &! in
+  SUBROUTINE surface_fluxes( jcs, jce, kbdim, ksfc_type,        &! in
                            & idx_wtr, idx_ice, idx_lnd, ih, iqv,   &! in
                            & psteplen,                             &! in
                            & pfrc, lsmask, alake,                  &! in
@@ -46,7 +46,7 @@ CONTAINS
                            & pevap_tile )                           ! out
 
     REAL(wp),INTENT(IN) :: psteplen
-    INTEGER, INTENT(IN) :: jcs, kproma, kbdim, ksfc_type
+    INTEGER, INTENT(IN) :: jcs, jce, kbdim, ksfc_type
     INTEGER, INTENT(IN) :: idx_wtr, idx_ice, idx_lnd
     INTEGER, INTENT(IN) :: ih, iqv
 
@@ -110,7 +110,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc = 1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zdqv)
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         ! Vertical gradient of specific humidity scaled by factor (1/tpfac1).
         ! Formula: ( qv_{tavg,klev} - qs_tile )/tpfac1
         ! Here qv_{tavg,klev} = tpfac1*qv_klev(t+dt) + (1-tpfac1)*qv_klev(t)
@@ -167,7 +167,7 @@ CONTAINS
 
     IF (idx_lnd <= ksfc_type) THEN
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         IF (lsmask(jl) > 0._wp) THEN
           plhflx_tile(jl,idx_lnd) = plhflx_lnd(jl)
         END IF
@@ -175,7 +175,7 @@ CONTAINS
     END IF
     IF (idx_wtr <= ksfc_type) THEN
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         IF (alake(jl) > 0._wp) THEN
           plhflx_tile(jl,idx_wtr) = plhflx_lwtr(jl)
         ELSE
@@ -185,7 +185,7 @@ CONTAINS
     END IF
     IF (idx_ice <= ksfc_type) THEN
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         IF (alake(jl) > 0._wp) THEN
           plhflx_tile(jl,idx_ice) = plhflx_lice(jl)
         ELSE
@@ -202,7 +202,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc = 1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zdcptv)
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
 
         ! Vertical gradient of dry static energy.
 
@@ -249,7 +249,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc = 1,ksfc_type
       !$ACC LOOP GANG VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         pevap_gbm (jl) = pevap_gbm (jl) + pfrc(jl,jsfc) * pevap_tile (jl,jsfc)
         plhflx_gbm(jl) = plhflx_gbm(jl) + pfrc(jl,jsfc) * plhflx_tile(jl,jsfc)
         pshflx_gbm(jl) = pshflx_gbm(jl) + pfrc(jl,jsfc) * pshflx_tile(jl,jsfc)
@@ -266,7 +266,7 @@ CONTAINS
   !!
   SUBROUTINE wind_stress( kbdim, ksfc_type,                     &! in
                         & psteplen,                             &! in
-                        & loidx, is,                            &! in
+                        & loidx, is, jcs,                       &! in
                         & pfrc, pcfm_tile, pfac_sfc,            &! in
                         & pu_rtpfac1, pv_rtpfac1,               &! in
                         & pocu, pocv,                           &! in
@@ -274,7 +274,7 @@ CONTAINS
                         & pu_stress_tile, pv_stress_tile        )! out
 
     REAL(wp),INTENT(IN)    :: psteplen
-    INTEGER, INTENT(IN)    :: kbdim, ksfc_type
+    INTEGER, INTENT(IN)    :: kbdim, ksfc_type, jcs
 
     INTEGER, INTENT(IN)    :: loidx(kbdim,ksfc_type) !< counter for masks
     INTEGER, INTENT(IN)    :: is   (      ksfc_type) !< counter for masks
@@ -335,7 +335,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc = 1,ksfc_type
        !$ACC LOOP GANG VECTOR PRIVATE(js)
-       DO jls = 1,is(jsfc)
+       DO jls = jcs,is(jsfc)
           ! set index
           js=loidx(jls,jsfc)
 
@@ -350,7 +350,7 @@ CONTAINS
     !DA: can't move this loop into OpenACC w/o atomics
     DO jsfc = 1,ksfc_type
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR PRIVATE(js) ASYNC(1)
-      DO jls = 1,is(jsfc)
+      DO jls = jcs,is(jsfc)
         ! set index
         js=loidx(jls,jsfc)
         pu_stress_gbm(js) = pu_stress_gbm(js) + pu_stress_tile(js,jsfc)*pfrc(js,jsfc)
@@ -367,7 +367,7 @@ CONTAINS
   !! Compute diagnostics: 10m wind, u and v in 10m,
   !!                      temperature in 2m, dew point temperature in 2m
   !!
-  SUBROUTINE nsurf_diag( jcs, kproma, kbdim, ksfc_type,   &! in
+  SUBROUTINE nsurf_diag( jcs, jce, kbdim, ksfc_type,   &! in
                        & idx_lnd,                         &! in
                        & pfrc,                            &! in
                        & pqm1,                            &! in humidity
@@ -398,7 +398,7 @@ CONTAINS
                        & puas_tile,                       &! out zonal wind in 10m
                        & pvas_tile                        )! out meridional wind in 10m
 
-    INTEGER, INTENT(IN) :: jcs, kproma, kbdim, ksfc_type
+    INTEGER, INTENT(IN) :: jcs, jce, kbdim, ksfc_type
     INTEGER, INTENT(IN) :: idx_lnd
 
     REAL(wp),INTENT(IN), DIMENSION(:,:) :: &                !< DIMENSION(kbdim,ksfc_type)
@@ -472,19 +472,22 @@ CONTAINS
         pvas_tile    (jl,jsfc) = cdimissval
         ptas_tile    (jl,jsfc) = cdimissval
         pdew2_tile   (jl,jsfc) = cdimissval
+        icond        (jl,jsfc) = 0
+        loidx        (jl,jsfc) = 0
       END DO
     END DO
     !$ACC END PARALLEL LOOP
 
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
     DO jsfc = 1,ksfc_type
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         icond(jl,jsfc) = MERGE(1, 0, pfrc(jl,jsfc).GT.0.0_wp)
       ENDDO
     ENDDO
     !$ACC END PARALLEL LOOP
 
-    CALL generate_index_list_batched(icond(:,:), loidx(jcs:,:), jcs, kproma, is, 1)
+    CALL generate_index_list_batched(icond(:,:), loidx(jcs:,:), jcs, jce, is, 1)
+
     !$ACC UPDATE HOST(is) ASYNC(1)
     !$ACC WAIT(1)
     is(:) = is(:) + jcs - 1
@@ -496,7 +499,7 @@ CONTAINS
     DO jsfc = 1,ksfc_type
 
       !$ACC WAIT
-      CALL lookup_ua_list_spline('nsurf_diag(1)', jcs, kproma, is(jsfc), loidx(:,jsfc), ptm1, ua)
+      CALL lookup_ua_list_spline('nsurf_diag(1)', jcs, jce, is(jsfc), loidx(:,jsfc), ptm1, ua)
 
       IF ( jsfc == idx_lnd ) THEN
         ! land only
@@ -523,7 +526,7 @@ CONTAINS
         zqs1       = zqs1 / (1._wp - vtmpc1 * zqs1)
         zrh2m(jl)  = MAX(zephum, pqm1(jl) / zqs1)
 
-        zaph2m(jl) = paphm1(jl) * &  ! = paphm1(jcs:kproma, klevp1)
+        zaph2m(jl) = paphm1(jl) * &  ! = paphm1(jcs:jce, klevp1)
             (1._wp - zhtq*grav / ( rd * ptas_tile(jl,jsfc) * (1._wp + vtmpc1 * pqm1(jl) - pxm1(jl))))
       ENDDO
       !$ACC END PARALLEL
@@ -592,7 +595,7 @@ CONTAINS
     !DA: can't move this loop into OpenACC w/o atomics
     DO jsfc = 1,ksfc_type
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR PRIVATE(js) ASYNC(1)
-      DO jls = 1,is(jsfc)
+      DO jls = jcs,is(jsfc) !CHANGED HERE FROM 1 to JCS TO DO AS THE LOOPS ABOVE
         ! set index
         js=loidx(jls,jsfc)
         psfcWind_gbm(js) = psfcWind_gbm(js) + pfrc(js,jsfc)*psfcWind_tile(js,jsfc)
@@ -608,7 +611,7 @@ CONTAINS
     ! find max and min values for 2m temperature
     !
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-    DO jl=jcs,kproma
+    DO jl=jcs,jce
         ptasmax  (jl) = MAX(ptasmax(jl),ptas_gbm(jl))
         ptasmin  (jl) = MIN(ptasmin(jl),ptas_gbm(jl))
     ENDDO

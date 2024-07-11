@@ -12,7 +12,7 @@ main(int argc, char *argv[])
 {
   int linfo = 0;
   int vlistID1, vlistID2, varID, streamID1, streamID2;
-  size_t nmiss;
+  size_t numMissVals;
   int nvars, status;
   double *vardata = NULL;
   const char *ifile, *ofile;
@@ -63,7 +63,7 @@ main(int argc, char *argv[])
       for (varID = 0; varID < nvars; ++varID)
         {
           /* Read variable  */
-          streamReadVar(streamID1, varID, vardata, &nmiss);
+          streamReadVar(streamID1, varID, vardata, &numMissVals);
 
           if (linfo)
             {
@@ -84,7 +84,7 @@ main(int argc, char *argv[])
             }
 
           /* Write variable */
-          streamWriteVar(streamID2, varID, vardata, nmiss);
+          streamWriteVar(streamID2, varID, vardata, numMissVals);
         }
 
       tsID++;

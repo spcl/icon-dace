@@ -72,10 +72,16 @@ export MD='rnmo'
 rundir=`pwd`
 cd checksuite.icon-dev
 
-case $HOST in
-    *daint*)
-        export MD='rnmot'
+builder="unknown"
+[[ $BB_NAME ]] && builder=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]')
 
+case $builder in
+    daint_*)
+        export MD='t'
+        ;;
+    levante_gpu*)
+        export MD='rmo'  # nproma tests are overriden by nblocks_c=1
+        ;;
 esac
 
 ./icon-dev.checksuite

@@ -163,7 +163,7 @@ CONTAINS
   END SUBROUTINE set_msg_timestamp
 
   SUBROUTINE enable_logging(l_write_output)
-    LOGICAL, INTENT(in) :: l_write_output
+    LOGICAL, INTENT(IN) :: l_write_output
     lwrite = l_write_output
   END SUBROUTINE enable_logging
 
@@ -226,8 +226,8 @@ CONTAINS
   END FUNCTION error_prefix
 
   SUBROUTINE finish(name, text)
-    CHARACTER(len=*), INTENT(in)           :: name
-    CHARACTER(len=*), INTENT(in), OPTIONAL :: text
+    CHARACTER(len=*), INTENT(IN)           :: name
+    CHARACTER(len=*), INTENT(IN), OPTIONAL :: text
     CHARACTER(LEN=filename_max) :: tmp
 
     tmp(:) = ' '
@@ -246,9 +246,9 @@ CONTAINS
 
   SUBROUTINE message(name, text, all_print)
 
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=*), INTENT(in) :: text
-    LOGICAL, INTENT(in), OPTIONAL :: all_print
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=*), INTENT(IN) :: text
+    LOGICAL, INTENT(IN), OPTIONAL :: all_print
 
     IF (PRESENT(all_print)) THEN
       lprint = all_print
@@ -266,8 +266,8 @@ CONTAINS
 
   SUBROUTINE message_to_own_unit(name, text, nerr_unit)
 
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=*), INTENT(in) :: text
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=*), INTENT(IN) :: text
     INTEGER :: nerr_unit
 
     IF (lvl_info_is_active() .AND. lvl_debug_is_active()) THEN
@@ -280,8 +280,8 @@ CONTAINS
 
   SUBROUTINE param(name, text)
 
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=*), INTENT(in) :: text
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=*), INTENT(IN) :: text
 
     IF (lvl_info_is_active()) THEN
       CALL write_to_unit(name, text, lvl_param)
@@ -290,10 +290,10 @@ CONTAINS
   END SUBROUTINE param
 
   SUBROUTINE write_to_unit(name, text, level, nerr_unit)
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=*), INTENT(in) :: text
-    INTEGER, INTENT(in) :: level
-    INTEGER, INTENT(in), OPTIONAL :: nerr_unit
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=*), INTENT(IN) :: text
+    INTEGER, INTENT(IN) :: level
+    INTEGER, INTENT(IN), OPTIONAL :: nerr_unit
 
     CHARACTER(len=filename_max) :: prefix
     CHARACTER(len=10) :: ctime
@@ -330,8 +330,8 @@ CONTAINS
 
   SUBROUTINE warning(name, text)
 
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=*), INTENT(in) :: text
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=*), INTENT(IN) :: text
 
     CALL write_to_unit(name, text, lvl_warn)
 
@@ -339,9 +339,9 @@ CONTAINS
 
   SUBROUTINE print_lvalue(mstring, lvalue, routine)
 
-    CHARACTER(len=*), INTENT(in)   :: mstring
-    LOGICAL, INTENT(in)            :: lvalue
-    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(in) :: routine
+    CHARACTER(len=*), INTENT(IN)   :: mstring
+    LOGICAL, INTENT(IN)            :: lvalue
+    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(IN) :: routine
     CHARACTER(len=:), POINTER :: rtn
     CHARACTER(len=1), TARGET :: dummy
     CHARACTER(len=filename_max) :: tmp = ""
@@ -360,9 +360,9 @@ CONTAINS
 
   SUBROUTINE print_ivalue(mstring, ivalue, routine)
 
-    CHARACTER(len=*), INTENT(in)   :: mstring
-    INTEGER, INTENT(in)            :: ivalue
-    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(in) :: routine
+    CHARACTER(len=*), INTENT(IN)   :: mstring
+    INTEGER, INTENT(IN)            :: ivalue
+    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(IN) :: routine
     CHARACTER(len=:), POINTER :: rtn
     CHARACTER(len=1), TARGET :: dummy
     CHARACTER(len=filename_max) :: tmp = ""
@@ -380,9 +380,9 @@ CONTAINS
 
   SUBROUTINE print_i8value(mstring, i8value, routine)
 
-    CHARACTER(len=*), INTENT(in)   :: mstring
-    INTEGER(i8), INTENT(in)        :: i8value
-    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(in) :: routine
+    CHARACTER(len=*), INTENT(IN)   :: mstring
+    INTEGER(i8), INTENT(IN)        :: i8value
+    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(IN) :: routine
     CHARACTER(len=:), POINTER :: rtn
     CHARACTER(len=1), TARGET :: dummy
     CHARACTER(len=filename_max) :: tmp = ""
@@ -400,9 +400,9 @@ CONTAINS
 
   SUBROUTINE print_rvalue(mstring, rvalue, routine)
 
-    CHARACTER(len=*), INTENT(in)   :: mstring
-    REAL(wp), INTENT(in)           :: rvalue
-    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(in) :: routine
+    CHARACTER(len=*), INTENT(IN)   :: mstring
+    REAL(wp), INTENT(IN)           :: rvalue
+    CHARACTER(len=*), TARGET, OPTIONAL, INTENT(IN) :: routine
     CHARACTER(len=:), POINTER :: rtn
     CHARACTER(len=1), TARGET :: dummy
     CHARACTER(len=filename_max) :: tmp = ""

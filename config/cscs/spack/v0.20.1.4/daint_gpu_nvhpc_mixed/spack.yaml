@@ -10,7 +10,7 @@
 
 spack:
   specs:
-  - icon@develop%nvhpc +ecrad +rte-rrtmgp +art +acm-license gpu=openacc+cuda +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2 +mixed-precision
+  - icon@develop%nvhpc +ecrad +rte-rrtmgp +art gpu=openacc+cuda +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2 +mixed-precision
   - rttov@13.1%nvhpc
   - hdf5@1.12.2%nvhpc
   - eccodes@2.19.0%nvhpc
@@ -22,7 +22,7 @@ spack:
     unify: true
   develop:
     icon:
-      spec: icon@develop%nvhpc +ecrad +rte-rrtmgp +art +acm-license gpu=openacc+cuda +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2 +mixed-precision
+      spec: icon@develop%nvhpc +ecrad +rte-rrtmgp +art gpu=openacc+cuda +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2 +mixed-precision
       path: ../../../../../
 
 

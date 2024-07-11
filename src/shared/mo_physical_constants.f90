@@ -109,7 +109,9 @@ MODULE mo_physical_constants
   REAL(wp), PARAMETER :: rd    = 287.04_wp        !> [J/K/kg] gas constant
   !$ACC DECLARE COPYIN(rd)
   REAL(wp), PARAMETER :: cpd   = 1004.64_wp       !! [J/K/kg] specific heat at constant pressure
+  !$ACC DECLARE COPYIN(cpd)
   REAL(wp), PARAMETER :: cvd   = cpd-rd           !! [J/K/kg] specific heat at constant volume
+  !$ACC DECLARE COPYIN(cvd)
   REAL(wp), PARAMETER :: con_m = 1.50E-5_wp       !! [m^2/s]  kinematic viscosity of dry air
   REAL(wp), PARAMETER :: con_h = 2.20E-5_wp       !! [m^2/s]  scalar conductivity of dry air
   REAL(wp), PARAMETER :: con0_h= 2.40e-2_wp       !! [J/m/s/K]thermal conductivity of dry air
@@ -121,6 +123,7 @@ MODULE mo_physical_constants
   !$ACC DECLARE COPYIN(rv)
   REAL(wp), PARAMETER :: cpv   = 1869.46_wp       !! [J/K/kg] specific heat at constant pressure
   REAL(wp), PARAMETER :: cvv   = cpv-rv           !! [J/K/kg] specific heat at constant volume
+  !$ACC DECLARE COPYIN(cvv)
   REAL(wp), PARAMETER :: dv0   = 2.22e-5_wp       !! [m^2/s]  diff coeff of H2O vapor in dry air at tmelt
   !> - liquid / water
   REAL(wp), PARAMETER :: rhoh2o= 1000._wp         !> [kg/m3]  density of liquid water
@@ -154,6 +157,7 @@ MODULE mo_physical_constants
   REAL(wp), PARAMETER :: rcpl  =  3.1733_wp       !! cp_d / cp_l - 1
   !
   REAL(wp), PARAMETER :: clw   = (rcpl + 1.0_wp) * cpd !> specific heat capacity of liquid water
+  !$ACC DECLARE COPYIN(clw)
   REAL(wp), PARAMETER :: cv_v  = (rcpv + 1.0_wp) * cpd - rv
   !
   REAL(wp), PARAMETER :: o_m_rdv  = 1._wp-rd/rv   !> [ ]
@@ -161,6 +165,7 @@ MODULE mo_physical_constants
   REAL(wp), PARAMETER :: rd_o_cpd = rd/cpd        !! [ ]
   !$ACC DECLARE COPYIN(rd_o_cpd)
   REAL(wp), PARAMETER :: cvd_o_rd = cvd/rd        !! [ ]
+  !$ACC DECLARE COPYIN(cvd_o_rd)
   !
   REAL(wp), PARAMETER :: p0ref     = 100000.0_wp   !> [Pa]  reference pressure for Exner function
 
@@ -225,6 +230,7 @@ MODULE mo_physical_constants
     alb_sno_nir  = 0.68_wp,         & ! Albedo of dry snow (near-infrared)
     !I_0          = 0.3             ! Ice-surface penetrating shortwave fraction
     I_0          = 0.17_wp            ! Ice-surface penetrating shortwave fraction
+  !$ACC DECLARE COPYIN(ci)
 
 !--------- parameters for NWP sea-ice model (we should agree on a single value)-----
 !_cdm>

@@ -69,10 +69,6 @@ CONTAINS
 
     CALL rad_init_bc(tile)
     CALL rad_init_ic(tile)
-    !! quincy
-    IF (model%config%use_quincy .AND. tile%contains_vegetation) THEN
-      CALL rad_init_q_ic(tile)
-    ENDIF
 
     IF (tile%Is_last_process_tile(RAD_)) THEN
       CALL rad_finalize_init_vars()
@@ -89,7 +85,7 @@ CONTAINS
       & rad_init_vars%alb_vis_can,    &
       & rad_init_vars%alb_nir_can     &
       & )
-      
+
   END SUBROUTINE rad_finalize_init_vars
 
   SUBROUTINE rad_read_init_vars(tile)
@@ -120,7 +116,7 @@ CONTAINS
       & rad_init_vars%alb_vis_can   (nproma, nblks), &
       & rad_init_vars%alb_nir_can   (nproma, nblks)  &
       & )
-      
+
     rad_init_vars%alb_background(:,:) = missval
     rad_init_vars%alb_vis_soil  (:,:) = missval
     rad_init_vars%alb_nir_soil  (:,:) = missval
@@ -129,7 +125,7 @@ CONTAINS
 
     dsl4jsb_Get_config(RAD_)
 
-    IF (.NOT. dsl4jsb_Config(RAD_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(RAD_)) RETURN
 
     IF (debug_on()) CALL message(TRIM(routine), 'Reading/setting radiation init vars')
 
@@ -252,7 +248,8 @@ CONTAINS
       dsl4jsb_var2D_onDomain(RAD_,alb_nir_lnd) = AlbedoNirInitial
     END IF
 
-    !$ACC UPDATE DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_vis)) &
+    !$ACC UPDATE ASYNC(1) &
+    !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_vis)) &
     !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_nir)) &
     !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_vis_lnd)) &
     !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_nir_lnd)) &
@@ -262,7 +259,8 @@ CONTAINS
     IF (tile%contains_soil) THEN
       dsl4jsb_var2D_onDomain(RAD_, alb_vis_soil) = rad_init_vars%alb_vis_soil
       dsl4jsb_var2D_onDomain(RAD_, alb_nir_soil) = rad_init_vars%alb_nir_soil
-      !$ACC UPDATE DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_nir_soil), dsl4jsb_var2D_onDomain(RAD_, alb_vis_soil))
+      !$ACC UPDATE ASYNC(1) &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_,alb_nir_soil), dsl4jsb_var2D_onDomain(RAD_, alb_vis_soil))
     END IF
 
     ! Note: If use_alb_canopy=FALSE and PFTs are used, alb_vis_can and alb_nir_can will be different on the tiles
@@ -281,7 +279,8 @@ CONTAINS
       ELSE
         dsl4jsb_var2D_onDomain(RAD_, alb_nir_can) = dsl4jsb_Lctlib_param(AlbedoCanopyNIR)
       END IF
-      !$ACC UPDATE DEVICE(dsl4jsb_var2D_onDomain(RAD_, alb_nir_can), dsl4jsb_var2D_onDomain(RAD_, alb_vis_can))
+      !$ACC UPDATE ASYNC(1) &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(RAD_, alb_nir_can), dsl4jsb_var2D_onDomain(RAD_, alb_vis_can))
 
       ! The albedo of snow on canopy:
       ! R: In the model the albedo of snow is weighted with albedo_age_weight between two albedo schemes (age and temperature).
@@ -301,65 +300,6 @@ CONTAINS
     END IF
 
   END SUBROUTINE rad_init_ic
-
-  !-----------------------------------------------------------------------------------------------------
-  !> Intialize radiation process (after memory has been set up)
-  !! 
-  !-----------------------------------------------------------------------------------------------------
-  SUBROUTINE rad_init_q_ic(tile)
-
-    USE mo_jsb_class,             ONLY: Get_model
-    USE mo_jsb_tile_class,        ONLY: t_jsb_tile_abstract
-    !USE mo_jsb_model_class,       ONLY: t_jsb_model
-    USE mo_rad_constants,         ONLY: rfr_ratio_toc
-
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile         !< one tile with data structure for one lct
-
-    !TYPE(t_jsb_model), POINTER :: model
-
-    CHARACTER(len=*), PARAMETER :: routine = modname//':rad_init_q_ic'
-
-    dsl4jsb_Def_memory(RAD_)
-
-    dsl4jsb_Real2D_onDomain      :: rfr_ratio_boc
-    dsl4jsb_Real2D_onDomain      :: rfr_ratio_boc_tvegdyn_mavg
-    dsl4jsb_Real3D_onDomain      :: ppfd_sunlit_tfrac_mavg_cl
-    dsl4jsb_Real3D_onDomain      :: ppfd_sunlit_tcnl_mavg_cl
-    dsl4jsb_Real3D_onDomain      :: ppfd_shaded_tfrac_mavg_cl
-    dsl4jsb_Real3D_onDomain      :: ppfd_shaded_tcnl_mavg_cl
-
-    IF (.NOT. tile%Is_process_active(RAD_)) RETURN
-
-    IF (debug_on()) CALL message(routine, 'Setting initial conditions of radiation memory (quincy) for tile '// &
-      &                                   TRIM(tile%name))
-
-    !model  => Get_model(tile%owner_model_id)
-
-    !dsl4jsb_Get_config(RAD_)
-
-    dsl4jsb_Get_memory(RAD_)
-
-    dsl4jsb_Get_var2D_onDomain(RAD_, rfr_ratio_boc)
-    dsl4jsb_Get_var2D_onDomain(RAD_, rfr_ratio_boc_tvegdyn_mavg)
-    dsl4jsb_Get_var3D_onDomain(RAD_, ppfd_sunlit_tfrac_mavg_cl)
-    dsl4jsb_Get_var3D_onDomain(RAD_, ppfd_sunlit_tcnl_mavg_cl)
-    dsl4jsb_Get_var3D_onDomain(RAD_, ppfd_shaded_tfrac_mavg_cl)
-    dsl4jsb_Get_var3D_onDomain(RAD_, ppfd_shaded_tcnl_mavg_cl)
-    
-    ! ------------------------------------------------------------------------------------------------------------
-    ! Go science
-    ! ------------------------------------------------------------------------------------------------------------
-
-    rfr_ratio_boc(:,:)                  = rfr_ratio_toc
-    rfr_ratio_boc_tvegdyn_mavg(:,:)     = rfr_ratio_boc(:,:) 
-
-    ppfd_sunlit_tfrac_mavg_cl(:,:,:)    = 150.0_wp
-    ppfd_sunlit_tcnl_mavg_cl(:,:,:)     = 150.0_wp
-    
-    ppfd_shaded_tfrac_mavg_cl(:,:,:)    = 10.0_wp
-    ppfd_shaded_tcnl_mavg_cl(:,:,:)     = 10.0_wp
-
-  END SUBROUTINE rad_init_q_ic
 
 #endif
 END MODULE mo_rad_init

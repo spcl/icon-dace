@@ -53,7 +53,7 @@ MODULE mo_var_groups
   ! Note that the statically defined group list "var_groups" is
   ! non-public. Its contents are copied to a dynamically growing list
   ! "var_groups_dyn".
-  INTEGER, PARAMETER :: N_VAR_GROUPS_STATIC = 73
+  INTEGER, PARAMETER :: N_VAR_GROUPS_STATIC = 74
 
   CHARACTER(LEN=vname_len), PARAMETER :: VAR_GROUPS_STATIC(N_VAR_GROUPS_STATIC) = &
      [ "ALL                   ",  &
@@ -128,7 +128,8 @@ MODULE mo_var_groups
     &  "WAVE_PHY              ",  &  ! ICON-waves: wave physics
     &  "WAVE_PHY_EXT          ",  &  ! ICON-waves: extended wave physics
     &  "WAVE_SHORT            ",  &  ! ICON-waves: short/"standart"
-    &  "WAVE_FORCING          "   ]  ! ICON-waves: wave forcing
+    &  "WAVE_FORCING          ",  &  ! ICON-waves: wave forcing
+    &  "METEOGRAM             "]     ! ICON meteogram variable
 
   ! ---------------------------------------------------------------
   ! DYNAMICALLY DEFINED VARIABLE GROUPS

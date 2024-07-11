@@ -20,14 +20,15 @@ MODULE mo_reader_cams
   USE mo_model_domain,            ONLY: t_patch
   USE mo_netcdf_errhandler,       ONLY: nf
   USE mo_netcdf
-  USE mtime,                      ONLY: julianday, getJulianDayFromDatetime,         &
-                                    &   datetime, newdatetime, deallocatedatetime,   &
-                                    &   OPERATOR(+), ASSIGNMENT(=),                  &
-                                    &   no_of_ms_in_a_day, no_of_ms_in_a_hour,       &
+  USE mtime,                      ONLY: julianday, juliandelta, getJulianDayFromDatetime,  &
+                                    &   datetime, newdatetime, deallocatedatetime,         &
+                                    &   OPERATOR(+), ASSIGNMENT(=),                        &
+                                    &   no_of_ms_in_a_day, no_of_ms_in_a_hour,             &
                                     &   no_of_ms_in_a_minute, no_of_ms_in_a_second
   USE mo_mpi,                     ONLY: my_process_is_mpi_workroot, process_mpi_root_id, p_comm_work, p_bcast
   USE mo_read_netcdf_distributed, ONLY: distrib_nf_open, distrib_read, distrib_nf_close, idx_blk_time
   USE mo_fortran_tools,           ONLY: t_ptr_4d
+  USE mo_radiation_config,        ONLY: irad_aero, iRadAeroCAMSclim, iRadAeroCAMStd
 
   IMPLICIT NONE
 
@@ -38,7 +39,7 @@ MODULE mo_reader_cams
   TYPE, EXTENDS(t_abstract_reader) :: t_cams_reader
 
     TYPE(t_patch), POINTER      :: p_patch => NULL()
-    CHARACTER(len=NF_MAX_NAME)  :: varnames(n_camsaermr+1)
+    CHARACTER(len=NF90_MAX_NAME)  :: varnames(n_camsaermr+1)
     CHARACTER(len=FILENAME_MAX) :: filename
     INTEGER                     :: fileid, dist_fileid,nlev_cams
     LOGICAL                     :: lopened = .FALSE.
@@ -68,25 +69,47 @@ CONTAINS
 
     this%filename = TRIM(filename)
 
-    this%varnames(1)  = "Sea_Salt_bin1"              ! layer-integrated mass (kg/m2)
-    this%varnames(2)  = "Sea_Salt_bin2"              ! layer-integrated mass (kg/m2)
-    this%varnames(3)  = "Sea_Salt_bin3"              ! layer-integrated mass (kg/m2)
-    this%varnames(4)  = "Mineral_Dust_bin1"          ! layer-integrated mass (kg/m2)
-    this%varnames(5)  = "Mineral_Dust_bin2"          ! layer-integrated mass (kg/m2)
-    this%varnames(6)  = "Mineral_Dust_bin3"          ! layer-integrated mass (kg/m2)
-    this%varnames(7)  = "Organic_Matter_hydrophilic" ! layer-integrated mass (kg/m2)
-    this%varnames(8)  = "Organic_Matter_hydrophobic" ! layer-integrated mass (kg/m2)
-    this%varnames(9)  = "Black_Carbon_hydrophilic"   ! layer-integrated mass (kg/m2)
-    this%varnames(10) = "Black_Carbon_hydrophobic"   ! layer-integrated mass (kg/m2)
-    this%varnames(11) = "Sulfates"                   ! layer-integrated mass (kg/m2)
-    this%varnames(12) = "half_level_pressure"        ! Pressure at base of layer (Pa)
+    IF (irad_aero == iRadAeroCAMSclim) THEN
 
-    this%nlev_cams = 60
+     this%varnames(1)  = "Sea_Salt_bin1"              ! layer-integrated mass (kg/m2)
+     this%varnames(2)  = "Sea_Salt_bin2"              ! layer-integrated mass (kg/m2)
+     this%varnames(3)  = "Sea_Salt_bin3"              ! layer-integrated mass (kg/m2)
+     this%varnames(4)  = "Mineral_Dust_bin1"          ! layer-integrated mass (kg/m2)
+     this%varnames(5)  = "Mineral_Dust_bin2"          ! layer-integrated mass (kg/m2)
+     this%varnames(6)  = "Mineral_Dust_bin3"          ! layer-integrated mass (kg/m2)
+     this%varnames(7)  = "Organic_Matter_hydrophilic" ! layer-integrated mass (kg/m2)
+     this%varnames(8)  = "Organic_Matter_hydrophobic" ! layer-integrated mass (kg/m2)
+     this%varnames(9)  = "Black_Carbon_hydrophilic"   ! layer-integrated mass (kg/m2)
+     this%varnames(10) = "Black_Carbon_hydrophobic"   ! layer-integrated mass (kg/m2)
+     this%varnames(11) = "Sulfates"                   ! layer-integrated mass (kg/m2)
+     this%varnames(12) = "half_level_pressure"        ! Pressure at base of layer (Pa)
+
+     this%nlev_cams = 60
+
+    ELSEIF (irad_aero == iRadAeroCAMStd) THEN
+
+     this%varnames(1)  = "aermr01" ! Sea_Salt_bin1 mixing ratio (kg/kg)
+     this%varnames(2)  = "aermr02" ! Sea_Salt_bin2 mixing ratio (kg/kg)
+     this%varnames(3)  = "aermr03" ! Sea_Salt_bin3 mixing ratio (kg/kg)
+     this%varnames(4)  = "aermr04" ! Mineral_Dust_bin1 mixing ratio (kg/kg)
+     this%varnames(5)  = "aermr05" ! Mineral_Dust_bin2 mixing ratio (kg/kg)
+     this%varnames(6)  = "aermr06" ! Mineral_Dust_bin3 mixing ratio (kg/kg)
+     this%varnames(7)  = "aermr07" ! Organic_Matter_hydrophilic mixing ratio (kg/kg)
+     this%varnames(8)  = "aermr08" ! Organic_Matter_hydrophobic mixing ratio (kg/kg)
+     this%varnames(9)  = "aermr09" ! Black_Carbon_hydrophilic mixing ratio (kg/kg)
+     this%varnames(10) = "aermr10" ! Black_Carbon_hydrophobic mixing ratio (kg/kg)
+     this%varnames(11) = "aermr11" ! Sulfates mixing ratio (kg/kg)
+     this%varnames(12) = "pres"    ! Pressure at base of layer (Pa)
+
+     this%nlev_cams = 137
+
+    ENDIF
+
     this%p_patch => p_patch
 
     IF (.NOT. this%lopened) THEN
       IF (my_process_is_mpi_workroot()) THEN
-        CALL nf(nf_open(this%filename, nf_nowrite, this%fileid), routine)
+        CALL nf(nf90_open(this%filename, nf90_nowrite, this%fileid), routine)
       ENDIF
       this%dist_fileid = distrib_nf_open(TRIM(this%filename))
       this%lopened = .TRUE.
@@ -101,7 +124,65 @@ CONTAINS
     TYPE(julianday), ALLOCATABLE, INTENT(out) :: &
       &  times(:)
 
-    ! Routine is not used for climatology (implementation is still necessary)
+    INTEGER                       :: tvid, tdid
+    CHARACTER(len=NF90_MAX_NAME)  :: cf_timeaxis_string
+    CHARACTER(len=:), ALLOCATABLE :: epoch
+    CHARACTER(len=:), ALLOCATABLE :: base_timeaxis_unit
+    TYPE(datetime), POINTER       :: epoch_datetime
+    TYPE(julianday)               :: epoch_jd
+    TYPE(juliandelta)             :: offset
+    INTEGER(i8)                   :: time_multiplicator
+    REAL(wp), ALLOCATABLE         :: times_read(:)
+    INTEGER                       :: ntimes
+    INTEGER                       :: i
+
+    CHARACTER(len=*), PARAMETER :: routine = 'cams_get_times'
+
+    IF (my_process_is_mpi_workroot()) THEN
+
+      CALL nf(nf90_inq_varid(this%fileid, "time", tvid), routine)
+      CALL nf(nf90_inq_dimid(this%fileid, "time", tdid), routine)
+      CALL nf(nf90_inquire_dimension(this%fileid, tdid, len = ntimes), routine)
+
+      ALLOCATE(times_read(ntimes))
+
+      CALL nf(nf90_get_var(this%fileid, tvid, times_read), routine)
+      CALL nf(nf90_get_att(this%fileid,   tvid, "units",cf_timeaxis_string), routine)
+
+    ENDIF
+
+    CALL p_bcast(ntimes, process_mpi_root_id, p_comm_work)
+    IF (.NOT. ALLOCATED(times_read)) THEN
+      ALLOCATE(times_read(ntimes))
+    ENDIF
+    CALL p_bcast(times_read, process_mpi_root_id, p_comm_work)
+    CALL p_bcast(cf_timeaxis_string, process_mpi_root_id, p_comm_work)
+
+    CALL get_cf_timeaxis_desc(TRIM(cf_timeaxis_string), epoch, base_timeaxis_unit)
+
+    epoch_datetime => newdatetime(epoch)
+    CALL getJulianDayFromDatetime(epoch_datetime, epoch_jd)
+    CALL deallocateDatetime(epoch_datetime)
+    
+    SELECT CASE (base_timeaxis_unit)
+    CASE('days')
+      time_multiplicator = no_of_ms_in_a_day
+    CASE('hours')
+      time_multiplicator = no_of_ms_in_a_hour
+    CASE('minutes')
+      time_multiplicator = no_of_ms_in_a_minute
+    CASE('seconds')
+      time_multiplicator = no_of_ms_in_a_second
+    END SELECT
+    
+    ALLOCATE(times(ntimes))
+
+    DO i = 1, ntimes
+      offset%sign = '+'
+      offset%day  = INT((time_multiplicator * times_read(i))/86400000.0_wp,i8)
+      offset%ms   = NINT(MOD(time_multiplicator * times_read(i), 86400000.0_wp),i8)
+      times(i) = epoch_jd + offset
+    ENDDO
 
   END SUBROUTINE cams_get_times
 
@@ -113,7 +194,7 @@ CONTAINS
     REAL(wp), ALLOCATABLE, INTENT(inout) :: dat(:,:,:,:)
     REAL(wp), ALLOCATABLE, TARGET        :: temp(:,:,:,:)
     TYPE(t_ptr_4d)                       :: tmp(1)
-    INTEGER                              :: var_dimlen(3),var_start(3), var_end(3),jt
+    INTEGER                              :: var_dimlen(3),var_start(3), var_end(3), jt
 
 
     ALLOCATE(temp(get_nproma(), this%nlev_cams, this%p_patch%nblks_c, n_camsaermr+1))
@@ -167,10 +248,58 @@ CONTAINS
     IF (ASSOCIATED(this%p_patch)) NULLIFY(this%p_patch)
     IF (this%lopened) THEN
       IF (my_process_is_mpi_workroot()) THEN
-        CALL nf(nf_close(this%fileid), routine)
+        CALL nf(nf90_close(this%fileid), routine)
       END IF
       CALL distrib_nf_close(this%dist_fileid)
     END IF
   END SUBROUTINE cams_deinit_reader
+
+  SUBROUTINE get_cf_timeaxis_desc(cf_timeaxis_string, epoch, base_timeaxis_unit)
+    CHARACTER(len=*), INTENT(in) :: cf_timeaxis_string
+    CHARACTER(len=:), ALLOCATABLE, INTENT(out) :: epoch, base_timeaxis_unit
+    
+    ! The CF convention allows for a timezone to be included. We will
+    ! ignore that one for all , but gets stored to word(5), if
+    ! provided, to keep the algorithm simple.
+
+    CHARACTER(len=16) :: word(5)
+    INTEGER :: pos1, pos2, n
+
+    pos1 = 1; pos2 = 0; n = 0;
+    word(:) = ""
+
+    DO
+      pos2 = INDEX(cf_timeaxis_string(pos1:), " ")
+      IF (pos2 == 0) THEN
+        n = n + 1
+        word(n) = cf_timeaxis_string(pos1:)
+        EXIT
+      ENDIF
+      n = n + 1
+      word(n) = cf_timeaxis_string(pos1:pos1+pos2-2)
+      pos1 = pos2+pos1
+    ENDDO
+
+ ! correct the date part
+    normalize_date: BLOCK
+      INTEGER :: idx1, idx2
+      INTEGER :: year, month, day
+      idx1 = INDEX(word(3), '-')    
+      idx2 = INDEX(word(3)(idx1+1:), '-')+idx1
+      READ(word(3)(      :idx1-1),*) year
+      READ(word(3)(idx1+1:idx2-1),*) month
+      READ(word(3)(idx2+1:      ),*) day
+      WRITE(word(3),'(i0,a,i2.2,a,i2.2)') year, '-', month, '-', day
+    END BLOCK normalize_date
+    
+    IF (word(4) /= "") THEN
+      epoch = TRIM(word(3))//'T'//TRIM(word(4))
+    ELSE
+      epoch = TRIM(word(3))
+    ENDIF
+
+    base_timeaxis_unit = TRIM(word(1))
+
+  END SUBROUTINE get_cf_timeaxis_desc
 
 END MODULE mo_reader_cams

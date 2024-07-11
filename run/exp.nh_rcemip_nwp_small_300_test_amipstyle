@@ -134,7 +134,6 @@ cat >> ${atmo_namelist} << EOF
  stretch_fac     = 1.2     ! values > 1 increase dz near model top
 /
 &dynamics_nml
- iequations     = 3       ! equation system
  divavg_cntrwgt = 0.50
  lcoriolis      = .FALSE.
 /

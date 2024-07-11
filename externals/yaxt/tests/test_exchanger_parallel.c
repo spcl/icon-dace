@@ -62,12 +62,14 @@
 #include "../src/xt_exchanger_irecv_isend.h"
 #include "../src/xt_exchanger_mix_isend_irecv.h"
 #include "../src/xt_exchanger_irecv_isend_packed.h"
+#include "../src/xt_exchanger_irecv_isend_ddt_packed.h"
 #include "../src/xt_exchanger_neigh_alltoall.h"
 #include "../src/xt_redist_internal.h"
 #include "../src/xt_mpi_internal.h"
 #include "../src/xt_config_internal.h"
 #include "core/ppm_xfuncs.h"
 
+#include "ctest_common.h"
 #include "test_redist_common.h"
 #include "core/ppm_xfuncs.h"
 #include "tests.h"
@@ -97,27 +99,45 @@ static int test_freq = 3;
 int main(int argc, char **argv)
 {
 
-  // init mpi
-  xt_mpi_call(MPI_Init(&argc, &argv), MPI_COMM_WORLD);
+  MPI_Comm comm = MPI_COMM_WORLD;
+  test_init_mpi(&argc, &argv, comm);
 
   xt_mpi_init();
   xt_config_defaults_init();
 
   Xt_exchanger_new *exchangers_new = parse_options(&argc, &argv);
   Xt_config config = xt_config_new();
+  int mt_configs_2_test[] = {
+    XT_MT_NONE,
+#ifdef _OPENMP
+    XT_MT_OPENMP,
+#endif
+  };
+  enum {
+    num_mt_modes = sizeof (mt_configs_2_test) / sizeof (mt_configs_2_test[0]),
+  };
+  for (size_t m = 0; m < num_mt_modes; ++m) {
+#ifdef _OPENMP
+    int thread_support_provided;
+    xt_mpi_call(MPI_Query_thread(&thread_support_provided), comm);
+    if (mt_configs_2_test[m] == XT_MT_OPENMP
+        && thread_support_provided != MPI_THREAD_MULTIPLE)
+      continue;
+#endif
+    xt_config_set_redist_mthread_mode(config, mt_configs_2_test[m]);
+    for (size_t i = 0; exchangers_new[i] != (Xt_exchanger_new)0; ++i) {
+      Xt_exchanger_new exchanger_new = exchangers_new[i];
 
-  for (size_t i = 0; exchangers_new[i] != (Xt_exchanger_new)0; ++i) {
-    Xt_exchanger_new exchanger_new = exchangers_new[i];
+      test_bcast(comm, exchanger_new, config);
 
-    test_bcast(MPI_COMM_WORLD, exchanger_new, config);
+      test_gather(comm, exchanger_new, config);
 
-    test_gather(MPI_COMM_WORLD, exchanger_new, config);
+      test_all2all(comm, exchanger_new, config);
 
-    test_all2all(MPI_COMM_WORLD, exchanger_new, config);
+      test_rr(comm, exchanger_new, config);
 
-    test_rr(MPI_COMM_WORLD, exchanger_new, config);
-
-    test_intercomm_all2all(MPI_COMM_WORLD, exchanger_new, config);
+      test_intercomm_all2all(comm, exchanger_new, config);
+    }
   }
   xt_config_delete(config);
   free(exchangers_new);
@@ -135,8 +155,9 @@ static Xt_exchanger_new *parse_options(int *argc, char ***argv)
     [xt_exchanger_irecv_send] = xt_exchanger_irecv_send_new,
     [xt_exchanger_irecv_isend] = xt_exchanger_irecv_isend_new,
     [xt_exchanger_irecv_isend_packed] = xt_exchanger_irecv_isend_packed_new,
+    [xt_exchanger_irecv_isend_ddt_packed] = xt_exchanger_irecv_isend_ddt_packed_new,
     [xt_exchanger_mix_isend_irecv] = xt_exchanger_mix_isend_irecv_new,
-#if MPI_VERSION >= 3
+#ifdef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
     [xt_exchanger_neigh_alltoall] = xt_exchanger_neigh_alltoall_new,
 #endif
   };
@@ -159,7 +180,7 @@ static Xt_exchanger_new *parse_options(int *argc, char ***argv)
                   optarg);
           exit(EXIT_FAILURE);
         }
-#if MPI_VERSION < 3
+#ifndef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
         else if (exchanger_new_id == xt_exchanger_neigh_alltoall)
         {
           fputs("xt_exchanger_neigh_alltoall_new requires MPI version 3.0 or "
@@ -397,7 +418,7 @@ test_all2all(MPI_Comm comm, Xt_exchanger_new exchanger_new, Xt_config config)
       Xt_exchanger exchanger = exchanger_new(nsend, nrecv,
                                              send_msgs,
                                              recv_msgs,
-                                             MPI_COMM_WORLD, 0, config);
+                                             comm, 0, config);
       // test
       int test_async = (exchanger_new != xt_exchanger_irecv_send_new);
       for (int async = 0; async < 1 + test_async; ++async) {
@@ -488,7 +509,7 @@ test_rr(MPI_Comm comm, Xt_exchanger_new exchanger_new, Xt_config config)
 static void
 test_intercomm_all2all(MPI_Comm comm, Xt_exchanger_new exchanger_new, Xt_config config)
 {
-#if MPI_VERSION >= 3
+#ifdef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
   // inter-communicator's are not defined for virtual topologies, which are
   // used by xt_exchanger_neigh_alltoall_new
   if (exchanger_new == xt_exchanger_neigh_alltoall_new) return;

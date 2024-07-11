@@ -270,21 +270,21 @@ CONTAINS
     !
 !$OMP PARALLEL
     IF (self%l_wind_exist) THEN
-      CALL copy(src=self%u10m_raw(:,1,:,1), dest=u10m)
-      CALL copy(src=self%v10m_raw(:,1,:,1), dest=v10m)
+      CALL copy(src=self%u10m_raw(:,1,:,1), dest=u10m, lacc=.FALSE.)
+      CALL copy(src=self%v10m_raw(:,1,:,1), dest=v10m, lacc=.FALSE.)
     END IF
 
     IF (self%l_ice_exist) THEN
-      CALL copy(src=self%sic_raw  (:,1,:,1), dest=sic)
+      CALL copy(src=self%sic_raw  (:,1,:,1), dest=sic, lacc=.FALSE.)
     ENDIF
 
     IF (self%l_slh_exist) THEN
-      CALL copy(src=self%slh_raw  (:,1,:,1), dest=slh)
+      CALL copy(src=self%slh_raw  (:,1,:,1), dest=slh, lacc=.FALSE.)
     ENDIF
 
     IF (self%l_osc_exist) THEN
-      CALL copy(src=self%uosc_raw (:,1,:,1), dest=uosc)
-      CALL copy(src=self%vosc_raw (:,1,:,1), dest=vosc)
+      CALL copy(src=self%uosc_raw (:,1,:,1), dest=uosc, lacc=.FALSE.)
+      CALL copy(src=self%vosc_raw (:,1,:,1), dest=vosc, lacc=.FALSE.)
     END IF
 !$OMP END PARALLEL
 

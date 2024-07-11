@@ -26,7 +26,7 @@ MODULE mo_surface
 
   USE mo_physical_constants,ONLY: grav, Tf, alf, albedoW, stbo, tmelt, rhos!!$, rhoi
   USE mo_physical_constants,ONLY: cvd, cpd
-  USE mo_coupling_config,   ONLY: is_coupled_run
+  USE mo_coupling_config,   ONLY: is_coupled_to_ocean
   USE mo_aes_phy_config,    ONLY: aes_phy_config
   USE mo_aes_phy_memory,    ONLY: cdimissval
   USE mo_aes_vdf_config,    ONLY: aes_vdf_config
@@ -67,7 +67,7 @@ CONTAINS
   !!
   !!
   SUBROUTINE update_surface( jg,                                &! in
-                           & jcs, kproma, kbdim,                &! in
+                           & jcs, jce, kbdim,                &! in
                            & kice,                              &! in
                            & klev, ksfc_type,                   &! in
                            & idx_wtr, idx_ice, idx_lnd,         &! in
@@ -147,7 +147,7 @@ CONTAINS
     TYPE(t_datetime), INTENT(IN), POINTER :: datetime ! date and time at the end of this time step
     REAL(wp),INTENT(IN) :: pdtime
     INTEGER, INTENT(IN) :: jg
-    INTEGER, INTENT(IN) :: jcs, kproma, kbdim
+    INTEGER, INTENT(IN) :: jcs, jce, kbdim
     INTEGER, INTENT(IN) :: klev, ksfc_type
     INTEGER, INTENT(IN) :: idx_wtr, idx_ice, idx_lnd
     REAL(wp),INTENT(IN) :: pfrc      (:,:) ! (kbdim,ksfc_type)
@@ -315,31 +315,31 @@ CONTAINS
     ! DA: compute the index lists on the GPU
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
     DO jsfc = 1,ksfc_type
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         pfrc_test(jl, jsfc) = MERGE(1_i1, 0_i1, pfrc(jl, jsfc) > 0.0_wp)
       END DO
     END DO
     !$ACC END PARALLEL LOOP
 
-    CALL generate_index_list_batched(pfrc_test(:,:), loidx, jcs, kproma, is, 1)
+    CALL generate_index_list_batched(pfrc_test(:,:), loidx, jcs, jce, is, 1)
     !$ACC UPDATE HOST(is) ASYNC(1)
 
     ! Compute factor for conversion temperature to dry static energy
     !DO jsfc=1,ksfc_type
-    !  zt2s_conv(jcs:kproma,jsfc) = pcpt_tile(jcs:kproma,jsfc) / ptsfc_tile(jcs:kproma,jsfc)
+    !  zt2s_conv(jcs:jce,jsfc) = pcpt_tile(jcs:jce,jsfc) / ptsfc_tile(jcs:jce,jsfc)
     !END DO
 
     ! Compute downward shortwave surface fluxes
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP GANG VECTOR
-    DO jl = jcs,kproma
+    DO jl = jcs,jce
       rvds(jl)      = rvds_dif(jl) + rvds_dir(jl)
       rnds(jl)      = rnds_dif(jl) + rnds_dir(jl)
       rpds(jl)      = rpds_dif(jl) + rpds_dir(jl)
     END DO
 
     !$ACC LOOP GANG VECTOR
-    DO jl = jcs,kproma
+    DO jl = jcs,jce
       delz(jl) = (pmair(jl,klev) / pfac_sfc(jl) / tpfac2 * pdtime)
     END DO
     !$ACC END PARALLEL
@@ -350,7 +350,7 @@ CONTAINS
     ! - perform bottom level elimination;
     ! - convert matrix entries to Richtmyer-Morton coefficients
     IF (idx_lnd <= ksfc_type) THEN
-      CALL matrix_to_richtmyer_coeff( jcs, kproma, klev, ksfc_type, idx_lnd, &! in
+      CALL matrix_to_richtmyer_coeff( jcs, jce, klev, ksfc_type, idx_lnd, &! in
         & aa(:,:,:,imh:imqv), bb(:,:,ih:iqv),      &! in
         & pdtime, delz,                            &! in
         & aa_btm, bb_btm,                          &! inout
@@ -358,7 +358,7 @@ CONTAINS
         & pcair = pcair(:),                        &! in
         & pcsat = pcsat(:))                         ! in
     ELSE
-      CALL matrix_to_richtmyer_coeff( jcs, kproma, klev, ksfc_type, idx_lnd, &! in
+      CALL matrix_to_richtmyer_coeff( jcs, jce, klev, ksfc_type, idx_lnd, &! in
         & aa(:,:,:,imh:imqv), bb(:,:,ih:iqv),      &! in
         & pdtime, delz,                            &! in
         & aa_btm, bb_btm,                          &! inout
@@ -368,7 +368,7 @@ CONTAINS
     ! Set defaults
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
     DO jsfc = 1,ksfc_type
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         zca(jl,jsfc) = 1._wp
         zcs(jl,jsfc) = 1._wp
       END DO
@@ -453,17 +453,17 @@ CONTAINS
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         zwindspeed_lnd(jl) = SQRT(pu(jl)**2 + pv(jl)**2)
       END DO
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         zwindspeed10m_lnd(jl)     = 0.8_wp * zwindspeed_lnd(jl)
       END DO
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         IF (rpds(jl) > 0._wp) THEN
           fract_par_diffuse(jl) = rpds_dif(jl) / rpds(jl)
         ELSE
@@ -475,12 +475,12 @@ CONTAINS
       ! computed in arguments.
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         rain_tmp(jl) = prsfl(jl)
         snow_tmp(jl) = pssfl(jl)
         drag_srf_tmp(jl) = grav*pfac_sfc(jl) * pcfh_tile(jl,idx_lnd)
         IF(lsm(jl)>0._wp) THEN
-          pch_tmp(jl) = pch_tile(jl,idx_lnd) ! MERGE(pch_tile(jcs:kproma,idx_lnd),1._wp,lsm(jcs:kproma)>0._wp)
+          pch_tmp(jl) = pch_tile(jl,idx_lnd) ! MERGE(pch_tile(jcs:jce,idx_lnd),1._wp,lsm(jcs:jce)>0._wp)
         ELSE
           pch_tmp(jl) = 1._wp
         END IF
@@ -495,75 +495,75 @@ CONTAINS
 
       IF (aes_phy_config(jg)%ljsb ) THEN
       IF (aes_phy_config(jg)%llake) THEN
-        CALL jsbach_interface ( jg, nblock, jcs, kproma,                                     & ! in
+        CALL jsbach_interface ( jg, nblock, jcs, jce,                                     & ! in
           & datetime, pdtime, pdtime,                                                        & ! in
-          & t_air             = ptemp(jcs:kproma),                                           & ! in
-          & q_air             = pq(jcs:kproma),                                              & ! in
-          & rain              = rain_tmp(jcs:kproma),                                        & ! in
-          & snow              = snow_tmp(jcs:kproma),                                        & ! in
-          & wind_air          = zwindspeed_lnd(jcs:kproma),                                  & ! in
-          & wind_10m          = zwindspeed10m_lnd(jcs:kproma),                               & ! in
-          & lw_srf_down       = rlds(jcs:kproma),                                            & ! in
-          & swvis_srf_down    = rvds(jcs:kproma),                                            & ! in
-          & swnir_srf_down    = rnds(jcs:kproma),                                            & ! in
-          & swpar_srf_down    = rpds(jcs:kproma),                                            & ! in
-          & fract_par_diffuse = fract_par_diffuse(jcs:kproma),                               & ! in
-          & press_srf         = ps(jcs:kproma),                                              & ! in
-          & drag_srf          = drag_srf_tmp(jcs:kproma),                                    & ! in
-          & t_acoef           = zen_h(jcs:kproma, idx_lnd),                                  & ! in
-          & t_bcoef           = zfn_h(jcs:kproma, idx_lnd),                                  & ! in
-          & q_acoef           = zen_qv(jcs:kproma, idx_lnd),                                 & ! in
-          & q_bcoef           = zfn_qv(jcs:kproma, idx_lnd),                                 & ! in
-          & pch               = pch_tmp(jcs:kproma),                                         & ! in
-          & cos_zenith_angle  = pcosmu0(jcs:kproma),                                         & ! in
-          & CO2_air           = pco2(jcs:kproma),                                            & ! in
-          & t_srf             = ztsfc_lnd(jcs:kproma),                                       & ! out (T_s^(n+1)) surface temp
+          & t_air             = ptemp(jcs:jce),                                           & ! in
+          & q_air             = pq(jcs:jce),                                              & ! in
+          & rain              = rain_tmp(jcs:jce),                                        & ! in
+          & snow              = snow_tmp(jcs:jce),                                        & ! in
+          & wind_air          = zwindspeed_lnd(jcs:jce),                                  & ! in
+          & wind_10m          = zwindspeed10m_lnd(jcs:jce),                               & ! in
+          & lw_srf_down       = rlds(jcs:jce),                                            & ! in
+          & swvis_srf_down    = rvds(jcs:jce),                                            & ! in
+          & swnir_srf_down    = rnds(jcs:jce),                                            & ! in
+          & swpar_srf_down    = rpds(jcs:jce),                                            & ! in
+          & fract_par_diffuse = fract_par_diffuse(jcs:jce),                               & ! in
+          & press_srf         = ps(jcs:jce),                                              & ! in
+          & drag_srf          = drag_srf_tmp(jcs:jce),                                    & ! in
+          & t_acoef           = zen_h(jcs:jce, idx_lnd),                                  & ! in
+          & t_bcoef           = zfn_h(jcs:jce, idx_lnd),                                  & ! in
+          & q_acoef           = zen_qv(jcs:jce, idx_lnd),                                 & ! in
+          & q_bcoef           = zfn_qv(jcs:jce, idx_lnd),                                 & ! in
+          & pch               = pch_tmp(jcs:jce),                                         & ! in
+          & cos_zenith_angle  = pcosmu0(jcs:jce),                                         & ! in
+          & CO2_air           = pco2(jcs:jce),                                            & ! in
+          & t_srf             = ztsfc_lnd(jcs:jce),                                       & ! out (T_s^(n+1)) surface temp
                                                                                                ! (filtered, if Asselin)
-          & t_eff_srf         = ztsfc_lnd_eff(jcs:kproma),                                   & ! out (T_s^eff) surface temp
+          & t_eff_srf         = ztsfc_lnd_eff(jcs:jce),                                   & ! out (T_s^eff) surface temp
                                                                                                ! (effective, for longwave rad)
-          & qsat_srf          = qsat_lnd(jcs:kproma),                                        & ! out
-          & s_srf             = zcpt_lnd(jcs:kproma),                                        & ! out (s_s^star, for vdiff scheme)
-          & fact_q_air        = pcair(jcs:kproma),                                           & ! out
-          & fact_qsat_srf     = pcsat(jcs:kproma),                                           & ! out
-          & evapotrans        = zevap_lnd(jcs:kproma),                                       & ! out
-          & latent_hflx       = zlhflx_lnd(jcs:kproma),                                      & ! out
-          & sensible_hflx     = zshflx_lnd(jcs:kproma),                                      & ! out
-          & grnd_hflx         = zgrnd_hflx(jcs:kproma, idx_lnd),                             & ! out
-          & grnd_hcap         = zgrnd_hcap(jcs:kproma, idx_lnd),                             & ! out
-          & rough_h_srf       = z0h_lnd(jcs:kproma),                                         & ! out
-          & rough_m_srf       = z0m_tile(jcs:kproma, idx_lnd),                               & ! out
-          & q_snocpymlt       = q_snocpymlt(jcs:kproma),                                     & ! out
-          & alb_vis_dir       = albvisdir_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_nir_dir       = albnirdir_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_vis_dif       = albvisdif_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_nir_dif       = albnirdif_tile(jcs:kproma, idx_lnd),                         & ! out
-          & co2_flux          = pco2_flux_tile(jcs:kproma, idx_lnd),                         & ! out
+          & qsat_srf          = qsat_lnd(jcs:jce),                                        & ! out
+          & s_srf             = zcpt_lnd(jcs:jce),                                        & ! out (s_s^star, for vdiff scheme)
+          & fact_q_air        = pcair(jcs:jce),                                           & ! out
+          & fact_qsat_srf     = pcsat(jcs:jce),                                           & ! out
+          & evapotrans        = zevap_lnd(jcs:jce),                                       & ! out
+          & latent_hflx       = zlhflx_lnd(jcs:jce),                                      & ! out
+          & sensible_hflx     = zshflx_lnd(jcs:jce),                                      & ! out
+          & grnd_hflx         = zgrnd_hflx(jcs:jce, idx_lnd),                             & ! out
+          & grnd_hcap         = zgrnd_hcap(jcs:jce, idx_lnd),                             & ! out
+          & rough_h_srf       = z0h_lnd(jcs:jce),                                         & ! out
+          & rough_m_srf       = z0m_tile(jcs:jce, idx_lnd),                               & ! out
+          & q_snocpymlt       = q_snocpymlt(jcs:jce),                                     & ! out
+          & alb_vis_dir       = albvisdir_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_nir_dir       = albnirdir_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_vis_dif       = albvisdif_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_nir_dif       = albnirdif_tile(jcs:jce, idx_lnd),                         & ! out
+          & co2_flux          = pco2_flux_tile(jcs:jce, idx_lnd),                         & ! out
           !
-          & drag_wtr          = drag_wtr_tmp(jcs:kproma),                                    & ! in
-          & drag_ice          = drag_ice_tmp(jcs:kproma),                                    & ! in
-          & t_acoef_wtr       = zen_h(jcs:kproma, idx_wtr),                                  & ! in
-          & t_bcoef_wtr       = zfn_h(jcs:kproma, idx_wtr),                                  & ! in
-          & q_acoef_wtr       = zen_qv(jcs:kproma, idx_wtr),                                 & ! in
-          & q_bcoef_wtr       = zfn_qv(jcs:kproma, idx_wtr),                                 & ! in
-          & t_acoef_ice       = zen_h(jcs:kproma, idx_ice),                                  & ! in
-          & t_bcoef_ice       = zfn_h(jcs:kproma, idx_ice),                                  & ! in
-          & q_acoef_ice       = zen_qv(jcs:kproma, idx_ice),                                 & ! in
-          & q_bcoef_ice       = zfn_qv(jcs:kproma, idx_ice),                                 & ! in
-          & t_lwtr            = ztsfc_lwtr(jcs:kproma),                                      & ! out
-          & qsat_lwtr         = qsat_lwtr(jcs:kproma),                                       & ! out
-          & s_lwtr            = zcpt_lwtr(jcs:kproma),                                       & ! out
-          & evapo_wtr         = zevap_lwtr(jcs:kproma),                                      & ! out
-          & latent_hflx_wtr   = zlhflx_lwtr(jcs:kproma),                                     & ! out
-          & sensible_hflx_wtr = zshflx_lwtr(jcs:kproma),                                     & ! out
-          & albedo_lwtr       = zalbedo_lwtr(jcs:kproma),                                    & ! out
-          & t_lice            = ztsfc_lice(jcs:kproma),                                      & ! out
-          & qsat_lice         = qsat_lice(jcs:kproma),                                       & ! out
-          & s_lice            = zcpt_lice(jcs:kproma),                                       & ! out
-          & evapo_ice         = zevap_lice(jcs:kproma),                                      & ! out
-          & latent_hflx_ice   = zlhflx_lice(jcs:kproma),                                     & ! out
-          & sensible_hflx_ice = zshflx_lice(jcs:kproma),                                     & ! out
-          & albedo_lice       = zalbedo_lice(jcs:kproma),                                    & ! out
-          & ice_fract_lake    = lake_ice_frc(jcs:kproma)                                     & ! out
+          & drag_wtr          = drag_wtr_tmp(jcs:jce),                                    & ! in
+          & drag_ice          = drag_ice_tmp(jcs:jce),                                    & ! in
+          & t_acoef_wtr       = zen_h(jcs:jce, idx_wtr),                                  & ! in
+          & t_bcoef_wtr       = zfn_h(jcs:jce, idx_wtr),                                  & ! in
+          & q_acoef_wtr       = zen_qv(jcs:jce, idx_wtr),                                 & ! in
+          & q_bcoef_wtr       = zfn_qv(jcs:jce, idx_wtr),                                 & ! in
+          & t_acoef_ice       = zen_h(jcs:jce, idx_ice),                                  & ! in
+          & t_bcoef_ice       = zfn_h(jcs:jce, idx_ice),                                  & ! in
+          & q_acoef_ice       = zen_qv(jcs:jce, idx_ice),                                 & ! in
+          & q_bcoef_ice       = zfn_qv(jcs:jce, idx_ice),                                 & ! in
+          & t_lwtr            = ztsfc_lwtr(jcs:jce),                                      & ! out
+          & qsat_lwtr         = qsat_lwtr(jcs:jce),                                       & ! out
+          & s_lwtr            = zcpt_lwtr(jcs:jce),                                       & ! out
+          & evapo_wtr         = zevap_lwtr(jcs:jce),                                      & ! out
+          & latent_hflx_wtr   = zlhflx_lwtr(jcs:jce),                                     & ! out
+          & sensible_hflx_wtr = zshflx_lwtr(jcs:jce),                                     & ! out
+          & albedo_lwtr       = zalbedo_lwtr(jcs:jce),                                    & ! out
+          & t_lice            = ztsfc_lice(jcs:jce),                                      & ! out
+          & qsat_lice         = qsat_lice(jcs:jce),                                       & ! out
+          & s_lice            = zcpt_lice(jcs:jce),                                       & ! out
+          & evapo_ice         = zevap_lice(jcs:jce),                                      & ! out
+          & latent_hflx_ice   = zlhflx_lice(jcs:jce),                                     & ! out
+          & sensible_hflx_ice = zshflx_lice(jcs:jce),                                     & ! out
+          & albedo_lice       = zalbedo_lice(jcs:jce),                                    & ! out
+          & ice_fract_lake    = lake_ice_frc(jcs:jce)                                     & ! out
           )
 
 #if defined(SERIALIZE) && (defined(SERIALIZE_JSBACH) || defined(SERIALIZE_ALL))
@@ -581,85 +581,85 @@ CONTAINS
        !$ACC WAIT(1)
 
        call fs_create_savepoint('jsb_interface_output1', ppser_savepoint)
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:kproma,idx_lnd))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lwtr', ztsfc_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lwtr', qsat_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lwtr', zcpt_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_wtr', zevap_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_wtr', zlhflx_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_wtr', zshflx_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lwtr', zalbedo_lwtr(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lice', ztsfc_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lice', qsat_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lice', zcpt_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_ice', zevap_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_ice', zlhflx_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_ice', zshflx_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lice', zalbedo_lice(jcs:kproma))
-       call fs_write_field(ppser_serializer, ppser_savepoint, 'ice_fract_lake', lake_ice_frc(jcs:kproma))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:jce,idx_lnd))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lwtr', ztsfc_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lwtr', qsat_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lwtr', zcpt_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_wtr', zevap_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_wtr', zlhflx_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_wtr', zshflx_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lwtr', zalbedo_lwtr(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 't_lice', ztsfc_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_lice', qsat_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'zcpt_lice', zcpt_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'evapo_ice', zevap_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx_ice', zlhflx_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx_ice', zshflx_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'albedo_lice', zalbedo_lice(jcs:jce))
+       call fs_write_field(ppser_serializer, ppser_savepoint, 'ice_fract_lake', lake_ice_frc(jcs:jce))
 #endif
 
       ELSE
-        CALL jsbach_interface ( jg, nblock, jcs, kproma,                                     & ! in
+        CALL jsbach_interface ( jg, nblock, jcs, jce,                                     & ! in
           & datetime, pdtime, pdtime,                                                        & ! in
-          & t_air             = ptemp(jcs:kproma),                                           & ! in
-          & q_air             = pq(jcs:kproma),                                              & ! in
-          & rain              = rain_tmp(jcs:kproma),                                        & ! in
-          & snow              = snow_tmp(jcs:kproma),                                        & ! in
-          & wind_air          = zwindspeed_lnd(jcs:kproma),                                  & ! in
-          & wind_10m          = zwindspeed10m_lnd(jcs:kproma),                               & ! in
-          & lw_srf_down       = rlds(jcs:kproma),                                            & ! in
-          & swvis_srf_down    = rvds(jcs:kproma),                                            & ! in
-          & swnir_srf_down    = rnds(jcs:kproma),                                            & ! in
-          & swpar_srf_down    = rpds(jcs:kproma),                                            & ! in
-          & fract_par_diffuse = fract_par_diffuse(jcs:kproma),                               & ! in
-          & press_srf         = ps(jcs:kproma),                                              & ! in
-          & drag_srf          = drag_srf_tmp(jcs:kproma),                                    & ! in
-          & t_acoef           = zen_h(jcs:kproma, idx_lnd),                                  & ! in
-          & t_bcoef           = zfn_h(jcs:kproma, idx_lnd),                                  & ! in
-          & q_acoef           = zen_qv(jcs:kproma, idx_lnd),                                 & ! in
-          & q_bcoef           = zfn_qv(jcs:kproma, idx_lnd),                                 & ! in
-          & pch               = pch_tmp(jcs:kproma),                                         & ! in
-          & cos_zenith_angle  = pcosmu0(jcs:kproma),                                         & ! in
-          & CO2_air           = pco2(jcs:kproma),                                            & ! in
-          & t_srf             = ztsfc_lnd(jcs:kproma),                                       & ! out (T_s^(n+1)) surface temp 
+          & t_air             = ptemp(jcs:jce),                                           & ! in
+          & q_air             = pq(jcs:jce),                                              & ! in
+          & rain              = rain_tmp(jcs:jce),                                        & ! in
+          & snow              = snow_tmp(jcs:jce),                                        & ! in
+          & wind_air          = zwindspeed_lnd(jcs:jce),                                  & ! in
+          & wind_10m          = zwindspeed10m_lnd(jcs:jce),                               & ! in
+          & lw_srf_down       = rlds(jcs:jce),                                            & ! in
+          & swvis_srf_down    = rvds(jcs:jce),                                            & ! in
+          & swnir_srf_down    = rnds(jcs:jce),                                            & ! in
+          & swpar_srf_down    = rpds(jcs:jce),                                            & ! in
+          & fract_par_diffuse = fract_par_diffuse(jcs:jce),                               & ! in
+          & press_srf         = ps(jcs:jce),                                              & ! in
+          & drag_srf          = drag_srf_tmp(jcs:jce),                                    & ! in
+          & t_acoef           = zen_h(jcs:jce, idx_lnd),                                  & ! in
+          & t_bcoef           = zfn_h(jcs:jce, idx_lnd),                                  & ! in
+          & q_acoef           = zen_qv(jcs:jce, idx_lnd),                                 & ! in
+          & q_bcoef           = zfn_qv(jcs:jce, idx_lnd),                                 & ! in
+          & pch               = pch_tmp(jcs:jce),                                         & ! in
+          & cos_zenith_angle  = pcosmu0(jcs:jce),                                         & ! in
+          & CO2_air           = pco2(jcs:jce),                                            & ! in
+          & t_srf             = ztsfc_lnd(jcs:jce),                                       & ! out (T_s^(n+1)) surface temp 
                                                                                                ! (filtered, if Asselin)
-          & t_eff_srf         = ztsfc_lnd_eff(jcs:kproma),                                   & ! out (T_s^eff) surface temp 
+          & t_eff_srf         = ztsfc_lnd_eff(jcs:jce),                                   & ! out (T_s^eff) surface temp 
                                                                                                ! (effective, for longwave rad)
-          & qsat_srf          = qsat_lnd(jcs:kproma),                                        & ! out
-          & s_srf             = zcpt_lnd(jcs:kproma),                                        & ! out (s_s^star, for vdiff scheme)
-          & fact_q_air        = pcair(jcs:kproma),                                           & ! out
-          & fact_qsat_srf     = pcsat(jcs:kproma),                                           & ! out
-          & evapotrans        = zevap_lnd(jcs:kproma),                                       & ! out
-          & latent_hflx       = zlhflx_lnd(jcs:kproma),                                      & ! out
-          & sensible_hflx     = zshflx_lnd(jcs:kproma),                                      & ! out
-          & grnd_hflx         = zgrnd_hflx(jcs:kproma, idx_lnd),                             & ! out
-          & grnd_hcap         = zgrnd_hcap(jcs:kproma, idx_lnd),                             & ! out
-          & rough_h_srf       = z0h_lnd(jcs:kproma),                                         & ! out
-          & rough_m_srf       = z0m_tile(jcs:kproma, idx_lnd),                               & ! out
-          & q_snocpymlt       = q_snocpymlt(jcs:kproma),                                     & ! out
-          & alb_vis_dir       = albvisdir_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_nir_dir       = albnirdir_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_vis_dif       = albvisdif_tile(jcs:kproma, idx_lnd),                         & ! out
-          & alb_nir_dif       = albnirdif_tile(jcs:kproma, idx_lnd),                         & ! out
-          & co2_flux          = pco2_flux_tile(jcs:kproma, idx_lnd)                          & ! out
+          & qsat_srf          = qsat_lnd(jcs:jce),                                        & ! out
+          & s_srf             = zcpt_lnd(jcs:jce),                                        & ! out (s_s^star, for vdiff scheme)
+          & fact_q_air        = pcair(jcs:jce),                                           & ! out
+          & fact_qsat_srf     = pcsat(jcs:jce),                                           & ! out
+          & evapotrans        = zevap_lnd(jcs:jce),                                       & ! out
+          & latent_hflx       = zlhflx_lnd(jcs:jce),                                      & ! out
+          & sensible_hflx     = zshflx_lnd(jcs:jce),                                      & ! out
+          & grnd_hflx         = zgrnd_hflx(jcs:jce, idx_lnd),                             & ! out
+          & grnd_hcap         = zgrnd_hcap(jcs:jce, idx_lnd),                             & ! out
+          & rough_h_srf       = z0h_lnd(jcs:jce),                                         & ! out
+          & rough_m_srf       = z0m_tile(jcs:jce, idx_lnd),                               & ! out
+          & q_snocpymlt       = q_snocpymlt(jcs:jce),                                     & ! out
+          & alb_vis_dir       = albvisdir_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_nir_dir       = albnirdir_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_vis_dif       = albvisdif_tile(jcs:jce, idx_lnd),                         & ! out
+          & alb_nir_dif       = albnirdif_tile(jcs:jce, idx_lnd),                         & ! out
+          & co2_flux          = pco2_flux_tile(jcs:jce, idx_lnd)                          & ! out
         )
 
 
@@ -673,25 +673,25 @@ CONTAINS
         !$ACC WAIT(1)
 
         call fs_create_savepoint('jsb_interface_output1', ppser_savepoint)
-        call fs_write_field(ppser_serializer, ppser_savepoint, 't_srf', ztsfc_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:kproma))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:kproma,idx_lnd))
-        call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:kproma,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 't_srf', ztsfc_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 't_eff_srf', ztsfc_lnd_eff(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'qsat_srf', qsat_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 's_srf', zcpt_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_q_air', pcair(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'fact_qsat_srf', pcsat(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'evapotrans', zevap_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'latent_hflx', zlhflx_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'sensible_hflx', zshflx_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hflx', zgrnd_hflx(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'grnd_hcap', zgrnd_hcap(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_h_srf', z0h_lnd(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'rough_m_srf', z0m_tile(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'q_snocpymlt', q_snocpymlt(jcs:jce))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dir', albvisdir_tile(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dir', albnirdir_tile(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_vis_dif', albvisdif_tile(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'alb_nir_dif', albnirdif_tile(jcs:jce,idx_lnd))
+        call fs_write_field(ppser_serializer, ppser_savepoint, 'co2_flux', pco2_flux_tile(jcs:jce,idx_lnd))
 #endif
 
       END IF ! llake
@@ -699,7 +699,7 @@ CONTAINS
 
 #ifdef _OPENACC
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         ! preliminary, dummy values
         pco2_flux_tile(jl, idx_ice) = 0._wp
 
@@ -741,35 +741,35 @@ CONTAINS
 
 #else
       IF (aes_phy_config(jg)%ljsb ) THEN
-        ptsfc_tile(jcs:kproma,idx_lnd) = ztsfc_lnd(jcs:kproma)
-        pcpt_tile (jcs:kproma,idx_lnd) = zcpt_lnd(jcs:kproma)
-        pqsat_tile(jcs:kproma,idx_lnd) = qsat_lnd(jcs:kproma)
+        ptsfc_tile(jcs:jce,idx_lnd) = ztsfc_lnd(jcs:jce)
+        pcpt_tile (jcs:jce,idx_lnd) = zcpt_lnd(jcs:jce)
+        pqsat_tile(jcs:jce,idx_lnd) = qsat_lnd(jcs:jce)
       END IF
       IF (aes_phy_config(jg)%llake) THEN
         IF (idx_wtr <= ksfc_type) THEN
-          WHERE (alake(jcs:kproma) > 0._wp)
-            ptsfc_tile    (jcs:kproma, idx_wtr) = ztsfc_lwtr   (jcs:kproma)
-            pcpt_tile     (jcs:kproma, idx_wtr) = zcpt_lwtr    (jcs:kproma)
-            pqsat_tile    (jcs:kproma, idx_wtr) = qsat_lwtr    (jcs:kproma)
-            albvisdir_tile(jcs:kproma, idx_wtr) = zalbedo_lwtr (jcs:kproma)
-            albvisdif_tile(jcs:kproma, idx_wtr) = zalbedo_lwtr (jcs:kproma)
-            albnirdir_tile(jcs:kproma, idx_wtr) = zalbedo_lwtr (jcs:kproma)
-            albnirdif_tile(jcs:kproma, idx_wtr) = zalbedo_lwtr (jcs:kproma)
+          WHERE (alake(jcs:jce) > 0._wp)
+            ptsfc_tile    (jcs:jce, idx_wtr) = ztsfc_lwtr   (jcs:jce)
+            pcpt_tile     (jcs:jce, idx_wtr) = zcpt_lwtr    (jcs:jce)
+            pqsat_tile    (jcs:jce, idx_wtr) = qsat_lwtr    (jcs:jce)
+            albvisdir_tile(jcs:jce, idx_wtr) = zalbedo_lwtr (jcs:jce)
+            albvisdif_tile(jcs:jce, idx_wtr) = zalbedo_lwtr (jcs:jce)
+            albnirdir_tile(jcs:jce, idx_wtr) = zalbedo_lwtr (jcs:jce)
+            albnirdif_tile(jcs:jce, idx_wtr) = zalbedo_lwtr (jcs:jce)
           ! security reasons
-            pco2_flux_tile(jcs:kproma, idx_wtr) =  0._wp
+            pco2_flux_tile(jcs:jce, idx_wtr) =  0._wp
           END WHERE
         END IF
         IF (idx_ice <= ksfc_type) THEN
-          WHERE (alake(jcs:kproma) > 0._wp)
-            ptsfc_tile    (jcs:kproma, idx_ice) = ztsfc_lice   (jcs:kproma)
-            pcpt_tile     (jcs:kproma, idx_ice) = zcpt_lice    (jcs:kproma)
-            pqsat_tile    (jcs:kproma, idx_ice) = qsat_lice    (jcs:kproma)
-            albvisdir_tile(jcs:kproma, idx_ice) = zalbedo_lice (jcs:kproma)
-            albvisdif_tile(jcs:kproma, idx_ice) = zalbedo_lice (jcs:kproma)
-            albnirdir_tile(jcs:kproma, idx_ice) = zalbedo_lice (jcs:kproma)
-            albnirdif_tile(jcs:kproma, idx_ice) = zalbedo_lice (jcs:kproma)
+          WHERE (alake(jcs:jce) > 0._wp)
+            ptsfc_tile    (jcs:jce, idx_ice) = ztsfc_lice   (jcs:jce)
+            pcpt_tile     (jcs:jce, idx_ice) = zcpt_lice    (jcs:jce)
+            pqsat_tile    (jcs:jce, idx_ice) = qsat_lice    (jcs:jce)
+            albvisdir_tile(jcs:jce, idx_ice) = zalbedo_lice (jcs:jce)
+            albvisdif_tile(jcs:jce, idx_ice) = zalbedo_lice (jcs:jce)
+            albnirdir_tile(jcs:jce, idx_ice) = zalbedo_lice (jcs:jce)
+            albnirdif_tile(jcs:jce, idx_ice) = zalbedo_lice (jcs:jce)
           ELSEWHERE
-            lake_ice_frc(jcs:kproma) = 0._wp
+            lake_ice_frc(jcs:jce) = 0._wp
           ENDWHERE
         END IF
       END IF
@@ -779,7 +779,7 @@ CONTAINS
       ! blending and in diagnosing surface fluxes.
       !
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         zca(jl,idx_lnd) = pcair(jl)
         zcs(jl,idx_lnd) = pcsat(jl)
       END DO
@@ -804,7 +804,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         pco2nat(jl) = pco2nat(jl) + pfrc(jl,jsfc) * pco2_flux_tile(jl,jsfc)
       END DO
     ENDDO
@@ -819,7 +819,7 @@ CONTAINS
       !$ACC LOOP SEQ
       DO jsfc = 1,ksfc_type
         !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO jl = jcs,kproma
+        DO jl = jcs,jce
           bb_btm(jl,jsfc,ih)  =  zen_h (jl,jsfc) + tpfac2*zfn_h (jl,jsfc)
           bb_btm(jl,jsfc,iqv) = zen_qv (jl,jsfc) + tpfac2*zfn_qv (jl,jsfc)
         END DO
@@ -828,7 +828,7 @@ CONTAINS
       !$ACC LOOP SEQ
       DO jsfc = 1,ksfc_type
         !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO jl = jcs,kproma
+        DO jl = jcs,jce
           bb_btm(jl,jsfc,ih)  = tpfac2*(    zen_h (jl,jsfc)                      &
                               &         *pcpt_tile(jl,jsfc)                      &
                               &         +   zfn_h (jl,jsfc) )
@@ -843,7 +843,7 @@ CONTAINS
     ! - Grid box mean
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR
-    DO jl = jcs,kproma
+    DO jl = jcs,jce
        se_sum(jl) = 0._wp    ! sum of weighted solution
        qv_sum(jl) = 0._wp    ! sum of weighted solution
       wgt_sum(jl) = 0._wp    ! sum of weights
@@ -852,7 +852,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc = 1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
              wgt(jl) = pfrc(jl,jsfc)
          wgt_sum(jl) = wgt_sum(jl) + wgt(jl)
           se_sum(jl) = se_sum(jl) + bb_btm(jl,jsfc,ih ) * wgt(jl)
@@ -862,13 +862,13 @@ CONTAINS
 
     IF (lsfc_heat_flux) THEN
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         bb(jl,klev,ih ) = se_sum(jl)/wgt_sum(jl)
         bb(jl,klev,iqv) = qv_sum(jl)/wgt_sum(jl)
       END DO
     ELSE
       !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jsfc)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         jsfc = 1
         bb(jl,klev,ih ) = bb_btm(jl,jsfc,ih )
         bb(jl,klev,iqv) = bb_btm(jl,jsfc,iqv)
@@ -886,12 +886,12 @@ CONTAINS
     ! need to be scaled by the same factor.
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR
-    DO jl = jcs,kproma
+    DO jl = jcs,jce
       zfrc_oce(jl) = 0._wp 
     END DO
     IF (idx_wtr.LE.ksfc_type) THEN   ! Open water is considered
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         IF (idx_ice.LE.ksfc_type) THEN ! Sea ice is also considered
           zfrc_oce(jl) = pfrc(jl,idx_wtr)+pfrc(jl,idx_ice)
         ELSE ! only open water
@@ -912,7 +912,7 @@ CONTAINS
     jkm1 = jk - 1
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR
-    DO jl = jcs,kproma
+    DO jl = jcs,jce
       aa(jl,jk,2,im) =  aa(jl,jk,2,im) - aa(jl,jk,1,im)*aa(jl,jkm1,3,im)
       aa(jl,jk,3,im) =  aa(jl,jk,3,im)/aa(jl,jk,2,im)
 
@@ -925,7 +925,7 @@ CONTAINS
     IF (lsfc_mom_flux) THEN
        CALL wind_stress( kbdim, ksfc_type,                    &! in
             &            pdtime,                              &! in
-            &            loidx, is,                           &! in
+            &            loidx, is, jcs,                      &! in
             &            pfrc, pcfm_tile, pfac_sfc,           &! in
             &            bb(:,klev,iu), bb(:,klev,iv),        &! in
             &            pocu(:), pocv(:),                    &! in
@@ -959,7 +959,7 @@ CONTAINS
 
     IF (lsfc_heat_flux) THEN
        !$ACC WAIT
-       CALL surface_fluxes( jcs, kproma, kbdim, ksfc_type,        &! in
+       CALL surface_fluxes( jcs, jce, kbdim, ksfc_type,        &! in
             &               idx_wtr, idx_ice, idx_lnd, ih, iqv,   &! in
             &               pdtime,                               &! in
             &               pfrc, lsm, alake,                     &! in
@@ -975,7 +975,7 @@ CONTAINS
             &               pevap_tile )                           ! out
       IF ( isrfc_type == 1 ) THEN
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-        DO jl = jcs,kproma
+        DO jl = jcs,jce
           pshflx_gbm (jl)   = -shflx*cpd*pfac_sfc(jl)*tpfac2/pdtime
           plhflx_gbm (jl)   = -lhflx*alv*pfac_sfc(jl)*tpfac2/pdtime
         END DO
@@ -1009,7 +1009,7 @@ CONTAINS
 
 #ifndef __NO_ICON_OCEAN__
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         rsns(jl)      = rsds(jl) - rsus(jl)
         rlns(jl)      = rlds(jl) - rlus(jl)
       END DO
@@ -1017,19 +1017,19 @@ CONTAINS
 
       IF (aes_phy_config(jg)%lmlo) THEN
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-        DO jl = jcs,kproma
+        DO jl = jcs,jce
           ztsfc_wtr(jl)=ptsfc_tile(jl, idx_wtr)
         ENDDO
         !$ACC END PARALLEL LOOP
         !$ACC WAIT
-        CALL ml_ocean ( kbdim, jcs, kproma, pdtime, &
-          & pahflw=plhflx_tile(:,idx_wtr),        & ! dependency on kproma has to be checked
-          & pahfsw=pshflx_tile(:,idx_wtr),        & ! dependency on kproma has to be checked
+        CALL ml_ocean ( kbdim, jcs, jce, pdtime, &
+          & pahflw=plhflx_tile(:,idx_wtr),        & ! dependency on jce has to be checked
+          & pahfsw=pshflx_tile(:,idx_wtr),        & ! dependency on jce has to be checked
           & ptrflw=rlns(:),                       &
           & psoflw=rsns(:),                       &
           & ptsw=ztsfc_wtr(:) )                     ! out
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-        DO jl = jcs,kproma
+        DO jl = jcs,jce
           IF (alake(jl) < EPSILON(1._wp)) THEN
             ptsfc_tile(jl, idx_wtr) = ztsfc_wtr(jl)
           END IF
@@ -1042,7 +1042,7 @@ CONTAINS
       ! TBD: This should be replaced by routine
       ! mo_surface_ocean:update_albedo_ocean from ECHAM6.2
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         IF (alake(jl) < EPSILON(1._wp)) THEN
           albvisdir_tile(jl,idx_wtr) = albedoW
           albvisdif_tile(jl,idx_wtr) = albedoW
@@ -1087,7 +1087,7 @@ CONTAINS
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO k=1,kice
-          DO jl = jcs,kproma
+          DO jl = jcs,jce
             swflx_ice(jl,k) = rvds_dif(jl) * (1._wp - albvisdif_ice(jl,k)) +     &
                             & rvds_dir(jl) * (1._wp - albvisdir_ice(jl,k)) +     &
                             & rnds_dif(jl) * (1._wp - albnirdif_ice(jl,k)) +     &
@@ -1107,7 +1107,7 @@ CONTAINS
 
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO k=1,kice
-          DO jl = jcs,kproma
+          DO jl = jcs,jce
             swflx_ice(jl,k) = rvds_dif(jl) * (1._wp - albvisdif_ice(jl,k)) +     &
                             & rvds_dir(jl) * (1._wp - albvisdir_ice(jl,k)) +     &
                             & rnds_dif(jl) * (1._wp - albnirdif_ice(jl,k)) +     &
@@ -1126,7 +1126,7 @@ CONTAINS
             ! .NOT. aes_phy_config(jg)%suppress_shflx_adjustment_over_ice
 
       !$ACC WAIT
-      CALL ice_fast(jcs, kproma, kbdim, kice, pdtime, &
+      CALL ice_fast(jcs, jce, kbdim, kice, pdtime, &
         &   Tsurf,              & ! inout
         &   T1,                 & ! inout
         &   T2,                 & ! inout
@@ -1147,10 +1147,10 @@ CONTAINS
       ! Update the thickness of snow on ice in atmosphere only simulation.
       ! In coupled experiments this is done by the ocean model in either
       ! ice_growth_zerolayer or ice_growth_winton.
-      IF ( .NOT. is_coupled_run() ) THEN
+      IF ( .NOT. is_coupled_to_ocean() ) THEN
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO k=1,kice
-          DO jl = jcs,kproma
+          DO jl = jcs,jce
             ! Snowfall on ice - no ice => no snow
             IF ( hi(jl,k) > 0._wp ) THEN
               ! Snow only falls when it's below freezing
@@ -1169,7 +1169,7 @@ CONTAINS
 
       ! Average the albedo.
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-      DO jl = jcs,kproma
+      DO jl = jcs,jce
         conc_sum(jl) = SUM(conc(jl,:))
         IF (alake(jl) < EPSILON(1._wp)) THEN
           albvisdir_tile(jl,idx_ice) = 0._wp
@@ -1191,7 +1191,7 @@ CONTAINS
 
       ! Compute new dry static energy
       ! (Switched off for now, should be used for implicit coupling)
-      !pcpt_tile(jcs:kproma,idx_ice) = ptsfc_tile(jcs:kproma,idx_ice) * zt2s_conv(jcs:kproma,idx_ice)
+      !pcpt_tile(jcs:jce,idx_ice) = ptsfc_tile(jcs:jce,idx_ice) * zt2s_conv(jcs:jce,idx_ice)
 
 #else
     ! __NO_ICON_OCEAN__
@@ -1207,12 +1207,12 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,ksfc_type
       !$ACC LOOP GANG VECTOR
-      DO jl = 1, kproma
+      DO jl = 1, jce
         albedo_tile(jl,jsfc) = 0._wp
       END DO
 
       !$ACC LOOP GANG VECTOR PRIVATE(zalbvis, zalbnir)
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         zalbvis = 0._wp
         IF(rvds(jl) > 0._wp) THEN
           zalbvis = &
@@ -1246,7 +1246,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,ksfc_type
       !$ACC LOOP GANG VECTOR
-      DO jl= jcs, kproma
+      DO jl= jcs, jce
         ptsfc(jl) = ptsfc(jl) + pfrc(jl,jsfc) * ptsfc_tile(jl,jsfc)
       ENDDO
     ENDDO
@@ -1254,13 +1254,13 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl= jcs, kproma
+      DO jl= jcs, jce
         ptsfc_rad(jl) = ptsfc_rad(jl) + pfrc(jl,jsfc) * ptsfc_tile(jl,jsfc)**4
       END DO
     ENDDO
 
     !$ACC LOOP GANG(STATIC: 1) VECTOR
-    DO jl = jcs, kproma
+    DO jl = jcs, jce
       ptsfc_rad(jl) = ptsfc_rad(jl)**0.25_wp
     END DO
     !$ACC END PARALLEL
@@ -1309,7 +1309,7 @@ CONTAINS
     END DO
     
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
-    DO jl = jcs, kproma
+    DO jl = jcs, jce
       rlus(jl) = rlds(jl) -rlns(jl)
     END DO
     !$ACC END PARALLEL LOOP
@@ -1329,7 +1329,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,nsfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         albvisdir(jl) = albvisdir(jl) + pfrc(jl,jsfc) * albvisdir_tile(jl,jsfc)
         albvisdif(jl) = albvisdif(jl) + pfrc(jl,jsfc) * albvisdif_tile(jl,jsfc)
         albnirdir(jl) = albnirdir(jl) + pfrc(jl,jsfc) * albnirdir_tile(jl,jsfc)
@@ -1342,7 +1342,7 @@ CONTAINS
     !$ACC LOOP SEQ
     DO jsfc=1,ksfc_type
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         mask(jl) = pfrc(jl,jsfc) <= 0._wp
         !
         IF (mask(jl)) THEN
@@ -1378,7 +1378,7 @@ CONTAINS
     !----------------------------------------------------------------------------
     IF (idx_ice<=ksfc_type) THEN  ! ice surface exists in the simulation
       !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jl = jcs, kproma
+      DO jl = jcs, jce
         mask(jl) = pfrc(jl,idx_ice) == 0._wp
         IF (mask(jl)) THEN
           z0m_tile(jl,idx_ice) = cdimissval

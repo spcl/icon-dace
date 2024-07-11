@@ -70,7 +70,10 @@ CONTAINS
                          ! 0.0060, if le 30 frequencies changed !@waves todo
                          ! to 0.0075 in subroutine initmdl !@waves todo
 
-    REAL(wp) :: depth    ! ocean depth (m) if not 0, then constant depth
+    REAL(wp) :: depth     ! ocean depth (m) if not 0, then constant depth
+    REAL(wp) :: depth_min ! allowed minimum of model depth (m)
+    REAL(wp) :: depth_max ! allowed maximum of model depth (m)
+
     INTEGER  :: niter_smooth ! number of smoothing iterations for wave bathymetry
 
     REAL(wp) :: XKAPPA  ! VON KARMAN CONSTANT.
@@ -93,20 +96,32 @@ CONTAINS
     LOGICAL :: linput_sf1      ! if .TRUE., calculate wind input source function term, first call
     LOGICAL :: linput_sf2      ! if .TRUE., calculate wind input source function term, second call
     LOGICAL :: ldissip_sf      ! if .TRUE., calculate dissipation source function term
+    LOGICAL :: lwave_brk_sf    ! if .TRUE., calculate wave breaking dissipation source function term
     LOGICAL :: lnon_linear_sf  ! if .TRUE., calculate non linear source function term
     LOGICAL :: lbottom_fric_sf ! if .TRUE., calculate bottom_friction source function term
     LOGICAL :: lwave_stress1   ! if .TRUE., calculate wave stress, first call
     LOGICAL :: lwave_stress2   ! if .TRUE., calculate wave stress, second call
 
+    ! for test case
+    REAL(wp) :: peak_u10, peak_v10 ! peak values (m/s) of 10 m U and V wind speed for test case
+    REAL(wp) :: peak_lat, peak_lon ! geographical location (deg) of wind peak value
+
+    ! source function time integration
+    REAL(wp) :: impl_fac       ! implicitness factor for total source function time integration
+                               ! impl_fac=0.5 : second order Crank-Nicholson/trapezoidal scheme
+                               ! impl_fac=1   : first order Euler backward scheme
+                               ! valid range: 0.5 <= impl_fac <= 1
 
     NAMELIST /wave_nml/ &
          forc_file_prefix,          &
          ndirs, nfreqs, fr1, CO, IREF,                      &
          ALPHA, FM, GAMMA_wave, SIGMA_A, SIGMA_B, FETCH,    &
          roair, RNUAIR, RNUAIRM, ROWATER, XEPS, XINVEPS, &
-         XKAPPA, XNLEV, BETAMAX, ZALP, jtot_tauhf, ALPHA_CH, depth, niter_smooth, &
-         linput_sf1, linput_sf2, ldissip_sf, lnon_linear_sf, lbottom_fric_sf, &
-         lwave_stress1, lwave_stress2
+         XKAPPA, XNLEV, BETAMAX, ZALP, jtot_tauhf, ALPHA_CH, &
+         depth, depth_min, depth_max, niter_smooth, &
+         linput_sf1, linput_sf2, ldissip_sf, lwave_brk_sf, lnon_linear_sf, lbottom_fric_sf, &
+         lwave_stress1, lwave_stress2, peak_u10, peak_v10, peak_lat, peak_lon, &
+         impl_fac
 
     !-----------------------------------------------------------
     ! 1. default settings
@@ -139,6 +154,8 @@ CONTAINS
     ALPHA_CH   = 0.0075_wp      !! minimum charnock constant (ecmwf cy45r1).
 
     depth        = 0._wp        !! ocean depth (m) if not 0, then constant depth
+    depth_min    = 0.2_wp       !! allowed minimum of model depth (m)
+    depth_max    = 999.0_wp     !! allowed maximum of model depth (m)
     niter_smooth = 1            !! number of smoothing iterations for wave bathymetry
                                 !! if 0 then no smoothing
 
@@ -150,11 +167,19 @@ CONTAINS
     linput_sf1 =       .TRUE. !< if .TRUE., calculate wind input source function term, first call
     linput_sf2 =       .TRUE. !< if .TRUE., calculate wind input source function term, second call
     ldissip_sf =       .TRUE. !< if .TRUE., calculate dissipation source function term
+    lwave_brk_sf =     .TRUE. !< if .TRUE., calculate wave breaking dissipation source function term
     lnon_linear_sf =   .TRUE. !< if .TRUE., calculate non linear source function term
     lbottom_fric_sf =  .TRUE. !< if .TRUE., calculate bottom_friction source function term
     lwave_stress1  =   .TRUE. !< if .TRUE., calculate wave stress, first call
     lwave_stress2  =   .TRUE. !< if .TRUE., calculate wave stress, second call
 
+    peak_u10 = 9.0_wp         !! peak value (m/s) of 10 m U wind component for test case
+    peak_v10 = 9.0_wp         !! peak value (m/s) of 10 m V wind component for test case
+    peak_lat = -60.0_wp       !! latitude (deg) of wind peak value
+    peak_lon = -140.0_wp      !! longitude (deg) of wind peak value
+
+    impl_fac = 1.0_wp         !! first order Euler backward time integration scheme
+                              !! for total source function
 
     !------------------------------------------------------------------
     ! 2. If this is a resumed integration, overwrite the defaults above
@@ -197,6 +222,9 @@ CONTAINS
       CALL finish(TRIM(routine),'Error: jtot_tauhf must be odd')
     END IF
 
+    IF ( (impl_fac<0.5_wp) .OR. (impl_fac>1.0_wp)) THEN
+      CALL finish(TRIM(routine),'impl_fac outside permissible range 0.5<=impl_fac<=1.0')
+    ENDIF
 
     !----------------------------------------------------
     ! 5. Fill the configuration state
@@ -228,16 +256,23 @@ CONTAINS
       wave_config(jg)%jtot_tauhf        = jtot_tauhf
       wave_config(jg)%ALPHA_CH          = ALPHA_CH
       wave_config(jg)%depth             = depth
+      wave_config(jg)%depth_min         = depth_min
+      wave_config(jg)%depth_max         = depth_max
       wave_config(jg)%niter_smooth      = niter_smooth
       wave_config(jg)%forc_file_prefix  = forc_file_prefix
       wave_config(jg)%linput_sf1        = linput_sf1
       wave_config(jg)%linput_sf2        = linput_sf2
       wave_config(jg)%ldissip_sf        = ldissip_sf
+      wave_config(jg)%lwave_brk_sf      = lwave_brk_sf
       wave_config(jg)%lnon_linear_sf    = lnon_linear_sf
       wave_config(jg)%lbottom_fric_sf   = lbottom_fric_sf
       wave_config(jg)%lwave_stress1     = lwave_stress1
       wave_config(jg)%lwave_stress2     = lwave_stress2
-
+      wave_config(jg)%peak_u10          = peak_u10
+      wave_config(jg)%peak_v10          = peak_v10
+      wave_config(jg)%peak_lat          = peak_lat
+      wave_config(jg)%peak_lon          = peak_lon
+      wave_config(jg)%impl_fac          = impl_fac
     ENDDO
 
 

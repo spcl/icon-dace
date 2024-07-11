@@ -31,7 +31,7 @@ MODULE mo_art_vinterp
   USE mo_initicon_config,               ONLY: generate_filename,  &
                                           &   ifs2icon_filename
   USE mo_master_config,                 ONLY: getModelBaseDir
-  USE mo_physical_constants,            ONLY: grav
+  USE mo_physical_constants,            ONLY: grav, p0sl_bg
   USE mo_nh_vert_interp,                ONLY: prepare_extrap
   USE mo_nh_vert_interp_ipz,            ONLY: z_at_plevels
   USE mo_read_interface,                ONLY: t_stream_id, nf, openInputFile,  &
@@ -227,7 +227,7 @@ SUBROUTINE art_prepare_vinterp(chem_init,p_patch, &
   SELECT CASE (TRIM(ADJUSTL(chem_init%chem_init_in%model_name)))
     CASE ('MOZART')
       CALL message(routine, "THIS IS MOZART INIT")
-      chem_coord%vct_chem_init(1:no_levels+1)  =   100000._wp * vct_chem_init_a(:)
+      chem_coord%vct_chem_init(1:no_levels+1)  =   p0sl_bg * vct_chem_init_a(:)
     CASE ('EMAC', 'ERA')
       chem_coord%vct_chem_init(1:no_levels+1)  =   vct_chem_init_a(:)
     CASE DEFAULT

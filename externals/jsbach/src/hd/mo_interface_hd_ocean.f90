@@ -65,7 +65,7 @@ CONTAINS
     INTEGER, INTENT(in) :: comp_id           ! yac component id
     INTEGER, INTENT(in) :: cell_point_ids(:) ! yac point is
     INTEGER, INTENT(in) :: grid_id           ! yac grid id
-    INTEGER, INTENT(in) :: n_patch_cells     ! number of cells (compute + halo) 
+    INTEGER, INTENT(in) :: n_patch_cells     ! number of cells (compute + halo)
                                             ! n_patch_cells is <= nproma*nblks
     ! Local variables
     !
@@ -140,12 +140,14 @@ CONTAINS
       & YAC_TIME_UNIT_ISO_FORMAT, &
       & yac_river_runoff_field_id )
 
-      DEALLOCATE(is_valid)
+    DEALLOCATE(is_valid)
 
-    END SUBROUTINE jsb_fdef_hd_fields
+  END SUBROUTINE jsb_fdef_hd_fields
 #endif
 
   SUBROUTINE interface_hd_ocean(tile, options)
+
+    USE mo_fortran_tools, ONLY: init
 
     CLASS(t_jsb_tile_abstract), INTENT(in) :: tile
     TYPE(t_jsb_task_options),   INTENT(in) :: options
@@ -171,7 +173,7 @@ CONTAINS
     REAL(wp), ALLOCATABLE :: buffer(:,:)
     INTEGER               :: collection_size, nbr_pointsets, nbr_subdomains
     INTEGER               :: info, ierror !< return values form cpl_put/get calls
-    INTEGER               :: iblk, n, nn !, nlen
+    INTEGER               :: iblk, n, nn, nlen
 
     n =options%nc ! only to avoid compiler warnings
 
@@ -197,18 +199,30 @@ CONTAINS
     write_coupler_restart = .FALSE.
 
     ALLOCATE(buffer(grid%nproma * grid%nblks, 1))
-    buffer(:,:) = 0.0_wp
+    !$ACC DATA CREATE(buffer)
+!$OMP PARALLEL
+    CALL init(buffer(:,:), lacc=.TRUE.)
+!$OMP END PARALLEL
+
+!$OMP PARALLEL DO PRIVATE(iblk, nn, nlen, n)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+    !$ACC LOOP SEQ
     DO iblk = 1, grid%nblks
       nn = (iblk - 1) * grid%nproma
-      !IF (iblk /= grid%nblks) THEN
-      !  nlen = grid%nproma
-      !ELSE
-      !  nlen = grid%npromz
-      !END IF
-      DO n = 1, grid%nproma
+      IF (iblk /= grid%nblks) THEN
+       nlen = grid%nproma
+      ELSE
+       nlen = grid%npromz
+      END IF
+      !$ACC LOOP GANG VECTOR
+      DO n = 1, nlen
         buffer(nn+n,1) = discharge_ocean(n,iblk)
       END DO
     END DO
+    !$ACC END PARALLEL
+    !$ACC UPDATE HOST(buffer) ASYNC(1)
+    !$ACC WAIT(1)
+!$OMP END PARALLEL DO
 
     nbr_hor_cells = grid%ntotal
     collection_size = 1
@@ -223,6 +237,7 @@ CONTAINS
        CALL message(TRIM(routine), 'YAC says it is put for restart')
     ENDIF
 
+    !$ACC END DATA
     DEALLOCATE(buffer)
 
   END SUBROUTINE interface_hd_ocean

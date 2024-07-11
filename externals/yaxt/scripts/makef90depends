@@ -9,7 +9,7 @@
 # Keywords: dependency generator Fortran
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -727,7 +727,10 @@ sub buildNameSubst(\@)
       # don't influence compiler behaviour, feel free to submit more
       my %mostlyHarmless =
           map { ($_, undef) }
-              qw(ALTERNATE_EDITOR COLORTERM
+              qw(_LMFILES_ __LMFILES__
+                 _LMFILES__modshare
+                 ALLINEA_LICENCE_DIR ALLINEA_NO_TREESERVER_KILL_TARGET
+                 ALTERNATE_EDITOR COLORTERM
                  DBUS_SESSION_BUS_ADDRESS DEBUG DESKTOP_SESSION DISPLAY
                  EDITOR FPATH_modshare
                  FONT_ENCODINGS_DIRECTORY
@@ -749,14 +752,22 @@ sub buildNameSubst(\@)
                  MODULEPATH MODULEPATH_modshare MODULE_VERSION
                  MODULE_VERSION_STACK
                  MUTT_XTITLES
+                 OLDPWD
                  PAGER PATH_modshare PROFILEREAD PROMAGIC_USEGLX
                  QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON
                  QT_QPA_PLATFORMTHEME
-                 RSYNC_RSH SESSION_MANAGER
+                 RSYNC_RSH
+                 SCHROOT_ALIAS_NAME
+                 SCHROOT_CHROOT_NAME
+                 SCHROOT_COMMAND
+                 SCHROOT_GID
+                 SCHROOT_GROUP
+                 SCHROOT_SESSION_ID
+                 SESSION_MANAGER
                  SHLVL SLURM_JOBID SLURM_JOB_ID SLURM_JOB_NODELIST
                  SLURM_NODELIST
                  SSH_AGENT_PID SSH_AUTH_SOCK SSH_CLIENT SSH_CONNECTION
-                 SSH_TTY TERM TEST_LOGS TESTSUITEFLAGS
+                 SSH_TTY TERM TEST_LOGS TESTS TESTSUITEFLAGS
                  TMPDIR TMUX TMUX_PANE
                  USERNAME
                  VBOX_CROGL_FORCE_SUPPORTED
@@ -982,7 +993,7 @@ sub buildNameSubst(\@)
             }
             print STDERR 'dependency database: ',
                 (@changes > 1?
-                 join(', ', @changes[0..$#changes-1]) . ' and ' . $changes[-1]
+                 join(', ', @changes[0..$#changes-1], 'and ' . $changes[-1])
                  :$changes[0]),
                      ' changed, forcing rebuild', "\n";
             while (my ($k, $v) = each %parseCache) {
@@ -991,19 +1002,34 @@ sub buildNameSubst(\@)
             $parseCache{'options:'} = \@optArgs;
             $parseCache{'env:'} = \$ENVdigest;
             $parseCache{'schema_version:'} = \$depdb_schema_version;
-            if ($debug) {
-               require Text::Diff;
-               if ($ENVdigest ne $savedENVdigest) {
-                  $savedENVdigest =~ tr/\0/\n/;
-                  $ENVdigest =~ tr/\0/\n/;
-                  print(STDERR Text::Diff::diff(\$savedENVdigest, \$ENVdigest),
-                        "\n");
+            if ($debug or $ENVdigest ne $savedENVdigest) {
+               my $ENVdiff;
+               eval {
+                  require Text::Diff;
+                  if ($ENVdigest ne $savedENVdigest) {
+                     $savedENVdigest =~ tr/\0/\n/;
+                     $ENVdigest =~ tr/\0/\n/;
+                     $ENVdiff = Text::Diff::diff(\$savedENVdigest, \$ENVdigest);
+                  }
+                  if ($debug) {
+                     my ($optArgs_serialized, $savedOptArgs_serialized)
+                         = (join("\n", @optArgs), join("\n", @savedOptArgs));
+                     print(STDERR Text::Diff::diff(\$optArgs_serialized,
+                                                   \$savedOptArgs_serialized), "\n")
+                         if ($optArgs_serialized ne $savedOptArgs_serialized);
+                  }
+               };
+               if (defined ($ENVdiff)) {
+                  my $ENVdiffFP;
+                  if ($debug) {
+                     print(STDERR $ENVdiff, "\n");
+                  }
+                  if (open($ENVdiffFP, '>>',
+                           File::Spec->catfile(File::Spec->tmpdir(),
+                                               'makef90depends-envdiff.txt'))) {
+                     print($ENVdiffFP $ENVdiff, "\n");
+                  }
                }
-               my ($optArgs_serialized, $savedOptArgs_serialized)
-                   = (join("\n", @optArgs), join("\n", @savedOptArgs));
-               print(STDERR Text::Diff::diff(\$optArgs_serialized,
-                                             \$savedOptArgs_serialized), "\n")
-                   if ($optArgs_serialized ne $savedOptArgs_serialized);
             }
          }
       }
@@ -1011,7 +1037,7 @@ sub buildNameSubst(\@)
       $ENV{'DEBUG'} = "$debug" if $debug;
    }
 
-   sub set_cast_mode($)
+   sub set_cast_mode($$)
    {
       my $mode = $_[1];
       if ($mode =~ m{^lp64$}ix)
@@ -1029,7 +1055,7 @@ sub buildNameSubst(\@)
       }
    }
 
-   sub set_c_char_sign($$)
+   sub set_c_char_sign($)
    {
       my $mode = $_[0];
       if ($mode =~ m{fpp-char-is-unsigned})
@@ -1375,6 +1401,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # Local Variables:
 # mode: cperl
 # cperl-indent-level: 3
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:

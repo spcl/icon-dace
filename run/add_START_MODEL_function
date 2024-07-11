@@ -24,22 +24,22 @@ START_MODEL_function()
   # NE: number of vector engines
   #
   ## optional to refine VE/VH configuration:
-  # proc0_shift: if > 0 allocate proc0 on VH (for both components), else allocate
+  # proc0_shift: if > 0 allocate proc0 on VH (for all components), else allocate
   #     all procs on VE. (default: 0)
-  # ICON_COMPONENT2_proc0_shift: if == 0, don't allocate proc0 on VH for
-  #     component 2. (This setting is rather a workaround that is necessary
+  # ICON_COMPONENT${c}_proc0_shift: if == 0, don't allocate proc0 on VH for
+  #     component c. (This setting is rather a workaround that is necessary
   #     until all components support proc0_shit.) (default: $proc0_shift)
-  # ICON_COMPONENT1_VE_procs: Number of vector engine processes for ICON
-  #     component 1, (default: PPN-ICON_COMPONENT2_VE_procs)
-  # ICON_COMPONENT2_VE_procs: Number of vector engine processes for ICON
-  #     component 2, (default: 0)
-  # ICON_COMPONENT1_VH_procs: Number of vector host processes for ICON
+  # ICON_COMPONENT${c}_VE_procs: Number of vector engine processes for ICON
+  #     component c, (default: PPN - (sum of VE_procs of all other components)
+  #     for component 1, 0 for all others)
+  # ICON_COMPONENT${c}_VH_procs: Number of vector host processes for ICON
   #     component 1, (default: 0)
   #     This excludes proc0. Component 1 always allocates a VH proc for proc0.
-  # ICON_COMPONENT2_VH_procs: Number of vector host processes for ICON
-  #     component 2, (default: 0) This excludes proc0. Component 2 only
-  #     allocates a VH proc for proc0 if ICON_COMPONENT2_VH_procs > 0.
-  # venum_lhost: Number of VE per logical host (default: 0)
+  # ICON_COMPONENT${c}_VH_bin: working-dir relative path to the VH binary of
+  #     component c, (default: $MODEL_SCAL)
+  # ICON_COMPONENT${c}_VE_bin: working-dir relative path to the VE binary of
+  #     component c, (default: $MODEL)
+  # venum_lhost: Number of VE per logical host (default: 2)
 
     # Check mandatory variables
     : ${PPN:?START_MODEL_function: PPN is not set}
@@ -54,95 +54,127 @@ START_MODEL_function()
 
     # Set optional variables
     local proc0_shift=${proc0_shift:-0}
-    local ICON_COMPONENT2_proc0_shift=${ICON_COMPONENT2_proc0_shift:-$proc0_shift}
-    local ICON_COMPONENT2_VE_procs=${ICON_COMPONENT2_VE_procs:-0}
-    # Component 1 uses the VE procs that are not used by the other components
-    local ICON_COMPONENT1_VE_procs=${ICON_COMPONENT1_VE_procs:-$((PPN-ICON_COMPONENT2_VE_procs))}
-    local ICON_COMPONENT1_VH_procs=${ICON_COMPONENT1_VH_procs:-0}
-    local ICON_COMPONENT2_VH_procs=${ICON_COMPONENT2_VH_procs:-0}
     local venum_lhost=${venum_lhost:-2}
 
-    local procs_per_ve=$(( (PPN + NE - 1)/NE )) # this should be about the same as $CPE
+    declare -i c=1 nveprocs_excl_first=0 any_nonstandard=0
+    declare -a proc0_shift_c VH_procs_c VE_procs_c VH_bin_c VE_bin_c
 
-    if (( proc0_shift > 0 )); then
+    # Get the number of mentioned components and their allocations.
+    while true; do
+        declare -n n_proc0_shift="ICON_COMPONENT${c}_proc0_shift"
+        declare -n n_VH_procs="ICON_COMPONENT${c}_VH_procs"
+        declare -n n_VE_procs="ICON_COMPONENT${c}_VE_procs"
+        declare -n n_VH_bin="ICON_COMPONENT${c}_VH_bin"
+        declare -n n_VE_bin="ICON_COMPONENT${c}_VE_bin"
+
+        # Check if component $c is mentioned at all (component 1 always is, so it can implicitly
+        # take the remaining procs)
+        if (( c > 1)) && [[ -z ${n_proc0_shift+x} && -z ${n_VH_procs+x} && -z ${n_VE_procs+x} ]]; then
+          break
+        fi
+
+        proc0_shift_c+=( "${n_proc0_shift:-$proc0_shift}" )
+        VH_procs_c+=( "${n_VH_procs:-0}" )
+        any_nonstandard=$(( any_nonstandard || proc0_shift_c[c-1] > 0 || VH_procs_c[c-1] > 0 ))
+
+        if (( c == 1 )); then
+            VE_procs_c+=( "${n_VE_procs:--1}" )
+        else
+            VE_procs_c+=( "${n_VE_procs:-0}" )
+            nveprocs_excl_first=$(( nveprocs_excl_first + VE_procs_c[c-1] ))
+        fi
+
+        VH_bin_c+=( "${n_VH_bin:-$MODEL_SCAL}" )
+        VE_bin_c+=( "${n_VE_bin:-$MODEL}" )
+
+        if [[ -n ${n_VE_bin+x} ]]; then
+            # A different VE binary was specified. Switch to full allocation specification.
+            any_nonstandard=1
+        fi
+
+        c=$(( c + 1 ))
+    done
+
+    # Number of components
+    declare -ri NUM_COMPONENTS=$(( c - 1 ))
+
+    # First component takes remaining procs if nothing was specified.
+    if (( VE_procs_c[0] < 0 )); then
+        VE_procs_c[0]=$(( PPN - nveprocs_excl_first ))
+    fi
+
+    local procs_per_ve=$(( (PPN + NE - 1)/NE )) # this should be about the same as $CPE
+    local number_vector_hosts=$(( (NE + venum_lhost - 1)/venum_lhost))
+
+    if (( any_nonstandard )); then
         local start_options=""
 
-        # Compute PPN for even distribution of IO and restart procs
-        # (number_vector_hosts is the number of allocated VHs)
-        local number_vector_hosts=$(( (NE + venum_lhost - 1)/venum_lhost))
-        local comp1_VH_ppn=$(( (ICON_COMPONENT1_VH_procs + number_vector_hosts - 1)/
-            number_vector_hosts))
-        local comp2_VH_ppn=$(( (ICON_COMPONENT2_VH_procs + number_vector_hosts - 1)/
-            number_vector_hosts))
+        local split_ve=-1
+        local remaining_cores=0
 
-        ###
-        # Component 1
-        #
-        echo "Always allocate proc0 for component 1 on VH 0 ($proc0_shift proc(s))"
-        start_options="${start_options} -v -vh -node 0 -np $proc0_shift -env OMP_NUM_THREADS 1 ${MODEL_SCAL}"
+        for (( c=0; c < NUM_COMPONENTS; c+=1 )); do
+            local _proc0_shift="${proc0_shift_c[c]}"
+            local _VH_procs="${VH_procs_c[c]}"
+            local _VE_procs="${VE_procs_c[c]}"
+            local _VH_bin="${VH_bin_c[c]}"
+            local _VE_bin="${VE_bin_c[c]}"
+            local cc=$(( c + 1 ))
 
-        # Number of VEs needed for component 1 (rounded up)
-        local comp1_ves=$(( (ICON_COMPONENT1_VE_procs + procs_per_ve - 1)/procs_per_ve))
-        # Last VE might be split between component 1 and component 2
-        local comp1_split_ve=$(( comp1_ves - 1 ))
-        # Remaining empty cores on last VE of component 1
-        local remaining_cores_split_ve=$(( comp1_ves*procs_per_ve - ICON_COMPONENT1_VE_procs ))
+            # Compute PPN for even distribution of IO and restart procs
+            # (number_vector_hosts is the number of allocated VHs)
+            local VH_ppn=$(( (_VH_procs + number_vector_hosts - 1)/number_vector_hosts ))
 
-        echo "Allocate ${ICON_COMPONENT1_VE_procs} VE procs (atmosphere) on hosts 0 to ${comp1_split_ve}"
-        start_options="${start_options} : -venode -node 0-${comp1_split_ve} -nnp ${procs_per_ve} -np ${ICON_COMPONENT1_VE_procs} -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} ${MODEL}"
+            if (( _proc0_shift > 0 )); then
+                # distribute proc0s across hosts if possible
+                local proc0_vh=$(( c % number_vector_hosts ))
+                echo "Component $cc: Allocate proc0 on VH $proc0_vh ($proc0_shift proc(s))"
+                start_options="$start_options : -vh -node $proc0_vh -np $proc0_shift -env OMP_NUM_THREADS 1 ${_VH_bin}"
+            fi
 
-        if (( ICON_COMPONENT1_VH_procs > 0 )); then
-            echo "Allocate ${ICON_COMPONENT1_VH_procs} VH procs distributed over all hosts (up to $comp1_VH_ppn procs per host)"
-            start_options="${start_options} : -vh -nnp ${comp1_VH_ppn} -np $ICON_COMPONENT1_VH_procs -env OMP_NUM_THREADS 1 ${MODEL_SCAL}"
+            local ve_procs_left=$_VE_procs
+
+            if (( remaining_cores > 0 && ve_procs_left > 0 )); then
+                # distribute leftover cores from previous component
+                local split_ve_procs=$remaining_cores
+                if (( ve_procs_left < remaining_cores )); then
+                    split_ve_procs=$ve_procs_left
+                fi
+                ve_procs_left=$(( ve_procs_left - split_ve_procs ))
+                remaining_cores=$(( remaining_cores - split_ve_procs ))
+
+                echo "Component $cc: Allocate $split_ve_procs procs on the split VE $split_ve"
+                start_options="$start_options : -venode -node $split_ve -np $split_ve_procs -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} ${_VE_bin}"
+            fi
+
+            local ves=$(( (ve_procs_left + procs_per_ve - 1)/procs_per_ve ))
+
+            if (( ves > 0 )); then
+                local start_ve=$(( split_ve + 1 ))
+                local end_ve=$(( start_ve + ves - 1 ))
+
+                echo "Component $cc: Allocate $ve_procs_left procs on VEs ${start_ve}-${end_ve} ($procs_per_ve per VE)"
+                start_options="$start_options : -venode -node ${start_ve}-${end_ve} -nnp $procs_per_ve -np $ve_procs_left -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} ${_VE_bin}"
+
+                split_ve=$end_ve
+                remaining_cores=$(( ves*procs_per_ve - ve_procs_left ))
+            else
+                : # No additional VEs needed. Keep split_ve and remaining_cores as is
+            fi
+
+            if (( _VH_procs > 0 )); then
+                echo "Component $cc: Allocate $_VH_procs VH procs distributed over all hosts (up to $VH_ppn procs per host)"
+                start_options="$start_options : -vh -nnp $VH_ppn -np $_VH_procs -env OMP_NUM_THREADS 1 ${_VH_bin}"
+            fi
+        done
+
+        if (( remaining_cores > 0 )); then
+            echo "$remaining_cores unassigned VE cores remain on VE $split_ve"
         fi
 
-        ###
-        # Component 2
-        #
-
-        if (( ICON_COMPONENT2_VE_procs + ICON_COMPONENT2_VH_procs > 0 )); then
-            local comp2_VH=0
-            if (( number_vector_hosts > 1 )); then
-                # use another Host for proc0 if multiple hosts are available
-                comp2_VH=$((number_vector_hosts - 1))
-            fi
-
-            if (( ICON_COMPONENT2_proc0_shift > 0 )); then
-                echo "Allocate proc0 for component 2 on VH $comp2_VH ($ICON_COMPONENT2_proc0_shift proc(s))"
-                start_options="$start_options : -v -vh -node $comp2_VH -np $ICON_COMPONENT2_proc0_shift -env OMP_NUM_THREADS 1 $MODEL_SCAL"
-            fi
-
-            local comp2_split_ve_procs=$remaining_cores_split_ve
-            # do we have to allocate procs on the split VE?
-            if (( ICON_COMPONENT2_VE_procs < remaining_cores_split_ve )); then
-                comp2_split_ve_procs=$ICON_COMPONENT2_VE_procs
-            fi
-
-            # allocate some procs on the split VE, if needed
-            if (( comp2_split_ve_procs > 0 )); then
-                echo "Allocate $comp2_split_ve_procs procs on the split VE $comp1_split_ve for component 2"
-                start_options="$start_options : -venode -node $comp1_split_ve -np $comp2_split_ve_procs -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} $MODEL"
-            fi
-
-            local comp2_excl_ve_procs=$(( ICON_COMPONENT2_VE_procs - comp2_split_ve_procs ))
-            # allocate remaining procs on component 2 exclusive nodes (if any)
-            if (( comp2_excl_ve_procs > 0 )); then
-                # VE ids exclusively used by component 2
-                local excl_comp2_ves=$((comp1_split_ve+1))-$((NE - 1))
-                echo "Allocate $comp2_excl_ve_procs procs on the split VEs $excl_comp2_ves for component 2"
-                start_options="$start_options : -venode -node $excl_comp2_ves -nnp $procs_per_ve -np $comp2_excl_ve_procs -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} $MODEL"
-            fi
-
-            if (( ICON_COMPONENT2_VH_procs > 0 )); then
-                echo "Allocate $ICON_COMPONENT2_VH_procs distributed over all hosts (up to $comp2_VH_ppn procs per host)"
-                start_options="$start_options : -vh -nnp $comp2_VH_ppn -np $ICON_COMPONENT2_VH_procs -env OMP_NUM_THREADS 1 $MODEL_SCAL"
-            fi
-        fi
-
-    else # no proc0_shift. Only VEs
-        local start_options="-v -x -venode -node 0-$((NE - 1)) -np $PPN -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} $MODEL"
+    else # Only VEs, default binary.
+        local start_options="-x -venode -node 0-$((NE - 1)) -np $PPN -env OMP_NUM_THREADS ${OMP_NUM_THREADS:-1} $MODEL"
     fi
-    $START $start_options
+    $START -v ${start_options# :}
     return $?
 }
 START_MODEL=START_MODEL_function

@@ -14,11 +14,10 @@
 
 MODULE mo_restart_var_data
 
-  USE mo_dynamics_config,    ONLY: iequations
   USE mo_exception,          ONLY: finish
   USE mo_fortran_tools,      ONLY: insert_dimension
   USE mo_grid_config,        ONLY: l_limited_area
-  USE mo_impl_constants,     ONLY: INH_ATMOSPHERE, TLEV_NNOW, TLEV_NNOW_RCF, SUCCESS
+  USE mo_impl_constants,     ONLY: TLEV_NNOW, TLEV_NNOW_RCF, SUCCESS
 #ifdef DEBUG
   USE mo_io_units,           ONLY: nerr
 #endif
@@ -215,8 +214,7 @@ CONTAINS
 
 #ifndef __NO_ICON_ATMO__
     lskip_timelev = .FALSE.
-    lskip_extra_timelevs = iequations == INH_ATMOSPHERE .AND. &
-      &                    .NOT. (l_limited_area .AND. patch_id == 1)
+    lskip_extra_timelevs = .NOT. (l_limited_area .AND. patch_id == 1)
 
     ! get time level index of the given field, if defined by a variable name suffix for time levels
     ! - if defined     : time_level =  1, 2, ...

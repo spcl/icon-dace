@@ -20,7 +20,7 @@ MODULE mo_output_coupling
   USE mo_run_config          ,ONLY: nlev, msg_level
   USE mo_run_config          ,ONLY: ltimer
   USE mo_timer               ,ONLY: timer_start, timer_stop, &
-       &                            timer_coupling_put, timer_coupling_init
+       &                            timer_coupling_put
   USE mo_util_string         ,ONLY: int2string
   USE mo_exception           ,ONLY: message, finish
   USE mo_parallel_config     ,ONLY: nproma
@@ -42,13 +42,12 @@ MODULE mo_output_coupling
   END TYPE t_exposed_var
 
   PUBLIC :: construct_output_coupling
-  PUBLIC :: winnow_field_list
+  PUBLIC :: construct_output_coupling_finalize
   PUBLIC :: output_coupling
   PUBLIC :: destruct_output_coupling
 
   TYPE(t_exposed_var), POINTER :: exposed_vars_head => NULL()
   INTEGER :: max_collection_size = 0, max_hor_size = 0
-
 
 CONTAINS
 
@@ -59,24 +58,28 @@ CONTAINS
   !! variables as a fields in the coupler.
 
   SUBROUTINE construct_output_coupling ( &
-    p_patch, comp_id, cell_point_ids, vertex_point_ids, timestepstring)
+    p_patch, comp_id, cell_point_id, vertex_point_id, timestepstring)
 
     USE mo_var_list_register,   ONLY: t_vl_register_iter
     USE mo_var_metadata,        ONLY: get_var_timelevel, get_var_name
     USE mo_cdi_constants,       ONLY: GRID_UNSTRUCTURED_CELL, GRID_UNSTRUCTURED_VERT
+    USE mo_var,                 ONLY: level_type_ml
+    USE mo_coupling_utils,      ONLY: cpl_get_instance_id
+#ifdef YAC_coupling
     USE mo_yac_finterface      ,ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT, &
          yac_fdef_field_metadata, yac_fget_component_name, yac_fget_grid_name
+#endif
 
     TYPE(t_patch), TARGET, INTENT(IN) :: p_patch(:)
     INTEGER, INTENT(IN) :: comp_id
-    INTEGER, INTENT(IN) :: cell_point_ids(1), vertex_point_ids(1)
+    INTEGER, INTENT(IN) :: cell_point_id, vertex_point_id
     CHARACTER(LEN=*), INTENT(IN) :: timestepstring
 
     TYPE(t_vl_register_iter), ALLOCATABLE :: vl_iter
     TYPE(t_exposed_var), POINTER :: exposed_var
     CHARACTER(len=:), ALLOCATABLE :: var_name, metadata, comp_name, grid_name
     INTEGER :: iv, tl, collection_size, key_notl, count = 0, var_size, grpi, nblks, pos(3)
-    INTEGER :: point_ids(1), var_ref_pos
+    INTEGER :: point_id, var_ref_pos, instance_id
 
     TYPE t_tmp_timelevel_var
        INTEGER :: key_notl
@@ -86,11 +89,21 @@ CONTAINS
 
     TYPE(t_tmp_timelevel_var), POINTER :: tmp_timelevel_var_head => NULL(), tmp_timelevel_var => NULL()
 
+#ifndef YAC_coupling
+    CALL finish(str_module // 'construct_output_coupling', &
+                'built without coupling support.')
+#else
+
+    CALL construct_output_nml_coupling(comp_id, cell_point_id, vertex_point_id)
+
+    instance_id = cpl_get_instance_id()
+
     max_hor_size = MAX(p_patch(1)%n_patch_cells, p_patch(1)%n_patch_verts)
 
     ALLOCATE(vl_iter)
     VARLIST_LOOP: DO WHILE(vl_iter%next())
-       IF (vl_iter%cur%p%patch_id .NE. 1) CYCLE
+       IF (vl_iter%cur%p%patch_id .NE. 1) CYCLE ! support ICON horizontal grid only
+       IF (vl_iter%cur%p%vlevel_type /= level_type_ml) CYCLE ! avoid ambigious var names
        DO iv = 1, vl_iter%cur%p%nvars
 
           ASSOCIATE( elem => vl_iter%cur%p%vl(iv)%p )
@@ -110,11 +123,11 @@ CONTAINS
 
             ! expose only vars on the icon grid (cells or vertices)
             IF (vl_iter%cur%p%hgrid(iv) .EQ. GRID_UNSTRUCTURED_CELL) THEN
-               point_ids = cell_point_ids
+               point_id = cell_point_id
                var_size = p_patch(1)%n_patch_cells
                nblks = p_patch(1)%nblks_c
             ELSEIF (vl_iter%cur%p%hgrid(iv) .EQ. GRID_UNSTRUCTURED_VERT) THEN
-               point_ids = vertex_point_ids
+               point_id = vertex_point_id
                var_size = p_patch(1)%n_patch_verts
                nblks = p_patch(1)%nblks_v
             ELSE
@@ -149,7 +162,7 @@ CONTAINS
 
             tl = get_var_timelevel(elem%info%name)
             key_notl = vl_iter%cur%p%key_notl(iv)
-            var_name = get_var_name(elem%info)
+            var_name = TRIM(get_var_name(elem%info))
             exposed_var => NULL()
             IF(tl /= -1) THEN
                ! check if we already have a timelevel val registered
@@ -173,9 +186,9 @@ CONTAINS
                   exposed_var%tlev_source = -1
                ENDIF
                CALL yac_fdef_field(             &
-                    & TRIM(var_name),           &
+                    & var_name,                 &
                     & comp_id,                  &
-                    & point_ids,                &
+                    & (/point_id/),             &
                     & 1,                        &
                     & collection_size,          &
                     & timestepstring,           &
@@ -206,6 +219,7 @@ CONTAINS
                   IF (elem%info%in_group(grpi)) metadata = metadata // "  - " // TRIM(var_groups_dyn%gname(grpi)) // newline
                END DO
                CALL yac_fdef_field_metadata( &
+                    instance_id, &
                     yac_fget_component_name(exposed_var%yac_field_id),&
                     yac_fget_grid_name(exposed_var%yac_field_id), &
                     var_name, metadata)
@@ -229,14 +243,21 @@ CONTAINS
        DEALLOCATE(tmp_timelevel_var_head)
     END DO
     DEALLOCATE(vl_iter)
+! YAC_coupling
+#endif
   END SUBROUTINE construct_output_coupling
 
 
   !>
-  !! SUBROUTINE winnow_field_list -- sort out all non-coupled fields
-  !! from the field_list
+  !! SUBROUTINE construct_output_coupling_finalize -- sort out all non-coupled fields
+  !! from the field_list (has to be called after the enddef operation)
 
-  SUBROUTINE winnow_field_list()
+  SUBROUTINE construct_output_coupling_finalize()
+
+#ifndef YAC_coupling
+   CALL finish(str_module // 'construct_output_coupling_finalize', &
+               "built without coupling support.")
+#else
     USE mo_yac_finterface, ONLY: yac_fget_role_from_field_id, &
          YAC_EXCHANGE_TYPE_NONE, YAC_EXCHANGE_TYPE_SOURCE
     TYPE(t_exposed_var), POINTER :: exposed_var, tmp
@@ -277,7 +298,9 @@ CONTAINS
 
     IF (msg_level >= 15) &
        CALL message(str_module, int2string(count) // " exposed vars left after clean up")
-  END SUBROUTINE winnow_field_list
+! YAC_coupling
+#endif
+  END SUBROUTINE construct_output_coupling_finalize
 
   !>
   !! SUBROUTINE output_coupling -- Exchange fields between
@@ -287,16 +310,23 @@ CONTAINS
     USE, INTRINSIC :: ieee_arithmetic
     USE mo_impl_constants      ,ONLY: TLEV_NNOW, TLEV_NNEW, TLEV_NNOW_RCF, TLEV_NNEW_RCF
     USE mo_dynamics_config,     ONLY: nnow, nnow_rcf, nnew, nnew_rcf
+#ifdef YAC_coupling
     USE mo_yac_finterface,      ONLY: yac_fget_field_collection_size, yac_fput, yac_fget_action, &
       &                               yac_fupdate, YAC_ACTION_NONE, yac_dble_ptr
+#endif
 
+    REAL(wp), OPTIONAL :: valid_mask(:,:,:)
+
+#ifndef YAC_coupling
+   CALL finish(str_module // 'output_coupling', &
+               'built without coupling support')
+#else
     INTEGER               :: info, ierror, collection_size, nn, now, ncontained, var_size, var_ref_pos
     REAL(wp), ALLOCATABLE, TARGET, SAVE :: buffer(:,:)
     REAL(wp), CONTIGUOUS, POINTER :: tmp_buffer(:,:)
-    TYPE(yac_dble_ptr), ALLOCATABLE :: buffer_ptr(:, :)
-    REAL(wp), OPTIONAL :: valid_mask(:,:,:)
     TYPE(t_exposed_var), POINTER :: cur_field
     TYPE(t_var_ptr) :: var_now
+    TYPE(yac_dble_ptr), ALLOCATABLE :: buffer_ptr(:, :)
 
     cur_field => exposed_vars_head
     IF (.NOT. ALLOCATED(buffer)) ALLOCATE(buffer(max_hor_size, max_collection_size))
@@ -404,6 +434,8 @@ CONTAINS
        IF (ltimer) CALL timer_stop(timer_coupling_put)
        cur_field => cur_field%next
     ENDDO
+! YAC_coupling
+#endif
   END SUBROUTINE output_coupling
 
   !>
@@ -418,5 +450,74 @@ CONTAINS
     END DO
   END SUBROUTINE destruct_output_coupling
 
+
+  SUBROUTINE construct_output_nml_coupling(comp_id, cell_point_id, vertex_point_id)
+
+    USE mo_cdi_constants,          ONLY: GRID_UNSTRUCTURED_CELL, GRID_UNSTRUCTURED_VERT
+    USE mo_exception,              ONLY: message_text
+    USE mo_name_list_output_init,  ONLY: output_file, nlevs_of_var
+    USE mo_name_list_output_types, ONLY: FILETYPE_YAC, t_output_name_list
+    USE mo_var_metadata,           ONLY: get_var_name
+    USE mo_var_metadata_types,     ONLY: t_var_metadata
+#ifdef YAC_coupling
+    USE mo_yac_finterface,         ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT
+#endif
+
+    INTEGER, INTENT(IN) :: comp_id
+    INTEGER, INTENT(IN) :: cell_point_id, vertex_point_id
+
+#ifndef YAC_coupling
+    CALL finish(str_module // 'construct_output_coupling', &
+                'built without coupling support.')
+#else
+    TYPE(t_var_metadata), POINTER :: info
+    TYPE(t_output_name_list), POINTER :: name_list
+    CHARACTER(len=:), ALLOCATABLE :: name
+    INTEGER :: i, j, k, nlevs, point_id
+
+    IF (.NOT. ALLOCATED(output_file)) RETURN
+
+    DO i=1,SIZE(output_file)
+       name_list => output_file(i)%name_list
+       IF (name_list%filetype == FILETYPE_YAC) THEN
+          DO j=1,output_file(i)%num_vars
+             info => output_file(i)%var_desc(j)%info
+
+             nlevs = nlevs_of_var(info, output_file(i)%level_selection)
+
+             name = TRIM(name_list%output_filename) // "_" // TRIM(get_var_name(info))
+
+             IF (info%hgrid .EQ. GRID_UNSTRUCTURED_CELL) THEN
+                point_id = cell_point_id
+             ELSEIF (info%hgrid .EQ. GRID_UNSTRUCTURED_VERT) THEN
+                point_id = vertex_point_id
+             ELSE
+                CALL finish(str_module, "Invalid hgrid for yac-coupled output_nml") ! TODO support other grids
+             END IF
+
+             IF (LEN_TRIM(name_list%output_start(1)) == 0 .OR. LEN_TRIM(name_list%output_start(2)) > 1) THEN
+                CALL finish(str_module, "Must be exactly one output interval for yac-coupled output_nml")
+             END IF
+
+             IF (msg_level >= 15) THEN
+                WRITE (message_text,'(a,a,a,i0,a)') 'Defining field for ', name,' with vgrid size ', nlevs, ' for yac-coupled output_nml'
+                CALL message(str_module, message_text)
+             END IF
+
+             CALL yac_fdef_field(                 &
+                  & name,                         &
+                  & comp_id,                      &
+                  & (/point_id/),                 &
+                  & 1,                            &
+                  & nlevs,                        &
+                  & name_list%output_interval(1), &
+                  & YAC_TIME_UNIT_ISO_FORMAT,     &
+                  & info%cdiVarID )
+          END DO
+       END IF
+    END DO
+! YAC_coupling
+#endif
+  END SUBROUTINE construct_output_nml_coupling
 
 END MODULE mo_output_coupling

@@ -17,7 +17,7 @@
 
 MODULE mo_art_linoz
     ! ICON
-    USE mo_math_constants,       ONLY: pi
+    USE mo_math_constants,       ONLY: pi, pi_2
     USE mo_kind,                 ONLY: wp
 
     USE mtime,                   ONLY: datetime
@@ -111,7 +111,7 @@ SUBROUTINE art_calc_linoz(jg,jb,jcs,jce, tracer, current_date, p_dtime )
     !  averaging in altitude
     !  ---------------------------------------------
     DO jk=1,nlev
-      ik = int( (art_atmo%lat(jc,jb)+pi/2._wp)/pi*18._wp ) +1
+      ik = int( (art_atmo%lat(jc,jb)+pi_2)/pi*18._wp ) +1
       il = int((art_atmo%z_mc(jc,jk,jb)/1000._wp-8._wp)/2._wp)
       ilp = il+1
       IF (il >= 25) THEN
@@ -246,7 +246,7 @@ SUBROUTINE art_calc_linoz_ana(jg,jb,jcs,jce ,&
     !  averaging in altitude
     !  ---------------------------------------------
     DO jk=1,nlev
-      ik = int( (art_atmo%lat(jc,jb)+pi/2._wp)/pi*18._wp ) +1
+      ik = int( (art_atmo%lat(jc,jb)+pi_2)/pi*18._wp ) +1
       il = int((art_atmo%z_mc(jc,jk,jb)/1000._wp-8._wp)/2._wp)
       ilp = il+1
       IF (il >= 25) THEN

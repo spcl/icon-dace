@@ -55,7 +55,7 @@ if [ x$namelist_list = x ]; then
   if [ x$atmo_namelist != x ]; then
     # this is the atmo model
     namelist_list[0]="$atmo_namelist"
-    modelname_list[0]="atmo"
+    modelname_list[0]="atm"
     modeltype_list[0]=1
     run_atmo="true"
   elif [ x$ocean_namelist != x ]; then
@@ -291,7 +291,7 @@ if [[ $run_jsbach == yes  ]] || [[ $run_jsbach == true ]]; then
 EOF
 #
 if [[ -n ${atmo_dyn_grids} ]]; then
-  no_of_domains=${#atmo_dyn_grids[@]}
+  no_of_domains=$(echo ${atmo_dyn_grids} | wc -w)
 else
   no_of_domains=1
 fi
@@ -342,8 +342,6 @@ ldd ${MODEL}
 #
 # TODO: be less atmospheric centric, i.e. do not assume that atmosphere is always component 1
 ICON_COMPONENT1_VH_procs=$(( ${num_restart_procs:-0} + ${num_io_procs:-0} + ${num_prefetch_proc:-0} + ${num_io_procs_radar:-0}))
-ICON_COMPONENT2_VE_procs=0 # Note: probably one has to substrace $proc0_shift here if proc0_shift is used for the second component.
-ICON_COMPONENT2_VH_procs=0 # TODO: use information about coupled processes to fill this
 
 #
 # start experiment

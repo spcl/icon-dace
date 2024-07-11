@@ -17,6 +17,7 @@ MODULE mo_fuel_config_class
   ! Used variables of module
 
   USE mo_exception,         ONLY: message
+  USE mo_jsb_control,       ONLY: debug_on
   USE mo_io_units,          ONLY: filename_max
   USE mo_jsb_config_class,  ONLY: t_jsb_config
 
@@ -62,7 +63,7 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Init_fuel_config'
 
-    CALL message(TRIM(routine), 'Starting fuel configuration')
+    IF (debug_on()) CALL message(TRIM(routine), 'Starting fuel configuration')
 
     ! Set defaults
     active                 = .FALSE.

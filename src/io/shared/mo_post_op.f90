@@ -23,7 +23,7 @@ MODULE mo_post_op
 
   USE mo_kind,                ONLY: dp, sp
   USE mo_var_metadata_types,  ONLY: t_post_op_meta, POST_OP_NONE,    &
-    &                               POST_OP_SCALE, POST_OP_LUC, POST_OP_LIN2DBZ
+    &                               POST_OP_SCALE, POST_OP_LUC, POST_OP_LIN2DBZ, POST_OP_OFFSET
 #ifndef __NO_ICON_ATMO__
   USE mo_lnd_nwp_config,      ONLY: convert_luc_ICON2GRIB
 #endif
@@ -114,6 +114,20 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
 
+    CASE(POST_OP_OFFSET)
+!$OMP PARALLEL
+!$OMP DO PRIVATE(l1,l2), SCHEDULE(runtime)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(idim) IF(acc_is_present(field2D) .AND. lzacc)
+      !$ACC LOOP GANG VECTOR COLLAPSE(2)
+      DO l2=1,idim(2)
+        DO l1=1,idim(1)
+          field2D(l1,l2) = field2D(l1,l2) + post_op%arg1%rval
+        END DO
+      END DO
+      !$ACC END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
+
     CASE DEFAULT
       CALL finish(routine, "Internal error!")
     END SELECT
@@ -185,6 +199,21 @@ CONTAINS
       !$ACC END PARALLEL
 !$OMP END DO
 !$OMP END PARALLEL 
+
+    CASE(POST_OP_OFFSET)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(l1,l2), SCHEDULE(runtime)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(idim) IF(acc_is_present(field2D) .AND. lzacc)
+      !$ACC LOOP GANG VECTOR COLLAPSE(2)
+      DO l2=1,idim(2)
+        DO l1=1,idim(1)
+          field2D(l1,l2) = field2D(l1,l2) + post_op%arg1%sval
+        END DO
+      END DO
+      !$ACC END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
 
     CASE DEFAULT
       CALL finish(routine, "Internal error!")
@@ -330,6 +359,23 @@ CONTAINS
 !$OMP END DO
 !$OMP END PARALLEL
 
+    CASE(POST_OP_OFFSET)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(l1,l2,l3), SCHEDULE(runtime)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(idim) IF(acc_is_present(field3D) .AND. lzacc)
+      !$ACC LOOP GANG VECTOR COLLAPSE(3)
+      DO l3=1,idim(3)
+        DO l2=1,idim(2)
+          DO l1=1,idim(1)
+            field3D(l1,l2,l3) = field3D(l1,l2,l3) + post_op%arg1%rval
+          END DO
+        END DO
+      END DO
+      !$ACC END PARALLEL
+!$OMP END DO
+!$OMP END PARALLEL
+
     CASE DEFAULT
       CALL finish(routine, "Internal error!")
     END SELECT
@@ -400,6 +446,24 @@ CONTAINS
         DO l2=1,idim(2)
           DO l1=1,idim(1)
             field3D(l1,l2,l3) = scalfac * LOG( MAX( field3D(l1,l2,l3), lowlim) )
+          END DO
+        END DO
+      END DO
+      !$ACC END PARALLEL
+      !$ACC WAIT(1)
+!$OMP END DO
+!$OMP END PARALLEL
+
+    CASE(POST_OP_OFFSET)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(l1,l2,l3), SCHEDULE(runtime)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(idim) IF(acc_is_present(field3D) .AND. lzacc)
+      !$ACC LOOP GANG VECTOR COLLAPSE(3)
+      DO l3=1,idim(3)
+        DO l2=1,idim(2)
+          DO l1=1,idim(1)
+            field3D(l1,l2,l3) = field3D(l1,l2,l3) + post_op%arg1%sval
           END DO
         END DO
       END DO

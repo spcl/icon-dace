@@ -59,6 +59,7 @@
 #include "xt_exchanger.h"
 #include "xt_mpi_internal.h"
 #include "instr.h"
+#include "xt_gpu.h"
 
 INSTR_DEF(instr,"YAXT_lifetime")
 
@@ -81,6 +82,7 @@ xt_initialize(MPI_Comm default_comm)
   setenv("SCT_CALLSTATS", "0", 0);
   INSTR_START(instr);
 #endif
+  xt_gpu_init();
   xt_lib_state = xt_lib_initialized;
 }
 
@@ -113,6 +115,24 @@ xt_finalized(void)
 {
   return xt_lib_state == xt_lib_finalized;
 }
+
+
+#if !defined PIC && defined XT_WORKAROUND_MPI_SYMBIND
+
+#include <stdint.h>
+extern int yaksa_type_create_indexed(int, const int *,
+                                     const int *, uint64_t,
+                                     void *, uint64_t *);
+struct opal_datatype_t;
+extern int32_t opal_datatype_commit(struct opal_datatype_t *);
+extern int32_t opal_datatype_add(struct opal_datatype_t *,
+                                 const struct opal_datatype_t *,
+                                 uint32_t, ptrdiff_t, ptrdiff_t);
+
+#define XT_SYM(sym) ((void(*)(void))(sym)),
+void (*xt_sym_bind[])(void) = { XT_WORKAROUND_MPI_SYMBIND };
+
+#endif
 
 /*
  * Local Variables:

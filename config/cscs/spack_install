@@ -18,6 +18,7 @@ VARIANT=$2
 # Unset positional parameters
 # so they are not forwarded to spack-c2sm/setup-env.sh
 set -- 
+set +x
 
 git clone --depth 1 --recurse-submodules --shallow-submodules -b $SPACK_VERSION https://github.com/C2SM/spack-c2sm.git
 
@@ -43,32 +44,4 @@ export CMAKE=$(spack find --format='{prefix}/bin/cmake' cmake@3.18: | head -1)
 spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
 spack install -v
 
-# reload spack env to get ECCODES_DEFINITIONECCODES_DEFINITION_PATH
-spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
-# store ECCODES_DEFINITION_PATH in setting, should be later replaced with spack env activate --sh
-echo "export ECCODES_DEFINITION_PATH=${ECCODES_DEFINITION_PATH}" >> $ICON_DIR/setting
-
-# Workaround for Balfrin to set cuda library in LD_LIBRARY_PATH
-# This relies on the spack env activate
-machine="$( ./spack-c2sm/src/machine.sh )"
-if [[ $machine == "balfrin" && "$VARIANT" == *"gpu"* ]]; then
- 
-  # Extract path to upstream used by spack, this contains also the modules
-  spack_upstream=`spack config get upstreams |grep install_tree`
-  spack_upstream=${spack_upstream#*install_tree:}
-  if [ ! -d $spack_upstream/modules ]; then
-    echo "Error: $spack_upstream/modules is not a directory"
-    exit 1
-  fi
-  module use $spack_upstream/modules
-  cuda_lib_path=`module show cuda 2>&1 |grep LD_LIBRARY_PATH`
-
-  cuda_lib_path=/${cuda_lib_path#*/}
-  if [ ! -d $cuda_lib_path ]; then
-    echo "Error: $cuda_path_lib does not exists"
-    exit 1
-  fi
-  echo "Prepend LD_LIBRARY_PATH with $cuda_lib_path in run setting"
-  echo "export LD_LIBRARY_PATH=$cuda_lib_path\${LD_LIBRARY_PATH:+:\$LD_LIBRARY_PATH}" >> $ICON_DIR/setting
-  echo "echo Info: cuda path is set in LD_LIBRARY_PATH=\$LD_LIBRARY_PATH" >> $ICON_DIR/setting
-fi
+$SCRIPT_DIR/create_sh_env $SPACK_VERSION $VARIANT

@@ -72,11 +72,15 @@ export MD='rnmo'
 rundir=`pwd`
 cd checksuite.icon-dev
 
-##case $HOST in
-##    *daint*)
-##        export MD='rnmot' # <-- PROVISIONAL, do not add tolerance test, references are missing
-##
-##esac
+builder="unknown"
+[[ $BB_NAME ]] && builder=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]')
+
+case $builder in
+    levante_gpu*)
+        # nproma test is invalid
+        export MD='rmo'
+        ;;
+esac
 
 ./icon-dev.checksuite
 STATUS=$?

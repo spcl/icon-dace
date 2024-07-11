@@ -39,7 +39,6 @@ CONTAINS
        &                     rho           ,& ! in: density
        &                     pf            ,& ! in: pressure
        &                     tke           ,& ! in: TKE (on half levels, size nlev+1)
-       &                     cpair         ,& ! in: pressure
        &                     ta            ,& ! inout: temp
        &                     qv            ,& ! inout: specific humidity
        &                     qc, qnc       ,& ! inout: cloud water
@@ -86,7 +85,6 @@ CONTAINS
     REAL(wp), DIMENSION(:,:), INTENT(in)  :: rho      !< density
     REAL(wp), DIMENSION(:,:), INTENT(in)  :: pf       !< pressure
     REAL(wp), DIMENSION(:,:), INTENT(in), POINTER  :: tke      !< TKE
-    REAL(wp), DIMENSION(:,:), INTENT(in)  :: cpair    !< specific heat of air
     !
     REAL(wp), DIMENSION(:,:), INTENT(inout)  :: ta       !< temperature
     REAL(wp), DIMENSION(:,:), INTENT(inout)  :: qv       !< sp humidity
@@ -252,7 +250,7 @@ CONTAINS
     !
     DO jk = jks,jke
        DO jc = jcs,jce
-          tend_ta (jc,jk) =     (zta (jc,jk)-ta (jc,jk))*zdtr*cvd/cpair(jc,jk)
+          tend_ta (jc,jk) =     (zta (jc,jk)-ta (jc,jk))*zdtr
           tend_qv (jc,jk) = MAX((zqv (jc,jk)-qv (jc,jk))*zdtr,-qv (jc,jk)*zdtr)
           tend_qc (jc,jk) = MAX((zqc (jc,jk)-qc (jc,jk))*zdtr,-qc (jc,jk)*zdtr)
           tend_qnc(jc,jk) = MAX((zqnc(jc,jk)-qnc(jc,jk))*zdtr,-qnc(jc,jk)*zdtr)

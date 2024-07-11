@@ -381,14 +381,14 @@ MODULE mo_nh_diagnose_pres_temp
 
 
   !!
-  !! Calculates the sum of condensate mixing ratios
+  !! Calculates the sum of selected tracer mass fractions
   !! Extracted from diag_temp (see above) in order to encapsulate the code duplication needed for vectorization
   !!
-  SUBROUTINE calc_qsum (tracer, qsum, condensate_list, jb, i_startidx, i_endidx, slev, slev_moist, nlev)
+  SUBROUTINE calc_qsum (tracer, qsum, tracer_list, jb, i_startidx, i_endidx, slev, slev_moist, nlev)
 
     REAL(wp), INTENT(IN)    :: tracer(:,:,:,:)       !! tracer array
     REAL(wp), INTENT(INOUT) :: qsum(:,:)             !! output: sum of condensates [kg kg-1]
-    INTEGER,  INTENT(IN)    :: condensate_list(:)    !! IDs of all tracers containing prognostic condensate.
+    INTEGER,  INTENT(IN)    :: tracer_list(:)        !! IDs of tracers for which the sum is taken
     INTEGER,  INTENT(IN)    :: jb, i_startidx, i_endidx, slev, slev_moist, nlev
 
     INTEGER  :: jk,jc
@@ -399,8 +399,8 @@ MODULE mo_nh_diagnose_pres_temp
 
 #ifdef __SX__
     qsum(:,MIN(slev,slev_moist):nlev) = 0._wp
-    DO jl = 1, SIZE(condensate_list)
-      jt = condensate_list(jl)
+    DO jl = 1, SIZE(tracer_list)
+      jt = tracer_list(jl)
       DO jk = slev_moist, nlev
         DO jc = i_startidx, i_endidx
           qsum(jc,jk) = qsum(jc,jk) + tracer(jc,jk,jb,jt)
@@ -408,7 +408,7 @@ MODULE mo_nh_diagnose_pres_temp
       ENDDO
     ENDDO
 #else
-    !$ACC DATA NO_CREATE(qsum, tracer, condensate_list)
+    !$ACC DATA NO_CREATE(qsum, tracer, tracer_list)
 
     IF (slev < slev_moist) THEN
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
@@ -425,7 +425,7 @@ MODULE mo_nh_diagnose_pres_temp
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO jk = slev_moist, nlev
       DO jc = i_startidx, i_endidx
-        qsum(jc,jk) = SUM(tracer(jc,jk,jb,condensate_list))
+        qsum(jc,jk) = SUM(tracer(jc,jk,jb,tracer_list))
       ENDDO
     ENDDO
     !$ACC END PARALLEL

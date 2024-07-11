@@ -1,13 +1,13 @@
 #%# -*- mode: sh -*-
-#%# ICON
-#%#
-#%# ------------------------------------------
-#%# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-#%# Contact information: icon-model.org
-#%# See AUTHORS.TXT for a list of authors
-#%# See LICENSES/ for license information
-#%# SPDX-License-Identifier: BSD-3-Clause
-#%# ------------------------------------------
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
 #
 # Setup for levante (SLURM)
 #
@@ -18,7 +18,7 @@
 #SBATCH --mail-user=%{JOB.email|d(EMAIL)|join(',')}
 #%  endif
 #%  for var in JOB.batch|d({}):
-#%    set val = JOB.batch[var]
+#%    set val = JOB.batch[var]|list|join(',')
 #%    if val|lower == 'true':
 #SBATCH --%{var}
 #%    elif ' ' in val:

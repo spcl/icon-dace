@@ -50,7 +50,7 @@ srvDebug(int debug)
 }
 
 static void
-srvLibInit()
+srvLibInit(void)
 {
   const char *envName = "SRV_PRECISION";
 

@@ -19,9 +19,9 @@ MODULE mo_bc_solar_irradiance
 
   USE mo_kind,            ONLY: dp, i8
   USE mo_exception,       ONLY: finish, message, warning, message_text
-  USE mo_netcdf_parallel, ONLY: p_nf_open, p_nf_inq_dimid, p_nf_inq_dimlen, &
-       &                        p_nf_inq_varid, p_nf_get_vara_double, p_nf_close, &
-       &                        nf_read, nf_noerr, p_nf_get_var_int
+  USE mo_netcdf,          ONLY: nf90_nowrite, nf90_noerr
+  USE mo_netcdf_parallel, ONLY: p_nf90_open, p_nf90_inq_dimid, p_nf90_inquire_dimension, &
+       &                        p_nf90_inq_varid, p_nf90_get_var, p_nf90_close
   USE mo_bcs_time_interpolation, ONLY: t_time_interpolation_weights
   USE mo_run_config,      ONLY: msg_level
 
@@ -69,12 +69,12 @@ CONTAINS
     WRITE (message_text,'(A,I4,A)') 'reading bc_solar_irradiance_sw_b14.nc (year ', year, ')'
     CALL message('mo_bc_solar_irradiance:read_bc_solar_irradiance', message_text)
 
-    CALL nf_check(p_nf_open('bc_solar_irradiance_sw_b14.nc', nf_read, ncid))
+    CALL nf_check(p_nf90_open('bc_solar_irradiance_sw_b14.nc', nf90_nowrite, ncid))
 
-    CALL nf_check(p_nf_inq_dimid(ncid, 'time', ndimid))
-    CALL nf_check(p_nf_inq_dimlen(ncid, ndimid, ssi_time_entries))
-    CALL nf_check(p_nf_inq_dimid(ncid, 'numwl', ndimid))
-    CALL nf_check(p_nf_inq_dimlen(ncid, ndimid, ssi_numwl))
+    CALL nf_check(p_nf90_inq_dimid(ncid, 'time', ndimid))
+    CALL nf_check(p_nf90_inquire_dimension(ncid, ndimid, len = ssi_time_entries))
+    CALL nf_check(p_nf90_inq_dimid(ncid, 'numwl', ndimid))
+    CALL nf_check(p_nf90_inquire_dimension(ncid, ndimid, len = ssi_numwl))
 
     ALLOCATE (ssi_years(ssi_time_entries))
     ALLOCATE (ssi_months(ssi_time_entries))
@@ -88,10 +88,10 @@ CONTAINS
        !$ACC ENTER DATA PCREATE(tsi_m)
     END IF
 
-    CALL nf_check(p_nf_inq_varid(ncid, 'year', nvarid))
-    CALL nf_check(p_nf_get_var_int (ncid, nvarid, ssi_years))
-    CALL nf_check(p_nf_inq_varid(ncid, 'month', nvarid))
-    CALL nf_check(p_nf_get_var_int (ncid, nvarid, ssi_months))
+    CALL nf_check(p_nf90_inq_varid(ncid, 'year', nvarid))
+    CALL nf_check(p_nf90_get_var(ncid, nvarid, ssi_years))
+    CALL nf_check(p_nf90_inq_varid(ncid, 'month', nvarid))
+    CALL nf_check(p_nf90_get_var(ncid, nvarid, ssi_months))
 
     first_year = ssi_years(1)
 
@@ -101,26 +101,26 @@ CONTAINS
       CALL finish('','No solar irradiance data available for the requested year')
     END IF
 
-    CALL nf_check(p_nf_inq_varid (ncid, 'TSI', nvarid))
+    CALL nf_check(p_nf90_inq_varid (ncid, 'TSI', nvarid))
     start(1) = idx
     cnt(1) = 14
     IF (lradt) THEN
-       CALL nf_check(p_nf_get_vara_double(ncid, nvarid, start, cnt, tsi_radt_m))
-       CALL nf_check(p_nf_inq_varid (ncid, 'SSI', nvarid))
+       CALL nf_check(p_nf90_get_var(ncid, nvarid, tsi_radt_m, start, cnt))
+       CALL nf_check(p_nf90_inq_varid (ncid, 'SSI', nvarid))
        start(1) = 1;   cnt(1) = ssi_numwl;
        start(2) = idx; cnt(2) = 14;
-       CALL nf_check(p_nf_get_vara_double (ncid, nvarid, start, cnt, ssi_radt_m))
+       CALL nf_check(p_nf90_get_var(ncid, nvarid, ssi_radt_m, start, cnt))
        lread_solar_radt=.FALSE.
        last_year_radt=year
        !$ACC UPDATE DEVICE(tsi_radt_m, ssi_radt_m) ASYNC(1)
     ELSE
-       CALL nf_check(p_nf_get_vara_double(ncid, nvarid, start, cnt, tsi_m))
+       CALL nf_check(p_nf90_get_var(ncid, nvarid, tsi_m, start, cnt))
        lread_solar=.FALSE.
        last_year=year
        !$ACC UPDATE DEVICE(tsi_m) ASYNC(1)
     END IF
 
-    CALL nf_check(p_nf_close(ncid))
+    CALL nf_check(p_nf90_close(ncid))
 
     DEALLOCATE(ssi_years)
     DEALLOCATE(ssi_months)

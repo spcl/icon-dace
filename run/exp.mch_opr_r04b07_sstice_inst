@@ -19,7 +19,7 @@
 #          It is used as a test case for SST-ICE mode 6 (SST and SIC based
 #          on instantaneous values)
 #
-# Author: Mikael Stellio (C2SM)
+# Created by: Mikael Stellio (C2SM)
 #
 # =========================================================================== 
 
@@ -188,7 +188,6 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /

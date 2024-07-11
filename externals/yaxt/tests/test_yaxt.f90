@@ -56,7 +56,7 @@ PROGRAM test_yaxt
        xt_redist_p2p_off_new, xt_redist_s_exchange, xt_int_kind, &
        xt_idxfsection_new, xt_redist_collection_static_new
   USE ftest_common, ONLY: test_abort, id_map, factorize, regular_deco, &
-       finish_mpi, cmp_arrays
+       init_mpi, finish_mpi, cmp_arrays
 
   ! PGI compilers up to at least version 15 do not handle generic
   ! interfaces correctly
@@ -376,9 +376,7 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: context = 'init_all: '
     INTEGER :: ierror
 
-    CALL MPI_INIT(ierror)
-    IF (ierror /= MPI_SUCCESS) &
-         CALL abort(context//'MPI_INIT failed', __LINE__)
+    CALL init_mpi
 
     CALL xt_initialize(MPI_COMM_WORLD)
 

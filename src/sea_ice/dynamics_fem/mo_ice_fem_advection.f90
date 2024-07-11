@@ -13,7 +13,7 @@
 ! Copyright (C) 2004-2024, AWI
 !
 ! Authors: Sergey Danilov, Qiang Wang
-! See LICENSES/Third_party_license_terms/BSD-3-Clause.fesom_seaice.txt for license information
+! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 !
 ! This file has been modified for the use in ICON

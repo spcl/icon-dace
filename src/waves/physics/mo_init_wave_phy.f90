@@ -167,6 +167,8 @@ CONTAINS
     INTEGER :: jc,jb,jd,jf,jk,jt
     REAL(wp):: st
 
+    REAL(wp), PARAMETER :: FLMIN = 0.000001_wp !! absolute minimum energy in spectral bins
+
     ! halo points must be included
     i_rlstart  = 1
     i_rlend    = min_rlcell
@@ -189,6 +191,9 @@ CONTAINS
         DO jc = i_startidx, i_endidx
             st = rpi_2*MAX(0._wp, COS(wave_config%dirs(jd)-p_forcing%dir10m(jc,jb)*deg2rad) )**2
             IF (st < 0.1E-08_wp) st = 0._wp
+
+            ! Avoid too small numbers of p_diag%ET
+            p_diag%ET(jc,jb,jf) = MAX(p_diag%ET(jc,jb,jf),FLMIN)
 
             ! WAM initialisation
             tracer(jc,jk,jb,jt) = p_diag%ET(jc,jb,jf) * st
@@ -222,8 +227,6 @@ CONTAINS
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
          &  routine = modname//':JONSWAP'
 
-    REAL(wp), PARAMETER :: FLMIN = 0.000001_wp !! absolute minimum energy in spectral bins
-
     REAL(wp) :: ARG, sigma, G2ZPI4FRH5M
 
     INTEGER :: i_rlstart, i_rlend, i_startblk, i_endblk
@@ -245,25 +248,22 @@ CONTAINS
 
       DO jf = 1,SIZE(freqs)
 
-        G2ZPI4FRH5M = grav**2._wp / pi2**4._wp * freqs(jf)**(-5._wp)
+        G2ZPI4FRH5M = grav**2 / pi2**4 * freqs(jf)**(-5)
 
         DO jc = i_startidx, i_endidx
 
           sigma = MERGE(sb,sa, freqs(jf)>fp(jc,jb))
           ET(jc,jb,jf) = 0._wp
 
-          ARG = 1.25_wp*(FP(jc,jb)/freqs(jf))**4._wp
+          ARG = 1.25_wp*(FP(jc,jb)/freqs(jf))**4
           IF (ARG.LT.50.0_wp) THEN
             ET(jc,jb,jf) = ALPHAJ(jc,jb) * G2ZPI4FRH5M * EXP(-ARG)
           END IF
 
-          ARG = 0.5_wp*((freqs(jf)-FP(jc,jb)) / (sigma*FP(jc,jb)))**2._wp
+          ARG = 0.5_wp*((freqs(jf)-FP(jc,jb)) / (sigma*FP(jc,jb)))**2
           IF (ARG.LT.99._wp) THEN
             ET(jc,jb,jf) = ET(jc,jb,jf)*exp(log(GAMMA)*EXP(-ARG))
           END IF
-
-          ! Avoid too small numbers of p_diag%FLMINFR
-          ET(jc,jb,jf) = MAX(ET(jc,jb,jf),FLMIN)
 
         END DO  !jc
       END DO  !jf
@@ -333,13 +333,13 @@ CONTAINS
           p_diag%FP(jc,jb) = MAX(0.13_wp, A*((grav*fetch)/(p_forcing%sp10m(jc,jb)**2))**D)
 
           p_diag%FP(jc,jb) = MIN(p_diag%FP(jc,jb), fm/UG)
-!!! set min of ALPHAJ to 0 (was 0.0081), otherwise it produces Hs > 1m with wind=0 !!!
           p_diag%ALPHAJ(jc,jb) = MAX(0.0081_wp, B * p_diag%FP(jc,jb)**E)
           p_diag%FP(jc,jb) = p_diag%FP(jc,jb) * UG
         ELSE
           p_diag%ALPHAJ(jc,jb) = 0.0081_wp
           p_diag%FP(jc,jb) = fm
         END IF
+
       END DO
 
     END DO
@@ -540,7 +540,7 @@ CONTAINS
           END IF
         END IF
       END IF
-      
+
       MCT = MC
       IF (MCT.GT.nfreqs) MCT  = nfreqs
       IF (MM.GT.nfreqs)  MM  = nfreqs

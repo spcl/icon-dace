@@ -11,7 +11,7 @@
 # ---------------------------------------------------------------
 
 # ----------------------------------------------------------------------------
-#PBS -q sx_norm_rh8
+#PBS -q sx_norm
 #PBS -l elapstim_req=00:20:00
 #PBS --venode=3          # Run up to 3 * 8 = 24 MPI jobs
 #PBS --venum-lhost=8     # Number of VE per logical host

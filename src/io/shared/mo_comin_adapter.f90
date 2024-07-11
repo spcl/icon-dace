@@ -17,6 +17,7 @@ MODULE mo_comin_adapter
     &                                    max_ntracer,  ifluxl_sm, islopel_vsm
   USE mo_cdi_constants,           ONLY : GRID_UNSTRUCTURED_CELL
   USE mo_zaxis_type,              ONLY : ZA_REFERENCE, ZA_SURFACE, zaxisTypeList, t_zaxisType
+  USE mo_master_control,          ONLY: get_my_process_name
   USE mo_grid_config,             ONLY : n_dom
   USE mo_exception,               ONLY : message, message_text, finish
   USE mo_model_domain,            ONLY : t_patch, p_patch
@@ -30,7 +31,7 @@ MODULE mo_comin_adapter
   USE mo_var_groups,              ONLY : groups
   USE mo_cf_convention,           ONLY : t_cf_var
   USE mo_grib2,                   ONLY : t_grib2_var
-  USE mo_nonhydro_state,          ONLY : p_nh_state, p_nh_state_lists
+  USE mo_nonhydro_types,          ONLY : t_nh_state, t_nh_state_lists
   USE mo_nwp_phy_state,           ONLY : prm_nwp_tend_list, prm_nwp_tend
   USE mo_advection_config,        ONLY : t_advection_config, advection_config
   USE mo_advection_utils,         ONLY : add_tracer_ref
@@ -39,6 +40,7 @@ MODULE mo_comin_adapter
   USE mo_util_vgrid_types,        ONLY : t_vgrid_buffer
   USE mo_decomposition_tools,     ONLY : get_local_index
   USE mo_comin_config,            ONLY : comin_config, t_comin_tracer_info
+  USE mo_coupling_utils,          ONLY : cpl_is_initialised, cpl_get_instance_id
   USE comin_host_interface,       ONLY : t_comin_var_ptr,                         &
     &                                    t_comin_var_descriptor,                  &
     &                                    t_var_request_list_item,                 &
@@ -56,7 +58,13 @@ MODULE mo_comin_adapter
     &                                    comin_current_set_datetime,              &
     &                                    comin_metadata_set,                      &
     &                                    comin_descrdata_set_timesteplength,      &
-    &                                    comin_var_update
+    &                                    comin_var_update,                        &
+    &                                    comin_callback_context_call
+
+  USE mo_timer,                   ONLY : timers_level, timer_comin_init, &
+                                         timer_comin_primary_constructors, &
+                                         timer_comin_callbacks, &
+                                         timer_start, timer_stop
 #endif
 
   IMPLICIT NONE
@@ -74,6 +82,7 @@ MODULE mo_comin_adapter
   PUBLIC :: icon_update_current_datetime
   PUBLIC :: icon_expose_timesteplength_domain
   PUBLIC :: icon_update_expose_variables
+  PUBLIC :: icon_call_callback
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_comin_adapter'
 
@@ -83,17 +92,6 @@ MODULE mo_comin_adapter
   INTERFACE metadata_set_if_present
     MODULE PROCEDURE metadata_set_if_present_int
   END INTERFACE metadata_set_if_present
-#endif
-
-#ifdef YAC_coupling
- INTERFACE
-    FUNCTION yac_cget_default_instance_id() BIND(c) RESULT(instance_id)
-      ! int yac_cget_default_instance_id();
-      USE iso_c_binding
-      IMPLICIT NONE
-      INTEGER(C_INT) :: instance_id
-    END FUNCTION yac_cget_default_instance_id
- END INTERFACE
 #endif
 
 CONTAINS
@@ -108,8 +106,10 @@ CONTAINS
   ! - OpenACC handling
   ! - GRIB2
   !
-  SUBROUTINE icon_append_comin_tracer_variables(p_patch)
-    TYPE(t_patch),        INTENT(IN)    :: p_patch(:)
+  SUBROUTINE icon_append_comin_tracer_variables(p_patch, p_nh_state, p_nh_state_lists)
+    TYPE(t_patch),             INTENT(IN)       :: p_patch(:)
+    TYPE(t_nh_state), POINTER, INTENT(IN)       :: p_nh_state(:)
+    TYPE(t_nh_state_lists), POINTER, INTENT(IN) :: p_nh_state_lists(:)
     ! Local variables
     CHARACTER(*), PARAMETER    :: routine = modname//"::icon_append_comin_tracer_variables"
     INTEGER                    :: jg, shape3d_c(3), jt, ntl, tracer_idx
@@ -126,6 +126,7 @@ CONTAINS
     INTEGER                    :: ivadv, ihadv
     TYPE(t_comin_tracer_info), POINTER :: this_info => NULL()
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     DOM_LOOP : DO jg=1,n_dom
       shape3d_c = [ nproma, p_patch(jg)%nlev, p_patch(jg)%nblks_c ]
 
@@ -212,6 +213,7 @@ CONTAINS
 
       NULLIFY(this_info)
     END DO DOM_LOOP
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_append_comin_tracer_variables
 
@@ -246,6 +248,7 @@ CONTAINS
     TYPE(t_comin_tracer_info), POINTER :: &
       &  this_info          !< ICON-internal ComIn variable information
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     DOM_LOOP : DO jg=1,n_dom
       shape3d_c = [ nproma, p_patch(jg)%nlev, p_patch(jg)%nblks_c ]
       ptr => comin_request_get_list_head()
@@ -343,6 +346,7 @@ CONTAINS
         CALL finish(routine, message_text)
       END IF
     END DO DOM_LOOP
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_append_comin_tracer_phys_tend
 
@@ -367,6 +371,7 @@ CONTAINS
     TYPE(t_grib2_var)          :: grib2_desc
     LOGICAL                    :: lrestart
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     ! ComIn variables are added to a separate variable list.
     ALLOCATE(p_comin_varlist(n_dom), STAT=ist)
     IF (ist /= SUCCESS)  CALL finish (routine, "allocation of ComIn variable list failed")
@@ -374,8 +379,9 @@ CONTAINS
     DOM_LOOP : DO jg=1,n_dom
 
       WRITE(dom_str, "(i2.2)") jg
-      CALL vlr_add(p_comin_varlist(jg), 'comin__'//dom_str, &
-        & patch_id=jg, vlevel_type=level_type_ml, lrestart=.TRUE.)
+      CALL vlr_add(p_comin_varlist(jg), 'comin__'//dom_str,        &
+        & patch_id=jg, vlevel_type=level_type_ml, lrestart=.TRUE., &
+        & model_type=get_my_process_name())
 
       shape2d_c = [ nproma,                   p_patch(jg)%nblks_c ]
       shape3d_c = [ nproma, p_patch(jg)%nlev, p_patch(jg)%nblks_c ]
@@ -429,6 +435,7 @@ CONTAINS
 
       END DO VAR_LOOP
     END DO DOM_LOOP
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_append_comin_variables
 
@@ -447,6 +454,7 @@ CONTAINS
     TYPE(t_advection_config),POINTER :: advconf
     TYPE(t_zaxisType)                :: zaxisType
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     WRITE (message_text,*) "expose ICON's variables to the ComIn infrastructure"
     CALL message(routine, message_text)
 
@@ -566,6 +574,7 @@ CONTAINS
 
       END DO
     END DO
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_expose_variables
 
@@ -585,6 +594,7 @@ CONTAINS
     ! local variables
     TYPE(t_comin_descrdata_global) :: comin_descrdata_global_data
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     comin_descrdata_global_data%n_dom            = n_dom
     comin_descrdata_global_data%max_dom          = max_dom
     comin_descrdata_global_data%nproma           = nproma
@@ -596,16 +606,15 @@ CONTAINS
     ALLOCATE(comin_descrdata_global_data%vct_a(SIZE(vct_a)))
     comin_descrdata_global_data%vct_a(:)         = vct_a(:)
 
-#ifdef YAC_coupling
-    ! The following will be replaced by an explicit instance id once it is used in ICON
-    ! Please also remove the INTERFACE for yac_cget_default_instance_id above
-    comin_descrdata_global_data%yac_instance_id  = yac_cget_default_instance_id()
-#else
-    comin_descrdata_global_data%yac_instance_id  = -1
-#endif
+    IF (cpl_is_initialised()) THEN
+      comin_descrdata_global_data%yac_instance_id  = cpl_get_instance_id()
+    ELSE
+      comin_descrdata_global_data%yac_instance_id  = -1
+    END IF
 
     ! register global info in ComIn
     CALL comin_descrdata_set_global(comin_descrdata_global_data)
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_expose_descrdata_global
 
@@ -621,6 +630,7 @@ CONTAINS
     INTEGER :: jg, ierr
     TYPE(t_comin_descrdata_domain) :: comin_descrdata_domain(SIZE(patch))
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     DO jg=1,SIZE(patch)
       ! cell, vertex and edge independent variables
       comin_descrdata_domain(jg)%grid_filename => patch(jg)%grid_filename
@@ -719,6 +729,7 @@ CONTAINS
     CALL comin_descrdata_set_fct_glb2loc_cell(glb2loc_index, ierr)
 
     IF (ierr /= 0)  CALL finish (routine, "Internal error: Cannot set glb2loc function!")
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_expose_descrdata_domain
 
@@ -734,6 +745,7 @@ CONTAINS
     !local variables
     TYPE(t_comin_descrdata_simulation_interval) :: comin_descrdata_state
 
+    IF (timers_level > 2) CALL timer_start(timer_comin_init)
     comin_descrdata_state%exp_start = sim_time_start
     comin_descrdata_state%exp_stop  = sim_time_end
     comin_descrdata_state%run_start = run_time_start
@@ -742,24 +754,25 @@ CONTAINS
     ! register time info in ComIn
     CALL comin_descrdata_set_simulation_interval(comin_descrdata_state)
     CALL comin_current_set_datetime(sim_time_current)
+    IF (timers_level > 2) CALL timer_stop(timer_comin_init)
 
   END SUBROUTINE icon_expose_descrdata_state
 
   ! Expose ICON's physics/advection time step of each domain
   !
   RECURSIVE SUBROUTINE icon_expose_timesteplength_domain(jg, dt_current)
-     INTEGER,  INTENT(IN) :: jg
-     REAL(wp), INTENT(IN) :: dt_current
-     !local variables
-     INTEGER :: jn, ierr
+    INTEGER,  INTENT(IN) :: jg
+    REAL(wp), INTENT(IN) :: dt_current
+    !local variables
+    INTEGER :: jn, ierr
 
-     CALL comin_descrdata_set_timesteplength(jg, dt_current, ierr)
+    CALL comin_descrdata_set_timesteplength(jg, dt_current, ierr)
 
-     DO jn=1,p_patch(jg)%n_childdom
+    DO jn=1,p_patch(jg)%n_childdom
        CALL icon_expose_timesteplength_domain(p_patch(jg)%child_id(jn), dt_current/2.0_wp)
-     END DO
+    END DO
 
-   END SUBROUTINE icon_expose_timesteplength_domain
+  END SUBROUTINE icon_expose_timesteplength_domain
 
   INTEGER FUNCTION glb2loc_index(jg, glb) RESULT(loc)
     INTEGER, INTENT(IN) :: jg
@@ -833,6 +846,15 @@ CONTAINS
     END DO
 
   END SUBROUTINE icon_update_expose_variables
+
+  SUBROUTINE icon_call_callback(ep, jg)
+    INTEGER, INTENT(IN) :: ep
+    INTEGER, INTENT(IN) :: jg
+
+    IF (timers_level > 2) CALL timer_start(timer_comin_callbacks)
+    CALL comin_callback_context_call(ep, jg)
+    IF (timers_level > 2) CALL timer_stop(timer_comin_callbacks)
+  END SUBROUTINE icon_call_callback
 
   ! Set integer metadata if present
   !

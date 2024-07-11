@@ -13,8 +13,4 @@
 #
 # configure wrapper which is used for buildbot builder dwd_nec (VE)
 #
-if ((RH_VERSION !=8 )); then
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-4.0.0_mpi-2.22_oper --enable-jsbach --disable-jsbach-hd "$@"
-else
-  "$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-5.1.0_mpi-3.5_oper_RH8 --enable-jsbach --disable-jsbach-hd "$@"
-fi
+"$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VE.nfort-5.1.0_mpi-3.5_oper --enable-jsbach --disable-jsbach-hd "$@"

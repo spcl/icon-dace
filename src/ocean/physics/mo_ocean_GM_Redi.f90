@@ -658,7 +658,7 @@ CONTAINS
     IF(SLOPE_CALC_VIA_TEMPERTURE_SALINITY)THEN    
       CALL dbg_print('calc_slopes: grad_T_horz',grad_T_horz,&
         & str_module,idt_src, in_subset=edges_in_domain)
-      IF(no_tracer==2)THEN  
+      IF(no_tracer >= 2)THEN  
       CALL dbg_print('calc_slopes: grad_S_horz',grad_S_horz,&
         & str_module,idt_src, in_subset=edges_in_domain)
       ENDIF

@@ -79,7 +79,8 @@ MODULE mo_2mom_mcrph_main
        & particle_ice_coeffs, particle_snow_coeffs, particle_graupel_coeffs, &
        & aerosol_ccn, aerosol_in, &
        & particle_coeffs, collection_coeffs, rain_riming_coeffs, dep_imm_coeffs, &
-       & ltabdminwgg, ltab_estick_ice, ltab_estick_snow, ltab_estick_parti
+       & coll_coeffs_ir_pm, &
+       & ltabdminwgg, ltabdminwgh, ltab_estick_ice, ltab_estick_snow, ltab_estick_parti
   USE mo_2mom_mcrph_util, ONLY: &
        & gamlookuptable,             &  ! For look-up table of incomplete Gamma function
        & nlookup, nlookuphr_dummy,   &  !   array size of table
@@ -100,6 +101,7 @@ MODULE mo_2mom_mcrph_main
        &  setup_snow_selfcollection, snow_selfcollection,                    &
        &  setup_particle_collection_type1,                                   &
        &  setup_particle_collection_type2,                                   &
+       &  setup_particle_coll_pm_type1_bfull,                                &
        &  snow_melting, particle_particle_collection,                        &
        &  particle_melting_lwf,prepare_melting_lwf,                          &
        &  setup_graupel_selfcollection, graupel_selfcollection, ice_melting, &
@@ -140,6 +142,16 @@ MODULE mo_2mom_mcrph_main
   REAL(wp)             :: rain_nm1, rain_nm2, rain_nm3, rain_g1, rain_g2
   REAL(wp)             :: graupel_nm1, graupel_nm2, graupel_g1, graupel_g2
 
+  ! .. Look up tables for graupel and hail shedding
+  TYPE(gamlookuptable) :: gshedc_ltab_dgg_03, gshedc_ltab_drr_01, gshedc_ltab_dgr_02, &
+                          gshedc_ltab_tgg_05, gshedc_ltab_tgg_03, gshedc_ltab_tgr_04
+  TYPE(gamlookuptable) :: hshedc_ltab_dhh_03, hshedc_ltab_drr_01, hshedc_ltab_dhr_02, &
+                          hshedc_ltab_thh_05, hshedc_ltab_thh_03, hshedc_ltab_thr_04
+  TYPE(gamlookuptable) :: gshedr_ltab_dgg_03, gshedr_ltab_drr_01, gshedr_ltab_dgr_02, &
+                          gshedr_ltab_tgg_05, gshedr_ltab_tgg_03, gshedr_ltab_tgr_04
+  TYPE(gamlookuptable) :: hshedr_ltab_dhh_03, hshedr_ltab_drr_01, hshedr_ltab_dhr_02, &
+                          hshedr_ltab_thh_05, hshedr_ltab_thh_03, hshedr_ltab_thr_04
+  
   ! choice of mu-D relation for rain, default is mu_Dm_rain_typ = 1
   INTEGER, PARAMETER     :: mu_Dm_rain_typ = 1     ! see init_twomoment() for possible choices
 
@@ -493,6 +505,10 @@ MODULE mo_2mom_mcrph_main
   TYPE(collection_coeffs), SAVE :: gic_coeffs  ! graupel ice collection
   TYPE(collection_coeffs), SAVE :: hsc_coeffs  ! hail snow collection
   TYPE(collection_coeffs), SAVE :: gsc_coeffs  ! graupel snow collection
+  TYPE(coll_coeffs_ir_pm), SAVE :: gshedc_coeffs ! graupel shedding during cloud riming
+  TYPE(coll_coeffs_ir_pm), SAVE :: hshedc_coeffs ! hail shedding during cloud riming
+  TYPE(coll_coeffs_ir_pm), SAVE :: gshedr_coeffs ! graupel shedding during rain riming
+  TYPE(coll_coeffs_ir_pm), SAVE :: hshedr_coeffs ! hail shedding during rain riming
 
   PUBLIC :: atmosphere, particle, particle_lwf, particle_frozen
   PUBLIC :: init_2mom_scheme, init_2mom_scheme_once, clouds_twomoment
@@ -680,14 +696,26 @@ CONTAINS
       CALL snow_riming(ik_slice, dt, scr_coeffs, srr_coeffs, atmo, snow, cloud, rain, ice, graupel, dep_rate_snow)
       IF (ischeck) CALL check(ik_slice, 'snow_riming',cloud,rain,ice,snow,graupel,hail)
 
-      ! hail-cloud and hail-rain riming
-      CALL particle_cloud_riming(ik_slice, dt, atmo, hail, hcr_coeffs, cloud, rain, ice)
-      CALL particle_rain_riming(ik_slice, dt, atmo, hail, hrr_coeffs, rain, ice)
+      ! hail-cloud and hail-rain riming including shedding
+      CALL particle_cloud_riming(ik_slice, dt, atmo, hail, hcr_coeffs, cloud, rain, ice, &
+           hshedc_coeffs, snow, ltabdminwgh, &
+           hshedc_ltab_dhh_03, hshedc_ltab_dhr_02, hshedc_ltab_drr_01, &
+           hshedc_ltab_thh_05, hshedc_ltab_thh_03, hshedc_ltab_thr_04 )
+      CALL particle_rain_riming(ik_slice, dt, atmo, hail, hrr_coeffs, rain, ice, &
+           hshedr_coeffs, cloud, snow, ltabdminwgh, &
+           hshedr_ltab_dhh_03, hshedr_ltab_dhr_02, hshedr_ltab_drr_01, &
+           hshedr_ltab_thh_05, hshedr_ltab_thh_03, hshedr_ltab_thr_04 )
       IF (ischeck) CALL check(ik_slice, 'hail riming',cloud,rain,ice,snow,graupel,hail)
 
-      ! graupel-cloud and graupel-rain riming
-      CALL particle_cloud_riming(ik_slice, dt, atmo, graupel, gcr_coeffs, cloud, rain, ice)
-      CALL particle_rain_riming(ik_slice, dt, atmo, graupel, grr_coeffs, rain, ice)
+      ! graupel-cloud and graupel-rain riming including shedding
+      CALL particle_cloud_riming(ik_slice, dt, atmo, graupel, gcr_coeffs, cloud, rain, ice, &
+           gshedc_coeffs, snow, ltabdminwgg, &
+           gshedc_ltab_dgg_03, gshedc_ltab_dgr_02, gshedc_ltab_drr_01, &
+           gshedc_ltab_tgg_05, gshedc_ltab_tgg_03, gshedc_ltab_tgr_04)
+      CALL particle_rain_riming(ik_slice, dt, atmo, graupel, grr_coeffs, rain, ice, &
+           gshedr_coeffs, cloud, snow, ltabdminwgg, &
+           gshedr_ltab_dgg_03, gshedr_ltab_dgr_02, gshedr_ltab_drr_01, &
+           gshedr_ltab_tgg_05, gshedr_ltab_tgg_03, gshedr_ltab_tgr_04)
       IF (ischeck) CALL check(ik_slice, 'graupel riming',cloud,rain,ice,snow,graupel,hail)
 
       ! freezing of rain and conversion to ice/graupel/hail
@@ -809,10 +837,27 @@ CONTAINS
 
     CALL particle_assign(cloud,cloud_nue1mue1)
     CALL particle_assign(rain,rainSBB)
+
+    IF (cfg_params % nu_r > -900.0_wp) rain%nu = cfg_params%nu_r
+
     CALL particle_frozen_assign(ice,ice_cosmo5)
     CALL particle_frozen_assign(snow,snowSBB)
 !!$    CALL particle_frozen_assign(snow,snowSBBcorr)
 
+    IF (cfg_params % nu_i > -900.0_wp) ice%nu = cfg_params%nu_i
+    IF (cfg_params % mu_i > -900.0_wp) ice%mu = cfg_params%mu_i
+    IF (cfg_params % ageo_i > -900.0_wp) ice%a_geo = cfg_params%ageo_i
+    IF (cfg_params % bgeo_i > -900.0_wp) ice%b_geo = cfg_params%bgeo_i
+    IF (cfg_params % avel_i > -900.0_wp) ice%a_vel = cfg_params%avel_i
+    IF (cfg_params % bvel_i > -900.0_wp) ice%b_vel = cfg_params%bvel_i
+    IF (cfg_params % cap_ice > -900.0_wp) ice%cap = cfg_params%cap_ice
+
+    IF (cfg_params % nu_s > -900.0_wp) snow%nu = cfg_params%nu_s
+    IF (cfg_params % mu_s > -900.0_wp) snow%mu = cfg_params%mu_s
+    IF (cfg_params % ageo_s > -900.0_wp) snow%a_geo = cfg_params%ageo_s
+    IF (cfg_params % bgeo_s > -900.0_wp) snow%b_geo = cfg_params%bgeo_s
+    IF (cfg_params % avel_s > -900.0_wp) snow%a_vel = cfg_params%avel_s
+    IF (cfg_params % bvel_s > -900.0_wp) snow%b_vel = cfg_params%bvel_s
     IF (cfg_params % cap_snow > -900.0_wp) snow%cap = cfg_params%cap_snow
     IF (cfg_params % vsedi_max_s > -900.0_wp) snow%vsedi_max = cfg_params%vsedi_max_s
 
@@ -823,11 +868,8 @@ CONTAINS
       CALL particle_lwf_assign(graupel,graupel_vivek)
     END SELECT
 
-    IF (cfg_params % nu_r > -900.0_wp) rain%nu = cfg_params%nu_r
-
     IF (cfg_params % nu_g > -900.0_wp) graupel%nu = cfg_params%nu_g
     IF (cfg_params % mu_g > -900.0_wp) graupel%mu = cfg_params%mu_g
-
     IF (cfg_params % ageo_g > -900.0_wp) graupel%a_geo = cfg_params%ageo_g
     IF (cfg_params % bgeo_g > -900.0_wp) graupel%b_geo = cfg_params%bgeo_g
     IF (cfg_params % avel_g > -900.0_wp) graupel%a_vel = cfg_params%avel_g
@@ -842,7 +884,6 @@ CONTAINS
 
     IF (cfg_params % nu_h > -900.0_wp) hail%nu = cfg_params%nu_h
     IF (cfg_params % mu_h > -900.0_wp) hail%mu = cfg_params%mu_h
-
     IF (cfg_params % ageo_h > -900.0_wp) hail%a_geo = cfg_params%ageo_h
     IF (cfg_params % bgeo_h > -900.0_wp) hail%b_geo = cfg_params%bgeo_h
     IF (cfg_params % avel_h > -900.0_wp) hail%a_vel = cfg_params%avel_h
@@ -915,13 +956,76 @@ CONTAINS
     rain_g1 = rain_ltable1%igf(rain_ltable1%n) ! ordinary gamma function of nm1 is the last value in table 1
     rain_g2 = rain_ltable2%igf(rain_ltable2%n) ! ordinary gamma function of nm2 is the last value in table 2
 
-    ! table and parameters for graupel_hail_conv_wet_gamlook
+    ! tables and parameters for graupel_hail_conv_wet_gamlook
     graupel_nm1 = (graupel%nu+1.0)/graupel%mu
     graupel_nm2 = (graupel%nu+2.0)/graupel%mu
     CALL incgfct_lower_lookupcreate(graupel_nm1, graupel_ltable1, nlookup, nlookuphr_dummy)
     CALL incgfct_lower_lookupcreate(graupel_nm2, graupel_ltable2, nlookup, nlookuphr_dummy)
     graupel_g1 = graupel_ltable1%igf(graupel_ltable1%n) ! ordinary gamma function of nm1 is the last value in table 1
     graupel_g2 = graupel_ltable2%igf(graupel_ltable2%n) ! ordinary gamma function of nm2 is the last value in table 2
+
+    
+    ! .. tables and parameters for graupel shedding during cloud riming:
+    !    graupel: partial moment; cloud: full moment
+    CALL setup_particle_coll_pm_type1_bfull(graupel,cloud,gshedc_coeffs)
+    !    for delta_gg-part:
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,3), gshedc_ltab_dgg_03, nlookup, nlookuphr_dummy)
+    !    for delta_gr-part:
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,2), gshedc_ltab_dgr_02, nlookup, nlookuphr_dummy)
+    !    for delta_rr-part:
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,1), gshedc_ltab_drr_01, nlookup, nlookuphr_dummy)
+    !    for theta_gg-part:
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,5), gshedc_ltab_tgg_05, nlookup, nlookuphr_dummy)
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,3), gshedc_ltab_tgg_03, nlookup, nlookuphr_dummy)
+    !    for theta_gr-part:
+    CALL incgfct_lower_lookupcreate(gshedc_coeffs%moma(0,4), gshedc_ltab_tgr_04, nlookup, nlookuphr_dummy)
+   
+    ! .. tables and parameters for hail shedding during cloud riming:
+    !    hail: partial moment; cloud: full moment
+    CALL setup_particle_coll_pm_type1_bfull(hail,cloud,hshedc_coeffs)
+    !    for delta_hh-part:
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,3), hshedc_ltab_dhh_03, nlookup, nlookuphr_dummy)
+    !    for delta_hr-part:
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,2), hshedc_ltab_dhr_02, nlookup, nlookuphr_dummy)
+    !    for delta_rr-part:
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,1), hshedc_ltab_drr_01, nlookup, nlookuphr_dummy)
+    !    for theta_hh-part:
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,5), hshedc_ltab_thh_05, nlookup, nlookuphr_dummy)
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,3), hshedc_ltab_thh_03, nlookup, nlookuphr_dummy)
+    !    for theta_hr-part:
+    CALL incgfct_lower_lookupcreate(hshedc_coeffs%moma(0,4), hshedc_ltab_thr_04, nlookup, nlookuphr_dummy)
+
+
+    ! .. tables and parameters for graupel shedding during rain riming:
+    !    graupel: partial moment; rain: full moment
+    CALL setup_particle_coll_pm_type1_bfull(graupel,rain,gshedr_coeffs)
+    !    for delta_gg-part:
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,3), gshedr_ltab_dgg_03, nlookup, nlookuphr_dummy)
+    !    for delta_gr-part:
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,2), gshedr_ltab_dgr_02, nlookup, nlookuphr_dummy)
+    !    for delta_rr-part:
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,1), gshedr_ltab_drr_01, nlookup, nlookuphr_dummy)
+    !    for theta_gg-part:
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,5), gshedr_ltab_tgg_05, nlookup, nlookuphr_dummy)
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,3), gshedr_ltab_tgg_03, nlookup, nlookuphr_dummy)
+    !    for theta_gr-part:
+    CALL incgfct_lower_lookupcreate(gshedr_coeffs%moma(0,4), gshedr_ltab_tgr_04, nlookup, nlookuphr_dummy)
+   
+    ! .. tables and parameters for hail shedding during rain riming:
+    !    hail: partial moment; rain: full moment
+    CALL setup_particle_coll_pm_type1_bfull(hail,rain,hshedr_coeffs)
+    !    for delta_hh-part:
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,3), hshedr_ltab_dhh_03, nlookup, nlookuphr_dummy)
+    !    for delta_hr-part:
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,2), hshedr_ltab_dhr_02, nlookup, nlookuphr_dummy)
+    !    for delta_rr-part:
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,1), hshedr_ltab_drr_01, nlookup, nlookuphr_dummy)
+    !    for theta_hh-part:
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,5), hshedr_ltab_thh_05, nlookup, nlookuphr_dummy)
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,3), hshedr_ltab_thh_03, nlookup, nlookuphr_dummy)
+    !    for theta_hr-part:
+    CALL incgfct_lower_lookupcreate(hshedr_coeffs%moma(0,4), hshedr_ltab_thr_04, nlookup, nlookuphr_dummy)
+
 
     ! .. Lookup tables for sticking efficiencies:
     CALL init_estick_ltab_equi (ltab_estick_ice,   cfg_params%iice_stick,   'estick_cloudice')
@@ -966,138 +1070,138 @@ CONTAINS
       CALL message(TRIM(routine), "init_2mom_scheme: rain coeffs and sedi vel")
       q_r = 1.0e-3_wp
       WRITE (txt,'(2A)') "    name  = ",rain%name ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     alfa  = ",rain_coeffs%alfa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     beta  = ",rain_coeffs%beta ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     gama  = ",rain_coeffs%gama ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     cmu0  = ",rain_coeffs%cmu0 ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     cmu1  = ",rain_coeffs%cmu1 ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     cmu2  = ",rain_coeffs%cmu2 ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     cmu3  = ",rain_coeffs%cmu3 ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     cmu4  = ",rain_coeffs%cmu4 ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     alfa  = ",rain_coeffs%alfa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     beta  = ",rain_coeffs%beta ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     gama  = ",rain_coeffs%gama ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     cmu0  = ",rain_coeffs%cmu0 ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     cmu1  = ",rain_coeffs%cmu1 ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     cmu2  = ",rain_coeffs%cmu2 ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     cmu3  = ",rain_coeffs%cmu3 ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     cmu4  = ",rain_coeffs%cmu4 ; CALL message(routine,TRIM(txt))
       WRITE(txt,'(A,I10)')   "     cmu5  = ",rain_coeffs%cmu5 ; CALL message(routine,TRIM(txt))
       x_r = rain%x_min ; CALL sedi_vel_rain(rain,rain_coeffs,q_r,x_r,rhocorr,vn_rain_min,vq_rain_min,1,1)
       x_r = rain%x_max ; CALL sedi_vel_rain(rain,rain_coeffs,q_r,x_r,rhocorr,vn_rain_max,vq_rain_max,1,1)
       WRITE(txt,'(A)')       "    out-of-cloud: " ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vn_rain_min  = ",vn_rain_min ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vn_rain_max  = ",vn_rain_max ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vq_rain_min  = ",vq_rain_min ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vq_rain_max  = ",vq_rain_max ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vn_rain_min  = ",vn_rain_min ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vn_rain_max  = ",vn_rain_max ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vq_rain_min  = ",vq_rain_min ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vq_rain_max  = ",vq_rain_max ; CALL message(routine,TRIM(txt))
       q_c = 1e-3_wp
       x_r = rain%x_min ; CALL sedi_vel_rain(rain,rain_coeffs,q_r,x_r,rhocorr,vn_rain_min,vq_rain_min,1,1,q_c)
       x_r = rain%x_max ; CALL sedi_vel_rain(rain,rain_coeffs,q_r,x_r,rhocorr,vn_rain_max,vq_rain_max,1,1,q_c)
       WRITE(txt,'(A)')       "    in-cloud: " ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vn_rain_min  = ",vn_rain_min ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vn_rain_max  = ",vn_rain_max ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vq_rain_min  = ",vq_rain_min ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     vq_rain_max  = ",vq_rain_max ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vn_rain_min  = ",vn_rain_min ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vn_rain_max  = ",vn_rain_max ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vq_rain_min  = ",vq_rain_min ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     vq_rain_max  = ",vq_rain_max ; CALL message(routine,TRIM(txt))
     END IF
 
     ! initialization for snow_cloud_riming
     CALL setup_particle_collection_type1(snow,cloud,scr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "   a_snow      = ",snow%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   b_snow      = ",snow%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   alf_snow    = ",snow%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   bet_snow    = ",snow%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   a_cloud    = ",cloud%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   b_cloud    = ",cloud%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   alf_cloud  = ",cloud%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   bet_cloud  = ",cloud%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_ss = ",scr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_sc = ",scr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_cc = ",scr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_ss = ",scr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_sc = ",scr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_cc = ",scr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_ss = ",scr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_sc = ",scr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_cc = ",scr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_ss = ",scr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_sc = ",scr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_cc = ",scr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   a_snow      = ",snow%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   b_snow      = ",snow%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   alf_snow    = ",snow%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   bet_snow    = ",snow%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   a_cloud    = ",cloud%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   b_cloud    = ",cloud%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   alf_cloud  = ",cloud%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   bet_cloud  = ",cloud%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_ss = ",scr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_sc = ",scr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_cc = ",scr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_ss = ",scr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_sc = ",scr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_cc = ",scr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_ss = ",scr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_sc = ",scr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_cc = ",scr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_ss = ",scr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_sc = ",scr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_cc = ",scr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! coefficients for snow_rain_riming
     CALL setup_particle_collection_type2(snow,rain,srr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    a_snow     = ",snow%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_snow     = ",snow%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    alf_snow   = ",snow%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    bet_snow   = ",snow%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_rain     = ",rain%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_rain     = ",rain%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    alf_rain   = ",rain%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    bet_rain   = ",rain%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ss = ",srr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_sr = ",srr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_rr = ",srr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ss = ",srr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_sr = ",srr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_rr = ",srr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ss = ",srr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_sr = ",srr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_rs = ",srr_coeffs%delta_q_ba ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_rr = ",srr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ss = ",srr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_sr = ",srr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_rs = ",srr_coeffs%theta_q_ba ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_rr = ",srr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_snow     = ",snow%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_snow     = ",snow%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    alf_snow   = ",snow%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    bet_snow   = ",snow%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_rain     = ",rain%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_rain     = ",rain%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    alf_rain   = ",rain%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    bet_rain   = ",rain%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ss = ",srr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_sr = ",srr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_rr = ",srr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ss = ",srr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_sr = ",srr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_rr = ",srr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ss = ",srr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_sr = ",srr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_rs = ",srr_coeffs%delta_q_ba ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_rr = ",srr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ss = ",srr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_sr = ",srr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_rs = ",srr_coeffs%theta_q_ba ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_rr = ",srr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! ice rain riming parameters
     CALL setup_particle_collection_type2(ice,rain,irr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "     a_ice      = ",ice%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     b_ice      = ",ice%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     alf_ice    = ",ice%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     bet_ice    = ",ice%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     a_rain    = ",rain%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     b_rain    = ",rain%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     alf_rain  = ",rain%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     bet_rain  = ",rain%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_ii = ", irr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_ir = ", irr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_rr = ", irr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_ii = ", irr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_ir = ", irr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_rr = ", irr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_ii = ", irr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_ir = ", irr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_ri = ", irr_coeffs%delta_q_ba ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_rr = ", irr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_ii = ", irr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_ir = ", irr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_ri = ", irr_coeffs%theta_q_ba ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_rr = ", irr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     a_ice      = ",ice%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     b_ice      = ",ice%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     alf_ice    = ",ice%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     bet_ice    = ",ice%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     a_rain    = ",rain%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     b_rain    = ",rain%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     alf_rain  = ",rain%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     bet_rain  = ",rain%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_ii = ", irr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_ir = ", irr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_rr = ", irr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_ii = ", irr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_ir = ", irr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_rr = ", irr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_ii = ", irr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_ir = ", irr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_ri = ", irr_coeffs%delta_q_ba ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_rr = ", irr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_ii = ", irr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_ir = ", irr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_ri = ", irr_coeffs%theta_q_ba ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_rr = ", irr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! ice cloud riming parameter setup
     CALL setup_particle_collection_type1(ice,cloud,icr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    a_ice      = ",ice%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_ice      = ",ice%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    alf_ice    = ",ice%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    bet_ice    = ",ice%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_cloud    = ",cloud%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_cloud    = ",cloud%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    alf_cloud  = ",cloud%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    bet_cloud  = ",cloud%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ii = ", icr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ic = ", icr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_cc = ", icr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ii = ", icr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ic = ", icr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_cc = ", icr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ii = ", icr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ic = ", icr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_cc = ", icr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ii = ", icr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ic = ", icr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_cc = ", icr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_ice      = ",ice%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_ice      = ",ice%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    alf_ice    = ",ice%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    bet_ice    = ",ice%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_cloud    = ",cloud%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_cloud    = ",cloud%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    alf_cloud  = ",cloud%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    bet_cloud  = ",cloud%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ii = ", icr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ic = ", icr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_cc = ", icr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ii = ", icr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ic = ", icr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_cc = ", icr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ii = ", icr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ic = ", icr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_cc = ", icr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ii = ", icr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ic = ", icr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_cc = ", icr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! hail rain riming
@@ -1105,230 +1209,230 @@ CONTAINS
 
     IF (isprint) THEN
       WRITE(txt,*) " hail_rain_riming:" ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     a_hail     = ",hail%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     b_hail     = ",hail%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     alf_hail   = ",hail%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     bet_hail   = ",hail%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     a_rain     = ",rain%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     b_rain     = ",rain%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     alf_rain   = ",rain%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     bet_rain   = ",rain%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_hh = ",hrr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_hr = ",hrr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_rr = ",hrr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_hh = ",hrr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_hr = ",hrr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_rr = ",hrr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_hh = ",hrr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_hr = ",hrr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_rr = ",hrr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_hh = ",hrr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_hr = ",hrr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_rr = ",hrr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     a_hail     = ",hail%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     b_hail     = ",hail%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     alf_hail   = ",hail%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     bet_hail   = ",hail%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     a_rain     = ",rain%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     b_rain     = ",rain%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     alf_rain   = ",rain%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     bet_rain   = ",rain%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_hh = ",hrr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_hr = ",hrr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_rr = ",hrr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_hh = ",hrr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_hr = ",hrr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_rr = ",hrr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_hh = ",hrr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_hr = ",hrr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_rr = ",hrr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_hh = ",hrr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_hr = ",hrr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_rr = ",hrr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! graupel rain riming parameter setup
     CALL setup_particle_collection_type1(graupel,rain,grr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "     delta_n_gg = ",grr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_gr = ",grr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_rr = ",grr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_gg = ",grr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_gr = ",grr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_rr = ",grr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_gg = ",grr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_gr = ",grr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_rr = ",grr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_gg = ",grr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_gr = ",grr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_rr = ",grr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_gg = ",grr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_gr = ",grr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_rr = ",grr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_gg = ",grr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_gr = ",grr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_rr = ",grr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_gg = ",grr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_gr = ",grr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_rr = ",grr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_gg = ",grr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_gr = ",grr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_rr = ",grr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! hail cloud riming parameter setup
     CALL setup_particle_collection_type1(hail,cloud,hcr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "     delta_n_hh  = ", hcr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_hc  = ", hcr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_n_cc  = ", hcr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_hh  = ", hcr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_hc  = ", hcr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_n_cc  = ", hcr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_hh  = ", hcr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_hc  = ", hcr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     delta_q_cc  = ", hcr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_hh  = ", hcr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_hc  = ", hcr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "     theta_q_cc  = ", hcr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_hh  = ", hcr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_hc  = ", hcr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_n_cc  = ", hcr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_hh  = ", hcr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_hc  = ", hcr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_n_cc  = ", hcr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_hh  = ", hcr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_hc  = ", hcr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     delta_q_cc  = ", hcr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_hh  = ", hcr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_hc  = ", hcr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "     theta_q_cc  = ", hcr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! graupel cloud riming parameters
     CALL setup_particle_collection_type1(graupel,cloud,gcr_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    delta_n_gg  = ", gcr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_gc  = ", gcr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_cc  = ", gcr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_gg  = ", gcr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_gc  = ", gcr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_cc  = ", gcr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_gg  = ", gcr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_gc  = ", gcr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_cc  = ", gcr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_gg  = ", gcr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_gc  = ", gcr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_cc  = ", gcr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_gg  = ", gcr_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_gc  = ", gcr_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_cc  = ", gcr_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_gg  = ", gcr_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_gc  = ", gcr_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_cc  = ", gcr_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_gg  = ", gcr_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_gc  = ", gcr_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_cc  = ", gcr_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_gg  = ", gcr_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_gc  = ", gcr_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_cc  = ", gcr_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! snow ice collection parameters setup
     CALL setup_particle_collection_type1(snow,ice,sic_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "   delta_n_ss = ", sic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_si = ", sic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_ii = ", sic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_ss = ", sic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_si = ", sic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_ii = ", sic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_ss = ", sic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_si = ", sic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_ii = ", sic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_ss = ", sic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_si = ", sic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_ii = ", sic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_ss = ", sic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_si = ", sic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_ii = ", sic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_ss = ", sic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_si = ", sic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_ii = ", sic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_ss = ", sic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_si = ", sic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_ii = ", sic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_ss = ", sic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_si = ", sic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_ii = ", sic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! hail ice collection parameter setup
     CALL setup_particle_collection_type1(hail,ice,hic_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    delta_n_hh = ", hic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_hi = ", hic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ii = ", hic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_hh = ", hic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_hi = ", hic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ii = ", hic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_hh = ", hic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_hi = ", hic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ii = ", hic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_hh = ", hic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_hi = ", hic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ii = ", hic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_hh = ", hic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_hi = ", hic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ii = ", hic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_hh = ", hic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_hi = ", hic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ii = ", hic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_hh = ", hic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_hi = ", hic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ii = ", hic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_hh = ", hic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_hi = ", hic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ii = ", hic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! graupel ice collection parameter setup
     CALL setup_particle_collection_type1(graupel,ice,gic_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "   a_graupel   = ",graupel%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   b_graupel   = ",graupel%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   alf_graupel = ",graupel%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   bet_graupel = ",graupel%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   a_ice       = ",ice%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   b_ice       = ",ice%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   alf_ice     = ",ice%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   bet_ice     = ",ice%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_gg  = ", gic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_gi  = ", gic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_n_ii  = ", gic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_gg  = ", gic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_gi  = ", gic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_n_ii  = ", gic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_gg  = ", gic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_gi  = ", gic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   delta_q_ii  = ", gic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_gg  = ", gic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_gi  = ", gic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "   theta_q_ii  = ", gic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   a_graupel   = ",graupel%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   b_graupel   = ",graupel%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   alf_graupel = ",graupel%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   bet_graupel = ",graupel%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   a_ice       = ",ice%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   b_ice       = ",ice%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   alf_ice     = ",ice%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   bet_ice     = ",ice%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_gg  = ", gic_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_gi  = ", gic_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_n_ii  = ", gic_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_gg  = ", gic_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_gi  = ", gic_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_n_ii  = ", gic_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_gg  = ", gic_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_gi  = ", gic_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   delta_q_ii  = ", gic_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_gg  = ", gic_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_gi  = ", gic_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "   theta_q_ii  = ", gic_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! hail snow collection parameter setup
     CALL setup_particle_collection_type1(hail,snow,hsc_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    delta_n_hh = ", hsc_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_hs = ", hsc_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ss = ", hsc_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_hh = ", hsc_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_hs = ", hsc_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ss = ", hsc_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_hh = ", hsc_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_hs = ", hsc_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ss = ", hsc_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_hh = ", hsc_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_hs = ", hsc_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ss = ", hsc_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_hh = ", hsc_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_hs = ", hsc_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ss = ", hsc_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_hh = ", hsc_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_hs = ", hsc_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ss = ", hsc_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_hh = ", hsc_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_hs = ", hsc_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ss = ", hsc_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_hh = ", hsc_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_hs = ", hsc_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ss = ", hsc_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! graupel snow collection parameter setup
     CALL setup_particle_collection_type1(graupel,snow,gsc_coeffs)
 
     IF (isprint) THEN
-      WRITE(txt,'(A,D10.3)') "    delta_n_gg = ", gsc_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_gs = ", gsc_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_n_ss = ", gsc_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_gg = ", gsc_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_gs = ", gsc_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_n_ss = ", gsc_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_gg = ", gsc_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_gs = ", gsc_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    delta_q_ss = ", gsc_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_gg = ", gsc_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_gs = ", gsc_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    theta_q_ss = ", gsc_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_gg = ", gsc_coeffs%delta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_gs = ", gsc_coeffs%delta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_n_ss = ", gsc_coeffs%delta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_gg = ", gsc_coeffs%theta_n_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_gs = ", gsc_coeffs%theta_n_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_n_ss = ", gsc_coeffs%theta_n_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_gg = ", gsc_coeffs%delta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_gs = ", gsc_coeffs%delta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    delta_q_ss = ", gsc_coeffs%delta_q_bb ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_gg = ", gsc_coeffs%theta_q_aa ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_gs = ", gsc_coeffs%theta_q_ab ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    theta_q_ss = ", gsc_coeffs%theta_q_bb ; CALL message(routine,TRIM(txt))
     END IF
 
     ! ice coeffs
     CALL setup_particle_coeffs(ice,ice_coeffs)
     IF (isprint) THEN
       WRITE(txt,*) "  ice: " ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    a_geo   = ",ice%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    b_geo   = ",ice%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    a_vel   = ",ice%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    b_vel   = ",ice%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    c_i     = ",ice_coeffs%c_i ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    a_f     = ",ice_coeffs%a_f ; CALL message(routine,TRIM(txt))
-      WRITE (txt,'(A,D10.3)') "    b_f     = ",ice_coeffs%b_f ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    a_geo   = ",ice%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    b_geo   = ",ice%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    a_vel   = ",ice%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    b_vel   = ",ice%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    c_i     = ",ice_coeffs%c_i ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    a_f     = ",ice_coeffs%a_f ; CALL message(routine,TRIM(txt))
+      WRITE (txt,'(A,ES14.7)') "    b_f     = ",ice_coeffs%b_f ; CALL message(routine,TRIM(txt))
     END IF
 
     ! graupel parameter setup
     CALL setup_particle_coeffs(graupel,graupel_coeffs)
     IF (isprint) THEN
       WRITE(txt,*) "  graupel: " ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_geo = ",graupel%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_geo = ",graupel%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_vel = ",graupel%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_vel = ",graupel%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    c_g   = ",graupel_coeffs%c_i ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_f   = ",graupel_coeffs%a_f ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_f   = ",graupel_coeffs%b_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_geo = ",graupel%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_geo = ",graupel%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_vel = ",graupel%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_vel = ",graupel%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    c_g   = ",graupel_coeffs%c_i ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_f   = ",graupel_coeffs%a_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_f   = ",graupel_coeffs%b_f ; CALL message(routine,TRIM(txt))
     END IF
 
     ! hail parameter setup
     CALL setup_particle_coeffs(hail,hail_coeffs)
     IF (isprint) THEN
       WRITE(txt,*) "  hail: " ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_geo = ",hail%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_geo = ",hail%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_vel = ",hail%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_vel = ",hail%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    c_h   = ",hail_coeffs%c_i ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_f   = ",hail_coeffs%a_f ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_f   = ",hail_coeffs%b_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_geo = ",hail%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_geo = ",hail%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_vel = ",hail%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_vel = ",hail%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    c_h   = ",hail_coeffs%c_i ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_f   = ",hail_coeffs%a_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_f   = ",hail_coeffs%b_f ; CALL message(routine,TRIM(txt))
     END IF
 
     ! snow parameter setup
     CALL setup_particle_coeffs(snow,snow_coeffs)
     IF (isprint) THEN
       WRITE(txt,*) "  snow: " ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_geo = ",snow%a_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_geo = ",snow%b_geo ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_vel = ",snow%a_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_vel = ",snow%b_vel ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    c_s   = ",snow_coeffs%c_i ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    a_f   = ",snow_coeffs%a_f ; CALL message(routine,TRIM(txt))
-      WRITE(txt,'(A,D10.3)') "    b_f   = ",snow_coeffs%b_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_geo = ",snow%a_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_geo = ",snow%b_geo ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_vel = ",snow%a_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_vel = ",snow%b_vel ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    c_s   = ",snow_coeffs%c_i ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    a_f   = ",snow_coeffs%a_f ; CALL message(routine,TRIM(txt))
+      WRITE(txt,'(A,ES14.7)') "    b_f   = ",snow_coeffs%b_f ; CALL message(routine,TRIM(txt))
     END IF
 
     ! setup selfcollection of ice particles, coeffs are stored in their derived types
@@ -1342,12 +1446,12 @@ CONTAINS
 
     IF (isprint) THEN
       CALL message(routine, "rain_coeffs:")
-      WRITE(txt,'(A,D10.3)') "    c_z= ",rain_coeffs%c_z
+      WRITE(txt,'(A,ES14.7)') "    c_z= ",rain_coeffs%c_z
       CALL message(routine,TRIM(txt))
     ENDIF
     IF (isprint) THEN
       CALL message(routine, "cloud_coeffs:")
-      WRITE(txt,'(A,D10.3)') "    c_z= ",cloud_coeffs%c_z
+      WRITE(txt,'(A,ES14.7)') "    c_z= ",cloud_coeffs%c_z
       CALL message(routine,TRIM(txt))
     ENDIF
 
@@ -1361,13 +1465,79 @@ CONTAINS
 
     !$ACC ENTER DATA COPYIN(rain_coeffs, ice_coeffs, snow_coeffs, graupel_coeffs, hail_coeffs, cloud_coeffs) &
     !$ACC   COPYIN(sic_coeffs, gic_coeffs, gsc_coeffs, hic_coeffs, hsc_coeffs, scr_coeffs, srr_coeffs) &
-    !$ACC   COPYIN(irr_coeffs, icr_coeffs, hrr_coeffs, grr_coeffs, hcr_coeffs, gcr_coeffs)
+    !$ACC   COPYIN(irr_coeffs, icr_coeffs, hrr_coeffs, grr_coeffs, hcr_coeffs, gcr_coeffs) &
+    !$ACC   COPYIN(gshedc_coeffs, gshedr_coeffs, hshedc_coeffs, hshedr_coeffs)
+
     !$ACC ENTER DATA COPYIN(ltab_estick_ice)
     !$ACC ENTER DATA COPYIN(ltab_estick_ice%x1, ltab_estick_ice%ltable)
     !$ACC ENTER DATA COPYIN(ltab_estick_snow)
     !$ACC ENTER DATA COPYIN(ltab_estick_snow%x1, ltab_estick_snow%ltable)
     !$ACC ENTER DATA COPYIN(ltab_estick_parti)
     !$ACC ENTER DATA COPYIN(ltab_estick_parti%x1, ltab_estick_parti%ltable)
+
+    !$ACC ENTER DATA COPYIN(graupel_ltable1)
+    !$ACC ENTER DATA COPYIN(graupel_ltable1%x, graupel_ltable1%xhr, graupel_ltable1%igf, graupel_ltable1%igfhr)
+    !$ACC ENTER DATA COPYIN(graupel_ltable2)
+    !$ACC ENTER DATA COPYIN(graupel_ltable2%x, graupel_ltable2%xhr, graupel_ltable2%igf, graupel_ltable2%igfhr)
+
+    !$ACC ENTER DATA COPYIN(rain_ltable1)
+    !$ACC ENTER DATA COPYIN(rain_ltable1%x, rain_ltable1%xhr, rain_ltable1%igf, rain_ltable1%igfhr)
+    !$ACC ENTER DATA COPYIN(rain_ltable2)
+    !$ACC ENTER DATA COPYIN(rain_ltable2%x, rain_ltable2%xhr, rain_ltable2%igf, rain_ltable2%igfhr)
+    !$ACC ENTER DATA COPYIN(rain_ltable3)
+    !$ACC ENTER DATA COPYIN(rain_ltable3%x, rain_ltable3%xhr, rain_ltable3%igf, rain_ltable3%igfhr)
+    
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_dgg_03)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_dgg_03%x, gshedc_ltab_dgg_03%xhr, gshedc_ltab_dgg_03%igf, gshedc_ltab_dgg_03%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_drr_01)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_drr_01%x, gshedc_ltab_drr_01%xhr, gshedc_ltab_drr_01%igf, gshedc_ltab_drr_01%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_dgr_02)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_dgr_02%x, gshedc_ltab_dgr_02%xhr, gshedc_ltab_dgr_02%igf, gshedc_ltab_dgr_02%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgg_05)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgg_05%x, gshedc_ltab_tgg_05%xhr, gshedc_ltab_tgg_05%igf, gshedc_ltab_tgg_05%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgg_03)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgg_03%x, gshedc_ltab_tgg_03%xhr, gshedc_ltab_tgg_03%igf, gshedc_ltab_tgg_03%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgr_04)
+    !$ACC ENTER DATA COPYIN(gshedc_ltab_tgr_04%x, gshedc_ltab_tgr_04%xhr, gshedc_ltab_tgr_04%igf, gshedc_ltab_tgr_04%igfhr)
+
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_dhh_03)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_dhh_03%x, hshedc_ltab_dhh_03%xhr, hshedc_ltab_dhh_03%igf, hshedc_ltab_dhh_03%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_drr_01)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_drr_01%x, hshedc_ltab_drr_01%xhr, hshedc_ltab_drr_01%igf, hshedc_ltab_drr_01%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_dhr_02)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_dhr_02%x, hshedc_ltab_dhr_02%xhr, hshedc_ltab_dhr_02%igf, hshedc_ltab_dhr_02%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thh_05)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thh_05%x, hshedc_ltab_thh_05%xhr, hshedc_ltab_thh_05%igf, hshedc_ltab_thh_05%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thh_03)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thh_03%x, hshedc_ltab_thh_03%xhr, hshedc_ltab_thh_03%igf, hshedc_ltab_thh_03%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thr_04)
+    !$ACC ENTER DATA COPYIN(hshedc_ltab_thr_04%x, hshedc_ltab_thr_04%xhr, hshedc_ltab_thr_04%igf, hshedc_ltab_thr_04%igfhr)
+
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_dgg_03)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_dgg_03%x, gshedr_ltab_dgg_03%xhr, gshedr_ltab_dgg_03%igf, gshedr_ltab_dgg_03%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_drr_01)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_drr_01%x, gshedr_ltab_drr_01%xhr, gshedr_ltab_drr_01%igf, gshedr_ltab_drr_01%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_dgr_02)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_dgr_02%x, gshedr_ltab_dgr_02%xhr, gshedr_ltab_dgr_02%igf, gshedr_ltab_dgr_02%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgg_05)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgg_05%x, gshedr_ltab_tgg_05%xhr, gshedr_ltab_tgg_05%igf, gshedr_ltab_tgg_05%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgg_03)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgg_03%x, gshedr_ltab_tgg_03%xhr, gshedr_ltab_tgg_03%igf, gshedr_ltab_tgg_03%igfhr)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgr_04)
+    !$ACC ENTER DATA COPYIN(gshedr_ltab_tgr_04%x, gshedr_ltab_tgr_04%xhr, gshedr_ltab_tgr_04%igf, gshedr_ltab_tgr_04%igfhr)
+
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_dhh_03)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_dhh_03%x, hshedr_ltab_dhh_03%xhr, hshedr_ltab_dhh_03%igf, hshedr_ltab_dhh_03%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_drr_01)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_drr_01%x, hshedr_ltab_drr_01%xhr, hshedr_ltab_drr_01%igf, hshedr_ltab_drr_01%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_dhr_02)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_dhr_02%x, hshedr_ltab_dhr_02%xhr, hshedr_ltab_dhr_02%igf, hshedr_ltab_dhr_02%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thh_05)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thh_05%x, hshedr_ltab_thh_05%xhr, hshedr_ltab_thh_05%igf, hshedr_ltab_thh_05%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thh_03)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thh_03%x, hshedr_ltab_thh_03%xhr, hshedr_ltab_thh_03%igf, hshedr_ltab_thh_03%igfhr)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thr_04)
+    !$ACC ENTER DATA COPYIN(hshedr_ltab_thr_04%x, hshedr_ltab_thr_04%xhr, hshedr_ltab_thr_04%igf, hshedr_ltab_thr_04%igfhr)
 
   END SUBROUTINE init_2mom_scheme_once
 

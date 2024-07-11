@@ -60,7 +60,6 @@ MODULE mo_cloud_two_types
      REAL(wp), POINTER :: zh        (:,:,:)=>NULL() !< [m]      height of half levels
      REAL(wp), POINTER :: rho       (:,:,:)=>NULL() !< [kg/m3]  air density
      REAL(wp), POINTER :: pf        (:,:,:)=>NULL() !< [Pa]     air pressure
-     REAL(wp), POINTER :: cpair     (:,:,:)=>NULL() !< [J/K/kg] specific heat of air
 !inout
      REAL(wp), POINTER :: qv        (:,:,:)=>NULL() !< [kg/kg]  specific humidity
      REAL(wp), POINTER :: qc        (:,:,:)=>NULL() !< [kg/kg]  mass fraction of cloud water in air

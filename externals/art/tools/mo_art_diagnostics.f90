@@ -36,6 +36,7 @@ MODULE mo_art_diagnostics
                                           &   t_art_aeronet, t_art_max_layer
   USE mo_art_impl_constants,            ONLY: IART_ACC_EMISS, IART_EMISS, IART_ACC_WETDEPO_GSCP, &
                                           &   IART_ACC_WETDEPO_CON, IART_ACC_WETDEPO_RRSFC
+  USE mo_physical_constants,             ONLY: argas, avo, p0sl_bg
   
   IMPLICIT NONE
   
@@ -44,6 +45,7 @@ MODULE mo_art_diagnostics
   PUBLIC :: art_dust_diagnostics
   PUBLIC :: art_seas_diagnostics
   PUBLIC :: art_volc_diagnostics
+  PUBLIC :: art_soot_diagnostics
   PUBLIC :: art_radio_diagnostics
   PUBLIC :: art_radio_diagnostics_dt_phy
   PUBLIC :: art_chem_calc_column
@@ -162,6 +164,52 @@ SUBROUTINE art_seas_diagnostics( rho, p_trac,     &
     &                     'seas', p_art_data%diag%seas_total_mc )
 
 END SUBROUTINE art_seas_diagnostics
+!!
+!!-------------------------------------------------------------------------
+!!
+SUBROUTINE art_soot_diagnostics( rho, p_trac,     &
+  &                              istart, iend, nlev, jb, p_art_data )
+
+  !<
+  ! SUBROUTINE art_soot_diagnostics
+  ! integrates the 3d AOD for art-tracers
+  ! vertically and saves the 2d AOD of art-tracers
+  ! in addition it calculates the
+  ! total biomass burning aerosol mass concentration [kg/m3]
+  !
+  ! Based on: -
+  ! Part of Module: mo_art_diagnostics
+  ! Author: Nikolas Porz, DWD
+  ! Initial Release: 2023-12-13
+  ! Modifications:
+  ! 2023-12-13: -
+  ! -
+  !>
+  REAL(wp), INTENT(in)   :: &
+    &  rho(:,:),            & !< Air density  [kg/m3]
+    &  p_trac(:,:,:)          !< Tracer mixing ratios [mug/kg]
+  INTEGER, INTENT(in)    :: &
+    &  istart, iend,        & !< Start and end index of art_atmo%nproma loop
+    &  nlev, jb               !< Number of verical levels, Block index
+  TYPE(t_art_data), INTENT(inout), TARGET :: &
+    &  p_art_data             !< Data container for ART
+! Local variables
+  CHARACTER(LEN=MAX_CHAR_LENGTH)  :: &
+    &  thisroutine = "mo_art_diagnostics:art_soot_diagnostics"
+
+  ! ----------------------------------------------------------------------
+  ! --- Calculate total column of aerosol optical depth
+  ! ----------------------------------------------------------------------
+  CALL art_calc_tau_vi( istart, iend, nlev, jb, &
+    &                   p_art_data%diag%soot_aeronet )
+
+  ! -------------------------------------------------------------
+  ! --- Calculate total biomass burning aerosol mass concentration [kg/m3]
+  ! -------------------------------------------------------------
+  CALL art_calc_total_mc( rho, p_trac, istart, iend, nlev, jb, p_art_data, &
+    &                     'soot', p_art_data%diag%soot_total_mc )
+  ! note the difference between 'biomass_burning' and 'soot' for emission scheme
+END SUBROUTINE art_soot_diagnostics
 !!
 !!-------------------------------------------------------------------------
 !!
@@ -496,7 +544,7 @@ SUBROUTINE art_chem_calc_column(column, pres, temp, z_ifc, p_tracer, istart, ien
 
 !NEC$ ivdep
   DO jc = istart, iend
-    column(jc, 1) = (p_tracer(jc,1) * pres(jc, 1) / (8.314472_wp * temp(jc, 1)))                     &
+    column(jc, 1) = (p_tracer(jc,1) * pres(jc, 1) / (argas * temp(jc, 1)))                     &
       &           * (z_ifc(jc, 1) - z_ifc(jc, 2))
   END DO
 
@@ -504,7 +552,7 @@ SUBROUTINE art_chem_calc_column(column, pres, temp, z_ifc, p_tracer, istart, ien
 !NEC$ ivdep
     DO jc = istart, iend
 
-      column(jc,jk) = (p_tracer(jc,jk) * pres(jc, jk) / (8.314472_wp * temp(jc, jk)))                &
+      column(jc,jk) = (p_tracer(jc,jk) * pres(jc, jk) / (argas * temp(jc, jk)))                &
         &           * (z_ifc(jc, jk) - z_ifc(jc,jk+1))                                               &
         &           + column(jc, jk-1)
     ENDDO
@@ -842,21 +890,21 @@ SUBROUTINE art_calc_o2_column(jg,jb,jcs,jce,nproma,nlev,o2_column)
 !NEC$ ivdep
   DO jc = jcs, jce
     press_alt_u = 100000._wp
-    press_alt_l =  -7000._wp * LOG(art_atmo%pres(jc,art_atmo%nlev,jb)/101325._wp)
+    press_alt_l =  -7000._wp * LOG(art_atmo%pres(jc,art_atmo%nlev,jb)/p0sl_bg)
     o2_column(jc,art_atmo%nlev,jb) = art_atmo%pres(jc,art_atmo%nlev,jb)    &
-      &             / 8.3144621_wp/art_atmo%temp(jc,art_atmo%nlev,jb)      &
-      &             * 6.022e23_wp/1000000._wp                              &
+      &             / argas/art_atmo%temp(jc,art_atmo%nlev,jb)      &
+      &             * avo/1000000._wp                              &
       &             * (press_alt_u-press_alt_l)*100._wp*0.2041_wp
   END DO
 
   DO jk = art_atmo%nlev-1,1,-1
 !NEC$ ivdep
     DO jc = jcs, jce
-      press_alt_u = -7000._wp * LOG(art_atmo%pres(jc,jk+1,jb)/101325._wp)
-      press_alt_l = -7000._wp * LOG(art_atmo%pres(jc,jk  ,jb)/101325._wp)
+      press_alt_u = -7000._wp * LOG(art_atmo%pres(jc,jk+1,jb)/p0sl_bg)
+      press_alt_l = -7000._wp * LOG(art_atmo%pres(jc,jk  ,jb)/p0sl_bg)
       o2_column(jc,jk,jb) = art_atmo%pres(jc,jk,jb)                    &
-        &              / 8.3144621_wp/art_atmo%temp(jc,jk,jb)          &
-        &              * 6.022e23_wp/1000000._wp                       &
+        &              / argas/art_atmo%temp(jc,jk,jb)          &
+        &              * avo/1000000._wp                       &
         &              * (press_alt_u-press_alt_l)*100._wp*0.2041_wp   &
         &              + o2_column(jc,jk+1,jb)
     ENDDO

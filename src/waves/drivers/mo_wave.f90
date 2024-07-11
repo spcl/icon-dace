@@ -12,7 +12,7 @@
 
 MODULE mo_wave
   USE mo_kind,                  ONLY: wp
-  USE mo_exception,             ONLY: message
+  USE mo_exception,             ONLY: message, finish
   USE mo_model_domain,          ONLY: p_patch
   USE mo_grid_config,           ONLY: n_dom, start_time, end_time
   USE mo_wave_state,            ONLY: construct_wave_state, destruct_wave_state
@@ -43,6 +43,9 @@ CONTAINS
 
     CHARACTER(*), PARAMETER :: routine = "mo_wave:wave"
 
+#ifdef _OPENACC
+    CALL finish(routine, "wave_process not ported to GPU yet")
+#endif
     CALL construct_wave()
 
     CALL perform_wave_stepping(time_config)

@@ -1,15 +1,83 @@
-#! /bin/bash
+#! /usr/bin/env bash
 #
 # This script contains all the necessary steps to recreate the
 # autotools files to build CDI.
 #
-libtoolize --force --copy
-libtoolversion=$(libtoolize --version \
-                      | sed -e 's/^libtoolize \(([^)]*) \)\{0,1\}\([0-9.]*\)/\2/;q')
+# Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
+#
+# Version: 1.0
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Keywords: autotools autogen autoconf libtool automake
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+set -e
+
+# this should guarantee reproducible results from automake runs
+export PERL_HASH_SEED=0
+
+if [[ -z "${libtoolize:-}" ]]; then
+  case $(uname -s) in
+    Darwin)
+      libtoolize=glibtoolize
+      if [[ -z "${SED+set}" ]] && command -v gsed >/dev/null; then
+        SED=gsed
+      fi
+      ;;
+    *)
+      libtoolize=libtoolize
+      ;;
+  esac
+fi
+
+SED=${SED-sed}
+if sed_version=$($SED --version 2>/dev/null) && [[ $sed_version = *GNU\ sed* ]]; then
+  sed_inplace_options=('-i')
+elif $SED -E </dev/null 2>/dev/null >/dev/null ; then
+  # assume modern FreeBSD sed
+  sed_inplace_options=('-i' '')
+else
+  printf '%s\n' 'Cannot find sed able to operate in place.' \
+    'Please provide full path to GNU or FreeBSD sed in SED environment variable.' \
+    >&2
+  exit 1
+fi
+
+autoreconf -i --force
+$libtoolize --force --copy
+libtoolversion=$($libtoolize --version \
+                      | ${SED} -e 's/^'"${libtoolize##*/}"' \(([^)]*) \)\{0,1\}\([0-9.]*\)/\2/;q')
 declare -a patches
 case "$libtoolversion" in
-  2.4.6)
-    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool-2.4.6.patch \
+  (2.4.6|2.4.7)
+    patches=(contrib/00nagfor-libtool-patch/nagfor-libtool-${libtoolversion}.patch \
       contrib/01aix-deplib-rpath-patch/aix-deplib-libtool.patch \
       contrib/03ltmain-ld-groups-patch/ltmain-ld-groups-libtool-2.4.6.patch \
       contrib/04ltmain-xlinker-patch/ltmain-xlinker-patch.patch \
@@ -25,7 +93,7 @@ case "$libtoolversion" in
     #   2) it is already applied to the Debian-provided libtool and the current
     #      way we apply our patches does not handle such cases.
     ;;
-  2.4.2)
+  (2.4.2)
     patches=(contrib/00nagfor-libtool-patch/nagfor-libtool.patch \
       contrib/01aix-deplib-rpath-patch/aix-deplib-libtool.patch \
       contrib/02nagfor53-shared-patch/nagfor53-shared.patch \
@@ -40,11 +108,19 @@ for patch in "${patches[@]}"; do
   patch -p1 <$patch
 done
 autoreconf -i
-find . -name Makefile.in -print0 | xargs -0 sed -i -e 's/[	 ][	 ]*$//'
+find . -name Makefile.in -exec $SED "${sed_inplace_options[@]}" \
+  -e 's/[	 ][	 ]*$//' \{\} +
 \rm -f config/ltmain.sh.orig m4/libtool.m4.orig
-wget -o /dev/null -O config/config.guess \
+
+if command -v wget >/dev/null ; then
+  DL_CMD=(wget -o /dev/null -O)
+elif command -v curl >/dev/null ; then
+  DL_CMD=(curl -s -o)
+fi
+
+"${DL_CMD[@]}" config/config.guess \
      'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.guess;hb=HEAD'
-wget -o /dev/null -O config/config.sub \
+"${DL_CMD[@]}" config/config.sub \
      'http://git.savannah.gnu.org/gitweb/?p=config.git;a=blob_plain;f=config.sub;hb=HEAD'
 
 #
@@ -52,4 +128,10 @@ wget -o /dev/null -O config/config.sub \
 # diff -x autom4te.cache -x .git -ur orig/libcdi new/libcdi 2>&1 |less
 # if a known good checkout is at orig/libcdi and a newly reconfigured
 # tree is at new/libcdi
+#
+# Local Variables:
+# mode: sh
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
 #

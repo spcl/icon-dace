@@ -62,7 +62,6 @@ CONTAINS
   SUBROUTINE diffuse_scalar_vertical_explicit( &
     & ibs, ibe, ics, ice, &
     & dz, zf, &
-    & rho_ic, &
     & k_ic, &
     & var, &
     & sfc_flx, &
@@ -75,7 +74,6 @@ CONTAINS
 
     REAL(wp), INTENT(in), DIMENSION(:,:,:) :: &
       & var, &
-      & rho_ic, &
       & k_ic, &
       & dz, &
       & zf
@@ -95,7 +93,7 @@ CONTAINS
     nlev = SIZE(var,2)
 
 !$OMP PARALLEL
-    CALL init(tend)
+    CALL init(tend, lacc=.FALSE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
@@ -105,8 +103,8 @@ CONTAINS
         DO jc = ics(jb), ice(jb)
           tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
           & ( &
-          &   rho_ic(jc,jk  ,jb) * k_ic(jc,jk  ,jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))&
-          & - rho_ic(jc,jk+1,jb) * k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))&
+          &   k_ic(jc,jk  ,jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))&
+          & - k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))&
           & )
         END DO
       END DO
@@ -116,7 +114,7 @@ CONTAINS
         tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
         & ( &
         &                      top_flx(jc,jb) &
-        & - rho_ic(jc,jk+1,jb) * k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb)) &
+        & - k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb)) &
         & )
       END DO
 
@@ -124,7 +122,7 @@ CONTAINS
       DO jc = ics(jb), ice(jb)
         tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
         & ( &
-        &   rho_ic(jc,jk  ,jb) * k_ic(jc,jk,  jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb)) &
+        &   k_ic(jc,jk,  jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb)) &
         & - sfc_flx(jc,jb) &
         & )
       END DO
@@ -138,7 +136,6 @@ CONTAINS
     & ibs, ibe, ics, ice, &
     & dtime, &
     & dz, zf, &
-    & rho_ic, &
     & k_ic, &
     & var, &
     & sfc_flx, &
@@ -156,7 +153,6 @@ CONTAINS
 
     REAL(wp), INTENT(in), DIMENSION(:,:,:) :: &
       & var, &
-      & rho_ic, &
       & k_ic, &
       & dz, &
       & zf
@@ -184,8 +180,8 @@ CONTAINS
     !$ACC DATA CREATE(a, b, c, rhs, new_var)
 
 !$OMP PARALLEL
-    CALL init(new_var)
-    CALL init(tend)
+    CALL init(new_var, lacc=.TRUE.)
+    CALL init(tend, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_RUNTIME_SCHEDULE
@@ -196,8 +192,8 @@ CONTAINS
       DO jk=2,nlev-1
         !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO jc = ics(jb), ice(jb)
-          a(jc,jk,jb) = - k_ic(jc,jk  ,jb) / dz(jc,jk,jb) * rho_ic(jc,jk  ,jb) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))
-          c(jc,jk,jb) = - k_ic(jc,jk+1,jb) / dz(jc,jk,jb) * rho_ic(jc,jk+1,jb) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))
+          a(jc,jk,jb) = - k_ic(jc,jk  ,jb) / dz(jc,jk,jb) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))
+          c(jc,jk,jb) = - k_ic(jc,jk+1,jb) / dz(jc,jk,jb) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))
           b(jc,jk,jb) = 1._wp / dtime - a(jc,jk,jb) - c(jc,jk,jb)
           rhs(jc,jk,jb) = var(jc,jk,jb) / dtime
         END DO
@@ -206,14 +202,14 @@ CONTAINS
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jc = ics(jb), ice(jb)
         a(jc,1,jb) = 0._wp 
-        c(jc,1,jb) = - k_ic(jc,2,jb) / dz(jc,1,jb) * rho_ic(jc,2,jb) / (zf(jc,1,jb)-zf(jc,2,jb))
+        c(jc,1,jb) = - k_ic(jc,2,jb) / dz(jc,1,jb) / (zf(jc,1,jb)-zf(jc,2,jb))
         b(jc,1,jb) = 1._wp / dtime - a(jc,1,jb) - c(jc,1,jb)
         rhs(jc,1,jb) = var(jc,1,jb) / dtime  ! TODO: only correct for top_flx=0 !
       END DO
 
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jc = ics(jb), ice(jb)
-        a(jc,nlev,jb) = - k_ic(jc,nlev  ,jb) / dz(jc,nlev,jb) * rho_ic(jc,nlev  ,jb) / (zf(jc,nlev-1,jb)-zf(jc,nlev,jb))
+        a(jc,nlev,jb) = - k_ic(jc,nlev  ,jb) / dz(jc,nlev,jb) / (zf(jc,nlev-1,jb)-zf(jc,nlev,jb))
         c(jc,nlev,jb) = 0._wp 
         b(jc,nlev,jb) = 1._wp / dtime - a(jc,nlev,jb) - c(jc,nlev,jb)
         rhs(jc,nlev,jb) = var(jc,nlev,jb) / dtime - sfc_flx(jc,jb) / dz(jc,nlev,jb) 

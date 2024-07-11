@@ -213,6 +213,9 @@ MODULE mo_icon2dace
   use mo_obs,         only: process_obs,     &! general purpose routine
                             set_rules_cosmo, &! set default /RULES/ for COSMO
                             set_time_slice    ! set metadata for time interpol.
+  use mo_cloud,       only: cloud_detect,     &! cloud detection for all radiances
+                            cloud_detect_init,&! initialize cloud detection
+                            PH_ABC
   use mo_obs_sndrcv,  only: p_alltoall,      &! MPI_ALLTOALL (t_obs)
                             p_bcast           ! MPI_BCAST    (t_obs)
   use mo_obs_rules,   only: read_nml_rules    ! read namelists /RULES/
@@ -1611,6 +1614,8 @@ contains
     type(t_lnd_prog),     pointer :: lnd_p    ! land model, prognostic vars.
     type(t_lnd_diag),     pointer :: lnd_d    ! land model, diagnostic vars.
     logical                       :: l_rad_cld
+    logical                       :: lceil
+    logical                       :: lvis
     ! character(*), parameter :: fields = &
     !      "ps pf ph t u v den q qcl qci qv_s z0 qv_dia qc_dia qi_dia& 
     !      & t2m td2m rh2m u_10m v_10m clct clcl clcm clch clc&
@@ -1678,8 +1683,17 @@ contains
     if (lqs) call allocate (state, "qs")
     if (lqg) call allocate (state, "qg")
 
+    !----------------------------------------
+    ! Handle optional variables ceiling, vis:
+    !----------------------------------------
+    lceil = associated (phy_d% ceiling_height)
+    lvis  = associated (phy_d% vis)
+    if (lceil) call allocate (state, "ceiling")
+    if (lvis)  call allocate (state, "vis")
+
     if (dbg_level > 1) then
        if (dace% lpio) write(0,*) "iqv,iqc,iqi,iqr,iqs,iqg=",iqv,iqc,iqi,iqr,iqs,iqg
+       if (dace% lpio) write(0,*) "atm_from_icon::lceil,lvis=",lceil, lvis
     end if
 
     j1 = icon_dc% ilim1(dace% pe)
@@ -1739,6 +1753,10 @@ contains
        state% fr_ice (j,1,1,1) = lnd_d% fr_seaice(idx,blk)
        state% qv_s   (j,1,1,1) = lnd_d% qv_s     (idx,blk)
 !      state% t_so   (j,1,:,1) = lnd_p% t_so   (idx,:,blk) ! needs checking
+
+       ! Optional variables:
+       if (lceil) state% ceiling(j,1,1,1) = phy_d% ceiling_height(idx,blk)
+       if (lvis)  state% vis    (j,1,1,1) = phy_d% vis           (idx,blk)
     end do
 
     call set_geo (state, geof=.true.)
@@ -1876,8 +1894,9 @@ contains
     call init_fdbk_tables () ! initialise tables
     call disable_gh       () ! disable generalized humidity transformation
     call read_nml_report     ! set defaults in table 'rept_use'
-    call read_tovs_nml       ! read namelists /TOVS_OBS/ and /TOVS_OBS_CHAN_NML/
+    !call read_tovs_nml      ! read namelists /TOVS_OBS/ and /TOVS_OBS_CHAN_NML/
     call read_nml_thin       ! read namelist /THINNING/
+    call cloud_detect_init   ! read namelists /TOVS_CLOUD/ and /CLOUD_DETECT_COEFFS/
     if (n_dace_op > 0) then
        call read_blacklists  ! read namelist /BLACKLIST/ (and blacklist file)
     end if
@@ -2302,7 +2321,7 @@ contains
 
        call thin_superob_tovs(obs, H_det)
        call process_obs (TSK_R,    obs)
-
+       call cloud_detect(obs, H_det, PH_ABC)
 
        if (first) then
           !-------------------------

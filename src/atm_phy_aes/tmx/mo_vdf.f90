@@ -245,7 +245,8 @@ CONTAINS
     !$ACC   CREATE(energy, new_energy, tend_energy) &
     !$noACC   CREATE(inv_rhoe, nabla2_e, tot_tend, ddt_u, ddt_v, hori_tend_c, hori_tend_e) &
     !$ACC   CREATE(inv_rhoe, nabla2_e, tot_tend, hori_tend_c, hori_tend_e) &
-    !$ACC   CREATE(a, b, c, rhs, var_new, vt_e, inv_rho_ic)
+    !$ACC   CREATE(a, b, c, rhs, var_new, vt_e, inv_rho_ic) &
+    !$ACC   CREATE(za, zb, zc, zrhs, var_new_e)
 
     SELECT TYPE (v => this%atmo%config)
     TYPE IS (t_vdf_atmo_config)
@@ -279,9 +280,6 @@ CONTAINS
     END SELECT
     __acc_attach(diags_sfc)
 
-    conf_sfc%cpd => conf_atmo%cpd
-    conf_sfc%cvd => conf_atmo%cvd
-
     ! Compute diagnostics at start of time step (e.g. sfc and atmo exchange coefficients)
     ! CALL this%atmo%Compute_diagnostics()
     ! Possibly put needed variables at lowest atmo level into sfc inputs collection
@@ -291,7 +289,7 @@ CONTAINS
 
     ! Call surface model and compute fluxes (so far, only explicit land/atmo is used!)
     CALL this%sfc%Compute(datetime)
-  
+
     ! Pseudo code:
     ! allocate (tri-diagonal) matrix
     ! for state in atmo%states:
@@ -326,7 +324,7 @@ CONTAINS
     ! 1. Vertical and horizontal diffusion of hydrometeors (iqv, iqc, ici)
     ! ---------------------------------------
 !$OMP PARALLEL
-    CALL init(top_flx)
+    CALL init(top_flx, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     ASSOCIATE ( &
@@ -354,27 +352,27 @@ CONTAINS
         tend => this%atmo%tendencies%Get_ptr_r3d('water vapor')
         new_state => this%atmo%new_states%Get_ptr_r3d('water vapor')
 !$OMP PARALLEL
-        CALL copy(evapotrans, sfc_flx)
+        CALL copy(evapotrans, sfc_flx, lacc=.TRUE.)
 !$OMP END PARALLEL
       CASE (2)
         state => this%atmo%states%Get_ptr_r3d('cloud water')
         tend => this%atmo%tendencies%Get_ptr_r3d('cloud water')
         new_state => this%atmo%new_states%Get_ptr_r3d('cloud water')
 !$OMP PARALLEL
-        CALL init(sfc_flx)
+        CALL init(sfc_flx, lacc=.TRUE.)
 !$OMP END PARALLEL
       CASE (3)
         state => this%atmo%states%Get_ptr_r3d('cloud ice')
         tend => this%atmo%tendencies%Get_ptr_r3d('cloud ice')
         new_state => this%atmo%new_states%Get_ptr_r3d('cloud ice')
 !$OMP PARALLEL
-        CALL init(sfc_flx)
+        CALL init(sfc_flx, lacc=.TRUE.)
 !$OMP END PARALLEL
       END SELECT
 
 !$OMP PARALLEL
-      CALL init(tend)
-      CALL init(new_state)
+      CALL init(tend, lacc=.TRUE.)
+      CALL init(new_state, lacc=.TRUE.)
 !$OMP END PARALLEL
 
       IF ( SOLVER_TYPE == 1 ) THEN !Explicit solver
@@ -382,7 +380,7 @@ CONTAINS
         CALL diffuse_scalar_vertical_explicit( &
           & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
           & mair(:,:,:), zf(:,:,:), &
-          & rho_ic(:,:,:), kh_ic(:,:,:), &
+          & kh_ic(:,:,:), &
           & state(:,:,:), sfc_flx(:,:), top_flx(:,:), &
           & tend(:,:,:) &
           & )
@@ -393,7 +391,7 @@ CONTAINS
           & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
           & dtime, &
           & mair(:,:,:), zf(:,:,:), &
-          & rho_ic(:,:,:), kh_ic(:,:,:), &
+          & kh_ic(:,:,:), &
           & state(:,:,:), sfc_flx(:,:), top_flx(:,:), &
           & tend(:,:,:) &
           & )
@@ -492,6 +490,8 @@ CONTAINS
       km_ie        => diags_atmo%km_ie,        &
       heating      => diags_atmo%heating,   &
       shfl         => diags_sfc%shfl,          &
+      ufts         => diags_sfc%ufts, &
+      ufvs         => diags_sfc%ufvs, &
       q_snocpymlt  => diags_sfc%q_snocpymlt_lnd, &
       rho_ic       => diags_atmo%rho_ic,       &
       zf        => ins_atmo%zf,             &
@@ -505,24 +505,24 @@ CONTAINS
     new_state_ta => this%atmo%new_states%Get_ptr_r3d('temperature')
 
 !$OMP PARALLEL
-    CALL init(top_flx)
-    CALL init(tend_ta)
-    CALL init(energy)
-    CALL init(tend_energy)
-    CALL init(new_energy)
+    CALL init(top_flx, lacc=.TRUE.)
+    CALL init(tend_ta, lacc=.TRUE.)
+    CALL init(energy, lacc=.TRUE.)
+    CALL init(tend_energy, lacc=.TRUE.)
+    CALL init(new_energy, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     CALL this%atmo%temp_to_energy(state_ta(:,:,:), energy(:,:,:), use_new_moisture_state=.FALSE.)
 
     ! sfc_flx(:,:) = shfl(:,:)
-    CALL this%atmo%energy_flux_to_flux_x(shfl(:,:), sfc_flx(:,:))
+    CALL this%atmo%compute_flux_x(shfl(:,:), ufts(:,:), ufvs(:,:), sfc_flx(:,:))
 
     IF ( SOLVER_TYPE == 1 ) THEN !Explicit solver
 
       CALL diffuse_scalar_vertical_explicit( &
         & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
         & mair(:,:,:), zf(:,:,:), &
-        & rho_ic(:,:,:), kh_ic(:,:,:), &
+        & kh_ic(:,:,:), &
         & energy(:,:,:), sfc_flx(:,:), top_flx(:,:), &
         & tend_energy(:,:,:) &
         & )
@@ -533,47 +533,16 @@ CONTAINS
         & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
         & dtime, &
         & mair(:,:,:), zf(:,:,:), &
-        & rho_ic(:,:,:), kh_ic(:,:,:), &
+        & kh_ic(:,:,:), &
         & energy(:,:,:), sfc_flx(:,:), top_flx(:,:), &
         & tend_energy(:,:,:) &
         & )
 
     END IF
 
-!$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = i_startblk_c,i_endblk_c
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
-      DO jk = 1, nlev
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO jc = i_startidx_c(jb), i_endidx_c(jb)
-          new_energy(jc,jk,jb) = energy(jc,jk,jb) + tend_energy(jc,jk,jb) * dtime
-        END DO
-      END DO
-      !$ACC END PARALLEL
-    END DO
-!$OMP END PARALLEL DO
-
-    CALL this%atmo%energy_to_temp(new_energy(:,:,:), new_state_ta(:,:,:), use_new_moisture_state=.TRUE.)
-
-!$OMP PARALLEL
-
-!$OMP DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = i_startblk_c,i_endblk_c
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
-      DO jk = 1, nlev
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO jc = i_startidx_c(jb), i_endidx_c(jb)
-          tend_ta(jc,jk,jb) = (new_state_ta(jc,jk,jb) - state_ta(jc,jk,jb)) / dtime
-        END DO
-      END DO
-      !$ACC END PARALLEL
-    END DO
-!$OMP END DO
-
     ! Note: new_state_ta and tend_ta will be updated later by horizontal diffusion and by additional heating (see below)
     ! Additional heating
+!$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk_c,i_endblk_c
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
@@ -581,19 +550,16 @@ CONTAINS
       DO jk=1,nlev
         !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
-          ! heating(jc,jk,jb) = tend_energy(jc,jk,jb) * mair(jc,jk,jb)
           heating(jc,jk,jb) = 0._wp
         END DO
       END DO
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jc = i_startidx_c(jb), i_endidx_c(jb)
-        ! heating(jc,nlev,jb) = heating(jc,nlev,jb) - q_snocpymlt(jc,jb)
         heating(jc,nlev,jb) = - q_snocpymlt(jc,jb) ! non-zero only for land
       END DO
       !$ACC END PARALLEL
     END DO
 !$OMP END DO
-
 !$OMP END PARALLEL
 
     !---------------------------------------------------------------
@@ -602,7 +568,7 @@ CONTAINS
 
     !include halo points and boundary points because these values will be
     !used in next loop
-    CALL sync_patch_array(SYNC_C, patch, state_ta)
+    CALL sync_patch_array(SYNC_C, patch, energy)
 
     rl_start   = grf_bdywidth_e
     rl_end     = min_rledge_int-1
@@ -616,7 +582,7 @@ CONTAINS
       CALL get_indices_e(patch, jb, i_startblk, i_endblk,       &
                         i_startidx, i_endidx, rl_start, rl_end)
 
-      ! compute kh_ie * grad_horiz(state_ta)
+      ! compute kh_ie * grad_horiz(energy)
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
       DO jk = 1, nlev
@@ -624,8 +590,8 @@ CONTAINS
           nabla2_e(je,jk,jb) = 0.5_wp * ( km_ie(je,jk,jb) + km_ie(je,jk+1,jb) ) *                    &
                                 rturb_prandtl *                                                       &
                                 patch%edges%inv_dual_edge_length(je,jb) *                           &
-                                ( state_ta(iecidx(je,jb,2),jk,iecblk(je,jb,2)) -                           &
-                                  state_ta(iecidx(je,jb,1),jk,iecblk(je,jb,1)) )
+                                ( energy(iecidx(je,jb,2),jk,iecblk(je,jb,2)) -                           &
+                                  energy(iecidx(je,jb,1),jk,iecblk(je,jb,1)) )
         ENDDO
       ENDDO
       !$ACC END PARALLEL
@@ -644,13 +610,45 @@ CONTAINS
             nabla2_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) * p_int%geofac_div(jc,1,jb) +  &
             nabla2_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) * p_int%geofac_div(jc,2,jb) +  &
             nabla2_e(ieidx(jc,jb,3),jk,ieblk(jc,jb,3)) * p_int%geofac_div(jc,3,jb) ) / rho(jc,jk,jb)
-          tend_ta(jc,jk,jb) = tend_ta(jc,jk,jb) + hori_tend_c(jc,jk,jb)
+          tend_energy(jc,jk,jb) = tend_energy(jc,jk,jb) + hori_tend_c(jc,jk,jb)
         END DO
       END DO
       !$ACC END PARALLEL
     END DO
 !$OMP END DO
 
+!$OMP END PARALLEL
+
+!$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = i_startblk_c,i_endblk_c
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+      !$ACC LOOP SEQ
+      DO jk = 1, nlev
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO jc = i_startidx_c(jb), i_endidx_c(jb)
+          new_energy(jc,jk,jb) = energy(jc,jk,jb) + tend_energy(jc,jk,jb) * dtime
+        END DO
+      END DO
+      !$ACC END PARALLEL
+    END DO
+!$OMP END PARALLEL DO
+
+    CALL this%atmo%energy_to_temp(new_energy(:,:,:), new_state_ta(:,:,:), use_new_moisture_state=.TRUE.)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = i_startblk_c,i_endblk_c
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+      !$ACC LOOP SEQ
+      DO jk = 1, nlev
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO jc = i_startidx_c(jb), i_endidx_c(jb)
+          tend_ta(jc,jk,jb) = (new_state_ta(jc,jk,jb) - state_ta(jc,jk,jb)) / dtime
+        END DO
+      END DO
+      !$ACC END PARALLEL
+    END DO
+!$OMP END DO
 !$OMP END PARALLEL
 
     END ASSOCIATE
@@ -667,10 +665,10 @@ CONTAINS
     new_state_v => this%atmo%new_states%Get_ptr_r3d('northward wind')
 
 !$OMP PARALLEL
-    CALL init(tend_u)
-    CALL init(new_state_u)
-    CALL init(tend_v)
-    CALL init(new_state_v)
+    CALL init(tend_u, lacc=.TRUE.)
+    CALL init(new_state_u, lacc=.TRUE.)
+    CALL init(tend_v, lacc=.TRUE.)
+    CALL init(new_state_v, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     ASSOCIATE ( &
@@ -678,8 +676,9 @@ CONTAINS
       i_endblk_c   => this%domain%i_endblk_c,      &
       i_startidx_c => this%domain%i_startidx_c(:), &
       i_endidx_c   => this%domain%i_endidx_c(:),   &
-      dtime        => conf_atmo%dtime,      &
-      solver_type  => conf_atmo%solver_type,&
+      dtime        => conf_atmo%dtime,             &
+      solver_type  => conf_atmo%solver_type,       &
+      dissipation_factor => conf_atmo%dissipation_factor, &
       rturb_prandtl=> conf_atmo%rturb_prandtl,&
       km_c         => diags_atmo%km_c,         &
       km_iv        => diags_atmo%km_iv,        &
@@ -696,7 +695,7 @@ CONTAINS
       heating      => diags_atmo%heating,      &
       zf           => ins_atmo%zf,             &
       mair         => ins_atmo%mair,           &
-      q2t_factor   => ins_atmo%q2t_factor,     &
+      cvair        => ins_atmo%cvair,          &
       rho          => ins_atmo%rho,            &
       inv_dzf      => ins_atmo%inv_dzf,        &
       dissip_kin_energy => diags_atmo%dissip_kin_energy &
@@ -711,7 +710,7 @@ CONTAINS
     !   CALL diffuse_scalar_vertical_explicit( &
     !     & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
     !     & mair(:,:,:), zf(:,:,:), &
-    !     & rho_ic(:,:,:), km_ic(:,:,:), &
+    !     & km_ic(:,:,:), &
     !     & state_u(:,:,:), mflux_u(:,:), top_flx(:,:), &
     !     & tend_u(:,:,:) &
     !     & )
@@ -722,7 +721,7 @@ CONTAINS
     !     & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
     !     & dtime, &
     !     & mair(:,:,:), zf(:,:,:), &
-    !     & rho_ic(:,:,:), km_ic(:,:,:), &
+    !     & km_ic(:,:,:), &
     !     & state_u(:,:,:), mflux_u(:,:), top_flx(:,:), &
     !     & tend_u(:,:,:) &
     !     & )
@@ -738,7 +737,7 @@ CONTAINS
     !   CALL diffuse_scalar_vertical_explicit( &
     !     & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
     !     & mair(:,:,:), zf(:,:,:), &
-    !     & rho_ic(:,:,:), km_ic(:,:,:), &
+    !     & km_ic(:,:,:), &
     !     & state_v(:,:,:), mflux_v(:,:), top_flx(:,:), &
     !     & tend_v(:,:,:) &
     !     & )
@@ -749,7 +748,7 @@ CONTAINS
     !     & i_startblk_c, i_endblk_c, i_startidx_c(:), i_endidx_c(:), &
     !     & dtime, &
     !     & mair(:,:,:), zf(:,:,:), &
-    !     & rho_ic(:,:,:), km_ic(:,:,:), &
+    !     & km_ic(:,:,:), &
     !     & state_v(:,:,:), mflux_v(:,:), top_flx(:,:), &
     !     & tend_v(:,:,:) &
     !     & )
@@ -759,8 +758,9 @@ CONTAINS
     !---------------------------------------------------------------
     ! Horizontal diffusion for horizontal wind
     !---------------------------------------------------------------
+
 !$OMP PARALLEL
-    CALL init(tot_tend)
+    CALL init(tot_tend, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     CALL sync_patch_array(SYNC_C, patch, rho)
@@ -930,7 +930,7 @@ CONTAINS
       !-----------------------------------------------------------------
       ! jk = 1
       !-----------------------------------------------------------------
-      !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
+      !$ACC LOOP GANG(STATIC: 1) VECTOR &
       !$ACC   PRIVATE(flux_dn_e)
       DO je = i_startidx, i_endidx
         flux_dn_e = km_ie(je,2,jb) *                                              &
@@ -946,7 +946,7 @@ CONTAINS
       !-----------------------------------------------------------------
       ! jk = nlev
       !-----------------------------------------------------------------
-      !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
+      !$ACC LOOP GANG(STATIC: 1) VECTOR &
       !$ACC   PRIVATE(flux_up_e, flux_dn_e, stress_c1n, stress_c2n)
       DO je = i_startidx, i_endidx
         flux_up_e = km_ie(je,nlev,jb) *                                           &
@@ -985,11 +985,11 @@ CONTAINS
     ELSE !Implicit solver
 
 !$OMP PARALLEL
-      CALL init(za)
-      CALL init(zb)
-      CALL init(zc)
-      CALL init(zrhs)
-      CALL init(var_new_e)
+      CALL init(za, lacc=.TRUE.)
+      CALL init(zb, lacc=.TRUE.)
+      CALL init(zc, lacc=.TRUE.)
+      CALL init(zrhs, lacc=.TRUE.)
+      CALL init(var_new_e, lacc=.TRUE.)
 !$OMP END PARALLEL
   
 !$OMP PARALLEL DO PRIVATE(jb, jk, je, i_startidx, i_endidx, dwdn, var_new,&
@@ -1030,7 +1030,7 @@ CONTAINS
         !--------------------------------------------------------
         ! jk = 1
         !--------------------------------------------------------
-        !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
+        !$ACC LOOP GANG(STATIC: 1) VECTOR &
         !$ACC   PRIVATE(dwdn)
         DO je = i_startidx, i_endidx
           zc(je,1,jb)   = - km_ie(je,2,jb) * p_nh_metrics%inv_ddqz_z_full_e(je,1,jb) *                &
@@ -1051,7 +1051,7 @@ CONTAINS
         ! jk = nlev
         !--------------------------------------------------------
 
-        !$ACC LOOP GANG(STATIC: 1) VECTOR TILE(32, 4) &
+        !$ACC LOOP GANG(STATIC: 1) VECTOR &
         !$ACC   PRIVATE(dwdn, stress_c1n, stress_c2n, flux_dn_e)
         DO je = i_startidx, i_endidx
           za(je,nlev,jb)  = - km_ie(je,nlev,jb) * p_nh_metrics%inv_ddqz_z_full_e(je,nlev,jb) *        &
@@ -1090,7 +1090,7 @@ CONTAINS
 
         CALL tdma_solver_vec(za(:,:,jb),zb(:,:,jb),zc(:,:,jb),zrhs(:,:,jb),1,nlev,i_startidx,i_endidx,var_new_e(:,:,jb))
 
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
         DO jk = 1, nlev
           DO je = i_startidx, i_endidx
             tot_tend(je,jk,jb) = tot_tend(je,jk,jb) + (var_new_e(je,jk,jb) - vn(je,jk,jb)) / dtime
@@ -1103,36 +1103,16 @@ CONTAINS
 
     END IF
 
-    ! 4) Update vn: it makes more sense to first apply diffusion on vn
-    ! and then get ddt_u/v than to interpolate tot_tend directly to
-    ! ddt_u/v. Proof: during the test phase it was found that the latter slowed
-    ! down the computation by 15%, although the results look same.
-
-!$OMP PARALLEL DO PRIVATE(jb,jk,je,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = i_startblk,i_endblk
-      CALL get_indices_e(patch, jb, i_startblk, i_endblk,       &
-                         i_startidx, i_endidx, rl_start, rl_end)
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
-      DO jk = 1, nlev
-        DO je = i_startidx, i_endidx
-          var_new_e(je,jk,jb) = vn(je,jk,jb) + dtime * tot_tend(je,jk,jb)
-        END DO
-      END DO
-      !$ACC END PARALLEL LOOP
-    END DO
-!$OMP END PARALLEL DO
-
-    ! 5) Get turbulent tendency at cell center
-    CALL sync_patch_array(SYNC_E, patch, var_new_e)
-    CALL rbf_vec_interpol_cell(var_new_e, patch, p_int, new_state_u, new_state_v, opt_rlend=min_rlcell_int)
+    CALL sync_patch_array(SYNC_E, patch, tot_tend)
+    CALL rbf_vec_interpol_cell(tot_tend, patch, p_int, tend_u, tend_v, opt_rlend=min_rlcell_int)
 
 !$OMP PARALLEL DO PRIVATE(jb,jk,jc,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk_c,i_endblk_c
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
       DO jk = 1, nlev
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
-          tend_u(jc,jk,jb) = ( new_state_u(jc,jk,jb) - state_u(jc,jk,jb) ) / dtime
-          tend_v(jc,jk,jb) = ( new_state_v(jc,jk,jb) - state_v(jc,jk,jb) ) / dtime
+          new_state_u(jc,jk,jb) = state_u(jc,jk,jb) + tend_u(jc,jk,jb) * dtime
+          new_state_v(jc,jk,jb) = state_v(jc,jk,jb) + tend_v(jc,jk,jb) * dtime
         END DO
       END DO
       !$ACC END PARALLEL LOOP
@@ -1147,9 +1127,9 @@ CONTAINS
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
           dissip_kin_energy(jc,jk,jb) = 0.5_wp * ( state_u(jc,jk,jb)**2 - new_state_u(jc,jk,jb)**2 &
             &                                    + state_v(jc,jk,jb)**2 - new_state_v(jc,jk,jb)**2 &
-            &                                    ) * mair(jc,jk,jb) / dtime
+            &                                    ) * mair(jc,jk,jb) * dissipation_factor / dtime
           heating(jc,jk,jb) = heating(jc,jk,jb) + dissip_kin_energy(jc,jk,jb)
-          tend_ta(jc,jk,jb) = tend_ta(jc,jk,jb) + heating(jc,jk,jb) * q2t_factor(jc,jk,jb)
+          tend_ta(jc,jk,jb) = tend_ta(jc,jk,jb) + heating(jc,jk,jb) / cvair(jc,jk,jb)
           new_state_ta(jc,jk,jb) = state_ta(jc,jk,jb) + tend_ta(jc,jk,jb) * dtime
         END DO
       END DO
@@ -1199,8 +1179,8 @@ CONTAINS
       )
 
 !$OMP PARALLEL
-    CALL init(tend)
-    CALL init(new_state)
+    CALL init(tend, lacc=.TRUE.)
+    CALL init(new_state, lacc=.TRUE.)
 !$OMP END PARALLEL
 
     !---------------------------------------------------------------
@@ -1227,10 +1207,10 @@ END DO
     ! 2) Vertical tendency: evaluated at w point
 
 !$OMP PARALLEL
-    CALL init(a)
-    CALL init(b)
-    CALL init(c)
-    CALL init(rhs)
+    CALL init(a, lacc=.TRUE.)
+    CALL init(b, lacc=.TRUE.)
+    CALL init(c, lacc=.TRUE.)
+    CALL init(rhs, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jc,jb,jk) ICON_OMP_DEFAULT_SCHEDULE
@@ -1309,7 +1289,7 @@ END DO
       !$ACC WAIT
       CALL tdma_solver_vec(a(:,:,jb),b(:,:,jb),c(:,:,jb),rhs(:,:,jb),2,nlev,i_startidx_c(jb),i_endidx_c(jb),var_new(:,:,jb))
 
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
       DO jk = 2, nlev
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
           tend(jc,jk,jb) = ( var_new(jc,jk,jb) - pwp1(jc,jk,jb) ) / dtime 
@@ -1331,7 +1311,7 @@ END DO
     i_endblk   = patch%edges%end_block(rl_end)
 
 !$OMP PARALLEL
-    CALL init(hori_tend_e)
+    CALL init(hori_tend_e, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jk, je, i_startidx, i_endidx, jcn, jbn, dvn1, dvn2, flux_up_c, flux_dn_c, &
@@ -1428,7 +1408,7 @@ END DO
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk_c,i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
       DO jk = 2, nlev
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
           tend(jc,jk,jb) = tend(jc,jk,jb) + inv_rho_ic(jc,jk,jb)             *                     &
@@ -1446,7 +1426,7 @@ END DO
 !$OMP END DO
 !$OMP DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk_c,i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
       DO jk = 2, nlev
         DO jc = i_startidx_c(jb), i_endidx_c(jb)
           new_state(jc,jk,jb) = state(jc,jk,jb) + tend(jc,jk,jb) * dtime
@@ -1510,7 +1490,7 @@ END DO
 
   SUBROUTINE Update_diagnostics(this)
 
-    USE mo_tmx_surface_interface, ONLY: compute_2m_temperature, compute_10m_wind
+    USE mo_tmx_surface_interface, ONLY: compute_2m_temperature, compute_2m_humidity, compute_10m_wind
     USE mo_vdf_sfc,               ONLY: average_tiles
 
     CLASS(t_vdf), INTENT(inout), TARGET :: this
@@ -1609,12 +1589,21 @@ END DO
           & diags_sfc%kh_neutral_tile(:,:,jtile), diags_sfc%km_neutral_tile(:,:,jtile), &
           & diags_sfc%t2m_tile(:,:,jtile) &
           & )
-      
+
+      CALL compute_2m_humidity( &
+        & domain_sfc, diags_sfc%nvalid(:,jtile), diags_sfc%indices(:,:,jtile), &
+        & ins_sfc%pa(:,:), ins_sfc%psfc(:,:), &
+        & new_ta(:,nlev,:), diags_sfc%t2m_tile(:,:,jtile), &
+        & new_qv(:,nlev,:), new_qc(:,nlev,:), new_qi(:,nlev,:), &
+        & diags_sfc%hus2m_tile(:,:,jtile) &
+        & )
+
     END DO
 
-    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%t2m_tile,     diags_sfc%t2m)
-    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%u10m_tile,    diags_sfc%u10m)
-    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%v10m_tile,    diags_sfc%v10m)
+    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%t2m_tile,   diags_sfc%t2m)
+    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%hus2m_tile, diags_sfc%hus2m)
+    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%u10m_tile,  diags_sfc%u10m)
+    CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, diags_sfc%v10m_tile,  diags_sfc%v10m)
     CALL average_tiles(domain_sfc, ins_sfc%fract_tile, diags_sfc%nvalid, diags_sfc%indices, &
       & diags_sfc%wind10m_tile, diags_sfc%wind10m)
 

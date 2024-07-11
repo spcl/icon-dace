@@ -28,7 +28,7 @@ MODULE mo_art_tracer_def_wrapper
                                           &   CLASS_DEFAULT, CLASS_CHEM, CLASS_DISTR
   USE mo_var_metadata,                  ONLY: create_vert_interp_metadata,             &
                                           &   vintp_types, post_op, get_timelevel_string
-  USE mo_var_groups,                    ONLY: groups, MAX_GROUPS
+  USE mo_var_groups,                    ONLY: groups, MAX_GROUPS, var_groups_dyn
   USE mo_fortran_tools,                 ONLY: t_ptr_2d3d
   USE mo_advection_config,              ONLY: t_advection_config
   USE mo_cf_convention,                 ONLY: t_cf_var
@@ -174,6 +174,7 @@ SUBROUTINE art_tracer_def_wrapper(IART_TRACER_TYPE, defcase, art_config, advconf
     &  units,                                 & !< Unit of tracer (derived from meta_storage)
     &  c_initc,                               & !< character value of initc tag ("file", ...)
     &  c_latbc,                               & !< character value of latbc tag ("file", ...)
+    &  c_meteogram,                           & !< character value of meteogram tag ("file",...)
     &  transport_template,                    & !< Name of transport template to be applied 
                                                 !  on tracer
     &  c_solve
@@ -193,9 +194,11 @@ SUBROUTINE art_tracer_def_wrapper(IART_TRACER_TYPE, defcase, art_config, advconf
     &  lfeedback,                             & !< Child -> Parent feedback?
     &  l_initc,                               & !< logical =.TRUE., if initc tag = "file"
     &  l_latbc,                               & !< logical =.TRUE., if latbc tag = "file"
-    &  l_modeNumber                             !< logical =.TRUE., if modeNumber tag is given
+    &  l_modeNumber,                          & !< logical =.TRUE., if modeNumber tag is given
+    &  l_meteogram                              !< logical =.TRUE., if meteogram tag = "true"
 
   INTEGER :: lfeedback_in
+  INTEGER :: idx_group_mtgrm
 
 
   lconv_tracer = .FALSE.
@@ -447,6 +450,7 @@ SUBROUTINE art_tracer_def_wrapper(IART_TRACER_TYPE, defcase, art_config, advconf
       IF(TRIM(defcase) == 'prog') THEN
         l_initc = .FALSE.
         l_latbc = .FALSE.
+        l_meteogram = .FALSE.
         in_group = groups('ART_AEROSOL')
         CALL key_value_storage_as_string(meta_storage,'initc', c_initc, ierror)
         IF (ierror == SUCCESS) THEN
@@ -455,6 +459,10 @@ SUBROUTINE art_tracer_def_wrapper(IART_TRACER_TYPE, defcase, art_config, advconf
         CALL key_value_storage_as_string(meta_storage,'latbc', c_latbc, ierror)
         IF (ierror == SUCCESS) THEN
           IF (TRIM(c_latbc) == 'file') l_latbc = .TRUE.
+        ENDIF
+        CALL key_value_storage_as_string(meta_storage,'meteogram', c_meteogram, ierror)
+        IF (ierror == SUCCESS) THEN
+          IF (TRIM(c_meteogram) == 'true') l_meteogram = .TRUE.
         ENDIF
         IF ( l_initc .AND. l_latbc ) THEN
           in_group = groups('ART_AEROSOL','tracer_fg_in','LATBC_PREFETCH_VARS')
@@ -469,6 +477,10 @@ SUBROUTINE art_tracer_def_wrapper(IART_TRACER_TYPE, defcase, art_config, advconf
             ENDIF
           ENDIF
         ENDIF
+        IF ( l_meteogram ) THEN
+            idx_group_mtgrm           = var_groups_dyn%group_id("METEOGRAM")
+            in_group(idx_group_mtgrm) = .TRUE.
+        END IF
       ENDIF
 
       ! Required aerosol metadata
@@ -803,14 +815,14 @@ SUBROUTINE set_transport(tracer_name_in, transport_template,                    
                 &        //' transport template set to default.'
     CALL message (TRIM(routine)//':set_transport', message_text)
     ivadv_tracer = 3  ! 3rd order PPM, handles CFL>1
-    itype_vlimit = 2  ! monotonic reconstruction ilter
+    itype_vlimit = 2  ! monotonic reconstruction limiter
     ihadv_tracer = 22 ! combination of miura and miura with subcycling
     itype_hlimit = 3  ! monotonic flux limiter
   ENDIF
 
   IF (TRIM(tolower(transport_template))=='on') THEN ! interim template
     ivadv_tracer = 3  ! 3rd order PPM, handles CFL>1
-    itype_vlimit = 2  ! monotonic reconstruction ilter
+    itype_vlimit = 2  ! monotonic reconstruction limiter
     ihadv_tracer = 22 ! combination of miura and miura with subcycling
     itype_hlimit = 3  ! monotonic flux limiter
   ENDIF
@@ -856,14 +868,14 @@ SUBROUTINE set_transport(tracer_name_in, transport_template,                    
 
   IF (TRIM(tolower(transport_template))=='stdaero') THEN ! interim template
     ivadv_tracer = 3  ! 3rd order PPM, handles CFL>1
-    itype_vlimit = 2  ! monotonic reconstruction ilter
+    itype_vlimit = 2  ! monotonic reconstruction limiter
     ihadv_tracer = 22 ! combination of miura and miura with subcycling
     itype_hlimit = 3  ! monotonic flux limiter
   ENDIF
 
   IF (TRIM(tolower(transport_template))=='hadv52aero') THEN ! interim template
     ivadv_tracer = 3  ! 3rd order PPM, handles CFL>1
-    itype_vlimit = 2  ! monotonic reconstruction ilter
+    itype_vlimit = 2  ! monotonic reconstruction limiter
     ihadv_tracer = 52 ! combination of hybrid FFSL/Miura3 with subcycling
     itype_hlimit = 3  ! monotonic flux limiter
   ENDIF

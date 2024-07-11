@@ -7,7 +7,7 @@
 #
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -45,14 +45,14 @@ normalize_yes_no_input()
 {
   case "$2" in
     y|yes|Y|Yes|YES)
-      typeset -g "$1=:"
+      export -n "$1=:"
       ;;
     n|no|N|No|NO)
-      typeset -g "$1=false"
+      export -n "$1=false"
       ;;
     *)
       printf 'encountered invalid input: "%s"\n' "$2" >&2
-      typeset -g "$1=invalid"
+      export -n "$1=invalid"
       ;;
   esac
 }
@@ -109,21 +109,21 @@ done
 lasttag=$(git tag | ${SORT_V-sort -V} | tail -n 1)
 mergebase=$(git merge-base "${lasttag}" HEAD)
 declare -a lalibs lalibdirs
-coproc LTLIBS {
+exec 5< <( \
   find . -name Makefile.am -exec grep -H _LTLIBRARIES \{\} + \
     | sed -e '/noinst_LTLIBRARIES/d' -e '/check_LTLIBRARIES/d' \
           -e 's/^\(.*Makefile.am:\) *[a-z_]*_LTLIBRARIES *+\{0,1\}= */\1/'
-}
+)
 lalibs=()
 while read -r libline ; do
   echo "inspecting $libline" >&2
   libpath=${libline%%/Makefile.am:*}
-  las=${libline##${libpath}/Makefile.am:}
+  las=${libline##"${libpath}"/Makefile.am:}
   for la in ${las} ; do
     lalibdirs+=("${libpath}")
     lalibs+=("${la/.la/_la}")
   done
-done <&"${LTLIBS[0]}"
+done <&5
 set -e
 declare -i i
 for ((i=0 ; i < ${#lalibs[@]}; ++i)) ; do
@@ -131,6 +131,11 @@ for ((i=0 ; i < ${#lalibs[@]}; ++i)) ; do
   lib=${lalib%_la}
   libpath=${lalibdirs[$i]}
   libname="${libpath#./}/${lib}.la"
+  if ! grep '^'"${lalib}"'_LDFLAGS *= *-version-info' \
+       "${libpath}/Makefile.am" > /dev/null ; then
+    echo "cannot find -version-info for ${libname}, skipping." >&2
+    continue
+  fi
   yesno_ask \
     "Was there any change/removal/addition to/of an exported $libname interface?" \
     interfaceChangedRemovedAdded
@@ -202,18 +207,22 @@ done
 config_files+=(m4/lt* m4/libtool.m4 include/config.h.in configure
                aclocal.m4)
 if [[ -r "${script_dir}/extra_release_dist_files" ]]; then
-  mapfile -t -O ${#config_files[@]} config_files <"${script_dir}/extra_release_dist_files"
+  mapfile -t -O ${#config_files[@]} config_files \
+          <"${script_dir}/extra_release_dist_files"
 fi
 git add -f "${config_files[@]}"
 git commit -n -m 'Add autotools files of release.'
 git checkout "$prevBranch"
 $reconfCmd >"$log_dir/post-release-commit-reconf.log" 2>&1
-
+git update-index -q --really-refresh
+if ! git diff-index --exit-code HEAD -- >/dev/null ; then
+  git commit -a -m 'Update files affected by release.'
+fi
 #
 # Local Variables:
 # mode: sh
 # coding: utf-8
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:
 #

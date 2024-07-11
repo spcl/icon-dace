@@ -357,17 +357,6 @@ MODULE mo_sppt_config
 
     END DO
 
-
-    !------------------------------
-    ! Cross check for commercial license - if not exit
-    !------------------------------
-
-#ifndef HAVE_ACM_LICENSE
-     CALL finish(routine, "SPPT requires the ACM Software License Agreement when configuring ICON")
-#endif
-
-
-
   END SUBROUTINE crosscheck_sppt
 
 END MODULE

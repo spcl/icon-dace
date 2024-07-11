@@ -54,7 +54,7 @@ modelNewEntry(cdiResH resH, int instID, int modelgribID, const char *name)
     }
   modelptr->instID = instID;
   modelptr->modelgribID = modelgribID;
-  if (name && *name) modelptr->name = strdupx(name);
+  if (name && *name) modelptr->name = strdup(name);
 
   return (modelptr);
 }

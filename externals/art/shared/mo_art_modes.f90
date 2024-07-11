@@ -72,6 +72,7 @@ MODULE mo_art_modes
     INTEGER           :: inucleation        !< Nucleation scheme used for this mode
     INTEGER           :: itrnucl            !< Tracer index of nucleation tracer
     INTEGER           :: itrcond            !< Tracer index of condensation tracer
+    LOGICAL           :: l_watercont = .TRUE. !< watercontent of seasalt              
   END TYPE t_mode_metadata
 
   TYPE t_mode_connect
@@ -338,7 +339,7 @@ SUBROUTINE art_aerotbp_modeshift(this_fields,istart,iend,kstart,nlev,jb,tracer)
 
   ! Convert insoluble to mixed mode
   IF (this_fields%shift2mixed%l_do_shift) THEN
-    CALL init(sol_mass) 
+    CALL init(sol_mass, lacc=.FALSE.) 
     ! Determine soluble mass
     DO jk = kstart, nlev
       DO jc = istart, iend
@@ -350,7 +351,7 @@ SUBROUTINE art_aerotbp_modeshift(this_fields,istart,iend,kstart,nlev,jb,tracer)
       ENDDO !jc
     ENDDO !jk
 
-    CALL art_shift2mixed(sol_mass(:,:),     &
+    CALL art_shift2mixed(sol_mass(istart:iend,kstart:nlev),     &
       &                  this_fields%mass(:,:,jb),              &
       &                  tracer(:,:,:),                         &
       &                  istart,                                &

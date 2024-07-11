@@ -60,7 +60,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 3600         ! model timestep in seconds
@@ -122,6 +121,9 @@ cat > ${ocean_namelist} << EOF
   richardson_tracer  = 2.0e-3    ! factor for vertical diffusion coefficient in PP scheme
   physics_parameters_type = 1   ! physics_parameters_ICON_PPoptimized_type
 /    
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
+/
 &ocean_forcing_nml
   iforc_oce = 11
   ! type_surfRelax_Temp= 0      !  0: no relaxation used

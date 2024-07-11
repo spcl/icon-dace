@@ -20,7 +20,6 @@ MODULE mo_jsb_process_class
 
   USE mo_jsb_task_class,      ONLY: t_jsb_process_task, t_jsb_process_task_p
   USE mo_jsb_config_class,    ONLY: t_jsb_config
-  USE mo_jsb_lcc_class,       ONLY: t_jsb_lcc_proc
   USE mo_jsb_impl_constants,  ONLY: SHORT_NAME_LEN
 
   IMPLICIT NONE
@@ -28,7 +27,8 @@ MODULE mo_jsb_process_class
 
   PUBLIC :: t_jsb_process, t_jsb_process_p, Get_process_name, Get_process_id
   PUBLIC :: A2L_, L2A_, SEB_, TURB_, SSE_, HYDRO_, HD_, RAD_, ASSIMI_, PHENO_, CARBON_ , DISTURB_, FUEL_, &
-      & PPLCC_, TLCC_, TCQ_, ALCC_, NLCC_, VEG_
+    &       PPLCC_, FAGE_, ALCC_, FLCC_, WLCC_, NLCC_, VEG_, SB_, SPQ_, &
+    &       Q_PHENO_, Q_ASSIMI_, Q_RAD_
   PUBLIC :: SKIP_, AGGREGATE_, ON_LEAFS_, ON_TILE_, ON_SUBTREE_, INHERIT_, Get_action_name
 
   TYPE t_jsb_process
@@ -37,8 +37,8 @@ MODULE mo_jsb_process_class
     CLASS(t_jsb_config), POINTER  :: config => NULL()
     TYPE(t_jsb_process_task_p), ALLOCATABLE :: task_list(:)
     INTEGER                       :: owner_model_id
-    LOGICAL                       :: l_changes_fractions=.FALSE.  !< Does this process change tile fractions?
-    TYPE(t_jsb_lcc_proc)          :: lcc_relocations ! pointers required for relocations
+    LOGICAL                       :: l_changes_fractions = .FALSE.  !< Does this process change tile fractions?
+    LOGICAL                       :: has_memory = .TRUE.  !< Does this process has an own memory module
   CONTAINS
     PROCEDURE :: Configure => Configure_process
     PROCEDURE :: Register_task
@@ -53,7 +53,8 @@ MODULE mo_jsb_process_class
 
   ENUM, BIND(C)
     ENUMERATOR :: A2L_=1, L2A_, SEB_, TURB_, SSE_, HYDRO_, HD_, RAD_, ASSIMI_, PHENO_,  CARBON_ , DISTURB_, &
-      & FUEL_, PPLCC_, TLCC_, TCQ_, ALCC_, NLCC_, VEG_
+      &           FUEL_, PPLCC_, FAGE_, ALCC_, FLCC_, WLCC_, NLCC_, VEG_, SB_, SPQ_, &
+      &           Q_PHENO_, Q_ASSIMI_, Q_RAD_
   END ENUM
 
   ! Process actions
@@ -86,10 +87,16 @@ CONTAINS
       return_value = 'hydro'
     CASE (RAD_)
       return_value = 'rad'
+    CASE (Q_RAD_)
+      return_value = 'q_rad'
     CASE (ASSIMI_)
       return_value = 'assimi'
+    CASE (Q_ASSIMI_)
+      return_value = 'q_assimi'
     CASE (PHENO_)
       return_value = 'pheno'
+    CASE (Q_PHENO_)
+      return_value = 'q_pheno'
 #ifndef __NO_JSBACH_HD__
     CASE (HD_)
       return_value = 'hd'
@@ -102,16 +109,22 @@ CONTAINS
       return_value = 'fuel'
     CASE (PPLCC_)
       return_value = 'pplcc'
-    CASE (TLCC_)
-      return_value = 'tlcc'
-    CASE (TCQ_)
-      return_value = 'tcq'
+    CASE (FAGE_)
+      return_value = 'fage'
     CASE (ALCC_)
       return_value = 'alcc'
+    CASE (FLCC_)
+      return_value = 'flcc'
+    CASE (WLCC_)
+      return_value = 'wlcc'
     CASE (NLCC_)
       return_value = 'nlcc'
     CASE (VEG_)
       return_value = 'veg'
+    CASE (SB_)
+      return_value = 'sb'
+    CASE (SPQ_)
+      return_value = 'spq'
     CASE DEFAULT
       return_value = ''
     END SELECT
@@ -138,10 +151,16 @@ CONTAINS
       return_value = HYDRO_
     CASE ('rad')
       return_value = RAD_
+    CASE ('q_rad')
+      return_value = Q_RAD_
     CASE ('assimi')
       return_value = ASSIMI_
+    CASE ('q_assimi')
+      return_value = Q_ASSIMI_
     CASE ('pheno')
       return_value = PHENO_
+    CASE ('q_pheno')
+      return_value = Q_PHENO_
 #ifndef __NO_JSBACH_HD__
     CASE ('hd')
       return_value = HD_
@@ -154,16 +173,22 @@ CONTAINS
       return_value = FUEL_
     CASE ('pplcc')
       return_value = PPLCC_
-    CASE ('tlcc')
-      return_value = TLCC_
-    CASE ('tcq')
-      return_value = TCQ_
+    CASE ('fage')
+      return_value = FAGE_
     CASE ('alcc')
       return_value = ALCC_
+    CASE ('flcc')
+      return_value = FLCC_
+    CASE ('wlcc')
+      return_value = WLCC_
     CASE ('nlcc')
       return_value = NLCC_
     CASE ('veg')
       return_value = VEG_
+    CASE ('sb')
+      return_value = SB_
+    CASE ('spq')
+      return_value = SPQ_
     CASE DEFAULT
       return_value = 0
     END SELECT

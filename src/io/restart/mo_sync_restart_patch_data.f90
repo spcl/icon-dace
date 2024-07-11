@@ -146,7 +146,7 @@ CONTAINS
           IF(is_mpi_workroot) THEN
             st(:) = [1,level,1]
             IF(timers_level >= 7) CALL timer_start(timer_write_restart_io)
-            CALL nf(nf_put_vara_double(ncid, info%cdiVarID, st(:nd), ct(:nd), gatherBuffer_dp), routine)
+            CALL nf(nf90_put_var(ncid, info%cdiVarID, gatherBuffer_dp, st(:nd), ct(:nd)), routine)
             IF(timers_level >= 7) CALL timer_stop(timer_write_restart_io)
           END IF
         END DO
@@ -165,7 +165,7 @@ CONTAINS
           IF(is_mpi_workroot) THEN
             st(:) = [1,level,1]
             IF(timers_level >= 7) CALL timer_start(timer_write_restart_io)
-            CALL nf(nf_put_vara_real(ncid, info%cdiVarID, st(:nd), ct(:nd), gatherBuffer_sp), routine)
+            CALL nf(nf90_put_var(ncid, info%cdiVarID, gatherBuffer_sp, st(:nd), ct(:nd)), routine)
             IF(timers_level >= 7) CALL timer_stop(timer_write_restart_io)
           END IF
         END DO
@@ -184,7 +184,7 @@ CONTAINS
           IF(is_mpi_workroot) THEN
             st(:) = [1,level,1]
             IF(timers_level >= 7) CALL timer_start(timer_write_restart_io)
-            CALL nf(nf_put_vara_int(ncid, info%cdiVarID, st(:nd), ct(:nd), gatherBuffer_int), routine)
+            CALL nf(nf90_put_var(ncid, info%cdiVarID, gatherBuffer_int, st(:nd), ct(:nd)), routine)
             IF(timers_level >= 7) CALL timer_stop(timer_write_restart_io)
           END IF
         END DO

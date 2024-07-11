@@ -93,8 +93,9 @@ SUBROUTINE art_extinit_pollen_fordiag(p_patch,nblks, p_pollen_prop, dict_tracer,
       n = n + 1
       this_pollen_table => p_pollen_prop%pollen_type(n)
 
-      this_pollen_table%sname              = TRIM(vname(iv))
-      ALLOCATE( this_pollen_table%fr_cov(      nproma, nblks) ) !used as init-flag in diag-create
+      this_pollen_table%sname = TRIM(vname(iv))
+      ALLOCATE( this_pollen_table%fr_cov(nproma, nblks) ) ! used as init-flag in diag-create
+
       !$ACC ENTER DATA CREATE(this_pollen_table%fr_cov)
       SELECT CASE(TRIM(vname(iv)))
         CASE('pollbetu')
@@ -120,8 +121,7 @@ END SUBROUTINE art_extinit_pollen_fordiag
 !!
 !!-------------------------------------------------------------------------
 !!
-SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_input_folder, &
-  &                           lart_diag_out)
+SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_input_folder)
 !<
 ! SUBROUTINE art_extinit_pollen
 ! This SR sets the values for the modal properties of different pollen types.
@@ -144,8 +144,6 @@ SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_in
     &  dict_tracer            !< Tracer index dictionary
   CHARACTER(LEN=*), INTENT(in)                 :: &
     &  cart_input_folder
-  LOGICAL, INTENT(in)                          :: &
-    &  lart_diag_out          !< is lart_diag_out set?
 
   !local
   INTEGER         :: &
@@ -156,18 +154,12 @@ SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_in
   CHARACTER(len=MAX_CHAR_LENGTH),ALLOCATABLE :: &
     &  vname(:)
 
-  ! if lart_diag_out is .FALSE., art_extinit_pollen_fordiag was not called in
-  ! (since it is called in diagnostic creation), so it needs to be done here.
-  IF(.NOT.lart_diag_out) THEN
-    CALL art_extinit_pollen_fordiag(p_patch,nblks, p_pollen_prop, dict_tracer, cart_input_folder)
-  END IF
-
-  IF(p_pollen_prop%npollen_used==0) THEN
+  IF (p_pollen_prop%npollen_used==0) THEN
     CALL message('mo_art_external_init_pollen:art_extinit_pollen',  &
-      &          'no polleni tracer declared in XML, but iart_pollen > 0')
+      &          'no pollen tracer declared in XML, but iart_pollen > 0')
   END IF
 
-  DO ip = 1,p_pollen_prop%npollen_used
+  DO ip = 1, p_pollen_prop%npollen_used
 
     this_pollen_table => p_pollen_prop%pollen_type(ip)
 
@@ -180,9 +172,6 @@ SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_in
     ALLOCATE( this_pollen_table%no_max_day(     nproma, nblks ) )
     ALLOCATE( this_pollen_table%no_max_timestep(nproma, nblks ) )
     !$ACC ENTER DATA CREATE(this_pollen_table%f_q_alt, this_pollen_table%no_max_day, this_pollen_table%no_max_timestep)
-    IF(TRIM(this_pollen_table%sname) == 'pollpoac') THEN
-      ALLOCATE( this_pollen_table%saisl( nproma, nblks ) )
-    END IF
     IF(TRIM(this_pollen_table%sname) == 'pollambr') THEN
       ALLOCATE(this_pollen_table%sobs_sum(  nproma, nblks ))
       ALLOCATE(this_pollen_table%rh_sum(    nproma, nblks ))
@@ -258,7 +247,6 @@ SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_in
     CASE('pollpoac')
       ! Maximum number of pollen that can be produced on one m2 during one day.
       this_pollen_table%no_max_day(:,:)       = 1.09E5_wp * this_pollen_table%tune(:,:)
-      this_pollen_table%saisl(:,:)       = 0._wp
       ! Maximum number of pollen is reached after 16h under ideal conditions.
       this_pollen_table%no_max_timestep(:,:)  = this_pollen_table%no_max_day(:,:) * dtime  &
         &                                    / (16._wp * 3600._wp)
@@ -361,10 +349,7 @@ SUBROUTINE art_extinit_pollen(p_patch,nblks, p_pollen_prop, dict_tracer, cart_in
     !$ACC UPDATE DEVICE(this_pollen_table%frac_xi_evap) &
     !$ACC   DEVICE(this_pollen_table%psi_random, this_pollen_table%xi_r_precip)
 
-    this_pollen_table%tthre(:,:)       = 0._wp
     this_pollen_table%tthrs_red(:,:)   = 0._wp
-    this_pollen_table%tthrs(:,:)       = 0._wp
-
 
     ! fill pollen dictionary. Link in both ways: pollen name to table index
     CALL p_pollen_prop%dict_pollen%put(TRIM(this_pollen_table%sname),ip)

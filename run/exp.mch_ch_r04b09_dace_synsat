@@ -8,12 +8,18 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-#--------------------------------------------------------------------------------------------------
+# ===========================================================================
+# 
+# Name: exp.mch_ch_r04b09_dace_synsat.run
 #
-# AMIP experiment
+# Purpose: Run script for ICON on a low resolution grid on 
+#          switzerland
+#          It is used for a technical test at MeteoSwiss.
 #
-author_list="Marek Jacob, DWD; Remo Dietlicher, MeteoSwiss"
+# Created by: "Marek Jacob (DWD)
 #
+# =========================================================================== 
+
 #--------------------------------------------------------------------------------------------------
 #
 # This experiment describes a ICON-LAM experiment using the physics packages that are
@@ -183,7 +189,6 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                          3         ! type of equations and prognostic variables
  divavg_cntrwgt              =                          0.50      ! weight of central cell for divergence averaging
  lcoriolis                   =                      .TRUE.        ! Coriolis force
 /

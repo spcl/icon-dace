@@ -235,6 +235,14 @@ CONTAINS
         physics_param%Tracer_HorizontalDiffusion_Background(i) = Salinity_HorizontalDiffusion_Background
         physics_param%Tracer_HorizontalDiffusion_Reference(i) = Salinity_HorizontalDiffusion_Reference
         physics_param%a_tracer_v_back(i) = Salinity_VerticalDiffusion_background
+      ELSEIF(i==3)THEN!age
+        physics_param%Tracer_HorizontalDiffusion_Background(i) = Temperature_HorizontalDiffusion_Background
+        physics_param%Tracer_HorizontalDiffusion_Reference(i) = Temperature_HorizontalDiffusion_Reference
+        physics_param%a_tracer_v_back(i) = Temperature_VerticalDiffusion_background
+      ELSEIF(i==4)THEN!age squared
+        physics_param%Tracer_HorizontalDiffusion_Background(i) = Temperature_HorizontalDiffusion_Background
+        physics_param%Tracer_HorizontalDiffusion_Reference(i) = Temperature_HorizontalDiffusion_Reference
+        physics_param%a_tracer_v_back(i) = Temperature_VerticalDiffusion_background
       ELSE
 
         CALL finish (method_name,'number of tracers exceeds number of background values')

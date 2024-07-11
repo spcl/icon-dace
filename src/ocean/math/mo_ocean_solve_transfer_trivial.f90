@@ -19,7 +19,7 @@ MODULE mo_ocean_solve_trivial_transfer
   USE mo_ocean_solve_transfer, ONLY: t_transfer
   USE mo_ocean_solve_aux, ONLY: solve_cell, solve_edge, solve_vert
   USE mo_model_domain, ONLY: t_patch
-  USE mo_mpi, ONLY: p_pe_work, p_comm_work, my_process_is_mpi_parallel
+  USE mo_mpi, ONLY: p_pe_work, p_comm_work, my_process_is_mpi_parallel, i_am_accel_node
   USE mo_parallel_config, ONLY: nproma
   USE mo_timer, ONLY: timer_start, timer_stop, new_timer
   USE mo_run_config, ONLY: ltimer
@@ -123,7 +123,7 @@ CONTAINS
       gID_tmp(1:this%nidx_l, iblk) = -1
     ENDDO
     IF(my_process_is_mpi_parallel()) &
-      & CALL exchange_data(this%comm_pat_sync, gID_tmp)
+      & CALL exchange_data(p_pat=this%comm_pat_sync, lacc=i_am_accel_node, recv=gID_tmp)
     NULLIFY(this%glb_idx_loc)
     ALLOCATE(this%glb_idx_loc(this%nidx_l * this%nblk_a))
     DO iblk = 1, this%nblk_a
@@ -434,8 +434,9 @@ CONTAINS
     REAL(KIND=wp), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: data_inout
 
     IF (ltimer) CALL timer_start(this%timer_sync)
-    IF(my_process_is_mpi_parallel()) &
-      CALL exchange_data(this%comm_pat_sync, data_inout)
+    IF(my_process_is_mpi_parallel()) THEN
+      CALL exchange_data(p_pat=this%comm_pat_sync, lacc=i_am_accel_node, recv=data_inout)
+    END IF
     IF (ltimer) CALL timer_stop(this%timer_sync)
   END SUBROUTINE trivial_transfer_sync_2d_wp
 
@@ -444,8 +445,9 @@ CONTAINS
     REAL(KIND=sp), INTENT(INOUT), DIMENSION(:,:), CONTIGUOUS :: data_inout
 
     IF (ltimer) CALL timer_start(this%timer_sync)
-    IF(my_process_is_mpi_parallel()) &
-      CALL exchange_data(this%comm_pat_sync, data_inout)
+    IF(my_process_is_mpi_parallel()) THEN
+      CALL exchange_data(p_pat=this%comm_pat_sync, lacc=i_am_accel_node, recv=data_inout)
+    END IF
     IF (ltimer) CALL timer_stop(this%timer_sync)
   END SUBROUTINE trivial_transfer_sync_2d_sp
 

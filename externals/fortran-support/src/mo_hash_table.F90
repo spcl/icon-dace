@@ -70,7 +70,7 @@ MODULE mo_hash_table
     TYPE(t_HashEntry), POINTER :: curEntry => NULL()
   CONTAINS
     PROCEDURE :: init => hashIterator_init
-    PROCEDURE :: nextEntry => hashIterator_nextEntry ! returns .TRUE. IF the operation was successfull
+    PROCEDURE :: nextEntry => hashIterator_nextEntry ! returns .TRUE. IF the operation was successful
     PROCEDURE :: reset => hashIterator_reset
   END TYPE
 

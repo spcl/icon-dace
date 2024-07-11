@@ -714,7 +714,7 @@ streamReadVar
 }}
 \begin{verbatim}
     SUBROUTINE streamReadVar(INTEGER streamID, INTEGER varID, REAL*8 data, 
-                             INTEGER nmiss)
+                             INTEGER numMissVals)
 \end{verbatim}
 
 Read a variable
@@ -730,7 +730,7 @@ streamReadVarF
 }}
 \begin{verbatim}
     SUBROUTINE streamReadVar(INTEGER streamID, INTEGER varID, REAL*4 data, 
-                             INTEGER nmiss)
+                             INTEGER numMissVals)
 \end{verbatim}
 
 Read a variable
@@ -746,7 +746,7 @@ streamReadVarSlice
 }}
 \begin{verbatim}
     SUBROUTINE streamReadVarSlice(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                  REAL*8 data, INTEGER nmiss)
+                                  REAL*8 data, INTEGER numMissVals)
 \end{verbatim}
 
 Read a horizontal slice of a variable
@@ -762,7 +762,7 @@ streamReadVarSliceF
 }}
 \begin{verbatim}
     SUBROUTINE streamReadVarSliceF(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                   REAL*4 data, INTEGER nmiss)
+                                   REAL*4 data, INTEGER numMissVals)
 \end{verbatim}
 
 Read a horizontal slice of a variable
@@ -778,7 +778,7 @@ streamWriteVar
 }}
 \begin{verbatim}
     SUBROUTINE streamWriteVar(INTEGER streamID, INTEGER varID, REAL*8 data, 
-                              INTEGER nmiss)
+                              INTEGER numMissVals)
 \end{verbatim}
 
 Write a variable
@@ -794,7 +794,7 @@ streamWriteVarF
 }}
 \begin{verbatim}
     SUBROUTINE streamWriteVarF(INTEGER streamID, INTEGER varID, REAL*4 data, 
-                               INTEGER nmiss)
+                               INTEGER numMissVals)
 \end{verbatim}
 
 Write a variable
@@ -810,7 +810,7 @@ streamWriteVarSlice
 }}
 \begin{verbatim}
     SUBROUTINE streamWriteVarSlice(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                   REAL*8 data, INTEGER nmiss)
+                                   REAL*8 data, INTEGER numMissVals)
 \end{verbatim}
 
 Write a horizontal slice of a variable
@@ -826,7 +826,7 @@ streamWriteVarSliceF
 }}
 \begin{verbatim}
     SUBROUTINE streamWriteVarSliceF(INTEGER streamID, INTEGER varID, INTEGER levelID, 
-                                    REAL*4 data, INTEGER nmiss)
+                                    REAL*4 data, INTEGER numMissVals)
 \end{verbatim}
 
 Write a horizontal slice of a variable

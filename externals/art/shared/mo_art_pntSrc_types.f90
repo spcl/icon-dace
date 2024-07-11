@@ -17,7 +17,7 @@ MODULE mo_art_pntSrc_types
 ! ICON
   USE mo_kind,                          ONLY: wp
   USE mo_model_domain,                  ONLY: t_patch
-  USE mo_math_constants,                ONLY: pi
+  USE mo_math_constants,                ONLY: rad2deg
   USE mo_exception,                     ONLY: message, message_text, finish
   USE mo_expression,                    ONLY: expression
   USE mo_fortran_tools,                 ONLY: init
@@ -176,8 +176,8 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
   lat_idx(gnat_jc,gnat_jb) = lat
   lon_idx(gnat_jc,gnat_jb) = lon
 
-  in_points(gnat_jc,gnat_jb,1) = lon_idx(gnat_jc,gnat_jb) * pi/180._wp
-  in_points(gnat_jc,gnat_jb,2) = lat_idx(gnat_jc,gnat_jb) * pi/180._wp
+  in_points(gnat_jc,gnat_jb,1) = lon_idx(gnat_jc,gnat_jb) * rad2deg
+  in_points(gnat_jc,gnat_jb,2) = lat_idx(gnat_jc,gnat_jb) * rad2deg
 
   ! --- Build GNAT data structure
   CALL gnat_init_grid(gnat, p_patch)
@@ -199,7 +199,7 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
   ALLOCATE(this_pntSrc%height_factor(p_patch%nlev))
   ALLOCATE(val_2d(p_patch%nlev+1,1))
   ALLOCATE(z_star(p_patch%nlev+1,1))
-  CALL init(this_pntSrc%height_factor)
+  CALL init(this_pntSrc%height_factor, lacc=.FALSE.)
 
   ! --- Save locations into this_pntSrc
   gnat_jc=0

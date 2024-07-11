@@ -230,7 +230,7 @@ CONTAINS
     ! Register a field list and apply default settings
     !
     CALL vlr_add(p_ext_oce_list, TRIM(listname), patch_id=p_patch%id, &
-      & lrestart=.FALSE., model_type=TRIM(get_my_process_name()))
+      & lrestart=.FALSE., model_type=get_my_process_name())
 
     ! bathymetric height at cell center
     !
@@ -375,16 +375,16 @@ CONTAINS
       !
       ! open file
       !
-      CALL nf(nf_open(TRIM(grid_file), NF_NOWRITE, ncid), routine)
+      CALL nf(nf90_open(TRIM(grid_file), NF90_NOWRITE, ncid), routine)
 
       !
       ! get number of cells and vertices
       !
-      CALL nf(nf_inq_dimid(ncid, 'cell', dimid), routine)
-      CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+      CALL nf(nf90_inq_dimid(ncid, 'cell', dimid), routine)
+      CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
-      CALL nf(nf_inq_dimid(ncid, 'vertex', dimid), routine)
-      CALL nf(nf_inq_dimlen(ncid, dimid, no_verts), routine)
+      CALL nf(nf90_inq_dimid(ncid, 'vertex', dimid), routine)
+      CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_verts), routine)
 
       !
       ! check the number of cells and verts
@@ -403,7 +403,7 @@ CONTAINS
         &                           '  no of verts =', no_verts
       CALL message( TRIM(routine),TRIM(message_text))
 
-      CALL nf(nf_close(ncid), routine)
+      CALL nf(nf90_close(ncid), routine)
     ENDIF
 
     CALL openinputfile(stream_id, grid_file, p_patch(jg))
@@ -476,15 +476,15 @@ CONTAINS
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(omip_file), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(omip_file), NF90_NOWRITE, ncid), routine)
         CALL message( TRIM(routine),'Ocean OMIP flux file opened for read' )
 
         !
         ! get and check number of cells in OMIP data
         !
-     !  CALL nf(nf_inq_dimid(ncid, 'cell', dimid), routine)  !  workaround for r2b2 omip.daily
-        CALL nf(nf_inq_dimid (ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+     !  CALL nf(nf90_inq_dimid(ncid, 'cell', dimid), routine)  !  workaround for r2b2 omip.daily
+        CALL nf(nf90_inq_dimid (ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         IF(p_patch(jg)%n_patch_cells_g /= no_cells) THEN
           CALL finish(TRIM(ROUTINE),&
@@ -494,8 +494,8 @@ CONTAINS
         !
         ! get number of timesteps
         !
-        CALL nf(nf_inq_dimid (ncid, 'time', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_tst), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_tst), routine)
         !
         ! check
         !
@@ -506,7 +506,7 @@ CONTAINS
           & 'Number of forcing timesteps is not equal forcing_timescale specified in namelist - ABORT')
         ENDIF
 
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       ENDIF
 
       CALL openinputfile(stream_id, omip_file, p_patch(jg))

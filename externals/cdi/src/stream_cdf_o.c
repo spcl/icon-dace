@@ -32,9 +32,9 @@ cdfCopyRecord(stream_t *streamptr2, stream_t *streamptr1)
 
   void *data = Malloc(datasize * ((memtype == MEMTYPE_DOUBLE) ? sizeof(double) : sizeof(float)));
 
-  size_t nmiss;
-  cdf_read_record(streamptr1, memtype, data, &nmiss);
-  cdf_write_record(streamptr2, memtype, data, nmiss);
+  size_t numMissVals;
+  cdf_read_record(streamptr1, memtype, data, &numMissVals);
+  cdf_write_record(streamptr2, memtype, data, numMissVals);
 
   Free(data);
 }
@@ -70,7 +70,7 @@ cdfDefComplex(stream_t *streamptr, int gridID, int gridIndex)
     size_t dimlen = 2;
     int fileID = streamptr->fileID;
 
-    bool switchNCMode = streamptr->ncmode == 2;
+    bool switchNCMode = (streamptr->ncmode == 2);
     if (switchNCMode)
       {
         streamptr->ncmode = 1;
@@ -131,7 +131,7 @@ cdfGridInqHalfSize(int gridID)
 }
 
 static void
-cdfDefSPorFC(stream_t *streamptr, int gridID, int gridIndex, char *restrict axisname, int gridRefType)
+cdfDefSPorFC(stream_t *streamptr, int gridID, int gridIndex, char *axisname, size_t maxlen, int gridRefType)
 {
   ncgrid_t *ncgrid = streamptr->ncgrid;
 
@@ -145,12 +145,10 @@ cdfDefSPorFC(stream_t *streamptr, int gridID, int gridIndex, char *restrict axis
   if (dimID == CDI_UNDEFID)
     {
       int fileID = streamptr->fileID;
-      if (iz == 0)
-        axisname[3] = '\0';
-      else
-        sprintf(&axisname[3], "%1d", iz + 1);
+      size_t len = strlen(axisname);
+      if (iz) snprintf(axisname + len, maxlen - len, "%1d", iz + 1);
 
-      bool switchNCMode = streamptr->ncmode == 2;
+      bool switchNCMode = (streamptr->ncmode == 2);
       if (switchNCMode)
         {
           streamptr->ncmode = 1;
@@ -174,15 +172,15 @@ static void
 cdfDefSP(stream_t *streamptr, int gridID, int gridIndex)
 {
   // char longname[] = "Spherical harmonic coefficient";
-  char axisname[5] = "nspX";
-  cdfDefSPorFC(streamptr, gridID, gridIndex, axisname, GRID_SPECTRAL);
+  char axisname[5] = "nsp";
+  cdfDefSPorFC(streamptr, gridID, gridIndex, axisname, sizeof(axisname), GRID_SPECTRAL);
 }
 
 static void
 cdfDefFC(stream_t *streamptr, int gridID, int gridIndex)
 {
-  char axisname[5] = "nfcX";
-  cdfDefSPorFC(streamptr, gridID, gridIndex, axisname, GRID_FOURIER);
+  char axisname[5] = "nfc";
+  cdfDefSPorFC(streamptr, gridID, gridIndex, axisname, sizeof(axisname), GRID_FOURIER);
 }
 
 static const struct cdfDefGridAxisInqs
@@ -268,11 +266,11 @@ cdfDefTrajLatLon(stream_t *streamptr, int gridID, int gridIndex, const struct cd
     {
       int dimNcID = streamptr->basetime.ncvarid;
       int fileID = streamptr->fileID;
-      bool switchNCMode = streamptr->ncmode == 2;
+
+      bool switchNCMode = (streamptr->ncmode == 2);
       if (switchNCMode)
         {
           cdf_redef(fileID);
-          switchNCMode = true;
           streamptr->ncmode = 1;
         }
 
@@ -282,6 +280,7 @@ cdfDefTrajLatLon(stream_t *streamptr, int gridID, int gridIndex, const struct cd
       cdiInqKeyString(gridID, axistype, CDI_KEY_NAME, axisname, &length);
       cdf_def_var(fileID, axisname, xtype, 1, &dimNcID, &ncvarid);
       cdfPutGridStdAtts(fileID, ncvarid, gridID, inqs->axisSym);
+
       if (switchNCMode)
         {
           cdf_enddef(fileID, streamptr->self);
@@ -319,7 +318,7 @@ checkDimName(int fileID, size_t dimlen, char *dimname)
 
   do
     {
-      if (iz) sprintf(name + len, "_%u", iz + 1);
+      if (iz) snprintf(name + len, CDI_MAX_NAME - len, "_%u", iz + 1);
 
       int dimid0;
       int status = nc_inq_dimid(fileID, name, &dimid0);
@@ -335,7 +334,7 @@ checkDimName(int fileID, size_t dimlen, char *dimname)
     }
   while (iz <= 99);
 
-  if (iz) sprintf(dimname + len, "_%u", iz + 1);
+  if (iz) snprintf(dimname + len, CDI_MAX_NAME - len, "_%u", iz + 1);
 
   return dimid;
 }
@@ -354,7 +353,7 @@ checkGridName(char *axisname, int fileID)
 
   do
     {
-      if (iz) sprintf(axisname2 + axisnameLen, "_%u", iz + 1);
+      if (iz) snprintf(axisname2 + axisnameLen, CDI_MAX_NAME - axisnameLen, "_%u", iz + 1);
 
       if (nc_inq_varid(fileID, axisname2, &ncdimid) != NC_NOERR) break;
 
@@ -362,7 +361,7 @@ checkGridName(char *axisname, int fileID)
     }
   while (iz <= 99);
 
-  if (iz) sprintf(axisname + axisnameLen, "_%u", iz + 1);
+  if (iz) snprintf(axisname + axisnameLen, CDI_MAX_NAME - axisnameLen, "_%u", iz + 1);
 }
 
 static int
@@ -377,7 +376,7 @@ checkZaxisName(char *axisname, int fileID, int vlistID, int zaxisID, int nzaxis)
   memcpy(axisname2, axisname, axisnameLen + 1);
   do
     {
-      if (iz) sprintf(axisname2 + axisnameLen, "_%u", iz + 1);
+      if (iz) snprintf(axisname2 + axisnameLen, CDI_MAX_NAME - axisnameLen, "_%u", iz + 1);
 
       int ncdimid;
       int status = nc_inq_varid(fileID, axisname2, &ncdimid);
@@ -398,12 +397,13 @@ checkZaxisName(char *axisname, int fileID, int vlistID, int zaxisID, int nzaxis)
             }
           break;
         }
+
     nextSuffix:
       ++iz;
     }
   while (iz <= 99);
 
-  if (iz) sprintf(axisname + axisnameLen, "_%u", iz + 1);
+  if (iz) snprintf(axisname + axisnameLen, CDI_MAX_NAME - axisnameLen, "_%u", iz + 1);
 
   return (int) iz;
 }
@@ -544,7 +544,8 @@ cdfGridCompress(int fileID, int ncvarid, size_t gridsize, int filetype, int comp
       && (filetype == CDI_FILETYPE_NC4 || filetype == CDI_FILETYPE_NC4C || filetype == CDI_FILETYPE_NCZARR))
     {
       cdf_def_var_chunking(fileID, ncvarid, NC_CHUNKED, chunks);
-      cdfDefVarDeflate(fileID, ncvarid, 1);
+      int shuffle = 1, compLevel = 1;
+      cdfDefVarDeflate(fileID, ncvarid, shuffle, compLevel);
     }
 #endif
 }
@@ -564,7 +565,7 @@ cdfDefAxisCommon(stream_t *streamptr, int gridID, int gridIndex, int ndims, bool
   char dimname[CDI_MAX_NAME + 3];
   dimname[0] = 0;
   int length = sizeof(dimname);
-  if (ndims && hasVals) cdiInqKeyString(gridID, axisKey, CDI_KEY_DIMNAME, dimname, &length);
+  if (ndims && !hasVals) cdiInqKeyString(gridID, axisKey, CDI_KEY_DIMNAME, dimname, &length);
 
   for (int index = 0; index < gridIndex; ++index)
     {
@@ -605,7 +606,7 @@ cdfDefAxisCommon(stream_t *streamptr, int gridID, int gridIndex, int ndims, bool
       checkGridName(axisname, fileID);
       size_t axisnameLen = strlen(axisname);
 
-      bool switchNCMode = streamptr->ncmode == 2 && (hasVals || ndims);
+      bool switchNCMode = (streamptr->ncmode == 2 && (hasVals || ndims));
       if (switchNCMode)
         {
           cdf_redef(fileID);
@@ -645,7 +646,7 @@ cdfDefAxisCommon(stream_t *streamptr, int gridID, int gridIndex, int ndims, bool
           mycdfPostDefActionGridProp(streamptr, gridID, ncvarid, gridAxisInq->valsQueryKey, &delayed);
 
           bool genBounds = false, hasBounds = gridInqPropPresence(gridID, gridAxisInq->bndsQueryKey);
-          bool grid_is_cyclic = gridIsCircular(gridID) > 0;
+          bool grid_is_cyclic = (gridIsCircular(gridID) > 0);
           double *restrict pbounds;
           size_t nvertex = gridInqNvertex(gridID);
           if (CDI_CMOR_Mode && grid_is_cyclic && !hasBounds)
@@ -695,6 +696,7 @@ cdfDefAxisCommon(stream_t *streamptr, int gridID, int gridIndex, int ndims, bool
 
   ncgrid[gridIndex].gridID = gridID;
   ncgrid[gridIndex].ncIDs[(axisLetter == 'X') ? CDF_DIMID_X : CDF_DIMID_Y] = dimID;
+
   return delayed;
 }
 
@@ -829,7 +831,8 @@ cdfDefIrregularGridCommon(stream_t *streamptr, int gridID, size_t xsize, size_t 
   int xdimID = CDI_UNDEFID;
   int ydimID = CDI_UNDEFID;
   int fileID = streamptr->fileID;
-  bool switchNCMode = streamptr->ncmode == 2;
+
+  bool switchNCMode = (streamptr->ncmode == 2);
   if (switchNCMode)
     {
       cdf_redef(fileID);
@@ -1081,7 +1084,7 @@ cdf_def_vct_echam(stream_t *streamptr, int zaxisID)
 
       int fileID = streamptr->fileID;
 
-      bool switchNCMode = streamptr->ncmode == 2;
+      bool switchNCMode = (streamptr->ncmode == 2);
       if (switchNCMode)
         {
           streamptr->ncmode = 1;
@@ -1183,7 +1186,7 @@ cdf_def_vct_cf(stream_t *streamptr, int zaxisID, int nclevID, int ncbndsID, int 
 
       int fileID = streamptr->fileID;
 
-      bool switchNCMode = streamptr->ncmode == 2;
+      bool switchNCMode = (streamptr->ncmode == 2);
       if (switchNCMode)
         {
           cdf_redef(fileID);
@@ -1294,7 +1297,8 @@ cdf_def_zaxis_hybrid_echam(stream_t *streamptr, int type, int *ncvaridp, int zax
 {
   int fileID = streamptr->fileID;
   struct cdfPostDefActionList *delayed = NULL;
-  bool switchNCMode = streamptr->ncmode == 2;
+
+  bool switchNCMode = (streamptr->ncmode == 2);
   if (switchNCMode)
     {
       streamptr->ncmode = 1;
@@ -1366,7 +1370,8 @@ cdf_def_zaxis_hybrid_cf(stream_t *streamptr, int type, int *ncvaridp, int zaxisI
   if (psname[0] == 0) strcpy(psname, "ps");
 
   int fileID = streamptr->fileID;
-  bool switchNCMode = streamptr->ncmode == 2;
+
+  bool switchNCMode = (streamptr->ncmode == 2);
   if (switchNCMode)
     {
       streamptr->ncmode = 1;
@@ -1492,9 +1497,10 @@ cdf_def_zaxis_hybrid_cf(stream_t *streamptr, int type, int *ncvaridp, int zaxisI
         cdf_put_att_text(fileID, ncvarid, "bounds", axisnameLen, axisname);
         size_t formulatermsLen;
         if (p0status == 0)
-          formulatermsLen = (size_t) (sprintf(txt, "%s%s %s%s", "a: a_bnds b: b_bnds p0: ", p0name, "ps: ", psname));
+          formulatermsLen = (size_t) (snprintf(txt, sizeof(txt), "%s%s %s%s", "a: a_bnds b: b_bnds p0: ", p0name, "ps: ", psname));
         else
-          formulatermsLen = (size_t) (sprintf(txt, "%s%s", "ap: ap_bnds b: b_bnds ps: ", psname));
+          formulatermsLen = (size_t) (snprintf(txt, sizeof(txt), "%s%s", "ap: ap_bnds b: b_bnds ps: ", psname));
+
         {
           static const char sname[] = "standard_name", sname_v[] = "atmosphere_hybrid_sigma_pressure_coordinate",
                             formulaterms[] = "formula_terms", units[] = "units";
@@ -1570,7 +1576,8 @@ cdfDefZaxisUUID(stream_t *streamptr, int zaxisID)
       if (cdiUUID2Str(uuid, uuidStr) == uuidNumHexChars)
         {
           int fileID = streamptr->fileID;
-          bool switchNCMode = streamptr->ncmode == 2;
+
+          bool switchNCMode = (streamptr->ncmode == 2);
           if (switchNCMode)
             {
               streamptr->ncmode = 1;
@@ -1578,6 +1585,7 @@ cdfDefZaxisUUID(stream_t *streamptr, int zaxisID)
             }
 
           cdf_put_att_text(fileID, NC_GLOBAL, "uuidOfVGrid", uuidNumHexChars, uuidStr);
+
           if (switchNCMode)
             {
               cdf_enddef(fileID, streamptr->self);
@@ -1841,6 +1849,7 @@ cdf_def_mapping(stream_t *streamptr, int gridID)
   if (!gmapvarname[0]) strcpy(gmapvarname, "crs");
 
   int fileID = streamptr->fileID;
+
   bool switchNCMode = (streamptr->ncmode == 2);
   if (switchNCMode)
     {
@@ -1952,7 +1961,7 @@ cdfDefCharacter(stream_t *streamptr, int gridID, int gridIndex, int cdiAxisID, i
 }
 
 static void
-cdfDefRgrid(stream_t *streamptr, int gridID, int gridIndex)
+cdfDefReducedGrid(stream_t *streamptr, int gridID, int gridIndex)
 {
   ncgrid_t *ncgrid = streamptr->ncgrid;
 
@@ -1970,11 +1979,9 @@ cdfDefRgrid(stream_t *streamptr, int gridID, int gridIndex)
       {
         int fileID = streamptr->fileID;
 
-        char axisname[16] = "rgridX";
-        if (iz == 0)
-          axisname[5] = '\0';
-        else
-          sprintf(&axisname[5], "%1d", iz + 1);
+        char axisname[16] = "rgrid";
+        size_t len = strlen(axisname);
+        if (iz) snprintf(axisname + len, sizeof(axisname) - len, "%1d", iz + 1);
 
         bool switchNCMode = (streamptr->ncmode == 2);
         if (switchNCMode)
@@ -2007,29 +2014,19 @@ cdfDefRgrid(stream_t *streamptr, int gridID, int gridIndex)
       {
         int fileID = streamptr->fileID;
 
-        char axisname[32] = "reduced_pointsX";
-        if (iz == 0)
-          axisname[14] = '\0';
-        else
-          sprintf(&axisname[14], "%1d", iz + 1);
+        char axisname[32] = "reduced_points";
+        size_t len = strlen(axisname);
+        if (iz) snprintf(axisname + len, sizeof(axisname) - len, "%1d", iz + 1);
 
-        bool switchNCMode = (streamptr->ncmode == 2);
-        if (switchNCMode)
-          {
-            streamptr->ncmode = 1;
-            cdf_redef(fileID);
-          }
+        if (streamptr->ncmode == 2) cdf_redef(fileID);
 
         cdf_def_dim(fileID, axisname, dimlen, &dimID);
 
         int ncvarid = CDI_UNDEFID;
         cdf_def_var(fileID, axisname, NC_INT, 1, &dimID, &ncvarid);
 
-        if (switchNCMode || streamptr->ncmode == 1)
-          {
-            cdf_enddef(fileID, streamptr->self);
-            streamptr->ncmode = 2;
-          }
+        cdf_enddef(fileID, streamptr->self);
+        streamptr->ncmode = 2;
 
         int *reducedPoints = (int *) Malloc(dimlen * sizeof(int));
         gridInqReducedPoints(gridID, reducedPoints);
@@ -2077,7 +2074,7 @@ cdf_define_generic_dim(stream_t *streamptr, int gridID, int gridIndex)
 
       if (dimID == CDI_UNDEFID)
         {
-          bool switchNCMode = streamptr->ncmode == 2;
+          bool switchNCMode = (streamptr->ncmode == 2);
           if (switchNCMode)
             {
               streamptr->ncmode = 1;
@@ -2180,8 +2177,13 @@ cdf_define_grid(stream_t *streamptr, int gridID, int gridIndex)
     }
   else if (gridtype == GRID_GAUSSIAN_REDUCED)
     {
-      cdfDefRgrid(streamptr, gridID, gridIndex);
-      if (gridInqYsize(gridID)) cdfDefYaxis(streamptr, gridID, gridIndex, 1, true);
+      cdfDefReducedGrid(streamptr, gridID, gridIndex);
+      if (gridInqYsize(gridID))
+        {
+          struct cdfPostDefActionList *ydelayed = cdfDefYaxis(streamptr, gridID, gridIndex, 1, true);
+          delayed = cdfPostDefActionConcat(delayed, ydelayed);
+          Free(ydelayed);
+        }
     }
   else if (gridtype == GRID_SPECTRAL)
     {
@@ -2204,12 +2206,20 @@ cdf_define_grid(stream_t *streamptr, int gridID, int gridIndex)
       if ((strlen = gridInqXIsc(gridID)))
         cdfDefCharacter(streamptr, gridID, gridIndex, CDI_XAXIS, strlen);
       else if (gridInqXsize(gridID))
-        cdfDefXaxis(streamptr, gridID, gridIndex, 1, false);
+        {
+          struct cdfPostDefActionList *xdelayed = cdfDefXaxis(streamptr, gridID, gridIndex, 1, false);
+          delayed = cdfPostDefActionConcat(delayed, xdelayed);
+          Free(xdelayed);
+        }
 
       if ((strlen = gridInqYIsc(gridID)))
         cdfDefCharacter(streamptr, gridID, gridIndex, CDI_YAXIS, strlen);
       else if (gridInqYsize(gridID))
-        cdfDefYaxis(streamptr, gridID, gridIndex, 1, false);
+        {
+          struct cdfPostDefActionList *ydelayed = cdfDefYaxis(streamptr, gridID, gridIndex, 1, false);
+          delayed = cdfPostDefActionConcat(delayed, ydelayed);
+          Free(ydelayed);
+        }
     }
   else
     {

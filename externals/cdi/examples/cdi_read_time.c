@@ -8,7 +8,7 @@ main(void)
   const int nlat = 6;   // Number of latitudes
   const int nlev = 5;   // Number of levels
   const int nts = 20;   // Number of time steps
-  size_t nmiss;
+  size_t numMissVals;
   double var1[nlon * nlat];
   double var2[nlon * nlat * nlev];
 
@@ -42,8 +42,8 @@ main(void)
       printf("read timestep %d:  date=%d  time=%d\n", tsID + 1, vdate, vtime);
 
       // Read var1 and var2
-      // streamReadVar(streamID, varID1, var1, &nmiss);
-      // streamReadVar(streamID, varID2, var2, &nmiss);
+      // streamReadVar(streamID, varID1, var1, &numMissVals);
+      // streamReadVar(streamID, varID2, var2, &numMissVals);
     }
 
   // Close the input stream

@@ -128,7 +128,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 1800         ! model timestep in seconds
@@ -197,6 +196,9 @@ dzlev_m(1:128) = 11.0,   9.0,     8.0,   8.0,     8.0,    8.0,    8.0,    8.0,  
   lambda_wind                     = 0.03
   tracer_TopWindMixing            = 0.5E-3 ! [m2/s] windmixing diffusivity in MPIOM-type pp-scheme
   velocity_TopWindMixing          = 0.5E-3 ! [m2/s] windmixing viscosity in MPIOM-type pp-scheme
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
 /
 &ocean_forcing_nml
   iforc_oce = 11

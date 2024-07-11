@@ -249,6 +249,7 @@ MODULE mo_ocean_types
       & condep           ,&! convection depth index
       & swsum            ,& ! swr fraction absorbed in the surface layer
       & heatabs          ,& ! ( total subsurface ) heating due to absorption [J m-2]
+      & bottom_pressure  ,& ! bottom pressure [Pa]
 !      & dummy2d          ,&
       & heatabs_t        ,&
       & heatabb          ,&

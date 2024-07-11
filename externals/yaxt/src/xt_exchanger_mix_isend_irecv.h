@@ -80,6 +80,10 @@ xt_exchanger_mix_isend_irecv_new(int nsend, int nrecv,
 
 PPM_DSO_INTERNAL extern const struct xt_exchanger_vtable
 xt_exchanger_mix_isend_irecv_vtable;
+#ifdef _OPENMP
+PPM_DSO_INTERNAL extern const struct xt_exchanger_vtable
+xt_exchanger_mix_isend_irecv_auto_omp_vtable;
+#endif
 
 
 #endif // XT_EXCHANGER_MIX_ISEND_IRECV_H

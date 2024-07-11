@@ -74,8 +74,10 @@ MODULE mo_rtifc
   use mo_rtifc_13,       only: rtifc_init_atlas,       &!
                                rtifc_emis_atlas,       &! get emissivity from atlas
                                rtifc_emis_retrieve,    &! retrieve emissivity (by Karbou-method)
+                               rtifc_emis_sea,         &! get emissivity from atlas
                                rtifc_init_brdf_atlas,  &!
-                               rtifc_brdf_atlas
+                               rtifc_brdf_atlas,       &
+                               rtifc_tskin_retrieve
 #endif
 
 #elif (_RTTOV_VERSION == 12)
@@ -102,8 +104,10 @@ MODULE mo_rtifc
   use mo_rtifc_12,       only: rtifc_init_atlas,       &!
                                rtifc_emis_atlas,       &! get emissivity from atlas
                                rtifc_emis_retrieve,    &! retrieve emissivity (by Karbou-method)
+                               rtifc_emis_sea,         &! get emissivity from atlas
                                rtifc_init_brdf_atlas,  &!
-                               rtifc_brdf_atlas
+                               rtifc_brdf_atlas,       &
+                               rtifc_tskin_retrieve
 #endif
 
 #elif (_RTTOV_VERSION == 10)
@@ -174,7 +178,9 @@ MODULE mo_rtifc
   public :: rtifc_init_brdf_atlas
   public :: rtifc_emis_atlas
   public :: rtifc_emis_retrieve
+  public :: rtifc_emis_sea
   public :: rtifc_brdf_atlas
+  public :: rtifc_tskin_retrieve
 #endif
 
   ! Optimization

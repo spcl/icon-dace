@@ -20,6 +20,7 @@ MODULE mo_sbm_storage
   USE mo_kind,                    ONLY: wp
   USE mo_impl_constants,          ONLY: success, max_char_length
   USE mo_exception,               ONLY: message, finish
+  USE mo_master_control,          ONLY: get_my_process_name
   USE mo_model_domain,            ONLY: t_patch
   USE mo_var_list_register,       ONLY: vlr_add, vlr_del
   USE mo_var_list,                ONLY: add_var, t_var_list_ptr
@@ -175,7 +176,8 @@ CONTAINS
     shape3d_c = (/nproma, p_patch%nlev, p_patch%nblks_c /)
 
     ! Register a field list and apply default settings
-    CALL vlr_add(sbm_storage_list, TRIM(listname), patch_id=p_patch%id, lrestart=.TRUE.)
+    CALL vlr_add(sbm_storage_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
 
     ! &      sbm_storage%qv_before_satad(nproma,nlev,nblks_c)

@@ -35,14 +35,6 @@ USE mo_physical_constants, ONLY: &
 USE mo_math_constants, ONLY: &
     uc2 => sqrt3            !!               -- " --
 
-!USE mo_convect_tables, ONLY: &
-!    b1       => c1es    , & !! constants for computing the sat. vapour
-!    b2w      => c3les   , & !! pressure over water (l) and ice (i)
-!    b2i      => c3ies   , & !!               -- " --
-!    b4w      => c4les   , & !!               -- " --
-!    b4i      => c4ies   , & !!               -- " --
-!    b234w    => c5les       !!               -- " --
-
 USE mo_satad, ONLY: zpsat_w => sat_pres_water, & !! saturation vapor pressure w.r.t. water
 !                   zpsat_i => sat_pres_ice  , & !! saturation vapor pressure w.r.t. ice
                     zqvap   => spec_humi     , & !! Specific humidity

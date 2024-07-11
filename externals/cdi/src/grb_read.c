@@ -20,7 +20,7 @@
 
 static int
 grb_decode(int filetype, int memType, int datatype, void *cgribexp, void *gribbuffer, size_t gribsize, void *data, size_t datasize,
-           int unreduced, size_t *nmiss, double missval)
+           int unreduced, size_t *numMissVals, double missval)
 {
   int status = 0;
 
@@ -31,21 +31,23 @@ grb_decode(int filetype, int memType, int datatype, void *cgribexp, void *gribbu
       extern int cdiNAdditionalGRIBKeys;
       if (cdiNAdditionalGRIBKeys > 0) Error("CGRIBEX decode does not support reading of additional GRIB keys!");
 #endif
-      status = cgribexDecode(memType, cgribexp, gribbuffer, gribsize, data, datasize, unreduced, nmiss, missval);
+      status = cgribexDecode(memType, cgribexp, gribbuffer, gribsize, data, datasize, unreduced, numMissVals, missval);
     }
   else
 #endif
 #ifdef HAVE_LIBGRIB_API
     {
-      void *datap = data;
       bool useFloatInterface = (have_gribapi_float_interface() && datatype != CDI_DATATYPE_FLT32 && datatype != CDI_DATATYPE_FLT64);
       int memTypeX = useFloatInterface ? memType : MEMTYPE_DOUBLE;
-      if (!useFloatInterface && memType == MEMTYPE_FLOAT) datap = Malloc(datasize * sizeof(double));
+      void *datap = (!useFloatInterface && memType == MEMTYPE_FLOAT) ? Malloc(datasize * sizeof(double)) : data;
 
-      status = gribapiDecode(memTypeX, gribbuffer, gribsize, datap, datasize, unreduced, nmiss, missval);
+      // if (useFloatInterface) printf("gribapi read: useFloatInterface\n");
+
+      status = gribapiDecode(memTypeX, gribbuffer, gribsize, datap, datasize, unreduced, numMissVals, missval);
 
       if (!useFloatInterface && memType == MEMTYPE_FLOAT)
         {
+          // printf("gribapi read: convert double to float\n");
           float *dataf = (float *) data;
           double *datad = (double *) datap;
           for (size_t i = 0; i < datasize; ++i) dataf[i] = (float) datad[i];
@@ -110,7 +112,7 @@ typedef struct JobArgs
 {
   int recID, tsID, *outZip, filetype, memType, datatype, unreduced;
   void *cgribexp, *gribbuffer, *data;
-  size_t recsize, gridsize, nmiss;
+  size_t recsize, gridsize, numMissVals;
   double missval;
 } JobArgs;
 
@@ -120,7 +122,7 @@ grb_decode_record(void *untypedArgs)
   JobArgs *args = (JobArgs *) untypedArgs;
   *args->outZip = grib1_unzip_record(args->gribbuffer, &args->recsize);
   grb_decode(args->filetype, args->memType, args->datatype, args->cgribexp, args->gribbuffer, args->recsize, args->data,
-             args->gridsize, args->unreduced, &args->nmiss, args->missval);
+             args->gridsize, args->unreduced, &args->numMissVals, args->missval);
   return 0;
 }
 
@@ -142,10 +144,11 @@ grb_read_raw_data(stream_t *streamptr, int tsID, int recID, int memType, void *g
   if (streamptr->protocol == CDI_PROTOCOL_FDB)
     {
 #ifdef HAVE_LIBFDB5
-      void *fdbItem = streamptr->tsteps[tsID].records[recID].fdbItem;
-      if (!fdbItem) Error("fdbItem not available!");
+      int fdbItemIndex = streamptr->tsteps[tsID].records[recID].fdbItemIndex;
+      if (fdbItemIndex == -1) Error("fdbItem not available!");
 
-      recsize = fdb_read_record(streamptr->protocolData, fdbItem, &(streamptr->record->buffersize), &gribbuffer);
+      recsize = cdi_fdb_read_record(streamptr->protocolData, &(streamptr->fdbKeyValueList[fdbItemIndex]),
+                                    &(streamptr->record->buffersize), &gribbuffer);
 #endif
     }
   else
@@ -175,7 +178,7 @@ grb_read_raw_data(stream_t *streamptr, int tsID, int recID, int memType, void *g
     .data = data,
     .recsize = recsize,
     .gridsize = gridsize,
-    .nmiss = 0,
+    .numMissVals = 0,
     .missval = vlistInqVarMissval(vlistID, varID),
     .datatype = vlistInqVarDatatype(vlistID, varID),
   };
@@ -186,7 +189,7 @@ grb_read_and_decode_record(stream_t *streamptr, int recID, int memType, void *da
 {
   JobArgs args = grb_read_raw_data(streamptr, streamptr->curTsID, recID, memType, streamptr->record->buffer, data, resetFilePos);
   grb_decode_record(&args);
-  return args.nmiss;
+  return args.numMissVals;
 }
 
 typedef struct JobDescriptor
@@ -204,11 +207,11 @@ JobDescriptor_startJob(AsyncManager *jobManager, JobDescriptor *me, stream_t *st
 }
 
 static void
-JobDescriptor_finishJob(AsyncManager *jobManager, JobDescriptor *me, void *data, size_t *nmiss)
+JobDescriptor_finishJob(AsyncManager *jobManager, JobDescriptor *me, void *data, size_t *numMissVals)
 {
   if (AsyncWorker_wait(jobManager, me->job)) xabort("error executing job in worker thread");
   memcpy(data, me->args.data, me->args.gridsize * ((me->args.memType == MEMTYPE_FLOAT) ? sizeof(float) : sizeof(double)));
-  *nmiss = me->args.nmiss;
+  *numMissVals = me->args.numMissVals;
 
   Free(me->args.gribbuffer);
   Free(me->args.data);
@@ -259,7 +262,7 @@ read_next_record(AsyncManager *jobManager, JobDescriptor *jd, stream_t *streampt
 }
 
 static void
-grb_read_next_record(stream_t *streamptr, int recID, int memType, void *data, size_t *nmiss)
+grb_read_next_record(stream_t *streamptr, int recID, int memType, void *data, size_t *numMissVals)
 {
   bool jobFound = false;
 
@@ -296,37 +299,37 @@ grb_read_next_record(stream_t *streamptr, int recID, int memType, void *data, si
           if (jd->args.recID == recID && jd->args.tsID == tsID)
             {
               jobFound = true;
-              JobDescriptor_finishJob(jobManager, jd, data, nmiss);
+              JobDescriptor_finishJob(jobManager, jd, data, numMissVals);
               if (streamptr->nextGlobalRecId < streamptr->maxGlobalRecs) read_next_record(jobManager, jd, streamptr, memType);
             }
         }
     }
 
   // perform the work synchronously if we didn't start a job for it yet
-  if (!jobFound) *nmiss = grb_read_and_decode_record(streamptr, recID, memType, data, false);
+  if (!jobFound) *numMissVals = grb_read_and_decode_record(streamptr, recID, memType, data, false);
 }
 
 void
-grb_read_record(stream_t *streamptr, int memType, void *data, size_t *nmiss)
+grb_read_record(stream_t *streamptr, int memType, void *data, size_t *numMissVals)
 {
   int tsID = streamptr->curTsID;
   int vrecID = streamptr->tsteps[tsID].curRecID;
   int recID = streamptr->tsteps[tsID].recIDs[vrecID];
 
-  grb_read_next_record(streamptr, recID, memType, data, nmiss);
+  grb_read_next_record(streamptr, recID, memType, data, numMissVals);
 }
 
 void
-grb_read_var_slice(stream_t *streamptr, int varID, int levelID, int memType, void *data, size_t *nmiss)
+grb_read_var_slice(stream_t *streamptr, int varID, int levelID, int memType, void *data, size_t *numMissVals)
 {
   int isub = subtypeInqActiveIndex(streamptr->vars[varID].subtypeID);
   int recID = streamptr->vars[varID].recordTable[isub].recordID[levelID];
 
-  *nmiss = grb_read_and_decode_record(streamptr, recID, memType, data, true);
+  *numMissVals = grb_read_and_decode_record(streamptr, recID, memType, data, true);
 }
 
 void
-grb_read_var(stream_t *streamptr, int varID, int memType, void *data, size_t *nmiss)
+grb_read_var(stream_t *streamptr, int varID, int memType, void *data, size_t *numMissVals)
 {
   int vlistID = streamptr->vlistID;
   int fileID = streamptr->fileID;
@@ -341,14 +344,14 @@ grb_read_var(stream_t *streamptr, int varID, int memType, void *data, size_t *nm
 
   if (CDI_Debug) Message("nlevs = %d gridID = %d gridsize = %zu", nlevs, gridID, gridsize);
 
-  *nmiss = 0;
+  *numMissVals = 0;
   for (int levelID = 0; levelID < nlevs; levelID++)
     {
       int recID = streamptr->vars[varID].recordTable[isub].recordID[levelID];
       size_t offset = levelID * gridsize;
       void *datap = (memType == MEMTYPE_FLOAT) ? (void *) ((float *) data + offset) : (void *) ((double *) data + offset);
 
-      *nmiss += grb_read_and_decode_record(streamptr, recID, memType, datap, false);
+      *numMissVals += grb_read_and_decode_record(streamptr, recID, memType, datap, false);
     }
 
   fileSetPos(fileID, currentfilepos, SEEK_SET);

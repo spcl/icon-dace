@@ -192,7 +192,7 @@ cat > ${atmo_namelist} << EOF
  nproma                       = $nproma
  nproma_sub = $nproma_sub
  p_test_run                   = .false.
- num_io_procs                 = 0         ! 0: no dedicated I/O processor
+ num_io_procs                 = 0         ! number of dedicated I/O processors
 ! num_io_procs_radar = 5   ! 0: no dedicated I/O processor
  num_restart_procs            = 0
  iorder_sendrecv              = 3                 ! (1), 3: best value for CRAY
@@ -470,9 +470,9 @@ dt_gwd                        = 1440.,
 ! ICON dynamics_nml
 !------------------
 &dynamics_nml
- iequations     = 3
  divavg_cntrwgt = 0.50
  lcoriolis      = .TRUE.
+ lmoist_thdyn   = .FALSE.
 /
 !-------------------
 ! ICON transport_nml

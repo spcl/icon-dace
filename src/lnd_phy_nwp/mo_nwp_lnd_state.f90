@@ -37,6 +37,7 @@ MODULE mo_nwp_lnd_state
     &                                ALB_SI_MISSVAL, TASK_COMPUTE_SMI
   USE mo_cdi_constants,        ONLY: GRID_UNSTRUCTURED_CELL, GRID_CELL
   USE mo_physical_constants,   ONLY: tmelt
+  USE mo_master_control,       ONLY: get_my_process_name
   USE mo_parallel_config,      ONLY: nproma
   USE mo_nwp_lnd_types,        ONLY: t_lnd_state, t_lnd_prog, t_lnd_diag, t_wtr_prog
   USE mo_exception,            ONLY: message, finish
@@ -44,6 +45,7 @@ MODULE mo_nwp_lnd_state
   USE mo_grid_config,          ONLY: n_dom
   USE mo_io_config,            ONLY: var_in_output
   USE mo_atm_phy_nwp_config,   ONLY: atm_phy_nwp_config
+  USE mo_coupling_config,      ONLY: is_coupled_to_ocean
   USE mo_lnd_nwp_config,       ONLY: nlev_soil, nlev_snow, ntiles_total, &
     &                                lmulti_snow, ntiles_water, lseaice, llake, &
     &                                itype_interception, l2lay_rho_snow, itype_trvg, &
@@ -68,7 +70,7 @@ MODULE mo_nwp_lnd_state
     &                                ZA_SEDIMENT_BOTTOM_TW_HALF, ZA_LAKE_BOTTOM, &
     &                                ZA_LAKE_BOTTOM_HALF, ZA_MIX_LAYER
   USE sfc_terra_data,          ONLY: zzhls, zdzhs, zdzms
-  USE mo_action,               ONLY: ACTION_RESET, actions, new_action
+  USE mo_action_types,         ONLY: ACTION_RESET, actions, new_action
 
 
 #include "add_var_acc_macro.inc"
@@ -395,7 +397,8 @@ MODULE mo_nwp_lnd_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(prog_list, TRIM(listname), patch_id=p_jg, lrestart=.TRUE.)
+    CALL vlr_add(prog_list, TRIM(listname), patch_id=p_jg, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
     !------------------------------
 
@@ -1046,7 +1049,8 @@ MODULE mo_nwp_lnd_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(prog_list, TRIM(listname), patch_id=p_jg, lrestart=.TRUE.)
+    CALL vlr_add(prog_list, TRIM(listname), patch_id=p_jg, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
     !------------------------------
 
@@ -1321,6 +1325,7 @@ MODULE mo_nwp_lnd_state
     &       p_diag_lnd%snowfrac_lcu_t, &
     &       p_diag_lnd%hsnow_max, &
     &       p_diag_lnd%snow_age, &
+    &       p_diag_lnd%qi_snowdrift_flx, &
     &       p_diag_lnd%t_snow_mult, &
     &       p_diag_lnd%rho_snow_mult, &
     &       p_diag_lnd%wliq_snow, &
@@ -1329,13 +1334,15 @@ MODULE mo_nwp_lnd_state
     &       p_diag_lnd%resid_wso, &
     &       p_diag_lnd%resid_wso_t, &
     &       p_diag_lnd%resid_wso_inst_t, &
-    &       p_diag_lnd%condhf_ice)
+    &       p_diag_lnd%condhf_ice, &
+    &       p_diag_lnd%meltpot_ice)
 
 
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(diag_list, TRIM(listname), patch_id=p_jg, lrestart=.TRUE.)
+    CALL vlr_add(diag_list, TRIM(listname), patch_id=p_jg, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
     !------------------------------
 
@@ -1367,13 +1374,23 @@ MODULE mo_nwp_lnd_state
            &                 "mode_iniana","iau_restore_vars"), lopenacc=.TRUE. )
     __acc_attach(p_diag_lnd%fr_seaice)
 
-    ! & p_diag_lnd%condhf_ice(nproma,nblks_c)
-    cf_desc    = t_cf_var('condhf_ice', 'W m-2', 'conductive heat flux at sea-ice bottom', datatype_flt)
-    grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( diag_list, vname_prefix//'condhf_ice', p_diag_lnd%condhf_ice,&
-           & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
-           & ldims=shape2d, lrestart=.TRUE., lopenacc=.TRUE.)
-    __acc_attach(p_diag_lnd%condhf_ice)
+    IF (is_coupled_to_ocean()) THEN
+      ! & p_diag_lnd%condhf_ice(nproma,nblks_c)
+      cf_desc    = t_cf_var('condhf_ice', 'W m-2', 'conductive heat flux at sea-ice bottom', datatype_flt)
+      grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+      CALL add_var( diag_list, vname_prefix//'condhf_ice', p_diag_lnd%condhf_ice,&
+            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
+            & ldims=shape2d, lrestart=.TRUE., lopenacc=.TRUE.)
+      __acc_attach(p_diag_lnd%condhf_ice)
+
+      ! & p_diag_lnd%meltpot_ice(nproma,nblks_c)
+      cf_desc    = t_cf_var('meltpot_ice', 'W m-2', 'melt potential at sea-ice top', datatype_flt)
+      grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+      CALL add_var( diag_list, vname_prefix//'meltpot_ice', p_diag_lnd%meltpot_ice,&
+            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
+            & ldims=shape2d, lrestart=.FALSE., lopenacc=.TRUE.)
+      __acc_attach(p_diag_lnd%meltpot_ice)
+    END IF
 
     ! & p_diag_lnd%qv_s_t(nproma,nblks_c,ntiles_total+ntiles_water)
     cf_desc    = t_cf_var('qv_s_t', 'kg kg-1', 'specific humidity at the surface', datatype_flt)
@@ -1513,6 +1530,16 @@ MODULE mo_nwp_lnd_state
              & lopenacc=.TRUE.)
       __acc_attach(p_diag_lnd%snow_age)
 
+      ! cloud-ice flux from drifting snow
+      cf_desc    = t_cf_var('qi_snowdrift_flx', 'kg m-2 s', &
+          & 'upward cloud-ice surface flux from drifting snow', datatype_flt)
+      grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+      CALL add_var( diag_list, 'qi_snowdrift_flx', p_diag_lnd%qi_snowdrift_flx,              &
+             & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,          &
+             & ldims=shape2d, lrestart=.FALSE.,                                  &
+             & in_group=groups('land_vars'),                                     &
+             & lopenacc=.TRUE.)
+      __acc_attach(p_diag_lnd%qi_snowdrift_flx)
     ENDIF
 
     ! & p_diag_lnd%t_so(nproma,nlev_soil+1,nblks_c)
@@ -1598,7 +1625,7 @@ MODULE mo_nwp_lnd_state
 
     ! & p_diag_lnd%runoff_g(nproma,nblks_c)
     cf_desc    = t_cf_var('runoff_g', 'kg m-2', &
-         &                'weighted soil water runoff', datatype_flt)
+         &                'weighted soil/ground water runoff', datatype_flt)
     grib2_desc = grib2_var(2, 0, 5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( diag_list, vname_prefix//'runoff_g', p_diag_lnd%runoff_g,        &
            & GRID_UNSTRUCTURED_CELL, ZA_DEPTH_RUNOFF_G, cf_desc, grib2_desc,       &
@@ -1638,18 +1665,18 @@ MODULE mo_nwp_lnd_state
     grib2_desc = grib2_var(2, 0, 5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( diag_list, vname_prefix//'runoff_s_inst_t', p_diag_lnd%runoff_s_inst_t,  &
            & GRID_UNSTRUCTURED_CELL, ZA_DEPTH_RUNOFF_S, cf_desc, grib2_desc,       &
-           & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,     &
+           & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,    &
            & in_group=groups("iau_init_vars"),                                             &
            & lopenacc=.TRUE.)
     __acc_attach(p_diag_lnd%runoff_s_inst_t)
 
     ! & p_diag_lnd%runoff_g_inst_t(nproma,nblks_c,ntiles_total)
     cf_desc    = t_cf_var('runoff_g_inst_t', 'kg m-2', &
-         &                'soil water runoff; instantaneous value', datatype_flt)
+         &                'soil/ground water runoff; instantaneous value', datatype_flt)
     grib2_desc = grib2_var(2, 0, 5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( diag_list, vname_prefix//'runoff_g_inst_t', p_diag_lnd%runoff_g_inst_t,    &
            & GRID_UNSTRUCTURED_CELL, ZA_DEPTH_RUNOFF_G, cf_desc, grib2_desc,       &
-           & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,       &
+           & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,      &
            & in_group=groups("iau_init_vars"),                                               &
            & lopenacc=.TRUE.)
     __acc_attach(p_diag_lnd%runoff_g_inst_t) 
@@ -1673,7 +1700,7 @@ MODULE mo_nwp_lnd_state
     grib2_desc = grib2_var(2, 0, 5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( diag_list, vname_prefix//'runoff_s_t', p_diag_lnd%runoff_s_t,    &
            & GRID_UNSTRUCTURED_CELL, ZA_DEPTH_RUNOFF_S, cf_desc, grib2_desc,       &
-           & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE., &
+           & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE., &
            & initval=0._wp, resetval=0._wp,                              &
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))), &
            & in_group=groups("iau_init_vars"),                                    &
@@ -1682,11 +1709,11 @@ MODULE mo_nwp_lnd_state
 
     ! & p_diag_lnd%runoff_g_t(nproma,nblks_c,ntiles_total)
     cf_desc    = t_cf_var('runoff_g_t', 'kg m-2', &
-         &                'soil water runoff', datatype_flt)
+         &                'soil/ground water runoff', datatype_flt)
     grib2_desc = grib2_var(2, 0, 5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var( diag_list, vname_prefix//'runoff_g_t', p_diag_lnd%runoff_g_t,    &
            & GRID_UNSTRUCTURED_CELL, ZA_DEPTH_RUNOFF_G, cf_desc, grib2_desc,       &
-           & ldims=shape3d_subs, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE., &
+           & ldims=shape3d_subsw, lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE., &
            & initval=0._wp, resetval=0._wp,                              &
            & action_list=actions(new_action(ACTION_RESET,runoff_interval(p_jg))), &
            & in_group=groups("iau_init_vars"),                                    &
@@ -1709,8 +1736,8 @@ MODULE mo_nwp_lnd_state
     ENDIF
 
     ! fill the separate variables belonging to the container runoff_s
-    ALLOCATE(p_diag_lnd%runoff_s_ptr(ntiles_total))
-    DO jsfc = 1,ntiles_total
+    ALLOCATE(p_diag_lnd%runoff_s_ptr(ntiles_total + ntiles_water))
+    DO jsfc = 1,ntiles_total + ntiles_water
       NULLIFY(p_diag_lnd%runoff_s_ptr(jsfc)%p_2d, p_diag_lnd%runoff_s_ptr(jsfc)%p_3d)
       WRITE(csfc,'(i2)') jsfc 
       CALL add_ref( diag_list, vname_prefix//'runoff_s_t',                       &
@@ -1726,8 +1753,8 @@ MODULE mo_nwp_lnd_state
     END DO
 
     ! fill the separate variables belonging to the container runoff_g
-    ALLOCATE(p_diag_lnd%runoff_g_ptr(ntiles_total))
-    DO jsfc = 1,ntiles_total
+    ALLOCATE(p_diag_lnd%runoff_g_ptr(ntiles_total + ntiles_water))
+    DO jsfc = 1,ntiles_total + ntiles_water
       NULLIFY(p_diag_lnd%runoff_g_ptr(jsfc)%p_2d, p_diag_lnd%runoff_g_ptr(jsfc)%p_3d)
       WRITE(csfc,'(i2)') jsfc 
       CALL add_ref( diag_list, vname_prefix//'runoff_g_t',                       &
@@ -2199,4 +2226,3 @@ MODULE mo_nwp_lnd_state
 
 
 END MODULE mo_nwp_lnd_state
-

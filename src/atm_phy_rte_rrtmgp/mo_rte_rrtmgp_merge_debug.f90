@@ -44,53 +44,53 @@ MODULE mo_rte_rrtmgp_merge_debug
 
   TYPE(TV), SAVE :: vars(nvar_all) = (/ &
 !In write_record_interface_aes
-    TV('kproma', (/5,-1,-1,-1/), nf_int, 1, .true.), &
-    TV('cosmu0', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('day_frc', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('rnseeds1', (/1,4,5,-1/), nf_int, 3, .true.), &
-    TV('rnseeds2', (/1,4,5,-1/), nf_int, 3, .true.), &
-    TV('a_ndif', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('a_ndir', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('a_vdif', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('a_vdir', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('zf', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('zh', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('dz', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('pp_fl_in', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('pp_hl_in', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('tk_fl_in', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('tk_hl_in', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('pp_fl', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('pp_hl', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('tk_fl', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('tk_hl', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('tk_sfc', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('xm_dry', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_vap', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_co2', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_ch4', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_o2', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_o3', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('xm_n2o', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('cdnc', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('cld_frc_ext', (/1,2,5,-1/), nf_double, 3, .true.), &
-    TV('f_ldcs', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_lucs', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_sdcs', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_sucs', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_ld', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_lu', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_sd', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('f_su', (/1,3,5,-1/), nf_double, 3, .true.), &
-    TV('vds_dir', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('pds_dir', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('nds_dir', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('vds_dif', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('pds_dif', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('nds_dif', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('vus', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('pus', (/1,5,-1,-1/), nf_double, 2, .true.), &
-    TV('nus', (/1,5,-1,-1/), nf_double, 2, .true.)/)
+    TV('kproma', (/5,-1,-1,-1/), nf90_int, 1, .true.), &
+    TV('cosmu0', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('day_frc', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('rnseeds1', (/1,4,5,-1/), nf90_int, 3, .true.), &
+    TV('rnseeds2', (/1,4,5,-1/), nf90_int, 3, .true.), &
+    TV('a_ndif', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('a_ndir', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('a_vdif', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('a_vdir', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('zf', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('zh', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('dz', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('pp_fl_in', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('pp_hl_in', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('tk_fl_in', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('tk_hl_in', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('pp_fl', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('pp_hl', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('tk_fl', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('tk_hl', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('tk_sfc', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('xm_dry', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_vap', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_co2', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_ch4', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_o2', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_o3', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('xm_n2o', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('cdnc', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('cld_frc_ext', (/1,2,5,-1/), nf90_double, 3, .true.), &
+    TV('f_ldcs', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_lucs', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_sdcs', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_sucs', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_ld', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_lu', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_sd', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('f_su', (/1,3,5,-1/), nf90_double, 3, .true.), &
+    TV('vds_dir', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('pds_dir', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('nds_dir', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('vds_dif', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('pds_dif', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('nds_dif', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('vus', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('pus', (/1,5,-1,-1/), nf90_double, 2, .true.), &
+    TV('nus', (/1,5,-1,-1/), nf90_double, 2, .true.)/)
 
   TYPE :: TDumpDictionary
     INTEGER :: nvar_active
@@ -209,26 +209,26 @@ CONTAINS
     
     INTEGER :: i, ret, dim_val(ndim), idummy
 
-    ret = nf_create(TRIM(name), nf_clobber, nf_write_id)
-    IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    ret = nf90_create(TRIM(name), nf90_clobber, nf_write_id)
+    IF (ret /= nf90_noerr) CALL crash(ret, __LINE__)
 
-    dim_val = (/kbdim, klev, klev+1, 4, nf_unlimited/)
+    dim_val = (/kbdim, klev, klev+1, 4, nf90_unlimited/)
     DO i = 1,ndim
       dims(i)%length = dim_val(i)
-      ret = nf_def_dim(nf_write_id, TRIM(dims(i)%name), dim_val(i), idummy)
-      IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+      ret = nf90_def_dim(nf_write_id, TRIM(dims(i)%name), dim_val(i), idummy)
+      IF (ret /= nf90_noerr) CALL crash(ret, __LINE__)
     END DO
 
     DO i = 1, nvar_all
       IF (dump_list%is_active(i)) THEN
-        ret = nf_def_var(nf_write_id, TRIM(vars(i)%name), &
-          vars(i)%nf_type, vars(i)%ndim, vars(i)%dims, dump_list%nf_idx(i))
-        IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+        ret = nf90_def_var(nf_write_id, TRIM(vars(i)%name), &
+          vars(i)%nf_type, vars(i)%dims, dump_list%nf_idx(i))
+        IF (ret /= nf90_noerr) CALL crash(ret, __LINE__)
       ENDIF
     END DO
 
-    ret = nf_enddef(nf_write_id)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    ret = nf90_enddef(nf_write_id)
+    if (ret /= nf90_noerr) CALL crash(ret, __LINE__)
 
   END SUBROUTINE open_write_internal
 
@@ -245,7 +245,7 @@ CONTAINS
     ENDIF
 
     IF (.not. dump_list%is_active(var_idx)) RETURN
-    IF (vars(var_idx)%nf_type /= nf_double) THEN
+    IF (vars(var_idx)%nf_type /= nf90_double) THEN
       CALL crash('Wrong type in call', __LINE__)
     END IF
     start = 1
@@ -254,9 +254,9 @@ CONTAINS
     END DO
     count(i) = 1
     start(i) = pos
-    ret = nf_put_vara_double(nf_write_id, &
-      dump_list%nf_idx(var_idx), start, count, data)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    ret = nf90_put_var(nf_write_id, &
+      dump_list%nf_idx(var_idx), data, start, count)
+    if (ret /= nf90_noerr) CALL crash(ret, __LINE__)
   END SUBROUTINE write_double
 
   SUBROUTINE write_int(var_name, data, pos)
@@ -272,7 +272,7 @@ CONTAINS
     ENDIF
 
     IF (.not. dump_list%is_active(var_idx)) RETURN
-    IF (vars(var_idx)%nf_type /= nf_int) THEN
+    IF (vars(var_idx)%nf_type /= nf90_int) THEN
       CALL crash('Wrong type in call', __LINE__)
     END IF
     start = 1
@@ -281,9 +281,9 @@ CONTAINS
     END DO
     count(i) = 1
     start(i) = pos
-    ret = nf_put_vara_int(nf_write_id, &
-      dump_list%nf_idx(var_idx), start, count, data)
-    if (ret /= nf_noerr) CALL crash(ret, __LINE__)
+    ret = nf90_put_var(nf_write_id, &
+      dump_list%nf_idx(var_idx), data, start, count)
+    if (ret /= nf90_noerr) CALL crash(ret, __LINE__)
   END SUBROUTINE write_int
 
   SUBROUTINE write_record_interface_aes(kproma, cosmu0, day_frc, &
@@ -366,8 +366,8 @@ CONTAINS
   SUBROUTINE close_write
     INTEGER :: ret
     IF (writing == 1) THEN
-      ret = nf_close(nf_write_id)
-      IF (ret /= nf_noerr) CALL crash(ret, __LINE__)
+      ret = nf90_close(nf_write_id)
+      IF (ret /= nf90_noerr) CALL crash(ret, __LINE__)
       writing = 0
     ENDIF
   END SUBROUTINE close_write

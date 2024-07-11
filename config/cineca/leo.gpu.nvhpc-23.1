@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+
+export LEO_GPU_MPIRUN_FLAGS=''
+export LEO_GPU_FCFLAGS='-acc=verystrict -gpu=cc80'
+${SCRIPT_DIR}/leo.common.nvhpc-23.1 --enable-gpu --enable-mpi-gpu "$@"

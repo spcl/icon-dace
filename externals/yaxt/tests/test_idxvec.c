@@ -62,6 +62,7 @@
 #define VERBOSE
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_idxlist_utils.h"
 #include "core/ppm_xfuncs.h"
 
@@ -77,11 +78,9 @@ test_get_indices_at_positions(int num_idx, const Xt_int indices[],
                               Xt_int undef_idx,
                               int num_pos, const int pos[]);
 
-int main(void) {
+int main(int argc, char **argv) {
 
-  // init mpi
-
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 

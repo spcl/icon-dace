@@ -76,13 +76,12 @@ SUBROUTINE art_read_pol_oper(jg)
     ! Last pollentype was reached and all data reading is finished
     !_jf: on NEC vector host 'this_pollen_table%fr_cov' is associated?!
     !_jf: as workaround test if variable shortname is set.
-    IF (.NOT. ASSOCIATED(this_pollen_table%fr_cov) .OR.  &
-      & TRIM(this_pollen_table%shortname) == '') THEN 
+    IF (.NOT. ASSOCIATED(this_pollen_table%fr_cov) .OR. TRIM(this_pollen_table%shortname) == '') THEN
       CALL message(TRIM(routine)//': art_read_pol_oper', 'Left reading loop')
       EXIT
     END IF 
   
-    IF ((this_pollen_table%linit .EQV. .TRUE.) .AND. (TRIM(vname) /= '' )) THEN
+    IF (TRIM(vname) /= '') THEN
 
       SELECT CASE(TRIM(vname))
         CASE('pollbetu')

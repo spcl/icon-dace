@@ -183,8 +183,7 @@ SUBROUTINE art_add_dms_emission_to_tracer(jg,jb,jcs,jce ,&
 
       CALL art_convert_emission_to_mmr(p_online_dms%mmr_onl_dms(:), &
            &        emiss_onl_dms,                                  &
-           &        art_atmo%temp(i,:,jb),                          &
-           &        art_atmo%pres(i,:,jb),                          &
+           &        art_atmo%rho(i,:,jb),                           &
            &        art_atmo%dz(i,:,jb),                            &
            &        p_dtime,1,nlev)
 

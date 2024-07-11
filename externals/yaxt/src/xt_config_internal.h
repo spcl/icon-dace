@@ -59,6 +59,8 @@
 
 enum xt_config_flags {
   exch_no_dt_dup = (1 << 0),
+  xt_mthread_mode_bit_ofs = 1,
+  xt_mthread_mode_mask = (1 << xt_mthread_mode_bit_ofs),
 };
 
 

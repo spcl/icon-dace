@@ -189,7 +189,7 @@ CONTAINS
     dsl4jsb_Get_memory(CARBON_)
     dsl4jsb_Get_config(CARBON_)
 
-    IF (.NOT. dsl4jsb_Config(CARBON_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(CARBON_)) RETURN
 
     ! Initialize the C Pools
 

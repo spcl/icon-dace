@@ -74,6 +74,7 @@ MODULE mo_model_domimp_patches
   USE mo_complete_subdivision, ONLY: generate_comm_pat_cvec1
 #ifndef NOMPI
   USE mo_complete_subdivision, ONLY: create_work2test_patterns
+  USE mpi, ONLY: MPI_INFO_NULL
 #endif
   USE mo_read_netcdf_distributed, ONLY: setup_distrib_read
   USE mo_read_interface, ONLY: t_stream_id, p_t_patch, openInputFile, &
@@ -86,45 +87,35 @@ MODULE mo_model_domimp_patches
   USE ppm_distributed_array,  ONLY: dist_mult_array_local_ptr, &
     &                               dist_mult_array_expose
   USE mo_fortran_tools, ONLY: t_ptr_2d, t_ptr_2d_int, t_ptr_3d, t_ptr_3d_int
-#ifndef NOMPI
-  ! The USE statement below lets this module use the routines from
-  ! mo_netcdf_parallel where only 1 processor is reading and
-  ! broadcasting the results
-#ifndef HAVE_PARALLEL_NETCDF
-  USE mo_netcdf_parallel, ONLY:                      &
-    & nf_nowrite, nf_global, nf_noerr,  &
-    & nf_inq_attid        => p_nf_inq_attid,          &
-    & nf_open             => p_nf_open,               &
-    & nf_close            => p_nf_close,              &
-    & nf_inq_dimid        => p_nf_inq_dimid,          &
-    & nf_inq_dimlen       => p_nf_inq_dimlen,         &
-    & nf_inq_varid        => p_nf_inq_varid,          &
-    & nf_get_att_text     => p_nf_get_att_text,       &
-    & nf_get_att_int      => p_nf_get_att_int,        &
-    & nf_get_var_int      => p_nf_get_var_int,        &
-    & nf_get_vara_int     => p_nf_get_vara_int,       &
-    & nf_get_vara_double  => p_nf_get_vara_double_
-#endif
-#endif
-#ifndef NOMPI
-    USE mpi, ONLY: MPI_INFO_NULL
-#endif
+  USE mo_netcdf, ONLY: nf90_nowrite, nf90_global, nf90_noerr
 
 #if defined(NOMPI) || defined(HAVE_PARALLEL_NETCDF)
+  USE mo_netcdf, ONLY:                      &
+    & nf90_open,                            &
+    & nf90_inquire_dimension,               &
+    & nf90_inquire_attribute,               &
+    & nf90_inq_varid,                       &
+    & nf90_inq_dimid,                       &
+    & nf90_get_var,                         &
+    & nf90_get_att,                         &
+    & nf90_close,                           &
+    & p_nf90x_get_var_local => nf90_get_var
+#if defined(HAVE_PARALLEL_NETCDF)
   USE mo_netcdf, ONLY: &
-    & nf_nowrite, nf_global, nf_noerr, nf_mpiio, &
-    & nf_inq_attid, &
-    & nf_open, &
-    & nf_open_par, &
-    & nf_close, &
-    & nf_inq_dimid, &
-    & nf_inq_dimlen, &
-    & nf_inq_varid, &
-    & nf_get_att_text, &
-    & nf_get_att_int => nfx_get_att, &
-    & nf_get_var_int, &
-    & nf_get_vara_int, &
-    & nf_get_vara_double
+    & nf90_open_par,   &
+    & nf90_mpiio
+#endif
+#else
+  USE mo_netcdf_parallel, ONLY:                            &
+    & nf90_open               => p_nf90_open,              &
+    & nf90_inquire_dimension  => p_nf90_inquire_dimension, &
+    & nf90_inquire_attribute  => p_nf90_inquire_attribute, &
+    & nf90_inq_varid          => p_nf90_inq_varid,         &
+    & nf90_inq_dimid          => p_nf90_inq_dimid,         &
+    & nf90_get_var            => p_nf90_get_var,           &
+    & nf90_get_att            => p_nf90_get_att,           &
+    & nf90_close              => p_nf90_close,             &
+    & p_nf90x_get_var_local
 #endif
 
   IMPLICIT NONE
@@ -1041,12 +1032,12 @@ CONTAINS
 
     tlen = LEN_TRIM(patch_pre%grid_filename)
 #if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-    ierr = nf_open_par(patch_pre%grid_filename(1:tlen), &
-       &               IOR(nf_nowrite, nf_mpiio), &
-       &               p_comm_work, MPI_INFO_NULL, ncid)
-    IF (ierr /= nf_noerr) THEN
+    ierr = nf90_open_par(patch_pre%grid_filename(1:tlen), &
+       &                 IOR(nf90_nowrite, nf90_mpiio), &
+       &                 p_comm_work, MPI_INFO_NULL, ncid)
+    IF (ierr /= nf90_noerr) THEN
 #endif
-      CALL nf(nf_open(patch_pre%grid_filename(1:tlen), nf_nowrite, ncid), routine)
+      CALL nf(nf90_open(patch_pre%grid_filename(1:tlen), nf90_nowrite, ncid), routine)
 #if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
       WRITE(message_text,'(2a)')  'warning: falling back to serial semantics for&
            & opening netcdf file ', patch_pre%grid_filename(1:tlen)
@@ -1056,18 +1047,18 @@ CONTAINS
 
     ! Test, if grid refinement information is available in the NetCDF
     ! file. If not, try to open "patch_pre%grid_filename_grfinfo":
-    lsep_grfinfo = (nf_inq_varid(ncid, 'refin_c_ctrl', varid) /= nf_noerr)
+    lsep_grfinfo = (nf90_inq_varid(ncid, 'refin_c_ctrl', varid) /= nf90_noerr)
     IF (lsep_grfinfo) THEN
       WRITE(message_text,'(a,a)') 'Read gridref info from file ', TRIM(patch_pre%grid_filename_grfinfo)
       CALL message ('', TRIM(message_text))
       tlen = LEN_TRIM(patch_pre%grid_filename_grfinfo)
 #if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
-      ierr = nf_open_par(patch_pre%grid_filename_grfinfo(1:tlen), &
-         &               IOR(nf_nowrite, nf_mpiio), p_comm_work, &
+      ierr = nf90_open_par(patch_pre%grid_filename_grfinfo(1:tlen), &
+         &               IOR(nf90_nowrite, nf90_mpiio), p_comm_work, &
          &               MPI_INFO_NULL, ncid_grf)
-      IF (ierr /= nf_noerr) THEN
+      IF (ierr /= nf90_noerr) THEN
 #endif
-        CALL nf(nf_open(patch_pre%grid_filename_grfinfo(1:tlen), nf_nowrite, &
+        CALL nf(nf90_open(patch_pre%grid_filename_grfinfo(1:tlen), nf90_nowrite, &
              ncid_grf), routine)
 #if defined (HAVE_PARALLEL_NETCDF) && !defined (NOMPI)
         WRITE(message_text,'(2a)')  'warning: falling back to serial semantics for&
@@ -1081,7 +1072,7 @@ CONTAINS
 
     uuid_string = 'warning: not given ...' ! To avoid null characters in the standard output
 
-    IF (nf_get_att_text(ncid, nf_global, 'uuidOfHGrid', uuid_string) /= nf_noerr) THEN
+    IF (nf90_get_att(ncid, nf90_global, 'uuidOfHGrid', uuid_string) /= nf90_noerr) THEN
       IF (is_grib_output()) THEN
         CALL message(routine, "Warning: uuidOfHGrid not set as an attribute!")
       END IF
@@ -1093,7 +1084,7 @@ CONTAINS
     END IF
 
     IF (lsep_grfinfo) THEN ! check correspondence of uuids between main grid file and connectivity info file
-      CALL nf(nf_get_att_text(ncid_grf, nf_global, 'uuidOfHGrid', uuid_string_grfinfo), routine)
+      CALL nf(nf90_get_att(ncid_grf, nf90_global, 'uuidOfHGrid', uuid_string_grfinfo), routine)
       IF (TRIM(uuid_string_grfinfo) /= TRIM(uuid_string)) THEN
         WRITE(message_text,'(a,a)') 'uuidOfHGrid of grfinfo file does not match uuidOfHGrid of basic grid file'
         IF (check_uuid_gracefully) THEN
@@ -1106,17 +1097,17 @@ CONTAINS
 
     ! Read also parent grid UUID for subsequent crosscheck (if available):
     grid_metadata%uuid_grid = uuid_string
-    ierr = nf_get_att_text(ncid_grf, nf_global, 'uuidOfParHGrid', grid_metadata%uuid_par)
-    IF (ierr /= nf_noerr)  grid_metadata%uuid_par = ""
+    ierr = nf90_get_att(ncid_grf, nf90_global, 'uuidOfParHGrid', grid_metadata%uuid_par)
+    IF (ierr /= nf90_noerr)  grid_metadata%uuid_par = ""
 
     ! Read additional grid identifiers
     ! grid_generatingCenter
     ! grid_generatingSubcenter
     ! number_of_grid_used
     ! ICON_grid_file_uri
-    netcd_status = nf_get_att_int(ncid, nf_global, 'centre', &
-      &                           grid_generatingCenter(ig)  )
-    IF (netcd_status == nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global, 'centre', &
+      &                         grid_generatingCenter(ig)  )
+    IF (netcd_status == nf90_noerr) THEN
       WRITE(message_text,'(a,i4,a,i4)') &
         & 'generating center of patch ', ig, ': ',grid_generatingCenter(ig)
       CALL message  (routine, TRIM(message_text))
@@ -1128,9 +1119,9 @@ CONTAINS
       grid_generatingCenter(ig) = 78    ! DWD
     ENDIF
 
-    netcd_status = nf_get_att_int(ncid, nf_global, 'subcentre', &
-      &                           grid_generatingSubcenter(ig)  )
-    IF (netcd_status == nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global, 'subcentre', &
+      &                         grid_generatingSubcenter(ig)  )
+    IF (netcd_status == nf90_noerr) THEN
       WRITE(message_text,'(a,i4,a,i4)') &
         & 'generating subcenter of patch ', ig, ': ',grid_generatingSubcenter(ig)
       CALL message  (routine, TRIM(message_text))
@@ -1142,9 +1133,9 @@ CONTAINS
       grid_generatingSubcenter(ig) = 255
     ENDIF
 
-    netcd_status = nf_get_att_int(ncid, nf_global, 'number_of_grid_used', &
+    netcd_status = nf90_get_att(ncid, nf90_global, 'number_of_grid_used', &
       &            number_of_grid_used(ig))
-    IF (netcd_status == nf_noerr) THEN
+    IF (netcd_status == nf90_noerr) THEN
       WRITE(message_text,'(a,i4,a,i4)') &
         & 'number_of_grid_used of patch ', ig, ': ',number_of_grid_used(ig)
       CALL message  (routine, TRIM(message_text))
@@ -1156,9 +1147,9 @@ CONTAINS
       number_of_grid_used(ig) = 42
     ENDIF
 
-    netcd_status = nf_get_att_text(ncid, nf_global, 'ICON_grid_file_uri', &
-      &                                              ICON_grid_file_uri(ig))
-    IF (netcd_status == nf_noerr) THEN
+    netcd_status = nf90_get_att(ncid, nf90_global, 'ICON_grid_file_uri', &
+      &                         ICON_grid_file_uri(ig))
+    IF (netcd_status == nf90_noerr) THEN
       WRITE(message_text,'(a,i4,a,a)') &
         & 'URI of patch ', ig, ': ',TRIM(ICON_grid_file_uri(ig))
       CALL message  (routine, TRIM(message_text))
@@ -1170,7 +1161,7 @@ CONTAINS
       ICON_grid_file_uri(ig) = ""
     ENDIF
 
-    CALL nf(nf_get_att_int(ncid, nf_global, 'grid_root', grid_metadata%grid_root), routine)
+    CALL nf(nf90_get_att(ncid, nf90_global, 'grid_root', grid_metadata%grid_root), routine)
     IF (grid_metadata%grid_root /= nroot) THEN
       WRITE(message_text,'(a,i4,a,i4)') &
         & 'grid_root attribute:', grid_metadata%grid_root,', R:',nroot
@@ -1180,26 +1171,26 @@ CONTAINS
       CALL finish  (routine, TRIM(message_text))
     END IF
 
-    CALL nf(nf_get_att_int(ncid, nf_global, 'grid_level', grid_metadata%grid_level), routine)
+    CALL nf(nf90_get_att(ncid, nf90_global, 'grid_level', grid_metadata%grid_level), routine)
 
     !--------------------------------------
     ! get number of cells, edges and vertices
-    CALL nf(nf_inq_dimid(ncid, 'edge', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, patch_pre%n_patch_edges_g), routine)
-    CALL nf(nf_inq_dimid(ncid, 'cell', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, patch_pre%n_patch_cells_g), routine)
-    CALL nf(nf_inq_dimid(ncid, 'vertex', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, patch_pre%n_patch_verts_g), routine)
-    CALL nf(nf_inq_dimid(ncid, 'nv', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, max_cell_connectivity), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'edge', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = patch_pre%n_patch_edges_g), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'cell', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = patch_pre%n_patch_cells_g), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'vertex', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = patch_pre%n_patch_verts_g), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'nv', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = max_cell_connectivity), routine)
     patch_pre%cells%max_connectivity = max_cell_connectivity
-    CALL nf(nf_inq_dimid(ncid, 'ne', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, max_verts_connectivity), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'ne', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = max_verts_connectivity), routine)
     patch_pre%verts%max_connectivity = max_verts_connectivity
     ! dimension of start/end index list fields (always 1 in new patch files, but this
     ! provides backward compatibility)
-    CALL nf(nf_inq_dimid(ncid, 'max_chdom', dimid), routine)
-    CALL nf(nf_inq_dimlen(ncid, dimid, dim_idxlist), routine)
+    CALL nf(nf90_inq_dimid(ncid, 'max_chdom', dimid), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = dim_idxlist), routine)
     IF (dim_idxlist>1) THEN
       WRITE(message_text,'(a)') &
         & 'WARNING: you are using an old grid file with multiple nesting'
@@ -1251,72 +1242,58 @@ CONTAINS
     ! patch_pre%cells%start(:)
     ! patch_pre%cells%end(:)
     ! nesting does not work for hex grids
-    CALL nf(nf_inq_varid(ncid_grf, 'start_idx_c', varid), routine)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rlcell - min_rlcell + 1, 1/), &
-      &                     patch_pre%cells%start(:)), routine)
-    CALL nf(nf_inq_varid(ncid_grf, 'end_idx_c', varid), routine)
-    CALL nf(nf_get_var_int(ncid_grf, varid, end_idx_c(:,:)), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'start_idx_c', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%cells%start(:), &
+      &                  (/1,1/), (/max_rlcell - min_rlcell + 1, 1/)), &
+      &     routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'end_idx_c', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, end_idx_c(:,:)), routine)
     ! Needed for backward compatibility of old grids
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rlcell - min_rlcell + 1, 1/), &
-      &                     patch_pre%cells%end(:)), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%cells%end(:), &
+      &                  (/1,1/), (/max_rlcell - min_rlcell + 1, 1/)), &
+      &     routine)
     IF (dim_idxlist > 1) &
       patch_pre%cells%end(min_rlcell_int) = patch_pre%n_patch_cells_g
 
     ! patch_pre%edges%start(:)
     ! patch_pre%edges%end(:)
-    CALL nf(nf_inq_varid(ncid_grf, 'start_idx_e', varid), routine)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rledge - min_rledge + 1, 1/), &
-      &                     patch_pre%edges%start(:)), routine)
-    CALL nf(nf_inq_varid(ncid_grf, 'end_idx_e', varid), routine)
-    CALL nf(nf_get_var_int(ncid_grf, varid, end_idx_e(:,:)), routine)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rledge - min_rledge + 1, 1/), &
-      &                     patch_pre%edges%end(:)), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'start_idx_e', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%edges%start(:), &
+      &                  (/1,1/), (/max_rledge - min_rledge + 1, 1/)), &
+      &     routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'end_idx_e', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, end_idx_e(:,:)), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%edges%end(:), &
+      &                  (/1,1/), (/max_rledge - min_rledge + 1, 1/)), &
+      &     routine)
     ! Needed for backward compatibility of old grids
     IF (dim_idxlist > 1) &
       patch_pre%edges%end(min_rledge_int) = patch_pre%n_patch_edges_g
 
     ! patch_pre%verts%start(:)
     ! patch_pre%verts%end(:)
-    CALL nf(nf_inq_varid(ncid_grf, 'start_idx_v', varid), routine)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rlvert - min_rlvert + 1, 1/), &
-      &                     patch_pre%verts%start(:)), routine)
-    CALL nf(nf_inq_varid(ncid_grf, 'end_idx_v', varid), routine)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, (/1,1/), &
-      &                     (/max_rlvert - min_rlvert + 1, 1/), &
-      &                     patch_pre%verts%end(:)), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'start_idx_v', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%verts%start(:), &
+      &                  (/1,1/), (/max_rlvert - min_rlvert + 1, 1/)), &
+      &     routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'end_idx_v', varid), routine)
+    CALL nf(nf90_get_var(ncid_grf, varid, patch_pre%verts%end(:), &
+      &                  (/1,1/), (/max_rlvert - min_rlvert + 1, 1/)), &
+      &     routine)
     ! Needed for backward compatibility of old grids
     IF (dim_idxlist > 1) &
       patch_pre%verts%end(min_rlvert_int) = patch_pre%n_patch_verts_g
 
-    ! patch_pre%cells%phys_id(:)
-    !
-    ! If no domain merging is used, the physical cell/edge ID must not
-    ! necessarily specified in the grid file:
-    CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_phys_id, local_ptr)
-    lhave_phys_id = (nf_inq_varid(ncid_grf, 'phys_cell_id', varid) == nf_noerr)
-    IF (lhave_phys_id) THEN
-      CALL nf(nf_get_vara_int(ncid_grf, varid, &
-        &                     (/patch_pre%cells%local_chunk(1,1)%first/), &
-        &                     (/patch_pre%cells%local_chunk(1,1)%size/), &
-        &                     local_ptr(:)), routine)
-    ELSE
-      local_ptr(:) = ig
-    END IF
-
     ! patch_pre%cells%neighbor
-    CALL nf(nf_inq_varid(ncid, 'neighbor_cell_index', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'neighbor_cell_index', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_neighbor, local_ptr_2d)
     local_ptr_2d(:,:) = 0
-    CALL nf(nf_get_vara_int(ncid, varid, &
-      &                     (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
-      &                     (/patch_pre%cells%local_chunk(1,1)%size, &
-      &                       max_cell_connectivity/), &
-      &                     local_ptr_2d(:,1:max_cell_connectivity)), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, &
+      &                           local_ptr_2d(:,1:max_cell_connectivity), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size, &
+      &                             max_cell_connectivity/)), &
+      &     routine)
 
     IF (max_cell_connectivity == 6 .AND. use_duplicated_connectivity) THEN
       DO ic = patch_pre%cells%local_chunk(1,1)%first, &
@@ -1342,14 +1319,15 @@ CONTAINS
 
 !     write(0,*) "get edge_of_cell..."
     ! patch_pre%cells%edge
-    CALL nf(nf_inq_varid(ncid, 'edge_of_cell', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'edge_of_cell', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_edge, local_ptr_2d)
     local_ptr_2d(:,:) = 0
-    CALL nf(nf_get_vara_int(ncid, varid, &
-      &                     (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
-      &                     (/patch_pre%cells%local_chunk(1,1)%size, &
-      &                       max_cell_connectivity/), &
-      &                     local_ptr_2d(:,1:max_cell_connectivity)), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, &
+      &                           local_ptr_2d(:,1:max_cell_connectivity), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size, &
+      &                             max_cell_connectivity/)), &
+      &     routine)
 
     IF (max_cell_connectivity == 6 .AND. use_duplicated_connectivity) THEN
 
@@ -1372,6 +1350,21 @@ CONTAINS
       END DO ! cells
     ENDIF
 
+    ! patch_pre%cells%phys_id(:)
+    !
+    ! If no domain merging is used, the physical cell/edge ID must not
+    ! necessarily specified in the grid file:
+    CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_phys_id, local_ptr)
+    lhave_phys_id = (nf90_inq_varid(ncid_grf, 'phys_cell_id', varid) == nf90_noerr)
+    IF (lhave_phys_id) THEN
+      CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr(:), &
+        &                           (/patch_pre%cells%local_chunk(1,1)%first/), &
+        &                           (/patch_pre%cells%local_chunk(1,1)%size/)), &
+        &     routine)
+    ELSE
+      local_ptr(:) = ig
+    END IF
+
     !----------------------------------------------------------------------------------
     ! compute cells%num_edges
     ! works for general unstructured grid
@@ -1385,14 +1378,15 @@ CONTAINS
 
     ! patch_pre%cells%vertex
 !     write(0,*) "get vertex_of_cell..."
-    CALL nf(nf_inq_varid(ncid, 'vertex_of_cell', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'vertex_of_cell', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_vertex, local_ptr_2d)
     local_ptr_2d(:,:) = 0
-    CALL nf(nf_get_vara_int(ncid, varid, &
-      &                     (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
-      &                     (/patch_pre%cells%local_chunk(1,1)%size, &
-      &                       max_cell_connectivity/), &
-      &                     local_ptr_2d(:,1:max_cell_connectivity)), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, &
+      &                           local_ptr_2d(:,1:max_cell_connectivity), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first, 1/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size, &
+      &                             max_cell_connectivity/)), &
+      &     routine)
 
     IF (max_cell_connectivity == 6 .AND. use_duplicated_connectivity) THEN
 
@@ -1416,47 +1410,47 @@ CONTAINS
     ENDIF
 
     ! patch_pre%cells%center latitude
-    CALL nf(nf_inq_varid(ncid, 'lat_cell_centre', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'lat_cell_centre', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_center, local_ptr_wp_2d)
-    CALL nf(nf_get_vara_double(ncid, varid, &
-      &                        (/patch_pre%cells%local_chunk(1,1)%first/), &
-      &                        (/patch_pre%cells%local_chunk(1,1)%size/), &
-      &                        local_ptr_wp_2d(:, 1)), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_wp_2d(:, 1), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! patch_pre%cells%center longitude
-    CALL nf(nf_inq_varid(ncid, 'lon_cell_centre', varid), routine)
-    CALL nf(nf_get_vara_double(ncid, varid, &
-      &                        (/patch_pre%cells%local_chunk(1,1)%first/), &
-      &                        (/patch_pre%cells%local_chunk(1,1)%size/), &
-      &                        local_ptr_wp_2d(:, 2)), routine)
+    CALL nf(nf90_inq_varid(ncid, 'lon_cell_centre', varid), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_wp_2d(:, 2), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! patch_pre%verts%vertex(:)%lat
-    CALL nf(nf_inq_varid(ncid, 'latitude_vertices', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'latitude_vertices', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%verts%dist, v_vertex, &
          local_ptr_wp_2d)
-    CALL nf(nf_get_vara_double(ncid, varid, &
-      &                        (/patch_pre%verts%local_chunk(1,1)%first/), &
-      &                        (/patch_pre%verts%local_chunk(1,1)%size/), &
-      &                        local_ptr_wp_2d(:, 1)), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_wp_2d(:, 1), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! patch_pre%verts%vertex(:)%lon
-    CALL nf(nf_inq_varid(ncid, 'longitude_vertices', varid), routine)
-    CALL nf(nf_get_vara_double(ncid, varid, &
-      &                        (/patch_pre%verts%local_chunk(1,1)%first/), &
-      &                        (/patch_pre%verts%local_chunk(1,1)%size/), &
-      &                        local_ptr_wp_2d(:, 2)), routine)
+    CALL nf(nf90_inq_varid(ncid, 'longitude_vertices', varid), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_wp_2d(:, 2), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%size/)), &
+      &     routine)
 
     !------------------------------------------
     ! nesting/lateral boundary indexes
     IF (max_cell_connectivity == 3) THEN ! triangular grid
       ! patch_pre%cells%parent
       IF (ig > 0) THEN
-        CALL nf(nf_inq_varid(ncid_grf, 'parent_cell_index', varid), routine)
+        CALL nf(nf90_inq_varid(ncid_grf, 'parent_cell_index', varid), routine)
         CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_parent, local_ptr)
-        CALL nf(nf_get_vara_int(ncid_grf, varid, &
-          &                     (/patch_pre%cells%local_chunk(1,1)%first/), &
-          &                     (/patch_pre%cells%local_chunk(1,1)%size/), &
-          &                     local_ptr), routine)
+        CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr, &
+          &                           (/patch_pre%cells%local_chunk(1,1)%first/), &
+          &                           (/patch_pre%cells%local_chunk(1,1)%size/)), &
+          &     routine)
       ENDIF
     ELSE
       CALL message ('read_patch',&
@@ -1468,56 +1462,56 @@ CONTAINS
 
     ! patch_pre%cells%refin_ctrl
 !     write(0,*) "refin_c_ctrl..."
-    CALL nf(nf_inq_varid(ncid_grf, 'refin_c_ctrl', varid), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'refin_c_ctrl', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%cells%dist, c_refin_ctrl, &
          local_ptr)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, &
-      &                     (/patch_pre%cells%local_chunk(1,1)%first/), &
-      &                     (/patch_pre%cells%local_chunk(1,1)%size/), &
-      &                     local_ptr), routine)
+    CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr, &
+      &                           (/patch_pre%cells%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%cells%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! patch_pre%edges%parent
 !     write(0,*) "parent_edge_index..."
     IF (ig > 0) THEN
-      CALL nf(nf_inq_varid(ncid_grf, 'parent_edge_index', varid), routine)
+      CALL nf(nf90_inq_varid(ncid_grf, 'parent_edge_index', varid), routine)
       CALL dist_mult_array_local_ptr(patch_pre%edges%dist, e_parent, local_ptr)
-      CALL nf(nf_get_vara_int(ncid_grf, varid, &
-        &                     (/patch_pre%edges%local_chunk(1,1)%first/), &
-        &                     (/patch_pre%edges%local_chunk(1,1)%size/), &
-        &                     local_ptr), routine)
+      CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr, &
+        &                           (/patch_pre%edges%local_chunk(1,1)%first/), &
+        &                           (/patch_pre%edges%local_chunk(1,1)%size/)), &
+        &     routine)
     ENDIF
     ! patch_pre%edges%refin_ctrl
 !     write(0,*) "refin_e_ctrl..."
-    CALL nf(nf_inq_varid(ncid_grf, 'refin_e_ctrl', varid), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'refin_e_ctrl', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%edges%dist, e_refin_ctrl, &
          local_ptr)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, &
-      &                     (/patch_pre%edges%local_chunk(1,1)%first/), &
-      &                     (/patch_pre%edges%local_chunk(1,1)%size/), &
-      &                     local_ptr), routine)
+    CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr, &
+      &                           (/patch_pre%edges%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%edges%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! patch_pre%verts%refin_ctrl
 !     write(0,*) "refin_v_ctrl..."
-    CALL nf(nf_inq_varid(ncid_grf, 'refin_v_ctrl', varid), routine)
+    CALL nf(nf90_inq_varid(ncid_grf, 'refin_v_ctrl', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%verts%dist, v_refin_ctrl, &
          local_ptr)
-    CALL nf(nf_get_vara_int(ncid_grf, varid, &
-      &                     (/patch_pre%verts%local_chunk(1,1)%first/), &
-      &                     (/patch_pre%verts%local_chunk(1,1)%size/), &
-      &                     local_ptr), routine)
+    CALL nf(p_nf90x_get_var_local(ncid_grf, varid, local_ptr, &
+      &                           (/patch_pre%verts%local_chunk(1,1)%first/), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%size/)), &
+      &     routine)
 
     ! BEGIN NEW SUBDIV
 
 !     write(0,*) max_verts_connectivity, "cells_of_vertex..."
-    CALL nf(nf_inq_varid(ncid, 'cells_of_vertex', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'cells_of_vertex', varid), routine)
 !     write(0,*) max_verts_connectivity, "  dist_mult_array_local_ptr..."
     CALL dist_mult_array_local_ptr(patch_pre%verts%dist, v_cell, local_ptr_2d)
-!     write(0,*) max_verts_connectivity, "  nf_get_vara_int..."
-    CALL nf(nf_get_vara_int(ncid, varid, &
-      &                     (/patch_pre%verts%local_chunk(1,1)%first, 1/), &
-      &                     (/patch_pre%verts%local_chunk(1,1)%size, &
-      &                       max_verts_connectivity/), &
-      &                     local_ptr_2d), routine)
+!     write(0,*) max_verts_connectivity, "  nf90_get_var..."
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_2d, &
+      &                           (/patch_pre%verts%local_chunk(1,1)%first, 1/), &
+      &                           (/patch_pre%verts%local_chunk(1,1)%size, &
+      &                             max_verts_connectivity/)), &
+      &     routine)
     ! eliminate indices < 0, this should not happen but some older grid files
     ! seem to contain such indices
 !     write(0,*) "SIZE(local_ptr_2d):", SIZE(local_ptr_2d,1), SIZE(local_ptr_2d,2)
@@ -1542,12 +1536,12 @@ CONTAINS
     END DO
 
     ! patch_pre%edges%cell(:,:)
-    CALL nf(nf_inq_varid(ncid, 'adjacent_cell_of_edge', varid), routine)
+    CALL nf(nf90_inq_varid(ncid, 'adjacent_cell_of_edge', varid), routine)
     CALL dist_mult_array_local_ptr(patch_pre%edges%dist, e_cell, local_ptr_2d)
-    CALL nf(nf_get_vara_int(ncid, varid, &
-      &                     (/patch_pre%edges%local_chunk(1,1)%first, 1/), &
-      &                     (/patch_pre%edges%local_chunk(1,1)%size, 2/), &
-      &                     local_ptr_2d), routine)
+    CALL nf(p_nf90x_get_var_local(ncid, varid, local_ptr_2d, &
+      &                           (/patch_pre%edges%local_chunk(1,1)%first, 1/), &
+      &                           (/patch_pre%edges%local_chunk(1,1)%size, 2/)), &
+      &     routine)
     WHERE(local_ptr_2d(:, :) < 0) local_ptr_2d(:, :) = 0
 
     CALL dist_mult_array_expose(patch_pre%verts%dist)
@@ -1556,8 +1550,8 @@ CONTAINS
     ! END NEW SUBDIV
 
 
-    CALL nf(nf_close(ncid), routine)
-    IF (lsep_grfinfo) CALL nf(nf_close(ncid_grf), routine)
+    CALL nf(nf90_close(ncid), routine)
+    IF (lsep_grfinfo) CALL nf(nf90_close(ncid_grf), routine)
 
     !
     ! deallocate temporary arrays to read in data form the grid/patch generator
@@ -1615,11 +1609,11 @@ CONTAINS
       patches(ip)%p => get_patch_ptr(patch, id_lp, ip)
     ENDDO
 
-    CALL nf(nf_open(TRIM(patch%grid_filename), nf_nowrite, ncid), routine)
+    CALL nf(nf90_open(TRIM(patch%grid_filename), nf90_nowrite, ncid), routine)
     CALL openinputfile(stream_id, TRIM(patch%grid_filename), patches)
 
     IF (lsep_grfinfo) THEN
-      CALL nf(nf_open(TRIM(patch%grid_filename_grfinfo), nf_nowrite, ncid_grf), routine)
+      CALL nf(nf90_open(TRIM(patch%grid_filename_grfinfo), nf90_nowrite, ncid_grf), routine)
       CALL openinputfile(stream_id_grf, TRIM(patch%grid_filename_grfinfo), patches)
     ELSE
       ncid_grf = ncid
@@ -1632,9 +1626,9 @@ CONTAINS
     patch%boundary_depth_index = 0
 #ifndef __NO_ICON_ATMO__
     patch%boundary_depth_index = nudge_zone_width
-    return_status = nf_inq_attid(ncid, nf_global, 'boundary_depth_index', varid)
-    IF (return_status == nf_noerr) THEN
-       CALL nf(nf_get_att_int(ncid, nf_global, 'boundary_depth_index', patch%boundary_depth_index), routine)
+    return_status = nf90_inquire_attribute(ncid, nf90_global, 'boundary_depth_index', attnum = varid)
+    IF (return_status == nf90_noerr) THEN
+       CALL nf(nf90_get_att(ncid, nf90_global, 'boundary_depth_index', patch%boundary_depth_index), routine)
        IF (nudge_zone_width < 0) THEN
          nudge_zone_width = patch%boundary_depth_index - 4
        ENDIF
@@ -1654,7 +1648,7 @@ CONTAINS
 
     ! p_p%cells%phys_id(:,:)
     IF (ig > 1) THEN
-      lhave_phys_id = nf_inq_varid(ncid_grf, 'phys_cell_id', varid) == nf_noerr
+      lhave_phys_id = nf90_inq_varid(ncid_grf, 'phys_cell_id', varid) == nf90_noerr
     ELSE
       lhave_phys_id = .FALSE.
     END IF
@@ -1688,7 +1682,7 @@ CONTAINS
 
     ! p_p%edges%phys_id(:,:)
     IF (ig > 1) THEN
-      lhave_phys_id = nf_inq_varid(ncid_grf, 'phys_edge_id', varid) == nf_noerr
+      lhave_phys_id = nf90_inq_varid(ncid_grf, 'phys_edge_id', varid) == nf90_noerr
     ELSE
       lhave_phys_id = .FALSE.
     END IF
@@ -2014,10 +2008,10 @@ CONTAINS
     !-------------------------------------------------
 
 
-    CALL nf(nf_close(ncid), routine)
+    CALL nf(nf90_close(ncid), routine)
     CALL closeFile(stream_id)
     IF (lsep_grfinfo) THEN
-      CALL nf(nf_close(ncid_grf), routine)
+      CALL nf(nf90_close(ncid_grf), routine)
       CALL closeFile(stream_id_grf)
     END IF
     !-------------------------------------------------
@@ -2183,7 +2177,7 @@ CONTAINS
     INTEGER :: varid
 
     gridfile_has_cartesian_info = &
-      nf_inq_varid(ncid, 'cell_circumcenter_cartesian_x', varid) == nf_noerr
+      nf90_inq_varid(ncid, 'cell_circumcenter_cartesian_x', varid) == nf90_noerr
 
   END FUNCTION gridfile_has_cartesian_info
   !-------------------------------------------------------------------------

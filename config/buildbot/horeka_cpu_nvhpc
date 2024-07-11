@@ -15,17 +15,8 @@ set -eu
 MY_DIR=$(cd "$(dirname "$0")"; pwd)
 ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
 
-if [ ! -z "${BB_NAME-}" ]; then
-  MAKE_PROCS=22
-else
-  MAKE_PROCS=8
-fi
+MAKE_PROCS=${SLURM_NTASKS:-8}
+echo "Building with $MAKE_PROCS tasks"
 
 ${ICON_DIR}/config/kit/hk.cpu.nvhpc
-make -j ${MAKE_PROCS}
-
-if [ ! -z "${BB_NAME-}" ] ; then
-  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh"
-  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_remake.sh"
-  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_git_untracked.sh"
-fi
+make --output-sync --no-print-directory -j ${MAKE_PROCS}

@@ -113,7 +113,7 @@ USE mo_physical_constants, ONLY : &
 
     rdv, con_m, con_h, grav      
 
-USE mo_convect_tables, ONLY : &
+USE mo_lookup_tables_constants, ONLY : &
 !
 ! Parameters for auxilary parametrizations:
 ! ------------------------------------------
@@ -262,6 +262,7 @@ USE turb_data, ONLY : &
 
 ! Switches controlling other physical parameterizations:
 USE mo_lnd_nwp_config,       ONLY: lseaice, llake, lterra_urb, itype_kbmo
+USE mo_atm_phy_nwp_config,   ONLY: lcuda_graph_turb_tran
 !   
 USE turb_data,         ONLY:   &
     itype_diag_t2m    !
@@ -310,12 +311,6 @@ REAL (KIND=wp), PARAMETER :: &
     z1d3=z1/z3     ,&
     z2d3=z2/z3     ,&
     z3d2=z3/z2
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
 !===============================================================================
 
@@ -860,7 +855,7 @@ LOGICAL        ::   ldebug = .FALSE.
                    lacc=lzacc, opt_acc_async_queue=acc_async_queue)
 
 #ifdef ICON_USE_CUDA_GRAPH
-   IF (lzacc .AND. lini) THEN
+   IF (lzacc .AND. lini .AND. lcuda_graph_turb_tran ) THEN
       CALL finish ('turbtran', 'initialization is not supported when capturing a graph with OpenACC')
    END IF
 #endif
@@ -2272,54 +2267,57 @@ my_thrd_id = omp_get_thread_num()
       !Note: '(u, v)_10m' always belong to mass points!
 
       END IF !in case of ".NOT.lnsfdia" this kind of diagnostics is done at another place
-      
+
+
+      IF (.NOT.lgz0inp .OR. lini) THEN
 !DIR$ IVDEP
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
-      !$ACC LOOP GANG VECTOR PRIVATE(velo, wert, fakt)
-      DO i=ivstart, ivend
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(acc_async_queue) IF(lzacc)
+        !$ACC LOOP GANG VECTOR PRIVATE(velo, wert, fakt)
+        DO i=ivstart, ivend
 
-!        Diagnose von gz0 (fuer den naechsten Zeitschritt)
-!        ueber Wasserflaechen mit der (angepassten) Charnock-Formel
+!          Diagnose von gz0 (fuer den naechsten Zeitschritt)
+!          ueber Wasserflaechen mit der (angepassten) Charnock-Formel
 
-         IF (fr_land(i) < z1d2) THEN
+           IF (fr_land(i) < z1d2) THEN
 
-           ! Use ice surface roughness or open-water surface roughness
-           ! according to lo_ice
-            IF ( lo_ice(i) ) THEN
-               ! Ice-covered grid box
-               gz0(i)=grav*z0_ice
-            ELSE !water covered surface
-               velo=(tke(i,ke1,ntur)+tke(i,ke,nvor))*z1d2
+             ! Use ice surface roughness or open-water surface roughness
+             ! according to lo_ice
+              IF ( lo_ice(i) ) THEN
+                 ! Ice-covered grid box
+                 gz0(i)=grav*z0_ice
+              ELSE !water covered surface
+                 velo=(tke(i,ke1,ntur)+tke(i,ke,nvor))*z1d2
 !Achtung: Die 'epsi'-Beschraenkung ist recht willkuerlich und fehlt in COSMO-Version!
 !Achtung: Modifikation tcm -> tvm: macht Unterschiede
-               wert=MAX( epsi, tvm(i)*SQRT(vel_2d(i)**2+velo**2) ) !effective Ustar**2
-               IF (imode_charpar.EQ.1) THEN !constant Charnock-Parameter
-                  fakt=alpha0
-               ELSE
-                  IF (lini .AND. .NOT.lnsfdia) THEN
-                     velo=vel_2d(i)
-                  ELSE
-                     velo=SQRT(u_10m(i)**2+v_10m(i)**2)
-                  END IF
+                 wert=MAX( epsi, tvm(i)*SQRT(vel_2d(i)**2+velo**2) ) !effective Ustar**2
+                 IF (imode_charpar.EQ.1) THEN !constant Charnock-Parameter
+                    fakt=alpha0
+                 ELSE
+                    IF (lini .AND. .NOT.lnsfdia) THEN
+                       velo=vel_2d(i)
+                    ELSE
+                       velo=SQRT(u_10m(i)**2+v_10m(i)**2)
+                    END IF
 !US from ICON version 044780ed>
-                  IF (depth_lk(i) > z0) THEN
-                    ! enhanced Charnock parameter over lakes, parameterizing a non-equlibrium wave spectrum
-                    fakt = 0.1_wp
-                  ELSE
-                    fakt=alpha0_char(velo)
-                  ENDIF
+                    IF (depth_lk(i) > z0) THEN
+                      ! enhanced Charnock parameter over lakes, parameterizing a non-equlibrium wave spectrum
+                      fakt = 0.1_wp
+                    ELSE
+                      fakt=alpha0_char(velo)
+                    ENDIF
 !US<
-               END IF
-               wert=MAX( grav*len_min, fakt*wert+grav*alpha1*con_m/SQRT(wert) )
-               IF (ditsmot.GT.z0) THEN
-                  gz0(i)=ditsmot*gz0(i)+(z1-ditsmot)*wert
-               ELSE
-                  gz0(i)=wert
-               END IF
-            END IF
-         END IF
-      END DO
-      !$ACC END PARALLEL
+                 END IF
+                 wert=MAX( grav*len_min, fakt*wert+grav*alpha1*con_m/SQRT(wert) )
+                 IF (ditsmot.GT.z0) THEN
+                    gz0(i)=ditsmot*gz0(i)+(z1-ditsmot)*wert
+                 ELSE
+                    gz0(i)=wert
+                 END IF
+              END IF
+           END IF
+        END DO
+        !$ACC END PARALLEL
+      ENDIF  !lgz0inp
 
       !$ACC END DATA ! from acc data present
       !$ACC END DATA ! from acc data create

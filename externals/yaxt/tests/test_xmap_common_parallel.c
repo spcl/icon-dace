@@ -54,6 +54,7 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_xmap_common.h"
 #include "core/ppm_xfuncs.h"
 
@@ -69,8 +70,7 @@ test_maxpos(xmap_constructor xmap_new, MPI_Comm comm, int indices_per_rank);
 int
 xt_xmap_parallel_test_main(xmap_constructor xmap_new)
 {
-  // init mpi
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(NULL, NULL, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 

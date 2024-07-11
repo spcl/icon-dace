@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+
+#MPI_LAUNCH=''
+#if [ ! -z "${BB_NAME}" ]; then
+#  set -x
+#  MPI_LAUNCH='srun -A mh0156 -p compute -N 1'
+#fi
+
+${ICON_DIR}/config/jsc/juwels_cluster.cpu.psmpi_nvhpc-23.1
+
+if [ ! -z "${BB_NAME}" ] ; then
+  MAKE_PROCS=22
+  echo "MAKE_PROCS=${MAKE_PROCS}"
+else
+  MAKE_PROCS=8
+fi
+make -j ${MAKE_PROCS}

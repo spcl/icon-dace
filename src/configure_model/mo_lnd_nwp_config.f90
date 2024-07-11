@@ -40,14 +40,16 @@ MODULE mo_lnd_nwp_config
   PUBLIC :: itype_trvg, itype_evsl, itype_lndtbl, l2lay_rho_snow
   PUBLIC :: itype_root, itype_heatcond, itype_interception, &
             itype_hydbound, idiag_snowfrac, itype_snowevap, cwimax_ml, c_soil, c_soil_urb, cr_bsmin
+  PUBLIC :: rsmin_fac
   PUBLIC :: itype_canopy, cskinc, tau_skin
-  PUBLIC :: lterra_urb, lurbalb, lurbahf, itype_kbmo, itype_eisa
+  PUBLIC :: lterra_urb, lurbalb, itype_ahf, itype_kbmo, itype_eisa
   PUBLIC :: lstomata, l2tls, lana_rho_snow
   PUBLIC :: isub_water, isub_lake, isub_seaice
   PUBLIC :: sstice_mode, sst_td_filename, ci_td_filename
   PUBLIC :: tile_list
   PUBLIC :: groups_smi
   PUBLIC :: czbot_w_so
+  PUBLIC :: lcuda_graph_lnd
 
 
   !--------------------------------------------------------------------------
@@ -79,13 +81,14 @@ MODULE mo_lnd_nwp_config
   REAL(wp)::  c_soil             !< surface area density of the (evaporative) soil surface
   REAL(wp)::  c_soil_urb         !< surface area density of the (evaporative) soil surface, urban areas
   REAL(wp)::  cr_bsmin           !< minimum bare soil evaporation resistance (see Schulz and Vogel 2020)
+  REAL(wp)::  rsmin_fac          !< factor for minimum stomata resistance for each land-cover class
   INTEGER ::  itype_canopy       !< type of canopy parameterisation with respect to the surface energy balance
                                  !< (see Schulz and Vogel 2020)
   REAL(wp)::  cskinc             !< skin conductivity (W/m**2/K)
   REAL(wp)::  tau_skin           !< relaxation time scale for the computation of the skin temperature
   LOGICAL ::  lterra_urb         !< activate urban model TERRA_URB (see Schulz et al. 2023)
   LOGICAL ::  lurbalb            !< use urban albedo and emissivity
-  LOGICAL ::  lurbahf            !< use urban anthropogenic heat flux
+  INTEGER ::  itype_ahf          !< type of urban anthropogenic heat flux
   INTEGER ::  itype_kbmo         !< type of bluff-body thermal roughness length parameterisation
   INTEGER ::  itype_eisa         !< type of evaporation from impervious surface area
   INTEGER ::  itype_hydbound     !< type of hydraulic lower boundary condition
@@ -111,6 +114,8 @@ MODULE mo_lnd_nwp_config
   REAL(wp)::  czbot_w_so       !< thickness of the hydraulical active soil layer [m]
 
   CHARACTER(LEN=filename_max) :: sst_td_filename, ci_td_filename
+  
+  LOGICAL :: lcuda_graph_lnd  !< activate cuda graph
 
   ! derived variables
   INTEGER ::  ibot_w_so    !< number of hydrological active soil layers 

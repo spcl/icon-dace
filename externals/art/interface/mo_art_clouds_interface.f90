@@ -31,7 +31,7 @@ MODULE mo_art_clouds_interface
   USE mo_art_config,                    ONLY: art_config
   USE mo_art_2mom_driver,               ONLY: art_2mom_mcrph,               &
                                           &   art_2mom_mcrph_init
-  USE mo_art_prepare_aerosol,           ONLY: art_prepare_dust_KL06
+  USE mo_art_prepare_aerosol,           ONLY: art_prepare_dust_KL06, art_prepare_dust_inas
 
   IMPLICIT NONE
 
@@ -39,6 +39,7 @@ MODULE mo_art_clouds_interface
 
   PUBLIC  :: art_clouds_interface_2mom
   PUBLIC  :: art_clouds_interface_2mom_init
+  PUBLIC  :: art_clouds_interface_dust
 
 CONTAINS
 !!
@@ -133,6 +134,41 @@ SUBROUTINE art_clouds_interface_2mom_init(msg_level,cfg_2mom)
   ENDIF !lart
 
 END SUBROUTINE art_clouds_interface_2mom_init
+!!
+!!-------------------------------------------------------------------------
+!!
+SUBROUTINE art_clouds_interface_dust(isize, ke, jg, jb, is, ie, ks, &
+                                   & rho, p_trac, ndust, sdust, aod_crit )
+  !! Interface for ART: Aerosol-Cloud-Interactions for cloudice2mom and INAS scheme
+  !! @par Revision History
+  ! Setup variables (Grid, timestep, looping)
+  INTEGER,            INTENT (in) :: &
+    &  isize, ke,                    & !< grid sizes
+    &  jg, jb,                       & !< domain index (p_patch%id)
+    &  is, ie, ks                      !< start/end indices
+  ! Dynamical core variables
+  REAL(wp), INTENT(in), TARGET    :: &
+    &  rho(:,:)                        !< Density
+  ! Tracer fields
+  REAL(wp), INTENT(inout), TARGET :: &
+    &  p_trac(:,:,:)                   !< Tracer fields
+  REAL(wp), INTENT(inout), TARGET :: &
+    &  ndust(:,:),                   &
+    &  sdust(:,:)
+  REAL(wp), INTENT(in)            :: &
+    &  aod_crit                        !< Threshold for dust AOD
+
+#ifdef __ICON_ART
+  IF (timers_level > 3) CALL timer_start(timer_art)
+  IF (timers_level > 3) CALL timer_start(timer_art_cldInt)
+
+  CALL art_prepare_dust_inas(jg,jb,is,ie,ks,ke,rho,p_trac,ndust,sdust,aod_crit)
+
+  IF (timers_level > 3) CALL timer_stop(timer_art_cldInt)
+  IF (timers_level > 3) CALL timer_stop(timer_art)
+#endif
+
+END SUBROUTINE art_clouds_interface_dust
 !!
 !!-------------------------------------------------------------------------
 !!

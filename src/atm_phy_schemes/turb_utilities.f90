@@ -232,7 +232,7 @@ USE mo_math_constants, ONLY : &
 
     uc2      => sqrt3       ! SQRT(3) used in cloud cover diagnostics based on rel. humid.
 
-USE mo_convect_tables, ONLY : &
+USE mo_lookup_tables_constants, ONLY : &
 !
 ! Parameters for auxilary parametrizations:
 ! ------------------------------------------
@@ -264,6 +264,8 @@ USE mo_fortran_tools, ONLY: set_acc_host_or_device
 #define _PGI_LEGACY_WAR 1
 USE openacc
 #endif
+
+USE mo_atm_phy_nwp_config, ONLY: lcuda_graph_turb_tran
 !==============================================================================
 
 IMPLICIT NONE
@@ -281,12 +283,6 @@ REAL (KIND=wp), PARAMETER :: &
     z3   = 3.0_wp, &
     z1d2 = z1/z2 , &
     z1d3 = z1/z3
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
 !==============================================================================
 
@@ -761,7 +757,7 @@ INTEGER :: i,k
        tur_rcpl=0.0_wp
      END IF
 
-     IF (.NOT. using_cuda_graph) THEN
+     IF (.NOT. lcuda_graph_turb_tran) THEN
        !$ACC WAIT(acc_async_queue)
      END IF
      !$ACC END DATA
@@ -1200,7 +1196,7 @@ INTEGER :: &
 
    END IF
    !$ACC END PARALLEL
-   IF (.NOT. using_cuda_graph) THEN
+   IF (.NOT. lcuda_graph_turb_tran) THEN
       !$ACC WAIT(acc_async_queue)
    END IF
    !$ACC END DATA
@@ -1781,7 +1777,9 @@ LOGICAL :: add_adv_inc, lvar_fcd, rogh_lay, alt_gama, corr
 !----------------------------------------------------------------------
   END DO !k
   !$ACC END PARALLEL
-  !$ACC WAIT(acc_async_queue)
+   IF (.NOT. lcuda_graph_turb_tran) THEN
+     !$ACC WAIT(acc_async_queue)
+   END IF
   !$ACC END DATA
 
 END SUBROUTINE solve_turb_budgets
@@ -2167,7 +2165,7 @@ LOGICAL ::  &
 
   END DO
   !$ACC END PARALLEL
-  IF (.NOT. using_cuda_graph) THEN
+  IF (.NOT. lcuda_graph_turb_tran) THEN
     !$ACC WAIT(acc_async_queue)
   END IF
   !$ACC END DATA
@@ -3325,7 +3323,7 @@ LOGICAL :: ldepth, lrpdep, lauxil
       !$ACC END PARALLEL
    END IF
 
-   IF (.NOT. using_cuda_graph) THEN
+   IF (.NOT. lcuda_graph_turb_tran) THEN
      !$ACC WAIT(1)
    END IF
    ! See comment above

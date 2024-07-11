@@ -72,23 +72,24 @@ CONTAINS
 #ifndef DISABLE_DUMP
     WRITE (*,*) "Dumping ", zfilename   
     ! create NetCDF file:
-    CALL nf(nf_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
-      &               nf_clobber, ncfile), routine)
+    CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
+      &               nf90_clobber, ncfile), routine)
     ! create dimensions:
     DO idim=1,ndims
-      CALL nf(nf_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
+      CALL nf(nf90_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
         &     ncid_dim(idim)), routine)
       icount(idim) = SIZE(p_array,idim)
     END DO
     ! create variable:
-    CALL nf(nf_def_var(ncfile, "var", NF_DOUBLE, ndims, ncid_dim(:), ncid_var), routine)
+    CALL nf(nf90_def_var(ncfile, "var", NF90_DOUBLE, ncid_dim, ncid_var), routine)
     ! End of definition mode
-    CALL nf(nf_enddef(ncfile), routine)
+    CALL nf(nf90_enddef(ncfile), routine)
     ! put data:
-    CALL nf(nf_put_vara_double(ncfile, ncid_var, (/ (1, idim=1,ndims) /), &
-      &                        icount, p_array), routine)
+    CALL nf(nf90_put_var(ncfile, ncid_var, p_array, &
+      &                  (/ (1, idim=1,ndims) /), icount), &
+      &     routine)
     ! close file
-    CALL nf(nf_close(ncfile), routine)
+    CALL nf(nf90_close(ncfile), routine)
 #endif
 
   END SUBROUTINE dump_array_to_netcdf_1d
@@ -115,24 +116,25 @@ CONTAINS
 #ifndef DISABLE_DUMP
     WRITE (*,*) "Dumping ", zfilename
     ! create NetCDF file:
-    CALL nf(nf_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
-      &               nf_clobber, ncfile), routine)
+    CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
+      &               nf90_clobber, ncfile), routine)
     ! create dimensions:
     DO idim=1,ndims
-      CALL nf(nf_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
+      CALL nf(nf90_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
         &     ncid_dim(idim)), routine)
       icount(idim) = SIZE(p_array,idim)
     END DO
     ! create variable:
-    CALL nf(nf_def_var(ncfile, "var", NF_DOUBLE, ndims, ncid_dim(:), ncid_var), &
+    CALL nf(nf90_def_var(ncfile, "var", NF90_DOUBLE, ncid_dim, ncid_var), &
       &     routine)
     ! End of definition mode
-    CALL nf(nf_enddef(ncfile), routine)
+    CALL nf(nf90_enddef(ncfile), routine)
     ! put data:
-    CALL nf(nf_put_vara_double(ncfile, ncid_var, (/ (1, idim=1,ndims) /), &
-      &                        icount, p_array), routine)
+    CALL nf(nf90_put_var(ncfile, ncid_var, p_array, &
+      &                  (/ (1, idim=1,ndims) /), icount), &
+      &     routine)
     ! close file
-    CALL nf(nf_close(ncfile), routine)
+    CALL nf(nf90_close(ncfile), routine)
 #endif
 
   END SUBROUTINE dump_array_to_netcdf_2d
@@ -159,24 +161,25 @@ CONTAINS
 #ifndef DISABLE_DUMP
     WRITE (*,*) "Dumping ", zfilename   
     ! create NetCDF file:
-    CALL nf(nf_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
-      &               nf_clobber, ncfile), routine)
+    CALL nf(nf90_create("00_"//TRIM(zfilename)//"_"//TRIM(int2string(debug_step))//".nc", &
+      &               nf90_clobber, ncfile), routine)
     ! create dimensions:
     DO idim=1,ndims
-      CALL nf(nf_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
+      CALL nf(nf90_def_dim(ncfile, 'dim'//int2string(idim), SIZE(p_array,idim), &
         &     ncid_dim(idim)), routine)
       icount(idim) = SIZE(p_array,idim)
     END DO
     ! create variable:
-    CALL nf(nf_def_var(ncfile, "var", NF_DOUBLE, ndims, ncid_dim(:), ncid_var), &
+    CALL nf(nf90_def_var(ncfile, "var", NF90_DOUBLE, ncid_dim, ncid_var), &
       &     routine)
     ! End of definition mode
-    CALL nf(nf_enddef(ncfile), routine)
+    CALL nf(nf90_enddef(ncfile), routine)
     ! put data:
-    CALL nf(nf_put_vara_double(ncfile, ncid_var, (/ (1, idim=1,ndims) /), &
-      &                        icount, p_array), routine)
+    CALL nf(nf90_put_var(ncfile, ncid_var, p_array, &
+      &                  (/ (1, idim=1,ndims) /), icount), &
+      &     routine)
     ! close file
-    CALL nf(nf_close(ncfile), routine)
+    CALL nf(nf90_close(ncfile), routine)
 #endif
 
   END SUBROUTINE dump_array_to_netcdf_3d

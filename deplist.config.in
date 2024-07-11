@@ -11,8 +11,14 @@
 # Check whether the dependency graph is acyclic:
 --check-cycles
 # Check that each Fortran module is defined:
---check-exists-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@
+--check-exists-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@ *.pp-modstamp.f90
 # Check that each Fortran module is defined only once:
---check-unique-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@
+--check-unique-prereq *.@FC_MOD_FILE_EXT@.proxy *.@OBJEXT@ *.pp-modstamp.f90
+# Check that each Fortran submodule is defined:
+--check-exists-prereq *.@FC_SMOD_FILE_EXT@.sproxy *.@OBJEXT@ *.pp-modstamp.f90
+# Check that each Fortran submodule is defined only once:
+--check-unique-prereq *.@FC_SMOD_FILE_EXT@.sproxy *.@OBJEXT@ *.pp-modstamp.f90
+# Check that every Fortran module stamp file can be produced from a source file:
+--check-exists-prereq *.pp-modstamp.f90 *.f90
 # Check that all object files have unique basenames:
 --check-unique-basename *.@OBJEXT@

@@ -57,12 +57,13 @@
 #define VERBOSE
 
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_idxlist_utils.h"
 #include "core/ppm_xfuncs.h"
 
-int main(void) {
-
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+int main(int argc, char **argv)
+{
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   if (xt_initialized() || xt_finalized())
     PUT_ERR("ERROR: unexpected library state\n");

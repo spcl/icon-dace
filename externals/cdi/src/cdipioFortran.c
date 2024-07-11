@@ -75,24 +75,24 @@ FCALLSCFUN3 (INT, cdiPioInit_fwrap, CDIPIOINIT, cdipioinit, INT, INT, PINT)
 FCALLSCSUB0 (pioWriteTimestep, PIOWRITETIMESTEP, piowritetimestep)
 FCALLSCSUB0 (cdiPioRDMAProgress, CDIPIORDMAPROGRESS, cdipiordmaprogress)
 FCALLSCSUB4 (cdiPioStreamDefDecomposedVlist, CDIPIOSTREAMDEFDECOMPOSEDVLIST, cdipiostreamdefdecomposedvlist, INT, INT, PVOID, INTV)
-static void streamWriteVarPart_fwrap(int streamID, int varID, double *data, int nmiss, void *partDesc)
+static void streamWriteVarPart_fwrap(int streamID, int varID, double *data, int numMissVals, void *partDesc)
 {
-  streamWriteVarPart(streamID, varID, data, nmiss, (*(Xt_idxlist *)partDesc));
+  streamWriteVarPart(streamID, varID, data, numMissVals, (*(Xt_idxlist *)partDesc));
 }
 FCALLSCSUB5 (streamWriteVarPart_fwrap, STREAMWRITEVARPART, streamwritevarpart, INT, INT, PDOUBLE, INT, PVOID)
-static void streamWriteVarPartF_fwrap(int streamID, int varID, float *data, int nmiss, void *partDesc)
+static void streamWriteVarPartF_fwrap(int streamID, int varID, float *data, int numMissVals, void *partDesc)
 {
-  streamWriteVarPartF(streamID, varID, data, nmiss, (*(Xt_idxlist *)partDesc));
+  streamWriteVarPartF(streamID, varID, data, numMissVals, (*(Xt_idxlist *)partDesc));
 }
 FCALLSCSUB5 (streamWriteVarPartF_fwrap, STREAMWRITEVARPARTF, streamwritevarpartf, INT, INT, PFLOAT, INT, PVOID)
-static void streamWriteScatteredVarPart_fwrap(int streamID, int varID, double *data, int numBlocks, const int  blocklengths[], const int  displacements[], int nmiss, void *partDesc)
+static void streamWriteScatteredVarPart_fwrap(int streamID, int varID, double *data, int numBlocks, const int  blocklengths[], const int  displacements[], int numMissVals, void *partDesc)
 {
-  streamWriteScatteredVarPart(streamID, varID, data, numBlocks, blocklengths, displacements, nmiss, (*(Xt_idxlist *)partDesc));
+  streamWriteScatteredVarPart(streamID, varID, data, numBlocks, blocklengths, displacements, numMissVals, (*(Xt_idxlist *)partDesc));
 }
 FCALLSCSUB8 (streamWriteScatteredVarPart_fwrap, STREAMWRITESCATTEREDVARPART, streamwritescatteredvarpart, INT, INT, PDOUBLE, INT, INTV, INTV, INT, PVOID)
-static void streamWriteScatteredVarPartF_fwrap(int streamID, int varID, float *data, int numBlocks, const int  blocklengths[], const int  displacements[], int nmiss, void *partDesc)
+static void streamWriteScatteredVarPartF_fwrap(int streamID, int varID, float *data, int numBlocks, const int  blocklengths[], const int  displacements[], int numMissVals, void *partDesc)
 {
-  streamWriteScatteredVarPartF(streamID, varID, data, numBlocks, blocklengths, displacements, nmiss, (*(Xt_idxlist *)partDesc));
+  streamWriteScatteredVarPartF(streamID, varID, data, numBlocks, blocklengths, displacements, numMissVals, (*(Xt_idxlist *)partDesc));
 }
 FCALLSCSUB8 (streamWriteScatteredVarPartF_fwrap, STREAMWRITESCATTEREDVARPARTF, streamwritescatteredvarpartf, INT, INT, PFLOAT, INT, INTV, INTV, INT, PVOID)
 static int cdiPioCSRLastN_fwrap(int commSuper, int IOMode, int nProcsIO)

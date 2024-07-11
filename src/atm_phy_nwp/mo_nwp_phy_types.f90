@@ -97,6 +97,7 @@ MODULE mo_nwp_phy_types
       &   acdnc(:,:,:),        & !! cloud droplet number concentration                   [1/m**3]
       &   cape    (:,:),       & !! convective available energy
       &   cloud_num(:,:),      & !! 2D cloud droplet number concentration for simple aerosol-cloud coupling [1/m**3]
+      &   cloud_num_fac(:,:),  & !! scaling factor for cloud_num, can be used for icpl_aero_gscp = 3 and lscale_cdnc = true
       &   conv_eis(:,:),       & !! estimated inversion strength
       &   con_gust(:,:),       & !! convective gusts near surface
       &   con_udd(:,:,:,:),    & !!(nproma,nlev,nblks,8) convective up/downdraft fields
@@ -140,6 +141,8 @@ MODULE mo_nwp_phy_types
       &  cldepth(:,:),         & !! modified cloud depth for media
       &  clct_mod(:,:),        & !! modified total cloud cover for media
       &  fac_ccqc(:,:),        & !! tuning factor (for ensemble perturbations) for CLC-QC relationship in cloud cover scheme
+      &  fac_entrorg(:,:),     & !! tuning factor (for ensemble perturbations) for entrainment parameter
+      &  fac_rmfdeps(:,:),     & !! tuning factor (for ensemble perturbations) for downdraft mass flux
       &  hbas_con(:,:),        & !! height of base of convection [m]
       &  htop_con(:,:),        & !! height of top of convection [m]
       &  htop_dc(:,:),         & !! height above msl of the top of dry convection [m]
@@ -192,21 +195,29 @@ MODULE mo_nwp_phy_types
       &  trsol_dn_sfc_diff(:,:),& !! shortwave diffuse downward radiative transmissivity at the surface
       &  swflx_up_toa(:,:),    & !! shortwave upward flux at the top of the atmosphere [W/m2]
       &  swflx_up_sfc(:,:),    & !! shortwave upward flux at the surface [W/m2]
+      &  swflx_up_sfc_os(:,:), & !! shortwave upward flux at the surface incl. orographic shading [W/m2]
+      &  swflx_up_sfc_tan_os(:,:), & !! shortwave upward flux at the surface incl. slope-dependent and orographic shading [W/m2]
       &  swflx_nir_sfc(:,:),   & !! shortwave downward near-infrared flux at the surface [W/m2]
       &  swflx_vis_sfc(:,:),   & !! shortwave downward visible flux at the surface [W/m2]
       &  swflx_par_sfc(:,:),   & !! shortwave downward photosynthetically active flux at the surface [W/m2]
+      &  swflx_par_sfc_tan_os(:,:), & !! shortwave downward photosynthetically active flux at the surface incl. slope-dependent and orographic shading [W/m2] 
       &  fr_nir_sfc_diff(:,:), & !! diffuse fraction of downward near-infrared flux at the surface
       &  fr_vis_sfc_diff(:,:), & !! diffuse fraction of downward visible flux at the surface
       &  fr_par_sfc_diff(:,:), & !! diffuse fraction of downward photosynthetically active flux at the surface
       &  aswflx_par_sfc(:,:),  & !! shortwave downward photosynthetically active flux at the surface [W/m2]
+      &  aswflx_par_sfc_tan_os(:,:),  & !! shortwave downward photosynthetically active flux at the surface [W/m2]
                                  !! accumulated or mean since model start
       &  swflx_dn_sfc_diff(:,:),& !! shortwave diffuse downward radiative flux at the surface [W/m2]
       &  swflxsfc(:,:),        & !! shortwave net flux at surface [W/m2]
+      &  swflxsfc_os(:,:),     & !! shortwave net flux at surface incl. orographic shading [W/m2]
+      &  swflxsfc_tan_os(:,:), & !! shortwave net flux at surface incl. slope-dependent and orographic shading [W/m2]
       &  swflxsfc_t(:,:,:),    & !! tile-based shortwave net flux at surface [W/m2]
       &  swflxtoa(:,:),        & !! shortwave net flux at toa [W/m2]
       &  lwflxtoa(:,:),        & !! thermal net flux at toa [W/m2]
       &  lwflxsfc_a(:,:),      & !! Surface net thermal radiation [W/m2], accumulated or mean since model start
       &  swflxsfc_a(:,:),      & !! Surface net solar radiation [W/m2], accumulated or mean since model start
+      &  swflxsfc_a_os(:,:),   & !! Surface net solar radiation incl. orographic shading [W/m2], accumulated or mean since model start
+      &  swflxsfc_a_tan_os(:,:),& !! Surface net solar radiation incl. slope-dependent and orographic shading [W/m2], accumulated or mean since model start
       &  lwflxclrsfc_a(:,:),   & !! Clear-sky surface net thermal radiation [W/m2], accumulated or mean since model start
       &  swflxclrsfc_a(:,:),   & !! Clear-sky surface net solar radiation [W/m2], accumulated or mean since model start
       &  lwflxtoa_a(:,:),      & !! TOA net thermal radiation [W/m2], accumulated or mean since model start
@@ -219,11 +230,17 @@ MODULE mo_nwp_phy_types
       &  athd_s    (:,:),      & !! Surface down thermal radiation [W/m2], accumulated or mean since model start
       &  athu_s    (:,:),      & !! Surface up thermal radiation [W/m2], accumulated or mean since model start
       &  asod_s    (:,:),      & !! Surface down solar rad. [W/m2], accumulated or mean since model start 
+      &  asod_s_os    (:,:),     & !! Surface down solar rad. uncorr. [W/m2], accumulated or mean since model start 
+      &  asod_s_tan_os    (:,:), & !! Surface down solar rad. uncorr. [W/m2], accumulated or mean since model start 
       &  asodird_s (:,:),      & !! Surface down solar direct rad. [W/m2], accumulated or mean since model start 
+      &  asodird_s_os (:,:),   & !! Surface down solar direct rad. incl. orographic shading [W/m2], accumulated or mean since model start
+      &  asodird_s_tan_os (:,:),& !! Surface down solar direct rad. incl. slope-dependent and orographic shading [W/m2], accumulated or mean since model start
       &  asodifd_s (:,:),      & !! Surface down solar diff. rad. [W/m2], accumulated or mean since model start 
       &  asodifu_s (:,:),      & !! Surface up solar diff. rad. [W/m2], accumulated or mean since model start 
                                  !! _a means average values if lflux_avg=.TRUE.
                                  !! and accumulated values if lflux_avg=.FALSE., default is .FALSE.
+      &  asodifu_s_os(:,:),    & !! Surface up solar diff. rad. incl. orographic shading [W/m2], accumulated or mean since model start 
+      &  asodifu_s_tan_os(:,:),& !! Surface up solar diff. rad. incl. slope-dependent and orographic shading [W/m2], accumulated or mean since model start 
       &  snowlmt     (:,:),    & !! height of snowfall limit above MSL
       &  drag_u_grid (:,:),    & !! zonal resolved surface stress [N/m2]
       &  drag_v_grid (:,:),    & !! meridional resolved surface stress [N/m2]
@@ -256,8 +273,10 @@ MODULE mo_nwp_phy_types
       &  graupel_gsp_rate (:,:),  & !! grid_scale surface graupel rate                 [kg/m2/s]
       &  hail_gsp_rate    (:,:),  & !! grid_scale surface hail rate                    [kg/m2/s]
       !  convective
-      &  rain_con_rate    (:,:),  & !! convective surface rain rate                    [kg/m2/s]
-      &  snow_con_rate    (:,:),  & !! convective surface snow_rate                    [kg/m2/s]
+      &  rain_con_rate_corr(:,:), & !! convective surface rain rate (water-conserving) [kg/m2/s]
+      &  rain_con_rate    (:,:),  & !! convective surface rain rate (next time step)   [kg/m2/s]
+      &  snow_con_rate_corr(:,:), & !! convective surface snow_rate (water-conserving) [kg/m2/s]
+      &  snow_con_rate    (:,:),  & !! convective surface snow rate (next time step)   [kg/m2/s]
       &  rain_con_rate_3d (:,:,:),& !! 3d convective rain rate (convection scheme)     [kg/m2/s]
       &  snow_con_rate_3d (:,:,:),& !! 3d convective snow_rate (convection scheme)     [kg/m2/s]
       !
@@ -337,6 +356,10 @@ MODULE mo_nwp_phy_types
       rh_2m_land (:,:),    & !! relative humidity in 2m  (land tiles only)    (  %  )
       u_10m (:,:)     ,    & !! zonal wind in 10m                             ( m/s )
       v_10m (:,:)     ,    & !! meridional wind in 10m                        ( m/s )
+      u_10m_a (:,:)   ,    & !! time-averaged zonal wind in 10m               ( m/s )
+      v_10m_a (:,:)   ,    & !! time-averaged meridional wind in 10m          ( m/s )
+      tcm_a (:,:)     ,    & !! time-averaged momentum transfer coefficient   ( --  )
+      gust_lim(:,:)   ,    & !! upper limit on gust speed                     ( m/s )
       sp_10m(:,:)     ,    & !! wind speed in 10m                             ( m/s )
       dyn_gust(:,:)   ,    & !! dynamic gust at 10m                           ( m/s )
       gust10(:,:)     ,    & !! max. gust at 10m                              ( m/s )
@@ -372,6 +395,8 @@ MODULE mo_nwp_phy_types
       reff_qs(:,:,:)   ,   & !! effective radius of cloud snow                (m)
       reff_qg(:,:,:)   ,   & !! effective radius of cloud graupel             (m)
       reff_qh(:,:,:)         !! effective radius of cloud hail                (m)
+
+    REAL(wp) :: prev_v10mavg_reset  !! storage for previous reset of averaged v10m field
 
     !> Diagnostics for LES turbulence
     REAL(wp), POINTER, CONTIGUOUS :: &
@@ -430,11 +455,11 @@ MODULE mo_nwp_phy_types
       rh(:,:,:),           & !> relative humidity
       pv(:,:,:),           & !> potential vorticity
       sdi2(:,:),           & !> supercell detection index (SDI2)
-      dhail(:,:,:),        & ! expected hail diameter at the ground
-      dhail_mx(:,:),       & ! maximum expected hail diameter at the ground
-      dhail_av(:,:),       & ! average expected hail diameter at the ground
-      dhail_sd(:,:),       & ! standard deviation of hail diameter at the ground
-      wdur(:,:),           & ! duration of strong updraft in a grid column
+      dhail(:,:,:),        & !> expected hail diameter at the ground
+      dhail_mx(:,:),       & !> maximum expected hail diameter at the ground
+      dhail_av(:,:),       & !> average expected hail diameter at the ground
+      dhail_sd(:,:),       & !> standard deviation of hail diameter at the ground
+      wdur(:,:),           & !> duration of strong updraft in a grid column
       lpi(:,:),            & !> lightning potential index (LPI)
       lpi_max(:,:),        & !> lightning potential index, maximum (LPI_MAX)
       koi(:,:),            & !> KOI (stability measure - equivalent potential temperature difference
@@ -452,10 +477,11 @@ MODULE mo_nwp_phy_types
       htop_sc(:,:),        & !> height of top  above MSL from shallow convection parameterization
       twater(:,:),         & !> Total column integrated water
       q_sedim(:,:,:),      & !> Specific content of precipitation particles
+      mconv(:,:),          & !> Low level horizontal moisture convergence (0-1000 m AGL average) div.(q_v*v_h) [1/s]
       tcond_max(:,:),      & !< Total column-integrated condensate
       tcond10_max(:,:),    & !< Total column-integrated condensate above z(T=-10 degC) 
       uh_max_3d(:,:,:),    & !< Updraft helicity (integrated over different vertical layers)
-      vorw_ctmax(:,:),     & !< Maximum rotation amplitude
+      vorw_ctmax(:,:),     & !< Maximum low level rotation amplitude: Time-max amplitude (positive or negative) of mean 0-3000 m MSL (or 1500 m AGL, whichever is higher) vorticity
       w_ctmax(:,:),        & !< Maximum updraft track
       dbz3d_lin(:,:,:),    & !< Radar reflectivity 3D in linear units mm^6/m^3
       dbz_850(:,:),        & !< Radar reflectivity in approx. 850 hPa
@@ -469,19 +495,21 @@ MODULE mo_nwp_phy_types
       lapse_rate(:,:),     & !< T(500hPa) - T(850hPa) with a correction if 850 hPa is below the surface
       cape_mu (:,:),       & !< Most unstable convective available energy
       cin_mu(:,:),         & !< Most unstable convective inhibition
-      cape_ml (:,:),       & !! convective available energy of mean surface layer parcel
-      si      (:,:),       & !! Showalter Index SI
-      sli     (:,:),       & !! Surface Lifted Index SLI
-      swiss12 (:,:),       & !! SWISS12 Index
-      swiss00 (:,:),       & !! SWISS00 Index
-      cin_ml  (:,:),       & !! convective inhibition of mean surface layer parcel
-      lcl_ml  (:,:),       & !! Lifted Condensation Level of mean surface layer parcel
-      lfc_ml  (:,:),       & !! Level of Free Convection of mean surface layer parcel
-      cape_3km (:,:),      & !! convective available energy of mean surface layer parcel with endpoint 3km.
-      cin_3km(:,:),        & !! convective inhibition of mean surface layer parcel with endpoint 3km.
-      cloudtop(:,:),       & !! Cloud Top
+      cape_ml (:,:),       & !< convective available energy of mean surface layer parcel
+      si      (:,:),       & !< Showalter Index SI
+      sli     (:,:),       & !< Surface Lifted Index SLI
+      swiss12 (:,:),       & !< SWISS12 Index
+      swiss00 (:,:),       & !< SWISS00 Index
+      cin_ml  (:,:),       & !< convective inhibition of mean surface layer parcel
+      lcl_ml  (:,:),       & !< Lifted Condensation Level of mean surface layer parcel
+      lfc_ml  (:,:),       & !< Level of Free Convection of mean surface layer parcel
+      cape_3km (:,:),      & !< convective available energy of mean surface layer parcel with endpoint 3km.
+      cin_3km(:,:),        & !< convective inhibition of mean surface layer parcel with endpoint 3km.
+      cloudtop(:,:),       & !< Cloud Top
       srh(:,:,:),          & !< Storm relative helicity with right-moving storm motion after Bunkers et al. (2000)
-      hpbl(:,:)              !! Boundary layer height  (m)
+      tot_pr_max(:,:),     & !< Time maximum total precipitation rate
+      hpbl(:,:),           & !< Boundary layer height  (m)
+      aod_550nm(:,:)         !< aerosol optical depth visible 550 nm (spectral band 25)
 
     ! Buffer field needed when vertical nesting is combined with a reduced radiation
     ! grid and latm_above_top = .TRUE.

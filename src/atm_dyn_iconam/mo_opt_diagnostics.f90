@@ -27,6 +27,7 @@ MODULE mo_opt_diagnostics
 
   USE mo_kind,                 ONLY: wp
   USE mo_parallel_config,      ONLY: nproma
+  USE mo_master_control,       ONLY: get_my_process_name
   USE mo_model_domain,         ONLY: t_patch, t_subset_range
   USE mo_nonhydro_types,       ONLY: t_nh_diag,t_nh_prog,      &
                                      t_nh_state_lists
@@ -45,7 +46,7 @@ MODULE mo_opt_diagnostics
   USE mo_zaxis_type,           ONLY: ZA_REFERENCE, ZA_REFERENCE_HALF, ZA_SURFACE, &
     &                                ZA_MEANSEA
   USE mo_cdi,                  ONLY: DATATYPE_FLT32, DATATYPE_PACK16,                  &
-    &                                DATATYPE_PACK24,                                  & 
+    &                                DATATYPE_PACK24,                                  &
     &                                DATATYPE_FLT64, GRID_UNSTRUCTURED,                &
     &                                TSTEP_CONSTANT
   USE mo_cdi_constants,        ONLY: GRID_UNSTRUCTURED_CELL,                           &
@@ -648,39 +649,47 @@ CONTAINS
 
     ! local variables
     CHARACTER(*), PARAMETER :: routine = modname//":construct_opt_diag"
-    INTEGER                            :: jg, ist
-    CHARACTER(LEN=2) :: dom_str
+    INTEGER                   :: jg, ist
+    CHARACTER(LEN=2)          :: dom_str
+    CHARACTER(:), ALLOCATABLE :: model_type
 
     ! initialize data structure for optional diagnostics
     ALLOCATE(p_nh_opt_diag(n_dom), STAT=ist)
     IF (ist /= SUCCESS) &
       CALL finish (routine, 'Allocation of optional diagnostics failed')
 
+    model_type = get_my_process_name()
+
     DO jg = 1, n_dom
       WRITE(dom_str, "(i2.2)") jg
 
       CALL vlr_add(p_nh_opt_diag(jg)%opt_diag_list, &
         & 'nh_state_opt_diag_of_domain_'//dom_str, &
-        & patch_id=p_patch(jg)%id, vlevel_type=level_type_ml, lrestart=.FALSE.)
+        & patch_id=p_patch(jg)%id, vlevel_type=level_type_ml, lrestart=.FALSE., &
+        & model_type=model_type)
 
       IF (.NOT. l_init_pz) CYCLE
 
       CALL vlr_add(p_nh_opt_diag(jg)%opt_diag_list_z, &
         & 'nh_state_opt_diag_z_of_domain_'//dom_str, &
-        & patch_id=p_patch(jg)%id, vlevel_type=level_type_hl, lrestart=.FALSE.)
+        & patch_id=p_patch(jg)%id, vlevel_type=level_type_hl, lrestart=.FALSE., &
+        & model_type=model_type)
 
       CALL vlr_add(p_nh_opt_diag(jg)%opt_diag_list_p, &
         & 'nh_state_opt_diag_p_of_domain_'//dom_str, &
-        & patch_id=p_patch(jg)%id, vlevel_type=level_type_pl, lrestart=.FALSE.)
+        & patch_id=p_patch(jg)%id, vlevel_type=level_type_pl, lrestart=.FALSE., &
+        & model_type=model_type)
 
       CALL vlr_add(p_nh_opt_diag(jg)%opt_diag_list_i, &
         & 'nh_state_opt_diag_i_of_domain_'//dom_str, &
-        & patch_id=p_patch(jg)%id, vlevel_type=level_type_il, lrestart=.FALSE.)
+        & patch_id=p_patch(jg)%id, vlevel_type=level_type_il, lrestart=.FALSE., &
+        & model_type=model_type)
 
       CALL vlr_add(p_nh_opt_diag(jg)%opt_acc_list, &
         & 'nh_accumulation_for_ProgAndDiag_of_domain_'//dom_str, &
-        & patch_id=p_patch(jg)%id, vlevel_type=level_type_ml,            &
-        & lrestart=.FALSE.,loutput=.TRUE.)
+        & patch_id=p_patch(jg)%id, vlevel_type=level_type_ml,    &
+        & lrestart=.FALSE.,loutput=.TRUE.,                       &
+        & model_type=model_type)
     ENDDO ! jg
 
     ! provisional construction of memory for a hardwired set of variables on domain 1
@@ -750,14 +759,14 @@ CONTAINS
 
     ! Initialization
     !$OMP PARALLEL
-    CALL init(vcoeff_lin%wfac_lin, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%idx0_lin, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%bot_idx_lin, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%wfacpbl1, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%wfacpbl2, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%kpbl1, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%kpbl2, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_lin%zextrap, opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%wfac_lin, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%idx0_lin, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%bot_idx_lin, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%wfacpbl1, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%wfacpbl2, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%kpbl1, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%kpbl2, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_lin%zextrap, lacc=.TRUE., opt_acc_async=.TRUE.)
     !$OMP END PARALLEL
   END SUBROUTINE vcoeff_lin_allocate
 
@@ -790,11 +799,11 @@ CONTAINS
 
     ! Initialization
     !$OMP PARALLEL
-    CALL init(vcoeff_cub%coef1, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_cub%coef2, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_cub%coef3, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_cub%idx0_cub, opt_acc_async=.TRUE.)
-    CALL init(vcoeff_cub%bot_idx_cub, opt_acc_async=.TRUE.)
+    CALL init(vcoeff_cub%coef1, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_cub%coef2, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_cub%coef3, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_cub%idx0_cub, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(vcoeff_cub%bot_idx_cub, lacc=.TRUE., opt_acc_async=.TRUE.)
     !$OMP END PARALLEL
   END SUBROUTINE vcoeff_cub_allocate
 
@@ -910,6 +919,10 @@ CONTAINS
       call vcoeff_cub_deallocate(vcoeff%cub_edge)
 
       vcoeff%l_allocated = .FALSE.
+#if defined(_CRAYFTN) && _RELEASE_MAJOR <= 16
+      !ACCWA: Cray compiler (16.0.1) is too eager on the optimization
+      !$ACC WAIT
+#endif
       !$ACC EXIT DATA DELETE(vcoeff)
     END IF
 
@@ -988,6 +1001,3 @@ CONTAINS
   END SUBROUTINE compute_lonlat_area_weights
 
 END MODULE mo_opt_diagnostics
-
-
-

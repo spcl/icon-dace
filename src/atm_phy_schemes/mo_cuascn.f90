@@ -52,7 +52,7 @@ CONTAINS
   !
   SUBROUTINE cuascn &
     & ( kidia,    kfdia,    klon,    ktdia,  klev, rmfcfl, &
-    & entrorg, detrpen, rprcon, lmfmid, lgrz_deepconv, ptsphy,&
+    & entrorg, fac_entrorg, detrpen, rprcon, lmfmid, lgrz_deepconv, ptsphy,&
     & paer_ss,  ptenh,    pqenh,    ptenq,             &
     & pten,     pqen,     pqsen,    plitot,&
     & pgeo,     pgeoh,    pap,      paph,&
@@ -240,6 +240,7 @@ REAL(KIND=jprb)   ,INTENT(in)    :: zdph(klon,klev)
 REAL(KIND=jprb)   ,INTENT(in)    :: ptenq(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(in)    :: pvervel(klon,klev) 
 REAL(KIND=jprb)   ,INTENT(in)    :: pwubase(klon) 
+REAL(KIND=jprb)   ,INTENT(in)    :: fac_entrorg(klon)
 REAL(KIND=jprb)   ,INTENT(in)    :: pcloudnum(klon) 
 REAL(KIND=jprb)   ,INTENT(in)    :: pcore(klon,klev) 
 LOGICAL           ,INTENT(in)    :: ldland(klon) 
@@ -285,7 +286,7 @@ INTEGER(KIND=jpim) :: jll
 
 REAL(KIND=jprb) :: z_cldmax, z_cprc2, z_cwdrag, z_cwifrac, zalfaw,&
  & zbc(klon), zbe, zbuoc, zc, zcbf, zcons2, zd, zdfi, &
- & zdkbuo, zdken, zrg, &
+ & zdkbuo, zdken, zrg, zcapethresh, &
  & zdt, zfac, zfacbuo, zint, zkedke, zlcrit, &
  & zleen, zlnew, zmfmax, zmftest, zmfulk, zmfun, &
  & zmfuqk, zmfusk, zoealfa, zoealfap, zprcdgw, &
@@ -319,7 +320,7 @@ IF (lhook) CALL dr_hook('CUASCN',0,zhook_handle)
 !$ACC   PRESENT(ptenh, pqenh, pten, pqen, pqsen, plitot, pgeo, pgeoh, zdgeoh, pap, paph) &
 !$ACC   PRESENT(zdph, ptenq, pvervel, pwubase, pcloudnum, pcore, ldland, ldlake, ldcum, ktype) &
 !$ACC   PRESENT(klab, ptu, pqu, plu, plrain, pmfu, pmfub, plglac, pmfus, pmfuq, pmful, plude) &
-!$ACC   PRESENT(pdmfup, pdmfen, pcape, kcbot, kctop, kctop0, kdpl, pmfude_rate, pkineu, pwmean) &
+!$ACC   PRESENT(pdmfup, pdmfen, pcape, kcbot, kctop, kctop0, kdpl, pmfude_rate, pkineu, pwmean, fac_entrorg) &
 
 !$ACC   CREATE(zdmfen, zdmfde, zqold, zbuo, zluold, zprecip, zdpmean, zoentr, zph, zpbase) &
 !$ACC   CREATE(zptop0, zttop0, zcrit, zdrain, zdnoprc, zentrorg, llflag, llflaguv, llo1) &
@@ -420,14 +421,15 @@ ENDDO
 
 !DIR$ IVDEP
 !OCL NOVREC
-!$ACC LOOP GANG(STATIC: 1) VECTOR
+!$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zcapethresh)
 DO jl=kidia,kfdia
   IF(ktype(jl) == 3) ldcum(jl)=.FALSE.
   ! Reduce entrainment in case of extreme CAPE in order to prevent numerical instabilities
-  IF (pcape(jl) > pcapethresh) THEN
-    zentrorg(jl) = entrorg*MAX(0.5_jprb,(pcapethresh/pcape(jl))**2)
+  zcapethresh = pcapethresh/MAX(1._jprb,SQRT(fac_entrorg(jl)))
+  IF (pcape(jl) > zcapethresh) THEN
+    zentrorg(jl) = entrorg*MAX(0.5_jprb,fac_entrorg(jl)*(zcapethresh/pcape(jl))**2)
   ELSE
-    zentrorg(jl) = entrorg
+    zentrorg(jl) = entrorg*fac_entrorg(jl)
   ENDIF
 ENDDO
 

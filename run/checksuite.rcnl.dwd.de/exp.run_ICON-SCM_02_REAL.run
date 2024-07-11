@@ -11,7 +11,7 @@
 # ------------------------------------------
 
 # ----------------------------------------------------------------------------
-#PBS -q sx_norm_rh8
+#PBS -q sx_norm
 #PBS -v NE=1,CPE=8
 #PBS -v NMPI_MALLOC_HEAP_EXPANSION_SIZE=512
 #PBS -v NMPI_MALLOC_MMAP_THRESHOLD=512
@@ -379,7 +379,6 @@ cat > NAMELIST_${EXPNAME} << EOF
 /
 
 &dynamics_nml
- iequations                   = 3
  divavg_cntrwgt               = 0.50
  lcoriolis                    = .TRUE.   ! SCM attention: .TRUE. distroys U-profile!!
 /

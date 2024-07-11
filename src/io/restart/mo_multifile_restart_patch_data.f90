@@ -142,15 +142,15 @@ CONTAINS
     IF (timers_level >= 7) CALL timer_start(timer_write_restart_io)
     desc => me%description
     CALL multifilePayloadPath(fname, desc%id, ifile, effectiveFilename)
-    CALL nf(nf_create(effectiveFilename, NF_NETCDF4, ncid), routine)
+    CALL nf(nf90_create(effectiveFilename, NF90_NETCDF4, ncid), routine)
     CALL setup_meta()
-    CALL nf(nf_set_fill(ncid, NF_NOFILL, dum), routine)
-    CALL nf(nf_enddef(ncid), routine)
+    CALL nf(nf90_set_fill(ncid, NF90_NOFILL, dum), routine)
+    CALL nf(nf90_enddef(ncid), routine)
     CALL write_glbids(iVarId)
-    CALL nf(nf_put_var1_double(ncid, tvid, [1], date_dayas), routine)
+    CALL nf(nf90_put_var(ncid, tvid, date_dayas, [1]), routine)
     IF (timers_level >= 7) CALL timer_stop(timer_write_restart_io)
     CALL collect_write()
-    CALL nf(nf_close(ncid), routine)
+    CALL nf(nf90_close(ncid), routine)
   CONTAINS
 
     SUBROUTINE setup_meta()
@@ -161,7 +161,7 @@ CONTAINS
 
       CALL rfids%init(ncid, [me%coll%idx(1)%nRecv, me%coll%idx(2)%nRecv, me%coll%idx(3)%nRecv], tvid)
       DO iV = 1, 3
-        CALL nf(nf_def_var(ncid, vNames_glbIdx(iV), NF_INT, 2, [rfids%gids(iV), rfids%ftid], iVarId(iV)), routine)
+        CALL nf(nf90_def_var(ncid, vNames_glbIdx(iV), NF90_INT, [rfids%gids(iV), rfids%ftid], iVarId(iV)), routine)
       END DO
       DO iV = 1, SIZE(me%varData) !SIZE(vWrNow)
         ci => me%varData(iV)%p%info
@@ -180,7 +180,7 @@ CONTAINS
       DO i = 1, 3
         buf_i => dummy_i
         IF (me%coll%idx(i)%nRecv .GT. 0) buf_i => me%coll%glb_idx(i)%p
-        CALL nf(nf_put_vara_int(ncid, vids(i), [1,1], [me%coll%idx(i)%nRecv,1], buf_i), &
+        CALL nf(nf90_put_var(ncid, vids(i), buf_i, [1,1], [me%coll%idx(i)%nRecv,1]), &
           &     modname//":fileStuff:write_glbids")
         bWritten = bWritten + INT(SIZE(buf_i), i8) * 4_i8
       END DO
@@ -224,11 +224,11 @@ CONTAINS
           END IF
           SELECT CASE(ci%data_type)
           CASE(REAL_T)
-            CALL nf(nf_put_vara_double(ncid, ci%cdiVarId, st(:nd), ct(:nd), rBuf%d(1+vO:vO+vS(iV))), routine)
+            CALL nf(nf90_put_var(ncid, ci%cdiVarId, rBuf%d(1+vO:vO+vS(iV)), st(:nd), ct(:nd)), routine)
           CASE(SINGLE_T)
-            CALL nf(nf_put_vara_real(ncid, ci%cdiVarId, st(:nd), ct(:nd), rBuf%s(1+vO:vO+vS(iV))), routine)
+            CALL nf(nf90_put_var(ncid, ci%cdiVarId, rBuf%s(1+vO:vO+vS(iV)), st(:nd), ct(:nd)), routine)
           CASE(INT_T)
-            CALL nf(nf_put_vara_int(ncid, ci%cdiVarId, st(:nd), ct(:nd), rBuf%i(1+vO:vO+vS(iV))), routine)
+            CALL nf(nf90_put_var(ncid, ci%cdiVarId, rBuf%i(1+vO:vO+vS(iV)), st(:nd), ct(:nd)), routine)
           END SELECT
           vO = vO + vS(iV)
           bWritten = bWritten + INT(vS(iV), i8) * typeByte(typeMap(ci%data_type))

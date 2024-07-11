@@ -489,7 +489,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
   z_tmp_s(:,3,isb_le:ieb_le) = REAL(p_lgrf%p_dom(jcd)%grf_vec_stencil_2a(:,isb_le:ieb_le),wp)
   z_tmp_s(:,4,isb_le:ieb_le) = REAL(p_lgrf%p_dom(jcd)%grf_vec_stencil_2b(:,isb_le:ieb_le),wp)
 
-  CALL exchange_data(comm_pat_loc_to_glb_e, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_e, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   IF (ieb_e >= isb_e) THEN
     p_grf%p_dom(jcd)%grf_vec_stencil_1a(:,isb_e:ieb_e) = INT(z_tmp_r(:,1,isb_e:ieb_e))
@@ -531,7 +531,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
                                                        p_lgrf%p_dom(jcd)%grf_vec_blk_2b(:,k,isb_le:ieb_le)),wp)
   ENDDO
 
-  CALL exchange_data(comm_pat_loc_to_glb_e, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_e, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   IF (ieb_e >= isb_e) THEN
     n = 0
@@ -599,7 +599,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
     z_tmp_s(:,n,isb_le:ieb_le) = p_lgrf%p_dom(jcd)%grf_vec_coeff_2b(k,:,isb_le:ieb_le)
   ENDDO
 
-  CALL exchange_data(comm_pat_loc_to_glb_e, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_e, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   IF (ieb_e >= isb_e) THEN
     n = 0
@@ -631,7 +631,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
 
   z_tmp_s(:,:,isb_le:ieb_le) = p_lgrf%p_dom(jcd)%grf_dist_pe2ce(:,:,isb_le:ieb_le)
 
-  CALL exchange_data(comm_pat_loc_to_glb_e, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_e, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   IF (ieb_e >= isb_e) p_grf%p_dom(jcd)%grf_dist_pe2ce(:,:,isb_e:ieb_e) = z_tmp_r(:,:,isb_e:ieb_e)
 
@@ -652,7 +652,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
   z_tmp_s(:,7,isb_lc:ieb_lc) = p_lgrf%p_dom(jcd)%grf_dist_pc2cc(:,3,2,isb_lc:ieb_lc)
   z_tmp_s(:,8,isb_lc:ieb_lc) = p_lgrf%p_dom(jcd)%grf_dist_pc2cc(:,4,2,isb_lc:ieb_lc)
 
-  CALL exchange_data(comm_pat_loc_to_glb_c, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_c, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   IF (ieb_c >= isb_c) THEN
     p_grf%p_dom(jcd)%grf_dist_pc2cc(:,1,1,isb_c:ieb_c) = z_tmp_r(:,1,isb_c:ieb_c)
@@ -714,7 +714,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
     z_tmp_s(:,n,:) = p_lgrf%fbk_wgt_bln(:,:,k)
   ENDDO
 
-  CALL exchange_data(comm_pat_loc_to_glb_c, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_c, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   n = 0
   DO k = 1, 4
@@ -740,7 +740,7 @@ SUBROUTINE transfer_grf_state(p_p, p_lp, p_grf, p_lgrf, jcd)
     z_tmp_s(:,n,:) = p_lgrf%fbk_wgt_e(:,:,k)
   ENDDO
 
-  CALL exchange_data(comm_pat_loc_to_glb_e, RECV=z_tmp_r, SEND=z_tmp_s)
+  CALL exchange_data(p_pat=comm_pat_loc_to_glb_e, lacc=.FALSE., RECV=z_tmp_r, SEND=z_tmp_s)
 
   n = 0
   DO k = 1, 6

@@ -509,7 +509,6 @@ cat > ${atm_namelist} << EOF
  lcouple_ocean_coldstart = .TRUE.               ! true: normal coupled forecasts, false: coupled data assimilation
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /
@@ -947,9 +946,6 @@ cat > ${oce_namelist} << EOF
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
 /
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
-/
 &run_nml
  modelTimeStep               = "${oceTimeStep}"
  output                      = 'nml'                            ! namelist controlled output scheme
@@ -1045,7 +1041,7 @@ if [[ "$output_oce_grib" == "yes" ]]; then
                                                                 ! 2: climate mode (absolute t-axis)
   include_last               = .FALSE.
   output_grid                = .TRUE.
-  ml_varlist                 = 'zos','to','so','u','v','hi','hs','conc','column_thick_c','rho','rhopot','delhi','ice_u','ice_v'
+  ml_varlist                 = 'zos','to_k','so','u','v','hi','hs','conc','column_thick_c','rho','rhopot','delhi','ice_u','ice_v'
 /
 EOF
 fi
@@ -1266,6 +1262,7 @@ cat >> ${oce_namelist} << EOF
 &sea_ice_nml
   i_ice_therm                                = 1           ! 1=zero-layer (default), 2=Winton, 0/2: not allowed
   i_ice_dyn                                  = 1           ! 1/0=switch on/off AWI ice dynamics
+  stress_ice_zero                            = .TRUE.      ! default: FALSE
 ! i_Qio_type                                 = 3           ! 3 (default): energy of whole grid-area used for melting (MPIOM-type)
 ! use_constant_tfreez                        = .TRUE.      ! default: TRUE
 ! use_no_flux_gradients                      = .FALSE.     ! default: TRUE
@@ -1746,22 +1743,22 @@ fi
 #-----------------------------------------------------------------------------
 # check if grib file have been written correctly
 #-----------------------------------------------------------------------------
-diff <(grib_ls -w level=0/108,stepRange=0 -p discipline,parameterCategory,parameterNumber coupleR2B4_R2B6_020_oce_grb_19790101T000000Z.grb | sed -r 's/( +)/ /g' ) <(echo "coupleR2B4_R2B6_020_oce_grb_19790101T000000Z.grb
-discipline parameterCategory parameterNumber 
-10 3 1 
-10 4 18 
-10 4 21 
-10 4 23 
-10 4 24 
-10 2 1 
-10 2 192 
-10 2 0 
-10 4 7 
-10 4 16 
-10 4 19 
-10 2 6 
-10 2 4 
-10 2 5 
+diff <(grib_ls -w level=0/108,stepRange=0 -p discipline,parameterCategory,parameterNumber coupleR2B4_R2B6_020_oce_grb_19790101T000000Z.grb | sed -r 's/( +)/ /g' | sed -r 's/ $//g' ) <(echo "coupleR2B4_R2B6_020_oce_grb_19790101T000000Z.grb
+discipline parameterCategory parameterNumber
+10 3 1
+10 4 18
+10 4 21
+10 4 23
+10 4 24
+10 2 1
+10 2 192
+10 2 0
+10 4 7
+10 4 16
+10 4 19
+10 2 6
+10 2 4
+10 2 5
 14 of 789 messages in coupleR2B4_R2B6_020_oce_grb_19790101T000000Z.grb
 
 14 of 789 total messages in 1 files")

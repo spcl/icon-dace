@@ -56,6 +56,7 @@ MODULE mo_vdf_sfc
       & dtime => NULL(), &
       & cpd => NULL(), &
       & cvd => NULL(), &
+      & cvv => NULL(), &
       & min_sfc_wind => NULL(), &
       & min_rough    => NULL(), &
       & rough_m_oce  => NULL(), &
@@ -76,6 +77,7 @@ MODULE mo_vdf_sfc
       & ua(:,:) => NULL(), &
       & va(:,:) => NULL(), &
       & qa(:,:) => NULL(), &
+      & rho_atm(:,:) => NULL(), &
       & pa(:,:) => NULL(), &
       & psfc(:,:) => NULL(), &
       & rsfl(:,:) => NULL(), &
@@ -134,6 +136,8 @@ MODULE mo_vdf_sfc
       & evapotrans(:,:) => NULL(), &
       & lhfl(:,:) => NULL(), &
       & shfl(:,:) => NULL(), &
+      & ufts(:,:) => NULL(), &
+      & ufvs(:,:) => NULL(), &
       & ustress(:,:) => NULL(), &
       & vstress(:,:) => NULL(), &
       & tsfc(:,:) => NULL(), &
@@ -170,6 +174,8 @@ MODULE mo_vdf_sfc
       !
       & t2m(:,:)            => NULL(), &
       & t2m_tile(:,:,:)     => NULL(), &
+      & hus2m(:,:)          => NULL(), &
+      & hus2m_tile(:,:,:)   => NULL(), &
       & wind10m(:,:)        => NULL(), &
       & u10m(:,:)           => NULL(), &
       & v10m(:,:)           => NULL(), &
@@ -187,8 +193,6 @@ MODULE mo_vdf_sfc
     ! PROCEDURE :: Init => init_t_vdf_sfc_variable_set
     PROCEDURE :: Set_pointers => Set_pointers_diagnostics
   END TYPE t_vdf_sfc_diagnostics
-
-  LOGICAL, SAVE :: l_init = .TRUE.
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_vdf_sfc'
 
@@ -233,7 +237,7 @@ CONTAINS
 
     USE mo_tmx_surface_interface, ONLY: &
       & update_land, update_sea_ice, compute_lw_rad_net, compute_sw_rad_net, compute_albedo, &
-      & compute_sfc_fluxes, compute_sfc_sat_spec_humidity
+      & compute_sfc_fluxes, compute_sfc_sat_spec_humidity, compute_energy_fluxes
     ! USE mo_vdf_diag_smag,  ONLY: compute_sfc_fluxes, compute_sfc_sat_spec_humidity
     USE mo_physical_constants, ONLY: albedoW ! TODO
     USE mo_sea_ice_nml, ONLY: albi           ! TODO
@@ -244,7 +248,6 @@ CONTAINS
     TYPE(t_vdf_sfc_config),      POINTER :: conf
     TYPE(t_vdf_sfc_inputs),      POINTER :: ins
     TYPE(t_vdf_sfc_diagnostics), POINTER :: diags
-    CLASS(t_variable_set),       POINTER :: set
 
     INTEGER :: jg, jtile, isfc, jc, jb
     REAL(wp), POINTER, DIMENSION(:,:,:) :: &
@@ -258,7 +261,7 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Compute'
 
-    jg = 1
+    jg = this%domain%patch%id
 
     !$ACC DATA CREATE(new_tsfc_rad, new_tsfc_eff, lwfl_net, swfl_net)
 
@@ -311,7 +314,7 @@ CONTAINS
       & rsds     => ins%rsds        &
       & )
 
-      ! DO isfc=1,SIZE(this%domain%sfc_types)
+    ! DO isfc=1,SIZE(this%domain%sfc_types)
     DO jtile=1,this%domain%ntiles
       isfc = this%domain%sfc_types(jtile)
 
@@ -319,25 +322,25 @@ CONTAINS
       CASE(isfc_oce)
         ! Ocean surface temperature is calculated outside of this, set tendency to zero
 !$OMP PARALLEL
-        CALL init(tend_tsfc(:,:,jtile))
-        CALL copy(old_tsfc(:,:,jtile), new_tsfc(:,:,jtile))
-        CALL copy(old_tsfc(:,:,jtile), new_tsfc_rad(:,:,jtile))
-        CALL copy(old_tsfc(:,:,jtile), new_tsfc_eff(:,:,jtile))
+        CALL init(tend_tsfc(:,:,jtile), lacc=.TRUE.)
+        CALL copy(old_tsfc(:,:,jtile), new_tsfc(:,:,jtile), lacc=.TRUE.)
+        CALL copy(old_tsfc(:,:,jtile), new_tsfc_rad(:,:,jtile), lacc=.TRUE.)
+        CALL copy(old_tsfc(:,:,jtile), new_tsfc_eff(:,:,jtile), lacc=.TRUE.)
 !$OMP END PARALLEL
         CALL compute_sfc_sat_spec_humidity(.FALSE., this%domain, this%domain%sfc_types(jtile), &
           & diags%nvalid(:,jtile), diags%indices(:,:,jtile), &
-          & ins%psfc(:,:), new_tsfc(:,:,jtile), diags%qsat_tile(:,:,jtile))
+          & ins%psfc(:,:), new_tsfc(:,:,jtile), new_qsfc(:,:,jtile))
         ! TODO: This should be replaced by routine mo_surface_ocean:update_albedo_ocean from ECHAM6.2
 !$OMP PARALLEL
-        CALL init(diags%albvisdir_tile(:,:,jtile), albedoW)
-        CALL init(diags%albvisdif_tile(:,:,jtile), albedoW)
-        CALL init(diags%albnirdir_tile(:,:,jtile), albedoW)
-        CALL init(diags%albnirdif_tile(:,:,jtile), albedoW)
+        CALL init(diags%albvisdir_tile(:,:,jtile), albedoW, lacc=.TRUE.)
+        CALL init(diags%albvisdif_tile(:,:,jtile), albedoW, lacc=.TRUE.)
+        CALL init(diags%albnirdir_tile(:,:,jtile), albedoW, lacc=.TRUE.)
+        CALL init(diags%albnirdif_tile(:,:,jtile), albedoW, lacc=.TRUE.)
 !$OMP END PARALLEL
       CASE(isfc_ice)
         IF (conf%nice_thickness_classes /= 1) CALL finish(routine, 'Only one ice thickness class (kice) implemented!')
 
-        CALL update_sea_ice(this%domain, this%dt, conf%cpd, &
+        CALL update_sea_ice(this%domain, this%dt, &
           & old_tsfc(:,:,jtile), &
           & diags%lwfl_net_tile(:,:,jtile), diags%swfl_net_tile(:,:,jtile), &
           & diags%lhfl_tile(:,:,jtile), diags%shfl_tile(:,:,jtile), &
@@ -353,7 +356,7 @@ CONTAINS
           & )
 
 !$OMP PARALLEL DO PRIVATE(jc, jb) ICON_OMP_DEFAULT_SCHEDULE
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
           DO jb = 1, this%domain%nblks_c
             DO jc = 1, this%domain%nproma  
               new_tsfc_rad(jc,jb,jtile) = new_tsfc(jc,jb,jtile)
@@ -366,9 +369,9 @@ CONTAINS
 
         CALL compute_sfc_sat_spec_humidity(.FALSE., this%domain, this%domain%sfc_types(jtile), &
           & diags%nvalid(:,jtile), diags%indices(:,:,jtile), &
-          & ins%psfc(:,:), new_tsfc(:,:,jtile), diags%qsat_tile(:,:,jtile))
+          & ins%psfc(:,:), new_tsfc(:,:,jtile), new_qsfc(:,:,jtile))
       CASE(isfc_lnd)
-        CALL update_land(jg, this%domain, datetime, this%dt, conf%cpd, &
+        CALL update_land(jg, this%domain, datetime, this%dt, conf%cvd, &
           & ins%dz(:,:), ins%psfc(:,:), ins%ta(:,:), ins%qa(:,:), ins%pa(:,:), &
           & ins%rsfl(:,:), ins%ssfl(:,:), &
           & ins%rlds(:,:), &
@@ -384,8 +387,9 @@ CONTAINS
           & diags%kh_tile(:,:,jtile), diags%km_tile(:,:,jtile), &
           & diags%kh_neutral_tile(:,:,jtile), diags%km_neutral_tile(:,:,jtile) &
           & )
+
 !$OMP PARALLEL DO PRIVATE(jc, jb) ICON_OMP_DEFAULT_SCHEDULE
-        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2)
+        !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO jb = 1, this%domain%nblks_c
           DO jc = 1, this%domain%nproma  
             tend_tsfc(jc,jb,jtile) = (new_tsfc(jc,jb,jtile) - old_tsfc(jc,jb,jtile)) / dtime
@@ -396,19 +400,29 @@ CONTAINS
 
       END SELECT
 
+!$OMP PARALLEL DO PRIVATE(jc, jb) ICON_OMP_DEFAULT_SCHEDULE
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
+      DO jb = 1, this%domain%nblks_c
+        DO jc = 1, this%domain%nproma  
+          new_tsfc_rad(jc,jb,jtile) = new_tsfc_rad(jc,jb,jtile)**4
+        END DO
+      END DO
+      !$ACC END PARALLEL LOOP
+!$OMP END PARALLEL DO
+
       ! Compute surface fluxes for heat, water vapor and momentum from new state
       ! Note: for land, latent and sensible heat fluxes are directly taken from land model
       ! because they are part of the surface energy balance equation that is solved there
       CALL compute_sfc_fluxes( &
         ! Input
         & this%domain, this%domain%sfc_types(jtile), diags%nvalid(:,jtile), diags%indices(:,:,jtile), &
-        & conf%cpd, conf%cvd, &
+        & conf%cvd, &
         & ins%ua(:,:), ins%va(:,:), &
         ! & diags%theta_atm(:,:), ins%qa(:,:), diags%wind(:,:), diags%rho_tile(:,:,jtile),  &
         & ins%ta(:,:), ins%qa(:,:), diags%wind(:,:), ins%u_oce_current(:,:), ins%v_oce_current(:,:), &
         & diags%rho_tile(:,:,jtile),  &
         ! & diags%qsat_tile(:,:,jtile), diags%theta_tile(:,:,jtile), &
-        & diags%qsat_tile(:,:,jtile), new_tsfc(:,:,jtile), &
+        & new_qsfc(:,:,jtile), new_tsfc(:,:,jtile), &
         & diags%kh_tile(:,:,jtile), diags%km_tile(:,:,jtile), &
         ! Output
         & diags%evapotrans_tile(:,:,jtile), diags%lhfl_tile(:,:,jtile), diags%shfl_tile(:,:,jtile), &
@@ -433,7 +447,7 @@ CONTAINS
 
     CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, new_tsfc(:,:,:), diags%tsfc, 'tsfc')
 
-    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, new_tsfc_rad(:,:,:)**4, tsfc_rad, 'tsfc_rad')
+    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, new_tsfc_rad(:,:,:), tsfc_rad, 'tsfc_rad4')
 !$OMP PARALLEL DO PRIVATE(jc, jb) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c, domain%i_endblk_c
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
@@ -471,6 +485,11 @@ CONTAINS
     END DO
 !$OMP END PARALLEL DO
 
+    CALL compute_energy_fluxes( &
+      & this%domain, conf%cvv, conf%cvd, &
+      & diags%shfl, diags%evapotrans, ins%ta, ins%rho_atm, &
+      & diags%ufts, diags%ufvs)
+
     END ASSOCIATE
 
     !$ACC WAIT(1)
@@ -503,7 +522,7 @@ CONTAINS
 
     ! CALL message(routine, '')
 
-    jg = 1
+    jg = this%domain%patch%id
 
     SELECT TYPE (set => this%config)
     TYPE IS (t_vdf_sfc_config)
@@ -542,7 +561,7 @@ CONTAINS
     DO jtile=1,this%domain%ntiles
 
       ! Surface saturated humidity
-      CALL compute_sfc_sat_spec_humidity(l_init .AND. .NOT. isrestart(), this%domain, this%domain%sfc_types(jtile), &
+      CALL compute_sfc_sat_spec_humidity(this%is_initial_time .AND. .NOT. isrestart(), this%domain, this%domain%sfc_types(jtile), &
         & diags%nvalid(:,jtile), diags%indices(:,:,jtile), &
         & ins%psfc(:,:), ins%tsfc_tile(:,:,jtile), diags%qsat_tile(:,:,jtile))
 
@@ -551,7 +570,7 @@ CONTAINS
         ! & diags%qsat_tile(:,:,jtile), ins%psfc(:,:), ins%ta(:,:), diags%rho_tile(:,:,jtile))
         & diags%qsat_tile(:,:,jtile), ins%psfc(:,:), ins%tsfc_tile(:,:,jtile), diags%rho_tile(:,:,jtile))
 
-      IF (l_init .AND. .NOT. isrestart()) THEN
+      IF (this%is_initial_time .AND. .NOT. isrestart()) THEN
 
         IF (this%domain%sfc_types(jtile) == isfc_lnd) THEN
           ! Compute inital 10m wind for update_land
@@ -582,7 +601,7 @@ CONTAINS
             & )
           
           ! Call land in quasi-diagnostic mode with a time step of 1 second
-          CALL update_land(jg, this%domain, datetime, 1._wp, conf%cpd, &
+          CALL update_land(jg, this%domain, datetime, 1._wp, conf%cvd, &
             & ins%dz(:,:), ins%psfc(:,:), ins%ta(:,:), ins%qa(:,:), ins%pa(:,:), &
             & ins%rsfl(:,:), ins%ssfl(:,:), &
             & ins%rlds(:,:), &
@@ -618,7 +637,7 @@ CONTAINS
         rough_min = 0._wp
       END IF
       ! Uses old value of km_tile before computation of new exchange coefficients (only in case of ocean)
-      CALL compute_sfc_roughness(l_init .AND. .NOT. isrestart(), this%domain, this%domain%sfc_types(jtile), &
+      CALL compute_sfc_roughness(this%is_initial_time .AND. .NOT. isrestart(), this%domain, this%domain%sfc_types(jtile), &
         & diags%nvalid(:,jtile), diags%indices(:,:,jtile), rough_min, conf%rough_m_oce, conf%rough_m_ice, &
         & diags%wind(:,:), diags%km_tile(:,:,jtile), diags%rough_h_tile(:,:,jtile), diags%rough_m_tile(:,:,jtile))
 
@@ -641,7 +660,7 @@ CONTAINS
         CALL compute_sfc_fluxes( &
           ! Input
           & this%domain, isfc_ice, diags%nvalid(:,jtile), diags%indices(:,:,jtile), &
-          & conf%cpd, conf%cvd, &
+          & conf%cvd, &
           & ins%ua(:,:), ins%va(:,:), &
           ! & diags%theta_atm(:,:), ins%qa(:,:), diags%wind(:,:), diags%rho_tile(:,:,jtile),  &
           & ins%ta(:,:), ins%qa(:,:), diags%wind(:,:), ins%u_oce_current(:,:), ins%v_oce_current(:,:), &
@@ -693,7 +712,8 @@ CONTAINS
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Update_diagnostics'
 
-    jg = 1
+
+    jg = this%domain%patch%id
 
     SELECT TYPE (set => this%config)
     TYPE IS (t_vdf_sfc_config)
@@ -729,10 +749,10 @@ CONTAINS
 
     ! TODO: Update roughness length for heat and momentum
 
-    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, diags%km_tile, diags%km)
-    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, diags%kh_tile, diags%kh)
+    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, diags%km_tile, diags%km, 'km')
+    CALL average_tiles(this%domain, ins%fract_tile, diags%nvalid, diags%indices, diags%kh_tile, diags%kh, 'kh')
 
-    IF (l_init) l_init = .FALSE.
+    IF (this%is_initial_time) this%is_initial_time = .FALSE.
 
     ! CALL message(routine, 'end')
 
@@ -746,62 +766,64 @@ CONTAINS
     REAL(wp),       INTENT(in)          :: fract_tile(:,:,:)
     INTEGER,        INTENT(out)         :: nvalid(:,:), indices(:,:,:)
 
-    INTEGER :: ib, ic, ics, ice, jsfc, ntiles
+    INTEGER     :: ib, ic, ics, ice, jsfc, ntiles
     INTEGER(i1) :: pfrc_test(domain%nproma,domain%nblks_c, domain%ntiles)
+    INTEGER     :: loidx    (domain%nproma,domain%ntiles), &
+      &            is       (domain%ntiles)
 
     ntiles = domain%ntiles
 
-    !$ACC DATA CREATE(pfrc_test) PRESENT(indices, nvalid)
+    !$ACC DATA CREATE(pfrc_test, loidx, is) PRESENT(fract_tile, indices, nvalid)
 
 !$OMP PARALLEL
+    CALL init(nvalid, lacc=.TRUE.)
+    CALL init(indices, lacc=.TRUE.)
+!$OMP END PARALLEL
 
-    ! CALL init(nvalid)
-    ! CALL init(indices)
-
+!$OMP PARALLEL
 !$OMP DO PRIVATE(ib, ic, ics, ice, jsfc) ICON_OMP_RUNTIME_SCHEDULE
     DO ib = domain%i_startblk_c, domain%i_endblk_c
       ics = domain%i_startidx_c(ib)
       ice = domain%i_endidx_c  (ib)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
       DO jsfc = 1, ntiles
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
         DO ic = ics, ice
           pfrc_test(ic,ib,jsfc) = MERGE(1_i1, 0_i1, fract_tile(ic,ib,jsfc) > 0.0_wp)
-          indices(ic,ib,jsfc) = 0
         END DO
-        !$ACC END LOOP
-        nvalid(ib,jsfc) = 0
       END DO
-      !$ACC END LOOP
-      !$ACC END PARALLEL
+      !$ACC END PARALLEL LOOP
     END DO
 !$OMP END DO
 
 !$OMP END PARALLEL
 
-    ! TODO: for some reason, I can't get generate_index_list_batched to work on GPUs
-
-    !$ACC WAIT(1)
-    !$ACC UPDATE HOST(pfrc_test, indices, nvalid)
-
-!$OMP PARALLEL DO PRIVATE(ib, ics, ice) ICON_OMP_RUNTIME_SCHEDULE
+!$OMP PARALLEL DO PRIVATE(ib, ics, ice, jsfc, ic, loidx, is) ICON_OMP_RUNTIME_SCHEDULE
     DO ib = domain%i_startblk_c, domain%i_endblk_c
       ics = domain%i_startidx_c(ib)
       ice = domain%i_endidx_c  (ib)
 
       CALL generate_index_list_batched( &
-        & pfrc_test(:,ib,:), indices(:,ib,:), ics, ice, nvalid(ib,:), opt_use_acc=.FALSE.)
+        & pfrc_test(:,ib,:), loidx(:,:), ics, ice, is(:), 1, opt_use_acc=.TRUE.)
+        ! Using indices(:,ib,:) and nvalid(ib,:) directly as in the next line does not work,
+        ! probably because they need to be contiguous to have proper addresses for CUDA
+        ! & pfrc_test(:,ib,:), indices(:,ib,:), ics, ice, nvalid(ib,:), 1, opt_use_acc=.TRUE.)
+
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+      !$ACC LOOP SEQ
+      DO jsfc = 1, ntiles
+        nvalid(ib,jsfc) = is(jsfc)
+        !$ACC LOOP GANG VECTOR
+        DO ic = 1, is(jsfc)
+          indices(ic,ib,jsfc) = loidx(ic,jsfc)
+        END DO
+      END DO
+      !$ACC END PARALLEL
   
     END DO
 !$OMP END PARALLEL DO
 
-    !$ACC UPDATE DEVICE(indices, nvalid)
-    !$noACC UPDATE HOST(indices, nvalid)
-
-    !$noACC WAIT(1)
-
+    !$ACC WAIT(1)
     !$ACC END DATA
 
   END SUBROUTINE compute_valid_indices
@@ -811,7 +833,7 @@ CONTAINS
     TYPE(t_domain), INTENT(in), POINTER :: domain
     REAL(wp), INTENT(in)  :: &
       & fract_tile(:,:,:)
-    REAL(wp), TARGET, INTENT(in) :: &
+    REAL(wp), INTENT(in) :: &
       & var_in(:,:,:)
     INTEGER,  INTENT(in)  :: &
       & nvalid(:,:),         &
@@ -820,9 +842,7 @@ CONTAINS
       & var_out(:,:)
     CHARACTER(len=*), OPTIONAL, INTENT(in) :: msg
 
-    INTEGER :: jb, jls, js, jsfc
-    REAL(wp), POINTER :: ptr3d(:,:,:)
-    LOGICAL :: not_is_present
+    INTEGER :: jb, jbs, jbe, jls, js, ntiles, jsfc
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':average_tiles'
 
@@ -830,56 +850,38 @@ CONTAINS
 
     IF (domain%ntiles < 1) CALL finish(routine, 'This should not happen - ntiles < 1')
 
-#ifdef _OPENACC
-    not_is_present = .NOT. acc_is_present(var_in)
-    IF (not_is_present) THEN
-      ALLOCATE(ptr3d(SIZE(var_in,1),SIZE(var_in,2),SIZE(var_in,3)))
-      ptr3d(:,:,:) = var_in(:,:,:)
-    ELSE
-      ptr3d => var_in
-    END IF
-#else
-    not_is_present = .TRUE.
-    ptr3d => var_in
-#endif
-    !$ACC DATA COPYIN(ptr3d) IF(not_is_present)
+    ntiles = domain%ntiles
+    jbs = domain%i_startblk_c
+    jbe = domain%i_endblk_c
 
-    IF (domain%ntiles == 1) THEN
+    IF (ntiles == 1) THEN
 
 !$OMP PARALLEL
-      CALL copy(ptr3d(:,:,1), var_out(:,:))
+      CALL copy(var_in(:,:,1), var_out(:,:), lacc=.TRUE.)
 !$OMP END PARALLEL
 
     ELSE
 
 !$OMP PARALLEL
-      CALL init(var_out)
+      CALL init(var_out, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb,jls,js,jsfc) ICON_OMP_RUNTIME_SCHEDULE
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
-      DO jb = domain%i_startblk_c,domain%i_endblk_c
-        !$ACC LOOP GANG(STATIC: 1)
-        DO jsfc = 1, domain%ntiles
-          !$ACC LOOP VECTOR
+      DO jb = jbs, jbe
+        DO jsfc = 1, ntiles
+          !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) PRIVATE(js)
           DO jls = 1, nvalid(jb,jsfc)
             js=indices(jls,jb,jsfc)
-            var_out(js,jb) = var_out(js,jb) + fract_tile(js,jb,jsfc) * ptr3d(js,jb,jsfc)
+            var_out(js,jb) = var_out(js,jb) + fract_tile(js,jb,jsfc) * var_in(js,jb,jsfc)
           END DO
+          !$ACC END PARALLEL LOOP
         END DO
       END DO
-      !$ACC END PARALLEL
 !$OMP END PARALLEL DO
 
     END IF
 
-    !$ACC END DATA
-#ifdef _OPENACC
-    IF (not_is_present) THEN
-      DEALLOCATE(ptr3d)
-    END IF
-#endif
+    !$ACC WAIT(1)
 
     ! IF (PRESENT(msg)) CALL message(routine, 'average complete for '//msg)
 
@@ -904,6 +906,7 @@ CONTAINS
     CALL configlist%append(t_variable('time step', shape_0d, "s", type_id="real"))
     CALL configlist%append(t_variable('cpd', shape_0d, "", type_id="real"))
     CALL configlist%append(t_variable('cvd', shape_0d, "", type_id="real"))
+    CALL configlist%append(t_variable('cvv', shape_0d, "", type_id="real"))
     CALL configlist%append(t_variable('minimum surface wind speed', shape_0d, "m/s", type_id="real"))
     CALL configlist%append(t_variable('ocean roughness length', shape_0d, "m", type_id="real"))
     CALL configlist%append(t_variable('ice roughness length', shape_0d, "m", type_id="real"))
@@ -925,6 +928,8 @@ CONTAINS
       __acc_attach(this%cpd)
       this%cvd => this%list%Get_ptr_r0d('cvd')
       __acc_attach(this%cvd)
+      this%cvv => this%list%Get_ptr_r0d('cvv')
+      __acc_attach(this%cvv)
       this%min_sfc_wind => this%list%Get_ptr_r0d('minimum surface wind speed')
       __acc_attach(this%min_sfc_wind)
       this%min_rough   => this%list%Get_ptr_r0d('minimal roughness length')
@@ -961,6 +966,7 @@ CONTAINS
     CALL inlist%append(t_variable('atm zonal wind', shape_2d, "m/s", type_id="real"))
     CALL inlist%append(t_variable('atm meridional wind', shape_2d, "m/s", type_id="real"))
     CALL inlist%append(t_variable('atm total water', shape_2d, "kg/kg", type_id="real"))
+    CALL inlist%append(t_variable('atm density', shape_2d, "kg/m3", type_id="real"))
     CALL inlist%append(t_variable('atm full level pressure', shape_2d, "Pa", type_id="real"))
     CALL inlist%append(t_variable('surface pressure', shape_2d, "Pa", type_id="real"))
     CALL inlist%append(t_variable('atm geometric height full', shape_2d, "Pa", type_id="real"))
@@ -1014,6 +1020,8 @@ CONTAINS
       __acc_attach(this%va)
       this%qa => this%list%Get_ptr_r2d('atm total water')
       __acc_attach(this%qa)
+      this%rho_atm => this%list%Get_ptr_r2d('atm density')
+      __acc_attach(this%rho_atm)
       this%pa => this%list%Get_ptr_r2d('atm full level pressure')
       __acc_attach(this%pa)
       this%psfc => this%list%Get_ptr_r2d('surface pressure')
@@ -1140,6 +1148,8 @@ CONTAINS
     CALL diaglist%append(t_variable('sfc sensible heat flux', shape_2d, "W m-2", type_id="real"))
     CALL diaglist%append(t_variable('sfc zonal wind stress', shape_2d, "N m-2", type_id="real"))
     CALL diaglist%append(t_variable('sfc mer. wind stress', shape_2d, "N m-2", type_id="real"))
+    CALL diaglist%append(t_variable('energy flux at surface from thermal exchange', shape_2d, "W m-2", type_id="real"))
+    CALL diaglist%append(t_variable('energy flux at surface from vapor exchange', shape_2d, "W m-2", type_id="real"))
     !
     CALL diaglist%append(t_variable('sfc temperature', shape_2d, "K", type_id="real"))
     CALL diaglist%append(t_variable('sfc radiative temperature', shape_2d, "K", type_id="real"))
@@ -1158,6 +1168,8 @@ CONTAINS
     !
     CALL diaglist%append(t_variable('2m temperature', shape_2d, "K", type_id="real"))
     CALL diaglist%append(t_variable('2m temperature, tile', shape_3d, "K", type_id="real"))
+    CALL diaglist%append(t_variable('2m specific humidity', shape_2d, "kg kg-1", type_id="real"))
+    CALL diaglist%append(t_variable('2m specific humidity, tile', shape_3d, "kg kg-1", type_id="real"))
     CALL diaglist%append(t_variable('10m wind speed', shape_2d, "m/s", type_id="real"))
     CALL diaglist%append(t_variable('10m zonal wind', shape_2d, "m/s", type_id="real"))
     CALL diaglist%append(t_variable('10m meridional wind', shape_2d, "m/s", type_id="real"))
@@ -1250,6 +1262,10 @@ CONTAINS
       __acc_attach(this%ustress)
       this%vstress         => this%list%Get_ptr_r2d('sfc mer. wind stress')
       __acc_attach(this%vstress)
+      this%ufts            => this%list%Get_ptr_r2d('energy flux at surface from thermal exchange')
+      __acc_attach(this%ufts)
+      this%ufvs            => this%list%Get_ptr_r2d('energy flux at surface from vapor exchange')
+      __acc_attach(this%ufvs)
    
       this%tsfc            => this%list%Get_ptr_r2d('sfc temperature')
       __acc_attach(this%tsfc)
@@ -1296,6 +1312,10 @@ CONTAINS
       __acc_attach(this%t2m)
       this%t2m_tile        => this%list%Get_ptr_r3d('2m temperature, tile')
       __acc_attach(this%t2m_tile)
+      this%hus2m           => this%list%Get_ptr_r2d('2m specific humidity')
+      __acc_attach(this%hus2m)
+      this%hus2m_tile      => this%list%Get_ptr_r3d('2m specific humidity, tile')
+      __acc_attach(this%hus2m_tile)
       this%wind10m         => this%list%Get_ptr_r2d('10m wind speed')
       __acc_attach(this%wind10m)
       this%u10m            => this%list%Get_ptr_r2d('10m zonal wind')

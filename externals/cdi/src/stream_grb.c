@@ -350,8 +350,7 @@ fdbInqContents(stream_t *streamptr)
 {
   streamptr->curTsID = 0;
 #ifdef HAVE_LIBGRIB_API
-  int status = fdbScanTimesteps(streamptr);
-  return status;
+  return fdbScanTimesteps(streamptr);
 #else
   return -1;
 #endif
@@ -498,6 +497,10 @@ grbGetGridtype(int *gridID, size_t gridsize, bool *gridIsRotated, bool *gridIsCu
       else if (projtype == CDI_PROJ_STERE)
         {
           gridtype = CDI_PROJ_STERE;
+        }
+      else if (projtype == CDI_PROJ_HEALPIX)
+        {
+          gridtype = CDI_PROJ_HEALPIX;
         }
     }
 

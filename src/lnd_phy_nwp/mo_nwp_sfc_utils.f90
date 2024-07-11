@@ -44,7 +44,6 @@ MODULE mo_nwp_sfc_utils
     &                               itype_interception, lterra_urb, l2lay_rho_snow, lprog_albsi, itype_trvg, &
                                     itype_snowevap, zml_soil, dzsoil, frsi_min, hice_min
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
-  USE mo_coupling_config,     ONLY: is_coupled_to_ocean
   USE mo_nwp_tuning_config,   ONLY: tune_minsnowfrac
   USE mo_initicon_config,     ONLY: init_mode_soil, ltile_coldstart, init_mode, lanaread_tseasfc, use_lakeiceana
   USE mo_run_config,          ONLY: msg_level
@@ -66,6 +65,12 @@ MODULE mo_nwp_sfc_utils
   USE mo_index_list,          ONLY: generate_index_list
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device, assert_acc_device_only
   USE mo_timer,               ONLY: ltimer, timer_nh_diagnostics, timer_start, timer_stop
+
+  USE mo_lnd_nwp_config,      ONLY: lcuda_graph_lnd
+
+#ifdef __NVCOMPILER
+  USE mo_coupling_config,     ONLY: is_coupled_to_ocean
+#endif
 
   IMPLICIT NONE
 
@@ -92,14 +97,7 @@ INTEGER, PARAMETER :: nlsoil= 8
   PUBLIC :: init_sea_lists
   PUBLIC :: copy_lnd_prog_now2new
   PUBLIC :: seaice_albedo_coldstart
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
-
-
+  
 
 CONTAINS
 
@@ -1785,13 +1783,14 @@ CONTAINS
   !! For fr_seaice in ]0,frsi_min[, it is set to 0
   !! For fr_seaice in ]1-frsi_min,1[, it is set to 1.  
   !!
-  SUBROUTINE init_sea_lists(p_patch, lseaice, fr_seaice, ext_data, opt_lverbose)
+  SUBROUTINE init_sea_lists(p_patch, lseaice, fr_seaice, ext_data, opt_lverbose, lacc)
 
     TYPE(t_patch)        , INTENT(IN)              :: p_patch        !< grid/patch info.
     LOGICAL              , INTENT(IN)              :: lseaice        !< seaice model on/off
     REAL(wp)             , INTENT(INOUT)           :: fr_seaice(:,:) !< seaice fraction
     TYPE(t_external_data), INTENT(INOUT)           :: ext_data
     LOGICAL              , INTENT(IN), OPTIONAL    :: opt_lverbose   !< trigger message() output
+    LOGICAL              , INTENT(IN), OPTIONAL    :: lacc
 
     ! Local array bounds:
 
@@ -1802,14 +1801,20 @@ CONTAINS
     !
     INTEGER :: jb, ic, jc
     INTEGER :: jg
-    INTEGER :: i_count_sea, i_count_ice, i_count_water
+    INTEGER :: i_count_sea, i_count_ice, i_count_water, ncount_ice, ncount_water
+    INTEGER :: idx_ice(nproma), idx_water(nproma), cond_ice(nproma), cond_water(nproma) ! used for generating index list
     INTEGER :: npoints_ice, npoints_wtr, npoints_sea
-    REAL(wp):: frac_sea                  ! for sanity check
+    REAL(wp):: frac_sea, lc_frac_t
+    REAL(wp):: san_frac_sea, san_lc_frac_t, diff_frac, max_diff ! for sanity check
     LOGICAL :: lverbose
+    LOGICAL :: lzacc
 
     CHARACTER(len=*), PARAMETER :: routine = 'mo_nwp_sfc_utils:init_sea_lists'
 !-------------------------------------------------------------------------
 
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+    !$ACC DATA CREATE(idx_ice, idx_water, cond_ice, cond_water) IF(lzacc)
 
     IF ( PRESENT(opt_lverbose) ) THEN
       lverbose = opt_lverbose
@@ -1833,7 +1838,8 @@ CONTAINS
     ! generate sea-ice and open-water index list
     !
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,ic,jc,i_count_sea,i_count_ice,i_count_water,frac_sea), SCHEDULE(guided)
+!$OMP DO PRIVATE(jb,ic,jc,i_count_sea,i_count_ice,i_count_water,frac_sea,ncount_ice,ncount_water,idx_ice,idx_water, &
+!$OMP            cond_ice,cond_water,max_diff,lc_frac_t,diff_frac,san_frac_sea,san_lc_frac_t), SCHEDULE(guided)
     DO jb = i_startblk, i_endblk
 
 
@@ -1857,6 +1863,8 @@ CONTAINS
       ! This will ensure that sea-ice and water fractions sum up exactly 
       ! to the total sea fraction.
 !$NEC ivdep
+      !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+      !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
       DO ic = 1, i_count_sea
         jc = ext_data%atm%list_sea%idx(ic,jb)
         IF (fr_seaice(jc,jb) < frsi_min ) THEN
@@ -1866,10 +1874,15 @@ CONTAINS
            fr_seaice(jc,jb) = 1._wp
         ENDIF
       ENDDO  ! ic
-
+      !$ACC END PARALLEL
 
 
       IF ( ntiles_total == 1 ) THEN  ! no tile approach
+#ifdef _OPENACC
+        IF (lzacc) THEN
+          CALL finish('init_sea_lists', "The code path without tiling is not ported to GPU")
+        ENDIF
+#endif _OPENACC
 
         !
         ! mixed water/ice points are not allowed. A sea point can be either
@@ -1894,7 +1907,7 @@ CONTAINS
             ext_data%atm%list_seaice%idx(i_count_ice,jb) = jc
             ext_data%atm%list_seaice%ncount(jb)          = i_count_ice
             ! set surface area index (needed by turbtran)
-            ext_data%atm%sai_t    (jc,jb,isub_seaice) = c_sea
+            ext_data%atm%sai_t(jc,jb,isub_seaice) = c_sea
           ELSE
             !
             ! water point: all sea points with fr_seaice < 0.5
@@ -1912,12 +1925,11 @@ CONTAINS
 
       ELSE   ! tile approach
 
-
 !$NEC ivdep
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
         DO ic = 1, i_count_sea
-
           jc = ext_data%atm%list_sea%idx(ic,jb)
-
 
           ! set sea-ice area fraction (static)
           ! simply copy from water tile. time-dependent fraction will be set lateron
@@ -1927,10 +1939,7 @@ CONTAINS
           ! seaice point
           !
           IF ( fr_seaice(jc,jb) >= frsi_min ) THEN
-            i_count_ice = i_count_ice + 1
-            ext_data%atm%list_seaice%idx(i_count_ice,jb) = jc
-            ext_data%atm%list_seaice%ncount(jb)          = i_count_ice
-
+            cond_ice(ic) = 1
             ! Initialize frac_t for seaice
             ext_data%atm%frac_t(jc,jb,isub_seaice) = ext_data%atm%lc_frac_t(jc,jb,isub_seaice) &
               &                                    * fr_seaice(jc,jb)
@@ -1938,8 +1947,9 @@ CONTAINS
 !DR Note that sai at seaice points is initialized with c/=c_sea, a corresponding update
 !DR of sai_t needs to be added to the procedure which updates the seaice index list.
             ! set surface area index (needed by turbtran)
-            ext_data%atm%sai_t    (jc,jb,isub_seaice)  = c_sea
+            ext_data%atm%sai_t(jc,jb,isub_seaice)  = c_sea
           ELSE
+            cond_ice(ic) = 0
             ext_data%atm%frac_t(jc,jb,isub_seaice) = 0._wp
           ENDIF
 
@@ -1947,35 +1957,80 @@ CONTAINS
           ! water point: all sea points with fr_seaice < (1-frsi_min)
           !
           IF ( fr_seaice(jc,jb) <= (1._wp-frsi_min) ) THEN
-            i_count_water = i_count_water + 1
-            ext_data%atm%list_seawtr%idx(i_count_water,jb) = jc
-            ext_data%atm%list_seawtr%ncount(jb)            = i_count_water
-
+            cond_water(ic) = 1
             ! Update frac_t for water tile
             ext_data%atm%frac_t(jc,jb,isub_water)  = ext_data%atm%lc_frac_t(jc,jb,isub_water)  &
               &                                    * (1._wp - fr_seaice(jc,jb))
           ELSE
+            cond_water(ic) = 0
             ! necessary, since frac_t(jc,jb,isub_water) has already been initialized
             ! with nonzero values in init_index_lists
             ext_data%atm%frac_t(jc,jb,isub_water)  = 0._wp
           ENDIF
+        ENDDO
+        !$ACC END PARALLEL
 
-        ENDDO  ! ic
+        CALL generate_index_list(cond_ice, idx_ice, 1, i_count_sea, ext_data%atm%list_seaice%ncount(jb), &
+          1, opt_acc_copy_to_host=.FALSE., opt_use_acc=lzacc)
+        CALL generate_index_list(cond_water, idx_water, 1, i_count_sea, ext_data%atm%list_seawtr%ncount(jb), &
+          1, opt_acc_copy_to_host=.FALSE., opt_use_acc=lzacc)
+        !$ACC WAIT
+        !$ACC UPDATE HOST(ext_data%atm%list_seaice%ncount(jb:jb), ext_data%atm%list_seawtr%ncount(jb:jb)) IF(lzacc)
+        ncount_ice = ext_data%atm%list_seaice%ncount(jb)
+        ncount_water = ext_data%atm%list_seawtr%ncount(jb)
+
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO ic = 1, ncount_ice
+          ext_data%atm%list_seaice%idx(ic,jb) = ext_data%atm%list_sea%idx(idx_ice(ic),jb)
+        ENDDO
+        !$ACC END PARALLEL
+
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR
+        DO ic = 1, ncount_water
+          ext_data%atm%list_seawtr%idx(ic,jb) = ext_data%atm%list_sea%idx(idx_water(ic),jb)
+        ENDDO
+        !$ACC END PARALLEL
+
 
 #ifndef __SX__
         ! Sanity check
         ! Check whether fractions of seaice and non-seaice covered tiles sum up to total sea fraction. 
-        DO ic = 1, i_count_sea
+        max_diff = 0.0_wp
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) REDUCTION(MAX: max_diff) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc, frac_sea, lc_frac_t, diff_frac) REDUCTION(MAX: max_diff)
+        DO ic = 1,i_count_sea
           jc = ext_data%atm%list_sea%idx(ic,jb)
           frac_sea = ext_data%atm%frac_t(jc,jb,isub_water) + ext_data%atm%frac_t(jc,jb,isub_seaice)
-          IF ( ABS(frac_sea - ext_data%atm%lc_frac_t(jc,jb,isub_water)) > dbl_eps ) THEN
-            WRITE(message_text,'(a,f12.9)') 'frac_seaice + frac_water: ', frac_sea
-            CALL message('', TRIM(message_text))
-            WRITE(message_text,'(a,f12.9)') 'tot frac_sea: ',  ext_data%atm%lc_frac_t(jc,jb,isub_water)
-            CALL message('', TRIM(message_text))
-            CALL finish(routine, 'sea-ice + water fractions do not sum up to total sea fraction')
-          END IF
-        ENDDO  ! jc
+          lc_frac_t = ext_data%atm%lc_frac_t(jc,jb,isub_water)
+          diff_frac = ABS(frac_sea - lc_frac_t)
+          max_diff = MAX(max_diff, diff_frac)
+        ENDDO
+        !$ACC END PARALLEL
+        !$ACC WAIT
+
+        IF (max_diff > dbl_eps) THEN ! Sanity check failed
+          !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) IF(lzacc)
+          !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc, frac_sea, lc_frac_t, diff_frac, san_frac_sea, san_lc_frac_t)
+          DO ic = 1,i_count_sea
+            jc = ext_data%atm%list_sea%idx(ic,jb)
+            frac_sea = ext_data%atm%frac_t(jc,jb,isub_water) + ext_data%atm%frac_t(jc,jb,isub_seaice)
+            lc_frac_t = ext_data%atm%lc_frac_t(jc,jb,isub_water)
+            diff_frac =  ABS(frac_sea - lc_frac_t)
+            IF (diff_frac == max_diff) THEN
+              san_frac_sea = frac_sea
+              san_lc_frac_t = lc_frac_t
+              EXIT
+            ENDIF
+          ENDDO
+          !$ACC END PARALLEL
+          WRITE(message_text,'(a,f12.9)') 'frac_seaice + frac_water: ', san_frac_sea
+          CALL message('', TRIM(message_text))
+          WRITE(message_text,'(a,f12.9)') 'tot frac_sea: ', san_lc_frac_t
+          CALL message('', TRIM(message_text))
+          CALL finish(routine, 'sea-ice + water fractions do not sum up to total sea fraction')
+        ENDIF
 #endif
       ENDIF   ! IF (ntiles_total == 1)
 
@@ -1986,6 +2041,10 @@ CONTAINS
 
       IF ( lverbose .OR. msg_level >= 13 ) THEN
         ! Some diagnostics: compute total number of sea-ice and open water points
+        !$ACC WAIT
+        !$ACC UPDATE HOST(ext_data%atm%list_seaice%idx, ext_data%atm%list_seaice%ncount) &
+        !$ACC   HOST(ext_data%atm%list_seawtr%idx, ext_data%atm%list_seawtr%ncount) &
+        !$ACC   HOST(ext_data%atm%list_sea%idx, ext_data%atm%list_sea%ncount) IF(lzacc)
         npoints_ice = ext_data%atm%list_seaice%get_sum_global(i_startblk,i_endblk)
         npoints_wtr = ext_data%atm%list_seawtr%get_sum_global(i_startblk,i_endblk)
         npoints_sea = ext_data%atm%list_sea   %get_sum_global(i_startblk,i_endblk)
@@ -2014,6 +2073,7 @@ CONTAINS
 
     ENDIF  ! lseaice
 
+    !$ACC END DATA ! idx_ice, idx_water, cond_ice, cond_water
 
   END SUBROUTINE init_sea_lists
 
@@ -2110,10 +2170,11 @@ CONTAINS
       ENDIF
     END SELECT
     !$ACC END PARALLEL
-    IF (.NOT. using_cuda_graph) THEN
+    IF (.NOT. lcuda_graph_lnd) THEN
       !$ACC WAIT(acc_async_queue)
     END IF
     !$ACC END DATA
+
   END SUBROUTINE diag_snowfrac_tg
 
 
@@ -2250,7 +2311,9 @@ CONTAINS
       idx_lst(ic) = idx_lst_lp(idx_lst(ic))
     ENDDO
 
-    !$ACC WAIT(1)
+    IF (.NOT. lcuda_graph_lnd) THEN
+      !$ACC WAIT(1)
+    END IF
     !$ACC END DATA
 
   END SUBROUTINE update_idx_lists_lnd
@@ -2271,7 +2334,8 @@ CONTAINS
     &                              frac_t_water, lc_frac_t_water, fr_seaice,            &
     &                              hice_old, tice_old, albsi_now, albsi_new,            &
     &                              t_g_t_now, t_g_t_new, t_s_t_now, t_s_t_new,          &
-    &                              t_sk_t_now, t_sk_t_new, qv_s_t, t_seasfc, condhf )
+    &                              t_sk_t_now, t_sk_t_new, qv_s_t, t_seasfc, condhf,    &
+    &                              meltpot                                              )
 
 
     REAL(wp),    INTENT(IN)    ::  &   !< sea-ice depth at new time level  [m]
@@ -2333,8 +2397,11 @@ CONTAINS
     REAL(wp),    INTENT(INOUT) ::  &   !< sea surface temperature          [kg/kg]
       &  t_seasfc(:)
 
-    REAL(wp),    INTENT(INOUT) ::  &   !< conductive heat flux at bottom of sea-ice [W/m^2]
-      &  condhf(:)
+    REAL(wp), OPTIONAL, INTENT(INOUT) :: &
+      &  condhf(:)                     !< conductive heat flux at bottom of sea-ice [W/m^2]
+
+    REAL(wp), OPTIONAL, INTENT(INOUT) :: &
+      &  meltpot(:)                    !< melt potential at top of sea-ice [W/m^2]
 
     ! Local variables
     INTEGER  :: list_seaice_count_old      !< old seaice index list and count
@@ -2342,7 +2409,8 @@ CONTAINS
     INTEGER  :: ic, jc                     !< loop indices
     INTEGER  :: i_capture !< to capture thread-local value in ACC ATOMIC
     LOGICAL  :: l_update_required
-    LOGICAL  :: lis_coupled_run   !< TRUE for coupled ocean-atmosphere runs (copy for ACC vectorisation)
+    LOGICAL  :: lhave_meltpot
+    LOGICAL  :: lhave_condhf
     !-------------------------------------------------------------------------
 
 
@@ -2356,7 +2424,7 @@ CONTAINS
       IF ( hice_n(jc) < hice_min ) l_update_required = .TRUE.
     ENDDO
     !$ACC END PARALLEL LOOP
-    IF (.NOT. using_cuda_graph) THEN
+    IF (.NOT. lcuda_graph_lnd) THEN
       !$ACC WAIT(1)
     END IF
     IF (.NOT. l_update_required) RETURN
@@ -2364,16 +2432,24 @@ CONTAINS
     IF (msg_level >= 13) CALL message('update_idx_lists_sea', &
       'One or more seaice cells melted -> List update required.')
 
-    lis_coupled_run = is_coupled_to_ocean() ! store result for vectorisation
+#ifdef __NVCOMPILER
+    ! nvfortran does not understand passing a NULL pointer to an optional (Fortran 2008) :(
+    lhave_meltpot = is_coupled_to_ocean()
+    lhave_condhf = is_coupled_to_ocean()
+#else
+    lhave_meltpot = PRESENT(meltpot)
+    lhave_condhf = PRESENT(condhf)
+#endif
 
-    !$ACC DATA PRESENT(condhf) IF(lis_coupled_run)
+    !$ACC DATA PRESENT(condhf) IF(lhave_condhf)
+    !$ACC DATA PRESENT(meltpot) IF(lhave_meltpot)
     !$ACC DATA CREATE(list_seaice_idx_old) &
     !$ACC   PRESENT(hice_n, pres_sfc, list_seawtr_idx) &
     !$ACC   PRESENT(list_seaice_idx, frac_t_ice) &
     !$ACC   PRESENT(frac_t_water, lc_frac_t_water, fr_seaice) &
     !$ACC   PRESENT(hice_old, tice_old, albsi_now, albsi_new) &
     !$ACC   PRESENT(t_g_t_now, t_g_t_new, t_s_t_now, t_s_t_new) &
-    !$ACC   PRESENT(t_sk_t_now, t_sk_t_new, qv_s_t, t_seasfc) NO_CREATE(condhf)
+    !$ACC   PRESENT(t_sk_t_now, t_sk_t_new, qv_s_t, t_seasfc) NO_CREATE(condhf, meltpot)
 
     !$ACC PARALLEL LOOP GANG VECTOR ASYNC(1) DEFAULT(PRESENT)
     DO ic = 1, list_seaice_count
@@ -2445,10 +2521,9 @@ CONTAINS
           tice_old(jc) = tmelt
           hice_old(jc) = 0._wp
 
-          IF (lis_coupled_run) THEN
-            ! also reset conductive heat flux below ice
-            condhf(jc)   = 0._wp
-          ENDIF
+            ! also reset ice heat fluxes
+          IF (lhave_condhf) condhf(jc) = 0._wp
+          IF (lhave_meltpot) meltpot(jc) = 0._wp
 
           ! Reset prognostic sea ice albedo for consistency
           IF (lprog_albsi) THEN
@@ -2524,10 +2599,9 @@ CONTAINS
           tice_old(jc) = tmelt
           hice_old(jc) = 0._wp
 
-          IF (lis_coupled_run) THEN
-            ! also reset conductive heat flux below ice
-            condhf(jc)   = 0._wp
-          ENDIF
+            ! also reset ice heat fluxes
+          IF (lhave_condhf) condhf(jc) = 0._wp
+          IF (lhave_meltpot) meltpot(jc) = 0._wp
 
           ! Reset prognostic sea ice albedo for consistency
           IF (lprog_albsi) THEN
@@ -2540,9 +2614,10 @@ CONTAINS
 
     ENDIF  ! IF ( ntiles_total == 1 )
     !$ACC UPDATE ASYNC(1) HOST(list_seawtr_count, list_seaice_count) ! also update index lists?
-    IF (.NOT. using_cuda_graph) THEN
+    IF (.NOT. lcuda_graph_lnd) THEN
       !$ACC WAIT(1)
     END IF
+    !$ACC END DATA
     !$ACC END DATA
     !$ACC END DATA
 
@@ -2738,7 +2813,7 @@ CONTAINS
 
     ! Local scalars:
     !
-    INTEGER :: jb, ic, jc
+    INTEGER :: jb, ic, jc, ncount
     INTEGER :: rl_start, rl_end
     INTEGER :: i_startblk, i_endblk
     INTEGER :: i_startidx, i_endidx
@@ -2785,24 +2860,28 @@ CONTAINS
 
     IF (lseaice) THEN
 
-#ifdef _OPENACC
-      CALL finish(routine, 'The branch for lseaice==.TRUE. is not supported by OpenACC.')
-#endif
+      !$ACC DATA CREATE(frsi, tice_now, hice_now, tsnow_now, hsnow_now, albsi_now) &
+      !$ACC   CREATE(tice_new, hice_new, tsnow_new, hsnow_new, albsi_new) IF(lzacc)
 
       ! allocate index lists for seaice and open water points
       !
-      CALL list_seaice_new%construct(nproma,p_patch%nblks_c)
-      CALL list_water_new%construct (nproma,p_patch%nblks_c)
+      ! The following are not created on GPU as only needed for check_water_idx_lists,
+      ! which would require an unnecessary back copy to CPU and the porting of compare_sets
+      CALL list_seaice_new%construct(nproma, p_patch%nblks_c)
+      CALL list_water_new%construct (nproma, p_patch%nblks_c)
       !
-      CALL list_seaice_old%construct(nproma,p_patch%nblks_c)
-      CALL list_water_old%construct (nproma,p_patch%nblks_c)
+      CALL list_seaice_old%construct(nproma, p_patch%nblks_c)
+      CALL list_water_old%construct (nproma, p_patch%nblks_c)
 
       ! store old seaice and open water lists
       !
       ! seaice list
+      !$ACC WAIT
+      !$ACC UPDATE HOST(ext_data%atm%list_seaice%ncount, ext_data%atm%list_seaice%idx) IF(lzacc)
       list_seaice_old = ext_data%atm%list_seaice
       !
       ! water list
+      !$ACC UPDATE HOST(ext_data%atm%list_seawtr%ncount, ext_data%atm%list_seawtr%idx) IF(lzacc)
       list_water_old = ext_data%atm%list_seawtr
 
 
@@ -2814,7 +2893,8 @@ CONTAINS
         &                 lseaice      = lseaice,           & ! in
         &                 fr_seaice    = fr_seaice(:,:),    & ! in(out)
         &                 ext_data     = ext_data,          & ! inout
-        &                 opt_lverbose = .FALSE. )            ! in
+        &                 opt_lverbose = .FALSE.,           & ! in
+        &                 lacc         = lzacc)               ! in
 
 
       ! store updated index lists
@@ -2823,11 +2903,13 @@ CONTAINS
       ! ext_data%atm%list_seawtr
       !
       ! seaice list
+      !$ACC WAIT
+      !$ACC UPDATE HOST(ext_data%atm%list_seaice%ncount, ext_data%atm%list_seaice%idx) IF(lzacc)
       list_seaice_new = ext_data%atm%list_seaice
       !
       ! water list
+      !$ACC UPDATE HOST(ext_data%atm%list_seawtr%ncount, ext_data%atm%list_seawtr%idx) IF(lzacc)
       list_water_new = ext_data%atm%list_seawtr
-
 
 
       ! compare old and new index lists by grouping the elements 
@@ -2836,13 +2918,16 @@ CONTAINS
       ! list_XY_destroyed : element exists only in old list
       ! list_XY_created   : element exists only in new list
       !
-      CALL list_water_retained%construct(nproma,p_patch%nblks_c)
-      CALL list_water_destroyed%construct(nproma,p_patch%nblks_c)
-      CALL list_water_created%construct(nproma,p_patch%nblks_c)
+      ! The following are created on GPU after CALL compare_sets (except list_seaice_retained)
+      ! to avoid unnecessary back and forth copies. All input arrays to compare_sets need to be on CPU
+      ! for later call to check_water_idx_lists but not all are needed on GPU
+      CALL list_water_retained%construct(nproma, p_patch%nblks_c)
+      CALL list_water_destroyed%construct(nproma, p_patch%nblks_c)
+      CALL list_water_created%construct(nproma, p_patch%nblks_c)
       !
-      CALL list_seaice_retained%construct(nproma,p_patch%nblks_c)
-      CALL list_seaice_destroyed%construct(nproma,p_patch%nblks_c)
-      CALL list_seaice_created%construct(nproma,p_patch%nblks_c)
+      CALL list_seaice_retained%construct(nproma, p_patch%nblks_c)
+      CALL list_seaice_destroyed%construct(nproma, p_patch%nblks_c)
+      CALL list_seaice_created%construct(nproma, p_patch%nblks_c)
 
       CALL compare_sets(p_patch        = p_patch,              &
         &               list1          = list_water_old,       &
@@ -2857,8 +2942,13 @@ CONTAINS
         &               list_intersect = list_seaice_retained, &
         &               list1_only     = list_seaice_destroyed,&
         &               list2_only     = list_seaice_created   )
-
-
+      !$ACC ENTER DATA CREATE(list_water_retained, list_water_destroyed) &
+      !$ACC   CREATE(list_water_created, list_seaice_destroyed, list_seaice_created) IF(lzacc)
+      !$ACC ENTER DATA COPYIN(list_water_retained%idx, list_water_retained%ncount) &
+      !$ACC   COPYIN(list_water_destroyed%idx, list_water_destroyed%ncount) &
+      !$ACC   COPYIN(list_water_created%idx, list_water_created%ncount) &
+      !$ACC   COPYIN(list_seaice_destroyed%idx, list_seaice_destroyed%ncount) &
+      !$ACC   COPYIN(list_seaice_created%idx, list_seaice_created%ncount) IF(lzacc)
 
 
       ! update various water and seaice related fields depending on whether 
@@ -2879,12 +2969,15 @@ CONTAINS
       ! For ntiles>1 isub_seaice/=isub_water. I.e. no such risk exists in case of activated tile approach.
       !
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,jc,ic,i_startidx,i_endidx,frsi,tice_now,hice_now,tsnow_now,hsnow_now,albsi_now,  &
+!$OMP DO PRIVATE(jb,jc,ic,ncount,i_startidx,i_endidx,frsi,tice_now,hice_now,tsnow_now,hsnow_now,albsi_now,  &
 !$OMP            tice_new,hice_new,tsnow_new,hsnow_new,albsi_new,t_water), SCHEDULE(guided)
       DO jb = i_startblk, i_endblk
 
 
         IF (lpresent_h_ice) THEN
+#ifdef _OPENACC
+          CALL finish('process_sst_and_seaice', "lseaice together with lpresent_h_ice is not supported on GPU")
+#endif
 
           CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
             &                i_startidx, i_endidx, rl_start, rl_end)
@@ -2917,7 +3010,10 @@ CONTAINS
         !
         ! perform seaice warmstart (compare with nwp_surface_init)
         !
-        DO ic = 1, list_seaice_created%ncount(jb)
+        ncount = list_seaice_created%ncount(jb) ! CPU and GPU values in sync
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
+        DO ic = 1, ncount
 
           jc = list_seaice_created%idx(ic,jb)
 
@@ -2928,6 +3024,7 @@ CONTAINS
           hsnow_now(ic) = prog_wtr_now%h_snow_si(jc,jb)
           albsi_now(ic) = prog_wtr_now%alb_si(jc,jb)
         ENDDO  ! jc
+        !$ACC END PARALLEL
 
         ! If h_ice is provided from external sources (lpresent_h_ice=.TRUE.), 
         ! it is necessary to skip the initialization of h_ice for newly 
@@ -2939,12 +3036,16 @@ CONTAINS
         CALL seaice_init_nwp ( (.NOT. lpresent_h_ice),                              & ! in 
           &                    list_seaice_created%ncount(jb), frsi,                & ! in
           &                    tice_now, hice_now, tsnow_now, hsnow_now, albsi_now, & ! inout
-          &                    tice_new, hice_new, tsnow_new, hsnow_new, albsi_new  ) ! inout
+          &                    tice_new, hice_new, tsnow_new, hsnow_new, albsi_new, & ! inout
+          &                    lacc=lzacc)
 
 
         !  Recover fields from index list
         !
-        DO ic = 1, list_seaice_created%ncount(jb)
+        ncount = list_seaice_created%ncount(jb) ! CPU and GPU values in sync
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
+        DO ic = 1, ncount
 
           jc = list_seaice_created%idx(ic,jb)
 
@@ -2972,13 +3073,17 @@ CONTAINS
           diag_lnd%qv_s_t(jc,jb,isub_seaice)     = spec_humi(sat_pres_ice(tice_now(ic)),&
             &                                                pres_sfc(jc,jb) )
         ENDDO  ! ic
+        !$ACC END PARALLEL
 
 
         ! III) destroyed seaice points
         !      now pure water point, no seaice tile
         !
         ! re-initialize h_ice, t_ice, h_snow_si, t_snow_si, alb_si
-        DO ic = 1, list_seaice_destroyed%ncount(jb)
+        ncount = list_seaice_destroyed%ncount(jb) ! CPU and GPU values in sync
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
+        DO ic = 1, ncount
 
           jc = list_seaice_destroyed%idx(ic,jb)
 
@@ -3010,6 +3115,7 @@ CONTAINS
             !diag_lnd%qv_s_t(jc,jb,isub_seaice)     =
           ENDIF
         ENDDO  ! ic
+        !$ACC END PARALLEL
 
 
         !*************************!
@@ -3019,7 +3125,10 @@ CONTAINS
         ! I) retained water points
         !    update SST
         !
-        DO ic = 1, list_water_retained%ncount(jb)
+        ncount = list_water_retained%ncount(jb) ! CPU and GPU values in sync
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
+        DO ic = 1, ncount
 
           jc = list_water_retained%idx(ic,jb)
 
@@ -3037,12 +3146,16 @@ CONTAINS
             &                             pres_sfc(jc,jb) )
 
         ENDDO  ! ic
+        !$ACC END PARALLEL
 
 
         ! II) newly generated water points
         !     update SST
         !
-        DO ic = 1, list_water_created%ncount(jb)
+        ncount = list_water_created%ncount(jb) ! CPU and GPU values in sync
+        !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc, t_water)
+        DO ic = 1, ncount
 
           jc = list_water_created%idx(ic,jb)
 
@@ -3061,6 +3174,7 @@ CONTAINS
             &                             pres_sfc(jc,jb) )
 
         ENDDO  ! ic
+        !$ACC END PARALLEL
 
 
         ! The following part is skipped for the case ntiles == 1
@@ -3075,7 +3189,10 @@ CONTAINS
           !      now pure seaice points
           !
           ! re-initialize water temperature which is in contact with overlying seaice
-          DO ic = 1, list_water_destroyed%ncount(jb)
+          ncount = list_water_destroyed%ncount(jb) ! CPU in sync with GPU value
+          !$ACC PARALLEL ASYNC(1) DEFAULT(PRESENT) FIRSTPRIVATE(ncount) IF(lzacc)
+          !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(jc)
+          DO ic = 1, ncount
 
             jc = list_water_destroyed%idx(ic,jb)
 
@@ -3092,6 +3209,7 @@ CONTAINS
               &                             pres_sfc(jc,jb) )
 
           ENDDO  ! ic
+          !$ACC END PARALLEL
         END IF  ! ntiles_total > 1
 
       ENDDO
@@ -3100,6 +3218,12 @@ CONTAINS
 
       IF (msg_level >= 12) THEN
         ! sanity check and log output
+        !$ACC WAIT
+        !$ACC UPDATE HOST(list_water_retained%idx, list_water_retained%ncount) &
+        !$ACC   HOST(list_water_destroyed%idx, list_water_destroyed%ncount) &
+        !$ACC   HOST(list_water_created%idx, list_water_created%ncount) &
+        !$ACC   HOST(list_seaice_destroyed%idx, list_seaice_destroyed%ncount) &
+        !$ACC   HOST(list_seaice_created%idx, list_seaice_created%ncount) IF(lzacc)
         CALL check_water_idx_lists(list_seaice_old       = list_seaice_old,       &
           &                        list_seaice_new       = list_seaice_new,       &
           &                        list_water_old        = list_water_old,        &
@@ -3116,8 +3240,15 @@ CONTAINS
       ENDIF
 
 
-
       ! cleanup
+      !$ACC WAIT
+      !$ACC EXIT DATA DELETE(list_water_retained%idx, list_water_retained%ncount) &
+      !$ACC   DELETE(list_water_destroyed%idx, list_water_destroyed%ncount) &
+      !$ACC   DELETE(list_water_created%idx, list_water_created%ncount) &
+      !$ACC   DELETE(list_seaice_destroyed%idx, list_seaice_destroyed%ncount) &
+      !$ACC   DELETE(list_seaice_created%idx, list_seaice_created%ncount) IF(lzacc)
+      !$ACC EXIT DATA DELETE(list_water_retained, list_water_destroyed) &
+      !$ACC   DELETE(list_water_created, list_seaice_destroyed, list_seaice_created) IF(lzacc)
       CALL list_seaice_new%finalize()
       CALL list_seaice_old%finalize()
       CALL list_seaice_created%finalize()
@@ -3130,7 +3261,8 @@ CONTAINS
       CALL list_water_destroyed%finalize()
       CALL list_water_retained%finalize()
 
-
+      !$ACC WAIT
+      !$ACC END DATA ! local IF lpresent_h_ice
 
     ELSE   ! seaice model switched off
 
@@ -3607,4 +3739,3 @@ CONTAINS
   END SUBROUTINE seaice_albedo_coldstart
 
 END MODULE mo_nwp_sfc_utils
-

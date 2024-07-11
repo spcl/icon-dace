@@ -33,7 +33,6 @@ MODULE mo_advection_quadrature
   USE mo_math_constants,      ONLY: dbl_eps, eps
   USE mo_parallel_config,     ONLY: nproma
 #ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
   USE mo_exception,           ONLY: warning
 #endif
 
@@ -149,8 +148,7 @@ CONTAINS
     i_startblk = p_patch%edges%start_blk(i_rlstart,1)
     i_endblk   = p_patch%edges%end_blk(i_rlend,i_nchdom)
 
-    !$ACC DATA PRESENT(p_coords_dreg_v, p_quad_vector_sum, p_dreg_area) PRESENT(shape_func_l) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC DATA PRESENT(p_coords_dreg_v, p_quad_vector_sum, p_dreg_area) PRESENT(shape_func_l)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(je,jk,jb,i_startidx,i_endidx,z_gauss_pts_1,z_gauss_pts_2,wgt_t_detjac,z_x,z_y &
@@ -160,7 +158,7 @@ CONTAINS
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
         &                i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(z_x, z_y, z_gauss_pts_1, z_gauss_pts_2) COLLAPSE(2)
       DO jk = slev, elev
 !$NEC ivdep
@@ -292,14 +290,13 @@ CONTAINS
     i_endblk   = p_patch%edges%end_blk(i_rlend,i_nchdom)
 
     !$ACC DATA PRESENT(p_coords_dreg_v, falist, falist%len, falist%eidx, falist%elev, p_dreg_area) &
-    !$ACC   PRESENT(shape_func_l, p_quad_vector_sum) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   PRESENT(shape_func_l, p_quad_vector_sum)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(je,jk,jb,ie,z_gauss_pts_1,z_gauss_pts_2,wgt_t_detjac,z_x,z_y) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR PRIVATE(je, jk, z_gauss_pts_1, z_gauss_pts_2)
 !$NEC ivdep
       DO ie = 1, falist%len(jb)
@@ -461,8 +458,7 @@ CONTAINS
 
     !$ACC DATA PRESENT(p_coords_dreg_v, p_quad_vector_sum, p_dreg_area) &
     !$ACC   COPYIN(z_wgt, z_eta) PRESENT(shape_func) &
-    !$ACC   CREATE(z_x, z_y, wgt_t_detjac, z_gauss_pts, z_quad_vector) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   CREATE(z_x, z_y, wgt_t_detjac, z_gauss_pts, z_quad_vector)
 !$OMP PARALLEL
 !$OMP DO PRIVATE(je,jk,jb,jg,i_startidx,i_endidx,z_gauss_pts,wgt_t_detjac, &
 !$OMP z_quad_vector,z_x,z_y,z_area) ICON_OMP_DEFAULT_SCHEDULE
@@ -472,12 +468,12 @@ CONTAINS
         &                i_startidx, i_endidx, i_rlstart, i_rlend)
 
 #ifdef _OPENACC
-      IF(i_am_accel_node) CALL warning("mo_advection_quadrature:prep_gauss_quadrature_q", "ACC optimization potential ahead.")
+      CALL warning("mo_advection_quadrature:prep_gauss_quadrature_q", "ACC optimization potential ahead.")
   ! nproma-sized arrays should be converted to thread-private scalars.
   ! or use cubic quadrature instead in your namelist.
 #endif
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP SEQ
       DO jk = slev, elev
 !$NEC ivdep
@@ -651,15 +647,14 @@ CONTAINS
     !$ACC DATA PRESENT(p_coords_dreg_v, falist, falist%len, falist%eidx, falist%elev, p_dreg_area) &
     !$ACC   PRESENT(p_quad_vector_sum) COPYIN(z_wgt, z_eta) &
     !$ACC   CREATE(z_x, z_y, z_quad_vector, wgt_t_detjac, z_gauss_pts) &
-    !$ACC   PRESENT(shape_func) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   PRESENT(shape_func)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(je,jk,jb,ie,jg,z_gauss_pts,wgt_t_detjac, &
 !$OMP z_quad_vector,z_x,z_y) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR
 !$NEC ivdep
       DO ie = 1, falist%len(jb)
@@ -713,7 +708,7 @@ CONTAINS
       !$ACC END PARALLEL
 
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR
 !$NEC ivdep
       DO ie = 1, falist%len(jb)
@@ -876,7 +871,7 @@ CONTAINS
       CALL get_indices_e(p_patch, jb, i_startblk, i_endblk, &
         &                i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(z_eta, z_wgt) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(z_eta, z_wgt)
       !$ACC LOOP GANG VECTOR PRIVATE(z_x, z_y, wgt_t_detjac, z_gauss_pts, z_quad_vector) COLLAPSE(2)
       DO jk = slev, elev
 !$NEC ivdep
@@ -1121,7 +1116,7 @@ CONTAINS
 !$OMP z_quad_vector,z_x,z_y) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(z_wgt, z_eta) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) COPYIN(z_wgt, z_eta)
       !$ACC LOOP GANG VECTOR PRIVATE(z_gauss_pts, wgt_t_detjac, z_quad_vector, z_x, z_y)
 !$NEC ivdep
       DO ie = 1, falist%len(jb)

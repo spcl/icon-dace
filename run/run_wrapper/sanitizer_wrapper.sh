@@ -49,12 +49,14 @@ fi
 #
 # For more options check the printout of `compute-sanitizer --help`
 
+if [[ "${MPI_RANK}" < 4 ]]; then # change me to run the sanitizer on more than one node
     compute-sanitizer \
     --tool initcheck \
     --print-limit 10 \
     --error-exitcode 1 \
     --show-backtrace no \
+    --launch-timeout 180 \
     "$@" 2>&1 | tee "LOG.sanitizer.${MPI_RANK}.${SLURM_JOBID}.${MPI_RANK}"
-# else
-#     "$@"
-# fi
+else
+    "$@"
+fi

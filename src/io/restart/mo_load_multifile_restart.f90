@@ -136,12 +136,12 @@ CONTAINS
   
       IF(timers_level >= 7) CALL timer_start(timer_load_restart_io)
       CALL multifilePayloadPath(mfPath, dom, partId, pathname)
-      CALL nf(nf_open(pathname, NF_NOWRITE, me%ncid), routine)
+      CALL nf(nf90_open(pathname, NF90_NOWRITE, me%ncid), routine)
       DO iG = 1, 3
-        CALL nf(nf_inq_varid(me%ncid, vNames_glbIdx(iG), me%iVarIds(iG)), routine)
-        CALL nf(nf_inq_varndims(me%ncid, me%iVarIds(iG), ndim), routine)
-        CALL nf(nf_inq_vardimid(me%ncid, me%iVarIds(iG), dimid(1:ndim)), routine)
-        CALL nf(nf_inq_dimlen(me%ncid, dimid(1), me%iCnts(iG)), routine)
+        CALL nf(nf90_inq_varid(me%ncid, vNames_glbIdx(iG), me%iVarIds(iG)), routine)
+        CALL nf(nf90_inquire_variable(me%ncid, me%iVarIds(iG), ndims = ndim), routine)
+        CALL nf(nf90_inquire_variable(me%ncid, me%iVarIds(iG), dimids = dimid(1:ndim)), routine)
+        CALL nf(nf90_inquire_dimension(me%ncid, dimid(1), len = me%iCnts(iG)), routine)
       END DO
       IF (timers_level >= 7) CALL timer_stop(timer_load_restart_io)
     END SUBROUTINE payloadFile_open
@@ -169,7 +169,7 @@ CONTAINS
       input(idx_no(i), blk_no(i)) = REAL(provGlbIdces(i), dp)
     END DO
 !ICON_OMP END PARALLEL
-    CALL exchange_data(pat, output, input)
+    CALL exchange_data(p_pat=pat, lacc=.FALSE., recv=output, send=input)
     error = 0
 !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
     DO i = 1, oSize
@@ -324,7 +324,7 @@ CONTAINS
     IF(timers_level >= 7) CALL timer_start(timer_load_restart_io)
     IF(ALLOCATED(files)) THEN
       DO hi = 1, SIZE(files)
-        CALL nf(nf_close(files(hi)%ncid), modname//":multifileReadPatch")
+        CALL nf(nf90_close(files(hi)%ncid), modname//":multifileReadPatch")
       END DO
     END IF
     IF(timers_level >= 7) CALL timer_stop(timer_load_restart_io)
@@ -352,12 +352,15 @@ CONTAINS
         IF (n .LE. 0) CYCLE
         IF (timers_level >= 7) CALL timer_start(timer_load_restart_io)
         IF (int_is_int) THEN
-          CALL nf(nf_get_vara_int(files(cFId)%ncid, files(cFId)%iVarIds(iG), [1,1], [n,1], &
-            &                     glbidx_read(cOff(iG)+1:cOff(iG)+n)), routine)
+          CALL nf(nf90_get_var(files(cFId)%ncid, files(cFId)%iVarIds(iG), &
+            &                  glbidx_read(cOff(iG)+1:cOff(iG)+n), &
+            &                  [1,1], [n,1]), &
+            &     routine)
         ELSE
           ALLOCATE(buffer(n))
-          CALL nf(nf_get_vara_double(files(cFId)%ncid, files(cFId)%iVarIds(iG), [1,1], [n,1], &
-            &                        buffer), routine)
+          CALL nf(nf90_get_var(files(cFId)%ncid, files(cFId)%iVarIds(iG), &
+            &                  buffer, [1,1], [n,1]), &
+            &     routine)
           !ICON_OMP PARALLEL DO SCHEDULE(STATIC)
           DO i = 1, n
             glbidx_read(cOff(iG) + i) = INT(buffer(i))
@@ -399,11 +402,11 @@ CONTAINS
       IF (SIZE(files) .GT. 0) THEN
         DO iV = 1, SIZE(vDat)
           IF (.NOT.has_valid_time_level(vDat(iV)%p%info, ptc%id, nnow(ptc%id), nnow_rcf(ptc%id))) CYCLE
-          i = nf_inq_varid(files(1)%ncid, vDat(iV)%p%info%name, vIDs(1,iV))
-          IF (i .EQ. NF_NOERR) THEN
-            CALL nf(nf_inq_varndims(files(1)%ncid, vIDs(1, iV), nds(iV)), routine)
+          i = nf90_inq_varid(files(1)%ncid, vDat(iV)%p%info%name, vIDs(1,iV))
+          IF (i .EQ. NF90_NOERR) THEN
+            CALL nf(nf90_inquire_variable(files(1)%ncid, vIDs(1, iV), ndims = nds(iV)), routine)
             DO fId = 2, SIZE(files)
-              CALL nf(nf_inq_varid(files(fId)%ncid, vDat(iV)%p%info%name, vIDs(fId,iV)), routine)
+              CALL nf(nf90_inq_varid(files(fId)%ncid, vDat(iV)%p%info%name, vIDs(fId,iV)), routine)
             END DO
             lCnt = MERGE(vDat(iV)%p%info%used_dimensions(2), 1, vDat(iV)%p%info%ndims .GT. 2)
             en_bloc = load_var_at_once .AND. lCnt .GT. 1
@@ -445,8 +448,9 @@ CONTAINS
           DO fId = 1, SIZE(files)
             IF (pCt(fId) .LT. 1) CYCLE
             ct(:) = [pCt(fId), MERGE(lCnt, 1, en_bloc), 1]
-            CALL nf(nf_get_vara_double(files(fId)%ncid, vIDs(fId, iV), st(:nds(iV)), ct(:nds(iV)), &
-              & buf_d(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc))), routine)
+            CALL nf(nf90_get_var(files(fId)%ncid, vIDs(fId, iV), &
+              & buf_d(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc)), &
+              & st(:nds(iV)), ct(:nds(iV))), routine)
             IF (en_bloc) THEN
               !ICON_OMP PARALLEL DO SCHEDULE(STATIC) COLLAPSE(2)
               DO lId = 1, lCnt
@@ -460,7 +464,7 @@ CONTAINS
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_io)
           IF (timers_level >= 7) CALL timer_start(timer_load_restart_communication)
           IF (.NOT.en_bloc) CALL C_F_POINTER(cptr_r, buf_3d_d, [nproma,1,nblk])
-          CALL exchange_data(cpat(hgrid)%p, ptr_3d_d(:,llId:MERGE(lCnt, llId, en_bloc),:), buf_3d_d)
+          CALL exchange_data(p_pat=cpat(hgrid)%p, lacc=.FALSE., recv=ptr_3d_d(:,llId:MERGE(lCnt, llId, en_bloc),:), send=buf_3d_d)
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_communication)
         END DO
       CASE(SINGLE_T)
@@ -474,8 +478,9 @@ CONTAINS
           DO fId = 1, SIZE(files)
             IF (pCt(fId) .LT. 1) CYCLE
             ct(:) = [pCt(fId), MERGE(lCnt, 1, en_bloc), 1]
-            CALL nf(nf_get_vara_real(files(fId)%ncid, vIDs(fId, iV), st(:nds(iV)), ct(:nds(iV)), &
-              & buf_s(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc))), routine)
+            CALL nf(nf90_get_var(files(fId)%ncid, vIDs(fId, iV), &
+              & buf_s(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc)), &
+              & st(:nds(iV)), ct(:nds(iV))), routine)
             IF (en_bloc) THEN
               !ICON_OMP PARALLEL DO SCHEDULE(STATIC) COLLAPSE(2)
               DO lId = 1, lCnt
@@ -489,7 +494,7 @@ CONTAINS
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_io)
           IF (timers_level >= 7) CALL timer_start(timer_load_restart_communication)
           IF (.NOT.en_bloc) CALL C_F_POINTER(cptr_r, buf_3d_s, [nproma,1,nblk])
-          CALL exchange_data(cpat(hgrid)%p, ptr_3d_s(:,llId:MERGE(lCnt, llId, en_bloc),:), buf_3d_s)
+          CALL exchange_data(p_pat=cpat(hgrid)%p, lacc=.FALSE., recv=ptr_3d_s(:,llId:MERGE(lCnt, llId, en_bloc),:), send=buf_3d_s)
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_communication)
         END DO
       CASE(INT_T)
@@ -509,8 +514,9 @@ CONTAINS
             IF (pCt(fId) .LT. 1) CYCLE
             ct(:) = [pCt(fId), MERGE(lCnt, 1, en_bloc), 1]
             IF (int_is_int) THEN
-              CALL nf(nf_get_vara_int(files(fId)%ncid, vIDs(fId, iV), st(:nds(iV)), ct(:nds(iV)), &
-                & buf_i(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc))), routine)
+              CALL nf(nf90_get_var(files(fId)%ncid, vIDs(fId, iV), &
+                & buf_i(MERGE(1, ofs+1, en_bloc):MERGE(ct(1)*lcnt, ofs+ct(1), en_bloc)), &
+                & st(:nds(iV)), ct(:nds(iV))), routine)
               IF (en_bloc) THEN
                 !ICON_OMP PARALLEL DO SCHEDULE(STATIC) COLLAPSE(2)
                 DO lId = 1, lCnt
@@ -520,8 +526,9 @@ CONTAINS
                 END DO
               END IF
             ELSE
-              CALL nf(nf_get_vara_double(files(fId)%ncid, vIDs(fId, iV), st(:nds(iV)), ct(:nds(iV)), &
-                & buf_d(1:ct(1)*MERGE(lcnt, 1, en_bloc))), routine)
+              CALL nf(nf90_get_var(files(fId)%ncid, vIDs(fId, iV), &
+                & buf_d(1:ct(1)*MERGE(lcnt, 1, en_bloc)), &
+                & st(:nds(iV)), ct(:nds(iV))), routine)
               !ICON_OMP PARALLEL DO SCHEDULE(STATIC) COLLAPSE(2)
               DO lId = 1, MERGE(lCnt, 1, en_bloc)
                 DO i = 1, pCt(fId)
@@ -534,7 +541,7 @@ CONTAINS
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_io)
           IF (timers_level >= 7) CALL timer_start(timer_load_restart_communication)
           IF (.NOT.en_bloc .AND. int_is_int) CALL C_F_POINTER(cptr_r, buf_3d_i, [nproma,1,nblk])
-          CALL exchange_data(cpat(hgrid)%p, ptr_3d_i(:,llId:MERGE(lCnt, llId, en_bloc),:), buf_3d_i)
+          CALL exchange_data(p_pat=cpat(hgrid)%p, lacc=.FALSE., recv=ptr_3d_i(:,llId:MERGE(lCnt, llId, en_bloc),:), send=buf_3d_i)
           IF (timers_level >= 7) CALL timer_stop(timer_load_restart_communication)
         END DO
       END SELECT

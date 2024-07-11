@@ -39,8 +39,8 @@ int cdiGribIterator_inqTile(CdiIterator *me, int *outTileIndex, int *outTileAttr
 int cdiGribIterator_inqTileCount(CdiIterator *me, int *outTileCount, int *outTileAttributeCount);
 char *cdiGribIterator_copyVariableName(CdiIterator *me);
 
-void cdiGribIterator_readField(CdiIterator *me, double *buffer, size_t *nmiss);
-void cdiGribIterator_readFieldF(CdiIterator *me, float *buffer, size_t *nmiss);
+void cdiGribIterator_readField(CdiIterator *me, double *buffer, size_t *numMissVals);
+void cdiGribIterator_readFieldF(CdiIterator *me, float *buffer, size_t *numMissVals);
 
 #endif
 

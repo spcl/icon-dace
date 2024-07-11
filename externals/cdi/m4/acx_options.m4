@@ -3,7 +3,7 @@ AC_DEFUN([ACX_CDI_OPTIONS],
 #  ----------------------------------------------------------------------
 #  Checks for multithreaded compiling + linking
 AC_ARG_WITH([threads],
-            [AC_HELP_STRING([--with-threads=<yes/no/directory>],
+            [AS_HELP_STRING([--with-threads=<yes/no/directory>],
                             [Compile + link for multithreading [default=yes]])],
             [],
             [with_threads=yes])
@@ -318,7 +318,7 @@ AC_SUBST([ENABLE_ACROSS],[$enable_across])
 #  Compile interface with internal CGRIBEX library
 AC_MSG_CHECKING([for CGRIBEX support])
 AC_ARG_ENABLE([cgribex],
-              [AC_HELP_STRING([--enable-cgribex],[Use the CGRIBEX library [default=yes]])],
+              [AS_HELP_STRING([--enable-cgribex],[Use the CGRIBEX library [default=yes]])],
               [AS_IF([test "x$enable_cgribex" != 'xno'],
                      [AC_DEFINE(HAVE_LIBCGRIBEX,[1],[Define to 1 for GRIB1 decoding/encoding with cgribex])
                       enable_cgribex=yes])],
@@ -330,7 +330,7 @@ AC_SUBST([ENABLE_CGRIBEX],[$enable_cgribex])
 #  Compile interface with internal SERVICE library
 AC_MSG_CHECKING([for SERVICE support])
 AC_ARG_ENABLE([service],
-              [AC_HELP_STRING([--enable-service],[Use the service library [default=yes]])],
+              [AS_HELP_STRING([--enable-service],[Use the service library [default=yes]])],
               [AS_IF([test "x$enable_service" != 'xno'],
                      [AC_DEFINE(HAVE_LIBSERVICE,[1],[Define to 1 for SERVICE interface])
                       enable_service=yes])],
@@ -342,7 +342,7 @@ AC_SUBST([ENABLE_SERVICE],[$enable_service])
 #  Compile interface with internal EXTRA library
 AC_MSG_CHECKING([for EXTRA support])
 AC_ARG_ENABLE([extra],
-              [AC_HELP_STRING([--enable-extra],[Use the extra library [default=yes]])],
+              [AS_HELP_STRING([--enable-extra],[Use the extra library [default=yes]])],
               [AS_IF([test "x$enable_extra" != 'xno'],
                      [AC_DEFINE(HAVE_LIBEXTRA,[1],[Define to 1 for EXTRA interface])
                       enable_extra=yes])],
@@ -354,7 +354,7 @@ AC_SUBST([ENABLE_EXTRA],[$enable_extra])
 #  Compile interface with internal IEG library
 AC_MSG_CHECKING([for IEG support])
 AC_ARG_ENABLE([ieg],
-              [AC_HELP_STRING([--enable-ieg],[Use the ieg library [default=yes]])],
+              [AS_HELP_STRING([--enable-ieg],[Use the ieg library [default=yes]])],
               [AS_IF([test "x$enable_ieg" != 'xno'],
                      [AC_DEFINE(HAVE_LIBIEG,[1],[Define to 1 for IEG interface])
                       enable_ieg=yes])],

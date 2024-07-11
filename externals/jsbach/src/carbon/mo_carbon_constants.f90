@@ -45,8 +45,10 @@ MODULE mo_carbon_constants
   ! Definitions for lcc
 
   !> list of potential active variables for the carbon process: For these the carbon interface provides active relocation
-  CHARACTER(len=VARNAME_LEN) :: carbon_potential_active_vars(3)  = [character(len=VARNAME_LEN) :: &
-     & 'c_green', 'c_woods', 'c_reserve' ]
+  CHARACTER(len=VARNAME_LEN) :: carbon_potential_active_vars(11)  = [character(len=VARNAME_LEN) :: &
+     & 'c_green', 'c_woods', 'c_reserve',                                                          &
+     & 'c_acid_ag1', 'c_water_ag1', 'c_ethanol_ag1', 'c_nonsoluble_ag1',                           &
+     & 'c_acid_ag2', 'c_water_ag2', 'c_ethanol_ag2', 'c_nonsoluble_ag2' ]
 
   !> list of required passive vars if vars are active (because these are used to relocate the active variables)
   INTEGER, PARAMETER :: nr_of_yasso_pools = 18

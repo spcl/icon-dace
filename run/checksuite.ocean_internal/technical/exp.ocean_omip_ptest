@@ -57,7 +57,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = -1       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 600               ! model timestep in seconds

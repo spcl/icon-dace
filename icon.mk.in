@@ -27,6 +27,13 @@ bundled_subdirs= $(bundled_config_subdirs) $(bundled_cmake_subdirs)
 # Relative path to the directory with the Fortran module files:
 moddir:= mod
 
+# When the two-step compilation is enabled, Fortran module files that are
+# generated together with the object file become an unwanted side effect. More
+# often than not, Fortran compilers do not have special flags to suppress the
+# generation of the module files. Therefore, we use the following directory as
+# a trash bin:
+@SEPARATE_MODS_ENABLED@moddir_null:= $(moddir)/null
+
 # Relative path to the directory with the generated executables:
 bindir:= bin
 
@@ -63,7 +70,7 @@ MKDIR_P= @MKDIR_P@
 
 # Fortran compiler flags:
 FCFLAGS= @FCFLAGS@
-make_FCFLAGS= @FC_MOD_IN@$(moddir) @FC_MOD_OUT@$(moddir)
+make_FCFLAGS= @FC_MOD_IN@$(moddir)
 ICON_FCFLAGS= @ICON_FCFLAGS@
 @ICON_FCGROUP_FLAGS@
 DEPGEN_FCFLAGS= @DEPGEN_FCFLAGS@
@@ -174,8 +181,9 @@ exec_files:=
 
 # Auxiliary function. Receives a space-separated list of relative paths to the
 # original Fortran '.f90' files and returns a space-separated list of paths to
-# the respective object files, which change depending on the preprocessing
-# steps applied to the original source files.
+# the respective object files (not necessarily in the respective order though),
+# which change depending on the preprocessing steps applied to the original
+# source files.
 get_obj_names= $(patsubst %.f90,%.@OBJEXT@,$(filter $(foreach f,$(1),$(f:f90=)%f90),$(f90_files)))
 
 # ICON executable:
@@ -192,7 +200,7 @@ lib_files:=
 # returns a space-separated list of paths to their prerequisite objects. The
 # input paths are excluded from the output.
 get_prereq_objs= $(filter-out $(1),$(filter %.@OBJEXT@, \
-                     $(shell $(DEPLIST) --inc-oo @deplist.config -t $(1) -f $(dep_files))))
+                     $(shell $(DEPLIST) @deplist.config -t $(1) -f $(dep_files))))
 
 # Common convenience library (holds prerequisite objects of the generated
 # executables):
@@ -230,16 +238,11 @@ join_comma= $(subst $() ,$(join_comma_symbol),$(strip $(1)))
 
 # Additional PGI/NVIDIA Fortran compiler flags enabling the inline library
 # generation and usage:
-#   We are not interested in the object files that are generated during the
-#   extraction of the inline information because we re-generate them later again
-#   using the inline library. Therefore, we can speed up the extraction by
-#   telling the compiler to omit any optimizations with the '-O0' flag. This
-#   also circumvents the problem with the compiler not being able to process
-#   certain files with the default optimization level set in $(ICON_FCFLAGS),
-#   which we use at the extraction step, regardless of the Fortran compile group
-#   a file belongs to.
 @PGI_INLIB_ENABLED@pgi_inlib_common_arg:= lib:$(pgi_inlib_name),name:$(call join_comma,$(pgi_inlib_procedures))
-@PGI_INLIB_ENABLED@pgi_inlib_ex_FCFLAGS= -O0 -Mextract=$(pgi_inlib_common_arg)
+@PGI_INLIB_ENABLED@pgi_inlib_ex_FCFLAGS= -Mextract=$(pgi_inlib_common_arg)
+@PGI_INLIB_ENABLED@@SEPARATE_MODS_ENABLED@dir_files+= $(moddir_null)/icon.il/.dirstamp
+@PGI_INLIB_ENABLED@@SEPARATE_MODS_ENABLED@pgi_inlib_ex_FCFLAGS+= @FC_MOD_OUT@$(moddir_null)/icon.il
+@PGI_INLIB_ENABLED@@SEPARATE_MODS_DISABLED@pgi_inlib_ex_FCFLAGS+= @FC_MOD_OUT@$(moddir)
 @PGI_INLIB_ENABLED@pgi_inlib_in_FCFLAGS= -Minline=$(pgi_inlib_common_arg),reshape
 
 # Additional flag limiting the GPU register usage (valid only if the inline
@@ -248,18 +251,33 @@ join_comma= $(subst $() ,$(join_comma_symbol),$(strip $(1)))
 
 ########################################
 
-# Get object file names that correspond to the source files in
-# $(pgi_inlib_f90_files):
-@PGI_INLIB_ENABLED@pgi_inlib_obj_files:= $(call get_obj_names,$(pgi_inlib_f90_files))
+# List of object files that correspond to the source files from
+# $(pgi_inlib_f90_files) and are needed for the current configuration:
+@PGI_INLIB_ENABLED@pgi_inlib_obj_files:= \
+@PGI_INLIB_ENABLED@  $(filter $(common_lib_obj_files) $(common_lib_prog_obj_files), \
+@PGI_INLIB_ENABLED@    $(call get_obj_names,$(pgi_inlib_f90_files)))
 
-# Filter-out object file names that are not needed for the current
-# configuration:
-@PGI_INLIB_ENABLED@pgi_inlib_obj_files:= $(filter $(common_lib_obj_files) $(common_lib_prog_obj_files),$(pgi_inlib_obj_files))
+# List of the respective dependency files:
+@PGI_INLIB_ENABLED@pgi_inlib_dep_files:= $(pgi_inlib_obj_files:.@OBJEXT@=.f90.d)
+
+# List of Fortran module files declared (or extended via submodules) that
+# correspond to $(pgi_inlib_obj_files):
+@PGI_INLIB_ENABLED@pgi_inlib_mod_files:= \
+@PGI_INLIB_ENABLED@  $(filter %.@FC_MOD_FILE_EXT@.proxy, \
+@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) -p $(pgi_inlib_obj_files) -f $(pgi_inlib_dep_files)))
 
 # List of objects that are generated using the inline library:
 @PGI_INLIB_ENABLED@pgi_inlib_target_obj_files:= \
 @PGI_INLIB_ENABLED@  $(filter %.@OBJEXT@, \
-@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) --inc-oo -p $(pgi_inlib_obj_files) -f $(dep_files)))
+@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) -p $(pgi_inlib_obj_files) -f $(dep_files)))
+
+# If a source file from $(pgi_inlib_f90_files) declares a submodule, the object
+# file of the respective parent module should be generated using the inline
+# library as well:
+@PGI_INLIB_ENABLED@pgi_inlib_target_obj_files+= \
+@PGI_INLIB_ENABLED@  $(patsubst %$(pp_infix)modstamp.f90,%.@OBJEXT@, \
+@PGI_INLIB_ENABLED@    $(filter %.@OBJEXT@ %$(pp_infix)modstamp.f90, \
+@PGI_INLIB_ENABLED@      $(shell $(DEPLIST) --no-hints --max-depth 1 -t $(pgi_inlib_mod_files) -f $(dep_files))))
 
 # To avoid circular dependencies, we need to account for situations when we
 # have a dependency A -> B -> C, where A and C belong to $(pgi_inlib_obj_files)
@@ -268,29 +286,16 @@ join_comma= $(subst $() ,$(join_comma_symbol),$(strip $(1)))
 # (prerequisites) and dependents (targets) of $(pgi_inlib_obj_files):
 @PGI_INLIB_ENABLED@pgi_inlib_obj_files:= \
 @PGI_INLIB_ENABLED@  $(filter $(pgi_inlib_target_obj_files), \
-@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) --inc-oo -t $(pgi_inlib_obj_files) -f $(dep_files)))
-
-# Now we need to create a list of Fortran module files that must be created
-# before any of the object files $(pgi_inlib_obj_files) gets generated. First,
-# we need a subset of dependency files that correspond to
-# $(pgi_inlib_obj_files):
+@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) --no-hints -t $(pgi_inlib_obj_files) -f $(dep_files)))
 @PGI_INLIB_ENABLED@pgi_inlib_dep_files:= $(pgi_inlib_obj_files:.@OBJEXT@=.f90.d)
 
-# List of Fortran module files that at least on element of
-# $(pgi_inlib_obj_files) depends on:
-@PGI_INLIB_ENABLED@pgi_inlib_mod_files:= \
-@PGI_INLIB_ENABLED@  $(filter %.@FC_MOD_FILE_EXT@.proxy, \
-@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) --inc-oo -f $(pgi_inlib_dep_files)))
-
-# List of Fortran modules declared in source files that correspond to
-# $(pgi_inlib_obj_files):
-@PGI_INLIB_ENABLED@pgi_inlib_internal_mod_files:= \
-@PGI_INLIB_ENABLED@  $(filter %.@FC_MOD_FILE_EXT@.proxy, \
-@PGI_INLIB_ENABLED@    $(shell $(DEPLIST) --inc-oo -p $(pgi_inlib_obj_files) -f $(pgi_inlib_dep_files)))
-
-# List of Fortran modules that must be created before the inline library:
+# List of Fortran module and submodule files that must be created before the
+# inline library:
 @PGI_INLIB_ENABLED@pgi_inlib_prereq_mod_files:= \
-@PGI_INLIB_ENABLED@  $(filter-out $(pgi_inlib_internal_mod_files),$(pgi_inlib_mod_files))
+@PGI_INLIB_ENABLED@  $(filter %.@FC_MOD_FILE_EXT@.proxy %.@FC_SMOD_FILE_EXT@.sproxy, \
+@PGI_INLIB_ENABLED@    $(filter-out \
+@PGI_INLIB_ENABLED@      $(shell $(DEPLIST) --no-hints -p $(pgi_inlib_obj_files) -f $(pgi_inlib_dep_files)), \
+@PGI_INLIB_ENABLED@      $(shell $(DEPLIST) --no-hints -t $(pgi_inlib_obj_files) $(pgi_inlib_obj_files:.@OBJEXT@=$(pp_infix)modstamp.f90) -f $(pgi_inlib_dep_files))))
 
 ############################### MAKEFILE TWEAKS ################################
 
@@ -312,6 +317,7 @@ silent_FPP=     @echo "  FPP     " $@;
 silent_GEN=     @echo "  GEN     " $@;
 silent_HIPCXX=  @echo "  HIPCXX  " $@;
 silent_MKDIR=   @echo "  MKDIR   " $(@D);
+silent_MOD=     @echo "  MOD    <" $<;
 silent_SB2=     @echo "  SB2PP   " $@;
 silent_none=    @
 endif
@@ -383,7 +389,7 @@ depend: $(dep_files)
 # Generate a list of files that are going to be compiled in the current
 # configuration:
 srclist: $(dep_files)
-	$(silent_GEN)$(DEPLIST) --inc-oo -t $(ICON_prog_obj_file) -f $^ 2>/dev/null | sed '/\(\.@OBJEXT@\|\.@FC_MOD_FILE_EXT@\.proxy\)$$/d' | sort > $@
+	$(silent_GEN)$(DEPLIST) -t $(ICON_prog_obj_file) -f $^ 2>/dev/null | sed '/\(\.@OBJEXT@\|\.@FC_MOD_FILE_EXT@\.proxy\|.@FC_SMOD_FILE_EXT@\.sproxy\)$$/d' | sort > $@
 
 # Check rule:
 check: all check-bundled
@@ -397,6 +403,8 @@ check: all check-bundled
 mostlyclean: $(bundled_subdirs)
 	rm -f $(exec_files) $(lib_files) $(addsuffix .@OBJEXT@,$(basename $(f90_files) $(c_files) $(cu_files) $(hip_files))) version.@OBJEXT@
 	rm -f $(moddir)/*.@FC_MOD_FILE_EXT@ $(moddir)/*.@FC_MOD_FILE_EXT@.proxy
+	rm -f $(moddir)/*.@FC_SMOD_FILE_EXT@ $(moddir)/*.@FC_SMOD_FILE_EXT@.sproxy
+@SEPARATE_MODS_ENABLED@	rm -rf $(moddir_null) $(f90_files:.f90=$(pp_infix)modstamp.f90)
 @PGI_INLIB_ENABLED@	rm -rf $(pgi_inlib_name)
 
 # Delete files generated at the building stage (strictly speaking, we should
@@ -430,7 +438,7 @@ clean: mostlyclean
 # Delete everything generated at the configure stage (and clean the created
 # directories if they are empty):
 distclean: clean
-	rm -f config.h config.log config.status depgen.c.config depgen.f90.config deplist.config collect.extra-libs
+	rm -f config.h config.log config.status depgen.c.config depgen.f90.config deplist.config collect.extra-libs @PGI_INLIB_ENABLED@ inlib.mk
 	rm -f run/collect.set-up.info run/set-up.info run/SETUP.config
 	rm -f $(dep_files)
 	rm -f $(dir_files)
@@ -506,13 +514,20 @@ $(lib_files): | $(dir_files)
 # PGI/NVIDIA inline library generation rule (note that the source files are
 # provided to the compiler in the topological order):
 @PGI_INLIB_ENABLED@$(pgi_inlib_name)/TOC: $(pgi_inlib_prereq_mod_files) $(pgi_inlib_obj_files:.@OBJEXT@=.f90) inlib.mk | $(dir_files)
-@PGI_INLIB_ENABLED@	$(silent_FCEX)rm -rf $(@D) && $(FC) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) $(pgi_inlib_ex_FCFLAGS) @FCFLAGS_f90@ $(filter %.f90,$^)
+@PGI_INLIB_ENABLED@	$(silent_FCEX)rm -rf $(@D) && $(FC) $(pgi_inlib_ex_FCFLAGS) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) @FCFLAGS_f90@ $(filter %.f90,$^)
 
 # Fortran compilation rule:
-%.@OBJEXT@: %.f90 | $(dir_files) $(bundled_subdirs)
-	$(silent_FC)$(FC) -o $@ -c $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) @FCFLAGS_f90@ $<
+@SEPARATE_MODS_ENABLED@%.@OBJEXT@: %.f90 | $(dir_files) $(bundled_subdirs) sanitize-mod-proxies
+@SEPARATE_MODS_ENABLED@	$(silent_FC)@MKDIR_P@ $(moddir_null)/$@ && $(FC) -o $@ -c @FC_MOD_OUT@$(moddir_null)/$@ $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) @FCFLAGS_f90@ $<
 
-# Fortran module file rule:
+@SEPARATE_MODS_DISABLED@%.@OBJEXT@: %.f90 | $(dir_files) $(bundled_subdirs) sanitize-mod-proxies
+@SEPARATE_MODS_DISABLED@	$(silent_FC)$(FC) -o $@ -c @FC_MOD_OUT@$(moddir) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) @FCFLAGS_f90@ $<
+
+# Fortran module file generation rule:
+@SEPARATE_MODS_ENABLED@%$(pp_infix)modstamp.f90: %.f90 | $(dir_files) $(bundled_subdirs) sanitize-mod-proxies
+@SEPARATE_MODS_ENABLED@	$(silent_MOD)$(FC) -c @FC_MOD_OUT@$(moddir) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS) @FC_MOD_ONLY@ @FCFLAGS_f90@ $< && touch $@
+
+# Fortran module file tracking and recovery rule:
 $(moddir)/%.@FC_MOD_FILE_EXT@.proxy:| sanitize-mod-proxies
 	@if test -n '$<'; then \
 	  if test ! -f '$(@:.proxy=)'; then rm -f '$<'; $(MAKE) -f icon.mk '$<'; fi; \
@@ -520,11 +535,21 @@ $(moddir)/%.@FC_MOD_FILE_EXT@.proxy:| sanitize-mod-proxies
 	  else cp '$(@:.proxy=)' '$@' 2>/dev/null; fi; \
 	fi
 
-# Delete all Fortran module proxy files that do not have an existing module to
-# be a proxy of, i.e. if <filename>.proxy exists but <filename> does not,
-# delete <filename>.proxy:
+# Fortran submodule file tracking and recovery rule:
+$(moddir)/%.@FC_SMOD_FILE_EXT@.sproxy:| sanitize-mod-proxies
+	@if test -z '$<'; then \
+	  echo "Cannot find Fortran source file providing submodule '$(basename $(@F:.sproxy=))'." >&2; \
+	else \
+	  if test ! -f '$(@:.sproxy=)'; then rm -f '$<'; $(MAKE) '$<'; fi; \
+	  if cmp '$@' '$(@:.sproxy=)' >/dev/null 2>&1 || $(MODCMP) '$@' '$(@:.sproxy=)' @FC_VENDOR@ 2>/dev/null; then :; \
+	  else cp '$(@:.sproxy=)' '$@' 2>/dev/null; fi; \
+	fi
+
+# Delete all Fortran (sub)module proxy files that do not have an existing
+# (sub)module to be a proxy of, i.e. if <filename>.proxy exists but <filename>
+# does not, delete <filename>.proxy:
 sanitize-mod-proxies:
-	@rm -f $(filter-out $(addsuffix .proxy,$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@)),$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@.proxy))
+	@rm -f $(filter-out $(addsuffix .proxy,$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@)),$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@.proxy)) $(filter-out $(addsuffix .sproxy,$(wildcard $(moddir)/*.@FC_SMOD_FILE_EXT@)),$(wildcard $(moddir)/*.@FC_SMOD_FILE_EXT@.sproxy))
 
 # C compilation rule:
 %.@OBJEXT@: %.c | $(dir_files)
@@ -619,7 +644,7 @@ version.c: force-create-version
 
 # Fortran dependency generation rule:
 %.f90.d: %.f90 icon.mk depgen.f90.config | $(dir_files)
-	$(silent_DEPGEN)$(DEPGEN) @depgen.f90.config -o $@ --obj-name $(@:.f90.d=.@OBJEXT@) -i $< -- $(DEPGEN_FCFLAGS) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS)
+	$(silent_DEPGEN)$(DEPGEN) @depgen.f90.config -o $@ --obj-name $(@:.f90.d=.@OBJEXT@) $(if @SEPARATE_MODS_DISABLED@,--fc-mod-stamp-name $(@:.f90.d=$(pp_infix)modstamp.f90)) -i $< -- $(DEPGEN_FCFLAGS) @FC_MOD_OUT@$(moddir) $(make_FCFLAGS) $(FCFLAGS) $(ICON_FCFLAGS)
 
 # C dependency generation rule:
 %.c.d: %.c icon.mk depgen.c.config | $(dir_files)
@@ -636,13 +661,13 @@ version.c: force-create-version
 # Dependency generation rule for Fortran-to-C bindings:
 c_binding.d: icon.mk
 	$(silent_DEPGEN):;{ \
-	  echo '$(call get_obj_names,src/io/restart/mo_c_restart_util.f90):| support/util_multifile_restart.@OBJEXT@'; \
-	  echo '$(call get_obj_names,support/mo_util_uuid.f90):| support/util_uuid.@OBJEXT@'; \
-	  echo '$(call get_obj_names,src/shared/mo_util_vcs.f90):| version.@OBJEXT@'; \
+	  echo '$(call get_obj_names,src/io/restart/mo_c_restart_util.f90): #-hint support/util_multifile_restart.@OBJEXT@'; \
+	  echo '$(call get_obj_names,support/mo_util_uuid.f90): #-hint support/util_uuid.@OBJEXT@'; \
+	  echo '$(call get_obj_names,src/shared/mo_util_vcs.f90): #-hint version.@OBJEXT@'; \
+	  echo '@ART_ENABLED@$(call get_obj_names,$(ART_subdir)/shared/mo_art_util_vcs.f90): #-hint version.@OBJEXT@'; \
+	  echo '@GPU_ENABLED@$(call get_obj_names,src/shared/mo_index_list.f90): #-hint src/shared_cuda/index_list_cuda.@OBJEXT@'; \
+	  echo '@DACE_ENABLED@$(call get_obj_names,$(DACE_subdir)/mo_wigos.f90): #-hint $(DACE_subdir)/dace_md5_ifc.@OBJEXT@ $(DACE_subdir)/md5.@OBJEXT@'; \
 	} >$@
-@ART_ENABLED@	$(silent_none)echo '$(call get_obj_names,src/art/shared/mo_art_util_vcs.f90):| version.@OBJEXT@' >>$@
-@GPU_ENABLED@	$(silent_none)echo '$(call get_obj_names,src/shared/mo_index_list.f90):| src/shared_cuda/index_list_cuda.@OBJEXT@' >>$@
-@DACE_ENABLED@	$(silent_none)echo '$(call get_obj_names,$(DACE_subdir)/mo_wigos.f90):| $(DACE_subdir)/dace_md5_ifc.@OBJEXT@ $(DACE_subdir)/md5.@OBJEXT@' >>$@
 
 # Dummy dependency file generation rule (called by config.status):
 dummy-depend: | $(dir_files)

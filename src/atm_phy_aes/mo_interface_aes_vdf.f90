@@ -30,7 +30,7 @@ MODULE mo_interface_aes_vdf
     &                               timer_vdf_dn, timer_vdf_sf, timer_vdf_up
 
   USE mo_ccycle_config       ,ONLY: ccycle_config
-  USE mo_physical_constants  ,ONLY: vmr_to_mmr_co2
+  USE mo_physical_constants  ,ONLY: vmr_to_mmr_co2,cvd,cpd
   USE mo_bc_greenhouse_gases ,ONLY: ghg_co2mmr
 
   USE mo_run_config          ,ONLY: iqv, iqc, iqi, iqnc, iqni, iqt, ico2
@@ -857,6 +857,7 @@ CONTAINS
           !----------------------------------------------------------------------------------------
           !
           IF (ltimer) CALL timer_stop(timer_vdf_up)
+
           !
           ! store in memory for output or recycling
           !
@@ -1054,7 +1055,7 @@ CONTAINS
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
           !$ACC LOOP GANG VECTOR
           DO jl = jcs,jce
-            tend_ta_sfc(jl,jb) = -q_snocpymlt(jl,jb) * field% qconv(jl,nlev,jb)
+            tend_ta_sfc(jl,jb) = -q_snocpymlt(jl,jb) / field% cvair(jl,nlev,jb)
           END DO
           !
           IF (ASSOCIATED(tend% ta_sfc)) THEN
@@ -1112,7 +1113,7 @@ CONTAINS
         !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1)
         DO jk = 1,nlev
           DO jl = jcs, jce
-            tend_ta_vdf(jl,jk,jb) = q_vdf(jl,jk,jb) * field% qconv(jl,jk,jb)
+            tend_ta_vdf(jl,jk,jb) = q_vdf(jl,jk,jb) / field% cvair(jl,jk,jb)
           END DO
         END DO
         !
@@ -1354,7 +1355,7 @@ CONTAINS
         ! convert    heating
         !$ACC LOOP GANG VECTOR
         DO jl = jcs,jce
-          tend_ta_rlw_impl(jl,jb) = q_rlw_impl(jl,jb) * field% qconv(jl,nlev,jb)
+          tend_ta_rlw_impl(jl,jb) = q_rlw_impl(jl,jb) / field% cvair(jl,nlev,jb)
         END DO
         !
         IF (ASSOCIATED(tend%ta_rlw_impl)) THEN

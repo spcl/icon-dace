@@ -44,10 +44,13 @@ machine=daint
 ./addbuilder DAINT_GPU_nvidia_mixed --machine $machine --build_script="./config/buildbot/daint_gpu_nvidia_mixed" --configureflags="--enable-mixed" --builderflags="Active"  --list $list
 machine=balfrin
 ./addmachine $machine --list $list
-./addbuilder balfrin_cpu_nvidia     --machine $machine --build_script="./config/buildbot/balfrin_cpu_nvidia"  --builderflags="Active"  --list $list
-./addbuilder balfrin_gpu_nvidia     --machine $machine --build_script="./config/buildbot/balfrin_gpu_nvidia"  --builderflags="Active"  --list $list
-./addbuilder balfrin_cpu_nvidia_mixed     --machine $machine --build_script="./config/buildbot/balfrin_cpu_nvidia_mixed"  --builderflags="Active"  --list $list
-./addbuilder balfrin_gpu_nvidia_mixed     --machine $machine --build_script="./config/buildbot/balfrin_gpu_nvidia_mixed"  --builderflags="Active"  --list $list
+./addbuilder balfrin_cpu_nvidia       --machine $machine --build_script="./config/buildbot/balfrin_cpu_nvidia"  --builderflags="Active"  --list $list
+./addbuilder balfrin_gpu_nvidia       --machine $machine --build_script="./config/buildbot/balfrin_gpu_nvidia"  --builderflags="Active"  --list $list
+./addbuilder balfrin_cpu_nvidia_mixed --machine $machine --build_script="./config/buildbot/balfrin_cpu_nvidia_mixed"  --builderflags="Active"  --list $list
+./addbuilder balfrin_gpu_nvidia_mixed --machine $machine --build_script="./config/buildbot/balfrin_gpu_nvidia_mixed"  --builderflags="Active"  --list $list
+# the alps_mch_test builders may be moved to different machines in the future
+./addbuilder alps_mch_test_cpu        --machine $machine --build_script="./config/buildbot/alps_mch_test_cpu"  --builderflags="Active"  --list $list
+./addbuilder alps_mch_test_gpu        --machine $machine --build_script="./config/buildbot/alps_mch_test_gpu"  --builderflags="Active"  --list $list
 
 #DWD machines
 machine=dwd_nec
@@ -87,9 +90,11 @@ machine=levante
 
 machine=jsc
 ./addmachine $machine --list $list
-./addbuilder cluster_gcc         --machine $machine  --build_script="config/buildbot/cluster_gcc"   --builderflags="Inactive" --list $list
-./addbuilder cluster_intel       --machine $machine  --build_script="config/buildbot/cluster_intel"   --builderflags="build_only" --list $list
-./addbuilder booster_nvhpc       --machine $machine  --build_script="config/buildbot/booster_nvhpc"   --builderflags="build_only" --list $list
+./addbuilder cluster_intel_ompi  --machine $machine  --build_script="config/buildbot/cluster_intel_ompi"   --builderflags="Inactive" --list $list
+./addbuilder cluster_intel_psmpi --machine $machine  --build_script="config/buildbot/cluster_intel_psmpi"  --builderflags="Inactive" --list $list
+./addbuilder cluster_nvhpc_psmpi --machine $machine  --build_script="config/buildbot/cluster_nvhpc_psmpi"  --builderflags="Inactive" --list $list
+./addbuilder booster_nvhpc_ompi  --machine $machine  --build_script="config/buildbot/booster_nvhpc_ompi"   --builderflags="Inactive" --list $list
+./addbuilder booster_nvhpc_psmpi --machine $machine  --build_script="config/buildbot/booster_nvhpc_psmpi"  --builderflags="Inactive" --list $list
 
 # KIT builders
 machine=horeka
@@ -101,5 +106,7 @@ machine=horeka
 
 machine=lumi
 ./addmachine $machine --list $list
-./addbuilder lumi_gpu  --machine $machine  --build_script="config/buildbot/lumi_gpu"   --builderflags="build_only" --list $list
-./addbuilder lumi_cpu  --machine $machine  --build_script="config/buildbot/lumi_cpu"   --builderflags="build_only" --list $list
+./addbuilder lumi_gpu  --machine $machine  --build_script="config/buildbot/lumi_gpu"   --builderflags="Active" --list $list
+./addbuilder lumi_cpu  --machine $machine  --build_script="config/buildbot/lumi_cpu"   --builderflags="Active" --list $list
+./addbuilder lumi_gpu_mixed  --machine $machine  --build_script="config/buildbot/lumi_gpu_mixed"   --builderflags="build_only" --list $list
+./addbuilder lumi_cpu_mixed  --machine $machine  --build_script="config/buildbot/lumi_cpu_mixed"   --builderflags="build_only" --list $list

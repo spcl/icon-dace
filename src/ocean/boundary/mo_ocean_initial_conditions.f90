@@ -207,7 +207,7 @@ CONTAINS
     LOGICAL  :: has_missValue
     REAL(wp) :: missValue
     
-    INTEGER :: block, idx, start_cell_index, end_cell_index, level
+    INTEGER :: blockno, jc, start_cell_index, end_cell_index, level
     TYPE(t_subset_range), POINTER :: all_cells
     TYPE(t_patch), POINTER :: patch_2d
     TYPE(t_stream_id) :: stream_id
@@ -230,16 +230,12 @@ CONTAINS
 
     CALL closeFile(stream_id)
 
-    DO block = all_cells%start_block, all_cells%end_block
-      CALL get_index_range(all_cells, block, start_cell_index, end_cell_index)
-      DO idx = start_cell_index, end_cell_index
-        ! FIXME: to complicated, better use land sea mask
-        DO level = patch_3d%p_patch_1d(1)%dolic_c(idx,block) + 1, 1
-!          IF ( variable(idx,block) /=  0.0_wp) THEN
-!            CALL warning(method_name, "non-zero variable on land")
-            variable(idx,block) = 0.0_wp
-!          ENDIF
-        ENDDO
+
+    !ICON_OMP_PARALLEL_DO PRIVATE(start_cell_index, end_cell_index, jc) SCHEDULE(dynamic)
+    DO blockno = all_cells%start_block, all_cells%end_block
+      CALL get_index_range(all_cells, blockno, start_cell_index, end_cell_index)
+      DO jc = start_cell_index, end_cell_index
+         variable(jc,blockno) = variable(jc,blockno) * patch_3d%wet_c(jc,1,blockno)
       ENDDO
     ENDDO
 

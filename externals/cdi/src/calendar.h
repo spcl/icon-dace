@@ -6,8 +6,6 @@
 
 // clang-format off
 
-#include "cdi.h"
-
 #ifdef __cplusplus
 extern "C" {
 #endif

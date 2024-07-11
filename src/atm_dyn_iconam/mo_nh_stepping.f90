@@ -35,7 +35,8 @@ MODULE mo_nh_stepping
   USE mo_nonhydro_state,           ONLY: p_nh_state, p_nh_state_lists
   USE mo_nonhydrostatic_config,    ONLY: itime_scheme, divdamp_order,                                 &
     &                                    divdamp_fac, divdamp_fac_o2, ih_clch, ih_clcm, kstart_moist, &
-    &                                    ndyn_substeps, ndyn_substeps_var, ndyn_substeps_max, vcfl_threshold
+    &                                    ndyn_substeps, ndyn_substeps_var, ndyn_substeps_max, vcfl_threshold, &
+    &                                    nlev_hcfl
   USE mo_diffusion_config,         ONLY: diffusion_config
   USE mo_dynamics_config,          ONLY: nnow, nnew, nnow_rcf, nnew_rcf, nsav1, nsav2, lmoist_thdyn, ldeepatmo
   USE mo_io_config,                ONLY: is_totint_time, n_diag, var_in_output, checkpoint_on_demand
@@ -51,7 +52,7 @@ MODULE mo_nh_stepping
     &                                    timer_iconam_aes, timer_dace_coupling, timer_rrg_interp, &
     &                                    timer_coupling
   USE mo_ext_data_state,           ONLY: ext_data
-  USE mo_radiation_config,         ONLY: irad_aero, iRadAeroCAMSclim
+  USE mo_radiation_config,         ONLY: irad_aero, iRadAeroCAMSclim, iRadAeroCAMStd
   USE mo_limarea_config,           ONLY: latbc_config
   USE mo_model_domain,             ONLY: p_patch, t_patch, p_patch_local_parent
   USE mo_time_config,              ONLY: t_time_config
@@ -61,8 +62,8 @@ MODULE mo_nh_stepping
   USE mo_gribout_config,           ONLY: gribout_config
   USE mo_nh_testcases_nml,         ONLY: is_toy_chem, ltestcase_update
   USE mo_nh_dcmip_terminator,      ONLY: dcmip_terminator_interface
-  USE mo_nh_supervise,             ONLY: supervise_total_integrals_nh, print_maxwinds,  &
-    &                                    init_supervise_nh, finalize_supervise_nh
+  USE mo_nh_supervise,             ONLY: supervise_total_integrals_nh, print_maxwinds,        &
+    &                                    init_supervise_nh, finalize_supervise_nh, compute_hcfl
   USE mo_intp_data_strc,           ONLY: p_int_state, t_int_state, p_int_state_local_parent
   USE mo_intp_rbf,                 ONLY: rbf_vec_interpol_cell
   USE mo_intp,                     ONLY: verts2cells_scalar
@@ -88,7 +89,7 @@ MODULE mo_nh_stepping
   USE mo_update_dyn_scm,           ONLY: add_slowphys_scm
   USE mo_advection_stepping,       ONLY: step_advection
   USE mo_prepadv_util,             ONLY: prepare_tracer
-  USE mo_nh_diffusion,             ONLY: diffusion
+  USE mo_nh_diffusion,             ONLY: diffusion, moisture_diffusion
   USE mo_memory_log,               ONLY: memory_log_add
   USE mo_mpi,                      ONLY: proc_split, push_glob_comm, pop_glob_comm, &
        &                                 p_comm_work, my_process_is_mpi_workroot,   &
@@ -102,7 +103,7 @@ MODULE mo_nh_stepping
 #endif
   ! NWP physics
   USE mo_atm_phy_nwp_config,       ONLY: dt_phy, atm_phy_nwp_config, iprog_aero, setup_nwp_diag_events
-  USE mo_nwp_phy_state,            ONLY: prm_diag, prm_nwp_tend, phy_params, prm_nwp_stochconv
+  USE mo_nwp_phy_state,            ONLY: prm_diag, prm_nwp_tend, phy_params, prm_nwp_stochconv, prm_nwp_diag_list
   USE mo_lnd_nwp_config,           ONLY: nlev_soil, nlev_snow, sstice_mode, sst_td_filename, &
     &                                    ci_td_filename, frsi_min
   USE mo_nwp_lnd_state,            ONLY: p_lnd_state
@@ -114,7 +115,7 @@ MODULE mo_nh_stepping
 #ifndef __NO_NWP__
   USE mo_nh_interface_nwp,         ONLY: nwp_nh_interface
   USE mo_phy_events,               ONLY: mtime_ctrl_physics
-  USE mo_nwp_phy_init,             ONLY: init_nwp_phy, init_cloud_aero_cpl
+  USE mo_nwp_phy_init,             ONLY: init_nwp_phy, init_cloud_aero_cpl, clim_cdnc
   USE mo_nwp_sfc_utils,            ONLY: aggregate_landvars, aggr_landvars, process_sst_and_seaice
   USE mo_nwp_diagnosis,            ONLY: nwp_diag_for_output, nwp_opt_diagnostics, nwp_diag_global
   USE mo_nwp_vdiff_interface,      ONLY: nwp_vdiff_update_seaice
@@ -131,7 +132,7 @@ MODULE mo_nh_stepping
   USE mo_omp_block_loop,           ONLY: omp_block_loop_cell
   USE mo_diagnose_qvi,             ONLY: diagnose_qvi
   USE mo_diagnose_uvi,             ONLY: diagnose_uvd, diagnose_uvp
-  USE mo_diagnose_ene,             ONLY: diagnose_ene
+  USE mo_aes_diagnostics,          ONLY: aes_global_diagnostics
   USE mo_interface_iconam_aes,     ONLY: interface_iconam_aes
 #endif
   USE mo_phys_nest_utilities,      ONLY: interpol_phys_grf, feedback_phys_diag, interpol_rrg_grf, copy_rrg_ubc
@@ -177,7 +178,7 @@ MODULE mo_nh_stepping
   USE mo_restart_util,             ONLY: check_for_checkpoint
   USE mo_prepadv_types,            ONLY: t_prepare_adv
   USE mo_prepadv_state,            ONLY: prep_adv, jstep_adv
-  USE mo_action,                   ONLY: reset_act
+  USE mo_action,                   ONLY: reset_act, get_prev_trigger_time
   USE mo_output_event_handler,     ONLY: get_current_jfile
   USE mo_opt_diagnostics,          ONLY: update_opt_acc, reset_opt_acc, &
     &                                    calc_mean_opt_acc, p_nh_opt_diag
@@ -231,11 +232,11 @@ MODULE mo_nh_stepping
   USE mo_icon2dace,                ONLY: mec_Event, init_dace_op, run_dace_op, dace_op_init
   USE mo_extpar_config,            ONLY: generate_td_filename
   USE mo_nudging_config,           ONLY: nudging_config, l_global_nudging, indg_type
+  USE mo_nwp_tuning_config,        ONLY: itune_gust_diag
   USE mo_nudging,                  ONLY: nudging_interface
-  USE mo_initicon_utils,           ONLY: prepare_thermo_src_term
+  USE mo_nh_moist_thdyn,           ONLY: thermo_src_term
 #ifndef __NO_ICON_COMIN__
-  USE comin_host_interface,        ONLY: comin_callback_context_call, &
-    &                                    COMIN_DOMAIN_OUTSIDE_LOOP,   &
+  USE comin_host_interface,        ONLY: COMIN_DOMAIN_OUTSIDE_LOOP,   &
     &                                    EP_ATM_TIMELOOP_BEFORE,      &
     &                                    EP_ATM_TIMELOOP_START,       &
     &                                    EP_ATM_TIMELOOP_END,         &
@@ -255,13 +256,12 @@ MODULE mo_nh_stepping
     &                                    EP_ATM_NUDGING_BEFORE,       &
     &                                    EP_ATM_NUDGING_AFTER
   USE mo_comin_adapter,            ONLY: icon_update_current_datetime, &
-    &                                    icon_update_expose_variables
+    &                                    icon_update_expose_variables, &
+    &                                    icon_call_callback
 #endif
 
-#ifdef YAC_coupling
   USE mo_coupling_config       ,ONLY: is_coupled_to_output
   USE mo_output_coupling       ,ONLY: output_coupling
-#endif
 
   !$ser verbatim USE mo_ser_all, ONLY: serialize_all
 
@@ -351,7 +351,7 @@ MODULE mo_nh_stepping
 
 
   ! Compute diagnostic dynamics fields for initial output and physics initialization
-  CALL diag_for_output_dyn ()
+  CALL diag_for_output_dyn (lacc=.FALSE.)
 
 
   ! diagnose airmass from \rho(now) for both restart and non-restart runs
@@ -388,7 +388,7 @@ MODULE mo_nh_stepping
       ENDDO
     END IF
 
-    IF (irad_aero == iRadAeroCAMSclim) THEN
+    IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd ) THEN
       ALLOCATE(cams_reader(n_dom))
       ALLOCATE(cams_intp(n_dom))
     END IF
@@ -470,13 +470,20 @@ MODULE mo_nh_stepping
            & phy_params(jg), mtime_current         ,&
            & lreset=(iau_iter==2)                   )
 
-      IF (.NOT.isRestart()) THEN
+      IF (atm_phy_nwp_config(jg)%icpl_aero_gscp == 3) THEN
+        ! Use cloud droplet number from climatology:
+        CALL clim_cdnc(mtime_current, p_patch(jg), ext_data(jg), prm_diag(jg))
+      ELSEIF (.NOT.isRestart()) THEN
         CALL init_cloud_aero_cpl (mtime_current, p_patch(jg), p_nh_state(jg)%metrics, ext_data(jg), prm_diag(jg))
       ENDIF
 
       IF (iprog_aero >= 1) CALL setup_aerosol_advection(p_patch(jg))
 
     ENDDO
+
+    IF (isRestart() .AND. itune_gust_diag == 4) THEN
+      CALL get_prev_trigger_time(prm_nwp_diag_list(:), 'u_10m_a', prm_diag(:)%prev_v10mavg_reset)
+    ENDIF
 
 #endif /* __NO_NWP__ */
   END IF  ! iforcing == inwp
@@ -485,27 +492,25 @@ MODULE mo_nh_stepping
 #if defined( _OPENACC )
     ! initialize GPU for NWP and AES
     i_am_accel_node = my_process_is_work()    ! Activate GPUs
-    IF (i_am_accel_node) THEN
-      CALL h2d_icon( p_int_state, p_int_state_local_parent, p_patch, p_patch_local_parent, &
-      &            p_nh_state, prep_adv, advection_config, les_config, iforcing, lacc=.TRUE. )
-      IF (n_dom > 1 .OR. l_limited_area) THEN
-        CALL devcpy_grf_state (p_grf_state, .TRUE., lacc=.TRUE.)
-        CALL devcpy_grf_state (p_grf_state_local_parent, .TRUE., lacc=.TRUE.)
-      ELSEIF (ANY(lredgrid_phys)) THEN
-        CALL devcpy_grf_state (p_grf_state_local_parent, .TRUE., lacc=.TRUE.)
-      ENDIF
-      IF ( iforcing == inwp ) THEN
-        DO jg=1, n_dom
-          CALL gpu_h2d_nh_nwp(jg, ext_data=ext_data(jg), &
-            phy_params=phy_params(jg), atm_phy_nwp_config=atm_phy_nwp_config(jg), lacc=.TRUE.)
+    CALL h2d_icon( p_int_state, p_int_state_local_parent, p_patch, p_patch_local_parent, &
+    &            p_nh_state, prep_adv, advection_config, les_config, iforcing, lacc=.TRUE. )
+    IF (n_dom > 1 .OR. l_limited_area) THEN
+      CALL devcpy_grf_state (p_grf_state, .TRUE., lacc=.TRUE.)
+      CALL devcpy_grf_state (p_grf_state_local_parent, .TRUE., lacc=.TRUE.)
+    ELSEIF (ANY(lredgrid_phys)) THEN
+      CALL devcpy_grf_state (p_grf_state_local_parent, .TRUE., lacc=.TRUE.)
+    ENDIF
+    IF ( iforcing == inwp ) THEN
+      DO jg=1, n_dom
+        CALL gpu_h2d_nh_nwp(jg, ext_data=ext_data(jg), &
+        phy_params=phy_params(jg), atm_phy_nwp_config=atm_phy_nwp_config(jg), lacc=.TRUE.)
 #ifdef __ICON_ART
-          IF(ALLOCATED(p_art_data)) THEN
-              CALL gpu_h2d_art(jg, p_art_data(jg), lacc=.TRUE.)
-          END IF
+        IF(ALLOCATED(p_art_data)) THEN
+            CALL gpu_h2d_art(jg, p_art_data(jg), lacc=.TRUE.)
+        END IF
 #endif
-        ENDDO
-        CALL devcpy_nwp(lacc=.TRUE.)
-      ENDIF
+      ENDDO
+      CALL devcpy_nwp(lacc=.TRUE.)
     ENDIF
 #endif
 
@@ -575,9 +580,13 @@ MODULE mo_nh_stepping
         DO jn = 1, p_patch(jg)%n_childdom
           jgc = p_patch(jg)%child_id(jn)
           IF (.NOT. p_patch(jgc)%ldom_active) CYCLE
-          IF (lsynsat(jgc) .AND. p_patch(jgc)%nshift > 0) CALL copy_rttov_ubc (jg, jgc, lacc=.TRUE.)
+          !
+          IF (lsynsat(jgc) .AND. p_patch(jgc)%nshift > 0) THEN
+            CALL copy_rttov_ubc (jg, jgc, prm_diag(:), lacc=.TRUE.)
+          ENDIF
         ENDDO
-        IF (lsynsat(jg)) CALL rttov_driver (jg, p_patch(jg)%parent_id, nnow_rcf(jg), lacc=.TRUE.)
+        IF (lsynsat(jg)) CALL rttov_driver (prm_diag(jg), p_lnd_state(jg), ext_data(jg), jg, &
+          &                                 p_patch(jg)%parent_id, nnow_rcf(jg), lacc=.TRUE.)
 
       ENDDO!jg
     ELSE
@@ -669,7 +678,7 @@ MODULE mo_nh_stepping
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     IF (output_mode%l_nml) THEN
@@ -677,7 +686,7 @@ MODULE mo_nh_stepping
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     !-----------------------------------------------
@@ -702,7 +711,7 @@ MODULE mo_nh_stepping
 #ifdef _OPENACC
           CALL message('mo_nh_stepping', 'Copy init values for DACE to CPU')
           DO jg=1, n_dom
-            CALL gpu_d2h_dace(jg, atm_phy_nwp_config(jg))
+            CALL gpu_d2h_dace(jg, atm_phy_nwp_config(jg), prm_diag(jg), p_lnd_state(jg))
           ENDDO
           i_am_accel_node = .FALSE.
 #endif
@@ -744,26 +753,24 @@ MODULE mo_nh_stepping
   CALL perform_nh_timeloop (time_config, iau_iter, latbc, restartDescriptor)
 
 #if defined( _OPENACC )
-  IF (i_am_accel_node) THEN
-    CALL d2h_icon( p_int_state, p_int_state_local_parent, p_patch, p_patch_local_parent, &
-      &            p_nh_state, prep_adv, advection_config, les_config, iforcing, lacc=.TRUE. )
-    IF (n_dom > 1 .OR. l_limited_area) THEN
-       CALL devcpy_grf_state (p_grf_state, .FALSE., lacc=.TRUE.)
-       CALL devcpy_grf_state (p_grf_state_local_parent, .FALSE., lacc=.TRUE.)
-    ELSEIF (ANY(lredgrid_phys)) THEN
-       CALL devcpy_grf_state (p_grf_state_local_parent, .FALSE., lacc=.TRUE.)
-    ENDIF
-    IF ( iforcing == inwp ) THEN
-      DO jg=1, n_dom
-        CALL gpu_d2h_nh_nwp(jg, ext_data=ext_data(jg), lacc=.TRUE.)
+  CALL d2h_icon( p_int_state, p_int_state_local_parent, p_patch, p_patch_local_parent, &
+    &            p_nh_state, prep_adv, advection_config, les_config, iforcing, lacc=.TRUE. )
+  IF (n_dom > 1 .OR. l_limited_area) THEN
+    CALL devcpy_grf_state (p_grf_state, .FALSE., lacc=.TRUE.)
+    CALL devcpy_grf_state (p_grf_state_local_parent, .FALSE., lacc=.TRUE.)
+  ELSEIF (ANY(lredgrid_phys)) THEN
+    CALL devcpy_grf_state (p_grf_state_local_parent, .FALSE., lacc=.TRUE.)
+  ENDIF
+  IF ( iforcing == inwp ) THEN
+    DO jg=1, n_dom
+      CALL gpu_d2h_nh_nwp(jg, ext_data=ext_data(jg), lacc=.TRUE.)
 #ifdef __ICON_ART
-        IF(ALLOCATED(p_art_data)) THEN
-            CALL gpu_d2h_art(jg, p_art_data(jg), lacc=.TRUE.)
-        END IF
+      IF(ALLOCATED(p_art_data)) THEN
+        CALL gpu_d2h_art(jg, p_art_data(jg), lacc=.TRUE.)
+      END IF
 #endif
-      ENDDO
-      CALL hostcpy_nwp(lacc=.TRUE.)
-    ENDIF
+    ENDDO
+    CALL hostcpy_nwp(lacc=.TRUE.)
   ENDIF
   i_am_accel_node = .FALSE.                 ! Deactivate GPUs
 #endif
@@ -878,6 +885,11 @@ MODULE mo_nh_stepping
     WRITE(message_text,'(a,i6,a)') 'Model start shifted backwards by ', ABS(jstep_shift),' time steps'
     CALL message(routine, message_text)
     atm_phy_nwp_config(:)%lcalc_acc_avg = .FALSE.
+    IF (iforcing == inwp) THEN
+      DO jg=1, n_dom
+        !$ACC UPDATE DEVICE(atm_phy_nwp_config(jg)%lcalc_acc_avg) ASYNC(1)
+      END DO
+    END IF
   ELSE
     jstep_shift = 0
   ENDIF
@@ -970,7 +982,7 @@ MODULE mo_nh_stepping
   CALL printEventGroup(checkpointEvents)
 
   ! Create mtime events for optional NWP diagnostics
-  CALL setup_nwp_diag_events(lpi_max_Event, celltracks_Event, dbz_Event,hail_max_Event)
+  CALL setup_nwp_diag_events(time_config, lpi_max_Event, celltracks_Event, dbz_Event, hail_max_Event)
 
   ! set time loop properties
   model_time_step => time_config%tc_dt_model
@@ -987,11 +999,11 @@ MODULE mo_nh_stepping
   jstep = jstep0+jstep_shift+1
 
   !$ser verbatim DO jg = 1, n_dom
-    !$ser verbatim   CALL serialize_all(nproma, jg, "initialization", .FALSE., opt_lupdate_cpu=.TRUE.)
+    !$ser verbatim   CALL serialize_all(nproma, jg, "initialization", .FALSE.)
   !$ser verbatim ENDDO
   
 #ifndef __NO_ICON_COMIN__
-CALL comin_callback_context_call(EP_ATM_TIMELOOP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+  CALL icon_call_callback(EP_ATM_TIMELOOP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
   TIME_LOOP: DO
@@ -1009,7 +1021,7 @@ CALL comin_callback_context_call(EP_ATM_TIMELOOP_BEFORE, COMIN_DOMAIN_OUTSIDE_LO
     ENDDO
 
 #ifndef __NO_ICON_COMIN__
-CALL comin_callback_context_call(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
 #ifndef __NO_NWP__
@@ -1021,6 +1033,10 @@ CALL comin_callback_context_call(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOO
 
     ! update model date and time mtime based
     mtime_current = mtime_current + model_time_step
+#ifndef __NO_ICON_COMIN__
+    CALL datetimeToString(mtime_current, dstring)
+    CALL icon_update_current_datetime(dstring)
+#endif
 
     ! provisional implementation for checkpoint+stop on demand
     IF (checkpoint_on_demand) CALL check_for_checkpoint(lready_for_checkpoint, lchkp_allowed, lstop_on_demand)
@@ -1045,8 +1061,15 @@ CALL comin_callback_context_call(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOO
     ENDIF
 
     ! turn on calculation of averaged and accumulated quantities at the first regular time step
-    IF (jstep-jstep0 == 1) atm_phy_nwp_config(:)%lcalc_acc_avg = .TRUE.
-
+    IF (jstep-jstep0 == 1) THEN
+      atm_phy_nwp_config(:)%lcalc_acc_avg = .TRUE.
+      IF (iforcing == inwp) THEN
+        DO jg=1, n_dom
+          !$ACC UPDATE DEVICE(atm_phy_nwp_config(jg)%lcalc_acc_avg) ASYNC(1)
+        END DO
+      END IF
+    END IF
+    
     lprint_timestep = msg_level > 2 .OR. MOD(jstep,25) == 0
 
     ! always print the first and the last time step
@@ -1115,6 +1138,7 @@ CALL comin_callback_context_call(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOO
             &                      ext_data        = ext_data(jg),     &
             &                      p_lnd_state     = p_lnd_state(jg),  &
             &                      p_nh_state      = p_nh_state(jg),   &
+            &                      prm_diag        = prm_diag(jg),     &
             &                      ref_datetime    = ref_datetime,     &
             &                      target_datetime = target_datetime,  &
             &                      mtime_old       = mtime_old         )
@@ -1253,7 +1277,7 @@ CALL comin_callback_context_call(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOO
 
 
 #ifndef __NO_ICON_COMIN__
-CALL comin_callback_context_call(EP_ATM_INTEGRATE_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INTEGRATE_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     !--------------------------------------------------------------------------
@@ -1263,7 +1287,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_BEFORE, COMIN_DOMAIN_OUTSIDE_L
     CALL integrate_nh(time_config, datetime_current, 1, jstep-jstep_shift, iau_iter, dtime, model_time_step, 1, latbc)
 
 #ifndef __NO_ICON_COMIN__
-CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     ! --------------------------------------------------------------------------------
@@ -1287,17 +1311,17 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     IF ((l_compute_diagnostic_quants .OR. iforcing==iaes .OR. iforcing==inoforcing)) THEN
 
       !$ser verbatim DO jg = 1, n_dom
-      !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag_dyn", .TRUE., opt_lupdate_cpu=.TRUE.)
+      !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag_dyn", .TRUE.)
       !$ser verbatim ENDDO
-      CALL diag_for_output_dyn ()
+      CALL diag_for_output_dyn (lacc=.TRUE.)
       !$ser verbatim DO jg = 1, n_dom
-      !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag_dyn", .FALSE., opt_lupdate_cpu=.TRUE.)
+      !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag_dyn", .FALSE.)
       !$ser verbatim ENDDO
 
       IF (iforcing == inwp) THEN
 #ifndef __NO_NWP__
         !$ser verbatim DO jg = 1, n_dom
-        !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag", .TRUE., opt_lupdate_cpu=.TRUE.)
+        !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag", .TRUE.)
         !$ser verbatim ENDDO
         !$ACC WAIT
         CALL aggr_landvars(p_patch(1:), ext_data(:), p_lnd_state(:), lacc=.TRUE.)
@@ -1335,13 +1359,17 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           DO jn = 1, p_patch(jg)%n_childdom
             jgc = p_patch(jg)%child_id(jn)
             IF (.NOT. p_patch(jgc)%ldom_active) CYCLE
-            IF (lsynsat(jgc) .AND. p_patch(jgc)%nshift > 0) CALL copy_rttov_ubc (jg, jgc, lacc=.TRUE.)
+            !
+            IF (lsynsat(jgc) .AND. p_patch(jgc)%nshift > 0) THEN
+              CALL copy_rttov_ubc (jg, jgc, prm_diag(:), lacc=.TRUE.)
+            ENDIF
           ENDDO
-          IF (lsynsat(jg)) CALL rttov_driver (jg, p_patch(jg)%parent_id, nnow_rcf(jg), lacc=.TRUE.)
+          IF (lsynsat(jg)) CALL rttov_driver (prm_diag(jg), p_lnd_state(jg), ext_data(jg), jg, &
+            &                                 p_patch(jg)%parent_id, nnow_rcf(jg), lacc=.TRUE.)
 
         ENDDO!jg
         !$ser verbatim DO jg = 1, n_dom
-        !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag", .FALSE., opt_lupdate_cpu=.TRUE.)
+        !$ser verbatim   CALL serialize_all(nproma, jg, "output_diag", .FALSE.)
         !$ser verbatim ENDDO
 
 #endif /* __NO_NWP__ */
@@ -1376,14 +1404,14 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
 
     !$ser verbatim DO jg = 1, n_dom
-    !$ser verbatim   CALL serialize_all(nproma, jg, "output_opt", .TRUE., opt_lupdate_cpu=.FALSE.)
+    !$ser verbatim   CALL serialize_all(nproma, jg, "output_opt", .TRUE.)
     !$ser verbatim ENDDO
 
     ! Calculate optional diagnostic output variables if requested in the namelist(s)
     IF (iforcing == inwp) THEN
 #ifndef __NO_NWP__
       CALL nwp_opt_diagnostics(p_patch(1:), p_patch_local_parent, p_int_state_local_parent, &
-                               p_nh_state, p_int_state(1:), prm_diag, &
+                               ext_data, p_nh_state, p_int_state(1:), prm_diag, &
                                l_nml_output_dom, nnow, nnow_rcf, lpi_max_Event, celltracks_Event,  &
                                dbz_Event, hail_max_Event, mtime_current, time_config%tc_dt_model, lacc=.TRUE.)
 
@@ -1391,10 +1419,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 #ifndef __NO_ICON_LES__
         IF(ANY( (/ismag,iprog/)==atm_phy_nwp_config(jg)%inwp_turb).AND.les_config(jg)%ldiag_les_out)THEN
 #ifdef _OPENACC
-              IF (i_am_accel_node) THEN
-                CALL finish ('perform_nh_timeloop', &
-                  &  'LES cloud diagnostics: OpenACC version currently not implemented')
-              ENDIF
+              CALL finish ('perform_nh_timeloop', &
+                &  'LES cloud diagnostics: OpenACC version currently not implemented')
 #endif
             !LES specific diagnostics only for output
             CALL les_cloud_diag    ( kstart_moist(jg),                       & !in
@@ -1435,7 +1461,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
     ! Adapt number of dynamics substeps if necessary
     !
-    IF (lcfl_watch_mode .OR. MOD(jstep-jstep_shift,5) == 0) THEN
+    IF (lcfl_watch_mode .OR. MOD(jstep-jstep_shift,5) == 0 .OR. jstep-jstep_shift <= 2) THEN
       IF (ANY((/MODE_IFSANA,MODE_COMBINED,MODE_COSMO,MODE_ICONVREMAP/) == init_mode)) THEN
         ! For interpolated initial conditions, apply more restrictive criteria for timestep reduction during the spinup phase
         CALL set_ndyn_substeps(lcfl_watch_mode,jstep <= 100)
@@ -1489,11 +1515,11 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     END IF
 
     !$ser verbatim DO jg = 1, n_dom
-    !$ser verbatim   CALL serialize_all(nproma, jg, "output_opt", .FALSE., opt_lupdate_cpu=.FALSE.)
+    !$ser verbatim   CALL serialize_all(nproma, jg, "output_opt", .FALSE.)
     !$ser verbatim ENDDO
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     ! output of results
@@ -1503,7 +1529,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     ! sample meteogram output
@@ -1515,17 +1541,15 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       END IF
    END DO
 
-#ifdef YAC_coupling
    IF( is_coupled_to_output() ) THEN
       IF (ltimer) CALL timer_start(timer_coupling)
       CALL output_coupling()
       IF (ltimer) CALL timer_stop(timer_coupling)
    END IF
-#endif
-
 
 
     ! Diagnostics: computation of total integrals
+    !              will be called for the base domain, only.
     !
     ! Diagnostics computation is not yet properly MPI-parallelized
     !
@@ -1539,16 +1563,19 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 #ifdef NOMPI
       IF (my_process_is_mpi_all_seq()) &
 #endif
-        CALL supervise_total_integrals_nh( kstep, p_patch(1:), p_nh_state, p_int_state(1:), &
-        &                                  nnow(1:n_dom), nnow_rcf(1:n_dom), jstep == (nsteps+jstep0), lacc=i_am_accel_node)
+        CALL supervise_total_integrals_nh( kstep, p_patch(1), p_nh_state(1), p_int_state(1), &
+        &                                  nnow(1), nnow_rcf(1), jstep == (nsteps+jstep0), lacc=i_am_accel_node)
     ENDIF
 
 
     ! re-initialize MAX/MIN fields with 'resetval'
     ! must be done AFTER output
-
+    !
     CALL reset_act%execute(slack=dtime, mtime_date=mtime_current)
 
+    IF (itune_gust_diag == 4) THEN
+      CALL get_prev_trigger_time(prm_nwp_diag_list(:), 'u_10m_a', prm_diag(:)%prev_v10mavg_reset)
+    ENDIF
 
     !--------------------------------------------------------------------------
     ! Write restart file
@@ -1604,7 +1631,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 #ifdef _OPENACC
             CALL message('mo_nh_stepping', 'Copy values for DACE to CPU')
             DO jg=1, n_dom
-              CALL gpu_d2h_dace(jg, atm_phy_nwp_config(jg))
+              CALL gpu_d2h_dace(jg, atm_phy_nwp_config(jg), prm_diag(jg), p_lnd_state(jg))
             ENDDO
             i_am_accel_node = .FALSE.
 #endif
@@ -1626,10 +1653,10 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
     IF (lwrite_checkpoint) THEN
 #ifndef __NO_ICON_COMIN__
-      CALL comin_callback_context_call(EP_ATM_CHECKPOINT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+      CALL icon_call_callback(EP_ATM_CHECKPOINT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
-      CALL diag_for_output_dyn ()
+      CALL diag_for_output_dyn (lacc=.TRUE.)
 #ifndef __NO_NWP__
       IF (iforcing == inwp) THEN
         CALL aggr_landvars(p_patch(1:), ext_data(:), p_lnd_state(:), lacc=.TRUE.)
@@ -1683,7 +1710,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         ENDIF
 #endif
 #ifndef __NO_ICON_COMIN__
-      CALL comin_callback_context_call(EP_ATM_CHECKPOINT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+        CALL icon_call_callback(EP_ATM_CHECKPOINT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
     END IF  ! lwrite_checkpoint
 
@@ -1695,7 +1722,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     ! prefetch boundary data if necessary
     IF(num_prefetch_proc >= 1 .AND. latbc_config%itype_latbc > 0 .AND. &
     &  .NOT.(jstep == 0 .AND. iau_iter == 1) ) THEN
-      !$ser verbatim CALL serialize_all(nproma, 1, "latbc_data", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=iau_iter)
+      !$ser verbatim CALL serialize_all(nproma, 1, "latbc_data", .TRUE., opt_id=iau_iter)
       latbc_read_datetime = latbc%mtime_last_read + latbc%delta_dtime
       CALL recv_latbc_data(latbc               = latbc,              &
          &                  p_patch             = p_patch(1:),        &
@@ -1705,15 +1732,15 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
          &                  latbc_read_datetime = latbc_read_datetime,&
          &                  lcheck_read         = .TRUE.,             &
          &                  tlev                = latbc%new_latbc_tlev)
-      !$ser verbatim CALL serialize_all(nproma, 1, "latbc_data", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=iau_iter)
+      !$ser verbatim CALL serialize_all(nproma, 1, "latbc_data", .FALSE., opt_id=iau_iter)
     ENDIF
 
     !$ser verbatim DO jg = 1, n_dom
-    !$ser verbatim   CALL serialize_all(nproma, jg, "time_loop_end", .FALSE., opt_lupdate_cpu=.FALSE., opt_id=iau_iter)
+    !$ser verbatim   CALL serialize_all(nproma, jg, "time_loop_end", .FALSE., opt_id=iau_iter)
     !$ser verbatim ENDDO
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_TIMELOOP_END, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_TIMELOOP_END, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
     IF (mtime_current >= time_config%tc_stopdate .OR. lstop_on_demand) THEN
@@ -1728,7 +1755,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
   ENDDO TIME_LOOP
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_callback_context_call(EP_ATM_TIMELOOP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+  CALL icon_call_callback(EP_ATM_TIMELOOP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
 #endif
 
   ! clean-up routine for mo_nh_supervise module (eg. closing of files)
@@ -1826,13 +1853,13 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 !$OMP PARALLEL
 #endif
       CALL copy(p_nh_state(jg)%prog(n_now)%vn, &
-           p_nh_state(jg)%prog(n_save)%vn)
+           p_nh_state(jg)%prog(n_save)%vn, lacc=.TRUE.)
       CALL copy(p_nh_state(jg)%prog(n_now)%w, &
-           p_nh_state(jg)%prog(n_save)%w)
+           p_nh_state(jg)%prog(n_save)%w, lacc=.TRUE.)
       CALL copy(p_nh_state(jg)%prog(n_now)%rho, &
-           p_nh_state(jg)%prog(n_save)%rho)
+           p_nh_state(jg)%prog(n_save)%rho, lacc=.TRUE.)
       CALL copy(p_nh_state(jg)%prog(n_now)%theta_v, &
-           p_nh_state(jg)%prog(n_save)%theta_v)
+           p_nh_state(jg)%prog(n_save)%theta_v, lacc=.TRUE.)
 #ifndef _OPENACC
 !$OMP END PARALLEL
 #endif
@@ -1850,7 +1877,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 #endif
 
 #ifndef __NO_ICON_COMIN__
-      CALL comin_callback_context_call(EP_ATM_INTEGRATE_START, jg)
+      CALL icon_call_callback(EP_ATM_INTEGRATE_START, jg)
 #endif
 
       IF (ifeedback_type == 1 .AND. (jstep == 1) .AND. jg > 1 ) THEN
@@ -1863,13 +1890,13 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         n_save = nsav2(jg)
 !$OMP PARALLEL
         CALL copy(p_nh_state(jg)%prog(n_now)%vn, &
-             p_nh_state(jg)%prog(n_save)%vn)
+             p_nh_state(jg)%prog(n_save)%vn, lacc=.TRUE.)
         CALL copy(p_nh_state(jg)%prog(n_now)%w, &
-             p_nh_state(jg)%prog(n_save)%w)
+             p_nh_state(jg)%prog(n_save)%w, lacc=.TRUE.)
         CALL copy(p_nh_state(jg)%prog(n_now)%rho, &
-             p_nh_state(jg)%prog(n_save)%rho)
+             p_nh_state(jg)%prog(n_save)%rho, lacc=.TRUE.)
         CALL copy(p_nh_state(jg)%prog(n_now)%theta_v, &
-             p_nh_state(jg)%prog(n_save)%theta_v)
+             p_nh_state(jg)%prog(n_save)%theta_v, lacc=.TRUE.)
 !$OMP END PARALLEL
       ENDIF
 
@@ -1884,7 +1911,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
       IF ( p_patch(jg)%n_childdom > 0 .AND. ndyn_substeps_var(jg) > 1) THEN
 
-        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_save_progvars", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_save_progvars", .TRUE., opt_id=jstep + num_steps*iau_iter)
         lbdy_nudging = .FALSE.
         lnest_active = .FALSE.
         DO jn = 1, p_patch(jg)%n_childdom
@@ -1901,20 +1928,16 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         n_save = nsav1(jg)
 
         IF (lbdy_nudging .OR. ifeedback_type == 1) THEN ! full copy needed
-#ifndef _OPENACC
 !$OMP PARALLEL
-#endif
-          CALL copy(p_nh_state(jg)%prog(n_now)%vn,p_nh_state(jg)%prog(n_save)%vn)
-          CALL copy(p_nh_state(jg)%prog(n_now)%w,p_nh_state(jg)%prog(n_save)%w)
-          CALL copy(p_nh_state(jg)%prog(n_now)%rho,p_nh_state(jg)%prog(n_save)%rho)
-          CALL copy(p_nh_state(jg)%prog(n_now)%theta_v,p_nh_state(jg)%prog(n_save)%theta_v)
-#ifndef _OPENACC
+          CALL copy(p_nh_state(jg)%prog(n_now)%vn,p_nh_state(jg)%prog(n_save)%vn, lacc=.TRUE.)
+          CALL copy(p_nh_state(jg)%prog(n_now)%w,p_nh_state(jg)%prog(n_save)%w, lacc=.TRUE.)
+          CALL copy(p_nh_state(jg)%prog(n_now)%rho,p_nh_state(jg)%prog(n_save)%rho, lacc=.TRUE.)
+          CALL copy(p_nh_state(jg)%prog(n_now)%theta_v,p_nh_state(jg)%prog(n_save)%theta_v, lacc=.TRUE.)
 !$OMP END PARALLEL
-#endif
         ELSE IF (lnest_active) THEN ! optimized copy restricted to nest boundary points
-          CALL save_progvars(jg,p_nh_state(jg)%prog(n_now),p_nh_state(jg)%prog(n_save))
+          CALL save_progvars(jg,p_nh_state(jg)%prog(n_now),p_nh_state(jg)%prog(n_save), lacc=.TRUE.)
         ENDIF
-        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_save_progvars", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_save_progvars", .FALSE., opt_id=jstep + num_steps*iau_iter)
 
       ENDIF
 
@@ -1954,7 +1977,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_ADVECTION_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg)
 #endif
 
 #ifdef MESSY
@@ -2019,10 +2042,11 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           &       rho_incr          = p_nh_state(jg)%diag%rho_incr,          & !in
           &       q_ubc             = prep_adv(jg)%q_ubc,                    & !in
           &       q_int             = prep_adv(jg)%q_int,                    & !out
-          &       opt_ddt_tracer_adv= p_nh_state(jg)%diag%ddt_tracer_adv     ) !optout
+          &       opt_ddt_tracer_adv= p_nh_state(jg)%diag%ddt_tracer_adv,    & !optout
+          &       lacc              = .TRUE.                                 ) !optin
 
 #ifndef __NO_ICON_COMIN__
-      CALL comin_callback_context_call(EP_ATM_ADVECTION_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg)
 #endif
 
 #ifdef MESSY
@@ -2052,8 +2076,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             init_mode /= MODE_IAU .AND. init_mode /= MODE_IAU_OLD) THEN
 
           ! Use here the model time step dt_loc, for which the diffusion is computed here.
-          CALL diffusion(p_nh_state(jg)%prog(nnow(jg)), p_nh_state(jg)%diag,       &
-            p_nh_state(jg)%metrics, p_patch(jg), p_int_state(jg), dt_loc, .TRUE.)
+          CALL diffusion(p_nh_state(jg)%prog(nnow(jg)), p_nh_state(jg)%diag,                   &
+            p_nh_state(jg)%metrics, p_patch(jg), p_int_state(jg), dt_loc, .TRUE., lacc=.TRUE.)
 
         ENDIF
 
@@ -2061,22 +2085,26 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
         IF (ldynamics) THEN
 
-          !$ser verbatim CALL serialize_all(nproma, jg, "dynamics", .TRUE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+          !$ser verbatim CALL serialize_all(nproma, jg, "dynamics", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
           ! dynamics integration with substepping
           !
           CALL perform_dyn_substepping (time_config, p_patch(jg), p_nh_state(jg), p_int_state(jg), &
             &                           prep_adv(jg), jstep, iau_iter, dt_loc, datetime_local(jg)%ptr)
-          !$ser verbatim CALL serialize_all(nproma, jg, "dynamics", .FALSE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+          !$ser verbatim CALL serialize_all(nproma, jg, "dynamics", .FALSE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
 
           ! diffusion at physics time steps
           !
           IF (diffusion_config(jg)%lhdiff_vn) THEN
-            !$ser verbatim CALL serialize_all(nproma, jg, "diffusion", .TRUE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jg, "diffusion", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
             CALL diffusion(p_nh_state(jg)%prog(nnew(jg)), p_nh_state(jg)%diag,     &
               &            p_nh_state(jg)%metrics, p_patch(jg), p_int_state(jg),   &
-              &            dt_loc, .FALSE.)
-            !$ser verbatim CALL serialize_all(nproma, jg, "diffusion", .FALSE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+              &            dt_loc, .FALSE., lacc=.TRUE.)
+            !$ser verbatim CALL serialize_all(nproma, jg, "diffusion", .FALSE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
           ENDIF
+
+          ! apply moisture term for thermodynamic equation
+          IF (lmoist_thdyn) CALL thermo_src_term(p_patch(jg), p_int_state(jg), p_nh_state(jg), prep_adv(jg), &
+            dt_loc, nnow_rcf(jg), nnew(jg))
 
         ELSE IF (iforcing == inwp) THEN
           ! dynamics for ldynamics off, option of coriolis force, typically used for SCM and similar test cases
@@ -2087,7 +2115,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
 #ifndef __NO_ICON_COMIN__
         CALL icon_update_expose_variables(TLEV_NNOW, nnew(jg))
-        CALL comin_callback_context_call(EP_ATM_ADVECTION_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg)
 #endif
 
 #ifdef MESSY
@@ -2122,6 +2150,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
               &      dt_loc,                                   &!in
               &      p_lnd_state(jg)%diag_lnd,                 &!in
               &      datetime_local(jg)%ptr,                   &!in
+              &      iau_iter,                                 &!in
               &      p_nh_state(jg)%prog(n_now_rcf)%tracer,    &!inout
               &      lacc=.TRUE.                               )
           ENDIF
@@ -2132,7 +2161,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             CALL message('integrate_nh', message_text)
           ENDIF
 
-          !$ser verbatim CALL serialize_all(nproma, jg, "step_advection", .TRUE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+          !$ser verbatim CALL serialize_all(nproma, jg, "step_advection", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
           CALL step_advection(                                                 &
             &       p_patch           = p_patch(jg),                           & !in
             &       p_int_state       = p_int_state(jg),                       & !in
@@ -2152,8 +2181,10 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             &       rho_incr          = p_nh_state(jg)%diag%rho_incr,          & !in
             &       q_ubc             = prep_adv(jg)%q_ubc,                    & !in
             &       q_int             = prep_adv(jg)%q_int,                    & !out
-            &       opt_ddt_tracer_adv= p_nh_state(jg)%diag%ddt_tracer_adv     ) !out
-          !$ser verbatim CALL serialize_all(nproma, jg, "step_advection", .FALSE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+            &       opt_ddt_tracer_adv= p_nh_state(jg)%diag%ddt_tracer_adv,    & !optout
+            &       lacc              = .TRUE.                                 ) !optin
+
+          !$ser verbatim CALL serialize_all(nproma, jg, "step_advection", .FALSE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
 
 #ifndef __NO_ICON_COMIN__
           CALL icon_update_expose_variables(TLEV_NNOW_RCF, nnew_rcf(jg))
@@ -2195,13 +2226,17 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         ENDIF !ltransport
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_ADVECTION_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg)
 #endif
 
 #ifdef MESSY
         CALL main_tracer_afteradv
 #endif
 
+        IF (diffusion_config(jg)%lhdiff_q) THEN
+          CALL moisture_diffusion(p_nh_state(jg)%prog(n_new_rcf), p_nh_state(jg)%diag, &
+            &  p_patch(jg), p_int_state(jg))
+        ENDIF
 
         ! Apply boundary nudging in case of one-way nesting
         IF (jg > 1 ) THEN
@@ -2209,13 +2244,13 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           IF (lfeedback(jg) .AND. l_density_nudging .AND. grf_intmethod_e <= 4) THEN
             IF (ltimer)            CALL timer_start(timer_nesting)
             IF (timers_level >= 2) CALL timer_start(timer_nudging)
-            CALL density_boundary_nudging(jg,nnew(jg))
+            CALL density_boundary_nudging(jg, nnew(jg), lacc=.TRUE.)
             IF (timers_level >= 2) CALL timer_stop(timer_nudging)
             IF (ltimer)            CALL timer_stop(timer_nesting)
           ELSE IF (.NOT. lfeedback(jg)) THEN
             IF (ltimer)            CALL timer_start(timer_nesting)
             IF (timers_level >= 2) CALL timer_start(timer_nudging)
-            CALL nest_boundary_nudging(jg,nnew(jg),nnew_rcf(jg))
+            CALL nest_boundary_nudging(jg, nnew(jg), nnew_rcf(jg), lacc=.TRUE.)
             IF (timers_level >= 2) CALL timer_stop(timer_nudging)
             IF (ltimer)            CALL timer_stop(timer_nesting)
           ENDIF
@@ -2223,7 +2258,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_PHYSICS_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_PHYSICS_BEFORE, jg)
 #endif
 
         IF ( ( iforcing==inwp .OR. iforcing==iaes ) ) THEN
@@ -2241,7 +2276,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
               &                     lcall_phy     = atm_phy_nwp_config(jg)%lcall_phy(:) ) !inout
 
             ! nwp physics
-            !$ser verbatim CALL serialize_all(nproma, jg, "physics", .TRUE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jg, "physics", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
             CALL nwp_nh_interface(atm_phy_nwp_config(jg)%lcall_phy(:), & !in
                 &                  .FALSE.,                            & !in
                 &                  lredgrid_phys(jg),                  & !in
@@ -2267,7 +2302,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
                 &                  p_lnd_state(jg)%prog_wtr(n_new_rcf),& !inout
                 &                  p_nh_state_lists(jg)%prog_list(n_new_rcf), & !in
                 &                  lacc=.TRUE.                         ) !in
-            !$ser verbatim CALL serialize_all(nproma, jg, "physics", .FALSE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jg, "physics", .FALSE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
 #endif
 
           CASE (iaes) ! iforcing
@@ -2301,7 +2336,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             !
             CALL omp_block_loop_cell ( p_patch(jg), diagnose_qvi ) ! tracer mass and tracer mass tendency vertical integral
             CALL omp_block_loop_cell ( p_patch(jg), diagnose_uvp ) ! internal energy vertical integral after physics
-            CALL omp_block_loop_cell ( p_patch(jg), diagnose_ene ) ! near surface energetics
+            CALL aes_global_diagnostics ( p_patch(jg), dt_loc, p_nh_state(jg)%prog(nnew(jg)), p_nh_state(jg)%diag )  ! global mean diagnostics
             !
             IF (ltimer) CALL timer_stop(timer_iconam_aes)
 #endif
@@ -2342,10 +2377,10 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             ENDIF
 
             IF (lcall_rrg) THEN
-              CALL interpol_rrg_grf(jg, jgc, jn, nnew_rcf(jg), lacc=.TRUE.)
+              CALL interpol_rrg_grf(jg, jgc, jn, nnew_rcf(jg), prm_diag(:), p_lnd_state(:), lacc=.TRUE.)
             ENDIF
             IF (lcall_rrg .AND. atm_phy_nwp_config(jgc)%latm_above_top) THEN
-              CALL copy_rrg_ubc(jg, jgc)
+              CALL copy_rrg_ubc(jg, jgc, prm_diag(:), lacc=.TRUE.)
             ENDIF
 
           ENDDO
@@ -2387,7 +2422,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_PHYSICS_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_PHYSICS_AFTER, jg)
 #endif
 
 #ifdef MESSY
@@ -2398,14 +2433,14 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       ENDIF  ! itime_scheme
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_NUDGING_BEFORE, jg)
+      CALL icon_call_callback(EP_ATM_NUDGING_BEFORE, jg)
 #endif
 
       !
       ! lateral nudging and optional upper boundary nudging in limited area mode
       !
       IF ( (l_limited_area .AND. (.NOT. l_global_nudging)) ) THEN
-        !$ser verbatim CALL serialize_all(nproma, jg, "nudging", .TRUE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nudging", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
 
         IF (latbc_config%itype_latbc > 0) THEN  ! use time-dependent boundary data
 
@@ -2465,7 +2500,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           ENDIF
 
         ENDIF
-        !$ser verbatim CALL serialize_all(nproma, jg, "nudging", .FALSE., opt_lupdate_cpu=.TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nudging", .FALSE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
 
       ELSE IF (l_global_nudging .AND. jg==1) THEN
 
@@ -2484,7 +2519,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_NUDGING_AFTER, jg)
+      CALL icon_call_callback(EP_ATM_NUDGING_AFTER, jg)
 #endif
 
       ! Check if at least one of the nested domains is active
@@ -2516,10 +2551,10 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         IF (timers_level >= 2) CALL timer_start(timer_bdy_interp)
 
         ! Compute time tendencies for interpolation to refined mesh boundaries
-        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_compute_tendencies", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_compute_tendencies", .TRUE., opt_id=jstep + num_steps*iau_iter)
         CALL compute_tendencies (jg,nnew(jg),n_now_grf,n_new_rcf,n_now_rcf, &
-          &                      rdt_loc,rdtmflx_loc)
-        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_compute_tendencies", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
+          &                      rdt_loc,rdtmflx_loc, lacc=.TRUE.)
+        !$ser verbatim CALL serialize_all(nproma, jg, "nesting_compute_tendencies", .FALSE., opt_id=jstep + num_steps*iau_iter)
 
         ! Loop over nested domains
         DO jn = 1, p_patch(jg)%n_childdom
@@ -2528,13 +2563,13 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
           ! Interpolate tendencies to lateral boundaries of refined mesh (jgc)
           IF (p_patch(jgc)%ldom_active) THEN
-            !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
-            !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps + num_steps*iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .TRUE., opt_id=jstep + num_steps*iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .TRUE., opt_id=jstep + num_steps + num_steps*iau_iter)
             CALL boundary_interpolation(jg, jgc,                   &
               &  n_now_grf,nnow(jgc),n_now_rcf,nnow_rcf(jgc),      &
-              &  p_patch(1:),p_nh_state(:),prep_adv(:),p_grf_state(1:))
-            !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*iau_iter)
-            !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps + num_steps*iau_iter)
+              &  p_patch(1:),p_nh_state(:),prep_adv(:),prm_diag(:),p_grf_state(1:), lacc=.TRUE.)
+            !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .FALSE., opt_id=jstep + num_steps*iau_iter)
+            !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .FALSE., opt_id=jstep + num_steps + num_steps*iau_iter)
           ENDIF
 
         ENDDO
@@ -2550,11 +2585,11 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           !
           IF (lfeedback(jgc) .AND. l_density_nudging .AND. grf_intmethod_e <= 4) THEN
             IF (timers_level >= 2) CALL timer_start(timer_nudging)
-            CALL prep_rho_bdy_nudging(jg,jgc)
+            CALL prep_rho_bdy_nudging(jg, jgc, lacc=.TRUE.)
             IF (timers_level >= 2) CALL timer_stop(timer_nudging)
           ELSE IF (.NOT. lfeedback(jgc)) THEN
             IF (timers_level >= 2) CALL timer_start(timer_nudging)
-            CALL prep_bdy_nudging(jg,jgc)
+            CALL prep_bdy_nudging(jg, jgc, lacc=.TRUE.)
             IF (timers_level >= 2) CALL timer_stop(timer_nudging)
           ENDIF
         ENDDO
@@ -2592,8 +2627,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
               CALL incr_feedback(p_patch, p_nh_state, p_int_state, p_grf_state, p_lnd_state, &
                 &           jgc, jg)
             ELSE
-              !$ser verbatim CALL serialize_all(nproma, jg, "nesting_relax_feedback", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep)
-              !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_relax_feedback", .TRUE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps)
+              !$ser verbatim CALL serialize_all(nproma, jg, "nesting_relax_feedback", .TRUE., opt_id=jstep)
+              !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_relax_feedback", .TRUE., opt_id=jstep + num_steps)
               IF (iforcing==inwp) THEN
                 CALL relax_feedback(  p_patch(n_dom_start:n_dom),            &
                   & p_nh_state(1:n_dom), p_int_state(n_dom_start:n_dom),     &
@@ -2603,8 +2638,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
                   & p_nh_state(1:n_dom), p_int_state(n_dom_start:n_dom),     &
                   & p_grf_state(n_dom_start:n_dom), jgc, jg, dt_loc)
               END IF
-              !$ser verbatim CALL serialize_all(nproma, jg, "nesting_relax_feedback", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep)
-              !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_relax_feedback", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps)
+              !$ser verbatim CALL serialize_all(nproma, jg, "nesting_relax_feedback", .FALSE., opt_id=jstep)
+              !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_relax_feedback", .FALSE., opt_id=jstep + num_steps)
             ENDIF
             IF (ldass_lhn) THEN
               IF (assimilation_config(jgc)%dass_lhn%isActive(datetime_local(jgc)%ptr)) THEN
@@ -2668,7 +2703,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             CALL gpu_d2h_nh_nwp(jg, ext_data=ext_data(jg), lacc=i_am_accel_node)
             i_am_accel_node = .FALSE. ! disable the execution of ACC kernels
 #endif
-            CALL initialize_nest(jg, jgc)
+            CALL initialize_nest(jg, jgc, ext_data(:), prm_diag(:), p_lnd_state(:))
 
             ! Apply hydrostatic adjustment, using downward integration
             CALL hydro_adjust_const_thetav(p_patch(jgc), p_nh_state(jgc)%metrics, .TRUE.,    &
@@ -2730,9 +2765,9 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
               &                  airmass   = p_nh_state(jgc)%diag%airmass_new     ) !inout
 
             IF ( lredgrid_phys(jgc) ) THEN
-              CALL interpol_rrg_grf(jg, jgc, jn, nnow_rcf(jg), lacc=.FALSE.)
+              CALL interpol_rrg_grf(jg, jgc, jn, nnow_rcf(jg), prm_diag(:), p_lnd_state(:), lacc=.FALSE.)
               IF (atm_phy_nwp_config(jgc)%latm_above_top) THEN
-                CALL copy_rrg_ubc(jg, jgc)
+                CALL copy_rrg_ubc(jg, jgc, prm_diag(:), lacc=.FALSE.)
               ENDIF
             ENDIF
 
@@ -2748,9 +2783,9 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
             CALL init_slowphysics (datetime_local(jgc)%ptr, jgc, dt_sub, lacc=.TRUE.)
 
             ! jg: use opt_id to account for multiple childs that can be initialized at once
-            !$ser verbatim   CALL serialize_all(nproma, jg, "initialization", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=jstep + num_steps*jn + num_steps*p_patch(jg)%n_childdom*iau_iter)
+            !$ser verbatim   CALL serialize_all(nproma, jg, "initialization", .FALSE., opt_id=jstep + num_steps*jn + num_steps*p_patch(jg)%n_childdom*iau_iter)
             ! jgc: opt_id not needed as jgc should be only initialized once
-            !$ser verbatim   CALL serialize_all(nproma, jgc, "initialization", .FALSE., opt_lupdate_cpu=.TRUE., opt_id=iau_iter)
+            !$ser verbatim   CALL serialize_all(nproma, jgc, "initialization", .FALSE., opt_id=iau_iter)
 
             WRITE(message_text,'(a,i2,a,f12.2)') 'domain ',jgc,' started at time ',sim_time
             CALL message('integrate_nh', message_text)
@@ -2759,7 +2794,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       ENDIF
 
 #ifndef __NO_ICON_COMIN__
-      CALL comin_callback_context_call(EP_ATM_INTEGRATE_END, jg)
+      CALL icon_call_callback(EP_ATM_INTEGRATE_END, jg)
 #endif
 
 #ifdef MESSY
@@ -2837,9 +2872,6 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       &                  rho       = p_nh_state%prog(nnow(jg))%rho, & !in
       &                  airmass   = p_nh_state%diag%airmass_now    ) !inout
 
-    ! get moisture term for thermodynamic equation 
-    IF (lmoist_thdyn) CALL prepare_thermo_src_term(p_patch)
-
     ! perform dynamics substepping
     !
     SUBSTEPS: DO nstep = 1, ndyn_substeps_var(jg)
@@ -2888,7 +2920,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       CALL solve_nh(p_nh_state, p_patch, p_int_state, prep_adv,     &
         &           nnow(jg), nnew(jg), linit_dyn(jg), l_recompute, &
         &           lsave_mflx, lprep_adv, lclean_mflx,             &
-        &           nstep, ndyn_substeps_tot-1, dt_dyn)
+        &           nstep, ndyn_substeps_tot-1, dt_dyn, lacc=.TRUE.)
 
       ! now reset linit_dyn to .FALSE.
       linit_dyn(jg) = .FALSE.
@@ -2916,6 +2948,9 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       &                  rho       = p_nh_state%prog(nnew(jg))%rho, & !in
       &                  airmass   = p_nh_state%diag%airmass_new    ) !inout
 
+    IF (nlev_hcfl(jg) > 0) THEN
+      CALL compute_hcfl(p_patch, p_nh_state%prog(nnew(jg))%vn, dt_dyn, nlev_hcfl(jg), p_nh_state%diag%max_hcfl_dyn)
+    ENDIF
 
   END SUBROUTINE perform_dyn_substepping
 
@@ -2972,7 +3007,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         &                     lcall_phy     = atm_phy_nwp_config(jg)%lcall_phy(:) )
       !
       ! nwp physics, slow physics forcing
-      !$ser verbatim CALL serialize_all(nproma, jg, "physics_init", .TRUE., opt_lupdate_cpu=.FALSE.)
+      !$ser verbatim CALL serialize_all(nproma, jg, "physics_init", .TRUE.)
       CALL nwp_nh_interface(atm_phy_nwp_config(jg)%lcall_phy(:), & !in
           &                  .TRUE.,                             & !in
           &                  lredgrid_phys(jg),                  & !in
@@ -2998,7 +3033,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           &                  p_lnd_state(jg)%prog_wtr(n_now_rcf),& !inout
           &                  p_nh_state_lists(jg)%prog_list(n_now_rcf), & !in
           &                  lacc=lacc) !in
-      !$ser verbatim CALL serialize_all(nproma, jg, "physics_init", .FALSE., opt_lupdate_cpu=.FALSE.)
+      !$ser verbatim CALL serialize_all(nproma, jg, "physics_init", .FALSE.)
 #endif
 
     CASE (iaes) ! iforcing
@@ -3009,8 +3044,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       ! fast physics coupling only
       ! assure that physics tendencies for dynamical core are zero
       !$OMP PARALLEL
-      CALL init(p_nh_state(jg)%diag%ddt_exner_phy)
-      CALL init(p_nh_state(jg)%diag%ddt_vn_phy)
+      CALL init(p_nh_state(jg)%diag%ddt_exner_phy, lacc=lacc)
+      CALL init(p_nh_state(jg)%diag%ddt_vn_phy, lacc=lacc)
       !$OMP END PARALLEL
 #endif
     END SELECT ! iforcing
@@ -3023,9 +3058,9 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
       IF (.NOT. p_patch(jgc)%ldom_active) CYCLE
 
       IF ( lredgrid_phys(jgc) ) THEN
-        CALL interpol_rrg_grf(jg, jgc, jn, nnow_rcf(jg), lacc=lacc)
+        CALL interpol_rrg_grf(jg, jgc, jn, nnow_rcf(jg), prm_diag(:), p_lnd_state(:), lacc=lacc)
         IF (atm_phy_nwp_config(jgc)%latm_above_top) THEN
-          CALL copy_rrg_ubc(jg, jgc)
+          CALL copy_rrg_ubc(jg, jgc, prm_diag(:), lacc=lacc)
         ENDIF
       ENDIF
     ENDDO
@@ -3058,8 +3093,9 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
   !! This routine encapsulates calls to diagnostic computations required at output
   !! times only
   !!
-  SUBROUTINE diag_for_output_dyn ()
+  SUBROUTINE diag_for_output_dyn (lacc)
 
+    LOGICAL, INTENT(IN) :: lacc
     CHARACTER(len=*), PARAMETER ::  &
      &  routine = 'mo_nh_stepping:diag_for_output_dyn'
 
@@ -3181,23 +3217,22 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
 
       IF (ldeepatmo) THEN
+#ifdef _OPENACC
+        CALL finish("routine", "ldeepatmo not yet ported to and tested with OpenACC")
+#endif
         ! Modify divergence and vorticity for spherical geometry
 
-#ifndef _OPENACC
 !$OMP PARALLEL PRIVATE (rl_start,rl_end,i_startblk,i_endblk)
-#endif
         rl_start   = 1
         rl_end     = min_rlcell
         i_startblk = p_patch(jg)%cells%start_block(rl_start) 
         i_endblk   = p_patch(jg)%cells%end_block(rl_end)  
-#ifndef _OPENACC
 !$OMP DO PRIVATE(jb, jc, jk, i_startidx, i_endidx), ICON_OMP_RUNTIME_SCHEDULE
-#endif
         DO jb = i_startblk, i_endblk
 
           CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
 
-          !$ACC PARALLEL ASYNC(1)
+          !$ACC PARALLEL ASYNC(1) IF(lacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO jk = 1, nlev
             DO jc = i_startidx, i_endidx
@@ -3209,21 +3244,17 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
           !$ACC END PARALLEL
 
         END DO  !jb
-#ifndef _OPENACC
 !$OMP END DO NOWAIT
-#endif
         rl_start   = 2
         rl_end     = min_rlvert
         i_startblk = p_patch(jg)%verts%start_block(rl_start)
         i_endblk   = p_patch(jg)%verts%end_block(rl_end)
-#ifndef _OPENACC
 !$OMP DO PRIVATE(jb, jv, jk, i_startidx, i_endidx), ICON_OMP_RUNTIME_SCHEDULE
-#endif
         DO jb = i_startblk, i_endblk
 
           CALL get_indices_v(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
 
-          !$ACC PARALLEL ASYNC(1)
+          !$ACC PARALLEL ASYNC(1) IF(lacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO jk = 1, nlev
             DO jv = i_startidx, i_endidx
@@ -3236,10 +3267,8 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
 
         END DO  !jb
         !$ACC WAIT(1)
-#ifndef _OPENACC
 !$OMP END DO NOWAIT
 !$OMP END PARALLEL
-#endif
 
       ENDIF  !IF (ldeepatmo)
 
@@ -3268,9 +3297,11 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         jgc = p_patch(jg)%child_id(jn)
         IF (.NOT. p_patch(jgc)%ldom_active) CYCLE
 
-        CALL interpol_scal_grf (p_patch(jg), p_patch(jgc), p_grf_state(jg)%p_dom(jn), 3, &
-             p_nh_state(jg)%diag%u, p_nh_state(jgc)%diag%u, p_nh_state(jg)%diag%v,       &
-             p_nh_state(jgc)%diag%v, p_nh_state(jg)%diag%div, p_nh_state(jgc)%diag%div)
+        CALL interpol_scal_grf (p_pp=p_patch(jg), p_pc=p_patch(jgc), p_grf=p_grf_state(jg)%p_dom(jn), &
+          nfields=3, lacc=lacc, &
+          f3din1=p_nh_state(jg)%diag%u, f3dout1=p_nh_state(jgc)%diag%u, &
+          f3din2=p_nh_state(jg)%diag%v, f3dout2=p_nh_state(jgc)%diag%v, &
+          f3din3=p_nh_state(jg)%diag%div, f3dout3=p_nh_state(jgc)%diag%div)
 
       ENDDO
 
@@ -3311,12 +3342,15 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
         IF (.NOT. p_patch(jgc)%ldom_active) CYCLE
 
         !$ACC WAIT
-        CALL interpol_phys_grf(ext_data, jg, jgc, jn, lacc=lacc)
+        CALL interpol_phys_grf(ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc=lacc)
 
-        IF (lfeedback(jgc) .AND. ifeedback_type==1) CALL feedback_phys_diag(jgc, jg, lacc=lacc)
+        IF (lfeedback(jgc) .AND. ifeedback_type==1) THEN
+          CALL feedback_phys_diag(jgc, jg, prm_diag(:), lacc=lacc)
+        ENDIF
 
-        CALL interpol_scal_grf (p_patch(jg), p_patch(jgc), p_grf_state(jg)%p_dom(jn), 1, &
-           p_nh_state(jg)%prog(nnow_rcf(jg))%tke, p_nh_state(jgc)%prog(nnow_rcf(jgc))%tke)
+        CALL interpol_scal_grf (p_pp=p_patch(jg), p_pc=p_patch(jgc), p_grf=p_grf_state(jg)%p_dom(jn), &
+          nfields=1, lacc=lacc, &
+          f3din1=p_nh_state(jg)%prog(nnow_rcf(jg))%tke, f3dout1=p_nh_state(jgc)%prog(nnow_rcf(jgc))%tke)
 
       ENDDO
 
@@ -3362,43 +3396,62 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     LOGICAL, INTENT(INOUT) :: lcfl_watch_mode
     LOGICAL, INTENT(IN) :: lspinup
 
-    INTEGER :: jg, ndyn_substeps_enh
-    REAL(wp) :: mvcfl(n_dom), thresh1_cfl, thresh2_cfl
+    INTEGER :: jg, ndyn_substeps_enh, nsubs_add
+    REAL(wp) :: mvcfl(n_dom), thresh1_vcfl, thresh2_vcfl, mhcfl(n_dom), thresh1_hcfl, thresh2_hcfl, subsfac
+    REAL(wp), PARAMETER :: hcfl_threshold=0.7_wp ! empirical value
     LOGICAL :: lskip
 
     lskip = .FALSE.
 
-    thresh1_cfl = MERGE(0.9_wp*vcfl_threshold,vcfl_threshold,lspinup)
-    thresh2_cfl = MERGE(0.85_wp*vcfl_threshold,0.9_wp*vcfl_threshold,lspinup)
+    thresh1_vcfl = MERGE(0.9_wp*vcfl_threshold,vcfl_threshold,lspinup)
+    thresh2_vcfl = MERGE(0.85_wp*vcfl_threshold,0.9_wp*vcfl_threshold,lspinup)
+    thresh1_hcfl = hcfl_threshold
+    thresh2_hcfl = 0.9_wp*hcfl_threshold
+    
     ndyn_substeps_enh = MERGE(1,0,lspinup)
 
     mvcfl(1:n_dom) = p_nh_state(1:n_dom)%diag%max_vcfl_dyn
+    mhcfl(1:n_dom) = p_nh_state(1:n_dom)%diag%max_hcfl_dyn
 
     p_nh_state(1:n_dom)%diag%max_vcfl_dyn = 0._vp
 
     mvcfl = global_max(mvcfl)
-    IF (ANY(mvcfl(1:n_dom) > 0.81_wp*vcfl_threshold) .AND. .NOT. lcfl_watch_mode) THEN
-      WRITE(message_text,'(a)') 'High CFL number for vertical advection in dynamical core, entering watch mode'
+    mhcfl = global_max(mhcfl)
+
+    IF ((ANY(mvcfl(1:n_dom) > 0.81_wp*vcfl_threshold) .OR.                            &
+         ANY(mhcfl(1:n_dom) > 0.9_wp*hcfl_threshold)) .AND. .NOT. lcfl_watch_mode) THEN
+      WRITE(message_text,'(a)') 'High CFL number for horizontal or vertical advection in dynamical core, entering watch mode'
       CALL message('',message_text)
       lcfl_watch_mode = .TRUE.
     ENDIF
 
     IF (lcfl_watch_mode) THEN
       DO jg = 1, n_dom
-        IF (mvcfl(jg) > 0.9_wp*vcfl_threshold .OR. ndyn_substeps_var(jg) > ndyn_substeps) THEN
+        ! Write monitoring output for the CFL number that is close to or above the critical value for increasing the substep ratio; 
+        ! to check this, we convert the CFL numbers to what they would be with the default timestep
+        subsfac = REAL(ndyn_substeps_var(jg),wp)/REAL(ndyn_substeps,wp)
+        IF (mvcfl(jg)*subsfac > 0.9_wp*vcfl_threshold) THEN
           WRITE(message_text,'(a,i3,a,f7.4)') 'Maximum vertical CFL number in domain ', &
             jg,':', mvcfl(jg)
           CALL message('',message_text)
         ENDIF
-        IF (mvcfl(jg) > thresh1_cfl) THEN
-          ndyn_substeps_var(jg) = MIN(ndyn_substeps_var(jg)+1,ndyn_substeps_max+ndyn_substeps_enh)
+        IF (mhcfl(jg)*subsfac > 0.9_wp*hcfl_threshold) THEN
+          WRITE(message_text,'(a,i3,a,f7.4)') 'Maximum horizontal CFL number in domain ', &
+            jg,':', mhcfl(jg)
+          CALL message('',message_text)
+        ENDIF
+
+        IF (mvcfl(jg) > thresh1_vcfl .OR. mhcfl(jg) > thresh1_hcfl) THEN
+          nsubs_add = MAX(1,NINT(REAL(ndyn_substeps_var(jg),wp)*(mvcfl(jg)-thresh1_vcfl)/thresh1_vcfl))
+          ndyn_substeps_var(jg) = MIN(ndyn_substeps_var(jg)+nsubs_add,ndyn_substeps_max+ndyn_substeps_enh)
           advection_config(jg)%ivcfl_max = MIN(ndyn_substeps_var(jg),ndyn_substeps_max)
           WRITE(message_text,'(a,i3,a,i3)') 'Number of dynamics substeps in domain ', &
             jg,' increased to ', ndyn_substeps_var(jg)
           CALL message('',message_text)
         ENDIF
-        IF (ndyn_substeps_var(jg) > ndyn_substeps .AND.                                            &
-            mvcfl(jg)*REAL(ndyn_substeps_var(jg),wp)/REAL(ndyn_substeps_var(jg)-1,wp) < thresh2_cfl) THEN
+        IF (ndyn_substeps_var(jg) > ndyn_substeps .AND.                                                    &
+            mhcfl(jg)*REAL(ndyn_substeps_var(jg),wp)/REAL(ndyn_substeps_var(jg)-1,wp) < thresh2_hcfl .AND. &
+            mvcfl(jg)*REAL(ndyn_substeps_var(jg),wp)/REAL(ndyn_substeps_var(jg)-1,wp) < thresh2_vcfl) THEN
           ndyn_substeps_var(jg) = ndyn_substeps_var(jg)-1
           advection_config(jg)%ivcfl_max = ndyn_substeps_var(jg)
           WRITE(message_text,'(a,i3,a,i3)') 'Number of dynamics substeps in domain ', &
@@ -3410,7 +3463,7 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     ENDIF
 
     IF (ALL(ndyn_substeps_var(1:n_dom) == ndyn_substeps) .AND. ALL(mvcfl(1:n_dom) < 0.76_wp*vcfl_threshold) .AND. &
-        lcfl_watch_mode .AND. .NOT. lskip) THEN
+        ALL(mhcfl(1:n_dom) < 0.85_wp*hcfl_threshold) .AND. lcfl_watch_mode .AND. .NOT. lskip) THEN
       WRITE(message_text,'(a)') 'CFL number for vertical advection has decreased, leaving watch mode'
       CALL message('',message_text)
       lcfl_watch_mode = .FALSE.
@@ -3535,16 +3588,16 @@ CALL comin_callback_context_call(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LO
     TYPE(t_nh_diag), INTENT(inout) :: p_nh_diag  !< p_nh_state(jg)%diag
 
 !$OMP PARALLEL
-    IF (p_nh_diag%ddt_vn_dyn_is_associated) CALL init(p_nh_diag%ddt_vn_dyn)
-    IF (p_nh_diag%ddt_vn_dmp_is_associated) CALL init(p_nh_diag%ddt_vn_dmp)
-    IF (p_nh_diag%ddt_vn_hdf_is_associated) CALL init(p_nh_diag%ddt_vn_hdf)
-    IF (p_nh_diag%ddt_vn_adv_is_associated) CALL init(p_nh_diag%ddt_vn_adv)
-    IF (p_nh_diag%ddt_vn_cor_is_associated) CALL init(p_nh_diag%ddt_vn_cor)
-    IF (p_nh_diag%ddt_vn_pgr_is_associated) CALL init(p_nh_diag%ddt_vn_pgr)
-    IF (p_nh_diag%ddt_vn_phd_is_associated) CALL init(p_nh_diag%ddt_vn_phd)
-    IF (p_nh_diag%ddt_vn_iau_is_associated) CALL init(p_nh_diag%ddt_vn_iau)
-    IF (p_nh_diag%ddt_vn_ray_is_associated) CALL init(p_nh_diag%ddt_vn_ray)
-    IF (p_nh_diag%ddt_vn_grf_is_associated) CALL init(p_nh_diag%ddt_vn_grf)
+    IF (p_nh_diag%ddt_vn_dyn_is_associated) CALL init(p_nh_diag%ddt_vn_dyn, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_dmp_is_associated) CALL init(p_nh_diag%ddt_vn_dmp, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_hdf_is_associated) CALL init(p_nh_diag%ddt_vn_hdf, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_adv_is_associated) CALL init(p_nh_diag%ddt_vn_adv, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_cor_is_associated) CALL init(p_nh_diag%ddt_vn_cor, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_pgr_is_associated) CALL init(p_nh_diag%ddt_vn_pgr, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_phd_is_associated) CALL init(p_nh_diag%ddt_vn_phd, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_iau_is_associated) CALL init(p_nh_diag%ddt_vn_iau, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_ray_is_associated) CALL init(p_nh_diag%ddt_vn_ray, lacc=.TRUE.)
+    IF (p_nh_diag%ddt_vn_grf_is_associated) CALL init(p_nh_diag%ddt_vn_grf, lacc=.TRUE.)
 !$OMP END PARALLEL
 
   END SUBROUTINE init_ddt_vn_diagnostics

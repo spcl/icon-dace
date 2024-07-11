@@ -1,5 +1,15 @@
 #!/bin/ksh 
 
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
 function set_cluster {
  ##
  echo " Running on " >&2
@@ -59,28 +69,11 @@ function set_cluster {
 	 FILETYPE="4" 
      output_folder="${WORK}/TESTSUITE_OUTPUT"
 	 ;; #(
-   xmlogin*) :
-     echo "...MISTRAL at DKRZ"; CENTER="DKRZ"
-     icon_data_poolFolder=/pool/data/ICON/grids/private/mpim/icon_preprocessing/source/ 
-     input_folder="${WORK}/TESTSUITE/"
-	 FILETYPE="4" 
-     output_folder="/scratch/b/${USER}/TESTSUITE_OUTPUT/"
-     aer_opt="/pool/data/ICON/grids/public/mpim/independent"
-	 ;;
-
-   mlogin*)
-     echo "...MISTRAL at DKRZ"; CENTER="DKRZ" 
-     input_folder="/pfs/imk/ICON/TESTSUITE/"
-	 FILETYPE="4" 
-     output_folder="${SCRATCH}/TESTSUITE_OUTPUT"
-	 icon_data_poolFolder=/pool/data/ICON/grids/private/mpim/icon_preprocessing/source/
-     aer_opt="/pool/data/ICON/grids/public/mpim/independent"
-	 ;;
-   xl40053*)
+   xlevante*|xl[1-5]*)
      echo "...LEVANTE at DKRZ"; CENTER="DKRZ"
-     input_folder="${WORK}/../testcases/"
-   FILETYPE="4"
-     output_folder="${SCRATCH}/TESTSUITE_OUTPUT"
+     input_folder="/work/bb1070/testcases/"
+     FILETYPE="4"
+     output_folder="${HOME/home/scratch}/TESTSUITE_OUTPUT"
      aer_opt="/pool/data/ICON/grids/public/mpim/independent"
    ;;
    *) :
@@ -249,6 +242,7 @@ cat > job_ICON << ENDFILE
 #SBATCH --time=$2
 #SBATCH --ntasks-per-node=76
 #SBATCH --partition=$4
+#SBATCH -C LSDF
 
 
 $5 
@@ -300,7 +294,7 @@ ENDFILEDWD
       ##       
 EOF
 ;;
-   xl40053*)
+   xlevante*|xl[1-5]*)
 account_id=$(id -gn)
 cat >> $output_script << EOF
 
@@ -308,7 +302,7 @@ cat > job_ICON << ENDFILE
 #!/bin/bash -x
 #SBATCH --account=$account_id
 
-#SBATCH --partition=$4
+#SBATCH --partition=compute
 #SBATCH --$3
 #SBATCH --exclusive
 #SBATCH --ntasks-per-node=128
@@ -342,58 +336,6 @@ ENDFILE
                  
 chmod +x job_ICON
 sbatch job_ICON  
-
-EOF
-;;
-   xmlogin*)
-account_id=$(id -gn)
-cat >> $output_script << EOF
-	   
-cat > job_ICON << ENDFILE
-#!/bin/bash -x
-#SBATCH --account=$account_id
-
-#SBATCH --partition=$4
-#SBATCH --$3
-#SBATCH --exclusive
-#SBATCH --ntasks-per-node=24
-#SBATCH --time=$2
-
-
-ulimit -s 102400
-
-$5 
-export OMPI_MCA_pml=cm
-export OMPI_MCA_mtl=mxm
-export OMPI_MCA_mtl_mxm_np=0
-export MXM_RDMA_PORTS=mlx5_0:1
-export MXM_LOG_LEVEL=ERROR
-# Disable GHC algorithm for collective communication
-export OMPI_MCA_coll=^ghc
-
-export MXM_HANDLE_ERRORS=bt
-export UCX_HANDLE_ERRORS=bt
-
-export OMPI_MCA_coll=^fca
-export OMPI_MCA_coll_hcoll_enable=1
-export OMPI_MCA_coll_hcoll_priority=95
-export OMPI_MCA_coll_hcoll_np=8
-export HCOLL_MAIN_IB=mlx5_0:1
-export HCOLL_ENABLE_MCAST=1
-export HCOLL_ENABLE_MCAST_ALL=1
-
-export HCOLL_ML_DISABLE_BARRIER=1
-export HCOLL_ML_DISABLE_IBARRIER=1
-export HCOLL_ML_DISABLE_BCAST=1
-export HCOLL_ML_DISABLE_REDUCE=1
-
-srun -l --propagate=STACK --cpu_bind=cores \
-  --distribution=block:cyclic ./icon.exe
-
-ENDFILE
-
-chmod +x job_ICON
-sbatch job_ICON
 
 EOF
 ;;

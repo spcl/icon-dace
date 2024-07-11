@@ -622,7 +622,7 @@ CONTAINS !......................................................................
 
   !>
   !! Auxiliary subroutine.
-  !! Structural copy of src/shared/mo_fortran_tools: DO_DEALLOCATE
+  !! Structural copy of externals/fortran-support/src/mo_fortran_tools: DO_DEALLOCATE
   !!
   !! For safety reasons we refrain from integrating this subroutine 
   !! into the interface DO_DEALLOCATE. 

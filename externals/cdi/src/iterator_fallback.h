@@ -37,8 +37,8 @@ char *cdiFallbackIterator_copyVariableName(CdiIterator *me);
 int cdiFallbackIterator_inqTile(CdiIterator *me, int *outTileIndex, int *outTileAttribute);
 int cdiFallbackIterator_inqTileCount(CdiIterator *me, int *outTileCount, int *outTileAttributeCount);
 
-void cdiFallbackIterator_readField(CdiIterator *me, double *buffer, size_t *nmiss);
-void cdiFallbackIterator_readFieldF(CdiIterator *me, float *buffer, size_t *nmiss);
+void cdiFallbackIterator_readField(CdiIterator *me, double *buffer, size_t *numMissVals);
+void cdiFallbackIterator_readFieldF(CdiIterator *me, float *buffer, size_t *numMissVals);
 
 void cdiFallbackIterator_delete(CdiIterator *super);
 

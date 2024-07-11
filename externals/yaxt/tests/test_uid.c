@@ -51,10 +51,11 @@
 #include <yaxt.h>
 
 #include "tests.h"
+#include "ctest_common.h"
 
-int main()
+int main(int argc, char **argv)
 {
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
   xt_initialize(MPI_COMM_WORLD);
   Xt_int a_list[] = { 2, 3, 7, 10 };
   enum { a_list_size = sizeof (a_list) / sizeof (a_list[0]) };

@@ -74,9 +74,6 @@ CONTAINS
 
     CALL construct_wave_ext_data_state(p_patch, wave_ext_data, wave_ext_data_list)
 
-    ! read depth from file
-    CALL read_ext_data_wave(p_patch, wave_ext_data)
-
     DO jg = 1, n_dom
       IF (wave_config(jg)%depth > 0.0_wp) THEN
         ! set depth to constant
@@ -85,9 +82,11 @@ CONTAINS
         wave_ext_data(jg)%bathymetry_c(:,:) = wave_config(jg)%depth
       ELSE
 
+        ! read depth from file
+        CALL read_ext_data_wave(p_patch(jg), wave_ext_data(jg))
+
         IF (wave_config(jg)%niter_smooth > 0) THEN
           ! smooth bathymetry
-          
           ALLOCATE(topo_smt_c(&
                SIZE(wave_ext_data(jg)%bathymetry_c,1), &
                SIZE(wave_ext_data(jg)%bathymetry_c,2)),&
@@ -101,13 +100,12 @@ CONTAINS
                topo_smt_c)
 
 !$OMP PARALLEL
-          CALL copy(src=topo_smt_c,dest=wave_ext_data(jg)%bathymetry_c)
+          CALL copy(src=topo_smt_c,dest=wave_ext_data(jg)%bathymetry_c, lacc=.FALSE.)
 !$OMP END PARALLEL
 
           DEALLOCATE(topo_smt_c,stat=ist)
           IF (ist/=SUCCESS) CALL finish(routine, &
                'deallocation of topo_smt_c array failed')
-          
         END IF
       END IF
     END DO
@@ -151,14 +149,14 @@ CONTAINS
 
 
 !$OMP PARALLEL
-    CALL copy(src=bathymetry_c, dest=bath_c_3d(:,1,:))
-    CALL init(bath_e_3d(:,:,:))
+    CALL copy(src=bathymetry_c, dest=bath_c_3d(:,1,:), lacc=.FALSE.)
+    CALL init(bath_e_3d(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
 
     CALL cells2edges_scalar(bath_c_3d, p_patch, p_int_state%c_lin_e, bath_e_3d)
 
 !$OMP PARALLEL
-    CALL copy(src=bath_e_3d(:,1,:), dest=bathymetry_e)
+    CALL copy(src=bath_e_3d(:,1,:), dest=bathymetry_e, lacc=.FALSE.)
 !$OMP BARRIER
 
 !$OMP DO PRIVATE(jb,je,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
@@ -168,7 +166,8 @@ CONTAINS
                          i_startidx, i_endidx, rl_start, rl_end)
 
       DO je = i_startidx, i_endidx
-          bathymetry_e(je,jb) = MAX(bathymetry_e(je,jb),0.2_wp)
+        bathymetry_e(je,jb) = MAX(bathymetry_e(je,jb),wave_config(p_patch%id)%depth_min)
+        bathymetry_e(je,jb) = MIN(bathymetry_e(je,jb),wave_config(p_patch%id)%depth_max)
       ENDDO
     ENDDO
 !$OMP END DO NOWAIT
@@ -179,10 +178,9 @@ CONTAINS
 
   SUBROUTINE read_ext_data_wave(p_patch, wave_ext_data)
 
-    TYPE(t_patch),         INTENT(IN)    :: p_patch(:)
-    TYPE(t_external_wave), INTENT(INOUT) :: wave_ext_data(:)
+    TYPE(t_patch),         INTENT(IN)    :: p_patch
+    TYPE(t_external_wave), INTENT(INOUT) :: wave_ext_data
 
-    INTEGER :: jg
     INTEGER :: jb, jc
     INTEGER :: rl_start, rl_end
     INTEGER :: i_startblk, i_endblk
@@ -192,42 +190,39 @@ CONTAINS
 
     CHARACTER(filename_max) :: extpar_file
 
-    DO jg = 1, n_dom
-      extpar_file = generate_filename(extpar_filename, getModelBaseDir(), &
-        &                             TRIM(p_patch(jg)%grid_filename),    &
-        &                              nroot,                             &
-        &                             p_patch(jg)%level, p_patch(jg)%id)
+    extpar_file = generate_filename(extpar_filename, getModelBaseDir(), &
+      &                             TRIM(p_patch%grid_filename),        &
+      &                             nroot,                              &
+      &                             p_patch%level, p_patch%id)
 
-      CALL openInputFile(stream_id, extpar_file, p_patch(jg), default_read_method)
+    CALL openInputFile(stream_id, extpar_file, p_patch, default_read_method)
 
-      CALL read_2D(stream_id, on_cells, 'z', wave_ext_data(jg)%bathymetry_c)
+    CALL read_2D(stream_id, on_cells, 'z', wave_ext_data%bathymetry_c)
 
-      CALL closeFile(stream_id)
+    CALL closeFile(stream_id)
 
+    rl_start   = 1
+    rl_end     = min_rlcell
+    i_startblk = p_patch%cells%start_block(rl_start)
+    i_endblk   = p_patch%cells%end_block(rl_end)
 
-      rl_start   = 1
-      rl_end     = min_rlcell
-      i_startblk = p_patch(jg)%cells%start_block(rl_start)
-      i_endblk   = p_patch(jg)%cells%end_block(rl_end)
-
-      ! set minimal depth of 0.2 m
-      !
+    ! set depth limits depth_min and depth_max
+    !
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
-      DO jb=i_startblk, i_endblk
+    DO jb=i_startblk, i_endblk
 
-        CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, &
-                           i_startidx, i_endidx, rl_start, rl_end)
+      CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
+           i_startidx, i_endidx, rl_start, rl_end)
 
-        DO jc = i_startidx, i_endidx
-           wave_ext_data(jg)%bathymetry_c(jc,jb) = MAX(wave_ext_data(jg)%bathymetry_c(jc,jb),0.2_wp)
-        END DO
-
+      DO jc = i_startidx, i_endidx
+        wave_ext_data%bathymetry_c(jc,jb) = MAX(wave_ext_data%bathymetry_c(jc,jb),wave_config(p_patch%id)%depth_min)
+        wave_ext_data%bathymetry_c(jc,jb) = MIN(wave_ext_data%bathymetry_c(jc,jb),wave_config(p_patch%id)%depth_max)
       END DO
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
 
     END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
 
   END SUBROUTINE read_ext_data_wave
 

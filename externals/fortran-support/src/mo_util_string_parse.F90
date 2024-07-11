@@ -54,12 +54,6 @@ CONTAINS
   !       parse_line = "1,3,5...10,20...nlev"
   !    More complex example:
   !       parse_line = "1,2, 10 ...22;2;16-(3+11), N-2,16-(2+10);5"
-  !
-  ! 08/2014 : F. Prill, DWD
-  !
-  ! @param[in]  parse_line     string containing integer numbers
-  ! @param[out] out_values     out_values[i] = 1 if "i" was in parse_line
-  ! @param[out] ierr           error code != 0 if parser failed
   ! ---------------------------------------------------------------------
   SUBROUTINE util_do_parse_intlist(parse_line, nlev_value, out_values, ierr)
     CHARACTER(len=*), INTENT(IN)    :: parse_line

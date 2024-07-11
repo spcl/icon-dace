@@ -31,9 +31,7 @@ MODULE mo_icon_interpolation_scalar
   USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
   USE mo_timer,               ONLY: timer_start, timer_stop, timer_intp
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device, assert_lacc_equals_i_am_accel_node
-#ifdef _OPENACC
   USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
 
@@ -258,7 +256,7 @@ ELSE
 END IF
 
 CALL set_acc_host_or_device(lzacc, lacc)
-CALL assert_lacc_equals_i_am_accel_node('mo_interpolation:cells2edges_scalar', lacc)
+CALL assert_lacc_equals_i_am_accel_node('mo_interpolation:cells2edges_scalar', lzacc, i_am_accel_node)
 
 iidx => ptr_patch%edges%cell_idx
 iblk => ptr_patch%edges%cell_blk

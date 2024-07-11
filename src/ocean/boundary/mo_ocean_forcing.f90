@@ -24,7 +24,7 @@ MODULE mo_ocean_forcing
   USE mo_io_units,            ONLY: filename_max
   USE mo_grid_config,         ONLY: nroot
   USE mo_parallel_config,     ONLY: nproma
-  USE mo_coupling_config,     ONLY: is_coupled_run
+  USE mo_coupling_config,     ONLY: is_coupled_to_atmo
   USE mo_hamocc_nml,          ONLY: l_cpl_co2
   USE mo_ocean_nml,           ONLY: no_tracer,                                &
     & basin_height_deg, basin_width_deg, basin_center_lat, basin_center_lon,  &
@@ -126,154 +126,116 @@ CONTAINS
       &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.false., in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
     __acc_attach(p_oce_sfc%top_dilution_coeff)
 
-    IF (is_coupled_run()) THEN
-      IF ( l_cpl_co2 ) THEN
-        CALL add_var(ocean_restart_list, 'co2_mixing_ratio', p_oce_sfc%CO2_Mixing_Ratio, &
-          &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-          &        t_cf_var('Co2_Mixing_Ratio', 'ppmv', 'CO2 Mixing Ratio', datatype_flt),&
-          &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-          &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.True., in_group=groups("oce_force_essentials"))
-      ENDIF
-
-      CALL add_var(ocean_restart_list, 'sea_level_pressure', p_oce_sfc%sea_level_pressure, &
+    IF (is_coupled_to_atmo() .AND. l_cpl_co2) THEN
+      CALL add_var(ocean_restart_list, 'co2_mixing_ratio', p_oce_sfc%CO2_Mixing_Ratio, &
         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-        &        t_cf_var('air_pressure_at_mean_sea_level', 'Pa', 'Sea Level Pressure', datatype_flt),&
+        &        t_cf_var('Co2_Mixing_Ratio', 'ppmv', 'CO2 Mixing Ratio', datatype_flt),&
         &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
         &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.True., in_group=groups("oce_force_essentials"))
-      CALL add_var(ocean_restart_list, 'Wind_Speed_10m', p_oce_sfc%Wind_Speed_10m, &
-        &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-        &        t_cf_var('wind_speed', 'm s-1', 'Wind Speed at 10m height', datatype_flt),&
-        &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-        &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+    END IF
+
+    ! Coupling fluxes must go into restart file:
+    CALL add_var(ocean_restart_list, 'sea_level_pressure', p_oce_sfc%sea_level_pressure, &
+      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
+      &        t_cf_var('air_pressure_at_mean_sea_level', 'Pa', 'Sea Level Pressure', datatype_flt),&
+      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
+    CALL add_var(ocean_restart_list, 'Wind_Speed_10m', p_oce_sfc%Wind_Speed_10m, &
+      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
+      &        t_cf_var('wind_speed', 'm s-1', 'Wind Speed at 10m height', datatype_flt),&
+      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
     ! heat fluxes
     CALL add_var(ocean_restart_list, 'HeatFlux_Total', p_oce_sfc%HeatFlux_Total, &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('surface_downward_heat_flux', 'W m-2', 'Total Heat Flux', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'HeatFlux_Shortwave', p_oce_sfc%HeatFlux_Shortwave, &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('surface_downwelling_shortwave_flux', 'W m-2', 'Shortwave Heat Flux', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'HeatFlux_LongWave', p_oce_sfc%HeatFlux_LongWave , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('surface_downwelling_longwave_flux', 'W m-2', 'Longwave Heat Flux', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'HeatFlux_Sensible', p_oce_sfc%HeatFlux_Sensible , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('surface_downward_sensible_heat_flux', 'W m-2', 'Sensible Heat Flux', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'HeatFlux_Latent', p_oce_sfc%HeatFlux_Latent , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('surface_downward_latent_heat_flux', 'W m-2', 'Latent Heat Flux', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
     ! freshwater fluxes
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'FrshFlux_Precipitation', p_oce_sfc%FrshFlux_Precipitation , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('lwe_precipitation_rate', 'm s-1', 'FrshFlux_Precipitation', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'FrshFlux_Evaporation', p_oce_sfc%FrshFlux_Evaporation , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('lwe_water_evaporation_rate', 'm s-1', 'FrshFlux_Evaporation', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'FrshFlux_SnowFall', p_oce_sfc%FrshFlux_SnowFall , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('FrshFlux_SnowFall', 'm s-1', 'FrshFlux_SnowFall', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
+
+    ! Coupling fluxes must go into restart file:
     CALL add_var(ocean_restart_list, 'FrshFlux_Runoff', p_oce_sfc%FrshFlux_Runoff , &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
       &        t_cf_var('FrshFlux_Runoff', 'm s-1', 'FrshFlux_Runoff', datatype_flt),&
       &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), lrestart_cont=.TRUE., in_group=groups("oce_force_essentials"))
+      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), &
+      &        lrestart=is_coupled_to_atmo(), lrestart_cont=.TRUE., lopenacc=.NOT.is_coupled_to_atmo())
 
-    ELSE
-      CALL add_var(ocean_default_list, 'sea_level_pressure', p_oce_sfc%sea_level_pressure, &
-        &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-        &        t_cf_var('air_pressure_at_mean_sea_level', 'Pa', 'Sea Level Pressure', datatype_flt),&
-        &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-        &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
+    IF (.NOT. is_coupled_to_atmo()) THEN
       __acc_attach(p_oce_sfc%sea_level_pressure)
-
-      CALL add_var(ocean_default_list, 'Wind_Speed_10m', p_oce_sfc%Wind_Speed_10m, &
-        &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-        &        t_cf_var('wind_speed', 'm s-1', 'Wind Speed at 10m height', datatype_flt),&
-        &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-        &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
       __acc_attach(p_oce_sfc%Wind_Speed_10m)
-
-    ! heat fluxes
-    CALL add_var(ocean_default_list, 'HeatFlux_Total', p_oce_sfc%HeatFlux_Total, &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('surface_downward_heat_flux', 'W m-2', 'Total Heat Flux', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%HeatFlux_Total)
-
-    CALL add_var(ocean_default_list, 'HeatFlux_Shortwave', p_oce_sfc%HeatFlux_Shortwave, &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('surface_downwelling_shortwave_flux', 'W m-2', 'Shortwave Heat Flux', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%HeatFlux_Shortwave)
-
-    CALL add_var(ocean_default_list, 'HeatFlux_LongWave', p_oce_sfc%HeatFlux_LongWave , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('surface_downwelling_longwave_flux', 'W m-2', 'Longwave Heat Flux', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%HeatFlux_LongWave)
-
-    CALL add_var(ocean_default_list, 'HeatFlux_Sensible', p_oce_sfc%HeatFlux_Sensible , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('surface_downward_sensible_heat_flux', 'W m-2', 'Sensible Heat Flux', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%HeatFlux_Sensible)
-
-    CALL add_var(ocean_default_list, 'HeatFlux_Latent', p_oce_sfc%HeatFlux_Latent , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('surface_downward_latent_heat_flux', 'W m-2', 'Latent Heat Flux', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%HeatFlux_Latent)
-
-    ! freshwater fluxes
-    CALL add_var(ocean_default_list, 'FrshFlux_Precipitation', p_oce_sfc%FrshFlux_Precipitation , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('lwe_precipitation_rate', 'm s-1', 'FrshFlux_Precipitation', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%FrshFlux_Precipitation)
-
-    CALL add_var(ocean_default_list, 'FrshFlux_Evaporation', p_oce_sfc%FrshFlux_Evaporation , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('lwe_water_evaporation_rate', 'm s-1', 'FrshFlux_Evaporation', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%FrshFlux_Evaporation)
-
-    CALL add_var(ocean_default_list, 'FrshFlux_SnowFall', p_oce_sfc%FrshFlux_SnowFall , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('FrshFlux_SnowFall', 'm s-1', 'FrshFlux_SnowFall', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%FrshFlux_SnowFall)
-
-    CALL add_var(ocean_default_list, 'FrshFlux_Runoff', p_oce_sfc%FrshFlux_Runoff , &
-      &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
-      &        t_cf_var('FrshFlux_Runoff', 'm s-1', 'FrshFlux_Runoff', datatype_flt),&
-      &        grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, GRID_CELL),&
-      &        ldims=(/nproma,alloc_cell_blocks/), in_group=groups("oce_force_essentials"), lopenacc=.TRUE.)
-    __acc_attach(p_oce_sfc%FrshFlux_Runoff)
-
-    END IF  !  end coupled IF
+      __acc_attach(p_oce_sfc%HeatFlux_Total)
+      __acc_attach(p_oce_sfc%HeatFlux_Shortwave)
+      __acc_attach(p_oce_sfc%HeatFlux_LongWave)
+      __acc_attach(p_oce_sfc%HeatFlux_Sensible)
+      __acc_attach(p_oce_sfc%HeatFlux_Latent)
+      __acc_attach(p_oce_sfc%FrshFlux_Precipitation)
+      __acc_attach(p_oce_sfc%FrshFlux_Evaporation)
+      __acc_attach(p_oce_sfc%FrshFlux_SnowFall)
+      __acc_attach(p_oce_sfc%FrshFlux_Runoff)
+    END IF
 
     CALL add_var(ocean_default_list, 'TopBC_WindStress_u', p_oce_sfc%TopBC_WindStress_u, &
       &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE, &
@@ -724,13 +686,13 @@ CONTAINS
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(relax_init_file), nf_nowrite, ncid), routine)
+        CALL nf(nf90_open(TRIM(relax_init_file), nf90_nowrite, ncid), routine)
 
         !
         ! get number of cells
         !
-        CALL nf(nf_inq_dimid(ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid(ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         !
         ! check the number of cells
@@ -744,8 +706,8 @@ CONTAINS
         !
         ! get number of levels
         !
-        CALL nf(nf_inq_dimid(ncid, 'level', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_levels), routine)
+        CALL nf(nf90_inq_dimid(ncid, 'level', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_levels), routine)
 
         !
         ! check the number of cells
@@ -756,7 +718,7 @@ CONTAINS
           CALL finish(TRIM(routine),'Number of vertical levels is not equal 1 - ABORT')
         ENDIF
 
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
 
       ENDIF  !  stdio
 

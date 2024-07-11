@@ -2420,10 +2420,10 @@ my_thrd_id = omp_get_thread_num()
     IF ( (PRESENT(tet_flux).AND.PRESENT(vap_flux).AND.PRESENT(liq_flux)) &
         .AND. PRESENT(l_3d_turb_fluxes)                           )  THEN
        IF (l_3d_turb_fluxes) THEN	 
-          !$ACC PARALLEL ASYNC(1) IF(lzacc)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
 !DIR$ IVDEP
+          !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO k=2, ke1
-          !$ACC LOOP GANG VECTOR
              DO i=ivstart, ivend !    gradient     rho     coefficient
   	          tet_flux(i,k) = zvari(i,k,tet)*rhon(i,k)*tkvh(i,k) 
   	          vap_flux(i,k) = zvari(i,k,vap)*rhon(i,k)*tkvh(i,k)  

@@ -28,15 +28,27 @@
 export EXPERIMENT='mch_icon-ch1'
 
 # set parameters to avoid crash of icon-dev.checksuite
-export TYPES="void"
-export DATES="void"
-export RESTART_DATE="void"
+export TYPES='atm_3d_ml'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES="20230913T000000Z 20230913T010000Z 20230913T020000Z 20230913T030000Z 20230913T040000Z 20230913T050000Z 20230913T060000Z 20230913T070000Z \
+                 20230913T080000Z 20230913T090000Z 20230913T100000Z 20230913T110000Z 20230913T120000Z 20230913T130000Z 20230913T140000Z 20230913T150000Z \
+                  20230913T160000Z 20230913T170000Z 20230913T180000Z 20230913T190000Z 20230913T200000Z 20230913T210000Z 20230913T220000Z 20230913T230000Z"
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+# 
+export RESTART_DATE='20230913T000000Z'
 
 #--------------------------------------------------------------------------------
 # 
 # 2. Define the checksuite mode
 #
 export MD='p'
+# Activate cuda-graph test as a bit-identity test. This check-script should not be run with cuda-graphs activated
+export MD=$MD'g'
+
 
 #--------------------------------------------------------------------------------
 # 

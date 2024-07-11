@@ -19,6 +19,8 @@
 !   2017-04-22  R. Hogan  Store surface fluxes at all g-points
 !   2017-10-23  R. Hogan  Renamed single-character variables
 
+#include "ecrad_config.h"
+
 module radiation_mcica_acc_sw
 
   public
@@ -52,9 +54,7 @@ contains
     use radiation_single_level, only   : single_level_type
     use radiation_cloud, only          : cloud_type
     use radiation_flux, only           : flux_type
-    use radiation_two_stream, only     : calc_two_stream_gammas_sw, &
-         &                               calc_reflectance_transmittance_sw, &
-         &                               calc_ref_trans_sw
+    use radiation_two_stream, only     : calc_ref_trans_sw
     use radiation_adding_ica_sw, only  : adding_ica_sw
     use radiation_cloud_generator_acc, only: cloud_generator_acc
     use radiation_cloud_cover, only    : beta2alpha, MaxCloudFrac
@@ -114,9 +114,6 @@ contains
     ! Combined scattering optical depth
     real(jprb) :: scat_od
 
-    ! Two-stream coefficients
-    real(jprb), dimension(config%n_g_sw) :: gamma1, gamma2, gamma3
-
     ! Optical depth scaling from the cloud generator, zero indicating
     ! clear skies
     real(jprb), dimension(config%n_g_sw,nlev) :: od_scaling
@@ -145,20 +142,18 @@ contains
     integer :: ibegin(istartcol:iendcol), iend(istartcol:iendcol)
 
     ! Temporary working array
-    real(jprb), dimension(config%n_g_sw,nlev+1) :: tmp_work_albedo, tmp_work_source
+    real(jprb), dimension(config%n_g_sw,nlev+1) :: tmp_work_albedo, &
+      &                                            tmp_work_source
     real(jprb), dimension(config%n_g_sw,nlev) :: tmp_work_inv_denominator
 
-    ! Total cloud cover output from the cloud generator
-    real(jprb) :: total_cloud_cover
+    ! Auxiliary for more efficient summation
+    real(jprb) :: sum_up, sum_dn_direct, sum_dn_diffuse
 
     ! Number of g points
     integer :: ng
 
     ! Loop indices for level, column and g point
     integer :: jlev, jcol, jg
-
-    ! temporary sum values for reduction 
-    real(jprb) :: sum_up, sum_dn_direct, sum_dn_diffuse
 
     real(jprb) :: hook_handle
 
@@ -290,10 +285,10 @@ contains
     ! Loop through columns
     !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) &
     !$ACC   NUM_GANGS(iendcol-istartcol+1) NUM_WORKERS((config%n_g_sw-1)/32+1) VECTOR_LENGTH(32)
-    !$ACC LOOP GANG PRIVATE(cos_sza, g_total, gamma1, gamma2, gamma3, od_cloud_new, od_scaling, od_total, ref_clear, &
+    !$ACC LOOP GANG PRIVATE(cos_sza, g_total, od_cloud_new, od_scaling, od_total, ref_clear, &
     !$ACC   ref_dir, ref_dir_clear, reflectance, ssa_total, tmp_work_inv_denominator, tmp_work_albedo, &
     !$ACC   tmp_work_source, trans_clear, trans_dir_diff, trans_dir_diff_clear, &
-    !$ACC   trans_dir_dir, trans_dir_dir_clear, transmittance, total_cloud_cover)
+    !$ACC   trans_dir_dir, trans_dir_dir_clear, transmittance)
     do jcol = istartcol,iendcol
       ! Only perform calculation if sun above the horizon
       if (single_level%cos_sza(jcol) > 0.0_jprb) then
@@ -319,12 +314,8 @@ contains
             ssa_total = ssa(:,jlev,jcol)
             g_total   =   g(:,jlev,jcol)
             call delta_eddington(od_total, ssa_total, g_total)
-            call calc_two_stream_gammas_sw(ng, &
-                 &  cos_sza, ssa_total, g_total, &
-                 &  gamma1, gamma2, gamma3)
-            call calc_reflectance_transmittance_sw(ng, &
-                 &  cos_sza, od_total, ssa_total, &
-                 &  gamma1, gamma2, gamma3, &
+            call calc_ref_trans_sw(ng, &
+                 &  cos_sza, od_total, ssa_total, g_total, &
                  &  ref_clear(:,jlev), trans_clear(:,jlev), &
                  &  ref_dir_clear(:,jlev), trans_dir_diff_clear(:,jlev), &
                  &  trans_dir_dir_clear(:,jlev) )
@@ -334,8 +325,8 @@ contains
 
         ! Use adding method to compute fluxes
         call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
-             &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
-             &  cos_sza, ref_clear, trans_clear, ref_dir_clear, trans_dir_diff_clear, &
+             &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), cos_sza, &
+             &  ref_clear, trans_clear, ref_dir_clear, trans_dir_diff_clear, &
              &  trans_dir_dir_clear, flux_up(:,:,jcol), flux_dn_diffuse(:,:,jcol), flux_dn_direct(:,:,jcol), &
              &  albedo=tmp_work_albedo, &
              &  source=tmp_work_source, &
@@ -352,9 +343,6 @@ contains
           end do
         end do
 
-        ! Store total cloud cover
-        total_cloud_cover = flux%cloud_cover_sw(jcol)
-
         ! Store spectral downwelling fluxes at surface
         !$ACC LOOP WORKER VECTOR
         do jg = 1,ng
@@ -364,20 +352,19 @@ contains
 
         ! Do cloudy-sky calculation
         call cloud_generator_acc(ng, nlev, &
-             &  single_level%iseed(jcol), &
+             &  single_level%iseed(jcol) + 0, & ! Workaround for nvhpc-24.1
              &  config%cloud_fraction_threshold, &
              &  frac(:,jcol), overlap_param(:,jcol), &
              &  config%cloud_inhom_decorr_scaling, frac_std(:,jcol), &
              &  config%pdf_sampler%ncdf, config%pdf_sampler%nfsd, &
              &  config%pdf_sampler%fsd1, config%pdf_sampler%inv_fsd_interval, &
              &  sample_val, &
-             &  od_scaling, total_cloud_cover, &
+             &  od_scaling, flux%cloud_cover_sw(jcol)+0.0_jprb, & ! Workaround for nvhpc-24.1
              &  ibegin(jcol), iend(jcol), &
              &  cum_cloud_cover=cum_cloud_cover(:,jcol), &
              &  pair_cloud_cover=pair_cloud_cover(:,jcol))
-
         
-        if (total_cloud_cover >= config%cloud_fraction_threshold) then
+        if (flux%cloud_cover_sw(jcol) >= config%cloud_fraction_threshold) then
           ! Total-sky calculation
           !$ACC LOOP SEQ
           do jlev = 1,nlev
@@ -408,6 +395,7 @@ contains
                   end if
                 end if
               end do
+
 #ifndef _OPENACC
               ! Apply delta-Eddington scaling to the cloud-aerosol-gas
               ! mixture
@@ -439,8 +427,8 @@ contains
             
           ! Use adding method to compute fluxes for an overcast sky
           call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
-               &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
-               &  cos_sza, reflectance, transmittance, ref_dir, trans_dir_diff, &
+               &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), cos_sza, &
+               &  reflectance, transmittance, ref_dir, trans_dir_diff, &
                &  trans_dir_dir, flux_up(:,:,jcol), flux_dn_diffuse(:,:,jcol), flux_dn_direct(:,:,jcol), &
                &  albedo=tmp_work_albedo, &
                &  source=tmp_work_source, &
@@ -451,10 +439,10 @@ contains
           do jg = 1,ng
             flux%sw_dn_diffuse_surf_g(jg,jcol) = flux_dn_diffuse(jg,nlev+1,jcol)
             flux%sw_dn_direct_surf_g(jg,jcol)  = flux_dn_direct(jg,nlev+1,jcol)
-            flux%sw_dn_diffuse_surf_g(jg,jcol) = total_cloud_cover *flux%sw_dn_diffuse_surf_g(jg,jcol) &
-                &     + (1.0_jprb - total_cloud_cover)*flux%sw_dn_diffuse_surf_clear_g(jg,jcol)
-            flux%sw_dn_direct_surf_g(jg,jcol) = total_cloud_cover *flux%sw_dn_direct_surf_g(jg,jcol) &
-                &     + (1.0_jprb - total_cloud_cover)*flux%sw_dn_direct_surf_clear_g(jg,jcol)
+            flux%sw_dn_diffuse_surf_g(jg,jcol) = flux%cloud_cover_sw(jcol) *flux%sw_dn_diffuse_surf_g(jg,jcol) &
+                &     + (1.0_jprb - flux%cloud_cover_sw(jcol))*flux%sw_dn_diffuse_surf_clear_g(jg,jcol)
+            flux%sw_dn_direct_surf_g(jg,jcol) = flux%cloud_cover_sw(jcol) *flux%sw_dn_direct_surf_g(jg,jcol) &
+                &     + (1.0_jprb - flux%cloud_cover_sw(jcol))*flux%sw_dn_direct_surf_clear_g(jg,jcol)
           end do
           
         else
@@ -484,7 +472,7 @@ contains
     ! Loop through columns
     !$ACC PARALLEL DEFAULT(NONE) ASYNC(1) PRIVATE(sum_dn_diffuse, sum_dn_direct, sum_up) &
     !$ACC   NUM_GANGS((iendcol-istartcol+1)*(nlev+1)) NUM_WORKERS(1) VECTOR_LENGTH(32*((config%n_g_sw-1)/32+1))
-    !$ACC LOOP GANG COLLAPSE(2) PRIVATE(cos_sza, total_cloud_cover)
+    !$ACC LOOP GANG COLLAPSE(2) PRIVATE(cos_sza)
     do jcol = istartcol,iendcol
       do jlev = 1, nlev+1
 
@@ -509,10 +497,7 @@ contains
         end if
         flux%sw_dn_clear(jcol,jlev) = sum_dn_diffuse + sum_dn_direct
 
-            ! Store total cloud cover
-            total_cloud_cover = flux%cloud_cover_sw(jcol)
-            
-            if (total_cloud_cover >= config%cloud_fraction_threshold) then
+            if (flux%cloud_cover_sw(jcol) >= config%cloud_fraction_threshold) then
               ! Store overcast broadband fluxes
               sum_up = 0.0_jprb
               sum_dn_direct = 0.0_jprb
@@ -537,26 +522,23 @@ contains
 
     ! Loop through columns
     !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(cos_sza, total_cloud_cover)
+    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(cos_sza)
     do jlev = 1, nlev+1
       do jcol = istartcol,iendcol
         ! Only perform calculation if sun above the horizon
         if (single_level%cos_sza(jcol) > 0.0_jprb) then
           cos_sza = single_level%cos_sza(jcol)
 
-          ! Store total cloud cover
-          total_cloud_cover = flux%cloud_cover_sw(jcol)
-          
-          if (total_cloud_cover >= config%cloud_fraction_threshold) then
+          if (flux%cloud_cover_sw(jcol) >= config%cloud_fraction_threshold) then
             ! Cloudy flux profiles currently assume completely overcast
             ! skies; perform weighted average with clear-sky profile
-            flux%sw_up(jcol,jlev) =  total_cloud_cover *flux%sw_up(jcol,jlev) &
-                &  + (1.0_jprb - total_cloud_cover)*flux%sw_up_clear(jcol,jlev)
-            flux%sw_dn(jcol,jlev) =  total_cloud_cover *flux%sw_dn(jcol,jlev) &
-                &  + (1.0_jprb - total_cloud_cover)*flux%sw_dn_clear(jcol,jlev)
+            flux%sw_up(jcol,jlev) =  flux%cloud_cover_sw(jcol) *flux%sw_up(jcol,jlev) &
+                &  + (1.0_jprb - flux%cloud_cover_sw(jcol))*flux%sw_up_clear(jcol,jlev)
+            flux%sw_dn(jcol,jlev) =  flux%cloud_cover_sw(jcol) *flux%sw_dn(jcol,jlev) &
+                &  + (1.0_jprb - flux%cloud_cover_sw(jcol))*flux%sw_dn_clear(jcol,jlev)
             if (allocated(flux%sw_dn_direct)) then
-              flux%sw_dn_direct(jcol,jlev) = total_cloud_cover *flux%sw_dn_direct(jcol,jlev) &
-                  &  + (1.0_jprb - total_cloud_cover)*flux%sw_dn_direct_clear(jcol,jlev)
+              flux%sw_dn_direct(jcol,jlev) = flux%cloud_cover_sw(jcol) *flux%sw_dn_direct(jcol,jlev) &
+                  &  + (1.0_jprb - flux%cloud_cover_sw(jcol))*flux%sw_dn_direct_clear(jcol,jlev)
             end if
             
           else

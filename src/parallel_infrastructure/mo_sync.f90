@@ -42,9 +42,7 @@ USE mo_mpi,                ONLY: p_pe, p_bcast, p_sum, p_max, p_min, p_send, p_r
   &                              my_process_is_mpi_parallel, p_work_pe0,p_pe_work,                 &
   &                              comm_lev, glob_comm, comm_proc0,   &
   &                              p_gather, p_gatherv, num_test_procs
-#ifdef _OPENACC
 USE mo_mpi,                ONLY: i_am_accel_node
-#endif
 USE mo_parallel_config, ONLY:p_test_run,   &
   & n_ghost_rows, l_log_checks, l_fast_sum
 USE mo_communication,      ONLY: exchange_data, exchange_data_4de1,            &
@@ -139,7 +137,11 @@ END INTERFACE
 INTEGER, SAVE :: log_unit = -1
 
 ! Flag if sync checks are enabled when sync_patch_array et al is called
+#ifndef _OPENACC
 LOGICAL, SAVE :: do_sync_checks = .TRUE.
+#else
+LOGICAL, SAVE :: do_sync_checks = .FALSE.
+#endif
 
 !-------------------------------------------------------------------------
 
@@ -217,7 +219,7 @@ SUBROUTINE sync_patch_array_r3(typ, p_patch, arr, opt_varname)
    ! Boundary exchange for work PEs
     IF(my_process_is_mpi_parallel()) THEN
       p_pat => comm_pat_of_type(p_patch, typ)
-      CALL exchange_data(p_pat, arr)
+      CALL exchange_data(p_pat=p_pat, lacc=i_am_accel_node, recv=arr)
     ENDIF
 END SUBROUTINE sync_patch_array_r3
 
@@ -247,7 +249,7 @@ SUBROUTINE sync_patch_array_s3(typ, p_patch, arr, opt_varname)
    ! Boundary exchange for work PEs
    IF(my_process_is_mpi_parallel()) THEN
       p_pat => comm_pat_of_type(p_patch, typ)
-      CALL exchange_data(p_pat, arr)
+      CALL exchange_data(p_pat=p_pat, lacc=i_am_accel_node, recv=arr)
    ENDIF
 END SUBROUTINE sync_patch_array_s3
 
@@ -267,7 +269,7 @@ SUBROUTINE sync_patch_array_i3(typ, p_patch, arr)
    ! Boundary exchange for work PEs
    IF(my_process_is_mpi_parallel()) THEN
       p_pat => comm_pat_of_type(p_patch, typ)
-      CALL exchange_data(p_pat, arr)
+      CALL exchange_data(p_pat=p_pat, lacc=i_am_accel_node, recv=arr)
    ENDIF
 END SUBROUTINE sync_patch_array_i3
 
@@ -280,7 +282,7 @@ END SUBROUTINE sync_patch_array_i3
     ! Boundary exchange for work PEs
     IF(my_process_is_mpi_parallel()) THEN
       p_pat => comm_pat_of_type(p_patch, typ)
-      CALL exchange_data(p_pat, arr)
+      CALL exchange_data(p_pat=p_pat, lacc=i_am_accel_node, recv=arr)
     ENDIF
   END SUBROUTINE sync_patch_array_l3
 
@@ -393,7 +395,8 @@ SUBROUTINE sync_patch_array_mult_dp(typ, p_patch, nfields, f3din1, f3din2, f3din
      IF (PRESENT(f3din4)) ndim2tot = ndim2tot+SIZE(f3din4,2)
      IF (PRESENT(f3din5)) ndim2tot = ndim2tot+SIZE(f3din5,2)
 
-     CALL exchange_data_mult(p_pat, nfields, ndim2tot, recv1=f3din1, recv2=f3din2, &
+     CALL exchange_data_mult(p_pat=p_pat, lacc=i_am_accel_node, &
+       &                     nfields=nfields, ndim2tot=ndim2tot, recv1=f3din1, recv2=f3din2, &
        &                     recv3=f3din3, recv4=f3din4, recv5=f3din5, recv4d=f4din , &
        &                     recv3d_arr=f3din_arr)
    ENDIF
@@ -475,7 +478,7 @@ SUBROUTINE sync_patch_array_mult_sp(typ, p_patch, nfields, f3din1, f3din2, f3din
 
    ! Boundary exchange for work PEs
    IF(my_process_is_mpi_parallel()) THEN
-     CALL p_pat%exchange_data_mult_mixprec(0, 0, nfields, ndim2tot, &
+     CALL p_pat%exchange_data_mult_mixprec(lacc=i_am_accel_node, nfields_dp=0, ndim2tot_dp=0, nfields_sp=nfields, ndim2tot_sp=ndim2tot, &
           recv_sp=fld)
    ENDIF
 
@@ -566,7 +569,8 @@ SUBROUTINE sync_patch_array_mult_mp(typ, p_patch, nfields, nfields_sp, f3din1, f
      IF (PRESENT(f3din4_sp)) ndim2tot_sp = ndim2tot_sp+SIZE(f3din4_sp,2)
      IF (PRESENT(f3din5_sp)) ndim2tot_sp = ndim2tot_sp+SIZE(f3din5_sp,2)
 
-     CALL exchange_data_mult_mixprec(p_pat, nfields, ndim2tot, nfields_sp, ndim2tot_sp,                    &
+     CALL exchange_data_mult_mixprec(p_pat=p_pat, lacc=i_am_accel_node,                                    &
+       nfields_dp=nfields, ndim2tot_dp=ndim2tot, nfields_sp=nfields_sp, ndim2tot_sp=ndim2tot_sp,           &
        recv1_dp=f3din1,    recv2_dp=f3din2,    recv3_dp=f3din3,    recv4_dp=f3din4,    recv5_dp=f3din5,    &
        recv1_sp=f3din1_sp, recv2_sp=f3din2_sp, recv3_sp=f3din3_sp, recv4_sp=f3din4_sp, recv5_sp=f3din5_sp, &
        recv4d_dp=f4din,    recv4d_sp=f4din_sp                                                              )
@@ -609,7 +613,7 @@ SUBROUTINE sync_patch_array_4de1(typ, p_patch, nfields, f4din, opt_varname)
      IF (nfields/=UBOUND(f4din,1)) &
        CALL finish('sync_patch_array_4de1','inconsistent arguments')
      ndim2tot = nfields*SIZE(f4din,3)
-     CALL exchange_data_4de1(p_pat, nfields, ndim2tot, recv=f4din)
+     CALL exchange_data_4de1(p_pat, i_am_accel_node, nfields, ndim2tot, recv=f4din)
    ENDIF
 
 END SUBROUTINE sync_patch_array_4de1
@@ -764,7 +768,7 @@ SUBROUTINE check_patch_array_3(typ, p_patch, arr, opt_varname)
    IF (num_test_procs > 1) THEN
      shape_recv = SHAPE(arr)
      ALLOCATE(arr_g(shape_recv(1),shape_recv(2),shape_recv(3)))
-     CALL exchange_data(p_pat_work2test, arr_g, arr)
+     CALL exchange_data(p_pat=p_pat_work2test, lacc=.FALSE., recv=arr_g, send=arr)
      IF(l_my_process_is_mpi_test) THEN
        jk_min_err = HUGE(jk_min_err)
 !$OMP PARALLEL PRIVATE(jb,jk,jl) REDUCTION(.or.: sync_error) &

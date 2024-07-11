@@ -1,0 +1,29 @@
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+
+components:
+  atmo_output:
+    model: ICON
+    simulated: atmosphere
+    grid: icon_atmos_grid
+    time:
+      step: %{atmo.timestep}
+      lag: %{atmo.lag|d(1)}
+  ocean_output:
+    model: ICON
+    simulated: ocean
+    grid: icon_ocean_grid
+    time:
+      step: %{ocean.timestep}
+      lag: %{ocean.lag|d(1)}
+dates:
+  start: "$start_date"
+  end: "$next_date"
+  calendar: "%{calendar}"

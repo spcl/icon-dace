@@ -229,7 +229,7 @@ CONTAINS
       CALL grad_fd_norm_oce_2d_3d( x, this%patch_2D, this%op_coeffs_wp%grad_coeff(:,1,:), &
         & this%z_grad_h_wp(:,:), subset_range=this%patch_2D%edges%gradIsCalculable)
       IF (this%patch_2d%cells%max_connectivity /= 3 .AND. my_process_is_mpi_parallel()) &
-        & CALL exchange_data(this%patch_2D%comm_pat_e, this%z_grad_h_wp)
+        & CALL exchange_data(p_pat=this%patch_2D%comm_pat_e, lacc=.false., recv=this%z_grad_h_wp)
       CALL map_edges2edges_viacell_3d_const_z( this%patch_3d, &
         & this%z_grad_h_wp(:,:), this%op_coeffs_wp, this%z_e_wp(:,:))
     END IF ! l_edge_based

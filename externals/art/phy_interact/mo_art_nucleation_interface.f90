@@ -38,6 +38,7 @@ MODULE mo_art_nucleation_interface
   
   PUBLIC :: art_nuc_warm_interface
   PUBLIC :: art_nuc_cold_interface
+  PUBLIC :: t_nuc_mode_cold
   
   
   TYPE t_nuc_mode_warm

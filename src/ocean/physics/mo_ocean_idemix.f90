@@ -106,7 +106,6 @@ MODULE mo_ocean_idemix
   USE mo_math_types,          ONLY: t_cartesian_coordinates
   USE mo_ocean_idemix_base,   ONLY: init_idemix, coeffs_idemix!, integrate_idemix
   USE mo_sea_ice_types,       ONLY: t_sea_ice, t_atmos_fluxes
-  !USE test,                   ONLY: test_test
   USE mo_read_interface,      ONLY: read_2D_1Time, on_cells, t_stream_id, &
     & read_netcdf_broadcast_method, openInputFile, closeFile
 

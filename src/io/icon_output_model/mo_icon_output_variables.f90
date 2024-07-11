@@ -94,7 +94,7 @@ CONTAINS
   
     CHARACTER(LEN=max_char_length) :: listname
     TYPE(t_patch), POINTER :: patch_2d
-    CHARACTER(len=64) :: model_name
+    CHARACTER(:), ALLOCATABLE :: model_name
     INTEGER :: alloc_cell_blocks
     INTEGER :: datatype_flt
     
@@ -109,7 +109,7 @@ CONTAINS
     ! default list: elements can be written to disk, but not to the restart file
     WRITE(listname,'(a)')  'output_default_list'
     CALL vlr_add(output_default_list, listname, patch_id=patch_2d%id, &
-      & lrestart=.FALSE.,model_type=TRIM(model_name), loutput=.TRUE.)
+      & lrestart=.FALSE.,model_type=model_name, loutput=.TRUE.)
 
     ! add an output variable
     CALL add_var(output_default_list, 'out_var', myOutputCollection%output_variable, grid_unstructured_cell, &

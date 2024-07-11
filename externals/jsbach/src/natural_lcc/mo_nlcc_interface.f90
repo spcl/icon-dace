@@ -99,7 +99,7 @@ CONTAINS
     INTEGER,              INTENT(in)    :: model_id
 
     CALL this%Register_task(tsk_nlcc(model_id))
-    
+
   END SUBROUTINE Register_nlcc_tasks
 
   ! ================================================================================================================================
@@ -198,8 +198,8 @@ CONTAINS
     dtime   = options%dtime
     !X if necessary: steplen = options%steplen
 
-    ! If process is not active on this tile, do nothing
-    !IF (.NOT. tile%Is_process_active(NLCC_)) RETURN
+    ! If process is not to be calculated on this tile, do nothing
+    !IF (.NOT. tile%Is_process_calculated(NLCC_)) RETURN
 
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 

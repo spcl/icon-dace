@@ -35,11 +35,11 @@ export TYPES='atm_3d_ml'
 # DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export DATES='20180921T000000Z'
+export DATES='20201210T060000Z'
 
 # RESTART_DATE defines the date and time from which restarts should be performed.
 # 
-export RESTART_DATE='20180921T000000Z'
+export RESTART_DATE='20201210T060000Z'
 
 #--------------------------------------------------------------------------------
 # 

@@ -28,12 +28,12 @@ MODULE mo_atm_phy_nwp_config
   USE mo_exception,           ONLY: message, message_text, finish
   USE mo_model_domain,        ONLY: t_patch
   USE mo_vertical_coord_table,ONLY: vct_a
+  USE mo_time_config,         ONLY: t_time_config
   USE mo_radiation_config,    ONLY: irad_o3
 #ifndef __NO_ICON_LES__
   USE mo_les_config,          ONLY: configure_les, les_config
 #endif
   USE mo_limarea_config,      ONLY: configure_latbc
-  USE mo_time_config,         ONLY: time_config
   USE mo_initicon_config,     ONLY: timeshift
   USE mo_nwp_tuning_config,   ONLY: itune_o3
   USE mtime,                  ONLY: datetime, timedelta, newTimedelta, event, newEvent, no_Error,     &
@@ -70,8 +70,8 @@ MODULE mo_atm_phy_nwp_config
   PUBLIC :: icpl_o3_tp
   PUBLIC :: iprog_aero
   PUBLIC :: setup_nwp_diag_events
-
-
+  PUBLIC :: icpl_aero_ice
+  PUBLIC :: lcuda_graph_turb_tran
 
   !!--------------------------------------------------------------------------
   !! Basic configuration setup for nwp physics
@@ -122,6 +122,7 @@ MODULE mo_atm_phy_nwp_config
     REAL(wp) :: qi0, qc0
 
     INTEGER  :: icpl_aero_gscp     !! type of aerosol-microphysics coupling
+    LOGICAL  :: lscale_cdnc        !! switch to activate the scaling of MODIS CDNCs
 
     REAL(wp) :: ustart_raylfric    !! velocity at which extra Rayleigh friction starts
     REAL(wp) :: efdt_min_raylfric  !! e-folding time corresponding to maximum relaxation 
@@ -213,10 +214,14 @@ MODULE mo_atm_phy_nwp_config
   INTEGER  :: icpl_aero_conv     !! type of coupling between aerosols and convection scheme
   INTEGER  :: iprog_aero         !! type of prognostic aerosol
   INTEGER  :: icpl_o3_tp         !! type of coupling between ozone and the tropopause
+  INTEGER  :: icpl_aero_ice      !! type of coupling between aersols and ice nucleation
 
   REAL(wp) ::  &                       !> Field of calling-time interval (seconds) for
     &  dt_phy(max_dom,iphysproc_short) !! each domain and phys. process
 
+  ! Optimization
+  LOGICAL :: lcuda_graph_turb_tran   !! activate CUDA GRAPH in turbulent transfer
+  
   !!--------------------------------------------------------------------------
   !! Tuning parameters for physics
   !!--------------------------------------------------------------------------
@@ -242,11 +247,12 @@ CONTAINS
   !!
   !! Read namelist for NWP physics and setup physics time control.
   !!
-  SUBROUTINE configure_atm_phy_nwp( n_dom, p_patch, dtime )
+  SUBROUTINE configure_atm_phy_nwp( n_dom, p_patch, time_config )
 
-    TYPE(t_patch), TARGET,INTENT(IN) :: p_patch(:)
-    INTEGER, INTENT(IN) :: n_dom
-    REAL(wp),INTENT(IN) :: dtime
+    TYPE(t_patch),       INTENT(IN) :: p_patch(:)
+    INTEGER,             INTENT(IN) :: n_dom
+    TYPE(t_time_config), INTENT(IN) :: time_config       !< time and date information
+
 
     ! local
     INTEGER :: jg, jk, jk_shift, jb, jc
@@ -270,11 +276,10 @@ CONTAINS
 
     !$ACC ENTER DATA CREATE(atm_phy_nwp_config)
 
-    ! for each fast physics process the time interval is set 
+    ! for each fast physics process the time interval is set
     ! equal to the time interval for advection.
     DO jg = 1,n_dom
-      atm_phy_nwp_config(jg)%dt_fastphy = (dtime/2._wp**(p_patch(jg)%level &
-          &                            -  p_patch(1)%level))            !seconds
+      atm_phy_nwp_config(jg)%dt_fastphy = time_config%get_model_timestep_sec(p_patch(jg)%nest_level)
     ENDDO
 
 
@@ -282,9 +287,9 @@ CONTAINS
     DO jg = 1,n_dom
       dt_phy_orig(jg,:)        = 0._wp  ! init
       dt_phy_orig(jg,itconv)   = atm_phy_nwp_config(jg)% dt_conv
-      dt_phy_orig(jg,itsso)    = atm_phy_nwp_config(jg)% dt_sso 
-      dt_phy_orig(jg,itgwd)    = atm_phy_nwp_config(jg)% dt_gwd 
-      dt_phy_orig(jg,itrad)    = atm_phy_nwp_config(jg)% dt_rad 
+      dt_phy_orig(jg,itsso)    = atm_phy_nwp_config(jg)% dt_sso
+      dt_phy_orig(jg,itgwd)    = atm_phy_nwp_config(jg)% dt_gwd
+      dt_phy_orig(jg,itrad)    = atm_phy_nwp_config(jg)% dt_rad
       dt_phy_orig(jg,itccov)   = atm_phy_nwp_config(jg)% dt_ccov
       dt_phy_orig(jg,itfastphy)= atm_phy_nwp_config(jg)% dt_fastphy
     ENDDO
@@ -383,7 +388,7 @@ CONTAINS
       atm_phy_nwp_config(jg)%is_les_phy = .FALSE. 
     
       IF(ANY( (/ismag,iprog/)  == atm_phy_nwp_config(jg)%inwp_turb ) )THEN
-        CALL configure_les(jg,dtime)
+        CALL configure_les(jg, dtime = time_config%get_model_timestep_sec(p_patch(jg)%nest_level))
         atm_phy_nwp_config(jg)%is_les_phy = .TRUE. 
       END IF 
 
@@ -1090,8 +1095,9 @@ CONTAINS
   !!
   !! Shifted from nh_stepping in order to improve code structure
   !!
-  SUBROUTINE setup_nwp_diag_events(lpi_max_Event, celltracks_Event, dbz_Event, hail_Event)
+  SUBROUTINE setup_nwp_diag_events(time_config, lpi_max_Event, celltracks_Event, dbz_Event, hail_Event)
 
+    TYPE(t_time_config),  INTENT(IN   ) :: time_config       !< time and date information
     TYPE(event), POINTER, INTENT(INOUT) :: lpi_max_Event, celltracks_Event, dbz_Event, hail_Event
 
     ! local

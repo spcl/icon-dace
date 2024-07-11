@@ -55,7 +55,6 @@ cat > ${ocean_namelist} << EOF
  ! grid_rescale_factor = 1.0E-3
 /
 &dynamics_nml
- iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep        = "${modelTimeStep}"       ! model timestep in seconds

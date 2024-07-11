@@ -1,3 +1,4 @@
+!NEC$ options "-O0"
 !
 ! Constructs and destructs the state vector of the nonhydrostatic.
 !
@@ -36,6 +37,7 @@ MODULE mo_nonhydro_state
     &                                GRID_UNSTRUCTURED_VERT, GRID_CELL, GRID_EDGE,   &
     &                                GRID_VERTEX
   USE mo_exception,            ONLY: message, finish
+  USE mo_master_control,       ONLY: get_my_process_name
   USE mo_model_domain,         ONLY: t_patch
   USE mo_nonhydro_types,       ONLY: t_nh_state, t_nh_state_lists,       &
                                      t_nh_prog, t_nh_diag,               &
@@ -43,7 +45,7 @@ MODULE mo_nonhydro_state
   USE mo_grid_config,          ONLY: n_dom, l_limited_area, ifeedback_type
   USE mo_nonhydrostatic_config,ONLY: itime_scheme, igradp_method, ndyn_substeps_max, &
     &                                lcalc_dpsdt
-  USE mo_dynamics_config,      ONLY: nsav1, nsav2, lmoist_thdyn
+  USE mo_dynamics_config,      ONLY: nsav1, nsav2
   USE mo_parallel_config,      ONLY: nproma
   USE mo_run_config,           ONLY: iforcing, ntracer, iqm_max, iqt,           &
     &                                iqv, iqc, iqi, iqr, iqs,                   &
@@ -54,17 +56,18 @@ MODULE mo_nonhydro_state
     &                                iqtke, ltestcase, lart,                    &
     &                                iqbin, iqb_i, iqb_e, iqb_s            
   USE mo_coupling_config,      ONLY: is_coupled_to_ocean
-  USE mo_radiation_config,     ONLY: irad_aero, iRadAeroCAMSclim
+  USE mo_radiation_config,     ONLY: irad_aero, iRadAeroCAMSclim, iRadAeroCAMStd
   USE mo_io_config,            ONLY: inextra_2d, inextra_3d, lnetcdf_flt64_output, &
     &                                t_var_in_output
   USE mo_limarea_config,       ONLY: latbc_config
   USE mo_advection_config,     ONLY: t_advection_config, advection_config
   USE mo_turbdiff_config,      ONLY: turbdiff_config
+  USE mo_diffusion_config,     ONLY: diffusion_config
   USE mo_initicon_config,      ONLY: init_mode, qcana_mode, qiana_mode, qrsgana_mode, &
     &                                icpl_da_sfcevap, icpl_da_skinc, icpl_da_sfcfric
   USE mo_nudging_config,       ONLY: nudging_config, indg_type
   USE mo_var_list,             ONLY: add_var, find_list_element, add_ref, t_var_list_ptr
-  USE mo_var_list_register, ONLY: vlr_add, vlr_del
+  USE mo_var_list_register,    ONLY: vlr_add, vlr_del
   USE mo_var,                  ONLY: t_var
   USE mo_var_groups,           ONLY: MAX_GROUPS, groups
   USE mo_var_metadata,         ONLY: create_vert_interp_metadata,            &
@@ -484,7 +487,8 @@ MODULE mo_nonhydro_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(p_prog_list, TRIM(listname), patch_id=p_patch%id, lrestart=.TRUE.)
+    CALL vlr_add(p_prog_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
     !------------------------------
     ! Ensure that all pointers have a defined association status
@@ -1638,6 +1642,7 @@ MODULE mo_nonhydro_state
     &       p_diag%div, &
     &       p_diag%div_ic, &
     &       p_diag%hdef_ic, &
+    &       p_diag%kh_smag_e, &
     &       p_diag%dwdx, &
     &       p_diag%dwdy, &
     &       p_diag%mass_fl_e, &
@@ -1693,7 +1698,8 @@ MODULE mo_nonhydro_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(p_diag_list, TRIM(listname), patch_id=p_patch%id, lrestart=.TRUE.)
+    CALL vlr_add(p_diag_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.TRUE., model_type=get_my_process_name())
 
     ! u           p_diag%u(nproma,nlev,nblks_c)
     !
@@ -1737,7 +1743,7 @@ MODULE mo_nonhydro_state
                 & lopenacc = .TRUE. )
     __acc_attach(p_diag%v)
 
-    IF (irad_aero == iRadAeroCAMSclim) THEN
+    IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
       cf_desc    = t_cf_var('CAMS_aerosols', 'kg kg-1', 'CAMS aerosols mixing ratios', datatype_flt)
       grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
       CALL add_var( p_diag_list, 'camsaermr', p_diag%camsaermr,                   &
@@ -2379,22 +2385,6 @@ MODULE mo_nonhydro_state
                 & lopenacc = .TRUE. )
     __acc_attach(p_diag%temp)
 
-
-    IF (lmoist_thdyn) THEN
-      ! chi_q        p_diag%chi_q(nproma,nlev,nblks_c)
-      !
-      cf_desc    = t_cf_var('chi_q', '1', 'moist specific heat ratios', datatype_flt)
-      grib2_desc = grib2_var(0, 0, 1, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-      CALL add_var( p_diag_list, 'chi_q', p_diag%chi_q,                     &
-                  & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE, cf_desc, grib2_desc,    &
-                  & ldims=shape3d_c, lrestart=.FALSE.,                            &
-                  & vert_interp=create_vert_interp_metadata(                      &
-                  &             vert_intp_type=vintp_types("P","Z","I"),          &
-                  &             vert_intp_method=VINTP_METHOD_LIN ),              &
-                  & lopenacc = .TRUE., initval=2.5e-7_wp )
-      __acc_attach(p_diag%chi_q)
-    ENDIF 
-
     ! tempv        p_diag%tempv(nproma,nlev,nblks_c)
     !
     cf_desc    = t_cf_var('virtual_temperature', 'K', 'Virtual temperature', datatype_flt)
@@ -2532,6 +2522,20 @@ MODULE mo_nonhydro_state
     ELSE ! dummy allocation to satisfy the strict NAG compiler
       ALLOCATE(p_diag%dwdx(1,1,nblks_c), p_diag%dwdy(1,1,nblks_c))
     ENDIF
+
+    IF (diffusion_config(p_patch%id)%lhdiff_q) THEN
+      ! kh_smag_e   p_diag%kh_smag_e(nproma,nlev,nblks_e)
+      cf_desc    = t_cf_var('horizontal Smagorinsky diffusion coefficient', 'm^2 s-1', &
+        &                   'horizontal Smagorinsky diffusion coefficient', datatype_flt)
+      grib2_desc = grib2_var( 255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_EDGE)
+      CALL add_var( p_diag_list, 'kh_smag_e', p_diag%kh_smag_e,                  &
+                  & GRID_UNSTRUCTURED_EDGE, ZA_REFERENCE,                        &
+                  & cf_desc, grib2_desc,                                         &
+                  & ldims=shape3d_e ,                                            &
+                  & lrestart=.FALSE., loutput=.TRUE.,                            &
+                  & lopenacc = .TRUE.                                            )
+      __acc_attach(p_diag%kh_smag_e)
+    END IF
 
     ! vor          p_diag%vor(nproma,nlev,nblks_c)
     !
@@ -3599,7 +3603,8 @@ MODULE mo_nonhydro_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(p_ref_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(p_ref_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
     ! vn_ref     p_ref%vn_ref(nproma,nlev,nblks_c)
     !
@@ -3836,7 +3841,8 @@ MODULE mo_nonhydro_state
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(p_metrics_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(p_metrics_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
     ! geometric height at the vertical interface of cells
     ! z_ifc        p_metrics%z_ifc(nproma,nlevp1,nblks_c)

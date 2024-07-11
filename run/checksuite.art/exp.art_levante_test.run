@@ -64,10 +64,10 @@ export OMP_DYNAMIC="false"
 export OMP_STACKSIZE=200M
 
 no_of_nodes=${SLURM_JOB_NUM_NODES:=1}
-mpi_procs_pernode=$((${SLURM_JOB_CPUS_PER_NODE%%\(*} / OMP_NUM_THREADS))
+mpi_procs_pernode=$((${SLURM_JOB_CPUS_PER_NODE%%\(*} / 2 / OMP_NUM_THREADS))
 ((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
 
-START="srun --cpu-freq=HighM1 --kill-on-bad-exit=1 --nodes=${SLURM_JOB_NUM_NODES:-1} --distribution=plane --ntasks=$((no_of_nodes * mpi_procs_pernode)) --ntasks-per-node=${mpi_procs_pernode} --cpus-per-task=${OMP_NUM_THREADS} --propagate=STACK"
+START="srun --hint=nomultithread --cpu-freq=HighM1 --kill-on-bad-exit=1 --nodes=${SLURM_JOB_NUM_NODES:-1} --distribution=plane --ntasks=$((no_of_nodes * mpi_procs_pernode)) --ntasks-per-node=${mpi_procs_pernode} --cpus-per-task=${OMP_NUM_THREADS} --propagate=STACK"
 #=============================================================================
 thisdir=$(pwd)
 basedir="${thisdir%/*}"
@@ -416,7 +416,6 @@ radiation_grid_filename = ${radiation_grid_filename}
  flat_height     = 16000.
 /
 &dynamics_nml
- iequations     = 3
  divavg_cntrwgt = 0.50
  lcoriolis      = .true.
 /
@@ -615,13 +614,11 @@ date
 ${START} ${MODEL} # > out.txt 2>&1
 model_exit_code="$?"
 date
-#
 #-----------------------------------------------------------------------------
-#
-finish_status=`cat finish.status`
-echo $finish_status
-echo "============================"
-echo "Script run successfully: $finish_status"
-echo "============================"
 echo "${model_exit_code}" > ${ICONDIR}/run/exp.art_mistral_test.run.final_status
 #-----------------------------------------------------------------------------
+if [ -r finish.status ] ; then
+  check_final_status 0 "${START} ${MODEL}"
+else
+  check_final_status -1 "${START} ${MODEL}"
+fi

@@ -2,7 +2,8 @@
 
 suffix=grb2
 pio_write_args="-w 3"
-mpi_task_num=8
+#mpi_task_num=8
+mpi_task_num=6
 
 . ./pio_write.run
 ( . ./pio_write_dist_array.run ) || test $? -eq 77

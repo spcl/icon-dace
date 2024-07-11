@@ -362,7 +362,6 @@ radiation_grid_filename = ${radiation_grid_filename}
  flat_height     = 16000.
 /
 &dynamics_nml
- iequations     = 3
  divavg_cntrwgt = 0.50
  lcoriolis      = .true.
 /

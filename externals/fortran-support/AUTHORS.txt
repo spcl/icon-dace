@@ -10,6 +10,7 @@
 # ---------------------------------------------------------------
 
 # A more complete author list is provided in the ICON repository.
+Daniel Hupp
 Daniel Reinert
 Daniel Rieger
 Florian Prill

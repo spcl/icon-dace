@@ -221,7 +221,6 @@ izenith                     =                          3         ! zenith angle 
 
 ! dynamics_nml: dynamical core -----------------------------------------------
 &dynamics_nml
- iequations                  =                         3         ! 3: non-hydrostatic atmosphere
  lcoriolis                   =                    .TRUE.         ! Coriolis Force
 /
 
@@ -276,7 +275,7 @@ izenith                     =                          3         ! zenith angle 
  output_filename             =              '${EXPNAME}_atm_2d'  ! file name base
  filetype                    =                               5   ! output format 5:NetCDFv4
  filename_format             = "<output_filename>_<datetime2>"   ! Output filename format
- output_start                =                 "${start_date}"
+ output_start                =          "2000-01-01T00:00:03Z"
  output_end                  =                   "${end_date}"
  output_interval             =     "${atm_output_interval_2d}"
  file_interval               =      "${atm_file_interval_2d}"

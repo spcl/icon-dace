@@ -32,9 +32,6 @@ MODULE mo_statistics
   USE mo_impl_constants, ONLY: on_cells, on_edges, on_vertices
   USE mo_math_types,     ONLY: t_geographical_coordinates
   USE mo_math_constants, ONLY: rad2deg
-#ifdef _OPENACC
-  USE mo_mpi,            ONLY: i_am_accel_node
-#endif
   USE mo_fortran_tools,  ONLY: set_acc_host_or_device
 
   IMPLICIT NONE
@@ -2103,7 +2100,7 @@ CONTAINS
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
     DO block = subset%start_block, subset%end_block
       CALL get_index_range(subset, block, start_index, end_index)
-      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
       DO level = 1, mylevels
         DO idx = start_index, end_index
@@ -2137,7 +2134,7 @@ CONTAINS
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc) SCHEDULE(dynamic)
     DO jb = subset%start_block, subset%end_block
       CALL get_index_range(subset, jb, start_index, end_index)
-      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1)
       !$ACC LOOP GANG VECTOR
       DO jc = start_index, end_index
         sum_field(jc,jb) = MERGE(my_miss, sum_field(jc,jb) + field(jc,jb), my_has_missvals .AND. (field(jc,jb) == my_miss))
@@ -2172,7 +2169,7 @@ CONTAINS
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, idx, level) SCHEDULE(dynamic)
       DO block = subset%start_block, subset%end_block
         CALL get_index_range(subset, block, start_index, end_index)
-        !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO level = 1, mylevels
           DO idx = start_index, end_index
@@ -2206,7 +2203,7 @@ CONTAINS
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index, end_index, jc) SCHEDULE(dynamic)
     DO jb = subset%start_block, subset%end_block
       CALL get_index_range(subset, jb, start_index, end_index)
-      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL PRESENT(sum_field, field) ASYNC(1)
       !$ACC LOOP GANG VECTOR
       DO jc = start_index, end_index
         sum_field(jc,jb) = MERGE(my_miss, &

@@ -72,19 +72,28 @@ def prepare_perturbed_run_script(
         rhs_old = [None] * len(rhs_new)
     rhs_old = [None if r == "None" else r for r in rhs_old]
 
-    for line in in_file:
-        # replace input directory with the ones given in config file
-        for lh, rh_old, rh_new in zip(lhs, rhs_old, rhs_new):
-            out_line = replace_assignment(line, lh, rh_new, rh_old, seed)
-            # replace first match
-            if out_line != line:
-                break
+    # only modify namelist if lhs,rhs_old or rhs_new are not equal None
+    if any(
+        any(item is not None for item in entry) for entry in [lhs, rhs_old, rhs_new]
+    ):
+        for line in in_file:
+            out_line = line
+            # replace input directory with the ones given in config file
+            for lh, rh_old, rh_new in zip(lhs, rhs_old, rhs_new):
+                out_line = replace_assignment(line, lh, rh_new, rh_old, seed)
+                # replace first match
+                if out_line != line:
+                    break
 
-        # rename the experiment name
-        if line == out_line:
-            out_line = replace_string(line, experiment_name, modified_experiment_name)
+            # rename the experiment name
+            if line == out_line:
+                out_line = replace_string(
+                    line, experiment_name, modified_experiment_name
+                )
 
-        out_file.write(out_line)
+            out_file.write(out_line)
+    else:
+        out_file.write(in_file.read())
 
     logger.info("writing model run script to: {}".format(perturbed_runscript))
     out_file.close()
@@ -216,17 +225,20 @@ def run_ensemble(
         append_job(job, job_list, parallel)
 
     # run the ensemble
-    Path(perturbed_run_dir).mkdir(exist_ok=True, parents=True)
-    os.chdir(perturbed_run_dir)
     if len(member_num) == 1:
         member_num = [i for i in range(1, member_num[0] + 1)]
     for m_num in member_num:
         m_id = str(m_num)
+        Path(perturbed_run_dir.format(member_id=m_id)).mkdir(
+            exist_ok=True, parents=True
+        )
+        os.chdir(perturbed_run_dir.format(member_id=m_id))
         if member_type:
             m_id = member_type + "_" + m_id
         runscript = "{}/{}".format(run_dir, run_script_name)
         perturbed_runscript = "{}/{}".format(
-            perturbed_run_dir, perturbed_run_script_name.format(member_id=m_id)
+            perturbed_run_dir.format(member_id=m_id),
+            perturbed_run_script_name.format(member_id=m_id),
         )
 
         prepare_perturbed_run_script(
@@ -241,9 +253,7 @@ def run_ensemble(
         )
 
         if not dry:
-            job = submit_command.split() + [
-                perturbed_run_script_name.format(member_id=m_id)
-            ]
+            job = submit_command.split() + [perturbed_runscript]
             logger.info("running the model with '{}'".format(" ".join(job)))
             append_job(job, job_list, parallel)
 

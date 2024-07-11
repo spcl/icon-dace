@@ -321,7 +321,6 @@ a_hshr       = 2.0
  flat_height     = 16000.
 /
 &dynamics_nml
- iequations     = 3
  divavg_cntrwgt = 0.50
  lcoriolis      = .TRUE.
 /
@@ -879,7 +878,7 @@ fi
 #          But when you worry you make it double ..."
 # ----------------------------------------------------------------------
 
-refdir="${DATAROOT}/ref_data_exp09/c1aea4e1"
+refdir="${DATAROOT}/ref_data_exp09/6a59ea02"
 
 module unload eccodes sx ; module load x86 eccodes/2.28.0-x86-python
 

@@ -69,7 +69,7 @@ MODULE mo_aes_phy_init
   USE mo_jsb_interface,        ONLY: jsbach_get_var
   ! USE mo_phy_schemes,          ONLY: register_exchange_coefficients_procedure
 #endif
-  USE mo_ext_data_state,       ONLY: ext_data
+  USE mo_ext_data_types,       ONLY: t_external_data
 
   ! carbon cycle
   USE mo_ccycle_config,        ONLY: print_ccycle_config, ccycle_config
@@ -205,9 +205,9 @@ CONTAINS
 #ifndef __NO_RTE_RRTMGP__
       !
       ! Radiation constants for gas and cloud optics
-      CALL rte_rrtmgp_basic_setup(nproma, nlev, pressure_scale, droplet_scale,       &
-        &                    aes_cop_config(1)%cinhoml1 ,aes_cop_config(1)%cinhoml2, &
-        &                    aes_cop_config(1)%cinhoml3 ,aes_cop_config(1)%cinhomi)
+      CALL rte_rrtmgp_basic_setup(nproma, nlev, pressure_scale, droplet_scale,          &
+        &                         aes_cop_config(1)%cinhoml, aes_cop_config(1)%cinhomi, &
+        &                         aes_cop_config(1)%cinhoms)
 #endif
     END IF
 
@@ -498,10 +498,11 @@ CONTAINS
   END SUBROUTINE init_aes_phy_tracer
 
 
-  SUBROUTINE init_aes_phy_external( p_patch, mtime_current)
+  SUBROUTINE init_aes_phy_external( p_patch, ext_data, mtime_current)
 
-    TYPE(t_patch), TARGET, INTENT(in) :: p_patch(:)
-    TYPE(datetime),  INTENT(in), POINTER    :: mtime_current !< Date and time information
+    TYPE(t_patch), TARGET,   INTENT(in) :: p_patch(:)
+    TYPE(t_external_data),   INTENT(in) :: ext_data(:)
+    TYPE(datetime), POINTER, INTENT(in) :: mtime_current !< Date and time information
 
     INTEGER :: ng, jg
     LOGICAL :: lany
@@ -954,12 +955,12 @@ CONTAINS
         END IF
 
         IF (.NOT. isrestart()) THEN
-          CALL jsbach_get_var('seb_t',            jg, tile='land', arr2d=field%ts_tile       (:,:,ilnd))
+          CALL jsbach_get_var('seb_t',            jg, tile='land', arr2d=field%ts_tile       (:,:,ilnd), lacc=.FALSE.)
           IF (.NOT. aes_vdf_config(jg)%use_tmx) THEN
-            CALL jsbach_get_var('turb_rough_m',     jg, tile='veg',  arr2d=field%z0m_tile    (:,:,ilnd))
+            CALL jsbach_get_var('turb_rough_m',     jg, tile='veg',  arr2d=field%z0m_tile    (:,:,ilnd), lacc=.FALSE.)
           END IF
-          CALL jsbach_get_var('rad_alb_vis_soil', jg, tile='veg',  arr2d=field%albvisdif_tile(:,:,ilnd))
-          CALL jsbach_get_var('rad_alb_nir_soil', jg, tile='veg',  arr2d=field%albnirdif_tile(:,:,ilnd))
+          CALL jsbach_get_var('rad_alb_vis_soil', jg, tile='veg',  arr2d=field%albvisdif_tile(:,:,ilnd), lacc=.FALSE.)
+          CALL jsbach_get_var('rad_alb_nir_soil', jg, tile='veg',  arr2d=field%albnirdif_tile(:,:,ilnd), lacc=.FALSE.)
         END IF
 
 !$OMP PARALLEL DO PRIVATE(jb,jc,jcs,jce,zlat) ICON_OMP_DEFAULT_SCHEDULE

@@ -81,6 +81,7 @@ MODULE mo_read_interface
   PUBLIC :: read_2D_extdim
   PUBLIC :: read_2D_extdim_int
   PUBLIC :: read_3D_extdim
+  PUBLIC :: read_inq_varexists
 
   PUBLIC :: nf  ! temporary hack, wich allows to USE nf via this module. Currently required for ART.
 
@@ -270,7 +271,7 @@ CONTAINS
     define_return_pointer        :: return_pointer(:)
 
     REAL(wp), POINTER            :: tmp_pointer(:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_bcast_REAL_1D'
 
@@ -298,7 +299,7 @@ CONTAINS
     define_return_pointer        :: return_pointer(:,:)
 
     REAL(wp), POINTER            :: tmp_pointer(:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_bcast_REAL_2D'
 
@@ -331,7 +332,7 @@ CONTAINS
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
     REAL(wp), POINTER            :: tmp_pointer(:,:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER :: method_name = &
       'mo_read_interface:read_bcast_REAL_1D_extdim_time'
 
@@ -365,7 +366,7 @@ CONTAINS
     INTEGER, INTENT(IN), OPTIONAL:: start_timestep, end_timestep
 
     REAL(wp), POINTER            :: tmp_pointer(:,:,:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_bcast_REAL_1D_extdim_extdim_time'
 
@@ -399,7 +400,7 @@ CONTAINS
     INTEGER, INTENT(IN), OPTIONAL:: start_extdim1, end_extdim1
 
     REAL(wp), POINTER            :: tmp_pointer(:,:,:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_bcast_REAL_extdim_extdim_extdim_extdim_slice'
 
@@ -436,7 +437,7 @@ CONTAINS
     TYPE(t_p_scatterPattern)               :: scatter_patterns(n_var)
     INTEGER                                :: n_g, i
     TYPE(t_ptr_2d_int), ALLOCATABLE     :: var_data_2d(:)
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_INT_2D_multivar'
     TYPE(t_distrib_read_data) :: io_data(n_var)
@@ -510,7 +511,7 @@ CONTAINS
     define_return_pointer_int        :: return_pointer(:,:)
     TYPE(t_ptr_2d_int) :: tmp_ptr(1)
     INTEGER, POINTER                 :: tmp_pointer(:,:)
-    CHARACTER(LEN=NF_MAX_NAME)       :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)       :: variable_name_
     CHARACTER(LEN=*), PARAMETER      :: method_name = &
       'mo_read_interface:read_dist_INT_2D'
 
@@ -566,7 +567,7 @@ CONTAINS
     TYPE(t_p_scatterPattern)          :: scatter_patterns(n_var)
     INTEGER                           :: n_g, i
     TYPE(t_ptr_2d), ALLOCATABLE :: var_data_2d(:)
-    CHARACTER(LEN=NF_MAX_NAME)        :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)        :: variable_name_
     CHARACTER(LEN=*), PARAMETER       :: method_name = &
       'mo_read_interface:read_dist_REAL_2D_multivar'
     TYPE(t_distrib_read_data) :: io_data(n_var)
@@ -641,7 +642,7 @@ CONTAINS
     define_return_pointer        :: return_pointer(:,:)
     TYPE(t_ptr_2d)               :: tmp_ptr(1)
     REAL(wp), POINTER            :: tmp_pointer(:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_dist_REAL_2D'
 
@@ -896,7 +897,7 @@ CONTAINS
     TYPE(t_ptr_3d)                         :: tmp_ptr(1)
     INTEGER                                :: var_dimlen(2), var_start(2), &
       &                                       var_end(2), var_ndims
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_REAL_2D_extdim'
 
@@ -1000,7 +1001,7 @@ CONTAINS
     TYPE(t_ptr_3d), ALLOCATABLE      :: var_data_3d(:)
     INTEGER                                :: var_dimlen(2), var_ndims, &
       &                                       var_start(2), var_end(2)
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_REAL_2D_extdim_multivar'
     TYPE(t_distrib_read_data) :: io_data(n_var)
@@ -1122,7 +1123,7 @@ CONTAINS
     INTEGER, POINTER                       :: tmp_pointer(:,:,:)
     INTEGER                                :: var_dimlen(2), var_start(2), &
       &                                       var_end(2), var_ndims
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_INT_2D_extdim'
 
@@ -1221,7 +1222,7 @@ CONTAINS
     TYPE(t_ptr_3d_int), ALLOCATABLE     :: var_data_3d(:)
     INTEGER                                :: var_dimlen(2), var_ndims, &
       &                                       var_start(2), var_end(2)
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_INT_2D_extdim_multivar'
     TYPE(t_distrib_read_data) :: io_data(n_var)
@@ -1332,7 +1333,7 @@ CONTAINS
     define_return_pointer        :: return_pointer(:,:,:)
 
     REAL(wp), POINTER            :: tmp_pointer(:,:,:)
-    CHARACTER(LEN=NF_MAX_NAME)   :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)   :: variable_name_
     CHARACTER(LEN=*), PARAMETER  :: method_name = &
       'mo_read_interface:read_bcast_REAL_3D'
 
@@ -1368,7 +1369,7 @@ CONTAINS
     TYPE(t_ptr_3d)                         :: tmp_ptr(1)
     INTEGER                                :: var_ndims, var_dimlen(2)
     REAL(wp), POINTER                      :: tmp_pointer(:,:,:)
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_REAL_3D'
 
@@ -1589,7 +1590,7 @@ CONTAINS
       &                                       var_start(3), var_end(3)
     TYPE(t_ptr_4d)                         :: tmp_pointer(1)
     CHARACTER(LEN=128)                     :: temp_string_array(2)
-    CHARACTER(LEN=NF_MAX_NAME)             :: variable_name_
+    CHARACTER(LEN=NF90_MAX_NAME)             :: variable_name_
     CHARACTER(LEN=*), PARAMETER            :: method_name = &
       'mo_read_interface:read_dist_REAL_3D_extdim'
 
@@ -1831,7 +1832,7 @@ CONTAINS
                               ref_var_dim_start, ref_var_dim_end)
 
     INTEGER, INTENT(IN)                    :: file_id
-    CHARACTER(LEN=NF_MAX_NAME), INTENT(IN) :: variable_name
+    CHARACTER(LEN=NF90_MAX_NAME), INTENT(IN) :: variable_name
     INTEGER, INTENT(IN)                    :: ref_var_ndims, &
       &                                       ref_var_dimlen(ref_var_ndims)
     INTEGER, OPTIONAL, INTENT(IN)          :: ref_var_dim_start(ref_var_ndims)
@@ -1839,9 +1840,9 @@ CONTAINS
     INTEGER, INTENT(IN)                    :: location
     CHARACTER(LEN=*), INTENT(IN), OPTIONAL :: extdim_name(2:ref_var_ndims)
 
-    INTEGER :: varid, var_ndims, var_dimlen(NF_MAX_VAR_DIMS), &
-      &        var_dimids(NF_MAX_VAR_DIMS)
-    CHARACTER(LEN=NF_MAX_NAME) :: var_dim_name(NF_MAX_VAR_DIMS)
+    INTEGER :: varid, var_ndims, var_dimlen(NF90_MAX_VAR_DIMS), &
+      &        var_dimids(NF90_MAX_VAR_DIMS)
+    CHARACTER(LEN=NF90_MAX_NAME) :: var_dim_name(NF90_MAX_VAR_DIMS)
     INTEGER :: i, tlen
 
     CHARACTER(LEN=*), PARAMETER :: method_name = &
@@ -1853,14 +1854,14 @@ CONTAINS
       CALL finish(method_name, "invalid arguments")
 
     tlen = LEN_TRIM(variable_name)
-    CALL nf(nf_inq_varid(file_id, variable_name(1:tlen), varid), &
+    CALL nf(nf90_inq_varid(file_id, variable_name(1:tlen), varid), &
       &     method_name // "("//variable_name(1:tlen)//")")
-    CALL nf(nf_inq_varndims(file_id, varid, var_ndims), &
+    CALL nf(nf90_inquire_variable(file_id, varid, ndims = var_ndims), &
       &     method_name // "("//variable_name(1:tlen)//")")
-    CALL nf(nf_inq_vardimid(file_id, varid, var_dimids), method_name)
+    CALL nf(nf90_inquire_variable(file_id, varid, dimids = var_dimids), method_name)
     DO i = 1, var_ndims
-      CALL nf(nf_inq_dimlen (file_id, var_dimids(i), var_dimlen(i)), method_name)
-      CALL nf(nf_inq_dimname(file_id, var_dimids(i), var_dim_name(i)), method_name)
+      CALL nf(nf90_inquire_dimension(file_id, var_dimids(i), len = var_dimlen(i)), method_name)
+      CALL nf(nf90_inquire_dimension(file_id, var_dimids(i), name = var_dim_name(i)), method_name)
     END DO
 
     IF (var_ndims /= ref_var_ndims ) THEN
@@ -1954,10 +1955,10 @@ CONTAINS
   SUBROUTINE bcast_varname(string_in, string_out)
 
     CHARACTER(LEN=*), INTENT(IN) :: string_in
-    CHARACTER(LEN=NF_MAX_NAME), INTENT(OUT) :: string_out
+    CHARACTER(LEN=NF90_MAX_NAME), INTENT(OUT) :: string_out
 
     IF (my_process_is_mpi_workroot()) THEN
-      IF (LEN(string_in) > NF_MAX_NAME) &
+      IF (LEN(string_in) > NF90_MAX_NAME) &
         CALL finish("bcast_varname", "invalid string length")
 
       string_out = string_in

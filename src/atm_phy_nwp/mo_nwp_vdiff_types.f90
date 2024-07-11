@@ -201,6 +201,8 @@ MODULE mo_nwp_vdiff_types
     REAL(wp), CONTIGUOUS, POINTER :: flx_heat_latent_sft(:,:,:) => NULL()
     !> Sensible heat flux over surface type [W/m**2] (nproma,nblks_c,SFT_NUM).
     REAL(wp), CONTIGUOUS, POINTER :: flx_heat_sensible_sft(:,:,:) => NULL()
+    !> Evaporation flux over surface type [kg/(m**2 s)] (nproma,nblks_c,SFT_NUM).
+    REAL(wp), CONTIGUOUS, POINTER :: flx_water_vapor_sft(:,:,:) => NULL()
 
     !> Sea state.
     TYPE(t_nwp_vdiff_sea_state) :: sea_state
@@ -390,6 +392,27 @@ CONTAINS
         )
     END DO
 
+    ! self%flx_water_vapor_sft(nproma,nblks_c,SFT_NUM)
+    cf_desc = t_cf_var('flx_water_vapor_sft', 'kg m-2 s-1', &
+        & 'Water vapor flux over surface types', datatype_flt)
+    grib2_desc = grib2_var(255, 255, 255, grib2_bits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(varlist, 'flx_water_vapor_sft', self%flx_water_vapor_sft, &
+        & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+        & ldims=shape2d_sft, isteptype=TSTEP_INSTANT, lopenacc=.TRUE., &
+        & lrestart=.FALSE., loutput=.FALSE., lcontainer=.TRUE. &
+      )
+    !$ACC ENTER DATA ASYNC(1) ATTACH(self%flx_water_vapor_sft)
+
+    DO i = 1, SFT_NUM
+      cf_desc = t_cf_var('flx_water_vapor_' // SFT_NAMES(i), 'kg m-2 s-1', &
+          & 'Water vapor flux over ' // SFT_NAMES(i), datatype_flt)
+      grib2_desc = grib2_var(255, 255, 255, grib2_bits, GRID_UNSTRUCTURED, GRID_CELL)
+      CALL add_ref(varlist, 'flx_water_vapor_sft', 'flx_water_vapor_' // SFT_NAMES(i), p2d, &
+          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, ref_idx=i, ldims=shape2d, &
+          & loutput=.TRUE., lrestart=.TRUE., in_group=groups('vdiff-sft') &
+        )
+    END DO
+
     ! self%fr_ice_on_lake(nproma,nblks_c), &
     cf_desc = t_cf_var('fr_ice_on_lake', 'm2(ice) m-2(lake)', 'Fraction of frozen lake area', &
         & datatype_flt)
@@ -541,6 +564,7 @@ CONTAINS
     !$ACC   HOST(self%flx_co2_natural_land) &
     !$ACC   HOST(self%flx_heat_latent_sft) &
     !$ACC   HOST(self%flx_heat_sensible_sft) &
+    !$ACC   HOST(self%flx_water_vapor_sft) &
     !$ACC   HOST(self%fr_ice_on_lake) &
     !$ACC   HOST(self%temp_sft) &
     !$ACC   HOST(self%theta_v_var) &
@@ -571,6 +595,7 @@ CONTAINS
     !$ACC   DEVICE(self%flx_co2_natural_land) &
     !$ACC   DEVICE(self%flx_heat_latent_sft) &
     !$ACC   DEVICE(self%flx_heat_sensible_sft) &
+    !$ACC   DEVICE(self%flx_water_vapor_sft) &
     !$ACC   DEVICE(self%fr_ice_on_lake) &
     !$ACC   DEVICE(self%temp_sft) &
     !$ACC   DEVICE(self%theta_v_var) &

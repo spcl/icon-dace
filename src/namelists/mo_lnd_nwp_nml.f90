@@ -50,6 +50,7 @@ MODULE mo_lnd_nwp_nml
     &                               config_c_soil             => c_soil            , &
     &                               config_c_soil_urb         => c_soil_urb        , &
     &                               config_cr_bsmin           => cr_bsmin          , &
+    &                               config_rsmin_fac          => rsmin_fac         , &
     &                               config_itype_trvg         => itype_trvg        , &
     &                               config_itype_evsl         => itype_evsl        , &
     &                               config_itype_lndtbl       => itype_lndtbl      , &
@@ -59,7 +60,7 @@ MODULE mo_lnd_nwp_nml
     &                               config_tau_skin           => tau_skin          , &
     &                               config_lterra_urb         => lterra_urb        , &
     &                               config_lurbalb            => lurbalb           , &
-    &                               config_lurbahf            => lurbahf           , &
+    &                               config_itype_ahf          => itype_ahf         , &
     &                               config_itype_kbmo         => itype_kbmo        , &
     &                               config_itype_eisa         => itype_eisa        , &
     &                               config_lstomata           => lstomata          , &
@@ -74,7 +75,8 @@ MODULE mo_lnd_nwp_nml
     &                               config_ci_td_filename     => ci_td_filename    , &
     &                               config_zml_soil           => zml_soil          , &
     &                               config_nlev_soil          => nlev_soil         , &
-    &                               config_czbot_w_so         => czbot_w_so
+    &                               config_czbot_w_so         => czbot_w_so        , &
+    &                               config_lcuda_graph_lnd    => lcuda_graph_lnd
 
   IMPLICIT NONE
 
@@ -132,13 +134,14 @@ CONTAINS
     REAL(wp)::  c_soil            !< surface area density of the (evaporative) soil surface
     REAL(wp)::  c_soil_urb        !< surface area density of the (evaporative) soil surface, urban areas
     REAL(wp)::  cr_bsmin          !< minimum bare soil evaporation resistance (see Schulz and Vogel 2020)
+    REAL(wp)::  rsmin_fac         !< factor for minimum stomata resistance for each land-cover class
     INTEGER ::  itype_canopy      !< type of canopy parameterisation with respect to the surface energy balance
                                   !< (see Schulz and Vogel 2020)
     REAL(wp)::  cskinc            !< skin conductivity (W/m**2/K)
     REAL(wp)::  tau_skin          !< relaxation time scale for the computation of the skin temperature
     LOGICAL ::  lterra_urb        !< activate urban model TERRA_URB (see Schulz et al. 2023)
     LOGICAL ::  lurbalb           !< use urban albedo and emissivity
-    LOGICAL ::  lurbahf           !< use urban anthropogenic heat flux
+    INTEGER ::  itype_ahf         !< type of urban anthropogenic heat flux
     INTEGER ::  itype_kbmo        !< type of bluff-body thermal roughness length parameterisation
     INTEGER ::  itype_eisa        !< type of evaporation from impervious surface area
     INTEGER ::  itype_hydbound    !< type of hydraulic lower boundary condition
@@ -159,7 +162,8 @@ CONTAINS
          lstomata   ,    & !> map of minimum stomata resistance
          l2tls      ,    & !> forecast with 2-TL integration scheme
          lana_rho_snow,  & !> if .TRUE., take rho_snow-values from analysis file
-         lsnowtile         !> if .TRUE., snow is considered as a separate tile
+         lsnowtile,      & !> if .TRUE., snow is considered as a separate tile
+         lcuda_graph_lnd   !> activate cuda graph
     !--------------------------------------------------------------------
     ! nwp forcing (right hand side)
     !--------------------------------------------------------------------
@@ -177,15 +181,16 @@ CONTAINS
          &               itype_interception                                   , &
          &               itype_hydbound                                       , &
          &               itype_canopy, cskinc, tau_skin                       , &
-         &               lterra_urb, lurbalb, lurbahf, itype_kbmo, itype_eisa , &
-         &               lstomata                                             , &
+         &               lterra_urb, lurbalb, itype_ahf, itype_kbmo           , &
+         &               itype_eisa, lstomata                                 , &
          &               l2tls                                                , &
          &               lana_rho_snow, l2lay_rho_snow                        , &
          &               lsnowtile, itype_snowevap                            , &
          &               sstice_mode                                          , &
          &               sst_td_filename                                      , &
          &               ci_td_filename, cwimax_ml, c_soil, c_soil_urb        , &
-         &               czbot_w_so, cr_bsmin
+         &               czbot_w_so, cr_bsmin, lcuda_graph_lnd                , &
+         &               rsmin_fac
 
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = 'mo_lnd_nwp_nml:read_nwp_lnd_namelist'
@@ -246,6 +251,7 @@ CONTAINS
     c_soil         = 1._wp   ! surface area density of the (evaporative) soil surface
     c_soil_urb     = 1._wp   ! surface area density of the (evaporative) soil surface, urban areas
     cr_bsmin       = 110._wp ! minimum bare soil evaporation resistance (s/m) (see Schulz and Vogel 2020)
+    rsmin_fac      = 1._wp   ! factor for minimum stomata resistance for each land-cover class
     itype_hydbound = 1       ! type of hydraulic lower boundary condition
     !
     itype_canopy   = 1       ! type of canopy parameterisation with respect to the surface energy balance
@@ -259,7 +265,9 @@ CONTAINS
     lterra_urb     = .FALSE. ! if .TRUE., activate urban model TERRA_URB by Wouters et al. (2016, 2017)
                              ! (see Schulz et al. 2023)
     lurbalb        = .TRUE.  ! if .TRUE., use urban albedo and emissivity (Wouters et al. 2016)
-    lurbahf        = .TRUE.  ! if .TRUE., use urban anthropogenic heat flux (Wouters et al. 2016)
+    itype_ahf      = 2       ! if >0, use urban anthropogenic heat flux (Wouters et al. 2016)
+                             !  1: constant AHF, 2: AHF based on climatological T2M, 
+                             !  3: to be implemented (AHF based on time-filtered predicted T2M)
     itype_kbmo     = 2       ! type of bluff-body thermal roughness length parameterisation
                              !  1: standard SAI-based turbtran (Raschendorfer 2001)
                              !  2: Brutsaert-Kanda parameterisation for bluff-body elements (kB-1)
@@ -278,6 +286,8 @@ CONTAINS
     lprog_albsi    = .FALSE. ! .TRUE.: sea-ice albedo is computed prognostically 
                              ! (only takes effect if "lseaice=.TRUE.")
     llake          = .TRUE.  ! .TRUE.: lake model is used
+    !
+    lcuda_graph_lnd = .FALSE. ! cuda graph deactivated by default
 
     !------------------------------------------------------------------
     ! 2. If this is a resumed integration, overwrite the defaults above 
@@ -369,9 +379,14 @@ CONTAINS
     ENDIF
     !$ACC ENTER DATA COPYIN(config_zml_soil)
 
-    !Check if target GPU configuration is supported
+    ! Check if target GPU configuration is supported
 #ifdef _OPENACC
     IF(lmulti_snow) CALL finish(routine, "GPU version not available for lmulti_snow == .TRUE.")
+#endif
+
+    ! deactivate cuda graph if no cpp key => make sure ACC WAIT is activated where needed
+#ifndef ICON_USE_CUDA_GRAPH
+    lcuda_graph_lnd = .FALSE.
 #endif
 
     !----------------------------------------------------
@@ -405,7 +420,7 @@ CONTAINS
     config_tau_skin           = tau_skin
     config_lterra_urb         = lterra_urb
     config_lurbalb            = lurbalb
-    config_lurbahf            = lurbahf
+    config_itype_ahf          = itype_ahf
     config_itype_kbmo         = itype_kbmo
     config_itype_eisa         = itype_eisa
     config_lstomata           = lstomata
@@ -416,6 +431,7 @@ CONTAINS
     config_c_soil             = c_soil
     config_c_soil_urb         = c_soil_urb
     config_cr_bsmin           = cr_bsmin
+    config_rsmin_fac          = rsmin_fac
     config_itype_hydbound     = itype_hydbound
     config_lana_rho_snow      = lana_rho_snow
     config_l2lay_rho_snow     = l2lay_rho_snow
@@ -425,6 +441,7 @@ CONTAINS
     config_ci_td_filename     = ci_td_filename
     config_nlev_soil          = nlev_soil
     config_czbot_w_so         = czbot_w_so
+    config_lcuda_graph_lnd    = lcuda_graph_lnd
     !$ACC UPDATE DEVICE(config_itype_interception) ASYNC(1)
 
     !-----------------------------------------------------

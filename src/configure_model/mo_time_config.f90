@@ -16,12 +16,11 @@ MODULE mo_time_config
   USE mo_exception,             ONLY: finish
   USE mtime,                    ONLY: datetime, timedelta, newDatetime, newTimedelta, &
     &                                 deallocateDatetime, MAX_CALENDAR_STR_LEN,       &
-    &                                 OPERATOR(*)
+    &                                 OPERATOR(*), getTotalMilliSecondsTimedelta
   USE mo_impl_constants,        ONLY: proleptic_gregorian, julian_gregorian, cly360,  &
     &                                 SUCCESS
   USE mo_util_string,           ONLY: tolower
-  USE mo_model_domain,          ONLY: t_patch
- 
+
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: calendar_index2string
@@ -39,8 +38,7 @@ MODULE mo_time_config
   PUBLIC :: set_calendar
   PUBLIC :: set_tc_dt_model
   PUBLIC :: set_tc_write_restart
-  PUBLIC :: get_dynamics_timestep
-  
+
   !> namelist parameters (as raw character strings):
   !
   ! these are the namelist settings originating from the restart file:
@@ -104,14 +102,22 @@ MODULE mo_time_config
     LOGICAL :: tc_write_restart = .TRUE.
 
     ! well, the model's timestep
-    
+
     TYPE(timedelta), POINTER     :: tc_dt_model => NULL() ! dynamics time step  on the global grid in mtime format
 
   CONTAINS
+    !
     ! create a copy of t_time_config object
-    PROCEDURE  :: copy      => time_config_copy
+    PROCEDURE  :: copy                   => time_config__copy
+    !
     ! destruct t_time_config object
-    PROCEDURE  :: destruct  => time_config_destruct
+    PROCEDURE  :: destruct               => time_config__destruct
+    !
+    ! return model time step for given nest level in seconds
+    PROCEDURE  :: get_model_timestep_sec => time_config__get_model_timestep_sec
+    !
+    ! return model time step for given nest level in timedelta ISO format
+    PROCEDURE  :: get_model_timestep_td  => time_config__get_model_timestep_td
   END TYPE t_time_config
   !>
   !!
@@ -125,7 +131,7 @@ CONTAINS
 
   !> Create manual deep copy of a t_time_config object
   !
-  SUBROUTINE time_config_copy(me, tc_new)
+  SUBROUTINE time_config__copy(me, tc_new)
     CLASS(t_time_config)               :: me
     TYPE(t_time_config), INTENT(INOUT) :: tc_new
 
@@ -152,12 +158,12 @@ CONTAINS
     tc_new%tc_write_restart = me%tc_write_restart
     tc_new%tc_dt_model      = me%tc_dt_model
 
-  END SUBROUTINE time_config_copy
+  END SUBROUTINE time_config__copy
 
 
   !> Destructs an object of type t_time_config
   !
-  SUBROUTINE time_config_destruct(me)
+  SUBROUTINE time_config__destruct(me)
     CLASS(t_time_config) :: me
 
     INTEGER :: ist
@@ -199,7 +205,36 @@ CONTAINS
     IF(ist /= SUCCESS) CALL finish(routine, "memory deallocation failure")
     NULLIFY(me%tc_dt_model)
 
-  END SUBROUTINE time_config_destruct
+  END SUBROUTINE time_config__destruct
+
+
+  !>
+  !! Return the model time step for a given nesting level in seconds
+  !!
+  REAL(wp) FUNCTION time_config__get_model_timestep_sec(me, nest_level) RESULT(dtime_sec)
+    CLASS(t_time_config) :: me
+    INTEGER, INTENT(IN)  :: nest_level    !< nesting level for which the time step is returned
+
+    dtime_sec = REAL(getTotalMilliSecondsTimedelta(me%tc_dt_model, me%tc_startdate), wp) &
+      &         / (REAL(2**nest_level,wp) * 1000._wp)
+
+  END FUNCTION time_config__get_model_timestep_sec
+
+
+  !>
+  !! Return the model time step for a given nesting level in timedelta ISO format
+  !!
+  TYPE(timedelta) FUNCTION time_config__get_model_timestep_td(me, nest_level) RESULT(dtime_td)
+    CLASS(t_time_config)     :: me
+    INTEGER, INTENT(IN)      :: nest_level   !< nesting level for which the time step is returned
+    !
+    REAL(wp)                 :: fac
+
+    fac = 1._wp/REAL(2**nest_level,wp)
+    ! timestep in timedelta ISO format
+    dtime_td = me%tc_dt_model * fac
+
+  END FUNCTION time_config__get_model_timestep_td
 
 
   !> Convert the calendar setting (which is an integer value for this
@@ -307,20 +342,6 @@ CONTAINS
     LOGICAL, INTENT(in) :: writeRestart
     time_config%tc_write_restart = writeRestart
   END SUBROUTINE set_tc_write_restart
-  
-  !> Compute the effective dynamics timestep for the given patch.
-  !! The timestep is halved for every level of nesting compared to the "global" timestep.
-  TYPE(timedelta) FUNCTION get_dynamics_timestep(patch) RESULT(dt_dyn)
-    TYPE(t_patch), INTENT(IN) :: patch !< Patch whose timestep will be returned.
-
-    INTEGER :: k
-
-    dt_dyn = time_config%tc_dt_model
-    DO k = 1, patch%nest_level
-      dt_dyn = dt_dyn * 0.5_wp
-    END DO
-
-  END FUNCTION get_dynamics_timestep
 
 END MODULE mo_time_config
 

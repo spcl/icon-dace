@@ -139,14 +139,14 @@ MODULE mo_sgs_turbulence
     !Initialize
 
 !$OMP PARALLEL
-    CALL init(km_iv(:,:,:))
-    CALL init(km_c(:,:,:))
-    CALL init(km_ie(:,:,:))
+    CALL init(km_iv(:,:,:), lacc=.FALSE.)
+    CALL init(km_c(:,:,:), lacc=.FALSE.)
+    CALL init(km_ie(:,:,:), lacc=.FALSE.)
 
     IF(p_test_run)THEN
-      CALL init(u_vert(:,:,:))
-      CALL init(v_vert(:,:,:))
-      CALL init(w_vert(:,:,:))
+      CALL init(u_vert(:,:,:), lacc=.FALSE.)
+      CALL init(v_vert(:,:,:), lacc=.FALSE.)
+      CALL init(w_vert(:,:,:), lacc=.FALSE.)
     END IF
 !$OMP END PARALLEL
 
@@ -215,7 +215,7 @@ MODULE mo_sgs_turbulence
     ELSE IF ( atm_phy_nwp_config(jg)%inwp_turb == ismag ) THEN 
 
       IF ( les_config(jg)%smag_coeff_type == 1 ) THEN
-        CALL brunt_vaisala_freq(p_patch, p_nh_metrics, theta_v, prm_diag%bruvais)
+        CALL brunt_vaisala_freq(p_patch, p_nh_metrics, nproma, theta_v, prm_diag%bruvais)
         CALL smagorinsky_model(p_nh_prog, p_nh_metrics, p_patch, p_int, prm_diag)
 
       ELSE IF ( les_config(jg)%smag_coeff_type == 2 ) THEN
@@ -258,8 +258,8 @@ MODULE mo_sgs_turbulence
                           prm_diag, p_nh_prog%rho, dt, tracer_qc)
     ELSE
 !$OMP PARALLEL
-      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqv))
-      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqc))
+      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqv), lacc=.FALSE.)
+      CALL init(prm_nwp_tend%ddt_tracer_turb(:,:,:,iqc), lacc=.FALSE.)
 !$OMP END PARALLEL
     END IF
 
@@ -1561,9 +1561,9 @@ MODULE mo_sgs_turbulence
     IF(is_sampling_time)THEN
 
 !$OMP PARALLEL PRIVATE(rl_start,rl_end,i_startblk,i_endblk)
-      CALL init(unew(:,:,:))
-      CALL init(vnew(:,:,:))
-      CALL init(vn_new(:,:,:))
+      CALL init(unew(:,:,:), lacc=.FALSE.)
+      CALL init(vnew(:,:,:), lacc=.FALSE.)
+      CALL init(vn_new(:,:,:), lacc=.FALSE.)
 !$OMP BARRIER
 
       rl_start   = grf_bdywidth_e+1
@@ -2078,10 +2078,10 @@ MODULE mo_sgs_turbulence
     !   Soon get different routines for different scalars
 
 !$OMP PARALLEL
-    CALL init(exner_me(:,:,:), 1._wp)
-    CALL init(exner_ic(:,:,:), 1._wp)
-    CALL init(a(:,:))
-    CALL init(c(:,:))
+    CALL init(exner_me(:,:,:), 1._wp, lacc=.FALSE.)
+    CALL init(exner_ic(:,:,:), 1._wp, lacc=.FALSE.)
+    CALL init(a(:,:), lacc=.FALSE.)
+    CALL init(c(:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
 
     !2) Calculate exner at edge for horizontal diffusion
@@ -2529,8 +2529,8 @@ MODULE mo_sgs_turbulence
     i_endblk   = p_patch%cells%end_block(rl_end)
 
 !$OMP PARALLEL
-    CALL init(a(:,:))
-    CALL init(c(:,:))
+    CALL init(a(:,:), lacc=.FALSE.)
+    CALL init(c(:,:), lacc=.FALSE.)
 
 !$OMP DO PRIVATE(jk,je,jb,i_startidx,i_endidx)
       DO jb = i_startblk,i_endblk

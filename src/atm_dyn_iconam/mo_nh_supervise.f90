@@ -25,7 +25,7 @@ MODULE mo_nh_supervise
   USE mo_model_domain,        ONLY: t_patch
   USE mo_intp_data_strc,      ONLY: t_int_state
   USE mo_intp_rbf,            ONLY: rbf_vec_interpol_cell
-  USE mo_grid_config,         ONLY: n_dom, l_limited_area, grid_sphere_radius
+  USE mo_grid_config,         ONLY: l_limited_area, grid_sphere_radius
   USE mo_math_constants,      ONLY: pi
   USE mo_parallel_config,     ONLY: nproma, p_test_run
   USE mo_run_config,          ONLY: dtime, msg_level, output_mode,           &
@@ -40,7 +40,8 @@ MODULE mo_nh_supervise
   USE mo_sync,                ONLY: global_sum_array, global_max
   USE mo_loopindices,         ONLY: get_indices_c, get_indices_e
   USE mo_impl_constants_grf,  ONLY: grf_bdywidth_c, grf_bdywidth_e
-  USE mo_fortran_tools,       ONLY: init, set_acc_host_or_device, assert_lacc_equals_i_am_accel_node, assert_acc_device_only
+  USE mo_fortran_tools,       ONLY: init, set_acc_host_or_device, assert_acc_device_only
+  USE mo_nh_diagnose_pres_temp,ONLY: calc_qsum
 
   IMPLICIT NONE
 
@@ -49,8 +50,7 @@ MODULE mo_nh_supervise
   CHARACTER(LEN=*), PARAMETER :: modname   = 'mo_nh_supervise'
 
   ! Needed by supervise_total_integrals_nh to keep data between steps
-  REAL(wp), ALLOCATABLE, SAVE :: z_total_tracer_old(:)
-  REAL(wp), ALLOCATABLE, SAVE :: z_total_tracer_0(:)
+  REAL(wp), ALLOCATABLE, SAVE :: z_tracer_mass_0(:)      ! tracer specific total mass at first step
 
   INTEGER :: n_file_ti = -1, n_file_tti = -1,  check_total_quant_fileid = -1       ! file identifiers
 
@@ -64,6 +64,7 @@ MODULE mo_nh_supervise
   PUBLIC :: supervise_total_integrals_nh
   PUBLIC :: print_maxwinds
   PUBLIC :: compute_dpsdt
+  PUBLIC :: compute_hcfl
 
 
 CONTAINS
@@ -116,20 +117,20 @@ CONTAINS
   SUBROUTINE supervise_total_integrals_nh( k_step, patch, nh_state, int_state, ntimlev, ntimlev_rcf, l_last_step, lacc)
 
     INTEGER,                  INTENT(IN) :: k_step            ! actual time step
-    TYPE(t_patch),            INTENT(IN) :: patch(n_dom)      ! Patch
-    TYPE(t_nh_state), TARGET, INTENT(IN) :: nh_state(n_dom)   ! NH State
-    TYPE(t_int_state),        INTENT(IN) :: int_state(n_dom)  ! Interpolation State
-    INTEGER,                  INTENT(IN) :: ntimlev(n_dom)    ! time level
-    INTEGER,                  INTENT(IN) :: ntimlev_rcf(n_dom)! rcf time level
+    TYPE(t_patch),            INTENT(IN) :: patch             ! Patch
+    TYPE(t_nh_state), TARGET, INTENT(IN) :: nh_state          ! NH State
+    TYPE(t_int_state),        INTENT(IN) :: int_state         ! Interpolation State
+    INTEGER,                  INTENT(IN) :: ntimlev           ! time level
+    INTEGER,                  INTENT(IN) :: ntimlev_rcf       ! rcf time level
     LOGICAL,                  INTENT(IN) :: l_last_step
-    LOGICAL, OPTIONAL,        INTENT(IN) :: lacc ! If true, use openacc
+    LOGICAL, OPTIONAL,        INTENT(IN) :: lacc              ! If true, use openacc
 
     REAL(wp), SAVE :: z_total_mass_0    !< total air mass including vapor and condensate at first time step [kg]
-    REAL(wp), SAVE :: z_total_drymass_0 !< total dry air mass at first time step [kg]
+    REAL(wp), SAVE :: z_dry_mass_0      !< dry air mass at first time step [kg]
     REAL(wp), SAVE :: z_total_energy_0  !< total energy at first time step [kg]
     !
     REAL(wp) :: z_total_mass            !< total air mass, including vapor and condensate partial densities [kg]
-    REAL(wp) :: z_total_drymass         !< total dry air mass (i.e. excluding vapor and condensate) [kg]
+    REAL(wp) :: z_dry_mass              !< dry air mass (i.e. excluding vapor and condensate) [kg]
     REAL(wp) :: z_kin_energy            !< kinetic energy [Nm]
     REAL(wp) :: z_pot_energy            !< potential energy [Nm]
     REAL(wp) :: z_int_energy            !< internal energy [Nm]
@@ -137,94 +138,96 @@ CONTAINS
     REAL(wp) :: z_mean_surfp            !< mean surface pressure [Pa]
     !
     REAL(wp) :: z_total_mass_re         !< changes in total mass compared to first step
-    REAL(wp) :: z_total_drymass_re      !< changes in total dry mass compared to first step
-    REAL(wp) :: z_total_energy_re       ! changes in total energy compared to first step
+    REAL(wp) :: z_dry_mass_re           !< changes in dry mass compared to first step
+    REAL(wp) :: z_total_energy_re       !< changes in total energy compared to first step
     !
     REAL(wp) :: z_kin_energy_re         !< percentage of kinetic energy out of total energy
     REAL(wp) :: z_int_energy_re         !< percentage of internal energy out of total energy
     REAL(wp) :: z_pot_energy_re         !< percentage of potential energy out of total energy
     REAL(wp) :: z_volume
 #ifndef NOMPI
-    REAL(wp) ::   z_total_mass_2d(nproma,patch(1)%nblks_c), &
-      &           z_kin_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_int_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_pot_energy_2d(nproma,patch(1)%nblks_c), &
-      &           z_surfp_2d(nproma,patch(1)%nblks_c), &
-      &           z_total_drymass_2d(nproma,patch(1)%nblks_c)
+    REAL(wp) ::   z_total_mass_2d(nproma,patch%nblks_c), &
+      &           z_dry_mass_2d(nproma,patch%nblks_c),   &
+      &           z_kin_energy_2d(nproma,patch%nblks_c), &
+      &           z_int_energy_2d(nproma,patch%nblks_c), &
+      &           z_pot_energy_2d(nproma,patch%nblks_c), &
+      &           z_surfp_2d(nproma,patch%nblks_c)
+
 #endif
 
-    REAL (wp):: z_total_tracer(ntracer)       ! total tracer mass
-    REAL (wp):: z_aux_tracer(nproma,patch(1)%nblks_c)
-    REAL (wp):: z_rel_err_tracer_s1(ntracer) ! relative error of total tracer
-    REAL (wp):: z_rel_err_tracer(ntracer)    ! relative error of total tracer
+    ! tracer fields
+    REAL(wp):: z_tracer_mass(ntracer)       ! tracer specific total mass
+    REAL(wp):: z_tracer_mass_re(ntracer)    ! changes in tracer specific total mass compared to first step
+    REAL(wp):: z_aux_tracer(nproma,patch%nblks_c)
+    REAL(wp):: z_total_tracer_mass          ! total tracer mass
+    REAL(wp):: z_total_tracer_mass_re       ! changes in total tracer mass compared to first step
+    REAL(wp):: z_water_mass                 ! total mass of water (including vapor)
+    REAL(wp):: z_water_mass_re              ! changes in total water mass compared to first step
+    !
+    REAL(wp), SAVE :: z_total_tracer_mass_0 ! total tracer mass at first step
+    REAL(wp), SAVE :: z_water_mass_0        ! total mass of water at first step
 
-    INTEGER :: jg, jb, jk, jc, jt             ! loop indices
+    INTEGER :: jb, jk, jc, jt               ! loop indices
     INTEGER :: nlen, npromz_c, nblks_c
     INTEGER :: nlev                           ! number of full levels
     INTEGER :: ist                            ! status variable
     TYPE(t_nh_prog), POINTER :: prog       ! prog state
     TYPE(t_nh_prog), POINTER :: prog_rcf   ! prog_rcf state
     TYPE(t_nh_diag), POINTER :: diag       ! diag state
-    REAL(wp) :: z_qsum(nproma,patch(1)%nlev,patch(1)%nblks_c)  ! total condensate including vapour
-    REAL(wp) :: z_total_moist, z_elapsed_time
-    REAL(wp) :: z_ekin(nproma,patch(1)%nlev,patch(1)%nblks_c)
+    REAL(wp) :: z_qsum(nproma,patch%nlev,patch%nblks_c)  ! total condensate including vapour
+    REAL(wp) :: z_elapsed_time
+    REAL(wp) :: z_ekin(nproma,patch%nlev,patch%nblks_c)
 
     REAL(wp) :: max_vn, max_w
     INTEGER  :: max_vn_level, max_vn_process, max_w_level, max_w_process
+    INTEGER  :: water_tracer_list(iqm_max)    ! list of all water tracer IDs (including vapor)
 
+    CHARACTER(*), PARAMETER :: routine = modname//"::supervise_total_integrals_nh"
     !-----------------------------------------------------------------------------
 
-    CALL assert_lacc_equals_i_am_accel_node('mo_nh_stepping:supervise_total_integrals_nh', lacc)
-    CALL assert_acc_device_only('mo_nh_stepping:supervise_total_integrals_nh', lacc)
+    CALL assert_acc_device_only(routine, lacc)
 
-    !$ACC DATA CREATE(z_ekin, z_qsum, z_aux_tracer)
+    ! store IDs of all water tracers in a list, including vapor
+    IF ( lforcing .AND. iforcing /= iheldsuarez ) THEN
+      water_tracer_list = (/(jt, jt=1,iqm_max)/)
+    ENDIF
+
+    !$ACC DATA CREATE(z_ekin, z_qsum, z_aux_tracer) COPYIN(water_tracer_list)
 #ifndef NOMPI
-    !$ACC DATA CREATE(z_total_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d, z_total_drymass_2d)
+    !$ACC DATA CREATE(z_total_mass_2d, z_dry_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d) COPYIN(water_tracer_list)
 #endif
 
-    ! Hack [ha]:
-    IF (.NOT. ALLOCATED (z_total_tracer_old)) THEN
-      ALLOCATE (z_total_tracer_old(ntracer), STAT=ist)
+    IF (.NOT. ALLOCATED (z_tracer_mass_0)) THEN
+      ALLOCATE (z_tracer_mass_0(ntracer), STAT=ist)
       IF(ist/=SUCCESS)THEN
-        CALL finish ('mo_nh_stepping:supervise_total_integrals_nh', &
-          'allocation of z_total_tracer_old failed')
+        CALL finish (routine, 'allocation of z_tracer_mass_0 failed')
       ENDIF
-      ALLOCATE (z_total_tracer_0(ntracer), STAT=ist)
-      IF(ist/=SUCCESS)THEN
-        CALL finish ('mo_nh_stepping:supervise_total_integrals_nh', &
-          'allocation of z_total_tracer_0 failed')
-      ENDIF
-      z_total_tracer_old = 0.0_wp
-      z_total_tracer_0   = 0.0_wp
+      z_tracer_mass_0 = 0.0_wp
     END IF
-
-    !  write(0,*) 'k_step=', k_step
-    ! Open the datafile
-    IF (k_step == 1 .AND. my_process_is_stdio()) THEN
-      CALL open_total_integral_files()
-    ENDIF
 
 
     z_elapsed_time = dtime*REAL(k_step,wp)/3600.0_wp
 
-    jg = 1 ! It does not make sense to double-count nested domains!
+    prog     => nh_state%prog(ntimlev)
+    prog_rcf => nh_state%prog(ntimlev_rcf)
+    diag     => nh_state%diag
 
-    prog     => nh_state(jg)%prog(ntimlev(jg))
-    prog_rcf => nh_state(jg)%prog(ntimlev_rcf(jg))
-    diag     => nh_state(jg)%diag
-
-    nblks_c   = patch(jg)%nblks_c
-    npromz_c  = patch(jg)%npromz_c
+    nblks_c   = patch%nblks_c
+    npromz_c  = patch%npromz_c
 
     ! number of vertical levels
-    nlev = patch(jg)%nlev
+    nlev = patch%nlev
 
     IF (iforcing <= 1) THEN ! u and v are not diagnosed regularly if physics is turned off
-      CALL rbf_vec_interpol_cell(prog%vn,patch(jg),int_state(jg),diag%u,diag%v, opt_acc_async=.TRUE.)
+      CALL rbf_vec_interpol_cell(prog%vn,patch,int_state,diag%u,diag%v, opt_acc_async=.TRUE.)
     ENDIF
 
+
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,jk,jc,jt,nlen)
+    CALL init(z_qsum, opt_acc_async=.TRUE.)
+!$OMP BARRIER
+
+!$OMP DO PRIVATE(jb,jk,jc,nlen)
     DO jb = 1, nblks_c
       IF (jb /= nblks_c) THEN
         nlen = nproma
@@ -239,26 +242,22 @@ CONTAINS
             0.25_wp*(prog%w(jc,jk,jb)**2 + prog%w(jc,jk+1,jb)**2)
         ENDDO
       ENDDO
-
-      ! compute total condensate INCLUDING vapour
-      !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-      DO jk = 1, nlev
-        DO jc = 1, nlen
-          z_qsum(jc,jk,jb) = 0._wp
-        ENDDO
-      ENDDO
-      IF ( ltransport .AND. lforcing .AND. iforcing /= iheldsuarez ) THEN
-        !$ACC LOOP SEQ
-        DO jt=1, iqm_max
-        !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
-          DO jk = 1, nlev
-            DO jc = 1, nlen
-              z_qsum(jc,jk,jb) = z_qsum(jc,jk,jb) + prog_rcf%tracer(jc,jk,jb,jt)
-            ENDDO  !jc
-          ENDDO  !jk
-        ENDDO  !jt
-      ENDIF
       !$ACC END PARALLEL
+
+      IF ( ltransport .AND. lforcing .AND. iforcing /= iheldsuarez ) THEN
+        ! compute total condensate INCLUDING vapor
+        !
+        CALL calc_qsum (tracer      = prog_rcf%tracer(:,:,:,:), & !in
+          &             qsum        = z_qsum(:,:,jb),           & !inout
+          &             tracer_list = water_tracer_list(:),     & !in
+          &             jb          = jb,                       & !in
+          &             i_startidx  = 1,                        & !in
+          &             i_endidx    = nlen,                     & !in
+          &             slev        = 1,                        & !in
+          &             slev_moist  = 1,                        & !in
+          &             nlev        = nlev)                       !in
+      ENDIF
+
     ENDDO
 !$OMP END DO
 !$OMP END PARALLEL
@@ -266,15 +265,15 @@ CONTAINS
 #ifdef NOMPI
 
 #ifdef _OPENACC
-    CALL finish("mo_nh_stepping:supervise_total_integrals_nh", "The NOMPI has not been tested with OpenACC.")
+    CALL finish(routine, "The NOMPI has not been tested with OpenACC.")
 #endif
 
-    z_total_mass    = 0.0_wp
-    z_total_drymass = 0.0_wp
-    z_kin_energy    = 0.0_wp
-    z_pot_energy    = 0.0_wp
-    z_int_energy    = 0.0_wp
-    z_mean_surfp    = 0.0_wp
+    z_total_mass  = 0.0_wp
+    z_dry_mass    = 0.0_wp
+    z_kin_energy  = 0.0_wp
+    z_pot_energy  = 0.0_wp
+    z_int_energy  = 0.0_wp
+    z_mean_surfp  = 0.0_wp
     DO jb = 1, nblks_c
       IF (jb /= nblks_c) THEN
         nlen = nproma
@@ -283,21 +282,21 @@ CONTAINS
       ENDIF
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_volume) &
-      !$ACC   REDUCTION(+, z_total_mass, z_kin_energy, z_int_energy, z_pot_energy, z_total_drymass)
+      !$ACC   REDUCTION(+, z_total_mass, z_kin_energy, z_int_energy, z_pot_energy, z_dry_mass)
       DO jk = 1, nlev
         DO jc = 1, nlen
-          z_volume = patch(jg)%cells%area(jc,jb)*nh_state(jg)%metrics%ddqz_z_full(jc,jk,jb) &
-            &       /patch(jg)%n_patch_cells_g*nh_state(jg)%metrics%deepatmo_vol_mc(jk)
+          z_volume = patch%cells%area(jc,jb)*nh_state%metrics%ddqz_z_full(jc,jk,jb) &
+            &       /REAL(patch%n_patch_cells_g,wp)*nh_state%metrics%deepatmo_vol_mc(jk)
           z_total_mass = z_total_mass + &
             &              prog%rho(jc,jk,jb)*z_volume
+          z_dry_mass   = z_dry_mass +   &
+            &              prog%rho(jc,jk,jb)*(1._wp - z_qsum(jc,jk,jb))*z_volume
           z_kin_energy = z_kin_energy + &
             &              prog%rho(jc,jk,jb)*z_ekin(jc,jk,jb)*z_volume
           z_int_energy = z_int_energy + &
             &              cvd*prog%exner(jc,jk,jb)*prog%rho(jc,jk,jb)*prog%theta_v(jc,jk,jb)*z_volume
           z_pot_energy = z_pot_energy + &
-            &              prog%rho(jc,jk,jb)*nh_state(jg)%metrics%geopot(jc,jk,jb)*z_volume
-          z_total_drymass = z_total_drymass + &
-            &              prog%rho(jc,jk,jb)*(1._wp - z_qsum(jc,jk,jb))*z_volume
+            &              prog%rho(jc,jk,jb)*nh_state%metrics%geopot(jc,jk,jb)*z_volume
         ENDDO
       ENDDO
       !$ACC END PARALLEL
@@ -305,7 +304,7 @@ CONTAINS
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) REDUCTION(+, z_mean_surfp)
       DO jc = 1, nlen
-        z_mean_surfp = z_mean_surfp + diag%pres_sfc(jc,jb)*patch(jg)%cells%area(jc,jb) /  &
+        z_mean_surfp = z_mean_surfp + diag%pres_sfc(jc,jb)*patch%cells%area(jc,jb) /  &
           &  (4._wp*grid_sphere_radius**2*pi)
       ENDDO
       !$ACC END PARALLEL
@@ -315,15 +314,16 @@ CONTAINS
 
 #else
 
-    !$OMP PARALLEL
-    CALL init(z_total_mass_2d, opt_acc_async=.TRUE.)
-    CALL init(z_kin_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_int_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_pot_energy_2d, opt_acc_async=.TRUE.)
-    CALL init(z_surfp_2d, opt_acc_async=.TRUE.)
-    CALL init(z_total_drymass_2d, opt_acc_async=.TRUE.)
-    !$OMP END PARALLEL
+!$OMP PARALLEL
+    CALL init(z_total_mass_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(z_dry_mass_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(z_kin_energy_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(z_int_energy_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(z_pot_energy_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+    CALL init(z_surfp_2d, lacc=.TRUE., opt_acc_async=.TRUE.)
+!$OMP BARRIER
 
+!$OMP DO PRIVATE(jb,jk,jc,nlen,z_volume)
     DO jb = 1, nblks_c
       IF (jb /= nblks_c) THEN
         nlen = nproma
@@ -335,50 +335,56 @@ CONTAINS
       DO jk = 1,nlev
         !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(z_volume)
         DO jc = 1, nlen
-          z_volume = patch(jg)%cells%area(jc,jb)      &
-            & *nh_state(jg)%metrics%ddqz_z_full(jc,jk,jb) &
-            & /REAL(patch(jg)%n_patch_cells_g,wp)*nh_state(jg)%metrics%deepatmo_vol_mc(jk)
+          z_volume = patch%cells%area(jc,jb)*nh_state%metrics%ddqz_z_full(jc,jk,jb) &
+            & /REAL(patch%n_patch_cells_g,wp)*nh_state%metrics%deepatmo_vol_mc(jk)
           z_total_mass_2d(jc,jb) = z_total_mass_2d(jc,jb)&
             & +prog%rho(jc,jk,jb)*z_volume
+          z_dry_mass_2d(jc,jb) = z_dry_mass_2d(jc,jb)&
+            & +prog%rho(jc,jk,jb)*(1._wp-z_qsum(jc,jk,jb))*z_volume
           z_kin_energy_2d(jc,jb) = z_kin_energy_2d(jc,jb)&
             & +prog%rho(jc,jk,jb)*z_ekin(jc,jk,jb)*z_volume
           z_int_energy_2d(jc,jb) = z_int_energy_2d(jc,jb)&
             & +cvd*prog%exner(jc,jk,jb)*prog%rho(jc,jk,jb)*prog%theta_v(jc,jk,jb)*z_volume
           z_pot_energy_2d(jc,jb) = z_pot_energy_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*nh_state(jg)%metrics%geopot(jc,jk,jb)*z_volume
-          z_total_drymass_2d(jc,jb) = z_total_drymass_2d(jc,jb)&
-            & +prog%rho(jc,jk,jb)*(1._wp-z_qsum(jc,jk,jb))*z_volume
+            & +prog%rho(jc,jk,jb)*nh_state%metrics%geopot(jc,jk,jb)*z_volume
         ENDDO
       ENDDO
       !$ACC LOOP GANG(STATIC: 1) VECTOR
       DO jc = 1, nlen
-        z_surfp_2d(jc,jb) = diag%pres_sfc(jc,jb)*patch(jg)%cells%area(jc,jb)
-        IF(.NOT. patch(jg)%cells%decomp_info%owner_mask(jc,jb)) THEN
+        z_surfp_2d(jc,jb) = diag%pres_sfc(jc,jb)*patch%cells%area(jc,jb)
+        IF(.NOT. patch%cells%decomp_info%owner_mask(jc,jb)) THEN
           z_total_mass_2d(jc,jb) = 0._wp
+          z_dry_mass_2d(jc,jb)   = 0._wp
           z_kin_energy_2d(jc,jb) = 0._wp
           z_int_energy_2d(jc,jb) = 0._wp
           z_pot_energy_2d(jc,jb) = 0._wp
-          z_surfp_2d(jc,jb) = 0._wp
-          z_total_drymass_2d(jc,jb) = 0._wp
+          z_surfp_2d(jc,jb)      = 0._wp
         ENDIF
       ENDDO
       !$ACC END PARALLEL
     ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
 
-    z_mean_surfp    = global_sum_array( z_surfp_2d, lacc=.TRUE. )/(4._wp*grid_sphere_radius**2*pi)
-    z_total_mass    = global_sum_array( z_total_mass_2d, lacc=.TRUE. )
-    z_kin_energy    = global_sum_array( z_kin_energy_2d, lacc=.TRUE. )
-    z_int_energy    = global_sum_array( z_int_energy_2d, lacc=.TRUE. )
-    z_pot_energy    = global_sum_array( z_pot_energy_2d, lacc=.TRUE. )
-    z_total_drymass = global_sum_array( z_total_drymass_2d, lacc=.TRUE. )
+    z_mean_surfp   = global_sum_array( z_surfp_2d, lacc=.TRUE. )/(4._wp*grid_sphere_radius**2*pi)
+    z_total_mass   = global_sum_array( z_total_mass_2d, lacc=.TRUE. )
+    z_dry_mass     = global_sum_array( z_dry_mass_2d, lacc=.TRUE. )
+    z_kin_energy   = global_sum_array( z_kin_energy_2d, lacc=.TRUE. )
+    z_int_energy   = global_sum_array( z_int_energy_2d, lacc=.TRUE. )
+    z_pot_energy   = global_sum_array( z_pot_energy_2d, lacc=.TRUE. )
     z_total_energy = z_int_energy+z_kin_energy+z_pot_energy
 
 #endif
 
     IF (k_step == 1) THEN
-      z_total_mass_0    = z_total_mass
-      z_total_drymass_0 = z_total_drymass
-      z_total_energy_0  = z_total_energy
+      z_total_mass_0   = z_total_mass
+      z_dry_mass_0     = z_dry_mass
+      z_total_energy_0 = z_total_energy
+
+      ! Open the datafile and store initial values of mass and energy
+      IF (my_process_is_stdio()) THEN
+        CALL open_total_integral_files(z_total_mass_0, z_dry_mass_0, z_total_energy_0)
+      ENDIF
     ENDIF
 
     ! percentage of single energies out of the total energy
@@ -387,13 +393,13 @@ CONTAINS
     z_pot_energy_re = z_pot_energy/z_total_energy*100.0_wp
     ! changes compared to first step
     z_total_mass_re   = z_total_mass   /z_total_mass_0    -1.0_wp
-    z_total_drymass_re= z_total_drymass/z_total_drymass_0 -1.0_wp
+    z_dry_mass_re     = z_dry_mass     /z_dry_mass_0      -1.0_wp
     z_total_energy_re = z_total_energy /z_total_energy_0  -1.0_wp
 
     IF (my_process_is_stdio()) THEN
       if (n_file_ti >= 0) &
         WRITE(n_file_ti,'(i8,7e20.12)') &
-        &   k_step, z_total_mass_re, z_total_drymass_re, z_total_energy_re, z_kin_energy_re, &
+        &   k_step, z_total_mass_re, z_dry_mass_re, z_total_energy_re, z_kin_energy_re, &
         &   z_int_energy_re, z_pot_energy_re, z_mean_surfp
       IF (l_last_step) THEN
         if (n_file_ti >= 0) &
@@ -401,17 +407,19 @@ CONTAINS
       ENDIF
     ENDIF
 
-    IF (ltransport  .OR. ( iforcing == inwp ) .OR. ( iforcing == iaes )) THEN
 
-      z_total_tracer(:) = 0.0_wp ! init must not used be used (this is no GPU variable)
-      z_total_moist = 0.0_wp
+    IF ( ltransport .OR. ANY((/inwp,iaes/)==iforcing) ) THEN
+
+      z_tracer_mass(:) = 0.0_wp ! init must not used be used (this is no GPU variable)
+      z_water_mass = 0.0_wp
 
       DO jt=1, ntracer
+!$OMP PARALLEL
+        CALL init(z_aux_tracer(:,:), lacc=.TRUE., opt_acc_async=.TRUE.) ! reinitialize for each jt
+!$OMP BARRIER
 
-        CALL init(z_aux_tracer(:,:), opt_acc_async=.TRUE.) ! reinitialize for each jt
-
+!$OMP DO PRIVATE(jb,jk,jc,nlen,z_volume)
         DO jb = 1, nblks_c
-
           IF (jb /= nblks_c) THEN
             nlen = nproma
           ELSE
@@ -424,96 +432,99 @@ CONTAINS
           DO jk = 1, nlev
             !$ACC LOOP GANG VECTOR PRIVATE(z_volume)
             DO jc = 1, nlen
-              z_volume = patch(jg)%cells%area(jc,jb)             &
-                &    * nh_state(jg)%metrics%ddqz_z_full(jc,jk,jb) &
-                &    * prog%rho(jc,jk,jb) * nh_state(jg)%metrics%deepatmo_vol_mc(jk)
+              z_volume = patch%cells%area(jc,jb)             &
+                &    * nh_state%metrics%ddqz_z_full(jc,jk,jb) &
+                &    * prog%rho(jc,jk,jb) * nh_state%metrics%deepatmo_vol_mc(jk)
 
               z_aux_tracer(jc,jb) = z_aux_tracer(jc,jb)    &
                 &    + prog_rcf%tracer(jc,jk,jb,jt) * z_volume
             ENDDO
           ENDDO
           !$ACC END PARALLEL
-
         ENDDO
+!$OMP END DO
 
+!$OMP DO PRIVATE(jb,jc)
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jb = 1, nblks_c
           DO jc = 1, nproma
-            IF(.NOT.patch(jg)%cells%decomp_info%owner_mask(jc,jb)) z_aux_tracer(jc,jb) = 0._wp
+            IF(.NOT.patch%cells%decomp_info%owner_mask(jc,jb)) z_aux_tracer(jc,jb) = 0._wp
           ENDDO
         ENDDO
         !$ACC END PARALLEL
-        z_total_tracer(jt) = global_sum_array(z_aux_tracer(:,:), lacc=.TRUE.)
-
+!$OMP END DO
+!$OMP END PARALLEL
+        z_tracer_mass(jt) = global_sum_array(z_aux_tracer(:,:), lacc=.TRUE.)
       ENDDO  ! ntracer
 
-      IF (lforcing) THEN
-        ! when run in physics mode, compute total mass of all tracers
-        ! (water substances)
-        z_total_moist = (SUM(z_total_tracer(:)))
+      z_total_tracer_mass = SUM(z_tracer_mass(1:ntracer))
+      !
+      IF ( ANY((/inwp,iaes/)==iforcing) ) THEN
+        ! when run in physics mode, compute total water mass (including vapor)
+        z_water_mass = SUM(z_tracer_mass((/water_tracer_list/)))
       ENDIF
-
 
       ! Save total tracer mass at first time step
       IF (k_step == 1) THEN
-        z_total_tracer_0(:)    = z_total_tracer(:)
-        z_rel_err_tracer_s1(:) = 0._wp
-        z_rel_err_tracer(:)    = 0._wp
-
+        z_tracer_mass_0(:)     = z_tracer_mass(:)
+        z_total_tracer_mass_0  = z_total_tracer_mass
+        z_water_mass_0         = z_water_mass
       ELSE
-
-        ! compute relative mass error
-        ! a) relative to time step 1 (z_rel_err_tracer_s1)
-        ! b) relative to the previous time step n-1 (z_rel_err_tracer)
-        DO jt=1, ntracer
-
-          IF (z_total_tracer_old(jt) == 0._wp) THEN
-            z_rel_err_tracer(jt) = 0._wp
+        ! compute mass change relative to time step 1
+        !
+        IF (z_total_tracer_mass_0 == 0._wp) THEN
+          z_total_tracer_mass_re = 0._wp
+        ELSE
+          z_total_tracer_mass_re = z_total_tracer_mass /z_total_tracer_mass_0 -1._wp
+        ENDIF
+        IF (z_water_mass_0 == 0._wp) THEN
+          z_water_mass_re = 0._wp
+        ELSE
+          z_water_mass_re = z_water_mass /z_water_mass_0 -1._wp
+        ENDIF
+        !
+        DO jt=1,ntracer
+          IF (z_tracer_mass_0(jt) == 0._wp) THEN
+            z_tracer_mass_re(jt) = 0._wp
           ELSE
-            z_rel_err_tracer(jt) = (z_total_tracer(jt)/z_total_tracer_old(jt)) - 1._wp
+            z_tracer_mass_re(jt) = z_tracer_mass(jt) /z_tracer_mass_0(jt) - 1._wp
           ENDIF
-          IF (z_total_tracer_0(jt) == 0._wp) THEN
-            z_rel_err_tracer_s1(jt) = 0._wp
-          ELSE
-            IF (lforcing) THEN
-              z_rel_err_tracer_s1(jt) = (z_total_moist/z_total_tracer_0(jt)) - 1._wp
-            ELSE
-              z_rel_err_tracer_s1(jt) = (z_total_tracer(jt)/z_total_tracer_0(jt)) - 1._wp
-            ENDIF
-          ENDIF
-
         ENDDO
-
       ENDIF
 
-      ! save total tracer mass for the next step
-      z_total_tracer_old(:) = z_total_tracer(:)
-
-      DO jt=1, ntracer
-        if (n_file_tti > 0) &
-          WRITE(n_file_tti,'(i21,f22.8,i21,3e40.16)')             &
-          k_step, z_elapsed_time, jt, z_total_tracer(jt), &
-          z_rel_err_tracer(jt), z_rel_err_tracer_s1(jt)
-      ENDDO
+      ! write to file
+      IF (my_process_is_stdio()) THEN
+        IF (n_file_tti > 0) THEN
+           ! total tracer mass
+           WRITE(n_file_tti,'(i8,f22.8,a22,2e22.12)')             &
+           k_step, z_elapsed_time, 'tot', z_total_tracer_mass, z_total_tracer_mass_re
+           ! water mass
+           WRITE(n_file_tti,'(i8,f22.8,a22,2e22.12)')             &
+           k_step, z_elapsed_time, 'water', z_water_mass, z_water_mass_re
+           !
+          DO jt=1,ntracer
+            WRITE(n_file_tti,'(i8,f22.8,i22,2e22.12)')          &
+            k_step, z_elapsed_time, jt, z_tracer_mass(jt), z_tracer_mass_re(jt)
+          ENDDO
+        ENDIF
+      ENDIF
 
       IF (l_last_step) THEN
-        if (n_file_ti >= 0) &
-          CLOSE(n_file_ti)
-        if (n_file_tti > 0) &
-          CLOSE(n_file_tti)
+        IF (n_file_ti >= 0) CLOSE(n_file_ti)
+        IF (n_file_tti > 0) CLOSE(n_file_tti)
 
-        DEALLOCATE(z_total_tracer_old, z_total_tracer_0, STAT=ist)
+        DEALLOCATE(z_tracer_mass_0, STAT=ist)
         IF(ist/=SUCCESS)THEN
-          CALL finish ('mo_nh_stepping:supervise_total_integrals_nh', &
-            'deallocation of z_total_tracer_old, z_total_tracer_0 failed')
+          CALL finish (routine, 'deallocation of z_tracer_mass_0 failed')
         ENDIF
       ENDIF
 
     ENDIF    ! ltransport
 
+
     ! write additional check quantities (check_global_quantities)
-    CALL calculate_maxwinds(patch(1), prog%vn, prog%w, &
+    CALL calculate_maxwinds(patch, prog%vn, prog%w, &
         & max_vn, max_vn_level, max_vn_process,        &
         & max_w, max_w_level, max_w_process, lacc=.TRUE. )
 
@@ -530,7 +541,7 @@ CONTAINS
 
     !$ACC WAIT
 #ifndef NOMPI
-    !$ACC END DATA ! z_total_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d, z_total_drymass_2d
+    !$ACC END DATA ! z_total_mass_2d, z_kin_energy_2d, z_int_energy_2d, z_pot_energy_2d, z_surfp_2d, z_dry_mass_2d
 #endif
     !$ACC END DATA
 
@@ -538,8 +549,11 @@ CONTAINS
   !-------------------------------------------------------------------------
 
   !-------------------------------------------------------------------------
-  SUBROUTINE open_total_integral_files( )
+  SUBROUTINE open_total_integral_files(total_mass_0, dry_mass_0, total_energy_0)
 
+    REAL(wp), INTENT(IN) :: total_mass_0     !< total mass intial value
+    REAL(wp), INTENT(IN) :: dry_mass_0       !< dry mass initial value
+    REAL(wp), INTENT(IN) :: total_energy_0   !< total energy initial value
     INTEGER :: istat
 
     n_file_ti = find_next_free_unit(100,1000)
@@ -549,6 +563,14 @@ CONTAINS
     IF (istat/=SUCCESS) THEN
       CALL finish('supervise_total_integrals_nh','could not open total_integrals.dat')
     ENDIF
+    WRITE (n_file_ti,'(A8,3A20)')'TIMESTEP',&
+      '      total mass m0,',&
+      '     dry mass mdry0,',&
+      '     total energy e0'
+    WRITE(n_file_ti,'(i8,3e20.12)') &
+      &   (/1/), total_mass_0, dry_mass_0, total_energy_0
+    WRITE(n_file_ti,*)' '
+
     WRITE (n_file_ti,'(A8,7A20)')'TIMESTEP',&
       '            m/m0 -1,',&
       '      mdry/mdry0 -1,',&
@@ -561,31 +583,17 @@ CONTAINS
     ! Open the datafile for tracer diagnostic
     IF (ltransport .OR. ( iforcing == inwp ) .OR. ( iforcing == iaes )) THEN
 
-      !!$       ALLOCATE(z_total_tracer_old(ntracer), STAT=ist)
-      !!$       IF(ist/=SUCCESS)THEN
-      !!$          CALL finish ('mo_nh_stepping:supervise_total_integrals_nh', &
-      !!$               'allocation of z_total_tracer_old failed')
-      !!$       ENDIF
-      !!$       ALLOCATE(z_total_tracer_0(ntracer), STAT=ist)
-      !!$       IF(ist/=SUCCESS)THEN
-      !!$          CALL finish ('mo_nh_stepping:supervise_total_integrals_nh', &
-      !!$               'allocation of z_total_tracer_0 failed')
-      !!$       ENDIF
-
-
       n_file_tti = find_next_free_unit(100,1000)
       OPEN(UNIT=n_file_tti,FILE='tracer_total_integrals.dat',ACTION="write", &
            FORM='FORMATTED',IOSTAT=istat)
       IF (istat/=SUCCESS) THEN
         CALL finish('supervise_total_integrals_nh','could not open tracer_total_integrals.dat')
       ENDIF
-      WRITE (n_file_tti,'(A22,A22,A22,3A40)') &
-        ' TIMESTEP            ,',&
-        ' ELAPSED TIME    (hr),',&
-        ' TRACER NR        (#),',&
-        ' TOTAL TRACER   (kg),',&
-        ' RELATIVE ERROR to step N-1(TRACER)',&
-        ' RELATIVE ERROR to step 1 (TRACER)'
+      WRITE (n_file_tti,'(A8,4A22)')'TIMESTEP',&
+        '    ELAPSED TIME (hr),',&
+        '        TRACER NR (#),',&
+        '     TRACER MASS (kg),',&
+        '                m/m0-1'
     ENDIF
 
     check_total_quant_fileid = find_next_free_unit(100,1000)
@@ -682,7 +690,7 @@ CONTAINS
     REAL(wp) :: w_aux (patch%cells%end_blk(min_rlcell_int,MAX(1,patch%n_childdom)),patch%nlevp1)
     REAL(wp) :: vn_aux_lev(patch%nlev), w_aux_lev(patch%nlevp1), vmax(2), vn_aux_tmp, w_aux_tmp
 
-    INTEGER  :: i_nchdom, istartblk_c, istartblk_e, iendblk_c, iendblk_e, i_startidx, i_endidx
+    INTEGER  :: istartblk_c, istartblk_e, iendblk_c, iendblk_e, i_startidx, i_endidx
     INTEGER  :: jb, jk, jg
 #if defined( __INTEL_COMPILER ) || defined( _OPENACC ) || defined (__SX__)
     INTEGER  :: jec
@@ -693,11 +701,10 @@ CONTAINS
     !-----------------------------------------------------------------------
     CALL set_acc_host_or_device(lzacc, lacc)
 
-    i_nchdom    = MAX(1,patch%n_childdom)
-    istartblk_c = patch%cells%start_blk(grf_bdywidth_c+1,1)
-    istartblk_e = patch%edges%start_blk(grf_bdywidth_e+1,1)
-    iendblk_c   = patch%cells%end_blk(min_rlcell_int,i_nchdom)
-    iendblk_e   = patch%edges%end_blk(min_rledge_int,i_nchdom)
+    istartblk_c = patch%cells%start_block(grf_bdywidth_c+1)
+    istartblk_e = patch%edges%start_block(grf_bdywidth_e+1)
+    iendblk_c   = patch%cells%end_block(min_rlcell_int)
+    iendblk_e   = patch%edges%end_block(min_rledge_int)
     jg          = patch%id
 
     !$ACC DATA PRESENT(vn, w, patch) COPYOUT(vn_aux, w_aux) IF(lzacc)
@@ -827,6 +834,55 @@ CONTAINS
 
   END SUBROUTINE calculate_maxwinds
 
+
+  !-------------------------------------------------------------------------
+  !>
+  !! Computes the maximum horizontal CFL number for the number of model levels (counted from the model top)
+  !! selected by namelist. This is used for an adaptive adjustment of the physics-dynamics time step ratio
+  !!
+  SUBROUTINE compute_hcfl(p_patch, vn, dtime, nlev_hcfl, max_hcfl)
+
+    TYPE(t_patch), INTENT(IN)  :: p_patch
+    REAL(wp),      INTENT(IN)  :: vn(:,:,:), dtime
+    INTEGER,       INTENT(IN)  :: nlev_hcfl
+    REAL(wp),      INTENT(OUT) :: max_hcfl
+
+    INTEGER  :: istartblk, iendblk, i_startidx, i_endidx
+    INTEGER  :: jb, jk, je
+    REAL(wp) :: max_hcfl_blk(p_patch%nblks_e), max_hcfl_tmp ! workaround for old NVIDIA compilers
+
+    !-----------------------------------------------------------------------
+
+    istartblk = p_patch%edges%start_block(grf_bdywidth_e+1)
+    iendblk   = p_patch%edges%end_block(min_rledge_int)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(jb, jk, je, i_startidx, i_endidx, max_hcfl_tmp) ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = istartblk, iendblk
+
+      CALL get_indices_e(p_patch, jb, istartblk, iendblk, i_startidx, i_endidx, &
+                         grf_bdywidth_e+1, min_rledge_int)
+
+      max_hcfl_tmp = 0._wp
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+      !$ACC LOOP GANG VECTOR COLLAPSE(2) REDUCTION(MAX: max_hcfl_tmp)
+      DO jk = 1, nlev_hcfl
+        DO je = i_startidx, i_endidx
+          max_hcfl_tmp = MAX(max_hcfl_tmp,dtime*ABS(vn(je,jk,jb))*p_patch%edges%inv_dual_edge_length(je,jb))
+        ENDDO
+      ENDDO
+      !$ACC END PARALLEL
+
+      max_hcfl_blk(jb) = max_hcfl_tmp
+
+    END DO
+!$OMP END DO
+!$OMP END PARALLEL
+
+
+    max_hcfl = MAXVAL(max_hcfl_blk(istartblk:iendblk))
+
+  END SUBROUTINE compute_hcfl
 
   !>
   !! Compute surface pressure time tendency abs(dpsdt)

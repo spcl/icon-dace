@@ -16,7 +16,7 @@
 # --------------------------------
 #SBATCH --account=mh0156
 #SBATCH --qos=buildbot
-#SBATCH --job-name=exp.check_externals_MISTRAL.run
+#SBATCH --job-name=exp.check_externals_LEVANTE.run
 #SBATCH --partition=compute
 #SBATCH --nodes=1
 # the following is needed to work around a bug that otherwise leads to
@@ -38,7 +38,7 @@ icon_data_rootFolder=${icon_data_rootFolder:=/pool/data/ICON}
 
 # Prepare RTE-RRTMGP data:
 rte_data_rootFolder="${icon_data_rootFolder}/buildbot_data/rte-rrtmgp"
-rte_data_id='2c977a37fe'
+rte_data_id='11a1825f6b'
 
 rte_builddir="${basedir}/externals/rte-rrtmgp"
 if [[ -f "${rte_builddir}/config.status" ]] ; then

@@ -17,7 +17,7 @@ MODULE mo_wave_crosscheck
 
   USE mo_exception,         ONLY: message, finish
   USE mo_parallel_config,   ONLY: check_parallel_configuration
-  USE mo_coupling_config,   ONLY: is_coupled_run
+  USE mo_coupling_config,   ONLY: is_coupled_to_atmo
   USE mo_run_config,        ONLY: nsteps, ldynamics, ntracer, num_lev, ltestcase
   USE mo_grid_config,       ONLY: n_dom
   USE mo_time_config,       ONLY: time_config, dt_restart
@@ -75,7 +75,7 @@ CONTAINS
 
     ! For standalone runs reading of forcing data from file is mandatory.
     ! The only exception are testcase runs (ltestcase=.TRUE).
-    IF (.NOT. is_coupled_run()) THEN
+    IF (.NOT. is_coupled_to_atmo()) THEN
       DO jg=1,n_dom
         IF (TRIM(wave_config(jg)%forc_file_prefix) == '' .AND. .NOT.ltestcase) THEN
           CALL finish(TRIM(routine),'Error: For standalone runs reading of forcing data from file is mandatory')

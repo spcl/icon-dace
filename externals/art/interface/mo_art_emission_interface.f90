@@ -66,7 +66,9 @@ MODULE mo_art_emission_interface
                                           &   art_prepare_tsum, art_prepare_sdes,     &
                                           &   art_prepare_saisl
   USE mo_art_emission_pntSrc,           ONLY: art_emission_pntSrc
-  USE mo_art_emission_biomBurn,         ONLY: art_emission_biomBurn_prepare,art_emission_biomBurn
+  USE mo_art_emission_biomBurn,         ONLY: art_emission_biomBurn_prepare, &
+                                          &   art_emission_biomBurn,         &
+                                          &   art_emission_biomBurn_bbplume
   USE mo_art_read_emissions,            ONLY: art_add_emission_to_tracers
   USE mo_art_emiss_types,               ONLY: t_art_emiss2tracer
   USE mo_art_prescribed_state,          ONLY: art_prescribe_tracers
@@ -75,7 +77,7 @@ MODULE mo_art_emission_interface
 #endif
   USE mo_sync,                          ONLY: sync_patch_array_mult, SYNC_C
   USE mo_art_fplume_emission,           ONLY: art_fplume_emission
-  USE mo_run_config,                    ONLY: iqv 
+  USE mo_run_config,                    ONLY: iqv
   USE mo_art_chem_deposition,           ONLY: art_CO2_deposition
   USE mo_art_diagnostics,               ONLY: art_save_aerosol_emission
   USE mo_art_read_extdata,              ONLY: art_read_sdes_ambrosia
@@ -99,7 +101,8 @@ CONTAINS
 !!-------------------------------------------------------------------------
 !!
   SUBROUTINE art_emission_interface(p_prog_list,ext_data,p_patch,dtime, &
-       &                            p_diag_lnd, current_date,tracer,lacc)
+       &                            p_diag_lnd, current_date,iau_iter,  &
+       &                            tracer,lacc)
   !! Interface for ART: Emissions
   !! @par Revision History
   !! Initial revision by Daniel Reinert, DWD (2012-01-27)
@@ -117,6 +120,8 @@ CONTAINS
     &  p_diag_lnd              !< List of diagnostic fields (land)
   TYPE(datetime), INTENT(in), POINTER :: &
     &  current_date            !< Date and time information
+  INTEGER, INTENT(IN)     :: & 
+    &  iau_iter                !< Counter for IAU iteration
   REAL(wp), INTENT(inout) :: &
     &  tracer(:,:,:,:)         !< Tracer mixing ratios [kg kg-1]
   LOGICAL, OPTIONAL, INTENT(IN) :: lacc
@@ -140,7 +145,7 @@ CONTAINS
   REAL(wp),ALLOCATABLE    :: &
     &  emiss_rateM(:,:,:),   & !< Mass emission rates [UNIT m-3 s-1], UNIT might be mug, kg
     &  emiss_rate0(:,:,:),   & !< Number emission rates [m-3 s-1]
-    &  saisl_stns(:)        
+    &  saisl_stns(:)
   CHARACTER(LEN=3)  :: hhh    !< hours since model start, e.g., "002"
   TYPE(t_mode), POINTER   :: &
     &  this_mode               !< pointer to current aerosol mode
@@ -220,7 +225,7 @@ CONTAINS
 !          &                     istart,iend,1,art_atmo%nlev,jb,p_art_data(jg))
           &                     istart,iend,1,nlev,p_art_data(jg)%air_prop%art_free_path(:,:,jb), &
           &                     p_art_data(jg)%air_prop%art_dyn_visc(:,:,jb),lacc=lacc)
-        
+
         ! ----------------------------------
         ! --- Preparations for emission routines
         ! ----------------------------------
@@ -258,11 +263,11 @@ CONTAINS
           END DO
           NULLIFY(this_mode)
         END IF
-        ! TODO: Incorporate this into emiss2tracer-scheme above 
+        ! TODO: Incorporate this into emiss2tracer-scheme above
         SELECT CASE(art_config(jg)%iart_fire)
           CASE(0)
             ! Nothing to do, no biomass burning emissions
-          CASE(1)
+          CASE(1) ! for both cases: 'biomass_buning' and 'soot'
             CALL art_emission_biomBurn_prepare(                                               &
               &          ext_data%atm%lu_class_fraction(:,jb,ext_data%atm%i_lc_crop_irrig),   &
               &          ext_data%atm%lu_class_fraction(:,jb,ext_data%atm%i_lc_crop_rain),    &
@@ -290,8 +295,8 @@ CONTAINS
           CASE default
             CALL finish('mo_art_emission_interface:art_emission_interface', &
                  &      'ART: Unknown biomass burning emissions configuration')
-        END SELECT 
-      ENDDO !jb   
+        END SELECT
+      ENDDO !jb
 !$omp end parallel do
 
         ! ----------------------------------
@@ -419,7 +424,7 @@ CONTAINS
                         ! Volcanic ash emission Rieger et al. 2015 extended by 2mom-PSD
                         emiss_rateM(:,:,:) = 0.0_wp
                         emiss_rate0(:,:,:) = 0.0_wp
-            
+
                         CALL art_calculate_emission_volc(jb, art_atmo%dz(:,:,jb),                   &
                           &                              p_patch%cells%area(:,jb),                  &
                           &                              p_art_data(jg)%ext%volc_data, nlev,        &
@@ -470,6 +475,34 @@ CONTAINS
                         emiss_rateM(:,:,:) = 0.0_wp
                         emiss_rate0(:,:,:) = 0.0_wp
                         CALL art_emission_biomBurn(                                               &
+                                     !dimensions:(nproma,nlev,nblks)
+                          &          art_atmo%temp(:,:,jb),                                       &
+                          &          art_atmo%pres(:,:,jb),                                       &
+                          &          art_atmo%u(:,:,jb),                                          &
+                          &          art_atmo%v(:,:,jb),                                          &
+                          &          tracer(:,:,jb,iqv),                                          &
+                          &          art_atmo%z_mc(:,:,jb),                                       &
+                          &          art_atmo%z_ifc(:,:,jb),                                      &
+                          &          art_atmo%lon(:,jb),                                          &
+                          &          art_atmo%cell_area(:,jb),                                    &
+                          &          art_atmo%dz(:,:,jb),                                         &
+                          &          current_date,                                                &
+                          &          p_art_data(jg)%ext%biomBurn_prop%dc_hflux_min_res(:,:,:),    &
+                          &          p_art_data(jg)%ext%biomBurn_prop%dc_hflux_max_res(:,:,:),    &
+                          &          p_art_data(jg)%ext%biomBurn_prop%dc_burnt_area_res(:,:,:),   &
+                          &          p_art_data(jg)%ext%biomBurn_prop%dc_emis_res(:,:,:),         &
+                          &          p_art_data(jg)%ext%biomBurn_prop%flux_bc(:,jb),              &
+                          &          emiss_rateM(:,:,1),                                          &
+                          &          art_atmo%nlev, art_atmo%nlevp1, jb, istart, iend )
+                        CALL this%calc_number_from_mass(emiss_rateM, emiss_rate0, istart, iend, 1,  &
+                          &                             nlev)
+                        CALL this%distribute_emissions(emiss_rateM, emiss_rate0, tracer(:,:,:,:),   &
+                          &                            art_atmo%rho(:,:,jb), dtime, istart, iend, 1,&
+                          &                            nlev, jb)
+                      CASE('soot')
+                        emiss_rateM(:,:,:) = 0.0_wp
+                        emiss_rate0(:,:,:) = 0.0_wp
+                        CALL art_emission_biomBurn_bbplume(                                       &
                                      !dimensions:(nproma,nlev,nblks)
                           &          art_atmo%temp(:,:,jb),                                       &
                           &          art_atmo%pres(:,:,jb),                                       &
@@ -563,7 +596,7 @@ CONTAINS
                 !--   Run calculations once a day: at 12 UTC --------------------------------------
                 !----------------------------------------------------------------------------------
                 ! time check
-                IF ( current_date%time%hour == 12 .AND.  &
+                IF ( current_date%time%hour == 12 .AND. iau_iter /= 1 .AND. &
                   &  (current_date%time%minute * 60 + current_date%time%second) < INT(dtime) ) THEN
                  ! Get n_stns
                  CALL art_pollen_get_nstns( p_art_data(jg)%ext%pollen_prop, fields%name, n_stns )
@@ -628,7 +661,7 @@ CONTAINS
                   IF (hhh /= "000" .AND. current_date%time%hour == 0 .AND.  &
                   &  (current_date%time%minute * 60 + current_date%time%second) < INT(dtime) ) THEN
 
-                    ! check if current_date is within the pollen saison. 
+                    ! check if current_date is within the pollen saison.
                     ! Otherwise no sdes file exists.
                     IF (current_date%date%month == 12) THEN
                       current_doy_dec1 = current_date%date%day
@@ -716,7 +749,7 @@ CONTAINS
         CALL art_CO2_deposition(jg,tracer(:,:,:,p_art_data(jg)%chem%indices%iTRCO2),  &
                    &            dtime, p_art_data(jg)%atmo)
       END IF
-     
+
 
       IF (art_config(jg)%lart_chemtracer) THEN
         CALL art_emiss_chemtracer(current_date,                   &

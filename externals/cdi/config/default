@@ -63,14 +63,23 @@ case "${HOSTNAME}" in
 	            CC=gcc CFLAGS="-g -pipe -D_REENTRANT -Wall -W -Wfloat-equal -pedantic -O2"
 	;;
     hama*)
-        CDILIBS="--disable-iso-c-interface \
+        CDILIBS="--enable-iso-c-interface \
                  --enable-maintainer-mode \
+                 --enable-swig \
+                 --enable-python \
                  --with-szlib=/opt/local/lib/libaec \
-                 --with-eccodes=$HOME/local/eccodes-2.30.0 \
-                 --with-netcdf=$HOME/local/netcdf-c-4.9.1"
+                 --with-eccodes=/opt/local \
+                 --with-netcdf=/opt/local"
         PREFIX="--prefix=$HOME/local/cdi"
-        LD_ADD="-Wl,-rpath,$HOME/local/eccodes-2.30.0/lib"
-        if  test "$COMP" = clang ; then
+        # LD_ADD="-Wl,-rpath,$HOME/local/eccodes-2.32.0/lib"
+        if  test "$COMP" = mpicc ; then
+          MPI_LAUNCH="$(which mpirun)"
+          YAXT_ROOT='/Users/m214003/local/yaxt-0.10.0'
+          ${CONFPATH}configure --enable-mpi $CONFIG_OPTS $CDILIBS LDFLAGS="$LD_ADD $LDFLAGS" \
+	             CC=mpicc CFLAGS="-g -pipe -D_REENTRANT -Wall -Wwrite-strings -W -Wfloat-equal -pedantic -O3" \
+                     MPI_LAUNCH="${MPI_LAUNCH}" \
+                     PKG_CONFIG_PATH="${YAXT_ROOT}/lib/pkgconfig"
+        elif  test "$COMP" = clang ; then
           ${CONFPATH}configure $CONFIG_OPTS $PREFIX $CDILIBS LDFLAGS="$LD_ADD $LDFLAGS" \
 	             CC=clang CFLAGS="-g -pipe -D_REENTRANT -Wall -Wwrite-strings -W -Wfloat-equal -pedantic -O3"
 	else

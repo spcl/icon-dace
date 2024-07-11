@@ -34,25 +34,25 @@ import re
 from depgen import file_in_dir
 
 
-class LCProcessor:
+class Parser:
     _re_lc = re.compile(r'^#\s*[1-9]\d*\s*"(.*?)"\s*(?:[1-9]\d*)?')
 
-    def __init__(self, stream, include_roots=None):
+    def __init__(self, include_roots=None, subparser=None):
         self.include_roots = include_roots
+
+        self._get_stream_iterator = (
+            subparser.parse if subparser else lambda x, *_: x
+        )
 
         # Callbacks:
         self.lc_callback = None
         self.debug_callback = None
 
-        self._stream = stream
+    def parse(self, stream, stream_name):
+        stream = self._get_stream_iterator(stream, stream_name)
 
-    def readline(self):
-        while 1:
-            line = self._stream.readline()
-            if not line:
-                return line
-
-            match = LCProcessor._re_lc.match(line)
+        for line in stream:
+            match = Parser._re_lc.match(line)
             if match:
                 filepath = match.group(1)
                 if os.path.isfile(filepath):
@@ -63,23 +63,16 @@ class LCProcessor:
                             self.lc_callback(filepath)
                         if self.debug_callback:
                             self.debug_callback(
-                                line, "accepted file '%s'" % filepath
+                                line, "accepted file '{0}'".format(filepath)
                             )
                     elif self.debug_callback:
                         self.debug_callback(
                             line,
-                            "ignored (file '%s' "
-                            "is not in the source roots)" % filepath,
+                            "ignored (file '{0}' is not "
+                            "in the source roots)".format(filepath),
                         )
                 elif self.debug_callback:
                     self.debug_callback(line, "ignored (file not found)")
                 continue
 
-            return line
-
-    @property
-    def name(self):
-        return self._stream.name
-
-    def close(self):
-        self._stream.close()
+            yield line

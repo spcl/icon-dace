@@ -250,10 +250,10 @@ MODULE mo_impl_constants
   ! Maximum allowed number of physical model domains
   INTEGER, PARAMETER :: max_phys_dom = 30
 
-  ! maximum allowed number of tracers (20 should be enough for the time being)
+  ! maximum allowed number of tracers
   ! DRIEG: For ART, more than 20 tracers are needed
   ! For ICON-waves the minimum value is 900
-  INTEGER, PARAMETER :: max_ntracer = 900
+  INTEGER, PARAMETER :: max_ntracer = 1600
 
   ! maximum allowed number of echotop levels:
   INTEGER, PARAMETER :: max_echotop = 10
@@ -373,10 +373,8 @@ MODULE mo_impl_constants
   INTEGER, PARAMETER :: izero_grad  = 1
   INTEGER, PARAMETER :: iparent_flx = 2
 
-
   ! equations to be solved
   INTEGER, PARAMETER :: inh_atmosphere =  3 ! - non-hydrost.atm.
-  INTEGER, PARAMETER :: ihs_ocean      = -1 ! - hydrostatic ocean
 
   ! parameterized forcing (right hand side) of dynamics
   INTEGER, PARAMETER :: inoforcing     =  0 ! - no forcing
@@ -575,6 +573,7 @@ MODULE mo_impl_constants
   INTEGER, PARAMETER, PUBLIC :: TASK_COMPUTE_VIS       = 34 !< task: compute near-surface visibility
   INTEGER, PARAMETER, PUBLIC :: TASK_COMPUTE_DBZLMX_LOW= 35 !< task: compute radar reflectivity layer maximum [500,2500] m AGL
   INTEGER, PARAMETER, PUBLIC :: TASK_COMPUTE_INVERSION = 36 !< task: compute radar reflectivity layer maximum [500,2500] m AGL
+  INTEGER, PARAMETER, PUBLIC :: TASK_COMPUTE_MCONV     = 37 !< task: compute low level horizontal moisture convergence div.(q_v*v_h) [1/s], average 0-1000 m AGL
 
   !--------------------------------------------------------------------!
   !  VARIABLE TIMELEVEL SPECIFICATION (FOR POST-PROCESSING SCHEDULER)  !

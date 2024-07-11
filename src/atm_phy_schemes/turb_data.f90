@@ -467,6 +467,7 @@ SUBROUTINE get_turbdiff_param (jg)
    rlam_heat    = turbdiff_config(jg)%rlam_heat
    rlam_mom     = turbdiff_config(jg)%rlam_mom
    rat_sea      = turbdiff_config(jg)%rat_sea
+   rat_lam      = turbdiff_config(jg)%rat_lam
    tkesmot      = turbdiff_config(jg)%tkesmot
    frcsmot      = turbdiff_config(jg)%frcsmot
    impl_s       = turbdiff_config(jg)%impl_s

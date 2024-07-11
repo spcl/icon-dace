@@ -1,6 +1,6 @@
 This program demonstrates a bug that may occur when using MPI datatype hindexed.
 The following MPI implementations exhibit this bug:
- * mpich/3.4, 3.4.1 and 3.4.2
+ * mpich/3.4, 3.4.1, 3.4.2 and 3.4.3
 
 The bug results from an invalid contiguity check in the underlying
 YAKSA data type library. It can be deactivated by building mpich with

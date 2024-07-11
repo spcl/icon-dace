@@ -72,9 +72,6 @@ cat > $namelist_filename << EOF
 &testcase_nml
  ctest_name  = 'JWw'        ! test case identifier
 /
-&dynamics_nml
- iequations      = 3
-/
 EOF
 }
 #-----------------------------------------------------------------------------

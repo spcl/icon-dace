@@ -439,7 +439,6 @@ cat > ${atm_namelist} << EOF
  Restart_filename        = "${EXPNAME}_restart_atm_<rsttime>.nc"
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /
@@ -739,9 +738,6 @@ cat > ${oce_namelist} << EOF
  dynamics_grid_filename      = "${ocean_grid}"
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
-/
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep               = "${oceTimeStep}"

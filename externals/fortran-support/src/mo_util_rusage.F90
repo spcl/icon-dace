@@ -55,7 +55,7 @@ MODULE mo_util_rusage
       IMPORT :: c_int, c_long, rusage
       INTEGER(c_int) :: r
       INTEGER(c_int), VALUE :: who
-      TYPE(rusage), INTENT(inout) :: r_usage
+      TYPE(rusage), INTENT(INOUT) :: r_usage
     END FUNCTION getrusage
   END INTERFACE
 
@@ -89,11 +89,11 @@ CONTAINS
 
   FUNCTION add_rss_list(name, tag) RESULT(idx)
     INTEGER :: idx
-    CHARACTER(len=*), INTENT(in) :: name
-    CHARACTER(len=10), INTENT(inout), OPTIONAL :: tag
+    CHARACTER(len=*), INTENT(IN) :: name
+    CHARACTER(len=10), INTENT(INOUT), OPTIONAL :: tag
 
     TYPE(rss_list), ALLOCATABLE :: tmp_rss_lists(:)
-    INTEGER :: ist
+    INTEGER :: iostat
 
     IF (.NOT. ALLOCATED(rss_lists)) THEN
       ALLOCATE (rss_lists(max_lists))
@@ -118,7 +118,7 @@ CONTAINS
     IF (PRESENT(tag)) THEN
       rss_lists(idx)%filename = TRIM(name)//'_'//TRIM(tag)//'.log'
       rss_lists(idx)%fileunit = find_next_free_unit(10, 999)
-      OPEN (UNIT=rss_lists(idx)%fileunit, FILE=rss_lists(idx)%filename, IOSTAT=ist, Recl=line_length)
+      OPEN (UNIT=rss_lists(idx)%fileunit, FILE=rss_lists(idx)%filename, IOSTAT=iostat, Recl=line_length)
       WRITE (rss_lists(idx)%fileunit, '(1x,a)') 'idx        maxrss      majflt      minflt       nvcsw      nivcsw'
     ELSE
       rss_lists(idx)%filename = ''
@@ -128,7 +128,7 @@ CONTAINS
   END FUNCTION add_rss_list
 
   SUBROUTINE add_rss_usage(list_idx)
-    INTEGER, INTENT(in) :: list_idx
+    INTEGER, INTENT(IN) :: list_idx
 
     TYPE(rusage) :: ru
     INTEGER :: max_size, idx, ret
@@ -220,7 +220,7 @@ CONTAINS
 
   FUNCTION find_next_free_unit(istart, istop) RESULT(iunit)
     INTEGER :: iunit
-    INTEGER, INTENT(in) :: istart, istop
+    INTEGER, INTENT(IN) :: istart, istop
     !
     INTEGER :: kstart, kstop
     LOGICAL :: lfound, lopened

@@ -85,13 +85,11 @@ MODULE mo_interface_iconam_aes
 #ifndef __NO_JSBACH__
   USE mo_jsb_interface         ,ONLY: jsbach_start_timestep, jsbach_finish_timestep
 #endif
-  
-#ifdef YAC_coupling
+
   USE mo_timer                 ,ONLY: timer_coupling
-  USE mo_coupling_config       ,ONLY: is_coupled_run
+  USE mo_coupling_config       ,ONLY: is_coupled_to_ocean
   USE mo_aes_ocean_coupling    ,ONLY: interface_aes_ocean
-#endif
-  
+
 #if defined(_OPENACC)
   USE mo_var_list_gpu          ,ONLY: gpu_update_var_list
 #endif
@@ -424,13 +422,11 @@ CONTAINS
     !
     ! Couple atmosphere and ocean, if needed
     !
-#ifdef YAC_coupling
-    IF (is_coupled_run()) THEN
+    IF (is_coupled_to_ocean()) THEN
       IF (ltimer) CALL timer_start(timer_coupling)
       CALL interface_aes_ocean(patch, diag)
       IF (ltimer) CALL timer_stop(timer_coupling)
     END IF
-#endif
     !
     !=====================================================================================
 

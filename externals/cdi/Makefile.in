@@ -203,7 +203,7 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/cdi.settings.in \
 	$(top_srcdir)/tables/gen_tableheaderfile.in AUTHORS ChangeLog \
 	INSTALL NEWS README config/compile config/config.guess \
 	config/config.sub config/install-sh config/ltmain.sh \
-	config/missing
+	config/missing config/py-compile
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
 top_distdir = $(distdir)
@@ -367,6 +367,7 @@ PPM_CORE_C_INCLUDE = @PPM_CORE_C_INCLUDE@
 PPM_CORE_C_LIB = @PPM_CORE_C_LIB@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
+PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
 PYTHON_CPPFLAGS = @PYTHON_CPPFLAGS@

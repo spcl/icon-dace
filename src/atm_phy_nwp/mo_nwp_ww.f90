@@ -26,7 +26,8 @@ MODULE mo_nwp_ww
   USE mo_physical_constants, ONLY: rdv, O_m_rdv, tmelt,    &
                                    rd_o_cpd, alvdcp,          &
                                    b3    => tmelt
-  USE mo_convect_tables,     ONLY: b1    => c1es  , & !! constants for computing the sat. vapour
+  USE mo_lookup_tables_constants, ONLY:  &
+                                   b1    => c1es  , & !! constants for computing the sat. vapour
                                    b2w   => c3les , & !! pressure over water (l) and ice (i)
                                    b4w   => c4les     !!               -- " --
   USE mo_impl_constants,     ONLY: max_dom

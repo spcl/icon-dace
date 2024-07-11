@@ -65,9 +65,15 @@ MODULE mo_turb_vdiff_config
                                 !! See mo_surface_ocean.f90 of ECHAM6.
 
     INTEGER  :: turb            !< turbulence scheme: VDIFF_TURB_TTE or VDIFF_TURB_3DSMAGORINSKY.
+    !
+    ! for tmx only
     LOGICAL  :: use_tmx         !< true: use tmx diffusion
     INTEGER  :: solver_type     !< 1: explicit solver, 2: implicit solver
     INTEGER  :: energy_type     !< use 1: dry static energy 2: internal energy for thermal diffusion in tmx 
+    REAL(wp) :: dissipation_factor !< for tmx only; factor for dissipation of kinetic energy
+    LOGICAL  :: use_louis       !< Switch to activate Louis formula for exchange coefficient
+    REAL(wp) :: louis_constant_b!< Louis constant b in Eq. 15 of Louis (1979) [BLM]
+    !
     REAL(wp) :: smag_constant
     REAL(wp) :: turb_prandtl    !< Turbulent Prandtl number
     REAL(wp) :: rturb_prandtl   !< inverse turbulent prandtl number
@@ -136,9 +142,15 @@ CONTAINS
     config%z0m_oce  =  1e-3_wp
     config%lmix_max =  150._wp
     config%turb     =  VDIFF_TURB_TTE
-    config%use_tmx  = .FALSE.
-    config%solver_type   = 2
-    config%energy_type   = 1
+    !
+    ! for tmx
+    config%use_tmx                 = .FALSE.
+    config%solver_type             = 2
+    config%energy_type             = 2
+    config%dissipation_factor      = 1._wp
+    config%use_louis               = .TRUE.
+    config%louis_constant_b        = 4.2_wp
+    !
     config%smag_constant = 0.23_wp
     config%max_turb_scale= 300._wp
     config%turb_prandtl  = 0.33333333333_wp

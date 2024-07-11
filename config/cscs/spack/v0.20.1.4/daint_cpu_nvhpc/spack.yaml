@@ -10,7 +10,7 @@
 
 spack:
   specs:
-  - icon@develop%nvhpc +ecrad +rte-rrtmgp +art +dace +acm-license fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2
+  - icon@develop%nvhpc +ecrad +rte-rrtmgp +art +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2
   - rttov@13.1%nvhpc
   - hdf5@1.12.2%nvhpc
   - eccodes@2.19.0%nvhpc
@@ -21,6 +21,6 @@ spack:
     unify: true
   develop:
     icon:
-      spec: icon@develop%nvhpc +ecrad +rte-rrtmgp +art +dace +acm-license fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2
+      spec: icon@develop%nvhpc +ecrad +rte-rrtmgp +art +dace fcgroup=DACE.externals/dace_icon.-O1 +rttov ~coupling +grib2
       path: ../../../../../
 

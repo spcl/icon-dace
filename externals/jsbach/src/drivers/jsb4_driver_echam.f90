@@ -1,4 +1,4 @@
-!> Contains the ECHAM driver for jsbach standalone
+!> Contains the ECHAM driver for ICON-Land standalone using MPI-ESM/ECHAM infrastructure
 !>
 !> ICON-Land
 !>
@@ -34,7 +34,7 @@ PROGRAM jsb4_driver
   dsl4jsb_Use_memory(TURB_)
   dsl4jsb_Use_memory(HYDRO_)
 
-  USE mo_jsb4_forcing,       ONLY: get_interface_variables_from_external_forcing, init_forcing, finalize_external_forcing
+  USE mo_jsb4_forcing_echam, ONLY: get_interface_variables_from_external_forcing, init_forcing, finalize_external_forcing
 
   ! Currently from adapter
   USE mo_jsb_grid_iface,     ONLY: get_lat, get_lon
@@ -119,7 +119,7 @@ PROGRAM jsb4_driver
   REAL(wp), ALLOCATABLE :: pch(:,:)
   REAL(wp), ALLOCATABLE :: cos_zenith_angle(:,:)
 
-  !! TODO: so far not used in jsb4 but already read from forcing file/ calculated in mo_jsb4_forcing
+  !! TODO: so far not used in jsb4 but already read from forcing file/ calculated in mo_jsb4_forcing_echam
   REAL(wp), ALLOCATABLE :: CO2_concentration(:,:)
   REAL(wp), ALLOCATABLE :: fract_par_diffuse(:,:)
 
@@ -321,6 +321,7 @@ PROGRAM jsb4_driver
 
     CALL IO_read_streams
 
+    ! processes not active when using SPQ_
     dsl4jsb_Get_memory(SEB_)
     dsl4jsb_Get_memory(TURB_)
     dsl4jsb_Get_memory(HYDRO_)
@@ -333,6 +334,7 @@ PROGRAM jsb4_driver
       END IF
       CALL model%Set_options(ics=ics, ice=ice, iblk=iblk)
 
+      ! processes not active and variables not available when using SPQ_
       t_srf_proc(ics:ice,iblk) = dsl4jsb_var2D_onChunk(SEB_, t)
       fact_q_air_proc(ics:ice,iblk) = dsl4jsb_var2D_onChunk(TURB_, fact_q_air)
       fact_qsat_srf_proc(ics:ice,iblk) = dsl4jsb_var2D_onChunk(TURB_, fact_qsat_srf)

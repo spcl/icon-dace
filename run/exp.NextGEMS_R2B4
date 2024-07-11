@@ -18,7 +18,7 @@ author_list='Monika Esch, MPIM'
 # (1) Variables provided by the scripting mechanism
 
 # EXPNAME                = name of exp. in 'exp.<name>'
-# basedir                = base directory, where src/, run/ etc exist
+# basedir                = base directory, where src/, run/, run-mpim/ etc exist
 # icon_data_poolFolder   = root directory for ICON data
 # nproma                 = blocking length for array dimensioning and inner loop lengths
 #                           which is set in run/create_target_header for the used machine
@@ -246,9 +246,8 @@ cat > ${atmo_namelist} << EOF
 /
 &aes_cop_nml
  aes_cop_config(1)%cinhomi  = 1.0
- aes_cop_config(1)%cinhoml1 = 0.4
- aes_cop_config(1)%cinhoml2 = 0.4
- aes_cop_config(1)%cinhoml3 = 0.4
+ aes_cop_config(1)%cinhoms  = 1.0
+ aes_cop_config(1)%cinhoml  = 0.4
  aes_cop_config(1)%cn1lnd   = 50.0
  aes_cop_config(1)%cn1sea   = 50.0
  aes_cop_config(1)%cn2lnd   = 220.0
@@ -308,6 +307,7 @@ cat > ${jsbach_namelist} << EOF
 ! l_soil_texture      = .TRUE.
 /
 &jsb_hydro_nml
+ l_socmap            = .FALSE.
  bc_filename         = 'bc_land_soil.nc'
  ic_filename         = 'ic_land_soil.nc'
  bc_sso_filename     = 'bc_land_sso.nc'
@@ -347,8 +347,8 @@ EOF
 
 # model files
 #
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc             ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc             ./rrtmgp-cloud-optics-coeffs-sw.nc
 
@@ -466,8 +466,8 @@ if [[ "$output_atm_2d" == "yes" ]]; then
                     'prlr'    , 'prls'    ,
                     'qgvi'    , 'qrvi'    , 'qsvi'    ,
                     'uas'     , 'vas'     , 'dew2'    ,
-                    'cptgzvi' , 'uphyvi'  , 'udynvi',
-                    'ssfl_tsa', 'rsfl_tsa', 'shfl_qsa',
+                    'cptgzvi' , 'duphyvi' , 'udynvi'  ,
+                    'ufts'    , 'ufvs'    , 'ufcs'    ,
                     'rpds_dir', 'rpds_dif', 'rvds_dif', 'rnds_dif',
                     'pr_rain', 'pr_ice', 'pr_snow', 'pr_grpl',
 /

@@ -43,15 +43,18 @@ exit 1
 import argparse
 import collections
 import fnmatch
+import itertools
 import os
 import re
 import sys
 
 _re_rule = re.compile(
-    r"^[ ]*([-+\w./]+(?:[ ]+[-+\w./]+)*)[ ]*"  # targets
-    r":(?:[ ]*([-+\w./]+(?:[ ]+[-+\w./]+)*))?[ ]*"  # normal prerequisites
-    r"(?:\|[ ]*([-+\w./]+(?:[ ]+[-+\w./]+)*))?"
-)  # order-only prerequisites
+    r"^[ ]*(?P<targets>[^:|#\s]+(?:[ ]+[^:|#\s]+)*)[ ]*"
+    r":[ ]*(?P<normal>[^:|#\s]+(?:[ ]+[^:|#\s]+)*)?[ ]*"
+    r"\|?[ ]*(?P<order_only>[^:|#\s]+(?:[ ]+[^:|#\s]+)*)?[ ]*"
+    r"(?:#-hint)?[ ]*(?P<hint>[^:|#\s]+(?:[ ]+[^:|#\s]+)*)?[ ]*"
+)
+
 _meta_root = 0
 _term_colors = {
     "black": 90,
@@ -87,8 +90,8 @@ def parse_args():
     parser = ArgumentParser(
         fromfile_prefix_chars="@",
         description="Reads a set of MAKEFILEs and prints a topologically "
-        "sorted list of TARGETs (PREREQuisites) together with "
-        "their dependencies (dependents).",
+        "sorted list of TARGETs (PREREQuisites) together with their "
+        "dependencies (dependents).",
     )
 
     parser.add_argument(
@@ -99,25 +102,37 @@ def parse_args():
         "--target",
         nargs="*",
         help="names of the makefile targets to be printed together with their "
-        "dependencies; mutually exclusive with the argument "
-        "'-p/--prereq'; if neither of the arguments is specified, all "
-        "targets and prerequisites found in the makefiles are sent to the "
-        "output",
+        "dependencies; mutually exclusive with the argument '-p/--prereq'; if "
+        "neither of the arguments is specified, all targets and prerequisites "
+        "found in the makefiles are sent to the output",
     )
     parser.add_argument(
         "-p",
         "--prereq",
         nargs="*",
         help="names of the makefile prerequisites to be printed together with "
-        "their dependents; mutually exclusive with the argument "
-        "'-t/--target'; if neither of the arguments is specified, all "
-        "targets and prerequisites found in the makefiles are sent to the "
-        "output",
+        "their dependents; mutually exclusive with the argument '-t/--target'; "
+        "if neither of the arguments is specified, all targets and "
+        "prerequisites found in the makefiles are sent to the output",
     )
     parser.add_argument(
-        "--inc-oo",
+        "--max-depth",
+        metavar="MAX_DEPTH",
+        type=int,
+        help="print dependencies (dependents) that are at most MAX_DEPTH "
+        "levels from the requested targets (prerequisites)",
+    )
+    parser.add_argument(
+        "--ignore-order-only",
+        "--no-oo",
         action="store_true",
-        help="include order-only prerequisites in the dependency graph",
+        help="ignore order-only prerequisites",
+    )
+    parser.add_argument(
+        "--ignore-hints",
+        "--no-hints",
+        action="store_true",
+        help="ignore #-hint prerequisites",
     )
     parser.add_argument(
         "-r",
@@ -128,14 +143,16 @@ def parse_args():
     parser.add_argument(
         "--check-unique-prereq",
         action="append",
-        nargs=2,
+        # Unfortunately, we cannot set nargs to 'two or more', therefore we
+        # set nargs to 'one or more':
+        nargs="+",
         metavar="PATTERN",
-        help="pair of shell-like wildcards; the option enables additional "
-        "consistency checks of the dependency graph: each target that "
-        "matches the first pattern of the pair is checked whether it has "
-        "no more than one prerequisite matching the second pattern; if "
-        "the check fails, a warning message is emitted to the standard "
-        "error stream",
+        help="list of two or more shell-like wildcards; the option enables "
+        "additional consistency checks of the dependency graph: each target "
+        "that matches the first pattern of the list is checked whether it has "
+        "no more than one prerequisite matching any of the rest of the "
+        "patterns; if the check fails, a warning message is emitted to the "
+        "standard error stream",
     )
     parser.add_argument(
         "--check-unique-basename",
@@ -143,24 +160,24 @@ def parse_args():
         nargs="+",
         metavar="PATTERN",
         help="list of shell-like wildcards; the option enables additional "
-        "consistency checks of the dependency graph; all targets that "
-        "match at least one the patterns are checked whether none of them "
-        "have the same basename; if the check fails, a warning message is "
-        "emitted to the standard error stream",
+        "consistency checks of the dependency graph; all targets that match at "
+        "least one of the patterns are checked whether none of them have the "
+        "same basename; if the check fails, a warning message is emitted to "
+        "the standard error stream",
     )
     parser.add_argument(
-        # Unfortunately, we cannot set nargs to 'two or more', therefore we
-        # set nargs to 'one or more':
         "--check-exists-prereq",
         action="append",
+        # Unfortunately, we cannot set nargs to 'two or more', therefore we
+        # set nargs to 'one or more':
         nargs="+",
         metavar="PATTERN",
         help="list of two or more shell-like wildcards; the option enables "
-        "additional consistency checks of the dependency graph: each "
-        "target that matches the first pattern of the list is checked "
-        "whether it has at least one prerequisite matching any of the "
-        "rest of the patterns; if the check fails, a warning message is "
-        "emitted to the standard error stream",
+        "additional consistency checks of the dependency graph: each target "
+        "that matches the first pattern of the list is checked whether it has "
+        "at least one prerequisite matching any of the rest of the patterns; "
+        "if the check fails, a warning message is emitted to the standard "
+        "error stream",
     )
     parser.add_argument(
         "--check-cycles",
@@ -173,15 +190,15 @@ def parse_args():
         "--check-colour",
         choices=_term_colors.keys(),
         help="colour the message output of the checks using ANSI escape "
-        "sequences; the argument is ignored if the standard error stream "
-        "is not associated with a terminal device",
+        "sequences; the argument is ignored if the standard error stream is "
+        "not associated with a terminal device",
     )
     parser.add_argument(
         "-f",
         "--makefile",
         nargs="*",
-        help="paths to makefiles; a single dash (-) triggers reading from "
-        "the standard input stream",
+        help="paths to makefiles; a single dash (-) triggers reading from the "
+        "standard input stream",
     )
 
     args = parser.parse_args()
@@ -190,6 +207,17 @@ def parse_args():
         parser.error(
             "arguments -t/--target and -p/--prereq are mutually " "exclusive"
         )
+
+    if args.max_depth is not None and args.max_depth < 0:
+        args.max_depth = None
+
+    if args.check_unique_prereq:
+        for pattern_list in args.check_unique_prereq:
+            if len(pattern_list) < 2:
+                parser.error(
+                    "argument --check-unique-prereq: expected 2 or "
+                    "more arguments"
+                )
 
     if args.check_exists_prereq:
         for pattern_list in args.check_exists_prereq:
@@ -205,54 +233,70 @@ def parse_args():
     return args
 
 
-def read_makefile(makefile, inc_order_only):
-    result = collections.defaultdict(list)
+def read_makefiles(makefiles, ignore_order_only, ignore_hints):
+    dep_graph = collections.defaultdict(list)
+    extra_edges = collections.defaultdict(list)
 
-    if makefile == "-":
-        stream = sys.stdin
-    elif not os.path.isfile(makefile):
-        return result
-    else:
-        stream = open(makefile, "r")
+    for mkf in makefiles:
+        if mkf == "-":
+            stream = sys.stdin
+        elif not os.path.isfile(mkf):
+            continue
+        else:
+            stream = open(mkf, "r")
 
-    it = iter(stream)
+        it = iter(stream)
 
-    for line in it:
-        while line.endswith("\\\n"):
-            line = line[:-2]
-            try:
-                line += next(it)
-            except StopIteration:
-                break
+        for line in it:
+            while line.endswith("\\\n"):
+                line = line[:-2]
+                try:
+                    line += next(it)
+                except StopIteration:
+                    break
 
-        match = _re_rule.match(line)
-        if match:
-            targets = set(match.group(1).split())
-            prereqs = []
+            match = _re_rule.match(line)
+            if match:
+                targets = set(match.group("targets").split())
+                prereqs = []
 
-            if match.group(2):
-                prereqs.extend(match.group(2).split())
+                prereqs_string = match.group("normal")
+                if prereqs_string:
+                    prereqs.extend(prereqs_string.split())
 
-            if match.group(3) and inc_order_only:
-                prereqs.extend(match.group(3).split())
+                if not ignore_order_only:
+                    prereqs_string = match.group("order_only")
+                    if prereqs_string:
+                        prereqs.extend(prereqs_string.split())
 
-            for target in targets:
-                result[target].extend(prereqs)
+                for target in targets:
+                    dep_graph[target].extend(prereqs)
 
-    stream.close()
-    return result
+                if not ignore_hints:
+                    prereqs_string = match.group("hint")
+                    if prereqs_string:
+                        for target in targets:
+                            extra_edges[target].extend(prereqs_string.split())
+
+        stream.close()
+    return dep_graph, extra_edges
 
 
 def visit_dfs(
     dep_graph,
     vertex,
+    current_depth=0,
+    max_depth=None,
     visited=None,
     start_visit_cb_list=None,
     finish_visit_cb_list=None,
     skip_visit_cb_list=None,
 ):
+    if max_depth is not None and current_depth > max_depth:
+        return
+
     if visited is None:
-        visited = set()
+        visited = dict()
 
     if vertex in visited:
         if skip_visit_cb_list:
@@ -264,13 +308,15 @@ def visit_dfs(
         for start_visit_cb in start_visit_cb_list:
             start_visit_cb(vertex)
 
-    visited.add(vertex)
+    visited[vertex] = current_depth
 
     if vertex in dep_graph:
         for child in dep_graph[vertex]:
             visit_dfs(
                 dep_graph,
                 child,
+                current_depth + 1,
+                max_depth,
                 visited,
                 start_visit_cb_list,
                 finish_visit_cb_list,
@@ -282,36 +328,31 @@ def visit_dfs(
             finish_visit_cb(vertex)
 
 
-def build_graph(makefiles, inc_oo):
-    # Read makefiles:
-    result = collections.defaultdict(list)
-    for mkf in makefiles:
-        mkf_dict = read_makefile(mkf, inc_oo)
+def dedupe(sequence):
+    seen = set()
+    for x in sequence:
+        if x not in seen:
+            yield x
+            seen.add(x)
 
-        for target, prereqs in mkf_dict.items():
-            result[target].extend(prereqs)
 
+def sanitize_graph(graph):
     # Remove duplicates (we do not use sets as values of the dictionary to keep
     # the order of prerequisites):
-    for target in result.keys():
-        seen = set()
-        result[target] = [
-            prereq
-            for prereq in result[target]
-            if not (prereq in seen or seen.add(prereq))
-        ]
+    for target in graph.keys():
+        graph[target] = graph.default_factory(
+            dedupe(prereq for prereq in graph[target])
+        )
 
     # Make leaves (i.e. prerequisites without any prerequisites) explicit nodes
     # of the graph:
     leaves = set(
         prereq
-        for prereqs in result.values()
+        for prereqs in graph.values()
         for prereq in prereqs
-        if prereq not in result
+        if prereq not in graph
     )
-    result.update((prereq, result.default_factory()) for prereq in leaves)
-
-    return result
+    graph.update((prereq, graph.default_factory()) for prereq in leaves)
 
 
 def flip_edges(graph):
@@ -326,9 +367,8 @@ def flip_edges(graph):
 
 def warn(msg, colour=None):
     sys.stderr.write(
-        "%s%s: WARNING: %s%s\n"
-        % (
-            ("\033[%dm" % _term_colors[colour]) if colour else "",
+        "{0}{1}: WARNING: {2}{3}\n".format(
+            ("\033[{0}m".format(_term_colors[colour])) if colour else "",
             os.path.basename(__file__),
             msg,
             "\033[0m" if colour else "",
@@ -364,10 +404,15 @@ def main():
     if args.makefile is None:
         return
 
-    dep_graph = build_graph(args.makefile, args.inc_oo)
+    dep_graph, extra_edges = read_makefiles(
+        args.makefile, args.ignore_order_only, args.ignore_hints
+    )
 
     if not dep_graph:
         return
+
+    sanitize_graph(dep_graph)
+    sanitize_graph(extra_edges)
 
     if args.prereq is None:
         traversed_graph = dep_graph
@@ -375,6 +420,7 @@ def main():
     else:
         traversed_graph = flip_edges(dep_graph)
         start_nodes = args.prereq
+        extra_edges = flip_edges(extra_edges)
 
     # Insert _meta_root, which will be the starting-point for the dependency
     # graph traverse:
@@ -397,26 +443,30 @@ def main():
 
         def check_unique_prereq_start_visit_cb(vertex):
             # Skip if the vertex is _meta_root or does not have descendants:
-            if vertex == _meta_root or vertex not in dep_graph:
+            if vertex == _meta_root:
                 return
             for pattern_list in args.check_unique_prereq:
                 if fnmatch.fnmatch(vertex, pattern_list[0]):
                     vertex_prereqs = dep_graph[vertex]
-                    for prereq_pattern in pattern_list[1:]:
-                        matching_prereqs = fnmatch.filter(
+                    prereq_patterns = pattern_list[1:]
+                    matching_prereqs = [
+                        prereq
+                        for prereq_pattern in prereq_patterns
+                        for prereq in fnmatch.filter(
                             vertex_prereqs, prereq_pattern
                         )
-                        if len(matching_prereqs) > 1:
-                            warn(
-                                "target '%s' has more than one immediate "
-                                "prerequisite matching pattern '%s':\n\t%s"
-                                % (
-                                    vertex,
-                                    prereq_pattern,
-                                    "\n\t".join(matching_prereqs),
-                                ),
-                                args.check_colour,
-                            )
+                    ]
+                    if len(matching_prereqs) > 1:
+                        warn(
+                            "target '{0}' has more than one immediate "
+                            "prerequisite matching any of the patterns: "
+                            "'{1}':\n\t{2}".format(
+                                vertex,
+                                "', '".join(prereq_patterns),
+                                "\n\t".join(matching_prereqs),
+                            ),
+                            args.check_colour,
+                        )
 
         start_visit_cb_list.append(check_unique_prereq_start_visit_cb)
 
@@ -443,8 +493,9 @@ def main():
                     if len(paths) > 1 and basename:
                         warn(
                             "the dependency graph contains more than one "
-                            "target with basename '%s':\n\t%s"
-                            % (basename, "\n\t".join(paths)),
+                            "target with basename '{0}':\n\t{1}".format(
+                                basename, "\n\t".join(paths)
+                            ),
                             args.check_colour,
                         )
 
@@ -461,15 +512,15 @@ def main():
                     vertex_prereqs = dep_graph.get(vertex, set())
                     prereq_patterns = pattern_list[1:]
                     if not any(
-                        [
-                            fnmatch.filter(vertex_prereqs, prereq_pattern)
-                            for prereq_pattern in prereq_patterns
-                        ]
+                        fnmatch.filter(vertex_prereqs, prereq_pattern)
+                        for prereq_pattern in prereq_patterns
                     ):
                         warn(
-                            "target '%s' does not have an immediate "
-                            "prerequisite matching any of the patterns: '%s'"
-                            % (vertex, "', '".join(prereq_patterns)),
+                            "target '{0}' does not have an immediate "
+                            "prerequisite matching any of the patterns: "
+                            "'{1}'".format(
+                                vertex, "', '".join(prereq_patterns)
+                            ),
                             args.check_colour,
                         )
 
@@ -501,12 +552,12 @@ def main():
                     )
 
                 warn(
-                    "the dependency graph has a cycle:\n\t%s"
-                    % "\n\t".join(msg_lines),
+                    "the dependency graph has a cycle:\n"
+                    "\t{0}".format("\n\t".join(msg_lines)),
                     args.check_colour,
                 )
 
-        def check_cycles_finish_visit_cb(vertex):
+        def check_cycles_finish_visit_cb(_):
             path.pop()
 
         start_visit_cb_list.append(check_cycles_start_visit_cb)
@@ -518,27 +569,52 @@ def main():
     def toposort_finish_visit_cb(vertex):
         toposort.append(vertex)
 
+    def toposort_postprocess_cb():
+        # The last element of toposort is _meta_root:
+        toposort.pop()
+
     finish_visit_cb_list.append(toposort_finish_visit_cb)
+    postprocess_cb_list.append(toposort_postprocess_cb)
 
-    visit_dfs(
-        traversed_graph,
-        _meta_root,
-        start_visit_cb_list=start_visit_cb_list,
-        finish_visit_cb_list=finish_visit_cb_list,
-        skip_visit_cb_list=skip_visit_cb_list,
-    )
+    visited_vertices = dict()
 
-    for postprocess_cb in postprocess_cb_list:
-        postprocess_cb()
+    def traverse(start_depth=-1):
+        visit_dfs(
+            traversed_graph,
+            _meta_root,
+            current_depth=start_depth,
+            max_depth=args.max_depth,
+            visited=visited_vertices,
+            start_visit_cb_list=start_visit_cb_list,
+            finish_visit_cb_list=finish_visit_cb_list,
+            skip_visit_cb_list=skip_visit_cb_list,
+        )
 
-    # The last element of toposort is _meta_root:
-    output = "\n".join(
-        toposort[-2::-1]
-        if (args.reverse ^ (args.prereq is not None))
-        else toposort[:-1]
-    )
-    if output:
-        print(output)
+        for postprocess_cb in postprocess_cb_list:
+            postprocess_cb()
+
+    traverse()
+
+    # Add the extra prerequisites to the graph:
+    for target, prereqs in extra_edges.items():
+        traversed_graph[target] = traversed_graph.default_factory(
+            dedupe(itertools.chain(traversed_graph[target], prereqs))
+        )
+
+    for target, prereqs in extra_edges.items():
+        target_depth = visited_vertices.get(target, None)
+        if target_depth is None:
+            continue
+
+        # Reset the _meta_root and traverse the graph:
+        visited_vertices.pop(_meta_root)
+        traversed_graph[_meta_root] = prereqs
+        traverse(target_depth)
+
+    if args.reverse ^ (args.prereq is not None):
+        toposort.reverse()
+
+    print("\n".join(toposort))
 
 
 if __name__ == "__main__":

@@ -32,7 +32,7 @@ else
   # installation of RTTOV if you want to build ICON with it but do not have read
   # access to the installation in ${sw_root}:
   # RTTOV_ROOT='/path/to/rttov'
-  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV}/include"
+  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV_ROOT}/include"
   # RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
   # RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
 fi
@@ -50,16 +50,11 @@ CXXFLAGS='-g -O2'
 CPPFLAGS="-I${sw_root}/include -I${sw_root}/include/libxml2"
 
 FC='mpif90'
-FCFLAGS="-I${sw_root}/include ${RTTOV_FCFLAGS-} -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline"
+FCFLAGS="${RTTOV_FCFLAGS-} -I${sw_root}/include -g -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline"
 
 ICON_FCFLAGS='-O2'
 
-# The compiler fails to process some of the EMVORADO and DACE source files with
-# the default optimization level:
-ICON_WORKAROUND1_FCFLAGS='-O1'
-ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:externals/emvorado/src_iface_icon/radar_interface.f90'
-
-LDFLAGS="-L${sw_root}/lib ${RTTOV_LDFLAGS-}"
+LDFLAGS="${RTTOV_LDFLAGS-} -L${sw_root}/lib"
 # The configure scripts of some of the bundled libraries (e.g. SCT) are
 # generated using original (non-patched) Libtool macros, which are not aware of
 # NVidia HPC compilers. As a result, their libtool scripts do not keep the
@@ -73,7 +68,7 @@ LIBS="-lxml2 -lfyaml -lSerialboxFortran -leccodes_f90 -leccodes ${RTTOV_LIBS-} -
 
 MPI_LAUNCH='mpiexec --oversubscribe'
 
-EXTRA_CONFIG_ARGS='--enable-loop-exchange --enable-grib2 --enable-fcgroup-WORKAROUND1'
+EXTRA_CONFIG_ARGS='--enable-loop-exchange --enable-grib2'
 
 # The compiler fails one of the YAC configure-time tests, which we suppress and
 # hope for the best:
@@ -92,8 +87,6 @@ FC="${FC}" \
 FCFLAGS="${FCFLAGS}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_LDFLAGS="${ICON_LDFLAGS}" \
-ICON_WORKAROUND1_FCFLAGS="${ICON_WORKAROUND1_FCFLAGS}" \
-ICON_WORKAROUND1_PATH="${ICON_WORKAROUND1_PATH}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \

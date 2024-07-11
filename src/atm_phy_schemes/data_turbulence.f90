@@ -50,7 +50,7 @@ PUBLIC           ! All constants and variables in this module are public
 REAL (KIND=ireals) ::          &
 !
   rlam_mom   =  0.0_ireals,    & ! scaling factor of the laminar boundary layer for momentum
-  rlam_heat  =  1.0_ireals,    & ! scaling factor of the laminar boundary layer for heat
+  rlam_heat  =  10.0_ireals,    & ! scaling factor of the laminar boundary layer for heat
 !
   rat_lam    =  1.0_ireals,    & ! ratio of laminar scaling factors for vapour and heat
   rat_can    =  1.0_ireals,    & ! ratio of canopy height over z0m

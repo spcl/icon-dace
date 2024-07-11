@@ -359,7 +359,7 @@ add_link_file  ${basedir}/externals/jsbach/data/lctlib_nlct21.def ./
 
 JSBACH_YEAR=1850
 #JSBACH_SOIL_SPINUP=""
-JSBACH_SOIL_SPINUP="_vga0437"
+JSBACH_SOIL_SPINUP="_slo1623"
 jsbach_lnd_frac="bc_land_frac_11pfts_${JSBACH_YEAR}.nc"
 jsbach_bc_phys="bc_land_phys_${JSBACH_YEAR}.nc"
 jsbach_bc_soil="bc_land_soil_${JSBACH_YEAR}.nc"
@@ -368,10 +368,8 @@ jsbach_sso="bc_land_sso_${JSBACH_YEAR}.nc"
 #
 # Paths for JSBACH - still preliminary
 #jsb4inidir=/work/mh0287/m211032/Icon/Coupled/JSBach4ini/dwd
-#datadir=/work/mj0060/m220053/ini_files/0012-0035/land/r00xx
 jsb4inidir=/work/mh0287/m211032/Icon/Coupled/JSBach4ini/vga
-#revision=r00vg
-revision=r03vg
+revision=r04vg
 datadir="$jsb4inidir/${atmos_gridID}-${ocean_gridID}/$revision"
 add_link_file ${datadir}/${jsbach_lnd_frac}             ./
 add_link_file ${datadir}/${jsbach_bc_phys}              ./
@@ -416,7 +414,7 @@ cat > $lnd_namelist << EOF
 &jsb_model_nml
   usecase              = 'jsbach_pfts'
   use_lakes            = .TRUE.
-  !enforce_water_budget = .FALSE.              !  general parameter for all tests (def=T)
+  enforce_water_budget = .TRUE.           ! True: stop in case of water conservation problem
   fract_filename       = '${jsbach_lnd_frac}'
   !output_tiles         = ${output_tiles}     ! List of tiles to output
   init_from_ifs        = .FALSE.
@@ -486,7 +484,6 @@ cat > $lnd_namelist << EOF
   bc_filename          = 'bc_land_hd.nc'
   diag_water_budget    = .FALSE.
   debug_hd             = .FALSE.
-  enforce_water_budget = .TRUE.          ! specific for HD, TRUE: stop in case of water conservation problem
 /
 EOF
 #done  #  ii domain
@@ -622,7 +619,6 @@ cat > ${atm_namelist} << EOF
  Restart_filename        = "${EXPNAME}_restart_atm_<rsttime>.nc"
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /
@@ -960,9 +956,9 @@ cat >> ${atm_namelist} << EOF
  output_grid             = .TRUE.                    ! flag whether grid information is added to output.
  remap                   = 0                         ! 1: latlon,  0: native grid
  operation               = "mean"                    ! works on icon grid only (remap=0)
-! ml_varlist              = 'group:jsb_seb_basic','hydro_w_soil_sl_box','hydro_w_soil_fc_sl_box',
+! ml_varlist              = 'group:jsb_seb_basic','hydro_wtr_soil_sl_box','hydro_w_soil_fc_sl_box',
 !                           'hydro_w_soil_sat_sl_box', 'hydro_soil_depth_sl_box',
-!                           'hydro_w_skin_box', 'hydro_w_ice_sl_box', 'hydro_w_snow_box',
+!                           'hydro_w_skin_box', 'hydro_ice_soil_sl_box', 'hydro_weq_snow_box',
 !                           'hydro_water_flux_box', 'hydro_water_content_box', 'hydro_water_budget_box'
     ml_varlist = 'assimi_gross_assimilation_box', 'assimi_dark_respiration_box',
                  'hydro_discharge_ocean_box', 'hydro_discharge_box',
@@ -1355,9 +1351,6 @@ cat > ${oce_namelist} << EOF
  dynamics_grid_filename      = "${ocean_grid}"
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
-/
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep               = "${oceTimeStep}"

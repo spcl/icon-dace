@@ -109,8 +109,8 @@ CONTAINS
 
   FUNCTION get_relative_humidity_air(nc, air_moisture, air_temperature, air_press) RESULT(relative_humidity_air)
 
-    USE mo_physical_constants_iface, ONLY: rd  ! gas constant for dry air [J/(K*kg)]
-    USE mo_physical_constants_iface, ONLY: rv  ! gas constant for water vapor [J/(K*kg)]
+    USE mo_jsb_physical_constants, ONLY: rd  ! gas constant for dry air [J/(K*kg)]
+    USE mo_jsb_physical_constants, ONLY: rv  ! gas constant for water vapor [J/(K*kg)]
 
     INTEGER, INTENT(in)  :: nc
     REAL(wp), INTENT(in) :: &
@@ -140,11 +140,6 @@ CONTAINS
 
   END FUNCTION get_relative_humidity_air
 
-  ! R: TBD: I copied this subroutine from MO_JSB4_FORCING, because
-  !    this mo is not compiled with icon/echam.
-  !    Reiner has to decide if we change config or the place of this procedure.
-  !    I made some changes because the dimensions (vector lenghts) were unnecessary
-  !    cryptic. We could even skip "nc" if we would change the DO loop below...
   !>
   !! Returns saturation specific humidity for given temperature and pressure
   !!

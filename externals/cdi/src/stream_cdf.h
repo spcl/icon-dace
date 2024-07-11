@@ -36,18 +36,18 @@ void cdfCopyRecord(stream_t *streamptr2, stream_t *streamptr1);
 
 void cdfDefineAttributes(int filetype, int vlistID, int varID, int fileID, int ncvarID);
 
-void cdf_read_record(stream_t *streamptr, int memtype, void *data, size_t *nmiss);
-void cdf_write_record(stream_t *streamptr, int memtype, const void *data, size_t nmiss);
+void cdf_read_record(stream_t *streamptr, int memtype, void *data, size_t *numMissVals);
+void cdf_write_record(stream_t *streamptr, int memtype, const void *data, size_t numMissVals);
 
-void cdf_read_var(stream_t *streamptr, int varID, int memtype, void *data, size_t *nmiss);
-void cdf_write_var(stream_t *streamptr, int varID, int memtype, const void *data, size_t nmiss);
+void cdf_read_var(stream_t *streamptr, int varID, int memtype, void *data, size_t *numMissVals);
+void cdf_write_var(stream_t *streamptr, int varID, int memtype, const void *data, size_t numMissVals);
 
-void cdf_read_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, void *data, size_t *nmiss);
-void cdf_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, const void *data, size_t nmiss);
+void cdf_read_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, void *data, size_t *numMissVals);
+void cdf_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, const void *data, size_t numMissVals);
 
-void cdf_write_var_chunk(stream_t *streamptr, int varID, int memtype, const int rect[][2], const void *data, size_t nmiss);
+void cdf_write_var_chunk(stream_t *streamptr, int varID, int memtype, const int rect[][2], const void *data, size_t numMissVals);
 
-void cdfDefVarDeflate(int ncid, int ncvarid, int deflateLevel);
+void cdfDefVarDeflate(int ncid, int ncvarid, int shuffle, int deflateLevel);
 void cdfDefTime(stream_t *streamptr);
 
 void cdf_scale_add(size_t size, double *data, double addoffset, double scalefactor);

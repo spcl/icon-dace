@@ -1316,201 +1316,201 @@ CONTAINS
        &         edge_3d_time_int_varid
 
       ! create the file.
-      call nf( nf_create(filename, NF_CLOBBER, ncid), method_name )
+      call nf( nf90_create(filename, NF90_CLOBBER, ncid), method_name )
 
       ! define the dimensions.
-      CALL nf(nf_def_dim(ncid, 'cell', p_n_work * 2*nproma, cell_dimid), &
+      CALL nf(nf90_def_dim(ncid, 'cell', p_n_work * 2*nproma, cell_dimid), &
        &      method_name)
-      CALL nf(nf_def_dim(ncid, 'vertex', p_n_work * 2*nproma, vertex_dimid), &
+      CALL nf(nf90_def_dim(ncid, 'vertex', p_n_work * 2*nproma, vertex_dimid), &
        &      method_name)
-      CALL nf(nf_def_dim(ncid, 'edge', p_n_work * 2*nproma, edge_dimid), &
+      CALL nf(nf90_def_dim(ncid, 'edge', p_n_work * 2*nproma, edge_dimid), &
        &      method_name)
-      CALL nf(nf_def_dim(ncid, 'levels', nlev, level_dimid), &
+      CALL nf(nf90_def_dim(ncid, 'levels', nlev, level_dimid), &
        &      method_name)
-      CALL nf(nf_def_dim(ncid, 'time', ntime, time_dimid), &
+      CALL nf(nf90_def_dim(ncid, 'time', ntime, time_dimid), &
        &      method_name)
 
       ! define variables
 
-      CALL nf(nf_def_var(ncid, 'cell_2d_real', NF_DOUBLE, 1, (/cell_dimid/), &
-        &                cell_2d_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_2d_real', NF_DOUBLE, 1, (/vertex_dimid/),&
-        &                vertex_2d_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_2d_real', NF_DOUBLE, 1, (/edge_dimid/), &
-        &                edge_2d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_2d_real', NF90_DOUBLE, cell_dimid, &
+        &                  cell_2d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_2d_real', NF90_DOUBLE, vertex_dimid, &
+        &                  vertex_2d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_2d_real', NF90_DOUBLE, edge_dimid, &
+        &                  edge_2d_real_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_3d_real', NF_DOUBLE, 2, &
-        &                (/cell_dimid, level_dimid/), &
-        &                cell_3d_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_3d_real', NF_DOUBLE, 2, &
-        &                (/vertex_dimid, level_dimid/), &
-        &                vertex_3d_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_3d_real', NF_DOUBLE, 2, &
-        &                (/edge_dimid, level_dimid/), &
-        &                edge_3d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_3d_real', NF90_DOUBLE, &
+        &                  (/cell_dimid, level_dimid/), &
+        &                  cell_3d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_3d_real', NF90_DOUBLE, &
+        &                  (/vertex_dimid, level_dimid/), &
+        &                  vertex_3d_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_3d_real', NF90_DOUBLE, &
+        &                  (/edge_dimid, level_dimid/), &
+        &                  edge_3d_real_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_2d_time_real', NF_DOUBLE, 2, &
-        &                (/cell_dimid, time_dimid/), &
-        &                cell_2d_time_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_2d_time_real', NF_DOUBLE, 2, &
-        &                (/vertex_dimid, time_dimid/), &
-        &                vertex_2d_time_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_2d_time_real', NF_DOUBLE, 2, &
-        &                (/edge_dimid, time_dimid/), &
-        &                edge_2d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_2d_time_real', NF90_DOUBLE, &
+        &                  (/cell_dimid, time_dimid/), &
+        &                  cell_2d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_2d_time_real', NF90_DOUBLE, &
+        &                  (/vertex_dimid, time_dimid/), &
+        &                  vertex_2d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_2d_time_real', NF90_DOUBLE, &
+        &                  (/edge_dimid, time_dimid/), &
+        &                  edge_2d_time_real_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_3d_time_real', NF_DOUBLE, 3, &
-        &                (/cell_dimid, level_dimid, time_dimid/), &
-        &                cell_3d_time_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_3d_time_real', NF_DOUBLE, 3, &
-        &                (/vertex_dimid, level_dimid, time_dimid/), &
-        &                vertex_3d_time_real_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_3d_time_real', NF_DOUBLE, 3, &
-        &                (/edge_dimid, level_dimid, time_dimid/), &
-        &                edge_3d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_3d_time_real', NF90_DOUBLE, &
+        &                  (/cell_dimid, level_dimid, time_dimid/), &
+        &                  cell_3d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_3d_time_real', NF90_DOUBLE, &
+        &                  (/vertex_dimid, level_dimid, time_dimid/), &
+        &                  vertex_3d_time_real_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_3d_time_real', NF90_DOUBLE, &
+        &                  (/edge_dimid, level_dimid, time_dimid/), &
+        &                  edge_3d_time_real_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_2d_int', NF_INT, 1, (/cell_dimid/), &
-        &                cell_2d_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_2d_int', NF_INT, 1, (/vertex_dimid/), &
-        &                vertex_2d_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_2d_int', NF_INT, 1, (/edge_dimid/), &
-        &                edge_2d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_2d_int', NF90_INT, cell_dimid, &
+        &                  cell_2d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_2d_int', NF90_INT, vertex_dimid, &
+        &                  vertex_2d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_2d_int', NF90_INT, edge_dimid, &
+        &                  edge_2d_int_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_3d_int', NF_INT, 2, &
-        &                (/cell_dimid, level_dimid/), &
-        &                cell_3d_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_3d_int', NF_INT, 2, &
-        &                (/vertex_dimid, level_dimid/), &
-        &                vertex_3d_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_3d_int', NF_INT, 2, &
-        &                (/edge_dimid, level_dimid/), &
-        &                edge_3d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_3d_int', NF90_INT, &
+        &                  (/cell_dimid, level_dimid/), &
+        &                  cell_3d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_3d_int', NF90_INT, &
+        &                  (/vertex_dimid, level_dimid/), &
+        &                  vertex_3d_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_3d_int', NF90_INT, &
+        &                  (/edge_dimid, level_dimid/), &
+        &                  edge_3d_int_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_2d_time_int', NF_INT, 2, &
-        &                (/cell_dimid, time_dimid/), &
-        &                cell_2d_time_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_2d_time_int', NF_INT, 2, &
-        &                (/vertex_dimid, time_dimid/), &
-        &                vertex_2d_time_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_2d_time_int', NF_INT, 2, &
-        &                (/edge_dimid, time_dimid/), &
-        &                edge_2d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_2d_time_int', NF90_INT, &
+        &                  (/cell_dimid, time_dimid/), &
+        &                  cell_2d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_2d_time_int', NF90_INT, &
+        &                  (/vertex_dimid, time_dimid/), &
+        &                  vertex_2d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_2d_time_int', NF90_INT, &
+        &                  (/edge_dimid, time_dimid/), &
+        &                  edge_2d_time_int_varid), method_name )
 
-      CALL nf(nf_def_var(ncid, 'cell_3d_time_int', NF_INT, 3, &
-        &                (/cell_dimid, level_dimid, time_dimid/), &
-        &                cell_3d_time_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'vertex_3d_time_int', NF_INT, 3, &
-        &                (/vertex_dimid, level_dimid, time_dimid/), &
-        &                vertex_3d_time_int_varid), method_name )
-      CALL nf(nf_def_var(ncid, 'edge_3d_time_int', NF_INT, 3, &
-        &                (/edge_dimid, level_dimid, time_dimid/), &
-        &                edge_3d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'cell_3d_time_int', NF90_INT, &
+        &                  (/cell_dimid, level_dimid, time_dimid/), &
+        &                  cell_3d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'vertex_3d_time_int', NF90_INT, &
+        &                  (/vertex_dimid, level_dimid, time_dimid/), &
+        &                  vertex_3d_time_int_varid), method_name )
+      CALL nf(nf90_def_var(ncid, 'edge_3d_time_int', NF90_INT, &
+        &                  (/edge_dimid, level_dimid, time_dimid/), &
+        &                  edge_3d_time_int_varid), method_name )
 
        ! end define mode
-       call nf( nf_enddef(ncid), method_name )
+       call nf( nf90_enddef(ncid), method_name )
 
        ! fill in dummy values
 
-       CALL nf(nf_put_var_double(ncid, cell_2d_real_varid, &
-        &                        (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
+       CALL nf(nf90_put_var(ncid, cell_2d_real_varid, &
+        &                   (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
         &      method_name)
-       CALL nf(nf_put_var_double(ncid, vertex_2d_real_varid, &
-        &                        (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
+       CALL nf(nf90_put_var(ncid, vertex_2d_real_varid, &
+        &                   (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
         &      method_name)
-       CALL nf(nf_put_var_double(ncid, edge_2d_real_varid, &
-        &                        (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
-        &      method_name)
-
-       CALL nf(nf_put_var_double(ncid, cell_3d_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev)/), &
-        &                                (/p_n_work * 2*nproma, nlev/))), &
-        &      method_name)
-       CALL nf(nf_put_var_double(ncid, vertex_3d_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev)/), &
-        &                                (/p_n_work * 2*nproma, nlev/))), &
-        &      method_name)
-       CALL nf(nf_put_var_double(ncid, edge_3d_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev)/), &
-        &                                (/p_n_work * 2*nproma, nlev/))), &
+       CALL nf(nf90_put_var(ncid, edge_2d_real_varid, &
+        &                   (/(REAL(i,wp),i=1,p_n_work * 2*nproma)/)), &
         &      method_name)
 
-       CALL nf(nf_put_var_double(ncid, cell_2d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * ntime)/), &
-        &                                (/p_n_work * 2*nproma, ntime/))), &
+       CALL nf(nf90_put_var(ncid, cell_3d_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev)/), &
+        &                           (/p_n_work * 2*nproma, nlev/))), &
         &      method_name)
-       CALL nf(nf_put_var_double(ncid, vertex_2d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * ntime)/), &
-        &                                (/p_n_work * 2*nproma, ntime/))), &
+       CALL nf(nf90_put_var(ncid, vertex_3d_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev)/), &
+        &                           (/p_n_work * 2*nproma, nlev/))), &
         &      method_name)
-       CALL nf(nf_put_var_double(ncid, edge_2d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * ntime)/), &
-        &                                (/p_n_work * 2*nproma, ntime/))), &
-        &      method_name)
-
-       CALL nf(nf_put_var_double(ncid, cell_3d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev * ntime)/), &
-        &                                (/p_n_work * 2*nproma, nlev, ntime/))), &
-        &      method_name)
-       CALL nf(nf_put_var_double(ncid, vertex_3d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev * ntime)/), &
-        &                                (/p_n_work * 2*nproma, nlev, ntime/))), &
-        &      method_name)
-       CALL nf(nf_put_var_double(ncid, edge_3d_time_real_varid, &
-        &                        RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
-        &                                   nproma * nlev * ntime)/), &
-        &                                (/p_n_work * 2*nproma, nlev, ntime/))), &
+       CALL nf(nf90_put_var(ncid, edge_3d_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev)/), &
+        &                           (/p_n_work * 2*nproma, nlev/))), &
         &      method_name)
 
-       CALL nf(nf_put_var_int(ncid, cell_2d_int_varid, &
-        &                     (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
-       CALL nf(nf_put_var_int(ncid, vertex_2d_int_varid, &
-        &                     (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
-       CALL nf(nf_put_var_int(ncid, edge_2d_int_varid, &
-        &                     (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
-
-       CALL nf(nf_put_var_int(ncid, cell_3d_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
-        &                           (/p_n_work * 2*nproma, nlev/))), method_name)
-       CALL nf(nf_put_var_int(ncid, vertex_3d_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
-        &                           (/p_n_work * 2*nproma, nlev/))), method_name)
-       CALL nf(nf_put_var_int(ncid, edge_3d_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
-        &                           (/p_n_work * 2*nproma, nlev/))), method_name)
-
-       CALL nf(nf_put_var_int(ncid, cell_2d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
-        &                           (/p_n_work * 2*nproma, ntime/))), method_name)
-       CALL nf(nf_put_var_int(ncid, vertex_2d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
-        &                           (/p_n_work * 2*nproma, ntime/))), method_name)
-       CALL nf(nf_put_var_int(ncid, edge_2d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
-        &                           (/p_n_work * 2*nproma, ntime/))), method_name)
-
-       CALL nf(nf_put_var_int(ncid, cell_3d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
-        &                             (/p_n_work * 2*nproma, nlev, ntime/))), &
+       CALL nf(nf90_put_var(ncid, cell_2d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * ntime)/), &
+        &                           (/p_n_work * 2*nproma, ntime/))), &
         &      method_name)
-       CALL nf(nf_put_var_int(ncid, vertex_3d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
-        &                             (/p_n_work * 2*nproma, nlev, ntime/))), &
+       CALL nf(nf90_put_var(ncid, vertex_2d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * ntime)/), &
+        &                           (/p_n_work * 2*nproma, ntime/))), &
         &      method_name)
-       CALL nf(nf_put_var_int(ncid, edge_3d_time_int_varid, &
-        &                     RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
-        &                             (/p_n_work * 2*nproma, nlev, ntime/))), &
+       CALL nf(nf90_put_var(ncid, edge_2d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * ntime)/), &
+        &                           (/p_n_work * 2*nproma, ntime/))), &
+        &      method_name)
+
+       CALL nf(nf90_put_var(ncid, cell_3d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev * ntime)/), &
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
+        &      method_name)
+       CALL nf(nf90_put_var(ncid, vertex_3d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev * ntime)/), &
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
+        &      method_name)
+       CALL nf(nf90_put_var(ncid, edge_3d_time_real_varid, &
+        &                   RESHAPE((/(REAL(i,wp),i=1,p_n_work * 2 * &
+        &                              nproma * nlev * ntime)/), &
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
+        &      method_name)
+
+       CALL nf(nf90_put_var(ncid, cell_2d_int_varid, &
+        &                   (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
+       CALL nf(nf90_put_var(ncid, vertex_2d_int_varid, &
+        &                   (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
+       CALL nf(nf90_put_var(ncid, edge_2d_int_varid, &
+        &                   (/(i,i=1,p_n_work * 2*nproma)/)), method_name)
+
+       CALL nf(nf90_put_var(ncid, cell_3d_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
+        &                         (/p_n_work * 2*nproma, nlev/))), method_name)
+       CALL nf(nf90_put_var(ncid, vertex_3d_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
+        &                         (/p_n_work * 2*nproma, nlev/))), method_name)
+       CALL nf(nf90_put_var(ncid, edge_3d_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * nlev)/), &
+        &                         (/p_n_work * 2*nproma, nlev/))), method_name)
+
+       CALL nf(nf90_put_var(ncid, cell_2d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
+        &                         (/p_n_work * 2*nproma, ntime/))), method_name)
+       CALL nf(nf90_put_var(ncid, vertex_2d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
+        &                         (/p_n_work * 2*nproma, ntime/))), method_name)
+       CALL nf(nf90_put_var(ncid, edge_2d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2*nproma * ntime)/), &
+        &                         (/p_n_work * 2*nproma, ntime/))), method_name)
+
+       CALL nf(nf90_put_var(ncid, cell_3d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
+        &      method_name)
+       CALL nf(nf90_put_var(ncid, vertex_3d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
+        &      method_name)
+       CALL nf(nf90_put_var(ncid, edge_3d_time_int_varid, &
+        &                   RESHAPE((/(i,i=1,p_n_work * 2 * nproma * nlev * ntime)/),&
+        &                           (/p_n_work * 2*nproma, nlev, ntime/))), &
         &      method_name)
 
        ! close the file
-       call nf( nf_close(ncid), method_name )
+       call nf( nf90_close(ncid), method_name )
 
     END SUBROUTINE
 

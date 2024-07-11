@@ -49,6 +49,9 @@ else
 AM_CPPFLAGS += -DWITHOUT_FORTRAN
 endif
 
+SUBDIRS = mpi-workarounds .
+DIST_SUBDIRS = mpi-workarounds .
+
 # headers from subdir xt will be installed (after substituting
 # definitions from config.h). These must be listed in a sequence in
 # which they can be combined in yaxt.h.
@@ -80,7 +83,9 @@ libyaxt_c_la_SOURCES =						\
 	xt/xt_idxmod.h						\
 	xt/xt_request.h						\
 	xt/xt_request_msgs.h					\
+	xt/xt_request_msgs_ebuf.h				\
 	xt/xt_request_msgs_packed.h				\
+	xt_request_msgs_ddt_packed.h				\
 	xt_arithmetic_util.h					\
 	xt_arithmetic_long.h					\
 	xt_config_internal.h					\
@@ -116,8 +121,12 @@ libyaxt_c_la_SOURCES =						\
 	xt/xt_redist_single_array_base.h			\
 	xt_request.c						\
 	xt_request_msgs.c					\
+	xt_request_msgs_ebuf.c					\
 	xt_request_msgs_packed.c				\
+	xt_request_msgs_ddt_packed.c				\
 	xt_request_internal.h					\
+	xt_request_msgs_internal.h				\
+	xt_request_msgs_ebuf_internal.h				\
 	xt_stripe.c						\
 	xt_stripe_util.h					\
 	xt_xmap_internal.h					\
@@ -159,15 +168,25 @@ libyaxt_c_la_SOURCES =						\
 	xt_exchanger_irecv_isend.h				\
 	xt_exchanger_irecv_isend_packed.c			\
 	xt_exchanger_irecv_isend_packed.h			\
+	xt_exchanger_irecv_isend_ddt_packed.c			\
+	xt_exchanger_irecv_isend_ddt_packed.h			\
 	xt_exchanger_neigh_alltoall.h				\
 	xt_exchanger_mix_isend_irecv.c				\
-	xt_exchanger_mix_isend_irecv.h
+	xt_exchanger_mix_isend_irecv.h				\
+	xt_gpu.h						\
+	xt_gpu.c						\
+	xt_ddt.h						\
+	xt_ddt_internal.h					\
+	xt_ddt.c
 
-if USE_MPI3
+if USE_NB_A2A
 libyaxt_c_la_SOURCES +=						\
 	xt_exchanger_neigh_alltoall.c
 endif
-
+if HAVE_CUDA
+libyaxt_c_la_SOURCES += xt_cuda.h				\
+	xt_cuda.c
+endif
 libyaxt_la_SOURCES =						\
 	xt_idxlist_collection_f.f90				\
 	xt_xmap_intersection_f.f90				\
@@ -194,68 +213,27 @@ libyaxt_la_SOURCES =						\
 	yaxt.f90
 
 libyaxt_la_LIBADD = libyaxt_c.la $(MPI_FC_LIB)
-libyaxt_la_LDFLAGS = -version-info 10:1:9
+libyaxt_la_LDFLAGS = -version-info 11:1:10
 libyaxt_c_la_LIBADD = $(MPI_C_LIB)
-libyaxt_c_la_LDFLAGS = -version-info 10:1:9
+libyaxt_c_la_LDFLAGS = -version-info 10:4:9
 
-if MPI_DT_WORKAROUND
-noinst_LTLIBRARIES = libmpi_workaround.la
-libmpi_workaround_la_LIBADD = $(xt_mpi_workaround_LIBS) $(MPI_C_LIB)
-libyaxt_c_la_LIBADD += libmpi_workaround.la
+if XT_ADD_MPI_WORKAROUND
+libyaxt_c_la_LIBADD += mpi-workarounds/libmpi_workaround.la
 endif
-nodist_libmpi_workaround_la_SOURCES =
-if OMPI_DT_WORKAROUND
-nodist_libmpi_workaround_la_SOURCES += ompi_workaround.c
-endif
-if MPICH_DT_WORKAROUND
-nodist_libmpi_workaround_la_SOURCES += mpich_workaround.c
-endif
-ompi_workaround.c: $(acx_opal_datatype_add_workaround)
-	cp $^ $@
 
-mpich_workaround.c: $(acx_yaksa_add_workaround)
-	cp $^ $@
-
-libmpi_workaround_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC \
-	$(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=link $(CCLD) \
-	$(OMPI_BUILD_CFLAGS) $(AM_LDFLAGS) \
-	$(LDFLAGS) -o $@
-
-ompi_workaround.lo: ompi_workaround.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(OMPI_MCA_C_INCLUDE) $(OMPI_BUILD_CFLAGS) -MT $@ -MD -MP -MF $(DEPDIR)/ompi_workaround.Tpo -c -o $@ `test -f 'ompi_workaround.c' || echo '$(srcdir)/'`ompi_workaround.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/ompi_workaround.Tpo $(DEPDIR)/ompi_workaround.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='ompi_workaround.c' object='ompi_workaround.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(OMPI_MCA_C_INCLUDE) $(OMPI_BUILD_CFLAGS) -c -o $@ `test -f 'ompi_workaround.c' || echo '$(srcdir)/'`ompi_workaround.c
-
-mpich_workaround.lo: mpich_workaround.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) -I../config/workarounds/mpich34_yaksa_patch $(CFLAGS) -MT $@ -MD -MP -MF $(DEPDIR)/mpich_workaround.Tpo -c -o $@ `test -f 'mpich_workaround.c' || echo '$(srcdir)/'`mpich_workaround.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/mpich_workaround.Tpo $(DEPDIR)/mpich_workaround.Plo
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='mpich_workaround.c' object='mpich_workaround.lo' libtool=yes @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) $(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) -I../config/workarounds/mpich34_yaksa_patch $(CFLAGS) -c -o $@ `test -f 'mpich_workaround.c' || echo '$(srcdir)/'`mpich_workaround.c
-
-
-
-EXTRA_DIST = m4-templates/xt_redist_template_module.f90.m4 \
-	m4-templates/f03-redist-gen.m4 \
-	m4-templates/int-prologue-i2.m4 \
-	m4-templates/int-prologue-i4.m4 \
-	m4-templates/int-prologue-i8.m4 \
-	m4-templates/real-prologue-dp.m4 \
-	m4-templates/real-prologue-sp.m4
+EXTRA_DIST = m4-templates/xt_redist_template_module.f90.m4	\
+	m4-templates/f03-redist-gen.m4				\
+	m4-templates/int-prologue-i2.m4				\
+	m4-templates/int-prologue-i4.m4				\
+	m4-templates/int-prologue-i8.m4				\
+	m4-templates/real-prologue-dp.m4			\
+	m4-templates/real-prologue-sp.m4			\
+	xt_redist_p2p_ext.c					\
+	xt_mpi_stripe_parse.c
 
 f03_redist_module_template=`i=m4-templates/xt_redist_template_module.f90.m4 ; \
 	if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; `
 update_orig=true
-
-BUILT_SOURCES = \
-	xt_redist_int_i2.f90					\
-	xt_redist_int_i4.f90					\
-	xt_redist_int_i8.f90					\
-	xt_redist_logical.f90					\
-	xt_redist_real_sp.f90					\
-	xt_redist_real_dp.f90
 
 xt_redist_real_sp.f90: \
 	m4-templates/xt_redist_template_module.f90.m4 \
@@ -265,10 +243,10 @@ xt_redist_real_sp.f90: \
 		-Dprologue='{real-prologue-sp.m4}' \
 		-Dtypetag=sp -Dtypedecl='REAL(sp)' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 xt_redist_real_dp.f90: \
@@ -279,10 +257,10 @@ xt_redist_real_dp.f90: \
 		-Dprologue='{real-prologue-dp.m4}' \
 		-Dtypetag=dp -Dtypedecl='REAL(dp)' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 xt_redist_logical.f90: \
@@ -292,10 +270,10 @@ xt_redist_logical.f90: \
 		-Dfname=$@ -Dmodname=xt_redist_logical \
 		-Dtypetag=l -Dtypedecl='LOGICAL' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 xt_redist_int_i4.f90: \
@@ -306,10 +284,10 @@ xt_redist_int_i4.f90: \
 		-Dprologue='{int-prologue-i4.m4}' \
 		-Dtypetag=i4 -Dtypedecl='INTEGER(i4)' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 xt_redist_int_i2.f90: \
@@ -320,10 +298,10 @@ xt_redist_int_i2.f90: \
 		-Dprologue='{int-prologue-i2.m4}' \
 		-Dtypetag=i2 -Dtypedecl='INTEGER(i2)' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 xt_redist_int_i8.f90: \
@@ -334,10 +312,10 @@ xt_redist_int_i8.f90: \
 		-Dprologue='{int-prologue-i8.m4}' \
 		-Dtypetag=i8 -Dtypedecl='INTEGER(i8)' \
 		$< >"$@.tmp"
-	cp "$@.tmp" "$@"
 	if $(update_orig) ; then \
 		cmp "$@.tmp" "$(srcdir)/$@" >/dev/null 2>&1 \
-		|| mv "$@.tmp" "$(srcdir)/$@" ; fi
+		|| mv "$@.tmp" "$(srcdir)/$@" ; else \
+		cp "$@.tmp" "$@" ; fi
 	-rm -f "$@.tmp"
 
 
@@ -350,8 +328,7 @@ xtinclude_Makefile.inc: Makefile
 all-local: xtinclude_Makefile.inc
 
 clean-local:
-	-rm -f *.$(FCMODEXT) i.*.L *.i \
-		ompi_workaround.c mpich_workaround.c *.dbg
+	-rm -f *.$(FCMODEXT) i.*.L *.i *.dbg
 
 
 # When an out-of-source build takes place, the recipe of the rule expects that
@@ -372,11 +349,11 @@ PKG_CFG_FILES = pkgconfig/yaxt_c.pc
 if with_fortran
 PKG_CFG_FILES += pkgconfig/yaxt.pc
 endif
-distclean-local: mostlyclean distclean-generic
+distclean-local: mostlyclean-compile distclean-generic
 	-rm -f xtinclude_Makefile.inc
-	-rm -rf '$(DEPDIR)' 'core/$(DEPDIR)'
+	-rm -rf '$(DEPDIR)' 'core/$(DEPDIR)' 'mpi-profile/$(DEPDIR)'
 	-if test "$(abs_builddir)" != "$(abs_srcdir)" ; then \
-	  rm -f pkgconfig/yaxt.pc pkgconfig/yaxt_c.pc; rmdir core pkgconfig ; fi
+	  rm -f pkgconfig/yaxt.pc pkgconfig/yaxt_c.pc; rmdir core pkgconfig mpi-workarounds; fi
 
 install-exec-local:
 	$(mkinstalldirs) "$(DESTDIR)$(libdir)/pkgconfig"

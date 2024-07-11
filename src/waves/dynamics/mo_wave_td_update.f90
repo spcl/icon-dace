@@ -57,7 +57,7 @@ CONTAINS
     REAL(wp) :: bath_c_3d(SIZE(bathymetry_c,1),1,SIZE(bathymetry_c,2))
 
 !$OMP PARALLEL
-    CALL copy(src=bathymetry_c, dest=bath_c_3d(:,1,:))
+    CALL copy(src=bathymetry_c, dest=bath_c_3d(:,1,:), lacc=.FALSE.)
 !$OMP END PARALLEL
 
     CALL grad_green_gauss_cell(bath_c_3d, p_patch, p_int_state, geo_bath_grad_c, &

@@ -30,6 +30,7 @@ INLINE_LIST_ICON=(
   src/atm_phy_schemes/mo_2mom_mcrph_processes.f90
   src/atm_phy_schemes/mo_2mom_mcrph_util.f90
   src/atm_phy_schemes/mo_aerosol_sources.f90
+  src/atm_phy_schemes/mo_cpl_aerosol_microphys.f90
   src/atm_phy_schemes/mo_albedo.f90
   src/atm_phy_schemes/mo_cufunctions.f90
   src/atm_phy_schemes/mo_satad.f90

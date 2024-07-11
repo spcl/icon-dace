@@ -195,23 +195,31 @@ CONTAINS
     IF (LEN_TRIM(fname_metadata%file_interval) == 0) THEN
       ! case a): steps_per_file
       mtime_first  => dates(1)
-      ! special treatment for the initial time step written at the
-      ! begin of the simulation: The first file gets one extra entry
-      IF ( (run_start == mtime_first)              .AND.  &
-        &  fname_metadata%steps_per_file_inclfirst   .AND.  &
-        &  (fname_metadata%jfile_offset == 0) ) THEN
-        result_fnames(1)%jfile = 1
-        result_fnames(1)%jpart = 1
-        DO i=2,num_dates
-          result_fnames(i)%jfile = (i-2)/fname_metadata%steps_per_file + 1 ! INTEGER division!
-          result_fnames(i)%jpart = i - 1 - (result_fnames(i)%jfile-1)*fname_metadata%steps_per_file
-          IF (result_fnames(i)%jfile == 1)  result_fnames(i)%jpart = result_fnames(i)%jpart + 1
+      if (fname_metadata%steps_per_file == 0) THEN
+        ! use only one file
+        DO i=1,num_dates
+          result_fnames(i)%jfile = 1
+          result_fnames(i)%jpart = i
         END DO
       ELSE
-        DO i=1,num_dates
-          result_fnames(i)%jfile = (i-1)/fname_metadata%steps_per_file + 1 ! INTEGER division!
-          result_fnames(i)%jpart = i - (result_fnames(i)%jfile-1)*fname_metadata%steps_per_file
-        END DO
+        ! special treatment for the initial time step written at the
+        ! begin of the simulation: The first file gets one extra entry
+        IF ( (run_start == mtime_first)              .AND.  &
+          &  fname_metadata%steps_per_file_inclfirst   .AND.  &
+          &  (fname_metadata%jfile_offset == 0) ) THEN
+          result_fnames(1)%jfile = 1
+          result_fnames(1)%jpart = 1
+          DO i=2,num_dates
+            result_fnames(i)%jfile = (i-2)/fname_metadata%steps_per_file + 1 ! INTEGER division!
+            result_fnames(i)%jpart = i - 1 - (result_fnames(i)%jfile-1)*fname_metadata%steps_per_file
+            IF (result_fnames(i)%jfile == 1)  result_fnames(i)%jpart = result_fnames(i)%jpart + 1
+          END DO
+        ELSE
+          DO i=1,num_dates
+            result_fnames(i)%jfile = (i-1)/fname_metadata%steps_per_file + 1 ! INTEGER division!
+            result_fnames(i)%jpart = i - (result_fnames(i)%jfile-1)*fname_metadata%steps_per_file
+          END DO
+        END IF
       END IF
     ELSE
       ! case b): file_interval

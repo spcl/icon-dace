@@ -33,12 +33,13 @@ MODULE mo_aes_phy_memory
   USE mo_cdi_constants,       ONLY: GRID_UNSTRUCTURED_CELL,    &
     &                               GRID_CELL
   USE mo_exception,           ONLY: message, finish
+  USE mo_master_control,      ONLY: get_my_process_name
   USE mo_fortran_tools,       ONLY: t_ptr_2d, t_ptr_3d
   USE mo_parallel_config,     ONLY: nproma
   USE mo_io_config,           ONLY: lnetcdf_flt64_output
   USE mo_name_list_output_config,   ONLY: is_variable_in_output
   USE mtime,                  ONLY: timedelta, OPERATOR(>)
-  USE mo_time_config,         ONLY: get_dynamics_timestep
+  USE mo_time_config,         ONLY: time_config
   USE mo_aes_phy_config,      ONLY: aes_phy_tc, dt_zero
   USE mo_aes_vdf_config,      ONLY: aes_vdf_config
   USE mo_aes_sfc_indices,     ONLY: nsfc_type, csfc
@@ -46,7 +47,7 @@ MODULE mo_aes_phy_memory
   USE mo_var_list,            ONLY: add_var, add_ref, t_var_list_ptr
   USE mo_var_list_register,   ONLY: vlr_add, vlr_del
   USE mo_var_metadata,        ONLY: create_vert_interp_metadata, vintp_types, get_timelevel_string
-  USE mo_action,              ONLY: ACTION_RESET, new_action, actions
+  USE mo_action_types,        ONLY: ACTION_RESET, new_action, actions
   USE mo_nonhydro_state,      ONLY: p_nh_state_lists
   USE mo_ext_data_state,      ONLY: ext_data
   USE mo_cf_convention,       ONLY: t_cf_var
@@ -146,7 +147,7 @@ MODULE mo_aes_phy_memory
       & mtrcvi    (:,:,:)=>NULL(),  &!< [kg/m2] atmosphere mass content of tracer
       & cptgzvi   (:,:)=>NULL(),    &!< [kg/m2] dry static energy  , vertically integrated through the atmospheric column
       & udynvi    (:,:)=>NULL(),    &!< [kg/m2] vertically integrated moist internal energy -- after dynamics
-      & uphyvi    (:,:)=>NULL(),    &!< [kg/m2] vertically integrated moist internal energy -- after physics
+      & duphyvi   (:,:)=>NULL(),    &!< [kg/m2] change of vertically integrated moist internal energy by physics
       & utmxvi    (:,:)=>NULL(),    &!< [kg/m2] vertically integrated moist internal energy -- after tmix
       & rho       (:,:,:)=>NULL(),  &!< [kg/m3] air density
       & mair      (:,:,:)=>NULL(),  &!< [kg/m2] air content
@@ -156,13 +157,11 @@ MODULE mo_aes_phy_memory
       & pfull     (:,:,:)=>NULL(),  &!< [Pa]    air pressure at model levels
       & phalf     (:,:,:)=>NULL()    !< [Pa]    air pressure at model half levels
 
-    ! surface flux weigthing for energy integrals
+    ! surface fluxes of internal energy (positive downward)
     REAL(wp),POINTER ::             &
-      & rsfl_tsa  (:,  :)=>NULL(),  &!< [K kg/m2/s ] 
-      & ssfl_tsa  (:,  :)=>NULL(),  &!< [K kg/m2/s ] 
-      & evap_tsa  (:,  :)=>NULL(),  &!< [K kg/m2/s ] 
-      & shfl_qsa  (:,  :)=>NULL()    !< [K kg/m2/s ] 
-
+      & ufts      (:,  :)=>NULL(),  &!< energy flux at surface from thermal exchange [K kg/m2/s ] 
+      & ufvs      (:,  :)=>NULL(),  &!< energy flux at surface from vapor exchange   [K kg/m2/s ] 
+      & ufcs      (:,  :)=>NULL()    !< energy flux at surface from condensate       [K kg/m2/s ] 
     TYPE(t_ptr_2d),ALLOCATABLE :: mtrcvi_ptr(:)
 
     ! Radiation
@@ -183,11 +182,13 @@ MODULE mo_aes_phy_memory
       & rsdt        (:,  :)=>NULL(),  &!< [W/m2] toa incident shortwave radiation
       & rsut        (:,  :)=>NULL(),  &!< [W/m2] toa outgoing shortwave radiation
       & rsutcs      (:,  :)=>NULL(),  &!< [W/m2] toa outgoing clear-sky shortwave radiation
+      & rsnt        (:,  :)=>NULL(),  &!< [W/m2] toa net shortwave radiation
       ! - at the surface at all times
       & rsds        (:,  :)=>NULL(),  &!< [W/m2] surface downwelling shortwave radiation
       & rsus        (:,  :)=>NULL(),  &!< [W/m2] surface upwelling   shortwave radiation
       & rsdscs      (:,  :)=>NULL(),  &!< [W/m2] surface downwelling clear-sky shortwave radiation
       & rsuscs      (:,  :)=>NULL(),  &!< [W/m2] surface upwelling   clear-sky shortwave radiation
+      & rsns        (:,  :)=>NULL(),  &!< [W/m2] surface net shortwave radiation
       !
       ! shortwave flux components at the surface
       ! - at radiation times
@@ -220,11 +221,13 @@ MODULE mo_aes_phy_memory
       ! - at the top of the atmosphere at all times
       & rlut        (:,  :)=>NULL(),  &!< [W/m2] toa outgoing longwave radiation
       & rlutcs      (:,  :)=>NULL(),  &!< [W/m2] toa outgoing clear-sky longwave radiation
+      & rlnt        (:,  :)=>NULL(),  &!< [W/m2] TOA net longwave radiation
       ! - at the surface at all times
       & rlds        (:,  :)=>NULL(),  &!< [W/m2] surface downwelling longwave radiation
       & rlus        (:,  :)=>NULL(),  &!< [W/m2] surface upwelling   longwave radiation
       & rldscs      (:,  :)=>NULL(),  &!< [W/m2] surface downwelling clear-sky longwave radiation
       & rluscs      (:,  :)=>NULL(),  &!< [W/m2] surface downwelling clear-sky longwave radiation
+      & rlns        (:,  :)=>NULL(),  &!< [W/m2] surface net longwave radiation
       & o3          (:,:,:)=>NULL()    !< [mol/mol] ozone volume mixing ratio
     ! effective radius of ice
     REAL(wp), POINTER ::      &
@@ -238,6 +241,9 @@ MODULE mo_aes_phy_memory
     REAL(wp), POINTER ::      &
       & reff_snow   (:,:,:)=>NULL(),  &!< effective radius of snow in [um]
       & tau_snow    (:,:,:)=>NULL()    !< 3d optical depth of snow
+    ! arbitrary 2d-field in radiation for output
+    REAL(wp), POINTER ::      &
+      & rad_2d      (:,:)=>NULL()      !< arbitrary 2d field in radiation for output     
     ! aerosol optical properties
     REAL(wp),POINTER ::      &
       & aer_aod_533 (:,:,:)=>NULL(),  &!< aerosol optical depth at 533 nm
@@ -283,9 +289,7 @@ MODULE mo_aes_phy_memory
 
     ! Energy and moisture budget related diagnostic variables
     REAL(wp),POINTER ::     &
-      & cpair    (:,:,:)=>NULL(),   &!< specific heat of air at constant pressure [J/kg/K]
       & cvair    (:,:,:)=>NULL(),   &!< specific heat of air at constant volume   [J/kg/K]
-      & qconv    (:,:,:)=>NULL(),   &!< convert heating to temp tend. [(K/s)/(W/m^2)]
       !
       & q_phy    (:,:,:)=>NULL(),   &!< layer heating by physics [W/m^2]
       & q_phy_vi (:,  :)=>NULL(),   &!< vertically integrated heating by physics [W/m^2]
@@ -375,7 +379,7 @@ MODULE mo_aes_phy_memory
       & ustar (:,:)=>NULL(),        &!<
       & wstar (:,:)=>NULL(),        &!< convective velocity scale
       & wstar_tile(:,:,:)=>NULL(),  &!< convective velocity scale (over each surface type)
-      & kedisp(:,:)=>NULL(),        &!< time-mean (or integrated?) vertically integrated dissipation of kinetic energy
+      & kedisp(:,:)=>NULL(),        &!< vertically integrated dissipation of kinetic energy
       & ocu   (:,:)=>NULL(),        &!< eastward  velocity of ocean surface current
       & ocv   (:,:)=>NULL()          !< northward velocity of ocean surface current
 
@@ -467,19 +471,22 @@ MODULE mo_aes_phy_memory
       & vas         (:,  :)=>NULL(),   &!< grid box mean 10m v-velocity
       & tas         (:,  :)=>NULL(),   &!< grid box mean 2m temperature
       & dew2        (:,  :)=>NULL(),   &!< grid box mean 2m dew point temperature
+      & qv2m        (:,  :)=>NULL(),   &!< grid box mean 2m specific humidity
       & tasmax      (:,  :)=>NULL(),   &!< grid box mean maximum 2m temperature
       & tasmin      (:,  :)=>NULL(),   &!< grid box mean minimum 2m temperature
       & sfcwind_tile(:,:,:)=>NULL(),   &!< 10 m wind on tiles
       & uas_tile    (:,:,:)=>NULL(),   &!< 10m u-velocity on tiles
       & vas_tile    (:,:,:)=>NULL(),   &!< 10m v-velocity on tiles
       & tas_tile    (:,:,:)=>NULL(),   &!< 2m temperature on tiles
-      & dew2_tile   (:,:,:)=>NULL()     !< 2m dew point temperature on tiles
+      & dew2_tile   (:,:,:)=>NULL(),   &!< 2m dew point temperature on tiles
+      & qv2m_tile   (:,:,:)=>NULL()     !< 2m specific humidity on tiles
 
     TYPE(t_ptr_2d),ALLOCATABLE :: sfcwind_tile_ptr(:)
     TYPE(t_ptr_2d),ALLOCATABLE :: uas_tile_ptr(:)
     TYPE(t_ptr_2d),ALLOCATABLE :: vas_tile_ptr(:)
     TYPE(t_ptr_2d),ALLOCATABLE :: tas_tile_ptr(:)
     TYPE(t_ptr_2d),ALLOCATABLE :: dew2_tile_ptr(:)
+    TYPE(t_ptr_2d),ALLOCATABLE :: qv2m_tile_ptr(:)
 
     ! global diagnostics
     REAL(wp),POINTER ::       &
@@ -490,9 +497,19 @@ MODULE mo_aes_phy_memory
       & rlut_gmean   (:)=>NULL(),      &!< [W/m2] global mean toa outgoing longwave radiation
       & prec_gmean   (:)=>NULL(),      &!< [kg/m2/s] global mean precipitation flux
       & evap_gmean   (:)=>NULL(),      &!< [kg/m2/s] global mean evaporation flux
-      & radtop_gmean (:)=>NULL(),      &!< [W/m2] global mean toa total radiation, derived variable
+      & radtop_gmean (:)=>NULL(),      &!< [W/m2] global mean toa net total radiation, derived variable
+      & radbot_gmean (:)=>NULL(),      &!< [W/m2] global mean surface net total radiation, derived variable
+      & radbal_gmean (:)=>NULL(),      &!< [W/m2] global mean net radiative flux into atmosphere, derived variable
       & fwfoce_gmean (:)=>NULL(),      &!< [kg/m2/s] global mean freshwater flux over ocean area, derived variable
-      & icefrc_gmean (:)=>NULL()!,      &!< global mean ice cover given as the fraction of grid box
+      & icefrc_gmean (:)=>NULL(),      &!< global mean ice cover given as the fraction of grid box
+      & udynvi_gmean (:)=>NULL(),      &!< [kg/m2] global mean vertically integrated moist internal energy - after dynamics
+      & duphyvi_gmean(:)=>NULL(),      &!< [kg/m2] global mean vertically integrated moist internal energy change by physics
+      & utmxvi_gmean (:)=>NULL(),      &!< [kg/m2] global mean vertically integrated moist internal energy - after tmx
+      & ufts_gmean   (:)=>NULL(),      &!< [K kg/m2/s] global mean energy flux at surface from thermal exchange
+      & ufvs_gmean   (:)=>NULL(),      &!< [K kg/m2/s] global mean energy flux at surface from vapor exchange
+      & ufcs_gmean   (:)=>NULL(),      &!< [K kg/m2/s] global mean energy flux at surface from condensate
+      & kedisp_gmean (:)=>NULL(),      &!< [W/m2] global mean of vertically integrated dissipation of kinetic energy
+      & uphybal_gmean   (:)=>NULL()     !< [W/m2] global energy balance in aes physics (positive: gain of internal energy)
 
   END TYPE t_aes_phy_field
 
@@ -610,7 +627,7 @@ CONTAINS
 
       nblks = patch_array(jg)%nblks_c
       nlev  = patch_array(jg)%nlev
-      dt_dyn = get_dynamics_timestep(patch_array(jg))
+      dt_dyn = time_config%get_model_timestep_td(patch_array(jg)%nest_level)
 
       WRITE(listname_f,'(a,i2.2)') 'prm_field_D',jg
       CALL new_aes_phy_field_list( jg, nproma, nlev, nblks, ntracer, nsfc_type,   &
@@ -726,7 +743,8 @@ CONTAINS
     !$ACC ENTER DATA COPYIN(field)
     ! Register a field list and apply default settings
 
-    CALL vlr_add(field_list, listname, patch_id=jg ,lrestart=.TRUE.)
+    CALL vlr_add(field_list, listname, patch_id=jg, lrestart=.TRUE., &
+      &          model_type=get_my_process_name())
 
     !------------------------------
     ! Metrics
@@ -1813,6 +1831,36 @@ CONTAINS
 
     END IF
     !
+    ! net shortwave fluxes only needed for diagnostic output for destinE
+    ! 176: rsns: surface net shortwave radiation flux: rsds - rsus  0-4-9-ffs1-sp1
+    ! 178: rsnt: TOA net shortwave radiation flux:     rsdt - rsut  0-4-9-ffs8-sp1
+
+    cf_desc    = t_cf_var('surface_net_shortwave_radiation_flux_in_air', &
+         &                'W m-2'                                      , &
+         &                'surface net shortwave radiation flux'       , &
+         &                datatype_flt                               )
+    grib2_desc = grib2_var(0,4,9, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(field_list, prefix//'rsns', field%rsns, &
+         &       GRID_UNSTRUCTURED_CELL    , ZA_SURFACE, &
+         &       cf_desc, grib2_desc                   , &
+         &       lrestart = .FALSE.                    , &
+         &       ldims=shape2d                         , &
+         &       lopenacc=.TRUE.                       )
+    __acc_attach(field%rsns)
+
+    cf_desc    = t_cf_var('toa_net_shortwave_radiation_flux_in_air', &
+         &                'W m-2'                                      , &
+         &                'toa net shortwave radiation flux'       , &
+         &                datatype_flt                               )
+    grib2_desc = grib2_var(0,4,9, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(field_list, prefix//'rsnt', field%rsnt, &
+         &       GRID_UNSTRUCTURED_CELL    , ZA_TOA    , &
+         &       cf_desc, grib2_desc                   , &
+         &       lrestart = .FALSE.                    , &
+         &       ldims=shape2d                         , &
+         &       lopenacc=.TRUE.                       )
+    __acc_attach(field%rsnt)
+
     !------------------
     !
 
@@ -1974,7 +2022,38 @@ CONTAINS
        __acc_attach(field%rluscs)
 
        !
+
     END IF
+
+    ! net longwave fluxes only needed for diagnostic output for destinE
+    !177: rlns: surface net longwave radiation flux:  rlds - rlus  0-5-5-ffs1-sp1
+    !179: rlnt: TOA net longwave radiation flux:           - rlut  0-5-5-ffs8-sp1
+    
+    cf_desc    = t_cf_var('surface_net_longwave_radiation_flux_in_air', &
+         &                'W m-2'                                     , &
+         &                'surface net longwave radiation flux'       , &
+         &                datatype_flt                               )
+    grib2_desc = grib2_var(0,5,5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(field_list, prefix//'rlns', field%rlns, &
+         &       GRID_UNSTRUCTURED_CELL    , ZA_SURFACE, &
+         &       cf_desc, grib2_desc                   , &
+         &       lrestart = .FALSE.                    , &
+         &       ldims=shape2d                         , &
+         &       lopenacc=.TRUE.                       )
+    __acc_attach(field%rlns)
+
+    cf_desc    = t_cf_var('toa_net_longwave_radiation_flux_in_air', &
+         &                'W m-2'                                 , &
+         &                'toa net longwave radiation flux'       , &
+         &                datatype_flt                               )
+    grib2_desc = grib2_var(0,5,5, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(field_list, prefix//'rlnt', field%rlnt, &
+         &       GRID_UNSTRUCTURED_CELL    , ZA_TOA    , &
+         &       cf_desc, grib2_desc                   , &
+         &       lrestart = .FALSE.                    , &
+         &       ldims=shape2d                         , &
+         &       lopenacc=.TRUE.                       )
+    __acc_attach(field%rlnt)
 
     !
     !------------------
@@ -2224,7 +2303,22 @@ CONTAINS
      __acc_attach(field%albnirdif_ice)
     END IF
 
+    !--------------------------------------
+    ! Arbitrary output fields for radiation
+    !--------------------------------------
 
+    cf_desc    = t_cf_var('rad_2d', '', &
+               & 'arbitrary radiation 2d-field', datatype_flt)
+    grib2_desc = grib2_var(0,6,1, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var( field_list, prefix//'rad_2d', field%rad_2d,       &
+         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
+         &        cf_desc, grib2_desc,                           &
+         &        ldims=shape2d,                                 &
+         &        lrestart = .FALSE.,                            &
+         &        isteptype=TSTEP_INSTANT,                       &
+         &        lopenacc=.TRUE.)
+    __acc_attach(field%rad_2d)
+    
     !-------
     ! Clouds
     !-------
@@ -2285,57 +2379,45 @@ CONTAINS
        __acc_attach(field%hur   )
     END IF
 
+    cf_desc    = t_cf_var('ufts', 'W m-2',    &
+               & 'energy flux at surface from thermal exchange', datatype_flt)
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var( field_list, prefix//'ufts', field%ufts,        &
+         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
+         &        cf_desc, grib2_desc,                           &
+         &        ldims=shape2d,                                 &
+         &        lrestart = .FALSE.,                            &
+         &        isteptype=TSTEP_INSTANT,                       &
+         &        lopenacc=.TRUE.)
+    __acc_attach(field%ufts)
+    
+    cf_desc    = t_cf_var('ufvs', 'W m-2',    &
+               & 'energy flux at surface from vapor exchange', datatype_flt)
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var( field_list, prefix//'ufvs', field%ufvs,        &
+         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
+         &        cf_desc, grib2_desc,                           &
+         &        ldims=shape2d,                                 &
+         &        lrestart = .FALSE.,                            &
+         &        isteptype=TSTEP_INSTANT,                       &
+         &        lopenacc=.TRUE.)
+    __acc_attach(field%ufvs)
+    
+    cf_desc    = t_cf_var('ufcs', 'W m-2',    &
+               & 'energy flux at surface from condensate', datatype_flt)
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var( field_list, prefix//'ufcs', field%ufcs,        &
+         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
+         &        cf_desc, grib2_desc,                           &
+         &        ldims=shape2d,                                 &
+         &        lrestart = .FALSE.,                            &
+         &        isteptype=TSTEP_INSTANT,                       &
+         &        lopenacc=.TRUE.)
+    __acc_attach(field%ufcs)
+    
     !--------------
     ! Precipitation
     !--------------
-    cf_desc    = t_cf_var('shfl_qsa', 'K kg m-2 s-1',    &
-               & 'near surface humidity weighted sensible temperature flux', datatype_flt)
-    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( field_list, prefix//'shfl_qsa', field%shfl_qsa,  &
-         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
-         &        cf_desc, grib2_desc,                           &
-         &        ldims=shape2d,                                 &
-         &        lrestart = .TRUE.,                             &
-         &        isteptype=TSTEP_INSTANT,                       &
-         &        lopenacc=.TRUE.)
-    __acc_attach(field%shfl_qsa)
-    
-    cf_desc    = t_cf_var('evap_tsa', 'K kg m-2 s-1',    &
-               & 'near surface temperature weighted evaporation', datatype_flt)
-    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( field_list, prefix//'evap_tsa', field%evap_tsa,  &
-         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
-         &        cf_desc, grib2_desc,                           &
-         &        ldims=shape2d,                                 &
-         &        lrestart = .TRUE.,                             &
-         &        isteptype=TSTEP_INSTANT,                       &
-         &        lopenacc=.TRUE.)
-    __acc_attach(field%evap_tsa)
-    
-    cf_desc    = t_cf_var('ssfl_tsa', 'K kg m-2 s-1',    &
-               & 'near surface temperature weighted solid precipitation', datatype_flt)
-    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( field_list, prefix//'ssfl_tsa', field%ssfl_tsa,  &
-         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
-         &        cf_desc, grib2_desc,                           &
-         &        ldims=shape2d,                                 &
-         &        lrestart = .TRUE.,                             &
-         &        isteptype=TSTEP_INSTANT,                       &
-         &        lopenacc=.TRUE.)
-    __acc_attach(field%ssfl_tsa)
-    
-    cf_desc    = t_cf_var('rsfl_tsa', 'K kg m-2 s-1',    &
-               & 'near surface temperature weighted liquid precipitation', datatype_flt)
-    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var( field_list, prefix//'rsfl_tsa', field%rsfl_tsa,  &
-         &        GRID_UNSTRUCTURED_CELL, ZA_SURFACE,            &
-         &        cf_desc, grib2_desc,                           &
-         &        ldims=shape2d,                                 &
-         &        lrestart = .TRUE.,                             &
-         &        isteptype=TSTEP_INSTANT,                       &
-         &        lopenacc=.TRUE.)
-    __acc_attach(field%rsfl_tsa)
-    
     cf_desc    = t_cf_var('prlr', 'kg m-2 s-1',    &
                & 'large-scale precipitation flux (water)', datatype_flt)
     grib2_desc = grib2_var(0,1,77, ibits, GRID_UNSTRUCTURED, GRID_CELL)
@@ -2469,21 +2551,6 @@ CONTAINS
     ! Variables for energy diagnostic of aes physics
     !---------------------------
 
-    CALL add_var( field_list, prefix//'cpair', field%cpair,                       &
-                & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE,                           &
-                & t_cf_var('cpair', 'J/kg/K',                                     &
-                &          'specific heat of air at constant pressure',           &
-                &          datatype_flt),                                         &
-                & grib2_var(0,0,255, ibits, GRID_UNSTRUCTURED, GRID_CELL),        &
-                & ldims=shape3d,                                                  &
-                & lrestart = .FALSE.,                                             &
-                & vert_interp=create_vert_interp_metadata(                        &
-                &   vert_intp_type=vintp_types("P","Z","I"),                      &
-                &   vert_intp_method=VINTP_METHOD_LIN ),                          &
-                & lopenacc=.TRUE.)
-
-    __acc_attach(field%cpair)
-
     CALL add_var( field_list, prefix//'cvair', field%cvair,                       &
                 & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE,                           &
                 & t_cf_var('cvair', 'J/kg/K',                                     &
@@ -2498,21 +2565,6 @@ CONTAINS
                 & lopenacc=.TRUE.)
 
     __acc_attach(field%cvair)
-
-    CALL add_var( field_list, prefix//'qconv', field%qconv,                       &
-                & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE,                           &
-                & t_cf_var('qconv', '(K/s)/(W/m2)',                               &
-                &          'conv. factor layer heating to temp. tendency',        &
-                &          datatype_flt),                                         &
-                & grib2_var(0,0,255, ibits, GRID_UNSTRUCTURED, GRID_CELL),        &
-                & ldims=shape3d,                                                  &
-                & lrestart = .FALSE.,                                             &
-                & vert_interp=create_vert_interp_metadata(                        &
-                &   vert_intp_type=vintp_types("P","Z","I"),                      &
-                &   vert_intp_method=VINTP_METHOD_LIN ),                          &
-                & lopenacc=.TRUE.)
-
-    __acc_attach(field%qconv)
 
     IF (is_variable_in_output(var_name=prefix//'q_phy')) THEN
        CALL add_var( field_list, prefix//'q_phy', field%q_phy,                       &
@@ -2769,22 +2821,23 @@ CONTAINS
            &        lopenacc=.TRUE.)
       __acc_attach(field%udynvi)
 
-      ! &       field% uphyvi     (nproma,nblks),          &
-      cf_desc    = t_cf_var('u_phy_vi','J m-2','vertically integrated moist internal energy after physics', &
+      ! &       field% duphyvi     (nproma,nblks),          &
+      cf_desc    = t_cf_var('du_phy_vi','J m-2','change of vertically integrated moist internal energy by physics', &
            &                datatype_flt)
       grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-      CALL add_var( field_list, prefix//'uphyvi', field%uphyvi,                      &
+      CALL add_var( field_list, prefix//'duphyvi', field%duphyvi,                      &
            &        GRID_UNSTRUCTURED_CELL, ZA_ATMOSPHERE,                       &
            &        cf_desc, grib2_desc,                                         &
            &        ldims=shape2d,                                               &
            &        lrestart = .FALSE.,                                          &
            &        isteptype=TSTEP_INSTANT,                                     &
            &        lopenacc=.TRUE.)
-      __acc_attach(field%uphyvi)
+      __acc_attach(field%duphyvi)
 
       ! &       field% utmxvi     (nproma,nblks),          &
-      IF (use_tmx .AND. is_variable_in_output(var_name=prefix//'utmxvi')) THEN
-          cf_desc    = t_cf_var('u_phy_vi','J m-2','vertically integrated moist internal energy after tmx', &
+      IF (use_tmx .AND. (     is_variable_in_output(var_name=prefix//'utmxvi') &
+                     &   .OR. is_variable_in_output(var_name=prefix//'utmxvi_gmean'))) THEN
+          cf_desc    = t_cf_var('u_tmx_vi','J m-2','vertically integrated moist internal energy after tmx', &
                &                datatype_flt)
           grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
           CALL add_var( field_list, prefix//'utmxvi', field%utmxvi,                  &
@@ -3085,13 +3138,15 @@ CONTAINS
       END DO
 
 
-      IF (is_variable_in_output(var_name=prefix//'kedisp')) THEN
-         cf_desc    = t_cf_var('vert_int_dissip_kin_energy', 'W/m2',            &
+      IF (     is_variable_in_output(var_name=prefix//'kedisp')                     &
+          .OR. is_variable_in_output(var_name=prefix//'kedisp_gmean')               &
+          .OR. is_variable_in_output(var_name=prefix//'uphybal_gmean')) THEN
+         cf_desc    = t_cf_var('vert_int_dissip_kin_energy', 'W/m2',                &
                      &         'vert. integr. dissip. kin. energy', datatype_flt)
          grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-         CALL add_var( field_list, prefix//'kedisp', field%kedisp,              &
-                     & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-                     & lrestart=.FALSE., ldims=shape2d,                         &
+         CALL add_var( field_list, prefix//'kedisp', field%kedisp,                  &
+                     & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,     &
+                     & lrestart=.FALSE., ldims=shape2d,                             &
                      & lopenacc=.TRUE.)
          __acc_attach(field%kedisp)
       END IF
@@ -3738,17 +3793,31 @@ CONTAINS
 
     __acc_attach(field%tas)
 
-    CALL add_var( field_list, prefix//'dew2', field%dew2,                       &
-                & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                         &
-                & t_cf_var('dew2','K','dew point temperature in 2m',            &
-                &          datatype_flt),                                       &
-                & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),        &
-                & ldims=shape2d,                                                &
-                & lrestart = .FALSE.,                                           &
-                & isteptype=TSTEP_INSTANT,                                      &
-                & lopenacc=.TRUE.)
-
-    __acc_attach(field%dew2)
+    ! For now, allocate both dew2 and qv2m in order to avoid problems in output
+    ! namelists in run script depending on whether tmx or vdiff are used
+!     IF (use_tmx) THEN
+     CALL add_var( field_list, prefix//'qv2m', field%qv2m,                      &
+                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                    & t_cf_var('qv2m','kg kg-1','specific humidity in 2m',      &
+                    &          datatype_flt),                                   &
+                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                    & ldims=shape2d,                                            &
+                    & lrestart = .FALSE.,                                       &
+                    & isteptype=TSTEP_INSTANT,                                  &
+                    & lopenacc=.TRUE.)
+     __acc_attach(field%qv2m)
+!     ELSE
+     CALL add_var( field_list, prefix//'dew2', field%dew2,                      &
+                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                    & t_cf_var('dew2','K','dew point temperature in 2m',        &
+                    &          datatype_flt),                                   &
+                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                    & ldims=shape2d,                                            &
+                    & lrestart = .FALSE.,                                       &
+                    & isteptype=TSTEP_INSTANT,                                  &
+                    & lopenacc=.TRUE.)
+     __acc_attach(field%dew2)
+!     END IF
 
     CALL add_var( field_list, prefix//'tasmax', field%tasmax,                   &
                 & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                         &
@@ -3830,24 +3899,39 @@ CONTAINS
 
     __acc_attach(field%tas_tile)
 
-    CALL add_var( field_list, prefix//'dew2_tile', field%dew2_tile,             &
-                & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                         &
-                & t_cf_var('dew2_tile','K','dew point temperature in 2m on tiles',&
-                &          datatype_flt),                                       &
-                & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),        &
-                & ldims=shapesfc,                                               &
-                & lcontainer=.TRUE., lrestart=.FALSE.,                          &
-                & isteptype=TSTEP_INSTANT,                                      &
-                & lopenacc=.TRUE.)
-
-    __acc_attach(field%dew2_tile)
-
+    IF (use_tmx) THEN
+     CALL add_var( field_list, prefix//'qv2m_tile', field%qv2m_tile,            &
+                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                    & t_cf_var('qv2m_tile','kg kg-1','specific humidity in 2m on tiles',&
+                    &          datatype_flt),                                   &
+                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                    & ldims=shapesfc,                                           &
+                    & lcontainer=.TRUE., lrestart=.FALSE.,                      &
+                    & isteptype=TSTEP_INSTANT,                                  &
+                    & lopenacc=.TRUE.)
+     __acc_attach(field%qv2m_tile)
+    ELSE
+     CALL add_var( field_list, prefix//'dew2_tile', field%dew2_tile,            &
+                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                    & t_cf_var('dew2_tile','K','dew point temperature in 2m on tiles',&
+                    &          datatype_flt),                                   &
+                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                    & ldims=shapesfc,                                           &
+                    & lcontainer=.TRUE., lrestart=.FALSE.,                      &
+                    & isteptype=TSTEP_INSTANT,                                  &
+                    & lopenacc=.TRUE.)
+     __acc_attach(field%dew2_tile)
+    END IF
 
     ALLOCATE(field%sfcwind_tile_ptr(ksfc_type))
     ALLOCATE(field%uas_tile_ptr(ksfc_type))
     ALLOCATE(field%vas_tile_ptr(ksfc_type))
     ALLOCATE(field%tas_tile_ptr(ksfc_type))
-    ALLOCATE(field%dew2_tile_ptr(ksfc_type))
+    IF (use_tmx) THEN
+     ALLOCATE(field%qv2m_tile_ptr(ksfc_type))
+    ELSE
+     ALLOCATE(field%dew2_tile_ptr(ksfc_type))
+    END IF
 
     DO jsfc = 1,ksfc_type
 
@@ -3891,7 +3975,18 @@ CONTAINS
                   & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
                   & lmiss=.TRUE., missval=cdimissval )
 
-      CALL add_ref( field_list, prefix//'dew2_tile',                                &
+      IF (use_tmx) THEN
+        CALL add_ref( field_list, prefix//'qv2m_tile',                              &
+                  & prefix//'qv2m_'//csfc(jsfc), field%qv2m_tile_ptr(jsfc)%p,       &
+                  & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
+                  & t_cf_var('qv2m_'//csfc(jsfc), 'kg kg-1',                        &
+                  &          'specific humidity in 2m on tile '//csfc(jsfc),        &
+                  &          datatype_flt),                                         &
+                  & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
+                  & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
+                  & lmiss=.TRUE., missval=cdimissval )
+      ELSE
+        CALL add_ref( field_list, prefix//'dew2_tile',                              &
                   & prefix//'dew2_'//csfc(jsfc), field%dew2_tile_ptr(jsfc)%p,       &
                   & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
                   & t_cf_var('dew2_'//csfc(jsfc), 'K',                              &
@@ -3900,6 +3995,7 @@ CONTAINS
                   & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
                   & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
                   & lmiss=.TRUE., missval=cdimissval )
+      END IF
 
     END DO
 
@@ -3953,14 +4049,33 @@ CONTAINS
     __acc_attach(field%evap_gmean)
 
 !   derived variable
-    cf_desc    = t_cf_var('radtop_gmean', 'W m-2', 'global mean toa total radiation', datatype_flt,'radtop_gmean')
+    cf_desc    = t_cf_var('radtop_gmean', 'W m-2', 'global mean toa net total radiation', datatype_flt,'radtop_gmean')
     grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
     CALL add_var( field_list, prefix//'radtop_gmean', field%radtop_gmean,      &
                 & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
                 & lrestart = .FALSE., ldims=(/1/),                             &
                 & lopenacc=.TRUE.)
     __acc_attach(field%radtop_gmean)
-!   derived variable
+
+    !   derived variable
+    cf_desc    = t_cf_var('radbot_gmean', 'W m-2', 'global mean surface net total radiation', datatype_flt,'radbot_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'radbot_gmean', field%radbot_gmean,      &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%radbot_gmean)
+
+    !   derived variable
+    cf_desc    = t_cf_var('radbal_gmean', 'W m-2', 'global mean net radiative flux into atmosphere', datatype_flt,'radbal_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'radbal_gmean', field%radbal_gmean,      &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%radbal_gmean)
+
+    !   derived variable
     cf_desc    = t_cf_var('fwfoce_gmean', 'kg m-2 s-1', 'mean surface freshwater flux over ocean surface', &
                 & datatype_flt,'fwfoce_gmean')
     grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
@@ -3969,6 +4084,82 @@ CONTAINS
                 & lrestart = .FALSE., ldims=(/1/),                             &
                 & lopenacc=.TRUE.)
     __acc_attach(field%fwfoce_gmean)
+
+!   derived variable
+    cf_desc    = t_cf_var('udynvi_gmean', 'J m-2', 'mean vertically integrated moist internal energy after dynamics', &
+                & datatype_flt,'udynvi_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'udynvi_gmean', field%udynvi_gmean,          &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%udynvi_gmean)
+!   derived variable
+    cf_desc    = t_cf_var('duphyvi_gmean', 'J m-2', 'mean vertically integrated moist internal energy change by physics', &
+                & datatype_flt,'duphyvi_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'duphyvi_gmean', field%duphyvi_gmean,          &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%duphyvi_gmean)
+    !   derived variable
+    IF (use_tmx .AND. is_variable_in_output(var_name=prefix//'utmxvi_gmean')) THEN
+      cf_desc    = t_cf_var('utmxvi_gmean', 'J m-2', 'mean vertically integrated moist internal energy after tmx', &
+                     & datatype_flt,'utmxvi_gmean')
+      grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+      CALL add_var( field_list, prefix//'utmxvi_gmean', field%utmxvi_gmean,          &
+                     & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                     & lrestart = .FALSE., ldims=(/1/),                             &
+                     & lopenacc=.TRUE.)
+      __acc_attach(field%utmxvi_gmean)
+    END IF
+!   derived variable
+    cf_desc    = t_cf_var('ufts_gmean', 'W m-2', 'mean energy flux at surface from thermal exchange', &
+                & datatype_flt,'ufts_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'ufts_gmean', field%ufts_gmean,          &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%ufts_gmean)
+!   derived variable
+    cf_desc    = t_cf_var('ufvs_gmean', 'W m-2', 'mean energy flux at surface from vapor exchange', &
+                & datatype_flt,'ufvs_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'ufvs_gmean', field%ufvs_gmean,          &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%ufvs_gmean)
+!   derived variable
+    cf_desc    = t_cf_var('ufcs_gmean', 'W m-2', 'mean energy flux at surface from condensate', &
+                & datatype_flt,'ufcs_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'ufcs_gmean', field%ufcs_gmean,          &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%ufcs_gmean)
+!   derived variable
+    cf_desc    = t_cf_var('kedisp_gmean', 'W m-2', 'mean vert. integr. dissip. kin. energy', &
+                & datatype_flt,'kedisp_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'kedisp_gmean', field%kedisp_gmean,      &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%kedisp_gmean)
+
+!   derived variable
+    cf_desc    = t_cf_var('uphybal_gmean', 'W m-2', 'mean energy balance in aes physics', &
+                & datatype_flt,'uphybal_gmean')
+    grib2_desc = grib2_var(255,255,255, ibits, GRID_UNSTRUCTURED, GRID_LONLAT)
+    CALL add_var( field_list, prefix//'uphybal_gmean', field%uphybal_gmean,      &
+                & GRID_LONLAT, ZA_SURFACE, cf_desc, grib2_desc,                &
+                & lrestart = .FALSE., ldims=(/1/),                             &
+                & lopenacc=.TRUE.)
+    __acc_attach(field%uphybal_gmean)
 
 ! icefrc not allocated in atmosphere
 !   cf_desc    = t_cf_var('icefrc_gmean', 'frac', 'global mean ice cover of grid box', datatype_flt,'icefrc_gmean')
@@ -4010,7 +4201,8 @@ CONTAINS
 
     !$ACC ENTER DATA COPYIN(tend)
 
-    CALL vlr_add(tend_list, listname, patch_id=jg ,lrestart=.FALSE.)
+    CALL vlr_add(tend_list, listname, patch_id=jg ,lrestart=.FALSE., &
+      &          model_type=get_my_process_name())
 
     !------------------------------
     ! Temperature tendencies

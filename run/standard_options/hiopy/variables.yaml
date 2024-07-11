@@ -1,0 +1,663 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+variables:
+  A_tracer_v_to:
+    component: ocean
+    hgrid: cell
+    vgrid: depth_below_sea_half
+    standard_name: ocean_vertical_diffusivity
+    long_name: sea water vertical diffusivity
+    cmip_name: sea_water_vertical_diffusivity
+    units: m2 s-1
+  FrshFlux_IceSalt:
+    component: ocean
+    hgrid: cell
+    long_name: Salt volume flux due to sea ice change
+    units: psu m s-1
+    vgrid: surface
+  FrshFlux_TotalIce:
+    component: ocean
+    hgrid: cell
+    long_name: Freshwater Flux due to Sea Ice Change
+    units: m s-1
+    vgrid: surface
+  Qbot:
+    component: ocean
+    hgrid: cell
+    long_name: Conductive heat flux at ice-ocean interface
+    units: W/m^2
+    vgrid: generic_ice
+  Qtop:
+    component: ocean
+    hgrid: cell
+    long_name: Energy flux available for surface melting
+    units: W/m^2
+    vgrid: generic_ice
+  Wind_Speed_10m:
+    component: ocean
+    hgrid: cell
+    long_name: Wind Speed at 10m height
+    units: m/s
+    vgrid: surface
+  atmos_fluxes_FrshFlux_Evaporation:
+    component: ocean
+    hgrid: cell
+    units: m/s
+    vgrid: surface
+  atmos_fluxes_FrshFlux_Precipitation:
+    component: ocean
+    hgrid: cell
+    units: m/s
+    vgrid: surface
+  atmos_fluxes_FrshFlux_Runoff:
+    component: ocean
+    hgrid: cell
+    units: m/s
+    vgrid: surface
+  atmos_fluxes_FrshFlux_SnowFall:
+    component: ocean
+    hgrid: cell
+    units: m/s
+    vgrid: surface
+  atmos_fluxes_HeatFlux_Latent:
+    component: ocean
+    hgrid: cell
+    units: W/m2
+    vgrid: surface
+  atmos_fluxes_HeatFlux_LongWave:
+    component: ocean
+    hgrid: cell
+    units: W/m2
+    vgrid: surface
+  atmos_fluxes_HeatFlux_Sensible:
+    component: ocean
+    hgrid: cell
+    units: W/m2
+    vgrid: surface
+  atmos_fluxes_HeatFlux_ShortWave:
+    component: ocean
+    hgrid: cell
+    units: W/m2
+    vgrid: surface
+  atmos_fluxes_HeatFlux_Total:
+    component: ocean
+    hgrid: cell
+    units: W/m2
+    vgrid: surface
+  atmos_fluxes_stress_x:
+    component: ocean
+    hgrid: cell
+    units: Pa
+    vgrid: surface
+  atmos_fluxes_stress_xw:
+    component: ocean
+    hgrid: cell
+    units: Pa
+    vgrid: surface
+  atmos_fluxes_stress_y:
+    component: ocean
+    hgrid: cell
+    units: Pa
+    vgrid: surface
+  atmos_fluxes_stress_yw:
+    component: ocean
+    hgrid: cell
+    units: Pa
+    vgrid: surface
+  cl:
+    component: atmo
+    hgrid: cell
+    long_name: cloud area fraction
+    units: m2 m-2
+    vgrid: reference
+  cli:
+    component: atmo
+    hgrid: cell
+    long_name: specific cloud ice content
+    units: kg kg-1
+    vgrid: reference
+  clivi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated cloud ice
+    units: kg m-2
+    vgrid: atmosphere
+  cllvi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated cloud water
+    units: kg m-2
+    vgrid: atmosphere
+  clw:
+    component: atmo
+    hgrid: cell
+    long_name: specific cloud water content
+    units: kg kg-1
+    vgrid: reference
+  conc:
+    component: ocean
+    hgrid: cell
+    long_name: ice concentration in each ice class
+    vgrid: generic_ice
+  delhi:
+    component: ocean
+    hgrid: cell
+    long_name: Change in ice mean thickness due to thermodynamic effects
+    units: m
+    vgrid: generic_ice
+  dew2:
+    component: atmo
+    hgrid: cell
+    long_name: dew point temperature in 2m
+    units: K
+    vgrid: height_2m
+  gpsm:
+    long_name: geopotential above surface
+    units: m2 s-2
+  heat_content_seaice:
+    component: ocean
+    hgrid: cell
+    vgrid: surface
+  heat_content_snow:
+    component: ocean
+    hgrid: cell
+    vgrid: surface
+  heat_content_total:
+    component: ocean
+    hgrid: cell
+    vgrid: surface
+  heatOceI:
+    component: ocean
+    hgrid: cell
+    long_name: Heat flux to ocean from the ice growth
+    units: W/m^2
+    vgrid: generic_ice
+  heatOceW:
+    component: ocean
+    hgrid: cell
+    long_name: Heat flux to ocean from the atmosphere
+    units: W/m^2
+    vgrid: generic_ice
+  hfls:
+    component: atmo
+    hgrid: cell
+    long_name: latent heat flux
+    standard_name: surface_downward_latent_heat_flux
+    units: W m-2
+    vgrid: surface
+  hfss:
+    component: atmo
+    hgrid: cell
+    long_name: sensible heat flux
+    standard_name: surface_downward_sensible_heat_flux
+    units: W m-2
+    vgrid: surface
+  hi:
+    component: ocean
+    hgrid: cell
+    long_name: ice thickness
+    units: m
+    vgrid: generic_ice
+  hs:
+    component: ocean
+    hgrid: cell
+    long_name: snow thickness
+    units: m
+    vgrid: generic_ice
+  hus:
+    component: atmo
+    hgrid: cell
+    long_name: Specific humidity
+    standard_name: specific_humidity
+    vgrid: reference
+  ice_u:
+    component: ocean
+    hgrid: cell
+    long_name: zonal velocity
+    units: m/s
+    vgrid: surface
+  ice_v:
+    component: ocean
+    hgrid: cell
+    long_name: meridional velocity
+    units: m/s
+    vgrid: surface
+  mlotst:
+    component: ocean
+    hgrid: cell
+    standard_name: ocean_mixed_layer_thickness_defined_by_sigma_t
+    units: m
+    vgrid: surface
+  newice:
+    component: ocean
+    hgrid: cell
+    long_name: new ice growth in open water
+    units: m
+    vgrid: surface
+  pfull:
+    standard_name: air_pressure
+    component: atmo
+    hgrid: cell
+    vgrid: reference
+    units: Pa
+  phalf:
+    standard_name: air_pressure
+    component: atmo
+    hgrid: cell
+    vgrid: reference_half
+    units: Pa
+  pr:
+    component: atmo
+    hgrid: cell
+    long_name: precipitation flux
+    units: kg m-2 s-1
+    vgrid: surface
+  prls:
+    component: atmo
+    hgrid: cell
+    vgrid: surface
+  prw:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated water vapour
+    units: kg m-2
+    vgrid: atmosphere
+  ps:
+    component: atmo
+    hgrid: cell
+    long_name: surface pressure
+    standard_name: surface_air_pressure
+    units: Pa
+    vgrid: surface
+  pres_msl:
+    component: atmo
+    hgrid: cell
+    long_name: mean sea level pressure
+    units: Pa
+    vgrid: meansea
+  pres_sfc:
+    component: atmo
+    hgrid: cell
+    standard_name: surface_air_pressure
+    long_name: surface pressure
+    units: Pa
+    vgrid: surface
+  qgvi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated graupel
+    units: kg m-2
+    vgrid: atmosphere
+  qrvi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated rain
+    units: kg m-2
+    vgrid: atmosphere
+  qsvi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated snow
+    units: kg m-2
+    vgrid: atmosphere
+  qg:
+    component: atmo
+    hgrid: cell
+    long_name: specific graupel content
+    units: kg kg-1
+    vgrid: reference
+  qr:
+    component: atmo
+    hgrid: cell
+    long_name: specific rain content
+    units: kg kg-1
+    vgrid: reference
+  qs:
+    component: atmo
+    hgrid: cell
+    long_name: specific snow content
+    units: kg kg-1
+    vgrid: reference
+  qv2m:
+    component: atmo
+    hgrid: cell
+    long_name: specific humidity in 2m
+    units: kg kg-1
+    vgrid: height_2m
+  rho:
+    component: atmo
+    hgrid: cell
+    long_name: density
+    standard_name: air_density
+    units: kg m-3
+    vgrid: reference
+  rlds:
+    component: atmo
+    hgrid: cell
+    long_name: surface downwelling longwave radiation
+    standard_name: surface_downwelling_longwave_flux_in_air
+    units: W m-2
+    vgrid: surface
+  rlus:
+    component: atmo
+    hgrid: cell
+    long_name: surface upwelling longwave radiation
+    standard_name: surface_upwelling_longwave_flux_in_air
+    units: W m-2
+    vgrid: surface
+  rlut:
+    component: atmo
+    hgrid: cell
+    long_name: toa outgoing longwave radiation
+    standard_name: toa_outgoing_longwave_flux
+    units: W m-2
+    vgrid: toa
+  rsds:
+    component: atmo
+    hgrid: cell
+    long_name: surface downwelling shortwave radiation
+    standard_name: surface_downwelling_shortwave_flux_in_air
+    units: W m-2
+    vgrid: surface
+  rsdt:
+    component: atmo
+    hgrid: cell
+    long_name: toa incident shortwave radiation
+    standard_name: toa_incoming_shortwave_flux
+    units: W m-2
+    vgrid: toa
+  rsus:
+    component: atmo
+    hgrid: cell
+    long_name: surface upwelling shortwave radiation
+    standard_name: surface_upwelling_shortwave_flux_in_air
+    units: W m-2
+    vgrid: surface
+  rsut:
+    component: atmo
+    hgrid: cell
+    long_name: toa outgoing shortwave radiation
+    standard_name: toa_outgoing_shortwave_flux
+    units: W m-2
+    vgrid: toa
+  sea_level_pressure:
+    component: ocean
+    hgrid: cell
+    long_name: Sea Level Pressure
+    units: Pa
+    vgrid: surface
+  sfcwind:
+    component: atmo
+    hgrid: cell
+    long_name: 10m windspeed
+    units: m s-1
+    vgrid: height_10m
+  sic:
+    component: atmo
+    hgrid: cell
+    long_name: fraction of ocean covered by sea ice
+    vgrid: surface
+  sit:
+    component: atmo
+    hgrid: cell
+    long_name: sea ice thickness
+    units: m
+    vgrid: surface
+  snow_to_ice:
+    component: ocean
+    hgrid: cell
+    long_name: amount of snow that is transformed to ice
+    units: m
+    vgrid: generic_ice
+  so:
+    component: ocean
+    hgrid: cell
+    long_name: sea water salinity
+    standard_name: sea_water_salinity
+    vgrid: null
+  stretch_c:
+    component: ocean
+    hgrid: cell
+    long_name: zstar surface stretch at cell center
+    units: m
+    vgrid: surface
+  ta:
+    component: atmo
+    hgrid: cell
+    long_name: Temperature
+    standard_name: air_temperature
+    units: K
+    vgrid: reference
+  tas:
+    component: atmo
+    hgrid: cell
+    long_name: temperature in 2m
+    standard_name: air_temperature
+    units: K
+    vgrid: height_2m
+  tauu:
+    component: atmo
+    hgrid: cell
+    long_name: u-momentum flux at the surface
+    units: N m-2
+    vgrid: surface
+  tauv:
+    component: atmo
+    hgrid: cell
+    long_name: v-momentum flux at the surface
+    units: N m-2
+    vgrid: surface
+  tke:
+    component: ocean
+    hgrid: cell
+    long_name: turbulent kinetic energy
+    units: m2 s-2
+    vgrid: depth_below_sea_half
+  to:
+    component: ocean
+    hgrid: cell
+    long_name: sea water potential temperature
+    standard_name: sea_water_potential_temperature
+    units: degC
+    vgrid: depth_below_sea
+  so:
+    component: ocean
+    hgrid: cell
+    standard_name: sea_water_salinity
+    long_name: sea water salinity
+    units: psu
+    vgrid: depth_below_sea
+  ts:
+    component: atmo
+    hgrid: cell
+    long_name: surface temperature
+    standard_name: surface_temperature
+    units: K
+    vgrid: surface
+  u:
+    component: ocean
+    hgrid: cell
+    long_name: u zonal velocity component
+    units: m/s
+    vgrid: depth_below_sea
+  ua:
+    component: atmo
+    hgrid: cell
+    long_name: Zonal wind
+    standard_name: eastward_wind
+    units: m s-1
+    vgrid: reference
+  uas:
+    component: atmo
+    hgrid: cell
+    long_name: zonal wind in 10m
+    units: m s-1
+    vgrid: height_10m
+  v:
+    component: ocean
+    hgrid: cell
+    long_name: v meridional velocity component
+    units: m/s
+    vgrid: depth_below_sea
+  va:
+    component: atmo
+    hgrid: cell
+    long_name: Meridional wind
+    standard_name: northward_wind
+    units: m s-1
+    vgrid: reference
+  vas:
+    component: atmo
+    hgrid: cell
+    long_name: meridional wind in 10m
+    units: m s-1
+    vgrid: height_10m
+  verticallyTotal_mass_flux_e:
+    component: ocean
+    hgrid: edge
+    vgrid: surface
+  w:
+    component: ocean
+    hgrid: cell
+    long_name: vertical velocity at cells
+    units: m/s
+    vgrid: depth_below_sea_half
+  wa_phy:
+    component: atmo
+    hgrid: cell
+    long_name: vertical velocity
+    units: m s-1
+    vgrid: reference_half
+  omega:
+    component: atmo
+    hgrid: cell
+    long_name: vertical velocity
+    units: Pa s-1
+    vgrid: reference
+  zos:
+    component: ocean
+    hgrid: cell
+    long_name: zstar sfc elevation at cell center
+    units: m
+    vgrid: surface
+  udynvi:
+    component: atmo
+    hgrid: cell
+    long_name: vertically integrated moist internal energy after dynamics
+    units: J m-2
+    vgrid: atmosphere
+  duphyvi:
+    component: atmo
+    hgrid: cell
+    long_name: change of vertically integrated moist internal energy by physics
+    units: J m-2
+    vgrid: atmosphere
+
+
+  hydro_canopy_cond_limited_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+  hydro_discharge_ocean_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: m3 s-1
+  hydro_drainage_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: kg m-2 s-1
+  hydro_runoff_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: kg m-2 s-1
+    long_name: surface runoff
+  hydro_snow_soil_dens_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: kg m-3
+    long_name: Density of snow on soil
+  hydro_transpiration_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: kg m-2 s-1
+    long_name: Transpiration from surface
+  hydro_ice_soil_sl_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: soil_depth_water
+    units: m
+    description: units is in water equivalents
+    long_name: Ice content in soil layers
+  hydro_weq_snow_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: m
+    description: units is in water equivalents
+    long_name: Water content of snow reservoir on surface
+  hydro_wtr_soil_sl_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: soil_depth_water
+    units: m
+    description: units is in water equivalents
+    long_name: Water content in soil layers
+  seb_forc_hflx_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: W m-2
+    long_name: additional heat flux at surface
+  seb_heat_cap_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: J m-2 K-1
+    long_name: surface layer heat capacity
+  sse_grnd_hflx_old_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: surface
+    units: J m-2 s-1
+    long_name: Ground heat flux (old)
+  sse_t_soil_sl_box:
+    component: jsbach
+    hgrid: cell
+    vgrid: soil_depth_energy
+    units: K
+    standard_name: soil_temperature
+
+  vort:
+    hgrid: vertex
+  u_vint:
+    component: ocean
+    hgrid: cell
+    vgrid: surface
+    long_name: vertically integrated barotropic zonal velocity
+    units: m2 s-1
+  v_vint:
+    component: ocean
+    hgrid: cell
+    vgrid: surface
+    long_name: vertically integrated meridional zonal velocity
+    units: m2 s-1
+
+  tend_ta_mig:
+    component: atmo
+    hgrid: cell
+    vgrid: reference
+    long_name: temperature tendency due to graupel processes (cp)
+    units: K s-1

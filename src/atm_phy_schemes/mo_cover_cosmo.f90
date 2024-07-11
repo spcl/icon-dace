@@ -30,7 +30,7 @@ USE mo_physical_constants, ONLY: &
 USE mo_math_constants, ONLY: &
     uc2 => sqrt3
 
-USE mo_convect_tables, ONLY: &
+USE mo_lookup_tables_constants, ONLY: &
     b1       => c1es    , & !! constants for computing the sat. vapour
     b2w      => c3les   , & !! pressure over water (l) and ice (i)
     b2i      => c3ies   , & !!               -- " --

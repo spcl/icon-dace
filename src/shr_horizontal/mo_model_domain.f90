@@ -66,6 +66,7 @@ MODULE mo_model_domain
 
   PUBLIC :: t_tangent_vectors
 
+  PUBLIC :: get_startrow_c
 
   !----------------------------------------------------
   ! TODO Abstraction of the two types of subsets
@@ -1227,6 +1228,27 @@ MODULE mo_model_domain
 
   END TYPE t_patch_3D
   !--------------------------------------------------------------------
+
+
+CONTAINS
+
+  ! Determine the start row for cells from a given edge start row.
+  !
+  ! The cell start row defines the row at which cell-based computations start.
+  !
+  ! For a given edge start row, the cell start row is computed as the minimum of the two
+  ! cell rows adjacent to the given edge row. Hence, the cell row which is closer
+  ! to the boundary is chosen.
+  !
+  !
+  ELEMENTAL FUNCTION get_startrow_c (startrow_e)  RESULT (startrow_c)
+
+    INTEGER, INTENT(IN) :: startrow_e  !< row at which edge-based computations start
+    INTEGER :: startrow_c
+
+    startrow_c = MAX(1,(startrow_e - MOD(startrow_e,2)) / 2)
+
+  END FUNCTION get_startrow_c
 
 END MODULE mo_model_domain
 

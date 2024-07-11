@@ -10,7 +10,7 @@ dnl Version: 1.0
 dnl Keywords:
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
-dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
+dnl URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are  permitted provided that the following conditions are
@@ -63,15 +63,15 @@ dnl to yes if all requested tests succeeded, to no if any test failed.
 dnl The library check will not run if the header check failed.
 AC_DEFUN([ACX_GENERIC_PACKAGE],
   [AC_REQUIRE([_ASX_TR_ARG_PREPARE])
-   AS_VAR_PUSHDEF([acx_pkg_root],[AS_TR_CPP([$1][root])])
-   AS_VAR_PUSHDEF([acx_pkg_lib],[AS_TR_CPP([$1_]_AC_LANG_ABBREV[_LIB])])
-   AS_VAR_PUSHDEF([acx_pkg_inc],[AS_TR_CPP([$1_]_AC_LANG_ABBREV[_INCLUDE])])
+   AS_VAR_PUSHDEF([acx_pkg_root],[AS_TR_CPP([$1][root])])dnl
+   AS_VAR_PUSHDEF([acx_pkg_lib],[AS_TR_CPP([$1_]_AC_LANG_ABBREV[_LIB])])dnl
+   AS_VAR_PUSHDEF([acx_pkg_inc],[AS_TR_CPP([$1_]_AC_LANG_ABBREV[_INCLUDE])])dnl
    AS_VAR_PUSHDEF([acx_cv_pkg_inc],
-     [AS_TR_SH([acx_cv_]_AC_LANG_ABBREV[_include_]$2)])
+     [AS_TR_SH([acx_cv_]_AC_LANG_ABBREV[_include_]$2)])dnl
    AS_VAR_PUSHDEF([acx_pkg_bindings],
-     [AS_TR_SH([have_][$1_]_AC_LANG_ABBREV[_bindings])])
+     [AS_TR_SH([have_][$1_]_AC_LANG_ABBREV[_bindings])])dnl
    AS_VAR_SET([acx_pkg_bindings],[yes])
-   AC_SUBST(acx_pkg_root)
+   AC_SUBST(acx_pkg_root)dnl
    AC_ARG_WITH(ASX_TR_ARG([$1-root]),
      [AS_HELP_STRING([--with-]ASX_TR_ARG([$1])[-root],
         [set directory to search for $1 headers and library]m4_ifval([$13],[, @<:@default=$13@:>@]))],
@@ -124,16 +124,15 @@ AC_DEFUN([ACX_GENERIC_PACKAGE],
            [AS_VAR_COPY([acx_temp],[ac_Search])
             acx_temp=`echo "$acx_temp" | sed -e 's/^ *//;s/ *$//'`
             AS_VAR_COPY([acx_pkg_lib],[acx_temp])])
-         AS_VAR_POPDEF([ac_Search])])])
+         AS_VAR_POPDEF([ac_Search])])])dnl
    AS_VAR_POPDEF([acx_pkg_bindings])dnl
    AS_VAR_POPDEF([acx_cv_pkg_inc])dnl
    AS_VAR_POPDEF([acx_pkg_inc])dnl
    AS_VAR_POPDEF([acx_pkg_lib])dnl
-   AS_VAR_POPDEF([acx_pkg_root])dnl
-  ])
+   AS_VAR_POPDEF([acx_pkg_root])])
 dnl
 dnl Local Variables:
 dnl mode: autoconf
-dnl license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+dnl license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 dnl license-default: "bsd"
 dnl End:

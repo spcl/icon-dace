@@ -148,7 +148,6 @@ cat > ${ocean_namelist} << EOF
  output      = 'vlist'      ! We're still using the old output mechanism
 /
 &dynamics_nml
- iequations  = ${ocean_model_equations}       ! -1: hydrost. ocean model
 /
 &extpar_nml
  itopo       = 0                 ! read external ocean data from gridfile
@@ -254,6 +253,9 @@ cat > ${ocean_namelist} << EOF
   CWT                = 0.5E-3    ! Set to standard values
   bottom_drag_coeff  =    0.0025 ! Chezy coefficient for bottom friction
   wstress_coeff      =    0.3    ! wind stress coefficient for top boundary forcing
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
 /
 &ocean_forcing_nml
   iforc_oce          = ${iforc}       ! ocean forcing:

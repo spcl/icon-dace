@@ -77,6 +77,12 @@ MODULE xt_redist_base
     INTEGER(c_int) :: start, size, stride
   END TYPE xt_offset_ext
 
+  TYPE, BIND(c), PUBLIC :: xt_aoffset_ext
+    INTEGER(mpi_address_kind) :: start
+    INTEGER(c_int) :: size
+    INTEGER(mpi_address_kind) :: stride
+  END TYPE xt_aoffset_ext
+
   TYPE, BIND(c), PUBLIC :: xt_redist_msg
     INTEGER(xt_mpi_fint_kind) :: rank, datatype
   END TYPE xt_redist_msg
@@ -259,6 +265,32 @@ MODULE xt_redist_base
       TYPE(c_ptr) :: redist
     END FUNCTION xt_redist_p2p_ext_custom_new_c2f
 
+    FUNCTION xt_redist_p2p_aext_new_c2f(xmap, num_src_ext, src_extents, &
+         num_dst_ext, dst_extents, datatype) &
+         BIND(c, name='xt_redist_p2p_aext_new_c2f') RESULT(redist)
+      IMPORT :: c_int, c_ptr, xt_aoffset_ext, xt_mpi_fint_kind, xt_xmap
+      TYPE(xt_xmap), INTENT(in) :: xmap
+      INTEGER(c_int), VALUE, INTENT(in) :: num_src_ext, num_dst_ext
+      TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+           dst_extents(num_dst_ext)
+      INTEGER(xt_mpi_fint_kind), VALUE, INTENT(in) :: datatype
+      TYPE(c_ptr) :: redist
+    END FUNCTION xt_redist_p2p_aext_new_c2f
+
+    FUNCTION xt_redist_p2p_aext_custom_new_c2f(xmap, num_src_ext, src_extents, &
+         num_dst_ext, dst_extents, datatype, config) &
+         BIND(c, name='xt_redist_p2p_aext_custom_new_c2f') RESULT(redist)
+      IMPORT :: c_int, c_ptr, xt_aoffset_ext, xt_mpi_fint_kind, xt_xmap, &
+           xt_config
+      TYPE(xt_xmap), INTENT(in) :: xmap
+      INTEGER(c_int), VALUE, INTENT(in) :: num_src_ext, num_dst_ext
+      TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+           dst_extents(num_dst_ext)
+      INTEGER(xt_mpi_fint_kind), VALUE, INTENT(in) :: datatype
+      TYPE(xt_config), INTENT(in) :: config
+      TYPE(c_ptr) :: redist
+    END FUNCTION xt_redist_p2p_aext_custom_new_c2f
+
     FUNCTION xt_redist_repeat_new_c(redist_f, src_extent, dst_extent, &
          num_repetitions, displacements) &
          BIND(C, name='xt_redist_repeat_new') RESULT(res)
@@ -380,6 +412,24 @@ MODULE xt_redist_base
     MODULE PROCEDURE xt_redist_p2p_ext_new_a1d_a1d_cfg
   END INTERFACE xt_redist_p2p_ext_custom_new
 
+  INTERFACE xt_redist_p2p_aext_new
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i2_a1d_i2_a1d
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i2_a1d_i2_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i4_a1d_i4_a1d
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i4_a1d_i4_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i8_a1d_i8_a1d
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i8_a1d_i8_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_a1d_a1d
+    MODULE PROCEDURE xt_redist_p2p_aext_new_a1d_a1d_cfg
+  END INTERFACE xt_redist_p2p_aext_new
+
+  INTERFACE xt_redist_p2p_aext_custom_new
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i2_a1d_i2_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i4_a1d_i4_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_i8_a1d_i8_a1d_cfg
+    MODULE PROCEDURE xt_redist_p2p_aext_new_a1d_a1d_cfg
+  END INTERFACE xt_redist_p2p_aext_custom_new
+
   INTERFACE xt_redist_repeat_new
     MODULE PROCEDURE xt_redist_repeat_new_i4_a1d
     MODULE PROCEDURE xt_redist_repeat_new_i4_a1d_cfg
@@ -421,7 +471,7 @@ MODULE xt_redist_base
        xt_redist_collection_static_new, xt_redist_collection_static_custom_new,&
        xt_redist_collection_new, xt_redist_collection_custom_new, &
        xt_redist_repeat_new, xt_redist_repeat_custom_new, &
-       xt_redist_get_mpi_comm, xt_redist_p2p_ext_new, &
+       xt_redist_get_mpi_comm, xt_redist_p2p_ext_new, xt_redist_p2p_aext_new, &
        xt_redist_a_exchange1, xt_redist_a_exchange, &
        xt_redist_single_array_base_new, xt_redist_single_array_base_custom_new,&
        xt_redist_get_send_mpi_datatype, xt_redist_get_recv_mpi_datatype, &
@@ -1266,6 +1316,155 @@ CONTAINS
     redist%cptr = xt_redist_p2p_ext_custom_new_c2f(xmap, num_src_ext_c, &
          src_extents, num_dst_ext_c, dst_extents, datatype, config)
   END FUNCTION xt_redist_p2p_ext_new_a1d_a1d_cfg
+
+  FUNCTION xt_redist_p2p_aext_new_i2_a1d_i2_a1d(xmap, num_src_ext, src_extents,&
+       num_dst_ext, dst_extents, datatype) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i2), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i2 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i2 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_new_c2f(xmap, &
+         num_src_ext_c, src_extents, num_dst_ext_c, dst_extents, datatype)
+  END FUNCTION xt_redist_p2p_aext_new_i2_a1d_i2_a1d
+
+  FUNCTION xt_redist_p2p_aext_new_i2_a1d_i2_a1d_cfg(xmap, num_src_ext, &
+       src_extents, num_dst_ext, dst_extents, datatype, config) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i2), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_config), INTENT(in) :: config
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i2 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i2 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_custom_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype, config)
+  END FUNCTION xt_redist_p2p_aext_new_i2_a1d_i2_a1d_cfg
+
+  FUNCTION xt_redist_p2p_aext_new_i4_a1d_i4_a1d(xmap, num_src_ext, src_extents,&
+       num_dst_ext, dst_extents, datatype) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i4), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i4 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i4 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype)
+  END FUNCTION xt_redist_p2p_aext_new_i4_a1d_i4_a1d
+
+  FUNCTION xt_redist_p2p_aext_new_i4_a1d_i4_a1d_cfg(xmap, num_src_ext, &
+       src_extents, num_dst_ext, dst_extents, datatype, config) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i4), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_config), INTENT(in) :: config
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i4 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i4 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_custom_new_c2f(xmap, &
+         num_src_ext_c, src_extents, num_dst_ext_c, dst_extents, datatype, &
+         config)
+  END FUNCTION xt_redist_p2p_aext_new_i4_a1d_i4_a1d_cfg
+
+  FUNCTION xt_redist_p2p_aext_new_i8_a1d_i8_a1d(xmap, num_src_ext, src_extents,&
+       num_dst_ext, dst_extents, datatype) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i8), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i8 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i8 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype)
+  END FUNCTION xt_redist_p2p_aext_new_i8_a1d_i8_a1d
+
+  FUNCTION xt_redist_p2p_aext_new_i8_a1d_i8_a1d_cfg(xmap, num_src_ext, &
+       src_extents, num_dst_ext, dst_extents, datatype, config) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    INTEGER(i8), INTENT(in) :: num_src_ext, num_dst_ext
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(num_src_ext), &
+         dst_extents(num_dst_ext)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_config), INTENT(in) :: config
+    TYPE(xt_redist) :: redist
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    IF (num_src_ext < 0_i8 .OR. num_src_ext > HUGE(1_c_int) &
+         .OR. num_dst_ext < 0_i8 .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_custom_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype, config)
+  END FUNCTION xt_redist_p2p_aext_new_i8_a1d_i8_a1d_cfg
+
+  FUNCTION xt_redist_p2p_aext_new_a1d_a1d(xmap, src_extents, dst_extents, &
+       datatype) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(:), dst_extents(:)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_redist) :: redist
+    INTEGER :: num_src_ext, num_dst_ext
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    num_src_ext = SIZE(src_extents)
+    num_dst_ext = SIZE(dst_extents)
+    IF (num_src_ext > HUGE(1_c_int) .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype)
+  END FUNCTION xt_redist_p2p_aext_new_a1d_a1d
+
+  FUNCTION xt_redist_p2p_aext_new_a1d_a1d_cfg(xmap, src_extents, dst_extents, &
+       datatype, config) RESULT(redist)
+    TYPE(xt_xmap), INTENT(in) :: xmap
+    TYPE(xt_aoffset_ext), INTENT(in) :: src_extents(:), dst_extents(:)
+    INTEGER, INTENT(in) :: datatype
+    TYPE(xt_config), INTENT(in) :: config
+    TYPE(xt_redist) :: redist
+    INTEGER :: num_src_ext, num_dst_ext
+    INTEGER(c_int) :: num_src_ext_c, num_dst_ext_c
+    num_src_ext = SIZE(src_extents)
+    num_dst_ext = SIZE(dst_extents)
+    IF (num_src_ext > HUGE(1_c_int) .OR. num_dst_ext > HUGE(1_c_int)) &
+         CALL xt_abort("invalid number of extents", filename, __LINE__)
+    num_src_ext_c = INT(num_src_ext, c_int)
+    num_dst_ext_c = INT(num_dst_ext, c_int)
+    redist%cptr = xt_redist_p2p_aext_custom_new_c2f(xmap, num_src_ext_c, &
+         src_extents, num_dst_ext_c, dst_extents, datatype, config)
+  END FUNCTION xt_redist_p2p_aext_new_a1d_a1d_cfg
 
   FUNCTION xt_redist_single_array_base_new_i2_a1d_i2_a1d( &
        nsend, nrecv, send_msgs, recv_msgs, comm) RESULT(redist)

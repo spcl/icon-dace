@@ -333,7 +333,7 @@ SUBROUTINE nice_param(wpar_ice,T_ice,          &
 
   INTEGER :: index 
 
-  monvol=np_ice*1.0_wp-6._wp*ddry_ice*ddry_ice*ddry_ice
+  monvol=np_ice*1.0e-6_wp*ddry_ice*ddry_ice*ddry_ice
   aux1=1.6397e-14_wp*T_ice-3.1769e-12_wp
   dpmax=aux1*(monvol**(-0.373_wp))*(wpar_ice**(-0.05_wp))
 
@@ -1164,7 +1164,7 @@ SUBROUTINE inspec_ice(si, T, n, dsh)
       IF (sw >= 1._wp) THEN           !< freezing above water saturation
         nd = 0._wp
         DO index =1, nbindust_ice
-          nd = nd + ndust_ice(index)*( 1._wp - EXP( EXP( 151.548_wp - 0.521_wp*T ) &
+          nd = nd + ndust_ice(index)*( 1._wp - EXP( (-1)*EXP( 150.577_wp - 0.517_wp*T ) &
             &                           * surface_dust(index) ) )
         ENDDO
         !nbc = exp( 127.936 - 0.444*t ) * surface_soot * nbc_ice
@@ -1183,10 +1183,10 @@ SUBROUTINE inspec_ice(si, T, n, dsh)
         param_dust%d = 0.2_wp
         param_dust%e = 238.0_wp
 
-        nbc = nbc_ice*( 1._wp - EXP( het_icenuc_ullrich(T,si,param_soot) * surface_soot ) )
+        nbc = nbc_ice*( 1._wp -EXP((-1._wp)*het_icenuc_ullrich(T,si,param_soot) * surface_soot ) )
         nd  = 0.0_wp
         DO index =1, nbindust_ice
-          nd  =nd + ndust_ice(index)*( 1._wp - EXP( het_icenuc_ullrich(T,si,param_dust) * surface_dust(index) ) )
+          nd  =nd + ndust_ice(index)*( 1._wp - EXP((-1._wp)*het_icenuc_ullrich(T,si,param_dust) * surface_dust(index) ) )
         ENDDO
         !norg  = het_icenuc_ullrich(t,si,param_org) * surface_org
 

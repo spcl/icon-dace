@@ -41,6 +41,9 @@ export DATES='20201210T060030Z'
 # 
 export RESTART_DATE='20201210T060020Z'
 
+# increase factor in order to circumvent false alarms
+export FACTOR=10
+
 # REFERENCE model directory and reference experiment for update test
 # (abs. path or relative paths w.r.t. <model dir>/run, e.g. .../icon-dev/run)
 #

@@ -62,13 +62,14 @@ xmap_dist_dir_intercomm_wrap(Xt_idxlist src_idxlist, Xt_idxlist dst_idxlist,
 }
 
 
-int main(void)
+int main(int argc, char **argv)
 {
   int rc
-    = xt_xmap_intercomm_parallel_test_main(xt_xmap_dist_dir_new, true, false);
+    = xt_xmap_intercomm_parallel_test_main(&argc, &argv,
+                                           xt_xmap_dist_dir_new, true, false);
   if (rc == EXIT_SUCCESS)
-    rc = xt_xmap_intercomm_parallel_test_main(xmap_dist_dir_intercomm_wrap,
-                                              false, true);
+    rc = xt_xmap_intercomm_parallel_test_main(
+      &argc, &argv, xmap_dist_dir_intercomm_wrap, false, true);
   else {
     xt_finalize();
     MPI_Finalize();

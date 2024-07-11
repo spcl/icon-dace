@@ -76,6 +76,7 @@ enum Xt_exchangers {
   xt_exchanger_irecv_isend_packed,
   xt_exchanger_mix_isend_irecv,
   xt_exchanger_neigh_alltoall,
+  xt_exchanger_irecv_isend_ddt_packed,
 };
 
 /**
@@ -118,7 +119,7 @@ int
 xt_config_get_idxvec_autoconvert_size(Xt_config config);
 
 /**
- * query size at which index lists of vector type will be converted
+ * set size at which index lists of vector type will be converted
  *
  * For many operations it makes sense to first compress large index
  * vectors to stripes before continuing further computations. This
@@ -131,6 +132,32 @@ xt_config_get_idxvec_autoconvert_size(Xt_config config);
  */
 void
 xt_config_set_idxvec_autoconvert_size(Xt_config config, int cnvsize);
+
+enum Xt_mthread_mode {
+  /* xt_redist_[as]_exchange calls will be single-threaded */
+  XT_MT_NONE = 0,
+  /* xt_redist_[as]_exchange calls will open an OpenMP parallel region */
+  XT_MT_OPENMP = 1,
+};
+
+/**
+ * query multi-thread mode of message passing
+ *
+ * @param[in] config   configuration object to query
+ * @return a value matching one of the enum Xt_mthread_mode members above
+ */
+int
+xt_config_get_redist_mthread_mode(Xt_config config);
+
+/**
+ * set multi-thread mode of message passing
+ *
+ * @param[in,out] config   configuration object to modify
+ * @param[in]     mode one of the enum Xt_mthread_mode members above
+ */
+void
+xt_config_set_redist_mthread_mode(Xt_config config, int mode);
+
 
 #endif
 

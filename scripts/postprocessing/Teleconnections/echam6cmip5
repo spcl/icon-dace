@@ -1,3 +1,12 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
 &parameter  code=4          out_name=pr       standard_name=precipitation_flux  delete=0/
 &parameter  code=34         name=low_cld     delete=1      /
 &parameter  code=35         name=mid_cld     delete=1      /

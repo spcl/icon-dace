@@ -23,18 +23,13 @@ MODULE mo_gme_turbdiff
 
   USE mo_fortran_tools,      ONLY: set_acc_host_or_device, assert_acc_device_only
 
+  USE mo_atm_phy_nwp_config, ONLY: lcuda_graph_turb_tran
+
   IMPLICIT NONE
 
   PRIVATE
 
-
   PUBLIC :: partura, parturs, progimp_turb, nearsfc
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
   CONTAINS
 
@@ -684,7 +679,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
       END DO
       !$ACC END PARALLEL
 
-      IF (.NOT. using_cuda_graph) THEN
+      IF (.NOT. lcuda_graph_turb_tran) THEN
         !$ACC WAIT(1)
       END IF
       !$ACC END DATA ! zvpb, zx, ztcm, ztch, zdfip, zris, zgz0m, zgz0h, lo_ice
@@ -1143,7 +1138,8 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
 !     
 !==============================================================================
 
-  USE mo_convect_tables,     ONLY: b1  => c1es,     & ! variables for computing the saturation steam pressure
+  USE mo_lookup_tables_constants, ONLY:  &
+                               b1  => c1es,     & ! variables for computing the saturation steam pressure
                                &   b2w => c3les,    & ! over water (w)
                                &   b4w => c4les
 
@@ -1581,7 +1577,7 @@ Water_or_Land: IF( fr_land(j1) < 0.5_wp ) THEN
       ENDDO
       !$ACC END PARALLEL
 
-      IF (.NOT. using_cuda_graph) THEN
+      IF (.NOT. lcuda_graph_turb_tran) THEN
         !$ACC WAIT(1)
       END IF
       !$ACC END DATA ! zv, zcm, zch, zgz0

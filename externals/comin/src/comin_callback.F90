@@ -137,7 +137,7 @@ CONTAINS
 
   !> Routine to find callback routine associated with current entry point
   !! @ingroup host_interface
-  SUBROUTINE comin_callback_context_call(entry_point_id, domain_id)
+  RECURSIVE SUBROUTINE comin_callback_context_call(entry_point_id, domain_id)
     INTEGER, INTENT(IN)            :: entry_point_id
     INTEGER, INTENT(IN)            :: domain_id
     TYPE(t_comin_callback_element), POINTER :: cl

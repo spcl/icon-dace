@@ -36,7 +36,7 @@ MODULE mo_nh_vert_interp_ipz
     &                               PRES_MSL_METHOD_DWD, PRES_MSL_METHOD_IFS_CORR,          &
     &                               SUCCESS
   USE mo_exception,           ONLY: finish
-  USE mo_fortran_tools,       ONLY: copy, init, assert_acc_device_only, assert_lacc_equals_i_am_accel_node, &
+  USE mo_fortran_tools,       ONLY: copy, init, assert_acc_device_only, &
     &                               set_acc_host_or_device, assert_acc_host_only, minval_1d
   USE mo_initicon_config,     ONLY: zpbl1, zpbl2
   USE mo_vertical_coord_table,ONLY: vct_a
@@ -108,7 +108,6 @@ CONTAINS
 
     !-------------------------------------------------------------------------
     CALL assert_acc_device_only(routine, lacc)
-    CALL assert_lacc_equals_i_am_accel_node(routine, lacc)
 
     vcoeff_z%l_initialized = .TRUE.
     IF (p_patch%n_patch_cells==0) RETURN
@@ -150,8 +149,8 @@ CONTAINS
         &                       vcoeff_z%lin_cell%wfacpbl1,                                  & !out
         &                       lacc=.TRUE.)
       !$OMP PARALLEL
-      CALL init(vcoeff_z%lin_cell%kpbl2(:,:), opt_acc_async=.TRUE.)
-      CALL init(vcoeff_z%lin_cell%wfacpbl2(:,:), opt_acc_async=.TRUE.)
+      CALL init(vcoeff_z%lin_cell%kpbl2(:,:), lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(vcoeff_z%lin_cell%wfacpbl2(:,:), lacc=.TRUE., opt_acc_async=.TRUE.)
       !$OMP END PARALLEL
     ELSE
       CALL prepare_extrap(p_metrics%z_mc, nblks_c, npromz_c, nlev,                           & !in
@@ -183,7 +182,7 @@ CONTAINS
     IF (jg > 1 .OR. l_limited_area) THEN ! copy outermost nest boundary row in order to avoid missing values
       i_endblk = p_patch%cells%end_blk(1,1)
       !$OMP PARALLEL
-      CALL copy(z_auxz(:,:,1:i_endblk), temp_z_out(:,:,1:i_endblk), opt_acc_async=.TRUE.)
+      CALL copy(z_auxz(:,:,1:i_endblk), temp_z_out(:,:,1:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
       !$OMP END PARALLEL
     ENDIF
    
@@ -203,7 +202,7 @@ CONTAINS
     IF (jg > 1 .OR. l_limited_area) THEN ! copy outermost nest boundary row in order to avoid missing values
       i_endblk = p_patch%cells%end_blk(1,1)
       !$OMP PARALLEL
-      CALL copy(z_auxz(:,:,1:i_endblk), pres_z_out(:,:,1:i_endblk), opt_acc_async=.TRUE.)
+      CALL copy(z_auxz(:,:,1:i_endblk), pres_z_out(:,:,1:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
       !$OMP END PARALLEL
     ENDIF
 
@@ -286,7 +285,6 @@ CONTAINS
     REAL(wp), POINTER, DIMENSION(:,:,:) :: ptr_tempv
 
     CALL assert_acc_device_only(routine, lacc)
-    CALL assert_lacc_equals_i_am_accel_node(routine, lacc)
 
     vcoeff_p%l_initialized = .TRUE.
     IF (p_patch%n_patch_cells==0) RETURN
@@ -338,7 +336,7 @@ CONTAINS
     IF (jg > 1 .OR. l_limited_area) THEN ! copy outermost nest boundary row in order to avoid missing values
       i_endblk = p_patch%cells%end_blk(1,1)
       !$OMP PARALLEL
-      CALL copy(z_auxp(:,:,1:i_endblk), gh_p_out(:,:,1:i_endblk), opt_acc_async=.TRUE.)
+      CALL copy(z_auxp(:,:,1:i_endblk), gh_p_out(:,:,1:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
       !$OMP END PARALLEL
     ENDIF
 
@@ -374,7 +372,7 @@ CONTAINS
     IF (jg > 1 .OR. l_limited_area) THEN ! copy outermost nest boundary row in order to avoid missing values
       i_endblk = p_patch%cells%end_blk(1,1)
       !$OMP PARALLEL
-      CALL copy(z_auxp(:,:,1:i_endblk), temp_p_out(:,:,1:i_endblk), opt_acc_async=.TRUE.)
+      CALL copy(z_auxp(:,:,1:i_endblk), temp_p_out(:,:,1:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
       !$OMP END PARALLEL
     ENDIF
 

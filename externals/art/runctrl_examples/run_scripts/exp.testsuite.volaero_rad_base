@@ -240,6 +240,7 @@ cat > ${atmo_namelist} << EOF
  vmr_o2        = 0.20946
  vmr_cfc11     = 240.e-12
  vmr_cfc12     = 532.e-12
+ ecrad_data_path = "${ICONFOLDER}/externals/ecrad/data"
 /
 &nonhydrostatic_nml
  iadv_rhotheta  = 2

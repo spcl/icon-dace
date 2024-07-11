@@ -59,6 +59,7 @@
 
 #define VERBOSE
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_idxlist_utils.h"
 
 
@@ -66,11 +67,9 @@ static void
 do_tests(Xt_idxlist idxlist, const Xt_int *ref_indices, int num_indices,
          const struct Xt_stripe *ref_stripes, int ref_num_stripes);
 
-int main(void) {
+int main(int argc, char **argv) {
 
-  // init mpi
-
-  xt_mpi_call(MPI_Init(NULL, NULL), MPI_COMM_WORLD);
+  test_init_mpi(&argc, &argv, MPI_COMM_WORLD);
 
   xt_initialize(MPI_COMM_WORLD);
 

@@ -105,7 +105,6 @@ cat > ${atmo_namelist} << EOF
  output               = "nml","totint"
 /
 &dynamics_nml
- iequations           = 3
  lcoriolis            = .FALSE.      ! no coriolis force
 /
 &nh_testcase_nml

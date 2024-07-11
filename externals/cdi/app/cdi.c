@@ -1,5 +1,5 @@
 #ifdef HAVE_CONFIG_H
-#include "../src/config.h"
+#include "config.h"
 #endif
 
 #include <inttypes.h>
@@ -432,7 +432,7 @@ print_short_info(int streamID, int vlistID, int vardis)
       int datatype = vlistInqVarDatatype(vlistID, varID);
       // clang-format off
       if      (datatype == CDI_DATATYPE_PACK  ) strcpy(pstr, "P0");
-      else if (datatype > 0 && datatype <= 32 ) sprintf(pstr, "P%d", datatype);
+      else if (datatype > 0 && datatype <= 32 ) snprintf(pstr, sizeof(pstr), "P%d", datatype);
       else if (datatype == CDI_DATATYPE_CPX32 ) strcpy(pstr, "C32");
       else if (datatype == CDI_DATATYPE_CPX64 ) strcpy(pstr, "C64");
       else if (datatype == CDI_DATATYPE_FLT32 ) strcpy(pstr, "F32");

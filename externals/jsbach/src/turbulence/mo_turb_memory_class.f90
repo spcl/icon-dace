@@ -198,7 +198,7 @@ CONTAINS
       & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits), &
       & prefix, suffix,                                                    &
       & output_level=BASIC,                                                &
-      & initval_r=0.5_wp )
+      & initval_r=0.0_wp )
 
   END SUBROUTINE Init_turb_memory
 

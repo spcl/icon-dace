@@ -208,7 +208,7 @@ MODULE mo_surface_height_lhs_zstar
         CALL grad_fd_norm_oce_2d_3d( x, this%patch_2D, this%op_coeffs_wp%grad_coeff(:,1,:), &
           & this%z_grad_h_wp(:,:), subset_range=this%patch_2D%edges%gradIsCalculable)
         IF (this%patch_2d%cells%max_connectivity /= 3 .AND. my_process_is_mpi_parallel()) &
-          & CALL exchange_data(this%patch_2D%comm_pat_e, this%z_grad_h_wp)
+          & CALL exchange_data(p_pat=this%patch_2D%comm_pat_e, lacc=.false., recv=this%z_grad_h_wp)
 
         !! Multiply with mass matrix and and sum up over column 
         !! The coefficients are arrived at by having a constant for all levels >= 2

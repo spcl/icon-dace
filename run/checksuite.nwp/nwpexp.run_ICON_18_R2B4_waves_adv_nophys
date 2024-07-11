@@ -196,7 +196,8 @@ EOF
 #
 # configure START_MODEL_function
 #
-ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+# requesting VH procs is disabled until waves supports proc0_shift=1.
+# ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
 
 # ----------------------------------------------------------------------------
 # run the model!
@@ -217,5 +218,3 @@ fi
 echo "EXIT_STATUS: $EXIT_STATUS"
 echo $EXPDIR
 exit $EXIT_STATUS
-
-

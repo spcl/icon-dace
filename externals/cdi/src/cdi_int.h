@@ -1,8 +1,20 @@
 #ifndef CDI_INT_H
 #define CDI_INT_H
 
+// strdup() from string.h
+#ifdef __STDC_ALLOC_LIB__
+#define __STDC_WANT_LIB_EXT2__ 1
+#else
+#undef _POSIX_C_SOURCE
+#define _POSIX_C_SOURCE 200809L
+#endif
+
 #ifdef HAVE_CONFIG_H
 #include "config.h"
+#endif
+
+#ifdef HAVE_LIBFDB5
+#include "cdi_fdb.h"
 #endif
 
 #include <assert.h>
@@ -17,6 +29,16 @@
 #include "cdi.h"
 #include "cdf_config.h"
 
+#ifdef HAVE_LIBPTHREAD
+#include <pthread.h>
+extern pthread_mutex_t CDI_IO_Mutex;
+#define CDI_IO_LOCK() pthread_mutex_lock(&CDI_IO_Mutex)
+#define CDI_IO_UNLOCK() pthread_mutex_unlock(&CDI_IO_Mutex)
+#else
+#define CDI_IO_LOCK()
+#define CDI_IO_UNLOCK()
+#endif
+
 // Base file types
 
 #define CDI_FILETYPE_GRIB 100    // File type GRIB
@@ -25,22 +47,6 @@
 // dummy use of unused parameters to silence compiler warnings
 #ifndef UNUSED
 #define UNUSED(x) (void) x
-#endif
-
-#ifndef strdupx
-#ifndef strdup
-char *strdup(const char *s);
-#endif
-#define strdupx strdup
-/*
-#define strdupx(s)			          \
-({					      	  \
-   const char *__old = (s);			  \
-   size_t __len = strlen(__old) + 1;		  \
-   char *__new = (char *) Malloc(__len);	  \
-   (char *) memcpy(__new, __old, __len);	  \
-})
-*/
 #endif
 
 char *str_to_lower(char *str);
@@ -183,7 +189,7 @@ typedef struct
   VarScanKeys scanKeys;
   var_tile_t tiles;  // tile-related meta-data, currently for GRIB-API only.
 #ifdef HAVE_LIBFDB5
-  void *fdbItem;
+  int fdbItemIndex;
 #endif
 } record_t;
 
@@ -301,6 +307,7 @@ typedef struct
   int localatts;
   int unreduced;
   int have_missval;
+  int shuffle;
   // netcdf4/HDF5 filter
   unsigned int filterId;
   size_t numParams;
@@ -310,7 +317,8 @@ typedef struct
   int comptype;   // compression type
   int complevel;  // compression level
   bool sortname;
-  bool sortparam;
+  bool lockIO;
+
   void *gribContainers;
 
   int numWorker;
@@ -321,6 +329,11 @@ typedef struct
 
   int protocol;
   void *protocolData;
+
+#ifdef HAVE_LIBFDB5
+  int fdbNumItems;
+  fdbKeyValueEntry *fdbKeyValueList;
+#endif
 } stream_t;
 
 // Length of optional keyword/value pair list
@@ -377,9 +390,10 @@ extern int CDI_Netcdf_Chunksizehint;
 extern int CDI_ChunkType;
 extern int CDI_Test;
 extern int CDI_Split_Ltype105;
+extern bool CDI_Lock_IO;
+extern bool CDI_Threadsafe;
 extern int cdiDataUnreduced;
 extern int cdiSortName;
-extern int cdiSortParam;
 extern int cdiHaveMissval;
 extern bool CDI_Ignore_Att_Coordinates;
 extern bool CDI_Coordinates_Lon_Lat;
@@ -491,9 +505,9 @@ int streamOpenID(const char *filename, char filemode, int filetype, int resH);
 
 void cdiStreamDefVlist_(int streamID, int vlistID);
 
-int cdiStreamWriteVar_(int streamID, int varID, int memtype, const void *data, SizeType nmiss);
+int cdiStreamWriteVar_(int streamID, int varID, int memtype, const void *data, SizeType numMissVals);
 
-void cdiStreamWriteVarChunk_(int streamID, int varID, int memtype, const int rect[][2], const void *data, SizeType nmiss);
+void cdiStreamWriteVarChunk_(int streamID, int varID, int memtype, const int rect[][2], const void *data, SizeType numMissVals);
 void cdiStreamCloseDefaultDelegate(stream_t *streamptr, int recordBufIsToBeDeleted);
 
 int cdiStreamDefTimestep_(stream_t *streamptr, int tsID);

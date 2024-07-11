@@ -99,7 +99,7 @@ CONTAINS
     INTEGER  :: jb, jls, js
     
 !$OMP PARALLEL
-    CALL init(rhos, 1._wp)
+    CALL init(rhos, 1._wp, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
@@ -148,7 +148,7 @@ CONTAINS
     INTEGER  :: jb, jc
     
 !$OMP PARALLEL
-    CALL init(mwind)
+    CALL init(mwind, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jc) ICON_OMP_DEFAULT_SCHEDULE
@@ -190,8 +190,8 @@ CONTAINS
     INTEGER  :: jb, jc
 
 !$OMP PARALLEL
-    CALL init(theta)
-    CALL init(thetav)
+    CALL init(theta, lacc=.TRUE.)
+    CALL init(thetav, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jc) ICON_OMP_DEFAULT_SCHEDULE
@@ -238,13 +238,13 @@ CONTAINS
     INTEGER  :: jb, jls, js
 
 !$OMP PARALLEL
-    CALL init(theta)
-    CALL init(thetav)
+    CALL init(theta, lacc=.TRUE.)
+    CALL init(thetav, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = domain%i_startblk_c,domain%i_endblk_c
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR ASYNC(1) PRIVATE(js)
       DO jls = 1, nvalid(jb)
         js = indices(jls,jb)
         theta(js,jb)  = potential_temperature(ptsfc(js,jb), ppsfc(js,jb))
@@ -289,7 +289,7 @@ CONTAINS
     w2 = 1._wp - fsl
 
 !$OMP PARALLEL
-    CALL init(richardson_number)
+    CALL init(richardson_number, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb, jls, js, zthetav_mid) ICON_OMP_DEFAULT_SCHEDULE
@@ -444,10 +444,10 @@ CONTAINS
     REAL(wp) :: dz_temp
     
 !$OMP PARALLEL
-    CALL init(km)
-    CALL init(kh)
-    CALL init(km_neutral)
-    CALL init(kh_neutral)
+    CALL init(km, lacc=.TRUE.)
+    CALL init(kh, lacc=.TRUE.)
+    CALL init(km_neutral, lacc=.TRUE.)
+    CALL init(kh_neutral, lacc=.TRUE.)
 !$OMP END PARALLEL
 
 !$OMP PARALLEL DO PRIVATE(jb,jls,js, dz_temp) ICON_OMP_DEFAULT_SCHEDULE

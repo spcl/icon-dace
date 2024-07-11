@@ -83,6 +83,10 @@ MODULE mo_ext_data_types
       &  fr_land_smt(:,:)      ! 0. for water, 1.0 indicates 100% land
                                ! index1=1,nproma, index2=1,nblks_c
 
+    REAL(wp), POINTER ::   &   !< smoothed land fraction for adaptive tuning of sea ice bottom heat flux and sea ice albedo
+      &  fr_urb_smt(:,:)      ! 0. for water, 1.0 indicates 100% land
+                               ! index1=1,nproma, index2=1,nblks_c
+
     REAL(wp), POINTER ::    &  !< fraction land glacier in a grid element [ ]
       &  fr_glac(:,:)          ! 1.0 indicates 100% glacier
                                ! index1=1,nproma, index2=1,nblks_c
@@ -149,13 +153,6 @@ MODULE mo_ext_data_types
     REAL(wp), POINTER ::   &   !< impervious surface area fraction of the urban canopy [ ]
       &  urb_isa_t(:,:,:)      ! 1.0 indicates 100% paved urban area
                                ! index1=1,nproma, index2=1,nblks_c, ntiles_total+ntiles_water
-
-    REAL(wp), POINTER ::   &   !< impervious surface area (ISA) fraction               [ ]
-      &  fr_paved(:,:)         ! 1.0 indicates 100% paved (urban) area
-                               ! index1=1,nproma, index2=1,nblks_c
-    REAL(wp), POINTER ::   &   !< impervious surface area (ISA) fraction               [ ]
-      &  fr_paved_t(:,:,:)     ! 1.0 indicates 100% paved (urban) area
-                               ! index1=1,nproma, index2=1,nblks_c, ntiles_total
 
     REAL(wp), POINTER ::   &   !< surface area index of the urban canopy               [ ]
       &  urb_ai(:,:)           ! index1=1,nproma, index2=1,nblks_c
@@ -337,6 +334,8 @@ MODULE mo_ext_data_types
       &  albni_dif(:,:)        !< (0.7 - 5.0 um)
                                ! index1=1,nproma, index2=1,nblks_c
 
+    REAL(wp), POINTER ::   &   !< Cloud droplet number climatology [m-3]
+      &  cdnc(:,:)             !<
 
 
     ! *** flow control parameters for tile approach ***
@@ -414,8 +413,6 @@ MODULE mo_ext_data_types
       & rootdmax_lcc(:)        ! index1=1,23
     REAL(wp), POINTER ::  &    !< Skin conductivity for each land use class [W/m^2/K]
       & skinc_lcc(:)           ! index1=1,23
-    REAL(wp), POINTER ::  &    !< Impervious surface area (ISA) for each land use class [ ]
-      & fr_paved_lcc(:)        ! index1=1,23
     REAL(wp), POINTER ::  &    !< Anthropogenic heat flux for each land use class [W/m^2]
       & ahf_lcc(:)             ! index1=1,23
     REAL(wp), POINTER ::  &    !< Minimum stomata resistance for each land-cover class  [ ]
@@ -508,6 +505,9 @@ MODULE mo_ext_data_types
 
     REAL(wp), POINTER ::   &   !< Broadband longwave (thermal) emissivity of the surface   [1]
       &  lw_emiss(:,:,:)       !< index1=1,nproma, index2=1,nblks_c, index3=1,ntimes
+
+    REAL(wp), POINTER ::   &   !< Cloud droplet number climatology 
+      &  cdnc(:,:,:)           !< monthly-mean values [m-3]
 
     !
     ! *** vegetation parameters ***

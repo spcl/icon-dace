@@ -9,7 +9,7 @@
 #define _GNU_SOURCES 1
 #endif
 #else
-#define VERSION "2.2.0"
+#define VERSION "2.3.0"
 #endif
 
 #ifndef _XOPEN_SOURCE

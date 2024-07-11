@@ -145,8 +145,9 @@ cdiGribIterator_serialize(CdiIterator *super)
 
   const char *path = cdiInputFile_getPath(me->file);
   char *escapedPath = cdiEscapeSpaces(path);
-  char *result = (char *) Malloc(strlen(escapedPath) + 3 * sizeof(int) * CHAR_BIT / 8);
-  sprintf(result, "%s %zu", escapedPath, (size_t) me->fileOffset);
+  size_t len = strlen(escapedPath) + 3 * sizeof(int) * CHAR_BIT / 8;
+  char *result = (char *) Malloc(len);
+  snprintf(result, len, "%s %zu", escapedPath, (size_t) me->fileOffset);
   Free(escapedPath);
   return result;
 }
@@ -618,28 +619,28 @@ cdiGribIterator_copyVariableName(CdiIterator *super)
 }
 
 void
-cdiGribIterator_readField(CdiIterator *super, double *buffer, size_t *nmiss)
+cdiGribIterator_readField(CdiIterator *super, double *buffer, size_t *numMissVals)
 {
   CdiGribIterator *me = (CdiGribIterator *) (void *) super;
 
   GRIB_CHECK(my_grib_set_double(me->gribHandle, "missingValue", CDI_Default_Missval), 0);
   gribGetDoubleArray(me->gribHandle, "values", buffer);
   long gridType = gribGetLong(me->gribHandle, "gridDefinitionTemplateNumber");
-  if (nmiss)
+  if (numMissVals)
     {
       // The condition excludes harmonic data.
-      *nmiss = (gridType >= 50 && gridType <= 53) ? (size_t) 0 : (size_t) gribGetLong(me->gribHandle, "numberOfMissing");
+      *numMissVals = (gridType >= 50 && gridType <= 53) ? (size_t) 0 : (size_t) gribGetLong(me->gribHandle, "numberOfMissing");
     }
 }
 
 void
-cdiGribIterator_readFieldF(CdiIterator *super, float *buffer, size_t *nmiss)
+cdiGribIterator_readFieldF(CdiIterator *super, float *buffer, size_t *numMissVals)
 {
   CdiGribIterator *me = (CdiGribIterator *) (void *) super;
 
   size_t valueCount = gribGetArraySize(me->gribHandle, "values");
   double *temp = (double *) Malloc(valueCount * sizeof(*temp));
-  cdiGribIterator_readField(super, temp, nmiss);
+  cdiGribIterator_readField(super, temp, numMissVals);
   for (size_t i = valueCount; i--;) buffer[i] = (float) temp[i];
   Free(temp);
 }

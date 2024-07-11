@@ -1121,7 +1121,6 @@ enddo
 !--------------------------------------------------
 
   !$ACC WAIT(1)
-  !$ACC EXIT DATA DELETE(tinc)
   !$ACC END DATA
 
 END SUBROUTINE vertdiff

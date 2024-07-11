@@ -83,7 +83,7 @@ cli_help = {
     "stats_file_name": r"the name of the stats file. No absolute path here, it will "
     + r"always be created in the (perturbed) model_output_dir.",
     "member_num": r"number of ensemble members or a comma separated list of members "
-    + r"(e.g. \"1,3,14\")",
+    + r'(e.g. "1,3,14")',
     "member_type": r"precision of experiment (e.g. double or mixed). "
     + r"The type is part of the created member_id, which is equal to "
     + r"(member_type+'_'+str(member_num))",
@@ -94,7 +94,7 @@ cli_help = {
     "file_id": r"A unique identifier and file pattern FILE_PATTERN of the files "
     + r"containing the variables to be analysed and the file specification label "
     + r"FILE_TYPE. FILE_PATTERN may contain simple shell-style wildcards such as "
-    + r"\"*\" and will be expanded internally by glob. Put FILE_PATTERN in quotes to "
+    + r'"*" and will be expanded internally by glob. Put FILE_PATTERN in quotes to '
     + r"avoid early glob expansion by the calling shell.",
     "ensemble": r"For ensemble stats: the sub-directory where the ensemble outputs are",
     "file_specification": "Specify how different file types shall be read. This "

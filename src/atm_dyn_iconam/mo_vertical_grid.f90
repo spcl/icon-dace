@@ -516,10 +516,10 @@ MODULE mo_vertical_grid
 
 !$OMP PARALLEL
       ! Initialization to ensure that values are properly set at lateral boundaries
-      CALL init(p_nh(jg)%metrics%exner_exfac(:,:,:), exner_expol)
-      CALL init(z_maxslp(:,:,:))
-      CALL init(z_maxhgtd(:,:,:))
-      CALL init(z_aux_c(:,:,:))
+      CALL init(p_nh(jg)%metrics%exner_exfac(:,:,:), exner_expol, lacc=.FALSE.)
+      CALL init(z_maxslp(:,:,:), lacc=.FALSE.)
+      CALL init(z_maxhgtd(:,:,:), lacc=.FALSE.)
+      CALL init(z_aux_c(:,:,:), lacc=.FALSE.)
 !$OMP BARRIER
 
 !$OMP DO PRIVATE(jb, i_startidx, i_endidx, jk, jk1, jc, z_maxslope, z_offctr, z_diff, &
@@ -1743,9 +1743,9 @@ MODULE mo_vertical_grid
     !PREPARE LES, Anurag Dipankar MPIM (2013-04)
     DO jg = 1 , n_dom
 #ifndef __NO_ICON_LES__
-      IF(atm_phy_nwp_config(jg)%is_les_phy .OR. aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
+      IF(atm_phy_nwp_config(jg)%is_les_phy .OR. aes_vdf_config(jg)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
 #else
-      IF(aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
+      IF(aes_vdf_config(jg)%turb == VDIFF_TURB_3DSMAGORINSKY) THEN
 #endif
         CALL prepare_les_model(p_patch(jg), p_nh(jg), p_int(jg), jg)
       END IF
@@ -2098,7 +2098,7 @@ MODULE mo_vertical_grid
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_aux
 #endif
 
-    IF ( aes_vdf_config(1)%turb == VDIFF_TURB_3DSMAGORINSKY ) THEN
+    IF ( aes_vdf_config(jg)%turb == VDIFF_TURB_3DSMAGORINSKY ) THEN
       smag_constant  = aes_vdf_config(jg)%smag_constant
       max_turb_scale = aes_vdf_config(jg)%max_turb_scale
     ELSE
@@ -2148,9 +2148,9 @@ MODULE mo_vertical_grid
 
     IF(p_test_run)THEN
 !$OMP PARALLEL
-      CALL init(p_nh%metrics%inv_ddqz_z_half_v(:,:,:))
-      CALL init(p_nh%metrics%inv_ddqz_z_half_e(:,:,:))
-      CALL init(p_nh%metrics%wgtfac_v(:,:,:))
+      CALL init(p_nh%metrics%inv_ddqz_z_half_v(:,:,:), lacc=.FALSE.)
+      CALL init(p_nh%metrics%inv_ddqz_z_half_e(:,:,:), lacc=.FALSE.)
+      CALL init(p_nh%metrics%wgtfac_v(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
     END IF
 

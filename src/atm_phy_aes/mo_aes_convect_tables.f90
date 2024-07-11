@@ -862,7 +862,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
         ztt = rsdeltat*temp(jl)
         zalpha(jl) = ztt - AINT(ztt)
         idx(jl) = INT(ztt-ztshft)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+        zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
         zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
 
         ! check dual phase conditions:
@@ -885,7 +885,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
         ztt = rsdeltat*temp(jl)
         zalpha(jl) = ztt - AINT(ztt)
         idx(jl) = INT(ztt-ztshft)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+        zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
         zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
       END DO
       !$ACC END PARALLEL
@@ -1120,7 +1120,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       DO jl = 1, size
         ztt = ANINT(rfdeltat*temp(jl))
         idx(jl) = INT(ztt)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+        zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
         zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
         ! check dual phase conditions
         ! lo2 = (ptm1(jl,jk) < cthomi) .OR. (ptm1(jl,jk) < tmelt .AND. zxised > csecfrl)
@@ -1137,7 +1137,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       DO jl = 1,size
         ztt = ANINT(rfdeltat*temp(jl))
         idx(jl) = INT(ztt)
-        zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+        zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
         zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
       END DO
     END IF
@@ -1182,7 +1182,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       ztt = rsdeltat*temp(jl)
       zalpha(nl) = ztt - AINT(ztt)
       idx(nl) = INT(ztt-ztshft)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+      zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp) !Reversed to avoid ztt=NaN to default to last FSEL argument!
       zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
     END DO
     !$ACC END PARALLEL
@@ -1239,7 +1239,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       jl = list(nl)
       ztt = ANINT(rfdeltat*temp(jl))
       idx(nl) = INT(ztt)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+      zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
       zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
     END DO
     ! if one index was out of bounds -> print error and exit
@@ -1278,7 +1278,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       ztt = rsdeltat*temp(jl)
       zalpha(nl) = ztt - AINT(ztt)
       idx(nl) = INT(ztt-ztshft)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+      zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
       zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
     END DO
     ! if one index was out of bounds -> print error and exit
@@ -1310,7 +1310,7 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
       jl = list(nl)
       ztt = ANINT(rfdeltat*temp(jl))
       idx(nl) = INT(ztt)
-      zinbounds = FSEL(ztmin-ztt,0.0_wp,zinbounds)
+      zinbounds = FSEL(ztt-ztmin,zinbounds,0.0_wp)
       zinbounds = FSEL(ztt-ztmax,0.0_wp,zinbounds)
     END DO
     ! if one index was out of bounds -> print error and exit

@@ -1172,8 +1172,8 @@ CONTAINS
     jk         = p_patch%nlev
 
 !$OMP PARALLEL
-    CALL init(u_stokes)
-    CALL init(v_stokes)
+    CALL init(u_stokes, lacc=.FALSE.)
+    CALL init(v_stokes, lacc=.FALSE.)
 !$OMP BARRIER
 !$OMP DO PRIVATE(jb,jc,jf,jd,jt,i_startidx,i_endidx,ak,akd,si,ci,fact,tailfac) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk

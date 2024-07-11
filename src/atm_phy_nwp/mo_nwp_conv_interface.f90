@@ -37,7 +37,7 @@ MODULE mo_nwp_conv_interface
        &                             t_nwp_phy_stochconv, t_ptr_cloud_ensemble
   USE mo_nwp_phy_state,        ONLY: phy_params
   USE mo_run_config,           ONLY: iqv, iqc, iqi, iqr, iqs, nqtendphy, lart
-  USE mo_physical_constants,   ONLY: grav, alf, cvd, cpd
+  USE mo_physical_constants,   ONLY: grav, alf, cvd, cpd, tmelt
   USE mo_atm_phy_nwp_config,   ONLY: atm_phy_nwp_config
   USE mo_cumaster,             ONLY: cumastrn
   USE mo_ext_data_types,       ONLY: t_external_data
@@ -143,6 +143,7 @@ CONTAINS
     LOGICAL  :: lcompute_lpi               !< compute lpi_con, mlpi_con, koi, lpi_con_max and mlpi_con_max
     LOGICAL  :: lcompute_lfd               !< compute lfd_con, lfd_con_max
     LOGICAL  :: lzacc                      !< to check, if lacc is present
+    REAL(wp) :: convfac                    !< Conversion fraction from snow to rain.
 
     ! Tracer specific variables:
     INTEGER :: nconv_tracer_tot, nconv
@@ -229,9 +230,9 @@ CONTAINS
        CALL finish('nwp_convection','stochastic convection not ported to GPU')
 #endif
        ! initialize stochstic diagnostic variables:
-       CALL init(prm_diag%mf_b)
-       CALL init(prm_diag%mf_p)
-       CALL init(prm_diag%mf_num)
+       CALL init(prm_diag%mf_b, lacc=lzacc)
+       CALL init(prm_diag%mf_p, lacc=lzacc)
+       CALL init(prm_diag%mf_num, lacc=lzacc)
     ENDIF
 
     IF (lstoch_expl .or. lstoch_sde) THEN
@@ -252,7 +253,7 @@ CONTAINS
 #ifndef __PGI
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE(jb,jc,jk,jt,i_startidx,i_endidx,z_omega_p,z_plitot,z_qhfl,z_shfl,z_dtdqv,&
-!$OMP            z_dtdt,z_dtdt_sv,zk850,zk950,u850,u950,v850,v950,wfac,z_ddspeed,&
+!$OMP            z_dtdt,z_dtdt_sv,zk850,zk950,u850,u950,v850,v950,wfac,z_ddspeed,convfac,&
 !$OMP            iseed,presmean,umean,vmean,qvmean,tempmean,qhfl_avg,shfl_avg,l,jc2,jb2,area_norm, &
 !$OMP            p_pres,p_u,p_v,p_qv,p_temp,p_qhfl_avg,p_shfl_avg,p_cloud_ensemble), ICON_OMP_GUIDED_SCHEDULE
 #endif
@@ -557,6 +558,8 @@ CONTAINS
 &          kcbot  = prm_diag%mbas_con(:,jb)                                 ,& !! OUT
 &          kctop  = prm_diag%mtop_con(:,jb)                                 ,& !! OUT
 &          LDSHCV = prm_diag%ldshcv  (:,jb)                                 ,& !! IN
+&          fac_entrorg = prm_diag%fac_entrorg(:,jb)                         ,& !! IN
+&          fac_rmfdeps = prm_diag%fac_rmfdeps(:,jb)                         ,& !! IN
 &          pmfu   =      prm_diag%con_udd(:,:,jb,1)                         ,& !! OUT
 &          pmfd   =      prm_diag%con_udd(:,:,jb,2)                         ,& !! OUT
 &          pmfude_rate = prm_diag%con_udd(:,:,jb,3)                         ,& !! OUT
@@ -634,6 +637,17 @@ CONTAINS
           ENDDO
         ENDDO
 
+!DIR$ IVDEP
+        !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(convfac, zk950)
+        DO jc = i_startidx, i_endidx
+          zk950 = prm_diag%k950(jc,jb) ! using this varibale directly in the next row gave a memory "memory not mapped to object" error in PGI (GPU) 20.8
+          ! rain-snow conversion factor to avoid 'snow showers' at temperatures when they don't occur in practice
+          convfac = MIN(1._wp,MAX(0._wp,p_diag%temp(jc,zk950,jb)-tmelt)* &
+            MAX(0._wp,prm_diag%t_2m(jc,jb)-(tmelt+1.5_wp)) )
+          prm_diag%rain_con_rate(jc,jb) = prm_diag%rain_con_rate_3d(jc,nlevp1,jb) + &
+            convfac*prm_diag%snow_con_rate_3d(jc,nlevp1,jb)
+          prm_diag%snow_con_rate(jc,jb) = (1._wp-convfac)*prm_diag%snow_con_rate_3d(jc,nlevp1,jb)
+        ENDDO
 
         ! convective contribution to wind gust
         ! (based on simple parameterization by Peter Bechthold)
@@ -696,4 +710,3 @@ CONTAINS
   END SUBROUTINE nwp_convection
 
 END MODULE mo_nwp_conv_interface
-

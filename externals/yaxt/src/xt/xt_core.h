@@ -107,6 +107,20 @@ struct Xt_offset_ext
 };
 
 /**
+ * represents \a size number of offsets beginning with \a start, where
+ * the offsets are \$start + i * stride for i in [0,size)\$
+ * In contrast to Xt_offset_ext which is meant to hold the start as
+ * number of elements, this struct holds start as MPI_Aint which is
+ * meant to hold memory offsets, typically counted in bytes.
+ */
+struct Xt_aoffset_ext
+{
+  MPI_Aint start;
+  int size;
+  MPI_Aint stride;
+};
+
+/**
  * initialize library
  * @param[in] default_comm communicator to use for collective aborts
  */

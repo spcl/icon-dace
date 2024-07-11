@@ -72,8 +72,10 @@ MODULE mo_2mom_mcrph_util
   CHARACTER(len=*), PARAMETER :: modname = 'mo_2mom_mcrph_util'
 
   ! Use look-up table for dmin_wetgrowth?
-  ! If .true., a lookup table file (netcdf or ascii format) is read from input directory.
-  ! If .false., an internal 4D-fit for a specific default graupel kind is used.
+  ! If .true., a lookup table file (netcdf or ascii format) is read from input directory if present
+  !  or produced on the fly. Both for graupel and hail.
+  ! If .false., an internal 4D-fit for a specific default graupel kind is used. hail is not implemented, so
+  !  this option is not usable any more. LEAVE IT .true.!
   LOGICAL, PARAMETER :: luse_dmin_wetgrowth_table  = .true.
   ! Do a test printout to stdout of the 4D-fit compared to the tabulated values?
   ! If .true., the lookup table file to compare with is read from input directory
@@ -1451,7 +1453,14 @@ CONTAINS
     REAL(wp) :: p_lok,T_lok,qw_lok,qi_lok
 
     INTEGER :: iu, io, ju, jo, ku, ko, lu, lo
-    REAL(wp) :: hilf1(2,2,2,2), hilf2(2,2,2), hilf3(2,2), hilf4(2)
+    REAL(wp) :: hilf1_1111, hilf1_1112, hilf1_1121, hilf1_1122, &
+         &      hilf1_1211, hilf1_1212, hilf1_1221, hilf1_1222, &
+         &      hilf1_2111, hilf1_2112, hilf1_2121, hilf1_2122, &
+         &      hilf1_2211, hilf1_2212, hilf1_2221, hilf1_2222
+    REAL(wp) :: hilf2_111, hilf2_112, hilf2_121, hilf2_122, &
+         &      hilf2_211, hilf2_212, hilf2_221, hilf2_222
+    REAL(wp) :: hilf3_11, hilf3_12, hilf3_21, hilf3_22
+    REAL(wp) :: hilf4_1, hilf4_2
 
     IF (T_a >= ltab%x2(ltab%n2)) THEN
       dmin_loc = 0.0d0
@@ -1472,13 +1481,49 @@ CONTAINS
       lu = MIN(FLOOR((qi_lok - ltab%x4(1)) * ltab%odx4 ) + 1, ltab%n4-1)
       lo = lu + 1
 
-      ! Tetra-lineare Interpolation von Dmin:
-      hilf1 = ltab%ltable(iu:io,ju:jo,ku:ko,lu:lo)
-      hilf2 = hilf1(1,:,:,:) + (hilf1(2,:,:,:) - hilf1(1,:,:,:)) * ltab%odx1 * (p_lok-ltab%x1(iu) )
-      hilf3 = hilf2(1,:,:)   + (hilf2(2,:,:)   - hilf2(1,:,:)  ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
-      hilf4 = hilf3(1,:)     + (hilf3(2,:)     - hilf3(1,:)    ) * ltab%odx3 * (qw_lok-ltab%x3(ku))
+      ! Tetra-linear interpolation of Dmin:
+      ! The following is an explicit manual expansion of this old code for better vectorization:
+      !    REAL(wp) :: hilf1(2,2,2,2), hilf2(2,2,2), hilf3(2,2), hilf4(2)
+      !      hilf1 = ltab%ltable(iu:io,ju:jo,ku:ko,lu:lo)
+      !      hilf2 = hilf1(1,:,:,:) + (hilf1(2,:,:,:) - hilf1(1,:,:,:)) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      !      hilf3 = hilf2(1,:,:)   + (hilf2(2,:,:)   - hilf2(1,:,:)  ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
+      !      hilf4 = hilf3(1,:)     + (hilf3(2,:)     - hilf3(1,:)    ) * ltab%odx3 * (qw_lok-ltab%x3(ku))
 
-      dmin_loc = hilf4(1) + (hilf4(2) - hilf4(1))  * ltab%odx4 * (qi_lok-ltab%x4(lu))
+      hilf1_1111 = ltab%ltable(iu,ju,ku,lu)
+      hilf1_1112 = ltab%ltable(iu,ju,ku,lo)
+      hilf1_1121 = ltab%ltable(iu,ju,ko,lu)
+      hilf1_1122 = ltab%ltable(iu,ju,ko,lo)
+      hilf1_1211 = ltab%ltable(iu,jo,ku,lu)
+      hilf1_1212 = ltab%ltable(iu,jo,ku,lo)
+      hilf1_1221 = ltab%ltable(iu,jo,ko,lu)
+      hilf1_1222 = ltab%ltable(iu,jo,ko,lo)
+      hilf1_2111 = ltab%ltable(io,ju,ku,lu)
+      hilf1_2112 = ltab%ltable(io,ju,ku,lo)
+      hilf1_2121 = ltab%ltable(io,ju,ko,lu)
+      hilf1_2122 = ltab%ltable(io,ju,ko,lo)
+      hilf1_2211 = ltab%ltable(io,jo,ku,lu)
+      hilf1_2212 = ltab%ltable(io,jo,ku,lo)
+      hilf1_2221 = ltab%ltable(io,jo,ko,lu)
+      hilf1_2222 = ltab%ltable(io,jo,ko,lo)
+
+      hilf2_111 = hilf1_1111 + (hilf1_2111 - hilf1_1111) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_112 = hilf1_1112 + (hilf1_2112 - hilf1_1112) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_121 = hilf1_1121 + (hilf1_2121 - hilf1_1121) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_122 = hilf1_1122 + (hilf1_2122 - hilf1_1122) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_211 = hilf1_1211 + (hilf1_2211 - hilf1_1211) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_212 = hilf1_1212 + (hilf1_2212 - hilf1_1212) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_221 = hilf1_1221 + (hilf1_2221 - hilf1_1221) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+      hilf2_222 = hilf1_1222 + (hilf1_2222 - hilf1_1222) * ltab%odx1 * (p_lok-ltab%x1(iu) )
+
+      hilf3_11  = hilf2_111  + (hilf2_211  - hilf2_111 ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
+      hilf3_12  = hilf2_112  + (hilf2_212  - hilf2_112 ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
+      hilf3_21  = hilf2_121  + (hilf2_221  - hilf2_121 ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
+      hilf3_22  = hilf2_122  + (hilf2_222  - hilf2_122 ) * ltab%odx2 * (T_lok-ltab%x2(ju) )
+      
+      hilf4_1   = hilf3_11   + (hilf3_21   - hilf3_11  ) * ltab%odx3 * (qw_lok-ltab%x3(ku))
+      hilf4_2   = hilf3_12   + (hilf3_22   - hilf3_12  ) * ltab%odx3 * (qw_lok-ltab%x3(ku))
+
+      dmin_loc = hilf4_1 + (hilf4_2 - hilf4_1)  * ltab%odx4 * (qi_lok-ltab%x4(lu))
     END IF
 
     RETURN

@@ -22,7 +22,8 @@ MODULE mo_art_photolysis
     
 
   USE mo_kind,                    ONLY: wp
-  USE mo_physical_constants,      ONLY: ppmv2gg,rhoh2o
+  USE mo_physical_constants,      ONLY: ppmv2gg,rhoh2o, amd, avo, argas, grav, p0sl_bg, rd
+  USE mo_math_constants,          ONLY: rad2deg, pi, pi2
   USE mo_util_phys,               ONLY: rel_hum
   
   USE mo_run_config,              ONLY: iqc, iqv, iqi
@@ -30,7 +31,7 @@ MODULE mo_art_photolysis
   
   USE CLD_SUB_MOD,                ONLY: CLOUD_JX
   USE FJX_CMN_MOD,                ONLY: JXL1_, AN_, JVN_, JFACTA, JIND, NRATJ, S_
-
+  USE mo_atm_phy_nwp_config,      ONLY: atm_phy_nwp_config
    
   USE mo_art_data,                ONLY: p_art_data
   USE mo_art_chem_data,           ONLY: nphot,          &
@@ -108,20 +109,12 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
   INTEGER                                   :: NICA, JCOUNT
 
   !--- other locals
-  REAL(wp) :: PMID, WLC!, ICWC
+  REAL(wp) :: PMID, WLC, ICWC
   REAL(wp) :: H_scale, ZDEL, PDEL,  F1
   INTEGER :: k, L, ANU, NJXU
-  REAL(wp), PARAMETER :: M_air   = 28.970_wp   ! molar mass of dry air [g/mol]
+
   
-  REAL(wp), PARAMETER :: M_air_si=M_air/1000.
-  REAL(wp), PARAMETER :: pi       = 3.14159265358979323846_wp
-  REAL(wp), PARAMETER :: R_gas    = 8.3144621_wp     ! R [J/K/mol]
-   
-  REAL(wp), PARAMETER :: RTD   = 180._wp/pi    ! Radians to degrees
-  REAL(wp), PARAMETER :: g        = 9.80665_wp       ! gravity acceleration [m/s2]
-  REAL(wp), PARAMETER :: N_A      = 6.02214129E23_wp ! Avogadro constant [1/mol]
-  REAL(wp), PARAMETER :: Rd      = 1000._wp * R_gas/M_air ! 287.05_dp
-  !real(wp),  dimension(2*JXL1_+1,2*JXL1_+1)   :: AMF
+  REAL(wp), PARAMETER :: M_air_si=amd/1000._wp
   
   INTEGER :: J
 
@@ -277,28 +270,6 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
   DO jb = art_atmo%i_startblk, art_atmo%i_endblk
     CALL art_get_indices_c(jg, jb, i_startidx, i_endidx)
 
-    DO jk=1,art_atmo%nlev
-!NEC$ ivdep
-      DO jc=i_startidx,i_endidx
-
-        IF (art_photo%input_fastjx_clf(jc,jk,jb) > 0.01      &
-             &  .AND. (art_photo%input_fastjx_lwp(jc,jk,jb)  &
-             &         + art_photo%input_fastjx_iwp(jc,jk,jb)) > ccwmin) THEN
-          
-          art_photo%input_fastjx_reice(jc,jk,jb) = MAX(art_atmo%reimin ,                       &
-                      &                   MIN(art_atmo%reimax  ,                               &
-                      &                   83.8_wp*art_photo%input_fastjx_iwc(jc,jk,jb)**0.216_wp))
-
-          art_photo%input_fastjx_reliq(jc,jk,jb) = MAX(art_atmo%relmin,                       &
-                      &                      MIN(art_atmo%relmax,                             &
-                      &                          fjx_zfact*art_photo%fjx_zkap(jc,jb)          &
-                      &                          * ( art_photo%input_fastjx_lwc(jc,jk,jb)     &
-                      &                           /art_photo%fjx_cdnc(jc,jk,jb))**(1.0_wp/3.0_wp)))
-
-        ENDIF
-
-      ENDDO
-    ENDDO
   ENDDO
 ! -------------------------------------------------------------------------------------------------
 
@@ -319,11 +290,11 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
 
 
       IF (U0 .gt. -0.13) THEN
-        SZA = RTD*acos( U0 )
+        SZA = rad2deg*acos( U0 )
 
         REFLB = art_atmo%albedo(jc,jb)
 
-        SOLF  = 1.d0-(0.034d0*cos(dble(39-186)*2.d0*PI/365.d0))
+        SOLF  = 1.d0-(0.034d0*cos(dble(39-186)*pi2/365.d0))
         FG0   = 0.0_wp
         LPRTJ = .false.
 
@@ -337,10 +308,10 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
         art_photo%PPP(1) = art_photo%PPP(2) * art_photo%PPP(2) / art_photo%PPP(3)
 
         DO K=1,L1_
-           art_photo%DDD(K) = ( art_photo%PPP(K) - art_photo%PPP(K+1) )*100./g  & ! -> kg/m2
+           art_photo%DDD(K) = ( art_photo%PPP(K) - art_photo%PPP(K+1) )*100._wp/grav  & ! -> kg/m2
            !DDD(K) = ( PPP(K) - PPP(K+1) )/g  & ! -> kg/m2
                 &    /M_air_si                    & ! -> -> mol/m2 (note SI)
-                &    *N_A                         & ! -> molec,
+                &    *avo                         & ! -> molec,
                 &    /1.e4_wp                          ! -> cm-2
         ENDDO
   
@@ -372,8 +343,6 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
           art_photo%TTT(K) = art_atmo%temp(jc,L_-K+1,jb)
           art_photo%RRR(K) = art_photo%input_fastjx_rh(jc,L_-K+1,jb)
           art_photo%CLF(K) =  art_photo%input_fastjx_clf(jc,L_-K+1,jb)
-          art_photo%REFFL(K) = art_photo%input_fastjx_reliq(jc, L_-K+1, jb)
-          art_photo%REFFI(K) = art_photo%input_fastjx_reice(jc, L_-K+1, jb)
         ENDDO
 
         art_photo%TTT(L1_) = art_photo%TTT(L_)
@@ -395,15 +364,15 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
           ENDIF
         ENDDO
 
-        art_photo%ZZZ(1)  = 16.d5*log10(1013.25d0/art_photo%PPP(1))     ! zzz in cm
+        art_photo%ZZZ(1)  = 16.d5*log10(p0sl_bg/art_photo%PPP(1))     ! zzz in cm
 
         DO L = 1,L_
-          H_scale  = Rd * art_photo%TTT(L) / g * 100.         ! in cm
+          H_scale  = Rd * art_photo%TTT(L) / grav * 100.         ! in cm
           ZDEL     = -( log(art_photo%PPP(L+1)/art_photo%PPP(L)) * H_scale )
           PDEL     = art_photo%PPP(L) - art_photo%PPP(L+1)
           PMID     = ( art_photo%PPP(L) + art_photo%PPP(L+1) ) / 2
           art_photo%ZZZ(L+1) = art_photo%ZZZ(L) + ZDEL
-          WLC      = art_photo%LWP(L) * g / 100000. / PDEL
+          WLC      = art_photo%LWP(L) * grav / 100000. / PDEL
 
           IF (WLC > 1.d-11) THEN                ! note: cldj.f90 uses 1e-11 and 1e-12
              F1       = 0.005d0 * (PMID - 610.d0)
@@ -415,7 +384,7 @@ SUBROUTINE art_photolysis(jg, p_tracer_now, vmr2Nconc)
              art_photo%REFFL(L) = 0.d0
           ENDIF
 
-          IF ( art_photo%IWP(L)*g/10000./PDEL > 1.d-11 ) THEN
+          IF ( art_photo%IWP(L)*grav/10000./PDEL > 1.d-11 ) THEN
              !ICWC     = art_photo%IWP(L) / ZDEL          ! g/m3
              !art_photo%REFFI(L) = 164.d0 * (ICWC**0.23d0)
              art_photo%CLDIW(L) = art_photo%CLDIW(L) + 2

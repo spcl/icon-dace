@@ -23,8 +23,8 @@ cdiUUID2Str(const unsigned char *uuid, char *uuidstr)
 {
   if (uuid == NULL || uuidstr == NULL) return 0;
 
-  int iret = sprintf(uuidstr, uuidFmt, uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7], uuid[8], uuid[9],
-                     uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
+  int iret = snprintf(uuidstr, uuidNumHexChars + 1, uuidFmt, uuid[0], uuid[1], uuid[2], uuid[3], uuid[4], uuid[5], uuid[6], uuid[7],
+                      uuid[8], uuid[9], uuid[10], uuid[11], uuid[12], uuid[13], uuid[14], uuid[15]);
 
   if (iret != uuidNumHexChars)
     {

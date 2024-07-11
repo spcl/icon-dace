@@ -1,3 +1,15 @@
+/* DO NOT REMOVE the config.h include file under any circumstances,
+ * it's very much needed on some platforms */
+#if defined(HAVE_CONFIG_H)
+#include "config.h"
+#endif
+/* DO NOT REMOVE the above config.h include file under any
+ * circumstances as long as it's the autoconf configuration header
+ * used to build this package. When it's missing on some platforms,
+ * some poor person has to do long, tedious debugging sessions, where
+ * struct offsets almost imperceptibly change from one file to the
+ * next to find out what happened */
+
 #include "cdi_datetime.h"
 #include <stdio.h>
 #include <stdlib.h>
@@ -56,12 +68,12 @@ CdiDate
 cdiDate_set(int64_t date)
 {
   int64_t iyear = date / 10000;
-  int year = iyear;
+  int year = (int) iyear;
   int64_t idate = date - iyear * 10000;
   if (idate < 0) idate = -idate;
   int64_t imonth = idate / 100;
-  int month = imonth;
-  int day = idate - imonth * 100;
+  int month = (int) imonth;
+  int day = (int) (idate - imonth * 100);
 
   CdiDate cdiDate;
   cdiDate.year = year;
@@ -81,7 +93,7 @@ cdiTime_set(int time)
   cdiTime.hour = (short) hour;
   cdiTime.minute = (short) minute;
   cdiTime.second = (short) second;
-  cdiTime.ms = ms;
+  cdiTime.ms = (short) ms;
 
   return cdiTime;
 }
@@ -117,8 +129,8 @@ cdiDate_encode(int year, int month, int day)
 {
   CdiDate cdiDate;
   cdiDate.year = year;
-  cdiDate.month = month;
-  cdiDate.day = day;
+  cdiDate.month = (short) month;
+  cdiDate.day = (short) day;
 
   return cdiDate;
 }
@@ -135,10 +147,10 @@ CdiTime
 cdiTime_encode(int hour, int minute, int second, int ms)
 {
   CdiTime cdiTime;
-  cdiTime.hour = hour;
-  cdiTime.minute = minute;
-  cdiTime.second = second;
-  cdiTime.ms = ms;
+  cdiTime.hour = (short) hour;
+  cdiTime.minute = (short) minute;
+  cdiTime.second = (short) second;
+  cdiTime.ms = (short) ms;
 
   return cdiTime;
 }

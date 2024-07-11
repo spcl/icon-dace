@@ -135,6 +135,7 @@ MODULE mo_2mom_mcrph_types
      REAL(wp)      :: lsigs     ! log(sigma_s)
      REAL(wp)      :: R2        ! in mum
      REAL(wp)      :: etas      ! soluble fraction
+     REAL(wp)      :: wcb_min   ! min updraft speed for Segal&Khain nucleation
      REAL(wp)      :: z0        ! parameter for height-dependency, constant up to z0_nccn
      REAL(wp)      :: z1e       ! 1/e scale height of N_ccn profile
   END TYPE aerosol_ccn
@@ -160,6 +161,14 @@ MODULE mo_2mom_mcrph_types
          &      theta_n_aa,theta_n_ab,theta_n_bb, &
          &      theta_q_aa,theta_q_ab,theta_q_ba,theta_q_bb
   END TYPE rain_riming_coeffs
+
+  !..these are coefficients for partial moments collection of type a+b->a
+  TYPE coll_coeffs_ir_pm
+    REAL(wp) :: moma(0:1,1:5), momb(0:1,1:5)
+    REAL(wp) :: delta_aa(0:1,0:1), delta_ab(0:1,0:1), delta_bb(0:1,0:1)
+    REAL(wp) :: theta_aa(0:1,0:1), theta_ab(0:1,0:1), theta_bb(0:1,0:1)
+    REAL(wp) :: lamfakt_a, lamfakt_b
+  END TYPE coll_coeffs_ir_pm
 
   TYPE dep_imm_coeffs
     REAL(wp) :: alf_dep, bet_dep, nin_dep, &
@@ -226,6 +235,8 @@ MODULE mo_2mom_mcrph_types
   
   ! Types to hold the equidistant lookup table for graupel wetgrowth diameter:
   TYPE(lookupt_4d), TARGET :: ltabdminwgg
+  ! Types to hold the equidistant lookup table for hail wetgrowth diameter:
+  TYPE(lookupt_4d), TARGET :: ltabdminwgh
 
   ! Types to hold the equidistant lookup table for sticking efficiencies:
   TYPE(lookupt_1d), TARGET :: ltab_estick_ice

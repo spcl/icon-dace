@@ -200,18 +200,18 @@ MODULE mo_initicon_io
 
     CHARACTER(len=*), PARAMETER :: routine = modname//"height_or_lev"
 
-    retval = nf_inq_dimid(ncid, 'lev', dimid)
+    retval = nf90_inq_dimid(ncid, 'lev', dimid)
 
     ! the "lev" branch
-    IF (retval == nf_noerr) THEN
-      CALL nf(nf_inq_dimlen(ncid, dimid, nlev), routine)
+    IF (retval == nf90_noerr) THEN
+      CALL nf(nf90_inquire_dimension(ncid, dimid, len = nlev), routine)
     ! the "hate*" branch
     ELSE
       dimstring = "height"
       DO i = 1, max_n_height
-        retval = nf_inq_dimid(ncid, TRIM(dimstring), dimids(i))
-        IF (retval == nf_noerr) THEN
-          CALL nf(nf_inq_dimlen(ncid, dimids(i), nlevs(i)), routine)
+        retval = nf90_inq_dimid(ncid, TRIM(dimstring), dimids(i))
+        IF (retval == nf90_noerr) THEN
+          CALL nf(nf90_inquire_dimension(ncid, dimids(i), len = nlevs(i)), routine)
         ELSE
           nlevs(i) = HUGE(1)
         ENDIF
@@ -315,13 +315,13 @@ MODULE mo_initicon_io
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(ifs2icon_file(jg)), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(ifs2icon_file(jg)), NF90_NOWRITE, ncid), routine)
 
         !
         ! get number of cells
         !
-        CALL nf(nf_inq_dimid(ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid(ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         !
         ! get number of vertical levels
@@ -351,7 +351,7 @@ MODULE mo_initicon_io
         !
         ! Check if rain water (QR) is provided as input
         !
-        IF (nf_inq_varid(ncid, 'QR', varid) == nf_noerr) THEN
+        IF (nf90_inq_varid(ncid, 'QR', varid) == nf90_noerr) THEN
           lread_qr = .true.
         ELSE
           lread_qr = .false.
@@ -361,7 +361,7 @@ MODULE mo_initicon_io
         !
         ! Check if snow water (QS) is provided as input
         !
-        IF (nf_inq_varid(ncid, 'QS', varid) == nf_noerr) THEN
+        IF (nf90_inq_varid(ncid, 'QS', varid) == nf90_noerr) THEN
           lread_qs = .true.
         ELSE
           lread_qs = .false.
@@ -371,27 +371,27 @@ MODULE mo_initicon_io
         !
         ! Check if normal velocity component (VN) is provided as input
         !
-        lread_vn = nf_inq_varid(ncid, 'VN', varid) == nf_noerr
+        lread_vn = nf90_inq_varid(ncid, 'VN', varid) == nf90_noerr
 
 
         IF (init_mode == MODE_IFSANA .OR. init_mode == MODE_COMBINED) THEN
           !
           ! get number of hybrid coefficients
           !
-          CALL nf(nf_inq_dimid(ncid, 'nhyi', dimid), routine)
-          CALL nf(nf_inq_dimlen(ncid, dimid, nhyi), routine)
+          CALL nf(nf90_inq_dimid(ncid, 'nhyi', dimid), routine)
+          CALL nf(nf90_inquire_dimension(ncid, dimid, len = nhyi), routine)
           !
           ! Check if surface pressure (PS) or its logarithm (LNPS) is provided as input
           !
-          IF (nf_inq_varid(ncid, 'PS', varid) == nf_noerr) THEN
+          IF (nf90_inq_varid(ncid, 'PS', varid) == nf90_noerr) THEN
             psvar = 'PS'
-          ELSE IF (nf_inq_varid(ncid, 'LNPS', varid) == nf_noerr) THEN
+          ELSE IF (nf90_inq_varid(ncid, 'LNPS', varid) == nf90_noerr) THEN
             psvar = 'LNPS'
           ENDIF
 
           ! Find out the dimension of psvar for reading purpose
-          IF (nf_inq_varid(ncid, TRIM(psvar), varid) == nf_noerr) THEN
-            CALL nf(nf_inq_varndims(ncid,varid,psvar_ndims), routine)
+          IF (nf90_inq_varid(ncid, TRIM(psvar), varid) == nf90_noerr) THEN
+            CALL nf(nf90_inquire_variable(ncid, varid, ndims = psvar_ndims), routine)
           ELSE
             CALL finish(routine, 'surface pressure var '//TRIM(psvar)//' is missing')
           ENDIF
@@ -399,17 +399,17 @@ MODULE mo_initicon_io
           !
           ! Check if model-level surface Geopotential is provided as GEOSP or GEOP_ML
           !
-          IF (nf_inq_varid(ncid, 'GEOSP', varid) == nf_noerr) THEN
+          IF (nf90_inq_varid(ncid, 'GEOSP', varid) == nf90_noerr) THEN
             geop_ml_var = 'GEOSP'
-          ELSE IF (nf_inq_varid(ncid, 'GEOP_ML', varid) == nf_noerr) THEN
+          ELSE IF (nf90_inq_varid(ncid, 'GEOP_ML', varid) == nf90_noerr) THEN
             geop_ml_var = 'GEOP_ML'
           ELSE
             CALL finish(routine,'Could not find model-level sfc geopotential')
           ENDIF
 
           ! Find out the dimension of geop_ml_var for reading purpose
-          IF (nf_inq_varid(ncid, TRIM(geop_ml_var), varid) == nf_noerr) THEN
-            CALL nf(nf_inq_varndims(ncid,varid,geopvar_ndims), routine)
+          IF (nf90_inq_varid(ncid, TRIM(geop_ml_var), varid) == nf90_noerr) THEN
+            CALL nf(nf90_inquire_variable(ncid, varid, ndims = geopvar_ndims), routine)
           ELSE
             CALL finish(routine,'surface geopotential var '//TRIM(geop_ml_var)//' is missing')
           ENDIF
@@ -583,7 +583,7 @@ MODULE mo_initicon_io
 
       ! close file
       !
-      IF(lread_process) CALL nf(nf_close(ncid), routine)
+      IF(lread_process) CALL nf(nf90_close(ncid), routine)
       CALL closeFile(stream_id)
 
       IF (ANY(init_mode == (/ MODE_COMBINED, MODE_IFSANA /) )) THEN
@@ -694,13 +694,13 @@ MODULE mo_initicon_io
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(ifs2icon_file(jg)), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(ifs2icon_file(jg)), NF90_NOWRITE, ncid), routine)
 
         !
         ! get number of cells
         !
-        CALL nf(nf_inq_dimid(ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid(ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         !
         ! get number of vertical levels
@@ -718,7 +718,7 @@ MODULE mo_initicon_io
         ! Check, if the surface-level surface geopotential (GEOP_SFC) is available.
         ! If GEOP_SFC is missing, a warning will be issued and the model-level surface
         ! geopotential (GEOSP or GEOP_ML) will be used instead.
-        IF (nf_inq_varid(ncid, 'GEOP_SFC', varid) == nf_noerr) THEN
+        IF (nf90_inq_varid(ncid, 'GEOP_SFC', varid) == nf90_noerr) THEN
           geop_sfc_var = 'GEOP_SFC'
         ELSE
 
@@ -731,8 +731,8 @@ MODULE mo_initicon_io
           geop_sfc_var = geop_ml_var
         ENDIF
         ! inquire dimension of geop_sfc_var which can be either 2 or 3
-        IF (nf_inq_varid(ncid, TRIM(geop_sfc_var), varid) == nf_noerr) THEN
-          CALL nf(nf_inq_varndims(ncid,varid,geop_sfc_var_ndims), routine)
+        IF (nf90_inq_varid(ncid, TRIM(geop_sfc_var), varid) == nf90_noerr) THEN
+          CALL nf(nf90_inquire_variable(ncid, varid, ndims = geop_sfc_var_ndims), routine)
         ELSE
           CALL finish(routine,'surface geopotential variable '//TRIM(geop_sfc_var)//' is missing')
         ENDIF
@@ -740,7 +740,7 @@ MODULE mo_initicon_io
         ! Check, if the snow albedo ALB_SNOW is available.
         ! If ALB_SNOW is missing, a warning will be issued and RHO_SNOW
         ! will be used instead to determine FRESHSNOW.
-        IF (nf_inq_varid(ncid, 'ALB_SNOW', varid) == nf_noerr) THEN
+        IF (nf90_inq_varid(ncid, 'ALB_SNOW', varid) == nf90_noerr) THEN
           WRITE (message_text,'(a,a)')                            &
             &  'snow albedo available, ', &
             &  'used to determine freshsnow.'
@@ -757,7 +757,7 @@ MODULE mo_initicon_io
 
 
         ! Check, if sea surface temperature field is provided as input
-        IF (nf_inq_varid(ncid, 'SST', varid) == nf_noerr) THEN
+        IF (nf90_inq_varid(ncid, 'SST', varid) == nf90_noerr) THEN
           l_sst_in = .TRUE.
         ELSE
           WRITE (message_text,'(a,a)')                            &
@@ -849,7 +849,7 @@ MODULE mo_initicon_io
 
       ! close file
       !
-      IF(lread_process) CALL nf(nf_close(ncid), routine)
+      IF(lread_process) CALL nf(nf90_close(ncid), routine)
       CALL closeFile(stream_id)
 
 
@@ -1272,7 +1272,7 @@ MODULE mo_initicon_io
     REAL(dp), POINTER :: levelValues(:)
     TYPE(t_fetchParams) :: params
     REAL(wp), ALLOCATABLE :: z_ifc_in(:,:,:), w_ifc(:,:,:), tke_ifc(:,:,:)
-    LOGICAL :: lfound_thv, lfound_rho, lfound_vn, lfound_qr, lfound_qs, lfound_qg
+    LOGICAL :: lfound_thv, lfound_rho, lfound_vn, lfound_hus, lfound_clw, lfound_cli, lfound_qr, lfound_qs, lfound_qg
 
     ALLOCATE(params%inputInstructions(SIZE(inputInstructions, 1)))
     params%inputInstructions = inputInstructions
@@ -1312,16 +1312,26 @@ MODULE mo_initicon_io
             ! If the TKE field is not in the input data, a cold-start initialization is executed in init_nwp_phy
             CALL fetch3d(params, 'tke', jg, tke_ifc, lread_tke)
 
-            CALL fetchRequired3d(params, 'qv', jg, initicon(jg)%atm_in%qv)
-            CALL fetchRequired3d(params, 'qc', jg, initicon(jg)%atm_in%qc)
-            CALL fetchRequired3d(params, 'qi', jg, initicon(jg)%atm_in%qi)
+            ! Check for both DWD/Sapphire variables due to naming mismatch
+            CALL fetch3d(params, 'hus', jg, initicon(jg)%atm_in%qv, lfound_hus)
+            CALL fetch3d(params, 'clw', jg, initicon(jg)%atm_in%qc, lfound_clw)
+            CALL fetch3d(params, 'cli', jg, initicon(jg)%atm_in%qi, lfound_cli)
+!$OMP PARALLEL
+            IF (.NOT. lfound_hus) CALL fetchRequired3d(params, 'qv', jg, initicon(jg)%atm_in%qv)
+            IF (.NOT. lfound_clw) CALL fetchRequired3d(params, 'qc', jg, initicon(jg)%atm_in%qc)
+            IF (.NOT. lfound_cli) CALL fetchRequired3d(params, 'qi', jg, initicon(jg)%atm_in%qi)
+!$OMP END PARALLEL
+
             CALL fetch3d(params, 'qr', jg, initicon(jg)%atm_in%qr, lfound_qr)
             CALL fetch3d(params, 'qs', jg, initicon(jg)%atm_in%qs, lfound_qs)
 !$OMP PARALLEL
-            IF (.NOT. lfound_qr) CALL init(initicon(jg)%atm_in%qr(:,:,:))
-            IF (.NOT. lfound_qs) CALL init(initicon(jg)%atm_in%qs(:,:,:))
+            IF (.NOT. lfound_qr) CALL init(initicon(jg)%atm_in%qr(:,:,:), lacc=.FALSE.)
+            IF (.NOT. lfound_qs) CALL init(initicon(jg)%atm_in%qs(:,:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
-
+            
+            ! Set up flags for later calls
+            IF (lfound_hus) latbc_config%latbc_contains_hus = .TRUE.
+            
             ! fetch additional tracers in first guess
             CALL fetch_tracer_fg('tracer_fg_in', params, jg,       &
               &                   atm_in  = initicon(jg)%atm_in,   &
@@ -1661,7 +1671,7 @@ MODULE mo_initicon_io
             ! allocate source array for vertical interpolation
             ALLOCATE(atm_in%tracer(idx)%field(nproma,nlev_in,nblks_c))
 !$OMP PARALLEL
-            CALL init(atm_in%tracer(idx)%field(:,:,:))      !_jf: necessary?
+            CALL init(atm_in%tracer(idx)%field(:,:,:), lacc=.FALSE.)      !_jf: necessary?
 !$OMP END PARALLEL
             ! request the first guess fields
             my_ptr3d => atm_in%tracer(idx)%field(:,:,:)
@@ -1740,7 +1750,7 @@ MODULE mo_initicon_io
                 CALL fetchSurface(params, 'fr_seaice', jg, lnd_diag%fr_seaice)
             ELSE
 !$OMP PARALLEL
-                CALL init(lnd_diag%fr_seaice(:,:))
+                CALL init(lnd_diag%fr_seaice(:,:), lacc=.FALSE.)
 !$OMP END PARALLEL
             ENDIF ! init_mode /= MODE_COSMO
 
@@ -1971,7 +1981,8 @@ MODULE mo_initicon_io
             IF (ANY((/MODE_COMBINED,MODE_COSMO,MODE_ICONVREMAP/) == init_mode)) THEN
                 IF (inputInstructions(jg)%ptr%sourceOfVar('smi')==kInputSourceFg) THEN
                     DO jt=1, ntiles_total
-                        CALL smi_to_wsoil(p_patch(jg), lnd_prog%w_so_t(:,:,:,jt))
+                        CALL smi_to_wsoil(p_patch(jg), ext_data(jg)%atm%list_land, &
+                          &               ext_data(jg)%atm%soiltyp, lnd_prog%w_so_t(:,:,:,jt))
                     END DO
                 ENDIF
             END IF
@@ -2095,11 +2106,7 @@ MODULE mo_initicon_io
             my_ptr2d => initicon(jg)%sfc%sst(:,:)
             CALL fetch2d(params, 't_seasfc', 0.0_wp, jg, my_ptr2d)
             !
-#ifdef __PGI
-            IF (inputInstructions(jg)%ptr%fetchStatus('t_seasfc', .FALSE.) == kStateFailedFetch) THEN
-#else
             IF (inputInstructions(jg)%ptr%fetchStatus('t_seasfc', lIsFg=.FALSE.) == kStateFailedFetch) THEN
-#endif
               ! T_SO(0). Note that the file may contain a 3D field, of which we ONLY fetch the level at 0.0.
               lHaveFg = inputInstructions(jg)%ptr%sourceOfVar('t_so') == kInputSourceFg
               CALL fetch2d(params, 't_so', 0.0_wp, jg, my_ptr2d)
@@ -2197,7 +2204,7 @@ MODULE mo_initicon_io
       IF(p_patch(jg)%ldom_active .AND. ANY((/MODE_IAU, MODE_IAU_OLD /) == init_mode)) THEN
         IF (lp2cintp_sfcana(jg)) THEN
           ! Perform parent-to-child interpolation of surface fields read from the analysis
-          CALL interpolate_sfcana(initicon, inputInstructions, p_patch(jg)%parent_id, jg)
+          CALL interpolate_sfcana(initicon, inputInstructions, p_patch(jg)%parent_id, jg, p_lnd_state(:))
 
         ELSE IF (ntiles_total>1 .AND. init_mode == MODE_IAU_OLD) THEN
           ! MODE_IAU_OLD: H_SNOW, FRESHSNOW, W_SNOW and RHO_SNOW are read from analysis (full fields)

@@ -119,7 +119,9 @@ eval_argument ()
         "cpu_time")          use_cpu_time=$2 ;;
         "mpi_procs_pernode") use_mpi_procs_pernode=$2 ;;
         "mpi_io_procs")      use_mpi_io_procs=$2 ;;
+        "nblocks_c")         use_nblocks_c=$2 ;;
         "nproma")            use_nproma=$2 ;;
+        "nproma_sub")        use_nproma_sub=$2 ;;
         "ntasks")            use_tasks=$2 ;;
         "openmp_threads")    use_openmp_threads=$2 ;;
         "omp_stacksize")     use_omp_stacksize=$2 ;;

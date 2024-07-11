@@ -37,7 +37,7 @@ MODULE mo_art_init_chemtracer
   USE mo_art_chem_data,                 ONLY: t_art_chem_indices
   USE mo_art_wrapper_routines,          ONLY: art_get_indices_c
   USE mo_art_chem_init_types,           ONLY: t_chem_init_state
-  USE mo_physical_constants,            ONLY: ppmv2gg
+  USE mo_physical_constants,            ONLY: ppmv2gg, p0sl_bg
   USE mo_util_string,                   ONLY: int2string
   USE mo_exception,                     ONLY: message
   USE mo_art_chem_init_utils,           ONLY: deallocate_chem_init_chem, &
@@ -174,7 +174,7 @@ SUBROUTINE art_init_chemtracer(jg, tracer)
         DO jk = 1,art_atmo%nlev
           DO jc = i_startidx,i_endidx
             tracer(jc,jk,jb,art_indices%iTRAGE) = 7._wp - (MIN( 7._wp,MAX( 0._wp, ( (-7000._wp *  &
-                            &        LOG(art_atmo%pres(jc,jk,jb)/101325._wp))/1.e3_wp - 15._wp )  &
+                            &        LOG(art_atmo%pres(jc,jk,jb)/p0sl_bg))/1.e3_wp - 15._wp )  &
                             &        / 25._wp * 7._wp )))
           ENDDO
         ENDDO

@@ -7,7 +7,7 @@
 AC_PREREQ([2.69])
 LT_PREREQ([2.4.6])
 
-AC_INIT([cdi],[2.2.4],[https://mpimet.mpg.de/cdi])
+AC_INIT([cdi],[2.4.0],[https://mpimet.mpg.de/cdi])
 AC_DEFINE_UNQUOTED(CDI, ["$PACKAGE_VERSION"], [CDI version])
 
 AC_CONFIG_AUX_DIR([config])
@@ -21,11 +21,26 @@ AM_INIT_AUTOMAKE([1.16.1 foreign])
 AM_MAINTAINER_MODE([enable])
 AM_EXTRA_RECURSIVE_TARGETS([examples])
 
-m4_pushdef([_AC_PROG_CC_C89],
-  [rm -rf conftest.dSYM # needed when configured on MacOS with CFLAGS='-g'
-   _AC_PROG_CC_C99([], [AC_MSG_FAILURE([C compiler does not support ISO C99])])])dnl
-AC_PROG_CC
-m4_popdef([_AC_PROG_CC_C89])dnl
+dnl Tests for the C compiler:
+dnl   Make sure conftest.dSYM is removed when configured on MacOS with
+dnl   CFLAGS='-g':
+m4_pushdef([_AM_PROG_CC_C_O], m4_bpatsubst(m4_dquote(m4_defn([_AM_PROG_CC_C_O])),
+  [rm -f\(.* conftest\*.*\)], [rm -rf\1]))dnl
+dnl   Check for ISO C99 support
+dnl   (Autoconf 2.69- and 2.70+ have different documented ways for this):
+m4_case(m4_version_compare(AC_AUTOCONF_VERSION,[2.70]),
+  [-1], [AC_PROG_CC_C99],
+  [0],  [dnl
+dnl   Fix a bug in Autoconf 2.70 (see https://savannah.gnu.org/support/?110396):
+         m4_pushdef([_AC_PROG_CC_C99],
+         m4_bpatsubst(m4_dquote(m4_defn([_AC_PROG_CC_C99])),
+           [\[ac_c_conftest_c89_program\]], [[ac_c_conftest_c99_program]]))dnl
+         AC_PROG_CC
+         m4_popdef([_AC_PROG_CC_C99])],
+  [1],  [AC_PROG_CC])
+AS_VAR_IF([ac_cv_prog_cc_c99], [no],
+  [AC_MSG_FAILURE([unable to detect C compiler flag needed to accept ISO C99])])
+m4_popdef([AC_PROG_CC_C_O])dnl
 ACX_PROG_CC_POSIX([2001])
 AC_C_RESTRICT
 
@@ -234,7 +249,7 @@ AC_FUNC_MMAP
 dnl Check for structures:
 AC_CHECK_MEMBERS([struct stat.st_blksize])
 dnl Checks for header files:
-AC_CHECK_HEADERS([malloc.h unistd.h sys/time.h],,,[AC_INCLUDES_DEFAULT])
+AC_CHECK_HEADERS([malloc.h sys/time.h],,,[AC_INCLUDES_DEFAULT])
 AX_EXECINFO
 dnl Checks for the availability of functions:
 AC_CHECK_FUNCS([mallinfo pwrite])

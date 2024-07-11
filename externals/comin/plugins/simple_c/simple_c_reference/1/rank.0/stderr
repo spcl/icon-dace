@@ -1,7 +1,7 @@
  ICON running
     running with            1  MPI tasks and            1  thread(s) per task.
       compatibility check.
-        linked to ICON Community Interface v0.1.0
+        linked to ICON Community Interface v0.1.1
       minimal-example: working precision test successful.
     ICON model setup
       ICON // Fill descriptive data structure
@@ -36,7 +36,7 @@ min_rlcell_int: -4
       Associate ICON varlist and ComIn
       CONTEXT EP_SECONDARY_CONSTRUCTOR
       current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: libsimple_c_plugin.so(comin_main)
-ComIn v0.1.0 simple_c_constructor called!
+ComIn v0.1.1 simple_c_constructor called!
 found variable: u on domain id 1
 found variable: v on domain id 1
 found variable: pres on domain id 1

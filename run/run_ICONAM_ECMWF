@@ -287,7 +287,6 @@ ntiles           = 1
  decay_exp       = 1.2
 /
 &dynamics_nml
- iequations     = 3
  divavg_cntrwgt = 0.50
  lcoriolis      = .TRUE.
 /

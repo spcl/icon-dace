@@ -9,7 +9,7 @@
 /*
  * Keywords: ScalES PPM error handling
  * Maintainer: Thomas Jahns <jahns@dkrz.de>
- * URL: https://www.dkrz.de/redmine/projects/scales-ppm
+ * URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are  permitted provided that the following conditions are
@@ -140,7 +140,7 @@ SymPrefix(restore_default_abort_handler)(void)
 
 /*
  * Local Variables:
- * license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+ * license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
  * license-markup: "doxygen"
  * license-default: "bsd"
  * End:

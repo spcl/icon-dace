@@ -158,8 +158,8 @@ instituteNewEntry(cdiResH resH, int center, int subcenter, const char *name, con
     }
   instituteptr->center = center;
   instituteptr->subcenter = subcenter;
-  if (name && *name) instituteptr->name = strdupx(name);
-  if (longname && *longname) instituteptr->longname = strdupx(longname);
+  if (name && *name) instituteptr->name = strdup(name);
+  if (longname && *longname) instituteptr->longname = strdup(longname);
   return instituteptr;
 }
 

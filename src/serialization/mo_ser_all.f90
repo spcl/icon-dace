@@ -70,11 +70,10 @@ MODULE mo_ser_all
   END SUBROUTINE
 
 
-  SUBROUTINE ser_var_list(name, abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain, substr, timelev)
+  SUBROUTINE ser_var_list(name, abs_threshold, rel_threshold, ser_mode, domain, substr, timelev)
     CHARACTER(len=*), INTENT(IN)            :: name    ! name of output var_list
     INTEGER, INTENT(IN)                     :: abs_threshold
     INTEGER, INTENT(IN)                     :: rel_threshold
-    LOGICAL, INTENT(IN)                     :: lupdate_cpu
     INTEGER, INTENT(IN)                     :: ser_mode
     INTEGER, INTENT(IN), OPTIONAL           :: domain  ! domain index to append
     CHARACTER(len=*), INTENT(IN), OPTIONAL  :: substr  ! String after domain, before timelev
@@ -95,7 +94,6 @@ MODULE mo_ser_all
 
     o%abs_threshold = abs_threshold
     o%rel_threshold = rel_threshold
-    o%lupdate_cpu = lupdate_cpu
     o%ser_mode = ser_mode
 
     ! Append domain index
@@ -127,10 +125,9 @@ MODULE mo_ser_all
         o%lopenacc  = info%lopenacc
 
         ! Contained variables are (/should be) already serialized through their container.
-        IF ( info%lcontained ) THEN 
+        IF ( info%lcontained ) THEN
           ! just check meta data
           o%lopenacc = .FALSE.
-          o%lupdate_cpu = .FALSE.
           call ser_component(o, TRIM(ser_name)//"_contained", info%used_dimensions)
           CYCLE for_all_list_elements
         END IF
@@ -138,7 +135,6 @@ MODULE mo_ser_all
         ! only compare shape of empty variables
         IF ( ANY(info%used_dimensions==0) ) THEN
           o%lopenacc = .FALSE.
-          o%lupdate_cpu = .FALSE.
           call ser_component(o, TRIM(ser_name)//"_shape", info%used_dimensions)
           CYCLE for_all_list_elements
         END IF
@@ -196,19 +192,17 @@ MODULE mo_ser_all
   END SUBROUTINE ser_var_list
 #endif
 
-  SUBROUTINE serialize_all(nproma, jg, savepoint_base, is_input, opt_lupdate_cpu, opt_id, opt_dt)
+  SUBROUTINE serialize_all(nproma, jg, savepoint_base, is_input, opt_id, opt_dt)
 
     INTEGER, INTENT(IN) :: nproma, jg
     CHARACTER(LEN=*), INTENT(IN) :: savepoint_base
     LOGICAL, INTENT(IN) :: is_input
 
-    LOGICAL, INTENT(IN), OPTIONAL :: opt_lupdate_cpu
     INTEGER, INTENT(IN), OPTIONAL :: opt_id
     ! use this to pass a datetime that describes the exact current sub-timestep of a nested domain.
-    TYPE(datetime), INTENT(IN), OPTIONAL, POINTER :: opt_dt 
+    TYPE(datetime), INTENT(IN), OPTIONAL, POINTER :: opt_dt
 
 #ifdef SERIALIZE
-    LOGICAL :: lupdate_cpu
     INTEGER :: id, ser_mode
     INTEGER, POINTER :: ser_setting(:)
 
@@ -314,13 +308,6 @@ MODULE mo_ser_all
 #endif
        ENDIF
 
-       ! only update CPU data if requested and for write mode
-       IF(PRESENT(opt_lupdate_cpu) .AND. ser_mode==0) THEN
-           lupdate_cpu = opt_lupdate_cpu
-       ELSE
-           lupdate_cpu = .FALSE.
-       ENDIF
-
        IF(PRESENT(opt_id)) THEN
            id = opt_id
        ELSE
@@ -340,12 +327,6 @@ MODULE mo_ser_all
          "_", id, "_dom", jg, "_rank", get_my_mpi_work_id()
        CALL message('SER working on',compare_file_name)
 
-#ifdef _OPENACC
-       IF(lupdate_cpu) THEN
-         CALL warning('GPU:'//TRIM(savepoint_name),'GPU HOST synchronization forced by serialization!')
-       ENDIF
-#endif
-
        IF(ser_mode == 3) THEN
          CALL open_compare_file(TRIM(compare_file_name))
        ELSE
@@ -361,46 +342,46 @@ MODULE mo_ser_all
 
        IF(iforcing == inwp) THEN
            ! Serialize NWP fields
-           CALL ser_var_list('prm_diag_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('prm_tend_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('lnd_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg))
-           CALL ser_var_list('lnd_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg))
-           CALL ser_var_list('lnd_diag_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('wtr_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg))
-           CALL ser_var_list('wtr_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg))
-           CALL ser_var_list('ext_data_atm_td_D', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('ext_data_atm_D', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
+           CALL ser_var_list('prm_diag_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('prm_tend_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('lnd_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg))
+           CALL ser_var_list('lnd_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg))
+           CALL ser_var_list('lnd_diag_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('wtr_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg))
+           CALL ser_var_list('wtr_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg))
+           CALL ser_var_list('ext_data_atm_td_D', abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('ext_data_atm_D', abs_threshold, rel_threshold, ser_mode, domain=jg)
 
            ! Serialize sppt
            IF (sppt_config(jg)%lsppt) THEN
-            CALL ser_var_list('sppt_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
+            CALL ser_var_list('sppt_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
            END IF
        ENDIF
 
        IF(ldass_lhn) THEN
            ! Serialize radar data and LHN fields
-           CALL ser_var_list('radar_data_ct_dom_',    abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('radar_data_td_dom_',    abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-           CALL ser_var_list('lhn_fields_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
+           CALL ser_var_list('radar_data_ct_dom_',    abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('radar_data_td_dom_',    abs_threshold, rel_threshold, ser_mode, domain=jg)
+           CALL ser_var_list('lhn_fields_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
        ENDIF
 
        ! Serialize dynamics fields
-       CALL ser_var_list('nh_state_metrics_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-       CALL ser_var_list('nh_state_diag_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
-       CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg)) !p_prog
-       CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg)) !p_prog
+       CALL ser_var_list('nh_state_metrics_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
+       CALL ser_var_list('nh_state_diag_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
+       CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew(jg)) !p_prog
+       CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow(jg)) !p_prog
        IF(nnow_rcf(jg) /= nnew(jg) .AND. nnow_rcf(jg) /= nnow(jg)) THEN
-         CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow_rcf(jg)) !p_prog_now_rcf
+         CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnow_rcf(jg)) !p_prog_now_rcf
        ENDIF
        IF(nnew_rcf(jg) /= nnew(jg) .AND. nnew_rcf(jg) /= nnow_rcf(jg) .AND. nnew_rcf(jg) /= nnow(jg)) THEN
-         CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew_rcf(jg)) !p_prog_rcf
+         CALL ser_var_list('nh_state_prog_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg, substr='_and_timelev_', timelev=nnew_rcf(jg)) !p_prog_rcf
        ENDIF
 
        ! Serialize fields that prepare advection
-       CALL ser_var_list('prepadv_of_domain_', abs_threshold, rel_threshold, lupdate_cpu, ser_mode, domain=jg)
+       CALL ser_var_list('prepadv_of_domain_', abs_threshold, rel_threshold, ser_mode, domain=jg)
 
        ! Serialize selected scalars and arrays that are not part of any list
-       CALL ser_manually(abs_threshold, rel_threshold, lupdate_cpu, ser_mode, jg)
+       CALL ser_manually(abs_threshold, rel_threshold, ser_mode, jg)
 
        IF(ser_mode == 3) THEN
          CALL close_compare_file()

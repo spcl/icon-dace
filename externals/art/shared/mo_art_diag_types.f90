@@ -157,6 +157,10 @@ MODULE mo_art_diag_types
     TYPE(t_art_cloud_height),POINTER :: &
       &  ash_cloud(:)         => NULL()     !< base and top in [m] of volcanic ash cloud for different
                                            !  threshold conentrations in [ug/m3] as cloud definitions
+! Biomass burning and fire diagnostics
+    REAL(wp),POINTER          ::         &
+      &  soot_total_mc(:,:,:) => NULL()    !< Total biomass burning aerosol mass concentration [kg/m3]
+
 ! Sea salt diagnostics
     REAL(wp),POINTER          ::         &
       &  seas_total_mc(:,:,:) => NULL()    !< Total sea salt mass concentration [kg/m3]

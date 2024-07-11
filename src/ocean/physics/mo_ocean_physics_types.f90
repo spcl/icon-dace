@@ -226,7 +226,7 @@ CONTAINS
     CALL message(TRIM(routine), 'construct hydro ocean physics')
 
     CALL vlr_add(ocean_params_list, 'ocean_params_list', patch_id=patch_2D%id, &
-      & lrestart=.FALSE., model_type=TRIM(get_my_process_name()))
+      & lrestart=.FALSE., model_type=get_my_process_name())
 
     ! determine size of arrays
     alloc_cell_blocks = patch_2D%alloc_cell_blocks

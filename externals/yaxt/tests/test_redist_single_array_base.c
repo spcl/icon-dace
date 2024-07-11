@@ -58,15 +58,14 @@
 
 #include "core/ppm_xfuncs.h"
 #include "tests.h"
+#include "ctest_common.h"
 #include "test_redist_common.h"
 
 int main(int argc, char **argv) {
 
-  // init mpi
-
   MPI_Comm comm = MPI_COMM_WORLD;
 
-  xt_mpi_call(MPI_Init(NULL, NULL), comm);
+  test_init_mpi(&argc, &argv, comm);
 
   xt_initialize(comm);
   Xt_config config = redist_exchanger_option(&argc, &argv);

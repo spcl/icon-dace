@@ -18,7 +18,7 @@ MODULE mo_art_psc_state
 ! ICON
   USE mo_kind,                          ONLY: wp
   USE mo_exception,                     ONLY: finish, message, message_text, warning
-  USE mo_physical_constants,            ONLY: argas, avo
+  USE mo_physical_constants,            ONLY: argas, avo, p0sl_bg, tmelt
   USE mo_math_constants,                ONLY: pi
 ! ART
   USE mo_art_data,                      ONLY: p_art_data
@@ -711,7 +711,7 @@ FUNCTION art_psc_NAT_growth_factor(nat_rad,pHNO3,H2O_gl,temp,pres,dtime)
     temp_corr = MAX(temp, 180._wp)
 
     ! from Hall and Pruppacher (1976)
-    diff_H2O = 0.22_wp*((temp/273.15_wp)**1.94_wp)*(101325._wp/pres*100._wp) * 1.e-4_wp
+    diff_H2O = 0.22_wp*((temp/273.15_wp)**1.94_wp)*(101325._wp/pres) * 1.e-4_wp
 
 
     ! transfer diff_H2O to that of HNO3. The factor relies on Zhu et al., JAMS, 2015

@@ -18,6 +18,7 @@ MODULE mo_sppt_state
   USE mo_impl_constants,          ONLY: SUCCESS, MAX_CHAR_LENGTH, HINTP_TYPE_LONLAT_BCTR, &
    &                                    HINTP_TYPE_LONLAT_RBF,VINTP_METHOD_LIN
   USE mo_exception,               ONLY: message, finish
+  USE mo_master_control,          ONLY: get_my_process_name
   USE mo_sppt_types,              ONLY: t_sppt
   USE mo_parallel_config,         ONLY: nproma
   USE mo_grid_config,             ONLY: n_dom
@@ -209,7 +210,8 @@ MODULE mo_sppt_state
      &      sppt%ddt_qg         )
 
     ! Register a field list and apply default settings
-    CALL vlr_add(sppt_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(sppt_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
     ! a) Fields to save current values
 

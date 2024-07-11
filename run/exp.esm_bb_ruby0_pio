@@ -162,9 +162,9 @@ lnd_file_interval="P20Y"
 #atm_output_interval="P1M"
 #oce_output_interval="P1M"
 #lnd_output_interval="P1M"
-atm_output_interval="PT2H"
-oce_output_interval="PT2H"
-lnd_output_interval="PT2H"
+atm_output_interval="PT9H"
+oce_output_interval="PT9H"
+lnd_output_interval="PT9H"
 
 # asynchronous diagnostic output processes
 # ----------------------------------------
@@ -594,8 +594,8 @@ EOF
 
 # model files
 #
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g128-210809.nc         ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g112-210809.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
 
@@ -929,10 +929,10 @@ if [[ "$output_lnd_dbg" == "yes" ]]; then
                     'rad_alb_vis_box'             , 'rad_alb_nir_box'        ,
                     'rad_rad_srf_net_box'         , 'rad_lw_srf_net_box'     , 'rad_sw_srf_net_box',
                     'seb_latent_hflx_box'         , 'seb_sensible_hflx_box'  , 'pheno_lai_box'     ,
-                    'hydro_evapotrans_box'        , 'hydro_w_soil_column_box',
+                    'hydro_evapotrans_box'        , 'hydro_wtr_rootzone_box' ,
                     'hydro_runoff_box'            , 'hydro_drainage_box'     ,
                     'hydro_discharge_ocean_box'   , 'hydro_discharge_box'    ,
-                    'hydro_w_snow_box',           , 'hydro_trans_box'        ,
+                    'hydro_weq_snow_box'          , 'hydro_transpiration_box',
                     'assimi_gross_assimilation_box','assimi_dark_respiration_box',
 /
 EOF
@@ -974,9 +974,9 @@ if [[ "$output_lnd_amip" == "yes" ]]; then
  output_interval  = "${lnd_output_interval}"
  file_interval    = "${lnd_file_interval}"
  include_last     = .FALSE.
- ml_varlist       = 'pheno_lai_box'         , 'pheno_fract_fpc_veg'         , 'hydro_fract_water_box' ,
-                    'hydro_fract_snow_box'  , 'hydro_w_skin_box'            , 'hydro_w_snow_box'      ,
-                    'hydro_w_soil_column_box'
+ ml_varlist       = 'pheno_lai_box'         , 'pheno_fract_fpc_veg'         , 'hydro_fract_wet_box' ,
+                    'hydro_fract_snow_box'  , 'hydro_wtr_skin_box'          , 'hydro_weq_snow_box'  ,
+                    'hydro_wtr_rootzone_box'
 /
 EOF
 fi
@@ -1017,9 +1017,6 @@ cat > ${oce_namelist} << EOF
  dynamics_grid_filename      = "${ocean_grid}"
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
-/
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep               = "${oceTimeStep}"

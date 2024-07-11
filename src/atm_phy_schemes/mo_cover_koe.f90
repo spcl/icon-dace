@@ -33,7 +33,8 @@ MODULE mo_cover_koe
                                    grav   , & !! gravitational acceleration
                                    alv,cvd    !! lh_v, cv_d
 
-  USE mo_convect_tables,     ONLY: c1es   , & !! constants for computing the sat. vapour
+  USE mo_lookup_tables_constants, ONLY:  &
+                                   c1es   , & !! constants for computing the sat. vapour
                                    c3les  , & !! pressure over water (l) and ice (i)
                                    c3ies  , & !!               -- " --
                                    c4les  , & !!               -- " --

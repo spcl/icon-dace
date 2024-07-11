@@ -381,7 +381,6 @@ MODULE mo_jsb_time_iface
     &                                  divideDatetimeDifferenceInSeconds !, isCurrentEventActive,      &
   USE mo_time_config,            ONLY: time_config !configure_time
   USE mo_time_nml,               ONLY: read_time_namelist
-  USE mo_dynamics_config,        ONLY: iequations
   USE mo_bcs_time_interpolation, ONLY: t_time_interpolation_weights,              &
     &                                  calculate_time_interpolation_weights
   USE mo_aes_phy_config,         ONLY: aes_phy_tc, dt_zero
@@ -758,11 +757,7 @@ CONTAINS
   REAL(wp) FUNCTION get_asselin_coef()
     CHARACTER(len=*), PARAMETER :: routine = modname//':get_asselin_coef'
 
-    SELECT CASE(iequations)
-    !
-    CASE DEFAULT
-      get_asselin_coef = 0._wp
-    END SELECT
+    get_asselin_coef = 0._wp
 
   END FUNCTION get_asselin_coef
 
@@ -923,7 +918,7 @@ MODULE mo_jsb_io_netcdf_iface
   !   MODULE PROCEDURE netcdf_read_real_2d_extdim
   ! END INTERFACE netcdf_read_2d_extdim
 
-  INTEGER, PARAMETER :: MAX_VAR_DIMS = 16 ! NF_MAX_VAR_DIMS
+  INTEGER, PARAMETER :: MAX_VAR_DIMS = 16 ! NF90_MAX_VAR_DIMS
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_jsb_io_netcdf_iface'
 
@@ -1112,8 +1107,8 @@ CONTAINS
     IF (my_process_is_stdio()) THEN
       IF (.NOT. input_file%is_open) CALL finish(TRIM(routine), 'NetCDF file not open')
 
-      status = nf_inq_dimid(input_file%file_id, TRIM(dimname), dimid)
-      netcdf_file_has_dim = (status == NF_NOERR)
+      status = nf90_inq_dimid(input_file%file_id, TRIM(dimname), dimid)
+      netcdf_file_has_dim = (status == NF90_NOERR)
     END IF
 
     CALL p_bcast(netcdf_file_has_dim, p_io, mpi_comm)
@@ -1132,8 +1127,8 @@ CONTAINS
     IF (my_process_is_stdio()) THEN
       IF(.NOT. input_file%is_open) CALL finish(TRIM(routine), 'NetCDF file not open')
 
-      status = nf_inq_varid(input_file%file_id, TRIM(varname), varid)
-      netcdf_file_has_var = (status == NF_NOERR)
+      status = nf90_inq_varid(input_file%file_id, TRIM(varname), varid)
+      netcdf_file_has_var = (status == NF90_NOERR)
     END IF
 
     CALL p_bcast(netcdf_file_has_var, p_io, mpi_comm)
@@ -1152,8 +1147,8 @@ CONTAINS
     IF (my_process_is_stdio()) THEN
       IF(.NOT. input_file%is_open) CALL finish(TRIM(routine), 'NetCDF file not open')
 
-      CALL nf(nf_inq_dimid  (input_file%file_id, TRIM(dimname), IO_dim_id), TRIM(routine))
-      CALL nf(nf_inq_dimlen (input_file%file_id, IO_dim_id, netcdf_file_get_dimlen), TRIM(routine))
+      CALL nf(nf90_inq_dimid  (input_file%file_id, TRIM(dimname), IO_dim_id), TRIM(routine))
+      CALL nf(nf90_inquire_dimension (input_file%file_id, IO_dim_id, len = netcdf_file_get_dimlen), TRIM(routine))
     ELSE
       CALL finish(TRIM(routine), 'should only be called on io process!')
     END IF
@@ -1313,12 +1308,7 @@ CONTAINS
 
     CHARACTER(:), ALLOCATABLE :: model_name
 
-    IF (TRIM(get_my_process_name()) == 'atmo') THEN
-      ! Model (process) name from master namelist is 'atmo' but name for model_type is 'atm'
-      model_name = 'atm'
-    ELSE
-      model_name = TRIM(get_my_process_name())
-    END IF
+    model_name = get_my_process_name()
 
     IF (PRESENT(table)) CONTINUE ! Only here to avoid compiler warning about "table" not being used
     CALL vlr_add(this_list, vname, output_type=output_type, restart_type=restart_type, &
@@ -1638,6 +1628,7 @@ MODULE mo_physical_constants_iface
     ki,              & !< Heat conductivity of ice               [J/(m s K)]
     ks,              & !< Heat conductivity of snow              [J/(m s K)]
     ! Auxiliary constants
+    rd_o_cpd,        & !< rd/cpd
     rvd1  => vtmpc1, & !< = rv/rd-1                              []
     cpvd1 => vtmpc2    !< = cpv/cpd-1                            []
 

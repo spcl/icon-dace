@@ -1,0 +1,111 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+
+############################################################################
+###                  Configure wrapper for JUWELS                        ###
+###                           MSA-setup                                  ###
+############################################################################
+
+set -eu
+
+# clear all modules and load Stage and modules for all dependencies
+MODULES='Stages/2023 imkl/2022.1.0 GCCcore/.11.3.0 CMake/3.26.3 Intel/2022.1.0  ParaStationMPI/5.8.0-1 netCDF-Fortran ecCodes libfyaml'
+BUILD_ENV="module --force purge; export USERINSTALLATIONS=/p/usersoftware/slmet/easybuild/stages/2023/; module load ${MODULES}; module list;"
+
+# set directory name for out of source builds
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+SOFWAREROOT='/p/software/juwels'
+
+### Libraries
+ROOT_ECCODES=${SOFTWAREROOT}/stages/2023/software/ecCodes/2.27.0-ipsmpi-2022a
+ROOT_HDF5=${SOFTWAREROOT}/stages/2023/software/HDF5/1.12.2-ipsmpi-2022a
+ROOT_IMKL=${SOFTWAREROOT}/stages/2023/software/imkl/2022.1.0
+ROOT_LIBFYAML=/p/usersoftware/slmet/easybuild/stages/2023/easybuild/juwels/software/libfyaml/0.8-GCCcore-11.3.0
+ROOT_LIBXML2=${SOFTWAREROOT}/stages/2023/software/libxml2/2.9.13-GCCcore-11.3.0
+ROOT_NETCDF=${SOFTWAREROOT}/stages/2023/software/netCDF/4.9.0-ipsmpi-2022a
+ROOT_NETCDFMINFORTRAN=${SOFTWAREROOT}/stages/2023/software/netCDF-Fortran/4.6.0-ipsmpi-2022a
+ROOT_PNETCDF=${SOFTWAREROOT}/stages/2023/software/PnetCDF/1.12.3-ipsmpi-2022a
+ROOT_PSMPI=${SOFTWAREROOT}/stages/2023/software/psmpi/5.8.0-1-intel-compilers-2022.1.0
+
+ECCODES_LIBS='-leccodes'
+HDF5_LIBS='-lhdf5'
+NETCDFF_LIBS='-lnetcdff'
+NETCDF_LIBS='-lnetcdf'
+PNETCDF_LIBS='-lpnetcdf'
+XML2_LIBS='-lxml2'
+MKL_CFLAGS='-qmkl=sequential'  
+MKL_FCFLAGS='-qmkl=sequential'
+#MKL_LDFLAGS="-L${MKL_ROOT}/mkl/2022.1.0/lib/intel64 -Wl,-rpath -Wl,${MKL_ROOT}/mkl/2022.1.0/lib/intel64"
+MKL_LDFLAGS="-L${ROOT_IMKL}/mkl/2022.1.0/lib/intel64"
+FYAML_LIBS='-lfyaml'
+################################################################################
+
+AR='xiar'
+
+CC="${ROOT_PSMPI}/bin/mpicc"
+CFLAGS="-m64 -march=skylake-avx512 -fma -ftz -g -gdwarf-4 -pc64 -std=gnu99 -O2 -qno-opt-dynamic-align ${MKL_CFLAGS}"
+CPPFLAGS="-I${ROOT_ECCODES}/include -I${ROOT_HDF5}/include -I${ROOT_NETCDF}/include -I${ROOT_LIBXML2}/include/libxml2 -I${ROOT_LIBFYAML}/include"
+
+FC="${ROOT_PSMPI}/bin/mpif90"
+#try to add -O3
+FCFLAGS="-I${ROOT_NETCDFMINFORTRAN}/include -gdwarf-4 -g -pc64 -fp-model source  ${MKL_FCFLAGS}"
+ICON_FCFLAGS='-fp-model source -qoverride-limits -assume realloc_lhs -align array64byte -no-prec-sqrt -no-prec-div -fast-transcendentals -m64 -march=skylake-avx512 -fma -g -gdwarf-4 -ip -pc64 -D__LOOP_EXCHANGE -D__SWAPDIM -DIFORT_CONSISTENCY_ENFORCE -DLRTM_FULL_VECTORIZATION -DOCE_SOLVE_OMP -DDO_NOT_COMBINE_PUT_AND_NOCHECK'
+ICON_OCEAN_FCFLAGS='-O2 -assume norealloc_lhs -reentrancy threaded'
+
+LDFLAGS="-Wl,--disable-new-dtags -Wl,--as-needed -L${ROOT_ECCODES}/lib64 -L${ROOT_ECCODES}/lib -L${ROOT_HDF5}/lib -L${ROOT_PNETCDF}/lib -L${ROOT_NETCDF}/lib -L${ROOT_NETCDFMINFORTRAN}/lib ${MKL_LDFLAGS} -L${ROOT_LIBXML2}/lib64 -L${ROOT_LIBFYAML}/lib"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${PNETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${FYAML_LIBS}"
+
+EXTRA_CONFIG_ARGS='--enable-intel-consistency --disable-parallel-netcdf --enable-openmp --enable-rte-rrtmgp --enable-coupling --enable-grib2 --enable-cdi-pio'
+
+# Speed up the configuration by disabling MPI checks:
+EXTRA_CONFIG_ARGS+=' --disable-mpi-checks '
+MPI_LAUNCH='srun'
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+AR="${AR}" \
+BUILD_ENV="$BUILD_ENV" \
+CC="$CC" \
+CFLAGS="$CFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
+FC="$FC" \
+FCFLAGS="$FCFLAGS" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="$LIBS" \
+MPI_LAUNCH="$MPI_LAUNCH" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+    case $arg in
+      -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+	  test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+	  exit 0 ;;
+    esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${ICON_DIR}/run/standard_*
+  ln -sf set-up.info run/SETUP.config
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='rrtmgp*.nc' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/utils
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi

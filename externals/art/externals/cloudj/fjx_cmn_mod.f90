@@ -26,6 +26,8 @@
 
       MODULE FJX_CMN_MOD
         USE mo_kind,                 ONLY: wp
+        USE mo_physical_constants,   ONLY: avo, amd, grav, earth_radius
+        USE mo_math_constants,       ONLY: pi, pi2, deg2rad
 
       implicit none
       public
@@ -74,11 +76,11 @@
 
       ! MASFAC: Conversion factor for pressure to column density
       real(wp), parameter   ::  &
-                         MASFAC = 100.d0*6.022d+23/(28.97d0*9.8d0*10.d0)
+                         MASFAC = 100.d0*avo/(amd*grav*10.d0)
       ! ZZHT: scale height (cm) used above top of CTM ZHL(LPAR+1)
       real(wp), parameter   :: ZZHT = 5.d5
       ! RAD: Radius of Earth (cm)
-      real(wp), parameter   :: RAD = 6375.d5
+      real(wp), parameter   :: RAD = earth_radius*100._wp
       ! ATAU: heating rate (factor increase from one layer to the next)
       real(wp), parameter   :: ATAU = 1.120d0
       ! ATAU0: minimum heating rate
@@ -231,10 +233,10 @@
       integer, parameter :: ICA_ = 20000   ! Max # of indep colm atmospheres
       integer, parameter :: NQD_ = 4       ! # of cloud fraction bins (4)
 
-      real(wp),  parameter ::  CPI    = 3.141592653589793d0
-      real(wp),  parameter ::  C2PI   = 2.d0*CPI
-      real(wp),  parameter ::  CPI180 = CPI/180.d0
-      real(wp),  parameter ::  G0     = 9.80665d0
+      real(wp),  parameter ::  CPI    = pi
+      real(wp),  parameter ::  C2PI   = pi2
+      real(wp),  parameter ::  CPI180 = deg2rad
+      real(wp),  parameter ::  G0     = grav
       real(wp),  parameter ::  G100 = 100.d0/G0
 !-------data to set up the random number sequence for use in cloud-JX
       integer, parameter :: NRAN_ = 10007  ! dimension for random number

@@ -22,7 +22,7 @@ MODULE mo_nlcc_config_class
   USE mo_jsb_config_class,  ONLY: t_jsb_config
 
   ! -------------------------------------------------------------------------------------------------------
-  ! Module variables 
+  ! Module variables
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: t_nlcc_config
@@ -45,7 +45,7 @@ CONTAINS
   !> Initialize nlcc process
   !!
   !! @param[inout]     config     Configuration type of process (t_nlcc_config)
-  !!  
+  !!
   SUBROUTINE Init_nlcc_config(config)
 
     USE mo_jsb_namelist_iface, ONLY: open_nml, POSITIONED, position_nml, close_nml

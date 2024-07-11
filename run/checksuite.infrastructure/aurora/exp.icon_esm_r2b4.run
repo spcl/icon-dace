@@ -583,9 +583,8 @@ cat > ${atm_namelist} << EOF
  aes_cop_config(1)%cn1sea     =  50.0
  aes_cop_config(1)%cn2sea     = 100.0
  aes_cop_config(1)%cinhomi    =   1.0
- aes_cop_config(1)%cinhoml1   =   1.0
- aes_cop_config(1)%cinhoml2   =   1.0
- aes_cop_config(1)%cinhoml3   =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml    =   1.0
 /
 &cloud_mig_nml
  cloud_mig_config(1)%mu_rain        = 0.5
@@ -607,6 +606,7 @@ cat > ${jsbach_namelist} << EOF
   usecase              = "${jsbach_usecase}"
   use_lakes            = ${llake}            ! TRUE if jsbach_with_lakes=yes
   fract_filename       = 'bc_land_frac.nc'
+  enforce_water_budget = .FALSE.         ! True: stop in case of water conservation problem
 /
 &jsb_seb_nml
   bc_filename          = 'bc_land_phys.nc'
@@ -634,6 +634,7 @@ cat > ${jsbach_namelist} << EOF
   ic_filename          = 'ic_land_soil.nc'
 /
 &jsb_hydro_nml
+  l_socmap             = .FALSE.
   bc_filename          = 'bc_land_soil.nc'
   ic_filename          = 'ic_land_soil.nc'
   bc_sso_filename      = 'bc_land_sso.nc'
@@ -671,7 +672,6 @@ cat > ${jsbach_namelist} << EOF
   bc_filename          = 'bc_land_hd.nc'
   diag_water_budget    = .TRUE.
   debug_hd             = .FALSE.
-  enforce_water_budget = .FALSE.         ! True: stop in case of water conservation problem
 /
 EOF
 
@@ -682,8 +682,8 @@ EOF
 
 # model files
 #
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-lw-g256-2018-12-04.nc   ./coefficients_lw.nc
-add_link_file ${basedir}/externals/rte-rrtmgp/rrtmgp/data/rrtmgp-data-sw-g224-2018-12-04.nc   ./coefficients_sw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc   ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc   ./coefficients_sw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc              ./rrtmgp-cloud-optics-coeffs-lw.nc
 add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc              ./rrtmgp-cloud-optics-coeffs-sw.nc
 
@@ -1020,11 +1020,11 @@ if [[ "$output_lnd" == "yes" ]]; then
  output_interval  = "${atm_output_interval}"
  file_interval    = "${atm_file_interval}"
  include_last     = .FALSE.
- ml_varlist       = 'pheno_lai_box'             , 'pheno_fract_fpc_veg'  , 'hydro_fract_water_box' ,
-                    'hydro_fract_snow_box'      , 'hydro_w_skin_box'     , 'hydro_w_snow_box'      ,
-                    'hydro_w_soil_column_box'   ,
+ ml_varlist       = 'pheno_lai_box'             , 'pheno_fract_fpc_veg'  , 'hydro_fract_wet_box' ,
+                    'hydro_fract_snow_box'      , 'hydro_wtr_skin_box'   , 'hydro_weq_snow_box'  ,
+                    'hydro_wtr_rootzone_box'    ,
                     'hydro_runoff_box'          , 'hydro_drainage_box'   ,
-                    'hydro_discharge_ocean_box' , 'hydro_discharge_box' 
+                    'hydro_discharge_ocean_box' , 'hydro_discharge_box'
 /
 EOF
 fi
@@ -1267,9 +1267,6 @@ cat > ${oce_namelist} << EOF
  dynamics_grid_filename      = "${ocean_grid}"
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
-/
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
 /
 &run_nml
  modelTimeStep               = "${oceTimeStep}"

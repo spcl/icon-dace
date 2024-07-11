@@ -14,14 +14,14 @@
 !>#### Contains the interfaces to the pplcc process which does the pre- and postprocessing for all
 !>     land cover change processes
 !>
-!> Note: 
+!> Note:
 !>
 !>       1. This module takes advantage of the handling of the integrate and aggregate routines, which both
-!>          call the same routines in this module (integrate = aggregate). 
+!>          call the same routines in this module (integrate = aggregate).
 !>          Thereby each tile is processed by the same routine for the tasks of this process.
 !>
 !>       2. currently only 2D variables are dealt with -- if also 3D variables need to be conserved,
-!>          these will anyway have to specially be dealt with in the concept and thus need to be 
+!>          these will anyway have to specially be dealt with in the concept and thus need to be
 !>          identified with an own cqt e.g. distinguish WATER_2D_CQ_TYPE and WATER_3D_CQ_TYPE?
 !>          Also, integration of pool-structure might need some additional work.
 !>
@@ -36,35 +36,41 @@ MODULE mo_pplcc_interface
   USE mo_exception,       ONLY: message, finish
 
   USE mo_jsb_model_class,    ONLY: t_jsb_model
-  USE mo_jsb_class,          ONLY: Get_model    
+  USE mo_jsb_class,          ONLY: Get_model
   USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract
   !USE mo_jsb_config_class,   ONLY: t_jsb_config, t_jsb_config_p
   USE mo_jsb_process_class,  ONLY: t_jsb_process
   USE mo_jsb_task_class,     ONLY: t_jsb_process_task, t_jsb_task_options
 
+  USE mo_jsb_time,          ONLY: is_newday
+  USE mo_jsb_cqt_class,     ONLY: Get_cqt_name, LIVE_CARBON_CQ_TYPE, AG_DEAD_C_CQ_TYPE, &
+    &                             BG_DEAD_C_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE, FLUX_C_CQ_TYPE
+
+  USE mo_carbon_interface,  ONLY: recalc_carbon_per_tile_vars
+
   ! Use of processes in this module
-  dsl4jsb_Use_processes PPLCC_, PHENO_
+  dsl4jsb_Use_processes PPLCC_, PHENO_, CARBON_
 
   ! Use of process configurations
   !  dsl4jsb_Use_config(PPLCC_)
 
   ! Use of process memories
   dsl4jsb_Use_memory(PPLCC_)
-  dsl4jsb_Use_memory(PHENO_)  
+  dsl4jsb_Use_memory(PHENO_)
 
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: Register_pplcc_tasks, global_pplcc_diagnostics
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_pplcc_interface'
-  
+
   !> Type definition for pplcc pre task (preprocessing for lcc)
   TYPE, EXTENDS(t_jsb_process_task) :: tsk_pplcc_pre_lcc
   CONTAINS
     PROCEDURE, NOPASS :: Integrate => update_pplcc_pre_lcc  !< prepares lcc processes for leaves
     PROCEDURE, NOPASS :: Aggregate => update_pplcc_pre_lcc  !< prepares lcc processes for all other nodes
   END TYPE tsk_pplcc_pre_lcc
-  
+
   !> Constructor interface for pplcc pre task (preprocessing for lcc)
   INTERFACE tsk_pplcc_pre_lcc
     PROCEDURE Create_task_pplcc_pre_lcc                      !< Constructor function for task
@@ -76,12 +82,12 @@ MODULE mo_pplcc_interface
     PROCEDURE, NOPASS :: Integrate => update_pplcc_post_lcc  !< does postprocessing for lcc processes on leaves
     PROCEDURE, NOPASS :: Aggregate => update_pplcc_post_lcc  !< does postprocessing for lcc processes on other nodes
   END TYPE tsk_pplcc_post_lcc
-  
+
   !> Constructor interface for pplcc post task (postprocessing for lcc)
   INTERFACE tsk_pplcc_post_lcc
     PROCEDURE Create_task_pplcc_post_lcc                        !< Constructor function for task
   END INTERFACE tsk_pplcc_post_lcc
-  
+
 CONTAINS
 
   ! ====================================================================================================== !
@@ -129,20 +135,17 @@ CONTAINS
 
     CALL this%Register_task(tsk_pplcc_pre_lcc(model_id))
     CALL this%Register_task(tsk_pplcc_post_lcc(model_id))
-    
+
   END SUBROUTINE Register_pplcc_tasks
 
   ! ====================================================================================================== !
   !
   !> Implementation of "update" for task "pplcc_pre_lcc"
   !>
-  !> Task "pplcc_pre_lcc" prepares lcc processes 
+  !> Task "pplcc_pre_lcc" prepares lcc processes
   !> -- for now: convert all cq vars to per grid cell.
   !
   SUBROUTINE update_pplcc_pre_lcc(tile, options)
-
-    USE mo_jsb_time,          ONLY: is_newday
-    USE mo_jsb_cqt_class,     ONLY: Get_cqt_name, LIVE_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE
 
     IMPLICIT NONE
 
@@ -158,8 +161,8 @@ CONTAINS
     REAL(wp) :: dtime
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_pplcc_pre_lcc'
 
-    CHARACTER(len=:), ALLOCATABLE :: thisUnit, expectedUnit
-    
+    CHARACTER(len=:), ALLOCATABLE :: this_unit, expected_string_in_unit
+
     ! Declare pointers for process configuration and memory
     dsl4jsb_Def_memory(PHENO_)
 !    dsl4jsb_Def_memory(PPLCC_)
@@ -174,19 +177,19 @@ CONTAINS
     ics     = options%ics
     ice     = options%ice
     dtime   = options%dtime
-    
+
     model => Get_model(tile%owner_model_id)
 
-    ! If process is not active on this tile, do nothing
-    IF (.NOT. tile%Is_process_active(PPLCC_)) RETURN
+    ! If process is not to be calculated on this tile, do nothing
+    IF (.NOT. tile%Is_process_calculated(PPLCC_)) RETURN
 
     ! If not newday, do nothing
-    IF( .NOT. is_newday(options%current_datetime,dtime)) RETURN
-    
+    IF (.NOT. is_newday(options%current_datetime,dtime)) RETURN
+
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
-    IF( tile%Has_conserved_quantities()) THEN
-      
+    IF (tile%Has_conserved_quantities()) THEN
+
       ! Iterate over all cq types and their vars and convert
       DO i_cqt = 1,tile%nr_of_cqts
 
@@ -196,27 +199,27 @@ CONTAINS
         ! conversion depends on the cq type
         cqt_id = tile%conserved_quantities(i_cqt)%p%type_id
         SELECT CASE (cqt_id)
-          CASE (LIVE_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE)
+          CASE (LIVE_CARBON_CQ_TYPE, AG_DEAD_C_CQ_TYPE, BG_DEAD_C_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE, FLUX_C_CQ_TYPE)
 
             ! in the current implementation of jsb4 carbon variables are only available on the pft tiles
             IF (.NOT. index(tile%name, 'pft') /= 0) THEN
               CALL finish(TRIM(routine), 'Violation of precondition: carbon cq types only expected for pft tiles, ' &
                 & //' but found on '// trim(tile%name))
-            ENDIF
+            END IF
 
-            ! in jsb4 the carbon variables are specified as mol per canopy
-            expectedUnit = 'mol(C) m-2(canopy)'
+            ! in jsb4 the carbon variables are specified per canopy
+            expected_string_in_unit = 'm-2(canopy)'
 
-            ! therefore the conversion factor needs to be adapted
+            ! therefore, PHENO variables are required to determine the conversion factor
             ! -> Assert that PHENO is active for this tile
-            IF (.NOT. tile%Is_process_active(PHENO_)) THEN
-              CALL finish(TRIM(routine), 'Violation of precondition: carbon cq types require pheno vars for conversion, ' &
-                & //' but pheno is not active for '// trim(tile%name))
-            ENDIF
+            IF (.NOT. tile%Has_process_memory(PHENO_)) THEN
+              CALL finish(TRIM(routine), 'Violation of precondition: carbon cq types require pheno vars for pplcc conversion, ' &
+                & //' but pheno memory is not available for '// trim(tile%name))
+            END IF
 
             !- Set pointers to memory on the current tile
-            dsl4jsb_Get_memory(PHENO_)       
-            ! and get required variables on this tile 
+            dsl4jsb_Get_memory(PHENO_)
+            ! and get required variables on this tile
             dsl4jsb_Get_var2D_onChunk(PHENO_, veg_fract_correction)    ! in
             dsl4jsb_Get_var2D_onChunk(PHENO_, fract_fpc_max)           ! in
 
@@ -225,19 +228,19 @@ CONTAINS
           ! CASE (WATER_CQ_TYPE)
           CASE DEFAULT
             !>
-            !> Assertion: for each CQT a conversion needs to be specified in pplcc_pre_lcc 
-            !> 
+            !> Assertion: for each CQT a conversion needs to be specified in pplcc_pre_lcc
+            !>
             CALL finish(TRIM(routine), 'Conversion factors unspecified for '//Get_cqt_name(cqt_id))
         END SELECT
-          
+
         ! Convert all variables of this type
         DO i_cq_var=1,tile%conserved_quantities(i_cqt)%p%no_of_vars
-          ! Assertion: variable needs to have the unit expected for this type
-          thisUnit = tile%conserved_quantities(i_cqt)%p%cq_vars_2D(i_cq_var)%p%unit
-          IF (.NOT. TRIM(thisUnit) .EQ. expectedUnit) THEN
-            CALL finish(TRIM(routine), 'Violation of assertion: variable does not have the expected unit ' &
-              & // expectedUnit // ' but '// trim(thisUnit))
-          ENDIF
+          ! Assertion: variable needs to contain substring expected for this type
+          this_unit = tile%conserved_quantities(i_cqt)%p%cq_vars_2D(i_cq_var)%p%unit
+          IF (.NOT. INDEX(TRIM(this_unit), expected_string_in_unit) > 0) THEN
+            CALL finish(TRIM(routine), 'Violation of assertion: variable does not have the expected unit, ' &
+              & // 'unit is expected to contain ' // expected_string_in_unit // ' but '// trim(this_unit) // ' does not.')
+          END IF
 
           IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), '..... and var '// &
             & TRIM(tile%conserved_quantities(i_cqt)%p%cq_vars_2D(i_cq_var)%p%name))
@@ -248,8 +251,8 @@ CONTAINS
             &   * conversion_factor(:)
 
           ! for bookkeeping I would have wanted to change the unit, but seems not to be intended to be changed
-        ENDDO
-      ENDDO
+        END DO
+      END DO
     END IF
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
@@ -260,13 +263,11 @@ CONTAINS
   !
   !> Implementation of "update" for task "pplcc_post_lcc"
   !>
-  !> Task "pplcc_post_lcc" does a postprocessing after all lcc processes were executed 
+  !> Task "pplcc_post_lcc" does a postprocessing after all lcc processes were executed
   !> -- for now: convert all cq vars back to their initial reference area.
+  !> -- and if the carbon process is active: recalculate ta variables
   !
   SUBROUTINE update_pplcc_post_lcc(tile, options)
-
-    USE mo_jsb_time,          ONLY: is_newday
-    USE mo_jsb_cqt_class,     ONLY: Get_cqt_name, LIVE_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE
 
     IMPLICIT NONE
 
@@ -295,18 +296,23 @@ CONTAINS
     ics     = options%ics
     ice     = options%ice
     dtime   = options%dtime
-    
+
     model => Get_model(tile%owner_model_id)
 
-    ! If process is not active on this tile, do nothing
-    IF (.NOT. tile%Is_process_active(PPLCC_)) RETURN
+    ! If process is not to be calculated on this tile, do nothing
+    IF (.NOT. tile%Is_process_calculated(PPLCC_)) RETURN
 
     ! If not newday, do nothing
-    IF( .NOT. is_newday(options%current_datetime,dtime)) RETURN
-    
+    IF (.NOT. is_newday(options%current_datetime,dtime)) RETURN
+
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
-    IF( tile%Has_conserved_quantities()) THEN
+    IF (.NOT. ASSOCIATED(tile%parent)) CALL pplcc_fraction_diagnostics(tile, options)
+
+    ! If process is not calculated on this tile, conversions are not necessary
+    IF (.NOT. tile%Is_process_calculated(PPLCC_)) RETURN
+
+    IF (tile%Has_conserved_quantities()) THEN
 
       ! Iterate over all cq types and their vars and convert and change unit
       DO i_cqt = 1,tile%nr_of_cqts
@@ -317,24 +323,24 @@ CONTAINS
         cqt_id = tile%conserved_quantities(i_cqt)%p%type_id
 
         SELECT CASE (cqt_id)
-          CASE (LIVE_CARBON_CQ_TYPE, DEAD_CARBON_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE)
+          CASE (LIVE_CARBON_CQ_TYPE, AG_DEAD_C_CQ_TYPE, BG_DEAD_C_CQ_TYPE, PRODUCT_CARBON_CQ_TYPE, FLUX_C_CQ_TYPE)
 
             ! in the current implementation of jsb4 carbon variables are only available on the pft tiles
             IF (.NOT. index(tile%name, 'pft') /= 0) THEN
               CALL finish(TRIM(routine), 'Violation of precondition: carbon cq types only expected for pft tiles, ' &
                 & //' but found on '// trim(tile%name))
-            ENDIF
+            END IF
 
             ! in jsb4 the carbon variables are specified as mol per canopy, therefore adapt the conversion factor
-            ! -> Assert that PHENO is active for this tile
-            IF (.NOT. tile%Is_process_active(PHENO_)) THEN
+            ! -> Assert that PHENO memory is available on this tile
+            IF (.NOT. tile%Has_process_memory(PHENO_)) THEN
               CALL finish(TRIM(routine), 'Violation of precondition: carbon cq types require pheno vars for conversion, ' &
-                & //' but pheno is not active for '// trim(tile%name))
-            ENDIF
+                & //' but pheno memory is not available for '// trim(tile%name))
+            END IF
 
             !- Set pointers to memory on the current tile
-            dsl4jsb_Get_memory(PHENO_)       
-            ! and get required variables on this tile 
+            dsl4jsb_Get_memory(PHENO_)
+            ! and get required variables on this tile
             dsl4jsb_Get_var2D_onChunk(PHENO_, veg_fract_correction)    ! in
             dsl4jsb_Get_var2D_onChunk(PHENO_, fract_fpc_max)           ! in
             conversion_factor(:) = conversion_factor(:) * veg_fract_correction(:) * fract_fpc_max(:)
@@ -342,11 +348,11 @@ CONTAINS
           ! CASE (WATER_CQ_TYPE)
           CASE DEFAULT
             !>
-            !> Assertion: for each CQT a conversion needs to be specified in pplcc_post_lcc 
-            !> 
+            !> Assertion: for each CQT a conversion needs to be specified in pplcc_post_lcc
+            !>
             CALL finish(TRIM(routine), 'Conversion factors unspecified for '//Get_cqt_name(cqt_id))
         END SELECT
-        
+
         ! Convert all variables of this type
         DO i_cq_var=1,tile%conserved_quantities(i_cqt)%p%no_of_vars
 
@@ -361,13 +367,16 @@ CONTAINS
               &   / conversion_factor(:)
           ELSEWHERE
             tile%conserved_quantities(i_cqt)%p%cq_vars_2D(i_cq_var)%p%ptr2d(ics:ice,iblk) = 0.0
-          ENDWHERE
+          END WHERE
 
-        ENDDO
-      ENDDO
+        END DO
+      END DO
+
+      IF (tile%Is_process_calculated(CARBON_)) THEN
+        CALL recalc_carbon_per_tile_vars(tile, options)
+      END IF
+
     END IF
-
-    IF (tile%name .EQ. 'box') CALL pplcc_fraction_diagnostics(tile, options)
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
@@ -396,7 +405,7 @@ CONTAINS
     dsl4jsb_Def_memory(PPLCC_)
     dsl4jsb_Def_memory(PHENO_)
 
-    CHARACTER(len=*),  PARAMETER  :: routine = modname//':pplc_fraction_diagnostics'
+    CHARACTER(len=*),  PARAMETER  :: routine = modname//':pplcc_fraction_diagnostics'
 
     ! Pointers to variables in memory
     !
@@ -423,7 +432,7 @@ CONTAINS
 
     ! The fraction variables are defined as fractions relative to the grid cell fraction. Thus
     ! only calculations on the box tile make sense
-    IF (.NOT. tile%name .EQ. 'box') CALL finish(TRIM(routine), 'Should only be called for the box tile')
+    IF (ASSOCIATED(tile%parent)) CALL finish(TRIM(routine), 'Should only be called for the root tile')
 
     ! Get required variables on this tile
     dsl4jsb_Get_var2D_onChunk(PHENO_, fract_fpc_max)        ! in

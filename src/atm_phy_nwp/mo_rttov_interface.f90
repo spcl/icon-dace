@@ -26,12 +26,10 @@ MODULE mo_rttov_interface
   USE mo_parallel_config,     ONLY: nproma
   USE mo_run_config,          ONLY: msg_level, iqv, iqc, iqi, iqs, ltimer
   USE mo_grid_config,         ONLY: l_limited_area
-  USE mo_nwp_phy_state,       ONLY: prm_diag
+  USE mo_nwp_phy_types,       ONLY: t_nwp_phy_diag
   USE mo_nonhydro_state,      ONLY: p_nh_state
-  USE mo_ext_data_state,      ONLY: ext_data
-  USE mo_ext_data_types,      ONLY: t_external_atmos
-  USE mo_nwp_lnd_state,       ONLY: p_lnd_state
-  USE mo_nwp_lnd_types,       ONLY: t_lnd_prog, t_lnd_diag
+  USE mo_ext_data_types,      ONLY: t_external_data, t_external_atmos
+  USE mo_nwp_lnd_types,       ONLY: t_lnd_state, t_lnd_prog, t_lnd_diag
   USE mo_nonhydro_types,      ONLY: t_nh_prog, t_nh_diag, t_nh_metrics
   USE mo_impl_constants,      ONLY: min_rlcell_int, RTTOV_BT_CL, RTTOV_BT_CS, &
     &                               RTTOV_RAD_CL, RTTOV_RAD_CS, vname_len
@@ -52,8 +50,8 @@ MODULE mo_rttov_interface
   USE mo_name_list_output_config, ONLY: is_variable_in_output
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
   USE mo_mpi,                 ONLY: p_pe, p_comm_work, p_io, num_work_procs, p_barrier, &
-    &                               get_my_mpi_all_id
-  USE mo_fortran_tools,       ONLY: assert_acc_device_only, assert_lacc_equals_i_am_accel_node
+    &                               get_my_mpi_all_id, i_am_accel_node
+  USE mo_fortran_tools,       ONLY: assert_acc_device_only
 #ifdef __USE_RTTOV
   USE mo_rtifc,               ONLY: rtifc_set_opts, rtifc_init, rtifc_fill_input, &
                                     rtifc_direct, rtifc_errmsg,                   &
@@ -102,7 +100,7 @@ CONTAINS
     INTEGER                    :: channels(mchans, num_sensors)
     CHARACTER(LEN=vname_len) :: shortname
     CHARACTER(LEN=128)         :: longname
-    INTEGER                    :: isens, ierrstat, k, isynsat, j
+    INTEGER                    :: isens, ierrstat, k, isynsat
 #ifdef __USE_RTTOV
     INTEGER                    :: istatus
 #endif
@@ -257,8 +255,11 @@ CONTAINS
 !! Driver routine to call the RTTOV library for computing synthetic satellite images
 !! For the time being, using a reduced radiation grid is mandatory
 !!
-SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
+SUBROUTINE rttov_driver (prm_diag, p_lnd_state, ext_data, jg, jgp, nnow, lacc)
 
+  TYPE(t_nwp_phy_diag),  TARGET, INTENT(IN) :: prm_diag     ! for dom jg
+  TYPE(t_lnd_state),     TARGET, INTENT(IN) :: p_lnd_state  ! for dom jg
+  TYPE(t_external_data), TARGET, INTENT(IN) :: ext_data     ! for dom jg
   INTEGER, INTENT(IN) :: jg, jgp ! grid ID and parent grid ID
   INTEGER, INTENT(IN) :: nnow    ! time level nnow valid for long time step
   LOGICAL, OPTIONAL,   INTENT(IN)   :: lacc ! If true, use openacc
@@ -297,7 +298,7 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
 
   INTEGER :: jb, jc, jk, i_startblk, i_endblk, is, ie, j, k, rlstart
   INTEGER :: nlev_rg, isens, n_profs, ncalc, &
-    &        istatus, synsat_idx, isynsat
+    &        istatus, isynsat
 
   ! Pointer to the acutally used variant of clc:
   REAL(wp), DIMENSION(:,:,:), POINTER ::  ptr_clc => NULL()
@@ -324,15 +325,15 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
   p_nh_prog    => p_nh_state(jg)%prog(nnow)
   p_nh_diag    => p_nh_state(jg)%diag
   p_nh_metrics => p_nh_state(jg)%metrics
-  p_extdata    => ext_data(jg)%atm
-  p_lnd_prog   => p_lnd_state(jg)%prog_lnd(nnow)
-  p_lnd_diag   => p_lnd_state(jg)%diag_lnd
+  p_extdata    => ext_data%atm
+  p_lnd_prog   => p_lnd_state%prog_lnd(nnow)
+  p_lnd_diag   => p_lnd_state%diag_lnd
 
   ! Decide which field for cloud cover has to be used:
   IF (atm_phy_nwp_config(jg)%luse_clc_rad) THEN
-    ptr_clc => prm_diag(jg)%clc_rad
+    ptr_clc => prm_diag%clc_rad
   ELSE
-    ptr_clc => prm_diag(jg)%clc
+    ptr_clc => prm_diag%clc
   END IF
 
   ! distance of satellite from middle of the earth
@@ -355,11 +356,11 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
   !$ACC   COPYIN(pres_rttov)
 
   CALL prepare_rttov_input(jg, jgp, nlev_rg, p_nh_metrics%z_ifc, p_nh_diag%pres,               &
-    p_nh_diag%dpres_mc, p_nh_diag%temp, prm_diag(jg)%tot_cld, ptr_clc,                         &
-    p_nh_prog%tracer(:,:,:,iqs), prm_diag(jg)%con_udd(:,:,:,3), prm_diag(jg)%con_udd(:,:,:,7), &
-    p_extdata%fr_land, p_extdata%fr_lake, p_lnd_diag%fr_seaice, prm_diag(jg)%cosmu0,           &
-    p_nh_diag%pres_sfc, p_lnd_prog%t_g, prm_diag(jg)%t_2m, prm_diag(jg)%qv_2m,                 &
-    prm_diag(jg)%u_10m, prm_diag(jg)%v_10m, prm_diag(jg)%buffer_rttov,                         &
+    p_nh_diag%dpres_mc, p_nh_diag%temp, prm_diag%tot_cld, ptr_clc,                             &
+    p_nh_prog%tracer(:,:,:,iqs), prm_diag%con_udd(:,:,:,3), prm_diag%con_udd(:,:,:,7),         &
+    p_extdata%fr_land, p_extdata%fr_lake, p_lnd_diag%fr_seaice, prm_diag%cosmu0,               &
+    p_nh_diag%pres_sfc, p_lnd_prog%t_g, prm_diag%t_2m, prm_diag%qv_2m,                         &
+    prm_diag%u_10m, prm_diag%v_10m, prm_diag%buffer_rttov,                                     &
     temp_rttov, qv_rttov, qc_rttov, qcc_rttov, qi_rttov, qs_rttov, clc_rttov,                  &
     rg_stype, rg_wtype, rg_cosmu0, rg_psfc, rg_hsfc, rg_tsfc, rg_t2m, rg_qv2m, rg_u10m, rg_v10m)
 
@@ -570,8 +571,8 @@ SUBROUTINE rttov_driver (jg, jgp, nnow, lacc)
   END IF
 
   !$ACC DATA COPYIN(rg_synsat)
-  CALL downscale_rttov_output(jg, jgp, num_images, rg_synsat, &
-  &                           prm_diag(jg)%synsat_arr, lsynsat_product)
+  CALL downscale_rttov_output(jg, num_images, rg_synsat, &
+  &                           prm_diag%synsat_arr, lsynsat_product)
   !$ACC WAIT
   !$ACC END DATA
 
@@ -1114,11 +1115,11 @@ END SUBROUTINE prepare_rttov_input
 !>
 !! Back-interpolation of synthetic satellite images from reduced grid to compute grid
 !!
-SUBROUTINE downscale_rttov_output(jg, jgp, nimg, rg_satimg, satimg, l_enabled)
+SUBROUTINE downscale_rttov_output(jg, nimg, rg_satimg, satimg, l_enabled)
 
   ! Input grid parameters
-  INTEGER, INTENT(IN)  :: jg, jgp  ! domain IDs of main and reduced grids
-  INTEGER, INTENT(IN)  :: nimg     ! number of sat images (= number of "levels" in satimg field)
+  INTEGER, INTENT(IN)  :: jg     ! domain ID of main grid
+  INTEGER, INTENT(IN)  :: nimg   ! number of sat images (= number of "levels" in satimg field)
 
   ! Array with sat images on reduced grid
   REAL(wp), INTENT(INOUT) :: rg_satimg(:,:,:)
@@ -1156,8 +1157,7 @@ SUBROUTINE downscale_rttov_output(jg, jgp, nimg, rg_satimg, satimg, l_enabled)
     CALL p_barrier(p_comm_work)
     WRITE (0,*) "Synchronize sat image array before interpolation"
   END IF
-  CALL assert_lacc_equals_i_am_accel_node("downscale_rttov_output", .TRUE.)
-  CALL exchange_data(p_pp%comm_pat_c, rg_satimg)
+  CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=.TRUE., recv=rg_satimg)
 
   ! Execute interpolation from reduced grid to full grid
   IF (dbg_level > 2) THEN
@@ -1296,20 +1296,22 @@ END SUBROUTINE define_rttov_levels
 !! This routine copies additional model levels to the local parent grid if the RTTOV library
 !! is called on a vertically nested grid
 !!
-SUBROUTINE copy_rttov_ubc (jg, jgc, lacc)
+SUBROUTINE copy_rttov_ubc (jg, jgc, prm_diag, lacc)
   ! Input grid parameters
-  INTEGER, INTENT(in) :: jg, jgc
-  LOGICAL, OPTIONAL, INTENT(IN) :: lacc ! If true, use openacc
+  INTEGER,              INTENT(in) :: jg, jgc
+  TYPE(t_nwp_phy_diag), INTENT(in) :: prm_diag(:)
+  LOGICAL, OPTIONAL,    INTENT(in) :: lacc ! If true, use openacc
 
   ! Local fields
 
   INTEGER :: nshift
 
-  CALL assert_acc_device_only("copy_rttov_ubc", lacc)
-  CALL assert_lacc_equals_i_am_accel_node("copy_rttov_ubc", lacc)
+  CALL assert_acc_device_only("copy_rttov_ubc", lacc=lacc)
 
   nshift = p_patch(jgc)%nshift
-  CALL exchange_data_mult(p_patch_local_parent(jgc)%comm_pat_glb_to_loc_c, 5, 5*nshift,                            &
+  CALL exchange_data_mult(p_pat=p_patch_local_parent(jgc)%comm_pat_glb_to_loc_c,                                   &
+       lacc=.TRUE.,                                                                                                &
+       nfields=5, ndim2tot=5*nshift,                                                                               &
        RECV1=prm_diag(jgc)%buffer_rttov(:,         1:  nshift,:), SEND1=p_nh_state(jg)%metrics%z_ifc(:,1:nshift,:),&
        RECV2=prm_diag(jgc)%buffer_rttov(:,  nshift+1:2*nshift,:), SEND2=p_nh_state(jg)%diag%pres(:,1:nshift,:),    &
        RECV3=prm_diag(jgc)%buffer_rttov(:,2*nshift+1:3*nshift,:), SEND3=p_nh_state(jg)%diag%dpres_mc(:,1:nshift,:),&

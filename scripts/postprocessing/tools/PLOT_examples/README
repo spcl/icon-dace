@@ -1,13 +1,3 @@
-# ICON
-#
-# ---------------------------------------------------------------
-# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-# Contact information: icon-model.org
-# See AUTHORS.TXT for a list of authors
-# See LICENSES/ for license information
-# SPDX-License-Identifier: CC-BY-4.0
-# ---------------------------------------------------------------
-
 #-----------------------------------------------------------------------------
 #
 # README file for simple and advanced plotting with NCL on lat/lon as well as on unstructured grid

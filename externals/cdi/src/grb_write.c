@@ -24,9 +24,9 @@
 #include "namespace.h"
 
 static size_t
-grb_encode(int filetype, int memType, int varID, int levelID, int vlistID, int gridID, int zaxisID, CdiDateTime vDateTime,
-           int tsteptype, int numavg, size_t datasize, const void *data, size_t nmiss, void **gribbuffer, int comptype,
-           void *gribContainers)
+grb_encode(int filetype, int memType, int datatype, int varID, int levelID, int vlistID, int gridID, int zaxisID,
+           CdiDateTime vDateTime, int tsteptype, int numavg, size_t datasize, const void *data, size_t numMissVals,
+           void **gribbuffer, int comptype, void *gribContainers)
 {
   size_t nbytes = 0;
 
@@ -36,8 +36,8 @@ grb_encode(int filetype, int memType, int varID, int levelID, int vlistID, int g
       size_t gribbuffersize = datasize * 4 + 3000;
       *gribbuffer = Malloc(gribbuffersize);
 
-      nbytes = cgribexEncode(memType, varID, levelID, vlistID, gridID, zaxisID, vDateTime, tsteptype, numavg, datasize, data, nmiss,
-                             *gribbuffer, gribbuffersize);
+      nbytes = cgribexEncode(memType, varID, levelID, vlistID, gridID, zaxisID, vDateTime, tsteptype, numavg, datasize, data,
+                             numMissVals, *gribbuffer, gribbuffersize);
     }
   else
 #endif
@@ -48,10 +48,17 @@ grb_encode(int filetype, int memType, int varID, int levelID, int vlistID, int g
 #else
       void *gribContainer = (void *) &((gribContainer_t *) gribContainers)[varID];
 #endif
+      // bool useFloatInterface = (have_gribapi_float_interface() && datatype != CDI_DATATYPE_FLT32 && datatype !=
+      // CDI_DATATYPE_FLT64);
+      bool useFloatInterface = false;
+      int memTypeX = useFloatInterface ? memType : MEMTYPE_DOUBLE;
       const void *datap = data;
-      int memTypeX = /*have_gribapi_float_interface() ? memType :*/ MEMTYPE_DOUBLE;
-      if (/*!have_gribapi_float_interface() &&*/ memType == MEMTYPE_FLOAT)
+
+      // if (useFloatInterface) printf("gribapi write: useFloatInterface\n");
+
+      if (!useFloatInterface && memType == MEMTYPE_FLOAT)
         {
+          // printf("gribapi write: convert float to double\n");
           const float *dataf = (const float *) data;
           double *datad = (double *) Malloc(datasize * sizeof(double));
           for (size_t i = 0; i < datasize; ++i) datad[i] = (double) dataf[i];
@@ -60,9 +67,9 @@ grb_encode(int filetype, int memType, int varID, int levelID, int vlistID, int g
 
       size_t gribbuffersize;
       nbytes = gribapiEncode(memTypeX, varID, levelID, vlistID, gridID, zaxisID, vDateTime, tsteptype, numavg, (long) datasize,
-                             datap, nmiss, gribbuffer, &gribbuffersize, comptype, gribContainer);
+                             datap, numMissVals, gribbuffer, &gribbuffersize, comptype, gribContainer);
 
-      if (/*!have_gribapi_float_interface() &&*/ memType == MEMTYPE_FLOAT) Free((void *) datap);
+      if (!useFloatInterface && memType == MEMTYPE_FLOAT) Free((void *) datap);
     }
 #else
   {
@@ -115,57 +122,59 @@ cdi_fdb_store(void *fdbHandle, const char *filename, void *gribbuffer, size_t nb
 {
 #ifdef HAVE_LIBFDB5
   size_t len = strlen(filename);
-  if (len == 4) Error("FDB keys missing!");
+  if (len == 6) Error("FDB keys missing!");
 
-  KeyValueEntry keyValue;
+  KeyValueItem keyValue;
   keyValue.item = NULL;
-  decode_fdbitem(filename + 4, &keyValue);
+  decode_fdbitem(filename + 6, &keyValue);
 
   if (keyValue.numKeys == 0) Error("FDB keys missing!");
 
-  const char *class = NULL;
-  const char *stream = NULL;
-  const char *expver = NULL;
-  for (int i = 0; i < keyValue.numKeys; i++)
+  bool expverDefined = false;
+  bool classDefined = false;
+  for (int k = 0; k < keyValue.numKeys; k++)
     {
       // clang-format off
-      if      (str_is_equal(keyValue.keys[i], "class"))  class = keyValue.values[i];
-      else if (str_is_equal(keyValue.keys[i], "stream")) stream = keyValue.values[i];
-      else if (str_is_equal(keyValue.keys[i], "expver")) expver = keyValue.values[i];
-      else Error("Unsupported FDB parameter: %s=%s", keyValue.keys[i], keyValue.values[i]);
+      if      (!expverDefined && str_is_equal(keyValue.keys[k], "expver")) expverDefined = true;
+      else if (!classDefined  && str_is_equal(keyValue.keys[k], "class")) classDefined = true;
       // clang-format on
     }
 
-  if (!class) Error("FDB parameter <class> undefined!");
-  if (!stream) Error("FDB parameter <stream> undefined!");
-  if (!expver) Error("FDB parameter <expver> undefined!");
+  if (!expverDefined) Error("FDB parameter <expver> undefined!");
+  if (!classDefined) Error("FDB parameter <class> undefined!");
 
   if (CDI_Debug)
     {
-      printf("{class=%s,expver=%s,stream=%s,date=%s,time=%s,domain=g}", class, expver, stream, fdbKeys->date, fdbKeys->time);
+      printf("{");
+      for (int k = 0; k < keyValue.numKeys; k++)
+        {
+          printf("%s%s=%s", (k > 0) ? "," : "", keyValue.keys[k], keyValue.values[k]);
+        }
+      printf(",date=%s,time=%s,domain=g}", fdbKeys->date, fdbKeys->time);
       printf("{type=an,levtype=%s}{step=0,", fdbKeys->levtype);
       if (fdbKeys->levelist[0]) printf("levelist=%s,", fdbKeys->levelist);
       printf("param=%s},length=%zu\n", fdbKeys->param, nbytes);
     }
 
   fdb_key_t *key;
-  fdb_new_key(&key);
-  fdb_key_add(key, "class", class);
-  fdb_key_add(key, "expver", expver);
-  fdb_key_add(key, "stream", stream);
-  fdb_key_add(key, "domain", "g");
-  fdb_key_add(key, "date", fdbKeys->date);
-  fdb_key_add(key, "time", fdbKeys->time);
-  fdb_key_add(key, "type", "an");
-  fdb_key_add(key, "levtype", fdbKeys->levtype);
-  fdb_key_add(key, "step", "0");
-  fdb_key_add(key, "param", fdbKeys->param);
-  if (fdbKeys->levelist[0]) fdb_key_add(key, "levelist", fdbKeys->levelist);
+  check_fdb_error(fdb_new_key(&key));
+  for (int k = 0; k < keyValue.numKeys; k++)
+    {
+      check_fdb_error(fdb_key_add(key, keyValue.keys[k], keyValue.values[k]));
+    }
+  check_fdb_error(fdb_key_add(key, "domain", "g"));
+  check_fdb_error(fdb_key_add(key, "date", fdbKeys->date));
+  check_fdb_error(fdb_key_add(key, "time", fdbKeys->time));
+  check_fdb_error(fdb_key_add(key, "type", "an"));
+  check_fdb_error(fdb_key_add(key, "levtype", fdbKeys->levtype));
+  check_fdb_error(fdb_key_add(key, "step", "0"));
+  check_fdb_error(fdb_key_add(key, "param", fdbKeys->param));
+  if (fdbKeys->levelist[0]) check_fdb_error(fdb_key_add(key, "levelist", fdbKeys->levelist));
 
-  fdb_archive(fdbHandle, key, gribbuffer, nbytes);
+  check_fdb_error(fdb_archive(fdbHandle, key, gribbuffer, nbytes));
   // alternative: write to tmpfile and use C++ code from fdb_write
 
-  fdb_delete_key(key);
+  check_fdb_error(fdb_delete_key(key));
 #endif
 }
 
@@ -226,11 +235,12 @@ grbCopyRecord(stream_t *streamptr2, stream_t *streamptr1)
   if (streamptr1->protocol == CDI_PROTOCOL_FDB)
     {
 #ifdef HAVE_LIBFDB5
-      void *fdbItem = streamptr1->tsteps[tsID].records[recID].fdbItem;
-      if (!fdbItem) Error("fdbItem not available!");
+      int fdbItemIndex = streamptr1->tsteps[tsID].records[recID].fdbItemIndex;
+      if (fdbItemIndex == -1) Error("fdbItem not available!");
 
       size_t buffersize = 0;
-      recsize = fdb_read_record(streamptr1->protocolData, fdbItem, &buffersize, &gribbuffer);
+      recsize
+          = cdi_fdb_read_record(streamptr1->protocolData, &(streamptr1->fdbKeyValueList[fdbItemIndex]), &buffersize, &gribbuffer);
 
       // round up recsize to next multiple of 8
       size_t gribbuffersize = ((recsize + 7U) & ~7U);
@@ -304,7 +314,7 @@ grbCopyRecord(stream_t *streamptr2, stream_t *streamptr1)
 
       if (scanModeIN != cdiGribDataScanningMode.value)
         {
-          size_t nmiss = 0;
+          size_t numMissVals = 0;
 
           int vlistID = streamptr1->vlistID;
           int varID = record->varID;
@@ -317,7 +327,7 @@ grbCopyRecord(stream_t *streamptr2, stream_t *streamptr1)
 
           if (cdiDebugExt >= 20) Message(" processing varID %d; levelID %d", varID, levelID);
 
-          grb_write_var_slice(streamptr2, varID, levelID, MEMTYPE_DOUBLE, (const void *) data, nmiss);
+          grb_write_var_slice(streamptr2, varID, levelID, MEMTYPE_DOUBLE, (const void *) data, numMissVals);
 
           free(data);
         }
@@ -367,7 +377,7 @@ grbCopyRecord(stream_t *streamptr2, stream_t *streamptr1)
 }
 
 void
-grb_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, const void *data, size_t nmiss)
+grb_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, const void *data, size_t numMissVals)
 {
   int filetype = streamptr->filetype;
   int fileID = streamptr->fileID;
@@ -379,6 +389,7 @@ grb_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, co
   CdiDateTime vDateTime = streamptr->tsteps[tsID].taxis.vDateTime;
   int numavg = (tsteptype == TSTEP_AVG) ? streamptr->tsteps[tsID].taxis.numavg : 0;
   int comptype = streamptr->comptype;
+  int datatype = vlistInqVarDatatype(vlistID, varID);
 
   if (CDI_Debug) Message("gridID = %d zaxisID = %d", gridID, zaxisID);
 
@@ -394,8 +405,8 @@ grb_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, co
     }
 
   void *gribbuffer = NULL;
-  size_t nbytes = grb_encode(filetype, memtype, varID, levelID, vlistID, gridID, zaxisID, vDateTime, tsteptype, numavg, datasize,
-                             data, nmiss, &gribbuffer, comptype, streamptr->gribContainers);
+  size_t nbytes = grb_encode(filetype, memtype, datatype, varID, levelID, vlistID, gridID, zaxisID, vDateTime, tsteptype, numavg,
+                             datasize, data, numMissVals, &gribbuffer, comptype, streamptr->gribContainers);
 
   if (filetype == CDI_FILETYPE_GRB && (comptype == CDI_COMPRESS_SZIP || comptype == CDI_COMPRESS_AEC))
     nbytes = grbSzip(filetype, gribbuffer, nbytes);
@@ -447,7 +458,7 @@ grb_write_var_slice(stream_t *streamptr, int varID, int levelID, int memtype, co
 }
 
 void
-grb_write_var(stream_t *streamptr, int varID, int memtype, const void *data, size_t nmiss)
+grb_write_var(stream_t *streamptr, int varID, int memtype, const void *data, size_t numMissVals)
 {
   int vlistID = streamptr->vlistID, gridID = vlistInqVarGrid(vlistID, varID), zaxisID = vlistInqVarZaxis(vlistID, varID),
       nlevs = zaxisInqSize(zaxisID);
@@ -460,31 +471,31 @@ grb_write_var(stream_t *streamptr, int varID, int memtype, const void *data, siz
       {
         const float *restrict fdata = ((const float *) data) + levelID * gridsize;
 
-        size_t nmiss_slice = 0;
-        if (nmiss)
-          for (size_t i = 0; i < chunkLen; ++i) nmiss_slice += DBL_IS_EQUAL(fdata[i], missval);
+        size_t numMissVals_slice = 0;
+        if (numMissVals)
+          for (size_t i = 0; i < chunkLen; ++i) numMissVals_slice += DBL_IS_EQUAL(fdata[i], missval);
 
-        grb_write_var_slice(streamptr, varID, levelID, memtype, fdata, nmiss_slice);
+        grb_write_var_slice(streamptr, varID, levelID, memtype, fdata, numMissVals_slice);
       }
   else
     for (int levelID = 0; levelID < nlevs; levelID++)
       {
         const double *restrict ddata = ((const double *) data) + levelID * gridsize;
 
-        size_t nmiss_slice = 0;
-        if (nmiss)
-          for (size_t i = 0; i < chunkLen; ++i) nmiss_slice += DBL_IS_EQUAL(ddata[i], missval);
+        size_t numMissVals_slice = 0;
+        if (numMissVals)
+          for (size_t i = 0; i < chunkLen; ++i) numMissVals_slice += DBL_IS_EQUAL(ddata[i], missval);
 
-        grb_write_var_slice(streamptr, varID, levelID, memtype, ddata, nmiss_slice);
+        grb_write_var_slice(streamptr, varID, levelID, memtype, ddata, numMissVals_slice);
       }
 }
 
 void
-grb_write_record(stream_t *streamptr, int memtype, const void *data, size_t nmiss)
+grb_write_record(stream_t *streamptr, int memtype, const void *data, size_t numMissVals)
 {
   int varID = streamptr->record->varID;
   int levelID = streamptr->record->levelID;
-  grb_write_var_slice(streamptr, varID, levelID, memtype, data, nmiss);
+  grb_write_var_slice(streamptr, varID, levelID, memtype, data, numMissVals);
 }
 
 #endif

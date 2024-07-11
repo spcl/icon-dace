@@ -20,14 +20,15 @@ MODULE mo_nwp_sfc_interp
 
   USE mo_kind,                ONLY: wp
   USE mo_model_domain,        ONLY: t_patch
-  USE mo_parallel_config,     ONLY: nproma 
+  USE mo_parallel_config,     ONLY: nproma
   USE mo_initicon_types,      ONLY: t_init_state
+  USE mo_ext_data_types,      ONLY: t_external_data
   USE mo_lnd_nwp_config,      ONLY: nlev_soil, ibot_w_so, zml_soil, dzsoil_icon => dzsoil
   USE mo_run_config,          ONLY: msg_level
   USE mo_physical_constants,  ONLY: grav, dtdz_standardatm
   USE sfc_terra_data,         ONLY: cporv, cadp, cfcap, cpwp
-  USE mo_ext_data_state,      ONLY: ext_data
   USE mo_exception,           ONLY: finish, message_text, message
+  USE mo_idx_list,            ONLY: t_idx_list_blocked
 
   IMPLICIT NONE
   PRIVATE
@@ -58,16 +59,17 @@ CONTAINS
   !! - And, the most complicated problem, lakes/islands not present at all in the
   !!   source data, is not yet addressed at all here!
 
-   SUBROUTINE process_sfcfields(p_patch, initicon)
+   SUBROUTINE process_sfcfields(p_patch, ext_data, initicon)
 
 
     TYPE(t_patch),          INTENT(IN)       :: p_patch
+    TYPE(t_external_data),  INTENT(IN)       :: ext_data
     CLASS(t_init_state),    INTENT(INOUT)    :: initicon
 
     ! LOCAL VARIABLES
     CHARACTER(LEN=*), PARAMETER       :: routine = 'process_sfcfields'
 
-    INTEGER  :: jg, jb, jk, jc, jk1, idx0(nlev_soil-1)
+    INTEGER  :: jb, jk, jc, jk1, idx0(nlev_soil-1)
     INTEGER  :: nlen, nlev, nlev_in, nlevsoil_in
 
     REAL(wp) :: tcorr1(nproma),tcorr2(nproma),wfac,wfac_vintp(nlev_soil-1),wfac_snow,snowdep
@@ -77,7 +79,6 @@ CONTAINS
 
 !-------------------------------------------------------------------------
 
-    jg   = p_patch%id
     nlev = p_patch%nlev
 
     nlev_in     = initicon%atm_in%nlev
@@ -93,13 +94,13 @@ CONTAINS
     ! Vertical interpolation indices and weights
 !PREVENT_INCONSISTENT_IFORT_FMA
     DO jk = 1, nlev_soil-1
-      IF (zml_soil(jk) < zsoil_ifs(1)) THEN
+      IF (zml_soil(jk) <= zsoil_ifs(1)) THEN
         idx0(jk)       = 0
         wfac_vintp(jk) = 1._wp - zml_soil(jk)/zsoil_ifs(1)
       ELSE IF (zml_soil(jk) > zsoil_ifs(nlevsoil_in)) THEN
         idx0(jk)       = nlevsoil_in
         wfac_vintp(jk) = 1._wp - (zml_soil(jk)-zsoil_ifs(nlevsoil_in))/&
-                                 (zml_soil(8) -zsoil_ifs(nlevsoil_in))
+                                 (zml_soil(nlev_soil) -zsoil_ifs(nlevsoil_in))
       ELSE
         DO jk1 = 1, nlevsoil_in-1
           IF (zml_soil(jk) > zsoil_ifs(jk1) .AND. zml_soil(jk) <= zsoil_ifs(jk1+1)) THEN
@@ -181,7 +182,7 @@ CONTAINS
 
         ! Copy climatological deep-soil temperature to extra soil level nlevsoil_in+1
         ! These are limited to -60 deg C because less is definitely nonsense
-        initicon%sfc_in%tsoil(jc,jb,nlevsoil_in+1) = MAX(213.15_wp,ext_data(jg)%atm%t_cl(jc,jb))
+        initicon%sfc_in%tsoil(jc,jb,nlevsoil_in+1) = MAX(213.15_wp,ext_data%atm%t_cl(jc,jb))
 
 
         initicon%sfc_in%wsoil(jc,jb,0) = initicon%sfc_in%wsoil(jc,jb,1) ! no-gradient condition for moisture
@@ -207,7 +208,7 @@ CONTAINS
         !
         ! Copy climatological deep-soil temperature to soil level nlev_soil
         ! These are limited to -60 deg C because less is definitely nonsense
-        initicon%sfc%tsoil(jc,nlev_soil,jb) = MAX(213.15_wp,ext_data(jg)%atm%t_cl(jc,jb))
+        initicon%sfc%tsoil(jc,nlev_soil,jb) = MAX(213.15_wp,ext_data%atm%t_cl(jc,jb))
       ENDDO
 
     ENDDO  ! jb
@@ -217,7 +218,7 @@ CONTAINS
 
     ! convert SMI (from IFS analysis) to W_SO
     !
-    CALL smi_to_wsoil(p_patch, initicon%sfc%wsoil)
+    CALL smi_to_wsoil(p_patch, ext_data%atm%list_land, ext_data%atm%soiltyp, initicon%sfc%wsoil)
 
   END SUBROUTINE process_sfcfields
 
@@ -233,17 +234,19 @@ CONTAINS
   !! Required input: soil moisture index
   !! Output: soil water content [m H2O]. Input field is overwritten
   !!
-  SUBROUTINE smi_to_wsoil(p_patch, wsoil)
+  SUBROUTINE smi_to_wsoil(p_patch, list_land, soiltyp, wsoil)
 
-    TYPE(t_patch), INTENT(IN)    :: p_patch
-    REAL(wp),      INTENT(INOUT) :: wsoil(:,:,:)!soil moisture index in
-                                                !soil moisture mass out [m H2O]
-                                                ! (nproma,nlev_soil,nblks)
+    TYPE(t_patch),            INTENT(IN)    :: p_patch
+    TYPE(t_idx_list_blocked), INTENT(IN)    :: list_land    ! land point index list
+    INTEGER,                  INTENT(IN)    :: soiltyp(:,:) ! soil texture
+    REAL(wp),                 INTENT(INOUT) :: wsoil(:,:,:) ! soil moisture index in
+                                                            ! soil moisture mass out [m H2O]
+                                                            ! (nproma,nlev_soil,nblks)
     ! LOCAL VARIABLES
     !
     REAL(wp) :: zwsoil(nproma)        ! local soil moisture field
     INTEGER  :: i_count, ic           ! counter
-    INTEGER  :: jg, jb, jk, jc, nlen
+    INTEGER  :: jb, jk, jc, nlen
     LOGICAL  :: lerr                  ! error flag
     INTEGER  :: ist
 
@@ -255,7 +258,6 @@ CONTAINS
       CALL message('smi_to_wsoil:', TRIM(message_text))
     ENDIF
 
-    jg = p_patch%id
 
     ! initialize error flag
     lerr = .FALSE.
@@ -266,7 +268,7 @@ CONTAINS
       nlen = MERGE(nproma, p_patch%npromz_c, jb /= p_patch%nblks_c)
 
       ! loop over target (ICON) land points only
-      i_count = ext_data(jg)%atm%list_land%ncount(jb)
+      i_count = list_land%ncount(jb)
 
 
       ! Conversion of soil moisture index SMI into TERRA soil moisture [m]
@@ -281,8 +283,8 @@ CONTAINS
 !CDIR NODEP,VOVERTAKE,VOB
         DO ic = 1, i_count
 
-          jc  = ext_data(jg)%atm%list_land%idx(ic,jb)
-          ist = ext_data(jg)%atm%soiltyp(jc,jb)
+          jc  = list_land%idx(ic,jb)
+          ist = soiltyp(jc,jb)
 
           ! Catch problematic coast cases: ICON-land but Ocean for source dataset
           ! 
@@ -334,18 +336,19 @@ CONTAINS
   !!
   !! Conversion of TERRA soil moisture into soil moisture index
   !!   soil moisture index = (soil moisture - wilting point) / (field capacity - wilting point)
-  SUBROUTINE wsoil_to_smi(p_patch, wsoil)
+  SUBROUTINE wsoil_to_smi(p_patch, list_land, soiltyp, wsoil)
 
-
-    TYPE(t_patch), INTENT(IN)    :: p_patch
-    REAL(wp),      INTENT(INOUT) :: wsoil(:,:,:) ! input: soil moisture mass [m H2O]
-                                                 ! output: soil moisture index 
+    TYPE(t_patch),            INTENT(IN)    :: p_patch
+    TYPE(t_idx_list_blocked), INTENT(IN)    :: list_land    ! land point index list
+    INTEGER,                  INTENT(IN)    :: soiltyp(:,:) ! soil texture
+    REAL(wp),                 INTENT(INOUT) :: wsoil(:,:,:) ! input: soil moisture mass [m H2O]
+                                                            ! output: soil moisture index
 
     ! LOCAL VARIABLES
     !
     REAL(wp) :: smi(nproma)           ! local storage for smi
     INTEGER  :: i_count, ic           ! counter
-    INTEGER  :: jg, jb, jk, jc, nlen, slt
+    INTEGER  :: jb, jk, jc, nlen, slt
     LOGICAL  :: lerr                  ! error flag
 
 !-------------
@@ -355,7 +358,6 @@ CONTAINS
       CALL message('wsoil_to_smi:', TRIM(message_text))
     ENDIF
 
-    jg = p_patch%id
     lerr = .FALSE.
 !$OMP PARALLEL REDUCTION(.or.: lerr)
 !$OMP DO PRIVATE(jb,jk,jc,nlen,ic,i_count,smi,slt)
@@ -363,7 +365,7 @@ CONTAINS
       nlen = MERGE(nproma, p_patch%npromz_c, jb /= p_patch%nblks_c)
 
       ! loop over target (ICON) land points only
-      i_count = ext_data(jg)%atm%list_land%ncount(jb)
+      i_count = list_land%ncount(jb)
 
       ! Conversion of TERRA soil moisture [m] into soil moisture index SMI
       !   soil moisture index = (soil moisture - wilting point) / (field capacity - wilting point)
@@ -374,8 +376,8 @@ CONTAINS
 
 !CDIR NODEP,VOVERTAKE,VOB
         DO ic = 1, i_count
-          jc = ext_data(jg)%atm%list_land%idx(ic,jb)
-          slt = ext_data(jg)%atm%soiltyp(jc,jb)
+          jc = list_land%idx(ic,jb)
+          slt = soiltyp(jc,jb)
           SELECT CASE(slt)
           CASE (1,2)  !ice,rock
             ! set wsoil to 0 for ice and rock

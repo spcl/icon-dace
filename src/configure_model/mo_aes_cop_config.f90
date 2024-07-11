@@ -53,13 +53,9 @@ MODULE mo_aes_cop_config
      !
      ! cloud optics
      REAL(wp) :: cinhomi  !          ice    cloud inhomogeneity factor
+     REAL(wp) :: cinhoms  !          snow   cloud inhomogeneity factor
+     REAL(wp) :: cinhoml  !          liquid cloud inhomogeneity factor
      !
-     !                    !          liquid cloud inhomogeneity factor:
-     REAL(wp) :: cinhoml1 !          - ktype = 0 = stratiform clouds
-     REAL(wp) :: cinhoml2 !          - ktype = 4 = shallow conv. (cf. clwprat)
-     REAL(wp) :: cinhoml3 !          - ktype = 1 = deep convection             and
-     !                    !            ktype = 2 = shallow conv. (cf. clwprat) and
-     !                    !            ktype = 3 = mid-level conv.
      ! freezing/deposition/sublimation for mo_aes_convect_tables:
      REAL(wp) :: cthomi   ! [K]      maximum temperature for homogeneous freezing
      REAL(wp) :: csecfrl  ! [kg/kg]  minimum in-cloud water mass mixing ratio in mixed phase clouds
@@ -94,9 +90,8 @@ CONTAINS
     !
     ! cloud optics
     aes_cop_config(:)% cinhomi  = 0.80_wp
-    aes_cop_config(:)% cinhoml1 = 0.80_wp
-    aes_cop_config(:)% cinhoml2 = 0.40_wp
-    aes_cop_config(:)% cinhoml3 = 0.80_wp
+    aes_cop_config(:)% cinhoms  = 0.80_wp
+    aes_cop_config(:)% cinhoml  = 0.80_wp
     !
     ! freezing/deposition/sublimation
     aes_cop_config(:)% cthomi   = tmelt-35.0_wp
@@ -147,9 +142,8 @@ CONTAINS
        CALL print_value('    aes_cop_config('//TRIM(cg)//')% cn2sea   ',aes_cop_config(jg)% cn2sea  )
        CALL message    ('','')
        CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhomi  ',aes_cop_config(jg)% cinhomi )
-       CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhoml1 ',aes_cop_config(jg)% cinhoml1)
-       CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhoml2 ',aes_cop_config(jg)% cinhoml2)
-       CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhoml3 ',aes_cop_config(jg)% cinhoml3)
+       CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhoms  ',aes_cop_config(jg)% cinhoms )
+       CALL print_value('    aes_cop_config('//TRIM(cg)//')% cinhoml  ',aes_cop_config(jg)% cinhoml )
        CALL message    ('','')
        CALL print_value('    aes_cop_config('//TRIM(cg)//')% cthomi   ',aes_cop_config(jg)% cthomi  )
        CALL print_value('    aes_cop_config('//TRIM(cg)//')% csecfrl  ',aes_cop_config(jg)% csecfrl )

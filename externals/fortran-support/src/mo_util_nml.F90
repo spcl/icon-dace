@@ -25,7 +25,7 @@ MODULE mo_util_nml
       &      BIND(C, NAME='util_annotate_nml')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iret
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: in_filename, out_filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: in_filename, out_filename
     END FUNCTION private_annotate_nml
   END INTERFACE
 
@@ -35,7 +35,7 @@ CONTAINS
 
   FUNCTION util_annotate_nml(in_filename, out_filename) RESULT(iret)
     INTEGER :: iret
-    CHARACTER(len=*), INTENT(in) :: in_filename, out_filename
+    CHARACTER(len=*), INTENT(IN) :: in_filename, out_filename
     iret = private_annotate_nml(TRIM(in_filename)//c_null_char, &
       &                         TRIM(out_filename)//c_null_char)
   END FUNCTION util_annotate_nml

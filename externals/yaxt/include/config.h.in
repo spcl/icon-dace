@@ -59,6 +59,9 @@
    */
 #undef HAVE_ALLOCA_H
 
+/* defined to 1 iff a cuda header of the 6.5 or newer version was found */
+#undef HAVE_CUDA
+
 /* Define to 1 if __builtin_clzl is available, 0 if not */
 #undef HAVE_DECL___BUILTIN_CLZL
 
@@ -101,6 +104,9 @@
 /* Define to 1 if you have the <limits.h> header file. */
 #undef HAVE_LIMITS_H
 
+/* Define to 1 if the system has the type `long double _Complex'. */
+#undef HAVE_LONG_DOUBLE__COMPLEX
+
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
 
@@ -139,6 +145,9 @@
 
 /* Define to the sub-directory where libtool stores uninstalled libraries. */
 #undef LT_OBJDIR
+
+/* work around missing define in older MPI implementations */
+#undef MPI_INT16_T
 
 /* work around problem with MPI_Comm_dup */
 #undef NEED_MPICH_UNWEIGHTED_COMM_DUP_WORKAROUND
@@ -215,6 +224,12 @@
 /* Version number of package */
 #undef VERSION
 
+/* defined to 1 if this MPI does not support zero-size datatypes */
+#undef XT_CANNOT_SUPPORT_ZERO_SIZE_DT
+
+/* defined if MPI_Neighbor_alltoall functions are actually working */
+#undef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
+
 /* Type to use for enumeration of distributed elements. */
 #undef XT_INT
 
@@ -226,6 +241,9 @@
 
 /* MPI Datatype for type for enumeration of distributed elements. */
 #undef XT_INT_MPIDT
+
+/* are libxml header files buried in sub-directory? */
+#undef XT_LIBXML_INCLUDE_SUBDIR
 
 /* Type to use for fast long multiplication of Xt_int */
 #undef XT_LONG
@@ -249,6 +267,9 @@
 
 /* Type to use for fast long multiplication of Xt_int */
 #undef XT_ULONG
+
+/* symbols to add a dependency on for correct static builds */
+#undef XT_WORKAROUND_MPI_SYMBIND
 
 /* Define to 1 if type `char' is unsigned and you are not using gcc.  */
 #ifndef __CHAR_UNSIGNED__

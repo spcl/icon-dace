@@ -56,6 +56,7 @@
 #define  GRIB2_GTYPE_SPECTRAL             50  // Spherical harmonic coefficients
 #define  GRIB2_GTYPE_GME                 100  // Triangular grid based on an icosahedron (GME)
 #define  GRIB2_GTYPE_UNSTRUCTURED        101  // General Unstructured Grid
+#define  GRIB2_GTYPE_HEALPIX             150  // HEALPix Grid
 
 const char *gribapiLibraryVersionString(void);
 void gribContainersNew(stream_t *streamptr);

@@ -60,7 +60,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = -1       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 3600               ! model timestep in seconds
@@ -159,6 +158,7 @@ cat > ${ocean_namelist} << EOF
 &sea_ice_nml
 ! i_ice_therm                     =   1       ! 1=zero-layer (default), 2=Winton, 0/2: not allowed
 ! i_ice_dyn                       =   0       ! 1/0=switch on/off AWI ice dynamics
+  stress_ice_zero                 = .TRUE.
 ! i_Qio_type                      =   3       ! 3 (default): energy of whole grid-area used for melting (MPIOM-type)
 ! use_constant_tfreez             = .TRUE.    ! default: true
 /

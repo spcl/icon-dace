@@ -9,7 +9,7 @@
 # Keywords: archive compare git repository
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -73,6 +73,7 @@ my %ignore_archive_missing = map { $_ => undef } (
   'scripts/release/release-as',
   'scripts/release/undo-release',
   'scripts/release/check-gitignore',
+  'scripts/git-hooks/Makefile',
   'scripts/git-hooks/find-problem-sources',
   'scripts/git-hooks/checklicense',
   'scripts/git-hooks/checklicense.exclusions',
@@ -395,6 +396,6 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # mode: cperl
 # coding: utf-8
 # cperl-indent-level: 2
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:

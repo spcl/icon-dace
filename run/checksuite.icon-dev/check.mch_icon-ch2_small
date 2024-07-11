@@ -30,16 +30,16 @@ export EXPERIMENT='mch_icon-ch2_small'
 # TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export TYPES='void'
+export TYPES='atm_3d_ml'
 
 # DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export DATES='20230115T110000Z'
+export DATES='20201210T060000Z'
 
 # RESTART_DATE defines the date and time from which restarts should be performed.
 # 
-export RESTART_DATE='20230115T110000Z'
+export RESTART_DATE='20201210T060100Z'
 
 #--------------------------------------------------------------------------------
 # 
@@ -55,6 +55,10 @@ export RESTART_DATE='20230115T110000Z'
 # default: MD='t'
 #
 export MD='t'
+# Activate cuda-graph test only when NVCOMPILER_ACC_USE_GRAPH is set to 1
+if [[ ${NVCOMPILER_ACC_USE_GRAPH} == 1 ]]; then
+    export MD=$MD'g'
+fi
 
 #--------------------------------------------------------------------------------
 # 

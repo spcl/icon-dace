@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Scheduler for internal post-processing.
 ! ===================================================================
 !
@@ -133,17 +143,6 @@
 ! TODO[FP] Do not insert post-processing tasks for patches with 0 cells.
 !
 ! -----------------------------------------------------------------------------------
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_pp_scheduler
 
@@ -162,7 +161,7 @@ MODULE mo_pp_scheduler
     &                                   TASK_COMPUTE_DBZLMX_LOW,                            &
     &                                   TASK_COMPUTE_CEILING, TASK_COMPUTE_VIS,             &
     &                                   TASK_COMPUTE_WSHEAR_U, TASK_COMPUTE_WSHEAR_V,       &
-    &                                   TASK_COMPUTE_LAPSERATE,                             &
+    &                                   TASK_COMPUTE_LAPSERATE, TASK_COMPUTE_MCONV,         &
     &                                   TASK_COMPUTE_SRH,                                   &
     &                                   TASK_COMPUTE_INVERSION,                             &
     &                                   TASK_INTP_VER_ZLEV,                                 &
@@ -266,7 +265,7 @@ CONTAINS
           &   TASK_COMPUTE_HTOP_SC, TASK_COMPUTE_TWATER,  TASK_COMPUTE_Q_SEDIM, &
           &   TASK_COMPUTE_DBZ850,  TASK_COMPUTE_DBZCMAX, TASK_COMPUTE_SMI,     &
           &   TASK_COMPUTE_DBZLMX_LOW, TASK_COMPUTE_SDI2, TASK_COMPUTE_VIS,     &
-          &   TASK_COMPUTE_INVERSION, TASK_COMPUTE_LAPSERATE )
+          &   TASK_COMPUTE_INVERSION, TASK_COMPUTE_LAPSERATE, TASK_COMPUTE_MCONV )
           CALL pp_scheduler_register(name=elem%info%name, jg=jg, p_out_var=elem, &
             &    l_init_prm_diag=l_init_prm_diag, job_type=elem%info%l_pp_scheduler_task ) 
         CASE (TASK_INTP_MSL)
@@ -1417,7 +1416,7 @@ CONTAINS
         &    TASK_COMPUTE_TWATER, TASK_COMPUTE_Q_SEDIM, TASK_COMPUTE_DBZ850, TASK_COMPUTE_DBZCMAX, &
         &    TASK_COMPUTE_DBZLMX_LOW, TASK_COMPUTE_SMI, TASK_COMPUTE_WSHEAR_U,                     &
         &    TASK_COMPUTE_WSHEAR_V, TASK_COMPUTE_SRH, TASK_COMPUTE_LAPSERATE, TASK_COMPUTE_VIS,    &
-        &    TASK_COMPUTE_INVERSION)
+        &    TASK_COMPUTE_INVERSION, TASK_COMPUTE_MCONV)
         IF (timers_level >= 5) CALL timer_start(timer_opt_diag_atmo)
         CALL pp_task_compute_field(ptr_task)
         IF (timers_level >= 5) CALL timer_stop(timer_opt_diag_atmo)

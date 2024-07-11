@@ -122,6 +122,7 @@ BUILD_ENV+='unset OMPI_CFLAGS OMPI_CXXFLAGS OMPI_FCFLAGS;'
 BUILD_ENV+='export CC=$(type -p mpicc);'
 BUILD_ENV+='export FC=$(type -p mpifort);'
 BUILD_ENV+='export MPI_LAUNCH=$(type -p mpiexec);'
+BUILD_ENV+="export MODULELIST='${MODULES[*]}';"
 BUILD_ENV+='export LC_ALL=en_US;'
 
 CFLAGS="-no-prec-sqrt -no-prec-div -fast-transcendentals -m64 -march=core-avx2 -mtune=core-avx2 -no-fma -ip -pc64 -O3 -qno-opt-dynamic-align ${MKL_FCFLAGS}"

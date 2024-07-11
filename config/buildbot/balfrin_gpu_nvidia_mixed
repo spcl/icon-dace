@@ -10,5 +10,5 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-./config/cscs/balfrin.gpu.nvidia_mixed
+./config/cscs/alps_mch.gpu.nvidia_mixed
 

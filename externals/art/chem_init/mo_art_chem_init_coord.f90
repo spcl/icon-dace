@@ -18,7 +18,7 @@ MODULE mo_art_chem_init_coord
   USE mo_kind,               ONLY: wp
   USE mo_exception,          ONLY: finish
   USE mo_impl_constants,     ONLY: success, max_char_length
-  USE mo_physical_constants, ONLY: grav, rcpd, rd
+  USE mo_physical_constants, ONLY: grav, rcpd, rd, p0sl_bg
 ! ART
   USE mo_art_chem_init_types,ONLY: t_art_chem_init_coord
 
@@ -139,7 +139,8 @@ CONTAINS
     !-- 1. Initialize variables
     nvclev = nlev+1
 !ag    coord%apzero    = 101325._wp ! changed for NCAR summer colloquium!
-    coord%apzero    = 100000._wp
+!sv    coord%apzero    = 100000._wp ! this was activated before adding the following line
+    coord%apzero    = p0sl_bg
     zrd       = rd
     coord%ralpha_chem_init(1) = zrd*LOG(2._wp)
     coord%rlnpr_chem_init(1)  = 2._wp*coord%ralpha_chem_init(1)
@@ -155,7 +156,7 @@ CONTAINS
 
     coord%t0icao  = 288._wp
     coord%tsticao = 216.5_wp
-    zp0icao = 101320._wp
+    zp0icao = p0sl_bg
     coord%rdlnp0i = rd*LOG(zp0icao)
     coord%rdtstic = rd*coord%tsticao
     coord%alrrdic = 0.0065_wp/grav

@@ -1,10 +1,10 @@
 ! This file was automatically generated, don't edit!
 !
-! Fortran interface for CDI library version 2.2.4
+! Fortran interface for CDI library version 2.4.0
 !
 ! Author:
 ! -------
-! Uwe Schulzweida, MPI-MET, Hamburg,   August 2023
+! Uwe Schulzweida, MPI-MET, Hamburg,   April 2024
 !
 
 !
@@ -90,7 +90,7 @@
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     DOUBLEPRECISION data,
-!                                     INTEGER         nmiss,
+!                                     INTEGER         numMissVals,
 !                                     TYPE(XT_IDXLIST)partDesc)
       EXTERNAL        streamWriteVarPart
 
@@ -98,7 +98,7 @@
 !                                    (INTEGER         streamID,
 !                                     INTEGER         varID,
 !                                     REAL            data,
-!                                     INTEGER         nmiss,
+!                                     INTEGER         numMissVals,
 !                                     TYPE(XT_IDXLIST)partDesc)
       EXTERNAL        streamWriteVarPartF
 
@@ -109,7 +109,7 @@
 !                                     INTEGER         numBlocks,
 !                                     INTEGER         blocklengths(*),
 !                                     INTEGER         displacements(*),
-!                                     INTEGER         nmiss,
+!                                     INTEGER         numMissVals,
 !                                     TYPE(XT_IDXLIST)partDesc)
       EXTERNAL        streamWriteScatteredVarPart
 
@@ -120,7 +120,7 @@
 !                                     INTEGER         numBlocks,
 !                                     INTEGER         blocklengths(*),
 !                                     INTEGER         displacements(*),
-!                                     INTEGER         nmiss,
+!                                     INTEGER         numMissVals,
 !                                     TYPE(XT_IDXLIST)partDesc)
       EXTERNAL        streamWriteScatteredVarPartF
 

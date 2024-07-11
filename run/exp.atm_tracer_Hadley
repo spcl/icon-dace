@@ -99,7 +99,6 @@ cat > ${atmo_namelist} << EOF
  output                 = "nml"
 /
 &dynamics_nml
- iequations             = 3                ! 3: non-hydrost. atmosphere
  divavg_cntrwgt         = 0.50
  lcoriolis              = .FALSE.
 /

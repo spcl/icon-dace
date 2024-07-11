@@ -13,7 +13,7 @@
 # Maintainer: Jörg Behrens <behrens@dkrz.de>
 #             Moritz Hanke <hanke@dkrz.de>
 #             Thomas Jahns <jahns@dkrz.de>
-# URL: http://https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: http://https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -43,33 +43,47 @@
 # SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #
 set -e
+
 # shellcheck source=get-package-and-version.shinc
 . scripts/release/get-package-and-version.shinc
-if [[ x${TMPDIR+set} = x ]]; then
-  if [[ -d "$XDG_RUNTIME_DIR" && -w "$XDG_RUNTIME_DIR" ]]; then
-    TMPDIR=$XDG_RUNTIME_DIR
-  elif [[ -d /dev/shm && -w /dev/shm ]]; then
-    TMPDIR=/dev/shm
-  else
-    TMPDIR=/tmp
-  fi
-  export TMPDIR
-fi
+
+trap errMsg ERR
+
+setupMakeDebugging
+addOverrides
+setTMPDIR
 tmpsrc=$(mktemp -d "${TMPDIR-/tmp}/tmp.XXXXXXXXXX")
 log=$(mktemp "${TMPDIR-/tmp}/tmp.XXXXXXXXXX")
-exec 6>"$log"
-echo "creating temporary source directory in $tmpsrc"
+exec 6>"${log}"
+echo "creating temporary source directory in ${tmpsrc}"
 if (( ${DEBUG:-0} == 0)) && [[ -z "${KEEP_BUILDDIR-}" ]] ; then
-  trap 'rm -rf "$tmpsrc" "$log"' EXIT
+  trap 'rm -rf "${tmpsrc}" "${log}"' EXIT
 fi
 repo=$PWD
-cd "$tmpsrc"
+cd "${tmpsrc}"
 if command -v rsync >/dev/null ; then
-  rsync -aHSXA --copy-unsafe-links "$repo"/. .
+  opts="-aHS"
+  rsync_options=$(rsync --help)
+  case $rsync_options in
+    (*\ -A,\ --acls\ *)
+      opts+=A
+      ;;
+  esac
+  case $rsync_options in
+    (*\ -X,\ --xattrs\ *)
+      opts+=X
+      ;;
+  esac
+  case $rsync_options in
+    (*\ -E,\ --extended-attributes\ *)
+      opts+=E
+      ;;
+  esac
+  rsync ${opts} "${repo}"/. .
 else
-  cp -a "$repo"/. .
+  cp -a "${repo}"/. .
 fi
-bash -x $reconfCmd >&6 2>&6
+bash -x "${reconfCmd}" >&6 2>&6
 set +e
 git update-index -q --ignore-submodules --refresh
 set -e
@@ -83,12 +97,12 @@ if [[ -z "${MAKE+set}" ]]; then
   MAKE=$(sed -n -e '/^MAKE = /{
 s/^MAKE =[ 	]*\(.*[^ ]\) *$/\1/; p ; q
 }' Makefile)
-  [[ -n "${MAKE}" ]] || MAKE=make
+  [[ -n "${MAKE}" ]] || MAKE='make'
 fi
 echo "  ${MAKE}"
-${MAKE} -j >&6 2>&6
+${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j >&6 2>&6
 echo "  make check"
-${MAKE} -j8 check >&6 2>&6
+${MAKE} "${MAKE_DEBUG_ARGS[@]}" -j8 check >&6 2>&6
 git update-index -q --really-refresh
 if git diff-index --exit-code HEAD -- >&6 ; then
   echo 'success: no unexpected files were created/modified.' >&2
@@ -96,7 +110,11 @@ if git diff-index --exit-code HEAD -- >&6 ; then
 else
   echo "error: untracked/modified files found!" >&2
   git status >&6 2>&6
-  ${PAGER-less} "$log"
+  if [[ -t /dev/stdin && -t /dev/stdout ]]; then
+    ${PAGER-less} "${log}"
+  else
+    printf "detailed log output in %s" "${log}" >&2
+  fi
   trap '' EXIT
   exit 1
 fi
@@ -105,7 +123,7 @@ fi
 # Local Variables:
 # mode: sh
 # coding: utf-8
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:
 #

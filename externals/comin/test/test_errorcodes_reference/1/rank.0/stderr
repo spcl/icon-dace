@@ -1,7 +1,7 @@
  ICON running
     running with            1  MPI tasks and            1  thread(s) per task.
       compatibility check.
-        linked to ICON Community Interface v0.1.0
+        linked to ICON Community Interface v0.1.1
       minimal-example: working precision test successful.
     ICON model setup
       ICON // Fill descriptive data structure

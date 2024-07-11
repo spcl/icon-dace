@@ -3656,6 +3656,8 @@ gridProjParamsInit(struct CDI_GridProjParams *gpp)
   gpp->y_0     = CDI_Grid_Missval;   // False northing (optional)
   gpp->x_SP    = CDI_Grid_Missval;   // Longitude of southern pole
   gpp->y_SP    = CDI_Grid_Missval;   // Latitude of southern pole
+  gpp->nside   = 0;                  // HEALPix number of points along a side (number of data points should be = 12 * nside * nside)
+  gpp->order   = -1;                 // HEALPix ordering convention (0:ring; 1:nested)
   // clang-format on
 }
 
@@ -3859,6 +3861,24 @@ gridVerifyProjParamsSTERE(struct CDI_GridProjParams *gpp)
   return 0;
 }
 
+int
+gridVerifyProjParamsHEALPIX(struct CDI_GridProjParams *gpp)
+{
+  static bool lwarn = true;
+
+  if (lwarn)
+    {
+      lwarn = false;
+      const char *projection = "healpix";
+      if (IS_EQUAL(gpp->nside, -1)) Error("%s mapping parameter %s missing!", projection, "nside");
+      if (IS_EQUAL(gpp->order, -1)) Error("%s mapping parameter %s missing!", projection, "order");
+      if (gpp->nside == 0) Error("%s mapping parameter %s unsupported!", projection, "nside", gpp->nside);
+      if (gpp->order != 0 && gpp->order != 1) Error("%s mapping parameter %s=%d unsupported!", projection, "order", gpp->order);
+    }
+
+  return 0;
+}
+
 /*
 @Function  gridDefParamsSTERE
 @Title     Define the parameter of a Polar stereographic grid
@@ -3891,6 +3911,26 @@ gridDefParamsSTERE(int gridID, struct CDI_GridProjParams gpp)
   gridptr->projtype = CDI_PROJ_STERE;
 
   gridVerifyProj(gridID);
+}
+void
+gridDefParamsHEALPIX(int gridID, struct CDI_GridProjParams gpp)
+{
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_VARNAME, "healpix");
+
+  const char *gmapname = "healpix";
+  cdiDefKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME, gmapname);
+  cdiDefAttTxt(gridID, CDI_GLOBAL, "grid_mapping_name", (int) (strlen(gmapname)), gmapname);
+
+  cdiDefAttInt(gridID, CDI_GLOBAL, "healpix_nside", CDI_DATATYPE_INT32, 1, &gpp.nside);
+  const char *orderName = (gpp.order == 1) ? "nested" : "ring";
+  cdiDefAttTxt(gridID, CDI_GLOBAL, "healpix_order", (int) (strlen(orderName)), orderName);
+
+  // gridDefParamsCommon(gridID, gpp);
+
+  grid_t *gridptr = grid_to_pointer(gridID);
+  gridptr->projtype = CDI_PROJ_HEALPIX;
+
+  // gridVerifyProj(gridID);
 }
 
 /*
@@ -3951,6 +3991,64 @@ gridInqParamsSTERE(int gridID, struct CDI_GridProjParams *gpp)
               else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
               else if (str_is_equal(attname, "latitudeOfFirstGridPointInDegrees"))     gpp->yval_0 = attflt[0];
               // clang-format on
+            }
+        }
+    }
+
+  return status;
+}
+
+int
+gridInqParamsHEALPIX(int gridID, struct CDI_GridProjParams *gpp)
+{
+  int status = -1;
+  if (gridInqType(gridID) != GRID_PROJECTION) return status;
+
+  gridProjParamsInit(gpp);
+
+  status = -2;
+  const char *projection = "healpix";
+  char gmapname[CDI_MAX_NAME];
+  int length = CDI_MAX_NAME;
+  cdiInqKeyString(gridID, CDI_GLOBAL, CDI_KEY_GRIDMAP_NAME, gmapname, &length);
+  if (gmapname[0] && str_is_equal(gmapname, projection))
+    {
+      int atttype, attlen;
+      char attname[CDI_MAX_NAME + 1];
+
+      int natts;
+      cdiInqNatts(gridID, CDI_GLOBAL, &natts);
+
+      if (natts) status = 0;
+
+      for (int iatt = 0; iatt < natts; ++iatt)
+        {
+          cdiInqAtt(gridID, CDI_GLOBAL, iatt, attname, &atttype, &attlen);
+
+          if (atttype == CDI_DATATYPE_TXT)
+            {
+              char attstring[256];
+              if (cdiInqAttTxt(gridID, CDI_GLOBAL, attname, (int) sizeof(attstring), attstring) == 0)
+                {
+                  attstring[attlen] = 0;
+                  if (str_is_equal(attname, "healpix_order")) gpp->order = strStartsWith(attstring, "nest");
+                }
+            }
+          else
+            {
+              if (attlen > 2) continue;
+              double attflt[2];
+              if (cdiInqAttConvertedToFloat(gridID, atttype, attname, attlen, attflt))
+                {
+                  // clang-format off
+                  if      (str_is_equal(attname, "earth_radius"))                          gpp->a      = attflt[0];
+                  else if (str_is_equal(attname, "semi_major_axis"))                       gpp->a      = attflt[0];
+                  else if (str_is_equal(attname, "semi_minor_axis"))                       gpp->b      = attflt[0];
+                  else if (str_is_equal(attname, "inverse_flattening"))                    gpp->rf     = attflt[0];
+                  else if (str_is_equal(attname, "longitudeOfFirstGridPointInDegrees"))    gpp->xval_0 = attflt[0];
+                  else if (str_is_equal(attname, "healpix_nside"))                         gpp->nside  = (int) lround(attflt[0]);
+                  // clang-format on
+                }
             }
         }
     }

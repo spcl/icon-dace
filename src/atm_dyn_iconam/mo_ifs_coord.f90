@@ -94,12 +94,12 @@ CONTAINS
 
     IF (lread_process) THEN
       ! Get the number of levels for vertical coordinate table parameters
-      CALL nf(nf_inq_dimid(ncid, 'nhyi', dimid), routine)
-      CALL nf(nf_inq_dimlen(ncid, dimid, nhyi), routine)
+      CALL nf(nf90_inq_dimid(ncid, 'nhyi', dimid), routine)
+      CALL nf(nf90_inquire_dimension(ncid, dimid, len = nhyi), routine)
       ! Get the actual number of levels in the file. This number might be
       ! smaller than nhyi-1 if some levels at the top have been cut
-      CALL nf(nf_inq_dimid(ncid, 'lev', dimid), routine)
-      CALL nf(nf_inq_dimlen(ncid, dimid, nlev_in), routine)
+      CALL nf(nf90_inq_dimid(ncid, 'lev', dimid), routine)
+      CALL nf(nf90_inquire_dimension(ncid, dimid, len = nlev_in), routine)
       IF (nlev_in < nhyi-1) THEN
         WRITE (message_text,*) "Number of levels in file is ",nlev_in, &
           &                    " is not equal to vertical coordinate table dimension",nhyi-1
@@ -124,12 +124,12 @@ CONTAINS
       ALLOCATE( hyab(nhyi), STAT=ierrstat)
       IF (ierrstat /= SUCCESS) CALL finish(routine, "ALLOCATE failed!")
 
-      CALL nf(nf_inq_varid(ncid, 'hyai', varid), routine)
-      CALL nf(nf_get_var_double(ncid, varid, hyab), routine)
+      CALL nf(nf90_inq_varid(ncid, 'hyai', varid), routine)
+      CALL nf(nf90_get_var(ncid, varid, hyab), routine)
       ! If data has been cut at the top, discard the top values of hyab
       vct_ab(:,1) = hyab((nhyi-nlev_in):nhyi)
-      CALL nf(nf_inq_varid(ncid, 'hybi', varid), routine)
-      CALL nf(nf_get_var_double(ncid, varid, hyab), routine)
+      CALL nf(nf90_inq_varid(ncid, 'hybi', varid), routine)
+      CALL nf(nf90_get_var(ncid, varid, hyab), routine)
       ! If data has been cut at the top, discard the top values of hyab
       vct_ab(:,2) = hyab((nhyi-nlev_in):nhyi)
 

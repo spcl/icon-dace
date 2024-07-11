@@ -22,7 +22,10 @@ _Describe important implementation details of the feature._
 - [ ] Mark the merge request as ready by removing `Draft:`
 
 ## Mandatory steps before merge
+- [ ] Test coverage does not decrease
 - [ ] Reviewed by a maintainer
 - [ ] Incorporate review suggestions
+- [ ] Prior to merging, please remove any boilerplate from the MR description, retaining only the _Please describe your feature in a couple of words_ and _describe important implementation details of the feature_ section to maintain 
+- [ ] Remember to edit the commit message and select the proper changelog category (feature/bugfix/other)
 
 **You are not supposed to merge this request by yourself, the maintainers of fortan-support take care of this action!**

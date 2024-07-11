@@ -1,0 +1,124 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "parent_pipeline"
+
+include:
+  - project: "anw_dienste/ci-templates"
+    file: ".slurm-ci.yml"
+
+.common:
+  variables:
+    GIT_SUBMODULE_STRATEGY: normal
+    GIT_SUBMODULE_PATHS: externals/probtest externals/fortran-support
+    GIT_SUBMODULE_UPDATE_FLAGS: --jobs=4
+    GIT_CONFIG_COUNT: 1
+    GIT_CONFIG_KEY_0: url.https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/.insteadOf
+    GIT_CONFIG_VALUE_0: "git@gitlab.dkrz.de:"
+    PYVENV: ${CI_PROJECT_DIR}/venv
+    CMAKE_EXTRA_ARGS:
+    MAKEFLAGS: --jobs=8 VERBOSE=1
+    CTEST_PARALLEL_LEVEL: 8
+  before_script:
+    - |
+      # Initialize Python environment
+      set -eu
+      if test ! -d ${PYVENV}; then
+        python3 -m venv ${PYVENV}
+        ${PYVENV}/bin/python3 -m pip install --verbose --no-cache-dir \
+          --upgrade pip
+        ${PYVENV}/bin/python3 -m pip install --verbose --no-cache-dir \
+          --requirement externals/probtest/requirements.txt
+      fi
+      export PATH="${PYVENV}/bin:${PATH}"
+  script:
+    - mkdir build
+    - cd build
+    - cmake ../test/microphysics_1mom_schemes ${CMAKE_EXTRA_ARGS}
+    - make
+  cache:
+    key:
+      files:
+        - externals/probtest/requirements.txt
+    paths:
+      - ${PYVENV}
+    policy: pull
+  interruptible: true
+
+.common_levante:
+  extends: .common
+  variables:
+    SCHEDULER_PARAMETERS: >-
+      --account=ka1125
+      --partition=shared
+      --nodes=1
+    # jacamar on Levante fetches from scratch each time
+    GIT_DEPTH: 1
+  before_script:
+    - module purge
+    - module load git gcc/11.2.0-gcc-11.2.0 python3
+    - !reference [.common, before_script]
+  tags:
+    - levante, hpc, dkrz
+
+.common_levante_gcc:
+  extends: .common_levante
+  variables:
+    CC: gcc
+    FC: gfortran
+    CXX: g++
+    NetCDF_ROOT: /sw/spack-levante/netcdf-fortran-4.5.3-l2ulgp
+
+.common_levante_intel:
+  extends: .common_levante
+  variables:
+    CC: icc
+    FC: ifort
+    CXX: icpc
+    NetCDF_ROOT: /sw/spack-levante/netcdf-fortran-4.5.3-pvmcx6
+  before_script:
+    - !reference [.common_levante, before_script]
+    - module load intel-oneapi-compilers/2022.0.1-gcc-11.2.0
+
+GCC Microphysics 1-moment:
+  extends: .common_levante_gcc
+  script:
+    - !reference [.common, script]
+    - ctest --output-on-failure
+  cache:
+    policy: pull-push
+
+INTEL Microphysics 1-moment:
+  extends: .common_levante_intel
+  script:
+    - !reference [.common, script]
+    - ctest --output-on-failure
+
+Create Tolerance Microphysics 1-moment:
+  extends: .common_levante_gcc
+  script:
+    - !reference [.common, script]
+    - make tolerance
+    # build git patch
+    - >
+      git -C ${CI_PROJECT_DIR} diff --patch-with-raw --
+      test/microphysics_1mom_schemes/tolerance
+      test/microphysics_1mom_schemes/reference
+      > ${CI_PROJECT_DIR}/reference.patch
+  artifacts:
+    paths:
+      - reference.patch
+    expire_in: 1 week
+    expose_as: 'Reference Git Patch'
+  rules:
+    - when: manual
+  allow_failure: true

@@ -48,6 +48,7 @@
 #include <config.h>
 #endif
 
+#include <assert.h>
 #include <errno.h>
 #include <string.h>
 
@@ -60,6 +61,7 @@
 #include "xt_exchanger_irecv_isend.h"
 #include "xt_exchanger_mix_isend_irecv.h"
 #include "xt_exchanger_irecv_isend_packed.h"
+#include "xt_exchanger_irecv_isend_ddt_packed.h"
 #include "xt_exchanger_neigh_alltoall.h"
 #include "xt_idxlist_internal.h"
 #include "core/core.h"
@@ -85,7 +87,7 @@ void xt_config_delete(Xt_config config)
 }
 
 static const struct {
-  char name[20];
+  char name[32];
   Xt_exchanger_new f;
   int code;
 } exchanger_table[] = {
@@ -95,10 +97,12 @@ static const struct {
     xt_exchanger_irecv_isend_new, xt_exchanger_irecv_isend },
   { "irecv_isend_packed",
     xt_exchanger_irecv_isend_packed_new, xt_exchanger_irecv_isend_packed },
+  { "irecv_isend_ddt_packed",
+    xt_exchanger_irecv_isend_ddt_packed_new, xt_exchanger_irecv_isend_ddt_packed },
   { "mix_irecv_isend",
     xt_exchanger_mix_isend_irecv_new, xt_exchanger_mix_isend_irecv },
   { "neigh_alltoall",
-#if MPI_VERSION >= 3
+#ifdef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
     xt_exchanger_neigh_alltoall_new,
 #else
     (Xt_exchanger_new)0,
@@ -146,7 +150,7 @@ Xt_exchanger_new
 xt_config_get_exchange_new_by_comm(Xt_config config, MPI_Comm comm)
 {
   Xt_exchanger_new exchanger_new = config->exchanger_new;
-#if MPI_VERSION >= 3
+#ifdef XT_CAN_USE_MPI_NEIGHBOR_ALLTOALL
   if (exchanger_new == xt_exchanger_neigh_alltoall_new) {
     int flag;
     xt_mpi_call(MPI_Comm_test_inter(comm, &flag), comm);
@@ -201,7 +205,32 @@ xt_config_set_idxvec_autoconvert_size(Xt_config config, int cnvsize)
     config->idxv_cnv_size = cnvsize;
 }
 
+int
+xt_config_get_redist_mthread_mode(Xt_config config)
+{
+  return (config->flags & (int32_t)xt_mthread_mode_mask) >> xt_mthread_mode_bit_ofs;
+}
 
+void
+xt_config_set_redist_mthread_mode(Xt_config config, int mode)
+{
+  assert(mode >= XT_MT_NONE && mode <= XT_MT_OPENMP);
+#ifndef _OPENMP
+  if (mode == XT_MT_OPENMP)
+    Xt_abort(Xt_default_comm, "error: automatic opening of OpenMP parallel regions requested,"
+             " but OpenMP is not configured.\n", "xt_config.c", __LINE__);
+#else
+  if (mode == XT_MT_OPENMP) {
+    int thread_support_provided = MPI_THREAD_SINGLE;
+    xt_mpi_call(MPI_Query_thread(&thread_support_provided), Xt_default_comm);
+    if (thread_support_provided != MPI_THREAD_MULTIPLE)
+      Xt_abort(Xt_default_comm, "error: automatic opening of OpenMP parallel regions requested,\n"
+             "        but MPI is not running in thread-safe mode.\n", "xt_config.c", __LINE__);
+  }
+#endif
+  config->flags = (config->flags & ~(int32_t)xt_mthread_mode_mask)
+    | ((int32_t)mode << xt_mthread_mode_bit_ofs);
+}
 
 void
 xt_config_defaults_init(void)
@@ -234,6 +263,49 @@ xt_config_defaults_init(void)
     } else
       xt_config_set_idxvec_autoconvert_size(&xt_default_config, (int)v);
   }
+  config_env = getenv("XT_CONFIG_DEFAULT_MULTI_THREAD_MODE");
+  if (config_env) {
+    char *endptr;
+    long v = strtol(config_env, &endptr, 0);
+    if (endptr != config_env) {
+      if ((errno == ERANGE && (v == LONG_MAX || v == LONG_MIN))
+          || (errno != 0 && v == 0)) {
+        perror("failed to parse value of "
+               "XT_CONFIG_DEFAULT_MULTI_THREAD_MODE environment variable");
+        goto dont_set_mt_mode;
+      } else if (v < XT_MT_NONE || v > XT_MT_OPENMP) {
+        fprintf(stderr, "numeric value of XT_CONFIG_DEFAULT_MULTI_THREAD_MODE"
+                " environment variable (%ld) out of range [0,%d]\n",
+                v, XT_MT_OPENMP);
+        goto dont_set_mt_mode;
+      } else if (*endptr) {
+        fprintf(stderr, "trailing text '%s' found after numeric value (%*s) in "
+                "XT_CONFIG_DEFAULT_MULTI_THREAD_MODE environment variable\n",
+                endptr, (int)(endptr-config_env), config_env);
+        goto dont_set_mt_mode;
+      }
+    } else {
+      if (!strcasecmp(config_env, "XT_MT_OPENMP")) {
+#ifndef _OPENMP
+        fputs("multi-threaded operation requested via "
+              "XT_CONFIG_DEFAULT_MULTI_THREAD_MODE, but OpenMP support is not"
+              " compiled in!\n", stderr);
+        goto dont_set_mt_mode;
+#else
+        v = XT_MT_OPENMP;
+#endif
+      } else if (!strcasecmp(config_env, "XT_MT_NONE")) {
+        v = XT_MT_NONE;
+      } else {
+        fputs("unexpected value of XT_CONFIG_DEFAULT_MULTI_THREAD_MODE"
+              " environment variable, unrecognized text or numeral\n",
+              stderr);
+        goto dont_set_mt_mode;
+      }
+    }
+    xt_config_set_redist_mthread_mode(&xt_default_config, (int)v);
+  }
+dont_set_mt_mode:;
 }
 
 /*

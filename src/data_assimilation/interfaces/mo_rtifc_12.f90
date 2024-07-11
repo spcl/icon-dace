@@ -152,7 +152,9 @@ MODULE mo_rtifc_12
   public :: rtifc_init_brdf_atlas
   public :: rtifc_emis_atlas
   public :: rtifc_emis_retrieve
+  public :: rtifc_emis_sea
   public :: rtifc_brdf_atlas
+  public :: rtifc_tskin_retrieve
 #endif
 
   ! RTTOV options
@@ -193,16 +195,15 @@ MODULE mo_rtifc_12
 #include "rttov_hdf_save.interface"
 #include "rttov_print_opts.interface"
 #include "rttov_print_profile.interface"
+#include "rttov_user_options_checkinput.interface"
 #if defined(_RTTOV_ATLAS)
 #include "rttov_setup_emis_atlas.interface"
 #include "rttov_get_emis.interface"
 #include "rttov_deallocate_emis_atlas.interface"
 #endif
+#include "rttov_nullify_coefs.interface"
+
 #if defined(_RTIFC_DISTRIBCOEF)
-#include "rttov_nullify_coef.interface"
-#include "rttov_nullify_coef_scatt_ir.interface"
-#include "rttov_nullify_coef_pccomp.interface"
-#include "rttov_nullify_optpar_ir.interface"
 #if !defined(HAVE_MPI_MOD)
 ! include "mpif.h"   ! already imported via "use mo_rtifc_base"
 #endif
@@ -3729,6 +3730,18 @@ FTRACE_END('rtifc_k')
 
  end subroutine rtifc_emis_retrieve
 
+ subroutine rtifc_emis_sea(iopt, lprofs, chans, emis, stat, pe, ldeb)
+   integer,             intent(in)  :: iopt      ! options index
+   integer,             intent(in)  :: lprofs(:) ! list of profile indices
+   integer,             intent(in)  :: chans(:)  ! list of channel indices
+   real(wp),            intent(out) :: emis(:)   ! computed emissivities
+   integer,             intent(out) :: stat      ! error status
+   integer,             intent(in), optional:: pe
+   logical,             intent(in), optional:: ldeb
+
+   stat = ERR_NO_RTTOV_LIB
+
+ end subroutine rtifc_emis_sea
 
  subroutine rtifc_init_atlas(iopts, atlas_id, angcorr, month, path, &
                              my_proc_id, n_proc, io_proc_id, mpi_comm_type)
@@ -4040,6 +4053,26 @@ FTRACE_END('rtifc_k')
    return
 
  end subroutine rtifc_brdf_atlas
+
+ subroutine rtifc_tskin_retrieve(iopt, lprofs, channum, chans, obs, &
+      spec, emis, tskin, stat, tsfl, pe, ldeb, spt_hd_id)
+   integer,  intent(in)            :: iopt      ! options index
+   integer,  intent(in)            :: lprofs(:) ! list of profile indices
+   integer,  intent(in)            :: channum(:)! list of channel numbers
+   integer,  intent(in)            :: chans(:)  ! list of channel indices
+   real(wp), intent(in)            :: obs(:)    ! observed brightness temperature
+   real(wp), intent(in)            :: spec(:,:) ! specularity
+   real(wp), intent(inout)         :: emis(:)   ! atlas emissivities
+   real(wp), intent(out)           :: tskin(:)  ! computed skin temperature
+   integer,  intent(out)           :: stat      ! error status
+   logical,  intent(inout)         :: tsfl      ! set tskin flag
+   integer,  intent(in),   optional:: pe
+   logical,  intent(in),   optional:: ldeb
+   integer,  intent(in),   optional:: spt_hd_id
+
+   stat = ERR_NO_RTTOV_LIB
+
+ end subroutine rtifc_tskin_retrieve
 
 #endif /* _RTTOV_ATLAS */
 

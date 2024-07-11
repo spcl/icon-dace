@@ -133,14 +133,16 @@ SUBROUTINE art_external_init(p_patch, artconf, ext_data, dims2d, dict_tracer, &
       WRITE (message_text,*) 'ART: Initialization of pollen tracer data.'
       CALL message (TRIM(routine)//':art_external_init', message_text)
     
-      ! ALLOCATE, inital calculations
-      CALL art_extinit_pollen(p_patch,p_patch%nblks_c, art_extdata%pollen_prop, dict_tracer, &
-        &                     TRIM(artconf%cart_input_folder), artconf%lart_diag_out)
-    
-      ! Read external data
+      ! Read variable external data (POV file)
       ! art_read_pol_oper was called in art_diagnostics_interface in previous
       ! code versions - moved here to avoid initialization related misbehaviour
       CALL art_read_pol_oper(jg)
+
+      ! ALLOCATE additional arrays, do inital calculations
+      CALL art_extinit_pollen(p_patch,p_patch%nblks_c, art_extdata%pollen_prop, dict_tracer, &
+        &                     TRIM(artconf%cart_input_folder))
+
+      ! Read constant external data (POC file)
       CALL art_read_pollendata(jg, art_extdata%pollen_prop, TRIM(artconf%cart_input_folder))
     ENDIF !iart_pollen
 

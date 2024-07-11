@@ -44,8 +44,12 @@ MODULE mo_parallel_nml
     & config_proc0_shift         => proc0_shift,         &
     & config_iorder_sendrecv     => iorder_sendrecv,     &
     & set_nproma, &
+    & set_nproma_nblocks, &
+    & set_nproma_nblocks_sub, &
     & config_nblocks_c           => nblocks_c,             &
+    & config_nblocks_e           => nblocks_e,             &
     & config_use_nblocks_c       => ignore_nproma_use_nblocks_c,     &
+    & config_use_nblocks_e       => ignore_nproma_use_nblocks_e,     &
     & config_nproma_sub          => nproma_sub,            &
     & config_nblocks_sub         => nblocks_sub,           &
     & config_use_nblocks_sub     => ignore_nproma_sub_use_nblocks_sub,     &
@@ -162,6 +166,7 @@ MODULE mo_parallel_nml
 
     INTEGER :: nproma    ! inner loop length/vector length
     INTEGER :: nblocks_c   ! inner loop number of blocks used for cells
+    INTEGER :: nblocks_e   ! inner loop number of blocks used for edges
 
     INTEGER :: nproma_sub    ! secondary nproma, by default the same as the basic one
     INTEGER :: nblocks_sub   ! number of blocks to subdivide the basic nproma into
@@ -197,7 +202,7 @@ MODULE mo_parallel_nml
       & num_io_procs,      pio_type,            &
       & num_io_procs_radar,                     &
       & iorder_sendrecv,                        &
-      & nproma, nblocks_c,                      &
+      & nproma, nblocks_c, nblocks_e,           &
       & nproma_sub, nblocks_sub,                &
       & use_icon_comm, &
       & icon_comm_debug, max_send_recv_buffer_size, &
@@ -288,12 +293,13 @@ MODULE mo_parallel_nml
     iorder_sendrecv = 1
 
     ! inner loop length/vector length
-    nproma = 1
+    nproma = 0
     nblocks_c = 0
+    nblocks_e = 0
 
     ! secondary inner loop length/vector length
-    nproma_sub = -1
-    nblocks_sub = -1
+    nproma_sub = 0
+    nblocks_sub = 0
 
     ! MPI gather to output processes in DOUBLE PRECISION
     use_dp_mpi2io = .FALSE.
@@ -372,14 +378,8 @@ MODULE mo_parallel_nml
     config_proc0_shift         = proc0_shift
     config_use_omp_input       = use_omp_input
     config_iorder_sendrecv     = iorder_sendrecv
-    config_nblocks_c           = nblocks_c
-    config_use_nblocks_c       = (nblocks_c > 0) ! Only use nblocks_c if it has a reasonable value
-    CALL set_nproma(nproma)
-
-    ! nblocks_sub defaults to 1; but explicitly set, it overrides nproma_sub
-    config_nproma_sub          = nproma_sub
-    config_nblocks_sub         = MERGE(nblocks_sub, 1, nblocks_sub > 0)
-    config_use_nblocks_sub     = (nblocks_sub > 0) .OR. (nproma_sub <= 0)
+    CALL set_nproma_nblocks(nproma, nblocks_c, nblocks_e)
+    CALL set_nproma_nblocks_sub(nproma_sub, nblocks_sub)
 
     config_use_icon_comm       = use_icon_comm
     config_icon_comm_debug     = icon_comm_debug

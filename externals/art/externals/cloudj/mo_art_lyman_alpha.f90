@@ -19,6 +19,7 @@ MODULE mo_fjx_lyman
 
      USE FJX_CMN_MOD
      USE mo_kind,                 ONLY: wp
+     USE mo_math_constants,       ONLY: deg2rad
      
      
  IMPLICIT NONE
@@ -46,7 +47,6 @@ MODULE mo_fjx_lyman
                                                              !  later is should be read in with time
 
 
-      real(wp), parameter :: degree =acos(-1d0)/180.0_wp
       real(wp) ::  chi
       real(wp), dimension(L1_+1) :: column, flux, o2_col
       real(wp) ::  t1, t2
@@ -64,7 +64,7 @@ MODULE mo_fjx_lyman
        ! slant o2 column
 
        DO jk=1,L1_-1
-           column(jk) = o2_col(jk)/cos(chi*degree)
+           column(jk) = o2_col(jk)/cos(chi*deg2rad)
        ENDDO
 
        t1 = tj( minloc(abs(column(1:L1_)-1e24_wp),1))
@@ -75,14 +75,14 @@ MODULE mo_fjx_lyman
        DO jk=1,lu-1
 
         flux(jk) = & 
-    &        ( 1 + 0.07_wp * (cos(chi*degree) - 0.5_wp)* exp(-4e-24_wp*column(jk)) ) &
+    &        ( 1 + 0.07_wp * (cos(chi*deg2rad) - 0.5_wp)* exp(-4e-24_wp*column(jk)) ) &
     &        * exp (        &   !* exp(-tau_bar) &
     &        - (2.48e-22_wp + 6e-26_wp*t1)*column(jk)**0.9d0 &
     &        + (2.6e-25_wp - 1e-27_wp*t2)*column(jk) &
     &        - 2.5e-51_wp*column(jk)**2 ) &
-    &        + 0.005_wp * (cos(chi*degree) + 0.07_wp) & ! + Q_s
+    &        + 0.005_wp * (cos(chi*deg2rad) + 0.07_wp) & ! + Q_s
     &        * exp( -9.8e-25_wp * column(jk)  &
-    &        * (cos(chi*degree) + 0.02_wp) ) 
+    &        * (cos(chi*deg2rad) + 0.02_wp) ) 
 
           ! multiply with solar flux of Lyman-alpha
 
@@ -99,13 +99,13 @@ MODULE mo_fjx_lyman
     sigma_o2all = 0.765e-24_wp * &
 & ( 1 + 0.35d0 * exp(-5e-25_wp*column(jk)) )     &
 &        * ( 1.1_wp + 0.1_wp * tanh(3e-25_wp*column(jk)     &
-&        *max(0.8_wp-cos(chi*degree),0d0) - 2.4_wp) )    &
+&        *max(0.8_wp-cos(chi*deg2rad),0d0) - 2.4_wp) )    &
 &        * ( 1.16_wp- 0.0021_wp * tj(jk)               &
 &        + 6e-6_wp * tj(jk)**2 )                          
     phi_o1d = 0.48_wp                    &! Abschnitt 3.4
 &        * ( 1 + 0.2_wp * exp(-3e-25_wp*column(jk)) )      &
 &        * ( 1.06_wp + 0.06_wp * tanh(3.5e-25_wp*column(jk) &
-&        *max(0.8_wp-cos(chi*degree),0.0_wp) - 2.4_wp) )    
+&        *max(0.8_wp-cos(chi*deg2rad),0.0_wp) - 2.4_wp) )    
 
 !Absorption cross sections (m2) for all Lyman alpha species
 

@@ -188,7 +188,7 @@ CONTAINS
     !-----------------------------------------------------------------------
     CALL vlr_add(horizontal_velocity_diagnostics, 'horizontal_velocity_diagnostics', &
       & patch_id=patch_2d%id, lrestart=.FALSE., loutput=.TRUE.,                           &
-      & model_type=TRIM(get_my_process_name()))
+      & model_type=get_my_process_name())
     !-----------------------------------------------------------------------
     IF (diagnose_for_horizontalVelocity) THEN
       CALL add_var(horizontal_velocity_diagnostics, 'veloc_adv_horz_u', veloc_adv_horz_u, &
@@ -888,6 +888,13 @@ CONTAINS
 
       ENDIF
 
+      ! bottom pressure
+      IF (isRegistered('bottom_pressure')) THEN
+        CALL calc_bottom_pressure(patch_3d, ocean_state, p_diag%bottom_pressure, &
+             p_oce_sfc%sea_level_pressure(:,:),ocean_state%p_diag%rho(:,:,:), &
+             prism_thickness(:,:,:),sea_surface_height(:,:), &
+             ice,ocean_state%p_prog(nnew(1))%stretch_c(:, :), lacc=lzacc)
+      END IF
 
 
       IF ( eddydiag .AND. &
@@ -2737,6 +2744,97 @@ CONTAINS
     !$ACC WAIT(1) IF(lzacc)
 
   END SUBROUTINE calc_heat_content
+
+  
+  SUBROUTINE calc_bottom_pressure(patch_3d,ocean_state,bottom_pressure,fslp,density,thickness,sea_surface_height,ice,stretch_c,lacc)
+
+    TYPE(t_patch_3d), TARGET, INTENT(IN)  :: patch_3d
+    TYPE(t_hydro_ocean_state), TARGET, INTENT(IN) :: ocean_state
+    REAL(wp), INTENT(INOUT)  :: bottom_pressure(:,:)    !< bottom pressure diagnostic (Pa)
+    REAL(wp), INTENT(IN)     :: fslp(:,:)               !< mean sea level pressure (Pa)
+    REAL(wp), INTENT(IN)     :: density(:,:,:)          !< ocean in-situ density (kgm-3)
+    REAL(wp), INTENT(IN)     :: thickness(:,:,:)        !< ocean thickness at pressure point (m)
+    REAL(wp), INTENT(IN)     :: sea_surface_height(:,:) !< sea surface height above sea level (m)
+    TYPE(t_sea_ice), INTENT(INOUT)  :: ice              !< sea ice fields
+    REAL(wp), INTENT(IN), OPTIONAL  :: stretch_c(:,:)   !< stretch factor for z*
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
+
+    ! local variables
+    INTEGER  :: blk, cell, cellStart,cellEnd, level
+    TYPE(t_subset_range), POINTER            :: subset
+    REAL(wp), POINTER :: temp(:,:,:)
+
+    LOGICAL  :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+    subset => patch_3d%p_patch_2d(1)%cells%owned
+    temp => ocean_state%p_prog(nold(1))%tracer(:,:,:,1)
+
+    ! note the computed bottom pressure does not include the thermosteric
+    ! correction term (Griffies et al. (2016), Eq.28 & Griffies et al. (2012) Eq. 225)
+
+    ! z-levels
+    IF (vert_cor_type .EQ. 0) THEN
+
+      ! compute and correct bottom pressure
+      !$OMP PARALLEL DO PRIVATE(cellstart,cellend,blk,cell,level) SCHEDULE(dynamic)
+      DO blk = subset%start_block, subset%end_block
+        CALL get_index_range(subset, blk, cellStart, cellEnd)
+        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        DO cell = cellStart, cellEnd
+
+          ! compute surface pressure of top cell and add atmospheric pressure
+          bottom_pressure(cell,blk) = grav*density(cell,1,blk)*(thickness(cell,1,blk) &
+               +sea_surface_height(cell,blk)) + fslp(cell,blk) !+thermosteric
+
+          ! add surface pressure to all levels below
+          !$ACC LOOP SEQ
+          DO level=2,subset%vertical_levels(cell,blk)
+            bottom_pressure(cell,blk) = bottom_pressure(cell,blk) &
+                 + grav*density(cell,level,blk)*thickness(cell,level,blk)
+          END DO
+
+        END DO ! cell
+        !$ACC END PARALLEL LOOP
+      END DO ! block
+      !$ACC WAIT(1)
+      !ICON_OMP_END_PARALLEL_DO
+
+
+    END IF
+
+    ! z*-levels
+    IF (vert_cor_type .EQ. 1) THEN
+
+      ! compute and correct bottom pressure
+      !$OMP PARALLEL DO PRIVATE(cellstart,cellend,blk,cell,level) SCHEDULE(dynamic)
+      DO blk = subset%start_block, subset%end_block
+        CALL get_index_range(subset, blk, cellStart, cellEnd)
+        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+        DO cell = cellStart, cellEnd
+
+          ! compute surface pressure of top cell and add atmospheric pressure
+          bottom_pressure(cell,blk) = grav*(density(cell,1,blk)*thickness(cell,1,blk)*stretch_c(cell,blk) &
+               + ice%draftave(cell,blk)*rho_ref) + fslp(cell,blk) !+thermosteric
+
+          ! add surface pressure to all levels below
+          !$ACC LOOP SEQ
+          DO level=2,subset%vertical_levels(cell,blk)
+            bottom_pressure(cell,blk) = bottom_pressure(cell,blk) &
+                 + grav*density(cell,level,blk)*thickness(cell,level,blk)*stretch_c(cell,blk)
+          END DO
+
+        END DO ! cell
+        !$ACC END PARALLEL LOOP
+      END DO ! block
+      !$ACC WAIT(1)
+      !ICON_OMP_END_PARALLEL_DO
+
+    END IF
+
+
+  END SUBROUTINE calc_bottom_pressure
 
 
   SUBROUTINE calc_eddydiag(patch_3d,u,v,w,w_prismcenter,T,S,R &

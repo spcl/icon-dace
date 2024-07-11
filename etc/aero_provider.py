@@ -10,63 +10,104 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ------------------------------------------
 
-from yac import *
 import xarray as xr
 import numpy as np
 import isodate
 from datetime import date
 from glob import glob
 import f90nml
+
 import sys
+import socket
 
 VERBOSE = 2
+DRYRUN = False
+
+if ( not DRYRUN ) :
+    from yac import *
+
+def get_hostname () :
+
+    fqdn = socket.getfqdn().split(".")
+
+    if ( "nid" == fqdn[0][:3] ) :
+        hostname = "Lumi"
+    elif ( "lvt.dkrz.de" == fqdn[1]+"."+fqdn[2]+"."+fqdn[3] ) :
+        hostname = "Levante"
+    else :
+        hostname = "unknown"
+        raise ValueError( "aero_provider: Host cannot be detected" )
+
+    return hostname
+
+def filename_dflt ( dataPath , fileRoot, band ) :
+    filename =  dataPath+fileRoot+"_"+band+"_rast.nc"
+    return filename
+
+def filename_year ( dataPath , fileRoot, band, year ) :
+    if ( year >= 1845 and year <= 2100 ) :
+        filename = dataPath+fileRoot+"_"+band+"_"+str(year)+"_rast.nc"
+        return filename
+    else:
+        raise ValueError ( "aero_provider: ", filename, " not available!" )
+
+if ( get_hostname() == "Levante" ) :
+    dataPath = "/pool/data/ICON/grids/public/mpim/independent/aerosol_kinne/"
+
+if ( get_hostname() == "Lumi" ) :
+    dataPath = "/appl/local/climatedt/pool/data/ICON/grids/public/mpim/common/aerosol_kinne/"
+
+fileRoot = "aeropt_kinne"
 
 iso_data_interval='P1M'
-iso_coupling_interval='PT90M' # radiation time step
-
-dataPath = "/pool/data/ICON/grids/public/mpim/independent/aerosol_kinne/"
-fileRoot = "aeropt_kinne"
 
 NAMELIST=sys.argv[1]
 nml_fname = glob(NAMELIST)[0]
 nml = f90nml.read(nml_fname)
 
 irad_aero = nml['aes_rad_nml']['aes_rad_config'][0]['irad_aero']
-print ( "aero_provider: found irad_aero = ", irad_aero, ' in ',  nml_fname )
+print ( "aero_provider: found irad_aero =", irad_aero, "in", nml_fname )
 
 if ( irad_aero != 12 and irad_aero != 13 and 
      irad_aero != 15 and irad_aero != 18 and 
      irad_aero != 19 ) :
-    print ( "aero_provider: irad_aero =", irad_aero, "is not supported" )
-    raise SystemExit(1); exit
+    raise ValueError( "aero_provider: irad_aero =", irad_aero, "is not supported" )
 
 try :
-    lrad_yac = nml['aes_rad_nml']['aes_rad_config'][0]['lrad_yac']
-    print ( "aero_provider: found lrad_yac = ", lrad_yac, " in ",  nml_fname )
+    coupled_to_aero = nml['coupling_mode_nml']['coupled_to_aero']
+    print ( "aero_provider: found coupled_to_aero =", coupled_to_aero, "in", nml_fname )
 except :
-    print ( "aero_provider: lrad_yac not set in ",  nml_fname )
-    lrad_yac = False
+    print ( "aero_provider: coupled_to_aero not set in", nml_fname )
+    coupled_to_aero = False
 
-if ( not lrad_yac ) :
-    print ( "aero_provider: lrad_yac = .FALSE. cannot be used when running o3_provider " )
+if ( not coupled_to_aero ) :
+    raise ValueError( "aero_provider: coupled_to_aero = .FALSE. cannot be used when running aero_provider " )
+
+try :
+    iso_coupling_interval = nml['aes_phy_nml']['aes_phy_config'][0]['dt_rad']
+    print ( "o3_provider: found dt_rad =", iso_coupling_interval, "in", nml_fname )
+except :
+    print ( "o3_provider: dt_rad not set in", nml_fname )
     raise SystemExit(1); exit
 
 try :
     lyr_perp = nml['aes_rad_nml']['aes_rad_config'][0]['lyr_perp']
-    print ( "aero_provider: found lyr_perp = ", lyr_perp, " in ",  nml_fname )
+    print ( "aero_provider: found lyr_perp =", lyr_perp, "in", nml_fname )
 except :
-    print ( "aero_provider: lyr_perp not set in ",  nml_fname )
+    print ( "aero_provider: lyr_perp not set in", nml_fname )
     lyr_perp = False
 
 if ( lyr_perp ) :
     yr_perp = nml['aes_rad_nml']['aes_rad_config'][0]['yr_perp']
-    print ( "aero_provider: found yr_perp = ", yr_perp, ' in ',  nml_fname )
+    print ( "aero_provider: found yr_perp =", yr_perp, "in", nml_fname )
 
 if ( irad_aero == 12 or irad_aero == 18 or irad_aero == 19 ) :
     scenario = "picontrol" # Kinne background from 1850
 
 if ( irad_aero == 13 or irad_aero == 15 ) :
     scenario = "historical"
+    if ( lyr_perp ) :
+        raise ValueError( "aero_provider: perpetual year conflicts with irad_aero" )
 
 if ( lyr_perp ) :
     scenario = "perpetual"
@@ -78,22 +119,12 @@ watch_this = 0
 watch_other = 0
 
 data_interval = isodate.parse_duration(iso_data_interval)
+coupling_interval = isodate.parse_duration(iso_coupling_interval)
 
-def filename_dflt ( dataPath , fileRoot, band ) :
-    filename =  dataPath+fileRoot+"_"+band+"_rast.nc"
-    return filename
-
-def filename_year ( dataPath , fileRoot, band, year ) :
-    if ( year >= 1845 and year <= 2100 ) :
-        filename = dataPath+fileRoot+"_"+band+"_"+str(year)+"_rast.nc"
-        return filename
-    else:
-        print ( filename, " not available!" )
-        raise SystemExit(1); exit        
-
-yac = YAC()
-def_calendar(Calendar.PROLEPTIC_GREGORIAN)
-comp = yac.def_comp(f"aero_provider")
+if ( not DRYRUN ) :
+    yac = YAC()
+    def_calendar(Calendar.PROLEPTIC_GREGORIAN)
+    comp = yac.def_comp(f"aero_provider")
 
 filename = filename_dflt( dataPath, fileRoot, "lw_b16_coa" )
 
@@ -112,37 +143,46 @@ sw_b14_coa = xr.open_dataset(filename, decode_times=False)
 deg2rad = np.pi/180
 lon = deg2rad*sw_b14_coa["lon"]
 lat = deg2rad*sw_b14_coa["lat"]
-dims = ["lat", "lon"]
-grid = Reg2dGrid("aero_grid", lon, lat)
-points = grid.def_points(Location.CORNER, lon, lat)
 
-aod_lw_b16_coa_field = Field.create("aod_lw_b16_coa", comp, points, lw_b16_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-ssa_lw_b16_coa_field = Field.create("ssa_lw_b16_coa", comp, points, lw_b16_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-aer_lw_b16_coa_field = Field.create("aer_lw_b16_coa", comp, points, lw_b16_coa.dims["lev"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
+if ( not DRYRUN ) :
 
-aod_sw_b14_coa_field = Field.create("aod_sw_b14_coa", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-ssa_sw_b14_coa_field = Field.create("ssa_sw_b14_coa", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-asy_sw_b14_coa_field = Field.create("asy_sw_b14_coa", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    grid = Reg2dGrid("aero_grid", lon, lat)
+    points = grid.def_points(Location.CORNER, lon, lat)
 
-aod_sw_b14_fin_field = Field.create("aod_sw_b14_fin", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-ssa_sw_b14_fin_field = Field.create("ssa_sw_b14_fin", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-asy_sw_b14_fin_field = Field.create("asy_sw_b14_fin", comp, points, sw_b14_coa.dims["lnwl"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
-aer_sw_b14_fin_field = Field.create("aer_sw_b14_fin", comp, points, sw_b14_coa.dims["lev"],
-                        iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    aod_lw_b16_coa_field = Field.create("aod_lw_b16_coa", comp, points, lw_b16_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    ssa_lw_b16_coa_field = Field.create("ssa_lw_b16_coa", comp, points, lw_b16_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    aer_lw_b16_coa_field = Field.create("aer_lw_b16_coa", comp, points, lw_b16_coa.sizes["lev"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
 
-yac.enddef()
+    aod_sw_b14_coa_field = Field.create("aod_sw_b14_coa", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    ssa_sw_b14_coa_field = Field.create("ssa_sw_b14_coa", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    asy_sw_b14_coa_field = Field.create("asy_sw_b14_coa", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
 
-start_date = isodate.parse_datetime(yac.start_datetime)
-end_datetime = isodate.parse_datetime(yac.end_datetime)
+    aod_sw_b14_fin_field = Field.create("aod_sw_b14_fin", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    ssa_sw_b14_fin_field = Field.create("ssa_sw_b14_fin", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    asy_sw_b14_fin_field = Field.create("asy_sw_b14_fin", comp, points, sw_b14_coa.sizes["lnwl"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+    aer_sw_b14_fin_field = Field.create("aer_sw_b14_fin", comp, points, sw_b14_coa.sizes["lev"],
+                            iso_coupling_interval, TimeUnit.ISO_FORMAT)
+
+if ( not DRYRUN ) :
+    yac.enddef()
+
+if ( not DRYRUN ) :
+    start_date = isodate.parse_datetime(yac.start_datetime)
+    end_date   = isodate.parse_datetime(yac.end_datetime)
+else :
+    start_date = isodate.parse_datetime('1970-12-28T00:00:00.000')
+    end_date   = isodate.parse_datetime('1971-01-02T00:00:00.000')
+
+model_date = start_date
 
 if ( scenario == 'picontrol' ) :
     filename = filename_year ( dataPath, fileRoot, "sw_b14_fin", 1850 )
@@ -152,17 +192,17 @@ if ( scenario == 'historical' ) :
     filename = filename_year ( dataPath, fileRoot, "sw_b14_fin", start_date.year )
 
 if VERBOSE > 0 :
-    print ( "aero_provider: Reading \n", filename, flush=True  )
+    print ( "aero_provider: Reading \n", filename, "for", scenario, flush=True  )
 
 this_sw_b14_fin = xr.open_dataset(filename, decode_times=False)
 other_sw_b14_fin = this_sw_b14_fin
 
 if ( VERBOSE > 0 ) :
-    print ( "aero_provider: Reading ", filename, flush=True  )
+    print ( "aero_provider: Reading", filename, flush=True  )
 
-while isodate.parse_datetime(aer_sw_b14_fin_field.datetime) < end_datetime:
+while model_date < end_date:
 
-    this_date  = isodate.parse_datetime(aer_sw_b14_fin_field.datetime)
+    this_date  = model_date
     this_month = this_date.month
     this_year  = this_date.year
 
@@ -193,7 +233,7 @@ while isodate.parse_datetime(aer_sw_b14_fin_field.datetime) < end_datetime:
             other_sw_b14_fin = xr.open_dataset(filename, decode_times=False)
             switch_year = True
             if ( VERBOSE > 0 ) :
-                print ( "aero_provider: Opened dataset for year ", other_year, flush=True  )
+                print ( "aero_provider: Opened other dataset for year", other_year, flush=True  )
 
         if ( other_year == this_year and switch_year ) :
             switch_year = False
@@ -288,16 +328,21 @@ while isodate.parse_datetime(aer_sw_b14_fin_field.datetime) < end_datetime:
     asy_sw_b14_fin_array = this_wght * this_asy_sw_b14_fin + other_wght * other_asy_sw_b14_fin
     aer_sw_b14_fin_array = this_wght * this_aer_sw_b14_fin + other_wght * other_aer_sw_b14_fin
 
-    aod_lw_b16_coa_field.put(aod_lw_b16_coa_array)
-    ssa_lw_b16_coa_field.put(ssa_lw_b16_coa_array)
-    aer_lw_b16_coa_field.put(aer_lw_b16_coa_array)
+    if ( not DRYRUN ) :
+        aod_lw_b16_coa_field.put(aod_lw_b16_coa_array)
+        ssa_lw_b16_coa_field.put(ssa_lw_b16_coa_array)
+        aer_lw_b16_coa_field.put(aer_lw_b16_coa_array)
 
-    aod_sw_b14_coa_field.put(aod_sw_b14_coa_array)
-    ssa_sw_b14_coa_field.put(ssa_sw_b14_coa_array)
-    asy_sw_b14_coa_field.put(asy_sw_b14_coa_array)
+        aod_sw_b14_coa_field.put(aod_sw_b14_coa_array)
+        ssa_sw_b14_coa_field.put(ssa_sw_b14_coa_array)
+        asy_sw_b14_coa_field.put(asy_sw_b14_coa_array)
 
-    aod_sw_b14_fin_field.put(aod_sw_b14_fin_array)
-    ssa_sw_b14_fin_field.put(ssa_sw_b14_fin_array)
-    asy_sw_b14_fin_field.put(asy_sw_b14_fin_array)
-    aer_sw_b14_fin_field.put(aer_sw_b14_fin_array)
+        aod_sw_b14_fin_field.put(aod_sw_b14_fin_array)
+        ssa_sw_b14_fin_field.put(ssa_sw_b14_fin_array)
+        asy_sw_b14_fin_field.put(asy_sw_b14_fin_array)
+        aer_sw_b14_fin_field.put(aer_sw_b14_fin_array)
 
+    model_date = model_date + coupling_interval
+
+if VERBOSE > 0 :
+    print ( "aero_provider: Done \n", flush=True )

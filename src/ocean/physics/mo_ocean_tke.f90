@@ -115,7 +115,6 @@ MODULE mo_ocean_tke
   USE mo_ocean_tke_base,      ONLY: init_tke, coeffs_tke!, integrate_tke
   USE mo_sea_ice_types,       ONLY: t_sea_ice, t_atmos_fluxes
   !USE turb_data,              ONLY: rhon ! air density
-  !USE test,                   ONLY: test_test
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
 
   IMPLICIT NONE
@@ -1410,47 +1409,5 @@ CONTAINS
     !write(*,*) 'tke = ', tke(8,:,10)
     !write(*,*) 'fu10 = ', fu10(8,10)
   END SUBROUTINE calc_tke_vector
-
-
-  SUBROUTINE nils_test(patch_3d, ocean_state, params_oce)
-    TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
-    TYPE(t_hydro_ocean_state), TARGET     :: ocean_state
-    TYPE(t_ho_params), INTENT(inout)      :: params_oce
-    TYPE(t_subset_range), POINTER :: edges_in_domain, all_cells!, cells_in_domain
-    TYPE(t_patch), POINTER :: patch_2D
-    REAL(wp), POINTER :: dz(:,:,:)
-    REAL(wp), POINTER :: prism_thick_c(:,:,:)
-
-    INTEGER :: start_index, end_index
-    INTEGER :: jc, blockNo, je,jk, tracer_index
-
-    CHARACTER(LEN=*), PARAMETER :: method_name = module_name//':nils_test'
-
-    patch_2D         => patch_3d%p_patch_2d(1)
-    edges_in_domain  => patch_2D%edges%in_domain
-    all_cells => patch_2D%cells%ALL
-    dz  => patch_3d%p_patch_1d(1)%prism_center_dist_c
-    prism_thick_c => patch_3d%p_patch_1d(1)%prism_thick_c
-    !uvel => ocean_state%p_diag%p_vn(jc,jk-1,blockNo)%x
-    !temp => ocean_state%p_prog(nold(1))%tracer(jc,1:levels-1,blockNo,1)
-    !salt => ocean_state%p_prog(nold(1))%tracer(jc,1:levels-1,blockNo,2)
-!    write(*,*) "Hi, here I am"
-!    DO blockNo = all_cells%start_block, all_cells%end_block
-!      CALL get_index_range(all_cells, blockNo, start_index, end_index)
-!      DO jc = start_index, end_index
-        !write(*,*) "blockNo = ", blockNo, "; jc = ", jc
-        !write(*,*) "dz(jc,:,blockNo) = ", dz(jc,:,blockNo)
-!      ENDDO
-!    ENDDO
-!    write(*,*) "all_cells%start_block = ", all_cells%start_block
-!    write(*,*) "all_cells%end_block = ", all_cells%end_block
-!    write(*,*) "start_index = ", start_index
-!   write(*,*) "end_index = ", end_index
-!    write(*,*) "Stopping..."
-!    stop
-
-    CALL finish(method_name,'Stopping...')
-
-  END SUBROUTINE nils_test
 
 END MODULE mo_ocean_tke

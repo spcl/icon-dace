@@ -36,7 +36,7 @@ MODULE mo_process_topo
   PUBLIC :: compute_smooth_topo
   PUBLIC :: smooth_topo
   PUBLIC :: smooth_topo_real_data, postproc_sso
-  PUBLIC :: smooth_frland
+  PUBLIC :: smooth_frland, smooth_urbfrac
 
 CONTAINS
 
@@ -490,6 +490,49 @@ CONTAINS
     ENDDO
 
   END SUBROUTINE smooth_frland
+
+  !-----------------------------------------------------------------------
+  !!
+  !! Smoothed urban fraction for a provisional tuning of the sealed fraction
+  !!
+  SUBROUTINE smooth_urbfrac (p_patch, p_int, fr_urb, fr_urb_smt)
+
+    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_int_state)  , INTENT(IN)    :: p_int
+    REAL(wp)           , INTENT(IN)    :: fr_urb(:,:)
+    REAL(wp)           , INTENT(OUT)   :: fr_urb_smt(:,:)
+
+    ! local variables
+    INTEGER  :: jb, jc, jb1, jc1, j
+    INTEGER  :: i_startblk, nblks_c, i_startidx, i_endidx
+
+    i_startblk = p_patch%cells%start_blk(3,1)
+    nblks_c    = p_patch%nblks_c
+
+    fr_urb_smt(:,1:i_startblk) = 0._wp
+
+    DO jb = i_startblk,nblks_c
+
+      CALL get_indices_c(p_patch, jb, i_startblk, nblks_c, i_startidx, i_endidx, 3)
+
+      fr_urb_smt(i_startidx:i_endidx,jb) = 0._wp
+
+      DO j=1, p_int%cell_environ%max_nmbr_nghbr_cells
+        DO jc = i_startidx, i_endidx
+          IF (j <= p_int%cell_environ%nmbr_nghbr_cells(jc,jb)) THEN
+            jc1 = p_int%cell_environ%idx(jc,jb,j)
+            jb1 = p_int%cell_environ%blk(jc,jb,j)
+            fr_urb_smt(jc,jb) = fr_urb_smt(jc,jb) + fr_urb(jc1,jb1)/REAL(p_int%cell_environ%nmbr_nghbr_cells(jc,jb),wp)
+          ENDIF
+        ENDDO
+      ENDDO
+
+    ENDDO  !jb
+
+    CALL sync_patch_array(SYNC_C, p_patch, fr_urb_smt)
+
+
+  END SUBROUTINE smooth_urbfrac
 
   !-----------------------------------------------------------------------
   !! Reduce SSO stdh and slope over glaciers depending on the ratio between SSO slope and resolved slope

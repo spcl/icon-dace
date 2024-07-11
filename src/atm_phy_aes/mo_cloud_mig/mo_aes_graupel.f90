@@ -1,8 +1,6 @@
 !
 ! Module containing thermodynamic functions used by the AES department in MPI-M
 !
-! Code slightly refactored from gscp_graupel (DWD)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -39,7 +37,7 @@ USE mo_aes_thermo, ONLY:        & !!
 
 IMPLICIT NONE
 PRIVATE
-PUBLIC :: graupel, snow_number, snow_lambda, ice_number
+PUBLIC :: graupel_init, graupel_run, graupel_finalize, snow_number, snow_lambda, ice_number
 
 LOGICAL, PARAMETER :: &
   lrain        = .TRUE.  , & ! switch for disabling rain
@@ -96,9 +94,23 @@ END TYPE t_qx_ptr
   
 CONTAINS
 
-  SUBROUTINE graupel(nvec, ke, ivstart, ivend, kstart,        & !! start/end indicies
+!
+! Routines _init, _finalize, and _-run are necessary to keep ICON main repo
+!  and Muphys repo in sync
+!
+  SUBROUTINE graupel_init()
+! Muphys Graupel has no state
+    WRITE(*, "(a)") "Graupel now initialized"
+  END SUBROUTINE graupel_init
+
+  SUBROUTINE graupel_finalize()
+! Muphys Graupel has no state
+    WRITE(*, "(a)") "Graupel now finalized"
+  END SUBROUTINE graupel_finalize
+
+  SUBROUTINE graupel_run(nvec, ke, ivstart, ivend, kstart,    & !! start/end indicies
              dt, dz, t, p, rho, qv, qc, qi, qr, qs, qg, qnc,  & !! prognostic variables
-             prr_gsp, pri_gsp, prs_gsp, prg_gsp, pflx        )  !  total precipitation flux
+             prr_gsp, pri_gsp, prs_gsp, prg_gsp, pflx, pre_gsp)  !  total precipitation flux
 
   INTEGER, INTENT(IN) ::  &
     nvec      , & !> number of horizontal points
@@ -130,13 +142,14 @@ CONTAINS
     qnc           !! cloud number concentration
 
   REAL(KIND=wp), DIMENSION(:,:), INTENT(OUT) ::   &   ! dim (ie,ke)
-    pflx          ! total precipitation flux 
+    pflx          !! total precipitation flux 
 
   REAL(KIND=wp), TARGET, DIMENSION(:), INTENT(OUT) ::   &   ! dim (ie)
     prr_gsp   , & !> precipitation rate of rain, grid-scale        (kg/(m2*s))
     pri_gsp   , & !> precipitation rate of ice, grid-scale         (kg/(m2*s))
     prs_gsp   , & !! precipitation rate of snow, grid-scale        (kg/(m2*s))
-    prg_gsp       !! precipitation rate of graupel, grid-scale     (kg/(m2*s))
+    prg_gsp   , & !! precipitation rate of graupel, grid-scale     (kg/(m2*s))
+    pre_gsp       !! energy flux at sfc from precipitation         (W/m2)
 
   LOGICAL :: is_sig_present(nvec*ke) ! is snow, ice or graupel present? 
 
@@ -170,7 +183,7 @@ CONTAINS
 
   !$ACC DATA &
   !$ACC   PRESENT(dz, t, p, rho, qv, qc, qi, qr, qs, qg, qnc) &
-  !$ACC   PRESENT(prr_gsp, prs_gsp, pri_gsp, prg_gsp, pflx) &
+  !$ACC   PRESENT(prr_gsp, prs_gsp, pri_gsp, prg_gsp, pflx, pre_gsp) &
   !$ACC   COPYIN(jmx_) &
   !$ACC   CREATE(is_sig_present, ind_k, ind_i, kmin, eflx, vt)
 
@@ -183,7 +196,8 @@ CONTAINS
   END DO
 
   !jmx=0
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+  !ACCWA: Cray compiler (16.0.1) treats jmx_ firstprivate unless it is explicitly present
+  !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(jmx_) ASYNC(1)
   !$ACC LOOP SEQ
   DO  k = ke,kstart,-1
     !$ACC LOOP GANG VECTOR PRIVATE(jmx, iqx)
@@ -212,7 +226,8 @@ CONTAINS
   END DO
   !$ACC END PARALLEL
 
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+  !ACCWA: Cray compiler (16.0.1) treats jmx_ firstprivate unless it is explicitly present
+  !$ACC PARALLEL DEFAULT(PRESENT) PRESENT(jmx_) ASYNC(1)
   !$ACC LOOP GANG VECTOR &
   !$ACC   PRIVATE(sink, dqdt, sx2x) &
   !$ACC   PRIVATE(k, iv) &
@@ -230,7 +245,7 @@ CONTAINS
     l_snow = snow_lambda  (rho(iv,k),q(lqs)%x(iv,k),n_snow)
 
     sx2x(:,:)     = 0.0_wp
-    sx2x(lqc,lqr) = cloud_to_rain   (t(iv,k),q(lqc)%x(iv,k),q(lqr)%x(iv,k),qnc(1))
+    sx2x(lqc,lqr) = cloud_to_rain   (t(iv,k),q(lqc)%x(iv,k),q(lqr)%x(iv,k),qnc(ivstart))
     sx2x(lqr,lqv) = rain_to_vapor   (t(iv,k),rho(iv,k),q(lqc)%x(iv,k),q(lqr)%x(iv,k),dvsw,dt)
     sx2x(lqc,lqi) = cloud_x_ice (t(iv,k),q(lqc)%x(iv,k),q(lqi)%x(iv,k),dt)
     sx2x(lqi,lqc) = -MIN(sx2x(lqc,lqi),0.0_wp)
@@ -245,7 +260,7 @@ CONTAINS
     
       IF (is_sig_present(j)) THEN
         eta           = deposition_factor(t(iv,k),qvsi) ! neglect cloud depth cor. from gcsp_graupel
-        sx2x(lqv,lqi) = vapor_x_ice    (q(lqi)%x(iv,k),m_ice,eta,dvsi,dt)
+        sx2x(lqv,lqi) = vapor_x_ice    (q(lqi)%x(iv,k),m_ice,eta,dvsi,rho(iv,k),dt)
         sx2x(lqi,lqv) =-MIN(sx2x(lqv,lqi),0.0_wp)
         sx2x(lqv,lqi) = MAX(sx2x(lqv,lqi),0.0_wp)
         ice_dep       = MIN(sx2x(lqv,lqi),dvsi/dt)
@@ -314,7 +329,10 @@ CONTAINS
     !$ACC   PRIVATE(kp1, qliq, qice, e_int, zeta, xrho, vc) &
     !$ACC   PRIVATE(ix, iqx, update)
     DO iv = ivstart, ivend  
-      IF (k==kstart) eflx(iv) = 0.0_wp
+      IF (k==kstart) THEN
+        eflx(iv)    = 0.0_wp
+        pre_gsp(iv) = 0.0_wp
+      END IF
       kp1 = min(ke    ,k+1)
 
       IF( k >= MINVAL(kmin(iv,:)) )THEN
@@ -366,6 +384,9 @@ CONTAINS
         qice       = q(lqs)%x(iv,k) + q(lqi)%x(iv,k) + q(lqg)%x(iv,k)
         e_int      = e_int - eflx(iv)
         t(iv,k)    = T_from_internal_energy(e_int,qv(iv,k),qliq,qice,rho(iv,k),dz(iv,k))
+        IF (k == ke) THEN
+          pre_gsp(iv) = eflx(iv)/dt
+        ENDIF
       ENDIF
     END DO
   END DO
@@ -383,7 +404,7 @@ CONTAINS
 
   !$ACC END DATA
 
-END SUBROUTINE graupel
+END SUBROUTINE graupel_run
 
 !!!=============================================================================================
 
@@ -408,7 +429,7 @@ PURE FUNCTION precip(params,zeta,vc,flx,vt,q,q_kp1,rho)
   flx_partial  = rho_x * vc * fall_speed(rho_x, params) 
   flx_partial  = MIN( flx_partial, flx_eff )
   precip(1)    = zeta*(flx_eff-flx_partial) / ((1.0_wp + zeta*vt)*rho)  ! q update
-  precip(2)    = (precip(1)*rho*vt + flx_partial)*0.5                   ! flx
+  precip(2)    = (precip(1)*rho*vt + flx_partial)*0.5_wp                ! flx
   rho_x        = (precip(1)+q_kp1)*0.5_wp*rho
   precip(3)    = vc*fall_speed(rho_x, params)                           ! vt
 
@@ -493,9 +514,9 @@ PURE FUNCTION snow_number(t,rho,qs)
     !$ACC ROUTINE SEQ
     IF (qs > qmin) THEN
       tc    = MAX(MIN(t,tmax),tmin) - tmelt
-      alf   = 10.**( xa1 + tc*(xa2 + tc*xa3) )
+      alf   = 10.0_wp**( xa1 + tc*(xa2 + tc*xa3) )
       bet   = xb1 + tc*(xb2 + tc*xb3)
-      n0s   = n0s3 * ((qs+qsmin) * rho / ams )**(4-3*bet) / (alf*alf*alf)
+      n0s   = n0s3 * ((qs+qsmin) * rho / ams )**(4.0_wp-3.0_wp*bet) / (alf*alf*alf)
 
       y     = EXP(n0s2*tc)
       n0smn = MAX(n0s4*y,n0s5)
@@ -624,7 +645,7 @@ PURE FUNCTION cloud_to_rain(t,qc,qr,nc)
           x3         = 2.00e+00_wp,  & ! gamma exponent for cloud distribution
           x2         = 2.60e-10_wp,  & ! separating mass between cloud and rain
           x1         = 9.44e+09_wp,  & ! kernel coeff for SB2001 autoconversion
-          au_kernel  = x1 / (20.0_wp*x2) * (x3+2.0_wp)*(x3+4.0_wp)/(x3+1.0_wp)**2
+          au_kernel  = x1 / (20.0_wp*x2) * (x3+2.0_wp)*(x3+4.0_wp)/(x3+1.0_wp)**2.0_wp
 
   REAL(KIND=wp) :: tau, & ! time-scale
                    phi, & ! similarity function for autoconversion
@@ -643,9 +664,9 @@ PURE FUNCTION cloud_to_rain(t,qc,qr,nc)
     IF (qc > qmin_ac .AND. t > tfrz_hom) THEN
       tau  = MAX(tau_min,MIN(1.0_wp-qc/(qc+qr),tau_max))
       phi  = tau**b
-      phi  = a * phi * (1.0_wp - phi)**3
-      xau  = au_kernel * (qc*qc/nc)**2  * (1.0_wp + phi/(1.0_wp - tau)**2)
-      xac  = ac_kernel * qc * qr * (tau/(tau+c))**4
+      phi  = a * phi * (1.0_wp - phi)**3.0_wp
+      xau  = au_kernel * (qc*qc/nc)**2.0_wp  * (1.0_wp + phi/(1.0_wp - tau)**2.0_wp)
+      xac  = ac_kernel * qc * qr * (tau/(tau+c))**4.0_wp
       cloud_to_rain = xau + xac
     ENDIF 
 
@@ -781,7 +802,7 @@ PURE FUNCTION rain_to_graupel(t,rho,qc,qr,qi,qs,mi,dvsw,dt)
     ENDIF 
   ENDIF 
   IF (min(qi,qr) > qmin .AND. qs > qs_crit) THEN ! rain + ice creating graupel
-    rain_to_graupel = rain_to_graupel +  a2 * (qi/mi) * qr**b2 
+    rain_to_graupel = rain_to_graupel + a2 * (qi/mi) * (rho*qr)**b2
   END IF
 
 END FUNCTION rain_to_graupel
@@ -949,12 +970,13 @@ END FUNCTION ice_deposition_nucleation
 
 !!!=============================================================================================
 
-PURE FUNCTION vapor_x_ice(qi,mi,eta,dvsi,dt)
+PURE FUNCTION vapor_x_ice(qi,mi,eta,dvsi,rho,dt)
   REAL(KIND=wp)             :: vapor_x_ice     ! returns rate of vapor deposition to ice
   REAL(KIND=wp), INTENT(IN) :: qi          , & ! specific humidity of ice
           &                    mi          , & ! ice crystal mass
           &                    eta         , & ! deposition factor
           &                    dvsi        , & ! vapor excess with respect to ice sat
+          &                    rho         , & ! ambient density
           &                    dt              ! time-step
 
   REAL(KIND=wp), PARAMETER  ::                 &
@@ -965,7 +987,7 @@ PURE FUNCTION vapor_x_ice(qi,mi,eta,dvsi,dt)
   !$ACC ROUTINE SEQ
   vapor_x_ice = 0.0_wp
   IF (qi>qmin) THEN
-    vapor_x_ice = (a * eta) * qi* (mi**b) * dvsi
+    vapor_x_ice = (a * eta) * rho * qi * (mi**b) * dvsi
     IF (vapor_x_ice > 0._wp) THEN
       vapor_x_ice = MIN(vapor_x_ice, dvsi/dt)
     ELSE

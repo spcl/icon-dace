@@ -151,7 +151,6 @@ CONTAINS
     IF (ASSOCIATED(input% zh    )) CALL copy(jcs,jce, jks,jke, field% zh        (:,:,jb)    , input% zh    (:,:,jb))
     IF (ASSOCIATED(input% rho   )) CALL copy(jcs,jce, jks,jke, field% rho       (:,:,jb)    , input% rho   (:,:,jb))
     IF (ASSOCIATED(input% pf    )) CALL copy(jcs,jce, jks,jke, field% pfull     (:,:,jb)    , input% pf    (:,:,jb))
-    IF (ASSOCIATED(input% cpair )) CALL copy(jcs,jce, jks,jke, field% cpair     (:,:,jb)    , input% cpair (:,:,jb))
     !
     ! input fields, inout
     !
@@ -195,7 +194,6 @@ CONTAINS
                &          field% rho       (:,:,jb)       ,& !< in : density
                &          field% pfull     (:,:,jb)       ,& !< in : pressure
                &          ptr_tke                         ,& !< in : TKE  (dummy because of no TKE in AES)
-               &          field% cpair     (:,:,jb)       ,& !< in : specific heat of air
                &          field% ta        (:,:,jb)       ,& !< inout : temperature
                &          field% qtrc_phy  (:,:,jb,iqv)   ,& !< inout : sp humidity
                &          field% qtrc_phy  (:,:,jb,iqc)   ,& !< inout : cloud water

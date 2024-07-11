@@ -33,9 +33,6 @@ MODULE mo_advection_traj
   USE mo_impl_constants,      ONLY: min_rledge_int, SUCCESS
   USE mo_timer,               ONLY: timer_start, timer_stop, timers_level, timer_back_traj
   USE mo_advection_utils,     ONLY: t_list2D
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
 ! Some compiler NVHPC versions have issues with the fast atomic path
 #ifdef _OPENACC
@@ -106,8 +103,8 @@ CONTAINS
       &      obj%distv_bary(nproma,nlev,nblks,ncoord), STAT=ist)
     IF (ist /= SUCCESS) CALL finish(routine, 'allocation failed')
 
-    !$ACC ENTER DATA CREATE(obj) IF(i_am_accel_node)
-    !$ACC ENTER DATA CREATE(obj%cell_idx, obj%cell_blk, obj%distv_bary) IF(i_am_accel_node)
+    !$ACC ENTER DATA CREATE(obj)
+    !$ACC ENTER DATA CREATE(obj%cell_idx, obj%cell_blk, obj%distv_bary)
 
   END SUBROUTINE construct
 
@@ -130,8 +127,8 @@ CONTAINS
     IF (ASSOCIATED(obj%cell_idx)) THEN
 
       !$ACC WAIT(1)
-      !$ACC EXIT DATA DELETE(obj%cell_idx, obj%cell_blk, obj%distv_bary) IF(i_am_accel_node)
-      !$ACC EXIT DATA DELETE(obj) IF(i_am_accel_node)
+      !$ACC EXIT DATA DELETE(obj%cell_idx, obj%cell_blk, obj%distv_bary)
+      !$ACC EXIT DATA DELETE(obj)
 
       DEALLOCATE(obj%cell_idx, obj%cell_blk, obj%distv_bary, STAT=ist)
       IF (ist /= SUCCESS) CALL finish(routine, 'deallocation failed')
@@ -253,7 +250,7 @@ CONTAINS
       CALL get_indices_e(ptr_p, jb, i_startblk, i_endblk,        &
            i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR TILE(64, 2)
       DO jk = slev, elev
         DO je = i_startidx, i_endidx
@@ -284,12 +281,12 @@ CONTAINS
           ! in which the barycenter is located. The distance vector points
           ! from the cell center to the barycenter.
           z_ntdistv_bary_1 =  - ( p_vn(je,jk,jb) * p_dthalf     &
-               & + MERGE(ptr_int%pos_on_tplane_e(je,jb,1,1),        &
-               &         ptr_int%pos_on_tplane_e(je,jb,2,1),lvn_pos))
+               & + MERGE(ptr_int%pos_on_tplane_e(je,1,1,jb),        &
+               &         ptr_int%pos_on_tplane_e(je,2,1,jb),lvn_pos))
 
           z_ntdistv_bary_2 =  - ( p_vt(je,jk,jb) * p_dthalf     &
-               & + MERGE(ptr_int%pos_on_tplane_e(je,jb,1,2),        &
-               &         ptr_int%pos_on_tplane_e(je,jb,2,2),lvn_pos))
+               & + MERGE(ptr_int%pos_on_tplane_e(je,1,2,jb),        &
+               &         ptr_int%pos_on_tplane_e(je,2,2,jb),lvn_pos))
 
           ! In a last step, transform this distance vector into a rotated
           ! geographical coordinate system with its origin at the circumcenter
@@ -494,18 +491,11 @@ CONTAINS
     i_startblk = ptr_p%edges%start_block(i_rlstart)
     i_endblk   = ptr_p%edges%end_block(i_rlend)
 
-#ifdef _OPENACC
-    IF( .NOT. i_am_accel_node) CALL finish(modname//":btraj_dreg", "The following code must run in GPU mode.")
-    ! The OpenACC ATOMIC code must not run on CPU. (gang_eidx, gang_elev would be to small.)
-    ! TODO: remove all IF(i_am_accel_node)
-#endif
-
     !$ACC DATA PRESENT(ptr_p, ptr_int, p_vn, p_vt, p_coords_dreg_v, p_cell_idx, p_cell_blk) &
-    !$ACC   NO_CREATE(opt_falist) CREATE(edge_verts, lvn_sys_pos) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   NO_CREATE(opt_falist) CREATE(edge_verts, lvn_sys_pos)
 
     IF (llist_gen) THEN
-      !$ACC KERNELS ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS ASYNC(1)
       opt_falist%len(:) = 0
       !$ACC END KERNELS
     ENDIF
@@ -521,18 +511,18 @@ CONTAINS
 
 
       ! get local copy of edge vertices
-      !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL ASYNC(1)
       !$ACC LOOP GANG VECTOR
 !NEC$ ivdep
       DO je = i_startidx, i_endidx
-        edge_verts(je,1:2,1:2) = ptr_int%pos_on_tplane_e(je,jb,7:8,1:2)
+        edge_verts(je,1:2,1:2) = ptr_int%pos_on_tplane_e(je,3:4,1:2,jb)
       ENDDO
       !$ACC END PARALLEL
 
       ! logical switch for merge options regarding the counterclockwise numbering
       IF (lcounterclock) THEN
 
-        !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = slev, elev
           DO je = i_startidx, i_endidx
@@ -541,7 +531,7 @@ CONTAINS
         ENDDO
         !$ACC END PARALLEL
       ELSE
-        !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL ASYNC(1)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = slev, elev
           DO je = i_startidx, i_endidx
@@ -568,7 +558,7 @@ CONTAINS
 #endif
 
         num_gangs = ( (elev-slev+1)*(i_endidx-i_startidx+1) + gang_size-1) / gang_size
-        !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node) &
+        !$ACC PARALLEL ASYNC(1) &
         !$ACC   PRIVATE(gang_ie, gang_captured_ie, gang_elev, gang_eidx) &
 #ifndef _USE_FAST_ATOMIC
         !$ACC   COPY(ie) &
@@ -641,7 +631,7 @@ CONTAINS
 #endif
       ENDIF
 
-      !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(depart_pts, pos_dreg_vert_c, pos_on_tplane_e) &
       !$ACC   PRIVATE(lvn_pos, pn_cell_1, pn_cell_2, dn_cell_1, dn_cell_2)
       DO jk = slev, elev
@@ -714,11 +704,11 @@ CONTAINS
 
 
           ! determine correct position on tangential plane
-          pos_on_tplane_e(1) = MERGE(ptr_int%pos_on_tplane_e(je,jb,1,1), &
-               &                     ptr_int%pos_on_tplane_e(je,jb,2,1),lvn_pos)
+          pos_on_tplane_e(1) = MERGE(ptr_int%pos_on_tplane_e(je,1,1,jb), &
+               &                     ptr_int%pos_on_tplane_e(je,2,1,jb),lvn_pos)
 
-          pos_on_tplane_e(2) = MERGE(ptr_int%pos_on_tplane_e(je,jb,1,2), &
-               &                     ptr_int%pos_on_tplane_e(je,jb,2,2),lvn_pos)
+          pos_on_tplane_e(2) = MERGE(ptr_int%pos_on_tplane_e(je,1,2,jb), &
+               &                     ptr_int%pos_on_tplane_e(je,2,2,jb),lvn_pos)
 
           ! Calculate position of departure region vertices in a translated
           ! coordinate system. The origin is located at the circumcenter
@@ -772,8 +762,8 @@ CONTAINS
       !$ACC END PARALLEL
     END DO    ! loop over blocks
 
-    !$ACC UPDATE HOST(opt_falist%len) ASYNC(1) IF(i_am_accel_node .AND. llist_gen)
-    !$ACC WAIT(1) IF(i_am_accel_node)
+    !$ACC UPDATE HOST(opt_falist%len) ASYNC(1) IF(llist_gen)
+    !$ACC WAIT(1)
     !$ACC END DATA
 
 !$OMP END DO NOWAIT

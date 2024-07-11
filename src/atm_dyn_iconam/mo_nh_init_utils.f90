@@ -471,7 +471,7 @@ CONTAINS
 
 !$OMP PARALLEL
     ! First, initialize w with zero in order to avoid undefined nest boundary points
-    CALL init(w(:,:,:))
+    CALL init(w(:,:,:), lacc=.FALSE.)
 !$OMP BARRIER
 
     ! specify a reasonable initial vertical wind speed

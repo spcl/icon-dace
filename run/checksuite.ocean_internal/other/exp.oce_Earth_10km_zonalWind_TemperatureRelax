@@ -54,7 +54,6 @@ cat > ${ocean_namelist} << EOF
  use_duplicated_connectivity = .false.
 /
 &dynamics_nml
- iequations  = -1       ! -1: hydrost. ocean model
 /
 &run_nml
  dtime       = 30         ! model timestep in seconds
@@ -132,6 +131,9 @@ cat > ${ocean_namelist} << EOF
   richardson_tracer  = 2.0e-3    ! factor for vertical diffusion coefficient in PP scheme
   ! l_constant_mixing  = .true.
   bottom_drag_coeff  = 2.5E-2
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
 /
 &ocean_forcing_nml
   iforc_oce = 11

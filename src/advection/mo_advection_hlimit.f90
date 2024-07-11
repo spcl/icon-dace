@@ -30,7 +30,7 @@ MODULE mo_advection_hlimit
   USE mo_kind,                ONLY: wp, vp
   USE mo_math_constants,      ONLY: dbl_eps
   USE mo_fortran_tools,       ONLY: init
-  USE mo_model_domain,        ONLY: t_patch
+  USE mo_model_domain,        ONLY: t_patch, get_startrow_c
   USE mo_grid_config,         ONLY: l_limited_area
   USE mo_loopindices,         ONLY: get_indices_c, get_indices_e
   USE mo_sync,                ONLY: SYNC_C1, sync_patch_array, &
@@ -41,9 +41,6 @@ MODULE mo_advection_hlimit
   USE mo_impl_constants,      ONLY: min_rledge_int, min_rlcell_int
 #ifndef USE_LAXFR_MACROS
   USE mo_advection_utils,     ONLY: laxfr_upflux
-#endif
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
 #endif
 
   IMPLICIT NONE
@@ -140,7 +137,7 @@ CONTAINS
       &  z_mflx_anti_out(nproma,slev:elev,ptr_patch%nblks_c) !< (units kg/kg)
 
     REAL(vp) ::                 &    !< flux divergence at cell center
-      &  z_fluxdiv_c(nproma,slev:elev)
+      &  z_fluxdiv_c
 
     REAL(wp) ::                 &    !< new tracer field after hor. transport,
       &  z_tracer_new_low(nproma,slev:elev,ptr_patch%nblks_c) 
@@ -166,21 +163,21 @@ CONTAINS
     REAL(wp) :: beta_fct             !< factor of allowed over-/undershooting in monotonous limiter
     REAL(wp) :: r_beta_fct           !< ... and its reverse value   
 
-    INTEGER, DIMENSION(:,:,:), POINTER :: &  !< Pointer to line and block indices of two
-      &  iilc, iibc                          !< neighbor cells (array)
-    INTEGER, DIMENSION(:,:,:), POINTER :: &  !< Pointer to line and block indices of three
-      &  iilnc, iibnc                        !< neighbor cells (array)
-    INTEGER, DIMENSION(:,:,:), POINTER :: &  !< Pointer to line and block indices (array)
-      &  iidx, iblk                          !< of edges
+    INTEGER, CONTIGUOUS, POINTER :: &  !< Pointer to line and block indices of two
+      &  iilc(:,:,:), iibc(:,:,:)      !< neighbor cells (array)
+    INTEGER, CONTIGUOUS, POINTER :: &  !< Pointer to line and block indices of three
+      &  iilnc(:,:,:), iibnc(:,:,:)    !< neighbor cells (array)
+    INTEGER, CONTIGUOUS, POINTER :: &  !< Pointer to line and block indices (array)
+      &  iidx(:,:,:), iblk(:,:,:)      !< of edges
 
     INTEGER  :: i_startblk, i_endblk, i_startidx, i_endidx
-    INTEGER  :: i_rlstart, i_rlend, i_nchdom
+    INTEGER  :: i_rlstart, i_rlend
     INTEGER  :: i_rlstart_e, i_rlend_e, i_rlstart_c, i_rlend_c
     INTEGER  :: je, jk, jb, jc         !< index of edge, vert level, block, cell
 
 #ifdef __INTEL_COMPILER
 !DIR$ ATTRIBUTES ALIGN :64 :: z_mflx_low,z_anti,z_mflx_anti_in,z_mflx_anti_out
-!DIR$ ATTRIBUTES ALIGN :64 :: z_fluxdiv_c,z_tracer_new_low,z_tracer_max,z_tracer_min
+!DIR$ ATTRIBUTES ALIGN :64 :: z_tracer_new_low,z_tracer_max,z_tracer_min
 !DIR$ ATTRIBUTES ALIGN :64 :: r_p,r_m,z_min,z_max
 #endif
   !-------------------------------------------------------------------------
@@ -197,9 +194,6 @@ CONTAINS
 
     r_beta_fct = 1._wp/beta_fct
 
-    ! number of child domains
-    i_nchdom = MAX(1,ptr_patch%n_childdom)
-
     ! Set pointers to index-arrays
 
     ! line and block indices of two neighboring cells
@@ -215,13 +209,12 @@ CONTAINS
     iibnc => ptr_patch%cells%neighbor_blk
 
     !$ACC DATA CREATE(z_mflx_low, z_anti, z_mflx_anti_in, z_mflx_anti_out, r_m, r_p) &
-    !$ACC   CREATE(z_tracer_new_low, z_tracer_max, z_tracer_min, z_min, z_max, z_fluxdiv_c) &
+    !$ACC   CREATE(z_tracer_new_low, z_tracer_max, z_tracer_min, z_min, z_max) &
     !$ACC   PRESENT(p_cc, p_mass_flx_e, p_rhodz_now, p_rhodz_new) PRESENT(p_mflx_tracer_h) &
-    !$ACC   PRESENT(ptr_patch, ptr_int, iilc, iibc, iilnc, iibnc, iidx, iblk) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   PRESENT(ptr_patch, ptr_int, iilc, iibc, iilnc, iibnc, iidx, iblk)
 
     IF (p_test_run) THEN
-      !$ACC KERNELS PRESENT(r_p, r_m) ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS PRESENT(r_p, r_m) ASYNC(1)
       r_p = 0._wp
       r_m = 0._wp
       !$ACC END KERNELS
@@ -235,8 +228,8 @@ CONTAINS
 
     i_rlstart_e  = 5
     i_rlend_e    = min_rledge_int - 2
-    i_startblk   = ptr_patch%edges%start_blk(i_rlstart_e,1)
-    i_endblk     = ptr_patch%edges%end_blk(i_rlend_e,i_nchdom)
+    i_startblk   = ptr_patch%edges%start_block(i_rlstart_e)
+    i_endblk     = ptr_patch%edges%end_block(i_rlend_e)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,je,jk,i_startidx,i_endidx) ICON_OMP_DEFAULT_SCHEDULE
@@ -245,7 +238,7 @@ CONTAINS
       CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
         &                i_startidx, i_endidx, i_rlstart_e, i_rlend_e)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2)
 #ifdef __LOOP_EXCHANGE
       DO je = i_startidx, i_endidx
@@ -286,8 +279,8 @@ CONTAINS
 
     i_rlstart_c  = grf_bdywidth_c - 1
     i_rlend_c    = min_rlcell_int - 1
-    i_startblk   = ptr_patch%cells%start_blk(i_rlstart_c,1)
-    i_endblk     = ptr_patch%cells%end_blk(i_rlend_c,i_nchdom)
+    i_startblk   = ptr_patch%cells%start_block(i_rlstart_c)
+    i_endblk     = ptr_patch%cells%end_block(i_rlend_c)
 
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,z_fluxdiv_c,z_mflx_anti_1,z_mflx_anti_2,z_mflx_anti_3 ) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk
@@ -295,8 +288,8 @@ CONTAINS
       CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk,        &
                          i_startidx, i_endidx, i_rlstart_c, i_rlend_c)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_mflx_anti_1, z_mflx_anti_2, z_mflx_anti_3)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+      !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_mflx_anti_1, z_mflx_anti_2, z_mflx_anti_3, z_fluxdiv_c)
 #ifdef __LOOP_EXCHANGE
 !DIR$ IVDEP,PREFERVECTOR
       DO jc = i_startidx, i_endidx
@@ -338,7 +331,7 @@ CONTAINS
             &                       + MAX(0._vp,z_mflx_anti_3)
 
           !  compute also divergence of low order fluxes
-          z_fluxdiv_c(jc,jk) =  &       ! This optimization works
+          z_fluxdiv_c =  &
             & z_mflx_low(iidx(jc,jb,1),jk,iblk(jc,jb,1)) * ptr_int%geofac_div(jc,1,jb) + &
             & z_mflx_low(iidx(jc,jb,2),jk,iblk(jc,jb,2)) * ptr_int%geofac_div(jc,2,jb) + &
             & z_mflx_low(iidx(jc,jb,3),jk,iblk(jc,jb,3)) * ptr_int%geofac_div(jc,3,jb)
@@ -351,7 +344,7 @@ CONTAINS
 !
           z_tracer_new_low(jc,jk,jb) =                        &
             &      ( p_cc(jc,jk,jb) * p_rhodz_now(jc,jk,jb)   &
-            &      - p_dtime * z_fluxdiv_c(jc,jk) )           &
+            &      - p_dtime * z_fluxdiv_c )                  &
             &      / p_rhodz_new(jc,jk,jb)
 
           ! precalculate local maximum of current tracer value and low order
@@ -372,7 +365,7 @@ CONTAINS
         ! in the boundary interpolation zone, the low-order advected tracer fields may be
         ! nonsense and therefore need artificial limitation
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
         !$ACC LOOP GANG VECTOR
         DO jc = i_startidx, i_endidx
           IF (ptr_patch%cells%refin_ctrl(jc,jb) == grf_bdywidth_c-1 .OR. &
@@ -400,8 +393,8 @@ CONTAINS
       i_startblk   = ptr_patch%cells%start_blk(1,1)
       i_endblk     = ptr_patch%cells%end_blk(grf_bdywidth_c-1,1)
 
-      CALL init(r_m(:,:,i_startblk:i_endblk), opt_acc_async=.TRUE.)
-      CALL init(r_p(:,:,i_startblk:i_endblk), opt_acc_async=.TRUE.)
+      CALL init(r_m(:,:,i_startblk:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
+      CALL init(r_p(:,:,i_startblk:i_endblk), lacc=.TRUE., opt_acc_async=.TRUE.)
 
 !$OMP BARRIER
 
@@ -412,8 +405,8 @@ CONTAINS
 
     i_rlstart_c  = grf_bdywidth_c
     i_rlend_c    = min_rlcell_int
-    i_startblk   = ptr_patch%cells%start_blk(i_rlstart_c,1)
-    i_endblk     = ptr_patch%cells%end_blk(i_rlend_c,i_nchdom)
+    i_startblk   = ptr_patch%cells%start_block(i_rlstart_c)
+    i_endblk     = ptr_patch%cells%end_block(i_rlend_c)
 
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,z_max,z_min) ICON_OMP_DEFAULT_SCHEDULE
     DO jb = i_startblk, i_endblk
@@ -421,7 +414,7 @@ CONTAINS
       CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
                          i_startidx, i_endidx, i_rlstart_c, i_rlend_c)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
@@ -485,8 +478,8 @@ CONTAINS
     !      LIMITED flux.
     !
 
-    i_startblk = ptr_patch%edges%start_blk(i_rlstart,1)
-    i_endblk   = ptr_patch%edges%end_blk(i_rlend,i_nchdom)
+    i_startblk = ptr_patch%edges%start_block(i_rlstart)
+    i_endblk   = ptr_patch%edges%end_block(i_rlend)
 
 
 
@@ -500,7 +493,7 @@ CONTAINS
       !
       ! compute final limited fluxes
       !
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
       !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(z_signum, r_frac)
 #ifdef __LOOP_EXCHANGE
       DO je = i_startidx, i_endidx
@@ -647,18 +640,18 @@ CONTAINS
 
     !$ACC ENTER DATA CREATE(r_m) ASYNC(1)
     !$ACC DATA PRESENT(p_cc, p_rhodz_now, p_mflx_tracer_h, r_m) &
-    !$ACC   PRESENT(ptr_patch, ptr_int, iilc, iibc, iidx, iblk) &
-    !$ACC   IF(i_am_accel_node)
+    !$ACC   PRESENT(ptr_patch, ptr_int, iilc, iibc, iidx, iblk)
 
     IF (p_test_run) THEN
-      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
       r_m = 0._wp
       !$ACC END KERNELS
     ENDIF
 
 !$OMP PARALLEL PRIVATE(i_rlstart_c,i_rlend_c,i_startblk,i_endblk)
 
-    i_rlstart_c = grf_bdywidth_c
+    ! determine start row for cells from start row for edges.
+    i_rlstart_c = get_startrow_c(startrow_e=i_rlstart)
     i_rlend_c   = min_rlcell_int
 
     ! Additional initialization of lateral boundary points is needed for limited-area mode
@@ -667,7 +660,7 @@ CONTAINS
       i_startblk   = ptr_patch%cells%start_block(1)
       i_endblk     = ptr_patch%cells%end_block(i_rlstart_c-1)
 
-      CALL init(r_m(:,:,i_startblk:i_endblk))
+      CALL init(r_m(:,:,i_startblk:i_endblk), lacc=.TRUE.)
 !$OMP BARRIER
     ENDIF
 
@@ -688,7 +681,7 @@ CONTAINS
       CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk,        &
                          i_startidx, i_endidx, i_rlstart_c, i_rlend_c)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO jc = i_startidx, i_endidx
         DO jk = slev, elev
@@ -757,7 +750,7 @@ CONTAINS
       CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk,    &
                          i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 #ifdef __LOOP_EXCHANGE
       DO je = i_startidx, i_endidx
         DO jk = slev, elev

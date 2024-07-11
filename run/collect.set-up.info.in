@@ -26,6 +26,7 @@ use_compiler
 use_compiler_version
 use_gpu
 use_host
+use_purge_modules
 use_load_modules
 use_load_profile
 use_mpi
@@ -55,8 +56,9 @@ VERSION_='@PACKAGE_VERSION@'
 use_host='@host_fqdn@'
 use_site='local.net'
 case "$use_host" in
+  kfa-juelich.de|fz-juelich.de|*jureca*|*juwels*) use_site=juelich.de ;;
   l*.lvt.dkrz.de|aurora*) use_site=dkrz.de ;;
-  daint*|tave*|santis*|kesch*|tsa*|nid*|balfrin*) use_site=cscs.ch ;;
+  daint*|tave*|santis*|kesch*|tsa*|nid*|balfrin*|tasna*) use_site=cscs.ch ;;
   uc2*|fh2*|hk*) use_site=kit.edu ;;
   xc*|rcnl*|oflws*|omlws*|gpnl*) use_site=dwd.de ;;
   *euler.ethz.ch) use_site=ethz.ch ;;
@@ -68,6 +70,7 @@ case "$use_host" in
     # server (buildmac1.mpimet.mpg.de) in the same way:
     echo "$use_host" | grep '^\([dw]14[6-9]-[1-9][0-9]\{0,2\}\|buildmac1\)\.mpimet\.mpg\.de$' >/dev/null 2>&1 || use_site=mpg.de ;;
   uan0?) use_site=csc.fi ;;
+  *.leonardo.local) use_site=cineca.it ;;
 esac
 test x"$ICON_DOCKER" = x1 && use_site=docker
 
@@ -112,8 +115,8 @@ case "$use_site" in
         if test xyes = x"${use_gpu}"; then use_target='daint_gpu'; else use_target='daint_cpu'; fi
       ;;
 
-      # balfrin (the current hostname is nid but will be changed to balfrin)
-      *nid*|*balfrin*)
+      # alps_mch (nid will be changed to balfrin)
+      *nid*|*balfrin*|*tasna*)
         if test -f "/etc/xthostname"; then
           host_name=$(cat /etc/xthostname)
 
@@ -121,10 +124,10 @@ case "$use_site" in
           use_submit='sbatch'
           use_sync_submit='sbatch --wait'
           if test xyes = x"${use_gpu}"; then
-            use_target=${host_name}'_gpu'
-            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --distribution=cyclic ${basedir}/run/run_wrapper/'${host_name}'_gpu.sh'
+            use_target='alps_mch_gpu'
+            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --distribution=cyclic ${basedir}/run/run_wrapper/alps_mch_gpu.sh'
           else
-            use_target=${host_name}'_cpu'
+            use_target='alps_mch_cpu'
             use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1'
           fi
         fi
@@ -176,13 +179,8 @@ case "$use_site" in
         use_target='rcl'
         use_shell='/bin/bash'
         use_mpi_startrun='@MPI_LAUNCH@'
-        if ((RH_VERSION != 8)); then
-          use_queue='sx_norm'
-        else
-          use_queue='sx_norm_rh8'
-          use_load_modules='mpi/3.5.0'  # binary is created on RHEL8 node and run on RHEL8 compute node
-                                        # !!! must be adapted, if the configure wrapper does not use mpi 3.5.0.
-        fi
+        use_queue='sx_norm'
+        use_load_modules='mpi/3.5.0' # !!! must be adapted, if the configure wrapper does not use mpi 3.5.0.
       ;;
       xc*)
         use_submit='qsub'
@@ -225,12 +223,14 @@ case "$use_site" in
     esac
   ;;
 
-  kfa-juelich.de|fz-juelich.de|*jureca*|*juwels*)
+  juelich.de)
     case "$use_host" in
-      jrl*|juwels*)
+      jrl*|jwlogin*|*juwels*)
         use_submit='sbatch'
+        use_sync_submit='sbatch --wait'
         use_mpi_startrun='srun'
-        use_target='jureca'
+        use_target='juwels'
+        use_load_profile='. /etc/profile'
       ;;
       juqueen*)
         use_submit='llsubmit'
@@ -247,7 +247,7 @@ case "$use_site" in
     use_sync_submit='sbatch --wait'
     use_load_profile='. /etc/profile'
     use_mpi_startrun='@MPI_LAUNCH@ -n ${SLURM_NPROCS}'
-    use_load_modules=""
+    use_load_modules="${MODULELIST}"
     case "$use_host" in
       uc2*) use_target='uc2' ;;
       fh2*) use_target='fh2' ;;
@@ -274,8 +274,25 @@ case "$use_site" in
   csc.fi)
     use_submit='sbatch'
     use_sync_submit='sbatch --wait'
-    use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --cpus-per-task $OMP_NUM_THREADS'
-    use_target='lumi'
+    use_mpi_startrun='srun'
+    if test xyes = x"${use_gpu}"; then
+      use_target='lumi_gpu'
+      use_mpi_startrun="srun ${ICON_CONTAINER_WRAPPER-} ${use_srcdir}/run/run_wrapper/lumi_gpu.sh"
+    else
+      use_target='lumi_cpu'
+      use_mpi_startrun="srun ${ICON_CONTAINER_WRAPPER-}"
+    fi
+  ;;
+
+  cineca.it)
+    use_shell='/usr/bin/bash'
+    use_submit='sbatch'
+    use_sync_submit='sbatch --wait'
+    use_mpi_startrun='@MPI_LAUNCH@ -n ${SLURM_NPROCS}'
+    use_target='leo'; 
+    if test xyes = x"${use_gpu}"; then 
+        use_mpi_startrun='@MPI_LAUNCH@ -n ${SLURM_NPROCS} ${basedir}/run/run_wrapper/leo.sh'
+    fi
   ;;
 
   ecmwf.int)

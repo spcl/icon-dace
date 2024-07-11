@@ -40,8 +40,9 @@ MODULE mo_intp_coeffs_lsq_bln
 !
 USE mo_kind,                ONLY: wp
 USE mo_math_constants,      ONLY: pi2
-USE mo_exception,           ONLY: message, finish
-USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell
+USE mo_exception,           ONLY: message, message_text, finish
+USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell, min_rlcell_int
+USE mo_master_control,      ONLY: get_my_process_type, wave_process
 USE mo_model_domain,        ONLY: t_patch
 USE mo_math_types,          ONLY: t_cartesian_coordinates
 USE mo_math_utilities,      ONLY: gnomonic_proj, rotate_latlon, &
@@ -60,6 +61,9 @@ IMPLICIT NONE
 
 PRIVATE
 
+!> module name string
+CHARACTER(LEN=*), PARAMETER :: modname = 'mo_intp_coeffs_lsq_bln'
+
 PUBLIC :: lsq_stencil_create
 PUBLIC :: lsq_compute_coeff_cell
 PUBLIC :: scalar_int_coeff
@@ -67,171 +71,434 @@ PUBLIC :: bln_int_coeff_e2c
 
 CONTAINS
 
-!-------------------------------------------------------------------------
-!
-!! This routine initializes the indices used to define the stencil.
-!!
-!! This routine initializes the indices used to define the stencil
-!! of the lsq reconstruction. The stencil is cell based and includes
-!! a variable number of cells (lsq_dim_c) around each control volume
-!! (currently 3 or 9)
-!!
-SUBROUTINE lsq_stencil_create( ptr_patch, ptr_int_lsq, lsq_dim_c)
-!
-TYPE(t_patch), INTENT(INOUT) :: ptr_patch
+  !-------------------------------------------------------------------------
+  !
+  !! This routine initializes the indices used to define the stencil
+  !! of the lsq reconstruction. The stencil is cell based and includes
+  !! a variable number of cells (lsq_dim_c) around each control volume
+  !! (currently 3, 9, or 12)
+  !!
+  SUBROUTINE lsq_stencil_create( ptr_patch, ptr_int_lsq, lsq_dim_c)
+    !
+    TYPE(t_patch), INTENT(INOUT) :: ptr_patch
+    TYPE(t_lsq),   INTENT(INOUT) :: ptr_int_lsq
+    INTEGER,       INTENT(IN)    :: lsq_dim_c    !< specifies size of the lsq stencil
 
-TYPE(t_lsq), INTENT(INOUT) :: ptr_int_lsq
+    ! local
+    INTEGER :: cnt                      ! counter
 
-INTEGER, INTENT(IN)  ::  &  ! parameter determining the size of the lsq stencil
-  &  lsq_dim_c
+    CHARACTER(len=*), PARAMETER :: routine = modname//':lsq_stencil_create'
 
-INTEGER :: ilc, ibc                 ! line and block index
-INTEGER :: ilc_n(3), ibc_n(3)       ! line and block index for neighbors of
-                                    ! direct neighbors
-INTEGER :: ilv(3), ibv(3)           ! vertex line and block indices
-INTEGER :: ilc_v(3,6), ibc_v(3,6)   ! cell line and block indices
-                                    ! around each of the three vertices
-INTEGER :: jb                       ! loop index blocks
-INTEGER :: jc                       ! loop index cells
-INTEGER :: jj                       ! loop index
-INTEGER :: jec                      ! loop index
-INTEGER :: jtri                     ! loop index
-INTEGER :: cnt                      ! counter
-INTEGER :: nblks_c
-INTEGER :: i_startblk               ! start block
-INTEGER :: i_startidx               ! start index
-INTEGER :: i_endidx                 ! end index
-INTEGER :: i_rlstart                ! refinement control start level
+    !--------------------------------------------------------------------
 
-REAL(wp) :: z_stencil(UBOUND(ptr_int_lsq%lsq_dim_stencil,1),UBOUND(ptr_int_lsq%lsq_dim_stencil,2))
+    CALL message(routine, '')
 
-!--------------------------------------------------------------------
 
-  CALL message('mo_interpolation:lsq_stencil_create', '')
+    SELECT CASE(lsq_dim_c)
+    !
+    CASE (3) ! lsq_dim_c == 3
+      IF (get_my_process_type() /= wave_process) THEN
+        !
+        ! 3-point stencil
+        !
+        CALL create_stencil_c3(p_patch     = ptr_patch,                 & !in
+          &                    idx_c       = ptr_int_lsq%lsq_idx_c,     & !out
+          &                    blk_c       = ptr_int_lsq%lsq_blk_c,     & !out
+          &                    dim_stencil = ptr_int_lsq%lsq_dim_stencil) !out
+      ELSE
+        !
+        ! 3-point stencil with special treatment of lateral boundaries
+        !
+        CALL create_stencil_c3_bnd(p_patch     = ptr_patch,                 & !in
+          &                        idx_c       = ptr_int_lsq%lsq_idx_c,     & !out
+          &                        blk_c       = ptr_int_lsq%lsq_blk_c,     & !out
+          &                        dim_stencil = ptr_int_lsq%lsq_dim_stencil) !out
+      ENDIF
 
-  i_rlstart = 2
+    CASE (9) ! lsq_dim_c == 9
+      !
+      ! 9-point stencil
+      !
+      CALL create_stencil_c9(p_patch     = ptr_patch,                 & !in
+        &                    idx_c       = ptr_int_lsq%lsq_idx_c,     & !out
+        &                    blk_c       = ptr_int_lsq%lsq_blk_c,     & !out
+        &                    dim_stencil = ptr_int_lsq%lsq_dim_stencil) !out
 
-  ! values for the blocking
-  nblks_c  = ptr_patch%nblks_c
+    CASE (12) ! lsq_dim_c == 12
+      !
+      ! 12-point stencil
+      !
+      CALL create_stencil_c12(p_patch     = ptr_patch,                 & !in
+        &                     idx_c       = ptr_int_lsq%lsq_idx_c,     & !out
+        &                     blk_c       = ptr_int_lsq%lsq_blk_c,     & !out
+        &                     dim_stencil = ptr_int_lsq%lsq_dim_stencil) !out
 
-  ! The start block depends on the width of the stencil
-  i_startblk = ptr_patch%cells%start_blk(i_rlstart,1)
+    CASE DEFAULT
+      WRITE(message_text,'(a,i2)') 'Could not create lsq stencil; invalid stencil size lsq_dim_c=', lsq_dim_c
+      CALL finish(routine, message_text)
+    END SELECT
+
+
+    DO cnt = 1, lsq_dim_c
+      CALL sync_idx(SYNC_C, SYNC_C, ptr_patch, ptr_int_lsq%lsq_idx_c(:,:,cnt), &
+        &                                      ptr_int_lsq%lsq_blk_c(:,:,cnt))
+    ENDDO
+    CALL sync_patch_array(SYNC_C, ptr_patch, ptr_int_lsq%lsq_dim_stencil)
+
+  END SUBROUTINE lsq_stencil_create
+
+
+  !>
+  !! For each cell create a 3-point stencil which consists of the 3 cells
+  !! surrounding the control volume, i.e. the direct neighbors.
+  !!
+  !!
+  SUBROUTINE create_stencil_c3 (p_patch, idx_c, blk_c, dim_stencil)
+
+    TYPE(t_patch), INTENT(IN   ) :: p_patch
+
+    INTEGER,       INTENT(INOUT) :: idx_c(:,:,:)      !< cell indizes
+    INTEGER,       INTENT(INOUT) :: blk_c(:,:,:)      !< block indices
+    INTEGER,       INTENT(INOUT) :: dim_stencil(:,:)  !< stencil size
+    CHARACTER(len=*), PARAMETER :: routine = modname//':create_stencil_c3'
+
+    CALL message(routine, 'create 3-point stencil')
+
+    ! sanity check
+    IF (ANY((/SIZE(idx_c,3),SIZE(blk_c,3)/) /= 3)) THEN
+      CALL finish(routine, "Invalid size of output fields")
+    ENDIF
+
+    ! the cell and block indices are copied from p_patch%cells%neighbor_idx
+    ! and p_patch%cells%neighbor_blk
 
 !$OMP PARALLEL
-  IF ( lsq_dim_c == ptr_patch%geometry_info%cell_type ) THEN
-    ! The stencil consists of 3 cells surrounding the control volume
-    ! i.e. the direct neighbors are taken.
+    CALL copy(p_patch%cells%neighbor_idx(:,:,:), idx_c(:,:,:), lacc=.FALSE.)
+    CALL copy(p_patch%cells%neighbor_blk(:,:,:), blk_c(:,:,:), lacc=.FALSE.)
+    CALL copy(p_patch%cells%num_edges(:,:),      dim_stencil(:,:), lacc=.FALSE.)
+!$OMP END PARALLEL
 
-    ! the cell and block indices are just copied from ptr_patch%cells%neighbor_idx
-    ! and ptr_patch%cells%neighbor_blk
-    CALL copy(ptr_patch%cells%neighbor_idx(:,:,:), &
-         ptr_int_lsq%lsq_idx_c(:,:,:))
-    CALL copy(ptr_patch%cells%neighbor_blk(:,:,:), &
-         ptr_int_lsq%lsq_blk_c(:,:,:))
-    CALL copy(ptr_patch%cells%num_edges(:,:), &
-         ptr_int_lsq%lsq_dim_stencil(:,:))
+  END SUBROUTINE create_stencil_c3
+
+
+  !>
+  !! For each cell create a 3-point stencil which consists of the 3 cells
+  !! surrounding the control volume, i.e. the direct neighbors.
+  !!
+  !! If a cell has less than 3 neighbors (i.e. if it is a boundary cell),
+  !! the algorithm tries to create an asymmetric 3-point stencil, by searching
+  !! for neighbors of the neighbors.
+  !!
+  !!
+  SUBROUTINE create_stencil_c3_bnd (p_patch, idx_c, blk_c, dim_stencil)
+
+    TYPE(t_patch), INTENT(IN   ) :: p_patch
+
+    INTEGER,       INTENT(INOUT) :: idx_c(:,:,:)      !< cell indizes
+    INTEGER,       INTENT(INOUT) :: blk_c(:,:,:)      !< block indices
+    INTEGER,       INTENT(INOUT) :: dim_stencil(:,:)  !< stencil size
+
+    INTEGER :: jb, jc                   !< loop index blocks/cells
+    INTEGER :: jec, js                  !< loop index
+    INTEGER :: cnt                      !< counter
+    INTEGER :: i_rlstart, i_rlend       !< cell start and end row
+    INTEGER :: i_startblk, i_endblk     !< start/end block
+    INTEGER :: i_startidx, i_endidx     !< start/end index
+    INTEGER :: ilc, ibc                 !< line and block index of neighbors
+    INTEGER :: ilc_n, ibc_n             !< line and block index for neighbors of
+                                        !  direct neighbors
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':create_stencil_c3_bnd'
+
+    CALL message(routine, 'create 3-point stencil with special boundary treatment')
+
+    ! sanity check
+    IF (ANY((/SIZE(idx_c,3),SIZE(blk_c,3)/) /= 3)) THEN
+      CALL finish(routine, "Invalid size of output fields")
+    ENDIF
+
+    ! the cell and block indices are copied from p_patch%cells%neighbor_idx
+    ! and p_patch%cells%neighbor_blk
+
+!$OMP PARALLEL
+    CALL copy(p_patch%cells%neighbor_idx(:,:,:), idx_c(:,:,:), lacc=.FALSE.)
+    CALL copy(p_patch%cells%neighbor_blk(:,:,:), blk_c(:,:,:), lacc=.FALSE.)
+    CALL copy(p_patch%cells%num_edges(:,:),      dim_stencil(:,:), lacc=.FALSE.)
 !$OMP BARRIER
 
-  ELSE IF (lsq_dim_c == 9) THEN
-
+    ! special treatment of boundary cell row defined by refin_c_ctrl==1:
+    ! construct asymmetric stencil for boundary cells
     !
-    ! The stencil consists of 9 cells surrounding the control volume. The 3 direct
-    ! neighbors and the neighbors of the direct neighbors are taken.
-    !
-!$OMP DO PRIVATE(jb,jc,jec,jj,i_startidx,i_endidx,cnt,ilc,ibc,ilc_n,&
-!$OMP ibc_n) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = i_startblk, nblks_c
+    i_rlstart = 1
+    i_rlend   = 1
+    i_startblk = p_patch%cells%start_block(i_rlstart)
+    i_endblk   = p_patch%cells%end_block(i_rlend)
 
-      CALL get_indices_c(ptr_patch, jb, i_startblk, nblks_c,     &
-                         i_startidx, i_endidx, i_rlstart)
+!$OMP DO PRIVATE(jb,jc,jec,js,i_startidx,i_endidx,cnt,ilc,ibc,ilc_n,ibc_n) ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = i_startblk, i_endblk
+
+      CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,     &
+                         i_startidx, i_endidx, i_rlstart, i_rlend)
 
       DO jc = i_startidx, i_endidx
 
-        IF(.NOT. ptr_patch%cells%decomp_info%owner_mask(jc,jb)) CYCLE
+        IF(.NOT. p_patch%cells%decomp_info%owner_mask(jc,jb)) CYCLE
 
-        cnt = 1
+        cnt = 0
+
+        ! get valid direct neighbours
+        DO jec = 1, 3
+          ilc = p_patch%cells%neighbor_idx(jc,jb,jec)
+          ibc = p_patch%cells%neighbor_blk(jc,jb,jec)
+
+          IF (ilc > 0) THEN
+            cnt = cnt + 1
+            !
+            idx_c(jc,jb,cnt) = ilc
+            blk_c(jc,jb,cnt) = ibc
+          ENDIF
+        ENDDO
+
+
+        ! check for incomplete stencil
+        !
+        IF (cnt==2) THEN
+          ! search for valid neighbors of neighbors
+          jsloop: DO js=1,2
+            ilc = idx_c(jc,jb,js)
+            ibc = blk_c(jc,jb,js)
+
+            jecloop: DO jec=1,3
+              ilc_n = p_patch%cells%neighbor_idx(ilc,ibc,jec)
+              ibc_n = p_patch%cells%neighbor_blk(ilc,ibc,jec)
+
+              ! if this is a valid cell and if it is not identical to
+              ! the 'source' cell, add it to the stencil
+              IF ( (ilc_n > 0) .AND. (ilc_n /= jc .OR. ibc_n /= jb)) THEN
+                cnt = cnt + 1
+                idx_c(jc,jb,cnt) = ilc_n
+                blk_c(jc,jb,cnt) = ibc_n
+                EXIT jsloop    ! we have found a valid candidate
+              ENDIF
+            ENDDO jecloop
+          ENDDO jsloop
+
+        ELSE IF (cnt==1) THEN
+
+          ! search for valid neighbors of neighbors
+          ! The current code assumes that we will find 2 more valid cells,
+          ! which means that all neighbors of the neighbors must be valid cells.
+          ! This is not necessarily the case for arbitrary grid resolutions!!
+          !
+          ilc = idx_c(jc,jb,1)
+          ibc = blk_c(jc,jb,1)
+
+          DO jec=1,3
+            ilc_n = p_patch%cells%neighbor_idx(ilc,ibc,jec)
+            ibc_n = p_patch%cells%neighbor_blk(ilc,ibc,jec)
+
+            ! if this is a valid cell and if it is not identical to
+            ! the 'source' cell, add it to the stencil
+            IF ( (ilc_n > 0) .AND. (ilc_n /= jc .OR. ibc_n /= jb)) THEN
+              cnt = cnt + 1
+              idx_c(jc,jb,cnt) = ilc_n
+              blk_c(jc,jb,cnt) = ibc_n
+            ENDIF
+          ENDDO
+
+        ELSE if (cnt==0) THEN
+          WRITE(message_text,'(a,i2,a)') 'insufficient stencil size. Unable to deal with an isolated cell.'
+          CALL finish(routine, message_text)
+        ENDIF
+
+
+        ! sanity check
+        IF (cnt < 3) THEN
+          WRITE(message_text,'(a,i2,a)') 'Insufficient stencil size ', cnt, ' < 3'
+          CALL finish(routine, message_text)
+        ENDIF
+
+        dim_stencil(jc,jb) = cnt
+
+      ENDDO ! loop over cells
+    ENDDO ! loop over blocks
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
+
+  END SUBROUTINE create_stencil_c3_bnd
+
+
+
+  !>
+  !! For each cell create a 9-point stencil which consists of the
+  !! 3 cells surrounding the control volume, i.e. the direct neighbors,
+  !! and the neighbors of the neighbors.
+  !!
+  !!
+  SUBROUTINE create_stencil_c9 (p_patch, idx_c, blk_c, dim_stencil)
+
+    TYPE(t_patch), INTENT(IN   ) :: p_patch
+
+    INTEGER,       INTENT(INOUT) :: idx_c(:,:,:)      !< cell indizes
+    INTEGER,       INTENT(INOUT) :: blk_c(:,:,:)      !< block indices
+    INTEGER,       INTENT(INOUT) :: dim_stencil(:,:)  !< stencil size
+
+    INTEGER :: jb, jc                   !< loop index blocks/cells
+    INTEGER :: jec, jj                  !< loop index
+    INTEGER :: cnt                      !< counter
+    INTEGER :: i_rlstart, i_rlend       !< cell start and end row
+    INTEGER :: i_startblk, i_endblk     !< start/end block
+    INTEGER :: i_startidx, i_endidx     !< start/end index
+    INTEGER :: ilc, ibc                 !< line and block index of neighbors
+    INTEGER :: ilc_n(3), ibc_n(3)       !< line and block index for neighbors of
+                                        !  direct neighbors
+    CHARACTER(len=*), PARAMETER :: routine = modname//':create_stencil_c9'
+
+    CALL message(routine, 'create 9-point stencil')
+
+    ! sanity check
+    IF (ANY((/SIZE(idx_c,3),SIZE(blk_c,3)/) /= 9)) THEN
+      CALL finish(routine, "Invalid size of output fields")
+    ENDIF
+
+    ! The start block depends on the width of the stencil
+    i_rlstart = 2
+    i_rlend   = min_rlcell_int
+
+    i_startblk = p_patch%cells%start_block(i_rlstart)
+    i_endblk   = p_patch%cells%end_block(i_rlend)
+
+!$OMP PARALLEL
+!$OMP DO PRIVATE(jb,jc,jec,jj,i_startidx,i_endidx,cnt,ilc,ibc,ilc_n,ibc_n) &
+!$OMP ICON_OMP_DEFAULT_SCHEDULE
+    DO jb = i_startblk, i_endblk
+
+      CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,     &
+                         i_startidx, i_endidx, i_rlstart, i_rlend)
+
+      DO jc = i_startidx, i_endidx
+
+        IF(.NOT. p_patch%cells%decomp_info%owner_mask(jc,jb)) CYCLE
+
+        cnt = 0
 
         DO jec = 1, 3
-          ilc = ptr_patch%cells%neighbor_idx(jc,jb,jec)
-          ibc = ptr_patch%cells%neighbor_blk(jc,jb,jec)
+
+          ilc = p_patch%cells%neighbor_idx(jc,jb,jec)
+          ibc = p_patch%cells%neighbor_blk(jc,jb,jec)
 
           ! direct neighbors
-          ptr_int_lsq%lsq_idx_c(jc,jb,cnt) = ilc
-          ptr_int_lsq%lsq_blk_c(jc,jb,cnt) = ibc
-
           cnt = cnt + 1
+          idx_c(jc,jb,cnt) = ilc
+          blk_c(jc,jb,cnt) = ibc
 
           ! neighbors of direct neighbors
           DO jj = 1,3
-            ilc_n(jj) = ptr_patch%cells%neighbor_idx(ilc,ibc,jj)
-            ibc_n(jj) = ptr_patch%cells%neighbor_blk(ilc,ibc,jj)
 
-            IF (ilc_n(jj) /= jc .or. ibc_n(jj) /= jb) THEN
-              ptr_int_lsq%lsq_idx_c(jc,jb,cnt) = ilc_n(jj)
-              ptr_int_lsq%lsq_blk_c(jc,jb,cnt) = ibc_n(jj)
+            ilc_n(jj) = p_patch%cells%neighbor_idx(ilc,ibc,jj)
+            ibc_n(jj) = p_patch%cells%neighbor_blk(ilc,ibc,jj)
+
+            IF (ilc_n(jj) /= jc .OR. ibc_n(jj) /= jb) THEN
               cnt = cnt + 1
+              idx_c(jc,jb,cnt) = ilc_n(jj)
+              blk_c(jc,jb,cnt) = ibc_n(jj)
             ENDIF
           ENDDO
 
         ENDDO ! jec loop
 
-        ptr_int_lsq%lsq_dim_stencil(jc,jb) = cnt - 1
+        dim_stencil(jc,jb) = cnt
 
       ENDDO ! loop over cells
-
     ENDDO ! loop over blocks
-!$OMP END DO
+!$OMP END DO NOWAIT
+!$OMP END PARALLEL
 
-  ELSE
+  END SUBROUTINE create_stencil_c9
 
-    !
-    ! The stencil consists of 12 cells surrounding the control volume.
-    ! This one is similar to the 9-point stencil except that it
-    ! is more isotropic. The stencil includes the 3 direct neighbors,
-    ! the neighbors of the direct neighbors and 3 additional cells
-    ! which share 1 vertex with the CV under consideration.
-    !
-    ! Note: At pentagon points the size of the stencil reduces to 11.
-    !
+
+  !>
+  !! For each cell create a 12-point stencil which consists of all
+  !! vertex neighbors.
+  !! It is similar to the 9-point stencil, but more isotropic.
+  !!
+  !! Note: At pentagon points the stencil size reduces to 11.
+  !!
+  SUBROUTINE create_stencil_c12 (p_patch, idx_c, blk_c, dim_stencil)
+
+    TYPE(t_patch), INTENT(IN   ) :: p_patch
+
+    INTEGER,       INTENT(INOUT) :: idx_c(:,:,:)      !< cell indizes
+    INTEGER,       INTENT(INOUT) :: blk_c(:,:,:)      !< block indices
+    INTEGER,       INTENT(INOUT) :: dim_stencil(:,:)  !< stencil size
+
+    INTEGER :: jb, jc                   !< loop index blocks/cells
+    INTEGER :: jec, jj, jtri            !< loop index
+    INTEGER :: cnt                      !< counter
+    INTEGER :: i_rlstart, i_rlend       !< cell start and end row
+    INTEGER :: i_startblk, i_endblk     !< start/end block
+    INTEGER :: i_startidx, i_endidx     !< start/end index
+    INTEGER :: ilc_n(3), ibc_n(3)       !< line and block index for neighbors of
+                                        !  direct neighbors
+    INTEGER :: ilv(3), ibv(3)           !< vertex line and block indices
+    INTEGER :: ilc_v(3,6), ibc_v(3,6)   !< cell line and block indices
+                                        !  around each of the three vertices
+    CHARACTER(len=*), PARAMETER :: routine = modname//':create_stencil_c12'
+
+    CALL message(routine, 'create 12-point stencil')
+
+    ! sanity check
+    IF (ANY((/SIZE(idx_c,3),SIZE(blk_c,3)/) /= 12)) THEN
+      CALL finish(routine, "Invalid size of output fields")
+    ENDIF
+
+    ! The start block depends on the width of the stencil
+    i_rlstart = 2
+    i_rlend   = min_rlcell_int
+
+    i_startblk = p_patch%cells%start_block(i_rlstart)
+    i_endblk   = p_patch%cells%end_block(i_rlend)
+
+!$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,jec,jj,jtri,i_startidx,i_endidx,cnt,ilv,ibv, &
 !$OMP            ilc_v,ibc_v,ilc_n,ibc_n) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = i_startblk, nblks_c
+    DO jb = i_startblk, i_endblk
 
-      CALL get_indices_c(ptr_patch, jb, i_startblk, nblks_c,     &
-                         i_startidx, i_endidx, i_rlstart)
+      CALL get_indices_c(p_patch, jb, i_startblk, i_endblk,     &
+                         i_startidx, i_endidx, i_rlstart, i_rlend)
 
       DO jc = i_startidx, i_endidx
 
-        IF(.NOT. ptr_patch%cells%decomp_info%owner_mask(jc,jb)) CYCLE
+        IF(.NOT. p_patch%cells%decomp_info%owner_mask(jc,jb)) CYCLE
 
-        cnt = 1
+        cnt = 0
 
-        ! get get line and block indices of cell vertices
-        ilv(1:3) = ptr_patch%cells%vertex_idx(jc,jb,1:3)
-        ibv(1:3) = ptr_patch%cells%vertex_blk(jc,jb,1:3)
+        ! get line and block indices of cell vertices
+        ilv(1:3) = p_patch%cells%vertex_idx(jc,jb,1:3)
+        ibv(1:3) = p_patch%cells%vertex_blk(jc,jb,1:3)
 
-        ! for each vertex: get all the cells which share this vertex
+        ! for each vertex: get all cells which share this vertex
         DO jj = 1,3
-          ilc_v(jj,:)=ptr_patch%verts%cell_idx(ilv(jj),ibv(jj),:)
-          ibc_v(jj,:)=ptr_patch%verts%cell_blk(ilv(jj),ibv(jj),:)
+          ilc_v(jj,:)=p_patch%verts%cell_idx(ilv(jj),ibv(jj),:)
+          ibc_v(jj,:)=p_patch%verts%cell_blk(ilv(jj),ibv(jj),:)
         ENDDO
 
         !
         ! 1. add the 3 direct neighbors to the stencil
         !
-        DO jec = 1, 3
+        DO jec = 1,3
           ! get line and block indices of direct neighbors
-          ilc_n(jec) = ptr_patch%cells%neighbor_idx(jc,jb,jec)
-          ibc_n(jec) = ptr_patch%cells%neighbor_blk(jc,jb,jec)
-
-          ptr_int_lsq%lsq_idx_c(jc,jb,cnt) = ilc_n(jec)
-          ptr_int_lsq%lsq_blk_c(jc,jb,cnt) = ibc_n(jec)
+          ilc_n(jec) = p_patch%cells%neighbor_idx(jc,jb,jec)
+          ibc_n(jec) = p_patch%cells%neighbor_blk(jc,jb,jec)
 
           cnt = cnt + 1
+
+          idx_c(jc,jb,cnt) = ilc_n(jec)
+          blk_c(jc,jb,cnt) = ibc_n(jec)
         ENDDO
 
         !
-        ! 2. loop over the vertices and add all the cells
+        ! 2. loop over the vertices and add all cells
         !    that are no direct neighbors and not our CV.
         !
         DO jj = 1,3   ! loop over vertices
@@ -243,35 +510,24 @@ REAL(wp) :: z_stencil(UBOUND(ptr_int_lsq%lsq_dim_stencil,1),UBOUND(ptr_int_lsq%l
               &  .OR.  (ilc_v(jj,jtri) == jc       .AND. ibc_v(jj,jtri) == jb)        &
               &  .OR.  (ilc_v(jj,jtri) == 0        .AND. ibc_v(jj,jtri) == 0 ) ) ) THEN
 
-              ptr_int_lsq%lsq_idx_c(jc,jb,cnt) = ilc_v(jj,jtri)
-              ptr_int_lsq%lsq_blk_c(jc,jb,cnt) = ibc_v(jj,jtri)
-
               cnt = cnt + 1
+
+              idx_c(jc,jb,cnt) = ilc_v(jj,jtri)
+              blk_c(jc,jb,cnt) = ibc_v(jj,jtri)
             ENDIF
           ENDDO
         ENDDO
 
-        ptr_int_lsq%lsq_dim_stencil(jc,jb) = cnt - 1
+        dim_stencil(jc,jb) = cnt
 
       ENDDO ! loop over cells
 
     ENDDO ! loop over blocks
 !$OMP END DO NOWAIT
-
-  ENDIF
 !$OMP END PARALLEL
 
-  DO cnt = 1, lsq_dim_c
-    CALL sync_idx(SYNC_C, SYNC_C, ptr_patch, ptr_int_lsq%lsq_idx_c(:,:,cnt), &
-                                           & ptr_int_lsq%lsq_blk_c(:,:,cnt))
-  ENDDO
+  END SUBROUTINE create_stencil_c12
 
-  z_stencil(:,:) = REAL(ptr_int_lsq%lsq_dim_stencil(:,:),wp)
-  CALL sync_patch_array(SYNC_C,ptr_patch,z_stencil)
-  ptr_int_lsq%lsq_dim_stencil(:,:) = NINT(z_stencil(:,:))
-
-
-END SUBROUTINE lsq_stencil_create
 
 !-------------------------------------------------------------------------
 !

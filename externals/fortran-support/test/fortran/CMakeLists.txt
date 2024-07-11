@@ -10,14 +10,14 @@
 # ---------------------------------------------------------------
 
 message(CHECK_START "Fetching external FortUTF")
-if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.24")
+if("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.24")
   cmake_policy(SET CMP0135 NEW)
 endif()
 include(FetchContent)
-FetchContent_Declare(fortutf
-  URL https://github.com/artemis-beta/FortUTF/archive/1f005b01c9c87b837c318a24214a0ded28678a84.tar.gz
-  URL_HASH MD5=bf41b39b3afaa497c48a8edf965cce14
-)
+FetchContent_Declare(
+  fortutf
+  URL https://github.com/artemis-beta/FortUTF/archive/bf749de0f710e0dd7f6d00a4f5104d78fefb94e9.tar.gz
+  URL_HASH MD5=1246c176d0f543acf040facc26d24d54)
 FetchContent_MakeAvailable(fortutf)
 message(CHECK_PASS "done")
 
@@ -28,9 +28,9 @@ set(FORTUTF_PROJECT_SRC_FILES helpers.f90)
 include("${fortutf_SOURCE_DIR}/cmake/fortutf.cmake")
 
 # We have to prevent FortUTF from generating invalid Fortran code:
-set(project_name ${PROJECT_NAME})
+set(name_holder ${PROJECT_NAME})
 string(REPLACE "-" "_" PROJECT_NAME ${PROJECT_NAME})
 FortUTF_Find_Tests()
-set(PROJECT_NAME ${project_name})
+set(PROJECT_NAME ${name_holder})
 add_test(NAME FortUTF_UnitTest COMMAND fortran_support_Tests)
 set_property(TEST FortUTF_UnitTest PROPERTY LABELS Fortran)

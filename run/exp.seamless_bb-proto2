@@ -462,7 +462,6 @@ cat > ${atm_namelist} << EOF
  Restart_filename        = "${EXPNAME}_restart_atm_<rsttime>.nc"
 /
 &dynamics_nml
- iequations              = ${atmo_model_equations}
  lcoriolis               = .TRUE.
  divavg_cntrwgt          = 0.50
 /
@@ -761,6 +760,7 @@ cat >> ${atm_namelist} << EOF
  itopo                   = 1
  n_iter_smooth_topo      = 1
  heightdiff_threshold    = 3000.
+ read_nc_via_cdi         = .true. ! Test CDI code path, other seamless_bbs test parallel NetCDF.
 /
 &lnd_nml
  ntiles                  = 3
@@ -981,9 +981,6 @@ cat > ${oce_namelist} << EOF
  use_dummy_cell_closure      = .TRUE.
  use_duplicated_connectivity = .FALSE.
 /
-&dynamics_nml
- iequations                  = -1                               ! -1: hydrost. ocean model
-/
 &run_nml
  modelTimeStep               = "${oceTimeStep}"
  output                      = 'nml'                            ! namelist controlled output scheme
@@ -1055,7 +1052,7 @@ if [[ "$output_oce_grib" == "yes" ]]; then
                                                                 ! 2: climate mode (absolute t-axis)
   include_last               = .FALSE.
   output_grid                = .TRUE.
-  ml_varlist                 = 'zos','to','so','u','v','hi','hs','conc','column_thick_c','rho','rhopot','delhi','ice_u','ice_v'
+  ml_varlist                 = 'zos','to_k','so','u','v','hi','hs','conc','column_thick_c','rho','rhopot','delhi','ice_u','ice_v'
 /
 EOF
 fi

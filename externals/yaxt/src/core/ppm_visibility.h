@@ -8,7 +8,7 @@
 /*
  * Keywords:
  * Maintainer: Thomas Jahns <jahns@dkrz.de>
- * URL: https://www.dkrz.de/redmine/projects/scales-ppm
+ * URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
  *
  * Redistribution and use in source and binary forms, with or without
  * modification, are  permitted provided that the following conditions are
@@ -48,9 +48,10 @@
 #  define PPM_DSO_API_EXPORT __declspec(dllexport)
 #  define PPM_DSO_INTERNAL
 #else
-#  if (defined __GNUC__ \
-       && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 1) \
-       && defined __PIC__)
+#  if ((defined __GNUC__                                                \
+        && (__GNUC__ > 4 || __GNUC__ == 4 && __GNUC_MINOR__ > 1))       \
+       || defined __PGIC__ && __PGIC__ >= 20)                           \
+       && defined __PIC__
 #    define PPM_DSO_API_EXPORT __attribute__ ((visibility ("default")))
 #    define PPM_DSO_INTERNAL __attribute__ ((visibility ("hidden")))
 #  else
@@ -63,7 +64,7 @@
 
 /*
  * Local Variables:
- * license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+ * license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
  * license-markup: "doxygen"
  * license-default: "bsd"
  * c-basic-offset: 2

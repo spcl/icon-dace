@@ -55,6 +55,7 @@
 #include "xt_exchanger_irecv_isend.h"
 #include "xt_exchanger_mix_isend_irecv.h"
 #include "xt_exchanger_irecv_isend_packed.h"
+#include "xt_exchanger_irecv_isend_ddt_packed.h"
 #include "xt_exchanger_neigh_alltoall.h"
 
 Xt_exchanger
@@ -93,6 +94,13 @@ xt_exchanger_get_MPI_Datatype(Xt_exchanger exchanger, int rank,
                               enum xt_msg_direction direction, bool do_dup) {
   return exchanger->vtable->get_MPI_Datatype(exchanger, rank, direction, do_dup);
 }
+
+Xt_exchanger_omp_share
+xt_exchanger_create_omp_share(Xt_exchanger exchanger)
+{
+  return exchanger->vtable->create_omp_share(exchanger);
+}
+
 
 /*
  * Local Variables:

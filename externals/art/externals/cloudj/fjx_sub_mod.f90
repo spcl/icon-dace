@@ -33,6 +33,7 @@
 !
       USE FJX_CMN_MOD
       USE mo_kind,                 ONLY: wp
+      USE mo_physical_constants,   ONLY: grav, cpd
       
 
 !      USE RRSW_FASTJ_CMN
@@ -224,7 +225,7 @@
 !-----------------------------------------------------------------------
       implicit none
 
-      real(wp),  parameter:: HeatFac_ = 86400.d0*9.80616d0/1.00464d5
+      real(wp),  parameter:: HeatFac_ = 86400.d0*grav/cpd/100._wp    ! factor 100 from before
 
 !---calling sequence variables
       integer, intent(in)                    :: L1U,ANU,NJXU

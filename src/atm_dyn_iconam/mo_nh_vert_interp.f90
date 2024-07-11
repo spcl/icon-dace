@@ -24,6 +24,7 @@ MODULE mo_nh_vert_interp
   USE mo_kind,                ONLY: wp
   USE mo_model_domain,        ONLY: t_patch
   USE mo_nonhydro_types,      ONLY: t_nh_state, t_nh_metrics
+  USE mo_ext_data_types,      ONLY: t_external_data
   USE mo_intp_data_strc,      ONLY: t_int_state
   USE mo_intp,                ONLY: edges2cells_scalar, &
     &                               cells2edges_scalar, cells2verts_scalar
@@ -54,10 +55,6 @@ MODULE mo_nh_vert_interp
   USE mo_nh_vert_extrap_utils,ONLY: t_expol_state
   USE mo_dynamics_config,     ONLY: ldeepatmo
   USE mo_deepatmo,            ONLY: deepatmo_htrafo
-
-#ifdef _OPENACC
-  USE mo_mpi,                 ONLY: i_am_accel_node
-#endif
 
   IMPLICIT NONE
   PRIVATE
@@ -190,6 +187,7 @@ CONTAINS
   !! data (atmosphere only) interpolated horizontally by IFS2ICON to
   !! the ICON grid
   !!
+  !! Only used during initialization and no OpenACC support.
   SUBROUTINE vert_interp_atm(p_patch, p_nh_state, p_int, p_grf, initicon)
 
     TYPE(t_patch),          INTENT(INOUT)    :: p_patch(:)
@@ -221,11 +219,11 @@ CONTAINS
 
         jgc = p_patch(jg)%child_id(jn)
 
-        CALL interpol_scal_grf (p_patch(jg), p_patch(jgc), p_grf(jg)%p_dom(jn), &
-                                1, initicon(jg)%atm%w, initicon(jgc)%atm%w )
+        CALL interpol_scal_grf (p_pp=p_patch(jg), p_pc=p_patch(jgc), p_grf=p_grf(jg)%p_dom(jn), &
+                                nfields=1, lacc=.FALSE., f3din1=initicon(jg)%atm%w, f3dout1=initicon(jgc)%atm%w )
 
-        CALL interpol2_vec_grf (p_patch(jg), p_patch(jgc), p_grf(jg)%p_dom(jn), &
-                                1, initicon(jg)%atm%vn, initicon(jgc)%atm%vn )
+        CALL interpol2_vec_grf (p_pp=p_patch(jg), p_pc=p_patch(jgc), p_grf=p_grf(jg)%p_dom(jn), &
+                                nfields=1, lacc=.FALSE., f3din1=initicon(jg)%atm%vn, f3dout1=initicon(jgc)%atm%vn )
 
       ENDDO
     ENDDO
@@ -241,10 +239,11 @@ CONTAINS
   !! data (surface only) interpolated horizontally by ICONREMAP to
   !! the ICON grid
   !!
-  SUBROUTINE vert_interp_sfc(p_patch, initicon)
+  SUBROUTINE vert_interp_sfc(p_patch, ext_data, initicon)
 
-    TYPE(t_patch),       INTENT(IN)       :: p_patch(:)
-    CLASS(t_init_state), INTENT(INOUT)    :: initicon(:)
+    TYPE(t_patch),         INTENT(IN)    :: p_patch(:)
+    TYPE(t_external_data), INTENT(IN)    :: ext_data(:)
+    CLASS(t_init_state),   INTENT(INOUT) :: initicon(:)
 
     ! LOCAL VARIABLES
     INTEGER :: jg
@@ -259,7 +258,7 @@ CONTAINS
       !
       ! process surface fields
       !
-      CALL process_sfcfields(p_patch(jg), initicon(jg))
+      CALL process_sfcfields(p_patch(jg), ext_data(jg), initicon(jg))
     ENDDO
 
   END SUBROUTINE vert_interp_sfc
@@ -314,7 +313,7 @@ CONTAINS
     INTEGER :: jg
     INTEGER :: nlev, nlevp1, idx
     INTEGER :: nlev_in         ! number of vertical levels in source vgrid 
-    LOGICAL :: lc2f, l_use_vn, latbcmode, lfill, linputonzgpot
+    LOGICAL :: lc2f, l_use_vn, latbcmode, linputonzgpot
 
     ! Auxiliary fields for input data
     REAL(wp), DIMENSION(nproma,initicon%atm_in%nlev,p_patch%nblks_c) :: temp_v_in
@@ -381,11 +380,9 @@ CONTAINS
 
 !-------------------------------------------------------------------------
 
-#ifdef _OPENACC
-    IF(i_am_accel_node) CALL finish(routine, "Does not support OpenACC (or is untested).")
+    ! Does not support OpenACC
     ! In order to support OpenACC, the lacc flags in the following code must be turned on.
     ! Additional porting might be necessary.
-#endif
 
     jg = p_patch%id
 
@@ -605,7 +602,7 @@ CONTAINS
           ! allocate target array for vertical interpolation
           ALLOCATE(initicon%atm%tracer(idx)%field(nproma,nlev,p_patch%nblks_c))
 !$OMP PARALLEL
-          CALL init(initicon%atm%tracer(idx)%field(:,:,:))   !_jf: necessary?
+          CALL init(initicon%atm%tracer(idx)%field(:,:,:), lacc=.FALSE.)   !_jf: necessary?
 !$OMP END PARALLEL
           ! set pointer to var_element of atm_in
           initicon%atm%tracer(idx)%var_element => initicon%atm_in%tracer(idx)%var_element

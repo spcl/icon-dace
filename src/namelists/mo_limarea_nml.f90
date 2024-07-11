@@ -67,6 +67,8 @@ CONTAINS
     !> grid file defining the lateral boundary
     CHARACTER(LEN=FILENAME_MAX)     :: latbc_boundary_grid
     !> if set to TRUE, qi and qc are read from latbc data
+    LOGICAL                         :: latbc_contains_hus
+    !> are the latbc files using hus/clw/cli or qv/qc/qi
     LOGICAL                         :: latbc_contains_qcqi
     !> take initial lateral boundary conditions from first guess
     LOGICAL                         :: init_latbc_from_fg
@@ -105,6 +107,7 @@ CONTAINS
     latbc_boundary_grid = ""  ! empty string means: whole domain is read for lateral boundary
     latbc_varnames_map_file = " "
     latbc_contains_qcqi = .TRUE.
+    latbc_contains_hus = .FALSE.
     init_latbc_from_fg  = .FALSE.
     nudge_hydro_pres    = .TRUE.
     fac_latbc_presbiascor = 0._wp
@@ -176,6 +179,7 @@ CONTAINS
     latbc_config%latbc_filename      = latbc_filename
     latbc_config%latbc_path          = TRIM(latbc_path)//'/'
     latbc_config%latbc_boundary_grid = latbc_boundary_grid
+    latbc_config%latbc_contains_hus = latbc_contains_hus
     latbc_config%latbc_contains_qcqi = latbc_contains_qcqi
     latbc_config%lsparse_latbc       = (LEN_TRIM(latbc_boundary_grid) > 0)
     latbc_config%latbc_varnames_map_file = latbc_varnames_map_file

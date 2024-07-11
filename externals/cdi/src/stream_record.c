@@ -32,7 +32,7 @@ recordInitEntry(record_t *record)
   varScanKeysInit(&record->scanKeys);
   memset(&record->tiles, 0, sizeof(record->tiles));
 #ifdef HAVE_LIBFDB5
-  record->fdbItem = NULL;
+  record->fdbItemIndex = -1;
 #endif
 }
 
@@ -291,7 +291,7 @@ cdi_create_records(stream_t *streamptr, int tsID)
   destTstep->recordSize = (int) maxrecords;
   destTstep->nallrecs = (int) nrecords;
 #ifdef HAVE_LIBFDB5
-  destTstep->records->fdbItem = NULL;
+  destTstep->records->fdbItemIndex = -1;
 #endif
 
   if (tsID == 0)

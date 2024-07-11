@@ -16,12 +16,21 @@
 # Increments the revision number - starting from 1,
 # and updates file name, time stamp, and user name
 #
-# Usage: $ICON_DIR/utils/id++ FILE [...]
+# Usage: $ICON_DIR/utils/id++ [-s N] FILE [FILE ...]
+#
+# -s N: set revision number to N instead
 #
 
 use warnings;
 use strict;
+use Getopt::Std;
 use POSIX;
+
+my %opts = ();
+getopts('s:', \%opts);
+
+my $factor = exists $opts{s} ? 0 : 1;
+my $offset = $opts{s} || 1;
 
 my $stamp = POSIX::strftime("%Y-%m-%d %H:%M:%SZ", gmtime());
 my $user = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
@@ -29,8 +38,8 @@ my $user = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
 while(<>) {
     my $file = $ARGV;
     s{\$Id: \S+ (\S+) \S+ \S+ \S+ \$}
-     {join(' ', '$Id:', $file, $1+1, $stamp, $user, '$')}ge;
+     {join(' ', '$Id:', $file, $factor*$1+$offset, $stamp, $user, '$')}ge;
     s{\$Id[: ]*\$}
-     {\$Id: $file 1 $stamp $user \$}g;
+     {\$Id: $file $offset $stamp $user \$}g;
     print;
 }

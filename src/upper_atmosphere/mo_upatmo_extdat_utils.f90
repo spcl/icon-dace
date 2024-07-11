@@ -158,7 +158,7 @@ CONTAINS
       ! Open file
       !-----------
 
-      CALL nf(nf_open(TRIM(filename), NF_NOWRITE, ncid), routine)
+      CALL nf(nf90_open(TRIM(filename), NF90_NOWRITE, ncid), routine)
 
       !---------------------
       ! Evaluate dimensions
@@ -221,9 +221,9 @@ CONTAINS
 
       ! Gas:
       ! If the variable could not be found, nf would call 'finish'
-      CALL nf(nf_inq_varid(ncid, TRIM(gasname), varid_gas), routine)
+      CALL nf(nf90_inq_varid(ncid, TRIM(gasname), varid_gas), routine)
       ! Get number of variable dimensions
-      CALL nf(nf_inq_varndims(ncid, varid_gas, ndim), routine)
+      CALL nf(nf90_inquire_variable(ncid, varid_gas, ndims = ndim), routine)
       ! Number of dimensions should be 3 (or maybe larger)
       IF (ndim < 3) THEN
         message_text = 'Gas '//TRIM(gasname)//' in gas file '//TRIM(filename) &
@@ -232,7 +232,7 @@ CONTAINS
       ENDIF  !IF (ndim < 3)
       ALLOCATE(dimids(ndim), STAT=istat)
       IF(istat /= SUCCESS) CALL finish(TRIM(routine), 'Allocation of dimids failed.')
-      CALL nf(nf_inq_vardimid(ncid, varid_gas, dimids), routine)
+      CALL nf(nf90_inquire_variable(ncid, varid_gas, dimids = dimids), routine)
       ! Check, if variable varies in correct dimensions
       IF (dimids(ndim) /= dimid_time) THEN
         message_text = 'First dimension of gas '//TRIM(gasname) &
@@ -250,7 +250,7 @@ CONTAINS
       DEALLOCATE(dimids, STAT=istat)
       IF(istat /= SUCCESS) CALL finish(TRIM(routine), 'Deallocation of dimids failed.')     
       ! Check variable unit
-      CALL nf(nf_get_att_text(ncid, varid_gas, 'units', varunit), routine)
+      CALL nf(nf90_get_att(ncid, varid_gas, 'units', varunit), routine)
       IF (TRIM(varunit) /= gasunit) THEN
         message_text = 'Exclusively supportet gas unit: '//gasunit &
           & //' but unit in file is: '//TRIM(varunit)
@@ -303,19 +303,19 @@ CONTAINS
     IF (lstdioproc) THEN
 
       ! Read gas data
-      CALL nf(nf_get_var_double(ncid, varid_gas, gas%data), routine)
+      CALL nf(nf90_get_var(ncid, varid_gas, gas%data), routine)
       ! Read levels
-      CALL nf(nf_get_var_double(ncid, varid_lev, gas%lev), routine)
+      CALL nf(nf90_get_var(ncid, varid_lev, gas%lev), routine)
       ! Read latitudes
-      CALL nf(nf_get_var_double(ncid, varid_lat, gas%lat), routine)
+      CALL nf(nf90_get_var(ncid, varid_lat, gas%lat), routine)
       ! Read times
-      CALL nf(nf_get_var_double(ncid, varid_time, gas%time), routine)
+      CALL nf(nf90_get_var(ncid, varid_time, gas%time), routine)
 
       !------------
       ! Close file
       !------------
 
-      CALL nf(nf_close(ncid), routine)
+      CALL nf(nf90_close(ncid), routine)
 
     ENDIF  !IF (lstdioproc)
 
@@ -688,12 +688,12 @@ CONTAINS
     ndim    = -999
     varid   = -999
     ! Get id of dimension
-    CALL nf(nf_inq_dimid(ncid, dimname, dimid), routine)
+    CALL nf(nf90_inq_dimid(ncid, dimname, dimid), routine)
     ! Get size of dimension
-    CALL nf(nf_inq_dimlen(ncid, dimid, ndim), routine)
+    CALL nf(nf90_inquire_dimension(ncid, dimid, len = ndim), routine)
     ! Get dimension unit
-    CALL nf(nf_inq_varid(ncid, dimname, varid), routine)
-    CALL nf(nf_get_att_text(ncid, varid, 'units', dimunit), routine)
+    CALL nf(nf90_inq_varid(ncid, dimname, varid), routine)
+    CALL nf(nf90_get_att(ncid, varid, 'units', dimunit), routine)
 
   END SUBROUTINE get_dim
 

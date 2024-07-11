@@ -18,7 +18,8 @@ MODULE mo_radiation_config
 
   IMPLICIT NONE
   PUBLIC
-  PUBLIC :: cams_clim_filename
+  PUBLIC :: cams_aero_filename
+
   !--------------------------------------------------------------------------
   ! Basic configuration setup for radiation
   !--------------------------------------------------------------------------
@@ -67,6 +68,8 @@ MODULE mo_radiation_config
                                    ! 2: is for slope-dependent radiation with shading and skyview
                                    ! 3: slope-dependent radiation with shading without skyview
 
+    !$ACC DECLARE CREATE(islope_rad)
+
     ! --- Switches for radiative agents
     !     irad_x=0 : radiation uses tracer x = 0
     !     irad_x=1 : radiation uses tracer x from a tracer variable
@@ -83,20 +86,19 @@ MODULE mo_radiation_config
     INTEGER  :: irad_cfc11  !< CFC 11
     INTEGER  :: irad_cfc12  !< CFC 12
     INTEGER  :: irad_aero   !< aerosols
-    LOGICAL  :: lrad_yac    !< aerosol coupling
     LOGICAL  :: lrad_aero_diag  !< diagnose aerosols
     ENUM, BIND(C)
-        ENUMERATOR :: iRadAeroNone=0,        iRadAeroConst=2,        iRadAeroTegen=6,   iRadAeroCAMSclim=7, &
-          &           iRadAeroART=9,         iRadAeroConstKinne=12,  iRadAeroKinne=13,  iRadAeroVolc=14,    &
-          &           iRadAeroKinneVolc=15,  iRadAeroKinneVolcSP=18, iRadAeroKinneSP=19
+        ENUMERATOR :: iRadAeroNone=0,         iRadAeroConst=2,      iRadAeroTegen=6,        iRadAeroCAMSclim=7, &
+          &           iRadAeroCAMStd=8,       iRadAeroART=9,        iRadAeroConstKinne=12,  iRadAeroKinne=13,   &
+          &           iRadAeroVolc=14,        iRadAeroKinneVolc=15, iRadAeroKinneVolcSP=18, iRadAeroKinneSP=19
     END ENUM
     !
     ! --- Name of the file that contains  dynamic greenhouse values
     !
     CHARACTER(LEN=filename_max)  :: ghg_filename
     !
-    !> NetCDF file with CAMS 3D climatology
-    CHARACTER(LEN=filename_max) :: cams_clim_filename
+    !> NetCDF file with CAMS 3D aerosols
+    CHARACTER(LEN=filename_max) :: cams_aero_filename
     !
     ! --- Default gas mixing ratios - 1990 values (CMIP5)
     !

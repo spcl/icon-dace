@@ -570,16 +570,22 @@ from ...mpi\_phy... to ...echam\_phy... because programmers felt that the acrony
   \end{itemize}
 \end{changeitem}
 
-\begin{changeitem}{nonhydrostatic\_nml}{2023-09-08}{icon-nwp:master xxx}
+\begin{changeitem}{nonhydrostatic\_nml}{2023-09-08}{icon-nwp:master ff5a51a9}
   \begin{itemize}
    \item Removed Namelist switch \texttt{idiv\_method} which allowed to select different methods for horizontal divergence computations. The possibility of divergence averaging has been removed. For divergence computation we now make unconditional use of the standard Gaussian integral in combination with averaged normal components of horizontal velocity.).
   \end{itemize}
 \end{changeitem}
 
-\begin{changeitem}{coupling\_mode\_nml}{2023-09-07}{icon-nwp:master xxx}
+\begin{changeitem}{coupling\_mode\_nml}{2023-09-07}{icon-nwp:master e99436e7}
   \begin{itemize}
    \item Remove logical switch \texttt{coupled\_mode}. Coupling with specific
      model components is now described by component specific switches.
+  \end{itemize}
+\end{changeitem}
+
+\begin{changeitem}{dynamics\_nml}{2023-12-11}{icon-nwp:master xxx}
+  \begin{itemize}
+   \item Remove Namelist switch \texttt{iequations}. This switch became obsolete, as there exists only one set of governing equations for the atmosphere and ocean each.
   \end{itemize}
 \end{changeitem}
 % --------------------------------------------------------------------------------------------

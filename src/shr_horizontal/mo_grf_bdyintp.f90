@@ -35,9 +35,7 @@ USE mo_parallel_config,     ONLY: nproma, p_test_run, cpu_min_nproma
 USE mo_communication,       ONLY: exchange_data_grf
 
 USE mo_grf_intp_data_strc
-#ifdef _OPENACC
-  USE mo_mpi,               ONLY: i_am_accel_node
-#endif
+USE mo_fortran_tools,       ONLY: assert_acc_device_only
 
 IMPLICIT NONE
 
@@ -60,7 +58,7 @@ CONTAINS
 !! the normal wind components along the lateral boundaries of nested
 !! model domains.
 !!
-SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
+SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out, lacc)
   !
   TYPE(t_patch), TARGET, INTENT(in) :: p_pp
   TYPE(t_patch), TARGET, INTENT(inout) :: p_pc
@@ -74,6 +72,8 @@ SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
   ! reconstructed edge-normal wind component
   REAL(wp),INTENT(INOUT) :: p_vn_out(:,:,:) ! dim: (nproma,nlev_c,nblks_e)
 
+  LOGICAL, INTENT(IN) :: lacc
+
   INTEGER :: jb, jk, je                ! loop indices
   INTEGER :: js                        ! shift parameter
   INTEGER :: nproma_bdyintp, nblks_bdyintp, npromz_bdyintp, nlen, nshift
@@ -86,6 +86,7 @@ SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
   INTEGER :: nlev_c       !< number of vertical full levels (child domain)
 
   !-----------------------------------------------------------------------
+  call assert_acc_device_only("interpol_vec_grf", lacc)
 
   ! Set pointers to index lists
   iidx    => p_grf%idxlist_bdyintp_e
@@ -107,7 +108,7 @@ SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
   ! upper boundary of child domain (in terms of vertical levels)
   js = p_pc%nshift
 
-  !$ACC DATA CREATE(vn_aux) IF(i_am_accel_node)
+  !$ACC DATA CREATE(vn_aux)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE (jb,jk,je,nlen,nshift) ICON_OMP_DEFAULT_SCHEDULE
@@ -121,7 +122,7 @@ SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
     nshift = (jb-1)*nproma_bdyintp
 
     ! PRESENT(p_pp%edges%refin_ctrl) is required, as PGI 20.9 can not find this variable otherwise.
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_pp%edges%refin_ctrl) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_pp%edges%refin_ctrl)
     !$ACC LOOP GANG VECTOR COLLAPSE(2)
     DO je = nshift+1, nshift+nlen
       DO jk = 1, nlev_c
@@ -188,7 +189,8 @@ SUBROUTINE interpol_vec_grf (p_pp, p_pc, p_grf, p_vn_in, p_vn_out)
 !$OMP END PARALLEL
 
   ! Store results in p_vn_out
-  CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf,1,nlev_c, &
+  CALL exchange_data_grf(p_pat_coll=p_pc%comm_pat_coll_interpol_vec_grf, &
+    lacc=.TRUE., nfields=1, ndim2tot=nlev_c, &
     RECV1=p_vn_out,SEND1=vn_aux)
   !$ACC WAIT(1)
   !$ACC END DATA ! vn_aux
@@ -200,7 +202,7 @@ END SUBROUTINE interpol_vec_grf
 !! Performs gradient-based interpolation from parent edges to child edges 1 and 2
 !! and RBF/IDW-based interpolation to child edges 3 and 4
 !!
-SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
+SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, lacc, f3din1, f3dout1, &
                               f3din2, f3dout2, f3din3, f3dout3, f3din4, f3dout4)
 
 
@@ -215,6 +217,8 @@ SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
 
   ! number of fields provided on input (needed for aux fields and pointer allocation)
   INTEGER, INTENT(IN) :: nfields
+
+  LOGICAL, INTENT(IN) :: lacc
 
   ! reconstructed edge-normal vector component; dim: (nproma,nlev_c,nblks_e)
   REAL(wp), INTENT(INOUT), DIMENSION(:,:,:), OPTIONAL :: f3dout1, f3dout2, f3dout3, f3dout4
@@ -291,11 +295,11 @@ SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
   ! upper boundary of child domain (in terms of vertical levels
   js = p_pc%nshift
 
-  !$ACC DATA CREATE(vn_aux, u_vert, v_vert) COPYIN(p_in) IF(i_am_accel_node)
+  !$ACC DATA CREATE(vn_aux, u_vert, v_vert) COPYIN(p_in) IF(lacc)
 
   DO jn = 1, nfields
     ! Make sure that all fields in p_in are available from gpu via p_in(jn)%fld.
-    !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(i_am_accel_node)
+    !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(lacc)
   ENDDO
 
 !$OMP PARALLEL
@@ -310,7 +314,7 @@ SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
     ENDIF
     nshift = (jb-1)*nproma_bdyintp
 
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
     !$ACC LOOP GANG VECTOR COLLAPSE(3)
     DO jv = nshift+1, nshift+nlen
       DO jn = 1, nfields
@@ -350,7 +354,7 @@ SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
     nshift = (jb-1)*nproma_bdyintp
 
     ! PRESENT(p_grf, iblk, iidx) is necessary to help PGI_20_9 with address-not-mapped errors
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_grf, iblk, iidx) IF(i_am_accel_node)
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) PRESENT(p_grf, iblk, iidx) IF(lacc)
     !$ACC LOOP GANG VECTOR COLLAPSE(3) PRIVATE(dvn_tang)
     DO je = nshift+1, nshift+nlen
       DO jn = 1, nfields
@@ -405,31 +409,31 @@ SUBROUTINE interpol2_vec_grf (p_pp, p_pc, p_grf, nfields, f3din1, f3dout1, &
 !$OMP END PARALLEL
 
   DO jn = 1, nfields
-    !$ACC EXIT DATA DETACH(p_in(jn)%fld) IF(i_am_accel_node)
+    !$ACC EXIT DATA DETACH(p_in(jn)%fld) IF(lacc)
   ENDDO
 
 
 
   IF (nfields == 1) THEN
     nlevtot = nlev_c
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf, lacc, nfields, nlevtot, &
       RECV1=f3dout1,SEND1=vn_aux(:,:,:,1) )
 
   ELSE IF (nfields == 2) THEN
     nlevtot = 2*nlev_c
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf, lacc, nfields, nlevtot, &
       RECV1=f3dout1,SEND1=vn_aux(:,:,:,1),RECV2=f3dout2,  &
       SEND2=vn_aux(:,:,:,2) )
 
   ELSE IF (nfields == 3) THEN
     nlevtot = 3*nlev_c
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf, lacc, nfields, nlevtot, &
       RECV1=f3dout1,SEND1=vn_aux(:,:,:,1),RECV2=f3dout2,  &
       SEND2=vn_aux(:,:,:,2),RECV3=f3dout3,SEND3=vn_aux(:,:,:,3) )
 
   ELSE IF (nfields == 4) THEN
     nlevtot = 4*nlev_c
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_vec_grf, lacc, nfields, nlevtot, &
       RECV1=f3dout1,SEND1=vn_aux(:,:,:,1),RECV2=f3dout2, &
       SEND2=vn_aux(:,:,:,2),RECV3=f3dout3,SEND3=vn_aux(:,:,:,3),  &
       RECV4=f3dout4,SEND4=vn_aux(:,:,:,4) )
@@ -446,7 +450,7 @@ END SUBROUTINE interpol2_vec_grf
 !! Performs interpolation of scalar fields from parent cells to child
 !! cells using the 2D gradient at the cell center.
 !!
-SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
+SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields, lacc,&
                               f3din1, f3dout1, f3din2, f3dout2, f3din3, f3dout3, &
                               f3din4, f3dout4, f3din5, f3dout5, f3din6, f3dout6, &
                               f4din1, f4dout1, f4din2, f4dout2,                  &
@@ -461,6 +465,8 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
 
   ! number of fields provided on input (needed for aux fields and pointer allocation)
   INTEGER, INTENT(IN) :: nfields
+
+  LOGICAL, INTENT(IN) :: lacc
 
   ! logical switch: if present and true, limit horizontal gradient so as to avoid negative values
   LOGICAL, INTENT(IN), OPTIONAL :: llimit_nneg(nfields)
@@ -595,15 +601,15 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
   ENDIF
 
   !$ACC DATA CREATE(grad_x, grad_y, maxval_neighb, minval_neighb, val_ctr, h_aux) &
-  !$ACC   COPYIN(p_in) IF(i_am_accel_node)
+  !$ACC   COPYIN(p_in) IF(lacc)
 
-  !$ACC SERIAL IF(i_am_accel_node)
+  !$ACC SERIAL IF(lacc)
   IF (p_test_run) h_aux(:,:,:,:) = 0._wp
   !$ACC END SERIAL
 
   DO jn = 1, nfields
     ! Make sure that all fields in p_in are available from gpu via p_in(jn)%fld.
-    !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(i_am_accel_node)
+    !$ACC ENTER DATA ATTACH(p_in(jn)%fld) IF(lacc)
   ENDDO
 
 #ifndef __PGI
@@ -620,7 +626,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
       DO jn = 1, nfields
         elev   = UBOUND(p_out(jn)%fld,2)
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jc = nshift+1, nshift+nlen
           DO jk = 1, elev
@@ -673,7 +679,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
         ENDDO
         !$ACC END PARALLEL
 
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
         !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(min_expval, max_expval) &
         !$ACC   PRIVATE(relaxed_minval, relaxed_maxval, limfac1, limfac2, limfac)
         DO jc = nshift+1, nshift+nlen
@@ -720,7 +726,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
 
         IF (l_limit_nneg(jn)) THEN
 
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO jc = nshift+1, nshift+nlen
             DO jk = 1, elev
@@ -744,7 +750,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
         
         ELSE
 
-          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lacc)
           !$ACC LOOP GANG VECTOR COLLAPSE(2)
           DO jc = nshift+1, nshift+nlen
             DO jk = 1, elev
@@ -774,7 +780,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
 ! -------------------------------------
 
   DO jn = 1, nfields
-    !$ACC EXIT DATA DETACH(p_in(jn)%fld) IF(i_am_accel_node)
+    !$ACC EXIT DATA DETACH(p_in(jn)%fld) IF(lacc)
   ENDDO
 
 
@@ -783,37 +789,37 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
   IF (l4d .AND. .NOT. PRESENT(f4din2)) THEN
 
     nlevtot = SIZE(f4dout1,2)*nfields
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                            RECV4D1=f4dout1,SEND4D1=h_aux)
 
   ELSE IF (l4d) THEN
 
     nlevtot = SIZE(f4dout1,2)*n4d+SIZE(f4dout2,2)*n4d
-    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+    CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                            RECV4D1=f4dout1,SEND4D1=h_aux(:,:,:,1:n4d),       &
                            RECV4D2=f4dout2,SEND4D2=h_aux(:,:,:,n4d+1:nfields)         )
 
   ELSE
     IF (nfields == 1) THEN
       nlevtot = SIZE(f3dout1,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1)               )
 
     ELSE IF (nfields == 2) THEN
       nlevtot = SIZE(f3dout1,2)+SIZE(f3dout2,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1),RECV2=f3dout2,&
                              SEND2=h_aux(:,:,:,2))
 
     ELSE IF (nfields == 3) THEN
       nlevtot = SIZE(f3dout1,2)+SIZE(f3dout2,2)+SIZE(f3dout3,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1),RECV2=f3dout2,&
                              SEND2=h_aux(:,:,:,2),RECV3=f3dout3,SEND3=h_aux(:,:,:,3)   )
 
     ELSE IF (nfields == 4) THEN
       nlevtot = SIZE(f3dout1,2)+SIZE(f3dout2,2)+SIZE(f3dout3,2)+SIZE(f3dout4,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1),RECV2=f3dout2,   &
                              SEND2=h_aux(:,:,:,2),RECV3=f3dout3,SEND3=h_aux(:,:,:,3),     &
                              RECV4=f3dout4,SEND4=h_aux(:,:,:,4)                           )
@@ -821,7 +827,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
     ELSE IF (nfields == 5) THEN
       nlevtot = SIZE(f3dout1,2)+SIZE(f3dout2,2)+SIZE(f3dout3,2) + &
                 SIZE(f3dout4,2)+SIZE(f3dout5,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1),RECV2=f3dout2,&
                              SEND2=h_aux(:,:,:,2),RECV3=f3dout3,SEND3=h_aux(:,:,:,3),  &
                              RECV4=f3dout4,SEND4=h_aux(:,:,:,4),RECV5=f3dout5,         &
@@ -830,7 +836,7 @@ SUBROUTINE interpol_scal_grf (p_pp, p_pc, p_grf, nfields,&
     ELSE IF (nfields == 6) THEN
       nlevtot = SIZE(f3dout1,2)+SIZE(f3dout2,2)+SIZE(f3dout3,2) + &
                 SIZE(f3dout4,2)+SIZE(f3dout5,2)+SIZE(f3dout6,2)
-      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf,nfields,nlevtot, &
+      CALL exchange_data_grf(p_pc%comm_pat_coll_interpol_scal_grf, lacc, nfields, nlevtot, &
                              RECV1=f3dout1,SEND1=h_aux(:,:,:,1),RECV2=f3dout2,&
                              SEND2=h_aux(:,:,:,2),RECV3=f3dout3,SEND3=h_aux(:,:,:,3),  &
                              RECV4=f3dout4,SEND4=h_aux(:,:,:,4),RECV5=f3dout5,         &

@@ -239,6 +239,8 @@ MODULE sfc_flake
 
   USE mo_fortran_tools, ONLY: set_acc_host_or_device
 
+  USE mo_lnd_nwp_config, ONLY: lcuda_graph_lnd
+
 !===================================================================================================
 
 !_cdm>
@@ -279,12 +281,6 @@ MODULE sfc_flake
          &  flake_coldinit      , & ! procedure (cold start initialization)
          &  flake_init          , & ! procedure (initialization)
          &  flake_interface         ! procedure (time stepping)
-
-#ifdef ICON_USE_CUDA_GRAPH
-  LOGICAL, PARAMETER :: using_cuda_graph = .TRUE.
-#else
-  LOGICAL, PARAMETER :: using_cuda_graph = .FALSE.
-#endif
 
 !234567890023456789002345678900234567890023456789002345678900234567890023456789002345678900234567890
 
@@ -1562,7 +1558,7 @@ CONTAINS
     !  End calculations
     !===============================================================================================
 
-    IF (.NOT. using_cuda_graph) THEN
+    IF (.NOT. lcuda_graph_lnd) THEN
       !$ACC WAIT(1)
     END IF
     !$ACC END DATA

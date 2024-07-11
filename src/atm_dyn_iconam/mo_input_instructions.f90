@@ -24,7 +24,7 @@ MODULE mo_input_instructions
     USE mo_input_request_list, ONLY: t_InputRequestList
     USE mo_lnd_nwp_config,     ONLY: lsnowtile
     USE mo_model_domain,       ONLY: t_patch
-    USE mo_util_string,        ONLY: difference, add_to_list, one_of
+    USE mo_util_string,        ONLY: difference, new_list, add_to_list, one_of
     USE mo_util_table,         ONLY: t_table, initialize_table, add_table_column, set_table_entry,  &
       &                              print_table, finalize_table
     USE mo_var_list_register_utils, ONLY: vlr_group
@@ -156,15 +156,15 @@ MODULE mo_input_instructions
 CONTAINS
 
     SUBROUTINE collectGroupFg(outGroup, outGroupSize, init_mode)
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: outGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(OUT) :: outGroup(:)
         INTEGER, INTENT(OUT) :: outGroupSize
         INTEGER, INTENT(IN) :: init_mode
 
         ! local tracerGroup to add all vars in group tracer_fg_in to first guess
-        CHARACTER(LEN = vname_len) :: tracerGroup(max_ntracer)
+        CHARACTER(LEN = vname_len), ALLOCATABLE :: tracerGroup(:)
         INTEGER :: tracerGroupSize
 
-        CHARACTER(len=vname_len) :: jsbGroup(1000)
+        CHARACTER(len=vname_len), ALLOCATABLE :: jsbGroup(:)
         INTEGER :: jsbGroupSize
 
         SELECT CASE(init_mode)
@@ -189,7 +189,7 @@ CONTAINS
             CASE(MODE_COSMO)
                 CALL vlr_group('mode_cosmo_in', outGroup, outGroupSize, loutputvars_only=.FALSE., lremap_lonlat=.FALSE.)
             CASE DEFAULT
-                outGroupSize = 0
+                CALL new_list(outGroup, outGroupSize)
         END SELECT
     END SUBROUTINE collectGroupFg
 
@@ -208,21 +208,21 @@ CONTAINS
     ! fields are expected, one of them can be marked mandatory in the initicon_nml:
     ! check_fg list.
     SUBROUTINE collectGroupFgOpt(outGroup, outGroupSize)
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: outGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(OUT) :: outGroup(:)
         INTEGER, INTENT(OUT) :: outGroupSize
 
-        CHARACTER(len=vname_len) :: jsbGroup(1000)
+        CHARACTER(len=vname_len), ALLOCATABLE :: jsbGroup(:)
         INTEGER :: jsbGroupSize
 
-        outGroup(1:31) = (/'alb_si       ','rho_snow_mult','aer_ss       ','aer_or       ', &
+        CALL add_to_list(outGroup, outGroupSize,                                            &
+          &    str_list2=(/'alb_si       ','rho_snow_mult','aer_ss       ','aer_or       ', &
           &                'aer_bc       ','aer_su       ','aer_du       ','plantevap    ', &
           &                't_sk         ','t2m_bias     ','hsnow_max    ','snow_age     ', &
           &                'qg           ','qh           ','qnc          ','qni          ', &
           &                'qnr          ','qns          ','qng          ','qnh          ', &
           &                'rh_avginc    ','t_avginc     ','t_wgt_avginc ','p_avginc     ', &
           &                'clmf_a       ','clmf_p       ','clmf_d       ','clnum_a      ', &
-          &                'clnum_p      ','clnum_d      ','vabs_avginc  '/)
-        outGroupSize  = 31
+          &                'clnum_p      ','clnum_d      ','vabs_avginc  '/))
 
         CALL vlr_group('jsb_init_vars', jsbGroup, jsbGroupSize, loutputvars_only=.FALSE., lremap_lonlat=.FALSE.)
         CALL add_to_list(outGroup, outGroupSize, jsbGroup, jsbGroupSize)
@@ -230,7 +230,7 @@ CONTAINS
     END SUBROUTINE collectGroupFgOpt
 
     SUBROUTINE collectGroupAna(outGroup, outGroupSize, init_mode)
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: outGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(OUT) :: outGroup(:)
         INTEGER, INTENT(OUT) :: outGroupSize
         INTEGER, INTENT(IN) :: init_mode
 
@@ -242,12 +242,12 @@ CONTAINS
             CASE(MODE_IAU_OLD)
                 CALL vlr_group('mode_iau_old_ana_in', outGroup, outGroupSize, loutputvars_only=.FALSE., lremap_lonlat=.FALSE.)
             CASE DEFAULT
-                outGroupSize = 0
+                CALL new_list(outGroup, outGroupSize)
         END SELECT
     END SUBROUTINE collectGroupAna
 
     SUBROUTINE collectGroupAnaAtm(outGroup, outGroupSize, init_mode)
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: outGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(OUT) :: outGroup(:)
         INTEGER, INTENT(OUT) :: outGroupSize
         INTEGER, INTENT(IN) :: init_mode
 
@@ -255,22 +255,12 @@ CONTAINS
             CASE(MODE_IAU, MODE_IAU_OLD)
                 CALL vlr_group('mode_iau_anaatm_in', outGroup, outGroupSize, loutputvars_only=.FALSE., lremap_lonlat=.FALSE.)
             CASE DEFAULT
-                outGroupSize = 0
+                CALL new_list(outGroup, outGroupSize)
         END SELECT
     END SUBROUTINE collectGroupAnaAtm
 
-    SUBROUTINE copyGroup(inGroup, inGroupSize, outGroup, outGroupSize)
-        CHARACTER(LEN = vname_len), INTENT(IN) :: inGroup(:)
-        INTEGER, INTENT(IN) :: inGroupSize
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: outGroup(:)
-        INTEGER, INTENT(OUT) :: outGroupSize
-
-        outGroup(1:inGroupSize) = inGroup(1:inGroupSize)
-        outGroupSize = inGroupSize
-    END SUBROUTINE copyGroup
-
     SUBROUTINE mergeAnaIntoFg(anaGroup, anaGroupSize, fgGroup, fgGroupSize, init_mode)
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: anaGroup(:), fgGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(INOUT) :: anaGroup(:), fgGroup(:)
         INTEGER, INTENT(INOUT) :: anaGroupSize, fgGroupSize
         INTEGER, INTENT(IN)    :: init_mode
 
@@ -289,11 +279,11 @@ CONTAINS
       &                      fgOptGroup, fgOptGroupSize, anaGroup, anaGroupSize)
         TYPE(t_patch), INTENT(IN) :: p_patch
         INTEGER, INTENT(in) :: init_mode
-        CHARACTER(LEN = vname_len), INTENT(INOUT) :: anaGroup(:), fgGroup(:), fgOptGroup(:)
+        CHARACTER(LEN = vname_len), ALLOCATABLE, INTENT(INOUT) :: anaGroup(:), fgGroup(:), fgOptGroup(:)
         INTEGER, INTENT(OUT) :: anaGroupSize, fgGroupSize, fgOptGroupSize
 
         CHARACTER(LEN = *), PARAMETER :: routine = modname//':collectGroups'
-        CHARACTER(LEN=vname_len), DIMENSION(200) :: anaAtmGroup
+        CHARACTER(LEN=vname_len), ALLOCATABLE, DIMENSION(:) :: anaAtmGroup
         INTEGER :: anaAtmGroupSize, jg
         LOGICAL :: lRemoveSnowfrac
 
@@ -313,6 +303,9 @@ CONTAINS
                     CALL mergeAnaIntoFg(anaGroup, anaGroupSize, fgGroup, fgGroupSize, init_mode)
                 ENDIF
                 IF (init_mode == MODE_ICONVREMAP) CALL add_to_list(fgGroup, fgGroupSize, 'smi')
+                IF (init_mode == MODE_ICONVREMAP) CALL add_to_list(fgGroup, fgGroupSize, 'hus')
+                IF (init_mode == MODE_ICONVREMAP) CALL add_to_list(fgGroup, fgGroupSize, 'clw')
+                IF (init_mode == MODE_ICONVREMAP) CALL add_to_list(fgGroup, fgGroupSize, 'cli')
 
             CASE(MODE_IAU, MODE_IAU_OLD)
                 ! in case of tile coldstart, we can omit snowfrac_lc
@@ -408,7 +401,7 @@ CONTAINS
         TYPE(t_readInstruction), pointer :: curInstruction
 
         ! lists of variable names
-        CHARACTER(LEN=vname_len), DIMENSION(1000) :: grp_vars_fg, grp_vars_optfg, grp_vars_ana
+        CHARACTER(LEN=vname_len), ALLOCATABLE, DIMENSION(:) :: grp_vars_fg, grp_vars_optfg, grp_vars_ana
 
         ! the corresponding sizes of the lists above
         INTEGER :: ngrp_vars_fg, ngrp_vars_optfg, ngrp_vars_ana

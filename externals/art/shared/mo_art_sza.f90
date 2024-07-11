@@ -22,7 +22,7 @@ MODULE mo_art_sza
 
   ! ICON
   USE mo_kind,                 ONLY: wp
-  USE mo_math_constants,       ONLY: pi, rad2deg
+  USE mo_math_constants,       ONLY: pi2, rad2deg
 
   USE mtime,                   ONLY: datetime, no_of_sec_in_a_day,   &
                                  &   getDayOfYearFromDateTime
@@ -89,7 +89,7 @@ MODULE mo_art_sza
 !
     zleapfrac = 0.681_wp + 0.2422_wp * REAL(year - 1949,wp) - &
                 REAL((year - 1949) / 4,wp)
-    zyearfrac = 2._wp * pi * (REAL(dayinyear,wp) - 1.0_wp + zleapfrac) / 365.2422_wp
+    zyearfrac = pi2 * (REAL(dayinyear,wp) - 1.0_wp + zleapfrac) / 365.2422_wp
     zdeclination_sun = 0.006918_wp - 0.399912_wp * COS(zyearfrac) + &
                        0.070257_wp * SIN(zyearfrac) -               &
                        0.006758_wp * COS(2._wp * zyearfrac) +       &
@@ -100,7 +100,7 @@ MODULE mo_art_sza
                       REAL(minute,wp) * 60._wp +  &
                       REAL(second,wp)) /          &
                       REAL(no_of_sec_in_a_day,wp)) - 0.5_wp
-    ztime_dateline = ztime_dateline * 2._wp * pi + 0.000075_wp +              &
+    ztime_dateline = ztime_dateline * pi2 + 0.000075_wp +              &
        0.001868_wp * COS(zyearfrac) - 0.032077_wp * SIN(zyearfrac) -          &
        0.014615_wp * COS(2._wp * zyearfrac) - 0.040849_wp * SIN(2._wp * zyearfrac)
 

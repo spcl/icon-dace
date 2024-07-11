@@ -9,7 +9,7 @@
 // SPDX-License-Identifier: BSD-3-Clause
 // ---------------------------------------------------------------
 
-// Fortan interface to the following functions is
+// Fortran interface to the following functions is
 // implemented in ../src/shared/mo_util_system.f90
 
 #include <stdlib.h>

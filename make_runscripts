@@ -266,8 +266,7 @@ then
         "out_script=clmexp.${name}.run" \
         "EXPNAME=${name}" \
         memory_model="large" \
-        $secondary_build_dir_option \
-        omp_stacksize="200M"
+        $secondary_build_dir_option
     set +x
 fi
 

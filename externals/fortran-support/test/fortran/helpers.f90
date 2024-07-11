@@ -13,6 +13,7 @@ MODULE helpers
   USE ISO_C_BINDING, ONLY: c_double
   USE mo_io_units, ONLY: find_next_free_unit
   USE mo_exception, ONLY: message
+  USE, INTRINSIC :: ISO_FORTRAN_ENV, ONLY: wp => real64
 
 CONTAINS
 
@@ -30,15 +31,15 @@ CONTAINS
   END SUBROUTINE rrand
 
   SUBROUTINE custom_exit()
-    CALL EXIT(1)
+    STOP
   END SUBROUTINE
 
   SUBROUTINE custom_exit_dummy()
   END SUBROUTINE
 
   SUBROUTINE open_new_logfile(nerr, file)
-    CHARACTER(len=*), INTENT(in) :: file
-    INTEGER, INTENT(out) :: nerr
+    CHARACTER(len=*), INTENT(IN) :: file
+    INTEGER, INTENT(OUT) :: nerr
 
     nerr = find_next_free_unit(10, 20)
     OPEN (unit=nerr, file=file, status='replace', action='write')
@@ -46,10 +47,63 @@ CONTAINS
   END SUBROUTINE open_new_logfile
 
   SUBROUTINE open_logfile(nerr, file)
-    CHARACTER(len=*), INTENT(in) :: file
-    INTEGER, INTENT(in) :: nerr
+    CHARACTER(len=*), INTENT(IN) :: file
+    INTEGER, INTENT(IN) :: nerr
 
     OPEN (unit=nerr, file=file, status='old', action='read')
 
   END SUBROUTINE open_logfile
+
+  FUNCTION calculate_mean_wp(array) RESULT(mean)
+    REAL(wp), INTENT(IN) :: array(:)
+    REAL(wp)             :: mean
+    INTEGER :: i, n
+
+    mean = 0.0_wp
+    variance = 0.0_wp
+
+    n = SIZE(array)
+
+    DO i = 1, SIZE(array)
+      mean = mean + array(i)
+    END DO
+    mean = mean/n
+
+  END FUNCTION
+
+  FUNCTION calculate_variance_wp(array) RESULT(variance)
+    REAL(wp), INTENT(IN) :: array(:)
+    REAL(wp)             :: mean, variance
+    INTEGER :: i, n
+
+    mean = 0.0_wp
+    variance = 0.0_wp
+
+    n = SIZE(array)
+    mean = calculate_mean_wp(array)
+
+    DO i = 1, SIZE(array)
+      variance = variance + (array(i) - mean)**2
+    END DO
+    variance = variance/n
+
+  END FUNCTION
+
+  SUBROUTINE assert_statistics(test_name, array, mean, variance, tol, max, min)
+    USE FORTUTF
+    CHARACTER(LEN=*), INTENT(IN) :: test_name
+    REAL(wp), INTENT(IN) :: array(:)
+    REAL(wp), INTENT(IN) :: mean, variance, tol, max, min
+
+    CALL TAG_TEST(test_name//"__mean")
+    CALL ASSERT_ALMOST_EQUAL(calculate_mean_wp(array), mean, tol)
+    CALL TAG_TEST(test_name//"__variance")
+    CALL ASSERT_ALMOST_EQUAL(calculate_variance_wp(array), variance, tol)
+    CALL TAG_TEST(test_name//"__max")
+    CALL ASSERT_LESS_THAN_EQUAL(MAXVAL(array), max)
+    CALL TAG_TEST(test_name//"__min")
+    CALL ASSERT_GREATER_THAN_EQUAL(MINVAL(array), min)
+
+  END SUBROUTINE
+
 END MODULE helpers

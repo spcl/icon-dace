@@ -240,7 +240,7 @@ CONTAINS
        !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
        DO jk = 1, nlev
          DO jc = jcs, jce
-           tend_ta_rad(jc,jk) = q_rad(jc,jk) * field% qconv(jc,jk,jb)
+           tend_ta_rad(jc,jk) = q_rad(jc,jk) / field% cvair(jc,jk,jb)
          END DO
        END DO
        !
@@ -256,7 +256,7 @@ CONTAINS
          !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
          DO jk = 1, nlev
            DO jc = jcs, jce
-             tend% ta_rsw(jc,jk,jb) = q_rsw(jc,jk) * field% qconv(jc,jk,jb)
+             tend% ta_rsw(jc,jk,jb) = q_rsw(jc,jk) / field% cvair(jc,jk,jb)
            END DO
          END DO
        END IF
@@ -264,7 +264,7 @@ CONTAINS
          !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
          DO jk = 1, nlev
            DO jc = jcs, jce
-             tend% ta_rlw(jc,jk,jb) = q_rlw(jc,jk) * field% qconv(jc,jk,jb)
+             tend% ta_rlw(jc,jk,jb) = q_rlw(jc,jk) / field% cvair(jc,jk,jb)
            END DO
          END DO
        END IF

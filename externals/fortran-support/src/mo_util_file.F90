@@ -24,8 +24,8 @@ MODULE mo_util_file
     FUNCTION private_symlink(file, link) RESULT(iret) BIND(C, NAME='symlink')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iret
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: file
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: link
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: file
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: link
     END FUNCTION private_symlink
   END INTERFACE
 
@@ -33,7 +33,7 @@ MODULE mo_util_file
     FUNCTION private_unlink(filename) RESULT(iret) BIND(C, NAME='unlink')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iret
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: filename
     END FUNCTION private_unlink
   END INTERFACE
 
@@ -41,7 +41,7 @@ MODULE mo_util_file
     FUNCTION private_islink(filename) RESULT(iret) BIND(C, NAME='util_islink')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iret
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: filename
     END FUNCTION private_islink
   END INTERFACE
 
@@ -49,8 +49,8 @@ MODULE mo_util_file
     FUNCTION private_rename(old_filename, new_filename) RESULT(iret) BIND(C, NAME='rename')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iret
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: old_filename
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: new_filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: old_filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: new_filename
     END FUNCTION private_rename
   END INTERFACE
 
@@ -58,8 +58,8 @@ MODULE mo_util_file
     FUNCTION private_create_tmpfile(filename, max_len) RESULT(flen) BIND(C, NAME='util_create_tmpfile')
       IMPORT :: c_char, c_int
       INTEGER(c_int) :: flen
-      CHARACTER(c_char), DIMENSION(*), INTENT(inout) :: filename
-      INTEGER(c_int), VALUE, INTENT(in) :: max_len
+      CHARACTER(c_char), DIMENSION(*), INTENT(INOUT) :: filename
+      INTEGER(c_int), VALUE, INTENT(IN) :: max_len
     END FUNCTION private_create_tmpfile
   END INTERFACE
 
@@ -67,7 +67,7 @@ MODULE mo_util_file
     FUNCTION private_filesize(filename) RESULT(flen) BIND(C, NAME='util_filesize')
       IMPORT :: c_long, c_char
       INTEGER(c_long) :: flen
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: filename
     END FUNCTION private_filesize
   END INTERFACE
 
@@ -75,7 +75,7 @@ MODULE mo_util_file
     FUNCTION private_file_is_writable(filename) RESULT(iwritable) BIND(C, NAME='util_file_is_writable')
       IMPORT :: c_int, c_char
       INTEGER(c_int) :: iwritable
-      CHARACTER(c_char), DIMENSION(*), INTENT(in) :: filename
+      CHARACTER(c_char), DIMENSION(*), INTENT(IN) :: filename
     END FUNCTION private_file_is_writable
   END INTERFACE
 
@@ -97,20 +97,20 @@ CONTAINS
 
   FUNCTION util_symlink(file, link) RESULT(iret)
     INTEGER :: iret
-    CHARACTER(len=*), INTENT(in) :: file
-    CHARACTER(len=*), INTENT(in) :: link
+    CHARACTER(len=*), INTENT(IN) :: file
+    CHARACTER(len=*), INTENT(IN) :: link
     iret = private_symlink(TRIM(file)//c_null_char, TRIM(link)//c_null_char)
   END FUNCTION util_symlink
 
   FUNCTION util_unlink(filename) RESULT(iret)
     INTEGER :: iret
-    CHARACTER(len=*), INTENT(in) :: filename
+    CHARACTER(len=*), INTENT(IN) :: filename
     iret = private_unlink(TRIM(filename)//c_null_char)
   END FUNCTION util_unlink
 
   FUNCTION util_islink(filename) RESULT(islink)
     LOGICAL :: islink
-    CHARACTER(len=*), INTENT(in) :: filename
+    CHARACTER(len=*), INTENT(IN) :: filename
     INTEGER :: iret
     iret = private_islink(TRIM(filename)//c_null_char)
     islink = .FALSE.
@@ -119,15 +119,15 @@ CONTAINS
 
   FUNCTION util_rename(old_filename, new_filename) RESULT(iret)
     INTEGER :: iret
-    CHARACTER(len=*), INTENT(in) :: old_filename
-    CHARACTER(len=*), INTENT(in) :: new_filename
+    CHARACTER(len=*), INTENT(IN) :: old_filename
+    CHARACTER(len=*), INTENT(IN) :: new_filename
     iret = private_rename(TRIM(old_filename)//c_null_char, TRIM(new_filename)//c_null_char)
   END FUNCTION util_rename
 
   FUNCTION create_tmpfile(filename, max_len) RESULT(flen)
     INTEGER :: flen
-    CHARACTER(len=*), INTENT(out) :: filename
-    INTEGER, INTENT(in)  :: max_len
+    CHARACTER(len=*), INTENT(OUT) :: filename
+    INTEGER, INTENT(IN)  :: max_len
     ! local variables
     INTEGER :: i
     !
@@ -143,8 +143,8 @@ CONTAINS
 
   FUNCTION util_tmpnam(filename, klen) RESULT(flen)
     INTEGER :: flen
-    CHARACTER(len=*), INTENT(out) :: filename
-    INTEGER, INTENT(in)  :: klen
+    CHARACTER(len=*), INTENT(OUT) :: filename
+    INTEGER, INTENT(IN)  :: klen
 
     flen = create_tmpfile(filename, klen)
     IF (flen < 0) THEN
@@ -154,13 +154,13 @@ CONTAINS
 
   FUNCTION util_filesize(filename) RESULT(flen)
     INTEGER(KIND=i8) :: flen
-    CHARACTER(len=*), INTENT(in) :: filename
+    CHARACTER(len=*), INTENT(IN) :: filename
     flen = private_filesize(TRIM(filename)//c_null_char)
   END FUNCTION util_filesize
 
   FUNCTION util_file_is_writable(filename) RESULT(lwritable)
     LOGICAL :: lwritable
-    CHARACTER(len=*), INTENT(in) :: filename
+    CHARACTER(len=*), INTENT(IN) :: filename
     lwritable = (private_file_is_writable(TRIM(filename)//c_null_char) == 1)
   END FUNCTION util_file_is_writable
 
@@ -186,7 +186,6 @@ CONTAINS
     error = c_createSymlink(targetPathCopy, linkNameCopy)
   END FUNCTION createSymlink
 
-  ! @return subtring from from the first "/" to the end of @p in_str.
   FUNCTION get_filename(in_str) RESULT(out_str)
     ! Parameters
     CHARACTER(len=*), INTENT(IN) :: in_str
@@ -201,7 +200,7 @@ CONTAINS
   END FUNCTION get_filename
 
   FUNCTION get_filename_noext(name) RESULT(filename)
-    CHARACTER(len=*), INTENT(in) :: name
+    CHARACTER(len=*), INTENT(IN) :: name
     CHARACTER(LEN=filename_max) :: filename
 
     INTEGER :: end_name
@@ -215,7 +214,6 @@ CONTAINS
 
   END FUNCTION get_filename_noext
 
-  ! @return subtring from the begin of @p in_str to the last "/".
   FUNCTION get_path(in_str) RESULT(out_str)
     ! Parameters
     CHARACTER(len=*), INTENT(IN) :: in_str

@@ -30,9 +30,11 @@ MODULE mo_master_control
 CONTAINS
 
   !------------------------------------------------------------------------
-  CHARACTER(len=64) FUNCTION get_my_process_name()
+  FUNCTION get_my_process_name()
 
-    get_my_process_name = my_model_name
+    CHARACTER(:), ALLOCATABLE :: get_my_process_name
+
+    get_my_process_name = TRIM(my_model_name)
 
   END FUNCTION get_my_process_name
   !------------------------------------------------------------------------

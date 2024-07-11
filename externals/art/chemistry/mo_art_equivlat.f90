@@ -18,7 +18,7 @@
 MODULE mo_art_equivlat
   ! ICON
   USE mo_kind,                   ONLY: wp
-  USE mo_math_constants,         ONLY: pi
+  USE mo_math_constants,         ONLY: pi2, rad2deg
   USE mo_physical_constants,     ONLY: earth_radius
   USE mo_model_domain,           ONLY: t_patch
   USE mo_sync,                   ONLY: global_min, global_max, global_sum_array
@@ -179,7 +179,7 @@ SUBROUTINE art_equivalent_latitude(jg, pv, equivLat_gridpoints, equivLat_isoline
 
      DO jk = 1,art_atmo%nlev
        DO i = 1, n_isolines
-         equivLat_isolines(i,jk) = 180./pi*asin(1.-(enclosed_area(i,jk)/(2.*pi)))
+         equivLat_isolines(i,jk) = rad2deg*asin(1.-(enclosed_area(i,jk)/pi2))
        ENDDO
      ENDDO
 
@@ -274,7 +274,7 @@ SUBROUTINE art_equivalent_latitude(jg, pv, equivLat_gridpoints, equivLat_isoline
 
      DO jk = 1,art_atmo%nlev
        DO i = 1, n_isolines
-         equivLat_isolines(i,jk) = -180./pi*asin(1.-(enclosed_area(i,jk)/(2.*pi)))
+         equivLat_isolines(i,jk) = -rad2deg*asin(1.-(enclosed_area(i,jk)/pi2))
          IF( equivLat_isolines(i,jk) > 0.0_wp ) equivLat_isolines(i,jk) = 0.0_wp
        ENDDO
      ENDDO

@@ -52,9 +52,9 @@ CONTAINS
   !! opens the namelist file.
   !!
   SUBROUTINE open_nml(file, lwarn, istat)
-    CHARACTER(len=*), INTENT(in) :: file
-    LOGICAL, INTENT(in), OPTIONAL :: lwarn
-    INTEGER, INTENT(out), OPTIONAL :: istat
+    CHARACTER(len=*), INTENT(IN) :: file
+    LOGICAL, INTENT(IN), OPTIONAL :: lwarn
+    INTEGER, INTENT(OUT), OPTIONAL :: istat
     LOGICAL :: l_lwarn = .FALSE.
     INTEGER :: l_istat
 
@@ -77,10 +77,6 @@ CONTAINS
   !>
   !! closes the namelist file.
   !!
-  !!
-  !! @par Revision History
-  !!  Luis Kornblueh, MPI-M, Hamburg, March 2001
-  !!
   SUBROUTINE close_nml
     INTEGER :: istat
 
@@ -95,14 +91,11 @@ CONTAINS
   !>
   !! set file pointer to begin of namelist for reading namelist /name/ (case independent).
   !!
-  !! @par Revision History
-  !!  Luis Kornblueh, MPI-M, Hamburg, March 2001
-  !!
   SUBROUTINE position_nml(name, unit, lrewind, status)
-    CHARACTER(len=*), INTENT(in)            :: name ! namelist group name
-    INTEGER, INTENT(in), OPTIONAL :: unit ! file unit number
-    LOGICAL, INTENT(in), OPTIONAL :: lrewind ! default: true
-    INTEGER, INTENT(out), OPTIONAL :: status ! error return value
+    CHARACTER(len=*), INTENT(IN)            :: name ! namelist group name
+    INTEGER, INTENT(IN), OPTIONAL :: unit ! file unit number
+    LOGICAL, INTENT(IN), OPTIONAL :: lrewind ! default: true
+    INTEGER, INTENT(OUT), OPTIONAL :: status ! error return value
 
     CHARACTER(len=256) :: yline ! line read
     CHARACTER(len=256) :: test ! uppercase namelist group name
@@ -195,7 +188,7 @@ CONTAINS
   !!  and their actual values used in the simulation.
   !!
   SUBROUTINE open_nml_output(file)
-    CHARACTER(len=*), INTENT(in) :: file
+    CHARACTER(len=*), INTENT(IN) :: file
     INTEGER :: istat
 
     nnml_output = find_next_free_unit(10, 20)
@@ -211,9 +204,6 @@ CONTAINS
   !>
   !!  close the ASCII output that contains all the namelist
   !!  variables and their actual values used in the simulation.
-  !!
-  !! @par Revision History
-  !!  Hui Wan, MPI-M, 2009-03-17
   !!
   SUBROUTINE close_nml_output
     INTEGER :: istat

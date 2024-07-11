@@ -399,10 +399,10 @@ CONTAINS
       n_dom_active = COUNT(me%mPatchData(:)%description%l_dom_active)
       CALL rAttribs%put('multifile_n_dom_active', n_dom_active)
       IF(timers_level >= 7) CALL timer_start(timer_write_restart_io)
-      CALL nf(nf_create(filename//"/attributes.nc", NF_NETCDF4, ncid), routine)
+      CALL nf(nf90_create(filename//"/attributes.nc", NF90_NETCDF4, ncid), routine)
       CALL restartAttributeList_write_to_ncdf(rAttribs, ncid)
-      CALL nf(nf_enddef(ncid), routine)
-      CALL nf(nf_close(ncid), routine)
+      CALL nf(nf90_enddef(ncid), routine)
+      CALL nf(nf90_close(ncid), routine)
       IF(timers_level >= 7) CALL timer_stop(timer_write_restart_io)
       CALL rAttribs%destruct()
     END SUBROUTINE writeAttributeFile

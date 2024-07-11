@@ -120,9 +120,6 @@ cat > ${atmo_namelist} << EOF
  num_lev          = ${nlev}
  output           = "nml","totint"
 /
-&dynamics_nml
- iequations       = ${atmo_model_equations}
-/
 &nonhydrostatic_nml
  ivctype          = 1        ! 1=Gal-Chen hybrid vertical coordinate, 2=sleve vertical coordinate
  exner_expol      = 0.60

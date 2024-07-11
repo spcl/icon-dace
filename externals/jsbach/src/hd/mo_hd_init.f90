@@ -53,16 +53,16 @@ CONTAINS
     dsl4jsb_Def_memory(HD_)
 
     INTEGER, POINTER ::         &
+      & hd_mask_ptr(:,:),       &
       & cell_sea_land_mask(:,:)
     REAL(wp), POINTER ::         &
       & return_pointer   (:,:),  &   !< temporary pointer
-      & return_pointer3d (:,:,:)     !< temporary pointer
+      & cells_up_ptr (:,:,:)     !< temporary pointer
 
     TYPE(t_input_file)  :: input_file
 
-    INTEGER, ALLOCATABLE :: cells_up(:,:,:)
     INTEGER :: n, blk, blks, blke, jc, jcs, jce, idx
-    INTEGER :: nblks, nproma
+    INTEGER :: nblks, nproma, nneigh
 
     CHARACTER(len=*),  PARAMETER     :: routine = modname//':hd_init_bc'
 
@@ -72,7 +72,7 @@ CONTAINS
     ! Get hd config
     dsl4jsb_Get_config(HD_)
 
-    IF (.NOT. dsl4jsb_Config(HD_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(HD_)) RETURN
 
     ! Get hd memory of the tile (only the root tile is used)
     dsl4jsb_Get_memory(HD_)
@@ -90,9 +90,9 @@ CONTAINS
 
       ! Maximum number of reservoirs
       ! If this is changed one has to change the definition of the three grids in mo_hd_config_class!!!
-      hd__mem%nres_o_max = 1
-      hd__mem%nres_b_max = 1
-      hd__mem%nres_r_max = 5
+      dsl4jsb_memory(HD_)%nres_o_max = 1
+      dsl4jsb_memory(HD_)%nres_b_max = 1
+      dsl4jsb_memory(HD_)%nres_r_max = 5
 
       !CALL message(TRIM(routine), 'Initializing HD fractions for tile '//TRIM(tile%name)//&
       !  &                         ' from '//TRIM(dsl4jsb_Config(HD_)%fract_filneame))
@@ -102,9 +102,12 @@ CONTAINS
       input_file = jsb_netcdf_open_input(TRIM(dsl4jsb_Config(HD_)%bc_filename), model%grid_id)
 
       ! HD model mask: -1 ocean, 0: ocean inflow cells, 1: land with outflow, 2: internal drainage
-      return_pointer => input_file%Read_2d(         &
-        & variable_name='MASK',                     &
-        & fill_array = dsl4jsb_var_ptr(HD_,hd_mask))
+      hd_mask_ptr => input_file%Read_2d_int(        &
+        & variable_name='MASK')
+      IF (ASSOCIATED(hd_mask_ptr)) THEN
+        dsl4jsb_var_ptr(HD_,hd_mask)(:,:) = REAL(hd_mask_ptr(:,:), wp)
+        DEALLOCATE(hd_mask_ptr)
+      END IF
 
       ! Retention constant of overland flow [day]
       return_pointer => input_file%Read_2d(         &
@@ -132,13 +135,13 @@ CONTAINS
         & fill_array = dsl4jsb_var_ptr(HD_,ret_baseflow))
 
       ! Global index neighbouring grid cells upstream
-      return_pointer3d => input_file%Read_2d_extdim(  &
+      cells_up_ptr => input_file%Read_2d_extdim(  &
         & variable_name='CELLS_UP',                   &
         & start_extdim=1, end_extdim=nneigh_max,    &
         & extdim_name='nneigh')
 
       IF (dsl4jsb_config(HD_)%use_bifurcated_rivers) THEN
-        ! Number of channel river splits into 
+        ! Number of channel river splits into
         return_pointer => input_file%Read_2d(         &
           & variable_name='NSPLIT',                   &
           & fill_array = dsl4jsb_var_ptr(HD_,nsplit))
@@ -149,48 +152,61 @@ CONTAINS
       nproma = grid%nproma
       nblks  = grid%nblks
 
-      ALLOCATE(cells_up(nproma, nblks, nneigh_max))
-      cells_up(:,:,:) = NINT(return_pointer3d(:,:,:))
-      hd__mem%nneigh = 0
-      DO n=1, nneigh_max
-        IF (ANY(cells_up(:,:,n) > 0)) THEN
-          hd__mem%nneigh = n
+      nneigh = 0
+      DO n = nneigh_max, 1, -1
+        IF (ANY(cells_up_ptr(:,:,n) > 0)) THEN
+          nneigh = n
+          EXIT
         END IF
       END DO
+      dsl4jsb_memory(HD_)%nneigh = nneigh
 
       ! find local idices of grid cells upstream
-      ALLOCATE(dsl4jsb_var_ptr(HD_,nidx_upstream) (nproma, hd__mem%nneigh, nblks))
-      ALLOCATE(dsl4jsb_var_ptr(HD_,bidx_upstream) (nproma, hd__mem%nneigh, nblks))
-      dsl4jsb_var_ptr(HD_,nidx_upstream) = -1
-      dsl4jsb_var_ptr(HD_,bidx_upstream) = -1
+      ALLOCATE(dsl4jsb_memory(HD_)%nidx_upstream%ptr (nproma, nneigh, nblks))
+      ALLOCATE(dsl4jsb_memory(HD_)%bidx_upstream%ptr (nproma, nneigh, nblks))
+      !$ACC ENTER DATA &
+      !$ACC   CREATE(dsl4jsb_memory(HD_)%nidx_upstream%ptr) &
+      !$ACC   CREATE(dsl4jsb_memory(HD_)%bidx_upstream%ptr)
+      dsl4jsb_memory(HD_)%nidx_upstream%ptr(:,:,:) = -1
+      dsl4jsb_memory(HD_)%bidx_upstream%ptr(:,:,:) = -1
 
       blks = grid%get_blk_start()
       blke = grid%get_blk_end()
       DO blk = blks, blke
         jcs = grid%get_col_start(blk)
         jce = grid%get_col_end  (blk)
-        DO n = 1, hd__mem%nneigh
+        DO n = 1, nneigh
           DO jc = jcs, jce
-            IF (cells_up(jc,blk,n) > 0) THEN
-              idx = get_local_index(grid%patch%cells%decomp_info%glb2loc_index, NINT(return_pointer3d(jc,blk,n)))
+            IF (cells_up_ptr(jc,blk,n) > 0) THEN
+              idx = get_local_index(grid%patch%cells%decomp_info%glb2loc_index, NINT(cells_up_ptr(jc,blk,n)))
               !print*, 'vg: p_pe: ', p_pe, ' n: ', n, ' blk: ', blk, ' FDIR: ', NINT(return_pointer(n,blk)), 'idx: ',idx
               IF (idx ==  0) THEN
-                WRITE (message_text,*) "index of grid cell upstream (", cells_up(jc,blk,n), ") not in global domain"
+                WRITE (message_text,*) "index of grid cell upstream (", NINT(cells_up_ptr(jc,blk,n)), ") not in global domain"
                 CALL finish(routine, message_text)
               ELSE IF (idx == -1) THEN
-                WRITE (message_text,*) "index of grid cell upstream (", cells_up(jc,blk,n), ") not in local domain"
+                WRITE (message_text,*) "index of grid cell upstream (", NINT(cells_up_ptr(jc,blk,n)), ") not in local domain"
                 CALL finish(routine, message_text)
               END IF
-              hd__mem%bidx_upstream%ptr(jc,n,blk) = (idx-1)/nproma + 1
-              hd__mem%nidx_upstream%ptr(jc,n,blk) = idx - (hd__mem%bidx_upstream%ptr(jc,n,blk)-1)*nproma
+              dsl4jsb_memory(HD_)%bidx_upstream%ptr(jc,n,blk) = (idx-1)/nproma + 1
+              dsl4jsb_memory(HD_)%nidx_upstream%ptr(jc,n,blk) = idx - (dsl4jsb_memory(HD_)%bidx_upstream%ptr(jc,n,blk)-1)*nproma
             END IF
           END DO
         END DO
       END DO
 
-      DEALLOCATE(cells_up)
+      !$ACC UPDATE &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,hd_mask), dsl4jsb_var2D_onDomain(HD_,nsplit))               &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,ret_overlflow), dsl4jsb_var2D_onDomain(HD_,nres_overlflow)) &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,ret_riverflow), dsl4jsb_var2D_onDomain(HD_,nres_riverflow)) &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,ret_baseflow), dsl4jsb_var2D_onDomain(HD_,nres_baseflow))   &
+      !$ACC   DEVICE(dsl4jsb_memory(HD_)%bidx_upstream%ptr(:,:,:)) &
+      !$ACC   DEVICE(dsl4jsb_memory(HD_)%nidx_upstream%ptr(:,:,:)) &
+      !$ACC   ASYNC(1)
+
+      !$ACC WAIT(1)
 
       CALL input_file%Close()
+      IF (ASSOCIATED(cells_up_ptr)) DEALLOCATE(cells_up_ptr)
 
     CASE ('weighted_to_coast')
 
@@ -207,20 +223,32 @@ CONTAINS
 
       CALL input_file%Close()
 
+      !$ACC UPDATE &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,hd_mask), dsl4jsb_var2D_onDomain(HD_,coast_ocean)) &
+      !$ACC   ASYNC(1)
+
+      !$ACC WAIT(1)
+
     CASE ('zero')
 
       input_file = jsb_netcdf_open_input(TRIM(dsl4jsb_Config(HD_)%bc_filename), model%grid_id)
-      
+
       ! coastal ocean cells
       cell_sea_land_mask => input_file%Read_2d_int( &
         & variable_name='cell_sea_land_mask')
       dsl4jsb_var2D_onDomain(HD_, hd_mask) = &
         & MERGE(0._wp, 1._wp, cell_sea_land_mask(:,:) == SEA_BOUNDARY)
       DEALLOCATE(cell_sea_land_mask)
-      
+
       CALL input_file%Close()
-      
-      CASE ('none')      
+
+      !$ACC UPDATE &
+      !$ACC   DEVICE(dsl4jsb_var2D_onDomain(HD_,hd_mask)) &
+      !$ACC   ASYNC(1)
+
+      !$ACC WAIT(1)
+
+    CASE ('none')
 
     END SELECT
 
@@ -258,7 +286,7 @@ CONTAINS
     ! Get hd config
     dsl4jsb_Get_config(HD_)
 
-    IF (.NOT. dsl4jsb_Config(HD_)%active) RETURN
+    IF (.NOT. model%Is_process_enabled(HD_)) RETURN
 
     ! Get hd memory of the tile (only the root tile is used)
     dsl4jsb_Get_memory(HD_)
@@ -279,53 +307,53 @@ CONTAINS
       nblks  = grid%nblks
       blks = grid%get_blk_start()
       blke = grid%get_blk_end()
-      
+
       ! Overlandflow reservoir
-      ptr => input_file%Read_2d_extdim(  &
-        & variable_name='FLFMEM',                   &
-        & start_extdim=1,                           &
-        & end_extdim= hd__mem%nres_o_max,           &
+      ptr => input_file%Read_2d_extdim(               &
+        & variable_name='FLFMEM',                     &
+        & start_extdim=1,                             &
+        & end_extdim= dsl4jsb_memory(HD_)%nres_o_max, &
         & extdim_name='oresnum')
-      
-      
+
+
       DO blk = blks, blke
          jcs = grid%get_col_start(blk)
          jce = grid%get_col_end  (blk)
-         DO n = 1, hd__mem%nres_o_max
+         DO n = 1, dsl4jsb_memory(HD_)%nres_o_max
            DO jc = jcs, jce
              dsl4jsb_var_ptr(HD_,overlflow_res)(jc,n,blk) = ptr(jc,blk,n)
            END DO
          END DO
       END DO
-      
+
       ! Baseflow reservoir
-      ptr => input_file%Read_2d_extdim(  &
-        & variable_name='FGMEM',                    &
-        & start_extdim=1,                           &
-        & end_extdim= hd__mem%nres_b_max,           &
+      ptr => input_file%Read_2d_extdim(               &
+        & variable_name='FGMEM',                      &
+        & start_extdim=1,                             &
+        & end_extdim= dsl4jsb_memory(HD_)%nres_b_max, &
         & extdim_name='bresnum')
-      
+
       DO blk = blks, blke
          jcs = grid%get_col_start(blk)
          jce = grid%get_col_end  (blk)
-         DO n = 1, hd__mem%nres_b_max
+         DO n = 1, dsl4jsb_memory(HD_)%nres_b_max
            DO jc = jcs, jce
               dsl4jsb_var_ptr(HD_,baseflow_res)(jc,n,blk) = ptr(jc,blk,n)
             END DO
           END DO
       END DO
-      
+
       ! Riverflow reservoir
-      ptr => input_file%Read_2d_extdim(  &
-        & variable_name='FRFMEM',                   &
-        & start_extdim=1,                           &
-        & end_extdim= hd__mem%nres_r_max,           &
+      ptr => input_file%Read_2d_extdim(               &
+        & variable_name='FRFMEM',                     &
+        & start_extdim=1,                             &
+        & end_extdim= dsl4jsb_memory(HD_)%nres_r_max, &
         & extdim_name='rresnum')
-      
+
       DO blk = blks, blke
          jcs = grid%get_col_start(blk)
          jce = grid%get_col_end  (blk)
-         DO n = 1, hd__mem%nres_r_max
+         DO n = 1, dsl4jsb_memory(HD_)%nres_r_max
            DO jc = jcs, jce
              dsl4jsb_var_ptr(HD_,riverflow_res)(jc,n,blk) = ptr(jc,blk,n)
            END DO
@@ -338,11 +366,18 @@ CONTAINS
 
       ALLOCATE(tile_fract(grid%nproma, grid%nblks))
       CALL tile%Get_fraction(fract=tile_fract(:,:))
-        dsl4jsb_var3D_onDomain(HD_,overlflow_res) = 1000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=hd__mem%nres_o_max)
-        dsl4jsb_var3D_onDomain(HD_,baseflow_res)  = 5000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=hd__mem%nres_b_max)
-        dsl4jsb_var3D_onDomain(HD_,riverflow_res) = 1000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=hd__mem%nres_r_max)
+      dsl4jsb_var3D_onDomain(HD_,overlflow_res) = 1000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=dsl4jsb_memory(HD_)%nres_o_max)
+      dsl4jsb_var3D_onDomain(HD_,baseflow_res)  = 5000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=dsl4jsb_memory(HD_)%nres_b_max)
+      dsl4jsb_var3D_onDomain(HD_,riverflow_res) = 1000._wp * SPREAD(tile_fract(:,:), DIM=2, NCOPIES=dsl4jsb_memory(HD_)%nres_r_max)
 
-      END IF
+    END IF
+
+    !$ACC UPDATE &
+    !$ACC   DEVICE(dsl4jsb_var3D_onDomain(HD_,overlflow_res), dsl4jsb_var3D_onDomain(HD_,baseflow_res)) &
+    !$ACC   DEVICE(dsl4jsb_var3D_onDomain(HD_,riverflow_res)) &
+    !$ACC   ASYNC(1)
+
+    !$ACC WAIT(1)
 
   END SUBROUTINE hd_init_ic
 

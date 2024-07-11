@@ -280,8 +280,8 @@ CONTAINS
         DO jc =  i_startidx, i_endidx
           ztot_prec_rate(jc) = prm_diag%rain_gsp_rate (jc,jb) &  ! rain_gsp
             &                + prm_diag%snow_gsp_rate (jc,jb) &  ! snow_gsp
-            &                + prm_diag%rain_con_rate (jc,jb) &  ! rain_con
-            &                + prm_diag%snow_con_rate (jc,jb)    ! snow_con
+            &                + prm_diag%rain_con_rate_corr (jc,jb) &  ! rain_con
+            &                + prm_diag%snow_con_rate_corr (jc,jb)    ! snow_con
           
           !IF (lozpr .AND. ((ngauss==2) .OR. (ngauss==4)) & ! these two variables would have to be imported from data_gwd
           pgelat(jc) = p_patch%cells%center(jc,jb)%lat
@@ -345,4 +345,3 @@ CONTAINS
   END SUBROUTINE nwp_gwdrag
 
 END MODULE mo_nwp_gw_interface
-

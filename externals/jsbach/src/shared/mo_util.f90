@@ -1,4 +1,4 @@
-!> Contains utility functions
+!> Some utility functions
 !>
 !> ICON-Land
 !>
@@ -11,17 +11,21 @@
 !> SPDX-License-Identifier: BSD-3-Clause
 !> ---------------------------------------
 !>
+!>#### Various helper routines for ICON-Land
+!>
 MODULE mo_util
 #ifndef __NO_JSBACH__
 
   USE mo_kind,      ONLY: wp
   USE mo_exception, ONLY: message, finish
+  USE mo_math_utilities, ONLY: tdma_solver_vec ! TODO from ICON, mo_math_utilities should be replaced once
+                                               !      libmath-support is an external library
 
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: soil_depth_to_layers_2d, ifs2soil, one_of, toupper, int2string, real2string, logical2string, &
-    &       report_memory_usage, soil_init_from_texture
+  PUBLIC :: soil_depth_to_layers_2d, ifs2soil, one_of, toupper, tolower, int2string, real2string, logical2string, &
+    &       report_memory_usage, soil_init_from_texture, tdma_solver_vec
 
   INTERFACE one_of
     MODULE PROCEDURE one_of_str
@@ -32,14 +36,9 @@ MODULE mo_util
 
 CONTAINS
 
-  !!
-  ! !>      Compute soil layer depths from (fixed) layer thicknesses and total depth
   !
-  ! @param      depth    Total soil depth
-  ! @param      dz       Fixed layer thicknesses
-  !
-  ! @return     Layer thicknesses until soil depth
-  !!
+  !> Compute soil layer depths from (fixed) layer thicknesses and total depth until bedrock
+  !>
   FUNCTION soil_depth_to_layers_2d(depth, dz) RESULT(depth_l)
 
     REAL(wp), INTENT(in) :: depth(:,:)
@@ -140,41 +139,67 @@ CONTAINS
 
   END SUBROUTINE ifs2soil
 
-  !> Calculate soil parameters fom soil texture.
+  !> Calculate mineral soil parameters fom soil texture.
   !!
   !! Input to this routine should conform:
   !! fraction_sand + fraction_silt + fraction_clay = 1
   !! fraction_sand_deep + fraction_silt_deep + fraction_clay_deep = 1
-  !! Properties of upper soil and deep soil are identical. Their composition is averaged.
-  !! The organic fraction of the soil is the non-mineral fraction of the soil.
+  !! The calculated mineral soil parameters do not have a vertical dimension,
+  !! as calculations are based on averages of the upper and lower soil textures.
+  !! TODO: Calculate layer dependant parameters
   PURE ELEMENTAL SUBROUTINE soil_init_from_texture(                 &
     & parameter_sand, parameter_silt, parameter_clay, parameter_oc, &
     & fraction_sand, fraction_silt, fraction_clay,                  &
     & fraction_sand_deep, fraction_silt_deep, fraction_clay_deep,   &
-    & fraction_oc, fraction_oc_deep,                                &
     & parameter_from_texture)
 
     REAL(wp), INTENT(in)  ::  parameter_sand, parameter_silt, parameter_clay, parameter_oc
     REAL(wp), INTENT(in)  ::                                      &
       fraction_sand, fraction_silt, fraction_clay,                &
-      fraction_sand_deep, fraction_silt_deep, fraction_clay_deep, &
-      fraction_oc, fraction_oc_deep
+      fraction_sand_deep, fraction_silt_deep, fraction_clay_deep
     REAL(wp), INTENT(out)  ::  parameter_from_texture
 
-    parameter_from_texture = MAX(1._wp - ((fraction_oc + fraction_oc_deep) &
-                             * 0.5_wp),0._wp) *                            &
-                             MAX(((fraction_sand + fraction_sand_deep)     &
-                             * 0.5_wp * parameter_sand) +                  &
-                             ((fraction_silt + fraction_silt_deep)         &
-                             * 0.5_wp * parameter_silt) +                  &
-                             ((fraction_clay + fraction_clay_deep)         &
-                             * 0.5_wp * parameter_clay),                   &
-                             MIN(parameter_sand,parameter_silt,parameter_clay)) &
-                             + ((fraction_oc + fraction_oc_deep)           &
-                             * 0.5_wp) * parameter_oc
+    ! Compute texture based soil parameter
+    parameter_from_texture = ((fraction_sand + fraction_sand_deep)         &
+      &                      * 0.5_wp * parameter_sand) +                  &
+      &                      ((fraction_silt + fraction_silt_deep)         &
+      &                      * 0.5_wp * parameter_silt) +                  &
+      &                      ((fraction_clay + fraction_clay_deep)         &
+      &                      * 0.5_wp * parameter_clay)
+
+    ! Ensure the parameter is within the correct bounds
+    parameter_from_texture = MAX(parameter_from_texture, MIN(parameter_sand,parameter_silt,parameter_clay))
+    parameter_from_texture = MIN(parameter_from_texture, MAX(parameter_sand,parameter_silt,parameter_clay))
 
   END SUBROUTINE soil_init_from_texture
 
+
+  !-----------------------------------------------------------------------------------------------------
+  !> conversion: uppercase -> lowercase
+  !!
+  !! implemented based on mo_util:toupper in jsbach4.1
+  !!
+  !-----------------------------------------------------------------------------------------------------
+  FUNCTION tolower(string) RESULT(stringlower)
+
+    IMPLICIT NONE
+    ! ---------------------------
+    ! 0.1 InOut
+    CHARACTER(len=*), INTENT(in) :: string
+    CHARACTER(len=LEN_TRIM(string)) :: stringlower
+    ! ---------------------------
+    ! 0.2 Local
+    INTEGER, PARAMETER :: idel = ICHAR('a')-ICHAR('A')  ! = 32
+    INTEGER :: i
+
+    DO i = 1, LEN_TRIM(string)
+      IF (ICHAR(string(i:i)) >= ICHAR('A') .AND. ICHAR(string(i:i)) <= ICHAR('Z')) THEN
+        stringlower(i:i) = CHAR( ICHAR(string(i:i)) + idel )
+      ELSE
+        stringlower(i:i) = string(i:i)
+      ENDIF
+    ENDDO
+  END FUNCTION tolower
   !
   !> Conversion: Lowercase -> Uppercase
   !
@@ -248,11 +273,12 @@ CONTAINS
     END DO
   END FUNCTION one_of_int
 
-  !
-  ! returns integer n as a string (often needed in printing messages)
-  !
-  ! Copied from ICON module shared/mo_util_string
-  !
+  !-----------------------------------------------------------------------------------------------------
+  !> returns integer n as a string (often needed in printing messages)
+  !!
+  !! Copied from ICON module shared/mo\_util\_string
+  !!
+  !-----------------------------------------------------------------------------------------------------
   FUNCTION int2string(n, opt_fmt)
     CHARACTER(len=:), ALLOCATABLE :: int2string ! result
     INTEGER, INTENT(in) :: n
@@ -271,6 +297,10 @@ CONTAINS
     !
   END FUNCTION int2string
 
+  !-----------------------------------------------------------------------------------------------------
+  !> returns real x as a string (often needed in printing messages)
+  !!
+  !-----------------------------------------------------------------------------------------------------
   FUNCTION real2string(x, opt_fmt)
     CHARACTER(len=:), ALLOCATABLE :: real2string ! result
     REAL(wp), INTENT(in) :: x

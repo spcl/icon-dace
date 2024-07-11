@@ -37,6 +37,7 @@ typedef struct
   int level2;
   int ltype;
   int tsteptype;
+  size_t gridsize;
 } compvar_t;
 
 typedef struct
@@ -536,6 +537,12 @@ cgribexDefProjLCC(int *isec2, int gridID)
   gridDefParamsLCC(gridID, gpp);
 }
 
+static size_t
+cgribexGetGridsize(const int *isec4)
+{
+  return ISEC4_NumValues;
+}
+
 static void
 cgribexAddRecord(stream_t *streamptr, cgribexrec_t *cgribexp, int param, size_t recsize, off_t position, int comptype, int lmv,
                  int iret)
@@ -569,6 +576,7 @@ cgribexAddRecord(stream_t *streamptr, cgribexrec_t *cgribexp, int param, size_t 
   record->ilevel2 = level2;
   record->ltype = leveltype;
   record->tsteptype = (short) tsteptype;
+  record->gridsize = cgribexGetGridsize(cgribexp->sec4);
 
   grid_t *gridptr = (grid_t *) Malloc(sizeof(*gridptr));
   bool uvRelativeToGrid = cgribexGetGrid(streamptr, isec2, isec4, gridptr, iret);
@@ -713,7 +721,7 @@ cgribexDecodeHeader(cgribexrec_t *cgribexp, int *gribbuffer, int recsize, int *l
 }
 
 static compvar_t
-cgribexVarSet(int param, int level1, int level2, int leveltype, int trange)
+cgribexVarSet(int param, int level1, int level2, int leveltype, int trange, size_t gridsize)
 {
   int tsteptype = cgribexGetTsteptype(trange);
 
@@ -723,6 +731,7 @@ cgribexVarSet(int param, int level1, int level2, int leveltype, int trange)
   compVar.level2 = level2;
   compVar.ltype = leveltype;
   compVar.tsteptype = tsteptype;
+  compVar.gridsize = gridsize;
 
   return compVar;
 }
@@ -735,7 +744,7 @@ cgribexVarCompare(const compvar_t *compVar, const record_t *record, int flag)
   bool rinst = (record->tsteptype == TSTEP_INSTANT || record->tsteptype == TSTEP_INSTANT2 || record->tsteptype == TSTEP_INSTANT3);
   int tstepDiff = (!((flag == 0) & (vinst && rinst))) & (compVar->tsteptype != record->tsteptype);
   int rstatus = (compVar->param != record->param) | (compVar->level1 != record->ilevel) | (compVar->level2 != record->ilevel2)
-                | (compVar->ltype != record->ltype) | tstepDiff;
+                | (compVar->ltype != record->ltype) | (compVar->gridsize != record->gridsize) | tstepDiff;
   return rstatus;
 }
 
@@ -852,7 +861,8 @@ cgribexScanTimestep1(stream_t *streamptr)
         {
           if (cdiDateTime_isLT(sDateTime, taxis->sDateTime)) taxis->sDateTime = sDateTime;
 
-          compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange);
+          size_t gridsize = cgribexGetGridsize(cgribexp->sec4);
+          compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange, gridsize);
           record_t *records = streamptr->tsteps[tsID].records;
           for (recID = 0; recID < nrecs; recID++)
             {
@@ -1026,7 +1036,8 @@ cgribexScanTimestep2(stream_t *streamptr)
             taxis->numavg = ISEC1_AvgNum;
         }
 
-      compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange);
+      size_t gridsize = cgribexGetGridsize(cgribexp->sec4);
+      compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange, gridsize);
 
       for (recID = 0; recID < nrecords; recID++)
         {
@@ -1218,7 +1229,8 @@ cgribexScanTimestep(stream_t *streamptr)
                 taxis->numavg = ISEC1_AvgNum;
             }
 
-          compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange);
+          size_t gridsize = cgribexGetGridsize(cgribexp->sec4);
+          compvar_t compVar = cgribexVarSet(param, level1, level2, leveltype, ISEC1_TimeRange, gridsize);
 
           for (vrecID = 0; vrecID < nrecs; vrecID++)
             {
@@ -1325,7 +1337,7 @@ cgribexScanTimestep(stream_t *streamptr)
 
 int
 cgribexDecode(int memtype, void *cgribex, void *gribbuffer, size_t gribsize, void *data, size_t datasize, int unreduced,
-              size_t *nmiss, double missval)
+              size_t *numMissVals, double missval)
 {
   int status = 0;
 
@@ -1355,14 +1367,14 @@ cgribexDecode(int memtype, void *cgribex, void *gribbuffer, size_t gribsize, voi
     gribExDP(isec0, isec1, isec2, fsec2, isec3, fsec3, isec4, (double *) data, (int) datasize, (int *) gribbuffer, (int) gribsize,
              &iword, hoper, &iret);
 
-  *nmiss = (ISEC1_Sec2Or3Flag & 64) ? ISEC4_NumValues - ISEC4_NumNonMissValues : 0;
+  *numMissVals = (ISEC1_Sec2Or3Flag & 64) ? ISEC4_NumValues - ISEC4_NumNonMissValues : 0;
 
   if (ISEC1_CenterID == 215 && (isec1[34] != 0 && isec1[34] != 255))
     {
       double undef_pds, undef_eps;
       MCH_get_undef(isec1, &undef_pds, &undef_eps);
 
-      *nmiss = 0;
+      *numMissVals = 0;
       if (memtype == MEMTYPE_FLOAT)
         {
           float *restrict dataf = (float *) data;
@@ -1370,7 +1382,7 @@ cgribexDecode(int memtype, void *cgribex, void *gribbuffer, size_t gribsize, voi
             if ((fabs(dataf[i] - undef_pds) < undef_eps) || IS_EQUAL(dataf[i], FSEC3_MissVal))
               {
                 dataf[i] = (float) missval;
-                (*nmiss)++;
+                (*numMissVals)++;
               }
         }
       else
@@ -1380,7 +1392,7 @@ cgribexDecode(int memtype, void *cgribex, void *gribbuffer, size_t gribsize, voi
             if ((fabs(datad[i] - undef_pds) < undef_eps) || IS_EQUAL(datad[i], FSEC3_MissVal))
               {
                 datad[i] = missval;
-                (*nmiss)++;
+                (*numMissVals)++;
               }
         }
     }
@@ -1850,6 +1862,11 @@ cgribexDefGrid(int *isec1, int *isec2, double *fsec2, int *isec4, int gridID, in
         ISEC1_Sec2Or3Flag = 0;
         break;
       }
+    case CDI_PROJ_HEALPIX:
+      {
+        Error("CGRIBEX library doesn't support HEALPix grids!");
+        break;
+      }
     default:
       {
         static bool lwarn = true;
@@ -2023,14 +2040,14 @@ cgribexDefEnsembleVar(int *isec1, int vlistID, int varID)
   // Put2Byte(isec1[38]);        // individual ensemble member
   // Put2Byte(isec1[39]);        // number of forecasts in ensemble
 
-  int perturbationNumber, numberOfForecastsInEnsemble, typeOfEnsembleForecast;
-  int r1 = cdiInqKeyInt(vlistID, varID, CDI_KEY_PERTURBATIONNUMBER, &perturbationNumber);
-  int r2 = cdiInqKeyInt(vlistID, varID, CDI_KEY_NUMBEROFFORECASTSINENSEMBLE, &numberOfForecastsInEnsemble);
-  int r3 = cdiInqKeyInt(vlistID, varID, CDI_KEY_TYPEOFENSEMBLEFORECAST, &typeOfEnsembleForecast);
-
-  if (r1 == 0 && r2 == 0 && r3 == 0)
+  if (ISEC1_CenterID == 252)
     {
-      if (ISEC1_CenterID == 252)
+      int perturbationNumber, numberOfForecastsInEnsemble, typeOfEnsembleForecast;
+      int r1 = cdiInqKeyInt(vlistID, varID, CDI_KEY_PERTURBATIONNUMBER, &perturbationNumber);
+      int r2 = cdiInqKeyInt(vlistID, varID, CDI_KEY_NUMBEROFFORECASTSINENSEMBLE, &numberOfForecastsInEnsemble);
+      int r3 = cdiInqKeyInt(vlistID, varID, CDI_KEY_TYPEOFENSEMBLEFORECAST, &typeOfEnsembleForecast);
+
+      if (r1 == 0 && r2 == 0 && r3 == 0)
         {
           ISEC1_LocalFLag = 1;
           isec1[36] = 1;
@@ -2043,7 +2060,7 @@ cgribexDefEnsembleVar(int *isec1, int vlistID, int varID)
 
 size_t
 cgribexEncode(int memtype, int varID, int levelID, int vlistID, int gridID, int zaxisID, CdiDateTime vDateTime, int tsteptype,
-              int numavg, size_t datasize, const void *data, size_t nmiss, void *gribbuffer, size_t gribbuffersize)
+              int numavg, size_t datasize, const void *data, size_t numMissVals, void *gribbuffer, size_t gribbuffersize)
 {
   cgribexrec_t *cgribexp = (cgribexrec_t *) cgribexNew();
 
@@ -2097,7 +2114,7 @@ cgribexEncode(int memtype, int varID, int levelID, int vlistID, int gridID, int 
   ISEC4_NumValues = (int) datasize;
   ISEC4_NumBits = grbBitsPerValue(datatype);
 
-  if (nmiss > 0)
+  if (numMissVals > 0)
     {
       FSEC3_MissVal = vlistInqVarMissval(vlistID, varID);
       ISEC1_Sec2Or3Flag |= 64;

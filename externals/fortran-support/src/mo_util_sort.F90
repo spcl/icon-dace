@@ -687,7 +687,7 @@ CONTAINS
   END SUBROUTINE quicksort_string
 
   SUBROUTINE insertion_sort_int(a)
-    INTEGER, INTENT(inout) :: a(:)
+    INTEGER, INTENT(INOUT) :: a(:)
 
     INTEGER :: t, h
     INTEGER :: i, n

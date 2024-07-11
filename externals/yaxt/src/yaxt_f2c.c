@@ -357,6 +357,29 @@ xt_redist_p2p_ext_custom_new_c2f(
 }
 
 PPM_DSO_INTERNAL Xt_redist
+xt_redist_p2p_aext_new_c2f(Xt_xmap *xmap,
+                          int num_src_ext, struct Xt_aoffset_ext src_extents[],
+                          int num_dst_ext, struct Xt_aoffset_ext dst_extents[],
+                          MPI_Fint datatype_f)
+{
+  return xt_redist_p2p_aext_new(*xmap, num_src_ext, src_extents,
+                                num_dst_ext, dst_extents,
+                                MPI_Type_f2c(datatype_f));
+}
+
+PPM_DSO_INTERNAL Xt_redist
+xt_redist_p2p_aext_custom_new_c2f(
+  Xt_xmap *xmap,
+  int num_src_ext, struct Xt_aoffset_ext src_extents[],
+  int num_dst_ext, struct Xt_aoffset_ext dst_extents[],
+  MPI_Fint datatype_f, struct xt_config_f *config)
+{
+  return xt_redist_p2p_aext_custom_new(*xmap, num_src_ext, src_extents,
+                                       num_dst_ext, dst_extents,
+                                       MPI_Type_f2c(datatype_f), config->cptr);
+}
+
+PPM_DSO_INTERNAL Xt_redist
 xt_redist_p2p_off_new_f(struct xt_xmap_f *xmap_f,
                         MPI_Fint *src_offsets, MPI_Fint *dst_offsets,
                         MPI_Fint datatype_f) {

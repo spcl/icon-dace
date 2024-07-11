@@ -25,45 +25,29 @@ stages:
   - publish
 
 .load_basic_modules: &load_basic_modules
-  - . /sw/rhel6-x64/etc/profile.mistral && module use /sw/spack-rhel6/spack/modules/linux-rhel6-haswell
+  - . /sw/etc/profile.levante
   - module purge
-  - module load libtool autoconf automake git
-  - module load python3/2020.02-gcc-9.1.0
-  - module load autoconf/2.69 automake/1.16.1
+  - module load git python3
 
 .init_build:
   before_script:
     - *load_basic_modules
   tags:
-    - mistral, singularity
+    - levante, xen
 
-.init_build_gcc_6_4:
+.init_build_gcc_11_2_0:
   extends: .init_build
   before_script:
     - *load_basic_modules
-    - module load gcc/6.4.0 openmpi/2.0.2p2_hpcx-gcc64 
-
-.init_build_gcc_9_1:
-  extends: .init_build
-  before_script:
-    - *load_basic_modules
-    - module load gcc/9.1.0-gcc-7.1.0 openmpi/2.0.2p2-gcc-9.1.0
-
-.init_build_intel:
-  extends: .init_build
-  before_script:
-    - *load_basic_modules
-    - module load gcc/4.8.2 intel/18.0.4 intelmpi/2018.4.274
-
-.init_build_nag:
-  extends: .init_build
-  before_script:
-    - *load_basic_modules
-    - module load nag/6.2 openmpi/2.0.2p2_hpcx-nag62
+    - module load gcc/11.2.0-gcc-11.2.0 openmpi/4.1.2-gcc-11.2.0
 
 .install_gcovr: &install_gcovr
-  - export PATH=$PATH:$HOME/.local/bin
-  - pip install gcovr==5.0
+  - mkdir $CI_PROJECT_DIR/install_dir
+  - python3 -m venv $CI_PROJECT_DIR/install_dir/python-venv/gcovr
+  - . $CI_PROJECT_DIR/install_dir/python-venv/gcovr/bin/activate
+# 'jinja2<3.1' is required to avoid bug, which was fixed in gcovr 5.1
+# gcovr 5.0 is required because newer version had other issues
+  - pip install 'jinja2<3.1' gcovr==5.0
 
 .check_warning:
   variables:
@@ -79,7 +63,7 @@ stages:
 gen_cov_data:
   stage: coverage
   dependencies: []
-  extends: .init_build_gcc_6_4
+  extends: .init_build_gcc_11_2_0
   script:
     - export OMPI_MCA_btl_sm_use_knem=0
     - export OMPI_MCA_btl_vader_single_copy_mechanism=none
@@ -89,6 +73,7 @@ gen_cov_data:
       CC=mpicc FC=mpifort
       FCFLAGS="-O0 -g -cpp -fprofile-arcs -ftest-coverage"
       CFLAGS="-O0 -g -Wall -fprofile-arcs -ftest-coverage"
+      MPI_LAUNCH="`which mpirun` --oversubscribe"
     - make -j8 check
   artifacts:
     paths:
@@ -102,9 +87,9 @@ gen_cov_data:
       - ./*/*/*/*.gcda
     expire_in: 5min
 
-run_test_gcc_6_4:
+run_test_gcc_11_2_0:
   stage: tests
-  extends: .init_build_gcc_6_4
+  extends: .init_build_gcc_11_2_0
   script:
     - export OMPI_MCA_btl_sm_use_knem=0
     - export OMPI_MCA_btl_vader_single_copy_mechanism=none
@@ -115,74 +100,7 @@ run_test_gcc_6_4:
       FCFLAGS="-O0 -g -cpp"
       CFLAGS="-O0 -g -Wall"
       --disable-silent-rules
-# build yaxt and unit tests without running tests
-    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
-# run tests
-    - make check
-  artifacts:
-    paths:
-      - make.err
-    expire_in: 5min
-
-run_test_gcc_9_1:
-  stage: tests
-  extends: .init_build_gcc_9_1
-  script:
-    - export OMPI_MCA_btl_sm_use_knem=0
-    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
-    - autoreconf -i
-    - >
-      ./configure
-      CC=mpicc FC=mpifort
-      FCFLAGS="-O2 -march=native"
-      BUILD_FCFLAGS="-Wall -Wextra -Werror"
-      CFLAGS="-O2 -march=native"
-      BUILD_CFLAGS="-Wall -Wextra -Werror"
-      --disable-silent-rules
-# build yaxt and unit tests without running tests
-    - make -j8 2> >(tee make.err)
-# run tests
-    - make check
-  artifacts:
-    paths:
-      - config.log
-      - make.err
-    expire_in: 5min
-
-run_test_intel:
-  stage: tests
-  extends: .init_build_intel
-  script:
-    - autoreconf -i
-    - >
-      ./configure
-      FCFLAGS="-O0 -fpp -g"
-      CFLAGS="-Wall -O0 -g"
-      CC=mpiicc FC=mpiifort
-      --disable-silent-rules
-# build yaxt and unit tests without running tests
-    - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
-# run tests
-    - make check
-  artifacts:
-    paths:
-      - make.err
-    expire_in: 5min
-
-run_test_nag:
-  stage: tests
-  extends: .init_build_nag
-  script:
-    - export OMPI_MCA_btl_sm_use_knem=0
-    - export OMPI_MCA_btl_vader_single_copy_mechanism=none
-    - autoreconf -i
-    - >
-      ./configure
-      FCFLAGS="-C=alias -C=array -C=bits -C=dangling -C=do -C=intovf -C=present -C=pointer -C=recursion -gline -nan -g -fpp -colour=warn:yellow -wmismatch=mpi_pack,mpi_unpack,mpi_bcast,mpi_send,mpi_recv,mpi_allreduce,mpi_isend,mpi_irecv,mpi_allgather,mpi_allgatherv,mpi_gather,mpi_gatherv,mpi_sendrecv,mpi_type_get_extent,xt_slice_c_loc -w=uda -w=alloctr -w=uep -w=x77 -f2008 -Wc,-pipe"
-      CFLAGS="-O0 -g -pipe"
-      BUILD_CFLAGS="-Wall -Werror"
-      CC=mpicc FC=mpif90
-      --disable-silent-rules
+      MPI_LAUNCH="`which mpirun` --oversubscribe"
 # build yaxt and unit tests without running tests
     - make -j8 check TESTS= XFAIL_TESTS= 2> >(tee make.err)
 # run tests
@@ -216,7 +134,7 @@ gen_cov_rep_html:
   stage: documentation
   needs:
     - gen_cov_data
-  extends: .init_build_gcc_6_4
+  extends: .init_build_gcc_11_2_0
   rules:
     - if: '$CI_COMMIT_BRANCH == "master"'
       when: always
@@ -258,29 +176,13 @@ gen_cov_rep_html:
       - coverage_tests/
     expire_in: 5min
 
-check_warning_intel:
+check_warning_gcc_11_2_0:
   stage: tests
   extends: .check_warning
   variables:
     OUTPUT_FILE: make.err
   needs:
-    - run_test_intel
-
-check_warning_gcc_6_4:
-  stage: tests
-  extends: .check_warning
-  variables:
-    OUTPUT_FILE: make.err
-  needs:
-    - run_test_gcc_6_4
-
-check_warning_nag:
-  stage: tests
-  extends: .check_warning
-  variables:
-    OUTPUT_FILE: make.err
-  needs:
-    - run_test_nag
+    - run_test_gcc_11_2_0
 
 check_warning_doxy:
   stage: documentation
@@ -322,7 +224,7 @@ gen_cov_rep_xml:
   stage: documentation
   needs:
     - gen_cov_data
-  extends: .init_build_gcc_6_4
+  extends: .init_build_gcc_11_2_0
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event"'
       when: always
@@ -333,6 +235,8 @@ gen_cov_rep_xml:
     - gcovr --xml-pretty --exclude-unreachable-branches -o coverage.xml --root .
   coverage: /^\s*lines:\s*\d+.\d+\%/
   artifacts:
-    expire_in: 1 week
-    reports:
-      cobertura: coverage.xml
+   expire_in: 1 week
+   reports:
+     coverage_report:
+       coverage_format: cobertura
+       path: coverage.xml

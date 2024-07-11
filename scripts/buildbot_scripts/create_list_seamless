@@ -55,10 +55,13 @@ $addexp exp.seamless_bb-ecradmin --builders "levante_intel_hybrid levante_gcc_hy
 
 ## new seamless entries for DWD-NEC - needs compilation with yac2: DWD_nec_yac2
 #-----------------------------------------------------------
-## Prototype-1:
-$addexp checksuite.nwp/nwpexp.run_ICON_17_R2B4_AO_coupled  --builders DWD_nec_yac2   --list $listname
-## Prototype-2:
-$addexp checksuite.nwp/nwpexp.run_ICON_20_R2B4_R2B6_AO_coupled   --builders DWD_nec_yac2 --list $listname
+## Prototype-1 (identical grid):
+$addexp checksuite.nwp/nwpexp.run_ICON_17_R2B4_AO_coupled         --builders DWD_nec_yac2 --list $listname
+## Prototype-2 (different grid):
+$addexp checksuite.nwp/nwpexp.run_ICON_20_R2B4_R2B6_AO_coupled    --builders DWD_nec_yac2 --list $listname
+## Prototype-3 (TERRA and HD coupled through YAC):
+$addexp checksuite.nwp/nwpexp.run_ICON_26_R2B4_R2B6_AO-HD_coupled --builders DWD_nec_yac2 --list $listname
+
 
 #lets see the list
 ./lslist $listname

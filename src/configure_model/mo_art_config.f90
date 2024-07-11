@@ -107,6 +107,7 @@ MODULE mo_art_config
     INTEGER :: iart_volcano            !< Treatment of volcanic ash aerosol
     INTEGER :: iart_nonsph             !< Treatment of nonspherical particles
     INTEGER :: iart_isorropia          !< Treatment of gas aerosol partioning
+    INTEGER :: iart_seas_water         !< Calculation of seasalt water content
     CHARACTER(LEN=IART_PATH_LEN) :: &
       &  cart_volcano_file             !< Absolute path + filename of input file for volcanoes
     INTEGER :: iart_radioact           !< Treatment of radioactive particles
@@ -119,7 +120,11 @@ MODULE mo_art_config
     INTEGER :: iart_aci_warm           !< Nucleation of aerosol to cloud droplets
     INTEGER :: iart_aci_cold           !< Nucleation of aerosol to cloud ice
     INTEGER :: iart_ari                !< Direct interaction of aerosol with radiation
-    
+
+    LOGICAL :: lart_dusty_cirrus       !< Dusty cirrus parameterization in cloud cover scheme
+    REAL(wp):: rart_dustyci_crit       !< Dust threshold for dusty cirrus  [mug/kg]
+    REAL(wp):: rart_dustyci_rhi        !< RHi  threshold for dusty cirrus  [-]
+
     ! Treatment of grid scale and convective precipitation in dust washout
     INTEGER :: iart_aero_washout       !< 0:gscp+con; 1:gscp,con; 2:gscp,rcucov*con
 

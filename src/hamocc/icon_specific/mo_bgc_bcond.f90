@@ -163,7 +163,7 @@ CONTAINS
     ! Register a field list and apply default settings
     !
     CALL vlr_add(p_ext_bgc_list, TRIM(listname), patch_id=p_patch%id, &
-      &               lrestart=.FALSE., model_type=TRIM(get_my_process_name()))
+      &               lrestart=.FALSE., model_type=get_my_process_name())
     IF (.not. lsediment_only) THEN
      cf_desc    = t_cf_var('Dust cell center', 'kg m-2 yr-1', &
        &                   'DUST', DATATYPE_FLT32)
@@ -293,13 +293,13 @@ CONTAINS
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(dust_file), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(dust_file), NF90_NOWRITE, ncid), routine)
         CALL message( TRIM(routine),'HAMOCC dust file opened for read' )
 
         !
         !
-        CALL nf(nf_inq_dimid (ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         IF(p_patch%n_patch_cells_g /= no_cells) THEN
           CALL finish(TRIM(ROUTINE),&
@@ -309,8 +309,8 @@ CONTAINS
         !
         ! get number of timesteps
         !
-        CALL nf(nf_inq_dimid (ncid, 'time', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_tst), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_tst), routine)
         !
         ! check
         !
@@ -321,7 +321,7 @@ CONTAINS
           & 'Number of forcing timesteps is not equal 12 specified in namelist - ABORT')
         ENDIF
 
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       ENDIF
 
       CALL openinputfile(stream_id, dust_file, p_patch)
@@ -361,13 +361,13 @@ CONTAINS
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(dust_file), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(dust_file), NF90_NOWRITE, ncid), routine)
         CALL message( TRIM(routine),'HAMOCC nitrogen input file opened for read' )
 
         !
         !
-        CALL nf(nf_inq_dimid (ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         IF(p_patch%n_patch_cells_g /= no_cells) THEN
           CALL finish(TRIM(ROUTINE),&
@@ -377,8 +377,8 @@ CONTAINS
         !
         ! get number of timesteps
         !
-        CALL nf(nf_inq_dimid (ncid, 'time', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_tst), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_tst), routine)
         !
         ! check
         !
@@ -389,7 +389,7 @@ CONTAINS
           & 'Number of forcing timesteps is not equal 12 specified in namelist - ABORT')
         ENDIF
 
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       ENDIF
 
       CALL openinputfile(stream_id, dust_file, p_patch)
@@ -465,13 +465,13 @@ CONTAINS
         !
         ! open file
         !
-        CALL nf(nf_open(TRIM(dust_file), NF_NOWRITE, ncid), routine)
+        CALL nf(nf90_open(TRIM(dust_file), NF90_NOWRITE, ncid), routine)
         CALL message( TRIM(routine),'HAMOCC particle flux file opened for read' )
 
         !
         !
-        CALL nf(nf_inq_dimid (ncid, 'ncells', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_cells), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'ncells', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
 
         IF(p_patch%n_patch_cells_g /= no_cells) THEN
           CALL finish(TRIM(ROUTINE),&
@@ -481,15 +481,15 @@ CONTAINS
         !
         ! get number of timesteps
         !
-        CALL nf(nf_inq_dimid (ncid, 'time', dimid), routine)
-        CALL nf(nf_inq_dimlen(ncid, dimid, no_tst), routine)
+        CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
+        CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_tst), routine)
         !
         ! check
         !
         WRITE(message_text,'(A,I6,A)')  'HAMOCC particle flux file contains',no_tst,' data sets'
         CALL message( TRIM(routine), TRIM(message_text) )
 
-        CALL nf(nf_close(ncid), routine)
+        CALL nf(nf90_close(ncid), routine)
       ENDIF
 
       CALL openInputFile(stream_id, dust_file, p_patch)

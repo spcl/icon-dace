@@ -24,6 +24,7 @@ MODULE mo_radar_data_state
 
   USE mo_kind,               ONLY: wp
   USE mo_io_units,           ONLY: filename_max
+  USE mo_master_control,     ONLY: get_my_process_name
   USE mo_parallel_config,    ONLY: nproma
   USE mo_impl_constants,     ONLY: inwp, max_char_length, SUCCESS
   USE mo_run_config,         ONLY: iforcing, check_uuid_gracefully
@@ -336,7 +337,8 @@ CONTAINS
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(p_radar_ct_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(p_radar_ct_list, TRIM(listname), patch_id=p_patch%id, &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
     ! radar blacklist at cell center
     !
@@ -406,7 +408,8 @@ CONTAINS
     ! Register a field list and apply default settings
     !
     CALL vlr_add(p_radar_td_list, TRIM(listname), patch_id=p_patch%id, &
-      &               lrestart=.FALSE., loutput=.FALSE.)
+      &               lrestart=.FALSE., loutput=.FALSE.,               &
+      &               model_type=get_my_process_name())
 
     ! radobs       p_radar_td%obs(nproma,nblks_c,nobs_times)
     cf_desc    = t_cf_var('rad_precip', 'mm/h',   &
@@ -1032,7 +1035,8 @@ CONTAINS
     !
     ! Register a field list and apply default settings
     !
-    CALL vlr_add(lhn_fields_list, TRIM(listname), patch_id=p_patch%id, lrestart=.FALSE.)
+    CALL vlr_add(lhn_fields_list, TRIM(listname), patch_id=p_patch%id,   &
+      &          lrestart=.FALSE., model_type=get_my_process_name())
 
 
     ! ttend_lhn      lhn_fields%ttend_lhn(nproma,nlev,nblks_c)

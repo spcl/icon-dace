@@ -32,6 +32,7 @@ MODULE mo_io_nml
   USE mo_io_config,          ONLY: config_lkeep_in_sync           => lkeep_in_sync          , &
                                  & config_dt_diag                 => dt_diag                , &
                                  & config_gust_interval           => gust_interval          , &
+                                 & config_ff10m_interval          => ff10m_interval         , &
                                  & config_celltracks_interval     => celltracks_interval    , &
                                  & config_dt_lpi                  => dt_lpi                 , &
                                  & config_dt_hailcast             => dt_hailcast            , &
@@ -109,6 +110,7 @@ CONTAINS
     LOGICAL :: lkeep_in_sync              ! if .true., sync stream after each timestep
     REAL(wp):: dt_diag                    ! diagnostic output timestep [seconds]
     REAL(wp):: gust_interval(max_dom)     ! time interval over which maximum wind gusts are taken
+    REAL(wp):: ff10m_interval(max_dom)    ! time interval over which ff10m is averaged
     REAL(wp):: celltracks_interval(max_dom)  ! time interval over which extrema of cell track vars are taken
                                              !  (LPI_MAX, UH_MAX, VORW_CTMAX, W_CTMAX, DBZ_CTMAX)
     TYPE(t_echotop_meta) :: echotop_meta(max_dom) ! meta data for echotops (ECHOTOP, ECHOTOPinM)
@@ -204,7 +206,7 @@ CONTAINS
       &              dt_hailcast, wdur_min_hailcast,                      &
       &              dt_radar_dbz, sunshine_interval, itype_dursun,       &
       &              itype_convindices, itype_hzerocl, melt_interval,     &
-      &              wshear_uv_heights, srh_heights
+      &              wshear_uv_heights, srh_heights, ff10m_interval
 
     !-----------------------
     ! 1. default settings
@@ -218,6 +220,7 @@ CONTAINS
     dt_checkpoint           = 0._wp  ! unspecified
 
     gust_interval(:)        = 3600._wp     ! 1 hour
+    ff10m_interval(:)       = 600._wp      ! 10 min
     celltracks_interval(:)  = 3600._wp     ! 1 hour
     DO jg=1, max_dom 
       ! echotop_meta(jg)%nechotop will be re-computed later in mo_nml_crosscheck.f90
@@ -316,6 +319,7 @@ CONTAINS
     config_lkeep_in_sync           = lkeep_in_sync
     config_dt_diag                 = dt_diag
     config_gust_interval(:)        = gust_interval(:)
+    config_ff10m_interval(:)       = ff10m_interval(:)
     config_celltracks_interval(:)  = celltracks_interval(:)
     config_echotop_meta(:)         = echotop_meta(:)
     config_precip_interval(:)      = precip_interval(:)

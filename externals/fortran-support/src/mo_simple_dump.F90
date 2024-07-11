@@ -28,9 +28,9 @@ MODULE mo_simple_dump
 CONTAINS
 
   SUBROUTINE dump2text1_wp(array, name, preserve_original)
-    REAL(wp), INTENT(inout) :: array(:)
-    CHARACTER(len=*), INTENT(in) :: name
-    LOGICAL, INTENT(in), OPTIONAL :: preserve_original
+    REAL(wp), INTENT(INOUT) :: array(:)
+    CHARACTER(len=*), INTENT(IN) :: name
+    LOGICAL, INTENT(IN), OPTIONAL :: preserve_original
 
     LOGICAL :: do_copy
     REAL(wp), ALLOCATABLE :: backup(:)
@@ -49,9 +49,9 @@ CONTAINS
   END SUBROUTINE dump2text1_wp
 
   SUBROUTINE dump2text2_wp(array, name, preserve_original)
-    REAL(wp), INTENT(inout) :: array(:, :)
-    CHARACTER(len=*), INTENT(in) :: name
-    LOGICAL, INTENT(in), OPTIONAL :: preserve_original
+    REAL(wp), INTENT(INOUT) :: array(:, :)
+    CHARACTER(len=*), INTENT(IN) :: name
+    LOGICAL, INTENT(IN), OPTIONAL :: preserve_original
 
     LOGICAL :: do_copy
     REAL(wp), ALLOCATABLE :: backup(:, :)
@@ -70,9 +70,9 @@ CONTAINS
   END SUBROUTINE dump2text2_wp
 
   SUBROUTINE dump2text3_wp(array, name, preserve_original)
-    REAL(wp), INTENT(inout) :: array(:, :, :)
-    CHARACTER(len=*), INTENT(in) :: name
-    LOGICAL, INTENT(in), OPTIONAL :: preserve_original
+    REAL(wp), INTENT(INOUT) :: array(:, :, :)
+    CHARACTER(len=*), INTENT(IN) :: name
+    LOGICAL, INTENT(IN), OPTIONAL :: preserve_original
 
     LOGICAL :: do_copy
     REAL(wp), ALLOCATABLE :: backup(:, :, :)

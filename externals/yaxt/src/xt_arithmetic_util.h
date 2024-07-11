@@ -101,6 +101,20 @@ isign_mask(int x)
 #endif
 }
 
+/**
+ * @return ~0 if x < 0, 0 otherwise
+ */
+static inline MPI_Aint
+asign_mask(MPI_Aint x)
+{
+#if (-1 >> 1) == -1
+  return x >> (sizeof (MPI_Aint) * CHAR_BIT - 1);
+#else
+#warning Unusual behaviour of shift operator detected.
+  return (x < 0) * ~(MPI_Aint)0;
+#endif
+}
+
 
 /**
  * @return ~(Xt_int)0 if x < 0, 0 otherwise

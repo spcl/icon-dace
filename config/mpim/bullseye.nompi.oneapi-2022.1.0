@@ -33,7 +33,7 @@ else
   # installation of RTTOV if you want to build ICON with it but do not have read
   # access to the installation in ${sw_root}:
   # RTTOV_ROOT='/path/to/rttov'
-  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV}/include"
+  # RTTOV_FCFLAGS="-I${RTTOV_ROOT}/mod -I${RTTOV_ROOT}/include"
   # RTTOV_LDFLAGS="-L${RTTOV_ROOT}/lib"
   # RTTOV_LIBS='-lrttov_other -lrttov_emis_atlas -lrttov_brdf_atlas -lrttov_parallel -lrttov_coef_io -lrttov_hdf -lrttov_main'
 fi
@@ -53,7 +53,7 @@ CXXFLAGS='-g -march=native -pc64 -ftz -fma -qno-opt-dynamic-align -O2'
 CPPFLAGS="-I${sw_root}/include -I${sw_root}/include/libxml2"
 
 FC='ifx'
-FCFLAGS="-I${sw_root}/include ${RTTOV_FCFLAGS-} -g -march=native -pc64 -fp-model source"
+FCFLAGS="${RTTOV_FCFLAGS-} -I${sw_root}/include -g -march=native -pc64 -fp-model source"
 
 common_ICON_FCFLAGS='-ftz -qoverride-limits -assume realloc_lhs -align array64byte -fma'
 
@@ -62,14 +62,14 @@ ICON_FCFLAGS="-O3 ${common_ICON_FCFLAGS}"
 ICON_OCEAN_FCFLAGS='-O3 -assume norealloc_lhs -reentrancy threaded -DOCE_SOLVE_OMP'
 ICON_OCEAN_PATH='src/hamocc:src/ocean:src/sea_ice'
 
-ICON_ECRAD_FCFLAGS='-qno-opt-dynamic-align -no-fma -fpe0'  # no optimization?
+ICON_ECRAD_FCFLAGS='-qno-opt-dynamic-align -no-fma -fpe0'
 
-LDFLAGS="-L${sw_root}/lib ${RTTOV_LDFLAGS-} -Wl,--disable-new-dtags"
-LIBS="-Wl,--as-needed -lxml2 -lSerialboxFortran -leccodes_f90 -leccodes ${RTTOV_LIBS-} -llapack -lblas -lnetcdff -lnetcdf -lhdf5_hl_fortran -lhdf5_fortran -lhdf5 -lz"
+LDFLAGS="${RTTOV_LDFLAGS-} -L${sw_root}/lib -Wl,--disable-new-dtags"
+LIBS="-Wl,--as-needed -lxml2 -lSerialboxFortran -leccodes ${RTTOV_LIBS-} -llapack -lblas -lnetcdff -lnetcdf -lhdf5_hl_fortran -lhdf5_fortran -lhdf5"
 
 AR='xiar'
 
-EXTRA_CONFIG_ARGS='--disable-mpi --disable-coupling --enable-grib2 --enable-fcgroup-OCEAN'
+EXTRA_CONFIG_ARGS='--enable-loop-exchange --enable-intel-consistency --disable-mpi --disable-coupling --enable-grib2 --enable-fcgroup-OCEAN'
 
 ################################################################################
 

@@ -9,7 +9,7 @@
 # Keywords: create autotool configured release in git
 # Author: Thomas Jahns <jahns@dkrz.de>
 # Maintainer: Thomas Jahns <jahns@dkrz.de>
-# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 #
 # Redistribution and use in source and binary forms, with or without
 # modification, are  permitted provided that the following conditions are
@@ -42,6 +42,12 @@
 set -e
 new_version=$1
 script_dir=scripts/release
+if command -v shellcheck >/dev/null; then
+  ${MAKE-make} -C scripts/release shellcheck
+  ${MAKE-make} -C scripts/git-hooks shellcheck
+else
+  printf "%s\n" 'warning: cannot find shellcheck'
+fi
 # check the whole kit is there
 if [[ -w configure.ac && -r configure.ac && \
         -x "${script_dir}/make-release" ]]; then
@@ -51,6 +57,24 @@ if [[ -w configure.ac && -r configure.ac && \
     echo 'error: modified files found!' >&2
     exit 1
   fi
+  source "${script_dir}/get-package-and-version.shinc"
+  if [[ ${tmpsrcdir+set} = '' ]]; then
+    if [[ -d /dev/shm && -w /dev/shm ]]; then
+      tmpsrcdir=/dev/shm
+    else
+      tmpsrcdir=/tmp
+    fi
+    origsrcdir=$PWD
+    tmpsrcdir=$(mktemp -d "${tmpsrcdir}/${package}-src-$(id -un)-XXXXXX")
+    if (( ${DEBUG:-0} == 0)) && [[ -z "${KEEP_BUILDDIR-}" ]] ; then
+      trap 'cp -rp "$tmpsrcdir"/*-release-logs "$origsrcdir"; rm -rf "$tmpsrcdir"' EXIT
+    fi
+  fi
+  if [[ -z "$commit_to_release" ]]; then
+    commit_to_release=$(git rev-parse --abbrev-ref HEAD)
+  fi
+  git clone -b "$commit_to_release" . "$tmpsrcdir"
+  pushd "$tmpsrcdir"
   # shellcheck source=setup-sed.shinc
   . "${script_dir}/setup-sed.shinc"
   # 1. insert new version
@@ -77,17 +101,19 @@ if [[ -w configure.ac && -r configure.ac && \
     exit 1
   fi
   # now that the tree is prepared, perform everything we need for the release
-  exec ${script_dir}/make-release
+  ${script_dir}/make-release
+  git push origin "v${new_version}" "release-${new_version}"
+  popd
 else
   echo 'error: insufficient permissions for configure.ac or' \
-       '${script_dir}/make-release!' >&2
+       "${script_dir}/make-release!" >&2
   exit 1
 fi
 #
 # Local Variables:
 # mode: sh
 # coding: utf-8
-# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 # license-default: "bsd"
 # End:
 #

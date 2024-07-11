@@ -118,34 +118,38 @@ ABSTRACT INTERFACE
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
   END SUBROUTINE interface_delete_comm_pattern
 
-  SUBROUTINE interface_exchange_data_r3d(p_pat, recv, send, add)
+  SUBROUTINE interface_exchange_data_r3d(p_pat, lacc, recv, send, add)
     IMPORT t_comm_pattern, dp
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT)   :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET        :: recv(:,:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
   END SUBROUTINE interface_exchange_data_r3d
 
-  SUBROUTINE interface_exchange_data_s3d(p_pat, recv, send, add)
+  SUBROUTINE interface_exchange_data_s3d(p_pat, lacc, recv, send, add)
     IMPORT t_comm_pattern, sp
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT)   :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(sp), INTENT(INOUT), TARGET        :: recv(:,:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
   END SUBROUTINE interface_exchange_data_s3d
 
-  SUBROUTINE interface_exchange_data_i3d(p_pat, recv, send, add)
+  SUBROUTINE interface_exchange_data_i3d(p_pat, lacc, recv, send, add)
     IMPORT t_comm_pattern
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT)  :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     INTEGER, INTENT(INOUT), TARGET        :: recv(:,:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:,:)
   END SUBROUTINE interface_exchange_data_i3d
 
   SUBROUTINE interface_exchange_data_mult( &
-    p_pat, ndim2tot, recv, send, nshift)
+    p_pat, lacc, ndim2tot, recv, send, nshift)
     IMPORT t_comm_pattern, t_ptr_3d
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     TYPE(t_ptr_3d), PTR_INTENT(IN) :: recv(:)
     TYPE(t_ptr_3d), PTR_INTENT(IN), OPTIONAL :: send(:)
     INTEGER, INTENT(IN)           :: ndim2tot
@@ -153,10 +157,11 @@ ABSTRACT INTERFACE
   END SUBROUTINE interface_exchange_data_mult
 
   SUBROUTINE interface_exchange_data_mult_mixprec( &
-    p_pat, nfields_dp, ndim2tot_dp, nfields_sp, ndim2tot_sp, recv_dp, send_dp, &
+    p_pat, lacc, nfields_dp, ndim2tot_dp, nfields_sp, ndim2tot_sp, recv_dp, send_dp, &
     recv_sp, send_sp, nshift)
     IMPORT t_comm_pattern, t_ptr_3d, t_ptr_3d_sp
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: recv_dp(:)
     TYPE(t_ptr_3d), PTR_INTENT(in), OPTIONAL :: send_dp(:)
     TYPE(t_ptr_3d_sp), PTR_INTENT(in), OPTIONAL :: recv_sp(:)
@@ -166,52 +171,58 @@ ABSTRACT INTERFACE
     INTEGER, OPTIONAL, INTENT(IN) :: nshift
   END SUBROUTINE interface_exchange_data_mult_mixprec
 
-  SUBROUTINE interface_exchange_data_4de1(p_pat, nfields, ndim2tot, recv, send)
+  SUBROUTINE interface_exchange_data_4de1(p_pat, lacc, nfields, ndim2tot, recv, send)
     IMPORT t_comm_pattern, dp
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT) :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT)           :: recv(:,:,:,:)
     REAL(dp), INTENT(IN   ), OPTIONAL :: send(:,:,:,:)
     INTEGER, INTENT(IN)           :: nfields, ndim2tot
   END SUBROUTINE interface_exchange_data_4de1
 
-  SUBROUTINE interface_exchange_data_r2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE interface_exchange_data_r2d(p_pat, lacc, recv, send, add, l_recv_exists)
     IMPORT t_comm_pattern, dp
     CLASS(t_comm_pattern), INTENT(INOUT), TARGET :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(dp), INTENT(INOUT), TARGET        :: recv(:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     REAL(dp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
   END SUBROUTINE interface_exchange_data_r2d
 
-  SUBROUTINE interface_exchange_data_s2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE interface_exchange_data_s2d(p_pat, lacc, recv, send, add, l_recv_exists)
     IMPORT t_comm_pattern, sp
     CLASS(t_comm_pattern), INTENT(INOUT), TARGET :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     REAL(sp), INTENT(INOUT), TARGET        :: recv(:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     REAL(sp), INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
   END SUBROUTINE interface_exchange_data_s2d
 
-  SUBROUTINE interface_exchange_data_i2d(p_pat, recv, send, add, l_recv_exists)
+  SUBROUTINE interface_exchange_data_i2d(p_pat, lacc, recv, send, add, l_recv_exists)
     IMPORT t_comm_pattern
     CLASS(t_comm_pattern), INTENT(INOUT), TARGET :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     INTEGER, INTENT(INOUT), TARGET        :: recv(:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     INTEGER, INTENT(IN), OPTIONAL, TARGET :: add (:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
   END SUBROUTINE interface_exchange_data_i2d
 
-  SUBROUTINE interface_exchange_data_l2d(p_pat, recv, send, l_recv_exists)
+  SUBROUTINE interface_exchange_data_l2d(p_pat, lacc, recv, send, l_recv_exists)
     IMPORT t_comm_pattern
     CLASS(t_comm_pattern), INTENT(INOUT), TARGET :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     LOGICAL, INTENT(INOUT), TARGET        :: recv(:,:)
     LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:)
     LOGICAL, OPTIONAL :: l_recv_exists
   END SUBROUTINE interface_exchange_data_l2d
 
-  SUBROUTINE interface_exchange_data_l3d(p_pat, recv, send)
+  SUBROUTINE interface_exchange_data_l3d(p_pat, lacc, recv, send)
     IMPORT t_comm_pattern
     CLASS(t_comm_pattern), TARGET, INTENT(INOUT)  :: p_pat
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     LOGICAL, INTENT(INOUT), TARGET        :: recv(:,:,:)
     LOGICAL, INTENT(IN), OPTIONAL, TARGET :: send(:,:,:)
   END SUBROUTINE interface_exchange_data_l3d
@@ -239,10 +250,11 @@ ABSTRACT INTERFACE
     CLASS(t_comm_pattern_collection), INTENT(INOUT) :: pattern_collection
   END SUBROUTINE interface_delete_comm_pattern_collection
 
-  SUBROUTINE interface_exchange_data_grf(p_pat_coll, nfields, ndim2tot, &
+  SUBROUTINE interface_exchange_data_grf(p_pat_coll, lacc, nfields, ndim2tot, &
        recv, send)
     IMPORT t_comm_pattern_collection, t_ptr_3d
     CLASS(t_comm_pattern_collection), TARGET, INTENT(INOUT) :: p_pat_coll
+    LOGICAL, INTENT(IN) :: lacc ! If true, use openacc
     INTEGER, INTENT(IN) :: nfields
     INTEGER, INTENT(IN) :: ndim2tot
     ! recv itself is intent(in), but the pointed to data will be modified

@@ -159,8 +159,6 @@ MODULE mo_art_chem_types_param
       PROCEDURE :: fill_init => linoz_fill_init
       PROCEDURE :: set_tracer_linoz
       PROCEDURE :: integrate => linoz_integrate
-      PROCEDURE :: convert_mmr => convert_vmr_to_mmr
-      PROCEDURE :: convert_vmr => convert_mmr_to_vmr
 
   END TYPE t_chem_meta_linoz
 
@@ -1113,48 +1111,6 @@ SUBROUTINE linoz_integrate(this)
 
 END SUBROUTINE linoz_integrate
 
-SUBROUTINE convert_vmr_to_mmr(this)
-!<
-! SUBROUTINE convert_vmr_to_mmr
-! Convert the volume mixing ratio to mass mixing ratio
-! Part of Module: mo_art_chem_types
-! Author: Jennifer Schroeter, KIT
-! Initial Release: aronund 2018-10
-! Modifications:
-!>
-  CLASS(t_chem_meta_linoz),INTENT(inout) :: &
-    &  this           !< Container with fields
-  REAL(wp) ::  &
-    &  mol_weight     !< molar weight of the tracer (kg / mol)
-  INTEGER ::   &
-    &  ierror         !< flag if element exists in storage
-
-  CALL this%opt_meta%get('mol_weight',mol_weight,ierror)
-   
-
-  this%tracer = this%tracer/(mol_weight*1000._wp/ amd)
-END SUBROUTINE  convert_vmr_to_mmr
-
-
-SUBROUTINE convert_mmr_to_vmr(this)
-!<
-! SUBROUTINE convert_mmr_to_vmr
-! Convert the mass mixing ratio to volume mixing ratio
-! Part of Module: mo_art_chem_types
-! Author: Jennifer Schroeter, KIT
-! Initial Release: aronund 2018-10
-! Modifications:
-!>
-  CLASS(t_chem_meta_linoz),INTENT(inout) :: &
-    &  this           !< Container with fields
-  REAL(wp) ::  &
-    &  mol_weight     !< molar weight of the tracer (kg / mol)
-  INTEGER ::   &
-    &  ierror         !< flag if element exists in storage
-
-  CALL this%opt_meta%get('mol_weight',mol_weight,ierror)
-  this%tracer = this%tracer * (mol_weight*1000._wp/ amd)
-END SUBROUTINE  convert_mmr_to_vmr
 
 !##############################################################
 ! Simnoy routines

@@ -5,7 +5,7 @@ dnl Version: 1.0
 dnl Keywords: configure configure.ac autotools
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
-dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
+dnl URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are  permitted provided that the following conditions are
@@ -46,7 +46,7 @@ dnl    [INCLUDE], [EXTRA-INCLUDES], [EXTRA-INCLUDEFLAGS],
 dnl       [ACTION-IF_HEADER-NOT-FOUND],
 dnl    [FUNCTION], [LIB-CANDIDATES], [EXTRA-LIBS], [EXTRA-LIBFLAGS],
 dnl      [ACTION-IF-LIB-NOT-FOUND],
-dnl    [DEFAULT-ROOT], [EXTRA-INCLUDE-PATHS-TO-TRY])
+dnl    [DEFAULT-ROOT])
 dnl -------------------------------------------------------------------
 dnl Check whether INCLUDE can be compiled and FUNCTION is found in
 dnl LIB-CANDIDATES. Sets PACKAGE_C_LIB and PACKAGE_C_INCLUDE variables to
@@ -57,7 +57,7 @@ dnl Also defines configure --with arguments for PACKAGEROOT,
 dnl PACKAGE-LIB and PACKAGE-INCLUDE.
 AC_DEFUN([ACX_C_PACKAGE],
   [AC_LANG_PUSH([C])
-   ACX_GENERIC_PACKAGE([$1],[$2],[-I],[$3],[$4],[$5],[$6],[-L],[$7],[$8],[$9],[$10],[$11],[$12],[$13])
+   ACX_GENERIC_PACKAGE([$1],[$2],[-I],[$3],[$4],[$5],[$6],[-L],[$7],[$8],[$9],[$10],[$11],[$12])
    AC_LANG_POP([C])dnl
   ])
 dnl

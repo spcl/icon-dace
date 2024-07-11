@@ -6,7 +6,7 @@ dnl Version: 1.0
 dnl Keywords:
 dnl Author: Thomas Jahns <jahns@dkrz.de>
 dnl Maintainer: Thomas Jahns <jahns@dkrz.de>
-dnl URL: https://www.dkrz.de/redmine/projects/scales-ppm
+dnl URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
 dnl
 dnl Redistribution and use in source and binary forms, with or without
 dnl modification, are  permitted provided that the following conditions are
@@ -46,13 +46,18 @@ AC_DEFUN([ACX_MV_OBJ],
        [Rename FROM.$ac_objext to TO.$ac_objext, and return whether this succeeded.])],
      [AS_LINENO_PUSH([$[]1])
       acx_path_from=`echo "$[]2" | sed -e 's!/\{0,1\}@<:@^/@:>@*$[]!!'`
-      test -z "$acx_path_from" && ASX_VAR_UNSET([acx_path_from])
+      test -z "$acx_path_from" && acx_path_from=.
       acx_fn_from=`echo "$[]2" | sed -e 's@^.*/@@'`
       acx_path_to=`echo "$[]3" | sed -e 's!/\{0,1\}@<:@^/@:>@*$[]!!'`
-      test -z "$acx_path_to" && ASX_VAR_UNSET([acx_path_to])
+      test -z "$acx_path_to" && acx_path_to=.
       acx_fn_to=`echo "$[]3" | sed -e 's@^.*/@@'`
       AS_IF([expr "$ac_compile" : '.*/libtool --mode=compile' >/dev/null],
-        [_AC_RUN_LOG([sed 's@\(pic_object='"'\)"'\(\(.libs/\)\{0,1\}\)'"$acx_fn_from"'\.o'"'"'@\1\2'"$acx_fn_to"'.o'"'"'@' "$][2.$ac_objext" >"$][3.$ac_objext" && rm "$][2.$ac_objext" && if test -f "$][2.$OBJEXT" ; then mv "$][2.$OBJEXT" "$][3.$OBJEXT" ; fi && if test -f "${acx_path_from+$acx_path_from/}.libs/$acx_fn_from.$OBJEXT" ; then as_dir="${acx_path_to-.}/.libs" as_fn_mkdir_p ; mv "${acx_path_from+$acx_path_from/}.libs/$acx_fn_from.$OBJEXT" "${acx_path_to+$acx_path_to/}.libs/$acx_fn_to.$OBJEXT" ; fi],
+        [_AC_RUN_LOG([sed 's@\(pic_object='"'\)"'\(\(.libs/\)\{0,1\}\)'"$acx_fn_from"'\.o'"'"'@\1\2'"$acx_fn_to"'.o'"'"'@' "$][2.$ac_objext" >"$][3.$ac_objext" && rm "$][2.$ac_objext" \
+        && if test -f "$][2.$OBJEXT" ; then mv "$][2.$OBJEXT" "$][3.$OBJEXT" ; fi \
+        && if test -f "$acx_path_from/.libs/$acx_fn_from.$OBJEXT" ; then \
+          as_dir="$acx_path_to/.libs" as_fn_mkdir_p ; \
+          mv "$acx_path_from/.libs/$acx_fn_from.$OBJEXT" \
+             "$acx_path_to/.libs/$acx_fn_to.$OBJEXT" ; fi],
             [_AS_ECHO_LOG([Renaming object file $][2.$ac_objext to $][3.$ac_objext.])])],
          [_AC_RUN_LOG([mv "$][2.$ac_objext" "$][3.$ac_objext"],
             [_AS_ECHO_LOG([Renaming object file $][2.$ac_objext to $][3.$ac_objext.])])])
@@ -64,7 +69,7 @@ dnl
 dnl
 dnl Local Variables:
 dnl mode: autoconf
-dnl license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+dnl license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
 dnl license-default: "bsd"
 dnl End:
 dnl

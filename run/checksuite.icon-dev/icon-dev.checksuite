@@ -16,11 +16,12 @@ set +x
 cd ..
 
 # get paths standardized by pwd
-SCRIPT_DIR=`pwd`
+SCRIPT_DIR=${SCRIPT_DIR:=`pwd`}
 cd ..
 MODEL_DIR=`pwd`
 cd $SCRIPT_DIR
 
+PREFIX=${PREFIX:=exp}
 
 #################### functions ##########################################
 function one_or_more_are_files
@@ -150,43 +151,12 @@ function copy_experiment
     fi
 }
 #------------------------------------------------------------------------
-function print_mode
-{
-    typeset MOD
-    MOD=$1
-    case $MOD in  
-        'b') PRINT_MD='b(ase)';;
-        'u') PRINT_MD='u(pdate)';;
-        'r') PRINT_MD='r(estart)';;
-        'n') PRINT_MD='n(proma)';;
-        'm') PRINT_MD='m(pi)';;
-        'o') PRINT_MD='o(mp)';;
-        't') PRINT_MD='t(olerance)';;
-        *) PRINT_MD=$MOD;;
-    esac
-    echo "- test mode    = $PRINT_MD"
-}
-#------------------------------------------------------------------------
 function print_usage
 {
-    typeset COMMAND MOD_ARG
+    typeset COMMAND
     COMMAND=$1
-    MOD_ARG=""
-
-    for MOD in $MODES; do
-        case $MOD in  
-            'b') MD='b(ase)';;
-            'u') MD='u(pdate)';;
-            'r') MD='r(estart)';;
-            'n') MD='n(proma)';;
-            'm') MD='m(pi)';;
-            'o') MD='o(mp)';;
-            't') MD='t(olerance)';;
-            *) MD=$MOD;;
-        esac
-        MOD_ARG=$MOD_ARG'|'$MD
-    done 
-    echo "usage: ${COMMAND} [-c] [-d <dates>] [-e <experiment>] [-f yes|no] [-h] [-m $MOD_ARG] [-o yes|no] [-r <reference model path>] [-s <restart_date>] [-t <files>] [-u]"
+    
+    echo "usage: ${COMMAND} [-c] [-d <dates>] [-e <experiment>] [-f yes|no] [-h] [-m <modes>] [-o yes|no] [-r <reference model path>] [-s <restart_date>] [-t <files>] [-u]"
     echo '-c : colour output'
     echo '-d : string containing the dates of the output files of the respective '
     echo '     experiment, default depends on experiment' 
@@ -194,10 +164,10 @@ function print_usage
     echo '-f : '"'yes'"': force make_runscripts even if base runscript exists (default)'
     echo '     '"'no'"': perform make_runscripts only if no runscripts are available'
     echo '-h : display help'
-    echo '-m : test mode, either single tests like base, update, restart,'
-    echo '     nproma, mpi, omp, or tolerance test'
-    echo '     or combined tests like ur (update and restart) possible'
-    echo '     Default mode: rnmo'
+    echo '-m : combination of letters representing possible tests to be ran:'
+    echo '     (u)pdate, (r)estart, (n)proma, (m)pi, (o)mp, (t)olerance, (p)erformance,'
+    echo '     (c)ompute-sanitizer and cuda-(g)raph'
+    echo '     Default: rnmo'
     echo '-o : '"'yes'"': overwrite existing experiments (default)'
     echo '     '"'no'"': use existing experiments'
     echo '-r : reference model path'
@@ -291,7 +261,7 @@ function diff_results
     
         for DATE in $DIFF_DATES; do
     
-            echo "----------------------------------------------------------------"
+            echo "------------------------------------------------------------------"
             echo "Compare for DATE=$DATE"
             DIFFERENT_TYPES=''
     
@@ -396,32 +366,6 @@ function diff_results
     fi
 }
 #------------------------------------------------------------------------
-function string_in_list
-{
-    typeset STR_IN_LIST STR
-    STR_IN_LIST=false
-    STR=$1
-    N=$#
-    M=2
-    LIST=""
-    while [ $M -le $N ]; do
-        ARG=$(eval echo \${$M})
-        LIST=$LIST" "$ARG
-        M=$(( M + 1 ))
-    done
-    for ELEMENT in $LIST; do
-        if [ "$STR" == $ELEMENT ]; then
-            STR_IN_LIST=true
-        fi
-    done 
-    if [ "$STR_IN_LIST" == 'true' ]; then
-        return 0
-    else
-        return 1
-    fi
-}
-
-#------------------------------------------------------------------------
 function tolerance_check
 {
     typeset MODEL_DIR1 EXP_BASE EXPERIMENT STATUS
@@ -431,7 +375,7 @@ function tolerance_check
 
     cd $MODEL_DIR
     builder=$(echo "${BB_NAME}" | tr '[:upper:]' '[:lower:]')
-    run/tolerance/check_tolerance "$EXPERIMENT" "${builder/_gpu_/_cpu_}" "$MODEL_DIR1" "$EXP_BASE" "$FACTOR"
+    run/tolerance/check_tolerance "$EXPERIMENT" "${builder/_gpu/_cpu}" "$MODEL_DIR1" "$EXP_BASE" "$FACTOR"
     return $?
 }
 
@@ -489,6 +433,7 @@ function performance_check
     return $TOL_STATUS
 }
 
+#------------------------------------------------------------------------
 make_sure_cdo_exists_and_runs() {
 
     # is cdo in PATH?
@@ -507,12 +452,52 @@ make_sure_cdo_exists_and_runs() {
 
 
 }
+
+#------------------------------------------------------------------------
+# Functions to set or get namelist parameters assuming one parameter per line 
+
+nml_replace(){
+    PARAM=$1
+    VALUE=$2
+    FILE=$3
+    if grep -q '^[[:space:]]*'${PARAM}'[[:space:]]*=' ${FILE}; then
+        sed 's/\(^\s*'$PARAM'\s*=\s*\).*$/\1'${VALUE}'/' < ${FILE} > ${FILE}.out
+        mv ${FILE}.out ${FILE}
+    else
+        echo "$0:${FUNCNAME}: ERROR parameter ${PARAM} not found in ${FILE}"
+        exit 1
+    fi
+}
+
+nml_add(){
+    PARAM=$1
+    VALUE=$2
+    NML=$3
+    FILE=$4
+    if grep -q '^[[:space:]]*&'${NML}'[[:space:]]*' ${FILE}; then
+        sed -e '/\s*&'${NML}'/a\'$'\n'${PARAM}' = '${VALUE} < ${FILE} > ${FILE}.out
+        mv ${FILE}.out ${FILE}
+    else
+        echo "$0:${FUNCNAME}: ERROR namelist ${NML} not found in ${FILE}"
+        exit 1
+    fi
+}
+
+nml_replace_or_add(){
+    PARAM=$1
+    VALUE=$2
+    NML=$3
+    FILE=$4
+    if grep -q '^[[:space:]]*'${PARAM}'[[:space:]]*=' ${FILE}; then
+        nml_replace ${PARAM} ${VALUE} ${FILE}
+    else
+        nml_add ${PARAM} ${VALUE} ${NML} ${FILE}
+    fi
+}
+
 #################### main script ########################################
 
 date
-
-# possible test modes
-MODES="b u r n m o t p c ur un um uo rn rm ro nm no mo mp mc tp tc urn urm uro unm uno umo rnm rno rmo nmo tmp tmc urnm urno urmo unmo rnmo urnmo rnmot"
 
 while getopts ":cd:e:f:hm:o:r:s:t:u" OPT; do
     case $OPT in
@@ -542,6 +527,7 @@ while getopts ":cd:e:f:hm:o:r:s:t:u" OPT; do
                 'tolerance')         MD='t';;
                 'performance')       MD='p';;
                 'compute-sanitizer') MD='c';;
+                'cuda-graph')        MD='g';;
                 *)                   MD=$MODE;;
             esac
 
@@ -551,7 +537,7 @@ while getopts ":cd:e:f:hm:o:r:s:t:u" OPT; do
             do
                char=$(expr substr "$MD" $i 1)
                case "$char" in
-                  b|u|r|n|m|o|t )
+                  b|u|r|n|m|o|t|p|c|g )
                      (( i += 1 ))
                      ;;
                   *) 
@@ -568,8 +554,7 @@ while getopts ":cd:e:f:hm:o:r:s:t:u" OPT; do
             fi
             ;;
         r  ) REFERENCE=$OPTARG
-            CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
-            if string_in_list $MD $CMODES; then
+            if [[ ${MD} =~ .*u.* ]]; then
                 if [ ! -d ${REFERENCE} ]; then
 	            echo 'you asked for an update test, but no reference model found'
 	            echo "reference model ${REFERENCE} does not exist"
@@ -610,6 +595,7 @@ FORCE_MRS=${FORCE_MRS='yes'}
 # t = tolerance test
 # p = performance test
 # c = compute-sanitizer test
+# g = cuda-graph
 #
 MD=${MD='rnmo'}
 # Force to overwrite existing experiments even if they are present
@@ -642,7 +628,7 @@ if [ "${EXPERIMENT}" == 'atm_jww_hs_test' ]; then
     RESTART_DATE=${RESTART_DATE='20080901T003000Z'}
 fi
 if [ "${EXPERIMENT}" == 'atm_ape_test' ]; then
-    TYPES=${TYPES='atm_2d_ml atm_3d_ml phy_3d_ml trc_3d_ml'}
+    TYPES=${TYPES='atm_2d_ml atm_3d_ml phy_3d_ml'}
     DATES=${DATES='19790101T000000Z 19790101T000400Z 19790101T000800Z 19790101T001200Z 19790101T001600Z'}
     RESTART_DATE=${RESTART_DATE='19790101T000800Z'}
 fi
@@ -668,7 +654,7 @@ if [ "${EXPERIMENT}" == 'atm_2mom_bubble_rceTorus_test' ]; then
 fi
 
 echo " "
-echo "=============================================================="
+echo "=================================================================="
 echo " "
 echo "Run the checksuite for:"
 echo "- EXPERIMENT   = ${EXPERIMENT:?   is not defined --> ERROR}"
@@ -676,12 +662,11 @@ echo "- TYPES        = ${TYPES:?        is not defined --> ERROR}"
 echo "- DATES        = ${DATES:?        is not defined --> ERROR}"
 echo "- RESTART_DATE = ${RESTART_DATE:? is not defined --> ERROR}"
 echo "- CHECK MODE   = ${MD:?           is not defined --> ERROR}"
-echo "--------------------------------------------------------------"
+echo "------------------------------------------------------------------"
 echo " "
 
 # check if REFERENCE is defined if an update test is requested
-CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*u.* ]]; then
     echo "- REFERENCE    = ${REFERENCE:?  is not defined --> ERROR}"
 
     # get reference path standardized by pwd; exit if path is not available
@@ -700,8 +685,10 @@ SCRIPT=${EXPERIMENT}
 
 cd ${MODEL_DIR}
 
-if [ ! -f ${SCRIPT_DIR}/exp.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
-    ./make_runscripts ${SCRIPT} -d
+MRS_SUBDIR="${SCRIPT_DIR#${MODEL_DIR}}"
+
+if [ ! -f ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
+    ./make_runscripts ${SCRIPT} -d ${MRS_SUBDIR:+-r ${MRS_SUBDIR}}
 fi
 
 if [ ! -d experiments ]; then
@@ -709,19 +696,19 @@ if [ ! -d experiments ]; then
 fi
 
 # check if the test runscript exists
-if [ ! -f ${SCRIPT_DIR}/exp.${SCRIPT}.run ]; then
+if [ ! -f ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run ]; then
     if [ "$COLOUR" == 'no' ]; then
-        echo "did not find base runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run"
+        echo "did not find base runscript ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run"
     else
-        echo "\033[31mdid not find base runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run\033[00m"
+        echo "\033[31mdid not find base runscript ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run\033[00m"
     fi
     exit 1
 else
-    echo "found runscript ${SCRIPT_DIR}/exp.${SCRIPT}.run"
+    echo "found runscript ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run"
 fi
 
 # find out on which system we are
-TARGET_MACHINE=`grep "# target machine is " ${SCRIPT_DIR}/exp.${SCRIPT}.run`
+TARGET_MACHINE=`grep "# target machine is " ${SCRIPT_DIR}/${PREFIX}.${SCRIPT}.run`
 TARGET_MACHINE=${TARGET_MACHINE#'# target machine is '}
 
 # variables to track the test results
@@ -730,17 +717,19 @@ FAILED_TESTS="FAILED_TESTS: "
 EXIT_STATUS=0
 
 # now start with the tests
+echo "Performing tests specified with MD=${MD}"
 
+
+echo ' '
+echo "####################    perform base test     ####################"
+echo ' '
 TEST='base'
-echo ' '
-echo "#################### perform $TEST test            ####################"
-echo ' '
 EXP_BASE=${EXPERIMENT}_${TEST}
 EXP_TEST=${EXPERIMENT}_${TEST}
 if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_BASE} ]; then
     cd ${SCRIPT_DIR}
-    RUN_SCRIPT=exp.${EXP_BASE}.run
-    sed    s/${SCRIPT}/${EXP_BASE}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT} # change experiment name
+    RUN_SCRIPT=${PREFIX}.${EXP_BASE}.run
+    sed    s/${SCRIPT}/${EXP_BASE}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT} # change experiment name
     sed -i s/data.${EXP_BASE}/data.${SCRIPT}/g             ${RUN_SCRIPT} # except in the data package name
 
     echo "Perform $TEST run"
@@ -767,37 +756,36 @@ else
 fi # OVERWRITE
 
 
-CMODES="u ur un um uo urn urm uro unm uno umo urnm urno urmo unmo urnmo"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*u.* ]]; then
+    echo ' '
+    echo "####################    perform update test   ####################"
+    echo ' '
     TEST='update'
-    echo ' '
-    echo "#################### perform $TEST test          ####################"
-    echo ' '
     cd ${REFERENCE} || exit 1
     RUN_STATUS=-1
     if [ ! -d experiments/${EXP_BASE} ] ;then 
-        if [ ! -f run/exp.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
-            ${MODEL_DIR}/make_runscripts ${SCRIPT}
+        if [ ! -f run/${PREFIX}.${SCRIPT}.run -o "$FORCE_MRS" == 'yes' ]; then
+            ${MODEL_DIR}/make_runscripts ${SCRIPT} ${MRS_SUBDIR:+-r ${MRS_SUBDIR}}
         fi
         if [ ! -d experiments ]; then
             mkdir experiments
         fi
         cd run
-        if [ ! -f exp.${SCRIPT}.run ]; then
+        if [ ! -f ${PREFIX}.${SCRIPT}.run ]; then
             if [ "$COLOUR" == 'no' ]; then
                 echo 'reference model: '$REFERENCE
-                echo "did not find base runscript for reference model exp.${SCRIPT}.run"
+                echo "did not find base runscript for reference model ${PREFIX}.${SCRIPT}.run"
             else
                 echo -e "\033[31mreference model: $REFERENCE\033[00m"
-                echo -e "\033[31mdid not find base runscript for reference model exp.${SCRIPT}.run\033[00m"
+                echo -e "\033[31mdid not find base runscript for reference model ${PREFIX}.${SCRIPT}.run\033[00m"
             fi
             exit 1
         else
-            echo "found base runscript exp.${SCRIPT}.run"
+            echo "found base runscript ${PREFIX}.${SCRIPT}.run"
         fi
 
-        RUN_SCRIPT=exp.${EXP_BASE}.run
-        sed    s/${SCRIPT}/${EXP_BASE}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT} # change experiment name
+        RUN_SCRIPT=${PREFIX}.${EXP_BASE}.run
+        sed    s/${SCRIPT}/${EXP_BASE}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT} # change experiment name
         sed -i s/data.${EXP_BASE}/data.${SCRIPT}/g             ${RUN_SCRIPT} # except in the data package name
 
         echo "Perform $TEST run"
@@ -832,12 +820,11 @@ if string_in_list $MD $CMODES; then
 fi # MODE
 
 
-CMODES="r ur rn rm ro urn urm uro rnm rno rmo urnm urno urmo rnmo urnmo rnmot rt"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*r.* ]]; then
+    echo ' '
+    echo "####################   perform restart test   ####################"
+    echo ' '
     TEST='restart'
-    echo ' '
-    echo "#################### perform $TEST test          ####################"
-    echo ' '
     RUN_STATUS=-1
     EXP_TEST=${EXPERIMENT}_${TEST}
     if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
@@ -852,9 +839,9 @@ if string_in_list $MD $CMODES; then
             exit 1
         fi
 
-        RUN_SCRIPT=exp.${EXP_TEST}.run
+        RUN_SCRIPT=${PREFIX}.${EXP_TEST}.run
         cd ${SCRIPT_DIR}
-        sed    s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+        sed    s/${SCRIPT}/${EXP_TEST}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT}
         sed -i s/data.${EXP_TEST}/data.${SCRIPT}/g             ${RUN_SCRIPT}
 
         sed s/restart:=\".false.\"/restart:=\".true.\"/g < ${RUN_SCRIPT} > ${RUN_SCRIPT}.out
@@ -892,19 +879,18 @@ if string_in_list $MD $CMODES; then
 fi # MODE
 
 
-CMODES="n un rn nm no urn unm uno rnm rno nmo urnm urno unmo rnmo urnmo rnmot"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*n.* ]]; then
+    echo ' '
+    echo "####################   perform nproma test    ####################"
+    echo ' '
     TEST='nproma'
-    echo ' '
-    echo "#################### perform $TEST test         ####################"
-    echo ' '
     RUN_STATUS=-1
     EXP_TEST=${EXPERIMENT}_${TEST}
     if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
 
-        RUN_SCRIPT=exp.${EXP_TEST}.run
+        RUN_SCRIPT=${PREFIX}.${EXP_TEST}.run
         cd ${SCRIPT_DIR}
-        sed    s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+        sed    s/${SCRIPT}/${EXP_TEST}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT}
         sed -i s/data.${EXP_TEST}/data.${SCRIPT}/g             ${RUN_SCRIPT}
 
         N_NPROMA=`grep "nproma=" ${RUN_SCRIPT}`
@@ -945,28 +931,27 @@ if string_in_list $MD $CMODES; then
 fi # MODE
 
 
-CMODES="m um rm nm mo tm mp mc urm unm umo rnm rmo nmo tmp tmc urnm urmo unmo rnmo urnmo rnmot"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*m.* ]]; then
+    echo ' '
+    echo "####################     perform mpi test     ####################"
+    echo ' '
     TEST='mpi'
-    echo ' '
-    echo "#################### perform $TEST test         ####################"
-    echo ' '
     TEST_POSSIBLE='no'
     RUN_STATUS=-1
     EXP_TEST=${EXPERIMENT}_${TEST}
     if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
         cd ${SCRIPT_DIR}
-        MPI=`grep with_mpi exp.${SCRIPT}.run`
+        MPI=`grep with_mpi ${PREFIX}.${SCRIPT}.run`
         MPIYES='# with_mpi=yes'
         if [ "$MPI" == "$MPIYES" ]; then
 
             # find out how many nodes and processes per node are in use
 
-            N_NODES=`grep "no_of_nodes=" exp.${SCRIPT}.run`
+            N_NODES=`grep "no_of_nodes=" ${PREFIX}.${SCRIPT}.run`
             eval N_NODES=\""${N_NODES#'no_of_nodes='}"\"
-            OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" exp.${SCRIPT}.run`
+            OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" ${PREFIX}.${SCRIPT}.run`
             eval OMP_NUM_THREADS=\""${OMP_NUM_THREADS#'export OMP_NUM_THREADS='}"\"
-            N_PPNODE=`grep "mpi_procs_pernode=" exp.${SCRIPT}.run`
+            N_PPNODE=`grep "mpi_procs_pernode=" ${PREFIX}.${SCRIPT}.run`
             eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
             N_PROCS=$(( N_NODES * N_PPNODE ))
 
@@ -974,9 +959,9 @@ if string_in_list $MD $CMODES; then
 
 	        TEST_POSSIBLE='yes'
 
-                RUN_SCRIPT=exp.${EXP_TEST}.run
+                RUN_SCRIPT=${PREFIX}.${EXP_TEST}.run
                 cd ${SCRIPT_DIR}
-                sed    s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+                sed    s/${SCRIPT}/${EXP_TEST}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT}
                 sed -i s/data.${EXP_TEST}/data.${SCRIPT}/g             ${RUN_SCRIPT}
 
                 if [ $N_PPNODE -gt 1 ]; then
@@ -1061,34 +1046,33 @@ if string_in_list $MD $CMODES; then
 fi # MODE
 
 
-CMODES="o uo ro no mo uro uno umo rno rmo nmo urno urmo unmo rnmo urnmo rnmot"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*o.* ]]; then
+    echo ' '
+    echo "####################     perform omp test     ####################"
+    echo ' '
     TEST='omp'
-    echo ' '
-    echo "#################### perform $TEST test         ####################"
-    echo ' '
     TEST_POSSIBLE='no'
     RUN_STATUS=-1
     EXP_TEST=${EXPERIMENT}_${TEST}
     if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
         cd ${SCRIPT_DIR}
-        OMP=`grep with_openmp exp.${SCRIPT}.run`
+        OMP=`grep with_openmp ${PREFIX}.${SCRIPT}.run`
         OMPYES='# with_openmp=yes'
         if [ "$OMP" == "$OMPYES" ]; then
 
             # find out how many omp threads are in use
 
-            N_OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" exp.${SCRIPT}.run`
+            N_OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" ${PREFIX}.${SCRIPT}.run`
             eval N_OMP_NUM_THREADS=\""${N_OMP_NUM_THREADS#'export OMP_NUM_THREADS='}"\"
-            N_ICON_THREADS=`grep "export ICON_THREADS=" exp.${SCRIPT}.run`
+            N_ICON_THREADS=`grep "export ICON_THREADS=" ${PREFIX}.${SCRIPT}.run`
             eval N_ICON_THREADS=\""${N_ICON_THREADS#'export ICON_THREADS='}"\"
 
             if [ $N_OMP_NUM_THREADS -gt 1 ]; then
 
 	        TEST_POSSIBLE='yes'
 
-                RUN_SCRIPT=exp.${EXP_TEST}.run
-                sed    s/${SCRIPT}/${EXP_TEST}/g < exp.${SCRIPT}.run > ${RUN_SCRIPT}
+                RUN_SCRIPT=${PREFIX}.${EXP_TEST}.run
+                sed    s/${SCRIPT}/${EXP_TEST}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT}
                 sed -i s/data.${EXP_TEST}/data.${SCRIPT}/g             ${RUN_SCRIPT}
 
                 N_OMP_NUM_THREADS_NEW=$(( N_OMP_NUM_THREADS - 1 ))
@@ -1098,7 +1082,7 @@ if string_in_list $MD $CMODES; then
                 # number of tasks to the number of threads, these need
                 # to be fixed too
                 OMP_NUM_THREADS=$N_OMP_NUM_THREADS
-                N_PPNODE=`grep "mpi_procs_pernode=" exp.${SCRIPT}.run`
+                N_PPNODE=`grep "mpi_procs_pernode=" ${PREFIX}.${SCRIPT}.run`
                 eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
 
                 # change script variables
@@ -1158,12 +1142,11 @@ if string_in_list $MD $CMODES; then
     fi # TEST_POSSIBLE
 fi # MODE
 
-CMODES="t tm tc rnmot rt tp tmp tmc"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*t.* ]]; then
+    echo ' '
+    echo "####################  perform tolerance test  ####################"
+    echo ' '
     TEST='tolerance'
-    echo ' '
-    echo "#################### perform $TEST test          ####################"
-    echo ' '
 
     # compare base run with reference
     tolerance_check $MODEL_DIR $EXP_BASE $EXPERIMENT
@@ -1176,12 +1159,11 @@ if string_in_list $MD $CMODES; then
     fi
 fi
 
-CMODES="p tp mp tmp"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*p.* ]]; then
+    echo ' '
+    echo "#################### perform performance test ####################"
+    echo ' '
     TEST='performance'
-    echo ' '
-    echo "#################### perform $TEST test          ####################"
-    echo ' '
 
     # compare base run with reference
     performance_check $MODEL_DIR $EXPERIMENT
@@ -1195,12 +1177,11 @@ if string_in_list $MD $CMODES; then
     fi
 fi
 
-CMODES="c tc mc tmc"
-if string_in_list $MD $CMODES; then
+if [[ ${MD} =~ .*c.* ]]; then
+    echo ' '
+    echo "################# perform compute-sanitizer test  ################"
+    echo ' '
     TEST='compute-sanitizer'
-    echo ' '
-    echo "#################### perform $TEST test          ####################"
-    echo ' '
 
     lowercase_bb_name=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]')
     if [[ ${lowercase_bb_name} =~ "gpu" ]]; then
@@ -1220,10 +1201,58 @@ if string_in_list $MD $CMODES; then
     fi
 fi
 
+if [[ ${MD} =~ .*g.* ]]; then
+    echo ' '
+    echo "#################### perform cuda-graph test  ####################"
+    echo ' '
+    TEST='cuda-graph'
+    RUN_STATUS=-1
+    EXP_TEST=${EXPERIMENT}_${TEST}
+    if [ "${OVERWRITE}" == 'yes' -o ! -d ${MODEL_DIR}/experiments/${EXP_TEST} ]; then
+
+        RUN_SCRIPT=${PREFIX}.${EXP_TEST}.run
+        cd ${SCRIPT_DIR}
+        sed    s/${SCRIPT}/${EXP_TEST}/g < ${PREFIX}.${SCRIPT}.run > ${RUN_SCRIPT}
+        sed -i s/data.${EXP_TEST}/data.${SCRIPT}/g             ${RUN_SCRIPT}
+
+        nml_replace_or_add lcuda_graph_lnd .TRUE. lnd_nml ${RUN_SCRIPT}
+        nml_replace_or_add lcuda_graph_turb_tran .TRUE. nwp_phy_nml ${RUN_SCRIPT}
+
+        echo "Perform $TEST run"
+        chmod 755 ${RUN_SCRIPT}
+        ${SCRIPT_DIR}/${RUN_SCRIPT}
+        RUN_STATUS=$?
+
+    else
+        echo "Found $TEST run"
+        RUN_STATUS=0
+    fi # OVERWRITE
+
+    if [ "$RUN_STATUS" == 0 ]; then
+        # compare base run with test run
+        diff_results $MODEL_DIR $EXP_BASE $MODEL_DIR $EXP_TEST $TEST
+        if [ "$DIFF_STATUS" == 0 ]; then
+            PASSED_TESTS="$PASSED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 0))
+        else
+            FAILED_TESTS="$FAILED_TESTS $TEST"
+            EXIT_STATUS=$(($EXIT_STATUS + 1))
+        fi
+    else
+        if [ "$COLOUR" == 'no' ]; then
+            echo "ERROR: The $TEST test run aborted --> no comparison with the base run"
+        else
+            echo -e "\033[31mERROR: The $TEST test run aborted --> no comparison with the base run\033[00m"
+        fi
+        FAILED_TESTS="$FAILED_TESTS $TEST"
+        EXIT_STATUS=$(($EXIT_STATUS + 1))
+    fi # RUN_STATUS
+fi # MODE
+
 
 echo ' '
 echo ' '
-echo '#################### test summary             ########################'
+echo '####################     test summary     ########################'
 echo ' '
 if [ "$COLOUR" == 'no' ]; then
     echo $PASSED_TESTS
@@ -1235,6 +1264,6 @@ fi
 echo ' '
 echo 'EXIT_STATUS: '$EXIT_STATUS
 echo ' '
-echo '======================================================================'
+echo '=================================================================='
 date
 exit $EXIT_STATUS

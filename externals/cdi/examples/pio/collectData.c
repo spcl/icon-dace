@@ -99,7 +99,7 @@ modelRun(MPI_Comm commModel)
   taxisID = taxisCreate(TAXIS_ABSOLUTE);
   vlistDefTaxis(vlistID, taxisID);
 
-  sprintf(&filename[0], "%s_%d.grb", name, tfID);
+  snprintf(&filename[0], sizeof(filename), "%s_%d.grb", name, tfID);
   streamID = streamOpenWrite(filename, filetype);
   xassert(streamID >= 0);
   streamDefVlist(streamID, vlistID);
@@ -112,7 +112,7 @@ modelRun(MPI_Comm commModel)
       /* if ( tfID > 0 ) */
       {
         streamClose(streamID);
-        sprintf(&filename[0], "%s_%d.grb", name, tfID);
+        snprintf(&filename[0], sizeof(filename), "%s_%d.grb", name, tfID);
         streamID = streamOpenWrite(filename, filetype);
         xassert(streamID >= 0);
         streamDefVlist(streamID, vlistID);

@@ -33,7 +33,7 @@ MODULE mo_nh_vert_interp_les
 #endif
   USE mo_impl_constants_grf,  ONLY: grf_bdywidth_c
   USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int
-  USE mo_parallel_config,     ONLY: nproma, p_test_run
+  USE mo_parallel_config,     ONLY: p_test_run
   USE mo_physical_constants,  ONLY: grav
   USE mo_les_config,          ONLY: les_config
   USE mo_exception,           ONLY: finish
@@ -67,14 +67,14 @@ MODULE mo_nh_vert_interp_les
 
     IF (p_test_run) THEN
 !$OMP PARALLEL
-      CALL init(p_metrics%ddxt_z_half_v)
-      CALL init(p_metrics%ddxn_z_half_c)
-      CALL init(p_metrics%ddxn_z_full_c)
-      CALL init(p_metrics%ddxn_z_full_v)
-      CALL init(p_metrics%ddxt_z_half_c)
-      CALL init(p_metrics%ddxt_z_full_c)
-      CALL init(p_metrics%ddxt_z_full_v)
-      CALL init(p_metrics%inv_ddqz_z_full_v)
+      CALL init(p_metrics%ddxt_z_half_v, lacc=.FALSE.)
+      CALL init(p_metrics%ddxn_z_half_c, lacc=.FALSE.)
+      CALL init(p_metrics%ddxn_z_full_c, lacc=.FALSE.)
+      CALL init(p_metrics%ddxn_z_full_v, lacc=.FALSE.)
+      CALL init(p_metrics%ddxt_z_half_c, lacc=.FALSE.)
+      CALL init(p_metrics%ddxt_z_full_c, lacc=.FALSE.)
+      CALL init(p_metrics%ddxt_z_full_v, lacc=.FALSE.)
+      CALL init(p_metrics%inv_ddqz_z_full_v, lacc=.FALSE.)
 !$OMP END PARALLEL
     END IF
 
@@ -243,12 +243,12 @@ MODULE mo_nh_vert_interp_les
     REAL(wp) :: var_aux(SIZE(var,1),SIZE(var,2),SIZE(var,3))
     INTEGER  :: i_startblk, i_endblk, rl_start
     INTEGER  :: i_endidx, i_startidx
-    INTEGER  :: jk, jc, jb, nz, nblk, nproma
+    INTEGER  :: jk, jc, jb, nz, nblk, kbdim
 
     rl_start   = grf_bdywidth_c+1
     i_startblk = p_patch%cells%start_block(rl_start)
     i_endblk   = p_patch%cells%end_block(min_rlcell_int)
-    nproma     = SIZE(var,1)
+    kbdim      = SIZE(var,1)
     nz         = SIZE(var,2)
     nblk       = SIZE(var,3)
 
@@ -260,7 +260,7 @@ MODULE mo_nh_vert_interp_les
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
                            i_startidx, i_endidx, rl_start, min_rlcell_int)
         DO jk = 1, nz
-          DO jc = 1, nproma
+          DO jc = 1, kbdim
             var_aux(jc,jk,jb) = MERGE(var(jc,jk,jb), 0._wp, &
                  jc >= i_startidx .AND. jc <= i_endidx)
           END DO
@@ -302,15 +302,17 @@ MODULE mo_nh_vert_interp_les
   !! Brunt Vaisala Frequency: 
   !! Calculates BVF for unsaturated and saturated case based on Durran & Klemp 1982
   !! Eq. 4. and using moist lapse rate expression from Marshall and Plumb
-
-  SUBROUTINE brunt_vaisala_freq(p_patch, p_metrics, thetav, bru_vais, lacc)
+  SUBROUTINE brunt_vaisala_freq(p_patch, p_metrics, kbdim, thetav, bru_vais, opt_rlstart, lacc)
 
     TYPE(t_patch), INTENT(in) :: p_patch
     TYPE(t_nh_metrics), INTENT(in) :: p_metrics
+    INTEGER,  INTENT(in):: kbdim
     REAL(wp), INTENT(in):: thetav(:,:,:)
     REAL(wp), INTENT(INOUT)               :: bru_vais(:,:,:)
+    ! optional starting indices
+    INTEGER, INTENT(in), OPTIONAL ::  opt_rlstart
 
-    REAL(wp) :: thetav_ic(nproma,p_patch%nlev+1,p_patch%nblks_c)
+    REAL(wp) :: thetav_ic(kbdim,p_patch%nlev+1,p_patch%nblks_c)
     INTEGER  :: i_startblk, i_endblk, rl_start, rl_end
     INTEGER  :: i_endidx, i_startidx, nlev
     INTEGER  :: jk, jc, jb
@@ -324,13 +326,20 @@ MODULE mo_nh_vert_interp_les
     !$ACC   PRESENT(thetav, bru_vais, p_metrics, p_metrics%inv_ddqz_z_half) &
     !$ACC   CREATE(thetav_ic) IF(lzacc)
 
-    !To be calculated at all cells at interface levels, except top/bottom 
-    !boundaries
-
+    ! To be calculated at all cells at interface levels, except top/bottom 
+    ! boundaries
     nlev      = p_patch%nlev
 
-    rl_start   = 2
-    rl_end     = min_rlcell_int
+    ! Note that the range of bruvais is essentially bound to where theta_v 
+    ! was calculated right before the call to brunt_vaisala_freq.
+    ! Check for optional arguments
+    IF ( PRESENT(opt_rlstart) ) THEN
+      rl_start = opt_rlstart
+    ELSE
+      rl_start = 2
+    ENDIF
+    rl_end = min_rlcell_int
+
     i_startblk = p_patch%cells%start_block(rl_start)
     i_endblk   = p_patch%cells%end_block(rl_end)
 
@@ -351,7 +360,7 @@ MODULE mo_nh_vert_interp_les
         DO jc = i_startidx , i_endidx
 #endif
           bru_vais(jc,jk,jb) = grav * ( thetav(jc,jk-1,jb) - thetav(jc,jk,jb) ) * &
-                               p_metrics%inv_ddqz_z_half(jc,jk,jb)/thetav_ic(jc,jk,jb)    
+                               p_metrics%inv_ddqz_z_half(jc,jk,jb)/thetav_ic(jc,jk,jb)
         END DO
       END DO     
       !$ACC END PARALLEL

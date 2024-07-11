@@ -60,6 +60,7 @@ MODULE mo_diffusion_nml
   LOGICAL :: lhdiff_temp   ! if .TRUE., apply horizontal diffusion to temp.
   LOGICAL :: lhdiff_vn     ! if .TRUE., apply horizontal diffusion to horizontal momentum.
   LOGICAL :: lhdiff_w      ! if .TRUE., apply horizontal diffusion to vertical momentum.
+  LOGICAL :: lhdiff_q      ! if .TRUE., apply horizontal diffusion to QV and QC.
   LOGICAL :: lsmag_3d(max_dom)      ! if .TRUE., compute 3D Smagorinsky diffusion coefficient.
   LOGICAL :: lhdiff_smag_w(max_dom) ! if .TRUE., apply additional Smagorinsky diffusion to vertical momentum.
 
@@ -68,7 +69,7 @@ MODULE mo_diffusion_nml
                           hdiff_smag_fac, hdiff_smag_fac2, hdiff_smag_fac3, hdiff_smag_fac4, &
                           hdiff_smag_z,   hdiff_smag_z2,   hdiff_smag_z3,   hdiff_smag_z4,   &
                           hdiff_multfac, lhdiff_temp, lhdiff_vn, itype_vn_diffu,             &
-                          itype_t_diffu, hdiff_w_efdt_ratio, lhdiff_w, lsmag_3d, lhdiff_smag_w
+                          itype_t_diffu, hdiff_w_efdt_ratio, lhdiff_w, lsmag_3d, lhdiff_smag_w, lhdiff_q
 
 CONTAINS
   !-------------------------------------------------------------------------
@@ -97,6 +98,7 @@ CONTAINS
     lhdiff_temp          = .TRUE.
     lhdiff_vn            = .TRUE.
     lhdiff_w             = .TRUE.
+    lhdiff_q             = .FALSE.
     lsmag_3d(:)          = .FALSE.
     lhdiff_smag_w(:)     = .FALSE.
 
@@ -220,6 +222,7 @@ CONTAINS
     diffusion_config(:)% lhdiff_temp          =  lhdiff_temp
     diffusion_config(:)% lhdiff_vn            =  lhdiff_vn
     diffusion_config(:)% lhdiff_w             =  lhdiff_w
+    diffusion_config(:)% lhdiff_q             =  lhdiff_q
     diffusion_config(:)% lsmag_3d             =  lsmag_3d(:)
     diffusion_config(:)% lhdiff_smag_w        =  lhdiff_smag_w(:)
     diffusion_config(:)% hdiff_order          =  hdiff_order

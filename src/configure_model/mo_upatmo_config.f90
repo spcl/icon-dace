@@ -21,7 +21,7 @@ MODULE mo_upatmo_config
     &                                    MODE_IFSANA, MODE_COMBINED, &
     &                                    MODE_DWDANA, inoforcing,    &
     &                                    SUCCESS, inwp, iaes,        &
-    &                                    inh_atmosphere, ivexpol
+    &                                    ivexpol
   USE mo_model_domain,             ONLY: t_patch
   USE mo_upatmo_impl_const,        ONLY: iUpatmoStat, imsg_thr, itmr_thr, &
     &                                    iUpatmoPrcStat, iUpatmoGasStat,  &

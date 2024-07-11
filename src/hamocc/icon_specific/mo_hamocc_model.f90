@@ -22,7 +22,7 @@ MODULE mo_hamocc_model
        &                            stop_mpi, my_process_is_io, my_process_is_mpi_test,   &
        &                            process_mpi_io_size
   USE mo_timer,               ONLY: init_timer, timer_start, timer_stop, print_timer, &
-       &  timer_model_init, timer_total
+       &                            timer_model_init, timer_total, timer_coupling
   USE mo_memory_log,              ONLY: memory_log_terminate
   USE mtime,                  ONLY: MAX_DATETIME_STR_LEN, datetimeToString
   USE mo_name_list_output_init, ONLY: init_name_list_output, parse_variable_groups, &
@@ -48,7 +48,8 @@ MODULE mo_hamocc_model
     & nshift,                 &
     & grid_generatingcenter,  & 
     & grid_generatingsubcenter, &
-    & configure_run, output_mode 
+    & configure_run, output_mode
+  USE mo_coupling_config,        ONLY: is_coupled_run
 
   USE mo_ocean_nml_crosscheck,   ONLY: ocean_crosscheck
   USE mo_ocean_nml,              ONLY: i_sea_ice, no_tracer, use_omip_forcing, lhamocc, &
@@ -71,7 +72,7 @@ MODULE mo_hamocc_model
     & construct_hydro_ocean_base, &! destruct_hydro_ocean_base, &
     & construct_patch_3d, destruct_patch_3d, &
     & construct_ocean_var_lists
-    
+
   USE mo_ocean_initialization, ONLY: init_ho_base, &
     & init_ho_basins, init_coriolis_oce, init_patch_3d,   &
     & init_patch_3d
@@ -117,9 +118,9 @@ MODULE mo_hamocc_model
   USE mo_ocean_hamocc_interface, ONLY: hamocc_to_ocean_init, hamocc_to_ocean_end, hamocc_to_ocean_interface
   USE mo_dynamics_config,        ONLY: nold, nnew
   USE mo_ocean_math_operators,   ONLY: update_height_hamocc
-#ifdef YAC_coupling
-  USE mo_io_coupling_frame,      ONLY: construct_io_coupling, destruct_io_coupling
-#endif
+  USE mo_coupling_utils,         ONLY: cpl_construct, cpl_destruct
+  USE mo_dummy_coupling_frame,   ONLY: construct_dummy_coupling, &
+    &                                  destruct_dummy_coupling
   USE mo_icon_output_tools,      ONLY: init_io_processes, prepare_output
 #ifndef __NO_ICON_COMIN__
   USE mo_mpi,               ONLY: p_comm_comin
@@ -335,7 +336,7 @@ MODULE mo_hamocc_model
     !  cleaning up process
     !------------------------------------------------------------------
     CALL message(method_name,'start to clean up')
-    
+
     CALL restartDescriptor%destruct()
 
     CALL destruct_hamocc_ocean_state()
@@ -354,10 +355,14 @@ MODULE mo_hamocc_model
     ! Delete variable lists
 
     IF (output_mode%l_nml) CALL close_name_list_output
-   
-#ifdef YAC_coupling
-     CALL destruct_io_coupling ( get_my_process_name() )
-#endif
+
+    IF ( is_coupled_run() ) THEN
+
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL destruct_dummy_coupling ( get_my_process_name() )
+      CALL cpl_destruct()
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
 
     CALL destruct_icon_communication()
 
@@ -419,19 +424,23 @@ MODULE mo_hamocc_model
     CALL mpi_handshake_dummy(p_comm_comin)
 #endif
 
-#ifdef YAC_coupling
-      ! The initialisation of YAC needs to be called by all (!) MPI processes
-      ! in MPI_COMM_WORLD.
-      ! construct_io_coupling needs to be called before init_name_list_output
-      ! due to calling sequence in subroutine atmo_model for other atmosphere
-      ! processes
-      CALL construct_io_coupling ( get_my_process_name()  )
-#endif
-
     !-------------------------------------------------------------------
     ! 3.2 Initialize various timers
     !-------------------------------------------------------------------
     CALL init_timer
+
+    IF ( is_coupled_run() ) THEN
+
+      ! The initialisation of the coupling needs to be called by all (!) MPI processes
+      ! in MPI_COMM_WORLD.
+      ! construct_dummy_coupling needs to be called before init_name_list_output
+      ! due to calling sequence in subroutine atmo_model for other atmosphere
+      ! processes
+      IF (ltimer) CALL timer_start(timer_coupling)
+      CALL cpl_construct()
+      CALL construct_dummy_coupling ( get_my_process_name()  )
+      IF (ltimer) CALL timer_stop(timer_coupling)
+    END IF
 
     IF (ltimer) CALL timer_start(timer_model_init)
 

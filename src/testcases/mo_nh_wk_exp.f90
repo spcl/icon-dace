@@ -198,7 +198,8 @@ MODULE mo_nh_wk_exp
 
     ! Tropopause parameters
     exner_tropo   = t_tropo_wk/theta_tropo_wk
-    e_tropo       = rh_min_wk*sat_pres_ice(t_tropo_wk)
+! UB    e_tropo       = rh_min_wk*sat_pres_ice(t_tropo_wk)
+    e_tropo       = rh_min_wk*sat_pres_water(t_tropo_wk)
     pres_tropo    = p0ref*(exner_tropo**cpd_o_rd)
     qv_tropo      = spec_humi(e_tropo,pres_tropo)
     theta_v_tropo = theta_tropo_wk*(1._wp+vtmpc1*qv_tropo)

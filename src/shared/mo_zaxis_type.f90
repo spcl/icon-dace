@@ -233,6 +233,7 @@ CONTAINS
     ZA_ATMOSPHERE              = za_list%register(cdi_zaxis_type=ZAXIS_ATMOSPHERE         , is_2D=.TRUE.)
     ZA_HEIGHT_2M_LAYER         = za_list%register(cdi_zaxis_type=ZAXIS_HEIGHT             , is_2D=.TRUE.)
     ZA_TROPOPAUSE              = za_list%register(cdi_zaxis_type=ZAXIS_GENERIC            , is_2D=.TRUE.)    
+
   END FUNCTION new_zaxisTypeList
 
 

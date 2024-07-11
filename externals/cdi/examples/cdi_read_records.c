@@ -17,14 +17,14 @@ typedef struct
 {
   int streamID;
   int *varID, *levelID;
-  size_t *nmiss;
+  size_t *numMissVals;
   double *array;
 } read_arg_t;
 
 typedef struct
 {
   int varID, levelID;
-  size_t nmiss;
+  size_t numMissVals;
   double *array;
   int array_size;
   int recID, nrecs;
@@ -41,7 +41,7 @@ typedef struct work_st
 typedef struct
 {
   int varID, levelID;
-  size_t nmiss;
+  size_t numMissVals;
   double *array;
   int array_size;
   int recID, nrecs;
@@ -63,17 +63,17 @@ readRecord(void *arg)
   read_arg_t *read_arg = (read_arg_t *) arg;
   int streamID;
   int *varID, *levelID;
-  size_t *nmiss;
+  size_t *numMissVals;
   double *array;
 
   streamID = read_arg->streamID;
   varID = read_arg->varID;
   levelID = read_arg->levelID;
-  nmiss = read_arg->nmiss;
+  numMissVals = read_arg->numMissVals;
   array = read_arg->array;
 
   streamInqRecord(streamID, varID, levelID);
-  streamReadRecord(streamID, array, nmiss);
+  streamReadRecord(streamID, array, numMissVals);
 }
 
 #if defined(HAVE_LIBPTHREAD)
@@ -253,7 +253,7 @@ destroy_iothread(void *p)
 #endif
 
 void
-stream_read_record_par(int streamID, int *varID, int *levelID, double *array, size_t *nmiss, par_io_t *parIO)
+stream_read_record_par(int streamID, int *varID, int *levelID, double *array, size_t *numMissVals, par_io_t *parIO)
 {
   int lpario = 0;
   int recID = 0, nrecs = 0;
@@ -273,7 +273,7 @@ stream_read_record_par(int streamID, int *varID, int *levelID, double *array, si
       read_arg.streamID = streamID;
       read_arg.varID = varID;
       read_arg.levelID = levelID;
-      read_arg.nmiss = nmiss;
+      read_arg.numMissVals = numMissVals;
       read_arg.array = array;
 
       readRecord(&read_arg);
@@ -285,7 +285,7 @@ stream_read_record_par(int streamID, int *varID, int *levelID, double *array, si
 
       *varID = parIO->varID;
       *levelID = parIO->levelID;
-      *nmiss = parIO->nmiss;
+      *numMissVals = parIO->numMissVals;
 
       memcpy(array, parIO->array, parIO->array_size * sizeof(double));
     }
@@ -301,7 +301,7 @@ stream_read_record_par(int streamID, int *varID, int *levelID, double *array, si
           read_arg->streamID = streamID;
           read_arg->varID = &parIO->varID;
           read_arg->levelID = &parIO->levelID;
-          read_arg->nmiss = &parIO->nmiss;
+          read_arg->numMissVals = &parIO->numMissVals;
           read_arg->array = parIO->array;
 
           dispatch(parIO->iothread, readRecord, read_arg);
@@ -315,17 +315,17 @@ stream_read_record_par(int streamID, int *varID, int *levelID, double *array, si
 }
 
 void
-stream_read_record(int streamID, int *varID, int *levelID, double *data, size_t *nmiss)
+stream_read_record(int streamID, int *varID, int *levelID, double *data, size_t *numMissVals)
 {
   streamInqRecord(streamID, varID, levelID);
-  streamReadRecord(streamID, data, nmiss);
+  streamReadRecord(streamID, data, numMissVals);
 }
 
 int
 main(int argc, char *argv[])
 {
   int taxisID, vlistID, varID, levelID, streamID, tsID;
-  size_t nmiss;
+  size_t numMissVals;
   int vdate, vtime;
   int nrecs, recID, code;
   int gridsize, i;
@@ -377,9 +377,9 @@ main(int argc, char *argv[])
           parIO.recID = recID;
           parIO.nrecs = nrecs;
 #ifdef PARIO
-          stream_read_record_par(streamID, &varID, &levelID, data, &nmiss, &parIO);
+          stream_read_record_par(streamID, &varID, &levelID, data, &numMissVals, &parIO);
 #else
-          stream_read_record(streamID, &varID, &levelID, data, &nmiss);
+          stream_read_record(streamID, &varID, &levelID, data, &numMissVals);
 #endif
           code = vlistInqVarCode(vlistID, varID);
           gridsize = gridInqSize(vlistInqVarGrid(vlistID, varID));

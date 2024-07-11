@@ -299,7 +299,7 @@ var_copy_entries(var_t *var2, var_t *var1)
       if (var1->opt_grib_kvpair[i].keyword != NULL)
         {
           var2->opt_grib_kvpair[i] = var1->opt_grib_kvpair[i];
-          var2->opt_grib_kvpair[i].keyword = strdupx(var1->opt_grib_kvpair[i].keyword);
+          var2->opt_grib_kvpair[i].keyword = strdup(var1->opt_grib_kvpair[i].keyword);
           var2->opt_grib_kvpair[i].update = true;
           if (CDI_Debug) Message("done.");
         }
@@ -446,7 +446,7 @@ vlist_generate_zaxis(int vlistID, int zaxistype, int nlevels, const double *leve
   vlist_t *vlistptr = vlist_to_pointer(vlistID);
   int nzaxis = vlistptr->nzaxis;
 
-  const bool hasBounds = (lbounds && ubounds);
+  bool hasBounds = (lbounds && ubounds);
 
   for (int index = 0; index < nzaxis; ++index)
     {
@@ -465,6 +465,8 @@ vlist_generate_zaxis(int vlistID, int zaxistype, int nlevels, const double *leve
       query.zaxistype = zaxistype;
       query.nlevels = nlevels;
       query.levels = levels;
+      query.lbounds = lbounds;
+      query.ubounds = ubounds;
 
       if ((zaxisglobdefined = (cdiResHFilterApply(getZaxisOps(), vgzZAxisSearch, &query) == CDI_APPLY_STOP)))
         zaxisID = query.resIDValue;
@@ -963,23 +965,15 @@ vlistNrecs(int vlistID)
 int
 vlistNumber(int vlistID)
 {
-  int number, number2;
   vlist_t *vlistptr = vlist_to_pointer(vlistID);
 
   int datatype = vlistptr->vars[0].datatype;
-  if (datatype == CDI_DATATYPE_CPX32 || datatype == CDI_DATATYPE_CPX64)
-    number = CDI_COMP;
-  else
-    number = CDI_REAL;
+  int number = (datatype == CDI_DATATYPE_CPX32 || datatype == CDI_DATATYPE_CPX64) ? CDI_COMP : CDI_REAL;
 
   for (int varID = 1; varID < vlistptr->nvars; varID++)
     {
       datatype = vlistptr->vars[varID].datatype;
-      if (datatype == CDI_DATATYPE_CPX32 || datatype == CDI_DATATYPE_CPX64)
-        number2 = CDI_COMP;
-      else
-        number2 = CDI_REAL;
-
+      int number2 = (datatype == CDI_DATATYPE_CPX32 || datatype == CDI_DATATYPE_CPX64) ? CDI_COMP : CDI_REAL;
       if (number2 != number)
         {
           number = CDI_BOTH;
@@ -1070,10 +1064,10 @@ vlistNtsteps(int vlistID)
 static void
 vlistPrintKernel(vlist_t *vlistptr, FILE *fp)
 {
-  const int vlistID = vlistptr->self;
+  int vlistID = vlistptr->self;
   fprintf(fp, "#\n# vlistID %d\n#\n", vlistID);
 
-  const int nvars = vlistptr->nvars;
+  int nvars = vlistptr->nvars;
 
   fprintf(fp,
           "nvars    : %d\n"

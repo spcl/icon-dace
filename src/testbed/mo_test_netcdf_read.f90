@@ -251,9 +251,11 @@ CONTAINS
     INTEGER :: file_id, old_mode
 
     IF( my_process_is_mpi_workroot()  ) THEN
-      CALL nf(nf_set_default_format(nf_format_64bit, old_mode), TRIM(filename))
-      CALL nf(nf_create(TRIM(filename), nf_clobber, file_id), TRIM(filename))
-      CALL nf(nf_set_fill(file_id, nf_nofill, old_mode), TRIM(filename))
+      CALL nf(nf90_create(TRIM(filename), &
+        &                 IOR(nf90_clobber, nf90_64bit_offset), &
+        &                 file_id), &
+        &     TRIM(filename))
+      CALL nf(nf90_set_fill(file_id, nf90_nofill, old_mode), TRIM(filename))
     ELSE
         file_id = -1 ! set it to an invalid value
     ENDIF
@@ -269,7 +271,7 @@ CONTAINS
 
     netcdf_close_output = -1
     IF( my_process_is_mpi_workroot()  ) THEN
-        netcdf_close_output = nf_close(file_id)
+        netcdf_close_output = nf90_close(file_id)
     ENDIF
 
   END FUNCTION netcdf_close_output
@@ -373,22 +375,22 @@ CONTAINS
         CALL finish(method_name, "gather array shape is nor correct")
       ENDIF
 
-      CALL nf(nf_def_dim(file_id, 'ncells',  total_number_of_cells,  dim_number_of_cells),  variable_name)
-      CALL nf(nf_def_dim(file_id, 'time',    array_time_steps,       dim_array_time_steps), variable_name)
+      CALL nf(nf90_def_dim(file_id, 'ncells',  total_number_of_cells,  dim_number_of_cells),  variable_name)
+      CALL nf(nf90_def_dim(file_id, 'time',    array_time_steps,       dim_array_time_steps), variable_name)
       dim_write_shape = (/ dim_number_of_cells, dim_array_time_steps /)
 
       ! define variable
       ! WRITE(0,*) " define variable:", variable_name
-!      CALL nf(nf_def_var(file_id, variable_name, nf_double, 2, dim_write_shape,&
+!      CALL nf(nf90_def_var(file_id, variable_name, nf90_double, dim_write_shape, &
 !        & variable_id), variable_name)
-      CALL nf(nf_def_var(file_id, variable_name, nf_float, 2, dim_write_shape,&
+      CALL nf(nf90_def_var(file_id, variable_name, nf90_float, dim_write_shape, &
         & variable_id), variable_name)
 
-      CALL nf(nf_enddef(file_id), variable_name)
+      CALL nf(nf90_enddef(file_id), variable_name)
 
       ! WRITE(0,*) " write array..."
-      CALL nf(nf_put_var_double(file_id, variable_id, output_array(:,:)), variable_name)
-      ! CALL nf(nf_put_var_real(file_id, variable_id, REAL(output_array(:,:,:))), variable_name)
+      CALL nf(nf90_put_var(file_id, variable_id, output_array(:,:)), variable_name)
+      ! CALL nf(nf90_put_var(file_id, variable_id, REAL(output_array(:,:,:))), variable_name)
 
     ENDIF
 
@@ -448,19 +450,19 @@ CONTAINS
         CALL finish(method_name, "gather array shape is nor correct")
       ENDIF
 
-      CALL nf(nf_def_dim(file_id, 'ncells',  total_number_of_cells,  dim_number_of_cells),  variable_name)
-      CALL nf(nf_def_dim(file_id, 'plev',    array_vertical_levels,  dim_vertical_levels),  variable_name)
-      CALL nf(nf_def_dim(file_id, 'time',    array_time_steps,       dim_array_time_steps), variable_name)
+      CALL nf(nf90_def_dim(file_id, 'ncells',  total_number_of_cells,  dim_number_of_cells),  variable_name)
+      CALL nf(nf90_def_dim(file_id, 'plev',    array_vertical_levels,  dim_vertical_levels),  variable_name)
+      CALL nf(nf90_def_dim(file_id, 'time',    array_time_steps,       dim_array_time_steps), variable_name)
       dim_write_shape = (/ dim_number_of_cells, dim_vertical_levels,  dim_array_time_steps /)
 
       ! define variable
       ! WRITE(0,*) " define variable:", variable_name
-!      CALL nf(nf_def_var(file_id, variable_name, nf_double, 3, dim_write_shape,&
+!      CALL nf(nf90_def_var(file_id, variable_name, nf90_double, dim_write_shape, &
 !        & variable_id), variable_name)
-      CALL nf(nf_def_var(file_id, variable_name, nf_float, 3, dim_write_shape,&
+      CALL nf(nf90_def_var(file_id, variable_name, nf90_float, dim_write_shape, &
         & variable_id), variable_name)
 
-      CALL nf(nf_enddef(file_id), variable_name)
+      CALL nf(nf90_enddef(file_id), variable_name)
 
 !      DO t=1, array_time_steps
 !        DO i=1, total_number_of_cells
@@ -471,8 +473,8 @@ CONTAINS
 !      ENDDO
       ! write array
       ! WRITE(0,*) " write array..."
-      CALL nf(nf_put_var_double(file_id, variable_id, output_array(:,:,:)), variable_name)
-      ! CALL nf(nf_put_var_real(file_id, variable_id, REAL(output_array(:,:,:))), variable_name)
+      CALL nf(nf90_put_var(file_id, variable_id, output_array(:,:,:)), variable_name)
+      ! CALL nf(nf90_put_var(file_id, variable_id, REAL(output_array(:,:,:))), variable_name)
 
     ENDIF
 

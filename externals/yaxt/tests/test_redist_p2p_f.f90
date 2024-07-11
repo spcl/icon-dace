@@ -67,7 +67,6 @@ PROGRAM test_redist_p2p_f
   CHARACTER(len=*), PARAMETER :: filename = 'test_redist_p2p_f.f90'
   TYPE(xt_config) :: config
 
-  ! init mpi
   CALL init_mpi
 
   CALL xt_initialize(mpi_comm_world)

@@ -31,7 +31,7 @@ START_MODEL="${START_MODEL:=$START $MODEL}"
 # set icon_data_poolFolder
 icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/clm"
 
-EXPID="icon-clm-exp001"  # working directory
+EXPID="ICON_CLM"  # working directory
 
 # base directory for data stored with the source code
 ICONDIR=${basedir}
@@ -45,11 +45,25 @@ GRIDDIR=${icon_data_poolFolder}/data/rcm # grid directory
 # LBC + initial data (subdirs inidata + latbc)
 INPUTDIR=${DATAROOT}/exp001
 
+# Kinne aersols (constant part)
+ln -sf ${GRIDDIR}/europe044_aeropt_kinne_sw_b14_coa.nc bc_aeropt_kinne_sw_b14_coa.nc
+ln -sf ${GRIDDIR}/europe044_aeropt_kinne_lw_b16_coa.nc bc_aeropt_kinne_lw_b16_coa.nc
+ln -sf ${GRIDDIR}/europe044_aeropt_kinne_sw_b14_fin_1850.nc bc_aeropt_kinne_sw_b14_fin.nc
+
+# MACv2 simple plumes
+ln -sf $ICONDIR/data//MACv2.0-SP_v1.nc .
+
+# volcanic aerosols
+# use data from 1979 for both years only for testing
+VOLC_DIR="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp/Checksuite_data/data_bbtest19"
+ln -sf ${VOLC_DIR}/bc_aeropt_cmip6_volc_lw_b16_sw_b14_1979.nc bc_aeropt_cmip6_volc_lw_b16_sw_b14_1978.nc
+ln -sf ${VOLC_DIR}/bc_aeropt_cmip6_volc_lw_b16_sw_b14_1979.nc bc_aeropt_cmip6_volc_lw_b16_sw_b14_1979.nc
+
 # ecRad specific files
 ECRAD_DIR=${ICONDIR}/externals/ecrad/data
 
-OUTDIR=output
-mkdir ${OUTDIR}
+# For checksuite
+restart=${restart:=".false."}
 
 # ---------------------------------------------------------------------------
 # copy input data: inidata, lbc data, static data, grids, external parameters
@@ -85,17 +99,16 @@ radiation_grid_filename=europe044_DOM01.parent.nc
 
 cat > icon_master.namelist << EOF
 	&master_nml
-	  lrestart               = .FALSE.
+	  lrestart               = $restart
 	  lrestart_write_last    = .TRUE.
 	/
 	&time_nml
 	  ini_datetime_string = "1979-01-01T00:00:00Z"
-	  dt_restart = 86400.0 ! implement a restart test
           is_relative_time=.true.
 	/
 	&master_model_nml
 	  model_type=1
-	  model_name="ATMO"
+	  model_name="atm"
 	  model_namelist_filename="NAMELIST_${EXPID}"
 	  model_min_rank=1
 	  model_max_rank=65536
@@ -105,6 +118,7 @@ cat > icon_master.namelist << EOF
           calendar             = "proleptic gregorian"
           experimentStartDate  = "1979-01-01T00:00:00Z"
           experimentStopDate   = "1979-01-02T00:00:00Z"
+          checkpointTimeIntval = "PT12H"
         /
 EOF
 
@@ -183,10 +197,10 @@ cat > NAMELIST_${EXPID} << EOF
 	         			              ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out01_${EXPID}'
+	  output_filename              = '${EXPID}_out01'
 	  filename_format              = '<output_filename>_<datetime2>'
        operation                    = ""
-         ml_varlist                   = 'alb_si','fr_seaice','t_g','hpbl' ! reduced list for buildbot
+         ml_varlist                   = 'alb_si','fr_seaice','t_g','hpbl','aod_550nm' ! reduced list for buildbot
 	 output_grid                  =  .TRUE.
 !	 stream_partitions_ml         =  2
 	/
@@ -200,7 +214,7 @@ cat > NAMELIST_${EXPID} << EOF
 	         				      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out02_${EXPID}'
+	  output_filename              = '${EXPID}_out02'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  ml_varlist                   = 'w_so','t_s','resid_wso'
@@ -217,7 +231,7 @@ cat > NAMELIST_${EXPID} << EOF
 	         				      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out03_${EXPID}'
+	  output_filename              = '${EXPID}_out03'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  ml_varlist                   = 'rain_con','tot_prec','t_2m','snow_melt'
@@ -234,7 +248,7 @@ cat > NAMELIST_${EXPID} << EOF
 	         				      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out04_${EXPID}'
+	  output_filename              = '${EXPID}_out04'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  ml_varlist                   = 'tmax_2m', 'dursun'
@@ -251,7 +265,7 @@ cat > NAMELIST_${EXPID} << EOF
 	 					      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out05_${EXPID}'
+	  output_filename              = '${EXPID}_out05'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  ml_varlist                   = 'tqc','cape_ml'
@@ -268,8 +282,8 @@ cat > NAMELIST_${EXPID} << EOF
 	                                               ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out06_${EXPID}'
-	  filename_format              = '<output_filename>_<datetime2>p'
+	  output_filename              = '${EXPID}_out06'
+	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  pl_varlist                   = 'temp'
 	  p_levels                     =  20000, 50000, 85000
@@ -286,7 +300,7 @@ cat > NAMELIST_${EXPID} << EOF
 	         				      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out08_${EXPID}'
+	  output_filename              = '${EXPID}_out08'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = "mean"
 	  ml_varlist                   = 'shfl_s','sob_t','sob_s'
@@ -302,7 +316,7 @@ cat > NAMELIST_${EXPID} << EOF
 	         				      ! 2: climate mode (absolute t-axis)
 	  include_last                 = .TRUE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/out09_${EXPID}'
+	  output_filename              = '${EXPID}_out09'
 	  filename_format              = '<output_filename>_<datetime2>'
      operation                    = ""
 	  ml_varlist                   = 'sob_s'
@@ -319,8 +333,8 @@ cat > NAMELIST_${EXPID} << EOF
 	         					! 2: climate mode (absolute t-axis)
 	  include_last                 = .FALSE.
 	  steps_per_file_inclfirst     = .FALSE.
-	  output_filename              = '${OUTDIR}/icon'
-	  filename_format              = '<output_filename>_<datetime2>c'   ! file name base
+	  output_filename              = '${EXPID}_icon'
+	  filename_format              = '<output_filename>_<datetime2>'   ! file name base
 	  ml_varlist		       = 'z_ifc','topography_c','fr_land','depth_lk', 'fr_lake', 'soiltyp',
 	  output_grid                  =  .TRUE.
 !	  stream_partitions_ml 	      =  2
@@ -341,6 +355,7 @@ cat > NAMELIST_${EXPID} << EOF
 	  output         = "nml" ! "nml"
 	  debug_check_level = 0
           lart           = .false.
+          restart_filename = '${EXPID}_restart_atm_<rsttime>.mfr'
 	/
 	&nwp_phy_nml
           inwp_gscp       = 1
@@ -359,8 +374,8 @@ cat > NAMELIST_${EXPID} << EOF
           efdt_min_raylfric = 7200.
           itype_z0         = 2
           icapdcycl        = 3
-          icpl_aero_conv   = 1
-          icpl_aero_gscp   = 1
+          icpl_aero_gscp  = 0   ! 1 not possible in combination with the Kinne aerosols (alternative: 3)
+          icpl_aero_conv  = 0
           icpl_o3_tp       = 1
           iprog_aero       = 0
           dt_rad    = 2400
@@ -381,6 +396,7 @@ cat > NAMELIST_${EXPID} << EOF
           tune_rcucov = 0.075
           tune_rhebc_land = 0.825
           tune_gust_factor=7.0
+          tune_albedo_wso=0.1,-0.1
 	/
 	&turbdiff_nml
           tkhmin  = 0.6
@@ -389,6 +405,7 @@ cat > NAMELIST_${EXPID} << EOF
 	  pat_len       = 750.
           c_diff  =  0.2
           rlam_heat = 10.0
+          rat_lam =  1.0
           rat_sea =  0.8
           ltkesso = .true.
 	  frcsmot       = 0.2
@@ -422,6 +439,7 @@ cat > NAMELIST_${EXPID} << EOF
 	  c_soil         = 1.25
 	  c_soil_urb     = 0.5
           lprog_albsi    = .true.
+          rsmin_fac      = 1.0
 	/
 	&radiation_nml
           ecrad_data_path= '${ECRAD_DIR}'
@@ -432,7 +450,7 @@ cat > NAMELIST_${EXPID} << EOF
           irad_cfc11  = 4           ! 4: from greenhouse gas scenario
           irad_cfc12  = 4           ! 4: from greenhouse gas scenario
 	  irad_o3     = 79
-	  irad_aero   = 6
+	  irad_aero   = 18
 	  albedo_type = 2          ! Modis albedo
           direct_albedo = 4
           albedo_whitecap = 1
@@ -466,7 +484,6 @@ cat > NAMELIST_${EXPID} << EOF
 	  flat_height     = 16000.
 	/
 	&dynamics_nml
-	  iequations     = 3
 	  divavg_cntrwgt = 0.50
 	  lcoriolis      = .true.
 	/
@@ -517,6 +534,7 @@ EOF
 # run ICON
 # ----------------------------------------------------------------------------
 
+ICON_COMPONENT1_VE_procs=$(( mpi_total_procs / OMP_NUM_THREADS ))
 ICON_COMPONENT1_VH_procs=$(( num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
 $START_MODEL
 EXIT_STATUS=$?

@@ -24,14 +24,13 @@ MODULE mo_opt_nwp_reflectivity
 
   USE mo_kind,                  ONLY: wp
   USE mo_math_constants,        ONLY: pi
-  USE gscp_data,                ONLY: isnow_n0temp, zami, mu_rain, zams_ci, zams_gr, zbms, &
-    &                                 znimax_Thom, zthn, mma, mmb, zcnue
   USE mo_2mom_mcrph_main,       ONLY: init_2mom_scheme,      &
     &                                 rain_coeffs  ! contains the parameters for the mue-Dm-relation
   USE mo_2mom_mcrph_types,      ONLY: particle, particle_frozen
   USE mo_2mom_mcrph_processes,  ONLY: moment_gamma, rain_mue_dm_relation
   USE mo_exception,             ONLY: finish, message
   USE mo_fortran_tools,         ONLY: set_acc_host_or_device
+  USE microphysics_1mom_schemes,ONLY: get_params_for_dbz_calculation
   
   IMPLICIT NONE
 
@@ -151,6 +150,10 @@ CONTAINS
 
     REAL(wp) :: zdebug
 
+    ! Variables requested from 1mom-microphysics granule
+    REAL(wp), SAVE :: zami, mu_rain, zams_ci, zams_gr, zbms, znimax_Thom, zthn, mma(10), mmb(10), zcnue
+    INTEGER, SAVE  :: isnow_n0temp
+
     CHARACTER(len=250) :: message_text
 
     LOGICAL :: lzacc             ! OpenACC flag
@@ -178,11 +181,23 @@ CONTAINS
     
     IF (firstcall) THEN
 
+      CALL get_params_for_dbz_calculation(isnow_n0temp_arg=isnow_n0temp, &
+                                          zami_arg=zami, &
+                                          mu_rain_arg=mu_rain, &
+                                          zams_ci_arg=zams_ci, &
+                                          zams_gr_arg=zams_gr, &
+                                          zbms_arg=zbms, &
+    &                                     znimax_Thom_arg=znimax_Thom, &
+                                          zthn_arg=zthn, &
+                                          mma_arg=mma, &
+                                          mmb_arg=mmb, &
+                                          zcnue_arg=zcnue)
+
       mom_fac = (6.0_wp / (pi * rho_w))**2
       
       ! Parameters for cloud droplets:
       !   PSD consistent to autoconversion parameterization of SB2001:
-      !   gamma distribution w.r.t. mass with gamma shape parameter zcnue from gscp_data.f90
+      !   gamma distribution w.r.t. mass with gamma shape parameter zcnue
       D_c_fix = 2.0E-5_wp                         ! constant mean mass diameter of cloud droplets (if n_cloud_s(:,:)
       x_c_fix = pi * rho_w / 6.0_wp * D_c_fix**3  !   is not present in argument list)
       cloud_tmp%nu = zcnue     ! gamma shape parameter mu for cloud droplets, in Axel's notation this is called nu instead!
@@ -263,7 +278,7 @@ CONTAINS
       
     ENDIF
 
-    !$ACC DATA COPYIN(n_cloud_s) PRESENT(q_cloud, q_graupel, q_ice, q_rain, q_snow, rho, T, z_radar) IF(lzacc)
+    !$ACC DATA COPYIN(n_cloud_s, mma, mmb) PRESENT(q_cloud, q_graupel, q_ice, q_rain, q_snow, rho, T, z_radar) IF(lzacc)
 
 !$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,ztc,zn0s,nn,hlp,alf,bet,m2s,m3s, &
@@ -295,7 +310,7 @@ CONTAINS
           rho_r = q_rain(jc,jk,jb)  * rho(jc,jk,jb)
           rho_s = q_snow(jc,jk,jb)  * rho(jc,jk,jb)
 
-          ! .. cloud droplets (gamma distribution w.r.t. mass x and mu_x=zcnue from gscp_data.f90):
+          ! .. cloud droplets (gamma distribution w.r.t. mass x and mu_x=zcnue
           IF (rho_c >= q_crit_radar) THEN
             IF (lqnc_input) THEN
               x_c = q_cloud(jc,jk,jb) / MAX(n_cloud_s(jc,jb), n_cloud_min)

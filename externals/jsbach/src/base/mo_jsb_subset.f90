@@ -24,7 +24,7 @@ MODULE mo_jsb_subset
   END ENUM
 
   TYPE t_subset
-    INTEGER :: type
+    INTEGER :: type = 0   ! is actually never set to ON_DOMAIN but only set to ON_CHUNK with interface_full() -> model%Set_subset() after PROC_init were called
     INTEGER :: ics
     INTEGER :: ice
     INTEGER :: iblk

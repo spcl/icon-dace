@@ -381,7 +381,7 @@ MODULE mo_sppt_core
 !$OMP END DO
 
     ! perform clipping of negative tracer concentrations
-    CALL negative2zero(pt_prog_rcf%tracer(:,:,:,:))
+    CALL negative2zero(pt_prog_rcf%tracer(:,:,:,:), lacc=.TRUE.)
 !$OMP END PARALLEL
 
   END SUBROUTINE apply_tend

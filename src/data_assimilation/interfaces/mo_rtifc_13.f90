@@ -93,6 +93,11 @@ MODULE mo_rtifc_13
                                   rttov_coef_mfasis,     &! Structure for RTTOV-MFASIS cloud or aerosol LUT structure
                                   rttov_mfasis_axis,     &! Structure for internal MFASIS LUT axis
                                   rttov_mfasis_lut,      &! Structure for MFASIS LUT data (one channel)
+#if (_RTTOV_MINOR == 2)
+                                  rttov_coef_mfasis_nn,  &! Structure for RTTOV-MFASIS-NN coefs
+                                  rttov_mfasis_nn,       &! Structure for RTTOV-MFASIS-NN
+                                  rttov_mfasis_nn_params,&! Structure for RTTOV-MFASIS-NN
+#endif
                                   rttov_coef_htfrtc       ! Structure for HT-FRTC scheme coefficients
 #ifdef _RTTOV_ARCH_VECTOR
   use rttov_types,          only: rttov_profiles
@@ -112,7 +117,7 @@ MODULE mo_rtifc_13
 #endif
 
 #if defined(_RTTOV_ATLAS)
-  use rttov_math_mod,       only: planck
+  use rttov_math_mod,       only: planck, inv_planck
   use mod_rttov_emis_atlas, only: rttov_emis_atlas_data,&! Data type to hold atlas info
                                   atlas_type_ir,        &!
                                   atlas_type_mw,        &!
@@ -168,7 +173,9 @@ MODULE mo_rtifc_13
   public :: rtifc_init_brdf_atlas
   public :: rtifc_emis_atlas
   public :: rtifc_emis_retrieve
+  public :: rtifc_emis_sea
   public :: rtifc_brdf_atlas
+  public :: rtifc_tskin_retrieve
 #endif
 
   ! RTTOV options
@@ -213,6 +220,9 @@ MODULE mo_rtifc_13
 #if defined(_RTTOV_ATLAS)
 #include "rttov_setup_emis_atlas.interface"
 #include "rttov_get_emis.interface"
+#if (_RTTOV_MINOR == 2)
+#include "rttov_get_sea_emis.interface"
+#endif
 #include "rttov_deallocate_emis_atlas.interface"
 #include "rttov_setup_brdf_atlas.interface"
 #include "rttov_deallocate_brdf_atlas.interface"
@@ -251,6 +261,11 @@ MODULE mo_rtifc_13
     module procedure p_bcast_rttov_coef_mfasis
     module procedure p_bcast_rttov_mfasis_axis
     module procedure p_bcast_rttov_mfasis_lut
+#if (_RTTOV_MINOR == 2)
+    module procedure p_bcast_rttov_coef_mfasis_nn
+    module procedure p_bcast_rttov_mfasis_nn
+    module procedure p_bcast_rttov_mfasis_nn_params
+#endif
     module procedure p_bcast_rttov_coef_htfrtc
 #if defined(_RTTOV_ATLAS)
     module procedure p_bcast_rttov_atlas
@@ -280,6 +295,11 @@ MODULE mo_rtifc_13
     module procedure p_bcast_rttov_cnt_coef_mfasis
     module procedure p_bcast_rttov_cnt_mfasis_axis
     module procedure p_bcast_rttov_cnt_mfasis_lut
+#if (_RTTOV_MINOR == 2)
+    module procedure p_bcast_rttov_cnt_coef_mfasis_nn
+    module procedure p_bcast_rttov_cnt_mfasis_nn
+    module procedure p_bcast_rttov_cnt_mfasis_nn_params
+#endif
     module procedure p_bcast_rttov_cnt_coef_htfrtc
 #if defined(_RTTOV_ATLAS)
     module procedure p_bcast_rttov_cnt_emis_atlas
@@ -629,7 +649,11 @@ contains
     if (present(ir_scatt_model   )) ropts%rt_ir%ir_scatt_model     = ir_scatt_model
     if (present(vis_scatt_model  )) ropts%rt_ir%vis_scatt_model    = vis_scatt_model
 #if defined(_RTTOV_GOD)
+#if (_RTTOV_MINOR == 2)
+    if (present(clip_gas_opdep   )) ropts%config%opdep13_gas_clip  = clip_gas_opdep
+#else
     if (present(clip_gas_opdep   )) ropts%config%clip_gas_opdep    = clip_gas_opdep
+#endif
 #endif
 
     if (present(do_checkinput    )) then
@@ -798,7 +822,11 @@ contains
     if (present(ir_scatt_model   )) ir_scatt_model    = ropts%rt_ir%ir_scatt_model
     if (present(vis_scatt_model  )) vis_scatt_model   = ropts%rt_ir%vis_scatt_model
 #if defined(_RTTOV_GOD)
+#if (_RTTOV_MINOR == 2)
+    if (present(clip_gas_opdep   )) clip_gas_opdep    = ropts%config%opdep13_gas_clip
+#else
     if (present(clip_gas_opdep   )) clip_gas_opdep    = ropts%config%clip_gas_opdep
+#endif
 #endif
 
     if (present(do_checkinput    )) do_checkinput     = ropts%config%do_checkinput
@@ -3473,7 +3501,7 @@ FTRACE_BEGIN('rtifc_k')
       do i = 1, npr
         write(msg,*) 'rttov input profile ',ipr(i),trim(profiles(ipr(i))%id)
         call rttov_print_profile(profiles(ipr(i)), usd, trim(msg))
-        call rttov_print_opts(ropts, usd, 'ropts (options for rttov_direct call):')
+        call rttov_print_opts(ropts, usd, 'ropts (options for rttov_k call):')
       end do
     else
       ipr_deb = 0
@@ -4289,6 +4317,71 @@ FTRACE_END('rtifc_k')
  end subroutine rtifc_emis_retrieve
 
 
+ subroutine rtifc_emis_sea(iopt, lprofs, chans, emis, stat, pe, ldeb)
+   integer,             intent(in)  :: iopt      ! options index
+   integer,             intent(in)  :: lprofs(:) ! list of profile indices
+   integer,             intent(in)  :: chans(:)  ! list of channel indices
+   real(wp),            intent(out) :: emis(:)   ! computed emissivities
+   integer,             intent(out) :: stat      ! error status
+   integer,             intent(in), optional:: pe
+   logical,             intent(in), optional:: ldeb
+   !--------------------------------------------------
+   ! Dynamic retrieve of emissivity (following Karbou)
+   !--------------------------------------------------
+   character(len=*),   parameter   :: proc   = 'rtifc_emis_sea'
+   type(t_rtopts),     pointer     :: rto    => null()
+   type(rttov_options),pointer     :: ropts  => null()
+   type(rttov_chanprof)            :: chanprof(size(chans))
+   integer                         :: nch
+   integer                         :: i, ic
+   logical                         :: ld
+#if (_RTTOV_MINOR == 2)
+
+   if (present(ldeb)) then
+     ld = ldeb
+   else
+     ld = .false.
+   end if
+
+   if (iopt<=0 .or. iopt>n_opts) call finish(proc, 'invalid option index')
+   rto   => rt_opts(iopt)
+   ropts => rto%opts
+   ic    =  rto%icoeff
+
+   nch = size(chans)
+
+   ! Check inputs consistency
+   if ( size(lprofs) /= size(chans) .or. size(lprofs) /= size(chans) .or. &
+        size(lprofs) /= size(emis) ) then
+     stat = ERR_DIM
+     return
+   end if
+   if (any(lprofs(:) /= 1 )) then
+     stat = ERR_DIM
+     return
+   end if
+   do i = 1,nch
+     chanprof(i)% chan = chans(i)
+     chanprof(i)% prof = lprofs(i)
+   enddo
+
+   if (ld) then
+     ipr_deb = chanprof(1)%prof
+   else
+     ipr_deb = -1
+   end if
+   ! Call rtifc_direct for first guesses needed
+   call rttov_get_sea_emis(stat, ropts, chanprof, profiles, coefs(ic), &
+        (/(.true.,i=1,nch)/), emis(1:nch))
+
+#else
+   stat = ERR_NO_RTTOV_LIB
+
+#endif
+
+ end subroutine rtifc_emis_sea
+
+
  subroutine rtifc_init_atlas(iopts, atlas_id, angcorr, month, path, &
                              my_proc_id, n_proc, io_proc_id, mpi_comm_type)
    integer,            intent(in) :: iopts(:)        ! option indices
@@ -4523,7 +4616,7 @@ FTRACE_END('rtifc_k')
         ,max_dst=max_dst &
 #endif
         )
-   if (ldeb) write(usd,*) 'debug_spot',proc,' result',emis
+   if (ldeb) write(usd,*) 'debug_spot ',proc,' result',emis
    if (stat /= 0) then
      write(0,*) 'stat=',stat
      call finish(proc, 'rttov_get_emis failed')
@@ -4682,13 +4775,234 @@ FTRACE_END('rtifc_k')
    end if
 
    do k = 1,size(chans)
-      chanprof(k)% chan = chans(k)
-      chanprof(k)% prof = profs(k)
+     chanprof(k)% chan = chans(k)
+     chanprof(k)% prof = profs(k)
    enddo
 
    call rttov_get_brdf(stat, ropts, chanprof, profiles, coefs(ic), vis_atlas, refl, brdf_flag=refl_flag)
 
  end subroutine rtifc_brdf_atlas
+
+
+ subroutine rtifc_tskin_retrieve(iopt, lprofs, channum, chans, obs, &
+      spec, emis, tskin, stat, tsfl, pe, ldeb, spt_hd_id)
+   integer,  intent(in)           :: iopt      ! options index
+   integer,  intent(in)           :: lprofs(:) ! list of profile indices
+   integer,  intent(in)           :: channum(:)! list of channel numbers
+   integer,  intent(in)           :: chans(:)  ! list of channel indices
+   real(wp), intent(in)           :: obs(:)    ! observed brightness temperature
+   real(wp), intent(in)           :: spec(:,:) ! specularity
+   real(wp), intent(inout)        :: emis(:)   ! atlas emissivities
+   real(wp), intent(out)          :: tskin(:)  ! computed skin temperature
+   integer,  intent(out)          :: stat      ! error status
+   logical,  intent(inout)        :: tsfl      ! set tskin flag
+   integer,  intent(in), optional :: pe
+   logical,  intent(in), optional :: ldeb
+   integer,  intent(in), optional :: spt_hd_id
+   !--------------------------------------------------
+   ! Dynamic retrieve of skin temperature (following Karbou)
+   !--------------------------------------------------
+   character(len=*),   parameter   :: proc   = 'rtifc_tskin_retrieve'
+   type(t_rtopts),     pointer     :: rto    => null()
+   type(rttov_options),pointer     :: ropts  => null()
+   integer                         :: ic, ipr, k, ndrts, nlevs, nl
+   logical                         :: ld
+   real(jprb),         allocatable :: t_b(:,:)
+   real(jprb),         allocatable :: emis_in(:,:)
+   real(jprb),         allocatable :: radclear(:,:)
+   real(jprb),         allocatable :: radupclear(:,:)
+   real(jprb),         allocatable :: raddnclear(:,:)
+   real(jprb),         allocatable :: gamma(:,:)
+   real(jprb),         allocatable :: gamma_k(:,:,:)
+   real(jprb),         allocatable :: obsrad(:)
+   real(jprb),         allocatable :: radup(:)
+   real(jprb),         allocatable :: rademi(:)
+   real(jprb)                      :: BlackBody_rad, temp_t, obs_eff
+   real(jprb),         allocatable :: tskin_temp(:)
+
+   if (present(ldeb)) then
+     ld = ldeb
+   else
+     ld = .false.
+   end if
+
+   if (iopt<=0 .or. iopt>n_opts) call finish(proc, 'invalid option index')
+   rto   => rt_opts(iopt)
+   ropts => rto%opts
+   ic    =  rto%icoeff
+    nlevs = coefs(ic)%coef%nlevels - 1
+    ! Check inputs consistency -  ! 1 = Infrared  ! 3 = Highspectral
+    if (coefs(ic)% coef% id_sensor /= 1 .and. coefs(ic)% coef% id_sensor /= 3) then
+      stat = ERR_INVALID_INSTR
+      return
+    end if
+    if (size(lprofs) /= size(chans) .or. &
+        size(lprofs) /= size(obs)  ) then
+      stat = ERR_DIM
+      return
+    end if
+    if (any(lprofs(:) /= 1 )) then
+      stat = ERR_DIM
+      return
+    end if
+    if (size(tskin) /= 1) then
+      stat = ERR_DIM
+      return
+    end if
+    ! Allocate auxiliary arrays
+    allocate(t_b       (size(lprofs),1))
+    allocate(emis_in   (size(lprofs),1))
+    emis_in(:,1) = emis ! if land-atlas is used, emis_in gets its value from atlas
+                        ! if surface is sea and emis=-1, then emis_in gets calcualted
+                        ! in rtifc_direct where it is smaller that 0.01.
+    allocate(radclear  (size(lprofs),1))
+    allocate(radupclear(size(lprofs),1))
+    allocate(raddnclear(size(lprofs),1))
+    allocate(gamma     (size(lprofs),1))
+    allocate(obsrad    (size(lprofs)))
+    allocate(radup     (size(lprofs)))
+    allocate(rademi    (size(lprofs)))
+    allocate(gamma_k   (nlevs,size(lprofs),1))
+
+    if (ld) then
+      ipr = 1
+    else
+      ipr = -1
+    end if
+    ! Call rtifc_direct for first guesses needed
+    call rtifc_direct (                  &
+        iopt,                           & ! <--  options index
+        lprofs,                         & ! <--  list of profile indices
+        chans,                          & ! <--  list of channel indices
+        emis_in,                        & ! <--> emissivities -
+        t_b,                            & !  --> calculated brightness
+        stat,                           & !  --> exit status
+        specularity  = spec,            & ! <--  specularities
+        radclear     = radclear,        & !  --> TOA radiance
+        radupclear   = radupclear,      & !  --> TOA upweeling radiance(with emissivity term)
+        raddnclear   = raddnclear,      & !  --> downelling radiance at surface
+        transmtotal  = gamma,           & !  --> total surface to TOA transmission (nchans,nprof)
+        transm       = gamma_k,         & !  --> transmission (nlevs,nchans,nprof)
+        iprint       = (/ipr/)          )! <--  debug
+    if (stat /= NO_ERROR) return
+
+    tsfl = .false.
+    ndrts = 0
+    tskin(:) = 0
+    BlackBody_rad = 0.0
+    temp_t = 0.0
+    allocate(tskin_temp(size(chans)))
+    tskin_temp(:) = 0.0
+
+    ! loop over channel
+    do k = 1, size(chans)
+      ! Adjustemnts for the finite spectral bandwidth if needed
+      ! Brightness temperatures are modified using band correction coefficients
+      if (coefs(ic)%coef%ff_val_bc) then
+        obs_eff = coefs(ic)%coef%ff_bcs(chans(k))*obs(k) + coefs(ic)%coef%ff_bco(chans(k))
+      else
+        obs_eff = obs(k)
+      end if
+      ! Compute radiance associated to observed brightness temperatures
+      call planck(coefs(ic)%coef% planck1(chans(k)),coefs(ic)%coef% planck2(chans(k)), &
+            obs_eff,obsrad(k))
+      ! Adjustemnts for the finite spectral bandwidth if needed
+      if (coefs(ic)%coef%ff_val_bc) then
+        temp_t = coefs(ic)%coef%ff_bcs(chans(k))* profiles(1)% skin% t + coefs(ic)%coef%ff_bco(chans(k))
+      else
+        temp_t = profiles(1)% skin% t
+      end if
+      ! Compute radiance associated to model skin temperature
+      call planck(coefs(ic)%coef% planck1(chans(k)),coefs(ic)%coef% planck2(chans(k)), &
+        temp_t, rademi(k))
+
+      ! Compute upwelling radiance without emission term
+      radup(k) = radupclear(k,1)-rademi(K)*emis_in(k,1)*gamma(k,1)
+
+      ! Compute radiance emitted by black body at temperature ts
+      BlackBody_rad  =(obsrad(k) - raddnclear(k,1)*(1.-emis_in(k,1))*gamma(k,1) - radup(k))/(emis_in(k,1) * gamma(k,1))
+
+      ! call inverse Planck function only if Blackbody radiation is positive
+      if (BlackBody_rad > 0 ) then
+        ! Calculate temperature from Black body radiance
+        call inv_planck(coefs(ic)%coef% planck1(chans(k)), coefs(ic)%coef% planck2(chans(k)), &
+        BlackBody_rad, tskin_temp(k) )
+
+        ! revert the band correction adjustments if needed
+        if (coefs(ic)%coef%ff_val_bc) then
+          tskin_temp(k) = (tskin_temp(k) - coefs(ic)%coef%ff_bco(chans(k)) )/coefs(ic)%coef%ff_bcs(chans(k))
+        else
+          tskin_temp(k) = tskin_temp(k)
+        end if
+
+        ! if derived tskin is valid and does not deviate from model tskin more than +/- 15 degree
+        if ( tskin_temp(k) > 0 .and. &
+          abs(tskin_temp(k) - dble(profiles(1)% skin% t)) <= 15.0) then
+          tskin(:) = tskin(:) + tskin_temp(k)
+          ndrts = ndrts + 1
+          tsfl = .true.
+
+          ! ------- print some info -----------
+          if (ld) then
+            write(*,*) proc,&
+            ' chan:', channum(k), &
+            ' obs:', obs(k), &
+            ' obsrad:', obsrad(k), &
+            ' radup:', radup(k), &
+            ' B_ts:', BlackBody_rad , &
+            ' ~radupclear::', radup(k) + BlackBody_rad, &
+            ' refl-raddnclear:', raddnclear(k,1)*(1.-emis_in(k,1))*gamma(k,1) , &
+            ' term1:', radclear(k,1) -  gamma(k,1)*emis_in(k,1)*rademi(k), &
+            ' term2:', obsrad(k) - gamma(k,1)*emis_in(k,1)*BlackBody_rad , &
+            ' raddnclear:',raddnclear(k,1), &
+            ' transtot:',gamma(k,1), &
+            ' emis:',emis_in(k,1), &
+            ' input emis:',emis(:), &
+            ' ts:', tskin_temp(k), &
+            ' tsm:', profiles(1)% skin% t
+            do nl = 1, nlevs
+              write(*,*) proc, spt_hd_id, ' nlev:', nl, ' trans_lev:', gamma_k(nl, k, 1)
+            end do
+          end if
+          !------- end of print info ------------
+        else
+          !call finish(proc, 'invalid derived tskin')
+          if (ld) then
+            write(*,*) proc, " Invalid/Unacceptable derived ts for spot_hd_id:", spt_hd_id, &
+            ' ret_ts:',tskin_temp(k), ' model_ts:', profiles(1)% skin% t, ' chan:', channum(k),&
+            ' bt:', obs(k), ' FG:', t_b, &
+            ' gamma:', gamma(k,1), ' emis:', emis_in(k,1)
+          end if
+
+        end if
+      else
+        ! find where surface level lies
+        do nl = 1, nlevs - 1
+            if (gamma_k(nl, k, 1) < gamma(k,1) ) then
+              exit
+            end if
+        end do
+        if (ld) then
+          write(*,*) proc, " Invalid Black-body rad computed for spot_hd_id: ", spt_hd_id, &
+          ' model_ts:', profiles(1)% skin% t, &
+          ' gamma:', gamma(k,1), ' gamma-nl:',&
+          !gamma_k(nl, k, 1), ' gamma-nl-1:', gamma_k(nl-1, k, 1),&
+          ' chan:', channum(k), ' bt:', obs(k), ' FG:', t_b, &
+          ' obsrad:', obsrad(k), ' radup:', radup(k), &
+          ' raddnclear:', raddnclear(k,1), ' emis:',emis_in(k,1)
+        end if
+      end if ! end if BlackBody_rad
+    end do ! end do k on chans
+
+    if (tsfl) then
+      tskin(:) = tskin(:)/ndrts
+      emis(:) = emis_in(:,1) ! in case emissivity is calculated during rtifc_direct call
+    else                     ! it should be passed out to be used later again. For land
+                             ! it does not change anything and is only an extra assigment operation!
+      tskin = profiles(1)% skin% t ! In case the derived tskin is invalid, the model ts is returned
+    end if
+
+  end subroutine rtifc_tskin_retrieve
 
 #endif /* _RTTOV_ATLAS */
 
@@ -5342,6 +5656,9 @@ FTRACE_END('dealloc_rttov_arrays')
     call p_bcast(coefs% coef_pccomp,     source, comm)
     call p_bcast(coefs% coef_mfasis_cld, source, comm)
     call p_bcast(coefs% coef_mfasis_aer, source, comm)
+#if (_RTTOV_MINOR == 2)
+    call p_bcast(coefs% coef_mfasis_nn, source, comm)
+#endif
     call p_bcast(coefs% coef_htfrtc,     source, comm)
   end subroutine
 
@@ -5378,6 +5695,9 @@ FTRACE_END('dealloc_rttov_arrays')
       if (associated(coef%ss_val_chn       )) allocate(coef%ss_val_chn       (coef%fmv_chn))
       if (associated(coef%ss_solar_spectrum)) allocate(coef%ss_solar_spectrum(coef%fmv_chn))
       if (associated(coef%ss_rayleigh_ext  )) allocate(coef%ss_rayleigh_ext  (coef%fmv_chn))
+#if (_RTTOV_MINOR == 2)
+      if (associated(coef%rayleigh_depol_gamma)) allocate(coef%rayleigh_depol_gamma(coef%fmv_chn))
+#endif
       if (associated(coef%refl_visnir_ow   )) allocate(coef%refl_visnir_ow   (coef%fmv_chn))
       if (associated(coef%refl_visnir_fw   )) allocate(coef%refl_visnir_fw   (coef%fmv_chn))
       if (associated(coef%woc_waopc_ow     )) allocate(coef%woc_waopc_ow     (coef%fmv_chn))
@@ -5415,6 +5735,9 @@ FTRACE_END('dealloc_rttov_arrays')
     if (associated(coef%ss_val_chn       )) call p_bcast(coef%ss_val_chn,       source,comm)
     if (associated(coef%ss_solar_spectrum)) call p_bcast(coef%ss_solar_spectrum,source,comm)
     if (associated(coef%ss_rayleigh_ext  )) call p_bcast(coef%ss_rayleigh_ext,  source,comm)
+#if (_RTTOV_MINOR == 2)
+    if (associated(coef%rayleigh_depol_gamma)) call p_bcast(coef%rayleigh_depol_gamma,  source,comm)
+#endif
     if (associated(coef%refl_visnir_ow   )) call p_bcast(coef%refl_visnir_ow,   source,comm)
     if (associated(coef%refl_visnir_fw   )) call p_bcast(coef%refl_visnir_fw,   source,comm)
     if (associated(coef%woc_waopc_ow     )) call p_bcast(coef%woc_waopc_ow,     source,comm)
@@ -6074,6 +6397,9 @@ FTRACE_END('dealloc_rttov_arrays')
       if (associated(coef_mfasis%aer_types ))   allocate(coef_mfasis%aer_types   (coef_mfasis%nparticles))
       if (associated(coef_mfasis%channel_list)) allocate(coef_mfasis%channel_list(coef_mfasis%nchannels))
       if (associated(coef_mfasis%channel_lut_index)) allocate(coef_mfasis%channel_lut_index(coef_mfasis%nchannels_coef))
+#if (_RTTOV_MINOR == 2)
+      if (associated(coef_mfasis%channel_deff_mixing)) allocate(coef_mfasis%channel_deff_mixing(coef_mfasis%nchannels_coef))
+#endif
       if (associated(coef_mfasis%lut))          allocate(coef_mfasis%lut(coef_mfasis%nchannels))
     endif
 
@@ -6089,6 +6415,10 @@ FTRACE_END('dealloc_rttov_arrays')
       call p_bcast(coef_mfasis%channel_list, source, comm)
     if (associated(coef_mfasis%channel_lut_index)) &
       call p_bcast(coef_mfasis%channel_lut_index, source, comm)
+#if (_RTTOV_MINOR == 2)
+    if (associated(coef_mfasis%channel_deff_mixing)) &
+      call p_bcast(coef_mfasis%channel_deff_mixing, source, comm)
+#endif
 
     if (associated(coef_mfasis%lut)) then
       do i = 1, coef_mfasis%nchannels
@@ -6148,6 +6478,108 @@ FTRACE_END('dealloc_rttov_arrays')
       call p_bcast(mfasis_lut%data, source, comm)
 
   end subroutine p_bcast_rttov_mfasis_lut
+
+#if (_RTTOV_MINOR == 2)
+  subroutine p_bcast_rttov_coef_mfasis_nn(c, source, comm)
+    type(rttov_coef_mfasis_nn),  intent(inout) :: c
+    integer,           intent(in)           :: source
+    integer, optional, intent(in)           :: comm
+    !-------------------------------------------------------------------------
+    ! Broadcast an rttov_coef_mfasis structure across all available processors
+    !-------------------------------------------------------------------------
+    integer :: i
+
+    call p_bcast_rttov_container(c, source, comm)
+
+    if (pe_ifc /= source) then
+      if (associated(c%channel_list    )) allocate(c%channel_list    (c%nchannels     ))
+      if (associated(c%channel_nn_index)) allocate(c%channel_nn_index(c%nchannels_coef))
+      if (associated(c%nn              )) allocate(c%nn              (c%nchannels     ))
+    endif
+
+    if (associated(c%channel_list    )) call p_bcast(c%channel_list,     source, comm)
+    if (associated(c%channel_nn_index)) call p_bcast(c%channel_nn_index, source, comm)
+
+    if (associated(c%nn)) then
+      do i = 1, c%nchannels
+        call p_bcast(c%nn(i), source,comm)
+      enddo
+    endif
+
+  end subroutine p_bcast_rttov_coef_mfasis_nn
+
+  subroutine p_bcast_rttov_mfasis_nn(nn, source, comm)
+    type(rttov_mfasis_nn),   intent(inout) :: nn
+    integer,           intent(in)           :: source
+    integer, optional, intent(in)           :: comm
+    !------------------------------------------------------------------------
+    ! Broadcast an rttov_nn structure across all available processors
+    !------------------------------------------------------------------------
+    integer :: dims(2),i
+
+    call p_bcast_rttov_container(nn, source, comm)
+
+    dims = -1
+    if (associated(nn%in )) dims(1:1) = shape(nn%in)
+    if (associated(nn%out)) dims(2:2) = shape(nn%out)
+
+    call p_bcast(dims,source,comm)
+
+    if (pe_ifc /= source) then
+      if (associated(nn%in      )) allocate(nn%in      (dims(1)))
+      if (associated(nn%out     )) allocate(nn%out     (dims(2)))
+      if (associated(nn%bias_i  )) allocate(nn%bias_i  (nn%n_nodes_max))
+      if (associated(nn%bias_h  )) allocate(nn%bias_h  (nn%n_nodes_max,nn%n_hidden-1))
+      if (associated(nn%bias_o  )) allocate(nn%bias_o  (nn%n_output))
+      if (associated(nn%weight_i)) allocate(nn%weight_i(nn%n_input, nn%n_nodes_max))
+      if (associated(nn%weight_h)) allocate(nn%weight_h(nn%n_nodes_max,nn%n_nodes_max,nn%n_hidden-1))
+      if (associated(nn%weight_o)) allocate(nn%weight_o(nn%n_nodes_max,nn%n_output))
+    endif
+
+    if (associated(nn%in)) then
+      do i = 1, size(nn%in)
+        call p_bcast(nn%in(i), source, comm)
+      end do
+    end if
+    if (associated(nn%out)) then
+      do i = 1, size(nn%out)
+        call p_bcast(nn%out(i), source, comm)
+      end do
+    end if
+    if (associated(nn%bias_i  )) call p_bcast(nn%bias_i,   source, comm)
+    if (associated(nn%bias_h  )) call p_bcast(nn%bias_h,   source, comm)
+    if (associated(nn%bias_o  )) call p_bcast(nn%bias_o,   source, comm)
+    if (associated(nn%weight_i)) call p_bcast(nn%weight_i, source, comm)
+    if (associated(nn%weight_h)) call p_bcast(nn%weight_h, source, comm)
+    if (associated(nn%weight_o)) call p_bcast(nn%weight_o, source, comm)
+
+  end subroutine p_bcast_rttov_mfasis_nn
+
+
+  subroutine p_bcast_rttov_mfasis_nn_params(nnp, source, comm)
+    type(rttov_mfasis_nn_params),   intent(inout) :: nnp
+    integer,           intent(in)           :: source
+    integer, optional, intent(in)           :: comm
+    !------------------------------------------------------------------------
+    ! Broadcast an rttov_nn structure across all available processors
+    !------------------------------------------------------------------------
+    integer :: dims(1)
+
+    call p_bcast_rttov_container(nnp, source, comm)
+
+    dims = -1
+    if (associated(nnp%auxparams)) dims(1:1) = shape(nnp%auxparams)
+
+    call p_bcast(dims,source,comm)
+
+    if (pe_ifc /= source) then
+      if (associated(nnp%auxparams)) allocate(nnp%auxparams(dims(1)))
+    endif
+
+    if (associated(nnp%auxparams)) call p_bcast(nnp%auxparams, source, comm)
+
+  end subroutine p_bcast_rttov_mfasis_nn_params
+#endif
 
 
   subroutine p_bcast_rttov_coef_htfrtc(coef, source, comm)
@@ -6563,6 +6995,72 @@ FTRACE_END('dealloc_rttov_arrays')
          call finish(proc, 'MPI ERROR in MPI_Bcast')
 #endif
   end subroutine p_bcast_rttov_cnt_mfasis_lut
+
+
+#if (_RTTOV_MINOR == 2)
+  subroutine p_bcast_rttov_cnt_coef_mfasis_nn(buffer,source,comm)
+    type(rttov_coef_mfasis_nn), intent(inout)  :: buffer
+    integer,          intent(in)            :: source
+    integer, optional,intent(in)            :: comm
+    !-------------------------------------------------------------------------
+    ! Broadcast an rttov_coef_mfasis container across all available processors
+    !-------------------------------------------------------------------------
+    character(len=*), parameter :: proc = 'p_bcast_rttov_cnt_coef_mfasis_nn'
+    integer :: lcom, errorcode
+
+#if defined(_RTIFC_USE_MPI_DACE)
+    call p_bcast_derivedtype(buffer,size(transfer(buffer,(/' '/))),source,comm)
+#else
+    lcom = MPI_COMM_WORLD ;if (present (comm)) lcom = comm
+    call MPI_Bcast(buffer,size(transfer(buffer,(/' '/))), MPI_BYTE, &
+                   source, lcom, errorcode)
+    if (errorcode /= MPI_SUCCESS) &
+         call finish(proc, 'MPI ERROR in MPI_Bcast')
+#endif
+  end subroutine p_bcast_rttov_cnt_coef_mfasis_nn
+
+  subroutine p_bcast_rttov_cnt_mfasis_nn(buffer,source,comm)
+    type(rttov_mfasis_nn), intent(inout)  :: buffer
+    integer,          intent(in)            :: source
+    integer, optional,intent(in)            :: comm
+    !-------------------------------------------------------------------------
+    ! Broadcast an rttov_mfasis container across all available processors
+    !-------------------------------------------------------------------------
+    character(len=*), parameter :: proc = 'p_bcast_rttov_cnt_mfasis_nn'
+    integer :: lcom, errorcode
+
+#if defined(_RTIFC_USE_MPI_DACE)
+    call p_bcast_derivedtype(buffer,size(transfer(buffer,(/' '/))),source,comm)
+#else
+    lcom = MPI_COMM_WORLD ;if (present (comm)) lcom = comm
+    call MPI_Bcast(buffer,size(transfer(buffer,(/' '/))), MPI_BYTE, &
+                   source, lcom, errorcode)
+    if (errorcode /= MPI_SUCCESS) &
+         call finish(proc, 'MPI ERROR in MPI_Bcast')
+#endif
+  end subroutine p_bcast_rttov_cnt_mfasis_nn
+
+  subroutine p_bcast_rttov_cnt_mfasis_nn_params(buffer,source,comm)
+    type(rttov_mfasis_nn_params), intent(inout)  :: buffer
+    integer,          intent(in)            :: source
+    integer, optional,intent(in)            :: comm
+    !-------------------------------------------------------------------------
+    ! Broadcast an rttov_mfasis container across all available processors
+    !-------------------------------------------------------------------------
+    character(len=*), parameter :: proc = 'p_bcast_rttov_cnt_mfasis_nn_params'
+    integer :: lcom, errorcode
+
+#if defined(_RTIFC_USE_MPI_DACE)
+    call p_bcast_derivedtype(buffer,size(transfer(buffer,(/' '/))),source,comm)
+#else
+    lcom = MPI_COMM_WORLD ;if (present (comm)) lcom = comm
+    call MPI_Bcast(buffer,size(transfer(buffer,(/' '/))), MPI_BYTE, &
+                   source, lcom, errorcode)
+    if (errorcode /= MPI_SUCCESS) &
+         call finish(proc, 'MPI ERROR in MPI_Bcast')
+#endif
+  end subroutine p_bcast_rttov_cnt_mfasis_nn_params
+#endif
 
 
   subroutine p_bcast_rttov_cnt_coef_htfrtc(buffer,source,comm)
