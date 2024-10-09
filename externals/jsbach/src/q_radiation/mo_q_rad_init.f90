@@ -60,7 +60,7 @@ CONTAINS
   SUBROUTINE q_rad_init_ic(tile)
     USE mo_jsb_class,             ONLY: Get_model
     USE mo_jsb_tile_class,        ONLY: t_jsb_tile_abstract
-    USE mo_q_rad_parameters,      ONLY: rfr_ratio_toc
+    USE mo_q_rad_parameters,      ONLY: rfr_ratio_toc, albedo_vis_initial, albedo_nir_initial
 
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile         !< one tile with data structure for one lct
 
@@ -70,13 +70,14 @@ CONTAINS
 
     dsl4jsb_Real2D_onDomain      :: rfr_ratio_boc
     dsl4jsb_Real2D_onDomain      :: rfr_ratio_boc_tvegdyn_mavg
+    dsl4jsb_Real2D_onDomain      :: alb_vis
+    dsl4jsb_Real2D_onDomain      :: alb_nir
     dsl4jsb_Real3D_onDomain      :: ppfd_sunlit_tfrac_mavg_cl
     dsl4jsb_Real3D_onDomain      :: ppfd_sunlit_tcnl_mavg_cl
     dsl4jsb_Real3D_onDomain      :: ppfd_shaded_tfrac_mavg_cl
     dsl4jsb_Real3D_onDomain      :: ppfd_shaded_tcnl_mavg_cl
 
     IF (.NOT. tile%Is_process_active(Q_RAD_)) RETURN
-
     IF (debug_on()) CALL message(routine, 'Setting initial conditions of radiation memory (quincy) for tile '// &
       &                                   TRIM(tile%name))
 
@@ -84,6 +85,8 @@ CONTAINS
 
     dsl4jsb_Get_var2D_onDomain(Q_RAD_, rfr_ratio_boc)
     dsl4jsb_Get_var2D_onDomain(Q_RAD_, rfr_ratio_boc_tvegdyn_mavg)
+    dsl4jsb_Get_var2D_onDomain(Q_RAD_, alb_vis)
+    dsl4jsb_Get_var2D_onDomain(Q_RAD_, alb_nir)
     dsl4jsb_Get_var3D_onDomain(Q_RAD_, ppfd_sunlit_tfrac_mavg_cl)
     dsl4jsb_Get_var3D_onDomain(Q_RAD_, ppfd_sunlit_tcnl_mavg_cl)
     dsl4jsb_Get_var3D_onDomain(Q_RAD_, ppfd_shaded_tfrac_mavg_cl)
@@ -101,6 +104,10 @@ CONTAINS
 
     ppfd_shaded_tfrac_mavg_cl(:,:,:)    = 10.0_wp
     ppfd_shaded_tcnl_mavg_cl(:,:,:)     = 10.0_wp
+
+    ! these variables are initialized with the mem%Add_var() routine in addition (same values) !
+    alb_vis(:,:)                        = albedo_vis_initial
+    alb_nir(:,:)                        = albedo_nir_initial
 
   END SUBROUTINE q_rad_init_ic
 

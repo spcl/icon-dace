@@ -105,7 +105,7 @@ cat > ${ocean_namelist} << EOF0
   include_last     = .false.
   output_grid      = .TRUE.
   filename_format  = "<output_filename>_<datetime2>"
-  ml_varlist       = 'group:oce_default','group:oce_essentials', 'group:ice_default'
+  ml_varlist       = 'group:oce_default','group:oce_essentials', 'group:ice_default', 'age_tracer', 'green_tracer'
 /
 &output_nml
   output_start     = "${start_date}"
@@ -248,6 +248,7 @@ cat >> ${ocean_namelist} << EOF2
   fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
   fct_limiter_horz      = 100    ! zalesak
   threshold_min_T       = -2.0   ! to avoid abort
+  no_tracer             = 4      ! 2 normal setup; 3 with age tracer; 4 with age tracer squared
 /
 &ocean_horizontal_diffusion_nml
   laplacian_form = 1                   ! 1=curlcurl-graddiv
@@ -409,6 +410,10 @@ cat >> ${ocean_namelist} << EOF4
    agulhas(1:10)                = 8024,8022
    agulhas_long(1:10)           = 8024,8022,6036
    agulhas_longer(1:10)         = 8024,8022,6036,6025
+   diagnose_age = .true.
+   diagnose_green = .true.
+   greenStartDate = '2001-01-01'
+   greenStopDate = '2001-01-10'
 /
 &io_nml
   restart_file_type = 5

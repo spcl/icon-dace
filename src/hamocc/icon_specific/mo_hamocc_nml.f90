@@ -1,7 +1,3 @@
-! @brief namelist setup for HAMOCC
-!
-! Namelist setup for HAMOCC, the HAMburg Ocean Carbon Cycle model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief namelist setup for HAMOCC
+!
+! Namelist setup for HAMOCC, the HAMburg Ocean Carbon Cycle model
 
 MODULE mo_hamocc_nml
 

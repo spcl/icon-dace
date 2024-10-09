@@ -1,5 +1,3 @@
-! configuration setup for atmospheric tracer transport
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! configuration setup for atmospheric tracer transport
 
 MODULE mo_advection_config
 
@@ -44,13 +44,13 @@ MODULE mo_advection_config
   ! types
   PUBLIC :: t_advection_config
   PUBLIC :: t_trList
+  PUBLIC :: t_gauss_quad_2d
 
   ! variables
   PUBLIC :: advection_config
-  PUBLIC :: shape_func, shape_func_l
-  PUBLIC :: eta, eta_l, zeta, zeta_l
-  PUBLIC :: wgt_zeta, wgt_zeta_l, wgt_eta, wgt_eta_l
   PUBLIC :: lcompute, lcleanup
+  PUBLIC :: gaussq_2d_o1
+  PUBLIC :: gaussq_2d_o2
 
   ! subroutines
   PUBLIC :: configure_advection
@@ -92,6 +92,18 @@ MODULE mo_advection_config
 !!$    FINAL                :: destruct_trList
   END TYPE t_trList
 
+
+  ! abscissa and weights for 2D Gauss-Legendre quadrature
+  ! over standard quadrilateral
+  !
+  TYPE :: t_gauss_quad_2d
+    ! Coordinates of Gauss quadrature points (in \zeta,\eta-system)
+    REAL(wp), ALLOCATABLE :: zeta(:), eta(:)
+    ! Gauss weights
+    REAL(wp), ALLOCATABLE :: wgt(:)
+    ! shape functions (evaluated at Gauss integration points)
+    REAL(wp), ALLOCATABLE :: shape_func(:,:)
+  END TYPE t_gauss_quad_2d
 
 
 
@@ -237,29 +249,13 @@ MODULE mo_advection_config
   TYPE(t_compute)  :: lcompute
   TYPE(t_compute)  :: lcleanup
 
-
-  ! for first order Gauss-Legendre quadrature
+  ! Abscissas and weights for FIRST ORDER Gauss-Legendre quadrature
   !
-  REAL(wp) :: shape_func_l(4)  !< shape functions for mapping the FFSL departure
-                               !< region onto the standard rectangle
+  TYPE(t_gauss_quad_2d), TARGET:: gaussq_2d_o1
 
-  REAL(wp) :: zeta_l, eta_l    !< Gauss quadrature point in \zeta-\eta space
-
-  REAL(wp) :: wgt_zeta_l       !< Gauss quadrature weights for zeta and eta
-  REAL(wp) :: wgt_eta_l        !< points
-
-
-  ! for second order Gauss-Legendre quadrature
+  ! Abscissas and weights for SECOND ORDER Gauss-Legendre quadrature
   !
-  REAL(wp) :: shape_func(4,4)  !< shape functions for mapping the FFSL departure
-                               !< region onto the standard rectangle (miura3 only)
-
-  REAL(wp) :: zeta(4), eta(4)  !< Gauss quadrature points in \zeta-\eta space
-                               !< (miura3 only)
-
-  REAL(wp) :: wgt_zeta(4)      !< Gauss quadrature weights for zeta and eta
-  REAL(wp) :: wgt_eta(4)       !< points (miura3 only)
-
+  TYPE(t_gauss_quad_2d), TARGET:: gaussq_2d_o2
 
 CONTAINS
 
@@ -586,74 +582,14 @@ CONTAINS
 
 
     !
-    ! Compute shape functions for mapping the departure region onto the
-    ! standard rectangle. Integration points, shape functions and quadrature
-    ! weights are provided for a first and second order Gauss-Legendre
+    ! Compute shape functions for mapping a quadrilateral element onto
+    ! a standard square of edge length 2.
+    ! Integration points, shape functions and quadrature weights
+    ! are provided for a first and second order Gauss-Legendre
     ! quadrature.
     !
-
     IF (jg == 1) THEN
-
-      !
-      ! First order
-      !
-
-      ! Coordinates of integration points (in \zeta,\eta-System)
-      !
-      zeta_l = 0._wp
-      eta_l  = 0._wp
-
-      ! shape function for mapping
-      shape_func_l(1) = 0.25_wp * (1._wp-zeta_l)*(1._wp-eta_l)
-      shape_func_l(2) = 0.25_wp * (1._wp+zeta_l)*(1._wp-eta_l)
-      shape_func_l(3) = 0.25_wp * (1._wp+zeta_l)*(1._wp+eta_l)
-      shape_func_l(4) = 0.25_wp * (1._wp-zeta_l)*(1._wp+eta_l)
-      !$ACC ENTER DATA COPYIN(shape_func_l)
-
-
-      ! Gauss quadrature weights
-      !
-      wgt_zeta_l = 2._wp
-      wgt_eta_l  = 2._wp
-
-
-      !
-      ! Second order
-      !
-
-      ! Coordinates of integration points (in \zeta,\eta-System)
-      !
-      zeta(1) = -1._wp/SQRT(3._wp)
-      zeta(2) =  1._wp/SQRT(3._wp)
-      zeta(3) =  1._wp/SQRT(3._wp)
-      zeta(4) = -1._wp/SQRT(3._wp)
-
-      eta(1)  = -1._wp/SQRT(3._wp)
-      eta(2)  = -1._wp/SQRT(3._wp)
-      eta(3)  =  1._wp/SQRT(3._wp)
-      eta(4)  =  1._wp/SQRT(3._wp)
-
-      ! shape functions for mapping
-      !
-      DO jm = 1,4
-        shape_func(1,jm) = 0.25_wp * (1._wp-zeta(jm))*(1._wp-eta(jm))
-        shape_func(2,jm) = 0.25_wp * (1._wp+zeta(jm))*(1._wp-eta(jm))
-        shape_func(3,jm) = 0.25_wp * (1._wp+zeta(jm))*(1._wp+eta(jm))
-        shape_func(4,jm) = 0.25_wp * (1._wp-zeta(jm))*(1._wp+eta(jm))
-      END DO
-      !$ACC ENTER DATA COPYIN(shape_func)
-
-      ! Gauss quadrature weights
-      !
-      wgt_zeta(1) = 1._wp
-      wgt_zeta(2) = 1._wp
-      wgt_zeta(3) = 1._wp
-      wgt_zeta(4) = 1._wp
-
-      wgt_eta(1)  = 1._wp
-      wgt_eta(2)  = 1._wp
-      wgt_eta(3)  = 1._wp
-      wgt_eta(4)  = 1._wp
+      CALL init_2D_gauss_quad (gaussq_2d_o1, gaussq_2d_o2)
     END IF
 
 
@@ -863,7 +799,7 @@ CONTAINS
     ! local
     INTEGER :: ist
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
-      &  routine = 'mo_advection_config: destruct_trList'
+      &  routine = modname//':: destruct_trList'
 
     IF (ALLOCATED(obj%list)) THEN
       DEALLOCATE(obj%list, STAT=ist)
@@ -1085,5 +1021,115 @@ CONTAINS
         & CALL vlr_add_vref(p_tracer_list, from_info%name, from_var_list)
     END DO
   END SUBROUTINE new_nh_state_tracer_list
+
+
+
+  ! Initialize weights and abscissas for 2D Gauss-Legendre quadrature
+  ! of order 1 and 2.
+  !
+  SUBROUTINE init_2D_gauss_quad (gq_2d_o1, gq_2d_o2)
+    TYPE(t_gauss_quad_2d), INTENT(OUT) :: gq_2d_o1    ! 2D Gausss-quadrature of order 1
+    TYPE(t_gauss_quad_2d), INTENT(OUT) :: gq_2d_o2    ! 2D Gausss-quadrature of order 2
+
+    INTEGER :: qpts   ! number of 2D Gauss quadrature points
+    CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
+      &  routine = modname//':: init_2D_gauss_quad'
+    INTEGER :: jm
+    INTEGER :: ist    ! error status flag
+    REAL(wp):: wgt_zeta(4), wgt_eta(4)
+
+    ! FIRST ORDER
+    !
+    ! Initialize abscissas and weights at Gauss points for O1 integration
+    ! (1 quadrature point)
+    qpts=1
+    !
+    ALLOCATE(gq_2d_o1%zeta(qpts),         &
+      &      gq_2d_o1%eta(qpts),          &
+      &      gq_2d_o1%wgt(qpts),          &
+      &      gq_2d_o1%shape_func(4,qpts), &
+      &      stat=ist)
+    IF(ist/=SUCCESS) CALL finish(routine, 'alloc of abscissas and weights failed')
+
+    gq_2d_o1% zeta(1) = 0.0_wp
+    gq_2d_o1% eta (1) = 0.0_wp
+
+    DO jm = 1,qpts
+      gq_2d_o1% shape_func(1,jm) = 0.25_wp &
+        &                        * (1._wp-gq_2d_o1% zeta(jm))*(1._wp-gq_2d_o1% eta(jm))
+      gq_2d_o1% shape_func(2,jm) = 0.25_wp &
+        &                        * (1._wp+gq_2d_o1% zeta(jm))*(1._wp-gq_2d_o1% eta(jm))
+      gq_2d_o1% shape_func(3,jm) = 0.25_wp &
+        &                        * (1._wp+gq_2d_o1% zeta(jm))*(1._wp+gq_2d_o1% eta(jm))
+      gq_2d_o1% shape_func(4,jm) = 0.25_wp &
+        &                        * (1._wp-gq_2d_o1% zeta(jm))*(1._wp+gq_2d_o1% eta(jm))
+    END DO
+
+    ! Gauss quadrature weights
+    !
+    wgt_zeta(1) = 2._wp
+    wgt_eta (1) = 2._wp
+
+    gq_2d_o1% wgt(1) = wgt_zeta(1) * wgt_eta(1)
+
+    !$ACC ENTER DATA CREATE(gq_2d_o1)
+    !$ACC ENTER DATA COPYIN(gq_2d_o1%zeta, gq_2d_o1%eta, gq_2d_o1%wgt, gq_2d_o1%shape_func)
+
+
+    ! SECOND ORDER
+    !
+    ! Initialize abscissas and weights at Gauss points for O2 integration
+    ! (4 quadrature points)
+    qpts=4
+    !
+    ALLOCATE(gq_2d_o2%zeta(qpts),         &
+      &      gq_2d_o2%eta(qpts),          &
+      &      gq_2d_o2%wgt(qpts),          &
+      &      gq_2d_o2%shape_func(4,qpts), &
+      &      stat=ist)
+    IF(ist/=SUCCESS) CALL finish(routine, 'alloc of abscissas and weights failed')
+
+
+    ! Coordinates of integration points (in \zeta,\eta-System)
+    !
+    gq_2d_o2% zeta(1) = -1._wp/SQRT(3._wp)
+    gq_2d_o2% zeta(2) =  1._wp/SQRT(3._wp)
+    gq_2d_o2% zeta(3) =  1._wp/SQRT(3._wp)
+    gq_2d_o2% zeta(4) = -1._wp/SQRT(3._wp)
+
+    gq_2d_o2% eta(1)  = -1._wp/SQRT(3._wp)
+    gq_2d_o2% eta(2)  = -1._wp/SQRT(3._wp)
+    gq_2d_o2% eta(3)  =  1._wp/SQRT(3._wp)
+    gq_2d_o2% eta(4)  =  1._wp/SQRT(3._wp)
+
+    ! shape functions for mapping (evaluated at Gauss points)
+    !
+    DO jm = 1,qpts
+      gq_2d_o2% shape_func(1,jm) = 0.25_wp &
+        &                        * (1._wp-gq_2d_o2% zeta(jm))*(1._wp-gq_2d_o2% eta(jm))
+      gq_2d_o2% shape_func(2,jm) = 0.25_wp &
+        &                        * (1._wp+gq_2d_o2% zeta(jm))*(1._wp-gq_2d_o2% eta(jm))
+      gq_2d_o2% shape_func(3,jm) = 0.25_wp &
+        &                        * (1._wp+gq_2d_o2% zeta(jm))*(1._wp+gq_2d_o2% eta(jm))
+      gq_2d_o2% shape_func(4,jm) = 0.25_wp &
+        &                        * (1._wp-gq_2d_o2% zeta(jm))*(1._wp+gq_2d_o2% eta(jm))
+    END DO
+
+    ! Gauss quadrature weights
+    !
+    wgt_zeta(1) = 1._wp
+    wgt_zeta(2) = 1._wp
+    !
+    wgt_eta(1)  = 1._wp
+    wgt_eta(2)  = 1._wp
+
+    gq_2d_o2% wgt(1) = wgt_zeta(1) * wgt_eta(1)
+    gq_2d_o2% wgt(2) = wgt_zeta(1) * wgt_eta(2)
+    gq_2d_o2% wgt(3) = wgt_zeta(2) * wgt_eta(1)
+    gq_2d_o2% wgt(4) = wgt_zeta(2) * wgt_eta(2)
+
+    !$ACC ENTER DATA CREATE(gq_2d_o2)
+    !$ACC ENTER DATA COPYIN(gq_2d_o2%zeta, gq_2d_o2%eta, gq_2d_o2%wgt, gq_2d_o2%shape_func)
+  END SUBROUTINE init_2D_gauss_quad
 
 END MODULE mo_advection_config

@@ -1,9 +1,3 @@
-! Namelist for NWP physics
-!
-! these Subroutines are called by control model and construct the
-! physics composition
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for NWP physics
+!
+! these Subroutines are called by control model and construct the
+! physics composition
 
 MODULE mo_nwp_phy_nml
 

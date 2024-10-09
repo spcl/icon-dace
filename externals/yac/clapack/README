@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 This directory contains the bundled version of LAPACK, which is based on
 Netlib clapack (https://www.netlib.org/clapack/). Contains only those files
 from the original library that implement functions required by YAC and their

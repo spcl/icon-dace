@@ -1,6 +1,3 @@
-! Read namelists, make sanity checks specific to each namelist and make
-! a cross check once all namelists of a component are available.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Read namelists, make sanity checks specific to each namelist and make
+! a cross check once all namelists of a component are available.
 
 MODULE mo_icon_output_read_namelists
 

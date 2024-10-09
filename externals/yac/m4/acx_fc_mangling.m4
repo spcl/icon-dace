@@ -1,6 +1,34 @@
+# Copyright (c) 2018-2024, MPI-M
+#
+# Author: Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 # ACX_FC_MANGLING_GLOBAL()
-# -----------------------------------------------------------------------------
-# Originally taken from Autoconf where it is known as _AC_FC_NAME_MANGLING.
 # -----------------------------------------------------------------------------
 # Detects the name mangling scheme for the global Fortran functions. The result
 # is either "unknown" or a comma-separated pair of two strings each denoting
@@ -84,8 +112,6 @@ AC_DEFUN([ACX_FC_MANGLING_GLOBAL],
 #                        [ACTION-IF-SUCCESS],
 #                        [ACTION-IF-FAILURE = FAILURE])
 # -----------------------------------------------------------------------------
-# Originally taken from Autoconf where it is known as AC_FC_WRAPPERS.
-# -----------------------------------------------------------------------------
 # Defines C preprocessor macros <MACRO-PREFIX>_GLOBAL(name, NAME) and
 # <MACRO-PREFIX>_GLOBAL_(name, NAME) to properly mangle the names of C/C++
 # identifiers, and identifiers with underscores, respectively, so that they
@@ -116,8 +142,6 @@ Fortran global functions])])],
 # ACX_FC_MANGLING_SHVAR(FUNC-NAME,
 #                       [ACTION-IF-SUCCESS],
 #                       [ACTION-IF-FAILURE = FAILURE])
-# -----------------------------------------------------------------------------
-# Originally taken from Autoconf where it is known as AC_FC_FUNC.
 # -----------------------------------------------------------------------------
 # Applies the name mangling scheme for the global Fortran functions to the
 # function FUNC-NAME. The result is empty on error.
@@ -157,8 +181,6 @@ the Fortran function $1])])])])
 
 # ACX_FC_MANGLING_MAIN([ACTION-IF-SUCCESS],
 #                      [ACTION-IF-FAILURE = FAILURE])
-# -----------------------------------------------------------------------------
-# Originally taken from Autoconf where it is known as AC_FC_DUMMY_MAIN.
 # -----------------------------------------------------------------------------
 # Detects the symbol name of the Fortran entry point function (i.e. the real
 # name of the main function expected by the Fortran compiler when linking an

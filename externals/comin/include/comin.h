@@ -19,7 +19,6 @@
 #include "comin_global.inc"
 
 #ifdef __cplusplus
-typedef bool _Bool;
 extern "C" {
 #endif
 
@@ -77,10 +76,11 @@ extern "C" {
   };
 
   enum ZAXIS {
-    COMIN_ZAXIS_NONE         = 0,
-    COMIN_ZAXIS_2D           = 1,
-    COMIN_ZAXIS_3D           = 2,
-    COMIN_ZAXIS_UNDEF        = 3,
+    COMIN_ZAXIS_UNDEF        = -1,
+    COMIN_ZAXIS_NONE         =  0,
+    COMIN_ZAXIS_2D           =  1,
+    COMIN_ZAXIS_3D           =  2,
+    COMIN_ZAXIS_3D_HALF      =  3,
   };
 
   enum VARACCESS_FLAG {
@@ -89,13 +89,14 @@ extern "C" {
     COMIN_FLAG_WRITE        = 1 << 2,
     // note: the COMIN_FLAG_SYNCHRONIZED is unavailable (not yet implemented):
     // COMIN_FLAG_SYNCHRONIZED = 1 << 3
+    COMIN_FLAG_DEVICE       = 1 << 4,
   };
 
   enum ERROR_CODE {
     COMIN_SUCCESS = 0,
     COMIN_INFO,
     COMIN_WARNING,
-    COMIN_ERROR,
+    COMIN_ERROR_STATUS,
     COMIN_ERROR_CALLBACK_REGISTER_OUTSIDE_PRIMARYCONSTRUCTOR,
     COMIN_ERROR_CALLBACK_COMPLETE,
     COMIN_ERROR_CALLBACK_EP_ID_UNKNOWN,
@@ -103,7 +104,7 @@ extern "C" {
     COMIN_ERROR_DESCRDATA_FINALIZE,
     COMIN_ERROR_METADATA_SET_OUTSIDE_PRIMARYCONSTRUCTOR,
     COMIN_ERROR_METADATA_KEY_NOT_FOUND,
-    COMIN_ERROR_METADATA_GET_INSIdE_PRIMARYCONSTRUCTOR,
+    COMIN_ERROR_METADATA_GET_INSIDE_PRIMARYCONSTRUCTOR,
     COMIN_ERROR_SETUP_FINALIZE,
     COMIN_ERROR_SETUP_COMIN_ALREADY_INITIALIZED,
     COMIN_ERROR_PLUGIN_INIT_COMIN_VERSION,
@@ -116,13 +117,22 @@ extern "C" {
     COMIN_ERROR_VAR_REQUEST_EXISTS_IS_LMODEXCLUSIVE,
     COMIN_ERROR_VAR_REQUEST_EXISTS_REQUEST_LMODEXCLUSIVE,
     COMIN_ERROR_VAR_DESCRIPTOR_NOT_FOUND,
-    COMIN_ERROR_VARIABLE_NOT_TRACER_IN_TURBULENT_TRANSPORT,
-    COMIN_ERROR_VARIABLE_NOT_TRACER_IN_CONVECTIVE_TRANSPORT,
     COMIN_ERROR_VAR_ITEM_NOT_ASSOCIATED,
     COMIN_ERROR_FIELD_NOT_ALLOCATED,
     COMIN_ERROR_POINTER_NOT_ASSOCIATED,
     COMIN_ERROR_TRACER_REQUEST_NOT_FOR_ALL_DOMAINS,
-    COMIN_ERROR_FATAL
+    COMIN_ERROR_VAR_SYNC_DEVICE_MEM_NOT_ASSOCIATED,
+    COMIN_ERROR_VAR_GET_OUTSIDE_SECONDARY_CONSTRUCTOR,
+    COMIN_ERROR_VAR_GET_NO_DEVICE,
+    COMIN_ERROR_VAR_GET_VARIABLE_NOT_FOUND,
+    COMIN_ERROR_VAR_METADATA_INCONSISTENT_TYPE,
+    COMIN_ERROR_FATAL,
+  };
+
+  enum HGRID_ID {
+    COMIN_HGRID_UNSTRUCTURED_CELL   = 1,
+    COMIN_HGRID_UNSTRUCTURED_EDGE   = 2,
+    COMIN_HGRID_UNSTRUCTURED_VERTEX = 3
   };
 
   const int COMIN_DOMAIN_OUTSIDE_LOOP = -1;
@@ -132,40 +142,54 @@ extern "C" {
   int     comin_current_get_ep();
   int     comin_current_get_domain_id();
   int     comin_current_get_plugin_id();
-  void    comin_current_get_plugin_name(char const ** val, int* len, int* ierr);
-  void    comin_current_get_plugin_options(char const ** val, int* len, int* ierr);
-  void    comin_current_get_plugin_comm(char const ** val, int* len, int* ierr);
-  void    comin_current_get_datetime(char const ** val, int* len, int* ierr);
+  void    comin_current_get_plugin_name(char const ** val, int* len);
+  void    comin_current_get_plugin_options(char const ** val, int* len);
+  void    comin_current_get_plugin_comm(char const ** val, int* len);
+  void    comin_current_get_datetime(char const ** val, int* len);
 
   int     comin_parallel_get_plugin_mpi_comm();
   int     comin_parallel_get_host_mpi_comm();
   int     comin_parallel_get_host_mpi_rank();
 
   void    comin_plugin_finish(const char* routine, const char* text);
+  void    comin_error_get_message(int error_code, char category[11], char message[MAX_LEN_ERR_MESSAGE]);
+  void    comin_error_check(int error_code, const char* scope);
+  void    comin_error_set_errors_return(bool errors_return);
+  int     comin_error_get();
 
-  void    comin_var_request_add(struct t_comin_var_descriptor var_descriptor, _Bool lmodexclusive, int* ierr);
+  void    comin_var_request_add(struct t_comin_var_descriptor var_descriptor, bool lmodexclusive);
   void*   comin_var_get(int context_len, int* context, struct t_comin_var_descriptor var_descriptor,int flag);
   double* comin_var_get_ptr(void* handle);
-  void    comin_var_get_shape(void* handle, int shape[5], int* ierr);
-  void    comin_var_get_pos(void* handle, int* pos_jc, int* pos_jk, int* pos_jb, int* pos_jn, int* ierr);
-  void    comin_var_get_ncontained(void* handle, int* ncontained, int* ierr);
+  double* comin_var_get_device_ptr(void* handle);
+  void    comin_var_get_shape(void* handle, int shape[5]);
+  void    comin_var_get_pos(void* handle, int* pos_jc, int* pos_jk, int* pos_jb, int* pos_jn);
+  void    comin_var_get_ncontained(void* handle, int* ncontained);
+  void    comin_var_get_descriptor(void* handle, struct t_comin_var_descriptor* descr);
+
   void*   comin_var_get_descr_list_head();
   void*   comin_var_get_descr_list_next(void* current);
-  void    comin_var_get_descr_list_var_desc(void* current, struct t_comin_var_descriptor* var_desc, int* ierr);
+  void    comin_var_get_descr_list_var_desc(void* current, struct t_comin_var_descriptor* var_desc);
 
   typedef void (*CALLBACK_PTR)();
-  void    comin_callback_register(int entry_point_id, CALLBACK_PTR fct_ptr, int* ierr);
-  void    comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1], int* ierr);
+  void    comin_callback_register(int entry_point_id, CALLBACK_PTR fct_ptr);
+  void    comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1]);
 
-  int     comin_metadata_get_typeid(const char* key);
-  void    comin_metadata_set_integer(struct t_comin_var_descriptor var_descriptor, const char* key, int val, int* ierr);
-  void    comin_metadata_set_logical(struct t_comin_var_descriptor var_descriptor, const char* key, _Bool val, int* ierr);
-  void    comin_metadata_set_real(struct t_comin_var_descriptor var_descriptor, const char* key, double val, int* ierr);
-  void    comin_metadata_set_character(struct t_comin_var_descriptor var_descriptor, const char* key, char const * val, int* ierr);
-  void    comin_metadata_get_integer(struct t_comin_var_descriptor var_descriptor, const char* key, int* val, int* ierr);
-  void    comin_metadata_get_logical(struct t_comin_var_descriptor var_descriptor, const char* key, _Bool* val, int* ierr);
-  void    comin_metadata_get_real(struct t_comin_var_descriptor var_descriptor, const char* key, double* val, int* ierr);
-  void    comin_metadata_get_character(struct t_comin_var_descriptor var_descriptor, const char* key, char const ** val, int* len, int* ierr);
+  int     comin_metadata_get_typeid(struct t_comin_var_descriptor var_descriptor, const char* key);
+  void    comin_metadata_set_integer(struct t_comin_var_descriptor var_descriptor, const char* key, int val);
+  void    comin_metadata_set_logical(struct t_comin_var_descriptor var_descriptor, const char* key, bool val);
+  void    comin_metadata_set_real(struct t_comin_var_descriptor var_descriptor, const char* key, double val);
+  void    comin_metadata_set_character(struct t_comin_var_descriptor var_descriptor, const char* key, char const * val);
+  void    comin_metadata_get_integer(struct t_comin_var_descriptor var_descriptor, const char* key, int* val);
+  void    comin_metadata_get_logical(struct t_comin_var_descriptor var_descriptor, const char* key, bool* val);
+  void    comin_metadata_get_real(struct t_comin_var_descriptor var_descriptor, const char* key, double* val);
+  void    comin_metadata_get_character(struct t_comin_var_descriptor var_descriptor, const char* key, char const ** val, int* len);
+
+  void*       comin_metadata_get_iterator_begin(struct t_comin_var_descriptor var_descriptor);
+  void*       comin_metadata_get_iterator_end(struct t_comin_var_descriptor var_descriptor);
+  const char* comin_metadata_iterator_get_key(void* it);
+  bool        comin_metadata_iterator_compare(void* it1, void* it2);
+  void        comin_metadata_iterator_next(void* it);
+  void        comin_metadata_iterator_delete(void* it);
 
   double  comin_descrdata_get_timesteplength(int jg);
   int     comin_descrdata_get_index(int j);
@@ -175,10 +199,10 @@ extern "C" {
   int     comin_descrdata_get_edge_npromz(int jg);
   int     comin_descrdata_get_vert_npromz(int jg);
   int     comin_descrdata_index_lookup_glb2loc_cell(int jg, int global_idx);
-  void    comin_descrdata_get_simulation_interval_exp_start(char const ** val, int* len, int* ierr);
-  void    comin_descrdata_get_simulation_interval_exp_stop(char const ** val, int* len, int* ierr);
-  void    comin_descrdata_get_simulation_interval_run_start(char const ** val, int* len, int* ierr);
-  void    comin_descrdata_get_simulation_interval_run_stop(char const ** val, int* len, int* ierr);
+  void    comin_descrdata_get_simulation_interval_exp_start(char const ** val, int* len);
+  void    comin_descrdata_get_simulation_interval_exp_stop(char const ** val, int* len);
+  void    comin_descrdata_get_simulation_interval_run_start(char const ** val, int* len);
+  void    comin_descrdata_get_simulation_interval_run_stop(char const ** val, int* len);
 
 
 
@@ -191,10 +215,8 @@ extern "C" {
 
   /// Convenience operation for accessing 2D/3D fields.
   static inline double* comin_var_to_3d(void* handle){
-    int ierr;
     int pos_jc, pos_jb, pos_jk, pos_jn;
-    comin_var_get_pos(handle, &pos_jc, &pos_jb, &pos_jk, &pos_jn, &ierr);
-    if(ierr != 0) comin_plugin_finish("comin_var_to_3d", "comin_var_get_pos failed");
+    comin_var_get_pos(handle, &pos_jc, &pos_jb, &pos_jk, &pos_jn);
     if(pos_jc != 0 || pos_jb != 1 || pos_jk != 2)
       comin_plugin_finish("comin_var_to_3d", "comin_var_to_3d only works for pos_jc, pos_jb, pos_jk = 1,2,3 (fortran dimension indices)");
     double* ptr = comin_var_get_ptr(handle);

@@ -1,7 +1,3 @@
-! Contains the implementation of the tracer transport routines for the ICON ocean model
-! using the z* vertical co-ordinate
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the tracer transport routines for the ICON ocean model
+! using the z* vertical co-ordinate
 
 MODULE mo_ocean_tracer_zstar
   !-------------------------------------------------------------------------

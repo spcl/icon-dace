@@ -1,7 +1,7 @@
  ICON running
     running with            1  MPI tasks and            1  thread(s) per task.
       compatibility check.
-        linked to ICON Community Interface v0.1.1
+        linked to ICON Community Interface v0.2.0
       minimal-example: working precision test successful.
     ICON model setup
       ICON // Fill descriptive data structure
@@ -13,12 +13,14 @@
        model variable 'temp.TL1', filled with value        40.00
        model variable 'rho.TL1', filled with value         0.00
        model variable 'pres_sfc.TL1', filled with value        50.00
+       model variable 'vn.TL1', filled with value        50.00
        model variable 'u.TL2', filled with value        10.00
        model variable 'v.TL2', filled with value        20.00
        model variable 'pres.TL2', filled with value        30.00
        model variable 'temp.TL2', filled with value        40.00
        model variable 'rho.TL2', filled with value         0.00
        model variable 'pres_sfc.TL2', filled with value        50.00
+       model variable 'vn.TL2', filled with value        50.00
       Associate ICON descriptive data structures and ComIn
       call of ComIn primary constructors.
 calc_water_column_plugin               - setup
@@ -37,7 +39,6 @@ calc_water_column_plugin               - plugin calc_water_column_plugin has id:
       current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: calc_water_column_plugin
 calc_water_column_plugin domain:  1  - get required meteorological data
 calc_water_column_plugin domain:  1  - get humidity tracer
-calc_water_column_plugin               variable qg is not associated
 calc_water_column_plugin domain:  1  - get plugin variables - requested to be created by ICON
       CONTEXT EP_ATM_YAC_DEFCOMP_BEFORE
       no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_BEFORE' (ep: 2).
@@ -79,8 +80,8 @@ calc_water_column_plugin domain:  1 - calculate water columns before physics.
 calc_water_column_plugin               
 calc_water_column_plugin domain:  1 - results of plugin calc_water_column:
 calc_water_column_plugin domain:  1 - maximum liquid water path  (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.5000
+calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   5.5000
+calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):  10.0000
 
         <phys>
         u: value    =   15.0000
@@ -95,9 +96,12 @@ calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.50
  WARNING: Variable not found: name, nnow = qv           2
  WARNING: Variable not found: name, nnow = qs           2
  WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = qg           2
  WARNING: Variable not found: name, nnow = lwp           2
  WARNING: Variable not found: name, nnow = iwp           2
  WARNING: Variable not found: name, nnow = twc           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_ATM_TIMELOOP_START
       no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
 
@@ -124,8 +128,8 @@ calc_water_column_plugin domain:  1 - calculate water columns before physics.
 calc_water_column_plugin               
 calc_water_column_plugin domain:  1 - results of plugin calc_water_column:
 calc_water_column_plugin domain:  1 - maximum liquid water path  (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.5000
+calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   5.5000
+calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):  10.0000
 
         <phys>
         u: value    =   15.0000
@@ -134,6 +138,8 @@ calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.50
         temp: value =   45.0000
   
       nnow, nold =            1           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_ATM_TIMELOOP_START
       no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
 
@@ -160,8 +166,8 @@ calc_water_column_plugin domain:  1 - calculate water columns before physics.
 calc_water_column_plugin               
 calc_water_column_plugin domain:  1 - results of plugin calc_water_column:
 calc_water_column_plugin domain:  1 - maximum liquid water path  (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   3.0000
-calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.5000
+calc_water_column_plugin domain:  1 - maximum ice water path     (kg/m2):   5.5000
+calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):  10.0000
 
         <phys>
         u: value    =   20.0000
@@ -176,9 +182,12 @@ calc_water_column_plugin domain:  1 - maximum total water column (kg/m2):   7.50
  WARNING: Variable not found: name, nnow = qv           2
  WARNING: Variable not found: name, nnow = qs           2
  WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = qg           2
  WARNING: Variable not found: name, nnow = lwp           2
  WARNING: Variable not found: name, nnow = iwp           2
  WARNING: Variable not found: name, nnow = twc           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_DESTRUCTOR
       current ep 'EP_DESTRUCTOR' (ep: 42) for library: calc_water_column_plugin
 calc_water_column_plugin                - destructor.

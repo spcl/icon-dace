@@ -1,6 +1,3 @@
-! Common serialization routines using Serialbox2
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Common serialization routines using Serialbox2
 
 MODULE mo_ser_common
 

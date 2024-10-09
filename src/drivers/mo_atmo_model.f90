@@ -1,5 +1,3 @@
-! @brief Main program for the ICON atmospheric model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Main program for the ICON atmospheric model
 
 MODULE mo_atmo_model
 
@@ -50,7 +50,10 @@ MODULE mo_atmo_model
 #endif
   USE mo_coupling_config,         ONLY: is_coupled_run
   USE mo_coupling_utils,          ONLY: cpl_construct, cpl_destruct
-  USE mo_impl_constants,          ONLY: SUCCESS, inwp, LSS_JSBACH, min_rlcell_int, min_rlcell
+  USE mo_impl_constants,          ONLY: SUCCESS, inwp, LSS_JSBACH, &
+    &                                   min_rlcell_int, min_rlcell, max_rlcell, &
+    &                                   min_rlvert_int, min_rlvert, max_rlvert, &
+    &                                   min_rledge_int, min_rledge, max_rledge
   USE mo_impl_constants_grf,      ONLY: grf_bdywidth_c, grf_bdywidth_e
   USE mo_zaxis_type,              ONLY: zaxisTypeList, t_zaxisTypeList
   USE mo_load_restart,            ONLY: read_restart_header
@@ -111,7 +114,7 @@ MODULE mo_atmo_model
   USE mo_util_vgrid,              ONLY: construct_vertical_grid
 
   ! external data, physics
-  USE mo_ext_data_state,          ONLY: ext_data, destruct_ext_data
+  USE mo_ext_data_state,          ONLY: ext_data, construct_ext_data, destruct_ext_data
   USE mo_ext_data_init,           ONLY: init_ext_data
 
   USE mo_diffusion_config,        ONLY: configure_diffusion
@@ -145,27 +148,20 @@ MODULE mo_atmo_model
     &                                   art_calc_ntracer_and_names
 #endif
   USE mo_sync,                    ONLY: global_max
+  USE mo_check_ext_constants,     ONLY: check_ext_constants
 
 #ifndef __NO_ICON_COMIN__
   USE comin_host_interface,       ONLY: comin_parallel_mpi_handshake,     &
-    &                                   comin_plugin_primaryconstructor,  &
-    &                                   comin_setup_set_verbosity_level,  &
     &                                   mpi_handshake_dummy
   USE mo_comin_config,            ONLY: comin_config
-  USE mo_comin_adapter,           ONLY: icon_expose_descrdata_global,   &
-    &                                   icon_expose_descrdata_domain,   &
-    &                                   icon_expose_descrdata_state,    &
-    &                                   icon_expose_timesteplength_domain
+  USE mo_comin_adapter,           ONLY: icon_expose_descrdata
   USE mo_time_config,             ONLY: time_config
-  USE mtime,                      ONLY: datetimeToString, MAX_DATETIME_STR_LEN
   USE mo_run_config,              ONLY: number_of_grid_used
   USE mo_util_vgrid_types,        ONLY: vgrid_buffer
   USE mo_run_config,              ONLY: dtime
   USE mo_grid_config,             ONLY: start_time, end_time
-  USE mo_vertical_coord_table,    ONLY: vct_a
   USE mo_mpi,                     ONLY: p_comm_comin
   USE mo_impl_constants,          ONLY: max_dom
-  USE mo_timer,                   ONLY: timer_comin_primary_constructors
 #endif
 
   !-------------------------------------------------------------------------
@@ -260,11 +256,6 @@ CONTAINS
     CHARACTER(len=1000)     :: message_text = ''
     INTEGER                 :: icomm_cart, my_cart_id, nproma_max, iart_ntracer
 
-#ifndef __NO_ICON_COMIN__
-    INTEGER :: ierr
-    CHARACTER(LEN=MAX_DATETIME_STR_LEN)    :: sim_start, sim_end, sim_current, run_start, run_stop
-#endif
-
     ! initialize global registry of lon-lat grids
     CALL lonlat_grids%init()
 
@@ -306,7 +297,8 @@ CONTAINS
     ! complete initicon config-state
     CALL configure_initicon()
 
-
+    ! check whether the external impl_constants are still the same as their original values
+    CALL check_ext_constants()
     !-------------------------------------------------------------------
     ! 3.1 Initialize the mpi work groups
     !-------------------------------------------------------------------
@@ -591,14 +583,11 @@ CONTAINS
     !------------------------------------------------------------------
     ! Create and optionally read external data fields
     !------------------------------------------------------------------
-    ALLOCATE (ext_data(n_dom), STAT=error_status)
-    IF (error_status /= SUCCESS) THEN
-      CALL finish(routine, 'allocation for ext_data failed')
-    ENDIF
 
     ! allocate memory for atmospheric/oceanic external data and
     ! optionally read those data from netCDF file.
     IF (timers_level > 4) CALL timer_start(timer_ext_data)
+    CALL construct_ext_data (p_patch(1:), ext_data)
     CALL init_ext_data (p_patch(1:), p_int_state(1:), ext_data)
     IF (timers_level > 4) CALL timer_stop(timer_ext_data)
 
@@ -671,29 +660,32 @@ CONTAINS
 #endif
 
 #ifndef __NO_ICON_COMIN__
-    CALL comin_setup_set_verbosity_level(msg_level, ierr)
-    IF (ierr /= 0) STOP
     ! expose descriptive data structures
-    CALL icon_expose_descrdata_global(n_dom, max_dom, nproma, min_rlcell_int, min_rlcell, &
-         &                     grf_bdywidth_c, grf_bdywidth_e, isRestart(),      &
-         &                     vct_a)
-    ! p_patch is used from index 1 to exclude potential coarse radiation grid
-    CALL icon_expose_descrdata_domain(p_patch(1:), number_of_grid_used, vgrid_buffer, &
-         &                     start_time, end_time)
-    CALL datetimeToString(time_config%tc_exp_startdate, sim_start)
-    CALL datetimeToString(time_config%tc_exp_stopdate, sim_end)
-    CALL datetimeToString(time_config%tc_exp_startdate, sim_current)
-    CALL datetimeToString(time_config%tc_startdate, run_start)
-    CALL datetimeToString(time_config%tc_stopdate, run_stop)
-    CALL icon_expose_descrdata_state(sim_start, sim_end, sim_current, run_start, run_stop)
-    CALL icon_expose_timesteplength_domain(1, dtime)
-    ! - call primary constructors
-    IF (timers_level > 2) CALL timer_start(timer_comin_primary_constructors)
-    CALL comin_plugin_primaryconstructor(comin_config%plugin_list(1:comin_config%nplugins), ierr)
-    IF (timers_level > 2) CALL timer_stop(timer_comin_primary_constructors)
-    IF (ierr /= SUCCESS) THEN
-      CALL finish(routine, "ICON ComIn: Call of primary constructors failed!")
-    ENDIF
+    CALL icon_expose_descrdata( &
+      &  msg_level = msg_level, &
+      &  n_dom = n_dom, &
+      &  max_dom = max_dom, &
+      &  nproma = nproma, &
+      &  min_rlcell_int = min_rlcell_int, &
+      &  min_rlcell = min_rlcell, &
+      &  max_rlcell = max_rlcell, &
+      &  min_rlvert_int = min_rlvert_int, &
+      &  min_rlvert = min_rlvert, &
+      &  max_rlvert = max_rlvert, &
+      &  min_rledge_int = min_rledge_int, &
+      &  min_rledge = min_rledge, &
+      &  max_rledge = max_rledge, &
+      &  grf_bdywidth_c = grf_bdywidth_c, &
+      &  grf_bdywidth_e = grf_bdywidth_e, &
+      &  lrestart = isRestart(), &
+      &  vct_a = vct_a, &
+      &  p_patch = p_patch(1:), &
+      &  number_of_grid_used = number_of_grid_used, &
+      &  vgrid_buffer = vgrid_buffer, &
+      &  start_time = start_time, &
+      &  end_time = end_time, &
+      &  time_config = time_config, &
+      &  dtime = dtime )
 #endif
 
     CALL init_tracer_settings(iforcing, n_dom, ltransport,                 &

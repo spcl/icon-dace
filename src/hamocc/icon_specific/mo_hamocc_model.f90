@@ -1,5 +1,3 @@
-! @page pagecontrolmodelf901 Main program for the ICON hamocc model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @page pagecontrolmodelf901 Main program for the ICON hamocc model
 
 MODULE mo_hamocc_model
 

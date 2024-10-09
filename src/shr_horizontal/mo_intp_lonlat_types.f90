@@ -1,12 +1,3 @@
-! Contains the the interpolation data structures for the regular grid.
-!
-! A hierarchy of data structures is needed since one can use
-!
-! * several lon-lat grids, where each of them is applied to
-!   * several ICON domains, where each of them requires
-!     * several interpolation methods for the different variables.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the the interpolation data structures for the regular grid.
+!
+! A hierarchy of data structures is needed since one can use
+!
+! * several lon-lat grids, where each of them is applied to
+!   * several ICON domains, where each of them requires
+!     * several interpolation methods for the different variables.
 
 MODULE mo_intp_lonlat_types
 

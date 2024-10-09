@@ -8,20 +8,21 @@
 #include <mtime_calendar.h>
 #include <mtime_timedelta.h>
 
-int main(int argc, char *argv[])
+int
+main(void)
 {
   initCalendar(PROLEPTIC_GREGORIAN);
 
   {
-    struct _timedelta *td1  = newTimeDelta("PT10M");
-    struct _timedelta *td2  = newTimeDelta("PT2H");  
+    struct _timedelta *td1 = newTimeDelta("PT10M");
+    struct _timedelta *td2 = newTimeDelta("PT2H");
 
     int64_t remainder, quot;
-        
+
     remainder = moduloTimedelta(td2, td1, &quot);
-        
+
     fprintf(stderr, "quot = %ld, rem = %ld\n", quot, remainder);
   }
-  
+
   return 0;
 }

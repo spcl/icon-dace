@@ -1,8 +1,3 @@
-! Reading of forcing data in standalone mode
-!
-! Routines for reading forcing data at user-defined time intervals in
-! standalone mode.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Reading of forcing data in standalone mode
+!
+! Routines for reading forcing data at user-defined time intervals in
+! standalone mode.
 
 MODULE mo_wave_forcing
 

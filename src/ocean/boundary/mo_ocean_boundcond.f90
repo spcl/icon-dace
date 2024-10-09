@@ -1,6 +1,3 @@
-! Contains the implementation of the top and bottom ocean boundary conditions
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the top and bottom ocean boundary conditions
+
 #include "omp_definitions.inc"
-!----------------------------
+
 MODULE mo_ocean_boundcond
   !-------------------------------------------------------------------------
   USE mo_kind,               ONLY: wp

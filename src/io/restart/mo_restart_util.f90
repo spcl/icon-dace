@@ -1,5 +1,3 @@
-! Contains common helper routines for(a)synchronous restart
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains common helper routines for(a)synchronous restart
 
 MODULE mo_restart_util
   USE mo_exception,          ONLY: message, finish, message_text

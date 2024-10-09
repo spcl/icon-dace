@@ -82,6 +82,8 @@ t2m_bias            T_2M_FILTBIAS
 rh_avginc           RELHUM_LML_FILTINC
 t_avginc            T_LML_FILTINC
 t_wgt_avginc        T_LML_COSWGT_FILTINC
+t_daywgt_avginc     T_LML_DTWGT_FILTINC
+rh_daywgt_avginc    RELHUM_LML_DTWGT_FILTINC
 p_avginc            P_LML_FILTINC
 vabs_avginc         SP_LML_FILTINC
 albdif              ALB_RAD

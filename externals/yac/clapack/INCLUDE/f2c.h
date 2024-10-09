@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /* f2c.h  --  Standard Fortran to C header file */
 
 /**  barf  [ba:rf]  2.  "He suggested using FORTRAN, and everybody barfed."

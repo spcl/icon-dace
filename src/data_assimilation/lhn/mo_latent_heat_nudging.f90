@@ -1,5 +1,3 @@
-! Module for latent heat nudging!!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module for latent heat nudging!!
 
 !----------------------------
 #include "omp_definitions.inc"

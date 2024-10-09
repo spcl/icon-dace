@@ -1,5 +1,3 @@
-! Interface DACE observation operators from ICON
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface DACE observation operators from ICON
 
 MODULE mo_icon2dace
 
@@ -33,9 +33,6 @@ MODULE mo_icon2dace
                                position_nml,        &! position to nml group
                                nnml,                &! Fortran namelist unit
                                POSITIONED            ! position_nml: OK return flag
-  USE mo_util_vcs,       ONLY: util_repository_url, &!
-                               util_branch_name,    &!
-                               util_revision_key     !
   USE mo_grid_config,    ONLY: nroot, start_lev
   USE mo_gribout_config, ONLY: gribout_config
   USE mo_parallel_config,ONLY: nproma, idx_1d
@@ -317,9 +314,6 @@ MODULE mo_icon2dace
   !----------------------------------------------------------------------------
   ! ICON model information
   !-----------------------
-  character(256) :: icon_repo     = ""
-  character(256) :: icon_branch   = ""
-  character(256) :: icon_revision = ""
   integer        :: grid_root     = -1
   integer        :: grid_level    = -1
   character      :: grid_uuid(16) = ACHAR (0)
@@ -383,7 +377,6 @@ contains
     !----------------
     ! Local variables
     !----------------
-    integer       :: n
     integer       :: ios     ! I/O status
     integer       :: iu      ! temp. unit number
     character(MD) :: cdate   ! yyyy-mm-ddThh:mm:ss.000
@@ -415,13 +408,6 @@ contains
     !--------------------------
     call set_dace_timer () ! the mtime event needs to be created on a detached IO-PE as well;
     IF (ldetached) RETURN  ! afterwards, this process is excluded from DACE coupling
-
-    !---------------------------
-    ! Get ICON model information
-    !---------------------------
-    n = len (icon_repo    ); call util_repository_url (icon_repo,     n)
-    n = len (icon_branch  ); call util_branch_name    (icon_branch,   n)
-    n = len (icon_revision); call util_revision_key   (icon_revision, n)
 
     !-----------------
     ! Grid information

@@ -24,10 +24,6 @@ extern "C"{
   int comin_descrdata_get_domain_cells_ncells_global(int jg);
   int comin_descrdata_get_domain_cells_nblks(int jg);
   int comin_descrdata_get_domain_cells_max_connectivity(int jg);
-  void comin_descrdata_get_domain_cells_clon(int jg, double** clon, int* arr_size);
-  void comin_descrdata_get_domain_cells_clat(int jg, double** clat, int* arr_size);
-  void comin_descrdata_get_domain_cells_area(int jg, double** area, int* arr_size);
-  void comin_descrdata_get_domain_cells_hhl(int jg, double** hhl, int* arr_size);
   void comin_descrdata_get_domain_cells_num_edges(int jg, int** num_edges, int* arr_size);
   void comin_descrdata_get_domain_cells_refin_ctrl(int jg, int** refin_ctrl, int* arr_size);
   void comin_descrdata_get_domain_cells_start_index(int jg, int** start_index, int* arr_size);
@@ -45,13 +41,16 @@ extern "C"{
   void comin_descrdata_get_domain_cells_neighbor_idx(int jg, int** neighbor_idx, int* arr_size);
   void comin_descrdata_get_domain_cells_edge_idx(int jg, int** edge_idx, int* arr_size);
   void comin_descrdata_get_domain_cells_edge_blk(int jg, int** edge_blk, int* arr_size);
+  void comin_descrdata_get_domain_cells_clon(int jg, double** clon, int* arr_size);
+  void comin_descrdata_get_domain_cells_clat(int jg, double** clat, int* arr_size);
+  void comin_descrdata_get_domain_cells_area(int jg, double** area, int* arr_size);
+  void comin_descrdata_get_domain_cells_hhl(int jg, double** hhl, int* arr_size);
   void comin_descrdata_get_domain_cells_glb_index(int jg, int** glb_index, int* arr_size);
   void comin_descrdata_get_domain_cells_decomp_domain(int jg, int** decomp_domain, int* arr_size);
   int comin_descrdata_get_domain_verts_nverts(int jg);
   int comin_descrdata_get_domain_verts_nverts_global(int jg);
   int comin_descrdata_get_domain_verts_nblks(int jg);
-  void comin_descrdata_get_domain_verts_vlon(int jg, double** vlon, int* arr_size);
-  void comin_descrdata_get_domain_verts_vlat(int jg, double** vlat, int* arr_size);
+  void comin_descrdata_get_domain_verts_num_edges(int jg, int** num_edges, int* arr_size);
   void comin_descrdata_get_domain_verts_refin_ctrl(int jg, int** refin_ctrl, int* arr_size);
   void comin_descrdata_get_domain_verts_start_index(int jg, int** start_index, int* arr_size);
   void comin_descrdata_get_domain_verts_end_index(int jg, int** end_index, int* arr_size);
@@ -63,11 +62,11 @@ extern "C"{
   void comin_descrdata_get_domain_verts_cell_blk(int jg, int** cell_blk, int* arr_size);
   void comin_descrdata_get_domain_verts_edge_idx(int jg, int** edge_idx, int* arr_size);
   void comin_descrdata_get_domain_verts_edge_blk(int jg, int** edge_blk, int* arr_size);
+  void comin_descrdata_get_domain_verts_vlon(int jg, double** vlon, int* arr_size);
+  void comin_descrdata_get_domain_verts_vlat(int jg, double** vlat, int* arr_size);
   int comin_descrdata_get_domain_edges_nedges(int jg);
   int comin_descrdata_get_domain_edges_nedges_global(int jg);
   int comin_descrdata_get_domain_edges_nblks(int jg);
-  void comin_descrdata_get_domain_edges_elon(int jg, double** elon, int* arr_size);
-  void comin_descrdata_get_domain_edges_elat(int jg, double** elat, int* arr_size);
   void comin_descrdata_get_domain_edges_refin_ctrl(int jg, int** refin_ctrl, int* arr_size);
   void comin_descrdata_get_domain_edges_start_index(int jg, int** start_index, int* arr_size);
   void comin_descrdata_get_domain_edges_end_index(int jg, int** end_index, int* arr_size);
@@ -82,16 +81,14 @@ extern "C"{
   void comin_descrdata_get_domain_edges_cell_blk(int jg, int** cell_blk, int* arr_size);
   void comin_descrdata_get_domain_edges_vertex_idx(int jg, int** vertex_idx, int* arr_size);
   void comin_descrdata_get_domain_edges_vertex_blk(int jg, int** vertex_blk, int* arr_size);
+  void comin_descrdata_get_domain_edges_elon(int jg, double** elon, int* arr_size);
+  void comin_descrdata_get_domain_edges_elat(int jg, double** elat, int* arr_size);
 
   const struct comin_descrdata_property_t comin_descrdata_domain_cells_properties[] = {
     {"ncells", (void*)&comin_descrdata_get_domain_cells_ncells, "int", 0, true, 0 },
     {"ncells_global", (void*)&comin_descrdata_get_domain_cells_ncells_global, "int", 0, true, 0 },
     {"nblks", (void*)&comin_descrdata_get_domain_cells_nblks, "int", 0, true, 0 },
     {"max_connectivity", (void*)&comin_descrdata_get_domain_cells_max_connectivity, "int", 0, true, 0 },
-    {"clon", (void*)&comin_descrdata_get_domain_cells_clon, "double", 2, true, 0 },
-    {"clat", (void*)&comin_descrdata_get_domain_cells_clat, "double", 2, true, 0 },
-    {"area", (void*)&comin_descrdata_get_domain_cells_area, "double", 2, true, 0 },
-    {"hhl", (void*)&comin_descrdata_get_domain_cells_hhl, "double", 3, true, 0 },
     {"num_edges", (void*)&comin_descrdata_get_domain_cells_num_edges, "int", 2, true, 0 },
     {"refin_ctrl", (void*)&comin_descrdata_get_domain_cells_refin_ctrl, "int", 2, true, 0 },
     {"start_index", (void*)&comin_descrdata_get_domain_cells_start_index, "int", 1, true, 0 },
@@ -109,6 +106,10 @@ extern "C"{
     {"neighbor_idx", (void*)&comin_descrdata_get_domain_cells_neighbor_idx, "int", 3, true, 0 },
     {"edge_idx", (void*)&comin_descrdata_get_domain_cells_edge_idx, "int", 3, true, 0 },
     {"edge_blk", (void*)&comin_descrdata_get_domain_cells_edge_blk, "int", 3, true, 0 },
+    {"clon", (void*)&comin_descrdata_get_domain_cells_clon, "double", 2, true, 0 },
+    {"clat", (void*)&comin_descrdata_get_domain_cells_clat, "double", 2, true, 0 },
+    {"area", (void*)&comin_descrdata_get_domain_cells_area, "double", 2, true, 0 },
+    {"hhl", (void*)&comin_descrdata_get_domain_cells_hhl, "double", 3, true, 0 },
     {"glb_index", (void*)&comin_descrdata_get_domain_cells_glb_index, "int", 1, true, 0 },
     {"decomp_domain", (void*)&comin_descrdata_get_domain_cells_decomp_domain, "int", 2, true, 0 },
     {0,0,0,0,0}};
@@ -117,8 +118,7 @@ extern "C"{
     {"nverts", (void*)&comin_descrdata_get_domain_verts_nverts, "int", 0, true, 0 },
     {"nverts_global", (void*)&comin_descrdata_get_domain_verts_nverts_global, "int", 0, true, 0 },
     {"nblks", (void*)&comin_descrdata_get_domain_verts_nblks, "int", 0, true, 0 },
-    {"vlon", (void*)&comin_descrdata_get_domain_verts_vlon, "double", 2, true, 0 },
-    {"vlat", (void*)&comin_descrdata_get_domain_verts_vlat, "double", 2, true, 0 },
+    {"num_edges", (void*)&comin_descrdata_get_domain_verts_num_edges, "int", 2, true, 0 },
     {"refin_ctrl", (void*)&comin_descrdata_get_domain_verts_refin_ctrl, "int", 2, true, 0 },
     {"start_index", (void*)&comin_descrdata_get_domain_verts_start_index, "int", 1, true, 0 },
     {"end_index", (void*)&comin_descrdata_get_domain_verts_end_index, "int", 1, true, 0 },
@@ -130,14 +130,14 @@ extern "C"{
     {"cell_blk", (void*)&comin_descrdata_get_domain_verts_cell_blk, "int", 3, true, 0 },
     {"edge_idx", (void*)&comin_descrdata_get_domain_verts_edge_idx, "int", 3, true, 0 },
     {"edge_blk", (void*)&comin_descrdata_get_domain_verts_edge_blk, "int", 3, true, 0 },
+    {"vlon", (void*)&comin_descrdata_get_domain_verts_vlon, "double", 2, true, 0 },
+    {"vlat", (void*)&comin_descrdata_get_domain_verts_vlat, "double", 2, true, 0 },
     {0,0,0,0,0}};
 
   const struct comin_descrdata_property_t comin_descrdata_domain_edges_properties[] = {
     {"nedges", (void*)&comin_descrdata_get_domain_edges_nedges, "int", 0, true, 0 },
     {"nedges_global", (void*)&comin_descrdata_get_domain_edges_nedges_global, "int", 0, true, 0 },
     {"nblks", (void*)&comin_descrdata_get_domain_edges_nblks, "int", 0, true, 0 },
-    {"elon", (void*)&comin_descrdata_get_domain_edges_elon, "double", 2, true, 0 },
-    {"elat", (void*)&comin_descrdata_get_domain_edges_elat, "double", 2, true, 0 },
     {"refin_ctrl", (void*)&comin_descrdata_get_domain_edges_refin_ctrl, "int", 2, true, 0 },
     {"start_index", (void*)&comin_descrdata_get_domain_edges_start_index, "int", 1, true, 0 },
     {"end_index", (void*)&comin_descrdata_get_domain_edges_end_index, "int", 1, true, 0 },
@@ -152,6 +152,8 @@ extern "C"{
     {"cell_blk", (void*)&comin_descrdata_get_domain_edges_cell_blk, "int", 3, true, 0 },
     {"vertex_idx", (void*)&comin_descrdata_get_domain_edges_vertex_idx, "int", 3, true, 0 },
     {"vertex_blk", (void*)&comin_descrdata_get_domain_edges_vertex_blk, "int", 3, true, 0 },
+    {"elon", (void*)&comin_descrdata_get_domain_edges_elon, "double", 2, true, 0 },
+    {"elat", (void*)&comin_descrdata_get_domain_edges_elat, "double", 2, true, 0 },
     {0,0,0,0,0}};
 
   const struct comin_descrdata_property_t comin_descrdata_domain_properties[] = {

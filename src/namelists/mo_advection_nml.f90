@@ -1,8 +1,3 @@
-! Namelist for scalar transport
-!
-! These subroutines are called by  read_atmo_namelists and do the transport
-! setup.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for scalar transport
+!
+! These subroutines are called by  read_atmo_namelists and do the transport
+! setup.
 
 MODULE mo_advection_nml
 

@@ -15,6 +15,7 @@
 #include <stdexcept>
 
 #include "comin.h"
+#include "util.h"
 
 #include "callbacks.h"
 
@@ -44,7 +45,6 @@ void py_comin_generic_callback(){
 static PyObject *
 py_comin_callback_register(PyObject */*self*/, PyObject *args)
 {
-  int ierr = 0;
   int ientry_point;
   PyObject* callback;
   if (!PyArg_ParseTuple(args, "iO", &ientry_point, &callback)) {
@@ -58,7 +58,7 @@ py_comin_callback_register(PyObject */*self*/, PyObject *args)
   int plugin_id = comin_current_get_plugin_id();
   if(callbacks[plugin_id].find(entry_point) == callbacks[plugin_id].end() &&
      entry_point != EP_DESTRUCTOR){
-    comin_callback_register(ientry_point, &py_comin_generic_callback, &ierr);
+    comin_callback_register(ientry_point, &py_comin_generic_callback);
   }
   Py_INCREF(callback);
   callbacks[plugin_id][entry_point].push_back(callback);
@@ -77,10 +77,7 @@ static PyObject* py_comin_callback_get_ep_name(PyObject* /*self*/,
     return NULL;
   }
   char out_ep_name[MAX_LEN_EP_NAME+1];
-  int ierr = 0;
-  comin_callback_get_ep_name(iep, out_ep_name, &ierr);
-  if(ierr != 0)
-    return PyErr_Format(PyExc_TypeError, "comin_callback_get_ep_name failed (iep = %d)", iep);
+  comin_callback_get_ep_name(iep, out_ep_name);
   return Py_BuildValue("s", out_ep_name);
 }
 
@@ -90,6 +87,6 @@ std::vector<PyMethodDef> py_comin_callbacks_methods() {
      "Registers callback to ICON"},
     {"_EP_DESTRUCTOR", (PyCFunction)py_comin_EP_DESCTRUCTOR, METH_NOARGS, ""},
     {"callback_get_ep_name", (PyCFunction)py_comin_callback_get_ep_name, METH_VARARGS | METH_KEYWORDS,
-     "C function signature: void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1], int* ierr)"},
+     "C function signature: void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1])"},
   };
 }

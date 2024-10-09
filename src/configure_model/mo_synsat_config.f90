@@ -1,7 +1,3 @@
-! @brief Setup for synthetic satellite images
-!
-! configuration setup for synthetic satellite images
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Setup for synthetic satellite images
+!
+! configuration setup for synthetic satellite images
 
 MODULE mo_synsat_config
 

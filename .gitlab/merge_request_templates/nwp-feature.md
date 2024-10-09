@@ -35,7 +35,7 @@ If your changes require the generation of new reference data, please refer to th
 
 #### Scientific Review
 - [ ] _Author:_ Select a scientific reviewer and add the label ![inScientificReview](https://img.shields.io/badge/-inScientificReview-orange)
-- [ ] _Scientific Reviewer:_ Review
+- [ ] _Scientific Reviewer:_ Review according to the [guidelines](https://gitlab.dkrz.de/icon/icon-nwp/-/wikis/ICON-NWP%20Scientific%20Review%20Guidelines)
 - [ ] _Scientific Reviewer:_ Approve the merge request using Gitlab's approve button.
 - [ ] _Scientific Reviewer:_ Remove label ![inScientificReview](https://img.shields.io/badge/-inScientificReview-orange)
 
@@ -44,6 +44,7 @@ If your changes require the generation of new reference data, please refer to th
 - [ ] _Author:_ Mark the merge request as ready by removing `Draft:`
 - [ ] _Author:_ Add label ![reviewRequested](https://img.shields.io/badge/-reviewRequested-red) to request a gatekeeper review
 - [ ] _Gatekeeper:_ Review (label ![inReview](https://img.shields.io/badge/-inReview-yellow) signals that the Merge Request was accepted for review)
-- [ ] _Gatekeeper:_ Prior to merging, please remove any boilerplate from the MR description, retaining only the _Feature Description_ to maintain clean commit messages.
+- [ ] _Gatekeeper:_ Add a final comment with the link to the pipeline corresponding to the buildbot test of the last commit. This link can be found in the pipeline tab.
+- [ ] _Gatekeeper:_ Prior to merging, please remove any boilerplate from the MR description, e.g. tick items, retaining only the _Feature Description_ to maintain clean commit messages.
 
 **Note:** Updating the reference data, rebasing and monitoring the buildbot-tests stays in the responsibility of the author.

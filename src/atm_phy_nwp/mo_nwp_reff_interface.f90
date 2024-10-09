@@ -1,13 +1,3 @@
-!
-! Interface to compute effective radius consistent with microphysics, cloud scheme
-! and convection scheme choice (not yet!).
-!
-! Description:
-! The module provides the interface between the ICON routine and the effective
-! radius module
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface to compute effective radius consistent with microphysics, cloud scheme
+! and convection scheme choice (not yet!).
+!
+! Description:
+! The module provides the interface between the ICON routine and the effective
+! radius module
 
 !----------------------------
 #include "omp_definitions.inc"

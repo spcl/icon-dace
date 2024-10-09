@@ -40,9 +40,6 @@ $addexp "checksuite.ocean_internal/technical/exp.test_ocean_omip_technical" \
 $addexp "checksuite.ocean_internal/technical/exp.test_ocean_omip_zstar_technical" \
 	--machines levante --without-configureflags "--without-mpi --enable-mixed" \
 	--runflags "cpu_time=00:30:00 queue=shared ntasks=32"  --list $listname
-$addexp "checksuite.ocean_internal/technical/exp.test_ocean_omip_age_technical" \
-	--machines levante --without-configureflags "--without-mpi --enable-mixed" \
-	--runflags "cpu_time=00:30:00 queue=shared ntasks=32"  --list $listname
 
 $addexp "checksuite.ocean_internal/ShallowWater/exp.ocean_WilliamsonTestCase2_Hex" \
 	--machines levante --without-configureflags "--enable-mixed" --runflags "cpu_time=00:30:00 queue=shared ntasks=16" --list $listname
@@ -54,17 +51,12 @@ $addexp "checksuite.ocean_internal/omip/exp.test_ocean_zstar_omip_10days" \
 	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
 $addexp "checksuite.ocean_internal/omip/exp.test_ocean_newice_omip_10days" \
 	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
-$addexp "checksuite.ocean_internal/omip/exp.test_ocean_age_omip_10days" \
-	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
 
 # add omip binary-identical test on levante
 $addexp "checksuite.ocean_internal/hamocc/exp.test_hamocc_omip_10days"       \
 	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
-$addexp "checksuite.ocean_internal/hamocc/exp.test_hamocc_age_omip_10days" \
-	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+
 $addexp "checksuite.ocean_internal/hamocc/exp.test_concurrent_hamocc_omip_10days" \
-	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
-$addexp "checksuite.ocean_internal/hamocc/exp.test_concurrent_age_hamocc_omip_10days" \
 	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
 
 $addexp "checksuite.ocean_internal/technical/exp.test_multioutput_model_40km" \

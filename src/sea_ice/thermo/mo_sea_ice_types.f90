@@ -1,11 +1,3 @@
-! This module provides definition of types of the ICON ocean surface module,
-! i.e. the sea ice and coupling between the atmopshere and the ocean model.
-!
-! Types are grouped as follows:
-! - Sea ice:                                   t_sea_ice, t_sea_ice_budgets
-! - Surface fluxes (categories):               t_atmos_fluxes
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides definition of types of the ICON ocean surface module,
+! i.e. the sea ice and coupling between the atmopshere and the ocean model.
+!
+! Types are grouped as follows:
+! - Sea ice:                                   t_sea_ice, t_sea_ice_budgets
+! - Surface fluxes (categories):               t_atmos_fluxes
 
 MODULE mo_sea_ice_types
   USE mo_kind,                ONLY: wp

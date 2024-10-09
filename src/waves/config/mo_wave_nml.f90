@@ -1,7 +1,3 @@
-! Namelist setup for waves.
-! The content of namelists is mostly adopted from the WAM 4.5.4.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist setup for waves.
+! The content of namelists is mostly adopted from the WAM 4.5.4.
 
 MODULE mo_wave_nml
 

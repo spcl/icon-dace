@@ -67,14 +67,14 @@ MODULE mo_kind
   ! Floating point section
   ! ----------------------
   !
-  INTEGER, PARAMETER :: ps =   6
-  INTEGER, PARAMETER :: rs =  37
+  INTEGER, PARAMETER :: ps = 6
+  INTEGER, PARAMETER :: rs = 37
   !
-  INTEGER, PARAMETER :: pd =  12
+  INTEGER, PARAMETER :: pd = 12
   INTEGER, PARAMETER :: rd = 307
   !
-  INTEGER, PARAMETER :: sp = SELECTED_REAL_KIND(ps,rs) !< single precision
-  INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(pd,rd) !< double precision
+  INTEGER, PARAMETER :: sp = SELECTED_REAL_KIND(ps, rs) !< single precision
+  INTEGER, PARAMETER :: dp = SELECTED_REAL_KIND(pd, rd) !< double precision
   !
   INTEGER, PARAMETER :: wp = dp                        !< selected working precision
   !
@@ -87,8 +87,8 @@ MODULE mo_kind
   ! Integer section
   ! ---------------
   !
-  INTEGER, PARAMETER :: pi2 =  4
-  INTEGER, PARAMETER :: pi4 =  9
+  INTEGER, PARAMETER :: pi2 = 4
+  INTEGER, PARAMETER :: pi4 = 9
   INTEGER, PARAMETER :: pi8 = 14  ! could be larger, but SX cannot do some operations otherwise
   !
   INTEGER, PARAMETER :: i2 = SELECTED_INT_KIND(pi2)   !< at least 2 byte integer

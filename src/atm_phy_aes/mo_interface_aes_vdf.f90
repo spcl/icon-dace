@@ -1,6 +1,3 @@
-!
-! Subroutine interface_aes_vdf calls the vertical diffusion and the surface schemes.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine interface_aes_vdf calls the vertical diffusion and the surface schemes.
 
 MODULE mo_interface_aes_vdf
 
@@ -434,6 +433,7 @@ CONTAINS
               !
               &          field%   zf(:,:,:),                &! in, geopot. height above sea level, full level
               &          field%   zh(:,:,:),                &! in, geopot. height above sea level, half level
+              &          field% geom(:,:,:),                &! in, geopotential above ground, full level
               &          field%frac_tile(:,:,:),            &! in, area fraction of each sfc type
               &                 ts_tile(:,:,:),             &! in, surface temperature
               &          field% ocu (:,:),                  &! in, ocean sfc velocity, u-component
@@ -1434,6 +1434,7 @@ CONTAINS
             &          field%sfcWind(:,  jb),           &! out 10m windspeed
             &          field%    tas(:,  jb),           &! out temperature in 2m
             &          field%   dew2(:,  jb),           &! out dew point temperature in 2m
+            &          field%   qv2m(:,  jb),           &! out specific humidity in 2m
             &          field%    uas(:,  jb),           &! out zonal wind in 10m
             &          field%    vas(:,  jb),           &! out meridional wind in 10m
             &          field%tasmax (:,  jb),           &! out max 2m temperature
@@ -1441,6 +1442,7 @@ CONTAINS
             &          field%sfcWind_tile(:,jb,:),      &! out 10m windspeed on tiles
             &          field%    tas_tile(:,jb,:),      &! out temperature in 2m on tiles
             &          field%   dew2_tile(:,jb,:),      &! out dew point temperature in 2m on tiles
+            &          field%   qv2m_tile(:,jb,:),      &! out specific humidity in 2m on tiles
             &          field%    uas_tile(:,jb,:),      &! out zonal wind in 10m on tiles
             &          field%    vas_tile(:,jb,:)       )! out meridional wind in 10m on tiles
 

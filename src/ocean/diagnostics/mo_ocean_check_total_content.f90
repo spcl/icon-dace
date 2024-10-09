@@ -1,6 +1,3 @@
-! Contains basic diagnostics for ICON ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains basic diagnostics for ICON ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"

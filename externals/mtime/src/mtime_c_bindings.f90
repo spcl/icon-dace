@@ -2,815 +2,809 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-module mtime_c_bindings
+MODULE mtime_c_bindings
   !
-  use, intrinsic :: iso_c_binding, only: c_bool, c_int, c_char, c_null_char, c_ptr, c_int64_t, &
-       &                                 c_float, c_double, c_associated
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_bool, c_char, c_double, c_float, c_int, c_int64_t, c_ptr
+  USE mtime_constants, ONLY: max_mtime_error_str_len
+  USE mtime_error_handling, ONLY: finish_mtime, mtime_strerror, no_error
   !
-  use mtime_constants
-  use mtime_error_handling
+  IMPLICIT NONE
   !
-  implicit none
-  !
-  public
+  PUBLIC
   !
   ! Type, bind(c)
   !
-  type, bind(c) :: event
+  TYPE, BIND(c) :: event
     ! FIXME (some day in the future): This derived type should not specify both -
     ! the linked list element and the element itself.
-    type(c_ptr) :: nextEventInGroup
-    integer(c_int64_t) :: eventId
-    type(c_ptr) :: eventName
-    type(c_ptr) :: eventsLastEvaluationDateTime
-    type(c_ptr) :: eventReferenceDatetime
-    type(c_ptr) :: eventFirstDatetime
-    type(c_ptr) :: eventLastDatetime
-    type(c_ptr) :: eventInterval
-    type(c_ptr) :: eventOffset
-    logical(c_bool) :: neverTriggerEvent
-    logical(c_bool) :: triggerCurrentEvent
-    logical(c_bool) :: nextEventIsFirst
-    logical(c_bool) :: lastEventWasFinal
-    logical(c_bool) :: eventisFirstInDay
-    logical(c_bool) :: eventisFirstInMonth
-    logical(c_bool) :: eventisFirstInYear
-    logical(c_bool) :: eventisLastInDay
-    logical(c_bool) :: eventisLastInMonth
-    logical(c_bool) :: eventisLastInYear
-    type(c_ptr) :: triggerNextEventDateTime
-    type(c_ptr) :: triggeredPreviousEventDateTime
-  end type event
+    TYPE(c_ptr) :: nextEventInGroup
+    INTEGER(c_int64_t) :: eventId
+    TYPE(c_ptr) :: eventName
+    TYPE(c_ptr) :: eventsLastEvaluationDateTime
+    TYPE(c_ptr) :: eventReferenceDatetime
+    TYPE(c_ptr) :: eventFirstDatetime
+    TYPE(c_ptr) :: eventLastDatetime
+    TYPE(c_ptr) :: eventInterval
+    TYPE(c_ptr) :: eventOffset
+    LOGICAL(c_bool) :: neverTriggerEvent
+    LOGICAL(c_bool) :: triggerCurrentEvent
+    LOGICAL(c_bool) :: nextEventIsFirst
+    LOGICAL(c_bool) :: lastEventWasFinal
+    LOGICAL(c_bool) :: eventisFirstInDay
+    LOGICAL(c_bool) :: eventisFirstInMonth
+    LOGICAL(c_bool) :: eventisFirstInYear
+    LOGICAL(c_bool) :: eventisLastInDay
+    LOGICAL(c_bool) :: eventisLastInMonth
+    LOGICAL(c_bool) :: eventisLastInYear
+    TYPE(c_ptr) :: triggerNextEventDateTime
+    TYPE(c_ptr) :: triggeredPreviousEventDateTime
+  END TYPE event
   !
-  type, bind(c) :: eventgroup
-    integer(c_int64_t) :: eventGroupId
-    type(c_ptr) :: eventGroupName
-    type(c_ptr) :: firstEventInGroup
-  end type eventgroup
+  TYPE, BIND(c) :: eventgroup
+    INTEGER(c_int64_t) :: eventGroupId
+    TYPE(c_ptr) :: eventGroupName
+    TYPE(c_ptr) :: firstEventInGroup
+  END TYPE eventgroup
   !
-  type, bind(c) :: julianday
-    integer(c_int64_t) :: day  !< the actual Julian day
-    integer(c_int64_t) :: ms   !< the milisecond on that particular day
-  end type julianday
+  TYPE, BIND(c) :: julianday
+    INTEGER(c_int64_t) :: day  !< the actual Julian day
+    INTEGER(c_int64_t) :: ms   !< the milisecond on that particular day
+  END TYPE julianday
   !
-  type, bind(c) :: juliandelta
-    character(c_char)  :: sign
-    integer(c_int64_t) :: day
-    integer(c_int64_t) :: ms
-  end type juliandelta
+  TYPE, BIND(c) :: juliandelta
+    CHARACTER(c_char)  :: sign
+    INTEGER(c_int64_t) :: day
+    INTEGER(c_int64_t) :: ms
+  END TYPE juliandelta
   !
-  type, bind(c) :: date
-    integer(c_int64_t) :: year
-    integer(c_int) :: month
-    integer(c_int) :: day
-  end type date
+  TYPE, BIND(c) :: date
+    INTEGER(c_int64_t) :: year
+    INTEGER(c_int) :: month
+    INTEGER(c_int) :: day
+  END TYPE date
   !
-  type, bind(c) :: time
-    integer(c_int) :: hour
-    integer(c_int) :: minute
-    integer(c_int) :: second
-    integer(c_int) :: ms
-  end type time
+  TYPE, BIND(c) :: time
+    INTEGER(c_int) :: hour
+    INTEGER(c_int) :: minute
+    INTEGER(c_int) :: second
+    INTEGER(c_int) :: ms
+  END TYPE time
   !
-  type, bind(c) :: datetime
-    type(date) :: date
-    type(time) :: time
-  end type datetime
+  TYPE, BIND(c) :: datetime
+    TYPE(date) :: date
+    TYPE(time) :: time
+  END TYPE datetime
   !
-  type, bind(c) :: timedelta
-    integer(c_int) :: flag_std_form
-    character(c_char) :: sign
-    integer(c_int64_t) :: year
-    integer(c_int) :: month
-    integer(c_int) :: day
-    integer(c_int) :: hour
-    integer(c_int) :: minute
-    integer(c_int) :: second
-    integer(c_int) :: ms
-  end type timedelta
+  TYPE, BIND(c) :: timedelta
+    INTEGER(c_int) :: flag_std_form
+    CHARACTER(c_char) :: sign
+    INTEGER(c_int64_t) :: year
+    INTEGER(c_int) :: month
+    INTEGER(c_int) :: day
+    INTEGER(c_int) :: hour
+    INTEGER(c_int) :: minute
+    INTEGER(c_int) :: second
+    INTEGER(c_int) :: ms
+  END TYPE timedelta
   !
-  type, bind(c) :: divisionquotienttimespan
-    integer(c_int64_t) :: quotient;
-    integer(c_int64_t) :: remainder_in_ms;
-  end type divisionquotienttimespan
+  TYPE, BIND(c) :: divisionquotienttimespan
+    INTEGER(c_int64_t) :: quotient; 
+    INTEGER(c_int64_t) :: remainder_in_ms; 
+  END TYPE divisionquotienttimespan
   !
   ! End Type, bind(c)
   !
-  interface
+  INTERFACE
     !
-    subroutine setCalendar(ct) bind(c, name='initCalendar') !TESTED-OK
-      import :: c_int
-      integer(c_int), value :: ct
-    end subroutine setCalendar
+    SUBROUTINE setCalendar(ct) BIND(c, name='initCalendar') !TESTED-OK
+      IMPORT :: c_int
+      INTEGER(c_int), VALUE :: ct
+    END SUBROUTINE setCalendar
     !
-    subroutine resetCalendar() bind(c, name='freeCalendar') !TESTED-OK
-    end subroutine resetCalendar
+    SUBROUTINE resetCalendar() BIND(c, name='freeCalendar') !TESTED-OK
+    END SUBROUTINE resetCalendar
     !
-    function calendarType() bind(c, name='getCalendarType') !TESTED-OK
-      import :: c_int
-      integer(c_int) :: calendarType
-    end function calendarType
+    FUNCTION calendarType() BIND(c, name='getCalendarType') !TESTED-OK
+      IMPORT :: c_int
+      INTEGER(c_int) :: calendarType
+    END FUNCTION calendarType
     !
-    function my_calendartostring(calendar) result(c_pointer) bind(c, name='calendarToString') !TESTED-OK
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: calendar
-    end function my_calendartostring
+    FUNCTION my_calendartostring(calendar) RESULT(c_pointer) BIND(c, name='calendarToString') !TESTED-OK
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: calendar
+    END FUNCTION my_calendartostring
     !
-  end interface
+  END INTERFACE
 
-  interface
-    function my_newjuliandelta(sign, day, ms) result(c_pointer) bind(c, name='newJulianDelta')
-      import :: c_int64_t, c_char, c_ptr
-      type(c_ptr)               :: c_pointer
-      character(c_char),  value :: sign
-      integer(c_int64_t), value :: day
-      integer(c_int64_t), value :: ms
-    end function my_newjuliandelta
+  INTERFACE
+    FUNCTION my_newjuliandelta(sign, day, ms) RESULT(c_pointer) BIND(c, name='newJulianDelta')
+      IMPORT :: c_int64_t, c_char, c_ptr
+      TYPE(c_ptr)               :: c_pointer
+      CHARACTER(c_char), VALUE :: sign
+      INTEGER(c_int64_t), VALUE :: day
+      INTEGER(c_int64_t), VALUE :: ms
+    END FUNCTION my_newjuliandelta
     !
-    subroutine my_deallocatejuliandelta(jd) bind(c,name='deallocateJulianDelta')
-      import :: c_ptr
-      type(c_ptr), value :: jd
-    end subroutine my_deallocatejuliandelta
-  end interface
+    SUBROUTINE my_deallocatejuliandelta(jd) BIND(c, name='deallocateJulianDelta')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: jd
+    END SUBROUTINE my_deallocatejuliandelta
+  END INTERFACE
 
-  interface
-    function my_newjulianday(day, ms) result(c_pointer) bind(c, name='newJulianDay')
-      import :: c_int64_t, c_ptr
-      type(c_ptr) :: c_pointer
-      integer(c_int64_t), value :: day
-      integer(c_int64_t), value :: ms
-    end function my_newjulianday
+  INTERFACE
+    FUNCTION my_newjulianday(day, ms) RESULT(c_pointer) BIND(c, name='newJulianDay')
+      IMPORT :: c_int64_t, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      INTEGER(c_int64_t), VALUE :: day
+      INTEGER(c_int64_t), VALUE :: ms
+    END FUNCTION my_newjulianday
     !
-    subroutine my_deallocatejulianday(jd) bind(c,name='deallocateJulianDay')
-      import :: c_ptr
-      type(c_ptr), value :: jd
-    end subroutine my_deallocatejulianday
+    SUBROUTINE my_deallocatejulianday(jd) BIND(c, name='deallocateJulianDay')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: jd
+    END SUBROUTINE my_deallocatejulianday
     !
-    function my_replacejulianday(src, dest) result(ret_dest) bind(c, name='replaceJulianday')
-      import :: c_ptr
-      type(c_ptr) :: ret_dest
-      type(c_ptr), value :: src
-      type(c_ptr), value :: dest
-    end function my_replacejulianday
+    FUNCTION my_replacejulianday(src, dest) RESULT(ret_dest) BIND(c, name='replaceJulianday')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_dest
+      TYPE(c_ptr), VALUE :: src
+      TYPE(c_ptr), VALUE :: dest
+    END FUNCTION my_replacejulianday
     !
-    function my_comparejulianday(op1, op2) result(ret) bind(c, name='compareJulianDay')
-      import :: c_ptr, c_int
-      integer(c_int) :: ret
-      type(c_ptr), value :: op1
-      type(c_ptr), value :: op2
-    end function my_comparejulianday
+    PURE FUNCTION my_comparejulianday(op1, op2) RESULT(ret) BIND(c, name='compareJulianDay')
+      IMPORT :: c_ptr, c_int
+      INTEGER(c_int) :: ret
+      TYPE(c_ptr), VALUE, INTENT(in) :: op1
+      TYPE(c_ptr), VALUE, INTENT(in) :: op2
+    END FUNCTION my_comparejulianday
     !
-    function my_juliandaytostring(my_julianday, string) result(string_ptr) bind(c, name='juliandayToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_julianday
-      character(c_char), dimension(*) :: string
-    end function my_juliandaytostring
+    FUNCTION my_juliandaytostring(my_julianday, string) RESULT(string_ptr) BIND(c, name='juliandayToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_julianday
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_juliandaytostring
     !
-    function my_addjuliandeltatojulianday(my_julianday, my_juliandelta, ret_julianday) result(julianday_ptr) &
-         &   bind(c, name='addJulianDeltaToJulianDay')
-      import :: c_ptr
-      type(c_ptr) :: julianday_ptr
-      type(c_ptr), value :: my_julianday, my_juliandelta, ret_julianday
-    end function my_addjuliandeltatojulianday
+    FUNCTION my_addjuliandeltatojulianday(my_julianday, my_juliandelta, ret_julianday) RESULT(julianday_ptr) &
+         &   BIND(c, name='addJulianDeltaToJulianDay')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: julianday_ptr
+      TYPE(c_ptr), VALUE :: my_julianday, my_juliandelta, ret_julianday
+    END FUNCTION my_addjuliandeltatojulianday
     !
-    function my_substractjulianday(my_julianday1, my_julianday2, ret_juliandelta) result(juliandelta_ptr) &
-         &   bind(c, name='substractJulianDay')
-      import :: c_ptr
-      type(c_ptr) :: juliandelta_ptr
-      type(c_ptr), value :: my_julianday1, my_julianday2, ret_juliandelta
-    end function my_substractjulianday
+    FUNCTION my_subtractjulianday(my_julianday1, my_julianday2, ret_juliandelta) RESULT(juliandelta_ptr) &
+         &   BIND(c, name='subtractJulianDay')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: juliandelta_ptr
+      TYPE(c_ptr), VALUE :: my_julianday1, my_julianday2, ret_juliandelta
+    END FUNCTION my_subtractjulianday
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_newdatefromstring(string) result(c_pointer) bind(c, name='newDate')
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: string
-    end function my_newdatefromstring
+    FUNCTION my_newdatefromstring(string) RESULT(c_pointer) BIND(c, name='newDate')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_newdatefromstring
     !
-    function my_newrawdate(year, month, day) result(c_pointer) bind(c, name='newRawDate')
-      import :: c_int64_t, c_int, c_ptr
-      type(c_ptr) :: c_pointer
-      integer(c_int64_t), value :: year
-      integer(c_int), value :: month, day
-    end function my_newrawdate
+    FUNCTION my_newrawdate(year, month, day) RESULT(c_pointer) BIND(c, name='newRawDate')
+      IMPORT :: c_int64_t, c_int, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      INTEGER(c_int64_t), VALUE :: year
+      INTEGER(c_int), VALUE :: month, day
+    END FUNCTION my_newrawdate
     !
-    function my_constructandcopydate(d) result(c_pointer) bind(c,name='constructAndCopyDate')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: d
-    end function my_constructandcopydate
+    FUNCTION my_constructandcopydate(d) RESULT(c_pointer) BIND(c, name='constructAndCopyDate')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: d
+    END FUNCTION my_constructandcopydate
     !
-    subroutine my_deallocatedate(d) bind(c, name='deallocateDate')
-      import :: c_ptr
-      type(c_ptr), value :: d
-    end subroutine my_deallocatedate
+    SUBROUTINE my_deallocatedate(d) BIND(c, name='deallocateDate')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: d
+    END SUBROUTINE my_deallocatedate
     !
-    function my_replacedate(src, dest) result(ret_dest) bind(c, name='replaceDate')
-      import :: c_ptr
-      type(c_ptr) :: ret_dest
-      type(c_ptr), value :: src , dest
-    end function my_replacedate
+    FUNCTION my_replacedate(src, dest) RESULT(ret_dest) BIND(c, name='replaceDate')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_dest
+      TYPE(c_ptr), VALUE :: src, dest
+    END FUNCTION my_replacedate
     !
-    function my_datetostring(my_date, string) result(string_ptr) bind(c, name='dateToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_date
-      character(c_char), dimension(*) :: string
-    end function my_datetostring
+    FUNCTION my_datetostring(my_date, string) RESULT(string_ptr) BIND(c, name='dateToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_date
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_datetostring
     !
-    function my_datetoposixstring(my_date, string, fmtstr) result(string_ptr) bind(c, name='dateToPosixString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_date
-      character(c_char), dimension(*) :: string
-      character(c_char), dimension(*) :: fmtstr
-    end function my_datetoposixstring
+    FUNCTION my_datetoposixstring(my_date, string, fmtstr) RESULT(string_ptr) BIND(c, name='dateToPosixString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_date
+      CHARACTER(c_char), DIMENSION(*) :: string
+      CHARACTER(c_char), DIMENSION(*) :: fmtstr
+    END FUNCTION my_datetoposixstring
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_newtimefromstring(string) result(c_pointer) bind(c, name='newTime')
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: string
-    end function my_newtimefromstring
+    FUNCTION my_newtimefromstring(string) RESULT(c_pointer) BIND(c, name='newTime')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_newtimefromstring
     !
-    function my_newrawtime(hour, minute, second, ms) result(c_pointer) bind(c, name='newRawTime')
-      import :: c_int, c_ptr
-      type(c_ptr) :: c_pointer
-      integer(c_int), value :: hour, minute, second, ms
-    end function my_newrawtime
+    FUNCTION my_newrawtime(hour, minute, second, ms) RESULT(c_pointer) BIND(c, name='newRawTime')
+      IMPORT :: c_int, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      INTEGER(c_int), VALUE :: hour, minute, second, ms
+    END FUNCTION my_newrawtime
     !
-    function my_constructandcopytime(t) result(c_pointer) bind(c,name='constructAndCopyTime')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: t
-    end function my_constructandcopytime
+    FUNCTION my_constructandcopytime(t) RESULT(c_pointer) BIND(c, name='constructAndCopyTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: t
+    END FUNCTION my_constructandcopytime
     !
-    subroutine my_deallocatetime(t) bind(c,name='deallocateTime')
-      import :: c_ptr
-      type(c_ptr), value :: t
-    end subroutine my_deallocatetime
+    SUBROUTINE my_deallocatetime(t) BIND(c, name='deallocateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: t
+    END SUBROUTINE my_deallocatetime
     !
-    function my_replacetime(src, dest) result(ret_dest) bind(c, name='replaceTime')
-      import :: c_ptr
-      type(c_ptr) :: ret_dest
-      type(c_ptr), value :: src , dest
-    end function my_replacetime
+    FUNCTION my_replacetime(src, dest) RESULT(ret_dest) BIND(c, name='replaceTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_dest
+      TYPE(c_ptr), VALUE :: src, dest
+    END FUNCTION my_replacetime
     !
-    function my_timetostring(my_time, string) result(string_ptr) bind(c, name='timeToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_time
-      character(c_char), dimension(*) :: string
-    end function my_timetostring
+    FUNCTION my_timetostring(my_time, string) RESULT(string_ptr) BIND(c, name='timeToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_time
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_timetostring
     !
-    function my_timetoposixstring(my_time, string, fmtstr) result(string_ptr) bind(c, name='timeToPosixString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_time
-      character(c_char), dimension(*) :: string
-      character(c_char), dimension(*) :: fmtstr
-    end function my_timetoposixstring
+    FUNCTION my_timetoposixstring(my_time, string, fmtstr) RESULT(string_ptr) BIND(c, name='timeToPosixString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_time
+      CHARACTER(c_char), DIMENSION(*) :: string
+      CHARACTER(c_char), DIMENSION(*) :: fmtstr
+    END FUNCTION my_timetoposixstring
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_newdatetime(string) result(c_pointer) bind(c, name='newDateTime')
-      import :: c_ptr, c_char
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: string
-    end function my_newdatetime
+    FUNCTION my_newdatetime(string) RESULT(c_pointer) BIND(c, name='newDateTime')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_newdatetime
     !
-    function my_newrawdatetime(year, month, day, hour, minute, second, ms) result(c_pointer) &
-         &             bind(c, name='newRawDateTime')
-      import :: c_int64_t, c_int, c_ptr
-      type(c_ptr) :: c_pointer
-      integer(c_int64_t), value :: year
-      integer(c_int), value :: month, day, hour, minute, second, ms
-    end function my_newrawdatetime
+    FUNCTION my_newrawdatetime(year, month, day, hour, minute, second, ms) RESULT(c_pointer) &
+         &             BIND(c, name='newRawDateTime')
+      IMPORT :: c_int64_t, c_int, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      INTEGER(c_int64_t), VALUE :: year
+      INTEGER(c_int), VALUE :: month, day, hour, minute, second, ms
+    END FUNCTION my_newrawdatetime
     !
-    function my_constructandcopydatetime(dt) result(c_pointer) bind(c,name='constructAndCopyDateTime')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: dt
-    end function my_constructandcopydatetime
+    FUNCTION my_constructandcopydatetime(dt) RESULT(c_pointer) BIND(c, name='constructAndCopyDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_constructandcopydatetime
     !
-    subroutine my_deallocatedatetime(dt) bind(c,name='deallocateDateTime')
-      import :: c_ptr
-      type(c_ptr), value :: dt
-    end subroutine my_deallocatedatetime
+    SUBROUTINE my_deallocatedatetime(dt) BIND(c, name='deallocateDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: dt
+    END SUBROUTINE my_deallocatedatetime
     !
-    function my_comparedatetime(op1, op2) result(ret) bind(c, name='compareDatetime')
-      import :: c_ptr, c_int
-      integer(c_int) :: ret
-      type(c_ptr), value :: op1
-      type(c_ptr), value :: op2
-    end function my_comparedatetime
+    PURE FUNCTION my_comparedatetime(op1, op2) RESULT(ret) BIND(c, name='compareDatetime')
+      IMPORT :: c_ptr, c_int
+      INTEGER(c_int) :: ret
+      TYPE(c_ptr), VALUE, INTENT(in) :: op1
+      TYPE(c_ptr), VALUE, INTENT(in) :: op2
+    END FUNCTION my_comparedatetime
 
-    function my_replacedatetime(src, dest) result(ret_dest) bind(c, name='replaceDatetime')
-      import :: c_ptr
-      type(c_ptr) :: ret_dest
-      type(c_ptr), value :: src
-      type(c_ptr), value :: dest
-    end function my_replacedatetime
+    FUNCTION my_replacedatetime(src, dest) RESULT(ret_dest) BIND(c, name='replaceDatetime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_dest
+      TYPE(c_ptr), VALUE :: src
+      TYPE(c_ptr), VALUE :: dest
+    END FUNCTION my_replacedatetime
     !
-    function my_datetimetostring(my_time, string) result(string_ptr) bind(c, name='datetimeToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_time
-      character(c_char), dimension(*) :: string
-    end function my_datetimetostring
+    FUNCTION my_datetimetostring(my_time, string) RESULT(string_ptr) BIND(c, name='datetimeToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_time
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_datetimetostring
     !
-    function my_datetimetoposixstring(my_time, string, fmtstr) result(string_ptr) bind(c, name='datetimeToPosixString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_time
-      character(c_char), dimension(*) :: string
-      character(c_char), dimension(*) :: fmtstr
-    end function my_datetimetoposixstring
+    FUNCTION my_datetimetoposixstring(my_time, string, fmtstr) RESULT(string_ptr) BIND(c, name='datetimeToPosixString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_time
+      CHARACTER(c_char), DIMENSION(*) :: string
+      CHARACTER(c_char), DIMENSION(*) :: fmtstr
+    END FUNCTION my_datetimetoposixstring
     !
-    function my_getnoofdaysinmonthdatetime(dt) bind(c, name='getNoOfDaysInMonthDateTime')
-      import :: c_int, c_ptr
-      integer(c_int) :: my_getnoofdaysinmonthdatetime
-      type(c_ptr), value :: dt
-    end function my_getnoofdaysinmonthdatetime
+    FUNCTION my_getnoofdaysinmonthdatetime(dt) BIND(c, name='getNoOfDaysInMonthDateTime')
+      IMPORT :: c_int, c_ptr
+      INTEGER(c_int) :: my_getnoofdaysinmonthdatetime
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_getnoofdaysinmonthdatetime
     !
-    function my_getnoofdaysinyeardatetime(dt) bind(c, name='getNoOfDaysInYearDateTime')
-      import :: c_int, c_ptr
-      integer(c_int) :: my_getnoofdaysinyeardatetime
-      type(c_ptr), value :: dt
-    end function my_getnoofdaysinyeardatetime
+    FUNCTION my_getnoofdaysinyeardatetime(dt) BIND(c, name='getNoOfDaysInYearDateTime')
+      IMPORT :: c_int, c_ptr
+      INTEGER(c_int) :: my_getnoofdaysinyeardatetime
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_getnoofdaysinyeardatetime
     !
-    function my_getdayofyearfromdatetime(dt) bind(c, name='getDayOfYearFromDateTime')
-      import :: c_int, c_ptr
-      integer(c_int) :: my_getdayofyearfromdatetime
-      type(c_ptr), value :: dt
-    end function my_getdayofyearfromdatetime
+    FUNCTION my_getdayofyearfromdatetime(dt) BIND(c, name='getDayOfYearFromDateTime')
+      IMPORT :: c_int, c_ptr
+      INTEGER(c_int) :: my_getdayofyearfromdatetime
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_getdayofyearfromdatetime
     !
-    function my_getnoofsecondselapsedinmonthdatetime(dt) bind(c, name='getNoOfSecondsElapsedInMonthDateTime')
-      import :: c_int64_t, c_ptr
-      integer(c_int64_t) :: my_getnoofsecondselapsedinmonthdatetime
-      type(c_ptr), value :: dt
-    end function my_getnoofsecondselapsedinmonthdatetime
+    FUNCTION my_getnoofsecondselapsedinmonthdatetime(dt) BIND(c, name='getNoOfSecondsElapsedInMonthDateTime')
+      IMPORT :: c_int64_t, c_ptr
+      INTEGER(c_int64_t) :: my_getnoofsecondselapsedinmonthdatetime
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_getnoofsecondselapsedinmonthdatetime
     !
-    function my_getnoofsecondselapsedindaydatetime(dt) bind(c, name='getNoOfSecondsElapsedInDayDateTime')
-      import :: c_int, c_ptr
-      integer(c_int) :: my_getnoofsecondselapsedindaydatetime
-      type(c_ptr), value :: dt
-    end function my_getnoofsecondselapsedindaydatetime
+    FUNCTION my_getnoofsecondselapsedindaydatetime(dt) BIND(c, name='getNoOfSecondsElapsedInDayDateTime')
+      IMPORT :: c_int, c_ptr
+      INTEGER(c_int) :: my_getnoofsecondselapsedindaydatetime
+      TYPE(c_ptr), VALUE :: dt
+    END FUNCTION my_getnoofsecondselapsedindaydatetime
     !
-    function my_getjuliandayfromdatetime(dt, jd) bind(c, name='getJulianDayFromDateTime')
-      import :: c_ptr
-      type(c_ptr) :: my_getjuliandayfromdatetime
-      type(c_ptr), value :: dt, jd
-    end function my_getjuliandayfromdatetime
+    FUNCTION my_getjuliandayfromdatetime(dt, jd) BIND(c, name='getJulianDayFromDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: my_getjuliandayfromdatetime
+      TYPE(c_ptr), VALUE :: dt, jd
+    END FUNCTION my_getjuliandayfromdatetime
     !
-    function my_getdatetimefromjulianday(jd, dt) bind(c, name='getDateTimeFromJulianDay')
-      import :: c_ptr
-      type(c_ptr) :: my_getdatetimefromjulianday
-      type(c_ptr), value :: jd, dt
-    end function my_getdatetimefromjulianday
+    FUNCTION my_getdatetimefromjulianday(jd, dt) BIND(c, name='getDateTimeFromJulianDay')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: my_getdatetimefromjulianday
+      TYPE(c_ptr), VALUE :: jd, dt
+    END FUNCTION my_getdatetimefromjulianday
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_newtimedeltafromstring(string) result(c_pointer) bind(c, name='newTimeDelta')
-      import :: c_char, c_ptr
-      type(c_ptr)                     :: c_pointer
-      character(c_char), dimension(*) :: string
-    end function my_newtimedeltafromstring
+    FUNCTION my_newtimedeltafromstring(string) RESULT(c_pointer) BIND(c, name='newTimeDelta')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr)                     :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_newtimedeltafromstring
     !
-    function my_newrawtimedelta(sign, year, month, day, hour, minute, second, ms) result(c_pointer) &
-         &             bind(c, name='newRawTimeDelta')
-      import :: c_int64_t, c_char, c_int, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), value :: sign
-      integer(c_int64_t), value :: year
-      integer(c_int), value :: month, day, hour, minute, second, ms
-    end function my_newrawtimedelta
+    FUNCTION my_newrawtimedelta(sign, year, month, day, hour, minute, second, ms) RESULT(c_pointer) &
+         &             BIND(c, name='newRawTimeDelta')
+      IMPORT :: c_int64_t, c_char, c_int, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), VALUE :: sign
+      INTEGER(c_int64_t), VALUE :: year
+      INTEGER(c_int), VALUE :: month, day, hour, minute, second, ms
+    END FUNCTION my_newrawtimedelta
     !
-    function my_constructandcopytimedelta(td) result(c_pointer) bind(c,name='constructAndCopyTimeDelta')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: td
-    end function my_constructandcopytimedelta
+    FUNCTION my_constructandcopytimedelta(td) RESULT(c_pointer) BIND(c, name='constructAndCopyTimeDelta')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: td
+    END FUNCTION my_constructandcopytimedelta
     !
-    subroutine my_deallocatetimedelta(dt) bind(c, name='deallocateTimeDelta')
-      import :: c_ptr
-      type(c_ptr), value :: dt
-    end subroutine my_deallocatetimedelta
+    SUBROUTINE my_deallocatetimedelta(dt) BIND(c, name='deallocateTimeDelta')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: dt
+    END SUBROUTINE my_deallocatetimedelta
     !
-    function my_comparetimedelta(op1, op2) result(ret) bind(c, name='compareTimeDelta')
-      import :: c_ptr, c_int
-      integer(c_int) :: ret
-      type(c_ptr), value :: op1
-      type(c_ptr), value :: op2
-    end function my_comparetimedelta
+    PURE FUNCTION my_comparetimedelta(op1, op2) RESULT(ret) BIND(c, name='compareTimeDelta')
+      IMPORT :: c_ptr, c_int
+      INTEGER(c_int) :: ret
+      TYPE(c_ptr), VALUE, INTENT(in) :: op1
+      TYPE(c_ptr), VALUE, INTENT(in) :: op2
+    END FUNCTION my_comparetimedelta
     !
-    function my_gettimedeltafromdate(my_date1,my_date2,timedelta_return) result(timedelta_ptr) &
-         &    bind(c,name='getTimeDeltaFromDate')
-      import :: c_ptr
-      type(c_ptr) :: timedelta_ptr
-      type(c_ptr), value :: my_date1, my_date2, timedelta_return
-    end function my_gettimedeltafromdate
+    FUNCTION my_gettimedeltafromdate(my_date1, my_date2, timedelta_return) RESULT(timedelta_ptr) &
+         &    BIND(c, name='getTimeDeltaFromDate')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: timedelta_ptr
+      TYPE(c_ptr), VALUE :: my_date1, my_date2, timedelta_return
+    END FUNCTION my_gettimedeltafromdate
     !
-    function my_gettimedeltafromdatetime(my_datetime1,my_datetime2,timedelta_return) result(timedelta_ptr) &
-         &    bind(c,name='getTimeDeltaFromDateTime')
-      import :: c_ptr
-      type(c_ptr) :: timedelta_ptr
-      type(c_ptr), value :: my_datetime1, my_datetime2, timedelta_return
-    end function my_gettimedeltafromdatetime
+    FUNCTION my_gettimedeltafromdatetime(my_datetime1, my_datetime2, timedelta_return) RESULT(timedelta_ptr) &
+         &    BIND(c, name='getTimeDeltaFromDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: timedelta_ptr
+      TYPE(c_ptr), VALUE :: my_datetime1, my_datetime2, timedelta_return
+    END FUNCTION my_gettimedeltafromdatetime
     !
-    function my_gettotalmillisecondstimedelta(my_timedelta, my_datetime) &
-         &   bind(c, name='getTotalMilliSecondsTimeDelta')
-      import :: c_ptr, c_int64_t
-      integer(c_int64_t) :: my_gettotalmillisecondstimedelta
-      type(c_ptr), value :: my_timedelta, my_datetime
-    end function my_gettotalmillisecondstimedelta
+    FUNCTION my_gettotalmillisecondstimedelta(my_timedelta, my_datetime) &
+         &   BIND(c, name='getTotalMilliSecondsTimeDelta')
+      IMPORT :: c_ptr, c_int64_t
+      INTEGER(c_int64_t) :: my_gettotalmillisecondstimedelta
+      TYPE(c_ptr), VALUE :: my_timedelta, my_datetime
+    END FUNCTION my_gettotalmillisecondstimedelta
     !
-    function my_gettotalsecondstimedelta(my_timedelta, my_datetime) bind(c, name='getTotalSecondsTimeDelta')
-      import :: c_ptr, c_int64_t
-      integer(c_int64_t) :: my_gettotalsecondstimedelta
-      type(c_ptr), value :: my_timedelta, my_datetime
-    end function my_gettotalsecondstimedelta
+    FUNCTION my_gettotalsecondstimedelta(my_timedelta, my_datetime) BIND(c, name='getTotalSecondsTimeDelta')
+      IMPORT :: c_ptr, c_int64_t
+      INTEGER(c_int64_t) :: my_gettotalsecondstimedelta
+      TYPE(c_ptr), VALUE :: my_timedelta, my_datetime
+    END FUNCTION my_gettotalsecondstimedelta
     !
-    function my_timedeltatostring(td, tostring) result(string_ptr) bind(c, name='timedeltaToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: td
-      character(c_char), dimension(*) :: tostring
-    end function my_timedeltatostring
+    FUNCTION my_timedeltatostring(td, tostring) RESULT(string_ptr) BIND(c, name='timedeltaToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: td
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_timedeltatostring
     !
-    function my_addtimedeltatodatetime(my_datetime, my_timedelta, ret_datetime) result(datetime_ptr) &
-         &   bind(c, name='addTimeDeltaToDateTime')
-      import :: c_ptr
-      type(c_ptr) :: datetime_ptr
-      type(c_ptr), value :: my_datetime, my_timedelta, ret_datetime
-    end function my_addtimedeltatodatetime
+    FUNCTION my_addtimedeltatodatetime(my_datetime, my_timedelta, ret_datetime) RESULT(datetime_ptr) &
+         &   BIND(c, name='addTimeDeltaToDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: datetime_ptr
+      TYPE(c_ptr), VALUE :: my_datetime, my_timedelta, ret_datetime
+    END FUNCTION my_addtimedeltatodatetime
     !
-    function my_addtimedeltatodate(my_date, my_timedelta, ret_date) result(date_ptr) &
-         &   bind(c, name='addTimeDeltaToDate')
-      import :: c_ptr
-      type(c_ptr) :: date_ptr
-      type(c_ptr), value :: my_date, my_timedelta, ret_date
-    end function my_addtimedeltatodate
+    FUNCTION my_addtimedeltatodate(my_date, my_timedelta, ret_date) RESULT(date_ptr) &
+         &   BIND(c, name='addTimeDeltaToDate')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: date_ptr
+      TYPE(c_ptr), VALUE :: my_date, my_timedelta, ret_date
+    END FUNCTION my_addtimedeltatodate
     !
-    function my_elementwisescalarmultiplytimedelta(my_timedelta, lambda, scaled_timedelta) result(timedelta_return) &
-         &   bind(c, name='elementwiseScalarMultiplyTimeDelta')
-      import :: c_ptr, c_int64_t
-      type(c_ptr) ::timedelta_return
-      type(c_ptr), value :: my_timedelta, scaled_timedelta
-      integer(c_int64_t), value :: lambda
-    end function my_elementwisescalarmultiplytimedelta
+    FUNCTION my_elementwisescalarmultiplytimedelta(my_timedelta, lambda, scaled_timedelta) RESULT(timedelta_return) &
+         &   BIND(c, name='elementwiseScalarMultiplyTimeDelta')
+      IMPORT :: c_ptr, c_int64_t
+      TYPE(c_ptr) ::timedelta_return
+      TYPE(c_ptr), VALUE :: my_timedelta, scaled_timedelta
+      INTEGER(c_int64_t), VALUE :: lambda
+    END FUNCTION my_elementwisescalarmultiplytimedelta
     !
-    function my_elementwisescalarmultiplytimedeltadp(my_timedelta, lambda, scaled_timedelta) result(timedelta_return) &
-         &   bind(c, name='elementwiseScalarMultiplyTimeDeltaDP')
-      import :: c_ptr, c_double
-      type(c_ptr) ::timedelta_return
-      type(c_ptr), value :: my_timedelta, scaled_timedelta
-      real(c_double), value :: lambda
-    end function my_elementwisescalarmultiplytimedeltadp
+    FUNCTION my_elementwisescalarmultiplytimedeltadp(my_timedelta, lambda, scaled_timedelta) RESULT(timedelta_return) &
+         &   BIND(c, name='elementwiseScalarMultiplyTimeDeltaDP')
+      IMPORT :: c_ptr, c_double
+      TYPE(c_ptr) ::timedelta_return
+      TYPE(c_ptr), VALUE :: my_timedelta, scaled_timedelta
+      REAL(c_double), VALUE :: lambda
+    END FUNCTION my_elementwisescalarmultiplytimedeltadp
     !
-    function my_elementwiseAddTimeDeltatoTimeDelta(my_timedelta1,my_timedelta2,added_timedelta) result(timedelta_return) &
-         &   bind(c, name='elementwiseAddTimeDeltatoTimeDelta')
-      import :: c_ptr
-      type(c_ptr) :: timedelta_return
-      type(c_ptr), value :: my_timedelta1,my_timedelta2,added_timedelta
-    end function my_elementwiseAddTimeDeltatoTimeDelta
+    FUNCTION my_elementwiseAddTimeDeltatoTimeDelta(my_timedelta1, my_timedelta2, added_timedelta) RESULT(timedelta_return) &
+         &   BIND(c, name='elementwiseAddTimeDeltatoTimeDelta')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: timedelta_return
+      TYPE(c_ptr), VALUE :: my_timedelta1, my_timedelta2, added_timedelta
+    END FUNCTION my_elementwiseAddTimeDeltatoTimeDelta
     !
-    function my_modulotimedelta(a, p, quot) result(rem) bind(c, name='moduloTimedelta')
-      import :: c_ptr, c_int64_t
-      integer(c_int64_t) :: rem
-      type(c_ptr), value :: a
-      type(c_ptr), value :: p
-      type(c_ptr), value :: quot
-    end function my_modulotimedelta
+    FUNCTION my_modulotimedelta(a, p, quot) RESULT(rem) BIND(c, name='moduloTimedelta')
+      IMPORT :: c_ptr, c_int64_t
+      INTEGER(c_int64_t) :: rem
+      TYPE(c_ptr), VALUE :: a
+      TYPE(c_ptr), VALUE :: p
+      TYPE(c_ptr), VALUE :: quot
+    END FUNCTION my_modulotimedelta
     !
-    function my_getptstringfromms(ms, tostring) result(string_ptr) bind(c, name='getPTStringFromMS')
-      import :: c_ptr, c_int64_t, c_char
-      type(c_ptr) :: string_ptr
-      integer(c_int64_t), value :: ms
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromms
+    FUNCTION my_getptstringfromms(ms, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromMS')
+      IMPORT :: c_ptr, c_int64_t, c_char
+      TYPE(c_ptr) :: string_ptr
+      INTEGER(c_int64_t), VALUE :: ms
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromms
     !
-    function my_getptstringfromsecondsint(s, tostring) result(string_ptr) bind(c, name='getPTStringFromSeconds')
-      import :: c_ptr, c_int64_t, c_char
-      type(c_ptr) :: string_ptr
-      integer(c_int64_t), value :: s
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromsecondsint
+    FUNCTION my_getptstringfromsecondsint(s, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromSeconds')
+      IMPORT :: c_ptr, c_int64_t, c_char
+      TYPE(c_ptr) :: string_ptr
+      INTEGER(c_int64_t), VALUE :: s
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromsecondsint
     !
-    function my_getptstringfromsecondsfloat(s, tostring) result(string_ptr) bind(c, name='getPTStringFromSecondsFloat')
-      import :: c_ptr, c_float, c_char
-      type(c_ptr) :: string_ptr
-      real(c_float), value :: s
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromsecondsfloat
+    FUNCTION my_getptstringfromsecondsfloat(s, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromSecondsFloat')
+      IMPORT :: c_ptr, c_float, c_char
+      TYPE(c_ptr) :: string_ptr
+      REAL(c_float), VALUE :: s
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromsecondsfloat
     !
-    function my_getptstringfromsecondsdouble(s, tostring) result(string_ptr) bind(c, name='getPTStringFromSecondsDouble')
-      import :: c_ptr, c_double, c_char
-      type(c_ptr) :: string_ptr
-      real(c_double), value :: s
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromsecondsdouble
+    FUNCTION my_getptstringfromsecondsdouble(s, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromSecondsDouble')
+      IMPORT :: c_ptr, c_double, c_char
+      TYPE(c_ptr) :: string_ptr
+      REAL(c_double), VALUE :: s
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromsecondsdouble
     !
-    function my_getptstringfromminutes(m, tostring) result(string_ptr) bind(c, name='getPTStringFromMinutes')
-      import :: c_ptr, c_int64_t, c_char
-      type(c_ptr) :: string_ptr
-      integer(c_int64_t),value :: m
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromminutes
+    FUNCTION my_getptstringfromminutes(m, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromMinutes')
+      IMPORT :: c_ptr, c_int64_t, c_char
+      TYPE(c_ptr) :: string_ptr
+      INTEGER(c_int64_t), VALUE :: m
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromminutes
     !
-    function my_getptstringfromhours(h, tostring) result(string_ptr) bind(c, name='getPTStringFromHours')
-      import :: c_ptr, c_int64_t, c_char
-      type(c_ptr) :: string_ptr
-      integer(c_int64_t),value :: h
-      character(c_char), dimension(*) :: tostring
-    end function my_getptstringfromhours
+    FUNCTION my_getptstringfromhours(h, tostring) RESULT(string_ptr) BIND(c, name='getPTStringFromHours')
+      IMPORT :: c_ptr, c_int64_t, c_char
+      TYPE(c_ptr) :: string_ptr
+      INTEGER(c_int64_t), VALUE :: h
+      CHARACTER(c_char), DIMENSION(*) :: tostring
+    END FUNCTION my_getptstringfromhours
     !
-    function my_timedeltatojuliandelta(td,dt,jd) result(c_pointer) bind(c,name='timeDeltaToJulianDelta')
-      import :: c_int64_t, c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: td
-      type(c_ptr), value :: dt
-      type(c_ptr), value :: jd
-    end function my_timedeltatojuliandelta
+    FUNCTION my_timedeltatojuliandelta(td, dt, jd) RESULT(c_pointer) BIND(c, name='timeDeltaToJulianDelta')
+      IMPORT :: c_int64_t, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: td
+      TYPE(c_ptr), VALUE :: dt
+      TYPE(c_ptr), VALUE :: jd
+    END FUNCTION my_timedeltatojuliandelta
     !
-    function my_divideTimeDeltaInSeconds(dividend, divisor, quotient) result(ret_quotient) bind(c,name='divideTimeDeltaInSeconds')
-      import :: c_ptr
-      type(c_ptr) :: ret_quotient
-      type(c_ptr), value :: dividend
-      type(c_ptr), value :: divisor
-      type(c_ptr), value :: quotient
-    end function my_divideTimeDeltaInSeconds
+    FUNCTION my_divideTimeDeltaInSeconds(dividend, divisor, quotient) RESULT(ret_quotient) &
+         &                                                            BIND(c, name='divideTimeDeltaInSeconds')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_quotient
+      TYPE(c_ptr), VALUE :: dividend
+      TYPE(c_ptr), VALUE :: divisor
+      TYPE(c_ptr), VALUE :: quotient
+    END FUNCTION my_divideTimeDeltaInSeconds
     !
-    function my_divideDatetimeDifferenceInSeconds(dt1, dt2, divisor, quotient) result(ret_quotient) &
-         &                                                                     bind(c,name='divideDatetimeDifferenceInSeconds')
-      import :: c_ptr
-      type(c_ptr) :: ret_quotient
-      type(c_ptr), value :: dt1
-      type(c_ptr), value :: dt2
-      type(c_ptr), value :: divisor
-      type(c_ptr), value :: quotient
-    end function my_divideDatetimeDifferenceInSeconds
+    FUNCTION my_divideDatetimeDifferenceInSeconds(dt1, dt2, divisor, quotient) RESULT(ret_quotient) &
+         &                                                                     BIND(c, name='divideDatetimeDifferenceInSeconds')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_quotient
+      TYPE(c_ptr), VALUE :: dt1
+      TYPE(c_ptr), VALUE :: dt2
+      TYPE(c_ptr), VALUE :: divisor
+      TYPE(c_ptr), VALUE :: quotient
+    END FUNCTION my_divideDatetimeDifferenceInSeconds
     !
-    function my_divideTwoDatetimeDiffsInSeconds(dt1_dividend, dt2_dividend, &
-         &                                      dt1_divisor,  dt2_divisor, denominator, quotient) &
-         &                                       result(ret_quotient) &
-         &                                       bind(c,name='divideTwoDatetimeDiffsInSeconds')
-      import :: c_ptr
-      type(c_ptr) :: ret_quotient
-      type(c_ptr), value :: dt1_dividend
-      type(c_ptr), value :: dt2_dividend
-      type(c_ptr), value :: dt1_divisor
-      type(c_ptr), value :: dt2_divisor
-      type(c_ptr), value :: denominator
-      type(c_ptr), value :: quotient
-    end function my_divideTwoDatetimeDiffsInSeconds
+    FUNCTION my_divideTwoDatetimeDiffsInSeconds(dt1_dividend, dt2_dividend, &
+         &                                      dt1_divisor, dt2_divisor, denominator, quotient) &
+         &                                       RESULT(ret_quotient) &
+         &                                       BIND(c, name='divideTwoDatetimeDiffsInSeconds')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: ret_quotient
+      TYPE(c_ptr), VALUE :: dt1_dividend
+      TYPE(c_ptr), VALUE :: dt2_dividend
+      TYPE(c_ptr), VALUE :: dt1_divisor
+      TYPE(c_ptr), VALUE :: dt2_divisor
+      TYPE(c_ptr), VALUE :: denominator
+      TYPE(c_ptr), VALUE :: quotient
+    END FUNCTION my_divideTwoDatetimeDiffsInSeconds
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_newevent(name, referenceDate, firstdate, lastDate, interval, offset) result(c_pointer) &
-         &              bind(c, name='newEvent')
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: name
-      character(c_char), dimension(*) :: referenceDate
-      character(c_char), dimension(*) :: firstDate
-      character(c_char), dimension(*) :: lastDate
-      character(c_char), dimension(*) :: interval
-      character(c_char), dimension(*) :: offset
-    end function my_newevent
+    FUNCTION my_newevent(name, referenceDate, firstdate, lastDate, interval, offset) RESULT(c_pointer) &
+         &              BIND(c, name='newEvent')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: name
+      CHARACTER(c_char), DIMENSION(*) :: referenceDate
+      CHARACTER(c_char), DIMENSION(*) :: firstDate
+      CHARACTER(c_char), DIMENSION(*) :: lastDate
+      CHARACTER(c_char), DIMENSION(*) :: interval
+      CHARACTER(c_char), DIMENSION(*) :: offset
+    END FUNCTION my_newevent
     !
-    function my_neweventwithdatatypes(name, referenceDate, firstdate, lastDate, interval, offset) &
-         &                           result(c_pointer) bind(c, name='newEventWithDataType')
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: name
-      type(c_ptr), value :: referenceDate
-      type(c_ptr), value :: firstDate
-      type(c_ptr), value :: lastDate
-      type(c_ptr), value :: interval
-      type(c_ptr), value :: offset
-    end function my_neweventwithdatatypes
+    FUNCTION my_neweventwithdatatypes(name, referenceDate, firstdate, lastDate, interval, offset) &
+         &                           RESULT(c_pointer) BIND(c, name='newEventWithDataType')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: name
+      TYPE(c_ptr), VALUE :: referenceDate
+      TYPE(c_ptr), VALUE :: firstDate
+      TYPE(c_ptr), VALUE :: lastDate
+      TYPE(c_ptr), VALUE :: interval
+      TYPE(c_ptr), VALUE :: offset
+    END FUNCTION my_neweventwithdatatypes
     !
-    subroutine my_deallocateevent(ev) bind(c,name='deallocateEvent')
-      import :: c_ptr
-      type(c_ptr), value :: ev
-    end subroutine my_deallocateevent
+    SUBROUTINE my_deallocateevent(ev) BIND(c, name='deallocateEvent')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: ev
+    END SUBROUTINE my_deallocateevent
     !
-    function my_constructandcopyevent(my_event) result(event_copy) bind(c, name='constructAndCopyEvent')
-      import :: c_ptr
-      type(c_ptr) :: event_copy
-      type(c_ptr), value :: my_event
-    end function my_constructandcopyevent
+    FUNCTION my_constructandcopyevent(my_event) RESULT(event_copy) BIND(c, name='constructAndCopyEvent')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: event_copy
+      TYPE(c_ptr), VALUE :: my_event
+    END FUNCTION my_constructandcopyevent
     !
-    function my_eventtostring(my_event, string) result(string_ptr) bind(c, name='eventToString')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_event
-      character(c_char), dimension(*) :: string
-    end function my_eventtostring
+    FUNCTION my_eventtostring(my_event, string) RESULT(string_ptr) BIND(c, name='eventToString')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_eventtostring
     !
-    function my_isCurrentEventActive(my_event, my_datetime, plus_slack, minus_slack) &
-         &                      result(ret) bind(c, name='isCurrentEventActive')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      type(c_ptr), value :: my_datetime
-      type(c_ptr), value :: plus_slack
-      type(c_ptr), value :: minus_slack
-      logical(c_bool) :: ret
-    end function my_isCurrentEventActive
+    FUNCTION my_isCurrentEventActive(my_event, my_datetime, plus_slack, minus_slack) &
+         &                      RESULT(ret) BIND(c, name='isCurrentEventActive')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      TYPE(c_ptr), VALUE :: my_datetime
+      TYPE(c_ptr), VALUE :: plus_slack
+      TYPE(c_ptr), VALUE :: minus_slack
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_isCurrentEventActive
     !
-    function my_iseventnextinnextday(my_event) result(ret) bind(c, name='iseventNextInNextDay')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_iseventnextinnextday
+    FUNCTION my_iseventnextinnextday(my_event) RESULT(ret) BIND(c, name='iseventNextInNextDay')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_iseventnextinnextday
     !
-    function my_iseventnextinnextmonth(my_event) result(ret) bind(c, name='iseventNextInNextMonth')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_iseventnextinnextmonth
+    FUNCTION my_iseventnextinnextmonth(my_event) RESULT(ret) BIND(c, name='iseventNextInNextMonth')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_iseventnextinnextmonth
     !
-    function my_iseventnextinnextyear(my_event) result(ret) bind(c, name='iseventNextInNextYear')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_iseventnextinnextyear
+    FUNCTION my_iseventnextinnextyear(my_event) RESULT(ret) BIND(c, name='iseventNextInNextYear')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_iseventnextinnextyear
     !
-    function my_gettriggernexteventatdatetime(my_event,my_currentdatetime,my_datetime) result(c_pointer) &
-         & bind(c, name='getTriggerNextEventAtDateTime')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: my_event
-      type(c_ptr), value :: my_currentdatetime
-      type(c_ptr), value :: my_datetime
-    end function my_gettriggernexteventatdatetime
+    FUNCTION my_gettriggernexteventatdatetime(my_event, my_currentdatetime, my_datetime) RESULT(c_pointer) &
+         & BIND(c, name='getTriggerNextEventAtDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: my_event
+      TYPE(c_ptr), VALUE :: my_currentdatetime
+      TYPE(c_ptr), VALUE :: my_datetime
+    END FUNCTION my_gettriggernexteventatdatetime
     !
-    function my_gettriggeredpreviouseventatdatetime(my_event,my_datetime) result(c_pointer) &
-         & bind(c, name='getTriggeredPreviousEventAtDateTime')
-      import :: c_ptr
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: my_event
-      type(c_ptr), value :: my_datetime
-    end function my_gettriggeredpreviouseventatdatetime
+    FUNCTION my_gettriggeredpreviouseventatdatetime(my_event, my_datetime) RESULT(c_pointer) &
+         & BIND(c, name='getTriggeredPreviousEventAtDateTime')
+      IMPORT :: c_ptr
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: my_event
+      TYPE(c_ptr), VALUE :: my_datetime
+    END FUNCTION my_gettriggeredpreviouseventatdatetime
     !
-    function my_geteventname(my_event, string) result(c_pointer) bind(c, name='getEventName')
-      import :: c_ptr, c_char
-      type(c_ptr) :: c_pointer
-      type(c_ptr), value :: my_event
-      character(c_char), dimension(*) :: string
-    end function my_geteventname
+    FUNCTION my_geteventname(my_event, string) RESULT(c_pointer) BIND(c, name='getEventName')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: c_pointer
+      TYPE(c_ptr), VALUE :: my_event
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_geteventname
     !
-    function my_getnexteventisfirst(my_event) result(ret) bind(c, name='getNextEventIsFirst')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_getnexteventisfirst
+    FUNCTION my_getnexteventisfirst(my_event) RESULT(ret) BIND(c, name='getNextEventIsFirst')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_getnexteventisfirst
     !
-    function my_geteventisfirstinday(my_event) result(ret) bind(c, name='getEventisFirstInDay')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventisfirstinday
+    FUNCTION my_geteventisfirstinday(my_event) RESULT(ret) BIND(c, name='getEventisFirstInDay')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventisfirstinday
     !
-    function my_geteventisfirstinmonth(my_event) result(ret) bind(c, name='getEventisFirstInMonth')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventisfirstinmonth
+    FUNCTION my_geteventisfirstinmonth(my_event) RESULT(ret) BIND(c, name='getEventisFirstInMonth')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventisfirstinmonth
     !
-    function my_geteventisfirstinyear(my_event) result(ret) bind(c, name='getEventisFirstInYear')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventisfirstinyear
+    FUNCTION my_geteventisfirstinyear(my_event) RESULT(ret) BIND(c, name='getEventisFirstInYear')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventisfirstinyear
     !
-    function my_geteventislastinday(my_event) result(ret) bind(c, name='getEventisLastInDay')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventislastinday
+    FUNCTION my_geteventislastinday(my_event) RESULT(ret) BIND(c, name='getEventisLastInDay')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventislastinday
     !
-    function my_geteventislastinmonth(my_event) result(ret) bind(c, name='getEventisLastInMonth')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventislastinmonth
+    FUNCTION my_geteventislastinmonth(my_event) RESULT(ret) BIND(c, name='getEventisLastInMonth')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventislastinmonth
     !
-    function my_geteventislastinyear(my_event) result(ret) bind(c, name='getEventisLastInYear')
-      import :: c_bool, c_ptr
-      type(c_ptr), value :: my_event
-      logical(c_bool) :: ret
-    end function my_geteventislastinyear
+    FUNCTION my_geteventislastinyear(my_event) RESULT(ret) BIND(c, name='getEventisLastInYear')
+      IMPORT :: c_bool, c_ptr
+      TYPE(c_ptr), VALUE :: my_event
+      LOGICAL(c_bool) :: ret
+    END FUNCTION my_geteventislastinyear
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_neweventgroup(name) result(c_pointer) bind(c, name='newEventGroup')
-      import :: c_char, c_ptr
-      type(c_ptr) :: c_pointer
-      character(c_char), dimension(*) :: name
-    end function my_neweventgroup
+    FUNCTION my_neweventgroup(name) RESULT(c_pointer) BIND(c, name='newEventGroup')
+      IMPORT :: c_char, c_ptr
+      TYPE(c_ptr) :: c_pointer
+      CHARACTER(c_char), DIMENSION(*) :: name
+    END FUNCTION my_neweventgroup
     !
-    subroutine my_deallocateeventgroup(evgrp) bind(c,name='deallocateEventGroup')
-      import :: c_ptr
-      type(c_ptr), value :: evgrp
-    end subroutine my_deallocateeventgroup
+    SUBROUTINE my_deallocateeventgroup(evgrp) BIND(c, name='deallocateEventGroup')
+      IMPORT :: c_ptr
+      TYPE(c_ptr), VALUE :: evgrp
+    END SUBROUTINE my_deallocateeventgroup
     !
-    function my_addeventtoeventgroup(my_event, my_eventgroup) result(ret) bind(c, name='addNewEventToEventGroup')
-      import :: c_bool, c_ptr
-      logical(c_bool) :: ret
-      type(c_ptr), value :: my_event
-      type(c_ptr), value :: my_eventgroup
-    end function my_addeventtoeventgroup
+    FUNCTION my_addeventtoeventgroup(my_event, my_eventgroup) RESULT(ret) BIND(c, name='addNewEventToEventGroup')
+      IMPORT :: c_bool, c_ptr
+      LOGICAL(c_bool) :: ret
+      TYPE(c_ptr), VALUE :: my_event
+      TYPE(c_ptr), VALUE :: my_eventgroup
+    END FUNCTION my_addeventtoeventgroup
     !
-    function my_removeeventfromeventgroup(evname, evgrp) result(ret) bind(c, name='removeEventFromEventGroup')
-      import :: c_bool, c_char, c_ptr
-      logical(c_bool) :: ret
-      character(c_char), dimension(*) :: evname
-      type(c_ptr), value :: evgrp
-    end function my_removeeventfromeventgroup
+    FUNCTION my_removeeventfromeventgroup(evname, evgrp) RESULT(ret) BIND(c, name='removeEventFromEventGroup')
+      IMPORT :: c_bool, c_char, c_ptr
+      LOGICAL(c_bool) :: ret
+      CHARACTER(c_char), DIMENSION(*) :: evname
+      TYPE(c_ptr), VALUE :: evgrp
+    END FUNCTION my_removeeventfromeventgroup
     !
-    function my_geteventgroupname(my_eventgroup, string) result(string_ptr) bind(c, name='getEventGroupName')
-      import :: c_ptr, c_char
-      type(c_ptr) :: string_ptr
-      type(c_ptr), value :: my_eventgroup
-      character(c_char), dimension(*) :: string
-    end function my_geteventgroupname
+    FUNCTION my_geteventgroupname(my_eventgroup, string) RESULT(string_ptr) BIND(c, name='getEventGroupName')
+      IMPORT :: c_ptr, c_char
+      TYPE(c_ptr) :: string_ptr
+      TYPE(c_ptr), VALUE :: my_eventgroup
+      CHARACTER(c_char), DIMENSION(*) :: string
+    END FUNCTION my_geteventgroupname
     !
-  end interface
+  END INTERFACE
   !
-  interface
+  INTERFACE
     !
-    function my_getRepetitions(repetitionString) bind(c, name='getRepetitions')
-      import :: c_int, c_char
-      integer(c_int) :: my_getRepetitions
-      character(c_char), dimension(*) :: repetitionString
-    end function my_getRepetitions
+    FUNCTION my_getRepetitions(repetitionString) BIND(c, name='getRepetitions')
+      IMPORT :: c_int, c_char
+      INTEGER(c_int) :: my_getRepetitions
+      CHARACTER(c_char), DIMENSION(*) :: repetitionString
+    END FUNCTION my_getRepetitions
     !
-    subroutine my_splitRepetitionString(recurringTimeInterval, repetitor, start, end, duration) &
-         bind(c, name='splitRepetitionString')
-      import :: c_char
-      character(c_char), dimension(*) :: recurringTimeInterval
-      character(c_char), dimension(*) :: repetitor
-      character(c_char), dimension(*) :: start
-      character(c_char), dimension(*) :: end
-      character(c_char), dimension(*) :: duration
-    end subroutine my_splitRepetitionString
+    SUBROUTINE my_splitRepetitionString(recurringTimeInterval, repetitor, start, END, duration) &
+      BIND(c, name='splitRepetitionString')
+      IMPORT :: c_char
+      CHARACTER(c_char), DIMENSION(*) :: recurringTimeInterval
+      CHARACTER(c_char), DIMENSION(*) :: repetitor
+      CHARACTER(c_char), DIMENSION(*) :: start
+      CHARACTER(c_char), DIMENSION(*) :: END
+      CHARACTER(c_char), DIMENSION(*) :: duration
+    END SUBROUTINE my_splitRepetitionString
     !
-  end interface
+  END INTERFACE
   !
+  INTERFACE handle_errno
+    MODULE PROCEDURE handle_errno_base
+    MODULE PROCEDURE handle_errno_cond
+  END INTERFACE handle_errno
 
-
-  interface handle_errno
-    module procedure handle_errno_base
-    module procedure handle_errno_cond
-  end interface handle_errno
-
-
-contains
+CONTAINS
 
   !___________________________________________________________________________
   ! auxiliary routine: handle error code.
-  subroutine handle_errno_base(errno, routine_str, lineno)
-    integer, intent(IN) :: errno
-    integer, intent(IN) :: lineno
-    character(LEN=*), intent(IN) :: routine_str
-    character(len=max_mtime_error_str_len)     :: error_str
-    if (errno /= no_error) then
-      call mtime_strerror(errno, error_str)
-      write (error_str,'(a,a,i0)') trim(error_str), " :: line ", lineno
-      call finish_mtime(routine_str, error_str)
-    end if
-  end subroutine handle_errno_base
-
+  SUBROUTINE handle_errno_base(errno, routine_str, lineno)
+    INTEGER, INTENT(IN) :: errno
+    INTEGER, INTENT(IN) :: lineno
+    CHARACTER(LEN=*), INTENT(IN) :: routine_str
+    CHARACTER(len=max_mtime_error_str_len)     :: error_str
+    IF (errno /= no_error) THEN
+      CALL mtime_strerror(errno, error_str)
+      WRITE (error_str, '(a,a,i0)') TRIM(error_str), " :: line ", lineno
+      CALL finish_mtime(routine_str, error_str)
+    END IF
+  END SUBROUTINE handle_errno_base
 
   !___________________________________________________________________________
   ! auxiliary routine: handle error code.
-  subroutine handle_errno_cond(lcond, errno, routine_str, lineno)
-    logical, intent(IN) :: lcond
-    integer, intent(IN) :: errno
-    integer, intent(IN) :: lineno
+  SUBROUTINE handle_errno_cond(lcond, errno, routine_str, lineno)
+    LOGICAL, INTENT(IN) :: lcond
+    INTEGER, INTENT(IN) :: errno
+    INTEGER, INTENT(IN) :: lineno
 
-    character(LEN=*), intent(IN) :: routine_str
-    character(len=max_mtime_error_str_len)     :: error_str
-    if (lcond)  call handle_errno_base(errno, routine_str, lineno)
-  end subroutine handle_errno_cond
+    CHARACTER(LEN=*), INTENT(IN) :: routine_str
+    IF (lcond) CALL handle_errno_base(errno, routine_str, lineno)
+  END SUBROUTINE handle_errno_cond
 
-
-end module mtime_c_bindings
+END MODULE mtime_c_bindings

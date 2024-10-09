@@ -1,7 +1,3 @@
-! Subroutine to initialized the Mountain Rossby Wave related test cases
-! for the NH-Core (mrw_nh, mrw2_nh and mwbr_const)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialized the Mountain Rossby Wave related test cases
+! for the NH-Core (mrw_nh, mrw2_nh and mwbr_const)
 
 MODULE mo_nh_mrw_exp
 

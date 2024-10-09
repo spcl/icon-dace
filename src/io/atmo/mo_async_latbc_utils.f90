@@ -1,6 +1,3 @@
-! This module contains the asynchronous I/O routine for lateral boundary nudging
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the asynchronous I/O routine for lateral boundary nudging
 
 !----------------------------
 #include "omp_definitions.inc"

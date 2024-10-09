@@ -1,8 +1,3 @@
-! Data type defintion for wave forcing data state
-!
-! Defines the data type for storing wave-specific forcing
-! fields.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data type defintion for wave forcing data state
+!
+! Defines the data type for storing wave-specific forcing
+! fields.
 
 MODULE mo_wave_forcing_types
 

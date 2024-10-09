@@ -1,6 +1,3 @@
-! Namelist for the configuration of interpolation and reconstruction.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for the configuration of interpolation and reconstruction.
 
 MODULE mo_interpol_nml
 

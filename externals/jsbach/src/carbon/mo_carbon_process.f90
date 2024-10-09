@@ -31,7 +31,10 @@ MODULE mo_carbon_process
 CONTAINS
 
   ! Calculations to allocate NPP to the plant C pools.
-  ELEMENTAL SUBROUTINE calc_Cpools( &
+#ifndef _OPENACC
+  ELEMENTAL &
+#endif
+  SUBROUTINE calc_Cpools( &
     & LAI,                        & ! in
     & LAI_previous,               & ! in
     & max_LAI,                    & ! in
@@ -106,6 +109,8 @@ CONTAINS
     & c_into_humus_1_sum,         & ! out, optional, necessary with yasso
     & c_into_humus_2_sum          & ! out, optional, necessary with yasso
     & )
+
+    !$ACC ROUTINE SEQ
 
     USE mo_jsb_physical_constants, ONLY : tmelt     ! tmelt =273.15_wp
 
@@ -280,7 +285,6 @@ CONTAINS
                                                                     !    0.2-4.7% due to denit in Xu Ri, 2008 * therein
     REAL(wp), PARAMETER :: sminn_NH4_fraction     = 0.4_wp          ! soil mineral NH4 is 40% of SMINN pool and rest in the form of
                                                                     !  NO3. Ref: Xu Ri, 2008
-
     ! Note: All fields with intent(out) are non-defined on return, even if the calling routine has set them.
 
     soilResp_rate            = 0.0_wp
@@ -385,10 +389,13 @@ CONTAINS
        MIN(greenC2leafC * leaf_shedding / specific_leaf_area_C, & !!    by leaf and root shedding to the green litter pool
            c_green)
     c_green = c_green - C_2_litter_greenPool              !! This removes carbon from the green pool
-    excess_carbon = max(0.0_wp,c_green - c_green_max)     !! If by the reduction of LAI the maximum value of the green
-                                                                  !!    pool is still smaller than the current value, there is
-    C_2_litter_greenPool = C_2_litter_greenPool + excess_carbon   !!    excess C that has also to be shedded to the green litter
-    c_green = c_green - excess_carbon                     !!    pool and also subtracted from the green pool
+
+    excess_carbon = max(0.0_wp,c_green - c_green_max)               !! If by the reduction of LAI the maximum value of the green
+                                                                    !!    pool is still smaller than the current value, there is
+    IF (excess_carbon > 0._wp) THEN
+      C_2_litter_greenPool = C_2_litter_greenPool + excess_carbon   !!    excess C that has also to be shedded to the green litter
+      c_green = c_green - excess_carbon                             !!    pool and also subtracted from the green pool
+    END IF
 
     IF (is_crop) THEN
       !!  Move shedded Carbon pro rata to crop harvest flux
@@ -479,19 +486,23 @@ CONTAINS
 
       c_woods_pot = c_woods_pot + NPP_2_woodPool                  !! Then it is attempted to put all NPP share into it
       excess_carbon = max(0.0_wp,c_woods_pot-Max_C_content_woods) !! .. but thereby the pool may get too large
-      c_woods_pot = c_woods_pot - excess_carbon                   !! .. so that the excess carbon has once more to be
+      IF (excess_carbon > 0._wp) THEN
+        c_woods_pot = c_woods_pot - excess_carbon                 !! .. so that the excess carbon has once more to be
                                                                   !! .. subtracted
-      NPP_2_greenPool = NPP_2_greenPool + excess_carbon           !! .. and instead made available to the green pool
-      NPP_2_woodPool = NPP_2_woodPool - excess_carbon             !! .. and the actual amount of NPP put to the wood pool
+        NPP_2_greenPool = NPP_2_greenPool + excess_carbon         !! .. and instead made available to the green pool
+        NPP_2_woodPool = NPP_2_woodPool - excess_carbon           !! .. and the actual amount of NPP put to the wood pool
+      END IF
                                                                   !! .. is less
       !! Growth of Reserve Pool (sugars and starches) and determination how much will enter the Green Pool
       IF (c_reserve_pot < c_reserve_optimal) THEN                 !! .. If the reserve pool is smaller than optimal,
         c_reserve_pot = c_reserve_pot +  NPP_2_reservePool        !! .... it is filled by the available NPP
         excess_carbon =                                         & !! .... Thereby it may happen that it gets larger than
              max(0.0_wp,c_reserve_pot - c_reserve_optimal)        !! .... optimal so that there is excess carbon
-        c_reserve_pot = c_reserve_pot - excess_carbon             !! .... that needs not be taken up
-        NPP_2_greenPool = NPP_2_greenPool + excess_carbon         !! .... but can better be used to increase the green
-        NPP_2_reservePool = NPP_2_reservePool - excess_carbon     !! .... pool and the actual amount of NPP put to the
+        IF (excess_carbon > 0._wp) THEN
+          c_reserve_pot = c_reserve_pot - excess_carbon           !! .... that needs not be taken up
+          NPP_2_greenPool = NPP_2_greenPool + excess_carbon       !! .... but can better be used to increase the green
+          NPP_2_reservePool = NPP_2_reservePool - excess_carbon   !! .... pool and the actual amount of NPP put to the
+        END IF
                                                                   !! .... reserve pool is less.
       ELSE                                                        !! .... Otherwise (reserve pool is larger than optimal)
         NPP_2_greenPool = NPP_2_greenPool + NPP_2_reservePool     !! .... all NPP is left for the green pool
@@ -503,19 +514,25 @@ CONTAINS
       c_green_pot = c_green_pot + NPP_2_greenPool                 !! Green pool is filled by the available NPP.
       excess_carbon = max(0.0_wp,c_green_pot - c_green_max)       !! .. Thereby it may get larger than appropriate for
                                                                   !!    current LAI.
-      NPP_2_greenPool = NPP_2_greenPool - excess_carbon           !! .. Hence the actual amount of NPP put to the green
+      IF (excess_carbon > 0._wp) THEN
+        NPP_2_greenPool = NPP_2_greenPool - excess_carbon         !! .. Hence the actual amount of NPP put to the green
                                                                   !!    pool is less.
-      c_green_pot = c_green_pot - excess_carbon                   !! .. This excess carbon needs not be taken up but
+        c_green_pot = c_green_pot - excess_carbon                 !! .. This excess carbon needs not be taken up but
+      END IF
       IF (c_reserve_pot < c_reserve_optimal) THEN                 !! .... if the reserve pool is smaller than optimal
-        c_reserve_pot = c_reserve_pot + excess_carbon             !! .... it is tried to put the carbon there,
-        NPP_2_reservePool = NPP_2_reservePool + excess_carbon     !! .... which means that additional NPP is put to the
+        IF (excess_carbon > 0._wp) THEN
+          c_reserve_pot = c_reserve_pot + excess_carbon           !! .... it is tried to put the carbon there,
+          NPP_2_reservePool = NPP_2_reservePool + excess_carbon   !! .... which means that additional NPP is put to the
                                                                   !!      reserve pool.
+        END IF
         excess_carbon =                                        &  !! .... Thereby it may happen that the reserve pool
              max(0.0_wp,c_reserve_pot - c_reserve_optimal)        !!      increases beyond the optimal value.
-        c_reserve_pot = c_reserve_pot - excess_carbon             !! .... In that case the excess carbon is once more
+        IF (excess_carbon > 0._wp) THEN
+          c_reserve_pot = c_reserve_pot - excess_carbon           !! .... In that case the excess carbon is once more
                                                                   !!      removed from the reserve pool
-        NPP_2_reservePool = NPP_2_reservePool - excess_carbon     !! .... so that the actual amount of NPP put into the
+          NPP_2_reservePool = NPP_2_reservePool - excess_carbon   !! .... so that the actual amount of NPP put into the
                                                                   !!      reserve pool is less.
+        END IF
       END IF
 
       excess_NPP = excess_carbon / sec_per_day
@@ -651,9 +668,6 @@ CONTAINS
 
   END SUBROUTINE calc_Cpools
 
-
-
-
   ! --- relocate_carbon_fire() ---------------------------------------------------------------------------------------------------
   !
   ! This routine models the consequences of fire for the carbon pools. More precisely:
@@ -735,70 +749,73 @@ CONTAINS
     REAL(wp), INTENT(inout) :: c_humus_2(:)           ! Humus litter pool for Yasso [mol(C)/m^2(canopy)]
 
     ! Local variables
-    REAL(wp), DIMENSION(SIZE(burned_fract))  :: non_woody_litter, fraction ! Helper
-    INTEGER                                  :: ind, nc
+    REAL(wp)  :: non_woody_litter, fraction ! Helper
+    INTEGER   :: ic, nc
 
     nc = SIZE(burned_fract)
-    non_woody_litter(:) = c_green(:) + c_reserve(:)
 
-    !! diagnose amount of carbon released from the green and reserve pool to the green litter pools
-    !! diagnose amount of carbon released from the wood pool to the woody litter pools
-    cflux_dist_green_2_soil(:) = cflux_dist_green_2_soil(:) + &
-      & (c_green(:) + c_reserve(:)) * (1._wp - fract_green_aboveGround) * burned_fract(:) / sec_per_day
-    cflux_dist_woods_2_soil(:)  = cflux_dist_woods_2_soil(:) + &
-      & c_woods(:) * (1._wp - fire_fract_wood_2_atmos * fract_wood_aboveGround) * burned_fract(:) / sec_per_day
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
+    !$ACC   PRIVATE(non_woody_litter, fraction)
+    DO ic = 1, nc
+      non_woody_litter = c_green(ic) + c_reserve(ic)
 
-    !! determine amount of carbon released from the wood pool, living tissue pools, and litter pools to the atmosphere
-    co2flux_fire_all_2_atm(:) = ( &
-        ! take living parts of plants above ground:
-      & non_woody_litter(:) * fract_green_aboveGround                      &
-        ! now add the YASSO pools above ground:
-      & + c_water_ag1(:) + c_acid_ag1(:) + c_ethanol_ag1(:)                &
-      & + c_nonsoluble_ag1(:)                                              &
-      & + c_water_ag2(:) + c_acid_ag2(:) + c_ethanol_ag2(:)                &
-      & + c_nonsoluble_ag2(:)                                              &
-        ! now add the fire affected fraction of wood pools above ground:
-      & + c_woods(:) * fire_fract_wood_2_atmos * fract_wood_aboveGround    &
-      & ) * burned_fract(:) * molarMassCO2_kg / sec_per_day
+      ! Amount of carbon released from the green and reserve pools entering the green litter pools
+      cflux_dist_green_2_soil(ic) = cflux_dist_green_2_soil(ic) + &
+        & (c_green(ic) + c_reserve(ic)) * (1._wp - fract_green_aboveGround) * burned_fract(ic) / sec_per_day
 
-    ! Lower down density of aboveground litter pools
-    fraction(:) = 1._wp - burned_fract(:)
-    c_acid_ag1      (:) = fraction(:) * c_acid_ag1       (:)
-    c_water_ag1     (:) = fraction(:) * c_water_ag1      (:)
-    c_ethanol_ag1   (:) = fraction(:) * c_ethanol_ag1    (:)
-    c_nonsoluble_ag1(:) = fraction(:) * c_nonsoluble_ag1 (:)
+      ! Amount of carbon released from the wood pool entering the woody litter pools
+      cflux_dist_woods_2_soil(ic)  = cflux_dist_woods_2_soil(ic) + &
+        & c_woods(ic) * (1._wp - fire_fract_wood_2_atmos * fract_wood_aboveGround) * burned_fract(ic) / sec_per_day
 
-    c_acid_ag2      (:) = fraction(:) * c_acid_ag2       (:)
-    c_water_ag2     (:) = fraction(:) * c_water_ag2      (:)
-    c_ethanol_ag2   (:) = fraction(:) * c_ethanol_ag2    (:)
-    c_nonsoluble_ag2(:) = fraction(:) * c_nonsoluble_ag2 (:)
+      ! Determin the amount of carbon released from the wood pool, the living tissue pools, and the
+      ! litter pools going to the atmosphere
+      co2flux_fire_all_2_atm(ic) = ( &
+          ! above ground fraction of living biomass
+        & non_woody_litter * fract_green_aboveGround                          &
+          ! add the above ground YASSO pools
+        & + c_water_ag1(ic) + c_acid_ag1(ic) + c_ethanol_ag1(ic)              &
+        & + c_nonsoluble_ag1(ic)                                              &
+        & + c_water_ag2(ic) + c_acid_ag2(ic) + c_ethanol_ag2(ic)              &
+        & + c_nonsoluble_ag2(ic)                                              &
+          ! add the fire affected fraction of the above ground wood pools
+        & + c_woods(ic) * fire_fract_wood_2_atmos * fract_wood_aboveGround    &
+          ! scale with the burned fraction
+        & ) * burned_fract(ic) * molarMassCO2_kg / sec_per_day
 
-    ! Add green and reserve vegetation carbon to belowground green litter pools
-    fraction(:) = (1._wp-fract_green_aboveGround) * burned_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_bg1(ind), c_water_bg1(ind), c_ethanol_bg1(ind), c_nonsoluble_bg1(ind), c_humus_1(ind), &
-        &                          non_woody_litter(ind), fraction(ind), LeafLit_coef)
-    ENDDO
+      ! Reduce the above ground yasso pools accordingly
+      fraction = 1._wp - burned_fract(ic)
+      c_acid_ag1      (ic) = fraction * c_acid_ag1       (ic)
+      c_water_ag1     (ic) = fraction * c_water_ag1      (ic)
+      c_ethanol_ag1   (ic) = fraction * c_ethanol_ag1    (ic)
+      c_nonsoluble_ag1(ic) = fraction * c_nonsoluble_ag1 (ic)
 
-    ! Add the remaings of burned wood:
-    ! AG
-    fraction(:) = (1._wp-fire_fract_wood_2_atmos) * fract_wood_aboveGround * burned_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_ag2(ind), c_water_ag2(ind), c_ethanol_ag2(ind), c_nonsoluble_ag2(ind), c_humus_2(ind), &
-        &                          c_woods(ind), fraction(ind), WoodLit_coef)
-    ENDDO
-    ! BG
-    fraction(:) = (1._wp-fract_wood_aboveGround) * burned_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_bg2(ind), c_water_bg2(ind), c_ethanol_bg2(ind), c_nonsoluble_bg2(ind), c_humus_2(ind), &
-        &                          c_woods(ind), fraction(ind), WoodLit_coef)
-    ENDDO
+      c_acid_ag2      (ic) = fraction * c_acid_ag2       (ic)
+      c_water_ag2     (ic) = fraction * c_water_ag2      (ic)
+      c_ethanol_ag2   (ic) = fraction * c_ethanol_ag2    (ic)
+      c_nonsoluble_ag2(ic) = fraction * c_nonsoluble_ag2 (ic)
 
-    ! Lower down the carbon density of living plant pools
-    fraction(:) = 1._wp - burned_fract(:)
-    c_green(:)   = c_green(:)   * fraction(:)
-    c_woods(:)   = c_woods(:)   * fraction(:)
-    c_reserve(:) = c_reserve(:) * fraction(:)
+      ! Add below ground fraction of the burned vegetation to the below ground green litter pools
+      fraction = (1._wp - fract_green_aboveGround) * burned_fract(ic)
+      CALL distribute_yasso_litter(c_acid_bg1(ic), c_water_bg1(ic), c_ethanol_bg1(ic), c_nonsoluble_bg1(ic), c_humus_1(ic), &
+        &                          non_woody_litter, fraction, LeafLit_coef)
+
+      ! Distribute the remaings of burned wood to the yasso litter pools
+      !  Above ground
+      fraction = (1._wp - fire_fract_wood_2_atmos) * fract_wood_aboveGround * burned_fract(ic)
+      CALL distribute_yasso_litter(c_acid_ag2(ic), c_water_ag2(ic), c_ethanol_ag2(ic), c_nonsoluble_ag2(ic), c_humus_2(ic), &
+        &                          c_woods(ic), fraction, WoodLit_coef)
+      !  Below ground
+      fraction = (1._wp - fract_wood_aboveGround) * burned_fract(ic)
+      CALL distribute_yasso_litter(c_acid_bg2(ic), c_water_bg2(ic), c_ethanol_bg2(ic), c_nonsoluble_bg2(ic), c_humus_2(ic), &
+        &                          c_woods(ic), fraction, WoodLit_coef)
+
+      ! Reduce the living plant carbon pools accordingly
+      fraction = 1._wp - burned_fract(ic)
+      c_green(ic)   = c_green(ic)   * fraction
+      c_woods(ic)   = c_woods(ic)   * fraction
+      c_reserve(ic) = c_reserve(ic) * fraction
+    END DO
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE relocate_carbon_fire
 
@@ -878,55 +895,59 @@ CONTAINS
     real(wp),intent(inout) :: c_humus_2(:)         ! Humus litter pool for Yasso [mol(C)/m^2(canopy)]
 
     ! Local variables
-    REAL(wp), DIMENSION(SIZE(damaged_fract)) :: non_woody_litter, fraction  ! Helper
-    INTEGER                                  :: ind, nc
+    REAL(wp)  :: non_woody_litter, fraction  ! Helper
+    INTEGER   :: ic, nc
 
     ! Initializations
     nc = SIZE(damaged_fract)
-    non_woody_litter(:) = c_green(:) + c_reserve(:)
 
-    !! transfer carbon from the wood pool to the wood litter pools nd
-    !! transfer carbon from the green and reserve pool to the green litter pool
-    cflux_dist_woods_2_soil(:) = cflux_dist_woods_2_soil(:) + c_woods(:) * damaged_fract(:) / sec_per_day
-    cflux_dist_green_2_soil(:) = cflux_dist_green_2_soil(:) + non_woody_litter(:) * damaged_fract(:) / sec_per_day
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
+    !$ACC   PRIVATE(non_woody_litter, fraction)
+    DO ic = 1, nc
 
-    ! Add damaged green and reserve
-    ! AG
-    fraction(:) = fract_green_aboveGround * damaged_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_ag1(ind), c_water_ag1(ind), c_ethanol_ag1(ind), c_nonsoluble_ag1(ind), c_humus_1(ind), &
-        &                          non_woody_litter(ind), fraction(ind), LeafLit_coef)
-    ENDDO
-    ! BG
-    fraction(:) = (1._wp - fract_green_aboveGround) * damaged_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_bg1(ind), c_water_bg1(ind), c_ethanol_bg1(ind), c_nonsoluble_bg1(ind), c_humus_1(ind), &
-        &                          non_woody_litter(ind), fraction(ind), LeafLit_coef)
-    ENDDO
+      non_woody_litter = c_green(ic) + c_reserve(ic)
 
-    ! Add damaged wood
-    ! AG
-    fraction(:) = fract_wood_aboveGround  * damaged_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_ag2(ind), c_water_ag2(ind), c_ethanol_ag2(ind), c_nonsoluble_ag2(ind), c_humus_2(ind), &
-        &                          c_woods(ind), fraction(ind), WoodLit_coef)
-    ENDDO
-    ! BG
-    fraction(:) = (1._wp - fract_wood_aboveGround)  * damaged_fract(:)
-    DO ind = 1,nc
-      CALL distribute_yasso_litter(c_acid_bg2(ind), c_water_bg2(ind), c_ethanol_bg2(ind), c_nonsoluble_bg2(ind), c_humus_2(ind), &
-        &                          c_woods(ind), fraction(ind), WoodLit_coef)
-    ENDDO
+      ! Amount of carbon transfered from damaged wood pool to the wood litter pools
+      cflux_dist_woods_2_soil(ic) = cflux_dist_woods_2_soil(ic) + c_woods(ic) * damaged_fract(ic) / sec_per_day
 
-    ! Lower down the carbon density of living plant pools
-    fraction(:) = 1._wp - damaged_fract(:)
-    c_green(:)   = c_green(:)   * fraction(:)
-    c_woods(:)   = c_woods(:)   * fraction(:)
-    c_reserve(:) = c_reserve(:) * fraction(:)
+      ! Amount of carbon transfered from the damaged non-woody vegetation pools to the green litter pools
+      cflux_dist_green_2_soil(ic) = cflux_dist_green_2_soil(ic) + non_woody_litter * damaged_fract(ic) / sec_per_day
+
+      ! Add the carbon of damaged non-woody vegetation pools to the yasso soil pools
+      !  Above ground
+      fraction = fract_green_aboveGround * damaged_fract(ic)
+      CALL distribute_yasso_litter(c_acid_ag1(ic), c_water_ag1(ic), c_ethanol_ag1(ic), c_nonsoluble_ag1(ic), c_humus_1(ic), &
+        &                          non_woody_litter, fraction, LeafLit_coef)
+      !  Below ground
+      fraction = (1._wp - fract_green_aboveGround) * damaged_fract(ic)
+      CALL distribute_yasso_litter(c_acid_bg1(ic), c_water_bg1(ic), c_ethanol_bg1(ic), c_nonsoluble_bg1(ic), c_humus_1(ic), &
+        &                          non_woody_litter, fraction, LeafLit_coef)
+
+      ! Add the carbon of damaged woody vegetation pool to the yasso soil pools
+      !  Above ground
+      fraction = fract_wood_aboveGround * damaged_fract(ic)
+      CALL distribute_yasso_litter(c_acid_ag2(ic), c_water_ag2(ic), c_ethanol_ag2(ic), c_nonsoluble_ag2(ic), c_humus_2(ic), &
+        &                          c_woods(ic), fraction, WoodLit_coef)
+      !  Below ground
+      fraction = (1._wp - fract_wood_aboveGround)  * damaged_fract(ic)
+      CALL distribute_yasso_litter(c_acid_bg2(ic), c_water_bg2(ic), c_ethanol_bg2(ic), c_nonsoluble_bg2(ic), c_humus_2(ic), &
+        &                          c_woods(ic), fraction, WoodLit_coef)
+
+      ! Reduce the living plant carbon pools accordingly
+      fraction = 1._wp - damaged_fract(ic)
+      c_green(ic)   = c_green(ic)   * fraction
+      c_woods(ic)   = c_woods(ic)   * fraction
+      c_reserve(ic) = c_reserve(ic) * fraction
+
+    END DO
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE relocate_carbon_damage
 
-  PURE SUBROUTINE yasso (Yasso_io_pools, Weather, litter, Lit_coefV,WoodLitterSize, Yasso_out, fract_aboveground, &
+#ifndef _OPENACC
+  PURE &
+#endif
+  SUBROUTINE yasso (Yasso_io_pools, Weather, litter, Lit_coefV,WoodLitterSize, Yasso_out, fract_aboveground, &
                          NPP_2_rootExudates, redFact_Nlimit)
     !! DSG: 11.03.2013
     !! modified Yasso soil C model using an Euler scheme and readable coding style
@@ -957,6 +978,8 @@ CONTAINS
     !!
     !! implementation: Tea Thum (FMI), Petri Raisanen (FMI), Daniel Goll (MPI-M)
     !!-------------------------------------------------------------------------------------------------------------------------
+
+    !$ACC ROUTINE SEQ
 
     USE mo_jsb_physical_constants, ONLY: tmelt
     IMPLICIT NONE
@@ -1355,9 +1378,16 @@ CONTAINS
   !
   !> Distributes incomming litter to yasso pools (i.e. proportional to litter coefficients and passed factors)
   !
-  PURE SUBROUTINE distribute_yasso_litter(c_acid, c_water, c_ethanol, c_nonsoluble, c_humus, &
+#ifndef _OPENACC
+  PURE &
+#endif
+  SUBROUTINE distribute_yasso_litter(c_acid, c_water, c_ethanol, c_nonsoluble, c_humus, &
     &                          litter, fraction, coefficients)
+
+    !$ACC ROUTINE SEQ
+
     IMPLICIT NONE
+
     ! -------------------------------------------------------------------------------------------------- !
     REAL(wp), INTENT(INOUT)             :: c_acid        !< yasso acid pool
     REAL(wp), INTENT(INOUT)             :: c_water       !< yasso water pool
@@ -1381,7 +1411,13 @@ CONTAINS
   !
   !> Adds incomming litter share (i.e. proportional to litter coefficient and factor)
   !
-  ELEMENTAL SUBROUTINE add_litter_to_yasso_pool(this_pool, litter, fraction, coefficient)
+#ifndef _OPENACC
+  ELEMENTAL &
+#endif
+  SUBROUTINE add_litter_to_yasso_pool(this_pool, litter, fraction, coefficient)
+
+!$ACC ROUTINE SEQ
+
     IMPLICIT NONE
     ! -------------------------------------------------------------------------------------------------- !
     REAL(wp), INTENT(INOUT) :: this_pool     !< target yasso pool

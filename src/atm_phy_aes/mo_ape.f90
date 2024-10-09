@@ -1,6 +1,3 @@
-!
-! Contains subroutines for aqua-planet simulation
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains subroutines for aqua-planet simulation
 
 MODULE mo_ape
 

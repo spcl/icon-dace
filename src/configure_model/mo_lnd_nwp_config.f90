@@ -1,8 +1,3 @@
-! @brief configuration setup for NWP land scheme TERRA
-!
-! configuration setup for NWP land scheme TERRA
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief configuration setup for NWP land scheme TERRA
+!
+! configuration setup for NWP land scheme TERRA
 
 MODULE mo_lnd_nwp_config
 
@@ -34,7 +33,7 @@ MODULE mo_lnd_nwp_config
 
 
   ! VARIABLES
-  PUBLIC :: dzsoil, zml_soil, nlev_soil, nlev_snow, ibot_w_so, ntiles_total, ntiles_lnd, ntiles_water
+  PUBLIC :: dzsoil, zml_soil, depth_hl, nlev_soil, nlev_snow, ibot_w_so, ntiles_total, ntiles_lnd, ntiles_water
   PUBLIC :: frlnd_thrhld, frlndtile_thrhld, frlake_thrhld, frsea_thrhld, frsi_min, hice_min, hice_max
   PUBLIC :: lseaice, lprog_albsi, lbottom_hflux, llake, lmelt, lmelt_var, lmulti_snow, lsnowtile, max_toplaydepth
   PUBLIC :: itype_trvg, itype_evsl, itype_lndtbl, l2lay_rho_snow

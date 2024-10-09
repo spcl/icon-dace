@@ -1,8 +1,3 @@
-! This module contains the constructors for polymorphic tracer metadata.
-! For each extended object, a constructor for the base type is called
-! via a type bound procedure.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the constructors for polymorphic tracer metadata.
+! For each extended object, a constructor for the base type is called
+! via a type bound procedure.
 
 MODULE mo_tracer_metadata
 

@@ -1,6 +1,3 @@
-! Subroutine to initialized the Jablonowski Williansom test case for the NH-Core
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialized the Jablonowski Williansom test case for the NH-Core
 
 MODULE mo_nh_jabw_exp
 !-------------------------------------------------------------------------

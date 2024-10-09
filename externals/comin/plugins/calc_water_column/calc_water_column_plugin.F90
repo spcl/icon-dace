@@ -4,7 +4,7 @@
 ! This example illustrates a simple diagnostic application, i.e.
 ! the calculations of the liquid water path(lwp), the ice water path (iwp)
 ! and the total water column (twc).
-! For this 
+! For this
 ! - the variables lwp, iwp and twc need to be added to the ICON variables
 !   including the definition of metadata, as the units
 ! - the humidity tracers from ICON need to be accessed and it needs to be
@@ -25,7 +25,7 @@
 !  headers of the routines.
 ! --------------------------------------------------------------------
 MODULE calc_water_column_plugin
-  
+
   USE iso_c_binding,           ONLY : C_INT
   USE comin_plugin_interface,  ONLY : comin_callback_register,                                          &
     &                                 comin_var_get,                                                    &
@@ -39,11 +39,11 @@ MODULE calc_water_column_plugin
     &                                 comin_parallel_get_host_mpi_rank, comin_current_get_domain_id,    &
     &                                 t_comin_plugin_info, comin_current_get_plugin_info,               &
     &                                 comin_plugin_finish, comin_metadata_set,                          &
-    &                                 comin_metadata_get, comin_var_to_3d
+    &                                 comin_metadata_get, comin_var_to_3d, comin_error_check
 
   IMPLICIT NONE
   PRIVATE
-  
+
   CHARACTER(LEN=*), PARAMETER :: pluginname = "calc_water_column_plugin"
 
   !> working precision (will be compared to ComIn's and ICON's)
@@ -51,34 +51,34 @@ MODULE calc_water_column_plugin
   TYPE(t_comin_setup_version_info) :: version
 
   TYPE :: t_plugin_vars
-     ! ICON data
-     TYPE(t_comin_var_ptr),  POINTER :: rho  => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qv => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qc => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qi => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qr => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qs => NULL()
-     TYPE(t_comin_var_ptr),  POINTER :: qg => NULL()
-     ! variables added to ICON by this plugin
-     TYPE(t_comin_var_ptr),  POINTER :: lwp  => NULL() ! liquid water path (qc+qr)
-     TYPE(t_comin_var_ptr),  POINTER :: iwp  => NULL() ! ice water path    (qi+qs+qg)
-     TYPE(t_comin_var_ptr),  POINTER :: twc  => NULL() ! (full) water path (qv+qc+qr+qi+qs+qg)
+    ! ICON data
+    TYPE(t_comin_var_ptr),  POINTER :: rho  => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qv => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qc => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qi => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qr => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qs => NULL()
+    TYPE(t_comin_var_ptr),  POINTER :: qg => NULL()
+    ! variables added to ICON by this plugin
+    TYPE(t_comin_var_ptr),  POINTER :: lwp  => NULL() ! liquid water path (qc+qr)
+    TYPE(t_comin_var_ptr),  POINTER :: iwp  => NULL() ! ice water path    (qi+qs+qg)
+    TYPE(t_comin_var_ptr),  POINTER :: twc  => NULL() ! (full) water path (qv+qc+qr+qi+qs+qg)
   END type t_plugin_vars
   ! pugin variables per patch
   TYPE(t_plugin_vars), DIMENSION(:), ALLOCATABLE :: pvpp
-     
+
   !> access descriptive data structures
   TYPE(t_comin_descrdata_domain),     POINTER   :: p_patch
   !  access global setup information
   TYPE(t_comin_descrdata_global),     POINTER   :: p_global
-  ! 
+  !
   LOGICAL :: lqg = .TRUE. ! qg is not  always available
-  
+
   PUBLIC :: comin_main
   PUBLIC :: calc_water_column_constructor
   PUBLIC :: calc_water_column_diagfct
   PUBLIC :: calc_water_column_destructor
-  
+
 CONTAINS
 
   ! --------------------------------------------------------------------
@@ -90,11 +90,8 @@ CONTAINS
     !
     TYPE(t_comin_plugin_info)     :: this_plugin
     TYPE(t_comin_var_descriptor)  :: lwp_d, iwp_d, twc_d
-    INTEGER                       :: status
     INTEGER                       :: jg
     CHARACTER(LEN=120)            :: text
-    
-    status = 0
 
     CALL message('- setup')
 
@@ -108,10 +105,9 @@ CONTAINS
 
     WRITE (text,'(a,i4)') '- number of domains: ', p_global%n_dom
     CALL message(text)
-    
+
     !> check plugin id
-    CALL comin_current_get_plugin_info(this_plugin, status)
-    IF (status /= 0)  RETURN
+    CALL comin_current_get_plugin_info(this_plugin)
     WRITE (text,'(a,a,a,i4)') "- plugin ", this_plugin%name, " has id: ", this_plugin%id
     CALL message(text)
 
@@ -120,41 +116,34 @@ CONTAINS
     ! request host model to add local variables
 
     DO jg = 1, p_global%n_dom
-       ! liquid water path (lwp) for first domain
-       lwp_d = t_comin_var_descriptor( id = jg, name = "lwp" )
-       CALL comin_var_request_add_wrapper(status, lwp_d, lmode_exclusive=.FALSE. &
-            , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
-       IF (status /= 0) CALL comin_plugin_finish('comin_main ('//pluginname//')' &
-            , 'variable request failed for lwp')
-       
-       ! ice water path (iwp) for first domain
-       iwp_d = t_comin_var_descriptor( id = jg, name = "iwp" )
-       CALL comin_var_request_add_wrapper(status, iwp_d, lmode_exclusive=.FALSE. &
-            , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
-       IF (status /= 0)  CALL comin_plugin_finish('comin_main ('//pluginname//')' &
-            , 'variable request failed for iwp')
-       
-       ! total water column (twc) for first domain
-       twc_d = t_comin_var_descriptor( id = jg, name = "twc" )
-       CALL comin_var_request_add_wrapper(status, twc_d, lmode_exclusive=.FALSE. &
-            , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
-       IF (status /= 0)  CALL comin_plugin_finish('comin_main ('//pluginname//')' &
-            , 'variable request failed for twc')
+      ! liquid water path (lwp) for first domain
+      lwp_d = t_comin_var_descriptor( id = jg, name = "lwp" )
+      CALL comin_var_request_add_wrapper(lwp_d, lmode_exclusive=.FALSE. &
+                                         , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
+
+      ! ice water path (iwp) for first domain
+      iwp_d = t_comin_var_descriptor( id = jg, name = "iwp" )
+      CALL comin_var_request_add_wrapper(iwp_d, lmode_exclusive=.FALSE. &
+                                         , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
+
+      ! total water column (twc) for first domain
+      twc_d = t_comin_var_descriptor( id = jg, name = "twc" )
+      CALL comin_var_request_add_wrapper(twc_d, lmode_exclusive=.FALSE. &
+                                         , zaxis_id = COMIN_ZAXIS_2d, tracer =.false., restart=.false., units='kg/m2')
     END DO
-       
+
     ! register callbacks
-    CALL comin_callback_register(EP_ATM_PHYSICS_BEFORE,      calc_water_column_diagfct,     status)
-    CALL comin_callback_register(EP_SECONDARY_CONSTRUCTOR,   calc_water_column_constructor, status)
-    CALL comin_callback_register(EP_DESTRUCTOR,              calc_water_column_destructor,  status)
+    CALL comin_callback_register(EP_ATM_PHYSICS_BEFORE,      calc_water_column_diagfct)
+    CALL comin_callback_register(EP_SECONDARY_CONSTRUCTOR,   calc_water_column_constructor)
+    CALL comin_callback_register(EP_DESTRUCTOR,              calc_water_column_destructor)
 
   END SUBROUTINE comin_main
-
 
   ! --------------------------------------------------------------------
   ! ComIn secondary constructor.
   ! --------------------------------------------------------------------
   SUBROUTINE calc_water_column_constructor()  BIND(C)
-    
+
     IMPLICIT NONE
 
     TYPE(t_comin_var_descriptor)  :: var_desc
@@ -163,77 +152,76 @@ CONTAINS
     ALLOCATE(pvpp(p_global%n_dom))
 
     domain_loop: DO jg = 1, p_global%n_dom
-       CALL message(' - get required meteorological data ', jg)
+      CALL message(' - get required meteorological data ', jg)
 
-       ! 1 - GET ICON VARIABLES:
-       ! 1.1 - A RHO
-       var_desc%name = 'rho'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%rho)
-       CALL check_variable(pvpp(jg)%rho, 'rho')
+      ! 1 - GET ICON VARIABLES:
+      ! 1.1 - A RHO
+      var_desc%name = 'rho'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%rho)
+      CALL check_variable(pvpp(jg)%rho, 'rho')
 
-       CALL message(' - get humidity tracer ',jg)
-       ! 1.2  qv
-       var_desc%name = 'qv'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qv)
-       CALL check_variable(pvpp(jg)%qv, 'qv')
-       ! 1.3  qc
-       var_desc%name = 'qc'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qc)
-       CALL check_variable(pvpp(jg)%qc,'qc')
-       ! 1.4  qi
-       var_desc%name = 'qi'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qi)
-       CALL check_variable(pvpp(jg)%qi, 'qi')
-       ! 1.5  qr   
-       var_desc%name = 'qr'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qr)
-       CALL check_variable(pvpp(jg)%qr, 'qr')
-       ! 1.6  qs
-       var_desc%name = 'qs'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qs)
-       CALL check_variable(pvpp(jg)%qs, 'qs')
-       ! 1.7  qg
-       var_desc%name = 'qg'
-       var_desc%id = jg
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                 var_desc, COMIN_FLAG_READ, pvpp(jg)%qg)
-       CALL check_variable(pvpp(jg)%qg, 'qg', lstop=.FALSE., lasso=lqg)
- 
-       CALL message(' - get plugin variables - requested to be created by ICON'&
-            , jg)
+      CALL message(' - get humidity tracer ',jg)
+      ! 1.2  qv
+      var_desc%name = 'qv'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qv)
+      CALL check_variable(pvpp(jg)%qv, 'qv')
+      ! 1.3  qc
+      var_desc%name = 'qc'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qc)
+      CALL check_variable(pvpp(jg)%qc,'qc')
+      ! 1.4  qi
+      var_desc%name = 'qi'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qi)
+      CALL check_variable(pvpp(jg)%qi, 'qi')
+      ! 1.5  qr
+      var_desc%name = 'qr'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qr)
+      CALL check_variable(pvpp(jg)%qr, 'qr')
+      ! 1.6  qs
+      var_desc%name = 'qs'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qs)
+      CALL check_variable(pvpp(jg)%qs, 'qs')
+      ! 1.7  qg
+      var_desc%name = 'qg'
+      var_desc%id = jg
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             var_desc, COMIN_FLAG_READ, pvpp(jg)%qg)
+      CALL check_variable(pvpp(jg)%qg, 'qg', lstop=.FALSE., lasso=lqg)
 
-       ! 2 - GET OWN VARIABLE requested in comin_main
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                t_comin_var_descriptor(name='lwp', id=jg),&
-            &                COMIN_FLAG_WRITE, pvpp(jg)%lwp)
-       CALL check_variable(pvpp(jg)%lwp, 'lwp',dim=2)
-   
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                t_comin_var_descriptor(name='iwp', id=jg), &
-            &                COMIN_FLAG_WRITE, pvpp(jg)%iwp)
-       CALL check_variable(pvpp(jg)%lwp, 'iwp',dim=2)
+      CALL message(' - get plugin variables - requested to be created by ICON'&
+                   , jg)
 
-       CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
-            &                t_comin_var_descriptor(name='twc', id=jg), &
-            &                COMIN_FLAG_WRITE, pvpp(jg)%twc)
-       CALL check_variable(pvpp(jg)%lwp, 'twc',dim=2)
+      ! 2 - GET OWN VARIABLE requested in comin_main
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             t_comin_var_descriptor(name='lwp', id=jg),&
+           &             COMIN_FLAG_WRITE, pvpp(jg)%lwp)
+      CALL check_variable(pvpp(jg)%lwp, 'lwp',dim=2)
+
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             t_comin_var_descriptor(name='iwp', id=jg), &
+           &             COMIN_FLAG_WRITE, pvpp(jg)%iwp)
+      CALL check_variable(pvpp(jg)%lwp, 'iwp',dim=2)
+
+      CALL comin_var_get([EP_ATM_PHYSICS_BEFORE], &
+           &             t_comin_var_descriptor(name='twc', id=jg), &
+           &             COMIN_FLAG_WRITE, pvpp(jg)%twc)
+      CALL check_variable(pvpp(jg)%lwp, 'twc',dim=2)
 
     END DO domain_loop
-    
-  END SUBROUTINE calc_water_column_constructor
 
+  END SUBROUTINE calc_water_column_constructor
 
   ! --------------------------------------------------------------------
   ! ComIn callback function.
@@ -244,9 +232,8 @@ CONTAINS
 
     CHARACTER(LEN=*), PARAMETER     :: substr='calc_water_column_diagfct'
     TYPE(t_comin_var_descriptor)    :: lwp_d, iwp_d, twc_d
-    INTEGER                         :: status
     INTEGER                         :: jk, jg
-    
+
     REAL(WP), POINTER, DIMENSION(:,:,:) :: rho_3d  => NULL()
 
     REAL(WP), POINTER, DIMENSION(:,:,:) :: lwp_3d => NULL()
@@ -260,16 +247,16 @@ CONTAINS
     REAL(WP), POINTER, DIMENSION(:,:,:) :: qs_3d => NULL()
     REAL(WP), POINTER, DIMENSION(:,:,:) :: qg_3d => NULL()
     ! conversion factor kg / kg => kg / m2
-    REAL(WP), POINTER, DIMENSION(:,:,:) :: conv => NULL() 
+    REAL(WP), POINTER, DIMENSION(:,:,:) :: conv => NULL()
 
-    CHARACTER(LEN=:), POINTER   :: units => NULL()
-    CHARACTER(LEN=200)          :: text = ''
-    
+    CHARACTER(LEN=:), ALLOCATABLE       :: units
+    CHARACTER(LEN=200)                  :: text = ''
+
     ! get current domain:
     jg = comin_current_get_domain_id()
     ! get current patch description data
     p_patch  => comin_descrdata_get_domain(jg)
-    
+
     CALL message('- calculate water columns before physics.', jg)
 
     qv_3d => comin_var_to_3d(pvpp(jg)%qv)
@@ -280,7 +267,7 @@ CONTAINS
     IF (lqg) qg_3d => comin_var_to_3d(pvpp(jg)%qg)
 
     rho_3d => comin_var_to_3d(pvpp(jg)%rho)
- 
+
     lwp_3d => comin_var_to_3d(pvpp(jg)%lwp)
     iwp_3d => comin_var_to_3d(pvpp(jg)%iwp)
     twc_3d => comin_var_to_3d(pvpp(jg)%twc)
@@ -289,47 +276,43 @@ CONTAINS
     ALLOCATE(conv(SIZE(qv_3d,1),SIZE(qv_3d,2),SIZE(qv_3d,3)))
     conv(:,:,:) = 0._wp
     DO jk=1,SIZE(qv_3d,2)
-       ! convert 1/kg  to 1/m2
-       conv(:,jk,:) = rho_3d(:,jk,:) * &
-            (p_patch%cells%hhl(:,jk,:) - p_patch%cells%hhl(:,jk+1,:))
+      ! convert 1/kg  to 1/m2
+      conv(:,jk,:) = rho_3d(:,jk,:) * &
+                     (p_patch%cells%hhl(:,jk,:) - p_patch%cells%hhl(:,jk+1,:))
     END DO
 
-    ! calculate liquid water part / ice_water_path and total water column 
-    lwp_3d(:,:,:) = 0._wp 
-    iwp_3d(:,:,:) = 0._wp 
-    twc_3d(:,:,:) = 0._wp 
+    ! calculate liquid water part / ice_water_path and total water column
+    lwp_3d(:,:,:) = 0._wp
+    iwp_3d(:,:,:) = 0._wp
+    twc_3d(:,:,:) = 0._wp
     DO jk=1,SIZE(qv_3d,2)
-       lwp_3d(:,:,1) = lwp_3d(:,:,1)   &
-            + (qr_3d(:,jk,:) + qc_3d(:,jk,:)) * conv(:,jk,:) 
-       iwp_3d(:,:,1) = iwp_3d(:,:,1)   &
-            + (qi_3d(:,jk,:)+qs_3d(:,jk,:)) * conv(:,jk,:)
+      lwp_3d(:,:,1) = lwp_3d(:,:,1)   &
+                      + (qr_3d(:,jk,:) + qc_3d(:,jk,:)) * conv(:,jk,:)
+      iwp_3d(:,:,1) = iwp_3d(:,:,1)   &
+                      + (qi_3d(:,jk,:)+qs_3d(:,jk,:)) * conv(:,jk,:)
     END DO
     IF (lqg) THEN
-       DO jk=1,SIZE(qv_3d,2)
-          iwp_3d(:,:,1) = iwp_3d(:,:,1)  + qg_3d(:,jk,:) * conv(:,jk,:) 
-       END DO
+      DO jk=1,SIZE(qv_3d,2)
+        iwp_3d(:,:,1) = iwp_3d(:,:,1)  + qg_3d(:,jk,:) * conv(:,jk,:)
+      END DO
     END IF
     twc_3d(:,:,1) = iwp_3d(:,:,1) + lwp_3d(:,:,1)
     DO jk=1,SIZE(qv_3d,2)
-        twc_3d(:,:,1) = twc_3d(:,:,1)  + qv_3d(:,jk,:) * conv(:,jk,:) 
+      twc_3d(:,:,1) = twc_3d(:,:,1)  + qv_3d(:,jk,:) * conv(:,jk,:)
     END DO
 
     CALL message(' ')
     CALL message('- results of plugin calc_water_column: ',jg)
 
     lwp_d = t_comin_var_descriptor( id = jg, name = "lwp" )
-    CALL comin_metadata_get(lwp_d, "units", units, status)
-    IF (status /= 0) CALL comin_plugin_finish(substr, 'lwp unit')
+    CALL comin_metadata_get(lwp_d, "units", units)
     write (text,fmt='(A,A5,A,F8.4)') '- maximum liquid water path  (',TRIM(units),'): ', MAXVAL(lwp_3d(:,:,1))
     CALL message(text, idom=jg,lall=.TRUE.)
     iwp_d = t_comin_var_descriptor( id = jg, name = "iwp" )
-    CALL comin_metadata_get(iwp_d, "units", units, status)
-    IF (status /= 0) CALL comin_plugin_finish(substr, 'iwp unit')
+    CALL comin_metadata_get(iwp_d, "units", units)
     write (text,fmt='(A,A5,A,F8.4)') '- maximum ice water path     (',TRIM(units),'): ', MAXVAL(iwp_3d(:,:,1))
     CALL message(text, idom=jg,lall=.TRUE.)
     twc_d = t_comin_var_descriptor( id = jg, name = "twc" )
-    CALL comin_metadata_get(twc_d, "units", units, status)
-    IF (status /= 0) CALL comin_plugin_finish(substr, 'twc unit')
     write (text,fmt='(A,A5,A,F8.4)') '- maximum total water column (',TRIM(units),'): ', MAXVAL(twc_3d(:,:,1))
     CALL message(text, idom=jg,lall=.TRUE.)
 
@@ -338,7 +321,7 @@ CONTAINS
     NULLIFY(lwp_3d, iwp_3d, twc_3d)
     NULLIFY(qv_3d,qc_3d,qi_3d,qr_3d,qs_3d,qg_3d, rho_3d)
     NULLIFY(p_patch)
-    
+
   END SUBROUTINE calc_water_column_diagfct
 
   ! --------------------------------------------------------------------
@@ -350,23 +333,23 @@ CONTAINS
     IMPLICIT NONE
 
     INTEGER :: jg
-    
+
     CALL message(' - destructor.')
 
     DO jg = 1, p_global%n_dom
-       NULLIFY(pvpp(jg)%rho)
-       NULLIFY(pvpp(jg)%qv)
-       NULLIFY(pvpp(jg)%qc)
-       NULLIFY(pvpp(jg)%qr)
-       NULLIFY(pvpp(jg)%qi)
-       NULLIFY(pvpp(jg)%qs)
-       NULLIFY(pvpp(jg)%qg)
-       NULLIFY(pvpp(jg)%twc)
-       NULLIFY(pvpp(jg)%iwp)
-       NULLIFY(pvpp(jg)%lwp)
+      NULLIFY(pvpp(jg)%rho)
+      NULLIFY(pvpp(jg)%qv)
+      NULLIFY(pvpp(jg)%qc)
+      NULLIFY(pvpp(jg)%qr)
+      NULLIFY(pvpp(jg)%qi)
+      NULLIFY(pvpp(jg)%qs)
+      NULLIFY(pvpp(jg)%qg)
+      NULLIFY(pvpp(jg)%twc)
+      NULLIFY(pvpp(jg)%iwp)
+      NULLIFY(pvpp(jg)%lwp)
     END DO
     DEALLOCATE(pvpp)
-    
+
   END SUBROUTINE calc_water_column_destructor
 
   !---------------------------------------------------------------------
@@ -376,14 +359,13 @@ CONTAINS
   !---------------------------------------------------------------------
   !---------------------------------------------------------------------
   !---------------------------------------------------------------------
-  
-  SUBROUTINE comin_var_request_add_wrapper(status, descriptor, lmode_exclusive, zaxis_id &
-                                          , tracer, restart, units)
+
+  SUBROUTINE comin_var_request_add_wrapper(descriptor, lmode_exclusive, zaxis_id &
+                                           , tracer, restart, units)
 
     IMPLICIT NONE
 
     ! I/O
-    INTEGER,                                INTENT(OUT) :: status
     TYPE(t_comin_var_descriptor),           INTENT(IN)  :: descriptor
     LOGICAL,                      OPTIONAL, INTENT(IN)  :: lmode_exclusive
     INTEGER,                      OPTIONAL, INTENT(IN)  :: zaxis_id
@@ -393,38 +375,29 @@ CONTAINS
     ! LOCAL
     LOGICAL   :: lexclusive
 
-    status = -1
-    
     IF (PRESENT(lmode_exclusive)) THEN
-       lexclusive = lmode_exclusive
+      lexclusive = lmode_exclusive
     ELSE
-       lexclusive = .FALSE.
+      lexclusive = .FALSE.
     END IF
 
-    CALL comin_var_request_add(descriptor, lexclusive, status)
-    IF (status /= 0)  RETURN
-    
+    CALL comin_var_request_add(descriptor, lexclusive)
+
     IF (PRESENT(zaxis_id)) THEN
-       CALL comin_metadata_set(descriptor, "zaxis_id", zaxis_id, status)
-       IF (status /= 0)  RETURN
+      CALL comin_metadata_set(descriptor, "zaxis_id", zaxis_id)
     END IF
     IF (PRESENT(tracer)) THEN
-       CALL comin_metadata_set(descriptor, "tracer", tracer, status)
-       IF (status /= 0)  RETURN
+      CALL comin_metadata_set(descriptor, "tracer", tracer)
     END IF
     IF (PRESENT(restart)) THEN
-       CALL comin_metadata_set(descriptor, "restart", restart, status)
-       IF (status /= 0)  RETURN
+      CALL comin_metadata_set(descriptor, "restart", restart)
     END IF
     IF (PRESENT(units)) THEN
-       CALL comin_metadata_set(descriptor, "units", TRIM(units), status)
-       IF (status /= 0 ) RETURN
+      CALL comin_metadata_set(descriptor, "units", TRIM(units))
     END IF
-    
-    status = 0
-    
+
   END SUBROUTINE comin_var_request_add_wrapper
-  
+
   ! --------------------------------------------------------------------------------------------------
 
   SUBROUTINE check_variable(var, name, dim, lstop, lasso)
@@ -440,41 +413,41 @@ CONTAINS
     ! LOCAL
     INTEGER                         :: idim
     LOGICAL                         :: llstop
-    
+
     IF (PRESENT(lstop)) THEN
-       llstop = lstop
+      llstop = lstop
     ELSE
-       llstop = .TRUE.
+      llstop = .TRUE.
     END IF
-    
+
     IF (.NOT. ASSOCIATED(var)) THEN
-       IF (llstop) THEN
-          CALL comin_plugin_finish(pluginname//': '//TRIM(name), "Internal error!")
-       ELSE
-          IF (PRESENT(lasso)) lasso = .FALSE.
-          call message ('variable '//TRIM(name)//' is not associated')
-          RETURN
-       END IF
+      IF (llstop) THEN
+        CALL comin_plugin_finish(pluginname//': '//TRIM(name), "Internal error!")
+      ELSE
+        IF (PRESENT(lasso)) lasso = .FALSE.
+        call message ('variable '//TRIM(name)//' is not associated')
+        RETURN
+      END IF
     END IF
 
     IF (PRESENT(lasso)) lasso = .TRUE.
 
     IF (PRESENT(dim)) THEN
-       idim = dim
+      idim = dim
     ELSE
-       idim = 3
+      idim = 3
     END IF
     SELECT CASE (idim)
     CASE (2)
-       CALL check_dimensions_2d(var, name)
+      CALL check_dimensions_2d(var, name)
     CASE (3)
-       CALL check_dimensions_3d(var, name)
+      CALL check_dimensions_3d(var, name)
     CASE DEFAULT
-       CALL comin_plugin_finish (pluginname//' unsupported dimension', 'check variable')
+      CALL comin_plugin_finish (pluginname//' unsupported dimension', 'check variable')
     END SELECT
 
   END SUBROUTINE check_variable
-  
+
   ! --------------------------------------------------------------------------------------------------
 
   SUBROUTINE check_dimensions_3d(var, name)
@@ -489,7 +462,7 @@ CONTAINS
          & , "Dimension check failed!")
 
   END SUBROUTINE check_dimensions_3d
-  
+
   ! --------------------------------------------------------------------------------------------------
 
   ! --------------------------------------------------------------------------------------------------
@@ -506,7 +479,7 @@ CONTAINS
          , "Dimension check failed!")
 
   END SUBROUTINE check_dimensions_2d
-  
+
   ! --------------------------------------------------------------------------------------------------
 
   SUBROUTINE message(text, idom, lall)
@@ -521,21 +494,21 @@ CONTAINS
     LOGICAL :: la
 
     IF (PRESENT(lall)) THEN
-       la = lall
+      la = lall
     ELSE
-       la = .FALSE.
+      la = .FALSE.
     END IF
-    
+
     IF (comin_parallel_get_host_mpi_rank() == 0 .OR. la) THEN
-       IF (PRESENT(idom)) THEN
-          WRITE (0,fmt='(A,I2,A)') pluginname//' domain: ',idom,' '//TRIM(text)
-       ELSE
-          WRITE (0,fmt='(A,A)')    pluginname//'               ',TRIM(text)
-       END IF
+      IF (PRESENT(idom)) THEN
+        WRITE (0,fmt='(A,I2,A)') pluginname//' domain: ',idom,' '//TRIM(text)
+      ELSE
+        WRITE (0,fmt='(A,A)')    pluginname//'               ',TRIM(text)
+      END IF
     END IF
-    
+
   END SUBROUTINE message
-    
+
 END MODULE calc_water_column_plugin
 ! --------------------------------------------------------------------------------------------------
 ! --------------------------------------------------------------------------------------------------

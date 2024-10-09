@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 An example that demonstrates the usage of the dynamic configuration interface.
 This allows the definition of couplings via an interface at run time, instead
 of using the configuration file.

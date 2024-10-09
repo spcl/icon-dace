@@ -1,6 +1,3 @@
-! Contains the the interpolation data structures for the triangular grid.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the the interpolation data structures for the triangular grid.
 
 MODULE mo_intp_data_strc
   !-------------------------------------------------------------------------

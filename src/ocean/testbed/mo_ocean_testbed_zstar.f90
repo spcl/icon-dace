@@ -1,6 +1,3 @@
-! Testbed for modifications requiresd to enable zstar
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Testbed for modifications requiresd to enable zstar
 
 !----------------------------
 #include "icon_definitions.inc"

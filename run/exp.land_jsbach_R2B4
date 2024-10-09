@@ -302,7 +302,7 @@ cat >> $jsbach_namelist << EOF
   use_lakes       = ${llake}
   fract_filename  = "bc_land_frac.nc"
   output_tiles    = ${output_tiles}     ! List of tiles to output
-  enforce_water_budget = .TRUE.         ! True: stop in case of water conservation problem
+  enforce_water_budget = 'error'        ! Error: stop in case of water conservation problem
 /
 &jsb_seb_nml
   bc_filename     = 'bc_land_phys.nc'
@@ -331,7 +331,7 @@ cat >> $jsbach_namelist << EOF
   ic_filename     = 'ic_land_soil.nc'
 /
 &jsb_hydro_nml
-  l_organic       = .TRUE.
+  l_organic       = .FALSE.
   l_socmap        = .TRUE.
   bc_filename     = 'bc_land_soil.nc'
   ic_filename     = 'ic_land_soil.nc'
@@ -446,7 +446,7 @@ add_link_file ${datadir}/ic_land_soil_${refyear}.nc                     ./ic_lan
 # boundary conditions
 #
 # - well mixed greenhouse gases
-datadir=${icon_data_poolFolder}/independent/greenhouse_gases
+datadir=${icon_data_poolFolder}/common/greenhouse_gases
 add_link_file $datadir/greenhouse_historical_plus.nc                    ./bc_greenhouse_gases.nc
 #
 # - land parameters

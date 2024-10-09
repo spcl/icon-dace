@@ -1,12 +1,3 @@
-! Contains the source function routines for
-! - wind input S_in
-! - nonlinear energy transfer S_nl
-! - dissipation S_dis (bottom friction and whitecapping)
-!
-! as well as the implicit time integration scheme for the
-! total source function S = S_in + S_dis + S_nl
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the source function routines for
+! - wind input S_in
+! - nonlinear energy transfer S_nl
+! - dissipation S_dis (bottom friction and whitecapping)
+!
+! as well as the implicit time integration scheme for the
+! total source function S = S_in + S_dis + S_nl
 
 !----------------------------
 #include "omp_definitions.inc"

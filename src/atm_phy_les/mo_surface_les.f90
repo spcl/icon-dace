@@ -1,8 +1,3 @@
-!
-! Surface calculations for les physics using Businger Dyer relationship
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Surface calculations for les physics using Businger Dyer relationship
 
 !----------------------------
 #include "omp_definitions.inc"

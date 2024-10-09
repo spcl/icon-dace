@@ -1,6 +1,3 @@
-! Provide interfaces to call sea ice ice model from the ocean and atmosphere.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide interfaces to call sea ice ice model from the ocean and atmosphere.
 
 !----------------------------
 #include "omp_definitions.inc"

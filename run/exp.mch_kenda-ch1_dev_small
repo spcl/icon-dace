@@ -294,8 +294,8 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
  inwp_gscp                   =                          4         ! cloud microphysics and precipitation
  icalc_reff                  =                        100         ! use effective radius calculation consistent between micro and cloud, use same as inwp_gscp
  inwp_convection             =                          1         ! convection
- lshallowconv_only           =                      .TRUE.        ! only shallow convection
- lgrayzone_deepconv          =                      .FALSE.       !
+ lshallowconv_only           =                      .FALSE.       ! only shallow convection
+ lgrayzone_deepconv          =                      .TRUE.        !
  inwp_radiation              =                          4         ! 1 : psrad 4: ecrad radiation
  inwp_cldcover               =                          1         ! cloud cover scheme for radiation
  inwp_turb                   =                          1         ! vertical diffusion and transfer

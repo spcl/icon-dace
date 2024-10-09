@@ -1,11 +1,3 @@
-!
-! Tasks for internal post-processing.
-!
-! The subroutines in this module can be inserted into a dynamic "job queue".
-! See module "mo_pp_scheduler" for detailed info.
-!
-! -----------------------------------------------------------------------------------
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Tasks for internal post-processing.
+!
+! The subroutines in this module can be inserted into a dynamic "job queue".
+! See module "mo_pp_scheduler" for detailed info.
 
 MODULE mo_pp_tasks
 

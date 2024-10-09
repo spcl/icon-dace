@@ -1,6 +1,3 @@
-! Defines the artificial testcases for the nonhydrostatic atmospheric model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Defines the artificial testcases for the nonhydrostatic atmospheric model.
 
 MODULE mo_nh_testcases_nml  
 !-------------------------------------------------------------------------  

@@ -1,6 +1,3 @@
-! This module provides methods for reading a NetCDF file in a distributed way.
-! This approach reduces memory consumption
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides methods for reading a NetCDF file in a distributed way.
+! This approach reduces memory consumption
+
 #include "omp_definitions.inc"
 
 MODULE mo_read_netcdf_distributed

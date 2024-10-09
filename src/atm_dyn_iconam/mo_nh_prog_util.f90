@@ -1,7 +1,3 @@
-!
-! This module contains the subroutine that Adds random perturbation
-! to the normal wind for the Non-Hyd core
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the subroutine that Adds random perturbation
+! to the normal wind for the Non-Hyd core
 
 MODULE mo_nh_prog_util
 

@@ -25,7 +25,7 @@ MODULE mo_nlcc_process
   PUBLIC :: calc_climbuf, bioclim_limits, scale_fpc, potential_tree_fpc
   PUBLIC :: fpc_to_cover_fract_pot, cover_fract_pot_to_cover_fract, desert_fraction, fpc_daily
 
-  CHARACTER(len=*), PARAMETER :: modname = 'mo_hydro_process'
+  CHARACTER(len=*), PARAMETER :: modname = 'mo_nlcc_process'
   REAL(wp), PARAMETER :: fract_small = 1.e-10_wp   !! smallest fraction of PFT tiles
   REAL(wp), PARAMETER :: act_fpc_min = 0.005_wp    !! minimum actual FPC to be considered to calculate potential FPC
   REAL(wp), PARAMETER :: sum_npp_min = 1.e-12_wp   !! minimum total npp for tree cover

@@ -16,7 +16,7 @@ MODULE mo_cuparameters
 
   USE mo_kind,       ONLY: jpim=>i4, jprb=>wp
   USE mo_exception,  ONLY: message_text, message
-  USE mo_physical_constants, ONLY: rday => rdaylen
+  USE mo_time_base,  ONLY: rday => rdaylen
   USE mo_nwp_parameters,  ONLY: t_phy_params
   USE mo_nwp_tuning_config, ONLY: tune_entrorg, tune_rhebc_land, tune_rhebc_ocean, tune_rcucov, &
     tune_texc, tune_qexc, tune_rhebc_land_trop, tune_rhebc_ocean_trop, tune_rcucov_trop, tune_gkdrag, &

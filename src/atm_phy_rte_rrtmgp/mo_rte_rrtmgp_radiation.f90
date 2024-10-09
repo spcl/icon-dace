@@ -1,3 +1,14 @@
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Module to provide interface to radiation routines.
 !
 ! Remarks
@@ -11,22 +22,10 @@
 !
 ! Origin
 !     This code is based on a former rte_rrtmgp implementation.
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_rte_rrtmgp_radiation
 
   USE mo_kind,                ONLY: wp, i8
-  USE mo_mpi,                 ONLY: my_process_is_stdio
   USE mo_model_domain,        ONLY: t_patch
 
   USE mo_physical_constants,  ONLY: rae
@@ -50,6 +49,8 @@ MODULE mo_rte_rrtmgp_radiation
 
   USE mtime, ONLY: datetime, getTotalSecondsTimeDelta !, datetimeToString
 
+  USE mo_timer,               ONLY: ltimer, timer_start, timer_stop, timer_rte_rrtmgp_rad
+
   IMPLICIT NONE
   
   PRIVATE
@@ -69,7 +70,8 @@ MODULE mo_rte_rrtmgp_radiation
     TYPE(t_patch),           INTENT(in) :: p_patch
     TYPE(datetime), POINTER, INTENT(in) :: datetime_radiation, & !< date and time of radiative transfer calculation
          &                                 current_datetime       !< current time step
-    LOGICAL,                 INTENT(in) :: ltrig_rad !< .true. if SW radiative transfer calculation has to be done at current time step
+    LOGICAL,                 INTENT(in) :: ltrig_rad !< .true. if SW radiative transfer calculation has
+                                                     !< to be done at current time step
     REAL(wp),                INTENT(out) :: amu0_x(:,:), rdayl_x(:,:), &
          &                                  amu0m_x(:,:), rdaylm_x(:,:)
 
@@ -417,6 +419,8 @@ MODULE mo_rte_rrtmgp_radiation
     !$ACC   CREATE(xvmr_vap, xvmr_co2, xvmr_o3, xvmr_o2, xvmr_ch4) &
     !$ACC   CREATE(xvmr_n2o, xvmr_cfc)
 
+    IF (ltimer) CALL timer_start(timer_rte_rrtmgp_rad)
+
     CALL calculate_temperature_pressure(jcs, jce, nproma, klev, &
       pp_hl(:,:), pp_fl(:,:), tk_fl(:,:), tk_sfc(:), pp_sfc, tk_hl)
 
@@ -444,7 +448,8 @@ MODULE mo_rte_rrtmgp_radiation
          &                klev,         xq_trc, xm_air, xm_snw            )
 
     CALL rte_rrtmgp_interface(jg, jb, jcs, jce, nproma, klev             ,&
-      aes_rad_config(jg)%irad_aero, is_coupled_to_aero()                 ,&
+      aes_rad_config(jg)%irad_aero                                       ,&
+      aes_rad_config(jg)%lrad_aero_diag   ,is_coupled_to_aero()          ,&
       psctm(jg), ssi_factor, loland, loglac, this_datetime               ,&
       pcos_mu0        ,daylght_frc                                       ,&
       alb_vis_dir     ,alb_nir_dir     ,alb_vis_dif     ,alb_nir_dif     ,&
@@ -469,6 +474,8 @@ MODULE mo_rte_rrtmgp_radiation
     !$ACC WAIT
     !$ACC END DATA
     !-------------------------------------------------------------------
+
+    IF (ltimer) CALL timer_stop(timer_rte_rrtmgp_rad)
 
   END SUBROUTINE rte_rrtmgp_radiation
   !---------------------------------------------------------------------

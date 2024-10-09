@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /* iparmq.f -- translated by f2c (version 20061008).
    You must link the resulting object file with libf2c:
 	on Microsoft Windows system, link with libf2c.lib;

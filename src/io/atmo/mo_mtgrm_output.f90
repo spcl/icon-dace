@@ -1,5 +1,3 @@
-! Data structures and subroutines for meteogram output.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! Data structures and subroutines for meteogram output.
+
 ! The sampling intervals for meteogram data are independent
 ! from global output steps. Values are buffered in memory until
 ! the next field output is invoked.
@@ -483,6 +482,9 @@ CONTAINS
     TYPE(t_var_metadata), POINTER :: info
     INTEGER                       :: iv
     CHARACTER(len=128)            :: var_name_mtgrm
+    INTEGER                       :: nindex
+    INTEGER                       :: var_ref_pos
+    REAL(wp), POINTER             :: r_ptr(:,:,:)
 
     var_list%no_atmo_vars = 0
     var_list%no_sfc_vars = 0
@@ -643,14 +645,26 @@ CONTAINS
                 ! for nuclear variables (parameterCategory = 18) do not change case
                 var_name_mtgrm = info%cf%standard_name
               END IF
+              nindex      = MERGE(info%ncontained,  1, info%lcontained)
+              var_ref_pos = MERGE(info%var_ref_pos, 4, info%lcontained)
+              SELECT CASE(var_ref_pos)
+              CASE (1)
+                r_ptr => elem%p%r_ptr(nindex,:,:,:,1)
+              CASE (2)
+                r_ptr => elem%p%r_ptr(:,nindex,:,:,1)
+              CASE (3)
+                r_ptr => elem%p%r_ptr(:,:,nindex,:,1)
+              CASE (4)
+                r_ptr => elem%p%r_ptr(:,:,:,nindex,1)
+              END SELECT
               IF ( info%vgrid == ZA_REFERENCE .AND. info%ndims == 3 ) THEN
                 CALL add_atmo_var(meteogram_config, var_list, VAR_GROUP_ATMO_ML, &
                   &               var_name_mtgrm, info%cf%units, &
-                  &               info%cf%long_name, var_info, elem%p%r_ptr(:,:,:,1,1))
+                  &               info%cf%long_name, var_info, r_ptr)
               ELSE IF ( info%vgrid == ZA_REFERENCE_HALF .AND. info%ndims == 3 ) THEN
                 CALL add_atmo_var(meteogram_config, var_list, VAR_GROUP_ATMO_HL, &
                   &               var_name_mtgrm, info%cf%units, &
-                  &               info%cf%long_name, var_info, elem%p%r_ptr(:,:,:,1,1))
+                  &               info%cf%long_name, var_info, r_ptr)
               ELSE IF ( ANY((/ZA_SURFACE, ZA_ATMOSPHERE/) == info%vgrid) .AND. info%ndims == 2 ) THEN
                 CALL add_sfc_var(meteogram_config, var_list, VAR_GROUP_SURFACE, &
                   &              var_name_mtgrm, info%cf%units, &

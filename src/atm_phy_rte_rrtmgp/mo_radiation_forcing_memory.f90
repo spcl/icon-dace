@@ -1,11 +1,3 @@
-!
-! Data types and variables used by the rte-rrtmgp radiation package.
-!
-! This module contains
-!  definition of data types for organising rte-rrtmgp diagnostics,
-!  the actual variables that are declared of these types, and
-!  subroutines for (de-)allocating memory for the variables.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data types and variables used by the rte-rrtmgp radiation package.
+!
+! This module contains
+!  definition of data types for organising rte-rrtmgp diagnostics,
+!  the actual variables that are declared of these types, and
+!  subroutines for (de-)allocating memory for the variables.
 
 MODULE mo_radiation_forcing_memory
 

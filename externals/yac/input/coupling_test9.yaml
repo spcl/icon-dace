@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   src2tgt: &src2tgt
     src_component: source_comp

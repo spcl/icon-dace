@@ -1,7 +1,3 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
-!
-! Two-moment mixed-phase bulk microphysics
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Two-moment mixed-phase bulk microphysics
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
 
 MODULE mo_2mom_mcrph_driver
 

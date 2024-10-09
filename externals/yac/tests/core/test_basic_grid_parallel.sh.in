@@ -1,0 +1,10 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@TEST_MPI_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 3 ./test_basic_grid_parallel.x

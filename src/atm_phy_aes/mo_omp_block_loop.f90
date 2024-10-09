@@ -1,12 +1,3 @@
-!
-! The subroutine omp_block_loop_cell provides an OpenMP parallelized
-! loop over all data blocks on the patch. For each data block, indices are
-! computed for cells in the data block belonging to the domain, and the
-! routine passed as argument is called with these indices to work on these
-! cells.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The subroutine omp_block_loop_cell provides an OpenMP parallelized
+! loop over all data blocks on the patch. For each data block, indices are
+! computed for cells in the data block belonging to the domain, and the
+! routine passed as argument is called with these indices to work on these
+! cells.
 
 !----------------------------
 #include "omp_definitions.inc"

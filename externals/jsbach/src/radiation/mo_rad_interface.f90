@@ -41,6 +41,7 @@ MODULE mo_rad_interface
   dsl4jsb_Use_config(RAD_)
   dsl4jsb_Use_config(ASSIMI_)
   dsl4jsb_Use_config(SEB_)
+  dsl4jsb_Use_config(HYDRO_)
 
   ! Use of process memories
   dsl4jsb_Use_memory(A2L_)
@@ -672,6 +673,7 @@ CONTAINS
 
     ! Declare pointers to process configuration and memory
     dsl4jsb_Def_config(SEB_)
+    dsl4jsb_Def_config(HYDRO_)
     dsl4jsb_Def_config(RAD_)
 
     dsl4jsb_Def_memory(RAD_)
@@ -743,7 +745,9 @@ CONTAINS
       & specificLeafArea_C_param, &
       & AlbedoLitterVIS_param,    &
       & StemArea_param
-    LOGICAL :: ForestFlag_param
+    LOGICAL :: &
+      & ForestFlag_param,         &
+      & l_ponds_param
 
     ! Set local variables from options argument
     iblk  = options%iblk
@@ -771,6 +775,7 @@ CONTAINS
 
     ! Set pointers to process configs and memory
     dsl4jsb_Get_config(SEB_)
+    dsl4jsb_Get_config(HYDRO_)
     dsl4jsb_Get_config(RAD_)
     dsl4jsb_Get_memory(RAD_)
     dsl4jsb_Get_memory(A2L_)
@@ -788,6 +793,8 @@ CONTAINS
     use_alb_soil_organic_C    = dsl4jsb_Config(RAD_) %use_alb_soil_organic_C
     albedo_age_weight         = dsl4jsb_Config(RAD_) %albedo_age_weight
     AlbedoCanopySnow          = dsl4jsb_Config(RAD_) %AlbedoCanopySnow
+
+    l_ponds_param             = dsl4jsb_Config(HYDRO_)%l_ponds
 
     IF(use_alb_soil_organic_C .eq. 'linear') THEN
        use_alb_soil_organic_int = 1
@@ -876,15 +883,17 @@ CONTAINS
           & alb_nir_snow(ic)      & ! inout
           & )
 
-        CALL calc_pond_albedo( &
-          & l_day(ic),            & ! in
-          & cos_zenith_angle(ic), & ! in
-          & t_unfilt(ic),         & ! in
-          & wtr_pond(ic),         & ! in
-          & ice_pond(ic),         & ! in
-          & alb_vis_pond(ic),     & ! inout
-          & alb_nir_pond(ic)      & ! inout
-          & )
+        IF (l_ponds_param) THEN
+          CALL calc_pond_albedo( &
+            & l_day(ic),            & ! in
+            & cos_zenith_angle(ic), & ! in
+            & t_unfilt(ic),         & ! in
+            & wtr_pond(ic),         & ! in
+            & ice_pond(ic),         & ! in
+            & alb_vis_pond(ic),     & ! inout
+            & alb_nir_pond(ic)      & ! inout
+            & )
+        END IF
       END DO
       !$ACC END PARALLEL LOOP
 

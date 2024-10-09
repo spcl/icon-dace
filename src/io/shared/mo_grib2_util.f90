@@ -1,5 +1,3 @@
-! Module containing utility routines for setting GRIB2 keys.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +9,8 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Module containing utility routines for setting GRIB2 keys.
+
 MODULE mo_grib2_util
 
   USE mo_impl_constants,     ONLY: MAX_CHAR_LENGTH
@@ -20,8 +20,10 @@ MODULE mo_grib2_util
     &                              TSTEP_CONSTANT, TSTEP_AVG, TSTEP_ACCUM, TSTEP_MAX,   &
     &                              TSTEP_MIN, TUNIT_SECOND, TUNIT_MINUTE, TUNIT_HOUR,   &
     &                              vlistDefVarIntKey, CDI_KEY_TYPEOFGENERATINGPROCESS,  &
-    &                              CDI_KEY_PRODUCTDEFINITIONTEMPLATE, CDI_NOERR
-  USE mo_gribout_config,     ONLY: t_gribout_config
+    &                              CDI_KEY_PRODUCTDEFINITIONTEMPLATE, CDI_NOERR,        &
+    &                              zaxisInqLbounds, zaxisInqUbounds
+  USE mo_gribout_config,     ONLY: t_gribout_config, GRIB_UNDEFVAL, &
+    &                              GRIB_LIB_COMPAT_ECC_2_31_0
   USE mo_var_metadata_types, ONLY: t_var_metadata, CLASS_TILE, CLASS_SYNSAT, &
     &                              CLASS_CHEM, CLASS_TILE_LAND,              &
     &                              CLASS_CHEM_STAT, CLASS_CHEM_OPTP,         &
@@ -34,7 +36,8 @@ MODULE mo_grib2_util
   USE mo_grib2_tile,         ONLY: t_grib2_template_tile
   ! calendar operations
   USE mtime,                 ONLY: timedelta, datetime,                &
-    &                              OPERATOR(-), getTotalSecondsTimeDelta 
+    &                              OPERATOR(-), getTotalSecondsTimeDelta
+  USE mo_grib2,              ONLY: t_grib2_key_list
 
   IMPLICIT NONE
 
@@ -49,6 +52,7 @@ MODULE mo_grib2_util
   PUBLIC :: set_GRIB2_chem_keys
   PUBLIC :: set_GRIB2_timedep_keys
   PUBLIC :: set_GRIB2_timedep_local_keys
+  PUBLIC :: grib_lib_compatibility
 
 CONTAINS
 
@@ -191,7 +195,7 @@ CONTAINS
         ! Local definition for ensemble products
         ! --------------------------------------
 
-        IF (grib_conf%localTypeOfEnsembleForecast /= -1)                                  &
+        IF (grib_conf%localTypeOfEnsembleForecast /= GRIB_UNDEFVAL)                       &
           &   CALL vlistDefVarIntKey(vlistID, varID, "localTypeOfEnsembleForecast" ,      &
           &                          grib_conf%localTypeOfEnsembleForecast)
 
@@ -231,13 +235,13 @@ CONTAINS
 
       ! SECTION 4: Product definition Section
 
-      IF (grib_conf%typeOfEnsembleForecast /= -1)                                       &
+      IF (grib_conf%typeOfEnsembleForecast /= GRIB_UNDEFVAL)                            &
         &   CALL vlistDefVarIntKey(vlistID, varID, "typeOfEnsembleForecast" ,           &
         &                          grib_conf%typeOfEnsembleForecast)
-      IF (grib_conf%numberOfForecastsInEnsemble /= -1)                                  &
+      IF (grib_conf%numberOfForecastsInEnsemble /= GRIB_UNDEFVAL)                       &
         &   CALL vlistDefVarIntKey(vlistID, varID, "numberOfForecastsInEnsemble" ,      &
         &                          grib_conf%numberOfForecastsInEnsemble)
-      IF (grib_conf%perturbationNumber /= -1)                                           &
+      IF (grib_conf%perturbationNumber /= GRIB_UNDEFVAL)                                &
         &   CALL vlistDefVarIntKey(vlistID, varID, "perturbationNumber" ,               &
         &                          grib_conf%perturbationNumber)
     END IF ! typeOfGeneratingProcess
@@ -654,5 +658,117 @@ CONTAINS
 
   END SUBROUTINE set_GRIB2_timedep_local_keys
 
+  !-------------------------------------------------------------------------
+  !> Adjustments for compensating non-backward-compatible
+  !! metadata changes after version updates of the GRIB library
+  !!
+  SUBROUTINE grib_lib_compatibility(grib_lib_compat, vlistID, varID, zaxisID, additional_grib_keys)
+
+    ! Arguments
+    INTEGER,                INTENT(IN) :: grib_lib_compat
+    INTEGER,                INTENT(IN) :: vlistID
+    INTEGER,                INTENT(IN) :: varID
+    INTEGER,                INTENT(IN) :: zaxisID
+    TYPE(t_grib2_key_list), INTENT(IN) :: additional_grib_keys
+
+    ! Local variables
+    INTEGER :: typeOfSecondFixedSurface
+    INTEGER :: scaleFactorOfSecondFixedSurface
+    INTEGER :: scaledValueOfSecondFixedSurface
+    INTEGER :: jkey
+    INTEGER :: key_len
+    INTEGER :: zaxisLboundsSize, zaxisUboundsSize
+    INTEGER :: counter
+    LOGICAL :: is_layer
+    LOGICAL :: is_version_ge_2_32_0
+
+    !---------------------------------
+
+    ! Initialization of local auxiliary variables
+    ! (we use GRIB_UNDEFVAL = -1 for initialization with negative integer)
+    zaxisLboundsSize                = GRIB_UNDEFVAL
+    zaxisUboundsSize                = GRIB_UNDEFVAL
+    is_layer                        = .FALSE.
+    typeOfSecondFixedSurface        = GRIB_UNDEFVAL
+    scaleFactorOfSecondFixedSurface = GRIB_UNDEFVAL
+    scaledValueOfSecondFixedSurface = GRIB_UNDEFVAL
+
+    IF (grib_lib_compat == GRIB_LIB_COMPAT_ECC_2_31_0) THEN
+
+      ! CDI uses the ecCodes sample file "GRIB2.tmpl" as a starting file for ecCodes.
+      ! The SecondFixedSurface keys are assigned the following values in GRIB2.tmpl:
+      !
+      ! - typeOfSecondFixedSurface        = 255 (Missing)
+      ! - scaleFactorOfSecondFixedSurface = MISSING (= 255)
+      ! - scaledValueOfSecondFixedSurface = MISSING (= 2,147,483,647)
+      !
+      ! Now, if typeOfSecondFixedSurface is set to a value >= 10, 102 say,
+      ! but scaleFactorOfSecondFixedSurface and scaledValueOfSecondFixedSurface
+      ! are not explicitly set, the result is as follows:
+      !
+      ! For ecCodes version < 2.32.0:
+      ! -----------------------------
+      ! - typeOfSecondFixedSurface        = 102 (Specific altitude above mean sea level)
+      ! - scaleFactorOfSecondFixedSurface = 0
+      ! - scaledValueOfSecondFixedSurface = 0
+      !
+      ! For ecCodes version >= 2.32.0:
+      ! ------------------------------
+      ! - typeOfSecondFixedSurface        = 102 (Specific altitude above mean sea level)
+      ! - scaleFactorOfSecondFixedSurface = MISSING
+      ! - scaledValueOfSecondFixedSurface = MISSING
+      !
+      ! With grib_lib_compat = 1, we try to overwrite the behavior of
+      ! ecCodes versions >= 2.32.0 with the behavior of versions < 2.32.0, in this respect.
+      
+      ! Check if the SecondFixedSurface keys are among the additional integer GRIB keys
+      counter = 0
+      KEY_LOOP: DO jkey = 1, additional_grib_keys%nint_keys
+        key_len = LEN_TRIM(additional_grib_keys%int_key(jkey)%key)
+        ! Avoid unnecessary string comparisons:
+        ! - LEN(typeOfSecondFixedSurface) = 24
+        ! - LEN(scaleFactorOfSecondFixedSurface) = LEN(scaledValueOfSecondFixedSurface) = 31
+        IF (key_len == 24) THEN
+          IF (additional_grib_keys%int_key(jkey)%key(1:key_len) == "typeOfSecondFixedSurface") THEN
+            typeOfSecondFixedSurface = additional_grib_keys%int_key(jkey)%val
+            counter = counter + 1
+          END IF
+        ELSEIF (key_len == 31) THEN
+          IF (additional_grib_keys%int_key(jkey)%key(1:key_len) == "scaleFactorOfSecondFixedSurface") THEN
+            scaleFactorOfSecondFixedSurface = additional_grib_keys%int_key(jkey)%val
+            counter = counter + 1
+          ELSEIF (additional_grib_keys%int_key(jkey)%key(1:key_len) == "scaledValueOfSecondFixedSurface") THEN
+            scaledValueOfSecondFixedSurface = additional_grib_keys%int_key(jkey)%val
+            counter = counter + 1
+          ENDIF
+        ENDIF
+        ! If there are 3 hits, we can already leave the search loop
+        IF (counter == 3) EXIT KEY_LOOP
+      END DO KEY_LOOP
+      
+      IF (typeOfSecondFixedSurface > 9) THEN
+        ! Figure out if zaxis is level- or layer-based:
+        ! In case a zaxis is layer-based, the lower and upper bounds of a layer - 
+        ! zaxisLbounds and zaxisUbounds - should have been specified during the creation of the zaxis.
+        ! In this case, the CDI functions zaxisInqLbounds and zaxisInqUbounds should return a size > 0.
+        zaxisLboundsSize = zaxisInqLbounds(zaxisID)
+        zaxisUboundsSize = zaxisInqUbounds(zaxisID)
+        is_layer         = ((zaxisLboundsSize > 0) .AND. (zaxisUboundsSize > 0))
+        ! If a zaxis is layer-based, CDI should set the values of
+        ! the GRIB keys 'scaleFactorOfSecondFixedSurface' and 'scaledValueOfSecondFixedSurface'.
+        ! Therefore, we should not overwrite these values here,
+        ! even though the key 'typeOfSecondFixedSurface' was explicitly set in the 'add_var'
+        ! of the respective variable (for whatever reason).
+        IF (.NOT. is_layer) THEN
+          ! We will set the value of the following two GRIB keys to zero,
+          ! only if they are not explicitly specified in 'add_var'
+          IF (scaleFactorOfSecondFixedSurface < 0) CALL vlistDefVarIntKey(vlistID, varID, "scaleFactorOfSecondFixedSurface", 0)
+          IF (scaledValueOfSecondFixedSurface < 0) CALL vlistDefVarIntKey(vlistID, varID, "scaledValueOfSecondFixedSurface", 0)
+        ENDIF
+      ENDIF ! IF (typeOfSecondFixedSurface > 9)
+
+    ENDIF ! IF (grib_lib_compat == GRIB_LIB_COMPAT_ECC_2_31_0)
+      
+  END SUBROUTINE grib_lib_compatibility
 
 END MODULE mo_grib2_util

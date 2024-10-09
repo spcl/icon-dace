@@ -1,5 +1,3 @@
-! Module for writing restart as a multifile (synchronously)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! Module for writing restart as a multifile (synchronously)
+
 ! Note: Other implementations of the restart writing interface can be
 ! found in mo_sync_restart and mo_async_restart.
 !

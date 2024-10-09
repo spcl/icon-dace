@@ -64,6 +64,9 @@ RTTOV_LIBS='-lrttov13'
 # FYAML
 FYAML_LIB='-lfyaml'
 
+# C++ standard library (for eccodes > 2.31.0)
+CXX_LIB='-lstdc++'
+
 # flags needed for static linking
 STATICLINK_FLAGS='-static -add-gcc-rpath'
 
@@ -95,7 +98,7 @@ ICON_DACE_FCFLAGS="-O2 -fallow-argument-mismatch"
 ICON_DACE_PATH="externals/dace_icon"
 
 LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5ROOT}/lib -L${NETCDFROOT}/lib -L${NETCDFFROOT}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${AMDLIB_ROOT}/libs -L${XML2ROOT}/lib -shared-mpi"
-LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES__LIBS} ${RTTOV_LIBS} ${AMD_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB} ${STATICLINK_FLAGS}"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES__LIBS} ${RTTOV_LIBS} ${AMD_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB} ${CXX_LIB} ${STATICLINK_FLAGS}"
 
 MPI_LAUNCH=''  # needed e.g. for yac configuration. What is the correct setting for gnu ??
 
@@ -142,7 +145,7 @@ done
 # Copy runscript-related files when building out-of-source:
 if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
   echo "Copying runscript input files from the source directory..."
-  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*'
   rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
   rsync -uavz ${ICON_DIR}/make_runscripts .
   ln -sf ${ICON_DIR}/data

@@ -1,3 +1,14 @@
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Configuration structure for the VDIFF turbulence scheme.
 !
 ! References:
@@ -11,17 +22,6 @@
 !           The climatic role of interactive leaf phenology in the vegetation-atmosphere system of
 !           radiative-convective equilibrium storm-resolving simulations.
 !           Tellus, Series B-Chemical and Physical Meteorology, 74, 164-175.
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_turb_vdiff_config
   USE mo_kind, ONLY: wp

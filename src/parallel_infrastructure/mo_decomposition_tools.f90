@@ -1,7 +1,3 @@
-! Set of methods for grid decomposition.
-! It runs only on a single process
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Set of methods for grid decomposition.
+! It runs only on a single process
 
 !-------------------------------------------------------------------------------------
 #define d_norma_3d(v) SQRT(DOT_PRODUCT(v%x,v%x))

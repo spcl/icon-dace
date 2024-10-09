@@ -1,6 +1,3 @@
-! This module checks the read-in namelist parameters and, in case of
-! inconsistencies, it tries to correct these.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module checks the read-in namelist parameters and, in case of
+! inconsistencies, it tries to correct these.
 
 MODULE mo_nml_crosscheck
 
@@ -93,10 +93,11 @@ MODULE mo_nml_crosscheck
 #endif
 
 #ifdef HAVE_RADARFWO
-  USE radar_data,            ONLY: ndoms_max_radar => ndoms_max
+  USE radar_data,                  ONLY: ndoms_max_radar => ndoms_max
 #endif
 
   USE mo_sppt_config,              ONLY: sppt_config, crosscheck_sppt
+  USE mo_gribout_config,           ONLY: gribout_crosscheck
 
 
   IMPLICIT NONE
@@ -701,6 +702,9 @@ CONTAINS
         CALL finish(routine, message_text)
       END IF
     END DO
+
+    ! Output in file format GRIB2
+    CALL gribout_crosscheck(n_dom=n_dom, verbose=(msg_level >= 15))
 
 
     !--------------------------------------------------------------------

@@ -1,6 +1,3 @@
-!
-! Global variables for the cloud microphsics "graupel" parameterization
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Global variables for the cloud microphsics "graupel" parameterization
 
 MODULE mo_cloud_mig_memory
 

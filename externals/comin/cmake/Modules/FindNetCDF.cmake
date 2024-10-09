@@ -234,5 +234,9 @@ if(NetCDF_FOUND)
     endif()
   endif()
 
-
 endif()
+
+find_program(NetCDF_NCDUMP ncdump
+  HINTS "${NC_CONFIG_C_LIBDIR}/.."
+  DOC "ncdump program, used for testing")
+mark_as_advanced(NetCDF_NCDUMP)

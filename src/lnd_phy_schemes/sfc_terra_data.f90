@@ -1,6 +1,3 @@
-! Data module for all parametric data in the soil model "terra"!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data module for all parametric data in the soil model "terra"!
 
 MODULE sfc_terra_data
 
@@ -280,8 +279,9 @@ PUBLIC           ! All constants and variables in this module are public
 
 ! 5. Additional control variables
 ! -------------------------------
-
+                                                                                                        
   LOGICAL                   ::  &
+
     lsoilinit_dfi = .FALSE.         ! initialize soil after dfi forward launching
 
 ! 6. Epsilons (security constants)

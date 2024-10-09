@@ -1,5 +1,0 @@
-#!@SHELL@
-
-@TEST_MPI_FALSE@exit 77
-
-@MPI_LAUNCH@ -n 9 ./test_instance_parallel3.x

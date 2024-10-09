@@ -8,10 +8,11 @@
 #include <check.h>
 #include "mtime_time.h"
 
-void add_mtime_time_test_to_suite(Suite* suite);
+void add_mtime_time_test_to_suite(Suite *suite);
 
 /*** SPECIAL ASSERT FUNCTIONS ***/
-void assertTime(const char* input_string, int hour, int minute, int second, int ms, const char* expected_output_string, const char* expected_basic_string);
-void assertInvalidTime(const char* input_string);
+void assertTime(const char *input_string, int hour, int minute, int second, int ms, const char *expected_output_string,
+                const char *expected_basic_string);
+void assertInvalidTime(const char *input_string);
 
 #endif

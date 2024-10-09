@@ -1,6 +1,3 @@
-! Constants comparable to those in 'src/shared/mo_impl_constants'.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Constants comparable to those in 'src/shared/mo_impl_constants'.
 
 MODULE mo_upatmo_impl_const
 

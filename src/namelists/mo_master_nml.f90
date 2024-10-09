@@ -1,6 +1,3 @@
-! Master namelist.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Master namelist.
 
 MODULE mo_master_nml
 
@@ -25,7 +24,7 @@ MODULE mo_master_nml
        &                       max_datetime_str_len, max_timedelta_str_len,                  &
        &                       datetime, newDatetime, deallocateDatetime,                    &
        &                       timedelta, newTimedelta, deallocateTimedelta,                 &
-       &                       datetimeToString, OPERATOR(+), register_print_mtime_procedure 
+       &                       datetimeToString, OPERATOR(+)
   USE mo_master_config,  ONLY: master_component_models, addModel, noOfModels, maxNoOfModels, &
        &                       setInstitution, setRestart, setReadRestartNamelists,          &
        &                       setRestartWriteLast, setModelBaseDir,                         &
@@ -227,7 +226,6 @@ CONTAINS
     END SELECT
 
     CALL setCalendar(icalendar)
-    CALL register_print_mtime_procedure(warning)
     
     IF (experimentStartDate /= "") THEN
       IF (experimentStopDate == "") THEN

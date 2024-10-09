@@ -1,6 +1,3 @@
-! @brief Interface between atmosphere and the O3 provider, through a coupler
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Interface between atmosphere and the O3 provider, through a coupler
 
 !----------------------------
 #include "omp_definitions.inc"

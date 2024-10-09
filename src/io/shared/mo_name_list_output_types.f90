@@ -1,10 +1,3 @@
-! Module containing type definitions and constants for synchronous
-! and asynchronous output.
-!
-! @note: The spelling "name_list" (with underscore) is intended to make
-!        clear that this does not pertain to a FORTRAN namelist but rather
-!        to a list of names of output variables
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module containing type definitions and constants for synchronous
+! and asynchronous output.
+!
+! @note: The spelling "name_list" (with underscore) is intended to make
+!        clear that this does not pertain to a FORTRAN namelist but rather
+!        to a list of names of output variables
 
 MODULE mo_name_list_output_types
 

@@ -1,3 +1,8 @@
+"""
+This module contains constants, configuration settings, and type mappings for
+handling numerical data.
+"""
+
 import numpy as np
 
 MODE_INIT = "init"
@@ -21,7 +26,7 @@ dataframe_type_dict = {
     "name": str,
 }
 
-datetime_format = "%Y-%m-%dT%H:%M:%S"
+DATETIME_FORMAT = "%Y-%m-%dT%H:%M:%S"
 
 compute_statistics = ["mean", "max", "min"]  # correspond to xarray.DataSet methods
 

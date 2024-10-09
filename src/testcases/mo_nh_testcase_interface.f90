@@ -1,7 +1,3 @@
-! Interface for non-hydrostatic testcases,
-! which require some kind of update during the time integration.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface for non-hydrostatic testcases,
+! which require some kind of update during the time integration.
 
 MODULE mo_nh_testcase_interface
 

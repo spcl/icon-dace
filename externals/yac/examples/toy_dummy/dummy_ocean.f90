@@ -1,7 +1,11 @@
+! Copyright (c) 2024 The YAC Authors
+!
+! SPDX-License-Identifier: BSD-3-Clause
+
 PROGRAM dummy_ocean
 
   USE mpi
-  USE mo_yac_finterface
+  USE yac
 
   IMPLICIT NONE
 

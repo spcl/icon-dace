@@ -1,9 +1,3 @@
-!
-! Interface between 'src/atm_phy_nwp/mo_nh_interface_nwp: nwp_nh_interface'
-! and the schemes of upper-atmosphere physics in 'src/upper_atmosphere'
-!
-!----------------------------
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface between 'src/atm_phy_nwp/mo_nh_interface_nwp: nwp_nh_interface'
+! and the schemes of upper-atmosphere physics in 'src/upper_atmosphere'
 
 !----------------------------
 #include "omp_definitions.inc"

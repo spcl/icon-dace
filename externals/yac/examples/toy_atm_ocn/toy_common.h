@@ -1,47 +1,6 @@
-/**
- * @file toy_common.h
- *
- * @copyright Copyright  (C)  2014 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 const char * fieldName[] = {"conserv_field_atm_oce",
                             "hcsbb_field_atm_oce",
@@ -50,3 +9,21 @@ const char * fieldName[] = {"conserv_field_atm_oce",
 int const num_fields = (int)(sizeof(fieldName)/sizeof(fieldName[0]));
 const int num_steps = 1;
 
+static inline void LLtoXYZ(double lon, double lat, double p_out[]) {
+
+   while (lon < -M_PI) lon += 2.0 * M_PI;
+   while (lon >= M_PI) lon -= 2.0 * M_PI;
+
+   double cos_lat = cos(lat);
+   p_out[0] = cos_lat * cos(lon);
+   p_out[1] = cos_lat * sin(lon);
+   p_out[2] = sin(lat);
+}
+
+static inline void XYZtoLL (double const p_in[], double * lon, double * lat) {
+
+   *lon = atan2(p_in[1] , p_in[0]);
+   *lat = M_PI_2 - acos(p_in[2]);
+}
+
+#define MIN(a,b) ((a) < (b) ? (a) : (b))

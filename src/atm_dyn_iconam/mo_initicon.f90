@@ -1,8 +1,3 @@
-!
-! This module contains the I/O routines for initicon
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the I/O routines for initicon
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -39,7 +36,7 @@ MODULE mo_initicon
     &                               niter_divdamp, niter_diffu, lanaread_tseasfc, qcana_mode, qiana_mode, &
     &                               qrsgana_mode, fgFilename, anaFilename, ana_varnames_map_file,         &
     &                               icpl_da_sfcevap, icpl_da_skinc, adjust_tso_tsnow,                     &
-    &                               lcouple_ocean_coldstart, icpl_da_seaice, smi_relax_timescale
+    &                               lcouple_ocean_coldstart, icpl_da_seaice, smi_relax_timescale, itype_sma
   USE mo_apt_routines,        ONLY: compute_filtincs
   USE mo_limarea_config,      ONLY: latbc_config
   USE mo_advection_config,    ONLY: advection_config
@@ -1679,7 +1676,7 @@ MODULE mo_initicon
 
     IF (init_mode == MODE_IAU)  CALL create_iau_snowana (p_patch, p_nh_state, p_lnd_state, ext_data)
 
-    CALL create_iau_soilana(p_patch, p_nh_state, p_lnd_state, ext_data, initicon)  
+    IF (itype_sma == 1) CALL create_iau_soilana(p_patch, p_nh_state, p_lnd_state, ext_data, initicon)
 
 
     DO jg = 1, n_dom

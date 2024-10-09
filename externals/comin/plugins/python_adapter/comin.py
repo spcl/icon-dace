@@ -9,7 +9,9 @@
 from _comin import *
 import _comin
 from dataclasses import dataclass
-import numpy as _np
+import shlex as _shlex
+import sys
+from collections.abc import Mapping
 
 
 def register_callback(ep):
@@ -19,18 +21,36 @@ def register_callback(ep):
     return __callback
 
 
-COMIN_ZAXIS_NONE  = 0
-COMIN_ZAXIS_2D    = 1
-COMIN_ZAXIS_3D    = 2
-COMIN_ZAXIS_UNDEF = 3
+COMIN_ZAXIS_UNDEF   = -1
+COMIN_ZAXIS_NONE    =  0
+COMIN_ZAXIS_2D      =  1
+COMIN_ZAXIS_3D      =  2
+COMIN_ZAXIS_3D_HALF =  3
 
 
 class _variable:
     def __init__(self, handle):
         self._handle = handle
+        try:
+            import numpy as _np
+            self.np = _np
+        except ImportError:
+            print("Warning: cant import numpy", file=sys.stderr)
 
     def __array__(self):
-        return _np.asarray(_comin._var_get_buffer(self._handle))
+        return self.np.asarray(_comin._var_get_buffer(self._handle))
+
+    @property
+    def __cuda_array_interface__(self):
+        import numpy as _np
+        host_buf = _comin._var_get_buffer(self._handle)
+        return {
+            "shape": host_buf.shape,
+            "typestr": _np.dtype(host_buf.format).str,
+            "data": (_comin._var_get_device_ptr(self._handle), False),
+            "version": 3,
+            "strides": host_buf.strides
+        }
 
     @property
     def pos(self):
@@ -44,13 +64,17 @@ class _variable:
     def to_3d(self):
         missing_dims = {0, 1, 2, 3, 4}.difference({*self.pos})
         if self.ncontained > 0:
-            return _np.asarray(self).transpose(*self.pos, *missing_dims)[..., 0, 0]
+            return self.np.asarray(self).transpose(*self.pos, *missing_dims)[..., 0, 0]
         else:
-            return _np.asarray(self).transpose(*self.pos[0:3], *missing_dims)[..., 0, 0]
+            return self.np.asarray(self).transpose(*self.pos[0:3], *missing_dims)[..., 0, 0]
+
+    @property
+    def descriptor(self):
+        return _comin._var_get_descriptor(self._handle)
 
 
-def var_get(context, var_descriptor, flag=-1):
-    """get variable object, arguments: entry point, name string, domain id, access flag)"""
+def var_get(context, var_descriptor, flag):
+    """get variable object, arguments: [entry point], (name string, domain id), access flag)"""
     return _variable(_comin._var_get(context, var_descriptor, flag))
 
 
@@ -65,6 +89,15 @@ class plugin_info:
     name: str
     options: str
     comm: str
+
+    @property
+    def args(self):
+        """
+        Extract the argument from the options string like as the
+        script was called from the command line. This is supposed to
+        be passed to `argparse.ArgumentParser.parse_args`.
+        """
+        return _shlex.split(self.options)[1:]
 
 
 def current_get_plugin_info():
@@ -110,6 +143,26 @@ def metadata_set(var_descriptor, **kwargs):
         _comin._metadata_set(var_descriptor, n, v)
 
 
+class metadata(Mapping):
+    def __init__(self, var_descr):
+        self.descr = var_descr
+
+    def __getitem__(self, key):
+        return metadata_get(self.descr, key)
+
+    def __iter__(self):
+        it = _comin._metadata_get_iterator_begin(self.descr)
+        end = _comin._metadata_get_iterator_end(self.descr)
+        while  not _comin._metadata_iterator_compare(it, end):
+            yield _comin._metadata_iterator_get_key(it)
+            _comin._metadata_iterator_next(it)
+        _comin._metadata_iterator_delete(it)
+        _comin._metadata_iterator_delete(end)
+
+    def __len__(self):
+        # impl. could be improved
+        return len(self.__iter__)
+
 @dataclass
 class simulation_interval:
     exp_start : str
@@ -126,5 +179,8 @@ def descrdata_get_simulation_interval():
 COMIN_FLAG_NONE = 0
 COMIN_FLAG_READ = 1 << 1
 COMIN_FLAG_WRITE = 1 << 2
+COMIN_FLAG_DEVICE = 1 << 4
 
-COMIN_HGRID_UNSTRUCTURED_CELL = 1
+COMIN_HGRID_UNSTRUCTURED_CELL   = 1
+COMIN_HGRID_UNSTRUCTURED_EDGE   = 2
+COMIN_HGRID_UNSTRUCTURED_VERTEX = 3

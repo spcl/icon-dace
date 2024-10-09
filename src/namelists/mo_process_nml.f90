@@ -1,6 +1,3 @@
-! Process Fortran namelists containing model configuration parameters from an external file.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Process Fortran namelists containing model configuration parameters from an external file.
 
 MODULE mo_process_nml
 

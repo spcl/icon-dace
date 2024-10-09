@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# This script generates the ensemble runscript templates needed for computing
+# probtest tolerances and adds them to the list specified by `listname`.
+# Note: This list must always be called as part of a full `create_list_<list>`,
+#       it does not initialize any machines and builders.
+
+# Usage: list_tolerance listname
+# Generate ensemble runscripts for all experiments.
+#
+# Usage: list_tolerance listname SINGLE_EXPERIMENT
+# Generate ensemble runscripts for just one experiment.
+# SINGLE_EXPERIMENT should not start with `exp.`
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+# get list name from argument
+listname=$1
+# get experiment Name from argument if given
+SINGLE_EXPERIMENT=${2-}
+
+# add experiments relevant for C2SM from yml-config
+if [[ -n "$SINGLE_EXPERIMENT" ]]; then
+  ./../experiments/addexp_from_yml --list $listname --experiment $SINGLE_EXPERIMENT
+else
+  ./../experiments/addexp_from_yml --list $listname
+fi

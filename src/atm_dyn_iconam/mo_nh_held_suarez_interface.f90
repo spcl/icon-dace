@@ -1,8 +1,3 @@
-!
-! This module contains the interface between ICONAM dynamics and Held-Suarez forcing
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the interface between ICONAM dynamics and Held-Suarez forcing
 
 !----------------------------
 #include "omp_definitions.inc"

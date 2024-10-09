@@ -1,9 +1,3 @@
-! Namelist for surface physics
-!
-! these Subroutines are called by control model and construct the
-! surface scheme composition
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,10 +9,15 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Namelist for surface physics
+!
+! these Subroutines are called by control model and construct the
+! surface scheme composition
+
 MODULE mo_lnd_nwp_nml
 
   USE mo_kind,                ONLY: wp
-  USE mo_exception,           ONLY: finish
+  USE mo_exception,           ONLY: finish, message
   USE mo_impl_constants,      ONLY: SSTICE_ANA, max_nsoil
   USE mo_namelist,            ONLY: position_nml, positioned, open_nml, close_nml
   USE mo_mpi,                 ONLY: my_process_is_stdio
@@ -27,6 +26,7 @@ MODULE mo_lnd_nwp_nml
   USE mo_restart_nml_and_att, ONLY: open_tmpfile, store_and_close_namelist,  &
     &                               open_and_restore_namelist, close_tmpfile
   USE mo_nml_annotate,        ONLY: temp_defaults, temp_settings
+
   USE mo_lnd_nwp_config,      ONLY: config_nlev_snow          => nlev_snow         , &
     &                               config_ntiles             => ntiles_lnd        , &
     &                               config_frlnd_thrhld       => frlnd_thrhld      , &
@@ -230,8 +230,14 @@ CONTAINS
                               ! (also used for simplified two-layer snow density scheme)
     lsnowtile      = .FALSE. ! if .TRUE., snow is considered as a separate tile
     idiag_snowfrac = 1       ! 1: old method based on SWE, 2: more advanced method used in operational system
+                             !20: same as, but with artificial reduction of snow-cover representing the effect
+                             !     of snow-free roughness elements
     itype_snowevap = 2       ! 1: old method, 2: empirical correction, 3: more advanced empirical correction 
-    !
+                             !Notes:
+                             !The empirical correction particularly aims on compensating an overestimation of mean
+                             ! snow-temperature, which is forced by the reduction of snow-albedo at the presence
+                             ! of snow-free rourghness elements. 
+  
     itype_trvg     = 2       ! type of vegetation transpiration parameterization
                              ! Note that this is currently the only available option!
     itype_evsl     = 2       ! type of bare soil evaporation parameterization
@@ -378,6 +384,11 @@ CONTAINS
       config_zml_soil = zml_soil(1:nlev_soil)
     ENDIF
     !$ACC ENTER DATA COPYIN(config_zml_soil)
+
+    IF (frlnd_thrhld > 0.5_wp) THEN
+       frlnd_thrhld =  0.5_wp
+       CALL message(TRIM(routine), 'Warning: frlnd_thrhld is reset to 1/2.')
+    END IF
 
     ! Check if target GPU configuration is supported
 #ifdef _OPENACC

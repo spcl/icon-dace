@@ -1,10 +1,3 @@
-! Processing of nudging parameters for the nudging types:
-! - Upper boundary nudging
-! - Global nudging
-! For the lateral boundary nudging, please see:
-! - src/configure_model/mo_limarea_config
-! - src/configure_model/mo_interpol_config
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Processing of nudging parameters for the nudging types:
+! - Upper boundary nudging
+! - Global nudging
+! For the lateral boundary nudging, please see:
+! - src/configure_model/mo_limarea_config
+! - src/configure_model/mo_interpol_config
 
 MODULE mo_nudging_config
 

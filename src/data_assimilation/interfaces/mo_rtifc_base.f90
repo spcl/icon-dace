@@ -1,5 +1,3 @@
-! Basis for RTTOV interface modules
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Basis for RTTOV interface modules
 
 MODULE mo_rtifc_base
 

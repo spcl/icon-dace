@@ -1,6 +1,3 @@
-! Contains the implementation of interpolation onto regular grids.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of interpolation onto regular grids.
 
 #ifdef __xlC__
   @PROCESS smp=noopt

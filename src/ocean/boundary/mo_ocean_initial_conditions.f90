@@ -1,10 +1,3 @@
-! Contains the implementation of the initial conditions for the hydrostatic ocean model.
-!
-! Contains the implementation of the initial conditions for the hydrostatic ocean model.
-! This module controls the initial conditions as well as the initialisation of
-! test cases, the top and bottom boundary conditions, and the structure of the
-! forcing quantities.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +9,13 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Contains the implementation of the initial conditions for the hydrostatic ocean model.
+!
+! Contains the implementation of the initial conditions for the hydrostatic ocean model.
+! This module controls the initial conditions as well as the initialisation of
+! test cases, the top and bottom boundary conditions, and the structure of the
+! forcing quantities.
+
 MODULE mo_ocean_initial_conditions
   !-------------------------------------------------------------------------
   USE mo_kind,               ONLY: wp
@@ -23,7 +23,8 @@ MODULE mo_ocean_initial_conditions
   USE mo_physical_constants, ONLY: rgrav, tmelt, tf, earth_angular_velocity,inverse_earth_radius! , SItodBar
   USE mo_math_constants,     ONLY: pi, pi_2, rad2deg, deg2rad
   USE mo_parallel_config,    ONLY: nproma
-  USE mo_ocean_nml,          ONLY: iswm_oce, n_zlev, no_tracer, i_sea_ice,            &
+  USE mo_ocean_nml,          ONLY: iswm_oce, n_zlev,i_sea_ice,                &
+    & no_tracer, use_age_tracer, age_idx, green_idx, diagnose_age, diagnose_green,     &
     & basin_center_lat, basin_center_lon, basin_height_deg,  basin_width_deg,         &
     & initial_temperature_bottom, initial_temperature_top, initial_temperature_shift, &
     & initial_temperature_north, initial_temperature_south,                           &
@@ -32,6 +33,7 @@ MODULE mo_ocean_initial_conditions
     & initial_salinity_top, initial_salinity_bottom, &
     & topography_type, topography_height_reference,  &
     & sea_surface_height_type, initial_temperature_type, initial_salinity_type, &
+    & initial_age_type, initial_green_type, n_age_tracer, &
     & initial_sst_type, initial_velocity_type, initial_velocity_amplitude,      &
     & forcing_temperature_poleLat, InitialState_InputFileName,                  &
     & smooth_initial_height_weights, smooth_initial_salinity_weights,           &
@@ -139,6 +141,14 @@ CONTAINS
       
     IF (no_tracer > 1) &
       & CALL init_ocean_salinity(patch_3d=patch_3d, ocean_salinity=ocean_state%p_prog(nold(1))%tracer(:,:,:,2))
+
+    IF (use_age_tracer) THEN
+      IF (diagnose_age) &
+        & CALL init_ocean_age(patch_3d=patch_3d, ocean_age=ocean_state%p_prog(nold(1))%tracer(:,:,:,age_idx), age_order=1)
+        
+      IF (diagnose_green) &
+        & CALL init_ocean_age(patch_3d=patch_3d, ocean_age=ocean_state%p_prog(nold(1))%tracer(:,:,:,green_idx), age_order=2)
+    END IF
 
     !---------------------------------------------------------------------
     ! CALL initialize_diagnostic_fields( patch_2d, patch_3d, ocean_state, operators_coeff)
@@ -478,6 +488,64 @@ CONTAINS
 
   END SUBROUTINE init_ocean_salinity
   !-------------------------------------------------------------------------------
+  
+  !-------------------------------------------------------------------------------
+  SUBROUTINE init_ocean_age(patch_3d, ocean_age, age_order)
+    TYPE(t_patch_3d ),TARGET, INTENT(inout) :: patch_3d
+    REAL(wp), TARGET                        :: ocean_age(:,:,:)
+    INTEGER :: age_order
+
+    LOGICAL  :: has_missValue
+    REAL(wp) :: missValue
+    INTEGER ::i
+    CHARACTER(LEN=*), PARAMETER :: method_name = module_name//':init_ocean_age'
+    !-------------------------------------------------------------------------
+    IF (n_age_tracer < 1) RETURN     ! no age
+
+    has_missValue = .false.
+    missValue     = -99999999.0_wp
+
+    IF (age_order == 1) THEN
+      SELECT CASE (initial_age_type)
+      CASE (000)
+        ocean_age(:,:,:) = 0.0_wp
+        CALL message(method_name, ' zero initialization')
+    
+      CASE (001)
+        CALL message(method_name, ': init age from file')
+        CALL init_cell_3D_variable_fromFile(patch_3d, variable=ocean_age, name="age_tracer", &
+          & has_missValue=has_missValue, missValue=missValue)
+
+      CASE default
+        CALL finish(method_name, "unknown initial_age_type")
+      END SELECT
+
+    ELSE IF (age_order == 2) THEN
+      SELECT CASE (initial_green_type)
+      CASE (000)
+        ocean_age(:,:,:) = 0.0_wp
+        CALL message(method_name, ' zero initialization')
+    
+      CASE (001)
+        CALL message(method_name, ': init age squared from file')
+        CALL init_cell_3D_variable_fromFile(patch_3d, variable=ocean_age, name="green_tracer", &
+          & has_missValue=has_missValue, missValue=missValue)
+
+      CASE default
+        CALL finish(method_name, "unknown initial_age_type")
+      END SELECT
+    END IF
+    !------------------------------
+    
+    CALL fillVerticallyMissingValues(patch_3d=patch_3d, ocean_tracer=ocean_age, &
+    & has_missValue=has_missValue, missValue=missValue)
+    
+    CALL dbg_print('init_ocean_age', ocean_age(:,:,:), &
+    & module_name,  1, in_subset=patch_3d%p_patch_2d(1)%cells%owned)
+
+  END SUBROUTINE init_ocean_age
+  !-------------------------------------------------------------------------------
+
 
   !-------------------------------------------------------------------------------
   SUBROUTINE init_ocean_temperature(patch_3d, ocean_temperature, ocean_state)

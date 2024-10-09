@@ -145,7 +145,8 @@ CONTAINS
     TYPE(t_jsb_task_options),   INTENT(in)    :: options
     ! -------------------------------------------------------------------------------------------------- !
     TYPE(t_jsb_model), POINTER                :: model
-    INTEGER :: iblk, nc, ics, ice
+    LOGICAL :: newday, exp_start
+    INTEGER :: iblk, ic, nc, ics, ice
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_damaged_area'
 
@@ -163,9 +164,9 @@ CONTAINS
     dsl4jsb_Real2D_onChunk :: press_srf
     dsl4jsb_Real2D_onChunk :: t_unfilt
     dsl4jsb_Real2D_onChunk :: wind_10m               ! 10m wind speed [m/s]
-    dsl4jsb_Real2D_onChunk :: max_wind_10m_act
-    dsl4jsb_Real2D_onChunk :: prev_day_max_wind_10m
-    dsl4jsb_Real2D_onChunk :: max_wind_10m
+    dsl4jsb_Real2D_onChunk :: max_wind_10m_act       ! Maximum 10m wind speed since midnight
+    dsl4jsb_Real2D_onChunk :: prev_day_max_wind_10m  ! Previous day maximum 10m wind speed
+    dsl4jsb_Real2D_onChunk :: max_wind_10m           ! Several day mean maximum wind speed (climate buffer)
     dsl4jsb_Real2D_onChunk :: q_rel_air_climbuf
     dsl4jsb_Real2D_onChunk :: q_rel_air_climbuf_yDay
 
@@ -234,42 +235,72 @@ CONTAINS
 
     dsl4jsb_Get_var2D_onChunk(ASSIMI_,    cover_fract_pot)         ! in
     ! -------------------------------------------------------------------------------------------------- !
+    !$ACC DATA CREATE(q_rel_air)
 
-    q_rel_air(:) = get_relative_humidity_air(nc, q_air(:), t_unfilt(:), press_srf(:))
-
-    ! For each time step update the climate buffer
-
-    ! R: This may be later in a climbuf process for dynveg and disturbance.
-    ! Maximum daily wind speed and relative air humidity smoothed in time
+    ! Local variables
+    newday = is_newday(options%current_datetime, options%dtime)
+    exp_start = is_time_experiment_start(options%current_datetime)
+    ! Smoothing factor for relative humidity
     persist = persist_rel_hum ** (1._wp/REAL(timesteps_per_day(options%dtime),wp))
-    q_rel_air_climbuf(:) = q_rel_air_climbuf(:) * persist  +  MIN(q_rel_air(:),100._wp) * (1._wp - persist)
 
-    IF (.NOT. is_newday(options%current_datetime, options%dtime) .OR. is_time_experiment_start(options%current_datetime)) THEN
-      WHERE (wind_10m(:) > max_wind_10m_act(:))
-         max_wind_10m_act(:) = wind_10m(:)
-      END WHERE
+    ! Update climate buffer variables each time step
+    q_rel_air(:) = get_relative_humidity_air(q_air(:), t_unfilt(:), press_srf(:))
+    !$ACC WAIT(1)
+
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+    !$ACC LOOP GANG(STATIC :1) VECTOR
+    DO ic = 1, nc
+      q_rel_air_climbuf(ic) =  q_rel_air_climbuf(ic) * persist + q_rel_air(ic) * (1._wp - persist)
+    END DO
+    !$ACC END LOOP
+
+    IF (.NOT. newday .OR. exp_start) THEN
+      !$ACC LOOP GANG(STATIC :1) VECTOR
+      DO ic = 1, nc
+        IF (wind_10m(ic) > max_wind_10m_act(ic)) THEN
+          max_wind_10m_act(ic) = wind_10m(ic)
+        END IF
+      END DO
+      !$ACC END LOOP
     ELSE
-      prev_day_max_wind_10m(:) = max_wind_10m_act(:)
-      max_wind_10m(:) = max_wind_10m(:) * persist_wind_10m + max_wind_10m_act(:) * (1._wp - persist_wind_10m)
-      max_wind_10m_act(:) = wind_10m(:)
-      q_rel_air_climbuf_yDay(:) = q_rel_air_climbuf(:)
+      ! Update previous day variabes at the beginning of the new day
+      !$ACC LOOP GANG(STATIC :1) VECTOR
+      DO ic = 1, nc
+        q_rel_air_climbuf_yDay(ic) = q_rel_air_climbuf(ic)
+        prev_day_max_wind_10m(ic) = max_wind_10m_act(ic)
+        ! Maximum daily wind speed smoothed in time
+        max_wind_10m(ic) = max_wind_10m(ic) * persist_wind_10m + max_wind_10m_act(ic) * (1._wp - persist_wind_10m)
+        max_wind_10m_act(ic) = wind_10m(ic)
+      END DO
+      !$ACC END LOOP
     END IF
+    !$ACC END PARALLEL
 
-    IF (is_newday(options%current_datetime, options%dtime)) THEN ! only once per day
-      burned_fract(:) = 0._wp
-      IF (      dsl4jsb_Lctlib_param(dynamic_PFT) &
+    ! Calculate or read burned area
+    IF (newday) THEN ! only once per day
+
+      ! Initialization (on all tiles)
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+      DO ic = 1, nc
+        burned_fract(ic) = 0._wp
+        damaged_fract(ic) = 0._wp
+      END DO
+      !$ACC END PARALLEL LOOP
+
+      ! Calculate burned area on burning tiles
+      IF (dsl4jsb_Lctlib_param(dynamic_PFT) &
           .OR. (dsl4jsb_Config(DISTURB_)%lburn_pasture .AND. dsl4jsb_Lctlib_param(pasture_PFT)) &
          ) THEN
 
         SELECT CASE (dsl4jsb_Config(DISTURB_)%fire_algorithm)
           CASE (0) !! No fire algorithm
-          CASE (1) !! jsbach algorithm
 
+          CASE (1) !! jsbach algorithm
             ! Calculate burned area. Woody and grass types call the subroutine with different parameters
-            IF (dsl4jsb_Lctlib_param(woody_PFT)) THEN  ! Woody Type
+            IF (dsl4jsb_Lctlib_param(woody_PFT)) THEN  ! Woody types
               fire_minimum = dsl4jsb_Config(DISTURB_)%fire_minimum_woody
               fire_tau     = dsl4jsb_Config(DISTURB_)%fire_tau_woody
-            ELSE                             ! all other types
+            ELSE                                       ! All other types
               fire_minimum = dsl4jsb_Config(DISTURB_)%fire_minimum_grass
               fire_tau     = dsl4jsb_Config(DISTURB_)%fire_tau_grass
             ENDIF
@@ -281,8 +312,9 @@ CONTAINS
               & fire_tau,                                        & ! in
               & q_rel_air_climbuf(:),                            & ! in
               & fuel(:),                                         & ! in
-              & burned_fract(:)                                  & ! inout
+              & burned_fract(:)                                  & ! out
               & )
+
           CASE (2) !! Arora & Boer algorithm
             CALL finish('disturbed_fract','Arora & Boer algorithm not implemented yet.')
           CASE (3)
@@ -293,10 +325,11 @@ CONTAINS
         END SELECT
       END IF
 
-      damaged_fract(:) = 0._wp
+      ! Calculate wind throw area on woody tiles
       IF (dsl4jsb_Lctlib_param(woody_PFT) .AND. dsl4jsb_Lctlib_param(dynamic_PFT)) THEN
         SELECT CASE (dsl4jsb_Config(DISTURB_)%windbreak_algorithm)
           CASE (0) !! No windbreak algorithm
+
           CASE (1) !! jsbach algorithm
             CALL broken_woody_fract_jsbach(                 & ! in
               & dsl4jsb_Config(DISTURB_)%wnd_threshold,     & ! in
@@ -306,19 +339,27 @@ CONTAINS
               & max_wind_10m(:),                            & ! in
               & damaged_fract(:)                            & ! inout
               & )
+
           CASE DEFAULT
             CALL finish('disturbed_frac','Unknown windbreak algorithm')
         END SELECT
       END IF
 
-      ! Init diagnostic carbon fluxes
-      IF (tile%Has_process_memory(CARBON_)) THEN
-        co2flux_fire_all_2_atm(:) = 0._wp
-        cflux_dist_green_2_soil(:) = 0._wp
-        cflux_dist_woods_2_soil(:) = 0._wp
-      END IF
+    END IF ! newday
 
-    END IF ! is_newday
+    ! Init diagnostic carbon fluxes
+    IF (tile%Has_process_memory(CARBON_) .AND. newday) THEN
+      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+      DO ic = 1, nc
+        co2flux_fire_all_2_atm(ic) = 0._wp
+        cflux_dist_green_2_soil(ic) = 0._wp
+        cflux_dist_woods_2_soil(ic) = 0._wp
+      END DO
+      !$ACC END PARALLEL LOOP
+    END IF
+
+    !$ACC WAIT(1)
+    !$ACC END DATA
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
@@ -356,6 +397,7 @@ CONTAINS
 
     dsl4jsb_Aggregate_onChunk(DISTURB_, burned_fract,            weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(DISTURB_, damaged_fract,           weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(DISTURB_, max_wind_10m_act,        weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(DISTURB_, q_rel_air_climbuf,       weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(DISTURB_, q_rel_air_climbuf_yDay,  weighted_by_fract)
 
@@ -365,9 +407,9 @@ CONTAINS
   !
   !> Implementation of "update" for task "natural_disturbances"
   !>
-  !> Task "natural_disturbances" calculates the disturbance of plants due to fire and windbreak
-  !> if flcc and wlcc are not active, damaged area and carbon effects are calculated on this tile
-  !> else only ta variables are updated
+  !> Task "natural_disturbances" calculates the carbon relocation resulting from fire and wind throw.
+  !> Note: If FLCC and WLCC processes are active, carbon relocation is calculated in separate process
+  !>       routines.
   !
   SUBROUTINE update_natural_disturbances(tile, options)
 
@@ -383,9 +425,10 @@ CONTAINS
     TYPE(t_jsb_task_options),   INTENT(in)    :: options
     ! -------------------------------------------------------------------------------------------------- !
     TYPE(t_jsb_model), POINTER                :: model
-    REAL(wp), DIMENSION(options%nc)           :: old_c_state_sum_ta, dummy_flux
+    REAL(wp), DIMENSION(options%nc)           :: old_c_state_sum_ta, cflux
+    REAL(wp), DIMENSION(5)                    :: lctlib_LeafLit_coef, lctlib_WoodLit_coef
 
-    INTEGER :: iblk, ics, ice
+    INTEGER :: iblk, ics, ice, ic, nc
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':update_natural_disturbances'
 
@@ -437,6 +480,7 @@ CONTAINS
     iblk    = options%iblk
     ics     = options%ics
     ice     = options%ice
+    nc      = options%nc
 
     ! If process is not to be calculated on this tile, do nothing
     IF (.NOT. tile%Is_process_calculated(DISTURB_)) RETURN
@@ -485,30 +529,37 @@ CONTAINS
     dsl4jsb_Get_var2D_onChunk(CARBON_,    c_humus_2)               ! inout
     dsl4jsb_Get_var2D_onChunk(CARBON_,    co2flux_fire_all_2_atm)  ! inout
 
-    !ta variable required for the carbon conservation test
+    ! Tile average (ta) variable required for the carbon conservation test
     dsl4jsb_Get_var2D_onChunk(CARBON_,    co2flux_fire_all_2_atm_ta) ! out
 
     ! -------------------------------------------------------------------------------------------------- !
-    IF (is_newday(options%current_datetime, options%dtime)) THEN ! only once per day
 
+    ! Calculate carbon relocation due to wind damages and fires
+
+    IF (is_newday(options%current_datetime, options%dtime)) THEN ! only once per day
       IF (tile%Has_process_memory(CARBON_)) THEN
 
-        ! Calculate carbon relocation connected with damages and fires
+        !$ACC DATA CREATE(old_c_state_sum_ta, cflux, lctlib_LeafLit_coef, lctlib_WoodLit_coef)
+
+        lctlib_LeafLit_coef = dsl4jsb_Lctlib_param(LeafLit_coef(1:5))
+        lctlib_WoodLit_coef = dsl4jsb_Lctlib_param(WoodLit_coef(1:5))
+        !$ACC UPDATE DEVICE(lctlib_LeafLit_coef, lctlib_WoodLit_coef)
+
+        ! (If WLCC is active, carbon relocation due to wind throw is calculated in separate WLCC process routines.)
         IF (.NOT. model%processes(WLCC_)%p%config%active) THEN
-          ! If WLCC is not active, wind disturbance is executed directly on this pft
-          ! (If WLCC would have been active, the carbon consequences of wind disturbance would have already been calculated)
+
           SELECT CASE (dsl4jsb_Config(DISTURB_)%windbreak_algorithm)
             CASE (0) !! No windbreak algorithm
             CASE (1) !! jsbach algorithm
 
-              !Calculate current sum before operation for c conservation test
+              ! Calculate current sum of all carbon pools for C conservation test
               CALL recalc_carbon_per_tile_vars(tile, options)
               CALL calculate_current_c_ta_state_sum(tile, options, old_c_state_sum_ta(:))
 
               CALL relocate_carbon_damage(                 &
                 & damaged_fract(:),                        & ! in
-                & dsl4jsb_Lctlib_param(LeafLit_coef(1:5)), & ! in
-                & dsl4jsb_Lctlib_param(WoodLit_coef(1:5)), & ! in
+                & lctlib_LeafLit_coef(1:5),                & ! in
+                & lctlib_WoodLit_coef(1:5),                & ! in
                 & c_green(:),                              & ! inout
                 & c_woods(:),                              & ! inout
                 & c_reserve(:),                            & ! inout
@@ -549,35 +600,44 @@ CONTAINS
                 & cflux_dist_green_2_soil = cflux_dist_green_2_soil(:),                     &
                 & cflux_dist_woods_2_soil = cflux_dist_woods_2_soil(:))
 
-              ! wind has no extra flux to atmos, only redistribution among cpools - therefore cflux = 0._wp
+              ! Check conservation of carbon windthrow carbon relocations
+              ! Note: Windthrow does not lead to an immediate flux to the atmosphere, therefore cflux = 0._wp
+              !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+              DO ic = 1, nc
+                cflux(ic) = 0._wp
+              END DO
+              !$ACC END PARALLEL LOOP
               dsl4jsb_Get_var2D_onChunk(DISTURB_,   cconservation_wind)
-              dummy_flux = 0._wp
               CALL check_carbon_conservation(tile, options, old_c_state_sum_ta(:), &
-                & dummy_flux(:), cconservation_wind(:))
+                & cflux(:), cconservation_wind(:))
 
             CASE DEFAULT
               CALL finish('disturbed_fract','Unknown windbreak algorithm')
           END SELECT
         END IF
 
+        ! (If FLCC is active, carbon relocation due to fire is calculated in separate FLCC process routines.)
         IF (.NOT. model%processes(FLCC_)%p%config%active) THEN
-          ! If FLCC is not active, fire disturbance is executed directly on this pft
-          ! (If FLCC would have been active, the carbon consequences of fire disturbance would have already been calculated)
 
-          co2flux_fire_all_2_atm = 0._wp
+          !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+          DO ic = 1, nc
+            co2flux_fire_all_2_atm(ic) = 0._wp
+          END DO
+          !$ACC END PARALLEL LOOP
+
           SELECT CASE (dsl4jsb_Config(DISTURB_)%fire_algorithm)
             CASE (0) !! No fire algorithm
             CASE (1) !! jsbach algorithm
 
-              !Calculate current sum before operation for c conservation test
+              ! Calculate current sum of all carbon pools for C conservation test
               CALL recalc_carbon_per_tile_vars(tile, options)
               CALL calculate_current_c_ta_state_sum(tile, options, old_c_state_sum_ta(:))
 
               CALL relocate_carbon_fire(                    &
                 & burned_fract(:),                          & ! in, only for windbreak
                 & dsl4jsb_Config(CARBON_)%fire_fract_wood_2_atmos, & ! in
-                & dsl4jsb_Lctlib_param(LeafLit_coef(1:5)),  & ! in
-                & dsl4jsb_Lctlib_param(WoodLit_coef(1:5)),  & ! in
+                & lctlib_LeafLit_coef(1:5),                 & ! in
+                & lctlib_WoodLit_coef(1:5),                 & ! in
                 & c_green(:),                               & ! inout
                 & c_woods(:),                               & ! inout
                 & c_reserve(:),                             & ! inout
@@ -620,11 +680,17 @@ CONTAINS
                 & cflux_dist_woods_2_soil = cflux_dist_woods_2_soil(:),                     &
                 & co2flux_fire_all_2_atm = co2flux_fire_all_2_atm(:))
 
-              ! For conservation test: negate currently positve co2flux_fire_all_2_atm_ta (flux away from land!)
-              ! and convert from CO2 flux to carbon change per day
+              ! Check conservation of carbon relocations due to fire
+              ! Note: co2flux_fire_all_2_atm_ta is currently positve. It needs to be turned negative
+              !      (flux away from land) and converted from CO2 flux per second to C flux per day.
+              !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+              DO ic = 1, nc
+                cflux(ic) = -co2flux_fire_all_2_atm_ta(ic) * sec_per_day / molarMassCO2_kg
+              END DO
+              !$ACC END PARALLEL LOOP
               dsl4jsb_Get_var2D_onChunk(DISTURB_,   cconservation_fire)     ! out
               CALL check_carbon_conservation(tile, options, old_c_state_sum_ta(:), &
-                & -co2flux_fire_all_2_atm_ta(:) * sec_per_day / molarMassCO2_kg, cconservation_fire(:))
+                & cflux(:), cconservation_fire(:))
 
             CASE (2) !! Arora & Boer algorithm
               CALL finish('disturbed_fract','Arora & Boer algorithm not implemented yet.')
@@ -635,6 +701,10 @@ CONTAINS
               CALL finish('disturbed_fract','Unknown fire algorithm')
           END SELECT
         ENDIF
+
+        !$ACC WAIT(1)
+        !$ACC END DATA
+
       ENDIF ! CARBON active
 
     ENDIF ! is_newday

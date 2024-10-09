@@ -1,5 +1,3 @@
-! Specification of vertical axes for the wave model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Specification of vertical axes for the wave model
 
 MODULE mo_waves_vertical_axes
 

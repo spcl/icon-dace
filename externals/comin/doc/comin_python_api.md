@@ -2,12 +2,16 @@
 
 
 ## Global ComIn functions, variables and constants
+- `COMIN_FLAG_DEVICE` (int)
 - `COMIN_FLAG_NONE` (int)
 - `COMIN_FLAG_READ` (int)
 - `COMIN_FLAG_WRITE` (int)
 - `COMIN_HGRID_UNSTRUCTURED_CELL` (int)
+- `COMIN_HGRID_UNSTRUCTURED_EDGE` (int)
+- `COMIN_HGRID_UNSTRUCTURED_VERTEX` (int)
 - `COMIN_ZAXIS_2D` (int)
 - `COMIN_ZAXIS_3D` (int)
+- `COMIN_ZAXIS_3D_HALF` (int)
 - `COMIN_ZAXIS_NONE` (int)
 - `COMIN_ZAXIS_UNDEF` (int)
 - `EP_ATM_ADVECTION_AFTER` (int)
@@ -52,7 +56,7 @@
 - `EP_DESTRUCTOR` (int)
 - `EP_FINISH` (int)
 - `EP_SECONDARY_CONSTRUCTOR` (int)
-- callable `callback_get_ep_name`: C function signature: void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1], int* ierr)
+- callable `callback_get_ep_name`: C function signature: void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1])
 - callable `current_get_datetime`: C function signature: `void comin_current_get_datetime(char const**,int*,int*);`
 - callable `current_get_domain_id`: C function signature: `int comin_current_get_domain_id()`
 - callable `current_get_plugin_info`: returns object describing the current plugin
@@ -68,31 +72,48 @@
 - callable `descrdata_get_vert_npromz`: C function signature: `int comin_descrdata_get_vert_npromz(int jg)`
 - callable `descrdata_index_lookup_glb2loc_cell`: C function signature: `int comin_descrdata_index_lookup_glb2loc_cell(int jg, int global_idx)`
 - callable `finish`: C function signature: `void comin_plugin_finish(const char* routine, const char* text)`
-- callable `metadata_get`: retrieve metadata, arguments: name string, domain id, metadata key
+- callable `metadata_get`: retrieve metadata, arguments: (name string, domain id) , metadata key
 - callable `metadata_set`: sets metadata for a requested field, arguments: name string, domain id, metadata key, metadata value
 - callable `parallel_get_host_mpi_comm`: C function signature: `int comin_parallel_get_host_mpi_comm()`
 - callable `parallel_get_host_mpi_rank`: C function signature: `int comin_parallel_get_host_mpi_rank()`
 - callable `parallel_get_plugin_mpi_comm`: C function signature: `int comin_parallel_get_host_mpi_comm()`
 - callable `setup_get_verbosity_level`: C function signature: `int comin_setup_get_verbosity_level()`
 - callable `setup_get_version`: returns (major, minor, patch) version info
+ismodule sys
 - callable `var_descr_list`: List of exposed variables (descriptors)
-- callable `var_get`: get variable object, arguments: entry point, name string, domain id, access flag)
-- callable `var_request_add`: Request the host model to add a variable, arguments: name string, domain id, [metadata key], [metadata value], ...
+- callable `var_get`: get variable object, arguments: [entry point], (name string, domain id), access flag)
+- callable `var_request_add`: Request the host model to add a variable, arguments: (name string, domain id), lmodexclusive
 
 
 ## Members of data type plugin_info
+- `plugin_info.args` (list)
 - `plugin_info.comm` (str)
 - `plugin_info.id` (int)
 - `plugin_info.options` (str)
 
 
 ## Global descriptive data
+- `global.device_driver` (str)
+- `global.device_name` (str)
+- `global.device_vendor` (str)
 - `global.grf_bdywidth_c` (int)
 - `global.grf_bdywidth_e` (int)
+- `global.has_device` (bool)
+- `global.host_git_branch` (str)
+- `global.host_git_remote_url` (str)
+- `global.host_git_tag` (str)
+- `global.host_revision` (str)
 - `global.lrestartrun` (bool)
 - `global.max_dom` (int)
+- `global.max_rlcell` (int)
+- `global.max_rledge` (int)
+- `global.max_rlvert` (int)
 - `global.min_rlcell` (int)
 - `global.min_rlcell_int` (int)
+- `global.min_rledge` (int)
+- `global.min_rledge_int` (int)
+- `global.min_rlvert` (int)
+- `global.min_rlvert_int` (int)
 - `global.n_dom` (int)
 - `global.nproma` (int)
 - `global.vct_a(:)` (float64)
@@ -185,6 +206,7 @@
 - `domain.verts.nblks` (int)
 - `domain.verts.neighbor_blk(:,:,:)` (int32)
 - `domain.verts.neighbor_idx(:,:,:)` (int32)
+- `domain.verts.num_edges(:,:)` (int32)
 - `domain.verts.nverts` (int)
 - `domain.verts.nverts_global` (int)
 - `domain.verts.refin_ctrl(:,:)` (int32)

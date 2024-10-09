@@ -1,6 +1,3 @@
-! Namelist for configuration of grid refinement algorithms.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for configuration of grid refinement algorithms.
 
 MODULE mo_gridref_nml
 

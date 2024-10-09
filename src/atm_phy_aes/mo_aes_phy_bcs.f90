@@ -1,7 +1,3 @@
-!
-! Prepares boundary conditions needed for ECHAM physics
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Prepares boundary conditions needed for ECHAM physics
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -40,7 +38,6 @@ MODULE mo_aes_phy_bcs
   USE mo_rte_rrtmgp_radiation       ,ONLY: pre_rte_rrtmgp_radiation
 #endif
   USE mo_radiation_general          ,ONLY: nbndlw, nbndsw
-  USE mo_bc_aeropt_stenchikov       ,ONLY: read_bc_aeropt_stenchikov
 
   USE mo_aes_sfc_indices            ,ONLY: nsfc_type, iwtr, iice
 
@@ -53,7 +50,6 @@ MODULE mo_aes_phy_bcs
   USE mo_bc_solar_irradiance        ,ONLY: read_bc_solar_irradiance, ssi_time_interpolation
   USE mo_bc_ozone                   ,ONLY: read_bc_ozone
   USE mo_bc_aeropt_kinne            ,ONLY: read_bc_aeropt_kinne
-  USE mo_bc_aeropt_cmip6_volc       ,ONLY: read_bc_aeropt_cmip6_volc
 #if defined( _OPENACC )
   USE mo_mpi                   ,ONLY: i_am_accel_node, my_process_is_work
 #endif
@@ -341,47 +337,20 @@ CONTAINS
       &                      opt_from_coupler=is_coupled_to_o3())
         END IF
         !
-        ! tropospheric aerosol optical properties after S. Kinne
-        IF (aes_rad_config(jg)% irad_aero == 12) THEN
-          l_filename_year = .FALSE.
-          CALL read_bc_aeropt_kinne(mtime_old, patch, l_filename_year, nbndlw, nbndsw, &
-      &                             opt_from_coupler=is_coupled_to_aero())
-        END IF
-        !
-        ! tropospheric aerosol optical properties after S. Kinne
+        ! irad_aero==13: transient tropospheric aerosol optical properties after S. Kinne (including anthropogenic)
         IF (aes_rad_config(jg)% irad_aero == 13) THEN
           l_filename_year = .TRUE.
           CALL read_bc_aeropt_kinne(mtime_old, patch, l_filename_year, nbndlw, nbndsw, &
       &                             opt_from_coupler=is_coupled_to_aero())
         END IF
         !
-        ! stratospheric aerosol optical properties
-        IF (aes_rad_config(jg)% irad_aero == 14) THEN
-          CALL read_bc_aeropt_stenchikov(mtime_old, patch)
-        END IF
-        !
-        ! tropospheric aerosols after S. Kinne and stratospheric aerosol optical properties
-        IF (aes_rad_config(jg)% irad_aero == 15) THEN
-          l_filename_year = .TRUE.
-          CALL read_bc_aeropt_kinne     (mtime_old, patch, l_filename_year, nbndlw, nbndsw, &
-      &                                  opt_from_coupler=is_coupled_to_aero())
-          CALL read_bc_aeropt_cmip6_volc(mtime_old, nbndlw, nbndsw)
-          CALL read_bc_aeropt_stenchikov(mtime_old, patch)
-        END IF
-        !
-        ! tropospheric background aerosols (Kinne) and stratospheric
-        ! aerosols (CMIP6) + simple plumes (analytical, nothing to be read
-        ! here, initialization see init_aes_phy (mo_aes_phy_init)) 
-        IF (aes_rad_config(jg)% irad_aero == 18) THEN
-          l_filename_year = .FALSE.
-          CALL read_bc_aeropt_kinne     (mtime_old, patch, l_filename_year, nbndlw, nbndsw, &
-      &                                  opt_from_coupler=is_coupled_to_aero())
-          CALL read_bc_aeropt_stenchikov(mtime_old, patch)
-        END IF
-        ! tropospheric background aerosols (Kinne), no stratospheric
+        ! irad_aero==12: tropospheric background aerosols (Kinne) only
+        ! irad_aero==19: tropospheric background aerosols (Kinne), no stratospheric
         ! aerosols + simple plumes (analytical, nothing to be read
-        ! here, initialization see init_aes_phy (mo_aes_phy_init)) 
-        IF (aes_rad_config(jg)% irad_aero == 19) THEN
+        ! here, initialization see init_aes_phy (mo_aes_phy_init))
+        ! the file name of the Kinne aerosols must not contain a year and
+        ! the data must contain the natural background (Kinne of 1850)
+        IF (aes_rad_config(jg)% irad_aero == 12 .OR. aes_rad_config(jg)% irad_aero == 19) THEN
           l_filename_year = .FALSE.
           CALL read_bc_aeropt_kinne     (mtime_old, patch, l_filename_year, nbndlw, nbndsw, &
       &                                  opt_from_coupler=is_coupled_to_aero())

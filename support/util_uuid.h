@@ -1,15 +1,15 @@
+// ICON
+//
+// ---------------------------------------------------------------
+// Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+// Contact information: icon-model.org
+//
+// See AUTHORS.TXT for a list of authors
+// See LICENSES/ for license information
+// SPDX-License-Identifier: BSD-3-Clause
+// ---------------------------------------------------------------
+
 /* 128 bit UUID computation / Rabin fingerprinting algorithm       */
-/*                                                                 */
-/* ICON                                                            */
-/*                                                                 */
-/* --------------------------------------------------------------- */
-/* Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss */
-/* Contact information: icon-model.org                             */
-/*                                                                 */
-/* See AUTHORS.TXT for a list of authors                           */
-/* See LICENSES/ for license information                           */
-/* SPDX-License-Identifier: BSD-3-Clause                           */
-/* --------------------------------------------------------------- */
 
 #ifndef UTIL_UUID_H
 #define UTIL_UUID_H

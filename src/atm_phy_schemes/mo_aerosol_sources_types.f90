@@ -1,11 +1,3 @@
-!
-! This module provides derived types for mo_aerosol_source which is used
-! to calculate source terms for different aerosol species.
-!
-! Implemented up to now:
-! - Mineral dust look-up tables for the clay content of different soil types
-!   and the bare soil fraction of different land use classes
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides derived types for mo_aerosol_source which is used
+! to calculate source terms for different aerosol species.
+!
+! Implemented up to now:
+! - Mineral dust look-up tables for the clay content of different soil types
+!   and the bare soil fraction of different land use classes
 
 MODULE mo_aerosol_sources_types
 

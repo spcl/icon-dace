@@ -1,9 +1,3 @@
-!
-!  This module contains the routines needed for nesting in the nonhydrostatic.
-!  version.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!  This module contains the routines needed for nesting in the nonhydrostatic.
+!  version.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -47,7 +44,7 @@ MODULE mo_nh_nest_utilities
   USE mo_prepadv_types,       ONLY: t_prepare_adv
   USE mo_nonhydrostatic_config,ONLY: ndyn_substeps_var
   USE mo_atm_phy_nwp_config,  ONLY: iprog_aero
-  USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int, min_rledge_int, min_rlcell, min_rledge
+  USE mo_impl_constants,      ONLY: SUCCESS, min_rlcell_int, min_rledge_int, min_rlcell, min_rledge, inwp
   USE mo_loopindices,         ONLY: get_indices_c, get_indices_e
   USE mo_impl_constants_grf,  ONLY: grf_bdyintp_start_c, grf_bdyintp_end_c, grf_bdywidth_c, &
     &                               grf_bdywidth_e, grf_nudgintp_start_c, grf_nudgintp_start_e, &
@@ -672,7 +669,7 @@ CONTAINS
   !! for vertical nesting.
   !!
   SUBROUTINE boundary_interpolation (jg,jgc,ntp_dyn,ntc_dyn,ntp_tr,ntc_tr, &
-    p_patch, p_nh_state, prep_adv, prm_diag, p_grf_state, lacc)
+    p_patch, p_nh_state, prep_adv, p_grf_state, prm_diag, lacc)
 
     CHARACTER(len=*), PARAMETER ::  &
       &  routine = modname//':boundary_interpolation'
@@ -682,11 +679,11 @@ CONTAINS
     ! Parent and child time levels for dynamical variables and tracers
     INTEGER,  INTENT(IN)    :: ntp_dyn, ntc_dyn, ntp_tr, ntc_tr
 
-    TYPE(t_patch)        , INTENT(   IN), TARGET :: p_patch(:)
-    TYPE(t_nh_state)     , INTENT(INOUT), TARGET :: p_nh_state(:)
-    TYPE(t_prepare_adv)  , INTENT(INOUT), TARGET :: prep_adv(:)
-    TYPE(t_nwp_phy_diag) , INTENT(INOUT)         :: prm_diag(:)
-    TYPE(t_gridref_state), INTENT(   IN), TARGET :: p_grf_state(:)
+    TYPE(t_patch)        , INTENT(   IN), TARGET   :: p_patch(:)
+    TYPE(t_nh_state)     , INTENT(INOUT), TARGET   :: p_nh_state(:)
+    TYPE(t_prepare_adv)  , INTENT(INOUT), TARGET   :: prep_adv(:)
+    TYPE(t_gridref_state), INTENT(   IN), TARGET   :: p_grf_state(:)
+    TYPE(t_nwp_phy_diag) , INTENT(INOUT), OPTIONAL :: prm_diag(:)
     LOGICAL, INTENT(IN) :: lacc
 
     ! local variables
@@ -1029,7 +1026,7 @@ CONTAINS
 
     ENDIF
 
-    IF (ltransport .AND. iprog_aero >= 1) THEN
+    IF (ltransport .AND. iprog_aero >= 1 .AND. iforcing == inwp) THEN
      CALL interpol_scal_grf (p_pp=p_pp, p_pc=p_pc, p_grf=p_grf%p_dom(i_chidx), nfields=1, lacc=.TRUE., &
       f3din1=prm_diag(jg)%aerosol, f3dout1=prm_diag(jgc)%aerosol, &
       llimit_nneg=(/.TRUE./), lnoshift=.TRUE.)

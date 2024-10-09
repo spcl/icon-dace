@@ -19,6 +19,7 @@
 #include <dlfcn.h>
 
 #include "comin.h"
+#include "util.h"
 
 #include "comin.py.h"
 
@@ -57,6 +58,18 @@ PyInit_comin(void)
   return pSelf;
 }
 
+static char* extract_filename(const char *str, int size){
+  PyObject* pShlex = PyImport_ImportModule("shlex");
+  PyObject* pDict = PyModule_GetDict(pShlex); // returns a borrowed reference
+  PyObject* pSplit = PyDict_GetItemString(pDict, (char*)"split"); // returns a borrowed reference
+  PyObject* pList = PyObject_CallFunction(pSplit, "s#", str, size);
+  PyObject* pFilename = PyList_GetItem(pList, 0);  // returns a borrowed reference
+  char* filename = strdup(PyUnicode_AsUTF8(pFilename));
+  Py_DECREF(pList);
+  Py_DECREF(pShlex);
+  return filename;
+}
+
 static int py_comin_instance_counter = 0;
 
 extern "C" {
@@ -64,7 +77,6 @@ extern "C" {
 
     using namespace std::string_literals;
 
-    int ierr = 0;
     int mpi_rank = comin_parallel_get_host_mpi_rank();
     if (mpi_rank == 0)
       std::cerr << "setup_python_adapter" << std::endl;
@@ -105,9 +117,7 @@ extern "C" {
                               py_comin_instance_counter--;
                               if(py_comin_instance_counter == 0)
                                 Py_Finalize();
-                            }, &ierr);
-    if (ierr != 0)
-      return;
+                            });
 
     // Dictionary to store the plugins global variables
     // independently from other python plugins
@@ -115,22 +125,20 @@ extern "C" {
 
     int ilen = -1;
     const char* plugin_options_c = NULL;
-    comin_current_get_plugin_options(&plugin_options_c, &ilen, &ierr);
-    std::string plugin_options(plugin_options_c, ilen);
+    comin_current_get_plugin_options(&plugin_options_c, &ilen);
+    char* filename = extract_filename(plugin_options_c, ilen);
 
-    if (ierr != 0)
-      return;
     try {
-      if (mpi_rank == 0)  std::cerr << "Running python script " << plugin_options << std::endl;
-      FILE* file = fopen(plugin_options.c_str(), "r");
-      if (file == NULL) throw std::runtime_error("Cannot read "s + plugin_options);
+      if (mpi_rank == 0)  std::cerr << "Running python script " << filename << std::endl;
+      FILE* file = fopen(filename, "r");
+      if (file == NULL) throw std::runtime_error("Cannot read "s + std::string(filename));
       else {
-        PyObject* pyResult = PyRun_File(file, plugin_options.c_str(), Py_file_input, globals, globals);
+        PyObject* pyResult = PyRun_File(file, filename, Py_file_input, globals, globals);
         Py_XDECREF(pyResult);
         fclose(file);
         if (PyErr_Occurred()){
           PyErr_Print();
-          throw std::runtime_error("Error while executing "s + plugin_options);
+          throw std::runtime_error("Error while executing "s + std::string(filename));
         }
       }
     } catch ( std::exception& err ) {

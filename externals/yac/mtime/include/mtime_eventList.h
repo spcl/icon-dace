@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2024 MPI-M, Luis Kornblueh, Rahul Sinha and DWD, Florian Prill. All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+//
 /*! \cond PRIVATE */
 /**
  * @addtogroup CBindings libmtime C language bindings
@@ -18,19 +22,16 @@
 #ifndef _MTIME_EVENTLIST_H
 #define _MTIME_EVENTLIST_H
 
-#include <stdbool.h> 
+#include <stdbool.h>
 
 struct _eventGroup;
 struct _event;
 
-void
-deallocateEventsInGroup(struct _eventGroup* eg);
+void deallocateEventsInGroup(struct _eventGroup *eg);
 
-bool
-addNewEventToGroup(struct _event* ev, struct _eventGroup* eg);
+bool addNewEventToGroup(struct _event *ev, struct _eventGroup *eg);
 
-bool
-removeEventWithNameFromGroup(char* nodeName, struct _eventGroup* eg);
+bool removeEventWithNameFromGroup(char *nodeName, struct _eventGroup *eg);
 
 /**
  * @}

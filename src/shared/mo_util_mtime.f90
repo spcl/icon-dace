@@ -1,6 +1,3 @@
-! This module contains auxiliary routines for mtime date/time objects.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains auxiliary routines for mtime date/time objects.
 
 MODULE mo_util_mtime
 

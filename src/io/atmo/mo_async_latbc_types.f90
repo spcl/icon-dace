@@ -1,7 +1,3 @@
-! This Module is a description for listings and indices
-! used for input prefetching routine.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This Module is a description for listings and indices
+! used for input prefetching routine.
 
 MODULE mo_async_latbc_types
 

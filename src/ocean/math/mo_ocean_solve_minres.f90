@@ -51,7 +51,7 @@ CONTAINS
   SUBROUTINE ocean_solve_mres_recover_arrays_wp(this, x, b, r, p0, &
     & p1, p2, s0, s1, s2, rs, ss)
     CLASS(t_ocean_solve_mres), INTENT(INOUT), TARGET :: this
-    REAL(KIND=wp), INTENT(OUT), POINTER, DIMENSION(:,:) :: &
+    REAL(KIND=wp), INTENT(INOUT), POINTER, DIMENSION(:,:) :: &
       & x, b, r, p0, p1, p2, s0, s1, s2, rs, ss
 
     IF (.NOT.ALLOCATED(this%r_wp)) THEN

@@ -1,7 +1,3 @@
-! @brief Ensemble perturbations of nwp physics
-!
-! configuration setup for ensemble physics perturbations
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Ensemble perturbations of nwp physics
+!
+! configuration setup for ensemble physics perturbations
 
 MODULE mo_ensemble_pert_config
 
@@ -47,7 +47,7 @@ MODULE mo_ensemble_pert_config
                                   get_terminal_fall_velocity_ice, &
                                   set_terminal_fall_velocity_ice
   USE mo_ext_data_types,     ONLY: t_external_data
-  USE mo_extpar_config,      ONLY: nclass_lu
+  USE mo_extpar_config,      ONLY: ext_atm_attr
   USE mo_exception,          ONLY: message_text, message, finish
   USE mtime,                 ONLY: datetime, getDayOfYearFromDateTime
   USE mo_mpi,                ONLY: p_io, p_comm_work, p_bcast
@@ -70,7 +70,7 @@ MODULE mo_ensemble_pert_config
             itype_pert_gen, timedep_pert, range_a_stab, range_c_diff, range_q_crit, range_thicklayfac,  &
             box_liq_sv, thicklayfac_sv, box_liq_asy_sv, range_lhn_coef, range_lhn_artif_fac,            &
             range_fac_lhn_down, range_fac_lhn_up, range_fac_ccqc, range_rmfdeps, range_entrorg_mult,    &
-            range_dustyci_crit, range_dustyci_rhi
+            range_dustyci_crit, range_dustyci_rhi, fac_rng_spinup
 
   !!--------------------------------------------------------------------------
   !! Basic configuration setup for ensemble perturbations
@@ -228,6 +228,7 @@ MODULE mo_ensemble_pert_config
 
   INTEGER :: itype_pert_gen        !< type of ensemble perturbation generation
   INTEGER :: timedep_pert          !< time dependence of ensemble perturbations
+  INTEGER :: fac_rng_spinup        !< factor for number of RNG spinup calls
   LOGICAL :: use_ensemble_pert     !< main switch
   LOGICAL :: linit                 !< internal switch to decide between initializing and applying random numbers
 
@@ -290,7 +291,7 @@ MODULE mo_ensemble_pert_config
       ENDIF
 
       CALL RANDOM_SEED(PUT=rnd_seed)
-      DO i = 1, 10+ipn
+      DO i = 1, (10+ipn)*fac_rng_spinup
         CALL RANDOM_NUMBER(rnd_num)
       ENDDO
 
@@ -300,13 +301,12 @@ MODULE mo_ensemble_pert_config
 
       ! Renitialize random number generator with the same seed as before, 
       ! excluding the time dependence applied to the physics perturbations in the case of timedep_pert=1
-      ipn = gribout_config(1)%perturbationNumber
       DO i = 1, rnd_size
         rnd_seed(i) = (135+i)*ipn - (21+i**2)*(5+MOD(ipn,10))**2 + 3*i**3
       ENDDO
 
       CALL RANDOM_SEED(PUT=rnd_seed)
-      DO i = 1, 10+ipn
+      DO i = 1, (10+ipn)*fac_rng_spinup
         CALL RANDOM_NUMBER(rnd_num)
       ENDDO
 
@@ -320,17 +320,17 @@ MODULE mo_ensemble_pert_config
         rnd_seed(i) = (139+i)*ipn - (23+i**2)*(5+MOD(ipn,12))**2 + 4*i**3
       ENDDO
       CALL RANDOM_SEED(PUT=rnd_seed)
-      DO i = 1, 10+ipn
+      DO i = 1, (10+ipn)*fac_rng_spinup
         CALL RANDOM_NUMBER(rnd_num)
       ENDDO
 
-      ALLOCATE(rnd_tkred_sfc(nclass_lu(1)), rnd_fac_ccqc(nclass_lu(1)))
+      ALLOCATE(rnd_tkred_sfc(ext_atm_attr(1)%nclass_lu), rnd_fac_ccqc(ext_atm_attr(1)%nclass_lu))
 
       CALL message('','')
       CALL message('','Perturbed external parameters: roughness length, root depth, min. stomata resistance,&
                    & max. leaf area index; defaults in brackets')
       ! Perturbations for external parameters specified depending on the land cover class
-      DO i = 1, nclass_lu(1) ! we assume here that the same land cover dataset is used for all model domains
+      DO i = 1, ext_atm_attr(1)%nclass_lu ! we assume here that the same land cover dataset is used for all model domains
 
         ! roughness length
         CALL random_gen(dum,rnd_num)
@@ -375,6 +375,9 @@ MODULE mo_ensemble_pert_config
 
       CALL RANDOM_NUMBER(rnd_num)
       rnd_rmfdeps = rnd_num
+
+      WRITE(message_text,'(a,2f8.4)') 'rnd_entrorg_mult, rnd_rmfdeps: ', rnd_entrorg_mult, rnd_rmfdeps
+      CALL message('', TRIM(message_text))
 
       !$ACC ENTER DATA COPYIN(rnd_tkred_sfc, rnd_fac_ccqc, rnd_entrorg_mult, rnd_rmfdeps)
 
@@ -586,13 +589,13 @@ MODULE mo_ensemble_pert_config
     ! turbulence
     CALL random_gen(rnd_tkhmin, rnd_num)
     tkfac = tkhmin_strat_sv(1)/tkhmin_sv(1)
-    turbdiff_config(1:max_dom)%tkhmin = tkhmin_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_tkhmin
-    turbdiff_config(1:max_dom)%tkhmin_strat = tkhmin_strat_sv(1:max_dom) + 2._wp*tkfac*(rnd_num-0.5_wp)*range_tkhmin
+    turbdiff_config(1:max_dom)%tkhmin = MAX(0._wp, tkhmin_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_tkhmin)
+    turbdiff_config(1:max_dom)%tkhmin_strat = MAX(0._wp, tkhmin_strat_sv(1:max_dom) + 2._wp*tkfac*(rnd_num-0.5_wp)*range_tkhmin)
 
     CALL random_gen(rnd_tkmmin, rnd_num)
     tkfac = tkmmin_strat_sv(1)/tkmmin_sv(1)
-    turbdiff_config(1:max_dom)%tkmmin = tkmmin_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_tkmmin
-    turbdiff_config(1:max_dom)%tkmmin_strat = tkmmin_strat_sv(1:max_dom) + 2._wp*tkfac*(rnd_num-0.5_wp)*range_tkmmin
+    turbdiff_config(1:max_dom)%tkmmin = MAX(0._wp, tkmmin_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_tkmmin)
+    turbdiff_config(1:max_dom)%tkmmin_strat = MAX(0._wp, tkmmin_strat_sv(1:max_dom) + 2._wp*tkfac*(rnd_num-0.5_wp)*range_tkmmin)
 
     CALL random_gen(rnd_rlam_heat, rnd_num)
     turbdiff_config(1:max_dom)%rlam_heat = MAX(0.1_wp, rlam_heat_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_rlam_heat)
@@ -600,10 +603,10 @@ MODULE mo_ensemble_pert_config
     turbdiff_config(1:max_dom)%rat_sea   = rat_sea_sv(1:max_dom)*rlam_heat_sv(1:max_dom)/turbdiff_config(1:max_dom)%rlam_heat
 
     CALL random_gen(rnd_turlen, rnd_num)
-    turbdiff_config(1:max_dom)%tur_len = tur_len_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_turlen
+    turbdiff_config(1:max_dom)%tur_len = MAX(0._wp, tur_len_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_turlen)
 
     CALL random_gen(rnd_a_hshr, rnd_num)
-    turbdiff_config(1:max_dom)%a_hshr = a_hshr_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_a_hshr
+    turbdiff_config(1:max_dom)%a_hshr = MAX(0._wp, a_hshr_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_a_hshr)
 
     ! a_stab has default value 0 and needs positive definite perturbations
     CALL random_gen(rnd_a_stab, rnd_num)
@@ -614,7 +617,7 @@ MODULE mo_ensemble_pert_config
     turbdiff_config(1:max_dom)%c_diff = c_diff_sv(1:max_dom) * rnd_fac
 
     CALL random_gen(rnd_q_crit, rnd_num)
-    turbdiff_config(1:max_dom)%q_crit = q_crit_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_q_crit
+    turbdiff_config(1:max_dom)%q_crit = MAX(0._wp, q_crit_sv(1:max_dom) + 2._wp*(rnd_num-0.5_wp)*range_q_crit)
 
     CALL random_gen(rnd_alpha0, rnd_num)
     rnd_fac   = range_charnock**(2._wp*(rnd_num-0.5_wp))
@@ -630,7 +633,7 @@ MODULE mo_ensemble_pert_config
 
     ! TERRA
     CALL random_gen(rnd_minsnowfrac, rnd_num)
-    tune_minsnowfrac = minsnowfrac_sv + 2._wp*(rnd_num-0.5_wp)*range_minsnowfrac
+    tune_minsnowfrac =  MAX(0._wp, minsnowfrac_sv + 2._wp*(rnd_num-0.5_wp)*range_minsnowfrac)
 
     CALL random_gen(rnd_c_soil, rnd_num)
     c_soil = c_soil_sv + 2._wp*(rnd_num-0.5_wp)*range_c_soil

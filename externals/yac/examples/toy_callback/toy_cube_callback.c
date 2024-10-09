@@ -1,69 +1,14 @@
-/**
- * @file toy_cube_callback.c
- *
- * @copyright Copyright  (C)  2021 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
-#include "yac_config.h"
-
-#if defined YAC_NETCDF_ENABLED
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
-#include "utils.h"
-#include "component.h"
-#include "fields.h"
-#include "yac_interface.h"
-#include "geometry.h"
-#include "yac_mpi.h"
-#include "generate_cubed_sphere.h"
-#include "test_function.h"
-
-#define VTK_OUTPUT
-#ifdef VTK_OUTPUT
-#include "vtk_output.h"
-#endif
+#include "yac.h"
+#include "yac_utils.h"
 
 /* ------------------------------------------------- */
 
@@ -105,7 +50,7 @@ int main (int argc, char *argv[]) {
   MPI_Comm_rank(local_comm,&rank);
   MPI_Comm_size(local_comm,&size);
 
-  yac_mpi_call(MPI_Comm_free(&local_comm), MPI_COMM_WORLD);
+  MPI_Comm_free(&local_comm);
 
 
   int corner_point_id;
@@ -127,12 +72,12 @@ int main (int argc, char *argv[]) {
   int * global_corner_id;
   int * corner_core_mask;
 
-  generate_part_cube_grid_information((unsigned)cube_n, &nbr_vertices, &nbr_cells,
-                                      &num_vertices_per_cell, &cell_to_vertex,
-                                      &x_vertices, &y_vertices, &x_cells,
-                                      &y_cells, &global_cell_id,
-                                      &cell_core_mask, &global_corner_id,
-                                      &corner_core_mask, rank, size);
+  yac_generate_part_cube_grid_information((unsigned)cube_n, &nbr_vertices, &nbr_cells,
+                                          &num_vertices_per_cell, &cell_to_vertex,
+                                          &x_vertices, &y_vertices, &x_cells,
+                                          &y_cells, &global_cell_id,
+                                          &cell_core_mask, &global_corner_id,
+                                          &corner_core_mask, rank, size);
 
   double * x_points, * y_points;
 
@@ -144,10 +89,10 @@ int main (int argc, char *argv[]) {
     x_vertices, y_vertices, (int*)cell_to_vertex, &grid_id);
 
 
-  yac_cset_global_index(global_cell_id, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
-  yac_cset_global_index(global_corner_id, CORNER, grid_id);
-  yac_cset_core_mask(corner_core_mask, CORNER, grid_id);
+  yac_cset_global_index(global_cell_id, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
+  yac_cset_global_index(global_corner_id, YAC_LOCATION_CORNER, grid_id);
+  yac_cset_core_mask(corner_core_mask, YAC_LOCATION_CORNER, grid_id);
 
   yac_cdef_points_unstruct(
     grid_id, nbr_vertices, YAC_LOCATION_CORNER, x_points, y_points, &corner_point_id);
@@ -160,7 +105,7 @@ int main (int argc, char *argv[]) {
   /* Search. */
   yac_cenddef( );
 
-  double * callback_in = xmalloc(nbr_vertices * sizeof(*callback_in));
+  double * callback_in = malloc(nbr_vertices * sizeof(*callback_in));
   for (unsigned i = 0; i < nbr_vertices; ++i) callback_in[i] = -10;
 
   int err;
@@ -180,26 +125,22 @@ int main (int argc, char *argv[]) {
 
   sprintf(vtk_filename, "toy_cube_callback_%d.vtk", rank);
 
-  double point_data[nbr_vertices][3];
-  for (int i = 0; i < nbr_vertices; ++i) {
-   LLtoXYZ(x_vertices[i], y_vertices[i], point_data[i]);
-  }
-
-  VTK_FILE *vtk_file = vtk_open(vtk_filename, "cube_out");
-  vtk_write_point_data(vtk_file, (double *)point_data, nbr_vertices);
-  vtk_write_cell_data(vtk_file, (unsigned *)cell_to_vertex,
+  YAC_VTK_FILE *vtk_file = yac_vtk_open(vtk_filename, "cube_out");
+  yac_vtk_write_point_data_ll(
+    vtk_file, x_vertices, y_vertices, nbr_vertices);
+  yac_vtk_write_cell_data(vtk_file, (unsigned *)cell_to_vertex,
                       (unsigned*)num_vertices_per_cell, nbr_cells);
-  vtk_write_point_scalars_int(
+  yac_vtk_write_point_scalars_int(
     vtk_file, corner_core_mask, nbr_vertices, "corner_core_mask");
-  vtk_write_point_scalars_int(
+  yac_vtk_write_point_scalars_int(
     vtk_file, global_corner_id, nbr_vertices, "global_corner_id");
-  vtk_write_cell_scalars_int(
+  yac_vtk_write_cell_scalars_int(
     vtk_file, global_cell_id, nbr_cells, "global_cell_id");
 
-  vtk_write_point_scalars_double(
+  yac_vtk_write_point_scalars_double(
     vtk_file, callback_in, nbr_vertices, "callback_in");
 
-  vtk_close(vtk_file);
+  yac_vtk_close(vtk_file);
 #endif // VTK_OUTPUT
 
   free(corner_core_mask);
@@ -244,12 +185,3 @@ static void parse_arguments(
     }
   }
 }
-
-#else
-#include <stdlib.h>
-#include <stdio.h>
-int main () {
-  printf ("Examples requires compiling with NetCDF.\n");
-  return EXIT_FAILURE;
-}
-#endif

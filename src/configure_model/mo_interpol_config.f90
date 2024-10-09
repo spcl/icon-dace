@@ -1,5 +1,3 @@
-! Configuration for interpolation and reconstruction.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,13 +9,15 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Configuration for interpolation and reconstruction.
+
 MODULE mo_interpol_config
 
   USE mo_kind,                ONLY: wp
   USE mo_math_constants,      ONLY: ln2
   USE mo_impl_constants,      ONLY: max_dom
   USE mo_exception,           ONLY: message, message_text, finish
-  USE mo_grid_geometry_info,  ONLY: t_grid_geometry_info, planar_torus_geometry
+  USE mo_lib_grid_geometry_info,  ONLY: t_grid_geometry_info, planar_torus_geometry
   USE mo_grid_config,         ONLY: grid_rescale_factor
   USE mo_run_config,          ONLY: msg_level
 

@@ -1,5 +1,3 @@
-! This is the master program of the ICON model.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This is the master program of the ICON model.
+
 PROGRAM icon
 
 #if defined (__INTEL_COMPILER) || defined (__PGI) || defined (NAGFOR)
@@ -96,7 +97,6 @@ PROGRAM icon
 
 #ifndef __NO_ICON_COMIN__
   TYPE(t_comin_setup_version_info) :: comin_version
-  INTEGER                      :: ierr
 #endif /* ifndef __NO_ICON_COMIN__ */
 
   ! handling of comand-line arguments:
@@ -207,18 +207,15 @@ PROGRAM icon
 #ifndef __NO_ICON_COMIN__
   !-------------------------------------------------------------------
   ! Initialize ICON community interfaces - UNDER DEVELOPMENT
-  CALL comin_setup_init(my_process_is_stdio() , ierr)
-  IF (ierr /= 0) STOP
+  CALL comin_setup_init(my_process_is_stdio())
   comin_version = comin_setup_get_version()
   WRITE(message_text,'(2(a,i0))') &
     &  "        linked to ICON Community Interface v", &
     &  comin_version%version_no_major, ".", comin_version%version_no_minor
   CALL message('', message_text)
 
-  CALL comin_setup_errhandler(finish, ierr)
-  IF (ierr /= 0) STOP
-  CALL comin_setup_check("icon", wp, ierr)
-  IF (ierr /= 0) STOP
+  CALL comin_setup_errhandler(finish)
+  CALL comin_setup_check("icon", wp)
 
   CALL message('', '')
 #endif /* ifndef __NO_ICON_COMIN__ */

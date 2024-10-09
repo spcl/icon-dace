@@ -1,7 +1,3 @@
-! Contains the interface needed to call AWI FEM sea ice model
-! as well as advection and interpolation routines.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the interface needed to call AWI FEM sea ice model
+! as well as advection and interpolation routines.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -527,6 +526,7 @@ CONTAINS
   !> 2) Resahpe result to get vars on FEM grid
   !-------------------------------------------------------------------------
   !!
+  !pgi$r opt 1
   SUBROUTINE map_icon2fem_scalar(p_patch, p_ice, ssh, lacc)
 
     USE mo_ice_fem_icon_init, ONLY: c2v_wgt

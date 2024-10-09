@@ -1,8 +1,3 @@
-! This module is the interface between nwp_nh_interface to the
-! surface parameterisations:
-! inwp_sfc  == 1 == surface scheme TERRA run in COSMO
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module is the interface between nwp_nh_interface to the
+! surface parameterisations:
+! inwp_sfc  == 1 == surface scheme TERRA run in COSMO
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -32,7 +31,8 @@ MODULE mo_nwp_sfc_interface
   USE mo_nwp_phy_types,       ONLY: t_nwp_phy_diag
   USE mo_nwp_phy_state,       ONLY: phy_params
   USE mo_parallel_config,     ONLY: nproma
-  USE mo_run_config,          ONLY: iqv, iqi, msg_level
+  USE mo_run_config,          ONLY: iqv, iqc, iqs, iqi, msg_level
+  USE mo_turbdiff_config,     ONLY: turbdiff_config
   USE mo_io_config,           ONLY: var_in_output
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
   USE mo_lnd_nwp_config,      ONLY: nlev_soil, nlev_snow, ibot_w_so, ntiles_total,    &
@@ -44,7 +44,7 @@ MODULE mo_nwp_sfc_interface
   USE mo_nwp_tuning_config,   ONLY: itune_gust_diag
   USE mo_radiation_config,    ONLY: islope_rad
   USE mo_extpar_config,       ONLY: itype_vegetation_cycle
-  USE mo_initicon_config,     ONLY: icpl_da_sfcevap, dt_ana, icpl_da_skinc, icpl_da_seaice
+  USE mo_initicon_config,     ONLY: icpl_da_sfcevap, dt_ana, icpl_da_skinc, icpl_da_seaice, icpl_da_snowalb
   USE mo_coupling_config,     ONLY: is_coupled_to_ocean
   USE mo_ensemble_pert_config,ONLY: sst_pert_corrfac
   USE mo_satad,               ONLY: sat_pres_water, sat_pres_ice, spec_humi, dqsatdT_ice
@@ -54,6 +54,7 @@ MODULE mo_nwp_sfc_interface
   USE sfc_flake_data,         ONLY: h_Ice_min_flk
   USE sfc_seaice,             ONLY: seaice_timestep_nwp
   USE sfc_terra_data                ! soil and vegetation parameters for TILES
+  USE turb_data,              ONLY: ilow_def_cond
   USE mo_physical_constants,  ONLY: tmelt, grav, salinity_fac, rhoh2o
   USE mo_index_list,          ONLY: generate_index_list
   USE mo_fortran_tools,       ONLY: init, set_acc_host_or_device, assert_acc_device_only
@@ -144,8 +145,10 @@ CONTAINS
     REAL(wp) :: v_t (nproma)
     REAL(wp) :: t_t (nproma)
     REAL(wp) :: qv_t(nproma)
-    REAL(wp) :: p0_t(nproma)
+    REAL(wp) :: qc_t(nproma)
+    REAL(wp) :: qi_t(nproma)
 
+    REAL(wp) :: p0_t(nproma)
     REAL(wp) :: sso_sigma_t(nproma)
     INTEGER  :: lc_class_t (nproma)
     INTEGER  :: cond (nproma), init_list_tmp (nproma), i_count_init_tmp
@@ -253,7 +256,8 @@ CONTAINS
     INTEGER  :: init_list(nproma), it1(nproma), it2(nproma)
     REAL(wp) :: tmp1, tmp2, tmp3, qsat1, dqsdt1, qsat2, dqsdt2, qi_snowdrift_flx_t
     REAL(wp) :: frac_sv(nproma), frac_snow_sv(nproma), fact1(nproma), fact2(nproma), tsnred(nproma), &
-                sntunefac(nproma), sntunefac2(nproma, ntiles_total), heatcond_fac(nproma), heatcap_fac(nproma)
+                sntunefac(nproma), sntunefac2(nproma, ntiles_total), heatcond_fac(nproma), heatcap_fac(nproma), &
+                hydiffu_fac(nproma), snowfrac_fac(nproma)
     REAL(wp) :: rain_gsp_rate(nproma, ntiles_total)
     REAL(wp) :: snow_gsp_rate(nproma, ntiles_total)
     REAL(wp) :: ice_gsp_rate (nproma, ntiles_total)
@@ -275,6 +279,8 @@ CONTAINS
     REAL(wp) :: plevap_t    (nproma)
     REAL(wp) :: rstom_t     (nproma)
     REAL(wp) :: z0_t        (nproma)
+
+    LOGICAL :: ldiff_qi, ldiff_qs, ldepo_qw
 
     CHARACTER(len=*), PARAMETER :: routine = 'mo_nwp_sfc_interface:nwp_surface'
 
@@ -310,13 +316,18 @@ CONTAINS
     i_startblk = p_patch%cells%start_blk(rl_start,1)
     i_endblk   = p_patch%cells%end_blk(rl_end,i_nchdom)
 
-    ! canopy-type needed by TERRA:
     SELECT CASE (atm_phy_nwp_config(jg)%inwp_turb)
-    CASE(icosmo)
-       icant=2 !canopy-treatment related to Raschendorfer-transfer-scheme
+    CASE(icosmo) !Raschendorfer-scheme for turbulence (based on 'turbtran', turbdiff' and 'vertdiff')
+       icant=2 !canopy-treatment according to transfer-scheme 'turbtran'
+       ldepo_qw = (ilow_def_cond == 2) !deposition of (liquid or frozen) cloud water required, if and only if
+                                       ! a zero-concentration condition is applied for turbulent vertical diffusion
     CASE DEFAULT
        icant=1 !canopy-treatment related to Louis-transfer-scheme
+       ldepo_qw = .FALSE. !no deposition of (liquid or frozen) cloud water considered
     END SELECT
+
+    ldiff_qi = MERGE(turbdiff_config(jg)%ldiff_qi, .FALSE., ldepo_qw) !deposition of cloud ice required 
+    ldiff_qs = MERGE(turbdiff_config(jg)%ldiff_qs, .FALSE., ldepo_qw) !deposition of      snow required
 
     IF (msg_level >= 15) THEN
       CALL message('mo_nwp_sfc_interface: ', 'call land-surface scheme')
@@ -389,8 +400,8 @@ CONTAINS
 !$OMP DO PRIVATE(jb,jc,jk,i_startidx,i_endidx,isubs,i_count,ic,isubs_snow,i_count_snow,i_count_seawtr,      &
 !$OMP   tmp1,tmp2,tmp3,fact1,fact2,frac_sv,frac_snow_sv,i_count_init,init_list,it1,it2,is1,is2,             &
 !$OMP   rain_gsp_rate,snow_gsp_rate,ice_gsp_rate,rain_con_rate,snow_con_rate,ps_t,prr_con_t,prs_con_t,      &
-!$OMP   prr_gsp_t,prs_gsp_t,pri_gsp_t,u_t,v_t,t_t,qv_t,p0_t,sso_sigma_t,lc_class_t,t_snow_now_t,t_s_now_t,  &
-!$OMP   t_g_t,qv_s_t,w_snow_now_t,rho_snow_now_t,w_i_now_t,w_p_now_t,w_s_now_t,freshsnow_t,                 &
+!$OMP   prr_gsp_t,prs_gsp_t,pri_gsp_t,u_t,v_t,t_t,qv_t,qc_t,qi_t,p0_t,sso_sigma_t,lc_class_t,t_g_t,qv_s_t,  &
+!$OMP   t_snow_now_t,t_s_now_t,w_snow_now_t,rho_snow_now_t,w_i_now_t,w_p_now_t,w_s_now_t,freshsnow_t,       &
 !$OMP   snowfrac_t,runoff_s_inst_t,runoff_g_inst_t,resid_wso_inst_t,u_10m_t,v_10m_t,tch_t,tcm_t,tfv_t,      &
 !$OMP   tfvsn_t,sobs_t,thbs_t,pabs_t,r_bsmin,                                                               &
 !$OMP   soiltyp_t,plcov_t,rootdp_t,sai_t,tai_t,eai_t,rsmin2d_t,t_snow_mult_now_t,wliq_snow_now_t,           &
@@ -401,8 +412,8 @@ CONTAINS
 !$OMP   wliq_snow_new_t,wtot_snow_new_t,dzh_snow_new_t,w_so_new_t,w_so_ice_new_t,lhfl_pl_t,                 &
 !$OMP   shfl_soil_t,lhfl_soil_t,shfl_snow_t,lhfl_snow_t,t_snow_new_t,graupel_gsp_rate,prg_gsp_t,            &
 !$OMP   snow_melt_flux_t,h_snow_gp_t,conv_frac,t_sk_now_t,t_sk_new_t,skinc_t,tsnred,plevap_t,z0_t,laifac_t, &
-!$OMP   cond,init_list_tmp,i_count_init_tmp,heatcond_fac,heatcap_fac,qi_snowdrift_flx_t,                    &
-!$OMP   qsat1,dqsdt1,qsat2,dqsdt2,sntunefac,sntunefac2,snowfrac_lcu_t) ICON_OMP_GUIDED_SCHEDULE
+!$OMP   cond,init_list_tmp,i_count_init_tmp,heatcond_fac,heatcap_fac,hydiffu_fac,qi_snowdrift_flx_t,        &
+!$OMP   snowfrac_fac,qsat1,dqsdt1,qsat2,dqsdt2,sntunefac,sntunefac2,snowfrac_lcu_t) ICON_OMP_GUIDED_SCHEDULE
 
     DO jb = i_startblk, i_endblk
 
@@ -643,7 +654,7 @@ CONTAINS
         !$ACC DATA CREATE(soiltyp_t, urb_isa_t, urb_ai_t, urb_h_bld_t) &
         !$ACC   CREATE(urb_hcap_t, urb_hcon_t, ahf_t) &
         !$ACC   CREATE(plcov_t, rootdp_t, sai_t, eai_t, tai_t, laifac_t, skinc_t) &
-        !$ACC   CREATE(rsmin2d_t, r_bsmin, u_t, v_t, t_t, qv_t, p0_t, ps_t, h_snow_gp_t) &
+        !$ACC   CREATE(rsmin2d_t, r_bsmin, u_t, v_t, t_t, qv_t, qc_t, qi_t, p0_t, ps_t, h_snow_gp_t) &
         !$ACC   CREATE(u_10m_t, v_10m_t, prr_con_t, prs_con_t, conv_frac, prr_gsp_t) &
         !$ACC   CREATE(prs_gsp_t, pri_gsp_t, prg_gsp_t, sobs_t, thbs_t, pabs_t, tsnred) &
         !$ACC   CREATE(t_snow_now_t, t_s_now_t, t_sk_now_t, t_g_t, qv_s_t, w_snow_now_t) &
@@ -658,8 +669,8 @@ CONTAINS
         !$ACC   CREATE(rstom_t, lhfl_bs_t, t_snow_mult_new_t, rho_snow_mult_new_t) &
         !$ACC   CREATE(wliq_snow_new_t, wtot_snow_new_t, dzh_snow_new_t, t_so_new_t) &
         !$ACC   CREATE(w_so_new_t, w_so_ice_new_t, lhfl_pl_t, shfl_s_t, lhfl_s_t) &
-        !$ACC   CREATE(qhfl_s_t, plevap_t, z0_t, sso_sigma_t, heatcond_fac, heatcap_fac) &
-        !$ACC   CREATE(snowfrac_lcu_t, lc_class_t, i_count) ASYNC(acc_async_queue)
+        !$ACC   CREATE(qhfl_s_t, plevap_t, z0_t, sso_sigma_t, heatcond_fac, heatcap_fac, hydiffu_fac) &
+        !$ACC   CREATE(snowfrac_fac, snowfrac_lcu_t, lc_class_t, i_count) ASYNC(acc_async_queue)
 
         !$ACC KERNELS ASYNC(acc_async_queue) IF(lzacc)
         i_count = ext_data%atm%gp_count_t(jb,isubs) 
@@ -691,8 +702,13 @@ CONTAINS
           v_t(ic)       =  p_diag%v         (jc,nlev,jb)
           t_t(ic)       =  p_diag%temp      (jc,nlev,jb)     
           qv_t(ic)      =  p_prog_rcf%tracer(jc,nlev,jb,iqv) 
+          qc_t(ic)      =  MERGE(p_prog_rcf%tracer(jc,nlev,jb,iqc), 0._wp, ldepo_qw)
+          qi_t(ic)      =  MERGE(p_prog_rcf%tracer(jc,nlev,jb,iqi), 0._wp, ldiff_qi) + &
+                           MERGE(p_prog_rcf%tracer(jc,nlev,jb,iqs), 0._wp, ldiff_qs)
+          !Note:
+          !So far, ice- and snow-fluxes are not discriminated in 'terra'!
+
           p0_t(ic)      =  p_diag%pres      (jc,nlev,jb) 
-    
           sso_sigma_t(ic)       = ext_data%atm%sso_stdh(jc,jb)
           lc_class_t(ic)        = ext_data%atm%lc_class_t(jc,jb,isubs)
 
@@ -736,11 +752,7 @@ CONTAINS
             laifac_t(ic)            =  1._wp
           ENDIF
 
-          IF (isubs > ntiles_lnd) THEN
-            z0_t(ic)                =  prm_diag%gz0_t(jc,jb,isubs-ntiles_lnd)/grav
-          ELSE
-            z0_t(ic)                =  prm_diag%gz0_t(jc,jb,isubs)/grav
-          ENDIF
+          z0_t(ic)                  =  prm_diag%gz0_t(jc,jb,isubs)/grav
 
           IF (icpl_da_skinc >= 2) THEN
             heatcond_fac(ic)        =  prm_diag%heatcond_fac(jc,jb)
@@ -748,6 +760,18 @@ CONTAINS
           ELSE
             heatcond_fac(ic)        =  1._wp
             heatcap_fac(ic)         =  1._wp
+          ENDIF
+
+          IF (icpl_da_snowalb >= 3) THEN
+            snowfrac_fac(ic)       =  prm_diag%snowfrac_fac(jc,jb)
+          ELSE
+            snowfrac_fac(ic)       =  1._wp
+          ENDIF
+
+          IF (icpl_da_sfcevap >= 5) THEN
+            hydiffu_fac(ic)       =  prm_diag%hydiffu_fac(jc,jb)
+          ELSE
+            hydiffu_fac(ic)       =  1._wp
           ENDIF
 
           ! note: we reset "runoff_s_inst_t", "runoff_g_inst_t" in
@@ -941,6 +965,7 @@ CONTAINS
 !
         &  heatcond_fac = heatcond_fac                       , & !IN tuning factor for soil thermal conductivity
         &  heatcap_fac  = heatcap_fac                        , & !IN tuning factor for soil heat capacity
+        &  hydiffu_fac  = hydiffu_fac                        , & !IN tuning factor for hydraulic diffusivity
 !
         &  rsmin2d      = rsmin2d_t                          , & !IN minimum stomatal resistance       ( s/m )
         &  r_bsmin      = r_bsmin                            , & !IN minimum bare soil evap resistance ( s/m )
@@ -949,7 +974,10 @@ CONTAINS
         &  u            =  u_t                               , & !IN zonal wind speed
         &  v            =  v_t                               , & !IN meridional wind speed 
         &  t            =  t_t                               , & !IN temperature                       (  K  )
-        &  qv           =  qv_t                              , & !IN specific water vapor content      (kg/kg)
+        &  qv           =  qv_t                              , & !IN specific water vapor  content     (kg/kg)
+        &  qc           =  qc_t                              , & !IN specific liquid-water content     (kg/kg)
+        &  qi           =  qi_t                              , & !IN specific frozen-water content     (kg/kg)
+                                                                 !   (as far as included into vertical diffusion)
         &  ptot         =  p0_t                              , & !IN base state pressure               ( Pa  ) 
         &  ps           =  ps_t                              , & !IN surface pressure                  ( Pa  )
 !
@@ -1045,7 +1073,9 @@ CONTAINS
         &  rstom         = rstom_t                           , & !OUT stomatal resistance                      ( s/m )
         &  zshfl_sfc     = shfl_s_t                          , & !OUT sensible heat flux surface interface     (W/m2) 
         &  zlhfl_sfc     = lhfl_s_t                          , & !OUT latent   heat flux surface interface     (W/m2) 
-        &  zqhfl_sfc     = qhfl_s_t                          , & !OUT moisture flux surface interface          (kg/m2/s)
+        &  zqhfl_sfc     = qhfl_s_t                          , & !OUT water   vapor flux surface interface     (kg/m2/s)
+        &  ldiff_qi      = ldiff_qi .OR. ldiff_qs            , & !IN turbulent diffusion of any frozen water is active
+        &  ldepo_qw      = ldepo_qw                          , & !IN deposition of (frozen or liquid) cloud water required
         &  lres_soilwatb = var_in_output(jg)%res_soilwatb    , & !IN flag to compute residuum of soil water
         &  lacc          = lzacc                             , & !IN flag to run OpenACC code
         &  opt_acc_async_queue = acc_async_queue               ) !IN OpenACC stream to run on
@@ -1083,6 +1113,7 @@ CONTAINS
           &  meltrate   = snow_melt_flux_t        , & ! snow melting rate
           &  sso_sigma  = sso_sigma_t             , & ! sso stdev
           &  z0         = z0_t                    , & ! vegetation roughness length
+          &  snowfrac_fac = snowfrac_fac          , & ! APT tuning factor for snow-cover fraction
           &  snowfrac   = snowfrac_t              , & ! OUT: snow cover fraction
           &  snowfrac_u = snowfrac_lcu_t          , & ! OUT: unmodified snow cover fraction
           &  t_g        = t_g_t                   , & ! OUT: averaged ground temperature

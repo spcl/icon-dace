@@ -25,7 +25,8 @@ MODULE mo_nlcc_interface
 
   USE mo_jsb_model_class,    ONLY: t_jsb_model
   USE mo_jsb_class,          ONLY: Get_model
-  USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract
+  USE mo_jsb_grid_class,     ONLY: t_jsb_grid
+  USE mo_jsb_tile_class,     ONLY: t_jsb_tile_abstract, t_jsb_aggregator
   USE mo_jsb_config_class,   ONLY: t_jsb_config, t_jsb_config_p
   USE mo_jsb_process_class,  ONLY: t_jsb_process
   USE mo_jsb_task_class,     ONLY: t_jsb_process_task, t_jsb_task_options
@@ -151,8 +152,8 @@ CONTAINS
     REAL(wp), POINTER  ::  damaged_fract(:,:)
     REAL(wp), POINTER  ::  max_green_bio(:,:)
     REAL(wp), POINTER  ::  sla(:,:)
-    REAL(wp), POINTER  ::  cover_fract_pot_previous_year(:,:)
-    REAL(wp), POINTER  ::  cover_fract_sum(:)
+    REAL(wp), ALLOCATABLE  ::  cover_fract_pot_previous_year(:,:)
+    REAL(wp), ALLOCATABLE  ::  cover_fract_sum(:)
     REAL(wp), ALLOCATABLE  :: fract_fpc_max(:,:)
 
     ! Declare process memories
@@ -397,8 +398,11 @@ CONTAINS
     DEALLOCATE(NPP_mean_5year)
     DEALLOCATE(burned_fract, damaged_fract)
     DEALLOCATE(max_green_bio, sla)
+    DEALLOCATE(fuel)
     DEALLOCATE(cover_fract_pot_previous_year)
     DEALLOCATE(cover_fract_sum)
+    DEALLOCATE(var_collect)
+
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
@@ -417,10 +421,11 @@ CONTAINS
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
     TYPE(t_jsb_task_options),   INTENT(in)    :: options
 
+    dsl4jsb_Def_memory(NLCC_)
+
     ! Local variables
-    TYPE(t_jsb_model), POINTER   :: model
+    CLASS(t_jsb_aggregator), POINTER          :: weighted_by_fract
     INTEGER  :: iblk, ics, ice, nc
-    !X if necessary: REAL(wp) :: dtime, steplen
     CHARACTER(len=*), PARAMETER :: routine = modname//':aggregate_nlcc'
 
     ! Get local variables from options argument
@@ -428,14 +433,24 @@ CONTAINS
     ics  = options%ics
     ice  = options%ice
     nc   = options%nc
-    !X if necessary: dtime   = options%dtime
-    !X if necessary: steplen = options%steplen
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
-    model => Get_model(tile%owner_model_id)
-    !X Implementation: Start your process scheme here...
+    dsl4jsb_Get_memory(NLCC_)
 
+    weighted_by_fract => tile%Get_aggregator("weighted_by_fract")
+
+    dsl4jsb_Aggregate_onChunk(NLCC_, min_mmtemp20,          weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, max_mmtemp20,          weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, gdd_prev_year,         weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, bare_fpc,              weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, desert_fpc,            weighted_by_fract)
+
+    dsl4jsb_Aggregate_onChunk(NLCC_, act_fpc,               weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, pot_fpc,               weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, cover_fract_pot,       weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, cover_fract,           weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(NLCC_, bio_exist,             weighted_by_fract)
 
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 

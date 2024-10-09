@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include "sysdep1.h"	/* here to get stat64 on some badly designed Linux systems */
 #include "f2c.h"
 #include "fio.h"

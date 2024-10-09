@@ -1,6 +1,3 @@
-!
-! Module containing thermodynamic functions used by the AES department in MPI-M
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module containing thermodynamic functions used by the AES department in MPI-M
 
 MODULE mo_aes_graupel
 

@@ -63,7 +63,7 @@ FCFLAGS="-I${INTEL_ROOT}/include -I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} 
 CFLAGS="-I${INTEL_ROOT}/include -g -gdwarf-4 -qno-opt-dynamic-align ${ARCH} -fma -ip -pc64 -std=gnu99 -I${FYAML_ROOT}/include"
 CPPFLAGS="-I${INTEL_ROOT}/include -I${MPI_ROOT}/include -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_INCLUDE_DIR}"
 
-ICON_FCFLAGS='-DDO_NOT_COMBINE_PUT_AND_NOCHECK -O2 -ftz -qoverride-limits -assume realloc_lhs -align array64byte -fma -ip -D__SWAPDIM -DOCE_SOLVE_OMP'
+ICON_FCFLAGS='-DDO_NOT_COMBINE_PUT_AND_NOCHECK -O2 -ftz -qoverride-limits -assume realloc_lhs -align array64byte -fma -ip -DOCE_SOLVE_OMP'
 ICON_CFLAGS='-O3 -ftz'
 ICON_OCEAN_FCFLAGS='-O3 -assume norealloc_lhs -reentrancy threaded -qopt-report-file=stdout -qopt-report=0 -qopt-report-phase=vec'
 ICON_BUNDLED_FCFLAGS="-O3 -ftz -std08"
@@ -75,7 +75,7 @@ ICON_ECRAD_FCFLAGS='-qno-opt-dynamic-align -no-fma -fpe0'
 # MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec -launcher fork"
 MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
 
-EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --enable-ecrad --enable-art --enable-grib2 --enable-emvorado --enable-dace --enable-coupling'
+EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --enable-ecrad --enable-art --enable-grib2 --enable-emvorado --enable-dace --enable-coupling --enable-dim-swap'
 EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-mpi-checks"
 
 ################################################################################

@@ -1,6 +1,3 @@
-! Contains namelists for parallel run control.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains namelists for parallel run control.
 
 MODULE mo_parallel_nml
 

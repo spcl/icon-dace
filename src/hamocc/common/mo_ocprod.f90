@@ -1,5 +1,3 @@
-! @brief Computes plankton dynamics, OM degradation
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Computes plankton dynamics, OM degradation
 
 MODULE mo_ocprod
 

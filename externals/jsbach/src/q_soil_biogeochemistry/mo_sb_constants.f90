@@ -304,6 +304,12 @@ MODULE mo_sb_constants
     f_psensi_soil_p_primary, &
     f_psensi_qmax_org_fine_particle
 
+  ! soil carbon init (SOM fast and slow pools)
+  REAL(wp):: &
+    & reference_depth_som_init            , &   ! reference depth of initial SOM fast/slow values (lctlib parameter) [m]
+    & k_som_init                          , &   ! Weilbull-shape parameter for SOM initialisation [unitless]
+    & sb_pool_total_som_at_ref_depth_init , &   ! initial value of SOM at reference depth ('reference_depth_som_init') [g C m-2]
+    & fract_som_fast                            ! mean of 400 sites in equilibrium with a C-dynamic QUINCY standalone simulation [unitless]
 
    !! only temporarily, mol / m2 !! @TODO
    REAL(wp), SAVE :: &
@@ -599,6 +605,11 @@ CONTAINS
     f_psensi_soil_p_primary           = 1.0_wp
     f_psensi_qmax_org_fine_particle   = 1.0_wp
 
+    ! soil carbon init (SOM fast and slow pools)
+    reference_depth_som_init            = 1.0_wp      ! defined by Soenke based on best knowledge
+    k_som_init                          = 2.0_wp      ! derived from a QUINCY standalone to equilibrium with a C-dynamic simulation with 400 sites
+    sb_pool_total_som_at_ref_depth_init = 11500.0_wp  ! derived from a QUINCY standalone to equilibrium with a C-dynamic simulation with 400 sites
+    fract_som_fast                      = 0.12_wp     ! derived from a QUINCY standalone to equilibrium with a C-dynamic simulation with 400 sites
 
     !! BLARPP only temporarily, mol / m2 !!  @TODO
     nh4_solute_prescribe = 0.2_wp         ! tuned, to have enough nh4 for microbial dynamics and a large enough associated-nh4 pool for initialization

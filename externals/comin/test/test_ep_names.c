@@ -15,12 +15,7 @@
 void check_ep_name(int ep, char* reference){
   printf("Checking %s (%d) ... ", reference, ep);
   char ep_name[MAX_LEN_EP_NAME+1];
-  int ierr = 0;
-  comin_callback_get_ep_name(ep, ep_name, &ierr);
-  if (ierr != 0){
-    printf("Call to comin_callback_get_ep_name failed. (ierr=%d)\n", ierr);
-    exit(1);
-  }
+  comin_callback_get_ep_name(ep, ep_name);
   if (strcmp(reference, ep_name)){
     printf("Wrong ep_name returned (%s != %s)\n", reference, ep_name);
     exit(2);

@@ -1,6 +1,3 @@
-!
-! Subroutine interface_aes_art calls the art reaction interface.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine interface_aes_art calls the art reaction interface.
 
 MODULE mo_interface_aes_art
 

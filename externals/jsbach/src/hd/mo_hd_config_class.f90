@@ -15,7 +15,7 @@ MODULE mo_hd_config_class
 !#ifndef __NO_JSBACH__
 #if !defined(__NO_JSBACH__) && !defined(__NO_JSBACH_HD__)
 
-  USE mo_exception,         ONLY: message
+  USE mo_exception,         ONLY: message, finish
   USE mo_io_units,          ONLY: filename_max
   USE mo_kind,              ONLY: wp
   USE mo_jsb_control,       ONLY: debug_on
@@ -29,7 +29,7 @@ MODULE mo_hd_config_class
   TYPE, EXTENDS(t_jsb_config) :: t_hd_config
      LOGICAL                     :: debug_hd                !< additional printing for debugging
      LOGICAL                     :: diag_water_budget       !< prints to diagnose global water budget
-     LOGICAL                     :: enforce_water_budget    !< finish if water conservation problem
+     INTEGER                     :: enforce_water_budget    !< descriptor for water balance 'ignore', 'logging', or 'error'
      CHARACTER(len=32)           :: routing_scheme          !< river_routing_scheme: full / weighted_to_coast / zero
      CHARACTER(len=filename_max) :: fract_filename          !< file name with fractions (land, ocean, etc)
      LOGICAL                     :: read_initial_reservoirs !< whether to read initial reservoir fillings from file
@@ -45,6 +45,8 @@ CONTAINS
   SUBROUTINE Init_hd_config(config)
 
     USE mo_jsb_namelist_iface, ONLY: open_nml, POSITIONED, position_nml, close_nml
+    USE mo_jsb_impl_constants, ONLY: WB_IGNORE, WB_LOGGING, WB_ERROR
+    USE mo_util_string,        ONLY: tolower
     USE mo_jsb_grid_class,     ONLY: t_jsb_vgrid, new_vgrid
     USE mo_jsb_grid,           ONLY: Register_vgrid
     USE mo_jsb_io,             ONLY: ZAXIS_DEPTH_BELOW_LAND
@@ -57,7 +59,7 @@ CONTAINS
     CHARACTER(len=filename_max)   :: fract_filename          !< file with fractions
     LOGICAL                       :: debug_hd                !< additional printing for debugging
     LOGICAL                       :: diag_water_budget       !< prints to diagnose global water budget
-    LOGICAL                       :: enforce_water_budget    !< finish if water conservation problem
+    CHARACTER(len=10)             :: enforce_water_budget    !< 'unset', 'ignore', 'logging', 'error'
     CHARACTER(len=32)             :: routing_scheme          !< river_routing_scheme: full / weighted_to_coast / zero
     LOGICAL                       :: read_initial_reservoirs !< whether to read initial reservoir fillings from file
     LOGICAL                       :: use_bifurcated_rivers   !< Switches on the potential splitting of rivers
@@ -88,7 +90,7 @@ CONTAINS
     fract_filename          = 'bc_land_frac.nc'
     debug_hd                = .FALSE.
     diag_water_budget       = .TRUE.
-    enforce_water_budget    = config%model_config%enforce_water_budget
+    enforce_water_budget    = 'unset'
     routing_scheme          = 'full'
     read_initial_reservoirs = .FALSE.
     use_bifurcated_rivers   = .FALSE.
@@ -106,16 +108,24 @@ CONTAINS
     config%fract_filename            = fract_filename
     config%debug_hd                  = debug_hd
     config%diag_water_budget         = diag_water_budget
-    config%enforce_water_budget      = enforce_water_budget
     config%routing_scheme            = routing_scheme
     config%read_initial_reservoirs   = read_initial_reservoirs
     config%use_bifurcated_rivers     = use_bifurcated_rivers
 
     IF (.NOT. active) RETURN
 
-    IF (.NOT. enforce_water_budget) THEN
-      CALL message(TRIM(routine), 'WARNING: Model will not stop due to river routing water balance violation.')
-    END IF
+    SELECT CASE (tolower(TRIM(enforce_water_budget)))
+    CASE ("unset")
+      config%enforce_water_budget = config%model_config%enforce_water_budget
+    CASE ("ignore", "logging")
+      config%enforce_water_budget = WB_IGNORE
+      CALL message(TRIM(routine), 'WARNING: River routing water balance will not be checked during simulation.')
+    CASE ("error")
+      config%enforce_water_budget = WB_ERROR
+      CALL message(TRIM(routine), 'WARNING: Simulation will stop due to any river routing water balance violation.')
+    CASE DEFAULT
+      CALL finish(TRIM(routine), 'enforce_water_budget == '//tolower(TRIM(enforce_water_budget))//' not available.')
+    END SELECT
 
     hd_o  => new_vgrid('hd_nres_overlflow', ZAXIS_DEPTH_BELOW_LAND, 1, levels=(/1._wp/), units='')
     CALL Register_vgrid(hd_o)

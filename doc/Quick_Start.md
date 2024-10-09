@@ -331,10 +331,9 @@ only when the GPU support with HIP is enabled);
 - `AR` &mdash; archiver command (used to create static libraries);
 - `RANLIB` &mdash; archive indexer command (used to create static libraries);
 - `PYTHON` &mdash; [Python](https://www.python.org/) interpreter command (used
-for [source dependency tracking](#source-dependency-tracking) and some of the
+for [source dependency tracking](#source-dependency-tracking),
+[source provenance collection](#source-provenance-collection) and some of the
 [preprocessing](#preprocessing) steps);
-- `PERL` &mdash; [Perl](https://www.perl.org/) interpreter command (used for
-[source provenance collection](#source-provenance-collection));
 - `CMAKE` &mdash; [CMake](https://cmake.org/) command (used to configure some of
 the bundled libraries);
 - `FPP` &mdash; Fortran preprocessor command (used when explicit Fortran
@@ -1095,7 +1094,7 @@ Source provenance information is collected at the building stage and injected in
 the ICON executable. This information is saved at runtime in the output files of
 the model, so that the latter could be matched with the exact version of ICON
 that was used to produce them. The information is collected automatically with
-the help of the [pvcs.pl](../utils/pvcs.pl) script. The script generated a
+the help of the [pvcs.py](../utils/pvcs.py) script. The script generated a
 source file `version.c` containing the url of the git repository, the name of
 the git branch, and the hash of the git commit. The source file is then treated
 by `make` as part of the ICON codebase.

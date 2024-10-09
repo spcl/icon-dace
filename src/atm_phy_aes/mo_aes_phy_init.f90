@@ -1,7 +1,3 @@
-!
-! Contains subroutines for initializing the AES physics package.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains subroutines for initializing the AES physics package.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -637,8 +635,7 @@ CONTAINS
       !
       ! parameterized simple plumes of tropospheric aerosols
       !
-      IF (ANY(aes_rad_config(:)%irad_aero == 18) .OR. &
-        & ANY(aes_rad_config(:)%irad_aero == 19)) THEN
+      IF (ANY(aes_rad_config(:)%irad_aero == 19)) THEN
         CALL setup_bc_aeropt_splumes
       END IF
 
@@ -919,7 +916,8 @@ CONTAINS
 
       SELECT CASE (nh_test_name)
 
-      CASE('APE','APE_aes','RCEhydro','RCE_glb','RCE_Tconst','RCE_Tprescr','aes_bubble','CBL_flxconst','RCEMIP_analytical')
+      CASE('APE','APE_aes','RCEhydro','RCE_glb','RCE_Tconst','RCE_Tprescr','aes_bubble','CBL_flxconst','RCEMIP_analytical', &
+        &  'dcmip_tc_52')
         ! Note that there is only one surface type in this case !!!
         !
 !$OMP PARALLEL DO PRIVATE(jb,jc,jcs,jce,zlat) ICON_OMP_DEFAULT_SCHEDULE

@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /**
  * \page frac_mask_desc Dynamic fractional masking
 
@@ -120,8 +124,8 @@ If a field was enabled for dynamic fractional masking, the user has to
 provide a mask for all field values in all exchanges, where this field
 is used as a source (see \ref yac_cput_frac, \ref yac_cput_frac_,
 \ref yac_cput_frac_ptr_, \ref yac_cexchange_frac, \ref yac_cexchange_frac_,
-\ref yac_cexchange_frac_ptr_, \ref mo_yac_finterface::yac_fput "yac_fput_frac_*",
-and \ref mo_yac_finterface::yac_fexchange "yac_fexchange_frac_*").
+\ref yac_cexchange_frac_ptr_, \ref yac::yac_fput "yac_fput_frac_*",
+and \ref yac::yac_fexchange "yac_fexchange_frac_*").
 
 \section remark_frac_mask Remark
 

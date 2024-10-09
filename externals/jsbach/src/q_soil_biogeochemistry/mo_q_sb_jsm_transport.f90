@@ -20,7 +20,7 @@ MODULE mo_q_sb_jsm_transport
 
   USE mo_kind,                  ONLY: wp
   USE mo_exception,             ONLY: message, finish
-  USE mo_jsb_math_constants,    ONLY: one_day, dtime, eps8, eps4
+  USE mo_jsb_math_constants,    ONLY: one_day, eps8, eps4
   USE mo_lnd_bgcm_idx
 
   IMPLICIT NONE
@@ -49,7 +49,7 @@ CONTAINS
   !! Output: vertical transport rate and lateral loss (mol/m3/timestep)
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_liquid_phase_transport_wrapper( &
-    & nc, nsoil_sb, num_sl_above_bedrock, soil_depth_sl, &                            ! in
+    & nc, nsoil_sb, dtime, num_sl_above_bedrock, soil_depth_sl, &                     ! in
     & rtm_gasdiffusion_act, &
     & rmm_gasdiffusion_act, percolation_sl, frac_w_lat_loss_sl, &
     & nh4_solute, no3_solute, po4_solute, nh4_n15_solute, no3_n15_solute, &
@@ -76,6 +76,7 @@ CONTAINS
 
     INTEGER,                           INTENT(in)    :: nc                       !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                 !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                    !< timestep length
     REAL(wp), DIMENSION(nc),           INTENT(in)    :: num_sl_above_bedrock     !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: soil_depth_sl            !< depth of each soil layer [m]
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: rtm_gasdiffusion_act     !< temperature modifier for gas diffusion
@@ -167,50 +168,50 @@ CONTAINS
 
     !>1.0 transport of DOM
     !>
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixC, :, :), transport_mt_dom(ixC, :, :), &
       &                              leaching_dom_carbon(:), lateral_loss_dom_carbon_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixN, :, :), transport_mt_dom(ixN, :, :), &
       &                              leaching_dom_nitrogen(:), lateral_loss_dom_nitrogen_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixP, :, :), transport_mt_dom(ixP, :, :), &
       &                              leaching_dom_phosphorus(:), lateral_loss_dom_phosphorus_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixC13, :, :), transport_mt_dom(ixC13, :, :), &
       &                              leaching_dom_carbon13(:), lateral_loss_dom_carbon13_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixC14, :, :), transport_mt_dom(ixC14, :, :), &
       &                              leaching_dom_carbon14(:), lateral_loss_dom_carbon14_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              pool_mt_dom(ixN15, :, :), transport_mt_dom(ixN15, :, :), &
       &                              leaching_dom_nitrogen15(:), lateral_loss_dom_nitrogen15_sl(:,:))
 
     !>2.0 transport of other solutes (NH4, NO3, PO4, and their isotopes)
     !>
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              nh4_solute(:,:), transport_nh4_solute(:,:), &
       &                              leaching_nh4_solute(:), lateral_loss_nh4_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              no3_solute(:,:), transport_no3_solute(:,:), &
       &                              leaching_no3_solute(:), lateral_loss_no3_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              po4_solute(:,:), transport_po4_solute(:,:), &
       &                              leaching_po4_solute(:), lateral_loss_po4_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              nh4_n15_solute(:,:), transport_nh4_n15_solute(:,:), &
       &                              leaching_nh4_n15_solute(:), lateral_loss_nh4_n15_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
       &                              no3_n15_solute(:,:), transport_no3_n15_solute(:,:), &
       &                              leaching_no3_n15_solute(:), lateral_loss_no3_n15_solute_sl(:,:))
@@ -247,6 +248,7 @@ CONTAINS
   SUBROUTINE calc_bioturbation_transport_wrapper_jsm( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & num_sl_above_bedrock, &
     & soil_depth_sl, &
     & elements_index_map, &
@@ -267,6 +269,7 @@ CONTAINS
 
     INTEGER,                            INTENT(in)    :: nc                         !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb                   !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                      !< timestep length
     REAL(wp), DIMENSION(nc),            INTENT(in)    :: num_sl_above_bedrock       !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: soil_depth_sl              !< depth of each soil layer [m]
     INTEGER,                            INTENT(in)    :: elements_index_map(:)      !< map bgcm element ID -> IDX
@@ -298,42 +301,42 @@ CONTAINS
         ix_elem = elements_index_map(ielem)    ! get element index in bgcm
         !>  1.1 polymeric litter
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_polymeric_litter, ix_elem, :, :), &
           &                              sb_transport_mt(ix_polymeric_litter, ix_elem, :, :))
         !>  1.2 minerally associated DOM
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_dom_assoc, ix_elem, :, :), &
           &                              sb_transport_mt(ix_dom_assoc, ix_elem, :, :))
         !>  1.3 fungi biomass
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_fungi, ix_elem, :, :), &
           &                              sb_transport_mt(ix_fungi, ix_elem, :, :))
         !>  1.4 microbial biomass
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_microbial, ix_elem, :, :), &
           &                              sb_transport_mt(ix_microbial, ix_elem, :, :))
         !>  1.5 microbial residue
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_residue, ix_elem, :, :), &
           &                              sb_transport_mt(ix_residue, ix_elem, :, :))
         !>  1.6 minerally associated microbial residue
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_residue_assoc, ix_elem, :, :), &
@@ -343,19 +346,19 @@ CONTAINS
 
     !>2.0 inorganic pools
     !>
-    ! CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
+    ! CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
     !                                  nh4_assoc(:,:), &
     !                                  transport_nh4_assoc(:,:))
-    ! CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
+    ! CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
     !                                  po4_assoc_fast(:,:), &
     !                                  transport_po4_assoc_fast(:,:))
-    ! CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
+    ! CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
     !                                  po4_assoc_slow(:,:), &
     !                                  transport_po4_assoc_slow(:,:))
-    ! CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
+    ! CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
     !                                  po4_occluded(:,:), &
     !                                  transport_po4_occluded(:,:))
-    ! CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
+    ! CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), k_bioturb(:,:), soil_depth_sl(:,:), &
     !                                  nh4_n15_assoc(:,:), &
     !                                  transport_nh4_n15_assoc(:,:))
   END SUBROUTINE calc_bioturbation_transport_wrapper_jsm
@@ -728,6 +731,7 @@ CONTAINS
   SUBROUTINE calc_liquid_phase_transport( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & num_sl_above_bedrock, &
     & percolation_sl, &
     & frac_w_lat_loss_sl, &
@@ -739,6 +743,7 @@ CONTAINS
 
     INTEGER,                            INTENT(in)    :: nc                     !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb               !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                  !< timestep length
     REAL(wp), DIMENSION(nc),            INTENT(in)    :: num_sl_above_bedrock   !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: percolation_sl         !< fraction of pool transported up or down (vertical) per second
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: frac_w_lat_loss_sl     !< constrained fraction of lateral (horizontal) water loss of 'w_soil_sl_old' (prev. timestep)
@@ -885,6 +890,7 @@ CONTAINS
   SUBROUTINE calc_bioturbation_transport( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & num_sl_above_bedrock, &
     & k_bioturb, &
     & soil_depth_sl, &
@@ -893,6 +899,7 @@ CONTAINS
 
     INTEGER,                            INTENT(in)    :: nc                   !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb             !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                !< timestep length
     REAL(wp), DIMENSION(nc),            INTENT(in)    :: num_sl_above_bedrock !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: k_bioturb            !< diffusion factor for bioturbation [m2/s]
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: soil_depth_sl        !< depth of each soil layer [m]

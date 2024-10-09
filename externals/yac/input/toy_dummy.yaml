@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 definitions:
   - &time_config
     src_lag: 1

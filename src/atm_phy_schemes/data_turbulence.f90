@@ -1,9 +1,3 @@
-!
-! Description:
-!  This module contains variables that are used in the turbulence
-!  parameterizations. With these variables a tuning of the scheme is
-!  possible.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Description:
+!  This module contains variables that are used in the turbulence
+!  parameterizations. With these variables a tuning of the scheme is
+!  possible.
 
 MODULE data_turbulence
 

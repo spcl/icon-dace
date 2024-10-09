@@ -1,5 +1,3 @@
-! Contains the icon_output time keeping and events
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the icon_output time keeping and events
 
 MODULE mo_icon_output_time_events
   !-------------------------------------------------------------------------

@@ -1,9 +1,3 @@
-!
-! Subroutine read_bc_ozone reads monthly ozone
-! concentrations from yearly files. The ozone concentrations are
-! used as boundary conditions for the radiative forcing of the
-! atmosphereAMIP. The routine is called from mo_aes_phy_interface.f90.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine read_bc_ozone reads monthly ozone
+! concentrations from yearly files. The ozone concentrations are
+! used as boundary conditions for the radiative forcing of the
+! atmosphereAMIP. The routine is called from mo_aes_phy_interface.f90.
 
 MODULE mo_bc_ozone
 

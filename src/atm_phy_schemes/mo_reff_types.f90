@@ -1,12 +1,3 @@
-!
-! Module to with the types to compute effective radius
-!
-! Description:
-! The module also contains adapted versions of the  routines developed
-! by Simon Grueber and Uli Blahack for the optical properties in RRTM
-! (only the effective radius, not the optical porperties),
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module to with the types to compute effective radius
+!
+! Description:
+! The module also contains adapted versions of the  routines developed
+! by Simon Grueber and Uli Blahack for the optical properties in RRTM
+! (only the effective radius, not the optical porperties),
 
 MODULE mo_reff_types
 

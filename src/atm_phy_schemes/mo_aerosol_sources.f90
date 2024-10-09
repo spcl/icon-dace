@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Module to calculate source terms for different aerosol species.
 !
 ! This module contains routines to calculate source terms for different aerosol species.
@@ -42,17 +52,7 @@
 !                         Mineral Dust Entrainment and Deposition (DEAD) model:
 !                         Description and 1990s dust climatology.
 !                         Journal of Geophysical Research: Atmospheres, 108(D14).
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
+
 MODULE mo_aerosol_sources
 
   USE mo_kind,                          ONLY: wp

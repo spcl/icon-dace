@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   time_config: &time_config
     coupling_period: 60
@@ -10,6 +14,8 @@ predef:
 start_date: 2008-03-09T16:05:07
 end_date: 2008-03-10T16:05:07
 timestep_unit: second
+debug:
+  missing_definition_is_fatal: false
 coupling:
   - src_component: comp_1
     src_grid: grid1
@@ -22,12 +28,12 @@ coupling:
     tgt_component: comp_2
     tgt_grid: grid2
     field: field_2
-    weight_file_name: "weight_file_1.nc"
+    weight_file_name: "test_instance_parallel1_weight_file_1.nc"
     <<: *time_config
   - src_component: comp_1
     src_grid: grid1
     tgt_component: comp_2
     tgt_grid: grid2
     field: field_3
-    weight_file_name: "weight_file_2.nc"
+    weight_file_name: "test_instance_parallel1_weight_file_2.nc"
     <<: *time_config

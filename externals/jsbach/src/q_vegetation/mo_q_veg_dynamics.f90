@@ -22,7 +22,7 @@ MODULE mo_q_veg_dynamics
   USE mo_jsb_impl_constants,   ONLY: true, false, test_false_true
   USE mo_jsb_control,          ONLY: debug_on
   USE mo_exception,            ONLY: message
-  USE mo_jsb_math_constants,   ONLY: one_year, one_day, dtime, eps8, eps4
+  USE mo_jsb_math_constants,   ONLY: one_year, one_day, eps8, eps4
 
   USE mo_lnd_bgcm_idx
   USE mo_lnd_bgcm_store,          ONLY: t_lnd_bgcm_store
@@ -51,7 +51,6 @@ CONTAINS
     USE mo_jsb_task_class,        ONLY: t_jsb_task_options
     USE mo_jsb_model_class,       ONLY: t_jsb_model
     USE mo_jsb_process_class,     ONLY: VEG_, Q_RAD_, Q_PHENO_, SPQ_
-    USE mo_jsb4_forcing,          ONLY: forcing_options_quincy
     USE mo_veg_constants,         ONLY: ITREE
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Use_config(VEG_)
@@ -67,6 +66,7 @@ CONTAINS
     TYPE(t_lnd_bgcm_store),   POINTER :: bgcm_store             !< the bgcm store of this tile
     TYPE(t_lctlib_element),   POINTER :: lctlib                 !< land-cover-type library - parameter across pft's
     REAL(wp), DIMENSION(options%nc)   :: fpc                    !< current foliage projective cover
+    REAL(wp)                          :: dtime                  !< timestep length
     INTEGER                           :: iblk, ics, ice, nc     !< dimensions
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':update_veg_dynamics'
     ! ----------------------------------------------------------------------------------------------------- !
@@ -103,6 +103,7 @@ CONTAINS
     ics     = options%ics
     ice     = options%ice
     nc      = options%nc
+    dtime   = options%dtime
     ! ----------------------------------------------------------------------------------------------------- !
     IF (.NOT. tile%Is_process_calculated(VEG_)) RETURN
     ! ----------------------------------------------------------------------------------------------------- !
@@ -157,26 +158,13 @@ CONTAINS
           &                                         diameter(:))
     ENDSELECT
 
-    !>  1.1 check stand harvest year (if this functionality is enabled: model%config\%flag_stand_harvest)
-    !>
-    ! but enable harvesting only after transient spinup, i.e., when l_transient_spinup=FALSE
-    IF (model%config%flag_stand_harvest .AND. .NOT. model%config%l_transient_spinup) THEN
-      model%config%l_do_stand_replacing_harvest = .FALSE.                                      ! per default this flag is FALSE
-      ! set stand_harvest to TRUE for the 1st timestep of the stand_replacing_year only
-      IF (forcing_options_quincy%forcing_year .EQ. model%config%stand_replacing_year .AND. &
-        & forcing_options_quincy%forcing_doy  .EQ. 1                                 .AND. &
-        & forcing_options_quincy%forcing_hour .LT. eps4                                     ) THEN
-        model%config%l_do_stand_replacing_harvest = .TRUE.
-      END IF
-    END IF
-
-    !>  1.2 Increase age of the cohort [years] & check if cohort harvest is reached
+    !>  1.1 Increase age of the cohort [years] & check if cohort harvest is reached
     !>
     ! apply this only after spinup of transient mode has finished
     IF (.NOT. model%config%l_transient_spinup) THEN
       SELECT CASE (TRIM(dsl4jsb_Config(VEG_)%veg_dynamics_scheme))
         CASE ("cohort")
-          cohort_age(:)        = cohort_age(:) + model%config%dtime / (one_year * one_day)
+          cohort_age(:)        = cohort_age(:) + dtime / (one_year * one_day)
           do_cohort_harvest(:) = false                                               ! per default it is set to FALSE
           WHERE (cohort_age(:) > dsl4jsb_Config(VEG_)%cohort_harvest_interval)
             do_cohort_harvest(:) = true
@@ -191,6 +179,7 @@ CONTAINS
     ! but calcs mortality_rate dynamically if veg_dynamics_scheme == population or cohort
     CALL calc_veg_mortality( &
       & nc                                              , & ! in
+      & dtime                                           , &
       & model%config%elements_index_map(:)              , &
       & model%config%is_element_used(:)                 , &
       & lctlib%growthform                               , &
@@ -229,6 +218,7 @@ CONTAINS
       IF(.NOT. model%config%l_do_stand_replacing_harvest) THEN
         CALL calc_veg_establishment( &
           & nc                                  , & ! in
+          & dtime                               , &
           & model%config%elements_index_map(:)  , &
           & model%config%is_element_used(:)     , &
           & lctlib%tau_seed_est                 , &
@@ -280,7 +270,7 @@ CONTAINS
     & diameter)                 &
     & RESULT(fpc)
 
-    USE mo_veg_constants,         ONLY: max_crown_area, min_diameter, k_crown_area, k_rp, k_fpc, ITREE
+    USE mo_veg_constants,         ONLY: max_crown_area, min_diameter, k_crown_area, k_rp, k_fpc, k_sai2lai, ITREE
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                  INTENT(in) :: nc                          !< dimensions
     INTEGER,                  INTENT(in) :: lctlib_growthform           !< lctlib paramter
@@ -307,7 +297,7 @@ CONTAINS
       lai_ind(:)    = veg_pool_sap_wood_carbon(:) / dens_ind(:) / lctlib_wood_density / height(:) * lctlib_k_latosa / &
         &             crown_area(:)
       ! foliage projective cover is then the product of density and individual crown area
-      fpc(:)        = crown_area(:) * dens_ind(:) * (1._wp - exp(-k_fpc * lai_ind(:)))
+      fpc(:)        = crown_area(:) * dens_ind(:) * (1._wp - EXP(-k_fpc * lai_ind(:) * (1._wp + k_sai2lai)))
     ELSEWHERE
       lai_ind(:) = 0.0_wp
       fpc(:)     = 0.0_wp
@@ -319,6 +309,7 @@ CONTAINS
   !>
   SUBROUTINE calc_veg_mortality( &
     & nc                        , &
+    & dtime                     , &
     & elements_index_map        , &
     & is_element_used           , &
     & lctlib_growthform         , &
@@ -336,6 +327,7 @@ CONTAINS
       &                                 ITREE, IGRASS, background_mort_rate_tree, background_mort_rate_grass
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                  INTENT(in)    :: nc                         !< dimensions
+    REAL(wp),                 INTENT(in)    :: dtime                      !< timestep length
     INTEGER,                  INTENT(in)    :: elements_index_map(:)      !< map bgcm element ID -> IDX
     LOGICAL,                  INTENT(in)    :: is_element_used(:)         !< is element in 'elements_index_map' used
     INTEGER,                  INTENT(in)    :: lctlib_growthform          !< lctlib paramter
@@ -540,6 +532,7 @@ CONTAINS
   !>
   SUBROUTINE calc_veg_establishment( &
     & nc                          , &
+    & dtime                       , &
     & elements_index_map          , &
     & is_element_used             , &
     & lctlib_tau_seed_est         , &
@@ -556,6 +549,7 @@ CONTAINS
     USE mo_jsb_physical_constants,      ONLY: Tzero
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                  INTENT(in)    :: nc                           !< dimensions
+    REAL(wp),                 INTENT(in)    :: dtime                        !< timestep length
     INTEGER,                  INTENT(in)    :: elements_index_map(:)        !< map bgcm element ID -> IDX
     LOGICAL,                  INTENT(in)    :: is_element_used(:)           !< is element in 'elements_index_map' used
     REAL(wp),                 INTENT(in)    :: lctlib_tau_seed_est          !< lctlib paramter

@@ -23,18 +23,24 @@ MODULE mo_jsb_lcc_class
   USE mo_jsb_var_class,       ONLY: t_jsb_var_p
   USE mo_jsb_varlist,         ONLY: VARNAME_LEN
   USE mo_jsb_impl_constants,  ONLY: SHORT_NAME_LEN
+  USE mo_jsb_math_constants,  ONLY: one_year
 
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: min_cf_change, min_tolerated_fract_mismatch, min_tolerated_cf_mismatch,       &
-    & t_jsb_lcc_proc, t_jsb_lcc_proc_p, t_jsb_lcc_var, t_jsb_lcc_var_p,                   &
-    & transfer_from_active_to_passive_var_onChunk, collect_matter_of_active_vars_onChunk, &
+  PUBLIC :: min_daily_cf_change, min_annual_cf_change, min_tolerated_fract_mismatch, min_tolerated_cf_mismatch,       &
+    & t_jsb_lcc_proc, t_jsb_lcc_proc_p, t_jsb_lcc_var, t_jsb_lcc_var_p,                                               &
+    & transfer_from_active_to_passive_var_onChunk, collect_matter_of_active_vars_onChunk,                             &
     & copy_from_active_to_passive_var_onChunk
 
-  REAL(wp), PARAMETER :: min_cf_change = 1.0E-16_wp
-  REAL(wp), PARAMETER :: min_tolerated_fract_mismatch = 1.0E-14_wp
+  REAL(wp), PARAMETER :: min_daily_cf_change = 1.0E-16_wp
+    !< min change in cover fractions for daily lcc, i.e. if the change is smaller than this threshold the lcc is not applied
+  REAL(wp), PARAMETER :: min_annual_cf_change = min_daily_cf_change * one_year
+    !< min change in cover fractions for annual lcc, i.e. if the change is smaller than this threshold the lcc is not applied
   REAL(wp), PARAMETER :: min_tolerated_cf_mismatch = 1.0E-11_wp
+    !< min mismatch in cover fractions which is tolerated when comparing different cover fraction sums
+  REAL(wp), PARAMETER :: min_tolerated_fract_mismatch = 1.0E-14_wp
+    !< minimum tolearated mismatch in forest age fraction sums (only used when running with FAGE)
 
   !> Type used to enclose pointers and values for each conserved quantity with active or passive relocation
   TYPE :: t_jsb_lcc_var

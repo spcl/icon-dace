@@ -1,6 +1,3 @@
-! Cariolle scheme.
-! documentation: cr2016_10_22_rjs
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Cariolle scheme.
+! documentation: cr2016_10_22_rjs
 
 MODULE mo_lcariolle
 

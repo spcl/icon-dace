@@ -1,5 +1,3 @@
-! Definition of variables and allocation of memory
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Definition of variables and allocation of memory
+
 #include "omp_definitions.inc"
 
 MODULE mo_bgc_memory_types

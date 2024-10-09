@@ -1,10 +1,3 @@
-! The module <i>mo_alloc_domain</i>
-! provides routines to allocate and deallocate patches. The routines
-! included here have been extracted from mo_model_import_domain in order
-! to resolve USE dependencies that led to large compile times on some
-! platforms
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The module <i>mo_alloc_domain</i>
+! provides routines to allocate and deallocate patches. The routines
+! included here have been extracted from mo_model_import_domain in order
+! to resolve USE dependencies that led to large compile times on some
+! platforms
 
 MODULE mo_alloc_patches
   !-------------------------------------------------------------------------

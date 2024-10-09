@@ -1,8 +1,3 @@
-!
-! This module prepares aerosol climatologies in a format that can be used by ecRad
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module prepares aerosol climatologies in a format that can be used by ecRad
 
 !----------------------------
 #include "omp_definitions.inc"

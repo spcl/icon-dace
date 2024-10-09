@@ -1,10 +1,3 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
-!
-! Routines for optional diagnostic radar reflectivity on the model grid in NWP
-! (formerly located in mo_opt_nwp_diagnostics.f90)
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Routines for optional diagnostic radar reflectivity on the model grid in NWP
+! (formerly located in mo_opt_nwp_diagnostics.f90)
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
 
 !----------------------------
 #include "omp_definitions.inc"

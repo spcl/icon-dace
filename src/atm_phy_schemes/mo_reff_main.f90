@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Module to compute effective radius consistent with microphysics, cloud scheme
 ! and convection scheme choice (not yet!).
 ! The effective radius calculated here can be used by the radiation module ECRAD,
@@ -12,18 +22,6 @@
 ! The module also contains adapted versions of the  routines developed
 ! by Simon Gruber and Uli Blahak for the optical properties in RRTM
 ! (only the effective radius, not the optical porperties),
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_reff_main
 

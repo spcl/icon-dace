@@ -1,8 +1,3 @@
-!
-! This module contains the I/O routines for initicon
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the I/O routines for initicon
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -112,33 +109,32 @@ MODULE mo_initicon_utils
   PUBLIC :: get_diag_stat_comm_work
   PUBLIC :: new_land_from_ocean
 
+  ! The routine initicon_inverse_post_op is called for either a 2D or a 3D array.
+  INTERFACE initicon_inverse_post_op
+    MODULE PROCEDURE inverse_post_op_r2d
+    MODULE PROCEDURE inverse_post_op_r3d
+  END INTERFACE initicon_inverse_post_op
+
   CONTAINS
-
-
 
 
   !-------------
   !>
-  !! SUBROUTINE initicon_inverse_post_op
-  !! Perform inverse post_op on input field, if necessary 
+  !! module procedures for  initicon_inverse_post_op
+  !! SUBROUTINE inverse_post_op_r2d
+  !! Perform inverse post_op on an 2D input field, if necessary 
   !!
-  SUBROUTINE initicon_inverse_post_op(varname, optvar_out2D, optvar_out3D)
-    CHARACTER(len=*), INTENT(IN)      :: varname             !< var name of field to be read
-    REAL(wp), OPTIONAL, INTENT(INOUT) :: optvar_out2D(:,:)   !< 3D output field
-    REAL(wp), OPTIONAL, INTENT(INOUT) :: optvar_out3D(:,:,:) !< 2D output field
-    INTEGER                         :: i              ! loop count
-    TYPE(t_var_metadata), POINTER   :: info           ! variable metadata
-    CHARACTER(*), PARAMETER     :: routine = 'initicon_inverse_post_op'
+  SUBROUTINE inverse_post_op_r2d (varname, field_2D)
+    CHARACTER(len=*), INTENT(IN)     :: varname             !< var name of field to be read
+    REAL(wp), INTENT(INOUT)          :: field_2D(:,:)       !< 2D output field
+    INTEGER                          :: i                   ! loop count
+    TYPE(t_var_metadata), POINTER    :: info                ! variable metadata
+    CHARACTER(*), PARAMETER          :: routine = 'inverse_post_op_r2d'
     CHARACTER(LEN=LEN_TRIM(varname)) :: lc_varname
-    TYPE(t_vl_register_iter) :: vl_iter
+    TYPE(t_vl_register_iter)         :: vl_iter
 
     !-------------------------------------------------------------------------
-    ! Check consistency of optional arguments
-    IF (PRESENT( optvar_out2D ) .AND. PRESENT( optvar_out3D )) THEN
-      CALL finish(routine, 'Only one optional argument must be present')
-    ELSE IF (.NOT.PRESENT( optvar_out2D ) .AND. .NOT.PRESENT( optvar_out3D )) THEN
-      CALL finish(routine, 'One of 2 optional arguments must be present')
-    ENDIF
+
     lc_varname = tolower(varname)
     ! get metadata information for field to be read
     NULLIFY(info)
@@ -159,13 +155,47 @@ MODULE mo_initicon_utils
     IF (info%post_op%ipost_op_type /= POST_OP_NONE) THEN
       IF(my_process_is_stdio() .AND. msg_level>10) &
         & CALL message(routine, 'Inverse Post_op for: ' // varname)
-      IF (PRESENT(optvar_out2D)) THEN
-        CALL perform_post_op(info%post_op, optvar_out2D, opt_inverse=.TRUE.)
-      ELSE IF (PRESENT(optvar_out3D)) THEN
-        CALL perform_post_op(info%post_op, optvar_out3D, opt_inverse=.TRUE.)
-      ENDIF
+      CALL perform_post_op(info%post_op, field_2D, opt_inverse=.TRUE.)
     ENDIF
-  END SUBROUTINE initicon_inverse_post_op
+  END SUBROUTINE inverse_post_op_r2d
+
+  !! SUBROUTINE inverse_post_op_r3d
+  !! Perform inverse post_op on an 3D input field, if necessary 
+  !!
+  SUBROUTINE inverse_post_op_r3d (varname, field_3D)
+    CHARACTER(len=*), INTENT(IN)     :: varname             !< var name of field to be read
+    REAL(wp), INTENT(INOUT)          :: field_3D(:,:,:)     !< 3D output field
+    INTEGER                          :: i                   ! loop count
+    TYPE(t_var_metadata), POINTER    :: info                ! variable metadata
+    CHARACTER(*), PARAMETER          :: routine = 'inverse_post_op_r3d'
+    CHARACTER(LEN=LEN_TRIM(varname)) :: lc_varname
+    TYPE(t_vl_register_iter)         :: vl_iter
+
+    !-------------------------------------------------------------------------
+
+    lc_varname = tolower(varname)
+    ! get metadata information for field to be read
+    NULLIFY(info)
+    DO WHILE(vl_iter%next() .AND. .NOT.ASSOCIATED(info))
+      ! loop only over model level variables
+      IF (vl_iter%cur%p%vlevel_type /= level_type_ml) CYCLE 
+      DO i = 1, vl_iter%cur%p%nvars
+        info => vl_iter%cur%p%vl(i)%p%info
+        IF (lc_varname == tolower(get_var_name(info))) EXIT
+        NULLIFY(info)
+      END DO
+    ENDDO
+    IF (.NOT.ASSOCIATED(info)) THEN
+      CALL message(TRIM(varname)//' not found',message_text)
+      CALL finish(routine, 'Varname does not match any of the ICON variable names')
+    ENDIF
+    ! perform post_op
+    IF (info%post_op%ipost_op_type /= POST_OP_NONE) THEN
+      IF(my_process_is_stdio() .AND. msg_level>10) &
+        & CALL message(routine, 'Inverse Post_op for: ' // varname)
+      CALL perform_post_op(info%post_op, field_3D, opt_inverse=.TRUE.)
+    ENDIF
+  END SUBROUTINE inverse_post_op_r3d
 
   !>
   !! SUBROUTINE init_aersosol

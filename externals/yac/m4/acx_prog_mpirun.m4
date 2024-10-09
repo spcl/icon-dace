@@ -1,3 +1,35 @@
+# Copyright (c) 2010-2024, DKRZ, MPI-M
+#
+# Authors:
+#   Thomas Jahns <jahns@dkrz.de>
+#   Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
+#
+# SPDX-License-Identifier: BSD-3-Clause
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are permitted provided that the following conditions are met:
+#
+# 1. Redistributions of source code must retain the above copyright notice,
+#    this list of conditions and the following disclaimer.
+# 2. Redistributions in binary form must reproduce the above copyright
+#    notice, this list of conditions and the following disclaimer in the
+#    documentation and/or other materials provided with the distribution.
+# 3. Neither the name of the copyright holder nor the names of its
+#    contributors may be used to endorse or promote products derived from
+#    this software without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
+# AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
+# IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
+# ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
+# LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
+# CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
+# SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
+# INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
+# CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
+# ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
+# POSSIBILITY OF SUCH DAMAGE.
+
 # ACX_PROG_MPIRUN([VARIABLE],
 #                 [ACTION-IF-SUCCESS],
 #                 [ACTION-IF-FAILURE = FAILURE],
@@ -90,9 +122,10 @@ m4_define([_ACX_PROG_MPIRUN],
          for acx_candidate in "$[@]"; do
             _AS_ECHO_LOG(
               [acx_exec_result=`$acx_candidate -n m4_default([$6], [2]) dnl
-./conftest$ac_exeext 2>/dev/null`])
+./conftest$ac_exeext 2>&AS_MESSAGE_LOG_FD`])
             acx_exec_result=dnl
-`$acx_candidate -n m4_default([$6], [2]) ./conftest$ac_exeext 2>/dev/null`
+`$acx_candidate -n m4_default([$6], [2]) dnl
+./conftest$ac_exeext 2>&AS_MESSAGE_LOG_FD`
             acx_status=$?
             _AS_ECHO_LOG([\$? = $acx_status])
             AS_IF([test $acx_status -eq 0],

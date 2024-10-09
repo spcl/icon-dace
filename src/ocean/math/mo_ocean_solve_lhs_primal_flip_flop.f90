@@ -1,6 +1,3 @@
-! contains extended lhs-matrix-generator type
-! provides the primal flip flop lhs for the "mass matrix inversion" - solve
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! contains extended lhs-matrix-generator type
+! provides the primal flip flop lhs for the "mass matrix inversion" - solve
+
 MODULE mo_primal_flip_flop_lhs
 
   USE mo_exception, ONLY: finish
@@ -42,11 +43,19 @@ MODULE mo_primal_flip_flop_lhs
 CONTAINS
 
 ! init generator object
-  SUBROUTINE lhs_primal_flip_flop_construct(this, patch_3d, op_coeffs, jk)
+  SUBROUTINE lhs_primal_flip_flop_construct(this, patch_3d, op_coeffs, jk, lacc)
     CLASS(t_primal_flip_flop_lhs), INTENT(INOUT) :: this
     TYPE(t_patch_3d), TARGET, INTENT(IN) :: patch_3d
     TYPE(t_operator_coeff), TARGET, INTENT(IN) :: op_coeffs
     INTEGER, INTENT(IN) :: jk
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+#ifdef _OPENACC
+    IF (lzacc) CALL finish("lhs_primal_flip_flop_wp()", "OpenACC version not implemented yet")
+#endif
 
     this%is_const = .false.
     this%patch_3d => patch_3d
@@ -61,7 +70,7 @@ CONTAINS
   SUBROUTINE lhs_primal_flip_flop_wp(this, x, ax, lacc)
     CLASS(t_primal_flip_flop_lhs), INTENT(INOUT) :: this
     REAL(KIND=wp), INTENT(IN) :: x(:,:)
-    REAL(KIND=wp), INTENT(OUT) ::ax(:,:)
+    REAL(KIND=wp), INTENT(INOUT) ::ax(:,:)
     LOGICAL, INTENT(IN), OPTIONAL :: lacc
     LOGICAL :: lzacc
 
@@ -79,10 +88,11 @@ CONTAINS
 
 ! clear object internals
 
-  SUBROUTINE lhs_primal_flip_flop_matrix_shortcut(this, idx, blk, coeff)
+  SUBROUTINE lhs_primal_flip_flop_matrix_shortcut(this, idx, blk, coeff, lacc)
     CLASS(t_primal_flip_flop_lhs), INTENT(INOUT) :: this
     INTEGER, INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:,:) :: idx, blk
     REAL(KIND=wp), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:,:) :: coeff
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
 
     CALL finish("lhs_primal_flip_flop_matrix_shortcut", &
       & "not implemented -- go away!")

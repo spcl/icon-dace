@@ -1,6 +1,3 @@
-! Contains the variables to set up the wave  model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the variables to set up the wave  model.
 
 MODULE mo_wave_state
 
@@ -200,6 +199,7 @@ CONTAINS
     CALL vlr_add(p_prog_list, TRIM(listname), patch_id=p_patch%id, lrestart=.TRUE., &
       &          model_type=get_my_process_name())
 
+
     tracer_container_name = 'tracer'//suffix
     cf_desc    = t_cf_var('tracer', '', 'spectral bin of wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
@@ -224,7 +224,7 @@ CONTAINS
             & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL),      &
             & ref_idx=jt,                                                         &
             & ldims=shape3d_c,                                                    &
-            & loutput=.TRUE.,                                                     &
+            & loutput=.TRUE., lrestart=.TRUE.,                                   &
             & tlev_source=TLEV_NNOW_RCF,                                          &
             & tracer_info=create_tracer_metadata(lis_tracer=.TRUE.,               &
             &                       name        = TRIM(tracer_name),              &
@@ -257,7 +257,7 @@ CONTAINS
     INTEGER :: jt
     INTEGER :: ist
     INTEGER :: shape3d_tr_c(3), shape2d_c(2)
-    CHARACTER(len=VNAME_LEN) :: sl_name, fl_name
+    CHARACTER(len=VNAME_LEN) :: sl_name, fl_name, llws_name
     CHARACTER(len=3) :: freq_ind_str, dir_ind_str
 
     TYPE(t_wave_config), POINTER :: wc
@@ -298,10 +298,20 @@ CONTAINS
          & ldims=shape3d_tr_c, &
          & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
+    ! llws        p_source%llws(nproma,nblks_c,ntracer)
+    cf_desc    = t_cf_var('llws', '-', '1 where sinput is positive', datatype_int)
+    grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_var(p_source_list, 'llws', p_source%llws,              &
+         & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & ldims=shape3d_tr_c,                                      &
+         & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
-    ALLOCATE(p_source%sl_ptr(ntracer), p_source%fl_ptr(ntracer), STAT=ist)
-    IF (ist/=SUCCESS) CALL finish(routine,                            &
-          'allocation of sl_ptr, fl_ptr failed')
+
+    ALLOCATE(p_source%sl_ptr(ntracer),           &
+      &      p_source%fl_ptr(ntracer),           &
+      &      p_source%llws_ptr(ntracer), STAT=ist)
+    IF (ist/=SUCCESS) CALL finish(routine,               &
+          'allocation of sl_ptr, fl_ptr, llws_ptr failed')
 
     DO jt = 1, ntracer
       write(freq_ind_str,'(I0.3)') wc%freq_ind(jt)
@@ -311,30 +321,27 @@ CONTAINS
       CALL add_ref(p_source_list, 'sl',                                     &
            & sl_name, p_source%sl_ptr(jt)%p_2d,                             &
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                            &
-           & t_cf_var(sl_name, '-',sl_name,                                 &
-           & datatype_flt),                                                 &
+           & t_cf_var(sl_name, '-',sl_name, datatype_flt),                  &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
-           & ref_idx=jt, ldims=shape2d_c, loutput=.TRUE.,                   &
-           & in_group=groups("wave_phy_ext"))
+           & ref_idx=jt, ldims=shape2d_c, lrestart=.FALSE., loutput=.TRUE.)
 
       fl_name = 'fl_'//TRIM(freq_ind_str)//'_'//TRIM(dir_ind_str)
       CALL add_ref(p_source_list, 'fl',                                     &
            & fl_name, p_source%fl_ptr(jt)%p_2d,                             &
            & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                            &
-           & t_cf_var(fl_name, '-',fl_name,                                 &
-           & datatype_flt),                                                 &
+           & t_cf_var(fl_name, '-',fl_name, datatype_flt),                  &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
-           & ref_idx=jt, ldims=shape2d_c, loutput=.TRUE.,                   &
-           & in_group=groups("wave_phy_ext"))
+           & ref_idx=jt, ldims=shape2d_c, lrestart=.FALSE., loutput=.TRUE.)
+
+      llws_name = 'llws_'//TRIM(freq_ind_str)//'_'//TRIM(dir_ind_str)
+      CALL add_ref(p_source_list, 'llws',                                   &
+           & llws_name, p_source%llws_ptr(jt)%p,                            &
+           & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                            &
+           & t_cf_var(llws_name, '-',llws_name, datatype_int),              &
+           & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
+           & ref_idx=jt, ldims=shape2d_c, lrestart=.TRUE., loutput=.TRUE.,  &
+           & in_group=groups("wave_debug"))
     END DO
-
-
-    ! llws        p_source%llws(nproma,nblks_c,ntracer)
-    cf_desc    = t_cf_var('llws', '-', '1 where sinput is positive', datatype_int)
-    grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_source_list, 'llws', p_source%llws,              &
-         & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape3d_tr_c)
 
   END SUBROUTINE new_wave_state_source_list
 
@@ -356,16 +363,15 @@ CONTAINS
     INTEGER :: datatype_flt  !< floating point accuracy in NetCDF output
     INTEGER :: nblks_c, nblks_e, nlev
     INTEGER :: nfreqs, ndirs
-    INTEGER :: jg, jf
+    INTEGER :: jg, jf, jt
     INTEGER :: ist
     INTEGER :: shape2d_c(2), shape2d_e(2)
     INTEGER :: shape3d_freq_c(3), shape3d_freq_e(3)
-    INTEGER :: shape4d_c_2(4)
     INTEGER :: shape3d_tr_c(3), shape4d_tr_e(4)
     INTEGER :: shape1d_freq_p4(1), shape1d_dir_2(2)
     INTEGER :: shape4d_freq_p4_2_dir_18(4)
 
-    CHARACTER(len=3) :: freq_ind_str
+    CHARACTER(len=3) :: freq_ind_str, dir_ind_str
     CHARACTER(len=VNAME_LEN) :: out_name
 
     TYPE(t_wave_config),      POINTER :: wc
@@ -390,7 +396,7 @@ CONTAINS
     shape3d_freq_e    = (/nproma, nblks_e, nfreqs/)
     shape3d_tr_c      = (/nproma, nblks_c, ntracer/)
     shape4d_tr_e      = (/nproma, nlev, nblks_e, ntracer/)
-    shape4d_c_2       = (/2, nproma, nlev, nblks_c /)
+
     shape4d_freq_p4_2_dir_18 = (/18,nfreqs+4,2,ndirs/)
 
     ibits = DATATYPE_PACK16   ! "entropy" of horizontal slice
@@ -404,12 +410,13 @@ CONTAINS
     CALL vlr_add(p_diag_list, TRIM(listname), patch_id=p_patch%id, lrestart=.TRUE., &
       &         model_type=get_my_process_name())
 
+
     !wave group velocity
     cf_desc    = t_cf_var('gv_c', 'm s-1', 'group velocity at cells', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'gv_c_freq', p_diag%gv_c,             &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape3d_freq_c, &
+         & ldims=shape3d_freq_c,                                    &
          & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.)
 
     cf_desc    = t_cf_var('gv_e', 'm s-1', 'group velocity at edges', datatype_flt)
@@ -432,7 +439,7 @@ CONTAINS
            & t_cf_var(TRIM(out_name), 'm s-1','group velocity at cells',    &
            & datatype_flt),                                                 &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
-           & ref_idx=jf, ldims=shape2d_c, loutput=.TRUE.,                   &
+           & ref_idx=jf, ldims=shape2d_c, lrestart=.FALSE., loutput=.TRUE., &
            & in_group=groups("wave_phy_ext"))
 
       out_name = 'gv_e_'//TRIM(freq_ind_str)
@@ -442,7 +449,7 @@ CONTAINS
            & t_cf_var(TRIM(out_name), 'm s-1','group velocity at edges',    &
            & datatype_flt),                                                 &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_EDGE), &
-           & ref_idx=jf, ldims=shape2d_e, loutput=.TRUE.,                   &
+           & ref_idx=jf, ldims=shape2d_e, lrestart=.FALSE., loutput=.TRUE., &
            & in_group=groups("wave_phy_ext"))
 
     END DO
@@ -451,31 +458,34 @@ CONTAINS
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_EDGE)
     CALL add_var(p_diag_list, 'gvn_e', p_diag%gvn_e,                &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape4d_tr_e)
+         & ldims=shape4d_tr_e, lrestart=.FALSE., loutput=.TRUE.)
 
     cf_desc    = t_cf_var('tangential_group_velocity', 'm s-1', 'group velocity tangential to edge', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_EDGE)
     CALL add_var(p_diag_list, 'gvt_e', p_diag%gvt_e,                &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape4d_tr_e)
+         & ldims=shape4d_tr_e, lrestart=.FALSE., loutput=.TRUE.)
 
     !Wave physics group
     cf_desc    = t_cf_var('emean', 'm^2', 'total wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'emean', p_diag%emean,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('emeanws', 'm^2', 'wind sea wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'emeanws', p_diag%emeanws,            &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('femean', 'm^2', 'mean frequency wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'femean', p_diag%femean,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('hrms_frac', '-', 'square ratio (Hrms / Hmax)**2', datatype_flt)
@@ -508,7 +518,7 @@ CONTAINS
            & t_cf_var(TRIM(out_name), 'm-1','wave number at cell center',   &
            & datatype_flt),                                                 &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
-           & ref_idx=jf, ldims=shape2d_c, lrestart=.TRUE., loutput=.TRUE.)
+           & ref_idx=jf, ldims=shape2d_c, lrestart=.FALSE., loutput=.TRUE.)
     END DO
 
 
@@ -530,7 +540,7 @@ CONTAINS
            & t_cf_var(TRIM(out_name), 'm-1','wave number at edge midpoint', &
            & datatype_flt),                                                 &
            & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_EDGE), &
-           & ref_idx=jf, ldims=shape2d_e, lrestart=.TRUE., loutput=.TRUE.)
+           & ref_idx=jf, ldims=shape2d_e, lrestart=.FALSE., loutput=.TRUE.)
     END DO
 
 
@@ -538,237 +548,281 @@ CONTAINS
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'f1mean', p_diag%f1mean,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('femeanws', 'm^2', 'mean frequency wind sea wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'femeanws', p_diag%femeanws,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('akmean', '', 'Mean wavenumber based on SQRT(1/K)-moment, wm1', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'akmean', p_diag%akmean,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('xkmean', '', 'Mean wavenumber based on SQRT(K)-moment, wm2', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'xkmean', p_diag%xkmean,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('swell_mask', '-', 'swell mask', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'swell_mask', p_diag%swell_mask,      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape3d_tr_c)
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
+         & ldims=shape2d_c, in_group=groups("wave_debug"))
 
     cf_desc    = t_cf_var('swell_mask_tr', '-', 'swell mask for tracers', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'swell_mask_tr', p_diag%swell_mask_tr,      &
+    CALL add_var(p_diag_list, 'swell_mask_tr', p_diag%swell_mask_tr,&
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lcontainer=.TRUE., lrestart=.FALSE., loutput=.FALSE.,    &
          & ldims=shape3d_tr_c)
+
+    ALLOCATE(p_diag%swmask_ptr(ntracer), STAT=ist)
+    IF (ist/=SUCCESS) CALL finish(routine,               &
+          'allocation of swmask_ptr failed')
+
+    DO jt = 1, ntracer
+      write(freq_ind_str,'(I0.3)') wc%freq_ind(jt)
+      write(dir_ind_str,'(I0.3)') wc%dir_ind(jt)
+
+      out_name = 'swmask_'//TRIM(freq_ind_str)//'_'//TRIM(dir_ind_str)
+      CALL add_ref(p_diag_list, 'swell_mask_tr',                            &
+           & out_name, p_diag%swmask_ptr(jt)%p,                             &
+           & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                            &
+           & t_cf_var(out_name, '-',out_name, datatype_int),                &
+           & grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL), &
+           & ref_idx=jt, ldims=shape2d_c, lrestart=.TRUE., loutput=.TRUE.,  &
+           & in_group=groups("wave_debug"))
+    END DO
+
 
     cf_desc    = t_cf_var('last_prog_freq_ind', '-', 'last frequency index of the prognostic range', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'last_prog_freq_ind', p_diag%last_prog_freq_ind, &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,            &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('ALPHAJ', '-', 'JONSWAP alpha', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ALPHAJ', p_diag%ALPHAJ,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.TRUE., loutput=.TRUE.,                        &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('FP', 'Hz', 'JONSWAP peak frequency', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FP', p_diag%FP,                      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.TRUE., loutput=.TRUE.,                        &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('ET', '-', 'JONSWAP spectra', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ET', p_diag%ET,                      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape3d_freq_c)
 
     cf_desc    = t_cf_var('FLMINFR', '-', 'THE MINIMUM VALUE IN SPECTRAL', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FLMINFR', p_diag%FLMINFR,            &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape3d_freq_c)
 
     cf_desc    = t_cf_var('friction_velocity', 'm s-1', 'friction velocity', datatype_flt)
     grib2_desc = grib2_var(10, 0, 17, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ustar', p_diag%ustar,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('roughness length', 'm', 'Surface roughness length', datatype_flt)
     grib2_desc = grib2_var(2, 0, 1, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'z0', p_diag%z0,                      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('wave_stress', '(m/s)**2', 'wave stress', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tauw', p_diag%tauw,                  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.TRUE., loutput=.TRUE.,                         &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('integrated_energy_flux', '-', 'integrated energy flux', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'phiaw', p_diag%phiaw,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c , in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('tauhf1', '-', 'high-fequency stress', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tauhf1', p_diag%tauhf1,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('phihf1', '-', 'high-frequency energy flux into ocean', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'phihf1', p_diag%phihf1,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('tauhf', '-', 'high-fequency stress', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tauhf', p_diag%tauhf,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('phihf', '-', 'high-frequency energy flux into ocean', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'phihf', p_diag%phihf,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('xlevtail', '-', 'tail level', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'xlevtail', p_diag%xlevtail,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
-
-    cf_desc    = t_cf_var('geo_bath_grad_c', 'm/m', 'bathymetry geo-gradient at cell center', datatype_flt)
-    grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'geo_bath_grad_c', p_diag%geo_bath_grad_c, &
-         & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc,      &
-         & ldims=shape4d_c_2, loutput=.FALSE.)
 
     ! nonlinear transfer function coefficients for shallow water
     cf_desc    = t_cf_var('enh', '-', 'nonlinear transfer function coefficients', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'enh', p_diag%enh,                    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape2d_c)
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
+         & ldims=shape2d_c, in_group=groups("wave_debug"))
 
     ! for discrete approximation of nonlinear transfer
     cf_desc    = t_cf_var('IKP', '-', 'IKP', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'IKP', p_diag%IKP,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('IKP1', '-', 'IKP1', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'IKP1', p_diag%IKP1,                  &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('IKM', '-', 'IKM', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'IKM', p_diag%IKM,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('IKM1', '-', 'IKM1', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'IKM1', p_diag%IKM1,                  &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('K1W', '-', 'K1W', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'K1W', p_diag%K1W,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('K2W', '-', 'K2W', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'K2W', p_diag%K2W,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('K11W', '-', 'K11W', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'K11W', p_diag%K11W,                  &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('K21W', '-', 'K21W', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'K21W', p_diag%K21W,                  &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('non_lin_tr_ind', '-', 'non_lin_tr_ind', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'non_lin_tr_ind', p_diag%non_lin_tr_ind, &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc,    &
+         & lrestart=.FALSE., loutput=.TRUE.,                           &
          & ldims=shape4d_freq_p4_2_dir_18)
 
     cf_desc    = t_cf_var('JA1', '-', 'JA1', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'JA1', p_diag%JA1,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('JA2', '-', 'JA2', datatype_int)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'JA2', p_diag%JA2,                    &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_dir_2)
 
     cf_desc    = t_cf_var('AF11', '-', 'AF11', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'AF11', p_diag%AF11,                  &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('FKLAP', '-', 'FKLAP', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FKLAP', p_diag%FKLAP,                &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('FKLAP1', '-', 'FKLAP1', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FKLAP1', p_diag%FKLAP1,              &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('FKLAM', '-', 'FKLAM', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FKLAM', p_diag%FKLAM,                &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
 
     cf_desc    = t_cf_var('FKLAM1', '-', 'FKLAM1', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'FKLAM1', p_diag%FKLAM1,              &
          & GRID_UNSTRUCTURED_EDGE, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape1d_freq_p4)
-
-    cf_desc    = t_cf_var('depth', 'm', 'Water depth', datatype_flt)
-    grib2_desc = grib2_var(10, 4, 14, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'depth', p_diag%depth,                &
-         & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape2d_c, in_group=groups("wave_short"))
 
     ! wave group
     ! total
@@ -779,42 +833,49 @@ CONTAINS
          & hor_interp=create_hor_interp_metadata(                   &
          &    hor_intp_type=HINTP_TYPE_LONLAT_BCTR,                 &
          &    fallback_type=HINTP_TYPE_LONLAT_NNB),                 &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('hs_dir', 'deg', 'Total mean wave direction', datatype_flt)
     grib2_desc = grib2_var(10, 0, 10, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'hs_dir', p_diag%hs_dir,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('tpp', 's', 'Total wave peak period', datatype_flt)
     grib2_desc = grib2_var(10, 0, 34, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tpp', p_diag%tpp,    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('tmp', 's', 'Total wave mean period', datatype_flt)
     grib2_desc = grib2_var(10, 0, 28, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tmp', p_diag%tmp,    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('tm1', 's', 'Total m1 wave period', datatype_flt)
     grib2_desc = grib2_var(10, 0, 15, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tm1', p_diag%tm1,                    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('tm2', 's', 'Total m2 wave period', datatype_flt)
     grib2_desc = grib2_var(10, 0, 28, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tm2', p_diag%tm2,                    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('ds', 'deg', 'Total directional wave spread', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ds', p_diag%ds,                      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     ! wind sea
@@ -822,60 +883,70 @@ CONTAINS
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'emean_sea', p_diag%emean_sea,        &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('femean_sea', 'm^2', 'Wind sea mean frequency wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'femean_sea', p_diag%femean_sea,      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('f1mean_sea', 'm^2', 'Wind sea mean frequency', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'f1mean_sea', p_diag%f1mean_sea,        &
+    CALL add_var(p_diag_list, 'f1mean_sea', p_diag%f1mean_sea,      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('hs_sea', 'm', 'Sea significant wave height', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'hs_sea', p_diag%hs_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('hs_sea_dir', 'deg', 'Sea mean wave direction', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'hs_sea_dir', p_diag%hs_sea_dir,      &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('pp_sea', 's', 'Sea wave peak period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'pp_sea', p_diag%pp_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('mp_sea', 's', 'Sea wave mean period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'mp_sea', p_diag%mp_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('m1_sea', 's', 'Sea m1 wave period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'm1_sea', p_diag%m1_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('m2_sea', 's', 'Sea m2 wave period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'm2_sea', p_diag%m2_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('ds_sea', 'deg', 'Sea directional wave spread', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ds_sea', p_diag%ds_sea,              &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.FALSE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
      ! swell
@@ -883,90 +954,105 @@ CONTAINS
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'emean_swell', p_diag%emean_swell,    &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('femean_swell', 'm^2', 'Swell mean frequency wave energy', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'femean_swell', p_diag%femean_swell,  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('f1mean_swell', 'm^2', 'Swell mean frequency', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'f1mean_swell', p_diag%f1mean_swell,    &
+    CALL add_var(p_diag_list, 'f1mean_swell', p_diag%f1mean_swell,  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_phy"))
 
     cf_desc    = t_cf_var('hs_swell', 'm', 'Swell significant wave height', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'hs_swell', p_diag%hs_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('hs_swell_dir', 'deg', 'Swell mean wave direction', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'hs_swell_dir', p_diag%hs_swell_dir,  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('pp_swell', 's', 'Swell wave peak period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-    CALL add_var(p_diag_list, 'pp_swell', p_diag%pp_swell,    &
+    CALL add_var(p_diag_list, 'pp_swell', p_diag%pp_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('mp_swell', 's', 'Swell wave mean period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'mp_swell', p_diag%mp_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('m1_swell', 's', 'Swell m1 wave period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'm1_swell', p_diag%m1_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('m2_swell', 's', 'Swell m2 wave period', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'm2_swell', p_diag%m2_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('ds_swell', 'deg', 'Swell directional wave spread', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'ds_swell', p_diag%ds_swell,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c, in_group=groups("wave_short"))
 
     cf_desc    = t_cf_var('drag', '-', 'Drag coefficient', datatype_flt)
     grib2_desc = grib2_var(10, 0, 16, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'drag', p_diag%drag,                  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape2d_c)
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
+         & ldims=shape2d_c, in_group=groups("wave_debug"))
 
     cf_desc    = t_cf_var('tauwn', '-', 'Normalized wave stress', datatype_flt)
     grib2_desc = grib2_var(10, 0, 19, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'tauwn', p_diag%tauwn,                &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape2d_c)
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
+         & ldims=shape2d_c, in_group=groups("wave_debug"))
 
     cf_desc    = t_cf_var('beta', '-', 'Charnock parameter', datatype_flt)
     grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'beta', p_diag%beta,                  &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
-         & ldims=shape2d_c)
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
+         & ldims=shape2d_c, in_group=groups("wave_debug"))
 
     cf_desc    = t_cf_var('u_stokes', 'ms-1', 'U-component surface Stokes drift', datatype_flt)
     grib2_desc = grib2_var(10, 0, 21, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'u_stokes', p_diag%u_stokes,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c)
 
     cf_desc    = t_cf_var('v_stokes', 'ms-1', 'V-component surface Stokes drift', datatype_flt)
     grib2_desc = grib2_var(10, 0, 22, ibits, GRID_UNSTRUCTURED, GRID_CELL)
     CALL add_var(p_diag_list, 'v_stokes', p_diag%v_stokes,          &
          & GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc, grib2_desc, &
+         & lrestart=.FALSE., loutput=.TRUE.,                        &
          & ldims=shape2d_c)
 
 

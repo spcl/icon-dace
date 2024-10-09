@@ -1,0 +1,37 @@
+
+HDOBJ   = $(OBJDIR)/hd_driver.o \
+          $(OBJDIR)/mo_time_base.o \
+          $(OBJDIR)/mo_io_units.o \
+          $(OBJDIR)/mo_time_control.o \
+          $(OBJDIR)/mo_mpi.o \
+          $(OBJDIR)/mo_machine.o \
+          $(OBJDIR)/mo_hydrology.o \
+          $(OBJDIR)/mo_couple_to_ocean.o \
+          $(OBJDIR)/mo_interpo.o \
+          $(OBJDIR)/mo_time_event.o \
+          $(OBJDIR)/mo_namelist.o \
+          $(OBJDIR)/mo_array_utils.o \
+          $(OBJDIR)/mo_memory_base.o \
+          $(OBJDIR)/mo_time_conversion.o \
+          $(OBJDIR)/mo_decomposition.o \
+          $(OBJDIR)/mo_hd_highres_io.o \
+          $(OBJDIR)/mo_constants.o \
+          $(OBJDIR)/mo_control.o \
+          $(OBJDIR)/mo_filename.o \
+          $(OBJDIR)/mo_netcdf.o \
+          $(OBJDIR)/mo_kind.o \
+          $(OBJDIR)/mo_memory_g3b.o \
+          $(OBJDIR)/mo_util_string.o \
+          $(OBJDIR)/get_dates.o \
+          $(OBJDIR)/mo_exception.o \
+          $(OBJDIR)/mo_jsbach_comm_to_echam5mods.o \
+          $(OBJDIR)/mo_time_manager.o \
+          $(OBJDIR)/mo_linked_list.o \
+          $(OBJDIR)/mo_gaussgrid.o \
+          $(OBJDIR)/mo_grid.o \
+          $(OBJDIR)/mo_io.o \
+          $(OBJDIR)/oas_hd_init.o \
+          $(OBJDIR)/oas_hd.o  \
+          $(OBJDIR)/mo_coupling.o \
+          $(OBJDIR)/mo_coupling_hd.o \
+          $(OBJDIR)/mo_bias_correction.o

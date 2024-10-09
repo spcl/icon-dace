@@ -1,5 +1,3 @@
-! @brief branch for the non-hydrostatic ICON workflow
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief branch for the non-hydrostatic ICON workflow
 
 MODULE mo_atmo_nonhydrostatic
 
@@ -125,6 +125,7 @@ USE mo_aes_phy_memory,      ONLY: construct_aes_phy_memory
 USE mo_cloud_mig_memory,    ONLY: construct_cloud_mig_memory
 USE mo_cloud_two_memory,    ONLY: construct_cloud_two_memory
 USE mo_radiation_forcing_memory, ONLY: construct_rad_forcing_list => construct_radiation_forcing_list
+USE mo_atm_energy_memory,   ONLY: construct_atm_energy
 USE mo_physical_constants,  ONLY: amd, amco2
 USE mo_aes_phy_dims,        ONLY: init_aes_phy_dims
 USE mo_aes_phy_init,        ONLY: init_aes_phy_params, init_aes_phy_external, &
@@ -188,6 +189,7 @@ USE mo_icon2dace,           ONLY: init_dace, finish_dace
     &                             EP_ATM_INIT_FINALIZE,               &
     &                             EP_DESTRUCTOR,                      &
     &                             comin_var_list_finalize,            &
+    &                             comin_var_request_list_finalize,    &
     &                             comin_descrdata_finalize,           &
     &                             comin_setup_finalize,               &
     &                             COMIN_DOMAIN_OUTSIDE_LOOP
@@ -219,7 +221,6 @@ CONTAINS
     CLASS(t_RestartDescriptor), POINTER  :: restartDescriptor
 
     CHARACTER(*), PARAMETER :: routine = "atmo_nonhydrostatic"
-    INTEGER :: ierr
 
 
     ! construct the atmospheric nonhydrostatic model
@@ -287,14 +288,12 @@ CONTAINS
     CALL deleteRestartDescriptor(restartDescriptor)
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_DESTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_DESTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 
-    CALL comin_var_list_finalize(ierr)
-    IF (ierr /= 0) STOP
-    CALL comin_descrdata_finalize(ierr)
-    IF (ierr /= 0) STOP
-    CALL comin_setup_finalize(ierr)
-    IF (ierr /= 0) STOP
+    CALL comin_var_list_finalize()
+    CALL comin_var_request_list_finalize()
+    CALL comin_descrdata_finalize()
+    CALL comin_setup_finalize()
 #endif
 
     !---------------------------------------------------------------------
@@ -432,6 +431,31 @@ CONTAINS
       ENDIF
 #endif
     END IF
+#ifndef __NO_ICON_COMIN__
+    ! ----------------------------------------------------------
+    ! ICON ComIn
+    !
+    ! loop over the total list of additional requested variables and
+    ! perform `add_var` / `add_ref` operations needed.
+    !
+    ! Remarks:
+    ! - Variables are added to a separate variable list.
+    !
+    ! - Further below, additional AES tracers are added. This happens
+    !   in a slightly different way than for NWP and subtly changes
+    !   the role of the `ncontained` counter in the tracer
+    !   container. ComIn, however, relies on the fact that
+    !   `ncontained` provides the total number of tracer references
+    !   added so far. This (and probably other ICON components) is
+    !   incompatible with the AES implementation. Calling the ComIn
+    !   tracer handling *before* the AES constructor is an imperfect
+    !   work-around which will be changed when a better solution on
+    !   the ICON side has been implemented.
+    CALL icon_append_comin_tracer_variables(p_patch(1:), p_nh_state, p_nh_state_lists)
+    CALL icon_append_comin_tracer_phys_tend(p_patch(1:))
+    CALL icon_append_comin_variables(p_patch(1:))
+    ! ----------------------------------------------------------
+#endif
 
     IF (iforcing == iaes) THEN
 #ifdef __NO_AES__   
@@ -441,6 +465,7 @@ CONTAINS
       CALL construct_cloud_mig_memory  ( p_patch(1:) )
       CALL construct_cloud_two_memory  ( p_patch(1:) )
       CALL construct_rad_forcing_list  ( p_patch(1:) )
+      CALL construct_atm_energy        ( p_patch(1:) )
 #endif
     END IF
 
@@ -462,15 +487,6 @@ CONTAINS
 
 #ifndef __NO_ICON_COMIN__
     ! ----------------------------------------------------------
-    ! UNDER DEVELOPMENT (ICON ComIn)
-    !
-    ! loop over the total list of additional requested variables and
-    ! perform `add_var` / `add_ref` operations needed.
-    ! remark: variables are added to a separate variable list.
-    CALL icon_append_comin_tracer_variables(p_patch(1:), p_nh_state, p_nh_state_lists)
-    CALL icon_append_comin_tracer_phys_tend(p_patch(1:))
-    CALL icon_append_comin_variables(p_patch(1:))
-
     ! expose ICON's variables to the ComIn infrastructure.
 
     CALL icon_expose_variables()
@@ -478,7 +494,7 @@ CONTAINS
     ! call to secondary constructor
     !   third party modules retrieve pointers to data arrays, telling
     !   ICON ComIn about the context where these will be accessed.
-    CALL icon_call_callback(EP_SECONDARY_CONSTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_SECONDARY_CONSTRUCTOR, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
     ! ----------------------------------------------------------
 #endif
 
@@ -661,31 +677,55 @@ CONTAINS
         CALL RANDOM_SEED(PUT = seed)
 
         DO jg=1,n_dom
-          CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                   p_nh_state(jg)%prog(nnow(jg))%w)
-          CALL add_random_noise_3d(p_patch(jg)%edges%all, pinit_amplitude, &
-                                   p_nh_state(jg)%prog(nnow(jg))%vn)
-          CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                   p_nh_state(jg)%prog(nnow(jg))%theta_v)
-          CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                   p_nh_state(jg)%prog(nnow(jg))%exner)
-          CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                   p_nh_state(jg)%prog(nnow(jg))%rho)
+          CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                   coordinates=p_patch(jg)%cells%center, &
+                                   amplitude=pinit_amplitude, &
+                                   field=p_nh_state(jg)%prog(nnow(jg))%w, &
+                                   seed_in=pinit_seed+5)
+          CALL add_random_noise_3d(subset=p_patch(jg)%edges%all, &
+                                   coordinates=p_patch(jg)%edges%center, &
+                                   amplitude=pinit_amplitude, &
+                                   field=p_nh_state(jg)%prog(nnow(jg))%vn, &
+                                   seed_in=pinit_seed+53)
+          CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                   coordinates=p_patch(jg)%cells%center, &
+                                   amplitude=pinit_amplitude, &
+                                   field=p_nh_state(jg)%prog(nnow(jg))%theta_v, &
+                                   seed_in=pinit_seed+157)
+          CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                   coordinates=p_patch(jg)%cells%center, &
+                                   amplitude=pinit_amplitude, &
+                                   field=p_nh_state(jg)%prog(nnow(jg))%exner, &
+                                   seed_in=pinit_seed+173)
+          CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                   coordinates=p_patch(jg)%cells%center, &
+                                   amplitude=pinit_amplitude, &
+                                   field=p_nh_state(jg)%prog(nnow(jg))%rho, &
+                                   seed_in=pinit_seed+211)
 
           IF (lseaice) THEN
-            CALL add_random_noise_2d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                     p_lnd_state(jg)%prog_wtr(nnow_rcf(jg))%t_ice)
+            CALL add_random_noise_2d(subset=p_patch(jg)%cells%all, &
+                                    coordinates=p_patch(jg)%cells%center, &
+                                    amplitude=pinit_amplitude, &
+                                    field=p_lnd_state(jg)%prog_wtr(nnow_rcf(jg))%t_ice, &
+                                    seed_in=pinit_seed+257)
           ENDIF
 
           IF (.NOT. ltestcase .OR. nh_test_name == 'dcmip_pa_12') THEN
-            CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                     p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,1))
+            CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                    coordinates=p_patch(jg)%cells%center, &
+                                    amplitude=pinit_amplitude, &
+                                    field=p_nh_state(jg)%prog(nnow_rcf(jg))%tracer(:,:,:,1), &
+                                    seed_in=pinit_seed+263)
           ENDIF
 
           IF (iforcing == inwp ) THEN
             DO jt = 1, SIZE(p_lnd_state(jg)%prog_lnd(nnow_rcf(jg))%t_so_t,4)
-              CALL add_random_noise_3d(p_patch(jg)%cells%all, pinit_amplitude, &
-                                  p_lnd_state(jg)%prog_lnd(nnow_rcf(jg))%t_so_t(:,:,:,jt) )
+              CALL add_random_noise_3d(subset=p_patch(jg)%cells%all, &
+                                      coordinates=p_patch(jg)%cells%center, &
+                                      amplitude=pinit_amplitude, &
+                                      field=p_lnd_state(jg)%prog_lnd(nnow_rcf(jg))%t_so_t(:,:,:,jt), &
+                                      seed_in=pinit_seed+373)
             ENDDO
           ENDIF
 
@@ -880,7 +920,7 @@ CONTAINS
 #endif
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_INIT_FINALIZE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INIT_FINALIZE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
     ! Determine if temporally averaged vertically integrated moisture quantities need to be computed
 

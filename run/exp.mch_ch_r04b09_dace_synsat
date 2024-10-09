@@ -13,8 +13,8 @@
 # Name: exp.mch_ch_r04b09_dace_synsat.run
 #
 # Purpose: Run script for ICON on a low resolution grid on 
-#          switzerland
-#          It is used for a technical test at MeteoSwiss.
+#          Switzerland. It is used to test the rttov GPU to 
+#          CPU bridge on a GPU builder
 #
 # Created by: "Marek Jacob (DWD)
 #

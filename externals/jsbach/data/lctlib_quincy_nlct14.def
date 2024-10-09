@@ -71,6 +71,12 @@ ps_pathway 1 1 1 1 1 1 1 2 1 2 1 2 2 2
 # JSBACH4: Phenology type (none: 0; evergreen: 1; summergreen: 2; raingreen: 3; grass (QUINCY = perennial?): 4; crop: 5)         
 phenology_type 1 1 3 2 1 2 4 4 4 4 4 4 0 0
         
+#lai_max: maximum leaf area index (--) only used for CANOPY mode
+lai_max 5.0 4.0 5.0 5.0 3.0 3.0 2.0 2.0 2.0 2.0 4.0 4.0 0.0 0.0
+
+#vegetation_height: Vegetation height [m] only used for CANOPY mode
+vegetation_height 30.0 15.0 30.0 15.0 15.0 15.0 1.0 1.0 1.0 1.0 1.0 1.0 0.0 0.0
+
 #sla: specific leaf area (mm / mgDW)        
 # From Kattge et al. 2011, Table 5, converted internally from (mm/mgDW) to (m2/mol C)        
 sla 9.46 8.99 15.4 15.4 5.0 10.09 20.12 19.23 20.12 19.23 20.12 19.23 19.23 19.23
@@ -285,3 +291,9 @@ fstore_target 1.0 1.2 1.0 1.0 0.5 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0 1.0
 # tuned according to Jackson et al. 1996, Oecologia, to reproduce their cummulative root distribution profiles        
 # only making use of the contrast sclerophyllic, tree, grass        
 k_root_dist 3.5 2.8 2.5 3.5 3.5 3.5 5.5 5.5 5.5 5.5 5.5 5.5 5.5 5.5
+
+#k_som_fast_init: fast pools SOM init value, empirically calibrated values to equilibrium soil profiles (unitless)
+k_som_fast_init 10.0 8.0 10.0 7.0 5.0 5.7 5.0 7.0 5.0 5.0 7.0 7.0 7.0 7.0
+
+#k_som_slow_init: slow pools SOM init value, empirically calibrated values to equilibrium soil profiles (unitless)
+k_som_slow_init 3.5 2.3 4.0 2.0 2.0 2.0 2.0 2.5 2.0 2.0 2.5 2.5 2.5 2.5

@@ -15,7 +15,6 @@ pgi_inlib_procedures+= \
   alb_seaice_equil \
   alpha0_char \
   calc_ustar \
-  ccw \
   clct2ww \
   create_rdm_seed \
   create_rdm_seed_in_time \
@@ -59,8 +58,6 @@ pgi_inlib_procedures+= \
   latent_heat_vaporization \
   laxfr_upflux \
   laxfr_upflux_v \
-  line_intersect \
-  lintersect \
   make_normalized \
   mc_limiter \
   nwp_dyn_gust \
@@ -121,7 +118,6 @@ pgi_inlib_f90_files+= \
   src/lnd_phy_schemes/sfc_seaice.f90 \
   src/lnd_phy_schemes/sfc_terra.f90 \
   src/serialization/mo_ser_common.f90 \
-  src/shared/mo_math_utilities.f90 \
   src/shared/mo_statistics.f90
 
 # List of files to be compiled with the GPU register limit flag:

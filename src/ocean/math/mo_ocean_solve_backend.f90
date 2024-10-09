@@ -1,7 +1,3 @@
-! contains abstact type for actual solver backends
-! this is an abstract interposer layer,
-! in order to use a single interface for all backend solvers
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! contains abstact type for actual solver backends
+! this is an abstract interposer layer,
+! in order to use a single interface for all backend solvers
+
 #include "icon_definitions.inc"
 
 MODULE mo_ocean_solve_backend
@@ -83,19 +84,24 @@ MODULE mo_ocean_solve_backend
 CONTAINS
 
 ! dump lhs or preconditioner matrix
-  SUBROUTINE ocean_solve_backend_dump_matrix(this, id, lprecon)
+  SUBROUTINE ocean_solve_backend_dump_matrix(this, id, lprecon, lacc)
     CLASS(t_ocean_solve_backend), INTENT(INOUT) :: this
     INTEGER, INTENT(IN) :: id
     LOGICAL, INTENT(IN) :: lprecon
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
     CHARACTER(LEN=*), PARAMETER :: routine = this_mod_name // &
       & "::ocean_solve_t::ocean_solve_dump_matrix()"
+
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
 
     IF (.NOT.ASSOCIATED(this%trans)) CALL finish(routine, &
       & "ocean_solve_t was not initialized")
     IF (lprecon) THEN
-      CALL this%lhs%dump_matrix(id, "ocean_matrix_precon_", .true.)
+      CALL this%lhs%dump_matrix(id, "ocean_matrix_precon_", .true., lacc=lzacc)
     ELSE
-      CALL this%lhs%dump_matrix(id, "ocean_matrix_lhs_", .false.)
+      CALL this%lhs%dump_matrix(id, "ocean_matrix_lhs_", .false., lacc=lzacc)
     END IF
   END SUBROUTINE ocean_solve_backend_dump_matrix
 
@@ -119,16 +125,22 @@ CONTAINS
     this%abs_tol_wp = par%tol
     IF (par_sp%nidx .NE. -1) this%abs_tol_sp = REAL(par_sp%tol, sp)
 ! rhs-pointer
+    !$ACC EXIT DATA DELETE(this%b_loc_wp) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
     NULLIFY(this%b_loc_wp)
 ! iters used arrays
     ALLOCATE(this%niter(2), this%niter_cal(2), this%res_wp(2))
 ! communication infrastructure
     this%trans => trans
 ! initialize lhs-object
-    CALL this%lhs%construct(par_sp%nidx .EQ. par%nidx, par, lhs_agen, trans)
 
-    !$ACC ENTER DATA COPYIN(this, this%lhs, this%trans, this%par) &
-    !$ACC   COPYIN(this%trans%nblk, this%trans%nidx_e, this%par%m) IF(lzacc)
+    !$ACC ENTER DATA COPYIN(this) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
+    CALL this%lhs%construct(par_sp%nidx .EQ. par%nidx, par, lhs_agen, trans, lacc=lzacc)
+
+    !$ACC ENTER DATA COPYIN(this%lhs, this%trans, this%par) &
+    !$ACC   COPYIN(this%trans%nblk, this%trans%nidx_e, this%par%m) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
     this%timer_wait = new_timer("solve_wait")
   END SUBROUTINE ocean_solve_backend_construct
 
@@ -147,7 +159,7 @@ CONTAINS
 
     IF (.NOT.ASSOCIATED(this%trans)) &
       & CALL finish(routine, "solve needs to be initialized")
-    IF (upd .EQ. 1) CALL this%lhs%update()
+    IF (upd .EQ. 1) CALL this%lhs%update(lacc=lzacc)
 ! transfer input fields to internal solver arrays (from worker-PEs to solver-PEs)
     IF (.NOT.ALLOCATED(this%x_wp)) THEN ! must also allocate
       CALL this%trans%into_once(this%x_loc_wp, this%x_wp, 1, lacc=lzacc)
@@ -156,8 +168,12 @@ CONTAINS
       CALL this%trans%into(this%x_loc_wp, this%x_wp, this%b_loc_wp, this%b_wp, 1, lacc=lzacc)
     END IF
 
+    !$ACC DATA PRESENT(this%x_loc_wp, this%x_wp, this%b_wp, this%b_loc_wp, this%b_wp) IF(lzacc)
     this%niter_cal(2) = -2
     IF (this%par_sp%nidx .EQ. this%par%nidx .AND. this%trans%is_solver_pe) THEN
+#ifdef _OPENACC
+      IF (lzacc) CALL finish(routine, "Single precision variant not ported to GPU")
+#endif
       IF (.NOT.ALLOCATED(this%x_sp)) & ! alloc sp-arrays, if not done, yet
         ALLOCATE(this%x_sp(this%trans%nidx, this%trans%nblk_a), &
           & this%b_sp(this%trans%nidx, this%trans%nblk_a))
@@ -192,14 +208,17 @@ CONTAINS
       this%niter_cal(1) = sum_it
     END IF
 
+    !$ACC END DATA
+
 ! transfer solution and residuals from solver-PEs back onto worker-PEs
     IF (ltimer) CALL timer_start(this%timer_wait)
     IF (ltimer) CALL p_barrier(p_comm_work)
     IF (ltimer) CALL timer_stop(this%timer_wait)
     CALL this%trans%sctr(this%x_wp, this%x_loc_wp, lacc=lzacc)
     !> these are 1d arrays with size two
-    CALL this%trans%bcst(this%res_wp, this%res_loc_wp)
-    CALL this%trans%bcst(this%niter_cal, this%niter)
+    ! 2024-09 DKRZ-dzo: Since this%res_wp and this%niter_cal are only in CPU memory, have lacc=.FALSE.
+    CALL this%trans%bcst(this%res_wp, this%res_loc_wp, lacc=.FALSE.)
+    CALL this%trans%bcst(this%niter_cal, this%niter, lacc=.FALSE.)
     niter = this%niter(1)
     niter_sp = this%niter(2)
 

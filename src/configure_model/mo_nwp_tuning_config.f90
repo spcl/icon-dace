@@ -1,7 +1,3 @@
-! @brief Tuning and/or perturbing nwp physics
-!
-! configuration setup for NWP physics tuning
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Tuning and/or perturbing nwp physics
+!
+! configuration setup for NWP physics tuning
 
 MODULE mo_nwp_tuning_config
 

@@ -1,13 +1,3 @@
-!
-! The radiation scheme ecRad expects information from the host model (i.e., ICON) to be
-!   copied to different ecRad data structures: t_ecrad_single_level_type, t_ecrad_gas_type,
-!   t_ecrad_thermodynamics_type and t_ecrad_cloud_type. Similarly, the output of ecRad, i.e.
-!   the radiative fluxes, are stored in a data structure t_ecrad_flux_type.
-! This module offers subroutines that transfer the data from ICON variables into the
-!   correct ecRad data structure. The subroutines are written in a way that they can be used
-!   on the reduced radiation grid as well as on the full radiation grid. This ensures
-!   consistency between the two modes.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The radiation scheme ecRad expects information from the host model (i.e., ICON) to be
+!   copied to different ecRad data structures: t_ecrad_single_level_type, t_ecrad_gas_type,
+!   t_ecrad_thermodynamics_type and t_ecrad_cloud_type. Similarly, the output of ecRad, i.e.
+!   the radiative fluxes, are stored in a data structure t_ecrad_flux_type.
+! This module offers subroutines that transfer the data from ICON variables into the
+!   correct ecRad data structure. The subroutines are written in a way that they can be used
+!   on the reduced radiation grid as well as on the full radiation grid. This ensures
+!   consistency between the two modes.
 
 MODULE mo_nwp_ecrad_utilities
 

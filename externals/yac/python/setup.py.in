@@ -1,125 +1,189 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 import os
+import shlex
+import subprocess
 from sysconfig import get_config_vars
 
 from setuptools import setup, Extension
-from Cython.Build import cythonize
-import numpy
 
-# This script is normally called from the Makefile and, while supporting the
-# direct execution of the script, we want the compiler command and compiler
-# flags to be consistent with those set by `make`. This is why the Makefile
-# calls the script with the overridden environment variables. For example, this
-# is supposed to ensure the consistency when the user wants to override the
-# compiler with a command line argument when calling `make`, e.g. `make CC=gcc`.
+# This script is called from the Makefile and we want the compiler command and
+# compiler flags to be consistent with those set by `make`. This is why the
+# Makefile calls the script with overridden environment variables. For example,
+# this ensures the consistency when the user wants to override the compiler with
+# a command line argument when calling `make`, e.g. `make CC=gcc`.
 
-# We need to compile and link the extension with the same compiler command that
-# is used for the building of YAC, which might be an MPI wrapper. By default,
-# setuptools take the compilation and linking commands from the sysconfigdata
-# but we are going to override them with the environment variables.
+linker_search_flags = ["-B", "-L"]
+linker_flags = linker_search_flags + ["-Wl,-rpath", "-Wl,-rpath-link"]
 
-# The first variable, CC, which holds the compilation command, is set to the
-# value detected by the configure script (either by `make` via the environment
-# variable or as a fallback value here in the script). That is not 100% correct
-# because the value for CC in the sysconfigdata file often contains additional
-# compiler flags (e.g. -pthread), which we lose in this case. Moreover, the user
-# might try to configure and build the whole project with a compiler that is
-# different from the one that was used to build Python itself, which might have
-# unexpected side effects. However, the experience shows that none of that is a
-# real issue and we will try not to make things too complicated:
-cc = os.environ.get("CC", "@CC@")
 
-# We now need to modify LDSHARED, the second variable, which is used for
-# linking, in a consistent manner. However, doing that in a makefile is harder
-# than in a Python script. Therefore, we honour the environment variable but
-# interpret its empty value as a trigger for the substitution:
-ldshared = os.environ.get("LDSHARED", None)
-if not ldshared:
-    # Get the values from the sysconfigdata:
-    config = get_config_vars()
-    config_cc = config["CC"]
-    config_ldshared = config["LDSHARED"]
+def filter_args(args, filtered_flags):
+    result = []
+    remainder = []
 
-    # Normally, the link command starts with the compilation command:
-    if config_ldshared.startswith(config_cc):
-        ldshared = cc + config_ldshared[len(config_cc):]
-    else:
-        # Otherwise, we try to replace the compiler command if it appears "in
-        # the middle" of the link command; to avoid mistaking some substring of
-        # a path for the compiler (e.g. to avoid replacing "gcc" in
-        # "-L/path/to/gcc/"), we require that the compiler command be surrounded
-        # by spaces. Note this may leave "config_ldshared" unchanged if the
-        # compilation command does not appear in the link command at all, for
-        # example, if "ld" is invoked directly (no change would be required in
-        # that case):
-        ldshared = config_ldshared.replace(" {0} ".format(config_cc),
-                                           " {0} ".format(cc))
+    expect_value = False
+    for arg in args:
+        if expect_value:
+            result.append(arg)
+            expect_value = False
+        elif arg in filtered_flags:
+            result.append(arg)
+            expect_value = True
+        elif any(arg.startswith(f) for f in filtered_flags):
+            result.append(arg)
+        else:
+            remainder.append(arg)
 
-# Override the default compiler flags set by setuptools but not the ones from
-# the environment:
-os.environ["CC"] = cc
-os.environ["LDSHARED"] = ldshared
-os.environ["CPPFLAGS"] = os.environ.get(
-    "CPPFLAGS",
-    "@CPPFLAGS@")
-os.environ["CFLAGS"] = os.environ.get(
-    "CFLAGS",
-    "-I@top_srcdir@/src "
-    "@MPI_CFLAGS@ "
-    "@CFLAGS@")
-os.environ["LDFLAGS"] = os.environ.get(
-    "LDFLAGS",
-    "@LDFLAGS@")
+    return result, remainder
 
-# Setuptools do not support the LIBS environment variable, therefore, we pass
-# its contents via the extra_link_args argument:
-libs = os.environ.get(
-    "LIBS",
-    "@top_builddir@/src/libyac.a "
-    "@LAPACK_CLIBS@ "
-    "@MTIME_CLIBS@ "
-    "@FYAML_CLIBS@ "
-    "@NETCDF_CLIBS@ "
-    "@YAXT_CLIBS@ "
-    "@MPI_CLIBS@ "
-    "@LIBS@")
 
-extra_link_args = libs.split()
+def extract_mpi_ldflags(mpicc):
+    if mpicc is not None:
+        try:
+            shell_command = r"""
+            @SHELL@
+            """.strip()
 
-# Non-portable linker flags, which we uncomment on Linux when compiling with GCC
-# for debugging:
-#   - make sure that the extension is linked to all required libraries:
-# extra_link_args.append("-Wl,--no-undefined")
-#   - check which libraries are actually needed for the extension:
-# extra_link_args.append("-Wl,--as-needed")
+            link_marker = "-o dummy"
 
-# The extension depends on all static libraries of the project:
-depends = [
-    link_arg for link_arg in extra_link_args
-    if (os.path.isfile(link_arg) and
-        os.path.abspath(link_arg).startswith("@abs_top_builddir@/"))]
+            mpicc_proc = subprocess.Popen(
+                shlex.split(shell_command)
+                + ["-c", "{0} -show {1}".format(mpicc, link_marker)],
+                stdout=subprocess.PIPE,
+                stderr=subprocess.DEVNULL,
+                encoding="utf-8",
+            )
+            mpicc_proc_out, _ = mpicc_proc.communicate()
+            if mpicc_proc.returncode == 0:
+                for line in mpicc_proc_out.splitlines():
+                    if link_marker in line:
+                        result, _ = filter_args(shlex.split(line), linker_flags)
+                        return result
+        except Exception:
+            pass
+    return []
 
-rpaths = [flag[2:] for flag in os.environ["LDFLAGS"].split()
-          if flag.startswith("-L")]
+
+def fix_ldshared(original_ldshared, overriden_cc):
+    fixed_ldshared = original_ldshared
+    if overriden_cc is not None:
+        (config_cc,) = get_config_vars("CC")
+
+        # Normally, the link command starts with the compilation command:
+        if fixed_ldshared.startswith(config_cc):
+            fixed_ldshared = overriden_cc + fixed_ldshared[len(config_cc) :]
+        else:
+            # Otherwise, we try to replace the compiler command if it appears
+            # "in the middle" of the link command; to avoid mistaking some
+            # substring of a path for the compiler (e.g. to avoid replacing
+            # "gcc" in "-L/path/to/gcc/"), we require that the compiler command
+            # be surrounded by spaces:
+            fixed_ldshared = fixed_ldshared.replace(
+                " {0} ".format(config_cc), " {0} ".format(overriden_cc)
+            )
+
+    ldshared_suffix, ldshared_prefix = filter_args(
+        shlex.split(fixed_ldshared), linker_flags
+    )
+
+    return shlex.join(ldshared_prefix), ldshared_suffix
+
+
+extra_objects = [r"yac_pyx.@OBJEXT@"]
+
+# Setuptools does not support the LDADD and LIBS environment variables,
+# therefore, we pass their contents via the extra_link_args argument:
+extra_link_args = []
+extra_link_args.extend(shlex.split(os.environ.get("LDADD", "")))
+extra_link_args.extend(shlex.split(os.environ.get("LIBS", "")))
+
+# The extension depends on the extra_objects and all static libraries of the
+# project:
+depends = list(extra_objects)
+abs_top_builddir = r"""
+@abs_top_builddir@/
+""".strip()
+depends.extend(
+    arg
+    for arg in extra_link_args
+    if (
+        os.path.isfile(arg)
+        and os.path.abspath(arg).startswith(abs_top_builddir)
+    )
+)
+
+library_dirs = []
+
+# The users can decide whether they want our hacky workarounds by setting the
+# YAC_OVERRIDE_PY_BUILD environment variable to anything but "0" or "no":
+if not os.environ.get("YAC_OVERRIDE_PY_BUILD", "no").lower() in ["0", "no"]:
+    # We mainly circumvent a potentially "dirty" lib directory in the Python
+    # installation prefix (a.k.a. LIBDIR from sysconfig) here. For example, if
+    # Python is installed with miniforge, the lib directory might contain NetCDF
+    # and MPI libraries that are not the ones that are used to build YAC. To get
+    # the linking of the extension right, we have to deprioritize all linker
+    # flags "hardcoded" into LDSHARED.
+
+    # MPI compiler wrappers normally set their linker flags with the lowest
+    # priority. We have to extract the flags to make them appear on the linker
+    # command line before the ones from LDSHARED:
+    cc = os.environ.get("CC", None)
+    extra_link_args.extend(extract_mpi_ldflags(cc))
+
+    # We have to provide the library_dirs argument for the Extension
+    # constructor. Otherwise, LIBDIR from sysconfig will be searched first:
+    ldflags = os.environ.pop("LDFLAGS", None)
+    ldflags = shlex.split(ldflags) if ldflags else []
+    linker_search_args, extra_link_args = filter_args(
+        ldflags + extra_link_args, linker_search_flags
+    )
+
+    for arg in linker_search_args:
+        # There might be spaces between the flags and the values:
+        dir_to_add = None
+        for flag in linker_search_flags:
+            if arg == flag:
+                break
+            elif arg.startswith(flag):
+                dir_to_add = arg[len(flag) :]
+                break
+        library_dirs.append(dir_to_add or arg)
+
+    # We need to make sure that CC from the environment is used for the linking
+    # of the extension and all linker flags that are "hardcoded" into LDSHARED
+    # are deprioritized:
+    ldshared = os.environ.get("LDSHARED", None)
+    if ldshared is None:
+        (ldshared,) = get_config_vars("LDSHARED")
+
+    ldshared, deprioritized = fix_ldshared(ldshared, os.environ.get("CC", None))
+    os.environ["LDSHARED"] = ldshared
+    extra_link_args.extend(deprioritized)
+
 
 yac_extension = Extension(
     name="yac._yac",
-    sources=["yac.pyx"],
+    sources=[],
+    language="c",
+    extra_objects=extra_objects,
     extra_link_args=extra_link_args,
-    include_dirs=[numpy.get_include()],
-    define_macros=[('NPY_NO_DEPRECATED_API', 'NPY_1_7_API_VERSION')],
     depends=depends,
-    runtime_library_dirs=rpaths,
+    library_dirs=library_dirs,
 )
+
+srcdir = r"""
+@srcdir@
+""".strip()
 
 setup(
     name="yac",
     version="@VERSION@",
-    ext_modules=cythonize([yac_extension], language_level=3),
+    ext_modules=[yac_extension],
     packages=["yac", "yac.examples", "yac.utils"],
-    package_dir={"yac": "@abs_top_srcdir@/python/src"},
+    package_dir={"yac": os.path.join(srcdir, "src")},
     zip_safe=False,
     install_requires=["numpy"],
-    extras_require={
-        "full": ["mpi4py"]
-    }
+    extras_require={"full": ["mpi4py"]},
 )

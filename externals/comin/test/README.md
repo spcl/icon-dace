@@ -7,7 +7,7 @@ downstream projects if they use cmake and have called `find_package(ComIn)`.
 
 ## Executing the tests
 To use the test facilities of ComIn it needs to be configured with
-`BUILD_TESTING=ON`. This can be achieved for example by executing 
+`BUILD_TESTING=ON`. This can be achieved for example by executing
 ```bash
 cmake -DBUILD_TESTING=ON .
 ```

@@ -1,0 +1,16 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+set -e
+
+@TEST_MPI_FALSE@exit 77
+
+CONFIG_DIR=@top_srcdir@/input/
+
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling5_dble.x $CONFIG_DIR
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling5_real.x $CONFIG_DIR
+@MPI_LAUNCH@ -n 3 ./test_dummy_coupling5_c.x $CONFIG_DIR
+

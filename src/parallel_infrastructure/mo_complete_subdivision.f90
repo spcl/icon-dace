@@ -1,7 +1,3 @@
-! This module provides all routines for dividing patches
-! (including interpolation state) and setting up communication.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides all routines for dividing patches
+! (including interpolation state) and setting up communication.
 
 MODULE mo_complete_subdivision
   !-------------------------------------------------------------------------

@@ -109,6 +109,10 @@ checkpoint="    864000.0 "
 nrest_procs="        1   "
 ofile_prfx="NWP-RST"
 
+# remove output files written after restart because existing output files are opened
+# in append mode in case of a restart (only relevant for manually executed tests)
+rm -f ${ofile_prfx}*.nc
+
 fi
 
 

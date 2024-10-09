@@ -273,6 +273,7 @@ SUBROUTINE art_init(jg, tc_dt_model, tc_exp_refdate, p_prog_list, tracer)
       &                        tc_dt_model,                             &
       &                        tc_exp_refdate,                          &
       &                        TRIM(art_config(jg)%cart_pntSrc_xml),    &
+      &                        art_config(jg)%lart_excl_end_pntSrc,     &
       &                        art_config(jg)%iart_radioact,            &
       &                        TRIM(art_config(jg)%cart_radioact_file), &
       &                        p_prog_list,                             &

@@ -2,51 +2,51 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-program output_control
+PROGRAM output_control
 
-  use mtime
+  USE mtime
 
-  implicit none
+  IMPLICIT NONE
 
-  type(eventgroup), pointer :: outputEventGroup => null()
-  type(event), pointer :: outputEvent1 => null()
-  type(event), pointer :: outputEvent2 => null()
-  type(event), pointer :: outputEvent3 => null()
-  type(event), pointer :: outputEvent4 => null()
+  TYPE(eventgroup), POINTER :: outputEventGroup => NULL()
+  TYPE(event), POINTER :: outputEvent1 => NULL()
+  TYPE(event), POINTER :: outputEvent2 => NULL()
+  TYPE(event), POINTER :: outputEvent3 => NULL()
+  TYPE(event), POINTER :: outputEvent4 => NULL()
 
-  character(len=max_groupname_str_len) :: egstring
+  CHARACTER(len=max_groupname_str_len) :: egstring
 
-  character(len=*), parameter :: reference_date = '2000-01-01T00:00:00'
-  character(len=*), parameter :: start_date = '2010-01-01T00:00:00'
-  character(len=*), parameter :: end_date = '2010-02-01T00:00:00'
+  CHARACTER(len=*), PARAMETER :: reference_date = '2000-01-01T00:00:00'
+  CHARACTER(len=*), PARAMETER :: start_date = '2010-01-01T00:00:00'
+  CHARACTER(len=*), PARAMETER :: end_date = '2010-02-01T00:00:00'
 
-  integer :: error
-  logical :: lret
+  INTEGER :: error
+  LOGICAL :: lret
 
-  type event_namelist_handling
-    ! represented in ISO 9601:2004 R string 
-    character(len=32) :: steps
-    character(len=32) :: start_date
-    character(len=32) :: end_date
-    character(len=32) :: duration
+  TYPE event_namelist_handling
+    ! represented in ISO 9601:2004 R string
+    CHARACTER(len=32) :: steps
+    CHARACTER(len=32) :: start_date
+    CHARACTER(len=32) :: end_date
+    CHARACTER(len=32) :: duration
     ! additional model required numbers
-    character(len=32) :: reference_date
-    character(len=32) :: offset
-    character(len=32) :: lbound_handling
-    character(len=32) :: ubound_handling
-  end type event_namelist_handling
+    CHARACTER(len=32) :: reference_date
+    CHARACTER(len=32) :: offset
+    CHARACTER(len=32) :: lbound_handling
+    CHARACTER(len=32) :: ubound_handling
+  END TYPE event_namelist_handling
 
-  call setCalendar(proleptic_gregorian)
+  CALL setCalendar(proleptic_gregorian)
 
   outputEventGroup => newEventGroup('output driver')
-  call getEventGroupName(outputEventGroup, egstring)
-  print *, trim(egstring)
+  CALL getEventGroupName(outputEventGroup, egstring)
+  PRINT *, TRIM(egstring)
 
-  outputEvent1 => newEvent('output1', reference_date, start_date, end_date, 'PT6H',errno=error)
-  call checkError(error)
+  outputEvent1 => newEvent('output1', reference_date, start_date, end_date, 'PT6H', errno=error)
+  CALL checkError(error)
   lret = addEventToEventGroup(outputEvent1, outputEventGroup)
 
-  outputEvent2 => newEvent('output2', reference_date, start_date, end_date, 'PT2H',errno=error)
+  outputEvent2 => newEvent('output2', reference_date, start_date, end_date, 'PT2H', errno=error)
   lret = addEventToEventGroup(outputEvent2, outputEventGroup)
 
   outputEvent3 => newEvent('output3', reference_date, start_date, end_date, 'PT4H')
@@ -55,64 +55,63 @@ program output_control
   outputEvent4 => newEvent('output4', reference_date, start_date, end_date, 'PT10H')
   lret = addEventToEventGroup(outputEvent4, outputEventGroup)
 
-  call printEventTriggerTimes(outputEvent1)
-  call printEventTriggerTimes(outputEvent2)
-  call printEventTriggerTimes(outputEvent3)
-  call printEventTriggerTimes(outputEvent4)
+  CALL printEventTriggerTimes(outputEvent1)
+  CALL printEventTriggerTimes(outputEvent2)
+  CALL printEventTriggerTimes(outputEvent3)
+  CALL printEventTriggerTimes(outputEvent4)
 
-contains
+CONTAINS
 
-  subroutine printEventTriggerTimes(eventI)
-    type(event), pointer :: eventI
-    type(datetime), pointer :: cd => null()
-    type(datetime), pointer :: sd => null()
-    type(datetime), pointer :: ed => null()
-    type(timedelta), pointer :: dt => null()
-    character(len=max_datetime_str_len) :: tstring
-    character(len=max_timedelta_str_len) :: dstring
-    integer :: i = 0
+  SUBROUTINE printEventTriggerTimes(eventI)
+    TYPE(event), POINTER :: eventI
+    TYPE(datetime), POINTER :: cd => NULL()
+    TYPE(datetime), POINTER :: sd => NULL()
+    TYPE(datetime), POINTER :: ed => NULL()
+    TYPE(timedelta), POINTER :: dt => NULL()
+    CHARACTER(len=max_datetime_str_len) :: tstring
+    CHARACTER(len=max_timedelta_str_len) :: dstring
+    INTEGER :: i = 0
     sd => getEventFirstDateTime(eventI)
-    call datetimeToString(sd, tstring)
-    print *, 'Start time    : ', trim(tstring)
+    CALL datetimeToString(sd, tstring)
+    PRINT *, 'Start time    : ', TRIM(tstring)
     ed => getEventLastDateTime(eventI)
-    call datetimeToString(ed, tstring)
-    print *, 'End time      : ', trim(tstring)
+    CALL datetimeToString(ed, tstring)
+    PRINT *, 'End time      : ', TRIM(tstring)
     dt => getEventInterval(eventI)
-    call timedeltaToString(dt, dstring)
-    print *, 'Time step     : ', trim(dstring)
+    CALL timedeltaToString(dt, dstring)
+    PRINT *, 'Time step     : ', TRIM(dstring)
     cd => newDatetime(sd)
-    call datetimeToString(cd, dstring)
-    print *, 'Current time  : ', trim(dstring)
-    output_times_loop: do 
+    CALL datetimeToString(cd, dstring)
+    PRINT *, 'Current time  : ', TRIM(dstring)
+    output_times_loop: DO
       ! open lower bound set
       cd = cd + dt
       ! open upper bound set
-      if (cd > ed) exit output_times_loop
-      call datetimeToString(cd, dstring)
-      print '(a,i3,a,a)', 'Output step ', i, ' time: ', trim(dstring)
+      IF (cd > ed) EXIT output_times_loop
+      CALL datetimeToString(cd, dstring)
+      PRINT '(a,i3,a,a)', 'Output step ', i, ' time: ', TRIM(dstring)
       ! closed lower bound set
       !cd = cd + dt
       i = i + 1
       ! closed upper bound set
       ! if (cd > ed) exit output_times_loop
-    enddo output_times_loop
-    print *,'________________________________________________________'
-    print *,''
-    call deallocateDatetime(sd)
-    call deallocateDatetime(ed)
-    call deallocateDatetime(cd)
-    call deallocateTimedelta(dt)
-  end subroutine printEventTriggerTimes
+    END DO output_times_loop
+    PRINT *, '________________________________________________________'
+    PRINT *, ''
+    CALL deallocateDatetime(sd)
+    CALL deallocateDatetime(ed)
+    CALL deallocateDatetime(cd)
+    CALL deallocateTimedelta(dt)
+  END SUBROUTINE printEventTriggerTimes
 
-  subroutine checkError(errno)
-    integer, intent(in) :: errno
-    character(len=max_mtime_error_str_len) :: estring
-    if (errno /= no_error) then
-      call mtime_strerror(errno, estring)
-      print *, trim(estring)
-      stop 'ERROR: finish.'
-    endif
-  end subroutine checkError
+  SUBROUTINE checkError(errno)
+    INTEGER, INTENT(in) :: errno
+    CHARACTER(len=max_mtime_error_str_len) :: estring
+    IF (errno /= no_error) THEN
+      CALL mtime_strerror(errno, estring)
+      PRINT *, TRIM(estring)
+      STOP 'ERROR: finish.'
+    END IF
+  END SUBROUTINE checkError
 
-
-end program output_control
+END PROGRAM output_control

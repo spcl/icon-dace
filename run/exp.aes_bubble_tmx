@@ -55,10 +55,12 @@ atmo_dyn_grids="'${grid_name}.nc',"
 modelTimeStep="PT30S"
 dt_rad="" #"PT2M"              # '': off, any valid PT... > 0s: on
 dt_tmx="$modelTimeStep"        # '': off, any valid PT... > 0s: on
-dt_mig="" #"$modelTimeStep"    # '': off, any valid PT... > 0s: on
+dt_mig="$modelTimeStep"    # '': off, any valid PT... > 0s: on
 
-ldynamics=false
-ltransport=false
+ldynamics=true
+ltransport=true
+
+use_louis=true
 
 # start and end date+time
 start_date=${start_date:="2008-08-01T00:00:00Z"}
@@ -82,7 +84,7 @@ output_atm_3d="yes"   # 1 file
 
 # determine the number of io processes
 
-num_io_procs=1
+num_io_procs=2
 
 # namelist files
 atmo_namelist=NAMELIST_${EXPNAME}_atm
@@ -97,7 +99,7 @@ cat > ${atmo_namelist} << EOF
 !
 &parallel_nml
  nproma            = ${nproma}
- nblocks_c         = 0
+ nblocks_c         = ${nblocks_c}
  num_io_procs      = ${num_io_procs}
  nproma_sub        = ${nproma_sub}
  io_process_stride = 6
@@ -215,6 +217,7 @@ cat > ${atmo_namelist} << EOF
 &aes_vdf_nml
  aes_vdf_config(1)%pr0         = 0.7
  aes_vdf_config(1)%use_tmx     = .TRUE.
+ aes_vdf_config(1)%use_louis   = .${use_louis}.
  aes_vdf_config(1)%turb        = 2 ! 1: TTE, 2: Smagorinsky (only 2 for use_tmx=true)
  aes_vdf_config(1)%solver_type = 2 ! for tmx only; 1: explicit solver, 2: implicit solver
  aes_vdf_config(1)%energy_type = 2 ! for tmx only; use 1: dry static energy, 2: internal energy for thermal vert. diffusion

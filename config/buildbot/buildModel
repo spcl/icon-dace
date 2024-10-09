@@ -22,8 +22,16 @@ MAKE_PROCS=22
 
 [[ -f ${LOGFILE} ]] && rm ${LOGFILE}
 
-# slurm specific stuff is set here in this file to keep the jobscripts as general as possible
-#TODO use mh0156 for dkrz
+# slurm specific stuff is set here to keep the jobscripts as general as possible
+# time limits as of now:
+# - buildbot timeout after 30mins of buildbing without generating any input (server-side)
+# - 1.5 hours time limit after job submission with slurm
+# - together with roughly 30min build time, we allow 60min queuing time
+DEADLINE="--deadline=now+90minutes"
+RUNTIME_LIMIT="--time=01:00:00"
+MINIMAL_TIME="--time-min=00:30:00"
+TIME_LIMITS="${RUNTIME_LIMIT} ${MINIMAL_TIME} ${DEADLINE}"
+
 case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
   levante_aurora)
     cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
@@ -32,7 +40,7 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
     fi
     ;;
   levante*)
-    sbatch --wait -A mh0156 --qos=buildbot -p shared,compute -n ${MAKE_PROCS} -o ${LOGFILE} -D $(pwd) ${ICON_DIR}/config/buildbot/buildModel.sbatch
+    sbatch ${TIME_LIMITS} --wait -A mh0156 --qos=buildbot -p shared,compute -n ${MAKE_PROCS} -o ${LOGFILE} -D $(pwd) ${ICON_DIR}/config/buildbot/buildModel.sbatch
     if test 0 -ne "$?" ; then
       exit 1
     fi
@@ -58,10 +66,6 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
     fi
     ;;
   dwd*)
-    # Temporary hack:
-    # switch python virtual environment
-    . /hpc/sw/buildbot/home/fe13/venv_dwd0_rh8/bin/activate
-    #
     # DWD might avoid job submission for building the model
     cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
     if test 0 -ne "$?" ; then
@@ -77,15 +81,22 @@ case $(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') in
     ;;
   horeka_*)
     # KIT horeka: use quarter of a shared node
-    sbatch --wait -A hk-project-glori-init -p dev_cpuonly -t 60 -N 1 -n 19 -o ${LOGFILE} -D ${PWD} ${ICON_DIR}/config/buildbot/buildModel.sbatch
+    sbatch ${TIME_LIMITS} --wait -A hk-project-glori-init -p dev_cpuonly -t 60 -N 1 -n 19 -o ${LOGFILE} -D ${PWD} ${ICON_DIR}/config/buildbot/buildModel.sbatch
     #cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
     if test 0 -ne "$?" ; then
       exit 1
     fi
     ;;
-  lumi*)
-    # CSC super computer; currently run locally
-    cd ${ICON_DIR} && ${ICON_DIR}/config/buildbot/buildModel.sbatch > ${LOGFILE} 2>&1
+  lumi_cpu)
+    # CSC super computer; CPU partition
+    sbatch ${TIME_LIMITS} --wait -A project_465000454 -p debug --time=00:30:00 -n ${MAKE_PROCS} -o ${LOGFILE} -D $(pwd) ${ICON_DIR}/config/buildbot/buildModel.sbatch
+    if test 0 -ne "$?" ; then
+      exit 1
+    fi
+    ;;
+  lumi_gpu)
+    # CSC super computer; GPU partition
+    sbatch ${TIME_LIMITS} --wait -A project_465000454 -p dev-g -n ${MAKE_PROCS} -o ${LOGFILE} -D $(pwd) ${ICON_DIR}/config/buildbot/buildModel.sbatch
     if test 0 -ne "$?" ; then
       exit 1
     fi

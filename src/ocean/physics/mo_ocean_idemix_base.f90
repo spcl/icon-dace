@@ -1,9 +1,3 @@
-! This module contains the main computations of the IDEMIX 1
-! parameterization (described in "A Global Model for the Diapycnal
-! Diffusivity Induced by Internal Gravity Waves", Olbers&Eden 2013) of
-! Internal wave energy and its dissipation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the main computations of the IDEMIX 1
+! parameterization (described in "A Global Model for the Diapycnal
+! Diffusivity Induced by Internal Gravity Waves", Olbers&Eden 2013) of
+! Internal wave energy and its dissipation
 
 MODULE mo_ocean_idemix_base
   USE mo_kind,               ONLY: wp

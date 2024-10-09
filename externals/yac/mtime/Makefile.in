@@ -14,59 +14,9 @@
 
 @SET_MAKE@
 
+# Copyright (c) 2024 The YAC Authors
 #
-# @file Makefile.am
-#
-# @copyright Copyright  (C)  2020 Moritz Hanke <hanke@dkrz.de>
-#                                 Rene Redler <rene.redler@mpimet.mpg.de>
-#                                 Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#                                 Teresa Holfeld <teresa.holfeld@zmaw.de>
-#                                 Thomas Jahns <jahns@dkrz.de>
-#
-# @version 1.0
-# @author Moritz Hanke <hanke@dkrz.de>
-#         Rene Redler <rene.redler@mpimet.mpg.de>
-#         Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#         Teresa Holfeld <teresa.holfeld@zmaw.de>
-#         Thomas Jahns <jahns@dkrz.de>
-#
-# Keywords:
-# Maintainer: Moritz Hanke <hanke@dkrz.de>
-#             Rene Redler <rene.redler@mpimet.mpg.de>
-#             Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#             Teresa Holfeld <teresa.holfeld@zmaw.de>
-#             Thomas Jahns <jahns@dkrz.de>
-# URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
-#
-# This file is part of YAC.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are  permitted provided that the following conditions are
-# met:
-#
-# Redistributions of source code must retain the above copyright notice,
-# this list of conditions and the following disclaimer.
-#
-# Redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
-# documentation and/or other materials provided with the distribution.
-#
-# Neither the name of the DKRZ GmbH nor the names of its contributors
-# may be used to endorse or promote products derived from this software
-# without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
+# SPDX-License-Identifier: BSD-3-Clause
 
 VPATH = @srcdir@
 am__is_gnu_make = { \
@@ -144,7 +94,7 @@ build_triplet = @build@
 host_triplet = @host@
 subdir = mtime
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler_simple.m4 \
 	$(top_srcdir)/m4/acx_fc_c_compatible.m4 \
 	$(top_srcdir)/m4/acx_fc_include.m4 \
 	$(top_srcdir)/m4/acx_fc_line_length.m4 \
@@ -155,6 +105,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/acx_lang_lib.m4 \
 	$(top_srcdir)/m4/acx_lang_macro.m4 \
 	$(top_srcdir)/m4/acx_lang_mpi.m4 \
+	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
 	$(top_srcdir)/m4/acx_prog_mpirun.m4 \
 	$(top_srcdir)/m4/acx_prog_search.m4 \
@@ -276,8 +227,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp \
-	COPYING
+am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -295,6 +245,7 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CURL = @CURL@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -322,7 +273,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LAPACK_CFLAGS = @LAPACK_CFLAGS@
 LAPACK_CLIBS = @LAPACK_CLIBS@
-LAPACK_FCLIBS = @LAPACK_FCLIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -340,6 +290,8 @@ MTIME_CLIBS = @MTIME_CLIBS@
 NETCDF_CFLAGS = @NETCDF_CFLAGS@
 NETCDF_CLIBS = @NETCDF_CLIBS@
 OBJEXT = @OBJEXT@
+OPENMP_CFLAGS = @OPENMP_CFLAGS@
+OPENMP_FCLIBS = @OPENMP_FCLIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -349,16 +301,19 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PIC_CFLAGS = @PIC_CFLAGS@
+PIC_FCFLAGS = @PIC_FCFLAGS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
+PYTHON_CFLAGS = @PYTHON_CFLAGS@
 RANLIB = @RANLIB@
+RPATH_CFLAGS = @RPATH_CFLAGS@
+RPATH_FCFLAGS = @RPATH_FCFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_ENVIRONMENT_MAKE = @SHLIB_ENVIRONMENT_MAKE@
 STRIP = @STRIP@
 VERSION = @VERSION@
 YAXT_CFLAGS = @YAXT_CFLAGS@
@@ -420,30 +375,31 @@ top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
 lib_LIBRARIES = libyac_mtime.a
 libyac_mtime_a_SOURCES = \
-        include/mtime_calendar.h          \
-        include/mtime_calendar360day.h    \
-        include/mtime_calendar365day.h    \
-        include/mtime_calendarGregorian.h \
-        include/mtime_date.h              \
-        include/mtime_datetime.h          \
-        include/mtime_eventHandling.h     \
-        include/mtime_eventList.h         \
-        include/mtime_iso8601.h           \
-        include/mtime_julianDay.h         \
-        include/mtime_time.h              \
-        include/mtime_timedelta.h         \
-        src/mtime_calendar.c              \
-        src/mtime_calendar360day.c        \
-        src/mtime_calendar365day.c        \
-        src/mtime_calendarGregorian.c     \
-        src/mtime_date.c                  \
-        src/mtime_datetime.c              \
-        src/mtime_eventHandling.c         \
-        src/mtime_eventList.c             \
-        src/mtime_iso8601.c               \
-        src/mtime_julianDay.c             \
-        src/mtime_time.c                  \
-        src/mtime_timedelta.c
+    include/mtime_calendar.h \
+    include/mtime_calendar360day.h \
+    include/mtime_calendar365day.h \
+    include/mtime_calendarGregorian.h \
+    include/mtime_date.h \
+    include/mtime_datetime.h \
+    include/mtime_eventHandling.h \
+    include/mtime_eventList.h \
+    include/mtime_iso8601.h \
+    include/mtime_julianDay.h \
+    include/mtime_time.h \
+    include/mtime_timedelta.h \
+    include/mtime_utilities.h \
+    src/mtime_calendar.c \
+    src/mtime_calendar360day.c \
+    src/mtime_calendar365day.c \
+    src/mtime_calendarGregorian.c \
+    src/mtime_date.c \
+    src/mtime_datetime.c \
+    src/mtime_eventHandling.c \
+    src/mtime_eventList.c \
+    src/mtime_iso8601.c \
+    src/mtime_julianDay.c \
+    src/mtime_time.c \
+    src/mtime_timedelta.c
 
 AM_CPPFLAGS = -I$(top_srcdir)/mtime/include
 AM_CFLAGS = $(PIC_CFLAGS)

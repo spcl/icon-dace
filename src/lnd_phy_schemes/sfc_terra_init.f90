@@ -1,6 +1,3 @@
-! Initialization routine for multi-layer soil model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initialization routine for multi-layer soil model
 
 MODULE sfc_terra_init
 

@@ -1,9 +1,3 @@
-! utility for real time measurements
-! on AIX a wrapper for the fast read_real_time function is used
-! on SX a CPU counter is used
-! on Linux/Intel a CPU register is read
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! utility for real time measurements
+! on AIX a wrapper for the fast read_real_time function is used
+! on SX a CPU counter is used
+! on Linux/Intel a CPU register is read
 
 MODULE mo_real_timer
 

@@ -29,9 +29,11 @@ MODULE mo_lnd_bgcm_store_class
   PUBLIC :: t_lnd_bgcm_store_abstract
   PUBLIC :: SB_BGCM_POOL_ID, SB_BGCM_DELTA_POOLS_ID, SB_BGCM_FORMATION_ID, SB_BGCM_LOSS_ID, &
     &       SB_BGCM_TRANSPORT_ID, SB_BGCM_MYCO_EXPORT_ID
-  PUBLIC :: VEG_BGCM_POOL_ID, VEG_BGCM_TOTAL_BIO_ID, VEG_BGCM_GROWTH_ID, &
-    &       VEG_BGCM_LITTERFALL_ID, VEG_BGCM_FRAC_ALLOC_ID,              &
-    &       VEG_BGCM_EXUDATION_ID, VEG_BGCM_ESTABLISHMENT_ID, VEG_BGCM_RESERVE_USE_ID
+  PUBLIC :: VEG_BGCM_POOL_ID, VEG_BGCM_TOTAL_BIO_ID, VEG_BGCM_GROWTH_ID,               &
+    &       VEG_BGCM_LITTERFALL_ID, VEG_BGCM_FRAC_ALLOC_ID,                            &
+    &       VEG_BGCM_EXUDATION_ID, VEG_BGCM_ESTABLISHMENT_ID, VEG_BGCM_RESERVE_USE_ID, &
+    &       VEG_BGCM_PP_FUEL_ID, VEG_BGCM_PP_PAPER_ID, VEG_BGCM_PP_FIBERBOARD_ID,      &
+    &       VEG_BGCM_PP_OIRW_ID, VEG_BGCM_PP_PV_ID, VEG_BGCM_PP_SAWNWOOD_ID, VEG_BGCM_FPROD_DECAY_ID
 
   ! ======================================================================================================= !
   !>
@@ -51,7 +53,14 @@ MODULE mo_lnd_bgcm_store_class
       & VEG_BGCM_FRAC_ALLOC_ID,     &   !< vegetation bgcm frac_alloc
       & VEG_BGCM_EXUDATION_ID,      &   !< vegetation bgcm exudation
       & VEG_BGCM_ESTABLISHMENT_ID,  &   !< vegetation bgcm establishment
-      & VEG_BGCM_RESERVE_USE_ID         !< vegetation bgcm reserve_use
+      & VEG_BGCM_RESERVE_USE_ID,    &   !< vegetation bgcm reserve_use
+      & VEG_BGCM_PP_FUEL_ID,        &   !< vegetation bgcm fuel product pool
+      & VEG_BGCM_PP_PAPER_ID,       &   !< vegetation bgcm paper product pool
+      & VEG_BGCM_PP_FIBERBOARD_ID,  &   !< vegetation bgcm fiberboard product pool
+      & VEG_BGCM_PP_OIRW_ID,        &   !< vegetation bgcm other industrial roundwood product pool
+      & VEG_BGCM_PP_PV_ID,          &   !< vegetation bgcm plywood and veneer product pool
+      & VEG_BGCM_PP_SAWNWOOD_ID,    &   !< vegetation bgcm sawnwood product pool
+      & VEG_BGCM_FPROD_DECAY_ID         !< vegetation bgcm flux from product pool decay
   END ENUM
 
   ! ======================================================================================================= !

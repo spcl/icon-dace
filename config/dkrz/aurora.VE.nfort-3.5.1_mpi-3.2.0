@@ -47,7 +47,7 @@ ECCODES_ROOT="/opt/dkrz/ve/eccodes/2.18.0_ncc-${cmp_ver}_serial_localdisk"
 ECCODES_LIBS='-leccodes_f90 -leccodes'
 
 # There is no installation for ${cmp_ver}:
-FYAML_ROOT='/opt/dkrz/ve/libfyaml/0.7.12_ncc-4.0.0'
+FYAML_ROOT='/opt/dkrz/ve/libfyaml/0.8-patch-23265a8_ncc-4.0.0'
 FYAML_LIBS='-lfyaml'
 
 XML2_ROOT="/opt/dkrz/ve/libxml2/2.9.14_ncc-${cmp_ver}"

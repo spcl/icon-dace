@@ -1,8 +1,3 @@
-!
-! Utility subroutines used for SPPT
-! (Stochastic Perturbation of Physics Tendencies)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Utility subroutines used for SPPT
+! (Stochastic Perturbation of Physics Tendencies)
 
 !----------------------------
 #include "omp_definitions.inc"

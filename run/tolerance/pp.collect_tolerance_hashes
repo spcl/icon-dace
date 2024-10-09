@@ -18,7 +18,7 @@ set -euo pipefail
 # 3. adds the current data and icon-git-hash to used_in file
 
 
-# Variables passed via list_part_tolerance -> addexp/runexp -> create_target_header
+# Variables passed via list_probtest -> addexp/runexp -> create_target_header
 #
 # tolerance_experiments : comma separated list of experiments
 # generate_hash_file : if "yes", then write a new yaml file. Otherwise print lines
@@ -52,20 +52,24 @@ IFS=',' read -ra experiments <<< "${tolerance_experiments}"
 declare -A experiment_hashes
 
 for exp in "${experiments[@]}"; do
-    model_output_dir="${basedir}/experiments/${exp}"
-    reference_file_name="${model_output_dir}/${exp}_reference.csv"
-    tolerance_file_name="${model_output_dir}/${exp}_tolerance.csv"
+    reference_file_name="${basedir}/${exp}_reference.csv"
+    tolerance_file_name="${basedir}/${exp}_tolerance.csv"
 
-    experiment_hash=$(cat "$reference_file_name" "$tolerance_file_name" | sha256sum | cut -b -40 )
-    reference_dir=${reference_root}/${experiment_hash}
-    experiment_hashes[$exp]=$experiment_hash
+    if [ -f "$tolerance_file_name" ]; then
+        experiment_hash=$(cat "$reference_file_name" "$tolerance_file_name" | sha256sum | cut -b -40 )
+        reference_dir=${reference_root}/${experiment_hash}
+        experiment_hashes[$exp]=$experiment_hash
 
-    mkdir -p "$reference_dir"
-    mv -v "$reference_file_name" "${reference_dir}/${exp}_reference.csv"
-    mv -v "$tolerance_file_name" "${reference_dir}/${exp}_tolerance.csv"
+        mkdir -p "$reference_dir"
+        mv -v "$reference_file_name" "${reference_dir}/${exp}_reference.csv"
+        mv -v "$tolerance_file_name" "${reference_dir}/${exp}_tolerance.csv"
 
-    # leave a log message
-    echo "${builder} ${date_str} ${origin} ${git_commit}" >> "${reference_dir}/sources.log"
+        # leave a log message
+        echo "${builder} ${date_str} ${origin} ${git_commit}" >> "${reference_dir}/sources.log"
+    else
+        experiment_hashes[$exp]="NO TOLERANCE FILE WAS CREATED. RETRY FOR THIS EXPERIMENT AND UPDATE LINE"
+        echo "WARNING: Tolerance generation failded for ${exp}"
+    fi
 
 done
 

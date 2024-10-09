@@ -1,3 +1,10 @@
+"""
+CLI for CDO Table Generation
+
+This module computes and generates a CDO table by comparing model output data
+against perturbed model data.
+"""
+
 import tempfile
 from pathlib import Path
 
@@ -14,7 +21,7 @@ from util.file_system import file_names_from_pattern
 from util.log_handler import logger
 
 
-def rel_diff(var1, var2):
+def compute_rel_diff(var1, var2):
     rel_diff = np.zeros_like(var1)
 
     mask_0 = np.logical_and(np.abs(var1) < 1e-15, np.abs(var2) < 1e-15)
@@ -31,8 +38,14 @@ def rel_diff(var1, var2):
 
 
 def rel_diff_stats(
-    file_id, filename, varname, time_dim, horizontal_dims, xarray_ds, fill_value_key
-):
+    file_id,
+    filename,
+    varname,
+    time_dim,
+    horizontal_dims,
+    xarray_ds,
+    fill_value_key,
+):  # pylint: disable=unused-argument
     dims = xarray_ds[varname].dims
     dataarray = xarray_ds[varname]
     time = xarray_ds[time_dim].values
@@ -52,7 +65,7 @@ def rel_diff_stats(
             mask = data != dataarray.attrs[fill_value_key]
             data = data[mask]
 
-        hist, edges = np.histogram(data, bins=[0] + cdo_bins)
+        hist, _ = np.histogram(data, bins=[0] + cdo_bins)
         matrix[i * ncol] = amax[i]
         matrix[i * ncol + 1 : i * ncol + ncol] = hist
 
@@ -116,7 +129,7 @@ def cdo_table(
     # TODO: A single perturbed run provides enough data to make proper statistics.
     #       refactor cdo_table interface to reflect that
     if len(member_num) == 1:
-        member_num = [i for i in range(1, member_num[0] + 1)]
+        member_num = list(range(1, member_num[0] + 1))
     if member_type:
         member_id = member_type + "_" + str(member_num[0])
     else:
@@ -125,18 +138,18 @@ def cdo_table(
     file_specification = file_specification[0]  # can't store dicts as defaults in click
     assert isinstance(file_specification, dict), "must be dict"
 
+    # save original method and restore at the end of this module
+    dataframe_from_ncfile_orig = model_output_parser.dataframe_from_ncfile
     # modify netcdf parse method:
     model_output_parser.dataframe_from_ncfile = rel_diff_stats
 
     # step 1: compute rel-diff netcdf files
     with tempfile.TemporaryDirectory() as tmpdir:
-        for file_type, file_pattern in file_id:
+        for _, file_pattern in file_id:
             ref_files, err = file_names_from_pattern(model_output_dir, file_pattern)
             if err > 0:
                 logger.info(
-                    "did not find any files for pattern {}. Continue.".format(
-                        file_pattern
-                    )
+                    "did not find any files for pattern %s. Continue.", file_pattern
                 )
                 continue
             ref_files.sort()
@@ -145,9 +158,7 @@ def cdo_table(
             )
             if err > 0:
                 logger.info(
-                    "did not find any files for pattern {}. Continue.".format(
-                        file_pattern
-                    )
+                    "did not find any files for pattern %s. Continue.", file_pattern
                 )
                 continue
             perturb_files.sort()
@@ -155,11 +166,9 @@ def cdo_table(
             for rf, pf in zip(ref_files, perturb_files):
                 if not rf.endswith(".nc") or not pf.endswith(".nc"):
                     continue
-                ref_data = xr.open_dataset("{}/{}".format(model_output_dir, rf))
+                ref_data = xr.open_dataset(f"{model_output_dir}/{rf}")
                 perturb_data = xr.open_dataset(
-                    "{}/{}".format(
-                        perturbed_model_output_dir.format(member_id=member_id), pf
-                    )
+                    f"{perturbed_model_output_dir.format(member_id=member_id)}/{pf}"
                 )
                 diff_data = ref_data.copy()
                 varnames = [
@@ -169,12 +178,12 @@ def cdo_table(
                 ]
 
                 for v in varnames:
-                    diff_data.variables.get(v).values = rel_diff(
+                    diff_data.variables.get(v).values = compute_rel_diff(
                         ref_data.variables.get(v).values,
                         perturb_data.variables.get(v).values,
                     )
 
-                diff_data.to_netcdf("{}/{}".format(tmpdir, rf))
+                diff_data.to_netcdf(f"{tmpdir}/{rf}")
                 ref_data.close()
                 perturb_data.close()
                 diff_data.close()
@@ -189,7 +198,8 @@ def cdo_table(
                 df.loc[:, (t, cdo_bins)].sum(axis=1), axis=0
             )
 
-        logger.info("writing cdo table to {}.".format(cdo_table_file))
+        logger.info("writing cdo table to %s.", cdo_table_file)
 
         Path(cdo_table_file).parent.mkdir(parents=True, exist_ok=True)
         df.to_csv(cdo_table_file)
+        model_output_parser.dataframe_from_ncfile = dataframe_from_ncfile_orig

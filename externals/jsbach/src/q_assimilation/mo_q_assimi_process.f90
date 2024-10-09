@@ -65,11 +65,14 @@ CONTAINS
     TYPE(t_jsb_model),      POINTER       :: model                    !< the model
     TYPE(t_lctlib_element), POINTER       :: lctlib                   !< land-cover-type library - parameter across pft's
     TYPE(t_jsb_vgrid),      POINTER       :: vgrid_canopy_q_assimi    !< Vertical grid
+    TYPE(t_jsb_vgrid),      POINTER       :: vgrid_soil_sb            !< Vertical grid for soil layers
+    INTEGER                               :: nsoil_sb                 !< number of soil layers
     INTEGER                               :: ncanopy                  !< number of canopy layers
     INTEGER                               :: icanopy                  !< for looping across ncanopy layers
     REAL(wp)                              :: lctlib_g1                !< set to g1_medlyn or g1_bberry depending on canopy_conductance_scheme
-    REAL(wp), DIMENSION(options%nc)       :: ga, hlp1, hlp2, hlp3     !< dummy variables
-    INTEGER                               :: iblk, ics, ice, nc, ic   !< dimensions
+    REAL(wp), DIMENSION(options%nc)       :: hlp1, hlp2, hlp3         !< dummy variables
+    INTEGER                               :: iblk, ics, ice, nc       !< dimensions
+    INTEGER                               :: ic, isoil                !< loop counter
     REAL(wp)                              :: steplen                  !< step length
     REAL(wp)                              :: alpha                    !< implicitness factor
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':update_canopy_fluxes'
@@ -85,7 +88,6 @@ CONTAINS
     dsl4jsb_Real2D_onChunk      :: t_air
     dsl4jsb_Real2D_onChunk      :: q_air
     dsl4jsb_Real2D_onChunk      :: press_srf
-    dsl4jsb_Real2D_onChunk      :: drag_srf
     dsl4jsb_Real2D_onChunk      :: wind_10m
     dsl4jsb_Real2D_onChunk      :: co2_mixing_ratio
     dsl4jsb_Real2D_onChunk      :: co2_mixing_ratio_C13
@@ -99,6 +101,7 @@ CONTAINS
     dsl4jsb_Real2D_onChunk      :: net_assimilation
     dsl4jsb_Real2D_onChunk      :: net_assimilation_boc
     dsl4jsb_Real2D_onChunk      :: maint_respiration_leaf
+    dsl4jsb_Real2D_onChunk      :: aerodyn_cond
     dsl4jsb_Real2D_onChunk      :: canopy_cond
     dsl4jsb_Real2D_onChunk      :: co2_conc_leaf
     dsl4jsb_Real2D_onChunk      :: beta_air
@@ -112,6 +115,7 @@ CONTAINS
     dsl4jsb_Real3D_onChunk      :: gross_assimilation_cl
     dsl4jsb_Real3D_onChunk      :: maint_respiration_leaf_cl
     dsl4jsb_Real3D_onChunk      :: canopy_cond_cl
+    dsl4jsb_Real3D_onChunk      :: ftranspiration_sl
     dsl4jsb_Real3D_onChunk      :: co2_conc_leaf_cl
     dsl4jsb_Real3D_onChunk      :: jmax_cl
     dsl4jsb_Real3D_onChunk      :: vcmax_cl
@@ -120,7 +124,12 @@ CONTAINS
     dsl4jsb_Real3D_onChunk      :: ppfd_sunlit_cl
     dsl4jsb_Real3D_onChunk      :: ppfd_shaded_cl
     ! SPQ_ 2D
+    dsl4jsb_Real2D_onChunk      :: spq_drag_srf
     dsl4jsb_Real2D_onChunk      :: w_soil_root_pot
+    dsl4jsb_Real3D_onChunk      :: t_soil_sl
+    dsl4jsb_Real3D_onChunk      :: w_soil_pwp_sl
+    dsl4jsb_Real3D_onChunk      :: w_soil_fc_sl
+    dsl4jsb_Real3D_onChunk      :: w_soil_pot_sl
     ! VEG_ 2D
     dsl4jsb_Real2D_onChunk      :: lai
     dsl4jsb_Real2D_onChunk      :: t_jmax_opt_mavg
@@ -134,6 +143,7 @@ CONTAINS
     dsl4jsb_Real3D_onChunk      :: fn_rub_cl
     dsl4jsb_Real3D_onChunk      :: fn_pepc_cl
     dsl4jsb_Real3D_onChunk      :: leaf_nitrogen_cl
+    dsl4jsb_Real3D_onChunk      :: root_fraction_sl
     ! ----------------------------------------------------------------------------------------------------- !
     iblk    = options%iblk
     ics     = options%ics
@@ -148,6 +158,8 @@ CONTAINS
     lctlib                 => model%lctlib(tile%lcts(1)%lib_id)
     vgrid_canopy_q_assimi  => Get_vgrid('q_canopy_layer')
     ncanopy                =  vgrid_canopy_q_assimi%n_levels
+    vgrid_soil_sb          => Get_vgrid('soil_layer_sb')
+    nsoil_sb               =  vgrid_soil_sb%n_levels
     ! ----------------------------------------------------------------------------------------------------- !
     IF (lctlib%BareSoilFlag) RETURN !< do not run this routine at tiles like "bare soil" and "urban area"
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
@@ -162,7 +174,6 @@ CONTAINS
     dsl4jsb_Get_var2D_onChunk(A2L_, t_air)                          ! in
     dsl4jsb_Get_var2D_onChunk(A2L_, q_air)                          ! in
     dsl4jsb_Get_var2D_onChunk(A2L_, press_srf)                      ! in
-    dsl4jsb_Get_var2D_onChunk(A2L_, drag_srf)                       ! in
     dsl4jsb_Get_var2D_onChunk(A2L_, wind_10m)                       ! in
     dsl4jsb_Get_var2D_onChunk(A2L_, co2_mixing_ratio)               ! in     ! ICON-Land: calculated from jsb4 co2_air_mol
     dsl4jsb_Get_var2D_onChunk(A2L_, co2_mixing_ratio_C13)           ! in
@@ -175,7 +186,9 @@ CONTAINS
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, net_assimilation)          ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, net_assimilation_boc)      ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, maint_respiration_leaf)    ! out
+    dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, aerodyn_cond)              ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, canopy_cond)               ! out
+    dsl4jsb_Get_var3D_onChunk(Q_ASSIMI_, ftranspiration_sl)         ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, co2_conc_leaf)             ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, beta_air)                  ! out
     dsl4jsb_Get_var2D_onChunk(Q_ASSIMI_, beta_soa)                  ! out
@@ -191,9 +204,14 @@ CONTAINS
     dsl4jsb_Get_var3D_onChunk(Q_ASSIMI_, jmax_cl)                   ! out
     dsl4jsb_Get_var3D_onChunk(Q_ASSIMI_, vcmax_cl)                  ! out
     dsl4jsb_Get_var3D_onChunk(Q_ASSIMI_, chlfl_yield_cl)            ! out
-    dsl4jsb_Get_var3D_onChunk(Q_RAD_, ppfd_sunlit_cl)                 ! in
-    dsl4jsb_Get_var3D_onChunk(Q_RAD_, ppfd_shaded_cl)                 ! in
+    dsl4jsb_Get_var3D_onChunk(Q_RAD_, ppfd_sunlit_cl)               ! in
+    dsl4jsb_Get_var3D_onChunk(Q_RAD_, ppfd_shaded_cl)               ! in
     dsl4jsb_Get_var2D_onChunk(SPQ_, w_soil_root_pot)                ! in
+    dsl4jsb_Get_var2D_onChunk(SPQ_, spq_drag_srf)                   ! in
+    dsl4jsb_Get_var3D_onChunk(SPQ_, t_soil_sl)                      ! in
+    dsl4jsb_Get_var3D_onChunk(SPQ_, w_soil_pwp_sl)                  ! in
+    dsl4jsb_Get_var3D_onChunk(SPQ_, w_soil_fc_sl)                   ! in
+    dsl4jsb_Get_var3D_onChunk(SPQ_, w_soil_pot_sl)                  ! in
     dsl4jsb_Get_var2D_onChunk(VEG_, lai)                            ! in
     dsl4jsb_Get_var2D_onChunk(VEG_, t_jmax_opt_mavg)                ! in
     dsl4jsb_Get_var2D_onChunk(VEG_, t_air_tacclim_mavg)             ! in
@@ -205,6 +223,7 @@ CONTAINS
     dsl4jsb_Get_var3D_onChunk(VEG_, fn_rub_cl)                      ! in
     dsl4jsb_Get_var3D_onChunk(VEG_, fn_pepc_cl)                     ! in
     dsl4jsb_Get_var3D_onChunk(VEG_, leaf_nitrogen_cl)               ! in
+    dsl4jsb_Get_var3D_onChunk(VEG_, root_fraction_sl)               ! in
     ! ----------------------------------------------------------------------------------------------------- !
 
     !>0.9.1 set output to zero
@@ -232,8 +251,27 @@ CONTAINS
     !  and then msat & nco become zero, resulting in an error with the log() operation "nlim = -log(nco/..."
     WHERE(beta_soil_ps(:) < eps8) beta_soil_ps(:) = eps8
 
+    !> 1.1 determine fraction of transpiration per soil layer
+    !>
+    ftranspiration_sl(:,:) = 0.0_wp
     DO ic = 1, nc
-      ga(ic) = heat_transfer_coef(drag_srf(ic), steplen, alpha) * MIN( MAX(wind_10m(ic), min_wind), max_wind)
+      DO isoil = 1, nsoil_sb
+        IF ((w_soil_fc_sl(ic,isoil) - w_soil_pwp_sl(ic,isoil)) > eps8 .AND. t_soil_sl(ic,isoil) > Tzero) THEN
+          hlp1(ic) = calc_soil_moisture_stress(w_soil_pot_sl(ic, isoil), lctlib%phi_leaf_min)
+          ftranspiration_sl(ic,isoil) = root_fraction_sl(ic,isoil) * hlp1(ic)
+        END IF
+      END DO
+      IF (SUM(ftranspiration_sl(ic,:)) > eps8) THEN
+        ftranspiration_sl(ic,:) = ftranspiration_sl(ic,:) / SUM(ftranspiration_sl(ic,:))
+      ELSE
+        ftranspiration_sl(ic,:) = 0.0_wp
+      END IF
+    END DO
+
+    !> 1.2 determine aerodynamic conductance
+    !>
+    DO ic = 1, nc
+      aerodyn_cond(ic) = heat_transfer_coef(spq_drag_srf(ic), steplen, alpha) * MIN( MAX(wind_10m(ic), min_wind), max_wind)
     END DO
 
     ! calc scaling factor to account for the 'state of acclimation' of evergreen conifers in spring
@@ -253,7 +291,7 @@ CONTAINS
         & t_air(:)                                                  , & ! in
         & press_srf(:)                                              , &
         & co2_mixing_ratio(:)                                       , &
-        & ga(:)                                                     , &
+        & aerodyn_cond(:)                                           , &
         & t_air_tacclim_mavg(:)                                     , &
         & ppfd_sunlit_cl(:,icanopy)                                 , &
         & ppfd_shaded_cl(:,icanopy)                                 , &
@@ -360,7 +398,7 @@ CONTAINS
                                             t_air               , &
                                             press_srf           , &
                                             co2_mixing_ratio    , &
-                                            ga                  , &
+                                            aerodyn_cond        , &
                                             temp_acclim         , &
                                             ppfd_sunlit_cl      , &
                                             ppfd_shaded_cl      , &
@@ -406,7 +444,7 @@ CONTAINS
   CHARACTER(len=*),         INTENT(IN) :: canopy_cond_scheme      !< canopy_conductance_scheme: medlyn / ballberry
   REAL(wp),                 INTENT(IN) :: t_air                   !< 2m air temperature [K]
   REAL(wp),                 INTENT(IN) :: press_srf               !< air pressure (Pa)
-  REAL(wp),                 INTENT(IN) :: ga                      !< aerodynamic conductance (m s-1)
+  REAL(wp),                 INTENT(IN) :: aerodyn_cond            !< ga -- aerodynamic conductance (m s-1)
   REAL(wp),                 INTENT(IN) :: temp_acclim             !< veg\%t_air_tacclim_mavg  average temperature for respiration acclimation
   REAL(wp),                 INTENT(IN) :: ppfd_sunlit_cl          !< PAR of sunlit foliage par per canopy layer (micro-mol m-2 s-1)
   REAL(wp),                 INTENT(IN) :: ppfd_shaded_cl          !< PAR of shaded foliage par per canopy layer (micro-mol m-2 s-1)
@@ -679,7 +717,7 @@ CONTAINS
         !! Friend 2005 eq. 8: r_tot = ( Dh2oco2_air / gs_cl + Dh2oco2_turb / (speed * q_cdrag))
         !! Corrected to Bonan et al. 2008, Ecol. Clim: accounting for the molecular diffusion differences
         !! at the stomatal interface (1.6) and in the boundary layer, where turbulence plays a role (1.37)
-        ci_cl = co2_mixing_ratio * ppm2Pa - an_cl * rtck * 1e-06_wp * (Dwv2co2_air/gs_cl + Dwv2co2_turb/ga)
+        ci_cl = co2_mixing_ratio * ppm2Pa - an_cl * rtck * 1e-06_wp * (Dwv2co2_air/gs_cl + Dwv2co2_turb/aerodyn_cond)
         ci_cl = MAX (ci_cl, pcp)
 
         !> change in An since last iteration and save new an_cl

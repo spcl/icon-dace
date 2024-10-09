@@ -1,5 +1,3 @@
-! @brief Master configuration.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Master configuration.
 
 MODULE mo_master_config
 

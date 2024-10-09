@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Description:  Contains the data structures
 !  to store the physical model state and other auxiliary variables
 !  in order to run the ECHAM physics.
@@ -15,17 +25,6 @@
 !     - fill the physics tendency construction/destruction subroutine
 !     - later implement already calculated icon gradients for echam physics
 !     - think about variables for flexible time steps
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_nwp_phy_types
 
@@ -81,6 +80,7 @@ MODULE mo_nwp_phy_types
     TYPE(t_ptr_2d3d),ALLOCATABLE :: tvs_s_t_ptr(:)  !< pointer array: turbulent velocity scale at surface
     TYPE(t_ptr_2d3d),ALLOCATABLE :: tkvm_s_t_ptr(:) !< pointer array: exchange coefficient for momentum at surface
     TYPE(t_ptr_2d3d),ALLOCATABLE :: tkvh_s_t_ptr(:) !< pointer array: exchange coefficient for heat at surface
+    TYPE(t_ptr_2d3d),ALLOCATABLE :: rcld_s_t_ptr(:) !< pointer array: standard deviation of the saturation deficit at surface
     TYPE(t_ptr_2d3d),ALLOCATABLE :: u_10m_t_ptr(:)  !< pointer array: zonal wind at 10m
     TYPE(t_ptr_2d3d),ALLOCATABLE :: v_10m_t_ptr(:)  !< pointer array: meridional wind at 10m
     TYPE(t_ptr_2d3d),ALLOCATABLE :: shfl_s_t_ptr(:) !< pointer array: surface sensible heat flux 
@@ -160,8 +160,11 @@ MODULE mo_nwp_phy_types
       &  albnirdif_t(:,:,:),   & !! tile-based near IR albedo for diffuse radiation (0.3-0.7um)
       &  lw_emiss(:,:),        & !! Longwave emissivity with corrections for deserts and snow cover
       &  snowalb_fac(:,:),     & !! Factor for adaptive snow albedo tuning (coupled to DA increments for T)
+      &  landalb_inc(:,:),     & !! Increment for adaptive land albedo tuning
       &  heatcond_fac(:,:),    & !! Factor for adaptive soil heat conductivity tuning (coupled to DA increments for T)
       &  heatcap_fac(:,:),     & !! Factor for adaptive soil heat capacity tuning (coupled to DA increments for T)
+      &  hydiffu_fac(:,:),     & !! Factor for adaptive tuning of hydraulic diffusivity
+      &  snowfrac_fac(:,:),    & !! Factor for adaptive tuning of snow-cover fraction diagnosis
       &  sfcfric_fac(:,:),     & !! Factor for adaptive surface friction tuning (coupled to DA increments for V_abs)
       &  hflux_si_fac(:,:),    & !! Factor for adaptive tuning of seaice bottom heat flux (coupled to DA increments for T)
       &  vio3(:,:),            & !! vertically integrated ozone amount (Pa O3)
@@ -331,7 +334,6 @@ MODULE mo_nwp_phy_types
       tfv(:,:)        ,    & !! laminar reduction factor for evaporation        --
       tvm(:,:)        ,    & !! turbulent transfer velocity for momentum      (m/s)
       tvh(:,:)        ,    & !! factor of laminar transfer of scalars           --
-      tkr(:,:)        ,    & !! turbulent reference surface diffusion coeff.  (m2/s) (Ustar*kap*z0)
       tkred_sfc(:,:)  ,    & !! reduction factor for minimum diffusion coefficients near the surface
                              !! (affects heat and momentum; used for EPS perturbations)
       tkred_sfc_h(:,:),    & !! reduction factor for minimum diffusion coefficient for heat near the surface
@@ -343,6 +345,7 @@ MODULE mo_nwp_phy_types
       z0_waves(:,:),       & !! wave-dependent roughness length               (  m  )
       tkvm(:,:,:),         & !! turbulent diffusion coefficients for momentum (m/s2 )
       tkvh(:,:,:),         & !! turbulent diffusion coefficients for heat     (m/s2 )
+      tprn(:,:,:),         & !! turbulent Prandtl-number                        --   
       t_2m(:,:)       ,    & !! temperature in 2m                             (  K  )
       t_2m_land(:,:)  ,    & !! temperature in 2m (land tiles only)           (  K  )
       tmax_2m(:,:)    ,    & !! maximum temperature in 2m (for specified timerange) ( K )
@@ -376,6 +379,8 @@ MODULE mo_nwp_phy_types
       tkvm_s_t(:,:,:)  ,   & !! surface turbulent diffusion coefficients for momentum (m/s2)
                              !! (tile based)
       tkvh_s_t(:,:,:)  ,   & !! surface turbulent diffusion coefficients for heat (m/s2)
+                             !! (tile based)
+      rcld_s_t(:,:,:)  ,   & !! standard deviation of the saturation deficit at surface --
                              !! (tile based)
       u_10m_t(:,:,:)   ,   & !! zonal wind at 10m                             ( m/s )
       v_10m_t(:,:,:)   ,   & !! meridional wind at 10m                        ( m/s )

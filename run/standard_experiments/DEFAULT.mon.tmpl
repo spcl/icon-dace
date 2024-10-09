@@ -40,13 +40,16 @@ import sys
 #% include 'standard_experiments/logging.tmpl'
 
 # Convenience link to log file
-job_name = 'mon'
-job_id = os.environ['%{JOB.id_environ}']
-log_name = f'%{LOG_DIR}/%{EXP_ID}.{job_name}.{job_id:>08}.log'
-log_link = f'%{SCRIPT_DIR}/%{EXP_ID}.{job_name}.log'
-try: os.remove(log_link)
-except FileNotFoundError: pass
-os.symlink(log_name, log_link)
+try:
+    job_name = 'mon'
+    job_id = os.environ['%{JOB.id_environ}']
+    log_name = f'%{LOG_DIR}/%{EXP_ID}.{job_name}.{job_id:>08}.log'
+    log_link = f'%{SCRIPT_DIR}/%{EXP_ID}.{job_name}.log'
+    try: os.remove(log_link)
+    except FileNotFoundError: pass
+    os.symlink(log_name, log_link)
+except KeyError:
+    pass
 
 # Process command line options
 
@@ -107,7 +110,7 @@ final_date = mtime.DateTime('%{FINAL_DATE}')
 next_date = start_date + interval
 
 if next_date > final_date:
-    logging.warn('next date after final date; setting next date to final date')
+    logging.warning('next date after final date; setting next date to final date')
     next_date = final_date
 
 offset = mtime.TimeDelta('-%{namelists.NAMELIST_atm.run_nml.modeltimestep}')
@@ -346,7 +349,7 @@ os.chdir(work_dir)
 
 makefile_template = '''\
 CDO = cdo
-CDOFLAGS = -s -O
+CDOFLAGS = -s -O --reduce_dim
 PLOT_TIMESER = plot_timeser
 
 EXP_ID = {exp_id}
@@ -379,8 +382,8 @@ $(MON_DIR)/index.html: $(MON_INDEX_SCRIPT)
 
 $(TARGETS_DIR)/%.nc: $(DATA_DIR)/%.nc
 	$(CDO) $(CDOFLAGS) select,startdate=$(MIN_DATE) $< $(<F)
-	base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.nc -c \
-	   "set -e ;\
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.nc -c \
+	   "set -ex ;\
 	    if [ -f $(MON_DIR)/$$base.nc ] ;\
 	    then \
 	        $(CDO) $(CDOFLAGS) mergetime $(<F) $(MON_DIR)/$$base.nc \
@@ -392,9 +395,9 @@ $(TARGETS_DIR)/%.nc: $(DATA_DIR)/%.nc
 	touch $@
 
 $(TARGETS_DIR)/%.pdf: $(TARGETS_DIR)/%.nc
-	base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.pdf \
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.pdf \
 	    filelock -s $(TARGETS_DIR)/$$base.nc -c \
-	   'set -e ;\
+	   'set -ex ;\
 	    base='$$base'; \
 	    tag=$${{base#$(EXP_ID)_}} ; \
 	    for prefix in $(MON_DIR)/$(EXP_ID) {add_prefixes}; do \
@@ -411,9 +414,9 @@ $(TARGETS_DIR)/%.pdf: $(TARGETS_DIR)/%.nc
 	touch $@
 
 $(TARGETS_DIR)/%.html: $(TARGETS_DIR)/%.pdf
-	base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.html \
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.html \
 	    filelock -s $(TARGETS_DIR)/$$base.pdf -c \
-	   "set -e ;\
+	   "set -ex ;\
 	    mkdir -p $$base ;\
 	    TEMP=$$PWD/$$base ;\
 	    export TEMP ;\

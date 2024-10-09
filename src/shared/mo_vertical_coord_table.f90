@@ -1,7 +1,3 @@
-! module *mo_vertical_coord_table* - *loop indices and surface-pressure independent
-! variables associated with the vertical finite-difference scheme.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! module *mo_vertical_coord_table* - *loop indices and surface-pressure independent
+! variables associated with the vertical finite-difference scheme.
 
 MODULE mo_vertical_coord_table
 

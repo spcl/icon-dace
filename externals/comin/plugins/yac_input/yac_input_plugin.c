@@ -6,7 +6,7 @@
 
 #include <comin.h>
 #include <mpi.h>
-#include <yac_interface.h>
+#include <yac.h>
 
 int comp_id;
 int field_id;
@@ -19,39 +19,28 @@ void create_grid_and_field();
 void recv_field();
 
 void comin_main(){
-  int ierr = 0;
   const char* options = NULL;
   int options_len = 0;
-  comin_current_get_plugin_options(&options, &options_len, &ierr);
+  comin_current_get_plugin_options(&options, &options_len);
   strncpy(descr.name, options, options_len);
   descr.id = 1;
 
 
-  comin_var_request_add(descr, false, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Failed to request_add the variable");
+  comin_var_request_add(descr, false);
 
-  comin_metadata_set_integer(descr, "zaxis_id", COMIN_ZAXIS_2D, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Cannot set metadata zaxis_id");
+  comin_metadata_set_integer(descr, "zaxis_id", COMIN_ZAXIS_2D);
 
-  comin_callback_register(EP_SECONDARY_CONSTRUCTOR, secondary_constructor, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Failed to register EP_SECONDARY_CONSTRUCTOR");
-  comin_callback_register(EP_ATM_YAC_DEFCOMP_BEFORE, defcomp, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Failed to register EP_ATM_YAC_DEFCOMP_BEFORE");
-  comin_callback_register(EP_ATM_YAC_SYNCDEF_BEFORE, create_grid_and_field, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Failed to register EP_ATM_YAC_SYNCDEF_BEFORE");
-  comin_callback_register(EP_ATM_TIMELOOP_START, recv_field, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yac_input_plugin", "Failed to register EP_ATM_TIMELOOP_START");
+  comin_callback_register(EP_SECONDARY_CONSTRUCTOR, secondary_constructor);
+  comin_callback_register(EP_ATM_YAC_DEFCOMP_BEFORE, defcomp);
+  comin_callback_register(EP_ATM_YAC_SYNCDEF_BEFORE, create_grid_and_field);
+  comin_callback_register(EP_ATM_TIMELOOP_START, recv_field);
 }
 
 void secondary_constructor(){
   int ep = EP_ATM_TIMELOOP_START;
   comin_var = comin_var_get(1, &ep, descr, COMIN_FLAG_WRITE);
+  if(comin_var == NULL)
+    comin_plugin_finish("yac_input_plugin", "Failed to get variable");
 }
 
 void defcomp(){

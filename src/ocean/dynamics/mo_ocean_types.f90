@@ -1,6 +1,3 @@
-! Contains the variables to set up the ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the variables to set up the ocean model.
+
 #include "iconfor_dsl_definitions.inc"
 !=============================================================================================
 MODULE mo_ocean_types
@@ -234,6 +234,13 @@ MODULE mo_ocean_types
       & swr_frac, &  !< relative swr absorption factor from hamocc (LFB_BGC_OCE)
       & sigma0, &  !<  density anomaly (desitity - 1000)
       & heat_content_liquid_water,    &
+      & diapycnal_velocity ,& ! diapycnal velocity [m/s] ! by_nils
+      & sigma2 ,& ! potential density ref. to 2000m [kg/m^3] ! by_nils
+      & layer_thickness_c ,& ! layer thickness interpolated to cell ! by_nils
+      & dhdt_tot ,& ! total layer thickness change ! by_nils 
+      & dhdt_srf ,& ! layer thickness change by surface density flux ! by_nils
+      & dhdt_hfl ,& ! layer thickness change by horizontal flux ! by_nils
+      & div_mass_flux_lay ,& ! divergence of mass flux within layer ! by_nils
       & odensitytend
 
 
@@ -282,7 +289,10 @@ MODULE mo_ocean_types
       & pacific_hfbasin  ,& ! northward ocean heat transport pacific
       & global_sltbasin   ,& ! northward ocean salt transport global
       & atlantic_sltbasin ,& ! northward ocean salt transport atlantic
-      & pacific_sltbasin     ! northward ocean salt transport pacific
+      & pacific_sltbasin ,&  ! northward ocean salt transport pacific
+      & sflx_dens ,& ! by_nils
+      & alphaT ,& ! by_nils
+      & betaS  !,&! by_nils
 
    onCells_2D :: &
       & northernHemisphere ,&
@@ -331,7 +341,10 @@ MODULE mo_ocean_types
       & press_grad     ,& ! hydrostatic pressure gradient term. Unit [m/s]
       & cfl_horz       ,& ! horizontal cfl values
 !       & zlim           ,& ! zalesak limiter factor
-      & vn_bolus  
+      & vn_bolus       ,&
+      & mass_flux_lay  ,& ! isopycnal mass flux [m^2/s] ! by_nils
+      & layer_thickness_e  ,& ! isopycnal layer thickness [m] ! by_nils
+      & weight_e_sum !,& ! by_nils
       
 !     onEdges_HalfLevels :: &
 !       & w_e            ! vertical velocity at edges. Unit [m/s]

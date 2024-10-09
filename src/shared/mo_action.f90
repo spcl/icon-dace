@@ -1,6 +1,3 @@
-! Routines for defining, initializing and executing action events
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! Routines for defining, initializing and executing action events
+
 ! *****************************************************************
 !            RECIPE FOR CREATING A NEW ACTION EVENT
 ! *****************************************************************

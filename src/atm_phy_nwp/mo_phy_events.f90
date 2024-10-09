@@ -1,8 +1,3 @@
-!
-! Time management for parameterized physical processes
-!
-! Setup mtime events and event groups for physical processes
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Time management for parameterized physical processes
+!
+! Setup mtime events and event groups for physical processes
 
 MODULE mo_phy_events
 

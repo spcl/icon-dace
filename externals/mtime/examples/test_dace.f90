@@ -2,27 +2,27 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-program test_mtime
+PROGRAM test_mtime
 
-  use mtime
-  use mo_event_manager
+  USE mtime
+  USE mo_event_manager
 
-  implicit none
-  
-  character(len=max_timedelta_str_len)   :: td_string
-  character(len=max_datetime_str_len)    :: dt_string
+  IMPLICIT NONE
 
-  call setcalendar(proleptic_gregorian)
-  call test1 ()
-  call test2 ()
-  
-contains
+  CHARACTER(len=max_timedelta_str_len)   :: td_string
+  CHARACTER(len=max_datetime_str_len)    :: dt_string
 
-  subroutine test1 ()
+  CALL setcalendar(proleptic_gregorian)
+  CALL test1()
+  CALL test2()
 
-    type(timedelta),  pointer :: dt, t0, t1, t2, t3
+CONTAINS
 
-    write (0,*) "test1:"
+  SUBROUTINE test1()
+
+    TYPE(timedelta), POINTER :: dt, t0, t1, t2, t3
+
+    WRITE (0, *) "test1:"
 
     dt => newtimedelta("pt24.000s")
 
@@ -32,113 +32,113 @@ contains
     t2 => newtimedelta("pt60m")
     t3 => newtimedelta("pt1h")
 
-    t1 =  t1 + dt
-    t2 =  t2 + dt
-    t3 =  t3 + dt
+    t1 = t1 + dt
+    t2 = t2 + dt
+    t3 = t3 + dt
 
-    call timedeltatostring (t0, td_string)
-    write(0,*) "  t0 : ", td_string, "reference"
-    call timedeltatostring (dt, td_string)
-    write(0,*) "  dt : ", td_string, "modification"
-    call timedeltatostring (t1, td_string)
-    write(0,*) "  t1 : ", td_string, "???"
-    call timedeltatostring (t2, td_string)
-    write(0,*) "  t2 : ", td_string, "ok"
-    call timedeltatostring (t3, td_string)
-    write(0,*) "  t3 : ", td_string, "ok"
-  end subroutine test1
+    CALL timedeltatostring(t0, td_string)
+    WRITE (0, *) "  t0 : ", td_string, "reference"
+    CALL timedeltatostring(dt, td_string)
+    WRITE (0, *) "  dt : ", td_string, "modification"
+    CALL timedeltatostring(t1, td_string)
+    WRITE (0, *) "  t1 : ", td_string, "???"
+    CALL timedeltatostring(t2, td_string)
+    WRITE (0, *) "  t2 : ", td_string, "ok"
+    CALL timedeltatostring(t3, td_string)
+    WRITE (0, *) "  t3 : ", td_string, "ok"
+  END SUBROUTINE test1
   !-
-  subroutine test2 ()
+  SUBROUTINE test2()
 
-    type(event),      pointer :: mec_event      => null()
+    TYPE(event), POINTER :: mec_event => NULL()
 
-    type(datetime),   pointer :: mec_refdate    => null()
+    TYPE(datetime), POINTER :: mec_refdate => NULL()
 
-    type(eventgroup), pointer :: mec_eventgroup => null()
+    TYPE(eventgroup), POINTER :: mec_eventgroup => NULL()
 
-    type(datetime),   pointer :: mec_startdate  => null()
-    type(datetime),   pointer :: mec_enddate    => null()
+    TYPE(datetime), POINTER :: mec_startdate => NULL()
+    TYPE(datetime), POINTER :: mec_enddate => NULL()
 
-    type(timedelta),  pointer :: mec_start      => null()
-    type(timedelta),  pointer :: mec_stop       => null()
-    type(timedelta),  pointer :: mec_interval   => null()
+    TYPE(timedelta), POINTER :: mec_start => NULL()
+    TYPE(timedelta), POINTER :: mec_stop => NULL()
+    TYPE(timedelta), POINTER :: mec_interval => NULL()
 
-    type(timedelta),  pointer :: time_step          => null()
-    
-    integer                   :: mec_events
-    integer                   :: ierr
-    logical                   :: lret
+    TYPE(timedelta), POINTER :: time_step => NULL()
 
-    type(datetime),   pointer :: mtime
+    INTEGER                   :: mec_events
+    INTEGER                   :: ierr
+    LOGICAL                   :: lret
 
-    integer                   :: i
+    TYPE(datetime), POINTER :: mtime
+
+    INTEGER                   :: i
 
     ! offset for start from reference date
-    mec_start      => newtimedelta("pt0s")
+    mec_start => newtimedelta("pt0s")
     ! offset for stop from reference date
-    mec_stop       => newtimedelta("pt3600s")
-    mec_interval   => newtimedelta("pt300s")
+    mec_stop => newtimedelta("pt3600s")
+    mec_interval => newtimedelta("pt300s")
 
-    time_step      => newtimedelta("pt24s")
+    time_step => newtimedelta("pt24s")
 
-    mec_refdate    => newdatetime ("2016-05-29t00:00:00.000")
-    mec_startdate  => newdatetime (mec_refdate)
-    mec_enddate    => newdatetime (mec_refdate)
-    mec_startdate  =  mec_startdate + mec_start
-    mec_enddate    =  mec_enddate   + mec_stop
+    mec_refdate => newdatetime("2016-05-29t00:00:00.000")
+    mec_startdate => newdatetime(mec_refdate)
+    mec_enddate => newdatetime(mec_refdate)
+    mec_startdate = mec_startdate + mec_start
+    mec_enddate = mec_enddate + mec_stop
 
-    write (0,*)
-    write (0,*) "test2:"
-    call timedeltatostring (time_step,    td_string)
-    write (0,*) "model time step   : ",   td_string
-    call timedeltatostring (mec_start,    td_string)
-    write (0,*) "mec start time    : ",   td_string
-    call timedeltatostring (mec_stop,     td_string)
-    write (0,*) "mec stop time     : ",   td_string
-    call timedeltatostring (mec_interval, td_string)
-    write (0,*) "mec interval      : ",   td_string
+    WRITE (0, *)
+    WRITE (0, *) "test2:"
+    CALL timedeltatostring(time_step, td_string)
+    WRITE (0, *) "model time step   : ", td_string
+    CALL timedeltatostring(mec_start, td_string)
+    WRITE (0, *) "mec start time    : ", td_string
+    CALL timedeltatostring(mec_stop, td_string)
+    WRITE (0, *) "mec stop time     : ", td_string
+    CALL timedeltatostring(mec_interval, td_string)
+    WRITE (0, *) "mec interval      : ", td_string
 
-    write (0,*)
+    WRITE (0, *)
 
-    call datetimetostring (mec_refdate,   dt_string)
-    write (0,*) "mec reference date: ",   dt_string
-    call datetimetostring (mec_startdate, dt_string)
-    write (0,*) "mec start date    : ",   dt_string
-    call datetimetostring (mec_enddate,   dt_string)
-    write (0,*) "mec end date      : ",   dt_string
+    CALL datetimetostring(mec_refdate, dt_string)
+    WRITE (0, *) "mec reference date: ", dt_string
+    CALL datetimetostring(mec_startdate, dt_string)
+    WRITE (0, *) "mec start date    : ", dt_string
+    CALL datetimetostring(mec_enddate, dt_string)
+    WRITE (0, *) "mec end date      : ", dt_string
 
-    write (0,*)
+    WRITE (0, *)
 
-    write (0,*) "checking event management"
+    WRITE (0, *) "checking event management"
 
-    call initeventmanager (mec_refdate)
+    CALL initeventmanager(mec_refdate)
 
-    mec_events     =  addeventgroup('meceventgroup')
+    mec_events = addeventgroup('meceventgroup')
     mec_eventgroup => geteventgroup(mec_events)
-    mec_enddate    =  mec_enddate   + time_step
-    mec_event      => newevent('mec', mec_refdate, mec_startdate, mec_enddate, &
-                                      mec_interval, errno=ierr)
+    mec_enddate = mec_enddate + time_step
+    mec_event => newevent('mec', mec_refdate, mec_startdate, mec_enddate, &
+                          mec_interval, errno=ierr)
     lret = addeventtoeventgroup(mec_event, mec_eventgroup)
-    write (0,*) "addeventtoeventgroup returns:", lret
-    call printeventgroup (mec_events)
+    WRITE (0, *) "addeventtoeventgroup returns:", lret
+    CALL printeventgroup(mec_events)
 
-    mtime => newdatetime (mec_startdate)
+    mtime => newdatetime(mec_startdate)
     i = 0
-    do
-      if (iscurrenteventactive (mec_event, mtime, plus_slack=time_step)) then
+    DO
+      IF (iscurrenteventactive(mec_event, mtime, plus_slack=time_step)) THEN
         i = i + 1
-        call datetimetostring (mtime, dt_string)
-        write (0,*) "mec will be called on: ", trim (dt_string)
-      end if
-      
-      if (mtime >= mec_enddate) then
-        exit
-      end if
-      mtime = mtime + time_step
-    end do
-    
-    write(0,*) "check_dace_timer: total mec calls:", i, "(expected: 13)"
-    
-  end subroutine test2
+        CALL datetimetostring(mtime, dt_string)
+        WRITE (0, *) "mec will be called on: ", TRIM(dt_string)
+      END IF
 
-end program test_mtime
+      IF (mtime >= mec_enddate) THEN
+        EXIT
+      END IF
+      mtime = mtime + time_step
+    END DO
+
+    WRITE (0, *) "check_dace_timer: total mec calls:", i, "(expected: 13)"
+
+  END SUBROUTINE test2
+
+END PROGRAM test_mtime

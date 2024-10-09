@@ -1,49 +1,8 @@
-// #define VERBOSE
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
-/**
- * @file toy_multi_common.c
- *
- * @copyright Copyright  (C)  2023 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// #define VERBOSE
 
 #include <mpi.h>
 #include <stdlib.h>
@@ -51,9 +10,10 @@
 #include <unistd.h>
 #include <math.h>
 #include <string.h>
-#include "utils.h"
-#include "yac_interface.h"
-#include "vtk_output.h"
+#include <stdint.h>
+#include "yac.h"
+#include "yac_core.h"
+#include "yac_utils.h"
 
 #include "toy_multi_common.h"
 
@@ -80,7 +40,8 @@ size_t nbr_interpolations = sizeof(interpolations) / sizeof(interpolations[0]);
 int run_toy_multi_common (
   char const * comp_name, int comp_id, int grid_id,
   int cell_point_id, int corner_point_id,
-  double * cell_point_data, double * corner_point_data, VTK_FILE * vtk_file) {
+  double * cell_point_data, double * corner_point_data,
+  YAC_VTK_FILE * vtk_file) {
 
   int info, err;
   double tic;
@@ -93,14 +54,14 @@ int run_toy_multi_common (
 
   // get list of all registered components
   int nbr_comps = yac_cget_nbr_comps();
-  char const ** comp_names = xmalloc((size_t)nbr_comps * sizeof(*comp_names));
+  char const ** comp_names = malloc((size_t)nbr_comps * sizeof(*comp_names));
   yac_cget_comp_names(nbr_comps, comp_names);
   size_t local_comp_idx = SIZE_MAX;
   for (int i = 0; i < nbr_comps; ++i) comp_names[i] = strdup(comp_names[i]);
 
   // register fields
   int * field_ids =
-    xmalloc((size_t)nbr_comps * nbr_interpolations * sizeof(*field_ids));
+    malloc((size_t)nbr_comps * nbr_interpolations * sizeof(*field_ids));
   for (int comp_idx = 0, i = 0; comp_idx < nbr_comps; ++comp_idx) {
     if (!strcmp(comp_name, comp_names[comp_idx]))
       local_comp_idx = (size_t)comp_idx;
@@ -146,7 +107,8 @@ int run_toy_multi_common (
         yac_cadd_interp_stack_config_hcsbb(interp_config);
       } else if (!strcmp(interp_name, "rbf")) {
         yac_cadd_interp_stack_config_nnn(
-          interp_config, YAC_NNN_RBF, 9, 1.487973e+01);
+          interp_config, YAC_NNN_RBF, 9,
+          YAC_INTERP_NNN_MAX_SEARCH_DISTANCE_DEFAULT, 1.487973e+01);
       } else {
         fprintf(
           stderr, "unsupported interpolation type: \"%s\"\n", interp_name);
@@ -205,12 +167,12 @@ int run_toy_multi_common (
   // initialise data
 
   double ** field_buffers =
-    xmalloc((size_t)nbr_comps * nbr_interpolations * sizeof(*field_buffers));
+    malloc((size_t)nbr_comps * nbr_interpolations * sizeof(*field_buffers));
   for (int comp_idx = 0, i = 0; comp_idx < nbr_comps; ++comp_idx) {
     for (size_t interp_idx = 0; interp_idx < nbr_interpolations;
          ++interp_idx, ++i) {
 
-      if (comp_idx == local_comp_idx) {
+      if ((size_t)comp_idx == local_comp_idx) {
         field_buffers[i] =
           (*(interpolations[interp_idx].location) == YAC_LOCATION_CELL)?
             cell_point_data:corner_point_data;
@@ -218,8 +180,8 @@ int run_toy_multi_common (
         int point_id =
           (*(interpolations[interp_idx].location) == YAC_LOCATION_CELL)?
             cell_point_id:corner_point_id;
-        size_t data_size = yac_get_points_size(point_id);
-        field_buffers[i] = xmalloc(data_size * sizeof(**field_buffers));
+        size_t data_size = yac_cget_points_size(point_id);
+        field_buffers[i] = malloc(data_size * sizeof(**field_buffers));
         for (size_t j = 0; j < data_size; ++j)
           field_buffers[i][j] = -10.0;
       }
@@ -244,7 +206,7 @@ int run_toy_multi_common (
     for (size_t interp_idx = 0; interp_idx < nbr_interpolations;
          ++interp_idx, ++i) {
 
-      if (comp_idx == local_comp_idx) continue;
+      if ((size_t)comp_idx == local_comp_idx) continue;
 
       double *collection_data[1];
 
@@ -261,18 +223,18 @@ int run_toy_multi_common (
 
   // write fields to vtk output file
 
-  vtk_write_cell_scalars_double(
+  yac_vtk_write_cell_scalars_double(
     vtk_file, cell_point_data,
-    yac_get_grid_size(YAC_LOCATION_CELL, grid_id), "cell_out");
-  vtk_write_point_scalars_double(
+    yac_cget_grid_size(YAC_LOCATION_CELL, grid_id), "cell_out");
+  yac_vtk_write_point_scalars_double(
     vtk_file, corner_point_data,
-    yac_get_grid_size(YAC_LOCATION_CORNER, grid_id), "corner_out");
+    yac_cget_grid_size(YAC_LOCATION_CORNER, grid_id), "corner_out");
 
   for (int comp_idx = 0, i = 0; comp_idx < nbr_comps; ++comp_idx) {
     for (size_t interp_idx = 0; interp_idx < nbr_interpolations;
          ++interp_idx, ++i) {
 
-      if (comp_idx != local_comp_idx) {
+      if ((size_t)comp_idx != local_comp_idx) {
 
         char field_name[256];
         sprintf(
@@ -280,14 +242,14 @@ int run_toy_multi_common (
           comp_names[comp_idx]);
 
         if (*(interpolations[interp_idx].location) == YAC_LOCATION_CELL)
-          vtk_write_cell_scalars_double(
+          yac_vtk_write_cell_scalars_double(
             vtk_file, field_buffers[i],
-            yac_get_grid_size(
+            yac_cget_grid_size(
               *(interpolations[interp_idx].location), grid_id), field_name);
         else
-          vtk_write_point_scalars_double(
+          yac_vtk_write_point_scalars_double(
             vtk_file, field_buffers[i],
-            yac_get_grid_size(
+            yac_cget_grid_size(
               *(interpolations[interp_idx].location), grid_id), field_name);
       }
     }
@@ -295,7 +257,7 @@ int run_toy_multi_common (
 
   // finalize
 
-  vtk_close(vtk_file);
+  yac_vtk_close(vtk_file);
   yac_cfinalize();
   MPI_Finalize();
 
@@ -304,7 +266,7 @@ int run_toy_multi_common (
   for (int comp_idx = 0, i = 0; comp_idx < nbr_comps; ++comp_idx)
     for (size_t interp_idx = 0; interp_idx < nbr_interpolations;
          ++interp_idx, ++i)
-      if (comp_idx != local_comp_idx) free(field_buffers[i]);
+      if ((size_t)comp_idx != local_comp_idx) free(field_buffers[i]);
   free(field_buffers);
 
   return EXIT_SUCCESS;

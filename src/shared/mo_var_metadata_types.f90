@@ -1,6 +1,3 @@
-! Meta-data type definitions for ICON variables.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Meta-data type definitions for ICON variables.
 
 MODULE mo_var_metadata_types
   USE ISO_C_BINDING,            ONLY: C_SIZE_T, C_LOC, c_ptr

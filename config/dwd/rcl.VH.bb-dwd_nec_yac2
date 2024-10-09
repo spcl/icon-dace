@@ -19,4 +19,5 @@
   --enable-ecrad \
   --enable-coupling \
   --enable-fcgroup-OCEAN \
+  --enable-comin \
   "$@"

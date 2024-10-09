@@ -1,7 +1,3 @@
-! Contains allocation, initialization and setup of the FEM mesh
-! in relation to the ICON grid.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains allocation, initialization and setup of the FEM mesh
+! in relation to the ICON grid.
 
 !----------------------------
 #include "omp_definitions.inc"

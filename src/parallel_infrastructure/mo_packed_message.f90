@@ -1,6 +1,3 @@
-! A class to make sending/receiving of data packets easier.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! A class to make sending/receiving of data packets easier.
 
 #include "handle_mpi_error.inc"
 

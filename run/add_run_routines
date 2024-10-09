@@ -228,11 +228,27 @@ compare_output_files()
 
 add_comin_setup()
 {
- if [ -n "$builder" ]; then
+ if [ -n "$builder" ] && [ "$builder" == "rcl_nec" ]; then
+
+        case "$basedir" in
+             */VE )
+                 hostdir="${basedir}/../VH/"
+                 ;;
+             */vector )
+                 hostdir="${basedir}/../host/"
+                 ;;
+        esac
+
+        for path in "$@"; do
+            # THIS PATH DOES NOT FIT TOGETHER WITH "host" NOMENCLATURE IN DWD_NEC
+            export LD_LIBRARY_PATH="${hostdir}/${path}:$LD_LIBRARY_PATH"
+            export VE_LD_LIBRARY_PATH="${basedir}/${path}:$VE_LD_LIBRARY_PATH"
+        done
+elif [ -n "$builder" ]; then
         for path in "$@"; do
             export LD_LIBRARY_PATH="${basedir}/${path}:$LD_LIBRARY_PATH"
         done
- fi
+fi
 }
 
 #-----------------------------------------------------------------------------

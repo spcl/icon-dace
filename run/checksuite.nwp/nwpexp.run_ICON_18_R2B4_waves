@@ -118,13 +118,13 @@ cat > ${wave_namelist} << EOF
 /
 &run_nml
  num_lev              = 1
- dtime                = ${dtime}     ! [s] timestep in seconds
+ dtime                = ${dtime}    ! [s] timestep in seconds
  ltimer               = .true.
  timers_level         = 10
- msg_level            = 15
- ltestcase            = .TRUE.       ! run testcase
+ msg_level            = 14
+ ltestcase            = .TRUE.      ! run testcase
  ldynamics            = .TRUE.
- ltransport           = .FALSE.      ! no horizontal propagation of wave energy
+ ltransport           = .TRUE.      ! horizontal propagation of wave energy
  ntracer              = $((${nd}*${nf}))
  output               = "nml"
 /
@@ -153,6 +153,14 @@ cat > ${wave_namelist} << EOF
  ndirs       = ${nd}   ! number of directions
  nfreqs      = ${nf}   ! number of frequencies
  forc_file_prefix = '' ! prefix of forcing file name
+ linput_sf1       = .TRUE. ! if .TRUE., calculate wind input source function term, first call
+ linput_sf2       = .TRUE. ! if .TRUE., calculate wind input source function term, second call
+ ldissip_sf       = .TRUE. ! if .TRUE., calculate dissipation source function term
+ lwave_brk_sf     = .TRUE. ! if .TRUE., calculate wave breaking dissipation source function term
+ lnon_linear_sf   = .TRUE. ! if .TRUE., calculate non linear source function term
+ lbottom_fric_sf  = .TRUE. ! if .TRUE., calculate bottom_friction source function term
+ lwave_stress1    = .TRUE. ! if .TRUE., calculate wave stress, first call
+ lwave_stress2    = .TRUE. ! if .TRUE., calculate wave stress, second call
 /
 &output_nml
  filetype                =                          4         ! output format: 2=GRIB2, 4=NETCDFv2
@@ -165,8 +173,7 @@ cat > ${wave_namelist} << EOF
  output_grid             =                      .TRUE.        ! flag whether grid information is added to output.
  ml_varlist              = 'bathymetry_c',
                            'group:wave_forcing',
-                           'group:wave_phy','group:wave_short',
-                           'q112_010_004','q1_001_001','fl_020_010','fl_025_001'
+                           'group:wave_phy','group:wave_short'
 /
 EOF
 

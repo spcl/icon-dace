@@ -1,10 +1,3 @@
-!
-! Calculation of surface albedo
-!
-! Calculation of surface albedo taking soil type, vegetation
-! and snow/ice conditions into account.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Calculation of surface albedo
+!
+! Calculation of surface albedo taking soil type, vegetation
+! and snow/ice conditions into account.
 
 !----------------------------
 #include "omp_definitions.inc"

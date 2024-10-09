@@ -11,8 +11,6 @@
 !
 MODULE comin_errhandler_types
 
-  USE mpi
-
   IMPLICIT NONE
 
   PRIVATE

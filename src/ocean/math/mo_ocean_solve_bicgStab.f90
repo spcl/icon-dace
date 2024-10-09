@@ -51,7 +51,7 @@ CONTAINS
   SUBROUTINE ocean_solve_bicgStab_recover_arrays_wp(this, x, b, &
       & r0, r, v, p, ta1, s, ta2)
     CLASS(t_ocean_solve_bicgStab), INTENT(INOUT), TARGET :: this
-    REAL(KIND=wp), INTENT(OUT), POINTER, DIMENSION(:,:) :: &
+    REAL(KIND=wp), INTENT(INOUT), POINTER, DIMENSION(:,:) :: &
       & x, b, r0, r, v, p, ta1, s, ta2
 
     IF (.NOT.ALLOCATED(this%r_wp)) THEN

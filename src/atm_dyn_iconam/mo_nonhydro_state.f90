@@ -1,12 +1,3 @@
-!NEC$ options "-O0"
-!
-! Constructs and destructs the state vector of the nonhydrostatic.
-!
-! Constructs and destructs the state vector of the nonhydrostatic
-! model variables. They are subdivided in several classes: prognostics
-! and diagnostics.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Constructs and destructs the state vector of the nonhydrostatic.
+!
+! Constructs and destructs the state vector of the nonhydrostatic
+! model variables. They are subdivided in several classes: prognostics
+! and diagnostics.
+
+!NEC$ options "-O0"
 
 MODULE mo_nonhydro_state
 
@@ -3413,6 +3412,30 @@ MODULE mo_nonhydro_state
         &           ldims=shape2d_c, lrestart=.true.,                               &
         &           in_group=groups("mode_iau_fg_in","mode_dwd_fg_in","mode_combined_in") )
 
+    ENDIF
+
+    IF (icpl_da_sfcevap >= 5) THEN
+      !  Time-filtered near-surface level T increment from data assimilation, weighted with peak in afternoon
+      cf_desc    = t_cf_var('t_daywgt_avginc', 'K', 'Weighted filtered T increment', datatype_flt)
+      grib2_desc = grib2_var(0, 210, 0, ibits, GRID_UNSTRUCTURED, GRID_CELL)&
+                 + t_grib2_int_key("typeOfGeneratingProcess", 207)         &
+                 + t_grib2_int_key("typeOfSecondFixedSurface", 1)          &
+                 + t_grib2_int_key("typeOfFirstFixedSurface", 103)
+      CALL add_var( p_diag_list, 't_daywgt_avginc', p_diag%t_daywgt_avginc,         &
+        &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_10M, cf_desc, grib2_desc,     &
+        &           ldims=shape2d_c, lrestart=.true.,                               &
+        &           in_group=groups("mode_iau_fg_in","mode_dwd_fg_in","mode_combined_in") )
+
+      !  Time-filtered near-surface level RH increment from data assimilation, weighted with peak in afternoon
+      cf_desc    = t_cf_var('rh_daywgt_avginc', '1', 'Weighted filtered RH increment', datatype_flt)
+      grib2_desc = grib2_var(0, 210, 1, ibits, GRID_UNSTRUCTURED, GRID_CELL)&
+                 + t_grib2_int_key("typeOfGeneratingProcess", 207)         &
+                 + t_grib2_int_key("typeOfSecondFixedSurface", 1)          &
+                 + t_grib2_int_key("typeOfFirstFixedSurface", 103)
+      CALL add_var( p_diag_list, 'rh_daywgt_avginc', p_diag%rh_daywgt_avginc,       &
+        &           GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_10M, cf_desc, grib2_desc,     &
+        &           ldims=shape2d_c, lrestart=.true.,                               &
+        &           in_group=groups("mode_iau_fg_in","mode_dwd_fg_in","mode_combined_in") )
     ENDIF
 
     IF (latbc_config%fac_latbc_presbiascor > 0._wp) THEN

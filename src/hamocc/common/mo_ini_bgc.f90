@@ -1,6 +1,3 @@
-
-! @brief set start values for bgc variables
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief set start values for bgc variables
 
 MODULE mo_ini_bgc
 

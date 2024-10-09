@@ -1,7 +1,3 @@
-! Type definition for preparation of transport with optional reduced
-! calling frequency.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Type definition for preparation of transport with optional reduced
+! calling frequency.
 
 MODULE mo_prepadv_types
 

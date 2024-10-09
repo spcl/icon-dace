@@ -319,7 +319,6 @@ cat >> ${atmo_namelist} << EOF
  aes_rad_config(1)%irad_cfc11 =  3
  aes_rad_config(1)%irad_cfc12 =  3
  aes_rad_config(1)%irad_aero  =  0
- aes_rad_config(1)%lclearsky  = ${lclearsky}
 /
 EOF
 fi # ${dt_rad}
@@ -360,7 +359,7 @@ cat > ${jsbach_namelist} << EOF
   usecase                 = 'jsbach_lite'
   use_lakes               = .${jsbach_with_lakes}.
   fract_filename          = 'bc_land_frac.nc'
-  enforce_water_budget    = .TRUE.      ! True: stop in case of water conservation problem
+  enforce_water_budget    = 'error'     ! Error: stop in case of water conservation problem
 /
 &jsb_seb_nml
   bc_filename             = 'bc_land_phys.nc'

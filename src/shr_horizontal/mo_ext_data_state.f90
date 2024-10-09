@@ -1,8 +1,3 @@
-! Allocation/deallocation of external parameter state
-!
-! This module contains routines for setting up the external data state.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Allocation/deallocation of external parameter state
+!
+! This module contains routines for setting up the external data state.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -32,6 +31,7 @@ MODULE mo_ext_data_state
   USE mo_model_domain,       ONLY: t_patch
   USE mo_ext_data_types,     ONLY: t_external_data, t_external_atmos_td, &
     &                              t_external_atmos
+  USE mo_ext_data_inquire,   ONLY: inquire_external_files
   USE mo_var_groups,         ONLY: groups
   USE mo_var_metadata_types, ONLY: POST_OP_SCALE, POST_OP_LUC, CLASS_TILE, CLASS_TILE_LAND
   USE mo_var_metadata,       ONLY: post_op, create_hor_interp_metadata
@@ -49,8 +49,7 @@ MODULE mo_ext_data_state
     &                              sstice_mode, lterra_urb
   USE mo_atm_phy_nwp_config, ONLY: iprog_aero, atm_phy_nwp_config
   USE mo_radiation_config,   ONLY: irad_o3, albedo_type, islope_rad
-  USE mo_extpar_config,      ONLY: i_lctype, nclass_lu, nhori,              &
-    &                              nmonths_ext, itype_vegetation_cycle, itype_lwemiss
+  USE mo_extpar_config,      ONLY: ext_atm_attr, ext_o3_attr, itype_vegetation_cycle, itype_lwemiss
   USE mo_cdi,                ONLY: DATATYPE_PACK16, DATATYPE_FLT32, DATATYPE_FLT64,     &
     &                              TSTEP_CONSTANT, TSTEP_MAX, TSTEP_AVG, TSTEP_INSTANT, &
     &                              GRID_UNSTRUCTURED
@@ -67,23 +66,6 @@ MODULE mo_ext_data_state
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_ext_data_state'
 
-  ! necessary information when reading ozone from file
-  CHARACTER(len=6)  :: levelname
-  CHARACTER(len=6)  :: cellname
-  CHARACTER(len=5)  :: o3name
-  CHARACTER(len=20) :: o3unit
-  !
-  INTEGER :: nlev_o3
-  INTEGER :: nmonths
-
-  ! variables
-  PUBLIC :: nmonths
-  PUBLIC :: nlev_o3
-  PUBLIC :: levelname
-  PUBLIC :: cellname
-  PUBLIC :: o3name
-  PUBLIC :: o3unit
-
   ! state
   PUBLIC :: ext_data
 
@@ -98,18 +80,17 @@ MODULE mo_ext_data_state
 CONTAINS
 
 
-
   !-------------------------------------------------------------------------
   !>
   !! Top-level procedure for building external data structure
   !!
   SUBROUTINE construct_ext_data (p_patch, ext_data)
 
-    TYPE(t_patch),          INTENT(IN)    :: p_patch(:)
-    TYPE(t_external_data),  INTENT(INOUT) :: ext_data(:)
+    TYPE(t_patch),                      INTENT(IN)    :: p_patch(:)  !< note: starts with domain 1
+    TYPE(t_external_data), ALLOCATABLE, INTENT(INOUT) :: ext_data(:) !< note: starts with domain 1
 
     INTEGER :: jg
-
+    INTEGER :: error_status
     CHARACTER(len=MAX_CHAR_LENGTH) :: listname
 
     CHARACTER(len=max_char_length), PARAMETER :: &
@@ -117,34 +98,42 @@ CONTAINS
 
 !-------------------------------------------------------------------------
 
+    CALL message (routine, 'Construction of data structure for ' // &
+      &                    'external data started')
 
-    CALL message (TRIM(routine), 'Construction of data structure for ' // &
-      &                          'external data started')
-
+    ALLOCATE (ext_data(n_dom), STAT=error_status)
+    IF (error_status /= SUCCESS) THEN
+      CALL finish(routine, 'allocation for ext_data failed')
+    ENDIF
     !$ACC ENTER DATA COPYIN(ext_data)
+
 
     ! Build external data list for constant-in-time fields for the atm model
     DO jg = 1, n_dom
+
+      ! open external paramter files and investigate the data structure
+      CALL inquire_external_files(p_patch(jg), ext_atm_attr(jg), ext_o3_attr(jg))
+
       !$ACC ENTER DATA COPYIN(ext_data(jg)%atm)
       WRITE(listname,'(a,i2.2)') 'ext_data_atm_D',jg
-      CALL new_ext_data_atm_list(p_patch(jg), ext_data(jg)%atm,       &
+      CALL new_ext_data_atm_list(p_patch(jg), ext_data(jg)%atm, &
         &                        ext_data(jg)%atm_list, TRIM(listname))
-    END DO
 
-    ! Build external data list for time-dependent fields
-    IF (iforcing > 1 ) THEN ! further distinction is made inside
-      DO jg = 1, n_dom
+
+      ! Build external data list for time-dependent fields
+      IF (iforcing > 1 ) THEN ! further distinction is made inside
         !$ACC ENTER DATA COPYIN(ext_data(jg)%atm_td)
         WRITE(listname,'(a,i2.2)') 'ext_data_atm_td_D',jg
         CALL new_ext_data_atm_td_list(p_patch(jg), ext_data(jg)%atm_td,       &
           &                           ext_data(jg)%atm_td_list, TRIM(listname))
-      END DO
-    END IF
+      END IF
+    END DO
 
-    CALL message (TRIM(routine), 'Construction of data structure for ' // &
-      &                          'external data finished')
+    CALL message (routine, 'Construction of data structure for ' // &
+      &                    'external data finished')
 
   END SUBROUTINE construct_ext_data
+
 
   !-------------------------------------------------------------------------
   !
@@ -160,13 +149,14 @@ CONTAINS
   SUBROUTINE new_ext_data_atm_list ( p_patch, p_ext_atm, p_ext_atm_list, &
     &                                listname)
 !
-    TYPE(t_patch), TARGET , INTENT(IN)   :: & !< current patch
+    TYPE(t_patch),          INTENT(IN)   :: & !< current patch
       &  p_patch
 
     TYPE(t_external_atmos), INTENT(INOUT):: & !< current external data structure
       &  p_ext_atm
 
-    TYPE(t_var_list_ptr)      , INTENT(INOUT):: p_ext_atm_list !< current external data list
+    TYPE(t_var_list_ptr),   INTENT(INOUT):: & !< current external data list
+      &  p_ext_atm_list
 
     CHARACTER(len=*)      , INTENT(IN)   :: & !< list name
       &  listname
@@ -193,6 +183,8 @@ CONTAINS
     CHARACTER(len=max_char_length), PARAMETER :: &
       routine = modname//':new_ext_data_atm_list'
 
+    INTEGER, POINTER :: nhori     => NULL()
+    INTEGER, POINTER :: nclass_lu => NULL()
     !--------------------------------------------------------------
 
     !determine size of arrays
@@ -211,11 +203,14 @@ CONTAINS
       datatype_flt = DATATYPE_FLT32
     ENDIF
 
+    nhori     => ext_atm_attr(jg)%nhori
+    nclass_lu => ext_atm_attr(jg)%nclass_lu
+
     ! predefined array shapes
     shape2d_c  = (/ nproma, nblks_c /)
     shape3d_c  = (/ nproma, nlev, nblks_c       /)
     shape3d_sfc_sec= (/ nproma, nblks_c, nhori  /)
-    shape3d_sfc= (/ nproma, nblks_c, nclass_lu(jg) /)
+    shape3d_sfc= (/ nproma, nblks_c, nclass_lu  /)
     shape3d_nt = (/ nproma, nblks_c, ntiles_total     /)
     shape3d_ntw = (/ nproma, nblks_c, ntiles_total + ntiles_water /)
 
@@ -1064,7 +1059,7 @@ CONTAINS
       CALL add_var( p_ext_atm_list, 'sai_t', p_ext_atm%sai_t,     &
         &           GRID_UNSTRUCTURED_CELL, ZA_SURFACE, cf_desc,  &
         &           grib2_desc, ldims=shape3d_ntw, loutput=.FALSE., &
-        &           lopenacc=.TRUE. )
+        &           initval=1._wp, lopenacc=.TRUE. ) !Attention(MR): initialization with general default value
       __acc_attach(p_ext_atm%sai_t)
 
       ! Transpiration area index (aggregated)
@@ -1332,7 +1327,7 @@ CONTAINS
         &           ldims=shape2d_c, loutput=.TRUE.,                                   &
         &           hor_interp=create_hor_interp_metadata(hor_intp_type=HINTP_TYPE_LONLAT_NNB),&
         &           var_class=CLASS_TILE,                                              &
-        &           post_op=post_op(POST_OP_LUC, new_cf=cf_desc, arg1=i_lctype(jg)) )
+        &           post_op=post_op(POST_OP_LUC, new_cf=cf_desc, arg1=ext_atm_attr(jg)%i_lctype) )
       ENDDO
 
 
@@ -1384,16 +1379,16 @@ CONTAINS
 
 
       ! Storage for table values - not sure if these dimensions are supported by add_var
-      ALLOCATE(p_ext_atm%z0_lcc(nclass_lu(jg)),         & ! Land-cover related roughness length
-                p_ext_atm%z0_lcc_min(nclass_lu(jg)),    & ! Minimum land-cover related roughness length
-                p_ext_atm%plcovmax_lcc(nclass_lu(jg)),  & ! Maximum plant cover fraction for each land-cover class
-                p_ext_atm%laimax_lcc(nclass_lu(jg)),    & ! Maximum leaf area index for each land-cover class
-                p_ext_atm%rootdmax_lcc(nclass_lu(jg)),  & ! Maximum root depth each land-cover class
-                p_ext_atm%skinc_lcc(nclass_lu(jg)),     & ! Skin conductivity for each land use class
-                p_ext_atm%ahf_lcc(nclass_lu(jg)),       & ! Anthropogenic heat flux for each land use class
-                p_ext_atm%stomresmin_lcc(nclass_lu(jg)),& ! Minimum stomata resistance for each land-cover class
-                p_ext_atm%snowalb_lcc(nclass_lu(jg)),   & ! Albedo in case of snow cover for each land-cover class
-                p_ext_atm%snowtile_lcc(nclass_lu(jg))   ) ! Specification of snow tiles for land-cover class
+      ALLOCATE(p_ext_atm%z0_lcc(nclass_lu),         & ! Land-cover related roughness length
+                p_ext_atm%z0_lcc_min(nclass_lu),    & ! Minimum land-cover related roughness length
+                p_ext_atm%plcovmax_lcc(nclass_lu),  & ! Maximum plant cover fraction for each land-cover class
+                p_ext_atm%laimax_lcc(nclass_lu),    & ! Maximum leaf area index for each land-cover class
+                p_ext_atm%rootdmax_lcc(nclass_lu),  & ! Maximum root depth each land-cover class
+                p_ext_atm%skinc_lcc(nclass_lu),     & ! Skin conductivity for each land use class
+                p_ext_atm%ahf_lcc(nclass_lu),       & ! Anthropogenic heat flux for each land use class
+                p_ext_atm%stomresmin_lcc(nclass_lu),& ! Minimum stomata resistance for each land-cover class
+                p_ext_atm%snowalb_lcc(nclass_lu),   & ! Albedo in case of snow cover for each land-cover class
+                p_ext_atm%snowtile_lcc(nclass_lu)   ) ! Specification of snow tiles for land-cover class
       !$ACC ENTER DATA CREATE(p_ext_atm%z0_lcc, p_ext_atm%z0_lcc_min, p_ext_atm%plcovmax_lcc) &
       !$ACC   CREATE(p_ext_atm%laimax_lcc, p_ext_atm%rootdmax_lcc, p_ext_atm%stomresmin_lcc) &
       !$ACC   CREATE(p_ext_atm%snowalb_lcc, p_ext_atm%snowtile_lcc)
@@ -1609,16 +1604,16 @@ CONTAINS
   SUBROUTINE new_ext_data_atm_td_list ( p_patch, p_ext_atm_td, &
     &                               p_ext_atm_td_list, listname)
 !
-    TYPE(t_patch), TARGET    , INTENT(IN)   :: & !< current patch
+    TYPE(t_patch),             INTENT(IN)   :: & !< current patch
       &  p_patch
 
     TYPE(t_external_atmos_td), INTENT(INOUT):: & !< current external data structure
       &  p_ext_atm_td
 
-    TYPE(t_var_list_ptr)         , INTENT(INOUT):: & !< current external data list
+    TYPE(t_var_list_ptr),      INTENT(INOUT):: & !< current external data list
       &  p_ext_atm_td_list
 
-    CHARACTER(len=*)         , INTENT(IN)   :: & !< list name
+    CHARACTER(len=*),          INTENT(IN)   :: & !< list name
       &  listname
 
     TYPE(t_cf_var)    :: cf_desc
@@ -1633,6 +1628,11 @@ CONTAINS
 
     INTEGER :: ibits         !< "entropy" of horizontal slice
     INTEGER :: datatype_flt  !< floating point accuracy in NetCDF output
+
+    INTEGER, POINTER :: nmonths_ext => NULL()
+    INTEGER, POINTER :: nmonths     => NULL()
+    INTEGER, POINTER :: nlev_o3     => NULL()
+
 
     CHARACTER(len=max_char_length), PARAMETER :: &
       routine = modname//':new_ext_data_atm_td_list'
@@ -1652,9 +1652,14 @@ CONTAINS
       datatype_flt = DATATYPE_FLT32
     ENDIF
 
+    nmonths_ext => ext_atm_attr(jg)%nmonths_ext
+    nlev_o3     => ext_o3_attr(jg)%nlev_o3
+    nmonths     => ext_o3_attr(jg)%nmonths
+
     ! predefined array shapes
-    shape3d_c   = (/ nproma, nblks_c, nmonths_ext(jg)  /)
+    shape3d_c   = (/ nproma, nblks_c, nmonths_ext      /)
     shape4d_c   = (/ nproma, nlev_o3, nblks_c, nmonths /)
+
 
     IF (iforcing == inwp) THEN
       SELECT CASE (sstice_mode)
@@ -1665,11 +1670,11 @@ CONTAINS
         CASE(SSTICE_AVG_MONTHLY)
           shape3d_sstice = (/ nproma, nblks_c,  2 /)
         CASE(SSTICE_AVG_DAILY)
-          CALL finish (TRIM(routine), 'sstice_mode=5  not implemented!')
+          CALL finish (routine, 'sstice_mode=5  not implemented!')
         CASE(SSTICE_INST)
           shape3d_sstice = (/ nproma, nblks_c,  2 /)
         CASE DEFAULT
-          CALL finish (TRIM(routine), 'sstice_mode not valid!')
+          CALL finish (routine, 'sstice_mode not valid!')
       END SELECT
     END IF
 
@@ -1720,7 +1725,7 @@ CONTAINS
         &           grib2_desc, ldims=(/nlev_o3+1/), loutput=.FALSE.  )
 
       ! o3       p_ext_atm_td%o3(nproma,nlev_o3,nblks_c,nmonths)
-      cf_desc    = t_cf_var('O3', TRIM(o3unit),   &
+      cf_desc    = t_cf_var('O3', ext_o3_attr(jg)%o3unit,   &
         &                   'mole_fraction_of_ozone_in_air', datatype_flt)
       grib2_desc = grib2_var(255, 255, 255, ibits, GRID_UNSTRUCTURED, GRID_CELL)
       CALL add_var( p_ext_atm_td_list, 'O3', p_ext_atm_td%O3, &
@@ -1952,8 +1957,8 @@ CONTAINS
       routine = modname//':destruct_ext_data'
     !-------------------------------------------------------------------------
 
-    CALL message (TRIM(routine), 'Destruction of data structure for ' // &
-      &                          'external data started')
+    CALL message (routine, 'Destruction of data structure for ' // &
+      &                    'external data started')
 
     DO jg = 1,n_dom
       ! Delete list of constant in time atmospheric elements
@@ -1992,8 +1997,8 @@ CONTAINS
       CALL finish(routine, 'deallocation of ext_data')
     ENDIF
 
-    CALL message (TRIM(routine), 'Destruction of data structure for ' // &
-      &                          'external data finished')
+    CALL message (routine, 'Destruction of data structure for ' // &
+      &                    'external data finished')
 
   END SUBROUTINE destruct_ext_data
   !-------------------------------------------------------------------------

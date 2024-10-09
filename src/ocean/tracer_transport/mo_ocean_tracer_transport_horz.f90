@@ -1,7 +1,3 @@
-! Contains the implementation of the horizontal tracer transport routines for the ICON ocean model.
-! This comprises horizontal advection and diffusion
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the horizontal tracer transport routines for the ICON ocean model.
+! This comprises horizontal advection and diffusion
 
 !----------------------------
 #include "omp_definitions.inc"

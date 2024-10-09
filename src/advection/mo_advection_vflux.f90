@@ -1,3 +1,14 @@
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Computation of vertical tracer flux
 !
 ! Vertical fluxes are calculated at triangle centers on half-levels.
@@ -10,18 +21,6 @@
 !
 ! These routines compute only the correct half level value of
 ! 'c*w'. The vertical divergence is computed in step_advection.
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -51,6 +50,9 @@ MODULE mo_advection_vflux
   USE mo_mpi,                 ONLY: process_mpi_stdio_id, my_process_is_stdio, get_my_mpi_work_id, &
                                     get_glob_proc0, comm_lev
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
+#ifdef _OPENACC
+  USE mo_mpi,                 ONLY: i_am_accel_node
+#endif
   USE mo_timer,               ONLY: timer_adv_vflx, timer_start, timer_stop
 
 
@@ -64,6 +66,10 @@ MODULE mo_advection_vflux
   PUBLIC :: upwind_vflux_ppm
   PUBLIC :: upwind_vflux_ppm4gpu
   PUBLIC :: implicit_sedim_tracer
+
+#ifndef _OPENACC
+  LOGICAL :: i_am_accel_node=.FALSE.
+#endif
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_advection_vflux'
 
@@ -101,7 +107,7 @@ CONTAINS
     REAL(wp), INTENT(IN) ::  &      !< advected cell centered variable
       &  p_cc(:,:,:,:)              !< dim: (nproma,nlev,nblks_c,ntracer)
 
-    REAL(wp), INTENT(INOUT) ::  &   !< contravariant vertical mass flux
+    REAL(wp), INTENT(IN) ::  &      !< contravariant vertical mass flux
       &  p_mflx_contra_v(:,:,:)     !< dim: (nproma,nlevp1,nblks_c)
 
     REAL(wp), INTENT(IN) :: p_dtime !< time step
@@ -445,7 +451,7 @@ CONTAINS
     INTEGER, INTENT(IN)  ::  &    !< selects upper boundary condition
       &  p_iubc_adv
 
-    REAL(wp), INTENT(INOUT) ::  & !< contravariant vertical mass flux
+    REAL(wp), INTENT(IN) ::  &    !< contravariant vertical mass flux
       &  p_mflx_contra_v(:,:,:)   !< dim: (nproma,nlevp1,nblks_c)
 
     REAL(wp), INTENT(IN) ::  &    !< time step
@@ -711,17 +717,6 @@ CONTAINS
 
     CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,       &
       &                 i_startidx, i_endidx, i_rlstart, i_rlend )
-
-
-    ! The contravariant mass flux should never exactly vanish
-    !
-    IF (l_out_edgeval) THEN
-      DO jk = slevp1, elev
-        p_mflx_contra_v(i_startidx:i_endidx,jk,jb) =                            &
-        &              p_mflx_contra_v(i_startidx:i_endidx,jk,jb)               &
-        &              + SIGN(dbl_eps,p_mflx_contra_v(i_startidx:i_endidx,jk,jb))
-      ENDDO
-    ENDIF
 
     !
     ! 1. Compute density weighted (fractional) Courant number 
@@ -1077,7 +1072,8 @@ CONTAINS
 
         DO jk = slevp1, nlev
           DO jc = i_startidx, i_endidx
-            p_upflux(jc,jk,jb) = p_upflux(jc,jk,jb)/p_mflx_contra_v(jc,jk,jb)
+            p_upflux(jc,jk,jb) = p_upflux(jc,jk,jb) / SIGN( MAX(ABS(p_mflx_contra_v(jc,jk,jb)),dbl_eps), &
+                                                            p_mflx_contra_v(jc,jk,jb)                    )
           ENDDO
         ENDDO
 
@@ -1194,7 +1190,7 @@ CONTAINS
     INTEGER, INTENT(IN)  ::   &   !< selects upper boundary condition
       &  p_iubc_adv
 
-    REAL(wp), INTENT(INOUT) ::  & !< contravariant vertical mass flux [kg/m**2/s]
+    REAL(wp), INTENT(IN) ::  &    !< contravariant vertical mass flux [kg/m**2/s]
       &  p_mflx_contra_v(:,:,:)   !< dim: (nproma,nlevp1,nblks_c)
 
     REAL(wp), INTENT(IN) ::  &    !< time step [s]
@@ -1431,22 +1427,6 @@ CONTAINS
 
       CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,       &
         &                 i_startidx, i_endidx, i_rlstart, i_rlend )
-
-
-      ! The contravariant mass flux should never exactly vanish
-      !
-      IF (l_out_edgeval) THEN
-        !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2)
-        DO jk = slevp1, elev
-          DO jc = i_startidx, i_endidx
-            p_mflx_contra_v(jc,jk,jb) =                            &
-          &              p_mflx_contra_v(jc,jk,jb)               &
-          &              + SIGN(dbl_eps,p_mflx_contra_v(jc,jk,jb))
-          ENDDO
-        ENDDO
-        !$ACC END PARALLEL
-      ENDIF
 
       !
       ! 1. Compute density weighted Courant number for w<0 and w>0. 
@@ -1780,7 +1760,8 @@ CONTAINS
         !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = slevp1, nlev
           DO jc = i_startidx, i_endidx
-            p_upflux(jc,jk,jb) = p_upflux(jc,jk,jb)/p_mflx_contra_v(jc,jk,jb)
+            p_upflux(jc,jk,jb) = p_upflux(jc,jk,jb) / SIGN( MAX(ABS(p_mflx_contra_v(jc,jk,jb)),dbl_eps), &
+                                                            p_mflx_contra_v(jc,jk,jb)                    )
           ENDDO
         ENDDO
         !$ACC END PARALLEL

@@ -1,3 +1,12 @@
+"""
+CLI for running ensembles
+
+This module provides a command-line interface (CLI) for running ensemble
+simulations with perturbed configurations.
+It allows users to execute a series of simulation runs by modifying the run
+scripts with specified perturbations and managing job submissions.
+"""
+
 import os
 import re
 import subprocess
@@ -8,7 +17,7 @@ import click
 
 from util.click_util import CommaSeperatedInts, CommaSeperatedStrings, cli_help
 from util.log_handler import logger
-from util.utils import get_seed_from_member_num
+from util.utils import get_seed_from_member_num, process_member_num
 
 
 def is_float(string):
@@ -42,8 +51,8 @@ def replace_assignment(line, left, right_new, right_old, seed):
 
     right_new = right_new.format(seed=seed)
 
-    out_line = "{}={}\n".format(left, right_new)
-    logger.info("generating new line: {}".format(out_line.replace("\n", "")))
+    out_line = f"{left}={right_new}\n"
+    logger.info("generating new line: %s", out_line.replace("\n", ""))
     return out_line
 
 
@@ -63,53 +72,50 @@ def prepare_perturbed_run_script(
     rhs_old,
     seed,
 ):
-    in_file = open(runscript, "r")
-    out_file = open(perturbed_runscript, "w")
+    with open(runscript, "r", encoding="utf-8") as in_file:
+        with open(perturbed_runscript, "w", encoding="utf-8") as out_file:
 
-    if rhs_old is None:
-        rhs_old = [None] * len(rhs_new)
-    if 1 == len(rhs_old) < len(rhs_new) and rhs_old[0] == "None":
-        rhs_old = [None] * len(rhs_new)
-    rhs_old = [None if r == "None" else r for r in rhs_old]
+            if rhs_old is None:
+                rhs_old = [None] * len(rhs_new)
+            if 1 == len(rhs_old) < len(rhs_new) and rhs_old[0] == "None":
+                rhs_old = [None] * len(rhs_new)
+            rhs_old = [None if r == "None" else r for r in rhs_old]
 
-    # only modify namelist if lhs,rhs_old or rhs_new are not equal None
-    if any(
-        any(item is not None for item in entry) for entry in [lhs, rhs_old, rhs_new]
-    ):
-        for line in in_file:
-            out_line = line
-            # replace input directory with the ones given in config file
-            for lh, rh_old, rh_new in zip(lhs, rhs_old, rhs_new):
-                out_line = replace_assignment(line, lh, rh_new, rh_old, seed)
-                # replace first match
-                if out_line != line:
-                    break
+            # only modify namelist if lhs,rhs_old or rhs_new are not equal None
+            if any(
+                any(item is not None for item in entry)
+                for entry in [lhs, rhs_old, rhs_new]
+            ):
+                for line in in_file:
+                    out_line = line
+                    # replace input directory with the ones given in config file
+                    for lh, rh_old, rh_new in zip(lhs, rhs_old, rhs_new):
+                        out_line = replace_assignment(line, lh, rh_new, rh_old, seed)
+                        # replace first match
+                        if out_line != line:
+                            break
 
-            # rename the experiment name
-            if line == out_line:
-                out_line = replace_string(
-                    line, experiment_name, modified_experiment_name
-                )
+                    # rename the experiment name
+                    if line == out_line:
+                        out_line = replace_string(
+                            line, experiment_name, modified_experiment_name
+                        )
 
-            out_file.write(out_line)
-    else:
-        out_file.write(in_file.read())
+                    out_file.write(out_line)
+            else:
+                out_file.write(in_file.read())
 
-    logger.info("writing model run script to: {}".format(perturbed_runscript))
-    out_file.close()
-    in_file.close()
-
-    return
+            logger.info("writing model run script to: %s", perturbed_runscript)
 
 
 def append_job(job, job_list, parallel):
-    p = subprocess.Popen(job)
-    if not parallel:
-        p.communicate()
-        time.sleep(5)
-        test_job_returncode(p)
-    else:
-        job_list.append(p)
+    with subprocess.Popen(job) as p:
+        if not parallel:
+            p.communicate()
+            time.sleep(5)
+            test_job_returncode(p)
+        else:
+            job_list.append(p)
 
 
 def finalize_jobs(job_list, dry, parallel):
@@ -225,21 +231,21 @@ def run_ensemble(
         append_job(job, job_list, parallel)
 
     # run the ensemble
-    if len(member_num) == 1:
-        member_num = [i for i in range(1, member_num[0] + 1)]
-    for m_num in member_num:
-        m_id = str(m_num)
+    processed_member_num = process_member_num(member_num)
+
+    for m_num, m_id in processed_member_num:
+
         Path(perturbed_run_dir.format(member_id=m_id)).mkdir(
             exist_ok=True, parents=True
         )
         os.chdir(perturbed_run_dir.format(member_id=m_id))
         if member_type:
             m_id = member_type + "_" + m_id
-        runscript = "{}/{}".format(run_dir, run_script_name)
-        perturbed_runscript = "{}/{}".format(
-            perturbed_run_dir.format(member_id=m_id),
-            perturbed_run_script_name.format(member_id=m_id),
-        )
+        runscript = f"{run_dir}/{run_script_name}"
+
+        perturbed_run_dir_path = perturbed_run_dir.format(member_id=m_id)
+        perturbed_run_script_path = perturbed_run_script_name.format(member_id=m_id)
+        perturbed_runscript = f"{perturbed_run_dir_path}/{perturbed_run_script_path}"
 
         prepare_perturbed_run_script(
             runscript,
@@ -254,7 +260,7 @@ def run_ensemble(
 
         if not dry:
             job = submit_command.split() + [perturbed_runscript]
-            logger.info("running the model with '{}'".format(" ".join(job)))
+            logger.info("running the model with '%s'", " ".join(job))
             append_job(job, job_list, parallel)
 
     finalize_jobs(job_list, dry, parallel)

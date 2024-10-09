@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -118,6 +117,10 @@ MODULE mo_aes_convect_tables
   !
   REAL(wp), PARAMETER :: tlbound =  50.0_wp  ! lower bound [K]
   REAL(wp), PARAMETER :: tubound = 400.0_wp  ! upper bound [K]
+
+  !> Maximum temperature when the upper bound has been extended [K].
+  REAL(wp), PARAMETER :: tmax_extended = 3000._wp
+
   !
   !-- full table:
   !
@@ -924,7 +927,8 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
     &                                      temp, idx, zalpha,                         &
     &                                      xi, nphase, zphase, iphase,                &
     &                                      kblock, kblock_size, opt_need_host_nphase, &
-    &                                      opt_sanitize_index, csecfrl, cthomi)
+    &                                      opt_sanitize_index, csecfrl, cthomi,       &
+    &                                      extend_upper_limit)
     CHARACTER(len=*),   INTENT(in)    :: name
     INTEGER,            INTENT(in)    :: jcs, jce, batch_size ! start and end index of block
     REAL(wp),           INTENT(in)    :: temp(:,:)
@@ -943,7 +947,11 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
     REAL(wp), INTENT(IN) :: csecfrl ! [kg/kg]  minimum in-cloud water mass mixing ratio in mixed phase clouds
     REAL(wp), INTENT(IN) :: cthomi ! [K]      maximum temperature for homogeneous freezing
 
+    !> Extend upper temperature limit beyond table bounds.
+    LOGICAL, OPTIONAL, INTENT(IN) :: extend_upper_limit
+
     LOGICAL :: sanitize_index
+    LOGICAL :: lextend_upper_limit
 
     REAL(wp) :: ztt, ztshft, ztmin,ztmax,znphase(batch_size),ztest,myznphase
     INTEGER :: jl, jgang, jvec, batch, zoutofbounds, myzoutofbounds
@@ -959,11 +967,10 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
     ztmax = flucupmax
 
     sanitize_index = .FALSE.
-    IF (PRESENT(opt_sanitize_index)) THEN
-      IF (opt_sanitize_index) THEN
-        sanitize_index = .TRUE.
-      END IF
-    END IF
+    IF (PRESENT(opt_sanitize_index)) sanitize_index = opt_sanitize_index
+
+    lextend_upper_limit = .FALSE.
+    IF (PRESENT(extend_upper_limit)) lextend_upper_limit = extend_upper_limit
 
     IF (PRESENT(xi)) THEN
       !$ACC DATA PRESENT(xi, zphase, iphase, nphase) &
@@ -989,6 +996,9 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
 
             ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
             ztt = rsdeltat*temp(jl,batch)
+            IF (lextend_upper_limit .AND. ztt >= ztmax .AND. ztt < rsdeltat * tmax_extended) &
+                & ztt = ztmax - 1e-6_wp
+
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
             IF ( ztt <= ztmin .OR. ztt >= ztmax ) myzoutofbounds = myzoutofbounds + 1
@@ -1042,6 +1052,9 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
           DO jl = jcs, jce
             ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
             ztt = rsdeltat*temp(jl,batch)
+            IF (lextend_upper_limit .AND. ztt >= ztmax .AND. ztt < rsdeltat * tmax_extended) &
+                & ztt = ztmax - 1e-6_wp
+
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
             IF ( ztt <= ztmin .OR. ztt >= ztmax ) zoutofbounds = zoutofbounds + 1
@@ -1053,6 +1066,9 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
           DO jl = jcs, jce
             ztshft = FSEL(tmelt-temp(jl,batch),1.0_wp,0.0_wp)
             ztt = rsdeltat*temp(jl,batch)
+            IF (lextend_upper_limit .AND. ztt >= ztmax .AND. ztt < rsdeltat * tmax_extended) &
+                & ztt = ztmax - 1e-6_wp
+
             zalpha(jl,batch) = ztt - AINT(ztt)
             idx(jl,batch) = INT(ztt-ztshft)
           END DO
@@ -1070,7 +1086,9 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
         DO batch = 1,batch_size
           DO jl = jcs, jce
             ztt = rsdeltat*temp(jl,batch)
-            IF ( ztt <= ztmin .OR. ztt >= ztmax ) THEN
+            IF (ztt <= ztmin &
+                & .OR. (.NOT. lextend_upper_limit .AND. ztt >= ztmax) &
+                & .OR. (lextend_upper_limit .AND. ztt >= rsdeltat * tmax_extended)) THEN
               WRITE ( 0 , '(a,a,a,a,i5,a,i8,a,f8.2,a,f8.2,a,f8.2)' )                               &
                  & ' Lookup table problem in ', TRIM(name), ' at ',                                &
                  & ' level   =',batch,                                                             &
@@ -1334,4 +1352,3 @@ SUBROUTINE prepare_ua_index_spline(jg, name, jcs, size, temp, idx, zalpha, &
   END SUBROUTINE lookuperror
   !----------------------------------------------------------------------------
 END MODULE mo_aes_convect_tables
-

@@ -1,6 +1,3 @@
-! Contains the implementation of velocity and tracer diffusion for the ICON ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of velocity and tracer diffusion for the ICON ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"

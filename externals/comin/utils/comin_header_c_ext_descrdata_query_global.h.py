@@ -1,5 +1,5 @@
 from templates import gen_c, gen_c_properties
-from structs import glob
+from fortran_parse_type import find_type
 
 print("""/* @authors 11/2023 :: ICON Community Interface  <comin@icon-model.org>
 
@@ -14,6 +14,7 @@ print("""/* @authors 11/2023 :: ICON Community Interface  <comin@icon-model.org>
 extern "C"{
 #endif""")
 
+glob = find_type("../src/comin_descrdata_types.F90", "t_comin_descrdata_global")
 
 gen_c("global", glob, False)
 gen_c_properties("global", glob, False)

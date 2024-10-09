@@ -1,0 +1,38 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+tests:
+  - name: atm_heldsuarez_test
+    check: checksuite.icon-dev/check.atm_heldsuarez
+    machines:
+      - name: daint
+    tags: ['merge2rc']
+    checksuite_modes:
+      - daint: 'rnmo'
+
+  - name: exclaim_ape_R02B04
+    check: checksuite.icon-dev/check.exclaim_ape_R02B04
+    machines:
+      - name: daint
+        exclude: ['DAINT_CPU_cce']
+    refgen: ['DAINT_CPU_nvidia']
+    tags: ['merge2rc','probtest']
+    ensemble_num:
+      - DAINT_CPU_nvidia: [25,12,13,20,19]
+    checksuite_modes:
+      - daint: 't'
+
+  - name: atm_tracer_Hadley
+    machines:
+      - name: daint
+        include_only: ['DAINT_CPU_nvidia']
+    tags: ['merge2rc']
+    checksuite_modes:
+      - daint: 'b'

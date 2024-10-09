@@ -264,8 +264,8 @@ CONTAINS
   !> Implementation of "update" for task "pplcc_post_lcc"
   !>
   !> Task "pplcc_post_lcc" does a postprocessing after all lcc processes were executed
-  !> -- for now: convert all cq vars back to their initial reference area.
-  !> -- and if the carbon process is active: recalculate ta variables
+  !> -- for now: convert all variables of conserved quantities (cq) back to their initial reference area.
+  !> -- and if the carbon process is active: recalculate the tile average (ta) variables.
   !
   SUBROUTINE update_pplcc_post_lcc(tile, options)
 
@@ -299,14 +299,15 @@ CONTAINS
 
     model => Get_model(tile%owner_model_id)
 
-    ! If process is not to be calculated on this tile, do nothing
-    IF (.NOT. tile%Is_process_calculated(PPLCC_)) RETURN
-
     ! If not newday, do nothing
     IF (.NOT. is_newday(options%current_datetime,dtime)) RETURN
 
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
 
+    ! PPLCC fraction diagnostics are calculated on the box tile, although the PPLCC process is calculated
+    ! on leafs (compare usecase definition). We only enter this routine on the box tile, because
+    ! update_pplcc_post_lcc is not only defined as Integrate but also as Aggregate procedure and thus is
+    ! called from the box tile on the way up the tile tree.
     IF (.NOT. ASSOCIATED(tile%parent)) CALL pplcc_fraction_diagnostics(tile, options)
 
     ! If process is not calculated on this tile, conversions are not necessary
@@ -431,7 +432,7 @@ CONTAINS
     model => Get_model(tile%owner_model_id)
 
     ! The fraction variables are defined as fractions relative to the grid cell fraction. Thus
-    ! only calculations on the box tile make sense
+    ! only calculations on the box tile make sense.
     IF (ASSOCIATED(tile%parent)) CALL finish(TRIM(routine), 'Should only be called for the root tile')
 
     ! Get required variables on this tile

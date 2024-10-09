@@ -1,6 +1,6 @@
 #! /bin/bash
 #SBATCH --job-name='exp.NextGEMS_R2B4_jsc.run'
-#SBATCH --output=LOG.exp.NextGEMS_R2B4_jsc.run.o
+#SBATCH --output=LOG.exp.NextGEMS_R2B4_jsc.run.run.o
 #SBATCH --partition=develbooster
 #SBATCH --constraint=gpu
 #SBATCH --gres=gpu:4
@@ -137,7 +137,7 @@ author_list='Monika Esch, MPIM'
 # nproma_sub             = radiation blocking length
 #                          which is set in run/create_target_header for the used machine
 #
-icon_data_poolFolder="/p/fastdata/slmet/slmet111/model_data/ICON"
+icon_data_poolFolder="/p/data1/slmet/model_data/ICON"
 
 
 #--------------------------------------------------------------------------------------------------
@@ -422,6 +422,7 @@ cat > ${jsbach_namelist} << EOF
 /
 &jsb_hydro_nml
  l_socmap            = .FALSE.
+ l_organic           = .FALSE.
  bc_filename         = 'bc_land_soil.nc'
  ic_filename         = 'ic_land_soil.nc'
  bc_sso_filename     = 'bc_land_sso.nc'

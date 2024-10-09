@@ -1,9 +1,3 @@
-!
-!  Namelist for SPPT (Stochastic Pertubation of Physics Tendencies)
-!
-!  these Subroutines are called by control model and construct the
-!  SPPT scheme
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for SPPT (Stochastic Pertubation of Physics Tendencies)
+!
+! these Subroutines are called by control model and construct the
+! SPPT scheme
 
 MODULE mo_sppt_nml
 

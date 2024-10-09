@@ -1,3 +1,7 @@
+// Copyright (c) 2013-2024 MPI-M, Luis Kornblueh, Rahul Sinha and DWD, Florian Prill. All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+//
 /*
  * strings to parse:
  *
@@ -31,7 +35,7 @@
  * @brief Split ISO 8601:2004 repeated time interval strings into base components
  *
  * @param[in] recurringTimeInterval
- *         A pointer to char. The string should contain an  ISO 8601:2004 repeated time 
+ *         A pointer to char. The string should contain an  ISO 8601:2004 repeated time
  *         interval string.
  *	   A string literal can be accepted.
  * @param[out] repetitor
@@ -47,50 +51,47 @@
  *
  */
 
-void 
-splitRepetitionString(const char *recurringTimeInterval,
-		      char *repetitor, char *start, char *end, char *duration)
+void
+splitRepetitionString(const char *recurringTimeInterval, char *repetitor, char *start, char *end, char *duration)
 {
   char *separator = "/";
   char *copy = NULL;
   char *token;
   char *brkb;
-  
+
   bool dflag = false;
-  
+
   *repetitor = '\0';
   *start = '\0';
   *end = '\0';
   *duration = '\0';
-  
+
   // eventually remove spaces with copy
 
-  copy = (char *) realloc(copy, (strlen(recurringTimeInterval)+1)*sizeof(char));
+  copy = (char *) realloc(copy, (strlen(recurringTimeInterval) + 1) * sizeof(char));
   strcpy(copy, recurringTimeInterval);
 
   token = strtok_r(copy, separator, &brkb);
   while (token != NULL)
     {
-      switch (*token) 
-	{
-	case 'R':
-	  strcpy(repetitor, token);
-	  break;
-	case 'P':
-	  dflag = true;
-	  strcpy(duration, token);
-	  break;
-	default:
-	  if (dflag)
-	    {
-	      strcpy(end, token);
-	    }
-	  else
-	    {
-	      dflag = true;
-	      strcpy(start, token);
-	    }
-	}
+      switch (*token)
+        {
+        case 'R': strcpy(repetitor, token); break;
+        case 'P':
+          dflag = true;
+          strcpy(duration, token);
+          break;
+        default:
+          if (dflag)
+            {
+              strcpy(end, token);
+            }
+          else
+            {
+              dflag = true;
+              strcpy(start, token);
+            }
+        }
       token = strtok_r(NULL, separator, &brkb);
     }
 
@@ -102,7 +103,7 @@ splitRepetitionString(const char *recurringTimeInterval,
 /**
  * @brief Extract number of repetitions from repetition string part.
  *
- * @param[in] repetitionString 
+ * @param[in] repetitionString
  *         A pointer to char. A repetition string starting with 'R'.
  *	   A string literal can be accepted.
  *
@@ -110,13 +111,14 @@ splitRepetitionString(const char *recurringTimeInterval,
  *         An int representing the number of repetitions.
  */
 
-int getRepetitions (const char *repetitionString)
+int
+getRepetitions(const char *repetitionString)
 {
-  const char *number = repetitionString+1;
+  const char *number = repetitionString + 1;
   char *ptr;
 
   int r = _MTIME_INDEFINETLY;
-  
+
   r = (int) strtol(number, &ptr, 10);
 
   if ((r == 0) && (errno == EINVAL))

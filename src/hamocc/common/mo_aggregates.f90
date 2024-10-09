@@ -1,5 +1,3 @@
-!! mm: modularized aggregation scheme following Maerz et al. (2020)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! mm: modularized aggregation scheme following Maerz et al. (2020)
 
 MODULE mo_aggregates
 

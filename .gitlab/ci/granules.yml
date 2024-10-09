@@ -17,9 +17,10 @@ include:
     file: ".slurm-ci.yml"
 
 .common:
+  extends: .default
   variables:
     GIT_SUBMODULE_STRATEGY: normal
-    GIT_SUBMODULE_PATHS: externals/probtest externals/fortran-support
+    GIT_SUBMODULE_PATHS: externals/fortran-support externals/math-support externals/probtest
     GIT_SUBMODULE_UPDATE_FLAGS: --jobs=4
     GIT_CONFIG_COUNT: 1
     GIT_CONFIG_KEY_0: url.https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/.insteadOf

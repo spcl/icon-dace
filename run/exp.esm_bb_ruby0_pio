@@ -583,7 +583,7 @@ cat > ${jsbach_namelist} << EOF
   bc_filename          = 'bc_land_hd.nc'
   diag_water_budget    = .TRUE.
   debug_hd             = .FALSE.
-  enforce_water_budget = .FALSE.         ! TRUE: stop in case of water conservation problem
+  enforce_water_budget = 'ignore'        ! Error: stop in case of water conservation problem
 /
 EOF
 
@@ -625,7 +625,7 @@ add_link_file ${datadir}/ifs2icon_1979010100_${atmos_refinement}_G.nc   ./ifs2ic
 #
 # - well mixed greenhouse gases: 1% per year increase of co2 starting 1850
 #
-datadir=${icon_data_poolFolder}/independent/greenhouse_gases
+datadir=${icon_data_poolFolder}/common/greenhouse_gases
 add_link_file $datadir/greenhouse_1pctCO2.nc                            ./bc_greenhouse_gases.nc
 #
 # - ozone
@@ -660,7 +660,7 @@ add_link_file ${datadir}/bc_sst_1979_2016.nc                            ./bc_sst
 # isolrad=6: use cmip6 constant value
 #
 # isolrad=1: read ssi and tsi from file
-#datadir=${icon_data_poolFolder}/independent/solar_radiation/3.2
+#datadir=${icon_data_poolFolder}/common/solar_radiation
 #add_link_file ${datadir}/swflux_14band_cmip6_1850-2299-v3.2.nc          ./bc_solar_irradiance_sw_b14.nc
 #
 # - land parameters

@@ -1,7 +1,3 @@
-! Contains utilities for diagnose mean sea level pressure.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains utilities for diagnose mean sea level pressure.
 
 !----------------------------
 #include "omp_definitions.inc"

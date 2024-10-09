@@ -1,10 +1,3 @@
-#ifdef __PGI
-!pgi$g opt=1
-#endif
-! This module provides all routines for dividing patches
-! (including interpolation state) and setting up communication.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides all routines for dividing patches
+! (including interpolation state) and setting up communication.
 !
 ! Much of the code in this module is duplicated due to different
 ! synchronization MPI RMA methods, which perform differently on
@@ -29,6 +25,11 @@
 ! active target synchronization and extra dist_mult_array_rma_sync
 ! calls need to be executed before requested remote data can be
 ! accessed.
+
+#ifdef __PGI
+!pgi$g opt=1
+#endif
+
 MODULE mo_setup_subdivision
   !
   !-------------------------------------------------------------------------
@@ -1724,9 +1725,19 @@ CONTAINS
         IF (my_process_is_work()) THEN      
           IF(ignore_nproma_use_nblocks_c .AND. n_patch_cells > 0) THEN
             new_nproma = (n_patch_cells-1) / nblocks_c + 1
+            ! In AMD GPUs there is significant performance loss if nproma is not aligned
+            ! to 256 bytes. Here double precision, i.e. 8 bytes / 32 elements is assumed
+            ! As it may improve the performance slightly also in NVIDIA systems, the
+            ! the alignemtn is doen always for GPU code
+#ifdef _OPENACC
+            new_nproma = ((new_nproma  + 32 - 1) / 32) * 32
+#endif
             CALL set_nproma(new_nproma)
           ELSEIF(ignore_nproma_use_nblocks_e .AND. n_patch_edges > 0) THEN
             new_nproma = (n_patch_edges-1) / nblocks_e + 1
+#ifdef _OPENACC
+            new_nproma = ((new_nproma  + 32 - 1) / 32) * 32
+#endif
             CALL set_nproma(new_nproma)
           ENDIF          
 
@@ -1754,6 +1765,11 @@ CONTAINS
       !! Also set the secondary nproma_sub and the number of subblocks nblocks_sub
       IF( ignore_nproma_sub_use_nblocks_sub ) THEN
         nproma_sub = (nproma-1)/nblocks_sub+1
+        ! In AMD GPUs there is significant performance loss if nproma_sub is not aligned
+        ! to 256 bytes. Here double precision, i.e. 8 bytes / 32 elements is assumed
+#if defined (_OPENACC) && defined (_CRAYFTN)
+        nproma_sub = ((nproma_sub  + 32 - 1) / 32) * 32
+#endif
       ELSE
         IF (nproma_sub > nproma) THEN
           CALL warning(routine, 'secondary nproma: nproma_sub cannot be bigger than nproma, adjusted')

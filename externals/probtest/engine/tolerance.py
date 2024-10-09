@@ -1,4 +1,10 @@
-import itertools
+"""
+CLI for computing tolerance values from statistical datasets
+
+This module reads statistical data from CSV files, computes relative differences,
+and determines the tolerance levels for various ensemble members.
+"""
+
 import os
 import sys
 
@@ -37,7 +43,7 @@ from util.log_handler import logger
 )
 def tolerance(stats_file_name, tolerance_file_name, member_num, member_type):
     if len(member_num) == 1:
-        member_num = [i for i in range(1, member_num[0] + 1)]
+        member_num = list(range(1, member_num[0] + 1))
     # read in stats files
     dfs = [
         parse_probtest_csv(stats_file_name.format(member_id=m_id), index_col=[0, 1, 2])
@@ -46,24 +52,20 @@ def tolerance(stats_file_name, tolerance_file_name, member_num, member_type):
             for m_num in member_num
         )
     ]
-    dfs.append(
-        parse_probtest_csv(stats_file_name.format(member_id="ref"), index_col=[0, 1, 2])
+    df_ref = parse_probtest_csv(
+        stats_file_name.format(member_id="ref"), index_col=[0, 1, 2]
     )
 
     ndata = len(dfs)
-    if ndata < 2:
+    if ndata < 1:
         logger.critical(
-            "not enough data to compute tolerance, got {} dataset. Abort.".format(ndata)
+            "not enough data to compute tolerance, got %s dataset. Abort.", ndata
         )
         sys.exit(1)
-    # get all possible combinations of the input data
-    combs = list(itertools.product(range(ndata), range(ndata)))
 
-    # do not use the i==j combinations
-    combs = [(i, j) for i, j in combs if j < i]
-    logger.info("computing tolerance from {} input combinations!".format(len(combs)))
+    logger.info("computing tolerance from %s ensemble members!", ndata)
     # compute relative differences for all combinations
-    rdiff = [compute_rel_diff_dataframe(dfs[i], dfs[j]) for i, j in combs]
+    rdiff = [compute_rel_diff_dataframe(df_ref, df) for df in dfs]
     # max-scan over height - drop height index
     rdiff_max = [r.groupby(["file_ID", "variable"]).max() for r in rdiff]
     # max over all combinations
@@ -75,7 +77,5 @@ def tolerance(stats_file_name, tolerance_file_name, member_num, member_type):
     tolerance_dir = os.path.dirname(tolerance_file_name)
     if tolerance_dir != "" and not os.path.exists(tolerance_dir):
         os.makedirs(tolerance_dir)
-    logger.info("writing tolerance file to {}".format(tolerance_file_name))
+    logger.info("writing tolerance file to %s", tolerance_file_name)
     df_max.to_csv(tolerance_file_name)
-
-    return

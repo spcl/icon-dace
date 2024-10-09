@@ -1,9 +1,3 @@
-!
-! Two-moment bulk microphysics by Axel Seifert, Klaus Beheng and Uli Blahak
-!
-! Description:
-! Provides various derived types for two-moment bulk microphysics
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Two-moment bulk microphysics by Axel Seifert, Klaus Beheng and Uli Blahak
+!
+! Description:
+! Provides various derived types for two-moment bulk microphysics
 
 MODULE mo_2mom_mcrph_types
 

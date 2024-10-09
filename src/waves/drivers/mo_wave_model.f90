@@ -1,5 +1,3 @@
-! Main program for the ICON ocean waves model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Main program for the ICON ocean waves model
 
 MODULE mo_wave_model
 
@@ -23,7 +23,7 @@ MODULE mo_wave_model
        &                                timer_domain_decomp, print_timer, &
        &                                timer_coupling
   USE mo_master_config,           ONLY: isRestart
-  USE mo_master_control,          ONLY: wave_process
+  USE mo_master_control,          ONLY: wave_process, get_my_process_name
   USE mo_impl_constants,          ONLY: success, pio_type_async, pio_type_cdipio
   USE mo_dynamics_config,         ONLY: configure_dynamics
   USE mo_run_config,              ONLY: configure_run, ldynamics, ltransport,    &
@@ -55,7 +55,8 @@ MODULE mo_wave_model
   USE mo_wave,                    ONLY: wave
   USE mo_wave_config,             ONLY: configure_wave, wave_config
 
-  USE mo_wave_ext_data_state,     ONLY: wave_ext_data, wave_ext_data_list, destruct_wave_ext_data_state
+  USE mo_wave_ext_data_state,     ONLY: wave_ext_data, wave_ext_data_list, construct_wave_ext_data_state, &
+    &                                   destruct_wave_ext_data_state
   USE mo_wave_ext_data_init,      ONLY: init_wave_ext_data
 
   USE mo_alloc_patches,           ONLY: destruct_patches
@@ -140,7 +141,7 @@ CONTAINS
     !---------------------------------------------------------------------
     IF (isRestart()) THEN
       CALL message('','Read restart file meta data ...')
-      CALL read_restart_header("wave")
+      CALL read_restart_header(get_my_process_name())
     ENDIF
 
     !---------------------------------------------------------------------
@@ -206,10 +207,18 @@ CONTAINS
     zaxisTypeList = t_zaxisTypeList()
 
     IF (timers_level > 4) CALL timer_start(timer_domain_decomp)
-
-    CALL build_decomposition(num_lev, nshift, is_ocean_decomposition = .FALSE.)
-
+    ! Only do the decomposition for relevant processes
+    IF (my_process_is_work() .OR. my_process_is_mpi_test()) THEN
+      CALL build_decomposition(num_lev, nshift, is_ocean_decomposition = .FALSE.)
+    ENDIF
     IF (timers_level > 4) CALL timer_stop(timer_domain_decomp)
+
+    !-------------------------------------------------------------------
+    ! 5. I/O initialization
+    !-------------------------------------------------------------------
+
+    ! This won't RETURN on dedicated restart PEs, starting their main loop instead.
+    CALL detachRestartProcs(timers_level > 1)
 
     CALL init_io_processes()
 
@@ -255,7 +264,9 @@ CONTAINS
     !------------------------------------------------------------------
     ! Create and optionally read external data fields
     !------------------------------------------------------------------
-    CALL init_wave_ext_data (p_patch(1:), p_int_state, wave_ext_data, wave_ext_data_list)
+    CALL construct_wave_ext_data_state(p_patch(1:))
+    !
+    CALL init_wave_ext_data (p_patch(1:), p_int_state, wave_ext_data)
 
     CALL message(routine, 'finished.')
 

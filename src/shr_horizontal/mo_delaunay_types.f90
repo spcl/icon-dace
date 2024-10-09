@@ -1,8 +1,3 @@
-! Type and object declarations, operators and utility routines for
-! the construction of a Delaunay
-! triangulation on the sphere.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Type and object declarations, operators and utility routines for
+! the construction of a Delaunay
+! triangulation on the sphere.
 
 MODULE mo_delaunay_types
 

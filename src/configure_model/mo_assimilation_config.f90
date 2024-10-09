@@ -1,5 +1,3 @@
-! @brief configuration setup for data assimilation
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief configuration setup for data assimilation
 
 MODULE mo_assimilation_config
   USE mo_kind,                 ONLY: wp, i8

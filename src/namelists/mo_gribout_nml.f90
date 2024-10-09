@@ -1,9 +1,3 @@
-! Namelist for Grib output
-!
-! These subroutines are called by  read_atmo_namelists and do the transport
-! setup.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +9,11 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Namelist for Grib output
+!
+! These subroutines are called by  read_atmo_namelists and do the transport
+! setup.
+
 MODULE mo_gribout_nml
 
   USE mo_io_units,            ONLY: nnml, nnml_output
@@ -24,7 +23,8 @@ MODULE mo_gribout_nml
   USE mo_mpi,                 ONLY: my_process_is_stdio
   USE mo_restart_nml_and_att, ONLY: open_tmpfile, store_and_close_namelist,     &
     &                               open_and_restore_namelist, close_tmpfile
-  USE mo_gribout_config,      ONLY: gribout_config
+  USE mo_gribout_config,      ONLY: gribout_config, GRIB_UNDEFVAL, GRIB_NOTINUSEVAL, &
+    &                               GRIB_LIB_COMPAT_ECC_2_31_0
   USE mo_grib2_tile,          ONLY: grib2_keys_tile
   USE mo_nml_annotate,        ONLY: temp_defaults, temp_settings
   USE mo_util_string,         ONLY: int2string, tolower, one_of
@@ -39,9 +39,6 @@ MODULE mo_gribout_nml
 
   !> module name
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_gribout_nml'
-
-  ! constant for better readability
-  INTEGER, PARAMETER :: UNDEFINED = -1
 
   !----------------------------------!
   ! gribout_nml namelist variables   !
@@ -138,6 +135,10 @@ MODULE mo_gribout_nml
       &  typeOfGrib2TileTemplate          !  'wmo': official WMO templates 55, 59, ...
                                           !  'dwd': local 'DWD' templates 40455, 40456, ...
 
+  CHARACTER(LEN=22) :: &                ! Type of GRIB library backward compatibility adjustment:
+    & grib_lib_compat                   ! 'current'
+                                        ! 'eccodes:2.31.0'
+
   NAMELIST/gribout_nml/  &
     &                    preset, tablesVersion,           &
     &                    localTablesVersion,              &
@@ -159,7 +160,8 @@ MODULE mo_gribout_nml
     &                    perturbationNumber,              &
     &                    lgribout_24bit,                  &
     &                    lgribout_compress_ccsds,         &
-    &                    typeOfGrib2TileTemplate
+    &                    typeOfGrib2TileTemplate,         &
+    &                    grib_lib_compat
 
 
 CONTAINS
@@ -184,9 +186,9 @@ CONTAINS
     INTEGER :: istat, funit
     INTEGER :: jg          !< patch loop index
     INTEGER :: iunit
+    INTEGER :: grib_lib_compat_int
 
-    CHARACTER(len=*), PARAMETER ::  &
-      &  routine = 'mo_gribout_nml: read_gribout_nml'
+    CHARACTER(len=*), PARAMETER :: routine = modname//"::read_gribout_nml"
 
     !-----------------------
     ! 1. default settings
@@ -208,15 +210,17 @@ CONTAINS
 
     typeOfGrib2TileTemplate              = 'dwd'    ! use DWD templates 40455, etc
 
-    typeOfProcessedData                  = UNDEFINED
-    typeOfGeneratingProcess              = UNDEFINED
-    localDefinitionNumber                = UNDEFINED
-    generatingCenter                     = UNDEFINED  ! output generating center
-    generatingSubcenter                  = UNDEFINED  ! output generating subcenter
-    typeOfEnsembleForecast               = UNDEFINED  ! (undefined, will not be set if unchanged)
-    localTypeOfEnsembleForecast          = UNDEFINED  ! (undefined, will not be set if unchanged)
-    numberOfForecastsInEnsemble          = UNDEFINED  ! (undefined, will not be set if unchanged)
-    perturbationNumber                   = UNDEFINED  ! (undefined, will not be set if unchanged)
+    typeOfProcessedData                  = GRIB_UNDEFVAL
+    typeOfGeneratingProcess              = GRIB_UNDEFVAL
+    localDefinitionNumber                = GRIB_UNDEFVAL
+    generatingCenter                     = GRIB_UNDEFVAL  ! output generating center
+    generatingSubcenter                  = GRIB_UNDEFVAL  ! output generating subcenter
+    typeOfEnsembleForecast               = GRIB_UNDEFVAL  ! (undefined, will not be set if unchanged)
+    localTypeOfEnsembleForecast          = GRIB_UNDEFVAL  ! (undefined, will not be set if unchanged)
+    numberOfForecastsInEnsemble          = GRIB_UNDEFVAL  ! (undefined, will not be set if unchanged)
+    perturbationNumber                   = GRIB_UNDEFVAL  ! (undefined, will not be set if unchanged)
+
+    grib_lib_compat                      = 'current'      ! i.e. switched off
 
     !------------------------------------------------------------------
     ! 2. If this is a resumed integration, overwrite the defaults above
@@ -260,6 +264,48 @@ CONTAINS
       CALL finish(routine, "Illegal Namelist setting for typeOfGrib2TileTemplate: "//TRIM(typeOfGrib2TileTemplate))
     ENDIF
 
+    ! Currently, the following types of GRIB library backward compatibility adjustment are available:
+    ! - 'current': Switched off.
+    ! - 'eccodes:2.31.0': For ecCodes versions >= 2.32.0.
+    !    CDI uses the ecCodes sample file "GRIB2.tmpl" as a starting file for ecCodes.
+    !    The SecondFixedSurface keys are assigned the following values in GRIB2.tmpl:
+    !
+    !    - typeOfSecondFixedSurface        = 255 (Missing)
+    !    - scaleFactorOfSecondFixedSurface = MISSING (= 255)
+    !    - scaledValueOfSecondFixedSurface = MISSING (= 2,147,483,647)
+    !
+    !    Now, if typeOfSecondFixedSurface is set to a value >= 10, 102 say,
+    !    but scaleFactorOfSecondFixedSurface and scaledValueOfSecondFixedSurface
+    !    are not explicitly set, the result is as follows:
+    !
+    !    For ecCodes version < 2.32.0:
+    !    -----------------------------
+    !    - typeOfSecondFixedSurface        = 102 (Specific altitude above mean sea level)
+    !    - scaleFactorOfSecondFixedSurface = 0
+    !    - scaledValueOfSecondFixedSurface = 0
+    !
+    !    For ecCodes version >= 2.32.0:
+    !    ------------------------------
+    !    - typeOfSecondFixedSurface        = 102 (Specific altitude above mean sea level)
+    !    - scaleFactorOfSecondFixedSurface = MISSING
+    !    - scaledValueOfSecondFixedSurface = MISSING
+    !
+    !    With grib_lib_compat = 'eccodes:2.31.0', we try to overwrite the behavior of
+    !    ecCodes versions >= 2.32.0 with the behavior of versions < 2.32.0, in this respect.
+    !
+    grib_lib_compat_int = GRIB_NOTINUSEVAL
+    IF (LEN_TRIM(grib_lib_compat) > 0) THEN
+      ! lowercase namelist entry
+      grib_lib_compat = tolower(grib_lib_compat)
+      IF (TRIM(grib_lib_compat) == 'current') THEN
+        grib_lib_compat_int = GRIB_NOTINUSEVAL
+      ELSEIF (TRIM(grib_lib_compat) == 'eccodes:2.31.0') THEN
+        grib_lib_compat_int = GRIB_LIB_COMPAT_ECC_2_31_0
+      ELSE
+        ! invalid namelist entry
+        CALL finish(routine, "Invalid namelist setting for grib_lib_compat: "//TRIM(grib_lib_compat))
+      ENDIF
+    ENDIF
 
     !----------------------------------------------------
     ! 5. Fill the configuration state
@@ -308,6 +354,8 @@ CONTAINS
         &                lgribout_compress_ccsds
       gribout_config(jg)%typeOfGrib2TileTemplate           = &
         &                tolower(typeOfGrib2TileTemplate)
+      gribout_config(jg)%grib_lib_compat                   = &
+        &                grib_lib_compat_int
     ENDDO
 
 
@@ -380,6 +428,9 @@ CONTAINS
   !> Preset values, when main switch is provided.
   !
   SUBROUTINE preset_namelist()
+    ! local variables
+    CHARACTER(LEN=*), PARAMETER :: routine = modname//"::preset_namelist"
+
     IF (TRIM(preset) == "deterministic") THEN
       !
       ! deterministic forecast
@@ -413,12 +464,19 @@ CONTAINS
       ! Note: atmospheric chemical constituents -> 41
       !       statistically processed data      -> 11
       CALL preset_value("typeOfEnsembleForecast",          typeOfEnsembleForecast,            192 , quiet=.FALSE. )
+
+    ELSE IF (LEN_TRIM(preset) > 0) THEN
+      !
+      ! invalid namelist entry for preset
+      !
+      CALL finish(routine, "Invalid namelist setting for preset: "//TRIM(preset))
+
     END IF
   END SUBROUTINE preset_namelist
 
 
   !> Sets a variable to a given value, but only if current value was
-  !> UNDEFINED
+  !> GRIB_UNDEFVAL = -1
   !
   SUBROUTINE preset_value(name, ival, preset_val, quiet)
     CHARACTER(LEN=*), INTENT(IN)    :: name              !< name of this parameter (for screen output)
@@ -429,7 +487,7 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = modname//"::preset_value"
     CHARACTER(len=20) :: cval, cpre
 
-    IF (ival == UNDEFINED) THEN
+    IF (ival == GRIB_UNDEFVAL) THEN
       ival = preset_val
       IF (.NOT. quiet) THEN
         CALL message(routine, "presetting namelist parameter '"//TRIM(name)//"' as "//TRIM(int2string(preset_val)))

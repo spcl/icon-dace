@@ -1,9 +1,3 @@
-! Provide an implementation of the ocean physics.
-!
-! Provide an implementation of the physical parameters and characteristics
-! for the hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the ocean physics.
+!
+! Provide an implementation of the physical parameters and characteristics
+! for the hydrostatic ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -895,6 +894,14 @@ CONTAINS
 !   and the Richardson Number ; shall be used in PP and possibly TKE
     CALL calc_vertical_stability(patch_3d, ocean_state, lacc=lzacc)
 
+#ifdef _OPENACC
+    IF (lzacc) THEN
+      IF (vert_mix_type /= vmix_tke) THEN
+        CALL finish('update_ho_params', 'OpenACC version for vert_mix_type /= vmix_tke currently not implemented')
+      END IF
+    END IF
+#endif
+    
     SELECT CASE(vert_mix_type)
     CASE(vmix_pp)
       CALL update_PP_scheme(patch_3d, ocean_state, fu10, concsum, params_oce,op_coeffs)
@@ -954,7 +961,7 @@ CONTAINS
 
 
   SUBROUTINE update_ho_params_zstar(patch_3d, ocean_state, fu10, concsum, params_oce,op_coeffs, atmos_fluxes, p_oce_sfc, &
-      & eta_c, stretch_c, stretch_e)
+      & eta_c, stretch_c, stretch_e, lacc)
     !, calculate_density_func)
 
     TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
@@ -968,18 +975,29 @@ CONTAINS
     REAL(wp), INTENT(IN) :: eta_c(nproma, patch_3d%p_patch_2d(1)%alloc_cell_blocks) !! sfc ht
     REAL(wp), INTENT(IN) :: stretch_c(nproma, patch_3d%p_patch_2d(1)%alloc_cell_blocks)
     REAL(wp), INTENT(IN) :: stretch_e(nproma, patch_3d%p_patch_2d(1)%nblks_e) !! stretch factor
+    LOGICAL, INTENT(IN), OPTIONAL        :: lacc
 
     INTEGER :: tracer_index
+    LOGICAL :: lzacc
     !INTEGER :: vert_mix_type=2 ! by_nils ! FIXME: make this a namelist parameter
     !-------------------------------------------------------------------------
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
     start_timer(timer_upd_phys,1)
 
 !    CALL calc_characteristic_physical_numbers(patch_3d, ocean_state)
-
 !   Calculate the vertical density gradient on the interfaces (zgrad_rho)
 !   and the Richardson Number ; shall be used in PP and possibly TKE
-     CALL calc_vertical_stability_zstar(patch_3d, ocean_state, eta_c, stretch_c)
+    CALL calc_vertical_stability_zstar(patch_3d, ocean_state, eta_c, stretch_c, lacc=lzacc)
 
+#ifdef _OPENACC
+    IF (lzacc) THEN
+      IF (vert_mix_type /= vmix_tke) THEN
+        CALL finish('update_ho_params', 'OpenACC version for vert_mix_type /= vmix_tke currently not implemented')
+      END IF
+    END IF
+#endif
 
     SELECT CASE(vert_mix_type)
     CASE(vmix_pp)
@@ -988,7 +1006,11 @@ CONTAINS
     CASE(vmix_tke)
       !write(*,*) 'Do calc_tke...'
       ! tke does not need a special routine for zstar
+#ifdef _OPENACC
+      CALL calc_tke(patch_3d, ocean_state, params_oce, atmos_fluxes, fu10, concsum, lacc=lzacc)
+#else
       CALL calc_tke(patch_3d, ocean_state, params_oce, atmos_fluxes, fu10, concsum)
+#endif
     CASE(vmix_idemix_tke)
       !write(*,*) 'Do calc_idemix...'
       CALL calc_idemix(patch_3d, ocean_state, params_oce, op_coeffs, atmos_fluxes)
@@ -2325,10 +2347,6 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish('calc_vertical_stability_zstar', 'OpenACC version for LVECTOR currently not implemented')
-#endif
-
     z_grav_rho = grav/OceanReferenceDensity
 
     !ICON_OMP_PARALLEL PRIVATE(salinity_up, salinity_down, z_rho_up, z_rho_down, pressure)
@@ -2337,10 +2355,15 @@ CONTAINS
     DO blockNo = all_cells%start_block, all_cells%end_block
       CALL get_index_range(all_cells, blockNo, start_index, end_index)
 
+      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       ocean_state%p_diag%Richardson_Number(:, :, blockNo) = 0.0_wp
       ocean_state%p_diag%zgrad_rho(:,:, blockNo) = 0.0_wp
+      !$ACC END KERNELS
 
+      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+      !$ACC LOOP SEQ
       DO level = 2, MAXVAL(patch_3d%p_patch_1d(1)%dolic_c(start_index:end_index,blockNo))
+        !$ACC LOOP GANG VECTOR
         DO cell_index = start_index, end_index
 
           IF (level <= patch_3d%p_patch_1d(1)%dolic_c(cell_index,blockNo)) THEN
@@ -2384,7 +2407,9 @@ CONTAINS
           END IF
         END DO ! index
       END DO ! levels
+      !$ACC END PARALLEL
     END DO
+    !$ACC WAIT(1)
 !ICON_OMP_END_DO
 !ICON_OMP_END_PARALLEL
 
@@ -2417,26 +2442,30 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-#ifdef _OPENACC
-    IF (lzacc) CALL finish('calc_vertical_stability_zstar', 'OpenACC version currently not implemented')
-#endif
-
     z_grav_rho = grav/OceanReferenceDensity
 
+    !$ACC DATA CREATE(salinity, z_rho_up, z_rho_down, pressure) IF(lzacc)
+
     !ICON_OMP_PARALLEL PRIVATE(salinity, z_rho_up, z_rho_down, pressure)
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     salinity(1:n_zlev) = sal_ref
     z_rho_up(:)=0.0_wp
     z_rho_down(:)=0.0_wp
     pressure(:) = 0._wp
+    !$ACC END KERNELS
 
     !ICON_OMP_DO PRIVATE(start_index, end_index, cell_index, end_level, level, &
     !ICON_OMP z_shear_cell) ICON_OMP_DEFAULT_SCHEDULE
     DO blockNo = all_cells%start_block, all_cells%end_block
       CALL get_index_range(all_cells, blockNo, start_index, end_index)
 
+      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       ocean_state%p_diag%Richardson_Number(:, :, blockNo) = 0.0_wp
       ocean_state%p_diag%zgrad_rho(:,:, blockNo) = 0.0_wp
+      !$ACC END KERNELS
 
+      !$ACC PARALLEL LOOP GANG VECTOR &
+      !$ACC   PRIVATE(salinity, z_rho_up, z_rho_down, pressure) DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       DO cell_index = start_index, end_index
 
         end_level = patch_3d%p_patch_1d(1)%dolic_c(cell_index,blockNo)
@@ -2451,13 +2480,27 @@ CONTAINS
            & * stretch_c(cell_index, blockNo) - eta_c(cell_index,blockNo))  &
            & * OceanReferenceDensity * sitodbar
 
+#ifdef _OPENACC
+        DO level = 1, end_level-1
+          z_rho_up(level) = calculate_density_onColumn_elem(ocean_state%p_prog(nold(1))%tracer(cell_index,level,blockNo,1), &
+                                              salinity(level), pressure(level+1))
+        END DO
+#else
         z_rho_up(1:end_level-1) = &
              calculate_density_onColumn(ocean_state%p_prog(nold(1))%tracer(cell_index,1:end_level-1,blockNo,1), &
              salinity(1:end_level-1), pressure(2:end_level),end_level-1)
+#endif
 
+#ifdef _OPENACC
+        DO level = 2, end_level
+          z_rho_down(level) = calculate_density_onColumn_elem(ocean_state%p_prog(nold(1))%tracer(cell_index,level,blockNo,1), &
+                                              salinity(level), pressure(level))
+        END DO
+#else
         z_rho_down(2:end_level) = &
              calculate_density_onColumn(ocean_state%p_prog(nold(1))%tracer(cell_index,2:end_level,blockNo,1), &
              salinity(2:end_level), pressure(2:end_level), end_level-1)
+#endif
 
         DO level = 2, end_level
 
@@ -2478,10 +2521,13 @@ CONTAINS
                (z_rho_down(level) - z_rho_up(level-1)) / z_shear_cell, 0.0_wp)
         END DO ! levels
       END DO ! index
+      !$ACC END PARALLEL LOOP
     END DO
+    !$ACC WAIT(1)
 !ICON_OMP_END_DO
 !ICON_OMP_END_PARALLEL
 
+    !$ACC END DATA
   END SUBROUTINE calc_vertical_stability_zstar
 #endif
   !-------------------------------------------------------------------------

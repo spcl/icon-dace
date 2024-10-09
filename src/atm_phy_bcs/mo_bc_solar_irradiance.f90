@@ -1,9 +1,3 @@
-! This is  a clone of the respective ECHAM routine
-!
-! Read spectrally resolved solar irradiance yearly, apply primitive time
-! interpolation to monthly mean values and apply
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This is  a clone of the respective ECHAM routine
+!
+! Read spectrally resolved solar irradiance yearly, apply primitive time
+! interpolation to monthly mean values and apply
 
 MODULE mo_bc_solar_irradiance
 

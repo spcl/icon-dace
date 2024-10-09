@@ -1,9 +1,3 @@
-! Provide an implementation of the ocean thermodynamics
-!
-! Provide an implementation of the parameters used for the thermodynamics
-! of the hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the ocean thermodynamics
+!
+! Provide an implementation of the parameters used for the thermodynamics
+! of the hydrostatic ocean model.
 
 !----------------------------
 #include "iconfor_dsl_definitions.inc"
@@ -336,7 +335,7 @@ CONTAINS
   !! Calculation the hydrostatic pressure gradient at edges with zstar
   !!
   SUBROUTINE calc_internal_press_grad_zstar(patch_3d, rho, pressure_hyd, bc_total_top_potential, &
-      & grad_coeff, stretch_c, press_grad)
+      & grad_coeff, stretch_c, press_grad, lacc)
     !
     TYPE(t_patch_3d ),TARGET, INTENT(in) :: patch_3d
     REAL(wp), INTENT(in)                 :: rho          (nproma,n_zlev, patch_3d%p_patch_2d(1)%alloc_cell_blocks)  !< density
@@ -345,6 +344,7 @@ CONTAINS
     REAL(wp), INTENT(in)                 :: grad_coeff(:,:,:)
     REAL(wp), INTENT(IN)                 :: stretch_c(nproma, patch_3d%p_patch_2d(1)%alloc_cell_blocks) !! stretch factor
     REAL(wp), INTENT(inout)              :: press_grad    (nproma,n_zlev, patch_3d%p_patch_2d(1)%nblks_e)  !< hydrostatic pressure gradient
+    LOGICAL, INTENT(in), OPTIONAL        :: lacc
 
     ! local variables:
     !CHARACTER(len=max_char_length), PARAMETER :: &
@@ -360,6 +360,10 @@ CONTAINS
     REAL(wp) :: phy(nproma,n_zlev, patch_3d%p_patch_2d(1)%alloc_cell_blocks) !! Extra pressure term for zstar
     REAL(wp) :: press_L, press_R, phy_L, phy_R
     REAL(wp) :: thick1, thick2
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
     !-----------------------------------------------------------------------
     z_grav_rho_inv = OceanReferenceDensity_inv * grav
     patch_2D        => patch_3d%p_patch_2d(1)
@@ -370,8 +374,13 @@ CONTAINS
     iidx => patch_3D%p_patch_2D(1)%edges%cell_idx
     iblk => patch_3D%p_patch_2D(1)%edges%cell_blk
 
+    !$ACC DATA CREATE(phy) IF(lzacc)
+
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     pressure_hyd (1:nproma,1:n_zlev, 1:patch_3d%p_patch_2d(1)%alloc_cell_blocks)=0.0_wp
     phy          (1:nproma,1:n_zlev, 1:patch_3d%p_patch_2d(1)%alloc_cell_blocks)=0.0_wp
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
     !-------------------------------------------------------------------------
 
 !ICON_OMP_PARALLEL
@@ -379,6 +388,7 @@ CONTAINS
     DO jb = all_cells%start_block, all_cells%end_block
       CALL get_index_range(all_cells, jb, start_index, end_index)
 
+      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       DO jc = start_index, end_index
 
         pressure_hyd(jc,1,jb) = rho(jc,1,jb)*z_grav_rho_inv*&
@@ -390,6 +400,7 @@ CONTAINS
         phy(jc, 1, jb) = 0.0_wp - &
             & stretch_c(jc, jb)*patch_3D%p_patch_1d(1)%constantPrismCenters_Zdistance(jc, 1, jb)
 
+       !$ACC LOOP SEQ
         DO jk = 2, patch_3d%p_patch_1d(1)%dolic_c(jc,jb)
 
           pressure_hyd(jc,jk,jb) = pressure_hyd(jc,jk-1,jb) + 0.5_wp*(rho(jc,jk,jb)+rho(jc,jk-1,jb))&
@@ -401,7 +412,9 @@ CONTAINS
 
         END DO
       END DO
+      !$ACC END PARALLEL LOOP
     END DO
+    !$ACC WAIT(1)
 !ICON_OMP_END_DO
 
 
@@ -410,6 +423,7 @@ CONTAINS
     DO jb = edges_in_domain%start_block, edges_in_domain%end_block
       CALL get_index_range(edges_in_domain, jb, start_index, end_index)
 
+      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       DO je = start_index, end_index
 
           ic1=patch_2D%edges%cell_idx(je,jb,1)
@@ -417,6 +431,7 @@ CONTAINS
           ic2=patch_2D%edges%cell_idx(je,jb,2)
           ib2=patch_2D%edges%cell_blk(je,jb,2)
 
+        !$ACC LOOP SEQ
         DO jk = 1, patch_3d%p_patch_1d(1)%dolic_e(je,jb)
           !! For each edge, we can determine for the bottom layer only
           !! what the shallower cell is by comparing
@@ -471,10 +486,13 @@ CONTAINS
 
         END DO
       END DO
+      !$ACC END PARALLEL LOOP
     END DO
+    !$ACC WAIT(1)
 !ICON_OMP_END_DO NOWAIT
 !ICON_OMP_END_PARALLEL
 
+    !$ACC END DATA
   END SUBROUTINE calc_internal_press_grad_zstar
   !-------------------------------------------------------------------------
 

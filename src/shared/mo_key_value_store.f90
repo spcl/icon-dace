@@ -1,8 +1,3 @@
-! This module provides a simple key value storage based on string comparisons
-! using the generic hash tables provided by mo_hash_table.
-! As method to calculate hash keys, the DJB algorithm is used.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides a simple key value storage based on string comparisons
+! using the generic hash tables provided by mo_hash_table.
+! As method to calculate hash keys, the DJB algorithm is used.
 
 MODULE mo_key_value_store
   USE mo_exception,             ONLY: finish, message

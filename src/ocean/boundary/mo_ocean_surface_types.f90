@@ -1,8 +1,3 @@
-! This module provides definition of ocean surface module types that describe:
-!  1) ocean surface fluxes : t_ocean_surface
-!  2) OMIP fluxes          : t_atmos_fluxes
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides definition of ocean surface module types that describe:
+!  1) ocean surface fluxes : t_ocean_surface
+!  2) OMIP fluxes          : t_atmos_fluxes
 
 MODULE mo_ocean_surface_types
   USE mo_kind,                ONLY: wp

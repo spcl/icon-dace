@@ -1,5 +1,3 @@
-! Contains the implementation of the mathematical operators for the ocean.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the mathematical operators for the ocean.
+
 #include "omp_definitions.inc"
 #include "iconfor_dsl_definitions.inc"
 
@@ -19,8 +20,8 @@ MODULE mo_ocean_testbed_div
   USE mo_parallel_config,    ONLY: nproma
   USE mo_exception,          ONLY: message, message_text, finish
   USE mo_run_config,         ONLY: test_mode
-  USE mo_math_constants
-  USE mo_physical_constants
+  USE mo_math_constants,     ONLY: pi
+  USE mo_physical_constants, ONLY: earth_radius
   USE mo_impl_constants,     ONLY: boundary, sea, sea_boundary !,sea,land, land_boundary, sea, max_char_length, &
   USE mo_model_domain,       ONLY: t_patch, t_patch_3D
   USE mo_ext_data_types,     ONLY: t_external_data

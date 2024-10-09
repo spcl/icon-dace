@@ -1,11 +1,3 @@
-! The module <i>mo_scalar_product</i>
-! implements discrete scalar products which depend on the grid geometry only
-! are used to formulate the primitive equations in weak form.
-! The coefficients used for projections from triangular edges to cell centers
-! and vice versa are contained in the ocean part of the model domain and
-! are calculated in <i>mo_ocean_topo</i>.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The module <i>mo_scalar_product</i>
+! implements discrete scalar products which depend on the grid geometry only
+! are used to formulate the primitive equations in weak form.
+! The coefficients used for projections from triangular edges to cell centers
+! and vice versa are contained in the ocean part of the model domain and
+! are calculated in <i>mo_ocean_topo</i>.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -3011,6 +3010,7 @@ CONTAINS
   !! !  SUBROUTINE maps for a fluid column a scalar value from the top/bottom of a 3D prism to the central level of the prism.
   !!
   !!
+  !pgi$r opt 1
   SUBROUTINE map_vec_prismtop2center_on_block(patch_3d, vec_top, vec_center, &
     & blockNo, start_cell_index, end_cell_index, lacc)
     TYPE(t_patch_3d ),TARGET, INTENT(in)            :: patch_3d
@@ -3158,7 +3158,7 @@ CONTAINS
     TYPE(t_patch_3d ),TARGET, INTENT(in   )          :: patch_3d
     REAL(wp), INTENT(in)                             :: scalar_center(:,:,:)
     TYPE(t_operator_coeff),INTENT(in)                :: p_op_coeff
-    REAL(wp), INTENT(out)                            :: scalar_top(:,:,:)
+    REAL(wp), INTENT(inout)                          :: scalar_top(:,:,:)
 
     !Local variables
     INTEGER :: blockNo
@@ -3305,7 +3305,7 @@ CONTAINS
     TYPE(t_patch_3d ),TARGET, INTENT(in   )          :: patch_3d
     REAL(wp), INTENT(inout)                          :: scalar_center(:,:,:)
     TYPE(t_operator_coeff),INTENT(in)                :: p_op_coeff
-    REAL(wp), INTENT(out)                            :: scalar_top(:,:,:)
+    REAL(wp), INTENT(inout)                          :: scalar_top(:,:,:)
 
     !Local variables
     INTEGER :: blockNo

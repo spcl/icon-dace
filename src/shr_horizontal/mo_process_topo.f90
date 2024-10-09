@@ -1,6 +1,3 @@
-! Contains routine for topography smoothing
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains routine for topography smoothing
 
 MODULE mo_process_topo
 
@@ -49,7 +48,7 @@ CONTAINS
   !!
   SUBROUTINE compute_smooth_topo(p_patch, p_int, topo_c, niter, topo_smt_c)
 
-    TYPE(t_patch),TARGET,INTENT(INOUT) :: p_patch
+    TYPE(t_patch),TARGET,INTENT(IN) :: p_patch
     TYPE(t_int_state), INTENT(IN) :: p_int
 
     ! Input fields: topography on cells
@@ -112,7 +111,7 @@ CONTAINS
   !!
   SUBROUTINE smooth_topo (p_patch, p_int, topography_c)
 
-    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_patch)      , INTENT(IN)    :: p_patch
     TYPE(t_int_state)  , INTENT(IN)    :: p_int
     REAL(wp)           , INTENT(INOUT) :: topography_c(:,:) ! original topography on input
                                                             ! smoothed one on output
@@ -368,7 +367,7 @@ CONTAINS
   !!
   SUBROUTINE smooth_topo_real_data (p_patch, p_int, fr_land, topography_c, fr_lake, sso_stdh)
 
-    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_patch)      , INTENT(IN)    :: p_patch
     TYPE(t_int_state)  , INTENT(IN)    :: p_int
     REAL(wp)           , INTENT(IN)    :: fr_land(:,:)
     REAL(wp)           , INTENT(INOUT) :: topography_c(:,:)
@@ -446,7 +445,7 @@ CONTAINS
   !!
   SUBROUTINE smooth_frland (p_patch, p_int, fr_land, fr_land_smt)
 
-    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_patch)      , INTENT(IN)    :: p_patch
     TYPE(t_int_state)  , INTENT(IN)    :: p_int
     REAL(wp)           , INTENT(IN)    :: fr_land(:,:)
     REAL(wp)           , INTENT(OUT)   :: fr_land_smt(:,:)
@@ -497,7 +496,7 @@ CONTAINS
   !!
   SUBROUTINE smooth_urbfrac (p_patch, p_int, fr_urb, fr_urb_smt)
 
-    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_patch)      , INTENT(IN)    :: p_patch
     TYPE(t_int_state)  , INTENT(IN)    :: p_int
     REAL(wp)           , INTENT(IN)    :: fr_urb(:,:)
     REAL(wp)           , INTENT(OUT)   :: fr_urb_smt(:,:)
@@ -543,7 +542,7 @@ CONTAINS
   !!
   SUBROUTINE postproc_sso (p_patch, p_int, fr_glac, topography_c, sso_stdh, sso_sigma)
 
-    TYPE(t_patch)      , INTENT(INOUT) :: p_patch
+    TYPE(t_patch)      , INTENT(IN)    :: p_patch
     TYPE(t_int_state)  , INTENT(IN)    :: p_int
     REAL(wp)           , INTENT(IN)    :: fr_glac(:,:)
     REAL(wp)           , INTENT(IN)    :: topography_c(:,:)

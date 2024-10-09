@@ -1,7 +1,3 @@
-! Contains the implementation of the semi-implicit Adams-Bashforth timestepping
-! for the ICON ocean model based on the mimetic spatial discretization approach.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the semi-implicit Adams-Bashforth timestepping
+! for the ICON ocean model based on the mimetic spatial discretization approach.
 
 !----------------------------
 #include "iconfor_dsl_definitions.inc"
@@ -178,26 +177,30 @@ CONTAINS
     END SELECT ! solver
 ! init lhs object
     CALL free_sfc_solver_lhs%construct(patch_3d, ocean_state%p_diag%thick_e, &
-      & op_coeffs, solverCoeff_sp)
+      & op_coeffs, solverCoeff_sp, lacc=lzacc)
 ! allocate and init communication infrastructure object
     SELECT CASE(select_transfer)
     CASE(0) ! all ocean workers are involved in solving (input is just copied to internal arrays)
-      CALL free_sfc_solver_trans_triv%construct(solve_cell, patch_2D) ! solve only on a subset of workers
-      CALL free_sfc_solver%construct(sol_type, par, par_sp, free_sfc_solver_lhs, free_sfc_solver_trans_triv, lacc=lzacc)
+      CALL free_sfc_solver_trans_triv%construct(solve_cell, patch_2D, lacc=lzacc) ! solve only on a subset of workers
+      CALL free_sfc_solver%construct(sol_type, par, par_sp, free_sfc_solver_lhs, &
+        & free_sfc_solver_trans_triv, lacc=lzacc)
     CASE DEFAULT ! solve only on a subset of workers
       trans_mode = MERGE(solve_trans_compact, solve_trans_scatter, select_transfer .GT. 0)
-      CALL free_sfc_solver_trans_sub%construct(solve_cell, patch_2D, ABS(select_transfer), trans_mode)
-      CALL free_sfc_solver%construct(sol_type, par, par_sp, free_sfc_solver_lhs, free_sfc_solver_trans_sub, lacc=lzacc)
+      CALL free_sfc_solver_trans_sub%construct(solve_cell, patch_2D, ABS(select_transfer), &
+        & trans_mode, lacc=lzacc)
+      CALL free_sfc_solver%construct(sol_type, par, par_sp, free_sfc_solver_lhs, &
+        & free_sfc_solver_trans_sub, lacc=lzacc)
     END SELECT
 ! alloc and init solver object
     IF (l_solver_compare) THEN
-      CALL free_sfc_solver_trans_triv%construct(solve_cell, patch_2D)
+      CALL free_sfc_solver_trans_triv%construct(solve_cell, patch_2D, lacc=lzacc)
       par%tol = solver_tolerance_comp
       par_sp%nidx = -1
       CALL free_sfc_solver_comp%construct(solve_legacy_gmres, par, par_sp, &
-        & free_sfc_solver_lhs, free_sfc_solver_trans_triv)
+        & free_sfc_solver_lhs, free_sfc_solver_trans_triv, lacc=lzacc)
     END IF
-    !$ACC ENTER DATA COPYIN(free_sfc_solver, free_sfc_solver%x_loc_wp) IF(lzacc)
+    !$ACC ENTER DATA COPYIN(free_sfc_solver, free_sfc_solver%x_loc_wp) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
   END SUBROUTINE init_free_sfc_ab_mimetic
 
   !-------------------------------------------------------------------------
@@ -247,6 +250,8 @@ CONTAINS
     CALL dbg_print('on entry: vn-new'               ,ocean_state%p_prog(nnew(1))%vn,str_module, 2, in_subset=owned_edges)
 
     ! Apply windstress
+    ! FIXME: 2024-09 DKRZ-dzo: Additional wait in case the solver did not end with one
+    !$ACC WAIT(1)
     CALL top_bound_cond_horz_veloc(patch_3d, ocean_state, op_coeffs, p_oce_sfc, lacc=lzacc)
 
     start_timer(timer_ab_expl,3)
@@ -296,7 +301,10 @@ CONTAINS
       END IF
       IF (l_is_compare_step) THEN
         !!ICON_OMP PARALLEL WORKSHARE
+        !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         free_sfc_solver_comp%x_loc_wp(:,:) = free_sfc_solver%x_loc_wp(:,:)
+        !$ACC END KERNELS
+        !$ACC WAIT(1)
         !!ICON_OMP END PARALLEL WORKSHARE
         free_sfc_solver_comp%b_loc_wp => free_sfc_solver%b_loc_wp
       END IF
@@ -305,6 +313,7 @@ CONTAINS
 
 ! call solver
       CALL free_sfc_solver%solve(n_it, n_it_sp, lacc=lzacc)
+      ! 2024-09 DKRZ-dzo: free_sfc_solver%res_loc_wp is never in GPU memory
       rn = MERGE(free_sfc_solver%res_loc_wp(1), 0._wp, n_it .NE. 0)
 
 
@@ -335,7 +344,8 @@ CONTAINS
           !!ICON_OMP END PARALLEL WORKSHARE
 
           IF (l_is_compare_step) THEN
-            CALL free_sfc_solver_comp%solve(n_it, n_it_sp)
+            CALL free_sfc_solver_comp%solve(n_it, n_it_sp, lacc=lzacc)
+            !$ACC UPDATE SELF(free_sfc_solver%x_loc_wp, free_sfc_solver_comp%x_loc_wp) IF(lzacc)
             rn = MERGE(free_sfc_solver_comp%res_loc_wp(1), 0._wp, n_it .NE. 0)
             WRITE(string,'(a,i4,a,e28.20)') &
               & 'SUM of ocean_solve iteration =', n_it-1,', residual =', rn
@@ -350,7 +360,7 @@ CONTAINS
             CALL message('ocean_solve('//TRIM(free_sfc_solver_comp%sol_type_name)//'): surface height',TRIM(string))
           END IF
 
-          IF (createSolverMatrix) CALL free_sfc_solver%dump_matrix(timestep)
+          IF (createSolverMatrix) CALL free_sfc_solver%dump_matrix(timestep, lacc=lzacc)
     !        CALL createSolverMatrix_onTheFly(solve%lhs, ocean_state%p_aux%p_rhs_sfc_eq, timestep)
 
           !-------- end of solver ---------------
@@ -375,8 +385,7 @@ CONTAINS
           IF (minmaxmean(1) + patch_3D%p_patch_1D(1)%del_zlev_m(1) <= min_top_height) THEN
     !          CALL finish(method_name, "height below min_top_height")
             CALL warning(method_name, "height below min_top_height")
-            !$ACC UPDATE HOST(ocean_state%p_prog(nnew(1))%h, ocean_state%p_prog(nnew(2))%h) ASYNC(1)
-            !$ACC WAIT(1)
+            !$ACC UPDATE SELF(ocean_state%p_prog(nnew(1))%h, ocean_state%p_prog(nnew(2))%h) IF(lzacc)
             CALL print_value_location(ocean_state%p_prog(nnew(1))%h(:,:), minmaxmean(1), owned_cells)
             CALL print_value_location(ocean_state%p_prog(nnew(2))%h(:,:), minmaxmean(1), owned_cells)
             CALL work_mpi_barrier()

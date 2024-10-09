@@ -1,7 +1,3 @@
-! mo_time_base [module]
-!    routines to handle Julian dates and times
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! mo_time_base [module]
+!    routines to handle Julian dates and times
 
 MODULE mo_time_base
 

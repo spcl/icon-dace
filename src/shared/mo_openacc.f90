@@ -1,7 +1,3 @@
-! This module provides fortran interface for OpenACC routines,
-! because the OpenACC standard only defines C-Interfaces.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides fortran interface for OpenACC routines,
+! because the OpenACC standard only defines C-Interfaces.
 
 ! (GZ, 2013-08-30): So far, the Cray compiler is the only one for which an OpenMP parallelization
 ! of copying data into / back from the MPI-buffer seems to give a benefit. Further compilers may

@@ -1,6 +1,3 @@
-! Defines the artificial testcases for the nonhydrostatic atmospheric model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Defines the artificial testcases for the nonhydrostatic atmospheric model.
 
 MODULE mo_nh_testcases  
 !-------------------------------------------------------------------------  
@@ -69,7 +68,7 @@ MODULE mo_nh_testcases
                                    & itype_atmo_ana, init_nh_atmo_ana_poly
   USE mo_nh_prog_util,         ONLY: nh_prog_add_random
   USE mo_random_util,          ONLY: add_random_noise_global
-  USE mo_grid_geometry_info,   ONLY: planar_torus_geometry
+  USE mo_lib_grid_geometry_info,   ONLY: planar_torus_geometry
   USE mo_nh_rce_exp,           ONLY: init_nh_state_rce_glb,                       &
                                    & init_nh_state_rce_tprescr_glb
   USE mo_aes_bubble,           ONLY: init_aes_bubble
@@ -431,10 +430,6 @@ MODULE mo_nh_testcases
 !!$                          & ext_data(jg)%atm%topography_v, ext_data(jg)%atm%fis  )
 !!$    END DO
 !!$    CALL message(TRIM(routine),'running the dcmip_mw_2x (schaer-type dcmip) test')
-
-  CASE ('dcmip_tc_51')
-    ! itopo == 0 --> The topography is initialized to 0 at the begining of this subroutine
-    CALL message(TRIM(routine),'running DCMIP tropical cyclone testcase 51')
 
   CASE ('dcmip_tc_52')
     ! itopo == 0 --> The topography is initialized to 0 at the begining of this subroutine
@@ -1172,9 +1167,7 @@ MODULE mo_nh_testcases
     CALL message(TRIM(routine),'End setup dcmip_mw_2x test')
 
 
-  CASE ('dcmip_tc_51','dcmip_tc_52')
-
-    ! 'dcmip_tc_51' and 'dcmip_tc_52' have the same initial state.
+  CASE ('dcmip_tc_52')
 
     DO jg = 1, n_dom
 
@@ -1189,7 +1182,7 @@ MODULE mo_nh_testcases
 
     END DO !jg
 
-    CALL message(TRIM(routine),'End setup dcmip_tc_51/52')
+    CALL message(TRIM(routine),'End setup dcmip_tc_52')
 
 
   CASE ('CBL')

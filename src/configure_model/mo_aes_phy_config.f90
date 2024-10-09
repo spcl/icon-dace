@@ -1,6 +1,3 @@
-! Configuration of the AES physics package.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the AES physics package.
 
 MODULE mo_aes_phy_config
 

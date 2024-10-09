@@ -1,7 +1,3 @@
-!
-! Module handling the collection of grid information for synchronous
-! and asynchronous output.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module handling the collection of grid information for synchronous
+! and asynchronous output.
 
 MODULE mo_name_list_output_gridinfo
 

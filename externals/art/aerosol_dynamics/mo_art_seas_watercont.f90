@@ -1,6 +1,18 @@
+!
+! mo_art_watercont_seas
+! This module calculates the water content of seasalt aerosol
+!
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
 !<
-!! mo_art_watercont_seas
-!! Calculation of water content of seasalt aerosol
 !!
 !! Author: Heike Vogel, Sven Werchner, KIT
 !! Initial Release: 2023-06-21
@@ -9,17 +21,6 @@
 !! YYYY-MM-DD: <name>, <institution>
 !! - ...
 !!
-!! Copyright and License
-!! This code is subject to the KIT-Software-License-Agreement in
-!! its most recent form.
-!! Where software is supplied by third parties, it is indicated in the
-!! headers of the routines.
-!! This software is provided for non-commercial use only.
-!!
-!! See the LICENSE conditions:
-!! http://icon-art.imk-tro.kit.edu/
-!! Institute of Meteorology and Climate Research, KIT, Karlsruhe
-!>
 MODULE mo_art_seas_watercont
 ! ICON
   USE mo_kind,                          ONLY: wp

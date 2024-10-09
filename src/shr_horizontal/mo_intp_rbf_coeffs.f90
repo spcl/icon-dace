@@ -1,8 +1,3 @@
-! Contains the implementation of interpolation and reconstruction
-! routines used by the shallow water model, including the RBF
-! reconstruction routines.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,7 +7,11 @@
 ! See AUTHORS.TXT for a list of authors
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------  
+! ---------------------------------------------------------------
+
+! Contains the implementation of interpolation and reconstruction
+! routines used by the shallow water model, including the RBF
+! reconstruction routines.
 
 #ifdef __xlC__
 @PROCESS smp=noopt
@@ -51,7 +50,7 @@ USE mo_interpol_config,     ONLY: rbf_vec_dim_c, rbf_vec_dim_e, rbf_vec_dim_v,  
   &                               rbf_vec_kern_v, rbf_vec_scale_c, rbf_vec_scale_e,&
   &                               rbf_vec_scale_v
 USE mo_sync,                ONLY: SYNC_C, SYNC_E, SYNC_V, sync_patch_array, sync_idx
-USE mo_grid_geometry_info,  ONLY: sphere_geometry
+USE mo_lib_grid_geometry_info,  ONLY: sphere_geometry
 USE mo_physical_constants,  ONLY: earth_radius
 USE mo_math_constants,      ONLY: deg2rad  ! = pi/180
 USE mo_mpi,                 ONLY: get_my_mpi_work_id  ! only for debugging

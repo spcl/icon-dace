@@ -1,10 +1,3 @@
-!
-! mo_nh_diffusion
-!
-! Diffusion in the nonhydrostatic model
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! mo_nh_diffusion
+!
+! Diffusion in the nonhydrostatic model
 
 !----------------------------
 #include "omp_definitions.inc"

@@ -1,6 +1,3 @@
-!
-! Configuration setup for SPPT (Stochastic Pertubation of Physics Tendencies)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration setup for SPPT (Stochastic Pertubation of Physics Tendencies)
 
 MODULE mo_sppt_config
 

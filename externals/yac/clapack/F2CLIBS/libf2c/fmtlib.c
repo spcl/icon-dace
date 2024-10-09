@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /*	@(#)fmtlib.c	1.2	*/
 #define MAXINTLENGTH 23
 

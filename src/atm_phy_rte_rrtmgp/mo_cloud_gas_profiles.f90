@@ -1,5 +1,3 @@
-! Module determining gas profiles used in radiative transfer
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module determining gas profiles used in radiative transfer
 
 MODULE mo_cloud_gas_profiles
 

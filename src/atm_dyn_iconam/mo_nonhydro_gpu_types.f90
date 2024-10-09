@@ -1,7 +1,3 @@
-!
-! Type definition for the GPU implementation of the dynamical core of ICONAM.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Type definition for the GPU implementation of the dynamical core of ICONAM.
 
 MODULE mo_nonhydro_gpu_types
 

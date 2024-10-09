@@ -1,6 +1,3 @@
-! Module contains some constants relevant for implementational issues.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module contains some constants relevant for implementational issues.
 
 MODULE mo_impl_constants
 !-------------------------------------------------------------------------

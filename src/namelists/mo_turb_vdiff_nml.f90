@@ -1,8 +1,3 @@
-! Namelist for VDIFF
-!
-! These subroutines are called by read_atmo_namelists and do the VDIFF setup.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for VDIFF
+!
+! These subroutines are called by read_atmo_namelists and do the VDIFF setup.
 
 MODULE mo_turb_vdiff_nml
   USE mo_kind, ONLY: wp

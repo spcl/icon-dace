@@ -908,7 +908,8 @@ cat >> ${ocean_namelist} << EOF
   diagnose_for_heat_content       = .TRUE.
   eddydiag                        = .FALSE.
   diagnose_for_tendencies         = .TRUE.
-  use_age_tracer                  = .TRUE.
+  diagnose_age                    = .TRUE.
+  diagnose_green                  = .TRUE.
 /
 
 &io_nml

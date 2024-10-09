@@ -1,7 +1,3 @@
-!
-!  Declares parameters computed during the initialization of the physics
-!  parameterizations that have to be domain-dependent
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!  Declares parameters computed during the initialization of the physics
+!  parameterizations that have to be domain-dependent
 
 MODULE mo_nwp_parameters
 

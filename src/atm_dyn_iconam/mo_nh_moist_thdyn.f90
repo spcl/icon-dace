@@ -1,7 +1,3 @@
-! Contains correction term for moist thermodynamics (moisture-dependence of heat capacities)
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains correction term for moist thermodynamics (moisture-dependence of heat capacities)
 
 !----------------------------
 #include "omp_definitions.inc"

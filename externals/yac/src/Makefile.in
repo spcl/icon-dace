@@ -14,58 +14,9 @@
 
 @SET_MAKE@
 
+# Copyright (c) 2024 The YAC Authors
 #
-# @file Makefile.am
-#
-# @copyright Copyright  (C)  2020 Moritz Hanke <hanke@dkrz.de>
-#                                 Rene Redler <rene.redler@mpimet.mpg.de>
-#                                 Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#                                 Teresa Holfeld <teresa.holfeld@zmaw.de>
-#                                 Thomas Jahns <jahns@dkrz.de>
-#
-# @version 1.0
-# @author Moritz Hanke <hanke@dkrz.de>
-#         Rene Redler <rene.redler@mpimet.mpg.de>
-#         Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#         Thomas Jahns <jahns@dkrz.de>
-#
-# Keywords:
-# Maintainer: Moritz Hanke <hanke@dkrz.de>
-#             Rene Redler <rene.redler@mpimet.mpg.de>
-#             Sergey Kosukhin <sergey.kosukhin@mpimet.mpg.de>
-#             Thomas Jahns <jahns@dkrz.de>
-# URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
-#
-# This file is part of YAC.
-#
-# Redistribution and use in source and binary forms, with or without
-# modification, are  permitted provided that the following conditions are
-# met:
-#
-# Redistributions of source code must retain the above copyright notice,
-# this list of conditions and the following disclaimer.
-#
-# Redistributions in binary form must reproduce the above copyright
-# notice, this list of conditions and the following disclaimer in the
-# documentation and/or other materials provided with the distribution.
-#
-# Neither the name of the DKRZ GmbH nor the names of its contributors
-# may be used to endorse or promote products derived from this software
-# without specific prior written permission.
-#
-# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
-# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
-# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
-# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
-# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
-# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
-# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
-# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
-# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
-# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
-# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
-#
-
+# SPDX-License-Identifier: BSD-3-Clause
 
 
 VPATH = @srcdir@
@@ -142,9 +93,10 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@ENABLE_MCI_TRUE@am__append_1 = mci
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler_simple.m4 \
 	$(top_srcdir)/m4/acx_fc_c_compatible.m4 \
 	$(top_srcdir)/m4/acx_fc_include.m4 \
 	$(top_srcdir)/m4/acx_fc_line_length.m4 \
@@ -155,6 +107,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/acx_lang_lib.m4 \
 	$(top_srcdir)/m4/acx_lang_macro.m4 \
 	$(top_srcdir)/m4/acx_lang_mpi.m4 \
+	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
 	$(top_srcdir)/m4/acx_prog_mpirun.m4 \
 	$(top_srcdir)/m4/acx_prog_search.m4 \
@@ -163,8 +116,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/tj_find_type.m4 $(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(dist_noinst_DATA) \
-	$(include_HEADERS) $(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = config.h yac_config.h
 CONFIG_CLEAN_FILES =
@@ -196,8 +148,7 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" \
-	"$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
 LIBRARIES = $(lib_LIBRARIES)
 AM_V_AR = $(am__v_AR_@AM_V@)
 am__v_AR_ = $(am__v_AR_@AM_DEFAULT_V@)
@@ -205,37 +156,9 @@ am__v_AR_0 = @echo "  AR      " $@;
 am__v_AR_1 = 
 libyac_a_AR = $(AR) $(ARFLAGS)
 libyac_a_LIBADD =
-am__dirstamp = $(am__leading_dot)dirstamp
-am_libyac_a_OBJECTS = area.$(OBJEXT) bnd_circle.$(OBJEXT) \
-	bnd_triangle.$(OBJEXT) check_overlap.$(OBJEXT) \
-	clipping.$(OBJEXT) component.$(OBJEXT) config_yaml.$(OBJEXT) \
-	core/core.$(OBJEXT) core/xmalloc.$(OBJEXT) \
-	core/xstdio.$(OBJEXT) couple_config.$(OBJEXT) \
-	dist_grid.$(OBJEXT) dist_grid_utils.$(OBJEXT) \
-	ensure_array_size.$(OBJEXT) event.$(OBJEXT) fields.$(OBJEXT) \
-	grid.$(OBJEXT) grid_cell.$(OBJEXT) grid_curve2d.$(OBJEXT) \
-	grid_reg2d.$(OBJEXT) grid_reg2d_common.$(OBJEXT) \
-	grid_unstruct.$(OBJEXT) instance.$(OBJEXT) \
-	interp_grid.$(OBJEXT) interp_method.$(OBJEXT) \
-	interp_method_avg.$(OBJEXT) interp_method_callback.$(OBJEXT) \
-	interp_method_check.$(OBJEXT) interp_method_conserv.$(OBJEXT) \
-	interp_method_creep.$(OBJEXT) interp_method_file.$(OBJEXT) \
-	interp_method_fixed.$(OBJEXT) interp_method_hcsbb.$(OBJEXT) \
-	interp_method_nnn.$(OBJEXT) interp_method_spmap.$(OBJEXT) \
-	interp_stack_config.$(OBJEXT) interp_weights.$(OBJEXT) \
-	interpolation.$(OBJEXT) interpolation_exchange.$(OBJEXT) \
-	interpolation_utils.$(OBJEXT) interpolation_direct.$(OBJEXT) \
-	interpolation_direct_mf.$(OBJEXT) \
-	interpolation_fixed.$(OBJEXT) \
-	interpolation_sum_mvp_at_src.$(OBJEXT) \
-	interpolation_sum_mvp_at_tgt.$(OBJEXT) intersection.$(OBJEXT) \
-	interval_tree.$(OBJEXT) io_utils.$(OBJEXT) mergesort.$(OBJEXT) \
-	mo_yac_finterface.$(OBJEXT) proc_sphere_part.$(OBJEXT) \
-	quicksort.$(OBJEXT) sphere_part.$(OBJEXT) utils.$(OBJEXT) \
-	yac_finterface.$(OBJEXT) yac_interface.$(OBJEXT) \
-	yac_lapack_interface.$(OBJEXT) yac_mpi.$(OBJEXT) \
-	yac_redirstdout.$(OBJEXT)
-libyac_a_OBJECTS = $(am_libyac_a_OBJECTS)
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@nodist_libyac_a_OBJECTS =  \
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@	libyac.$(OBJEXT)
+libyac_a_OBJECTS = $(nodist_libyac_a_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -251,55 +174,8 @@ am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/area.Po ./$(DEPDIR)/bnd_circle.Po \
-	./$(DEPDIR)/bnd_triangle.Po ./$(DEPDIR)/check_overlap.Po \
-	./$(DEPDIR)/clipping.Po ./$(DEPDIR)/component.Po \
-	./$(DEPDIR)/config_yaml.Po ./$(DEPDIR)/couple_config.Po \
-	./$(DEPDIR)/dist_grid.Po ./$(DEPDIR)/dist_grid_utils.Po \
-	./$(DEPDIR)/ensure_array_size.Po ./$(DEPDIR)/event.Po \
-	./$(DEPDIR)/fields.Po ./$(DEPDIR)/grid.Po \
-	./$(DEPDIR)/grid_cell.Po ./$(DEPDIR)/grid_curve2d.Po \
-	./$(DEPDIR)/grid_reg2d.Po ./$(DEPDIR)/grid_reg2d_common.Po \
-	./$(DEPDIR)/grid_unstruct.Po ./$(DEPDIR)/instance.Po \
-	./$(DEPDIR)/interp_grid.Po ./$(DEPDIR)/interp_method.Po \
-	./$(DEPDIR)/interp_method_avg.Po \
-	./$(DEPDIR)/interp_method_callback.Po \
-	./$(DEPDIR)/interp_method_check.Po \
-	./$(DEPDIR)/interp_method_conserv.Po \
-	./$(DEPDIR)/interp_method_creep.Po \
-	./$(DEPDIR)/interp_method_file.Po \
-	./$(DEPDIR)/interp_method_fixed.Po \
-	./$(DEPDIR)/interp_method_hcsbb.Po \
-	./$(DEPDIR)/interp_method_nnn.Po \
-	./$(DEPDIR)/interp_method_spmap.Po \
-	./$(DEPDIR)/interp_stack_config.Po \
-	./$(DEPDIR)/interp_weights.Po ./$(DEPDIR)/interpolation.Po \
-	./$(DEPDIR)/interpolation_direct.Po \
-	./$(DEPDIR)/interpolation_direct_mf.Po \
-	./$(DEPDIR)/interpolation_exchange.Po \
-	./$(DEPDIR)/interpolation_fixed.Po \
-	./$(DEPDIR)/interpolation_sum_mvp_at_src.Po \
-	./$(DEPDIR)/interpolation_sum_mvp_at_tgt.Po \
-	./$(DEPDIR)/interpolation_utils.Po ./$(DEPDIR)/intersection.Po \
-	./$(DEPDIR)/interval_tree.Po ./$(DEPDIR)/io_utils.Po \
-	./$(DEPDIR)/mergesort.Po ./$(DEPDIR)/proc_sphere_part.Po \
-	./$(DEPDIR)/quicksort.Po ./$(DEPDIR)/sphere_part.Po \
-	./$(DEPDIR)/utils.Po ./$(DEPDIR)/yac_interface.Po \
-	./$(DEPDIR)/yac_lapack_interface.Po ./$(DEPDIR)/yac_mpi.Po \
-	./$(DEPDIR)/yac_redirstdout.Po core/$(DEPDIR)/core.Po \
-	core/$(DEPDIR)/xmalloc.Po core/$(DEPDIR)/xstdio.Po
+am__depfiles_remade = ./$(DEPDIR)/libyac.Po
 am__mv = mv -f
-AM_V_PPFC = $(am__v_PPFC_@AM_V@)
-am__v_PPFC_ = $(am__v_PPFC_@AM_DEFAULT_V@)
-am__v_PPFC_0 = @echo "  PPFC    " $@;
-am__v_PPFC_1 = 
-FCLD = $(FC)
-FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
-	$@
-AM_V_FCLD = $(am__v_FCLD_@AM_V@)
-am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
-am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -312,15 +188,30 @@ AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
 am__v_CCLD_1 = 
-SOURCES = $(libyac_a_SOURCES)
-DIST_SOURCES = $(libyac_a_SOURCES)
+SOURCES = $(nodist_libyac_a_SOURCES)
+DIST_SOURCES =
+RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
+	ctags-recursive dvi-recursive html-recursive info-recursive \
+	install-data-recursive install-dvi-recursive \
+	install-exec-recursive install-html-recursive \
+	install-info-recursive install-pdf-recursive \
+	install-ps-recursive install-recursive installcheck-recursive \
+	installdirs-recursive pdf-recursive ps-recursive \
+	tags-recursive uninstall-recursive
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-DATA = $(dist_noinst_DATA) $(nodist_pkgconfig_DATA)
-HEADERS = $(include_HEADERS) $(nodist_include_HEADERS)
+HEADERS = $(nodist_include_HEADERS)
+RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+  distclean-recursive maintainer-clean-recursive
+am__recursive_targets = \
+  $(RECURSIVE_TARGETS) \
+  $(RECURSIVE_CLEAN_TARGETS) \
+  $(am__extra_recursive_targets)
+AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
+	distdir distdir-am
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP) \
 	config.h.in yac_config.h.in
 # Read a list of newline-separated strings from the standard input,
@@ -339,9 +230,35 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
+DIST_SUBDIRS = core utils mci pkgconfig
 am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/config.h.in \
 	$(srcdir)/yac_config.h.in $(top_srcdir)/config/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+am__relativize = \
+  dir0=`pwd`; \
+  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
+  sed_rest='s,^[^/]*/*,,'; \
+  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
+  sed_butlast='s,/*[^/]*$$,,'; \
+  while test -n "$$dir1"; do \
+    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
+    if test "$$first" != "."; then \
+      if test "$$first" = ".."; then \
+        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
+        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
+      else \
+        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
+        if test "$$first2" = "$$first"; then \
+          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
+        else \
+          dir2="../$$dir2"; \
+        fi; \
+        dir0="$$dir0"/"$$first"; \
+      fi; \
+    fi; \
+    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
+  done; \
+  reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -358,6 +275,7 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CURL = @CURL@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -385,7 +303,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LAPACK_CFLAGS = @LAPACK_CFLAGS@
 LAPACK_CLIBS = @LAPACK_CLIBS@
-LAPACK_FCLIBS = @LAPACK_FCLIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -403,6 +320,8 @@ MTIME_CLIBS = @MTIME_CLIBS@
 NETCDF_CFLAGS = @NETCDF_CFLAGS@
 NETCDF_CLIBS = @NETCDF_CLIBS@
 OBJEXT = @OBJEXT@
+OPENMP_CFLAGS = @OPENMP_CFLAGS@
+OPENMP_FCLIBS = @OPENMP_FCLIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -412,16 +331,19 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PIC_CFLAGS = @PIC_CFLAGS@
+PIC_FCFLAGS = @PIC_FCFLAGS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
+PYTHON_CFLAGS = @PYTHON_CFLAGS@
 RANLIB = @RANLIB@
+RPATH_CFLAGS = @RPATH_CFLAGS@
+RPATH_FCFLAGS = @RPATH_FCFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_ENVIRONMENT_MAKE = @SHLIB_ENVIRONMENT_MAKE@
 STRIP = @STRIP@
 VERSION = @VERSION@
 YAXT_CFLAGS = @YAXT_CFLAGS@
@@ -481,149 +403,17 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-lib_LIBRARIES = libyac.a
-include_HEADERS = yac_interface.h
-nodist_include_HEADERS = yac_config.h $(mo_yac_finterface_mod)
-@FCMODUC_FALSE@mo_yac_finterface_mod = mo_yac_finterface.$(FCMODEXT)
-@FCMODUC_TRUE@mo_yac_finterface_mod = MO_YAC_FINTERFACE.$(FCMODEXT)
-pkgconfigdir = $(libdir)/pkgconfig
-dist_noinst_DATA = pkgconfig/yac.pc.in
-nodist_pkgconfig_DATA = pkgconfig/yac.pc
-libyac_a_SOURCES = \
-        area.c \
-        area.h \
-        bnd_circle.c \
-        bnd_triangle.c \
-        check_overlap.c \
-        clipping.c \
-        clipping.h \
-        component.c \
-        component.h \
-        config_yaml.c \
-        config_yaml.h \
-        core/core.c \
-        core/core.h \
-        core/ppm_xfuncs.h \
-        core/symprefix.h \
-        core/xmalloc.c \
-        core/xstdio.c \
-        couple_config.c \
-        couple_config.h \
-        dist_grid.c \
-        dist_grid.h \
-        dist_grid_utils.c \
-        dist_grid_utils.h \
-        ensure_array_size.c \
-        ensure_array_size.h \
-        event.c \
-        event.h \
-        fields.c \
-        fields.h \
-        geometry.h \
-        grid.c \
-        grid.h \
-        grid_cell.c \
-        grid_cell.h \
-        grid_curve2d.c \
-        grid_reg2d.c \
-        grid_reg2d_common.c \
-        grid_reg2d_common.h \
-        grid_unstruct.c \
-        instance.c \
-        instance.h \
-        interp_grid.c \
-        interp_grid.h \
-        interp_method.c \
-        interp_method.h \
-        interp_method_avg.c \
-        interp_method_avg.h \
-        interp_method_callback.c \
-        interp_method_callback.h \
-        interp_method_check.c \
-        interp_method_check.h \
-        interp_method_conserv.c \
-        interp_method_conserv.h \
-        interp_method_creep.c \
-        interp_method_creep.h \
-        interp_method_file.c \
-        interp_method_file.h \
-        interp_method_fixed.c \
-        interp_method_fixed.h \
-        interp_method_hcsbb.c \
-        interp_method_hcsbb.h \
-        interp_method_nnn.c \
-        interp_method_nnn.h \
-        interp_method_spmap.c \
-        interp_method_spmap.h \
-        interp_stack_config.c \
-        interp_stack_config.h \
-        interp_weights.c \
-        interp_weights.h \
-        interpolation.c \
-        interpolation.h \
-        interpolation_exchange.c \
-        interpolation_exchange.h \
-        interpolation_utils.c \
-        interpolation_utils.h \
-        interpolation_direct.c \
-        interpolation_direct.h \
-        interpolation_direct_mf.c \
-        interpolation_direct_mf.h \
-        interpolation_fixed.c \
-        interpolation_fixed.h \
-        interpolation_sum_mvp_at_src.c \
-        interpolation_sum_mvp_at_src.h \
-        interpolation_sum_mvp_at_tgt.c \
-        interpolation_sum_mvp_at_tgt.h \
-        intersection.c \
-        interval_tree.c \
-        interval_tree.h \
-        io_utils.c \
-        io_utils.h \
-        mergesort.c \
-        mo_yac_finterface.F90 \
-        proc_sphere_part.c \
-        proc_sphere_part.h \
-        quicksort.c \
-        quicksort_template.h \
-        quicksort_template_2.h \
-        sphere_part.c \
-        sphere_part.h \
-        utils.c \
-        utils.h \
-        version.h \
-        yac_finterface.F90 \
-        yac_interface.c \
-        yac_interface.h \
-        yac_lapack_interface.c \
-        yac_lapack_interface.h \
-        yac_mpi.c \
-        yac_mpi.h \
-        yac_redirstdout.c \
-        feenableexcept.h
-
-AM_CFLAGS = \
-        $(PIC_CFLAGS) \
-        $(MPI_CFLAGS) \
-        $(YAXT_CFLAGS) \
-        $(NETCDF_CFLAGS) \
-        $(FYAML_CFLAGS) \
-        $(MTIME_CFLAGS) \
-        $(LAPACK_CFLAGS)
-
-
-# Compile *.F90 without CPPFLAGS, which are normally meant for the C compiler
-# and might not be compatible with the Fortran compiler:
-FCDEFS = $(FCPPDEF)HAVE_CONFIG_H
-DEFAULT_FCINCLUDES = $(FCPPINC).@yac_fcisrc@
-PPFCCOMPILE = $(FC) $(FCDEFS) $(DEFAULT_FCINCLUDES) $(FCINCLUDES) \
-	$(AM_FCFLAGS) $(FCFLAGS)
-
+nodist_include_HEADERS = yac_config.h
+SUBDIRS = core utils $(am__append_1) pkgconfig
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@lib_LIBRARIES = libyac.a
+# Keep 'make dist' working:
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@nodist_libyac_a_SOURCES = libyac.c
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@manifests = core/manifest.txt mci/manifest.txt
 all: config.h yac_config.h
-	$(MAKE) $(AM_MAKEFLAGS) all-am
+	$(MAKE) $(AM_MAKEFLAGS) all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .F90 .c .o .obj
+.SUFFIXES: .c .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -707,100 +497,30 @@ uninstall-libLIBRARIES:
 
 clean-libLIBRARIES:
 	-test -z "$(lib_LIBRARIES)" || rm -f $(lib_LIBRARIES)
-core/$(am__dirstamp):
-	@$(MKDIR_P) core
-	@: > core/$(am__dirstamp)
-core/$(DEPDIR)/$(am__dirstamp):
-	@$(MKDIR_P) core/$(DEPDIR)
-	@: > core/$(DEPDIR)/$(am__dirstamp)
-core/core.$(OBJEXT): core/$(am__dirstamp) \
-	core/$(DEPDIR)/$(am__dirstamp)
-core/xmalloc.$(OBJEXT): core/$(am__dirstamp) \
-	core/$(DEPDIR)/$(am__dirstamp)
-core/xstdio.$(OBJEXT): core/$(am__dirstamp) \
-	core/$(DEPDIR)/$(am__dirstamp)
 
-libyac.a: $(libyac_a_OBJECTS) $(libyac_a_DEPENDENCIES) $(EXTRA_libyac_a_DEPENDENCIES) 
-	$(AM_V_at)-rm -f libyac.a
-	$(AM_V_AR)$(libyac_a_AR) libyac.a $(libyac_a_OBJECTS) $(libyac_a_LIBADD)
-	$(AM_V_at)$(RANLIB) libyac.a
+@ENABLE_DEPRECATED_FALSE@libyac.a: $(libyac_a_OBJECTS) $(libyac_a_DEPENDENCIES) $(EXTRA_libyac_a_DEPENDENCIES) 
+@ENABLE_DEPRECATED_FALSE@	$(AM_V_at)-rm -f libyac.a
+@ENABLE_DEPRECATED_FALSE@	$(AM_V_AR)$(libyac_a_AR) libyac.a $(libyac_a_OBJECTS) $(libyac_a_LIBADD)
+@ENABLE_DEPRECATED_FALSE@	$(AM_V_at)$(RANLIB) libyac.a
+
+@ENABLE_MCI_FALSE@libyac.a: $(libyac_a_OBJECTS) $(libyac_a_DEPENDENCIES) $(EXTRA_libyac_a_DEPENDENCIES) 
+@ENABLE_MCI_FALSE@	$(AM_V_at)-rm -f libyac.a
+@ENABLE_MCI_FALSE@	$(AM_V_AR)$(libyac_a_AR) libyac.a $(libyac_a_OBJECTS) $(libyac_a_LIBADD)
+@ENABLE_MCI_FALSE@	$(AM_V_at)$(RANLIB) libyac.a
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
-	-rm -f core/*.$(OBJEXT)
 
 distclean-compile:
 	-rm -f *.tab.c
 
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/area.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bnd_circle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/bnd_triangle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/check_overlap.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/clipping.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/component.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/config_yaml.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/couple_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_grid.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/dist_grid_utils.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/ensure_array_size.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/event.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/fields.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_cell.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_curve2d.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_reg2d.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_reg2d_common.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/grid_unstruct.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/instance.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_grid.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_avg.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_callback.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_check.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_conserv.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_creep.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_file.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_fixed.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_hcsbb.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_nnn.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_method_spmap.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_stack_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interp_weights.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_direct.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_direct_mf.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_exchange.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_fixed.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_sum_mvp_at_src.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_sum_mvp_at_tgt.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interpolation_utils.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/intersection.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/interval_tree.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/io_utils.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/mergesort.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/proc_sphere_part.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/quicksort.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/sphere_part.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/utils.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yac_interface.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yac_lapack_interface.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yac_mpi.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/yac_redirstdout.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@core/$(DEPDIR)/core.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@core/$(DEPDIR)/xmalloc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@core/$(DEPDIR)/xstdio.Po@am__quote@ # am--include-marker
+@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/libyac.Po@am__quote@ # am--include-marker
 
 $(am__depfiles_remade):
 	@$(MKDIR_P) $(@D)
 	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
 
 am--depfiles: $(am__depfiles_remade)
-
-.F90.o:
-	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ $<
-
-.F90.obj:
-	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -817,48 +537,6 @@ am--depfiles: $(am__depfiles_remade)
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
 @AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
 @am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-install-nodist_pkgconfigDATA: $(nodist_pkgconfig_DATA)
-	@$(NORMAL_INSTALL)
-	@list='$(nodist_pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pkgconfigdir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pkgconfigdir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pkgconfigdir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pkgconfigdir)" || exit $$?; \
-	done
-
-uninstall-nodist_pkgconfigDATA:
-	@$(NORMAL_UNINSTALL)
-	@list='$(nodist_pkgconfig_DATA)'; test -n "$(pkgconfigdir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(pkgconfigdir)'; $(am__uninstall_files_from_dir)
-install-includeHEADERS: $(include_HEADERS)
-	@$(NORMAL_INSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(includedir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(includedir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then d=; else d="$(srcdir)/"; fi; \
-	  echo "$$d$$p"; \
-	done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_HEADER) $$files '$(DESTDIR)$(includedir)'"; \
-	  $(INSTALL_HEADER) $$files "$(DESTDIR)$(includedir)" || exit $$?; \
-	done
-
-uninstall-includeHEADERS:
-	@$(NORMAL_UNINSTALL)
-	@list='$(include_HEADERS)'; test -n "$(includedir)" || list=; \
-	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 install-nodist_includeHEADERS: $(nodist_include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -881,14 +559,61 @@ uninstall-nodist_includeHEADERS:
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
 
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run 'make' without going through this Makefile.
+# To change the values of 'make' variables: instead of editing Makefiles,
+# (1) if the variable is set in 'config.status', edit 'config.status'
+#     (which will cause the Makefiles to be regenerated when you run 'make');
+# (2) otherwise, pass the desired values on the 'make' command line.
+$(am__recursive_targets):
+	@fail=; \
+	if $(am__make_keepgoing); then \
+	  failcom='fail=yes'; \
+	else \
+	  failcom='exit 1'; \
+	fi; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
+
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
-tags: tags-am
+tags: tags-recursive
 TAGS: tags
 
 tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	set x; \
 	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
+	fi; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
 	$(am__define_uniq_tagged_files); \
 	shift; \
 	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
@@ -901,7 +626,7 @@ tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	      $$unique; \
 	  fi; \
 	fi
-ctags: ctags-am
+ctags: ctags-recursive
 
 CTAGS: ctags
 ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
@@ -914,7 +639,7 @@ GTAGS:
 	here=`$(am__cd) $(top_builddir) && pwd` \
 	  && $(am__cd) $(top_srcdir) \
 	  && gtags -i $(GTAGS_ARGS) "$$here"
-cscopelist: cscopelist-am
+cscopelist: cscopelist-recursive
 
 cscopelist-am: $(am__tagged_files)
 	list='$(am__tagged_files)'; \
@@ -965,22 +690,48 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    $(am__make_dryrun) \
+	      || test -d "$(distdir)/$$subdir" \
+	      || $(MKDIR_P) "$(distdir)/$$subdir" \
+	      || exit 1; \
+	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
+	    $(am__relativize); \
+	    new_distdir=$$reldir; \
+	    dir1=$$subdir; dir2="$(top_distdir)"; \
+	    $(am__relativize); \
+	    new_top_distdir=$$reldir; \
+	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
+	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
+	    ($(am__cd) $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$new_top_distdir" \
+	        distdir="$$new_distdir" \
+		am__remove_distdir=: \
+		am__skip_length_check=: \
+		am__skip_mode_fix=: \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
+	done
 check-am: all-am
-check: check-am
-all-am: Makefile $(LIBRARIES) $(DATA) $(HEADERS) config.h yac_config.h
-installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pkgconfigdir)" "$(DESTDIR)$(includedir)" "$(DESTDIR)$(includedir)"; do \
+check: check-recursive
+all-am: Makefile $(LIBRARIES) $(HEADERS) config.h yac_config.h
+installdirs: installdirs-recursive
+installdirs-am:
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
-install: install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+install: install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	if test -z '$(STRIP)'; then \
 	  $(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
@@ -998,224 +749,104 @@ clean-generic:
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
-	-rm -f core/$(DEPDIR)/$(am__dirstamp)
-	-rm -f core/$(am__dirstamp)
 
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-am
+clean: clean-recursive
 
 clean-am: clean-generic clean-libLIBRARIES mostlyclean-am
 
-distclean: distclean-am
-		-rm -f ./$(DEPDIR)/area.Po
-	-rm -f ./$(DEPDIR)/bnd_circle.Po
-	-rm -f ./$(DEPDIR)/bnd_triangle.Po
-	-rm -f ./$(DEPDIR)/check_overlap.Po
-	-rm -f ./$(DEPDIR)/clipping.Po
-	-rm -f ./$(DEPDIR)/component.Po
-	-rm -f ./$(DEPDIR)/config_yaml.Po
-	-rm -f ./$(DEPDIR)/couple_config.Po
-	-rm -f ./$(DEPDIR)/dist_grid.Po
-	-rm -f ./$(DEPDIR)/dist_grid_utils.Po
-	-rm -f ./$(DEPDIR)/ensure_array_size.Po
-	-rm -f ./$(DEPDIR)/event.Po
-	-rm -f ./$(DEPDIR)/fields.Po
-	-rm -f ./$(DEPDIR)/grid.Po
-	-rm -f ./$(DEPDIR)/grid_cell.Po
-	-rm -f ./$(DEPDIR)/grid_curve2d.Po
-	-rm -f ./$(DEPDIR)/grid_reg2d.Po
-	-rm -f ./$(DEPDIR)/grid_reg2d_common.Po
-	-rm -f ./$(DEPDIR)/grid_unstruct.Po
-	-rm -f ./$(DEPDIR)/instance.Po
-	-rm -f ./$(DEPDIR)/interp_grid.Po
-	-rm -f ./$(DEPDIR)/interp_method.Po
-	-rm -f ./$(DEPDIR)/interp_method_avg.Po
-	-rm -f ./$(DEPDIR)/interp_method_callback.Po
-	-rm -f ./$(DEPDIR)/interp_method_check.Po
-	-rm -f ./$(DEPDIR)/interp_method_conserv.Po
-	-rm -f ./$(DEPDIR)/interp_method_creep.Po
-	-rm -f ./$(DEPDIR)/interp_method_file.Po
-	-rm -f ./$(DEPDIR)/interp_method_fixed.Po
-	-rm -f ./$(DEPDIR)/interp_method_hcsbb.Po
-	-rm -f ./$(DEPDIR)/interp_method_nnn.Po
-	-rm -f ./$(DEPDIR)/interp_method_spmap.Po
-	-rm -f ./$(DEPDIR)/interp_stack_config.Po
-	-rm -f ./$(DEPDIR)/interp_weights.Po
-	-rm -f ./$(DEPDIR)/interpolation.Po
-	-rm -f ./$(DEPDIR)/interpolation_direct.Po
-	-rm -f ./$(DEPDIR)/interpolation_direct_mf.Po
-	-rm -f ./$(DEPDIR)/interpolation_exchange.Po
-	-rm -f ./$(DEPDIR)/interpolation_fixed.Po
-	-rm -f ./$(DEPDIR)/interpolation_sum_mvp_at_src.Po
-	-rm -f ./$(DEPDIR)/interpolation_sum_mvp_at_tgt.Po
-	-rm -f ./$(DEPDIR)/interpolation_utils.Po
-	-rm -f ./$(DEPDIR)/intersection.Po
-	-rm -f ./$(DEPDIR)/interval_tree.Po
-	-rm -f ./$(DEPDIR)/io_utils.Po
-	-rm -f ./$(DEPDIR)/mergesort.Po
-	-rm -f ./$(DEPDIR)/proc_sphere_part.Po
-	-rm -f ./$(DEPDIR)/quicksort.Po
-	-rm -f ./$(DEPDIR)/sphere_part.Po
-	-rm -f ./$(DEPDIR)/utils.Po
-	-rm -f ./$(DEPDIR)/yac_interface.Po
-	-rm -f ./$(DEPDIR)/yac_lapack_interface.Po
-	-rm -f ./$(DEPDIR)/yac_mpi.Po
-	-rm -f ./$(DEPDIR)/yac_redirstdout.Po
-	-rm -f core/$(DEPDIR)/core.Po
-	-rm -f core/$(DEPDIR)/xmalloc.Po
-	-rm -f core/$(DEPDIR)/xstdio.Po
+distclean: distclean-recursive
+		-rm -f ./$(DEPDIR)/libyac.Po
 	-rm -f Makefile
 distclean-am: clean-am distclean-compile distclean-generic \
 	distclean-hdr distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
 html-am:
 
-info: info-am
+info: info-recursive
 
 info-am:
 
-install-data-am: install-includeHEADERS install-nodist_includeHEADERS \
-	install-nodist_pkgconfigDATA
+install-data-am: install-nodist_includeHEADERS
 
-install-dvi: install-dvi-am
+install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
 install-exec-am: install-libLIBRARIES
 
-install-html: install-html-am
+install-html: install-html-recursive
 
 install-html-am:
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-am
+install-pdf: install-pdf-recursive
 
 install-pdf-am:
 
-install-ps: install-ps-am
+install-ps: install-ps-recursive
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/area.Po
-	-rm -f ./$(DEPDIR)/bnd_circle.Po
-	-rm -f ./$(DEPDIR)/bnd_triangle.Po
-	-rm -f ./$(DEPDIR)/check_overlap.Po
-	-rm -f ./$(DEPDIR)/clipping.Po
-	-rm -f ./$(DEPDIR)/component.Po
-	-rm -f ./$(DEPDIR)/config_yaml.Po
-	-rm -f ./$(DEPDIR)/couple_config.Po
-	-rm -f ./$(DEPDIR)/dist_grid.Po
-	-rm -f ./$(DEPDIR)/dist_grid_utils.Po
-	-rm -f ./$(DEPDIR)/ensure_array_size.Po
-	-rm -f ./$(DEPDIR)/event.Po
-	-rm -f ./$(DEPDIR)/fields.Po
-	-rm -f ./$(DEPDIR)/grid.Po
-	-rm -f ./$(DEPDIR)/grid_cell.Po
-	-rm -f ./$(DEPDIR)/grid_curve2d.Po
-	-rm -f ./$(DEPDIR)/grid_reg2d.Po
-	-rm -f ./$(DEPDIR)/grid_reg2d_common.Po
-	-rm -f ./$(DEPDIR)/grid_unstruct.Po
-	-rm -f ./$(DEPDIR)/instance.Po
-	-rm -f ./$(DEPDIR)/interp_grid.Po
-	-rm -f ./$(DEPDIR)/interp_method.Po
-	-rm -f ./$(DEPDIR)/interp_method_avg.Po
-	-rm -f ./$(DEPDIR)/interp_method_callback.Po
-	-rm -f ./$(DEPDIR)/interp_method_check.Po
-	-rm -f ./$(DEPDIR)/interp_method_conserv.Po
-	-rm -f ./$(DEPDIR)/interp_method_creep.Po
-	-rm -f ./$(DEPDIR)/interp_method_file.Po
-	-rm -f ./$(DEPDIR)/interp_method_fixed.Po
-	-rm -f ./$(DEPDIR)/interp_method_hcsbb.Po
-	-rm -f ./$(DEPDIR)/interp_method_nnn.Po
-	-rm -f ./$(DEPDIR)/interp_method_spmap.Po
-	-rm -f ./$(DEPDIR)/interp_stack_config.Po
-	-rm -f ./$(DEPDIR)/interp_weights.Po
-	-rm -f ./$(DEPDIR)/interpolation.Po
-	-rm -f ./$(DEPDIR)/interpolation_direct.Po
-	-rm -f ./$(DEPDIR)/interpolation_direct_mf.Po
-	-rm -f ./$(DEPDIR)/interpolation_exchange.Po
-	-rm -f ./$(DEPDIR)/interpolation_fixed.Po
-	-rm -f ./$(DEPDIR)/interpolation_sum_mvp_at_src.Po
-	-rm -f ./$(DEPDIR)/interpolation_sum_mvp_at_tgt.Po
-	-rm -f ./$(DEPDIR)/interpolation_utils.Po
-	-rm -f ./$(DEPDIR)/intersection.Po
-	-rm -f ./$(DEPDIR)/interval_tree.Po
-	-rm -f ./$(DEPDIR)/io_utils.Po
-	-rm -f ./$(DEPDIR)/mergesort.Po
-	-rm -f ./$(DEPDIR)/proc_sphere_part.Po
-	-rm -f ./$(DEPDIR)/quicksort.Po
-	-rm -f ./$(DEPDIR)/sphere_part.Po
-	-rm -f ./$(DEPDIR)/utils.Po
-	-rm -f ./$(DEPDIR)/yac_interface.Po
-	-rm -f ./$(DEPDIR)/yac_lapack_interface.Po
-	-rm -f ./$(DEPDIR)/yac_mpi.Po
-	-rm -f ./$(DEPDIR)/yac_redirstdout.Po
-	-rm -f core/$(DEPDIR)/core.Po
-	-rm -f core/$(DEPDIR)/xmalloc.Po
-	-rm -f core/$(DEPDIR)/xstdio.Po
+maintainer-clean: maintainer-clean-recursive
+		-rm -f ./$(DEPDIR)/libyac.Po
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-local
+mostlyclean-am: mostlyclean-compile mostlyclean-generic
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
-uninstall-am: uninstall-includeHEADERS uninstall-libLIBRARIES \
-	uninstall-nodist_includeHEADERS uninstall-nodist_pkgconfigDATA
+uninstall-am: uninstall-libLIBRARIES uninstall-nodist_includeHEADERS
 
-.MAKE: all install-am install-strip
+.MAKE: $(am__recursive_targets) all install-am install-strip
 
-.PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libLIBRARIES cscopelist-am ctags ctags-am \
-	distclean distclean-compile distclean-generic distclean-hdr \
+.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am \
+	am--depfiles check check-am clean clean-generic \
+	clean-libLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-hdr \
 	distclean-tags distdir dvi dvi-am html html-am info info-am \
 	install install-am install-data install-data-am install-dvi \
 	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-includeHEADERS install-info \
-	install-info-am install-libLIBRARIES install-man \
-	install-nodist_includeHEADERS install-nodist_pkgconfigDATA \
+	install-html-am install-info install-info-am \
+	install-libLIBRARIES install-man install-nodist_includeHEADERS \
 	install-pdf install-pdf-am install-ps install-ps-am \
 	install-strip installcheck installcheck-am installdirs \
-	maintainer-clean maintainer-clean-generic mostlyclean \
-	mostlyclean-compile mostlyclean-generic mostlyclean-local pdf \
-	pdf-am ps ps-am tags tags-am uninstall uninstall-am \
-	uninstall-includeHEADERS uninstall-libLIBRARIES \
-	uninstall-nodist_includeHEADERS uninstall-nodist_pkgconfigDATA
+	installdirs-am maintainer-clean maintainer-clean-generic \
+	mostlyclean mostlyclean-compile mostlyclean-generic pdf pdf-am \
+	ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-libLIBRARIES uninstall-nodist_includeHEADERS
 
 .PRECIOUS: Makefile
 
 
-yac_finterface.$(OBJEXT): $(mo_yac_finterface_mod)
-$(mo_yac_finterface_mod): mo_yac_finterface.$(OBJEXT)
-	@if test ! -f $@; then rm -f $<; $(MAKE) $<; fi
-
-mostlyclean-local:
-	-rm -f *.$(FCMODEXT) i.*.L *.i
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@libyac.a: $(manifests)
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@	$(AM_V_at)-rm -f $@
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@	$(AM_V_AR)$(AR) $(ARFLAGS) $@ `cat $(manifests)`
+@ENABLE_DEPRECATED_TRUE@@ENABLE_MCI_TRUE@	$(AM_V_at)$(RANLIB) $@
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

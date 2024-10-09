@@ -947,12 +947,10 @@ if [[ ${MD} =~ .*m.* ]]; then
 
             # find out how many nodes and processes per node are in use
 
-            N_NODES=`grep "no_of_nodes=" ${PREFIX}.${SCRIPT}.run`
-            eval N_NODES=\""${N_NODES#'no_of_nodes='}"\"
             OMP_NUM_THREADS=`grep "export OMP_NUM_THREADS=" ${PREFIX}.${SCRIPT}.run`
             eval OMP_NUM_THREADS=\""${OMP_NUM_THREADS#'export OMP_NUM_THREADS='}"\"
-            N_PPNODE=`grep "mpi_procs_pernode=" ${PREFIX}.${SCRIPT}.run`
-            eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
+            N_NODES=${no_of_nodes:?no_of_nodes not set}
+            N_PPNODE=${mpi_procs_pernode:?mpi_procs_pernode not set}
             N_PROCS=$(( N_NODES * N_PPNODE ))
 
             if [ $N_PROCS -gt 1 ]; then
@@ -1082,8 +1080,7 @@ if [[ ${MD} =~ .*o.* ]]; then
                 # number of tasks to the number of threads, these need
                 # to be fixed too
                 OMP_NUM_THREADS=$N_OMP_NUM_THREADS
-                N_PPNODE=`grep "mpi_procs_pernode=" ${PREFIX}.${SCRIPT}.run`
-                eval N_PPNODE=\""${N_PPNODE#'mpi_procs_pernode='}"\"
+                N_PPNODE=${mpi_procs_pernode:?mpi_procs_pernode not set}
 
                 # change script variables
                 sed -i \

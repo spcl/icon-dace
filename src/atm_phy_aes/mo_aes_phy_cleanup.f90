@@ -16,6 +16,7 @@ MODULE mo_aes_phy_cleanup
   USE mo_aes_phy_memory,           ONLY: destruct_aes_phy_memory
   USE mo_cloud_mig_memory,         ONLY: destruct_cloud_mig_memory
   USE mo_radiation_forcing_memory, ONLY: destruct_radiation_forcing_list
+  USE mo_atm_energy_memory,        ONLY: destruct_atm_energy
   USE mo_aes_phy_config,           ONLY: aes_phy_tc, dt_zero
   USE mo_turb_vdiff,               ONLY: vdiff_cleanup
 
@@ -51,6 +52,8 @@ CONTAINS
        lany = lany .OR. (aes_phy_tc(jg)%dt_mig > dt_zero)
     END DO
     IF (lany) CALL destruct_cloud_mig_memory
+
+    CALL destruct_atm_energy
 
     CALL destruct_aes_phy_memory
 

@@ -1,8 +1,3 @@
-!
-! This module has useful routines for LES runs
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module has useful routines for LES runs
 
 !----------------------------
 #include "omp_definitions.inc"

@@ -13,10 +13,12 @@ MODULE mo_rte_rrtmgp_interface
   USE mo_kind,                       ONLY: wp
   USE mo_math_constants,             ONLY: pi
   USE mo_physical_constants,         ONLY: rhoh2o, rd_o_cpd
-  USE mo_exception,                  ONLY: finish, warning
+  USE mo_exception,                  ONLY: finish
+#ifdef _OPENACC
+  USE mo_exception,                  ONLY: warning
+#endif
   USE mo_parallel_config,            ONLY: nproma_sub
   USE mo_bc_aeropt_kinne,            ONLY: set_bc_aeropt_kinne
-  USE mo_bc_aeropt_stenchikov,       ONLY: add_bc_aeropt_stenchikov
   USE mo_bc_aeropt_splumes,          ONLY: add_bc_aeropt_splumes
 
   USE mo_optical_props,              ONLY: ty_optical_props_1scl, &
@@ -33,8 +35,27 @@ MODULE mo_rte_rrtmgp_interface
 
   USE mo_rad_diag,                   ONLY: rad_aero_diag
   USE mo_timer,                      ONLY: ltimer, timer_start, timer_stop, &
-   &                                       timer_lrtm, timer_srtm
-  USE mo_radiation_config,           ONLY: lrad_aero_diag
+   &                                       timer_rte_rrtmgp_int, &
+   &                                       timer_rte_rrtmgp_int_onb, &
+   &                                       timer_gas_concs, &
+   &                                       timer_clamp_pr_temp, &
+   &                                       timer_source_lw, &
+   &                                       timer_atmos_lw, &
+   &                                       timer_k_dist_lw, &
+   &                                       timer_aerosol_lw, &
+   &                                       timer_rte_lw_clrsky, &
+   &                                       timer_clouds_bnd_lw, &
+   &                                       timer_cloud_optics_lw, &
+   &                                       timer_snow_bnd_lw, &
+   &                                       timer_rte_lw_allsky, &
+   &                                       timer_atmos_sw, &
+   &                                       timer_k_dist_sw, &
+   &                                       timer_aerosol_sw, &
+   &                                       timer_rte_sw_clrsky, &
+   &                                       timer_clouds_bnd_sw, &
+   &                                       timer_cloud_optics_sw, &
+   &                                       timer_snow_bnd_sw, &
+   &                                       timer_rte_sw_allsky
   USE mo_radiation_general,          ONLY: wavenum1, wavenum2
   USE mo_aes_rad_config,             ONLY: aes_rad_config
   USE mtime,                         ONLY: datetime
@@ -87,7 +108,7 @@ CONTAINS
   !-------------------------------------------------------------------
   SUBROUTINE rte_rrtmgp_interface(                                          &
       & jg, jb, jcs, jce, nproma, klev                                     ,&
-      & irad_aero       , lrad_coupled                                     ,&
+      & irad_aero       , lrad_aero_diag, lrad_coupled                     ,&
       & psctm           , ssi_factor                                       ,&
       & loland          ,loglac          ,this_datetime                    ,&
       & pcos_mu0        ,daylght_frc                                       ,&
@@ -122,6 +143,7 @@ CONTAINS
          nproma, klev, & !< array dimensions(?)
          irad_aero       !< aerosol control
 
+    LOGICAL, INTENT(IN) :: lrad_aero_diag                !< diagnose aerosol optical properties
     LOGICAL, INTENT(IN) :: lrad_coupled                  !< kinne aerosol from coupler (true) or file
     REAL(wp),INTENT(IN) :: psctm                         !< orbit and time dependent solar constant for radiation time step
     REAL(wp),INTENT(IN) :: ssi_factor(:)                 !< fraction of TSI in the 14 RRTM SW bands
@@ -199,32 +221,28 @@ CONTAINS
          aer_asy_2325  (:,:), & !< Asymmetry factor at 2325 nm
          aer_aod_9731  (:,:)    !< Aerosol optical density at 9731 nm
 
-    LOGICAL :: lclearsky, inhom_lts
+    LOGICAL :: lclrsky_lw, lclrsky_sw
+    LOGICAL :: inhom_lts
     REAL(wp) :: inhom_lts_max
 
     ! --------------------------------------------------------------------------
     INTEGER :: ncol_supplied, ncol_needed, jchunk_start, jchunk_end
     INTEGER :: nbndsw, nbndlw
     ! --- Aerosol optical properites - vertically reversed fields
-    REAL(wp) ::                &
-         x_cdnc       (nproma)  !< Scale factor for Cloud Droplet Number Concentration
-                                !<  baustelle - x_cndc should be used in cloud optics but isn't
     REAL(wp), ALLOCATABLE :: &
          aer_tau_lw(:,:,:),  & !< LW optical thickness of aerosols
          aer_tau_sw(:,:,:),  & !< aerosol optical thickness
          aer_ssa_sw(:,:,:),  & !< aerosol single scattering albedo
          aer_asy_sw(:,:,:)     !< aerosol asymmetry factor
+
+    IF (ltimer) CALL timer_start(timer_rte_rrtmgp_int)
+
     ! --------------------------------------------------------------------------
     !
     ! Aerosol optical properties are computed at this level because they require
     !   geographic and temporal information; the geographic information is lost
     !   when the data provided to RTE+RRTMGP are extracted from larger arrarys
     !
-    ! IF (aero == ...) THEN
-    ! iaero=0: No aerosol
-    ! iaero=13: only tropospheric Kinne aerosols
-    ! iaero=14: only Stenchikov's volcanic aerosols
-    ! iaero=15: tropospheric Kinne aerosols + volcanic Stenchikov's aerosols
     ! set all aerosols to zero first
 
     lneed_aerosols = (irad_aero /= 0)
@@ -245,41 +263,24 @@ CONTAINS
       aer_ssa_sw(:,:,:) = 1.0_wp
       aer_asy_sw(:,:,:) = 0.0_wp
       !$ACC END KERNELS
-
-      IF (irad_aero==13 .OR. irad_aero==15 .OR. irad_aero==18) THEN
-      ! iaero=13: only Kinne aerosols are used
-      ! iaero=15: Kinne aerosols plus Stenchikov's volcanic aerosols are used
-      ! iaero=18: Kinne background aerosols (of natural origin, 1850) are set
+      IF (irad_aero==12 .OR. irad_aero==13 .OR. irad_aero==19) THEN
+      ! irad_aero=12 Kinne aerosols (natural background, data are read
+      !      from a file without year in its name.
+      ! irad_aero=13: only Kinne aerosols are used
+      ! irad_aero=19: Kinne aerosols (background of natural origin,
+      ! read from a file without year in its name!) + simple plumes
         CALL set_bc_aeropt_kinne(this_datetime,                        &
               & jg,                                                    &
-              & jcs, nproma,    nproma,                klev,           &
-              & jb,             nbndsw,                nbndlw,         &
+              & jcs,            jce,                   nproma,         &
+              & klev,           jb,                                    &
+              & nbndsw,         nbndlw,                                &
               & zf,             dz,                                    &
               & aer_tau_sw,     aer_ssa_sw,            aer_asy_sw,     &
-              & aer_tau_lw, opt_from_coupler=lrad_coupled, opt_use_acc=use_acc)
+              & aer_tau_lw,                                            &
+              & opt_from_coupler=lrad_coupled, opt_use_acc=use_acc     )
       END IF
-      IF (irad_aero==14 .OR. irad_aero==15 .OR. irad_aero==18) THEN
-      ! iaero=14: only Stechnikov's volcanic aerosols are used (added to zero)
-      ! iaero=15: Stenchikov's volcanic aerosols are added to Kinne aerosols
-      ! iaero=18: Stenchikov's volcanic aerosols are added to Kinne background
-      !           aerosols (of natural origin, 1850)
-#ifdef _OPENACC
-        CALL warning('mo_rte_rrtmgp_interface/rte_rrtmgp_interface','Stenchikov aerosols ACC not implemented')
-#endif
-        !$ACC UPDATE HOST(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw, dz, pp_fl) ASYNC(1)
-        !$ACC WAIT(1)
-        CALL add_bc_aeropt_stenchikov(this_datetime,    jg,               &
-              & jcs, nproma,      nproma,                 klev,       &
-              & jb,               nbndsw,                nbndlw,           &
-              & dz,               pp_fl,                                   &
-              & aer_tau_sw,    aer_ssa_sw,         aer_asy_sw,     &
-              & aer_tau_lw                                              )
-        !$ACC UPDATE DEVICE(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw) ASYNC(1)
-      END IF
-      IF (irad_aero==18 .OR. irad_aero==19) THEN
+      IF (irad_aero==19) THEN
       ! Simple plumes are added to ...
-      ! iaero=18: ... Stennchikov's volcanic aerosols and
-      !               Kinne background aerosols (of natural origin, 1850)
       ! iaero=19: ... Kinne background aerosols (of natural origin, 1850)
 #ifdef _OPENACC
         CALL warning('mo_rte_rrtmgp_interface/rte_rrtmgp_interface','Plumes ACC not implemented')
@@ -287,18 +288,17 @@ CONTAINS
         !$ACC UPDATE HOST(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw, zf, dz, zh(:,klev+1)) ASYNC(1)
         !$ACC WAIT(1)
         CALL add_bc_aeropt_splumes(                                      &
-              & jg,          jcs,         nproma,        nproma,         & 
+              & jg,          jcs,         jce,           nproma,         & 
               & klev,        jb,          nbndsw,        this_datetime,  &
               & zf,          dz,          zh(:,klev+1),  wavenum1,       &
-              & wavenum2,    aer_tau_sw,  aer_ssa_sw,    aer_asy_sw,     &
-              & x_cdnc                                                   )
+              & wavenum2,    aer_tau_sw,  aer_ssa_sw,    aer_asy_sw      )
         !$ACC UPDATE DEVICE(aer_tau_sw, aer_ssa_sw, aer_asy_sw) ASYNC(1)
       END IF
 
       ! this should be decativated in the concurrent version and make the aer_* global variables for output
       IF (lrad_aero_diag) THEN
         CALL rad_aero_diag (                                  &
-          & 1,               nproma,          nproma,         &
+          & jcs,             jce,             nproma,         &
           & klev,            nbndlw,          nbndsw,         &
           & aer_tau_lw,      aer_tau_sw,      aer_ssa_sw,     &
           & aer_asy_sw,                                       &
@@ -332,7 +332,8 @@ CONTAINS
     !
     ! --------------------------------------------------------------------------
     ! Set flag for the optional computation of clear-sky fluxes
-    lclearsky     = aes_rad_config(jg)%lclearsky
+    lclrsky_lw    = aes_rad_config(jg)%lclrsky_lw
+    lclrsky_sw    = aes_rad_config(jg)%lclrsky_sw
     !
     inhom_lts     = aes_rad_config(jg)%inhom_lts
     inhom_lts_max = aes_rad_config(jg)%inhom_lts_max
@@ -350,7 +351,8 @@ CONTAINS
     IF (jcs==1 .and. ncol_needed == ncol_supplied .and. nproma_sub == ncol_needed) THEN
 
        CALL rte_rrtmgp_interface_onBlock(                              &
-          & lclearsky,         inhom_lts,         inhom_lts_max,       &
+          & lclrsky_lw,        lclrsky_sw,                             &
+          & inhom_lts,         inhom_lts_max,                          &
           & ncol_needed,       klev,                                   &
           & psctm,             ssi_factor,                             &
           & loland(:),         loglac(:),                              &
@@ -389,7 +391,8 @@ CONTAINS
        DO jchunk_start = jcs,jce, nproma_sub
         jchunk_end = MIN(jchunk_start + nproma_sub - 1, jce)
         CALL shift_and_call_rte_rrtmgp_interface_onBlock(                &
-            & lclearsky,         inhom_lts,         inhom_lts_max,       &
+            & lclrsky_lw,        lclrsky_sw,                             &
+            & inhom_lts,         inhom_lts_max,                          &
             & jchunk_start,      jchunk_end,                             &
             & klev,                                                      &
             & psctm,             ssi_factor,                             &
@@ -424,6 +427,8 @@ CONTAINS
 
   !$ACC WAIT
   !$ACC EXIT DATA DELETE(aer_tau_lw, aer_tau_sw, aer_ssa_sw, aer_asy_sw) IF(lneed_aerosols)
+
+    IF (ltimer) CALL timer_stop(timer_rte_rrtmgp_int)
 
   END SUBROUTINE rte_rrtmgp_interface
  ! -------------------------------------------------------------------------------------
@@ -483,7 +488,8 @@ CONTAINS
   !!
 
   SUBROUTINE rte_rrtmgp_interface_onBlock(                   &
-       & lclearsky,      inhom_lts,      inhom_lts_max,      &
+       & lclrsky_lw,     lclrsky_sw,                         &
+       & inhom_lts,      inhom_lts_max,                      &
        & ncol,           klev,                               &
        & psctm,          ssi_factor,                         &
        & laland,         laglac,                             &
@@ -515,7 +521,8 @@ CONTAINS
 !DIR$ OPTIMIZE:1
 #endif
 
-    LOGICAL,INTENT(IN)  :: lclearsky                     !< flag for clear-sky computations
+    LOGICAL,INTENT(IN)  :: lclrsky_lw                    !< flag for LW clear-sky computations
+    LOGICAL,INTENT(IN)  :: lclrsky_sw                    !< flag for SW clear-sky computations
     LOGICAL,INTENT(IN)  :: inhom_lts
     REAL(wp),INTENT(IN) :: inhom_lts_max                 !< maximum value on inhoml
 
@@ -602,7 +609,7 @@ CONTAINS
     ! into the arrays before accordingly.
 
     INTEGER  :: jk, jl !< loop indices
-    INTEGER  :: nbndlw, nbndsw, ngptsw
+    INTEGER  :: nbndlw, nbndsw !, ngptsw
     REAL(wp) ::                      &
          zsemiss(k_dist_lw%get_nband(),ncol) !< LW surface emissivity by band
     ! --- local scaled variables
@@ -622,7 +629,7 @@ CONTAINS
     !
     ! Random seeds for sampling. Needs to get somewhere upstream
     !
-    INTEGER :: band, gpt, i, j
+    INTEGER :: band, i, j
     REAL(wp) :: low, high
 
     TYPE(ty_source_func_lw)     :: source_lw !check types regarding acc later
@@ -677,9 +684,11 @@ CONTAINS
     !$ACC   CREATE(albdir, toa_flux) &
     !$ACC   CREATE(plev, play, tlev, tlay)
 
+    IF (ltimer) CALL timer_start(timer_rte_rrtmgp_int_onb)
+
     nbndlw = k_dist_lw%get_nband()
     nbndsw = k_dist_sw%get_nband()
-    ngptsw = k_dist_sw%get_ngpt()
+!    ngptsw = k_dist_sw%get_ngpt()
     cld_frc_thresh = 4._wp*spacing(1._wp)
 
     ! 1.0 Constituent properties
@@ -784,6 +793,9 @@ CONTAINS
     !
     ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
     !$ACC WAIT
+    !
+    IF (ltimer) CALL timer_start(timer_gas_concs)
+    !
     CALL stop_on_err(gas_concs%init(gas_names))
     CALL stop_on_err(gas_concs%set_vmr('h2o',   xvmr_vap))
     CALL stop_on_err(gas_concs%set_vmr('co2',   xvmr_co2))
@@ -793,6 +805,8 @@ CONTAINS
     CALL stop_on_err(gas_concs%set_vmr('n2o',   xvmr_n2o))
     CALL stop_on_err(gas_concs%set_vmr('cfc11', xvmr_cfc(:,:,1)))
     CALL stop_on_err(gas_concs%set_vmr('cfc12', xvmr_cfc(:,:,2)))
+    !
+    IF (ltimer) CALL timer_stop (timer_gas_concs)
 
     !--------------------------------
     !
@@ -801,6 +815,9 @@ CONTAINS
     ! The air pressure on levels plev, on the upper and lower boundaries of a layer,
     ! is used to determine the air mass transferred by radiation. For safety
     ! reasons plev is limited to values >= 0 Pa (and <=10**6 Pa so that high is defined).
+    !
+    IF (ltimer) CALL timer_start(timer_clamp_pr_temp)
+    !
     low = 0._wp
     high = 1000000._wp
     CALL clamp_pressure(pp_hl, plev, low, high)
@@ -819,18 +836,16 @@ CONTAINS
     high = k_dist_lw%get_temp_max()
     CALL clamp_temperature(tk_hl, tlev, low, high)
     CALL clamp_temperature(tk_fl, tlay, low, high)
+    !
+    IF (ltimer) CALL timer_stop (timer_clamp_pr_temp)
 
     !--------------------------------
     !
     ! Boundary conditions
     !
-    ! baustelle - shouldn't the min solar zenith cosine be parameterized?
-!!debug++
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
     mu0(:) = MAX(1.e-10_wp,MIN(1.0_wp,pcos_mu0(:)))
     !$ACC END KERNELS
-!!debug--
-
 
     ! 2.0 Surface Properties
     ! --------------------------------
@@ -876,7 +891,6 @@ CONTAINS
     !
     ! 4.0 Radiative Transfer Routines
     ! --------------------------------
-    IF (ltimer) CALL timer_start(timer_lrtm)
     !
     ! 4.1 Longwave radiative Transfer
 
@@ -885,27 +899,34 @@ CONTAINS
     !
     ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
     !$ACC WAIT
+    IF (ltimer) CALL timer_start(timer_source_lw)
     CALL stop_on_err(source_lw%alloc    (ncol, klev, k_dist_lw))
+    IF (ltimer) CALL timer_stop (timer_source_lw)
+    IF (ltimer) CALL timer_start(timer_atmos_lw)
     CALL stop_on_err(atmos_lw%alloc_1scl(ncol, klev, k_dist_lw))
-    ! baustelle - surface and lowest layer temperature are considered the same
+    IF (ltimer) CALL timer_stop (timer_atmos_lw)
     !$ACC DATA CREATE(source_lw, atmos_lw)
 
     !$ACC DATA CREATE(source_lw%lay_source, source_lw%lev_source_inc) &
     !$ACC   CREATE(source_lw%lev_source_dec, source_lw%sfc_source) &
     !$ACC   CREATE(source_lw%sfc_source_Jac, atmos_lw%tau)
 
+    IF (ltimer) CALL timer_start(timer_k_dist_lw)
     CALL stop_on_err( &
            k_dist_lw%gas_optics(play, plev, tlay, tk_sfc, &
                                 gas_concs, atmos_lw, source_lw, &
                                 tlev = tlev))
+    IF (ltimer) CALL timer_stop (timer_k_dist_lw)
     !
     ! 4.1.2 Aerosol optical depth: add to clear-sky
     !  If irad_aero == 0, aer_tau_lw will not be allocated here
     !  and we need to skip this step
     !
     IF ( lneed_aerosols ) THEN
+      IF (ltimer) CALL timer_start(timer_aerosol_lw)
       CALL stop_on_err(aerosol_lw%alloc_1scl(ncol, klev, &
                                              k_dist_lw%get_band_lims_wavenumber()))
+      IF (ltimer) CALL timer_stop (timer_aerosol_lw)
       !$ACC DATA PRESENT(aer_tau_lw) CREATE(aerosol_lw)
       !$ACC DATA CREATE(aerosol_lw%tau)
       !
@@ -923,31 +944,39 @@ CONTAINS
       !
       ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
       !$ACC WAIT
+      IF (ltimer) CALL timer_start(timer_aerosol_lw)
       CALL stop_on_err(aerosol_lw%increment(atmos_lw))
+      IF (ltimer) CALL timer_stop (timer_aerosol_lw)
       ! aerosols
       !$ACC END DATA
       DEALLOCATE(aerosol_lw%tau)
       !$ACC END DATA
+      IF (ltimer) CALL timer_start(timer_aerosol_lw)
       CALL aerosol_lw%finalize()
+      IF (ltimer) CALL timer_stop (timer_aerosol_lw)
     END IF
     !
     !
     ! 4.1.3 Longwave clear-sky fluxes
     !
-    IF (lclearsky) THEN
+    IF (lclrsky_lw) THEN
        !
        fluxes_lwcs%flux_up => flx_uplw_clr
        fluxes_lwcs%flux_dn => flx_dnlw_clr
        !
        ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
        !$ACC WAIT
+       IF (ltimer) CALL timer_start(timer_rte_lw_clrsky)
        CALL stop_on_err(rte_lw(atmos_lw, top_at_1, source_lw, zsemiss, fluxes_lwcs))
+       IF (ltimer) CALL timer_stop (timer_rte_lw_clrsky)
        !
     END IF
 
     ! new cloud optics: allocate memory for cloud optical properties:
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_lw)
     CALL stop_on_err(clouds_bnd_lw%alloc_1scl(ncol, klev, &
                      k_dist_lw%get_band_lims_wavenumber()))
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_lw)
     !$ACC DATA CREATE(clouds_bnd_lw)
     !$ACC DATA CREATE(clouds_bnd_lw%tau)
     ! then compute cloud optics
@@ -957,8 +986,10 @@ CONTAINS
 !++jsr, first, detect cloud ice optical depth with zdwp=0,
 !       then calculate cloud optical depth
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_lw)
     CALL stop_on_err(cloud_optics_lw%cloud_optics( &
                      zdwp,     ziwp,    re_drop,    re_cryst,   clouds_bnd_lw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_lw)
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP SEQ
     DO band = 1, nbndlw
@@ -973,30 +1004,40 @@ CONTAINS
 !--jsr, calculate cloud optics including ice and water hydrometeors now
 !       only these are used in the sequel.    
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_lw)
     CALL stop_on_err(cloud_optics_lw%cloud_optics( &
                      zlwp,     ziwp,    re_drop,    re_cryst,   clouds_bnd_lw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_lw)
     ! This will require computing logical masks for ice and liquid clouds
     !   nrghice (ice roughness) is 1, 2, or 3; probably any values is fine
     !
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_lw)
     CALL stop_on_err(clouds_bnd_lw%increment(atmos_lw))
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_lw)
 
     !$ACC WAIT
     !$ACC END DATA
     DEALLOCATE(clouds_bnd_lw%tau)
     !$ACC END DATA
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_lw)
     CALL clouds_bnd_lw%finalize()
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_lw)
 
     ! Snow optics
     ! snow optics using optical properties of cloud ice
     ! allocate memory for snow optical properties:
+    IF (ltimer) CALL timer_start(timer_snow_bnd_lw)
     CALL stop_on_err(snow_bnd_lw%alloc_1scl(ncol, klev, &
                      k_dist_lw%get_band_lims_wavenumber()))
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_lw)
     !$ACC DATA CREATE(snow_bnd_lw)
     !$ACC DATA CREATE(snow_bnd_lw%tau)
     ! compute snow optics from table of cloud_optics
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_lw)
     CALL stop_on_err(cloud_optics_lw%cloud_optics( &
          zdwp,     zswp,  re_snow,  re_snow,   snow_bnd_lw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_lw)
     !++jsr scale tau with reimax/reff_snow for reff_snow > reimax
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP SEQ
@@ -1014,11 +1055,15 @@ CONTAINS
     !$ACC END PARALLEL
     !--jsr
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_snow_bnd_lw)
     CALL stop_on_err(snow_bnd_lw%increment(atmos_lw))
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_lw)
     !$ACC END DATA
     DEALLOCATE(snow_bnd_lw%tau)
     !$ACC END DATA
+    IF (ltimer) CALL timer_start(timer_snow_bnd_lw)
     CALL snow_bnd_lw%finalize()
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_lw)
     
     !
     ! 4.1.5 Longwave all-sky fluxes
@@ -1027,18 +1072,22 @@ CONTAINS
     fluxes_lw%flux_dn => flx_dnlw
     ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
     !$ACC WAIT
+    IF (ltimer) CALL timer_start(timer_rte_lw_allsky)
     CALL stop_on_err(rte_lw(atmos_lw, top_at_1, source_lw, &
                             zsemiss, fluxes_lw))
+    IF (ltimer) CALL timer_stop (timer_rte_lw_allsky)
     !
     ! 4.1.6 End of longwave calculations - free memory
     !
     !$ACC END DATA
     DEALLOCATE(atmos_lw%tau)
     !$ACC END DATA
+    IF (ltimer) CALL timer_start(timer_source_lw)
     CALL source_lw%finalize()
+    IF (ltimer) CALL timer_stop (timer_source_lw)
+    IF (ltimer) CALL timer_start(timer_atmos_lw)
     CALL atmos_lw%finalize()
-
-    IF (ltimer) CALL timer_stop(timer_lrtm)
+    IF (ltimer) CALL timer_stop (timer_atmos_lw)
     !
     !-------------------------------------------------------------------------------------------------------
     !-------------------------------------------------------------------------------------------------------
@@ -1050,31 +1099,35 @@ CONTAINS
     !-------------------------------------------------------------------------------------------------------
     !-------------------------------------------------------------------------------------------------------
     !
-    IF (ltimer) CALL timer_start(timer_srtm)
-    !
     ! 4.2.1 Array and type allocation for shortwave
     !--------------------------------
     !
     ! Shortwave gas optical properties and source functions
     !
+    IF (ltimer) CALL timer_start(timer_atmos_sw)
     CALL stop_on_err(atmos_sw%alloc_2str(ncol, klev, k_dist_sw))
+    IF (ltimer) CALL timer_stop (timer_atmos_sw)
     !$ACC DATA CREATE(atmos_sw)
     !$ACC DATA CREATE(atmos_sw%tau, atmos_sw%ssa, atmos_sw%g) &
     !$ACC   CREATE(toa_flux)
 
     ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
     !$ACC WAIT
+    IF (ltimer) CALL timer_start(timer_k_dist_sw)
     CALL stop_on_err(&
        k_dist_sw%gas_optics(play, plev, tlay, &
                             gas_concs, atmos_sw, &
                             toa_flux))
+    IF (ltimer) CALL timer_stop (timer_k_dist_sw)
     !toa_flux is output, some flux of rrtmgp, see mo_gas_optics_rrtmgp.F90
     !
     ! 4.2.2 Aerosol optical depth: add to clear-sky, reorder bands
     !
     IF ( lneed_aerosols ) THEN
+      IF (ltimer) CALL timer_start(timer_aerosol_sw)
       CALL stop_on_err(aerosol_sw%alloc_2str(ncol, klev, &
                                             k_dist_sw%get_band_lims_wavenumber()))
+      IF (ltimer) CALL timer_stop (timer_aerosol_sw)
       !$ACC DATA CREATE(aerosol_sw)
       !$ACC DATA CREATE(aerosol_sw%tau, aerosol_sw%ssa, aerosol_sw%g) &
       !$ACC   PRESENT(aer_tau_sw, aer_ssa_sw, aer_asy_sw)
@@ -1093,23 +1146,29 @@ CONTAINS
       !$ACC END PARALLEL
       ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
       !$ACC WAIT
+      IF (ltimer) CALL timer_start(timer_aerosol_sw)
       CALL stop_on_err(aerosol_sw%increment(atmos_sw))
+      IF (ltimer) CALL timer_stop (timer_aerosol_sw)
       ! aerosol_sw
       !$ACC END DATA
       !$ACC END DATA
+      IF (ltimer) CALL timer_start(timer_aerosol_sw)
       CALL aerosol_sw%finalize()
+      IF (ltimer) CALL timer_stop (timer_aerosol_sw)
     END IF
     !
     ! 4.2.3 Shortwave clear-sky fluxes
     !
-    IF (lclearsky) THEN
+    IF (lclrsky_sw) THEN
        !
        fluxes_swcs%flux_up => flx_upsw_clr
        fluxes_swcs%flux_dn => flx_dnsw_clr
        !
        ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
        !$ACC WAIT
+       IF (ltimer) CALL timer_start(timer_rte_sw_clrsky)
        CALL stop_on_err(rte_sw(atmos_sw, top_at_1, mu0, toa_flux, albdir, albdif, fluxes_swcs))
+       IF (ltimer) CALL timer_stop (timer_rte_sw_clrsky)
        !
     END IF
 
@@ -1129,16 +1188,20 @@ CONTAINS
     !$ACC END PARALLEL
     
     ! new cloud optics: allocate memory for cloud optical properties:
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_sw)
     CALL stop_on_err(clouds_bnd_sw%alloc_2str(ncol, klev, &
                      k_dist_sw%get_band_lims_wavenumber()))
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_sw)
     !$ACC DATA CREATE(clouds_bnd_sw)
     !$ACC DATA CREATE(clouds_bnd_sw%tau, clouds_bnd_sw%ssa, clouds_bnd_sw%g)
     ! then compute cloud optics
 !++jsr, first, detect cloud ice optical depth with zdwp=0,
 !       then calculate cloud optical depth
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_sw)
     CALL stop_on_err(cloud_optics_sw%cloud_optics( &
                      zdwp,     ziwp,    re_drop,    re_cryst,   clouds_bnd_sw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_sw)
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP SEQ
     DO band = 1, nbndsw
@@ -1153,27 +1216,39 @@ CONTAINS
 !--jsr, calculate cloud optics including ice and water hydrometeors now
 !       only these are used in the sequel.    
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_sw)
     CALL stop_on_err(cloud_optics_sw%cloud_optics( &
                      zlwp,     ziwp,    re_drop,    re_cryst,   clouds_bnd_sw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_sw)
     !
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_sw)
     CALL stop_on_err(clouds_bnd_sw%delta_scale()) ! necessary for cases w=g near 1
     CALL stop_on_err(clouds_bnd_sw%increment(atmos_sw))
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_sw)
 
     !$ACC END DATA
     !$ACC END DATA
+    IF (ltimer) CALL timer_start(timer_clouds_bnd_sw)
     CALL clouds_bnd_sw%finalize()
+    IF (ltimer) CALL timer_stop (timer_clouds_bnd_sw)
     !
     ! optics for snow
+    IF (ltimer) CALL timer_start(timer_snow_bnd_sw)
     CALL stop_on_err(snow_bnd_sw%alloc_2str(ncol, klev, &
                      k_dist_sw%get_band_lims_wavenumber()))
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_sw)
     !$ACC DATA CREATE(snow_bnd_sw)
     !$ACC DATA CREATE(snow_bnd_sw%tau, snow_bnd_sw%ssa, snow_bnd_sw%g)
     ! then compute snow optics
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_cloud_optics_sw)
     CALL stop_on_err(cloud_optics_sw%cloud_optics( &
                      zdwp,     zswp,  re_snow,  re_snow,   snow_bnd_sw ))
+    IF (ltimer) CALL timer_stop (timer_cloud_optics_sw)
     ! delta scale for the case ssa and g close to 1
+    IF (ltimer) CALL timer_start(timer_snow_bnd_sw)
     CALL stop_on_err(snow_bnd_sw%delta_scale())
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_sw)
     !++jsr scale tau with reimax/reff_snow for reff_snow > reimax
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
     !$ACC LOOP SEQ
@@ -1192,11 +1267,15 @@ CONTAINS
     !--jsr
     ! increment the optcial properties of the atmosphere
     !$ACC WAIT(1)
+    IF (ltimer) CALL timer_start(timer_snow_bnd_sw)
     CALL stop_on_err(snow_bnd_sw%increment(atmos_sw))
+    IF (ltimer) CALL timer_stop(timer_snow_bnd_sw)
     !$ACC END DATA
     DEALLOCATE(snow_bnd_sw%tau)
     !$ACC END DATA
+    IF (ltimer) CALL timer_start(timer_snow_bnd_sw)
     CALL snow_bnd_sw%finalize()
+    IF (ltimer) CALL timer_stop (timer_snow_bnd_sw)
 
     !
     ! 4.2.5 Shortwave all-sky fluxes
@@ -1216,9 +1295,11 @@ CONTAINS
     CALL set_fractions(fluxes_sw, atmos_sw, psctm, ssi_factor)
     ! RTE-RRTMGP ACC code is synchronous, so need to wait before calling it
     !$ACC WAIT
+    IF (ltimer) CALL timer_start(timer_rte_sw_allsky)
     CALL stop_on_err(rte_sw(atmos_sw, top_at_1, &
                             mu0, toa_flux, albdir, albdif, &
                             fluxes_sw))
+    IF (ltimer) CALL timer_stop (timer_rte_sw_allsky)
 
     !
     ! 4.2.6 End of shortwave calculations - free memory
@@ -1227,8 +1308,6 @@ CONTAINS
     !$ACC END DATA
     CALL atmos_sw%finalize()
         
-    IF (ltimer) CALL timer_stop(timer_srtm)
-
 #ifdef RRTMGP_MERGE_DEBUG
 !$OMP CRITICAL (write_record)
     CALL write_record_interface_aes(nproma, pcos_mu0, daylght_frc, &
@@ -1246,10 +1325,14 @@ CONTAINS
 #endif
 
   !$ACC END DATA
+
+    IF (ltimer) CALL timer_stop(timer_rte_rrtmgp_int_onb)
+
   END SUBROUTINE rte_rrtmgp_interface_onBlock
   ! ----------------------------------------------------------------------------
   SUBROUTINE shift_and_call_rte_rrtmgp_interface_onBlock(    &
-    & lclearsky,      inhom_lts,      inhom_lts_max,  &
+    & lclrsky_lw,     lclrsky_sw,                     &
+    & inhom_lts,      inhom_lts_max,                  &
     & jcs,            jce,                            &
     &                 klev,                           &
     !
@@ -1280,7 +1363,8 @@ CONTAINS
     & vis_dn_dff_sfc, par_dn_dff_sfc, nir_dn_dff_sfc, &
     & vis_up_sfc,     par_up_sfc,     nir_up_sfc      )
 
- LOGICAL,INTENT(IN)  :: lclearsky                     !< flag for clear-sky computations
+ LOGICAL,INTENT(IN)  :: lclrsky_lw                    !< flag for LW clear-sky computations
+ LOGICAL,INTENT(IN)  :: lclrsky_sw                    !< flag for SW clear-sky computations
  LOGICAL,INTENT(IN)  :: inhom_lts
  REAL(wp),INTENT(IN) :: inhom_lts_max
 
@@ -1395,17 +1479,20 @@ CONTAINS
       & s_aer_tau_sw(:,:,:), &
       & s_aer_ssa_sw(:,:,:), &
       & s_aer_asy_sw(:,:,:)
+
  ! Shifted output arguments
+ ! - Note: The size of the 2nd dimension of the "clr" fields can be different from klev+1
+ !         Therefore SIZE(.,2) is used her for the 2nd dimension of all fields.
  !
  REAL(wp)  ::                              &
-      & s_lw_upw       (jce-jcs+1,klev+1), & !<   upward LW flux profile, all sky
-      & s_lw_upw_clr   (jce-jcs+1,klev+1), & !<   upward LW flux profile, clear sky
-      & s_lw_dnw       (jce-jcs+1,klev+1), & !< downward LW flux profile, all sky
-      & s_lw_dnw_clr   (jce-jcs+1,klev+1), & !< downward LW flux profile, clear sky
-      & s_sw_upw       (jce-jcs+1,klev+1), & !<   upward SW flux profile, all sky
-      & s_sw_upw_clr   (jce-jcs+1,klev+1), & !<   upward SW flux profile, clear sky
-      & s_sw_dnw       (jce-jcs+1,klev+1), & !< downward SW flux profile, all sky
-      & s_sw_dnw_clr   (jce-jcs+1,klev+1)    !< downward SW flux profile, clear sky
+      & s_lw_upw       (jce-jcs+1,SIZE(lw_upw    ,2)), & !<   upward LW flux profile, all sky
+      & s_lw_upw_clr   (jce-jcs+1,SIZE(lw_upw_clr,2)), & !<   upward LW flux profile, clear sky
+      & s_lw_dnw       (jce-jcs+1,SIZE(lw_dnw    ,2)), & !< downward LW flux profile, all sky
+      & s_lw_dnw_clr   (jce-jcs+1,SIZE(lw_dnw_clr,2)), & !< downward LW flux profile, clear sky
+      & s_sw_upw       (jce-jcs+1,SIZE(sw_upw    ,2)), & !<   upward SW flux profile, all sky
+      & s_sw_upw_clr   (jce-jcs+1,SIZE(sw_upw_clr,2)), & !<   upward SW flux profile, clear sky
+      & s_sw_dnw       (jce-jcs+1,SIZE(sw_dnw    ,2)), & !< downward SW flux profile, all sky
+      & s_sw_dnw_clr   (jce-jcs+1,SIZE(sw_dnw_clr,2))    !< downward SW flux profile, clear sky
 
   ! Shift input arguments that would be non-contiguous when sliced
   !
@@ -1491,10 +1578,11 @@ CONTAINS
   ! Call radiation with shifted input arguments and receive shifted output arguments
   !
   CALL rte_rrtmgp_interface_onBlock(                                                 &
-      & lclearsky,             inhom_lts,                   inhom_lts_max,           &
-      &   ncol,                klev,                                                 &
+      & lclrsky_lw,               lclrsky_sw,                                        &
+      & inhom_lts,                inhom_lts_max,                                     &
+      & ncol,                     klev,                                              &
       !
-      &   psctm,                  ssi_factor,                                        &
+      & psctm,                    ssi_factor,                                        &
       & laland     (jcs:jce),     laglac     (jcs:jce),                              &
       & pcos_mu0   (jcs:jce),     daylght_frc(jcs:jce),                              &
       & alb_vis_dir(jcs:jce),     alb_nir_dir(jcs:jce),                              &
@@ -1525,15 +1613,27 @@ CONTAINS
   !
   ! (ncol, klev+1)
   !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
+  tau_snow       (jcs:jce,:) = s_tau_snow       (1:ncol,:)
+  tau_ice        (jcs:jce,:) = s_tau_ice        (1:ncol,:)
   lw_upw         (jcs:jce,:) = s_lw_upw         (1:ncol,:)
-  lw_upw_clr     (jcs:jce,:) = s_lw_upw_clr     (1:ncol,:)
   lw_dnw         (jcs:jce,:) = s_lw_dnw         (1:ncol,:)
-  lw_dnw_clr     (jcs:jce,:) = s_lw_dnw_clr     (1:ncol,:)
   sw_upw         (jcs:jce,:) = s_sw_upw         (1:ncol,:)
-  sw_upw_clr     (jcs:jce,:) = s_sw_upw_clr     (1:ncol,:)
   sw_dnw         (jcs:jce,:) = s_sw_dnw         (1:ncol,:)
-  sw_dnw_clr     (jcs:jce,:) = s_sw_dnw_clr     (1:ncol,:)
   !$ACC END KERNELS
+  !
+  IF (lclrsky_lw) THEN
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
+    lw_upw_clr   (jcs:jce,:) = s_lw_upw_clr     (1:ncol,:)
+    lw_dnw_clr   (jcs:jce,:) = s_lw_dnw_clr     (1:ncol,:)
+    !$ACC END KERNELS
+  END IF
+  !
+  IF (lclrsky_sw) THEN
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
+    sw_upw_clr   (jcs:jce,:) = s_sw_upw_clr     (1:ncol,:)
+    sw_dnw_clr   (jcs:jce,:) = s_sw_dnw_clr     (1:ncol,:)
+    !$ACC END KERNELS
+  END IF
 
   !$ACC WAIT(1)
   !$ACC EXIT DATA DELETE(s_aer_tau_lw, s_aer_tau_sw, s_aer_ssa_sw, s_aer_asy_sw) IF(lneed_aerosols)

@@ -1,11 +1,3 @@
-! Some utilities which are specific to the transport algorithm.
-!
-! Module contains some functions and procedures which are specifically related
-! to the transport schemes. These subroutines or functions are needed at
-! various places within the transport scheme. Therefore outsourcing these
-! routines protects from possible circular dependencies.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Some utilities which are specific to the transport algorithm.
+!
+! Module contains some functions and procedures which are specifically related
+! to the transport schemes. These subroutines or functions are needed at
+! various places within the transport scheme. Therefore outsourcing these
+! routines protects from possible circular dependencies.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -42,7 +41,8 @@ MODULE mo_advection_utils
   USE mo_comin_config,          ONLY: comin_config
 #ifndef __NO_ICON_COMIN__
   USE comin_host_interface,     ONLY: comin_request_get_list_head,       &
-    &                                 t_var_request_list_item
+    &                                 t_var_request_list_item,           &
+    &                                 comin_metadata_get_or
 #endif
 
   IMPLICIT NONE
@@ -275,6 +275,7 @@ CONTAINS
     CHARACTER(len=MAX_CHAR_LENGTH) :: src_name_str
 #ifndef __NO_ICON_COMIN__
     TYPE(t_var_request_list_item), POINTER :: ptr
+    LOGICAL                                :: tracer, tracer_conv, tracer_turb
 #endif
 
     INTEGER  :: iqb
@@ -602,7 +603,8 @@ CONTAINS
           CYCLE VAR_LOOP
         END IF
 
-        IF (.NOT. comin_request_item%metadata%tracer) THEN
+        CALL comin_metadata_get_or(comin_request_item%metadata,"tracer",tracer,.FALSE.)
+        IF (.NOT. tracer) THEN
           ptr => ptr%next()
           CYCLE VAR_LOOP
         END IF
@@ -634,17 +636,20 @@ CONTAINS
             CYCLE VAR_LOOP_TURB
           END IF
 
-          IF (.NOT. comin_request_item%metadata%tracer) THEN
+          CALL comin_metadata_get_or(comin_request_item%metadata,"tracer",tracer,.FALSE.)
+          IF (.NOT. tracer) THEN
             ptr => ptr%next()
             CYCLE VAR_LOOP_TURB
           END IF
 
-          IF (comin_request_item%metadata%tracer_turb) THEN
+          CALL comin_metadata_get_or(comin_request_item%metadata,"tracer_turb",tracer_turb,.FALSE.)
+          IF (tracer_turb) THEN
             comin_config%comin_icon_domain_config(jg)%nturb_tracer = &
               &  comin_config%comin_icon_domain_config(jg)%nturb_tracer + 1
           END IF
 
-          IF (comin_request_item%metadata%tracer_conv) THEN
+          CALL comin_metadata_get_or(comin_request_item%metadata,"tracer_conv",tracer_conv,.FALSE.)
+          IF (tracer_conv) THEN
             comin_config%comin_icon_domain_config(jg)%nconv_tracer = &
               &  comin_config%comin_icon_domain_config(jg)%nconv_tracer + 1
           END IF

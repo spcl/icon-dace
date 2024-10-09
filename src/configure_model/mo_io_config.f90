@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -171,6 +170,7 @@ MODULE mo_io_config
     LOGICAL :: cape_3km     = .FALSE. !< Flag. TRUE if computation of CAPE 3KM is desired
     LOGICAL :: lfc_ml       = .FALSE. !< Flag. TRUE if computation of the Level of Free Convection is desired
     LOGICAL :: lcl_ml       = .FALSE. !< Flag. TRUE if computation of the Lifted Condensation Level is desired
+    LOGICAL :: ddt_temp_drag = .FALSE. !< Flag. TRUE if temp-tend. from sso+gravity-wave-drag+Rayleigh-frict. is required
     ! add vars for global mean claclulations
     LOGICAL :: tas_gmean    = .FALSE. !< Flag. TRUE if computation of global mean T2m 
     LOGICAL :: rsdt_gmean   = .FALSE. !< Flag. TRUE if computation of global mean toa downward short wave rad
@@ -283,6 +283,7 @@ CONTAINS
       var_in_output(jg)%omega    = is_variable_in_output(var_name="omega")    .OR. &
         &                          is_variable_in_output(var_name="wap_m")
       var_in_output(jg)%res_soilwatb = is_variable_in_output_dom(var_name="resid_wso", jg=jg)
+      var_in_output(jg)%ddt_temp_drag = is_variable_in_output_dom(var_name="ddt_temp_drag", jg=jg)
     END DO
 
 

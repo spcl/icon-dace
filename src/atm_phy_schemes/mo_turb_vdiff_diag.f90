@@ -1,6 +1,3 @@
-!
-! Subroutines for computing turbulent exchange coefficients.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutines for computing turbulent exchange coefficients.
 
 !------------------
 #include "fsel.inc"
@@ -28,6 +27,7 @@ MODULE mo_turb_vdiff_diag
   USE mo_aes_convect_tables,ONLY: prepare_ua_index_spline_batch, lookup_ua_spline_batch
 #endif
 
+  USE mo_sleve_config,      ONLY: top_height
   USE mo_turb_vdiff_config, ONLY: t_vdiff_config
   USE mo_turb_vdiff_params, ONLY: ckap, cb,cc, chneu, da1,                  &
     &                             eps_shear, eps_corio, totte_min, cons5
@@ -43,6 +43,8 @@ MODULE mo_turb_vdiff_diag
   IMPLICIT NONE
   PRIVATE
   PUBLIC :: atm_exchange_coeff, sfc_exchange_coeff
+
+  REAL(wp), PARAMETER :: THERMOSPHERE_HEIGHT = 100e3_wp
 
 CONTAINS
   !>
@@ -66,13 +68,13 @@ CONTAINS
                                & jcs, kproma, kbdim,                      &! in
                                & klev, klevm1,                            &! in
                                & pdtime, pcoriol,                         &! in
-                               & pghf, pghh,                              &! in
+                               & pghf, pghh, pgeof,                       &! in
                                & pum1, pvm1, ptm1, ptvm1,                 &! in
                                & pqm1, pxm1,                              &! in
                                & papm1, paphm1, paclc,                    &! in
                                & pustarm, pthvvar,                        &! in
                                & ptottem1,                                &! in
-                               & vdiff_config,                        &! in
+                               & vdiff_config,                            &! in
                                & pcptgz, phdtcbl,                         &! out
                                & pzthvvar, ptottevn,                      &! out
                                & pcfm, pcfh, pcfv, pcftotte, pcfthv,      &! out
@@ -88,6 +90,7 @@ CONTAINS
     REAL(wp),INTENT(IN) :: pcoriol(:)   !< (kbdim)
     REAL(wp),INTENT(IN) :: pghf(:,:)    !< (kbdim,klev)
     REAL(wp),INTENT(IN) :: pghh(:,:)    !< (kbdim,klevp1)
+    REAL(wp),INTENT(IN) :: pgeof(:,:)   !< (kbdim,klev) Geopotential above ground (full level) [m2/s2]
     REAL(wp),INTENT(IN) :: pxm1(:,:)    !< (kbdim,klev)
     REAL(wp),INTENT(IN) :: ptvm1(:,:)   !< (kbdim,klev)
     REAL(wp),INTENT(IN) :: pqm1(:,:), pum1(:,:), pvm1(:,:) !< (kbdim,klev)
@@ -215,8 +218,9 @@ CONTAINS
 
 #ifndef _OPENACC
     DO 212 jk=1,klev
-      CALL prepare_ua_index_spline('vdiff (1)',jcs,kproma,ptm1(:,jk),idx,za       &
-      &                                       ,klev=jk,kblock=jb,kblock_size=kbdim)
+      CALL prepare_ua_index_spline('vdiff (1)',jcs,kproma,ptm1(:,jk),idx,za        &
+      &                                       ,klev=jk,kblock=jb,kblock_size=kbdim,&
+      &                            extend_upper_limit=top_height >= THERMOSPHERE_HEIGHT)
       CALL lookup_ua_spline(jcs,kproma,idx,za,zua)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
@@ -234,7 +238,7 @@ CONTAINS
         ! Virtual dry static energy, potential temperature, virtual potential
         ! temperature
 
-        pcptgz (jl,jk) = pghf(jl,jk)*grav+ptm1(jl,jk)*cpd
+        pcptgz (jl,jk) = pgeof(jl,jk)+ptm1(jl,jk)*cpd
         ztheta (jl,jk) = ptm1(jl,jk)*ztheta(jl,jk)
         zthetav(jl,jk) = ztheta(jl,jk)*(1._wp+vtmpc1*pqm1(jl,jk)-pxm1(jl,jk))
 
@@ -256,7 +260,8 @@ CONTAINS
     CALL prepare_ua_index_spline_batch('vdiff (1)', jcs, kproma, klev, &
       &                                ptm1, idx_batch, za_batch,          &
       &                                kblock=jb,kblock_size=kbdim, &
-                                       csecfrl=csecfrl, cthomi=cthomi)
+                                       csecfrl=csecfrl, cthomi=cthomi, &
+                                       extend_upper_limit=top_height >= THERMOSPHERE_HEIGHT)
     CALL lookup_ua_spline_batch(jcs, kproma, klev, idx_batch, za_batch, zua_batch)
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
@@ -269,7 +274,7 @@ CONTAINS
         ! Virtual dry static energy, potential temperature, virtual potential
         ! temperature
 
-        pcptgz (jl,jk) = pghf(jl,jk)*grav+ptm1(jl,jk)*cpd
+        pcptgz (jl,jk) = pgeof(jl,jk)+ptm1(jl,jk)*cpd
         ztheta (jl,jk) = ptm1(jl,jk)*ztheta(jl,jk)
         zthetav(jl,jk) = ztheta(jl,jk)*(1._wp+vtmpc1*pqm1(jl,jk)-pxm1(jl,jk))
 

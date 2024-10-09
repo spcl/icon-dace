@@ -1,5 +1,3 @@
-! Interface between atmosphere physics and the ocean surface waves, through a coupler
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface between atmosphere physics and the ocean surface waves, through a coupler
 
 !----------------------------
 #include "omp_definitions.inc"

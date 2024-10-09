@@ -1,5 +1,3 @@
-! @page pagecontrolmodelf901 Main program for the ICON icon_output model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @page pagecontrolmodelf901 Main program for the ICON icon_output model
+
 #include "iconfor_dsl_definitions.inc"
 !=============================================================================================
 MODULE mo_icon_output_model

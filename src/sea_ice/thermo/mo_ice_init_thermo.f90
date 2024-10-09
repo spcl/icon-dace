@@ -1,9 +1,3 @@
-! Provide an implementation of the initialization of the sea-ice.
-!
-! Provide an implementation of the subroutines used for initialization of
-! the surface module.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the initialization of the sea-ice.
+!
+! Provide an implementation of the subroutines used for initialization of
+! the surface module.
 
 MODULE mo_ice_init_thermo
   !-------------------------------------------------------------------------

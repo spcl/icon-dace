@@ -1,6 +1,3 @@
-!
-! Computation of NO heating using the parameterization of Kockarts [GRL, 1980]
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Computation of NO heating using the parameterization of Kockarts [GRL, 1980]
 
 MODULE mo_upatmo_phy_no
 

@@ -1,7 +1,3 @@
-! @brief Variables for sediment modules
-!
-! declaration and memory allocation
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Variables for sediment modules
+!
+! declaration and memory allocation
 
 MODULE mo_sedmnt
 

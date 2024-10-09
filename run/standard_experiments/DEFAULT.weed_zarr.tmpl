@@ -56,7 +56,7 @@ cd %{DATA_DIR}
 grep -F -l '"component": "atmo"' %{JOB.pattern}/*/.zattrs |
     sed 's,/.zattrs,,' |
     parallel --jobs %{JOB.tasks} --no-run-if-empty --line-buffer --verbose \
-        rm -r '{}'/*
+        rm -rf '{}'/*
 #%    else:
 echo 'Oops: invalid pattern configuration' >&2
 #%    endif

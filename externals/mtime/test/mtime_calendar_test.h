@@ -8,6 +8,6 @@
 #include <check.h>
 #include "mtime_calendar.h"
 
-void add_mtime_calendar_test_to_suite(Suite* suite);
+void add_mtime_calendar_test_to_suite(Suite *suite);
 
 #endif

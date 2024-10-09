@@ -1,5 +1,3 @@
-! The base CLASS for the PUBLIC INTERFACE for restart writing.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The base CLASS for the PUBLIC INTERFACE for restart writing.
 
 MODULE mo_restart_descriptor
   USE mtime,                        ONLY: datetime, datetimeToString, MAX_DATETIME_STR_LEN

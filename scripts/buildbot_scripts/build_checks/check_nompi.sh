@@ -1,14 +1,15 @@
-#/bin/bash
+#!/bin/bash
 
 # ICON
 #
-# ------------------------------------------
+# ---------------------------------------------------------------
 # Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
 # Contact information: icon-model.org
+#
 # See AUTHORS.TXT for a list of authors
 # See LICENSES/ for license information
 # SPDX-License-Identifier: BSD-3-Clause
-# ------------------------------------------
+# ---------------------------------------------------------------
 
 # Checks that the ICON executable does not depend on the MPI library.
 # Must be run in the root build directory after a successful build of a non-MPI

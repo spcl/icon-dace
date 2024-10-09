@@ -20,7 +20,6 @@ MODULE comin_parallel_types
   ! max. character string length (e.g. MPI group name)
   INTEGER, PARAMETER :: MAX_GRPNAMELEN = 256
 
-
   ! data structure containing parallelization (MPI-) related data.
   TYPE :: t_comin_parallel_info
     ! MPI communicator, comprising ICON's participating PEs

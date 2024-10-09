@@ -1,9 +1,3 @@
-! Contains the interpolation routines needed for grid refinement.
-!
-! These had originally been included in mo_grf_interpolation but then were
-! packed into a separate module to clean up the code
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the interpolation routines needed for grid refinement.
+!
+! These had originally been included in mo_grf_interpolation but then were
+! packed into a separate module to clean up the code
 
 !----------------------------
 #include "omp_definitions.inc"

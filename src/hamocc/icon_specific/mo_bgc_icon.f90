@@ -1,14 +1,3 @@
-! @brief Main biogeochemical subroutine, called at each time step
-!
-! This subroutine calls all routines that calculate changes of pelagic biogeochemical
-! tracers due to local processes (like photosythesis, heterotrophic
-! processes, N-fixation, and denitrification), the air-sea gas
-! exchange of carbon dioxide, oxygen, dinitrogen, and the
-! benthic processes. It further calls the computation of the vertical displacement of
-! particles
-!
-! called by mo_hydro_ocean_run:perform_ho_stepping
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,18 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Main biogeochemical subroutine, called at each time step
+!
+! This subroutine calls all routines that calculate changes of pelagic biogeochemical
+! tracers due to local processes (like photosythesis, heterotrophic
+! processes, N-fixation, and denitrification), the air-sea gas
+! exchange of carbon dioxide, oxygen, dinitrogen, and the
+! benthic processes. It further calls the computation of the vertical displacement of
+! particles
+!
+! called by mo_hydro_ocean_run:perform_ho_stepping
+
 #include "icon_definitions.inc"
 #include "omp_definitions.inc"
 

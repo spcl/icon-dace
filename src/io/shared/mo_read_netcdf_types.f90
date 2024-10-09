@@ -1,6 +1,3 @@
-! This module provides data structures for reading a NetCDF file in a distributed way.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides data structures for reading a NetCDF file in a distributed way.
 
 MODULE mo_read_netcdf_types
 

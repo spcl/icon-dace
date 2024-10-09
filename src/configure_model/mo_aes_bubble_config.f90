@@ -1,8 +1,3 @@
-! @brief Module containing subroutines for the configuration of aes_bubble test case
-!
-! @literature cr2021_08_03)jsr for further documentation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Module containing subroutines for the configuration of aes_bubble test case
+!
+! @literature cr2021_08_03)jsr for further documentation
 
 MODULE mo_aes_bubble_config
                                                                                      

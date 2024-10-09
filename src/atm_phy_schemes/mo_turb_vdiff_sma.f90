@@ -1,7 +1,3 @@
-!
-! Subroutines for computing turbulent exchange coefficients of
-! 3D Smagorinsky turbulent scheme.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutines for computing turbulent exchange coefficients of
+! 3D Smagorinsky turbulent scheme.
 
 !------------------
 #include "fsel.inc"
@@ -92,7 +91,7 @@ CONTAINS
                                & p_patch,                                 &! in
                                & pz0m, ptsfc, pfrc,                       &! in
                                & ppsfc,                                   &! in
-                               & pghf,                                    &! in
+                               & pghf, pgeof,                             &! in
                                & pum1, pvm1, pwm1,                        &! in
                                & ptm1, ptvm1,                             &! in
                                & pqm1, pxm1,                              &! in
@@ -125,6 +124,7 @@ CONTAINS
     INTEGER, INTENT(IN) :: klev, klevm1, klevp1
     INTEGER :: nlev, nlevp1
     REAL(wp),INTENT(IN) :: pghf(:,:,:)
+    REAL(wp),INTENT(IN) :: pgeof(:,:,:) !< Geopotential above ground (full level) [m2/s2]
     REAL(wp),INTENT(IN) :: pxm1(:,:,:)
     REAL(wp),INTENT(IN) :: ptvm1(:,:,:)
     REAL(wp),INTENT(IN) :: pqm1(:,:,:)
@@ -269,7 +269,7 @@ CONTAINS
 
     !$ACC DATA &
     !---- Argument arrays - intent(in)
-    !$ACC   PRESENT(pghf, pxm1, ptvm1, pqm1, pwm1, ptm1, rho, papm1, paphm1) &
+    !$ACC   PRESENT(pghf, pgeof, pxm1, ptvm1, pqm1, pwm1, ptm1, rho, papm1, paphm1) &
     !$ACC   PRESENT(pz0m, ptsfc, pfrc, ppsfc, pcsat, pcair) &
     !---- Argument arrays - intent(inout)
     !$ACC   PRESENT(pum1, pvm1, p_patch) &
@@ -410,7 +410,7 @@ CONTAINS
         ztvmid = zsdep1*ptvm1(jl,jk,jb)+zsdep2*ptvm1(jl,jk+1,jb)
 
         ! Virtual dry static energy
-        pcptgz(jl,jk,jb) = pghf(jl,jk,jb)*grav+ptm1(jl,jk,jb)*cpd !+(cpv-cpd)*pqm1(jl,jk,jb))
+        pcptgz(jl,jk,jb) = pgeof(jl,jk,jb)+ptm1(jl,jk,jb)*cpd !+(cpv-cpd)*pqm1(jl,jk,jb))
 
         ! Potential temperature
         ztheta(jl,jk,jb) = ptm1(jl,jk,jb)*(p0ref/papm1(jl,jk,jb))**rd_o_cpd
@@ -424,7 +424,7 @@ CONTAINS
 
       ! dry static energy pcpt_tile
       !
-      pcptgz(jl,klev,jb) = pghf(jl,klev,jb)*grav+ptm1(jl,klev,jb)*cpd!+(cpv-cpd)*pqm1(jl,klev,jb))
+      pcptgz(jl,klev,jb) = pgeof(jl,klev,jb)+ptm1(jl,klev,jb)*cpd!+(cpv-cpd)*pqm1(jl,klev,jb))
 
       ! Potential temperature
       ztheta(jl,klev,jb) = ptm1(jl,klev,jb)*(p0ref/papm1(jl,klev,jb))**rd_o_cpd

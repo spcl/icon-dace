@@ -1,18 +1,3 @@
-!
-!
-! Prepares and postprocesses the fields for and from nwp physics
-!
-! Depending on the action item different sets of physics will be called:
-! this is
-! 1. condensation only so to apply saturation adjustment where needed
-! 2. 'slow physics' means up to now the whole physical package beside
-!     microphysics.
-! 3. turbulence, microphysics and condensation are considered fast physical package
-! 4. Updating the moist tracers in synchrone time intervalls to
-!    advection and saturation adjustment
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -23,6 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Prepares and postprocesses the fields for and from nwp physics
+!
+! Depending on the action item different sets of physics will be called:
+! this is
+! 1. condensation only so to apply saturation adjustment where needed
+! 2. 'slow physics' means up to now the whole physical package beside
+!     microphysics.
+! 3. turbulence, microphysics and condensation are considered fast physical package
+! 4. Updating the moist tracers in synchrone time intervalls to
+!    advection and saturation adjustment
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -61,6 +57,7 @@ MODULE mo_nh_interface_nwp
   USE mo_run_config,              ONLY: ntracer, iqv, iqc, iqi, iqs, iqr, iqg, iqtke,  &
     &                                   msg_level, ltimer, timers_level, lart, ldass_lhn
   USE mo_grid_config,             ONLY: l_limited_area
+  USE mo_io_config,               ONLY: var_in_output
   USE mo_physical_constants,      ONLY: rd, rd_o_cpd, vtmpc1, p0ref, rcvd, cvd, cvv, grav
 
   USE mo_nh_diagnose_pres_temp,   ONLY: diagnose_pres_temp, diag_pres, diag_temp, calc_qsum
@@ -159,6 +156,7 @@ MODULE mo_nh_interface_nwp
 
   USE mo_nwp_tuning_config,       ONLY: tune_sc_eis
   USE mo_sbm_storage,             ONLY: t_sbm_storage, get_sbm_storage
+  USE mo_name_list_output_config, ONLY: is_variable_in_output
 
   !$ser verbatim USE mo_ser_all,              ONLY: serialize_all
 
@@ -258,6 +256,9 @@ CONTAINS
 
     REAL(wp) :: z_exner_sv(nproma,pt_patch%nlev,pt_patch%nblks_c), z_tempv, sqrt_ri(nproma), n2, dvdz2, &
       zddt_u_raylfric(nproma,pt_patch%nlev), zddt_v_raylfric(nproma,pt_patch%nlev), wfac
+
+    LOGICAL :: l_out_ddt_temp_drag
+    REAL(wp) :: z_ddt_temp_drag(nproma,pt_patch%nlev)
 
     !< SBM microphysics:
     TYPE(t_sbm_storage), POINTER:: ptr_sbm_storage =>NULL()   ! pointer to SBM storage object
@@ -359,6 +360,8 @@ CONTAINS
       l_any_upatmophys = .FALSE.
     ENDIF
 
+    l_out_ddt_temp_drag = var_in_output(jg)%ddt_temp_drag
+
     ! condensate tracer IDs
     condensate_list => advection_config(jg)%trHydroMass%list
 
@@ -386,7 +389,7 @@ CONTAINS
         &                sppt(jg)%rn_2d_now, sppt(jg)%rn_2d_new, lacc=lzacc)
     ENDIF ! end of lsppt
 
-    !$ACC DATA CREATE(zddt_v_raylfric, zddt_u_raylfric, sqrt_ri, z_ddt_temp, z_ddt_alpha, z_ddt_v_tot) &
+    !$ACC DATA CREATE(zddt_v_raylfric, zddt_u_raylfric, sqrt_ri, z_ddt_temp, z_ddt_temp_drag, z_ddt_alpha, z_ddt_v_tot) &
     !$ACC   CREATE(zcosmu0, z_ddt_u_tot, z_exner_sv, z_qsum, kc_inversion, kc_entr_zone, lfound_inversion) IF(lzacc)
     !$ACC DATA COPYIN(dt_phy_jg)
 
@@ -657,7 +660,7 @@ CONTAINS
     !!-------------------------------------------------------------------------
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_SURFACE_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_SURFACE_BEFORE, jg, lacc=lzacc)
 #endif
 
     !For turbulence schemes NOT including the call to the surface scheme.
@@ -690,10 +693,10 @@ CONTAINS
       IF (timers_level > 2) CALL timer_stop(timer_nwp_surface)
     END IF
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_SURFACE_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_SURFACE_AFTER, jg, lacc=lzacc)
 #endif
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TURBULENCE_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_TURBULENCE_BEFORE, jg, lacc=lzacc)
 #endif
 
     !Call to turbulent parameterization schemes
@@ -787,10 +790,10 @@ CONTAINS
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TURBULENCE_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_TURBULENCE_AFTER, jg, lacc=lzacc)
 #endif
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_MICROPHYSICS_BEFORE, jg, lacc=lzacc)
 #endif
     !-------------------------------------------------------------------------
     !  prognostic microphysic and precipitation scheme
@@ -828,7 +831,7 @@ CONTAINS
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_MICROPHYSICS_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_MICROPHYSICS_AFTER, jg, lacc=lzacc)
 #endif
 
 #ifdef __ICON_ART
@@ -1272,7 +1275,7 @@ CONTAINS
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_CONVECTION_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_CONVECTION_BEFORE, jg, lacc=lzacc)
 #endif
 
     !-------------------------------------------------------------------------
@@ -1305,7 +1308,7 @@ CONTAINS
     ENDIF! convection
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_CONVECTION_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_CONVECTION_AFTER, jg, lacc=lzacc)
 #endif
 
     !-------------------------------------------------------------------------
@@ -1353,9 +1356,6 @@ CONTAINS
 &                       i_startidx, i_endidx, rl_start, rl_end)
 
         IF (lcalc_inv) THEN
-#ifdef _OPENACC
-          IF (lzacc) CALL finish("mo_nh_interface_nwp:nwp_nh_interface", "inversion_height_index() is not yet ported with OpenACC.")
-#endif
           ! inversion height diagnostic for EIS-based stratocumulus parameterization in cover_koe
           ! ( for efficiency reasons this could be integrated in cover_koe and called with an index list )
           CALL inversion_height_index(                             &
@@ -1367,7 +1367,8 @@ CONTAINS
              &  i_startidx,i_endidx,kstart_moist(jg),nlev,nlev,  &
              &  kc_inversion(:),                                 &
              &  kc_entr_zone(:),                                 &
-             &  lfound_inversion(:))
+             &  lfound_inversion(:),                             &
+             &  lacc=lzacc)
         ELSE
           !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
           !$ACC LOOP GANG VECTOR
@@ -1487,7 +1488,7 @@ CONTAINS
 
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADIATION_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_RADIATION_BEFORE, jg, lacc=lzacc)
 #endif
 
     !-------------------------------------------------------------------------
@@ -1520,10 +1521,10 @@ CONTAINS
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADIATION_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_RADIATION_AFTER, jg, lacc=lzacc)
 #endif
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADHEAT_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_RADHEAT_BEFORE, jg, lacc=lzacc)
 #endif
 
     IF ( lcall_phy_jg(itradheat) ) THEN
@@ -1768,10 +1769,10 @@ CONTAINS
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_RADHEAT_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_RADHEAT_AFTER, jg, lacc=lzacc)
 #endif
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_GWDRAG_BEFORE, jg)
+    CALL icon_call_callback(EP_ATM_GWDRAG_BEFORE, jg, lacc=lzacc)
 #endif
 
     !-------------------------------------------------------------------------
@@ -1802,7 +1803,7 @@ CONTAINS
     ENDIF ! inwp_sso
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_GWDRAG_AFTER, jg)
+    CALL icon_call_callback(EP_ATM_GWDRAG_AFTER, jg, lacc=lzacc)
 #endif
 
 
@@ -2024,7 +2025,7 @@ CONTAINS
       i_endblk   = pt_patch%cells%end_block(rl_end)
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,z_qsum,z_ddt_temp,z_ddt_alpha,vabs,nudgecoeff,&
+!$OMP DO PRIVATE(jb,jk,jc,i_startidx,i_endidx,z_qsum,z_ddt_temp,z_ddt_temp_drag,z_ddt_alpha,vabs,nudgecoeff,&
 !$OMP  rfric_fac,zddt_u_raylfric,zddt_v_raylfric,sqrt_ri,n2,dvdz2,wfac) ICON_OMP_DEFAULT_SCHEDULE
 !
       DO jb = i_startblk, i_endblk
@@ -2106,7 +2107,7 @@ CONTAINS
             ! heating related to momentum deposition by SSO, GWD and Rayleigh friction
             !
             wfac = MIN(1._wp, 0.004_wp*p_metrics%geopot_agl(jc,jk,jb)/grav)
-            prm_nwp_tend%ddt_temp_drag(jc,jk,jb) = -rcvd*(pt_diag%u(jc,jk,jb)*             &
+            z_ddt_temp_drag(jc,jk)               = -rcvd*(pt_diag%u(jc,jk,jb)*             &
                                                    (prm_nwp_tend%ddt_u_sso(jc,jk,jb)+      &
                                                     prm_nwp_tend%ddt_u_gwd(jc,jk,jb)+      &
                                                     zddt_u_raylfric(jc,jk))                &
@@ -2119,12 +2120,23 @@ CONTAINS
             ! total slow physics heating rate
             !
             z_ddt_temp(jc,jk) = prm_nwp_tend%ddt_temp_radsw(jc,jk,jb) + prm_nwp_tend%ddt_temp_radlw(jc,jk,jb) &
-              &              +  prm_nwp_tend%ddt_temp_drag (jc,jk,jb) + prm_nwp_tend%ddt_temp_pconv(jc,jk,jb) &
-              &              +  prm_nwp_tend%ddt_temp_clcov(jc,jk,jb)
+              &               + z_ddt_temp_drag(jc,jk)                + prm_nwp_tend%ddt_temp_pconv(jc,jk,jb) &
+              &               + prm_nwp_tend%ddt_temp_clcov(jc,jk,jb)
           ENDDO
         ENDDO
         !$ACC END PARALLEL
 
+        IF (l_out_ddt_temp_drag) THEN
+          !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+          !$ACC LOOP GANG VECTOR COLLAPSE(2)
+          DO jk = 1, nlev
+!DIR$ IVDEP
+            DO jc = i_startidx, i_endidx
+              prm_nwp_tend%ddt_temp_drag(jc,jk,jb) = z_ddt_temp_drag(jc,jk)
+            END DO
+          END DO
+          !$ACC END PARALLEL
+        END IF
 
         IF(sppt_config(jg)%lsppt .AND. .NOT. linit) THEN
           !

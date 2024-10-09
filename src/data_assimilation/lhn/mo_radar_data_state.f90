@@ -1,10 +1,3 @@
-!
-! Allocation/deallocation and reading of radar datasets for LHN
-!
-! This module contains routines for setting up the radar data state.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Allocation/deallocation and reading of radar datasets for LHN
+!
+! This module contains routines for setting up the radar data state.
 
 !----------------------------
 #include "omp_definitions.inc"

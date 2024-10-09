@@ -9,6 +9,7 @@
             "tolerance_file_name": "{{reference}}/{{experiment_name}}_tolerance.csv",
             "member_num": "[{member_num}]",
             "member_type": "{{member_type}}",
+            "factor": 5,
             "file_specification": [{
                 "latlon": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["lat:lon"] },
                 "meteogram": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["max_nlevs:nstations", "nstations"] },
@@ -45,11 +46,15 @@
         {
             "ensemble": false
         },
+    "select-members":
+        {
+            "test_tolerance": false,
+            "selected_members_file_name": "{{reference}}/{{experiment_name}}_selected_members.csv"
+        },
     "check":
         {
             "input_file_ref": "{{reference}}/{{experiment_name}}_reference.csv",
-            "input_file_cur": "{{codebase_install}}/experiments/{{experiment_name}}/statistics.csv",
-            "factor": 5
+            "input_file_cur": "{{codebase_install}}/experiments/{{experiment_name}}/statistics.csv"
         },
     "performance":
         {

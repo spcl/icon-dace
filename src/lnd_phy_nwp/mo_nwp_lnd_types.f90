@@ -1,6 +1,3 @@
-! Data type definition for land surface scheme (TERRA)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data type definition for land surface scheme (TERRA)
 
 MODULE mo_nwp_lnd_types
 

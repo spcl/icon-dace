@@ -1,13 +1,3 @@
-!
-! Prepares and provides cloud optical properties
-!
-! Remarks
-!   This code makes use tabulated Mie Calculations for the RRTM band structure
-!   prepared by Stefan Kinne.
-!
-! Origin
-!   Rewrite and synthesis of ECHAM5 code, particularly rad_int.f90 
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Prepares and provides cloud optical properties
+!
+! Remarks
+!   This code makes use tabulated Mie Calculations for the RRTM band structure
+!   prepared by Stefan Kinne.
+!
+! Origin
+!   Rewrite and synthesis of ECHAM5 code, particularly rad_int.f90
 
 MODULE mo_newcld_optics
 

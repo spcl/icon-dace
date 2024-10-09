@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /* Unless compiled with -DNO_OVERWRITE, this variant of s_cat allows the
  * target of a concatenation to appear on its right-hand side (contrary
  * to the Fortran 77 Standard, but in accordance with Fortran 90).

@@ -1,7 +1,3 @@
-! Waves config.
-! The content is mostly adopted from the WAM 4.5.4.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Waves config.
+! The content is mostly adopted from the WAM 4.5.4.
 
 MODULE mo_wave_config
 
@@ -222,8 +221,7 @@ CONTAINS
     CALL message ('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!','')
     CALL message ('!     ICON-WAVES IS STILL UNDER DEVELOPMENT                              !','')
     CALL message ('!     THIS CODE IS FOR TECHNICAL TESTING ONLY                            !','')
-    CALL message ('!     THE IMPLEMENTATION OF WAVE PHYSICS IS NOT YET COMPLETED            !','')
-    CALL message ('!     THE ENERGY PROPAGATION DOES NOT WORK FOR THE 3 OUTERMOST CELL ROWS !','')
+    CALL message ('!     THE WAVE PHYSICS IS UNDER EVALUATION                               !','')
     CALL message ('!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!','')
     CALL message ('!!!!!!!!','')
     CALL message ('!!!!!!','')

@@ -1,7 +1,3 @@
-! Set of methods for simple statistics
-! NOTE: in order to get correct results make sure you provide the proper in_subset!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Set of methods for simple statistics
+! NOTE: in order to get correct results make sure you provide the proper in_subset!
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -97,19 +96,20 @@ MODULE mo_statistics
   INTERFACE levels_horizontal_mean
     MODULE PROCEDURE LevelHorizontalMean_3D_InRange_2Dweights
     MODULE PROCEDURE LevelHorizontalMean_3D_InRange_3Dweights
-    MODULE PROCEDURE HorizontalMean_2D_InRange_2Dweights
+    MODULE PROCEDURE      HorizontalMean_2D_InRange_2Dweights
   END INTERFACE levels_horizontal_mean
 
   ! the same as above, but better name
   INTERFACE horizontal_mean
     MODULE PROCEDURE LevelHorizontalMean_3D_InRange_2Dweights
     MODULE PROCEDURE LevelHorizontalMean_3D_InRange_3Dweights
-    MODULE PROCEDURE HorizontalMean_2D_InRange_2Dweights
+    MODULE PROCEDURE      HorizontalMean_2D_InRange_2Dweights
   END INTERFACE horizontal_mean
 
   INTERFACE horizontal_sum
     MODULE PROCEDURE LevelHorizontalSum_3D_InRange_2Dweights
     MODULE PROCEDURE LevelHorizontalSum_3D_InRange_3Dweights
+    MODULE PROCEDURE      HorizontalSum_2D_InRange_2Dweights
   END INTERFACE horizontal_sum
 
 
@@ -1451,7 +1451,30 @@ CONTAINS
 
   !-----------------------------------------------------------------------
   !>
-  ! Returns the weighted average for each level in a 3D array in a given range subset.
+  ! Returns the weighted sum for a 2D array in a given range subset.
+  SUBROUTINE HorizontalSum_2D_InRange_2Dweights(values, weights, in_subset, WeightedSum, lopenacc)
+    REAL(wp), INTENT(in) :: values(:,:)
+    REAL(wp), INTENT(in) :: weights(:,:)
+    TYPE(t_subset_range), INTENT(in) :: in_subset
+    REAL(wp), INTENT(out) :: WeightedSum
+    LOGICAL, OPTIONAL, INTENT(in)   :: lopenacc  ! Flag to run on GPU
+
+    LOGICAL :: lzopenacc
+
+    IF (PRESENT(lopenacc)) THEN
+      lzopenacc = lopenacc
+    ELSE
+      lzopenacc = .FALSE.
+    ENDIF
+
+    WeightedSum = Sum_2D_2Dweights_InRange(values, weights, in_subset, lopenacc=lzopenacc)
+
+  END SUBROUTINE HorizontalSum_2D_InRange_2Dweights
+  !-----------------------------------------------------------------------
+
+  !-----------------------------------------------------------------------
+  !>
+  ! Returns the weighted average for a 2D array in a given range subset.
   SUBROUTINE HorizontalMean_2D_InRange_2Dweights(values, weights, in_subset, mean, lopenacc)
     REAL(wp), INTENT(in) :: values(:,:)
     REAL(wp), INTENT(in) :: weights(:,:)

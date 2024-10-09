@@ -1,6 +1,3 @@
-!
-! Classes and functions for the turbulent mixing package (tmx)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Classes and functions for the turbulent mixing package (tmx)
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -42,6 +41,7 @@ MODULE mo_vdf_sfc
 
   TYPE, EXTENDS(t_tmx_process) :: t_vdf_sfc
   CONTAINS
+    PROCEDURE :: Init => Init_vdf_sfc
     PROCEDURE :: Compute
     PROCEDURE :: Compute_diagnostics
     PROCEDURE :: Update_diagnostics
@@ -176,6 +176,8 @@ MODULE mo_vdf_sfc
       & t2m_tile(:,:,:)     => NULL(), &
       & hus2m(:,:)          => NULL(), &
       & hus2m_tile(:,:,:)   => NULL(), &
+      & dew2m(:,:)          => NULL(), &
+      & dew2m_tile(:,:,:)   => NULL(), &
       & wind10m(:,:)        => NULL(), &
       & u10m(:,:)           => NULL(), &
       & v10m(:,:)           => NULL(), &
@@ -212,7 +214,7 @@ CONTAINS
     ALLOCATE(t_vdf_sfc::result)
     !$ACC ENTER DATA COPYIN(result)
     ! Call Init of abstract parent class
-    CALL result%Init(dt=dt, name=name, domain=domain)
+    CALL result%Init_process(dt=dt, name=name, domain=domain)
 
     ! Initialize variable sets
     ALLOCATE(t_vdf_sfc_config :: result%config)
@@ -232,6 +234,15 @@ CONTAINS
     ! CALL result%diagnostics%Set_pointers()
 
   END FUNCTION t_vdf_sfc_construct
+
+  SUBROUTINE Init_vdf_sfc(this)
+    CLASS(t_vdf_sfc), INTENT(inout), TARGET :: this
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':Init'
+
+    !CALL message(routine, '')
+
+  END SUBROUTINE Init_vdf_sfc
 
   SUBROUTINE Compute(this, datetime)
 
@@ -695,8 +706,6 @@ CONTAINS
   END SUBROUTINE Compute_diagnostics
 
   SUBROUTINE Update_diagnostics(this)
-
-    USE mo_tmx_surface_interface, ONLY: compute_2m_temperature, compute_10m_wind
 
     CLASS(t_vdf_sfc), INTENT(inout), TARGET :: this
 
@@ -1170,6 +1179,8 @@ CONTAINS
     CALL diaglist%append(t_variable('2m temperature, tile', shape_3d, "K", type_id="real"))
     CALL diaglist%append(t_variable('2m specific humidity', shape_2d, "kg kg-1", type_id="real"))
     CALL diaglist%append(t_variable('2m specific humidity, tile', shape_3d, "kg kg-1", type_id="real"))
+    CALL diaglist%append(t_variable('2m dewpoint temperature', shape_2d, "K", type_id="real"))
+    CALL diaglist%append(t_variable('2m dewpoint temperature, tile', shape_3d, "K", type_id="real"))
     CALL diaglist%append(t_variable('10m wind speed', shape_2d, "m/s", type_id="real"))
     CALL diaglist%append(t_variable('10m zonal wind', shape_2d, "m/s", type_id="real"))
     CALL diaglist%append(t_variable('10m meridional wind', shape_2d, "m/s", type_id="real"))
@@ -1316,6 +1327,10 @@ CONTAINS
       __acc_attach(this%hus2m)
       this%hus2m_tile      => this%list%Get_ptr_r3d('2m specific humidity, tile')
       __acc_attach(this%hus2m_tile)
+      this%dew2m           => this%list%Get_ptr_r2d('2m dewpoint temperature')
+      __acc_attach(this%dew2m)
+      this%dew2m_tile      => this%list%Get_ptr_r3d('2m dewpoint temperature, tile')
+      __acc_attach(this%dew2m_tile)
       this%wind10m         => this%list%Get_ptr_r2d('10m wind speed')
       __acc_attach(this%wind10m)
       this%u10m            => this%list%Get_ptr_r2d('10m zonal wind')

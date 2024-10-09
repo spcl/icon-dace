@@ -1,6 +1,3 @@
-!
-! Copy to data with given index ranges
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Copy to data with given index ranges
 
 MODULE mo_copy
 

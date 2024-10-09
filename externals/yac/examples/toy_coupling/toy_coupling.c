@@ -1,49 +1,6 @@
-/**
- * @file toy_coupling.c
- *
- * @copyright Copyright  (C)  2013 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-#include "yac_config.h"
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 #define EXACT
 
@@ -53,11 +10,13 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <string.h>
+#include <math.h>
 
-#include "yac_interface.h"
-#include "geometry.h"
-#include "vtk_output.h"
-#include "utils.h"
+#include "yac.h"
+#include "yac_core.h"
+#include "yac_utils.h"
+
+#define YAC_RAD (0.01745329251994329576923690768489) // M_PI / 180
 
 const char * fieldName[] = { "AtoB",
                              "BtoA"};
@@ -98,6 +57,7 @@ static void dummy_compB (char const * configFilename);
 
 static void parse_arguments(
   int argc, char ** argv, char const ** configFilenamem, char const ** gridPath);
+static inline void LLtoXYZ(double lon, double lat, double p_out[]);
 
 /* -------------------------------------------------------------------- */
 
@@ -160,7 +120,7 @@ static void remove_duplicated_vertices(double * temp_vertex_lon,
                                        int * old_to_new_id) {
 
    struct point_with_index * sort_array =
-      xmalloc(*temp_nbr_vertices * sizeof(*sort_array));
+      malloc(*temp_nbr_vertices * sizeof(*sort_array));
 
    for (int i = 0; i < *temp_nbr_vertices; ++i) {
 
@@ -178,8 +138,8 @@ static void remove_duplicated_vertices(double * temp_vertex_lon,
       sort_array[i].i = i;
    }
 
-   yac_mergesort(sort_array, *temp_nbr_vertices, sizeof(*sort_array),
-                 compare_point_with_index);
+   qsort(sort_array, *temp_nbr_vertices, sizeof(*sort_array),
+         compare_point_with_index);
 
    old_to_new_id[sort_array[0].i] = 1;
 
@@ -244,7 +204,7 @@ static void read_compA_grid_data(char const * gridPath,
   "mesh_compA_convex.txt";
 #endif
 
-  char * full_gridFilename = xmalloc(strlen(gridPath) + strlen(gridFilename) + 2);
+  char * full_gridFilename = malloc(strlen(gridPath) + strlen(gridFilename) + 2);
   sprintf(full_gridFilename, "%s/%s", gridPath, gridFilename);
 
   char* inFormat0 = "%s %*s %*s";
@@ -272,10 +232,10 @@ static void read_compA_grid_data(char const * gridPath,
 
   *nbr_vertices = nbr_vertices_per_cell * (*nbr_cells);
 
-  *buffer_lon = xmalloc ( *nbr_cells * sizeof(*buffer_lon) );
-  *buffer_lat = xmalloc ( *nbr_cells * sizeof(*buffer_lat) );
-  *buffer_lonv = xmalloc ( (*nbr_vertices) * sizeof(*buffer_lonv) );
-  *buffer_latv = xmalloc ( (*nbr_vertices) * sizeof(*buffer_latv) );
+  *buffer_lon = malloc ( *nbr_cells * sizeof(*buffer_lon) );
+  *buffer_lat = malloc ( *nbr_cells * sizeof(*buffer_lat) );
+  *buffer_lonv = malloc ( (*nbr_vertices) * sizeof(*buffer_lonv) );
+  *buffer_latv = malloc ( (*nbr_vertices) * sizeof(*buffer_latv) );
 
   for ( int i = 0; i < *nbr_cells; ++i ) {
     YAC_ASSERT(1 == fscanf ( inData, inFormat1, &((*buffer_lon)[i]) ),
@@ -343,11 +303,11 @@ static void read_compA_grid_data(char const * gridPath,
 
   // Connectivity
 
-  (*cell_to_vertex) = xmalloc ( (*nbr_cells) * nbr_vertices_per_cell *
+  (*cell_to_vertex) = malloc ( (*nbr_cells) * nbr_vertices_per_cell *
                                 sizeof(**cell_to_vertex) );
-  (*num_vertices_per_cell) = xmalloc ( *nbr_cells * sizeof(**num_vertices_per_cell) );
+  (*num_vertices_per_cell) = malloc ( *nbr_cells * sizeof(**num_vertices_per_cell) );
 
-  int * old_to_new_id = xmalloc((*nbr_vertices) * sizeof(*old_to_new_id));
+  int * old_to_new_id = malloc((*nbr_vertices) * sizeof(*old_to_new_id));
   remove_duplicated_vertices(*buffer_lonv, *buffer_latv, nbr_vertices,
                              old_to_new_id);
 
@@ -413,29 +373,29 @@ static void dummy_compA (char const * configFilename, char const * gridPath) {
 
   // Decomposition information
 
-  global_index = xmalloc ( nbr_cells * sizeof(*global_index) ) ;
-  cell_core_mask  = xmalloc ( nbr_cells * sizeof(*cell_core_mask) );
+  global_index = malloc ( nbr_cells * sizeof(*global_index) ) ;
+  cell_core_mask  = malloc ( nbr_cells * sizeof(*cell_core_mask) );
 
   for ( int i = 0; i < nbr_cells; ++i ) {
     global_index[i] = i;
     cell_core_mask[i] = 1;
   }
 
-  yac_cset_global_index(global_index, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
+  yac_cset_global_index(global_index, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
 
   // Center points in cells
 
   yac_cdef_points_unstruct ( grid_id,
                              nbr_cells,
-                             CELL,
+                             YAC_LOCATION_CELL,
                              buffer_lon,
                              buffer_lat,
                              &cell_point_id );
 
   // Define fields
 
-  field_id = xmalloc ( no_of_fields * sizeof(*field_id));
+  field_id = malloc ( no_of_fields * sizeof(*field_id));
 
   for ( int i = 0; i < no_of_fields; ++i )
     yac_cdef_field ( fieldName[i],
@@ -450,8 +410,8 @@ static void dummy_compA (char const * configFilename, char const * gridPath) {
 
   // Data exchange
 
-  recv_buffer = xmalloc (nbr_cells * sizeof (*recv_buffer) );
-  send_buffer = xmalloc (nbr_cells * sizeof (*send_buffer) );
+  recv_buffer = malloc (nbr_cells * sizeof (*recv_buffer) );
+  send_buffer = malloc (nbr_cells * sizeof (*send_buffer) );
 
   for ( int i = 0; i < nbr_cells; ++i ) recv_buffer[i] = 20.0;
   for ( int i = 0; i < nbr_cells; ++i ) send_buffer[i] = (double) i;
@@ -501,19 +461,20 @@ static void dummy_compA (char const * configFilename, char const * gridPath) {
   for (int i = 0; i < nbr_vertices; ++i)
    LLtoXYZ(buffer_lonv[i], buffer_latv[i], point_data[i]);
 
-  VTK_FILE *vtk_file = vtk_open(vtk_filename, "compA_out");
+  YAC_VTK_FILE *vtk_file = yac_vtk_open(vtk_filename, "compA_out");
 
-  vtk_write_point_data(vtk_file, (double *)point_data, nbr_vertices);
+  yac_vtk_write_point_data(vtk_file, (double *)point_data, nbr_vertices);
 
-  vtk_write_cell_data(vtk_file, (unsigned *)cell_to_vertex,
-                      (unsigned*)num_vertices_per_cell, nbr_cells);
+  yac_vtk_write_cell_data(vtk_file, (unsigned *)cell_to_vertex,
+                          (unsigned*)num_vertices_per_cell, nbr_cells);
 
-  vtk_write_cell_scalars_int(vtk_file, global_index, nbr_cells,
-                             "global_cell_id");
+  yac_vtk_write_cell_scalars_int(
+    vtk_file, global_index, nbr_cells, "global_cell_id");
 
-  vtk_write_cell_scalars_double(vtk_file, recv_buffer, nbr_cells, "cell_in");
+  yac_vtk_write_cell_scalars_double(
+    vtk_file, recv_buffer, nbr_cells, "cell_in");
 
-  vtk_close(vtk_file);
+  yac_vtk_close(vtk_file);
 
   /* Free memory and finalise */
 
@@ -576,8 +537,8 @@ static void dummy_compB (char const * configFilename) {
   nbr_vertices[0] = nbr_cells[0] + 1;
   nbr_vertices[1] = nbr_cells[1] + 1;
 
-  double * buffer_lonv = xmalloc ( nbr_vertices[0] * sizeof(*buffer_lonv) );
-  double * buffer_latv = xmalloc ( nbr_vertices[1] * sizeof(*buffer_latv) );
+  double * buffer_lonv = malloc ( nbr_vertices[0] * sizeof(*buffer_lonv) );
+  double * buffer_latv = malloc ( nbr_vertices[1] * sizeof(*buffer_latv) );
 
   // Description of reg2d elements
 
@@ -601,8 +562,8 @@ static void dummy_compB (char const * configFilename) {
 
   int total_nbr_cells =  nbr_cells[0] * nbr_cells[1];
 
-  global_index = xmalloc ( total_nbr_cells * sizeof(*global_index) ) ;
-  cell_core_mask  = xmalloc ( total_nbr_cells * sizeof(*cell_core_mask) );
+  global_index = malloc ( total_nbr_cells * sizeof(*global_index) ) ;
+  cell_core_mask  = malloc ( total_nbr_cells * sizeof(*cell_core_mask) );
 
   for ( int j = 0; j < nbr_cells[1]; ++j ) {
      for ( int i = 0; i < nbr_cells[0]; ++i ) {
@@ -611,13 +572,13 @@ static void dummy_compB (char const * configFilename) {
      }
   }
 
-  yac_cset_global_index(global_index, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
+  yac_cset_global_index(global_index, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
 
   // Center points in cells
 
-  double * buffer_lon = xmalloc ( nbr_cells[0] * sizeof(*buffer_lon) );
-  double * buffer_lat = xmalloc ( nbr_cells[1] * sizeof(*buffer_lat) );
+  double * buffer_lon = malloc ( nbr_cells[0] * sizeof(*buffer_lon) );
+  double * buffer_lat = malloc ( nbr_cells[1] * sizeof(*buffer_lat) );
 
   buffer_lon[0] = 265.6 * YAC_RAD;
   buffer_lat[0] =  58.5 * YAC_RAD;
@@ -630,14 +591,14 @@ static void dummy_compB (char const * configFilename) {
 
   yac_cdef_points_reg2d ( grid_id,
                           nbr_cells,
-                          CELL,
+                          YAC_LOCATION_CELL,
                           buffer_lon,
                           buffer_lat,
                           &cell_point_id );
 
   // Define fields
 
-  field_id = xmalloc ( no_of_fields * sizeof(*field_id));
+  field_id = malloc ( no_of_fields * sizeof(*field_id));
 
   for ( int i = 0; i < 2; ++i )
     yac_cdef_field ( fieldName[i],
@@ -652,8 +613,8 @@ static void dummy_compB (char const * configFilename) {
 
  // Data exchange
 
-  recv_buffer = xmalloc ( total_nbr_cells * sizeof (*recv_buffer) );
-  send_buffer = xmalloc ( total_nbr_cells * sizeof (*send_buffer) );
+  recv_buffer = malloc ( total_nbr_cells * sizeof (*recv_buffer) );
+  send_buffer = malloc ( total_nbr_cells * sizeof (*send_buffer) );
 
   for ( int j = 0; j < nbr_cells[1]; ++j ) {
      for ( int i = 0; i < nbr_cells[0]; ++i ) {
@@ -699,14 +660,14 @@ static void dummy_compB (char const * configFilename) {
   // write field to vtk output file
   //----------------------------------------------------------
 
-  double * point_data = xmalloc(nbr_vertices[0] * nbr_vertices[1] * 3 * sizeof(*point_data));
+  double * point_data = malloc(nbr_vertices[0] * nbr_vertices[1] * 3 * sizeof(*point_data));
   for (int i = 0; i < nbr_vertices[1]; ++i)
     for (int j = 0; j < nbr_vertices[0]; ++j)
       LLtoXYZ(buffer_lonv[j], buffer_latv[i],
               &point_data[3*(i * nbr_vertices[0] + j)]);
 
-  unsigned * cell_corners = xmalloc(total_nbr_cells * 4 * sizeof(*cell_corners));
-  unsigned * num_points_per_cell = xmalloc(total_nbr_cells * sizeof(*num_points_per_cell));
+  unsigned * cell_corners = malloc(total_nbr_cells * 4 * sizeof(*cell_corners));
+  unsigned * num_points_per_cell = malloc(total_nbr_cells * sizeof(*num_points_per_cell));
 
   for (int i = 0; i < total_nbr_cells; ++i) {
 
@@ -727,18 +688,21 @@ static void dummy_compB (char const * configFilename) {
 
   sprintf(vtk_filename, "compB_out_%d.vtk", rank);
 
-  VTK_FILE *vtk_file = vtk_open(vtk_filename, "compB_out");
+  YAC_VTK_FILE *vtk_file = yac_vtk_open(vtk_filename, "compB_out");
 
-  vtk_write_point_data(vtk_file, point_data, nbr_vertices[0]*nbr_vertices[1]);
+  yac_vtk_write_point_data(
+    vtk_file, point_data, nbr_vertices[0]*nbr_vertices[1]);
 
-  vtk_write_cell_data(vtk_file, cell_corners, num_points_per_cell, total_nbr_cells);
+  yac_vtk_write_cell_data(
+    vtk_file, cell_corners, num_points_per_cell, total_nbr_cells);
 
-  vtk_write_cell_scalars_int(vtk_file, global_index, total_nbr_cells,
-                             "global_cell_id");
+  yac_vtk_write_cell_scalars_int(
+    vtk_file, global_index, total_nbr_cells, "global_cell_id");
 
-  vtk_write_cell_scalars_double(vtk_file, recv_buffer, total_nbr_cells, "cell_in");
+  yac_vtk_write_cell_scalars_double(
+    vtk_file, recv_buffer, total_nbr_cells, "cell_in");
 
-  vtk_close(vtk_file);
+  yac_vtk_close(vtk_file);
 
   /* Free memory */
 
@@ -786,4 +750,15 @@ static void parse_arguments(
         break;
     }
   }
+}
+
+static inline void LLtoXYZ(double lon, double lat, double p_out[]) {
+
+   while (lon < -M_PI) lon += 2.0 * M_PI;
+   while (lon >= M_PI) lon -= 2.0 * M_PI;
+
+   double cos_lat = cos(lat);
+   p_out[0] = cos_lat * cos(lon);
+   p_out[1] = cos_lat * sin(lon);
+   p_out[2] = sin(lat);
 }

@@ -1,5 +1,14 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Two-moment bulk microphysics after Seifert, Beheng and Blahak
 !
 ! Description:
@@ -15,18 +24,8 @@
 ! The role of CCN in precipitation and hail in a mid-latitude storm as seen
 ! in simulations using a spectral (bin) microphysics model in a 2D dynamic frame,
 ! Atmospheric Research, 99, 129-146
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
 
 MODULE mo_2mom_mcrph_dmin_wetgrowth
 

@@ -1,6 +1,3 @@
-!
-! Description:  Data type definition for initicon
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Description:  Data type definition for initicon
 
 MODULE mo_initicon_types
 

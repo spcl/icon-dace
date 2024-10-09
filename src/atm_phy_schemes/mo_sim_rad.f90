@@ -1,12 +1,3 @@
-!
-!  Description:
-!  This module computes simplified radiation for stratocumulus case - DYCOMS-II
-!  see Stevens et al. 2005
-!
-! Routines (module procedure)
-!
-!     - sim_rad!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!  Description:
+!  This module computes simplified radiation for stratocumulus case - DYCOMS-II
+!  see Stevens et al. 2005
+!
+! Routines (module procedure)
+!
+!     - sim_rad!
 
 MODULE mo_sim_rad
 

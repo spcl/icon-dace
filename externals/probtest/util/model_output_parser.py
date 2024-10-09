@@ -1,3 +1,28 @@
+"""
+Definition of available model output data parsers
+
+All available parsers are summarized in the dict `model_output_parser` at the
+end of this module.
+
+Each parser expects two arguments:
+file_id: str
+  identifier of the file type
+filename: str
+  full file name
+specification: dict
+  Dictionary with type specific settings
+
+Each parser returns a list of Pandas DataFrame:
+  index = pd.MultiIndex.from_product(
+      [[file_id], [varname], height], names=("file_ID", "variable", "height")
+  )
+  columns = pd.MultiIndex.from_product(
+      [time, compute_statistics], names=("time", "statistic")
+  )
+
+  return [pd.DataFrame(matrix, index=index, columns=columns)]
+"""
+
 import sys
 from collections.abc import Iterable
 
@@ -10,32 +35,9 @@ from util.log_handler import logger
 from util.utils import numbers
 from util.xarray_ops import statistics_over_horizontal_dim
 
-# Definition of available model output data parsers
-#
-# All available parsers are summarized in the dict `model_output_parser` at the
-# end of this module.
-#
-# Each parser expects two arguments:
-# file_id: str
-#    identifier of the file type
-# filename: str
-#    full file name
-# specification: dict
-#    Dictionary with type specific settings
-#
-# Each parser returns a list of Pandas DataFrame:
-#    index = pd.MultiIndex.from_product(
-#        [[file_id], [varname], height], names=("file_ID", "variable", "height")
-#    )
-#    columns = pd.MultiIndex.from_product(
-#        [time, compute_statistics], names=("time", "statistic")
-#    )
-#
-#    return [pd.DataFrame(matrix, index=index, columns=columns)]
-
 
 def parse_netcdf(file_id, filename, specification):
-    logger.debug("parse NetCDF file {}".format(filename))
+    logger.debug("parse NetCDF file %s", filename)
     time_dim = specification["time_dim"]
     horizontal_dims = specification["horizontal_dims"]
     fill_value_key = specification.get("fill_value_key", None)
@@ -151,9 +153,11 @@ def dataframe_from_ncfile(
     else:
         logger.error(
             (
-                "Unknown number of dimension for first_stat of variable '{}'. "
-                + "Dims: {}"
-            ).format(varname, first_stat.dims)
+                "Unknown number of dimension for first_stat of variable '%s'. "
+                + "Dims: %s"
+            ),
+            varname,
+            str(first_stat.dims),
         )
         sys.exit(1)
 
@@ -188,7 +192,7 @@ def parse_csv(file_id, filename, specification):
     represent the time dimension.
     Each column contains a individual variable
     """
-    logger.debug("parse CSV file {}".format(filename))
+    logger.debug("parse CSV file %s", filename)
 
     csv = pd.read_csv(filename, **specification["parser_args"])
 
@@ -207,7 +211,7 @@ def parse_csv(file_id, filename, specification):
         height = np.arange(csv.columns.size / n_time, dtype=int)
 
         # convert to proper multidimensional array
-        array = np.array(csv).reshape(csv.index.size, n_time, -1)
+        array = np.array(csv).reshape((csv.index.size, n_time, -1))
         # transpose such that time is in last dimension
         array = array.transpose(0, 2, 1)  # index, "height", time
         # collapse index and "height" dimensions

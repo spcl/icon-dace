@@ -1,15 +1,3 @@
-! MPI global reshuffle.
-!
-! This program works on a distributed-memory array, where each PE's
-! part is defined by global indices "owner_idx" (local size!).  The
-! "reshuffle" operation means that each PE writes a number of "nsend"
-! values (where "nsend" may be different for each PE) to the array at
-! global indices "glb_idx". This involves, of course, some
-! send/receive operations, since the destination indices may be stored
-! on a different PE. This implementation of the "reshuffle" operation
-! involves no global-size arrays.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -20,6 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! MPI global reshuffle.
+!
+! This program works on a distributed-memory array, where each PE's
+! part is defined by global indices "owner_idx" (local size!).  The
+! "reshuffle" operation means that each PE writes a number of "nsend"
+! values (where "nsend" may be different for each PE) to the array at
+! global indices "glb_idx". This involves, of course, some
+! send/receive operations, since the destination indices may be stored
+! on a different PE. This implementation of the "reshuffle" operation
+! involves no global-size arrays.
 
 MODULE mo_reshuffle
 #ifndef NOMPI

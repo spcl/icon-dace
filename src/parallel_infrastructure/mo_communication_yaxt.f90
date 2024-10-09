@@ -1,9 +1,3 @@
-!#define HAVE_YAXT
-
-! This module provides the yaxt based communication routines
-! for parallel runs
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides the yaxt based communication routines
+! for parallel runs
 
 !----------------------------
 #include "icon_definitions.inc"

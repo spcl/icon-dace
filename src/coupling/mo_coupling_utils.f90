@@ -1,5 +1,3 @@
-! Set of routines shared by various coupling related modules
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Set of routines shared by various coupling related modules
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -34,7 +34,7 @@ MODULE mo_coupling_utils
     &                           timer_coupling_init_enddef
 #ifdef YAC_coupling
   USE mo_mpi,             ONLY: p_comm_yac
-  USE mo_yac_finterface,  ONLY: yac_finit, yac_finit_comm, &
+  USE yac,                ONLY: yac_finit, yac_finit_comm, &
     &                           yac_fread_config_yaml, &
     &                           yac_ffinalize, yac_fdef_comp, &
     &                           yac_fdef_comps, yac_fdef_grid, &
@@ -46,6 +46,7 @@ MODULE mo_coupling_utils
     &                           yac_dble_ptr, yac_fput, yac_fget, &
     &                           yac_fget_field_collection_size, &
     &                           yac_fsync_def, yac_fenddef, &
+    &                           yac_fget_grid_size, &
     &                           YAC_LOCATION_CELL, &
     &                           YAC_LOCATION_CORNER, &
     &                           YAC_LOCATION_EDGE, &
@@ -121,9 +122,6 @@ CONTAINS
     yac_is_initialised = .TRUE.
 
     CALL yac_finit_comm ( p_comm_yac, yac_instance_id )
-    CALL MPI_COMM_RANK ( p_comm_yac, global_rank, ierror )
-    IF ( global_rank == 0 .AND. cpl_config_file_exists()) &
-      CALL yac_fread_config_yaml( yac_instance_id, TRIM(yaml_filename) )
 
     IF (ltimer) CALL timer_stop(timer_coupling_init)
 
@@ -208,6 +206,7 @@ CONTAINS
     CHARACTER(LEN=MAX_DATETIME_STR_LEN) :: stopdatestring
 
     INTEGER :: jc, jv, jb, nblks, nn, comp_ids(2)
+    INTEGER :: comp_comm, comp_rank, ierror
 
     REAL(wp), ALLOCATABLE :: buffer_lon(:)
     REAL(wp), ALLOCATABLE :: buffer_lat(:)
@@ -254,6 +253,13 @@ CONTAINS
       output_comp_id = -1
     END IF
     IF (ltimer) CALL timer_stop(timer_coupling_init_def_comp)
+
+    ! root process of the component reads in the configuration file
+    CALL yac_fget_comp_comm(comp_id, comp_comm)
+    CALL MPI_COMM_RANK(comp_comm, comp_rank, ierror)
+    IF (comp_rank == 0 .AND. cpl_config_file_exists()) &
+      CALL yac_fread_config_yaml( yac_instance_id, TRIM(yaml_filename) )
+    CALL MPI_Comm_free(comp_comm, ierror)
 
     ! Extract cell information
     !
@@ -347,14 +353,14 @@ CONTAINS
     DEALLOCATE (buffer_lon, buffer_lat, buffer_c)
 
     nblks = &
-      MAX(p_patch%n_patch_cells, p_patch%nblks_v, p_patch%nblks_e)
+      MAX(p_patch%nblks_c, p_patch%nblks_v)
     ALLOCATE(is_valid(nproma*nblks))
 
     ! set global indices and core masks
     CALL set_basic_info( &
-      p_patch%cells%decomp_info, YAC_LOCATION_CELL, nbr_inner_cells)
+      p_patch%cells%decomp_info, YAC_LOCATION_CELL, .TRUE., nbr_inner_cells)
     CALL set_basic_info( &
-      p_patch%verts%decomp_info, YAC_LOCATION_CORNER)
+      p_patch%verts%decomp_info, YAC_LOCATION_CORNER, .FALSE.)
 !     CALL set_basic_info( &
 !       p_patch%edges%decomp_info, YAC_LOCATION_EDGE)
 
@@ -362,10 +368,11 @@ CONTAINS
 
   CONTAINS
 
-    SUBROUTINE set_basic_info(decomp_info, location, core_count)
+    SUBROUTINE set_basic_info(decomp_info, location, set_core_mask, core_count)
 
       TYPE(t_grid_domain_decomp_info), INTENT(IN) :: decomp_info
       INTEGER, INTENT(IN) :: location
+      LOGICAL, INTENT(IN) :: set_core_mask
       INTEGER, OPTIONAL, INTENT(OUT) :: core_count
 
       INTEGER :: i, point_count
@@ -396,8 +403,10 @@ CONTAINS
 !ICON_OMP_END_PARALLEL_DO
       END IF
 
-      ! Define core mask
-      CALL yac_fset_core_mask ( is_valid, location, grid_id )
+      IF (set_core_mask) THEN
+        ! Define core mask
+        CALL yac_fset_core_mask ( is_valid, location, grid_id )
+      END IF
 
     END SUBROUTINE set_basic_info
 
@@ -487,28 +496,9 @@ CONTAINS
     INTEGER, INTENT(OUT) :: mask_id        ! mask identifier
 
 #ifdef YAC_coupling
-
-    ! define iso C interface to YAC routine, until the respective Fortran
-    ! one is available
-    INTERFACE
-
-      FUNCTION yac_get_grid_size_c (location, grid_id ) &
-        BIND( c, name='yac_get_grid_size' )
-
-        USE, INTRINSIC :: iso_c_binding, ONLY : c_size_t, c_int
-
-        INTEGER ( KIND=c_int ), VALUE :: location
-        INTEGER ( KIND=c_int ), VALUE :: grid_id
-
-        INTEGER ( KIND=c_size_t ) :: yac_get_grid_size_c
-
-      END FUNCTION yac_get_grid_size_c
-
-    END INTERFACE
-
     CALL yac_fdef_mask (                  &
       & grid_id,                          &
-      & INT(yac_get_grid_size_c(          &
+      & INT(yac_fget_grid_size(           &
       &     YAC_LOCATION_CELL, grid_id)), &
       & YAC_LOCATION_CELL,                &
       & is_valid,                         &

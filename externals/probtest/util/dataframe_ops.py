@@ -1,16 +1,24 @@
+"""
+This module provides functions for statistical analysis and comparison of
+datasets, primarily for performance testing and validation.
+It includes utilities to handle data reading, processing, and comparison against
+reference datasets with specified tolerances.
+"""
+
 import sys
+import warnings
 
 import numpy as np
 import pandas as pd
 
-from util.constants import CHECK_THRESHOLD
+from util.constants import CHECK_THRESHOLD, compute_statistics
 from util.file_system import file_names_from_pattern
 from util.log_handler import logger
 from util.model_output_parser import model_output_parser
 
 pd.set_option("display.max_colwidth", None)
 pd.set_option("display.max_columns", None)
-pd.set_option("display.float_format", "{:,.2e}".format)
+pd.set_option("display.float_format", lambda x: f"{x:,.2e}")
 
 
 def force_monotonic(dataframe):
@@ -22,12 +30,11 @@ def force_monotonic(dataframe):
 
 
 def compute_rel_diff_dataframe(df1, df2):
-    average = (df1 + df2) / 2
-    out = (df1 - df2) / average
+    """This implementation is similar to the numpy.isclose function:
+    (absolute(a - b) <= (atol + rtol * absolute(b)) ),
+    assuming atol==rtol and moving the right hand side to the left."""
+    out = (df1 - df2) / (1.0 + df1.abs())
     out = out.abs()
-    # put 0 if both numbers are very small
-    zeros = np.logical_and(df1.abs() < CHECK_THRESHOLD, df2.abs() < CHECK_THRESHOLD)
-    out[zeros] = 0.0
     return out
 
 
@@ -61,17 +68,17 @@ def read_input_file(label, file_name, specification):
         file_parser = model_output_parser[specification["format"].lower()]
     except KeyError:
         logger.error(
-            "No parser defined for format `{}` of file `{}`.".format(
-                specification["format"], file_name
-            )
+            "No parser defined for format `%s` of file `%s`.",
+            specification["format"],
+            file_name,
         )
         sys.exit(1)
 
     var_dfs = file_parser(label, file_name, specification)
 
     if len(var_dfs) == 0:
-        logger.error("Could not find any variables in `{}`".format(file_name))
-        logger.error("Wrong file format or specification? Fid: `{}` ".format(label))
+        logger.error("Could not find any variables in `%s`", file_name)
+        logger.error("Wrong file format or specification? Fid: `%s` ", label)
         sys.exit(1)
 
     # different variables in a file have same timestamps:
@@ -114,9 +121,7 @@ def df_from_file_ids(file_id, input_dir, file_specification):
         input_files, err = file_names_from_pattern(input_dir, file_pattern)
         if err > 0:
             logger.info(
-                "Can not find any files for file_pattern {}. Continue.".format(
-                    file_pattern
-                )
+                "Can not find any files for file_pattern %s. Continue.", file_pattern
             )
             continue
 
@@ -124,17 +129,17 @@ def df_from_file_ids(file_id, input_dir, file_specification):
             specification = file_specification[file_type]
         except KeyError:
             logger.error(
-                "No parser defined for format `{}` of file_pattern `{}`.".format(
-                    file_type, file_pattern
-                )
+                "No parser defined for format `%s` of file_pattern `%s`.",
+                file_type,
+                file_pattern,
             )
             sys.exit(1)
 
         file_dfs = []
         for f in input_files:
             var_df = read_input_file(
-                label="{}:{}".format(file_type, file_pattern),
-                file_name="{}/{}".format(input_dir, f),
+                label=f"{file_type}:{file_pattern}",
+                file_name=f"{input_dir}/{f}",
                 specification=specification,
             )
             file_dfs.append(var_df)
@@ -178,3 +183,131 @@ def unify_time_index(fid_dfs):
         fid_dfs_out.append(df)
 
     return fid_dfs_out
+
+
+def check_intersection(df_ref, df_cur):
+    # Check if variable names in reference and test case have any intersection
+    # Check if numbers of time steps agree
+    skip_test = 0
+    if not set(df_ref.index.intersection(df_cur.index)):
+        logger.info(
+            "WARNING: No intersection between variables in input and reference file."
+        )
+        skip_test = 1
+        return skip_test, df_ref, df_cur
+
+    # Check if there are variable missing in the reference or test case
+    non_common_vars = list(set(df_ref.index) ^ set(df_cur.index))
+    missing_in_ref = []
+    missing_in_cur = []
+    for var in non_common_vars:
+        if var in df_cur.index:
+            missing_in_ref.append(var[1])
+        else:
+            missing_in_cur.append(var[1])
+    # Remove multiple entries of a variable due to different altitude levels
+    missing_in_ref = list(set(missing_in_ref))
+    missing_in_cur = list(set(missing_in_cur))
+    if missing_in_ref:
+        warning_msg = (
+            "WARNING: The following variables are in the test case but not in the"
+            f" reference case and therefore not tested: {', '.join(missing_in_ref)}"
+        )
+        warnings.warn(warning_msg, UserWarning)
+    if missing_in_cur:
+        warning_msg = (
+            "WARNING: The following variables are in the reference case but not in the"
+            f" test case and therefore not tested: {', '.join(missing_in_cur)}"
+        )
+        warnings.warn(warning_msg, UserWarning)
+
+    # Remove rows without intersection
+    df_ref = df_ref[~df_ref.index.isin(non_common_vars)]
+    df_cur = df_cur[~df_cur.index.isin(non_common_vars)]
+
+    # Make sure they have the same number of time steps
+    if len(df_ref.columns) > len(df_cur.columns):
+        logger.info(
+            "WARNING: The reference includes more timesteps than the test case. "
+            "Only the first %s time step(s) are tested.\n",
+            len(df_cur.columns) // len(compute_statistics),
+        )
+        df_ref = df_ref.iloc[:, : len(df_cur.columns)]
+    elif len(df_ref.columns) < len(df_cur.columns):
+        logger.info(
+            "WARNING: The reference includes less timesteps than the test case. "
+            "Only the first %s time step(s) are tested.\n",
+            len(df_ref.columns) // len(compute_statistics),
+        )
+        df_cur = df_cur.iloc[:, : len(df_ref.columns)]
+    return skip_test, df_ref, df_cur
+
+
+def check_variable(diff_df, df_tol):
+    out = diff_df - df_tol
+
+    selector = (out > CHECK_THRESHOLD).any(axis=1)
+
+    return len(out[selector].index) == 0, diff_df[selector], df_tol[selector]
+
+
+def parse_check(tolerance_file_name, input_file_ref, input_file_cur, factor):
+    """
+    Parses all necessary data to perform a check from tolerance, reference and
+    input files, applying scaling factor to tolerance values.
+
+    Args:
+        tolerance_file_name (str): Path to the CSV file containing tolerance values.
+        input_file_ref (str): Path to the reference input CSV file.
+        input_file_cur (str): Path to the current input CSV file.
+        factor (float): Scaling factor to be applied to the tolerance values.
+
+    Returns:
+        tuple: A tuple containing three DataFrames:
+            - df_tol (pandas.DataFrame): The tolerance DataFrame with values
+                                         scaled by the provided factor.
+            - df_ref (pandas.DataFrame): The reference DataFrame parsed from the
+                                         reference input file.
+            - df_cur (pandas.DataFrame): The current DataFrame parsed from the
+                                         current input file.
+    """
+    df_tol = parse_probtest_csv(tolerance_file_name, index_col=[0, 1])
+
+    logger.info("applying a factor of %s to the spread", factor)
+    df_tol *= factor
+
+    df_ref = parse_probtest_csv(input_file_ref, index_col=[0, 1, 2])
+    df_cur = parse_probtest_csv(input_file_cur, index_col=[0, 1, 2])
+
+    logger.info(
+        "checking %s against %s using tolerances from %s",
+        input_file_cur,
+        input_file_ref,
+        tolerance_file_name,
+    )
+
+    return df_tol, df_ref, df_cur
+
+
+def test_stats_file_with_tolerances(
+    tolerance_file_name, input_file_ref, input_file_cur, factor
+):
+
+    df_tol, df_ref, df_cur = parse_check(
+        tolerance_file_name, input_file_ref, input_file_cur, factor
+    )
+
+    # check if variables are available in reference file
+    skip_test, df_ref, df_cur = check_intersection(df_ref, df_cur)
+    if skip_test:  # No intersection
+        logger.error("RESULT: check FAILED")
+        sys.exit(1)
+
+    # compute relative difference
+    diff_df = compute_rel_diff_dataframe(df_ref, df_cur)
+    # take maximum over height
+    diff_df = diff_df.groupby(["file_ID", "variable"]).max()
+
+    out, err, tol = check_variable(diff_df, df_tol)
+
+    return out, err, tol

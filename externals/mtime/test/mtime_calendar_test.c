@@ -11,69 +11,69 @@
 
 START_TEST(test_calendar_preinit)
 {
-	char calendar_in_use[MAX_CALENDAR_STR_LEN];
+  char calendar_in_use[MAX_CALENDAR_STR_LEN];
 
-	ck_assert(calendarToString(calendar_in_use) != NULL);
-	ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
-	ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
+  ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
 }
 END_TEST
 
 START_TEST(test_calendarGregorian_init_and_free)
 {
-	char calendar_in_use[MAX_CALENDAR_STR_LEN];
+  char calendar_in_use[MAX_CALENDAR_STR_LEN];
 
-	initCalendar(PROLEPTIC_GREGORIAN);
-	ck_assert(calendarToString(calendar_in_use) != NULL); 
-	ck_assert_str_eq("Proleptic Gregorian", calendarToString(calendar_in_use));
-	ck_assert_int_eq(PROLEPTIC_GREGORIAN, getCalendarType());
-	
-	freeCalendar();
-	ck_assert(calendarToString(calendar_in_use) != NULL);
-	ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
-	ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
+  initCalendar(PROLEPTIC_GREGORIAN);
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Proleptic Gregorian", calendarToString(calendar_in_use));
+  ck_assert_int_eq(PROLEPTIC_GREGORIAN, getCalendarType());
+
+  freeCalendar();
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
+  ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
 }
 END_TEST
 
 START_TEST(test_calendar360day_init_and_free)
 {
-	char calendar_in_use[MAX_CALENDAR_STR_LEN];
+  char calendar_in_use[MAX_CALENDAR_STR_LEN];
 
-	initCalendar(YEAR_OF_365_DAYS);
-	ck_assert(calendarToString(calendar_in_use) != NULL); 
-	ck_assert_str_eq("Year of 365 days", calendarToString(calendar_in_use));
-	ck_assert_int_eq(YEAR_OF_365_DAYS, getCalendarType());
-	
-	freeCalendar();
-	ck_assert(calendarToString(calendar_in_use) != NULL);
-	ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
-	ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
-	
+  initCalendar(YEAR_OF_365_DAYS);
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Year of 365 days", calendarToString(calendar_in_use));
+  ck_assert_int_eq(YEAR_OF_365_DAYS, getCalendarType());
+
+  freeCalendar();
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
+  ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
 }
 END_TEST
 
 START_TEST(test_calendar365day_init_and_free)
 {
-	char calendar_in_use[MAX_CALENDAR_STR_LEN];
+  char calendar_in_use[MAX_CALENDAR_STR_LEN];
 
-	initCalendar(YEAR_OF_360_DAYS);
-	ck_assert(calendarToString(calendar_in_use) != NULL); 
-	ck_assert_str_eq("Year of 360 days", calendarToString(calendar_in_use));
-	ck_assert_int_eq(YEAR_OF_360_DAYS, getCalendarType());
-	
-	freeCalendar();
-	ck_assert(calendarToString(calendar_in_use) != NULL);
-	ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
-	ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
+  initCalendar(YEAR_OF_360_DAYS);
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Year of 360 days", calendarToString(calendar_in_use));
+  ck_assert_int_eq(YEAR_OF_360_DAYS, getCalendarType());
+
+  freeCalendar();
+  ck_assert(calendarToString(calendar_in_use) != NULL);
+  ck_assert_str_eq("Not defined", calendarToString(calendar_in_use));
+  ck_assert_int_eq(CALENDAR_NOT_SET, getCalendarType());
 }
 END_TEST
 
-void add_mtime_calendar_test_to_suite(Suite* suite)
+void
+add_mtime_calendar_test_to_suite(Suite *suite)
 {
-    TCase *tcase = tcase_create("mtime_calendar_test");
-    suite_add_tcase(suite, tcase);
-    tcase_add_test(tcase, test_calendar_preinit);
-    tcase_add_test(tcase, test_calendarGregorian_init_and_free);
-    tcase_add_test(tcase, test_calendar360day_init_and_free);
-    tcase_add_test(tcase, test_calendar365day_init_and_free);
+  TCase *tcase = tcase_create("mtime_calendar_test");
+  suite_add_tcase(suite, tcase);
+  tcase_add_test(tcase, test_calendar_preinit);
+  tcase_add_test(tcase, test_calendarGregorian_init_and_free);
+  tcase_add_test(tcase, test_calendar360day_init_and_free);
+  tcase_add_test(tcase, test_calendar365day_init_and_free);
 }

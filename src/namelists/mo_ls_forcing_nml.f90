@@ -1,6 +1,3 @@
-! Namelist file for large-scale forcing terms
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist file for large-scale forcing terms
 
 MODULE mo_ls_forcing_nml
 

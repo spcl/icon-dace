@@ -30,35 +30,27 @@ export EXPERIMENT='mch_icon-ch2_small'
 # TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export TYPES='atm_3d_ml'
+export TYPES=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param types)
 
 # DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export DATES='20201210T060000Z'
+export DATES=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param dates)
+
 
 # RESTART_DATE defines the date and time from which restarts should be performed.
 # 
-export RESTART_DATE='20201210T060100Z'
+export RESTART_DATE=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param restart_date)
 
 #--------------------------------------------------------------------------------
 # 
-# 2. Define the checksuite mode
+# Define the checksuite mode
 #
-# u = update test
-# r = restart test
-# n = nproma test
-# m = mpi test
-# o = omp test
-# t = tolerance test
+export MD=$("${basedir}/scripts/experiments/get_param_for_exp_by_machine" --experiment "$EXPERIMENT" --param checksuite_modes)
+
+# Set the tolerance factor
 #
-# default: MD='t'
-#
-export MD='t'
-# Activate cuda-graph test only when NVCOMPILER_ACC_USE_GRAPH is set to 1
-if [[ ${NVCOMPILER_ACC_USE_GRAPH} == 1 ]]; then
-    export MD=$MD'g'
-fi
+export FACTOR=$("${basedir}/scripts/experiments/get_param_for_exp_by_machine" --experiment "$EXPERIMENT" --param tolerance_factor)
 
 #--------------------------------------------------------------------------------
 # 

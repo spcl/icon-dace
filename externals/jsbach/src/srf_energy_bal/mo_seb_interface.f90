@@ -23,7 +23,7 @@ MODULE mo_seb_interface
   USE mo_jsb_control,     ONLY: debug_on
   USE mo_jsb_time,        ONLY: is_time_experiment_start
   USE mo_kind,            ONLY: wp
-  USE mo_exception,       ONLY: message, finish
+  USE mo_exception,       ONLY: message, finish, message_text
 
   USE mo_jsb_model_class,    ONLY: t_jsb_model
   USE mo_jsb_class,          ONLY: Get_model
@@ -47,7 +47,7 @@ MODULE mo_seb_interface
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: Register_seb_tasks, global_seb_diagnostics
+  PUBLIC :: Register_seb_tasks, global_seb_diagnostics, seb_check_temperature_range
 
   TYPE, EXTENDS(t_jsb_process_task) :: tsk_surface_energy
   CONTAINS
@@ -610,6 +610,74 @@ CONTAINS
     IF (debug_on() .AND. iblk==1) CALL message(TRIM(routine), 'Finished.')
 
   END SUBROUTINE aggregate_surface_fluxes
+
+  !-----------------------------------------------------------------------------------------------------
+  !> Make sure temperature is within a realistic range and finish the simulation with a meaningfull
+  !! message if not.
+  !!
+  !! The routine is called at the beginning and at the end of each time step.
+  !!
+  !-----------------------------------------------------------------------------------------------------
+  SUBROUTINE seb_check_temperature_range(model_id, no_omp_thread)
+
+    USE mo_jsb_grid,            ONLY: Get_grid
+    USE mo_jsb_grid_class,      ONLY: t_jsb_grid
+    USE mo_jsb_parallel,        ONLY: Get_omp_thread
+
+    ! Argument
+    INTEGER, INTENT(in) :: model_id, no_omp_thread
+
+    ! Local variables
+    TYPE(t_jsb_model), POINTER           :: model
+    TYPE(t_jsb_grid),  POINTER           :: grid
+    CLASS(t_jsb_tile_abstract), POINTER  :: tile
+
+    dsl4jsb_Def_memory(SEB_)
+
+    INTEGER                       :: iblk, ic
+    REAL(wp), POINTER             :: lat(:,:), lon(:,:), tile_fract(:,:)
+    CHARACTER(len=*),  PARAMETER  :: routine = modname//':seb_check_temperature_range'
+
+    dsl4jsb_Real2D_onDomain :: t
+
+    IF (debug_on()) CALL message(TRIM(routine), 'Starting routine')
+
+    model => Get_model(model_id)
+    grid  => Get_grid(model%grid_id)
+    lat   => grid%lat(:,:)
+    lon   => grid%lon(:,:)
+
+    !vg no_omp_thread = Get_omp_thread()
+
+    CALL model%Get_top_tile(tile)
+    DO WHILE (ASSOCIATED(tile))
+      IF (tile%visited(no_omp_thread) .OR. .NOT. tile%Is_process_active(SEB_)) THEN
+        CALL model%Goto_next_tile(tile)
+        CYCLE
+      END IF
+
+      dsl4jsb_Get_memory(SEB_)
+      dsl4jsb_Get_var2D_onDomain(SEB_, t)
+
+      tile_fract => tile%fract(:,:)
+      IF (ANY(t(:,:) < 50._wp .OR. t(:,:) > 400._wp)) THEN
+        DO iblk = 1, grid%nblks
+          DO ic = 1, grid%nproma
+            IF ((t(ic,iblk) < 50._wp .OR. t(ic,iblk) > 400._wp) .AND. tile_fract(ic,iblk) > 0._wp) THEN
+              WRITE (message_text,*) 'Temperature out of bound: ', t(ic,iblk), 'K',             NEW_LINE('a'), &
+                & 'on ',TRIM(tile%name),' tile at', lat(ic,iblk), 'N and ', lon(ic,iblk), 'E',  NEW_LINE('a'), &
+                & '(ic: ',ic,' iblk: ',iblk, ' tile_fract:', tile_fract(ic,iblk),'):',          NEW_LINE('a'), &
+                & 'One thing to check: consistency of land-sea mask and forcing.'
+              CALL finish(TRIM(routine), TRIM(message_text))
+            END IF
+          END DO
+        END DO
+      END IF
+
+      CALL model%Goto_next_tile(tile)
+    ENDDO
+
+  END SUBROUTINE seb_check_temperature_range
 
   !-----------------------------------------------------------------------------------------------------
   !> Calculations of diagnostic global land mean output

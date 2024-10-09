@@ -1,8 +1,3 @@
-! Contains the implementation of interpolation and reconstruction
-! routines used by the shallow water model, including the RBF
-! reconstruction routines.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of interpolation and reconstruction
+! routines used by the shallow water model, including the RBF
+! reconstruction routines.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -34,6 +33,9 @@ USE mo_model_domain,        ONLY: t_patch
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e, get_indices_v
 USE mo_intp_data_strc,      ONLY: t_int_state
 USE mo_fortran_tools,       ONLY: init
+USE mo_parallel_config,     ONLY: nproma
+use mo_lib_intp_rbf,        ONLY: rbf_vec_interpol_cell_lib, rbf_interpol_c2grad_lib, &
+                                  rbf_vec_interpol_vertex_lib, rbf_vec_interpol_edge_lib
 USE mo_mpi,                 ONLY: i_am_accel_node
 
 IMPLICIT NONE
@@ -103,17 +105,12 @@ LOGICAL, INTENT(IN), OPTIONAL :: opt_acc_async
 
 ! !LOCAL VARIABLES
 INTEGER :: slev, elev                ! vertical start and end level
-INTEGER :: jc, jk, jb                ! integer over cells, levels, and blocks,
 
 INTEGER :: i_startblk      ! start block
 INTEGER :: i_endblk        ! end block
-INTEGER :: i_startidx      ! start index
-INTEGER :: i_endidx        ! end index
-INTEGER :: rl_start, rl_end, i_nchdom, jk0, jkk
-
-
-INTEGER,  DIMENSION(:,:,:),   POINTER :: iidx, iblk
-REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff
+INTEGER :: i_startidx_in      ! start index
+INTEGER :: i_endidx_in        ! end index
+INTEGER :: rl_start, rl_end
 
 !-----------------------------------------------------------------------
 
@@ -140,69 +137,17 @@ ELSE
   rl_end = min_rlcell_int-1
 END IF
 
-iidx => ptr_int%rbf_vec_idx_c
-iblk => ptr_int%rbf_vec_blk_c
-
-ptr_coeff => ptr_int%rbf_vec_coeff_c
-
 ! values for the blocking
-i_nchdom   = MAX(1,ptr_patch%n_childdom)
-i_startblk = ptr_patch%cells%start_blk(rl_start,1)
-i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
+i_startblk = ptr_patch%cells%start_block(rl_start)
+i_endblk   = ptr_patch%cells%end_block(rl_end)
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc), ICON_OMP_RUNTIME_SCHEDULE
+i_startidx_in = ptr_patch%cells%start_index(rl_start)
+i_endidx_in   = ptr_patch%cells%end_index(rl_end)
 
-DO jb = i_startblk, i_endblk
-
-  CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
-                     i_startidx, i_endidx, rl_start, rl_end)
-
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-  !$ACC LOOP GANG VECTOR TILE(32, 4)
-#ifdef __LOOP_EXCHANGE
-  DO jc = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
-  DO jk = slev, elev
-    DO jc = i_startidx, i_endidx
-#endif
-      p_u_out(jc,jk,jb) =  &
-        ptr_coeff(1,1,jc,jb)*p_vn_in(iidx(1,jc,jb),jk,iblk(1,jc,jb)) + &
-        ptr_coeff(2,1,jc,jb)*p_vn_in(iidx(2,jc,jb),jk,iblk(2,jc,jb)) + &
-        ptr_coeff(3,1,jc,jb)*p_vn_in(iidx(3,jc,jb),jk,iblk(3,jc,jb)) + &
-        ptr_coeff(4,1,jc,jb)*p_vn_in(iidx(4,jc,jb),jk,iblk(4,jc,jb)) + &
-        ptr_coeff(5,1,jc,jb)*p_vn_in(iidx(5,jc,jb),jk,iblk(5,jc,jb)) + &
-        ptr_coeff(6,1,jc,jb)*p_vn_in(iidx(6,jc,jb),jk,iblk(6,jc,jb)) + &
-        ptr_coeff(7,1,jc,jb)*p_vn_in(iidx(7,jc,jb),jk,iblk(7,jc,jb)) + &
-        ptr_coeff(8,1,jc,jb)*p_vn_in(iidx(8,jc,jb),jk,iblk(8,jc,jb)) + &
-        ptr_coeff(9,1,jc,jb)*p_vn_in(iidx(9,jc,jb),jk,iblk(9,jc,jb))
-      p_v_out(jc,jk,jb) =  &
-        ptr_coeff(1,2,jc,jb)*p_vn_in(iidx(1,jc,jb),jk,iblk(1,jc,jb)) + &
-        ptr_coeff(2,2,jc,jb)*p_vn_in(iidx(2,jc,jb),jk,iblk(2,jc,jb)) + &
-        ptr_coeff(3,2,jc,jb)*p_vn_in(iidx(3,jc,jb),jk,iblk(3,jc,jb)) + &
-        ptr_coeff(4,2,jc,jb)*p_vn_in(iidx(4,jc,jb),jk,iblk(4,jc,jb)) + &
-        ptr_coeff(5,2,jc,jb)*p_vn_in(iidx(5,jc,jb),jk,iblk(5,jc,jb)) + &
-        ptr_coeff(6,2,jc,jb)*p_vn_in(iidx(6,jc,jb),jk,iblk(6,jc,jb)) + &
-        ptr_coeff(7,2,jc,jb)*p_vn_in(iidx(7,jc,jb),jk,iblk(7,jc,jb)) + &
-        ptr_coeff(8,2,jc,jb)*p_vn_in(iidx(8,jc,jb),jk,iblk(8,jc,jb)) + &
-        ptr_coeff(9,2,jc,jb)*p_vn_in(iidx(9,jc,jb),jk,iblk(9,jc,jb))
-    ENDDO
-  ENDDO
-  !$ACC END PARALLEL
-
-ENDDO
-
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-
-IF ( PRESENT(opt_acc_async) ) THEN
-  IF ( .NOT. opt_acc_async ) THEN
-    !$ACC WAIT
-  END IF
-ELSE
-  !$ACC WAIT
-END IF
+CALL rbf_vec_interpol_cell_lib( p_vn_in, ptr_int%rbf_vec_idx_c, ptr_int%rbf_vec_blk_c, &
+  &                             ptr_int%rbf_vec_coeff_c, p_u_out, p_v_out, &
+  &                             i_startblk, i_endblk, i_startidx_in, i_endidx_in, & 
+  &                             slev, elev, nproma, lacc=i_am_accel_node, acc_async=opt_acc_async )
 
 END SUBROUTINE rbf_vec_interpol_cell
 !====================================================================================
@@ -245,17 +190,12 @@ REAL(wp),INTENT(INOUT) ::  &
 
 ! !LOCAL VARIABLES
 INTEGER :: slev, elev                ! vertical start and end level
-INTEGER :: jc, jk, jb                ! integer over cells, levels, and blocks,
 
 INTEGER :: i_startblk      ! start block
 INTEGER :: i_endblk        ! end block
-INTEGER :: i_startidx      ! start index
-INTEGER :: i_endidx        ! end index
-INTEGER :: rl_start, rl_end, i_nchdom
-
-
-INTEGER,  DIMENSION(:,:,:),   POINTER :: iidx, iblk
-REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff
+INTEGER :: i_startidx_in      ! start index
+INTEGER :: i_endidx_in        ! end index
+INTEGER :: rl_start, rl_end
 
 !-----------------------------------------------------------------------
 
@@ -282,16 +222,12 @@ ELSE
   rl_end = min_rlcell_int
 END IF
 
-
-iidx => ptr_int%rbf_c2grad_idx
-iblk => ptr_int%rbf_c2grad_blk
-
-ptr_coeff => ptr_int%rbf_c2grad_coeff
-
 ! values for the blocking
-i_nchdom   = MAX(1,ptr_patch%n_childdom)
-i_startblk = ptr_patch%cells%start_blk(rl_start,1)
-i_endblk   = ptr_patch%cells%end_blk(rl_end,i_nchdom)
+i_startblk = ptr_patch%cells%start_block(rl_start)
+i_endblk   = ptr_patch%cells%end_block(rl_end)
+
+i_startidx_in = ptr_patch%cells%start_index(rl_start)
+i_endidx_in   = ptr_patch%cells%end_index(rl_end)
 
 !$OMP PARALLEL
 
@@ -308,59 +244,12 @@ IF (ptr_patch%id > 1) THEN
 #endif
 ENDIF
 
-!$ACC DATA PRESENT(p_cell_in, grad_x, grad_y, iidx, iblk, ptr_coeff) IF(i_am_accel_node)
-
-!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc), ICON_OMP_RUNTIME_SCHEDULE
-
-DO jb = i_startblk, i_endblk
-
-  CALL get_indices_c(ptr_patch, jb, i_startblk, i_endblk, &
-                     i_startidx, i_endidx, rl_start, rl_end)
-
-  !$ACC PARALLEL ASYNC(1) IF(i_am_accel_node)
-  !$ACC LOOP GANG
-#ifdef __LOOP_EXCHANGE
-  DO jc = i_startidx, i_endidx
-    !$ACC LOOP VECTOR
-    DO jk = slev, elev
-#else
-  DO jk = slev, elev
-    !$ACC LOOP VECTOR
-    DO jc = i_startidx, i_endidx
-#endif
-
-      grad_x(jc,jk,jb) =  &
-        ptr_coeff(1,1,jc,jb)*p_cell_in(jc,jk,jb) + &
-        ptr_coeff(2,1,jc,jb)*p_cell_in(iidx(2,jc,jb),jk,iblk(2,jc,jb)) + &
-        ptr_coeff(3,1,jc,jb)*p_cell_in(iidx(3,jc,jb),jk,iblk(3,jc,jb)) + &
-        ptr_coeff(4,1,jc,jb)*p_cell_in(iidx(4,jc,jb),jk,iblk(4,jc,jb)) + &
-        ptr_coeff(5,1,jc,jb)*p_cell_in(iidx(5,jc,jb),jk,iblk(5,jc,jb)) + &
-        ptr_coeff(6,1,jc,jb)*p_cell_in(iidx(6,jc,jb),jk,iblk(6,jc,jb)) + &
-        ptr_coeff(7,1,jc,jb)*p_cell_in(iidx(7,jc,jb),jk,iblk(7,jc,jb)) + &
-        ptr_coeff(8,1,jc,jb)*p_cell_in(iidx(8,jc,jb),jk,iblk(8,jc,jb)) + &
-        ptr_coeff(9,1,jc,jb)*p_cell_in(iidx(9,jc,jb),jk,iblk(9,jc,jb)) + &
-        ptr_coeff(10,1,jc,jb)*p_cell_in(iidx(10,jc,jb),jk,iblk(10,jc,jb))
-      grad_y(jc,jk,jb) =  &
-        ptr_coeff(1,2,jc,jb)*p_cell_in(jc,jk,jb) + &
-        ptr_coeff(2,2,jc,jb)*p_cell_in(iidx(2,jc,jb),jk,iblk(2,jc,jb)) + &
-        ptr_coeff(3,2,jc,jb)*p_cell_in(iidx(3,jc,jb),jk,iblk(3,jc,jb)) + &
-        ptr_coeff(4,2,jc,jb)*p_cell_in(iidx(4,jc,jb),jk,iblk(4,jc,jb)) + &
-        ptr_coeff(5,2,jc,jb)*p_cell_in(iidx(5,jc,jb),jk,iblk(5,jc,jb)) + &
-        ptr_coeff(6,2,jc,jb)*p_cell_in(iidx(6,jc,jb),jk,iblk(6,jc,jb)) + &
-        ptr_coeff(7,2,jc,jb)*p_cell_in(iidx(7,jc,jb),jk,iblk(7,jc,jb)) + &
-        ptr_coeff(8,2,jc,jb)*p_cell_in(iidx(8,jc,jb),jk,iblk(8,jc,jb)) + &
-        ptr_coeff(9,2,jc,jb)*p_cell_in(iidx(9,jc,jb),jk,iblk(9,jc,jb)) + &
-        ptr_coeff(10,2,jc,jb)*p_cell_in(iidx(10,jc,jb),jk,iblk(10,jc,jb))
-
-    ENDDO
-  ENDDO
-  !$ACC END PARALLEL
-
-ENDDO
-!$ACC END DATA
-
-!$OMP END DO NOWAIT
 !$OMP END PARALLEL
+
+CALL rbf_interpol_c2grad_lib( p_cell_in, ptr_int%rbf_c2grad_idx, ptr_int%rbf_c2grad_blk, &
+  &                           ptr_int%rbf_c2grad_coeff, grad_x, grad_y, & 
+  &                           i_startblk, i_endblk, i_startidx_in, i_endidx_in, & 
+  &                           slev, elev, nproma, lacc=i_am_accel_node )
 
 END SUBROUTINE rbf_interpol_c2grad
 
@@ -410,16 +299,12 @@ LOGICAL, INTENT(IN), OPTIONAL :: opt_acc_async
 ! !LOCAL VARIABLES
 
 INTEGER :: slev, elev                ! vertical start and end level
-INTEGER :: jv, jk, jb                ! integer over vertices, levels, and blocks,
 
 INTEGER :: i_startblk      ! start block
 INTEGER :: i_endblk        ! end block
-INTEGER :: i_startidx      ! start index
-INTEGER :: i_endidx        ! end index
-INTEGER :: rl_start, rl_end, i_nchdom
-
-INTEGER,  DIMENSION(:,:,:),   POINTER :: iidx, iblk
-REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff
+INTEGER :: i_startidx_in      ! start index
+INTEGER :: i_endidx_in        ! end index
+INTEGER :: rl_start, rl_end
 
 !-----------------------------------------------------------------------
 
@@ -446,65 +331,17 @@ ELSE
   rl_end = min_rlvert_int-1
 END IF
 
-
-iidx => ptr_int%rbf_vec_idx_v
-iblk => ptr_int%rbf_vec_blk_v
-
-ptr_coeff => ptr_int%rbf_vec_coeff_v
-
 ! values for the blocking
-i_nchdom   = MAX(1,ptr_patch%n_childdom)
-i_startblk = ptr_patch%verts%start_blk(rl_start,1)
-i_endblk   = ptr_patch%verts%end_blk(rl_end,i_nchdom)
+i_startblk = ptr_patch%verts%start_block(rl_start)
+i_endblk   = ptr_patch%verts%end_block(rl_end)
 
+i_startidx_in = ptr_patch%verts%start_index(rl_start)
+i_endidx_in   = ptr_patch%verts%end_index(rl_end)
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jv), ICON_OMP_RUNTIME_SCHEDULE
-DO jb = i_startblk, i_endblk
-
-  CALL get_indices_v(ptr_patch, jb, i_startblk, i_endblk, &
-                     i_startidx, i_endidx, rl_start, rl_end)
-
-  !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(i_am_accel_node)
-#ifdef __LOOP_EXCHANGE
-  DO jv = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
-!$NEC outerloop_unroll(4)
-  DO jk = slev, elev
-    DO jv = i_startidx, i_endidx
-#endif
-
-      p_u_out(jv,jk,jb) =  &
-        ptr_coeff(1,1,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
-        ptr_coeff(2,1,jv,jb)*p_e_in(iidx(2,jv,jb),jk,iblk(2,jv,jb)) + &
-        ptr_coeff(3,1,jv,jb)*p_e_in(iidx(3,jv,jb),jk,iblk(3,jv,jb)) + &
-        ptr_coeff(4,1,jv,jb)*p_e_in(iidx(4,jv,jb),jk,iblk(4,jv,jb)) + &
-        ptr_coeff(5,1,jv,jb)*p_e_in(iidx(5,jv,jb),jk,iblk(5,jv,jb)) + &
-        ptr_coeff(6,1,jv,jb)*p_e_in(iidx(6,jv,jb),jk,iblk(6,jv,jb))
-      p_v_out(jv,jk,jb) =  &
-        ptr_coeff(1,2,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
-        ptr_coeff(2,2,jv,jb)*p_e_in(iidx(2,jv,jb),jk,iblk(2,jv,jb)) + &
-        ptr_coeff(3,2,jv,jb)*p_e_in(iidx(3,jv,jb),jk,iblk(3,jv,jb)) + &
-        ptr_coeff(4,2,jv,jb)*p_e_in(iidx(4,jv,jb),jk,iblk(4,jv,jb)) + &
-        ptr_coeff(5,2,jv,jb)*p_e_in(iidx(5,jv,jb),jk,iblk(5,jv,jb)) + &
-        ptr_coeff(6,2,jv,jb)*p_e_in(iidx(6,jv,jb),jk,iblk(6,jv,jb))
-
-      ENDDO
-    ENDDO
-
-ENDDO
-
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-
-IF ( PRESENT(opt_acc_async) ) THEN
-  IF ( .NOT. opt_acc_async ) THEN
-    !$ACC WAIT
-  END IF
-ELSE
-  !$ACC WAIT
-END IF
+CALL rbf_vec_interpol_vertex_lib( p_e_in, ptr_int%rbf_vec_idx_v, ptr_int%rbf_vec_blk_v, &
+  &                               ptr_int%rbf_vec_coeff_v, p_u_out, p_v_out, &
+  &                               i_startblk, i_endblk, i_startidx_in, i_endidx_in, & 
+  &                               slev, elev, nproma, lacc=i_am_accel_node, acc_async=opt_acc_async )
 
 END SUBROUTINE rbf_vec_interpol_vertex_wp
 
@@ -546,16 +383,12 @@ LOGICAL, INTENT(IN), OPTIONAL :: opt_acc_async
 ! !LOCAL VARIABLES
 
 INTEGER :: slev, elev                ! vertical start and end level
-INTEGER :: jv, jk, jb                ! integer over vertices, levels, and blocks,
 
 INTEGER :: i_startblk      ! start block
 INTEGER :: i_endblk        ! end block
-INTEGER :: i_startidx      ! start index
-INTEGER :: i_endidx        ! end index
-INTEGER :: rl_start, rl_end, i_nchdom
-
-INTEGER,  DIMENSION(:,:,:),   POINTER :: iidx, iblk
-REAL(wp), DIMENSION(:,:,:,:), POINTER :: ptr_coeff
+INTEGER :: i_startidx_in      ! start index
+INTEGER :: i_endidx_in        ! end index
+INTEGER :: rl_start, rl_end
 
 !-----------------------------------------------------------------------
 
@@ -582,65 +415,17 @@ ELSE
   rl_end = min_rlvert_int-1
 END IF
 
-iidx => ptr_int%rbf_vec_idx_v
-iblk => ptr_int%rbf_vec_blk_v
-
-ptr_coeff => ptr_int%rbf_vec_coeff_v
-
 ! values for the blocking
-i_nchdom   = MAX(1,ptr_patch%n_childdom)
-i_startblk = ptr_patch%verts%start_blk(rl_start,1)
-i_endblk   = ptr_patch%verts%end_blk(rl_end,i_nchdom)
+i_startblk = ptr_patch%verts%start_block(rl_start)
+i_endblk   = ptr_patch%verts%end_block(rl_end)
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jv), ICON_OMP_RUNTIME_SCHEDULE
-DO jb = i_startblk, i_endblk
+i_startidx_in = ptr_patch%verts%start_index(rl_start)
+i_endidx_in   = ptr_patch%verts%end_index(rl_end)
 
-  CALL get_indices_v(ptr_patch, jb, i_startblk, i_endblk, &
-                     i_startidx, i_endidx, rl_start, rl_end)
-
-  !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-  DO jv = i_startidx, i_endidx
-    DO jk = slev, elev
-#else
-!$NEC outerloop_unroll(4)
-  DO jk = slev, elev
-    DO jv = i_startidx, i_endidx
-#endif
-
-      p_u_out(jv,jk,jb) =  &
-        ptr_coeff(1,1,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
-        ptr_coeff(2,1,jv,jb)*p_e_in(iidx(2,jv,jb),jk,iblk(2,jv,jb)) + &
-        ptr_coeff(3,1,jv,jb)*p_e_in(iidx(3,jv,jb),jk,iblk(3,jv,jb)) + &
-        ptr_coeff(4,1,jv,jb)*p_e_in(iidx(4,jv,jb),jk,iblk(4,jv,jb)) + &
-        ptr_coeff(5,1,jv,jb)*p_e_in(iidx(5,jv,jb),jk,iblk(5,jv,jb)) + &
-        ptr_coeff(6,1,jv,jb)*p_e_in(iidx(6,jv,jb),jk,iblk(6,jv,jb))
-      p_v_out(jv,jk,jb) =  &
-        ptr_coeff(1,2,jv,jb)*p_e_in(iidx(1,jv,jb),jk,iblk(1,jv,jb)) + &
-        ptr_coeff(2,2,jv,jb)*p_e_in(iidx(2,jv,jb),jk,iblk(2,jv,jb)) + &
-        ptr_coeff(3,2,jv,jb)*p_e_in(iidx(3,jv,jb),jk,iblk(3,jv,jb)) + &
-        ptr_coeff(4,2,jv,jb)*p_e_in(iidx(4,jv,jb),jk,iblk(4,jv,jb)) + &
-        ptr_coeff(5,2,jv,jb)*p_e_in(iidx(5,jv,jb),jk,iblk(5,jv,jb)) + &
-        ptr_coeff(6,2,jv,jb)*p_e_in(iidx(6,jv,jb),jk,iblk(6,jv,jb))
-
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-
-ENDDO
-
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-
-IF ( PRESENT(opt_acc_async) ) THEN
-  IF ( .NOT. opt_acc_async ) THEN
-    !$ACC WAIT
-  END IF
-ELSE
-  !$ACC WAIT
-END IF
+CALL rbf_vec_interpol_vertex_lib( p_e_in, ptr_int%rbf_vec_idx_v, ptr_int%rbf_vec_blk_v, &
+  &                               ptr_int%rbf_vec_coeff_v, p_u_out, p_v_out, &
+  &                               i_startblk, i_endblk, i_startidx_in, i_endidx_in, & 
+  &                               slev, elev, nproma, lacc=i_am_accel_node, acc_async=opt_acc_async )
 
 END SUBROUTINE rbf_vec_interpol_vertex_vp
 
@@ -684,16 +469,12 @@ REAL(wp),INTENT(INOUT) ::  &
 LOGICAL, INTENT(IN), OPTIONAL :: opt_acc_async
 
 INTEGER :: slev, elev                ! vertical start and end level
-INTEGER :: je, jk, jb                ! integer over edges, levels, and blocks,
 
 INTEGER :: i_startblk      ! start block
 INTEGER :: i_endblk        ! end block
-INTEGER :: i_startidx      ! start index
-INTEGER :: i_endidx        ! end index
-INTEGER :: rl_start, rl_end, i_nchdom
-
-INTEGER,  DIMENSION(:,:,:), POINTER :: iidx, iblk
-REAL(wp), DIMENSION(:,:,:), POINTER :: ptr_coeff
+INTEGER :: i_startidx_in      ! start index
+INTEGER :: i_endidx_in        ! end index
+INTEGER :: rl_start, rl_end
 
 !-----------------------------------------------------------------------
 
@@ -720,54 +501,17 @@ ELSE
   rl_end = min_rledge_int-2
 END IF
 
-iidx => ptr_int%rbf_vec_idx_e
-iblk => ptr_int%rbf_vec_blk_e
-
-ptr_coeff => ptr_int%rbf_vec_coeff_e
-
 ! values for the blocking
-i_nchdom   = MAX(1,ptr_patch%n_childdom)
-i_startblk = ptr_patch%edges%start_blk(rl_start,1)
-i_endblk   = ptr_patch%edges%end_blk(rl_end,i_nchdom)
+i_startblk = ptr_patch%edges%start_block(rl_start)
+i_endblk   = ptr_patch%edges%end_block(rl_end)
 
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,je) ICON_OMP_DEFAULT_SCHEDULE
-  DO jb = i_startblk, i_endblk
+i_startidx_in = ptr_patch%edges%start_index(rl_start)
+i_endidx_in   = ptr_patch%edges%end_index(rl_end)
 
-    CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
-                       i_startidx, i_endidx, rl_start, rl_end)
-
-    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(i_am_accel_node)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
-#ifdef __LOOP_EXCHANGE
-    DO je = i_startidx, i_endidx
-      DO jk = slev, elev
-#else
-    DO jk = slev, elev
-      DO je = i_startidx, i_endidx
-#endif
-
-        p_vt_out(je,jk,jb) =  &
-          ptr_coeff(1,je,jb)*p_vn_in(iidx(1,je,jb),jk,iblk(1,je,jb)) + &
-          ptr_coeff(2,je,jb)*p_vn_in(iidx(2,je,jb),jk,iblk(2,je,jb)) + &
-          ptr_coeff(3,je,jb)*p_vn_in(iidx(3,je,jb),jk,iblk(3,je,jb)) + &
-          ptr_coeff(4,je,jb)*p_vn_in(iidx(4,je,jb),jk,iblk(4,je,jb))
-
-      ENDDO
-    ENDDO
-    !$ACC END PARALLEL
-  ENDDO
-
-!$OMP END DO NOWAIT
-!$OMP END PARALLEL
-
-  IF ( PRESENT(opt_acc_async) ) THEN
-    IF ( .NOT. opt_acc_async ) THEN
-      !$ACC WAIT
-    END IF
-  ELSE
-    !$ACC WAIT
-  END IF
+CALL rbf_vec_interpol_edge_lib( p_vn_in, ptr_int%rbf_vec_idx_e, ptr_int%rbf_vec_blk_e, & 
+  &                             ptr_int%rbf_vec_coeff_e, p_vt_out, &
+  &                             i_startblk, i_endblk, i_startidx_in, i_endidx_in, & 
+  &                             slev, elev, nproma, lacc=i_am_accel_node, acc_async=opt_acc_async )
   
 END SUBROUTINE rbf_vec_interpol_edge
 

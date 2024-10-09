@@ -1,11 +1,3 @@
-! NWP surface tile utility functions
-!
-! Surface tile utility functions. Many of them are dealing with the
-! request of tile metainformation and its conversion between the
-! model-internal tile structure and the output tile structure according
-! to GRIB2 Product Definition Template (PDT) 4.55.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! NWP surface tile utility functions
+!
+! Surface tile utility functions. Many of them are dealing with the
+! request of tile metainformation and its conversion between the
+! model-internal tile structure and the output tile structure according
+! to GRIB2 Product Definition Template (PDT) 4.55.
 
 MODULE mo_nwp_sfc_tiles
 

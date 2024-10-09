@@ -1,3 +1,7 @@
+"""
+This module provides a function for searching files in a directory based on a pattern.
+"""
+
 from pathlib import Path
 
 from util.log_handler import logger
@@ -28,7 +32,7 @@ def file_names_from_pattern(dir_name, file_pattern):
     file_names = [str(f) for f in file_names]
     if len(file_names) < 1:
         logger.warning(
-            "no files found in '{}' for pattern '{}'".format(dir_name, file_pattern)
+            "no files found in '%s' for pattern '%s'", dir_name, file_pattern
         )
         logger.debug("the directory contains the following files:")
         for f in Path(dir_name).glob("*"):

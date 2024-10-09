@@ -1,8 +1,3 @@
-! Contains the implementation of interpolation and reconstruction
-! routines used by the shallow water model, including the RBF
-! reconstruction routines.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of interpolation and reconstruction
+! routines used by the shallow water model, including the RBF
+! reconstruction routines.
   
 #ifdef __xlC__
 ! @PROCESS nosmp
@@ -43,7 +42,8 @@ MODULE mo_intp_coeffs
   USE mo_impl_constants_grf,  ONLY: grf_nudge_start_c, grf_nudge_start_e
   USE mo_model_domain,        ONLY: t_patch
   USE mo_grid_config,         ONLY: lfeedback, grid_sphere_radius
-  USE mo_math_types,          ONLY: t_cartesian_coordinates, t_geographical_coordinates
+  USE mo_math_types,          ONLY: t_cartesian_coordinates, t_geographical_coordinates, &
+    &                               t_tangent_vectors
   USE mo_math_utilities,      ONLY: gc2cc, cc2gc, gnomonic_proj,               &
     & gvec2cvec, cvec2gvec,                      &
     & rotate_latlon, arc_length,                 &
@@ -55,7 +55,7 @@ MODULE mo_intp_coeffs
   USE mo_intp_data_strc,      ONLY: t_int_state
   USE mo_interpol_config,     ONLY: nudge_zone_width, nudge_max_coeff, nudge_efold_width
   USE mo_grid_subset,         ONLY: get_index_range
-  USE mo_grid_geometry_info,  ONLY: planar_torus_geometry, sphere_geometry
+  USE mo_lib_grid_geometry_info,  ONLY: planar_torus_geometry, sphere_geometry
   USE mo_grid_subset,         ONLY: get_index_range
   USE mo_fortran_tools,       ONLY: init
 
@@ -2368,7 +2368,7 @@ CONTAINS
   !! Bifurcation for calculations depending on grid geometry.
   !!
   SUBROUTINE init_tplane_c( ptr_patch, ptr_int )
-    TYPE(t_patch),     INTENT(inout) :: ptr_patch
+    TYPE(t_patch),     INTENT(in)    :: ptr_patch
     TYPE(t_int_state), INTENT(inout) :: ptr_int
 
     CHARACTER(LEN=*), PARAMETER :: method_name = 'mo_intp_coeffs:init_tplane_c'
@@ -2377,9 +2377,9 @@ CONTAINS
     SELECT CASE(ptr_patch%geometry_info%geometry_type)
 
     CASE (planar_torus_geometry)
-      CALL init_tplane_c_torus ( ptr_patch, ptr_int )
+      CALL init_tplane_c_torus ( ptr_patch, ptr_int%pos_on_tplane_c_edge )
     CASE (sphere_geometry)
-      CALL init_tplane_c_sphere ( ptr_patch, ptr_int )
+      CALL init_tplane_c_sphere ( ptr_patch, ptr_int%pos_on_tplane_c_edge )
     CASE DEFAULT
       CALL finish(method_name, "Undefined geometry type")
     END SELECT
@@ -2388,357 +2388,338 @@ CONTAINS
 
 
   !----------------------------------------------------------------------------
-  !!AD> This is old "init_tplane_c" routine now renamed!
   !!
-  !! Initializes a tangential plane at each cell circumcenter. Necessary for efficient
-  !! computation of flux areas and overlap regions between flux areas and the
-  !! model grid.
+  !! Initializes a plane tangent to the edge midpoint for every edge.
+  !! It is used to compute overlap regions between flux areas and
+  !! the model grid.
   !!
-  !! The position of cell vertices is precomputed using the gnomonic projection.
-  !! These vertices are then stored in an edge-based structure. Moreover, in order
-  !! to avoid inconsistencies, an additional "projection error" is added when
-  !! projecting the vertices. Instead of performing the projection on a plane
-  !! tangent to the cell center (cell-based system), the projection is first
-  !! performed on a plane tangent to the cell edge (edge-based system). Then, the
-  !! projected points are transformed back into a cell based system, assuming
-  !! co-planarity of the two systems.
+  !! Projection method: gnomonic
+  !!
+  !! For every edge, the following set of points is projected onto a
+  !! plane, which has its origin at the edge midpoint:
+  !! - vertices of the two grid cells which share the given edge
+  !! - cell circumcenters of the four cells which are adjacent to these
+  !!   two grid cells (butterfly cells).
+  !!
+  !! In a second step, these points are expressed in two different cartesian
+  !! systems, with the origin at the cell circumcenter of the cells that share
+  !! the given edge. Unit vectors point into local north and local east
+  !! direction. This change of coordinate basis is done for convenience.
   !!
   !! Order of storage for pos_on_tplane_c_edge:
   !! pos_on_tplane_c_edge(nproma,nblks_e,ncells=2,npts=5)%lon/lat
+  !!
   !! - cell ordering according to edge%cell_idx/blk
   !! - npts 1-3: cell vertices
-  !!   - ordering of first 2 vertices according to edge%vertex_idx/blk
-  !!   - ordering of coordinates: 1=x, 2=y
-  !! - npts 4-5: coordinates of neighboring cell centers (share vertex 1 and 2, respectively)
-  !!   - only those 2 neighbors that do not share the given edge.
-  !!   - no "projection error" added to cell center
+  !!   - vertex one and two bound the given edge.
+  !!     Ordering according to edge%vertex_idx/blk
+  !! - npts 4-5: coordinates of neighboring cell centers
+  !!   - those 2 neighbors that do not share the given edge,
+  !!     but share vertex 1 and 2, respectively
+  !! - Ordering of coordinates: lon=x, lat=y
   !!
-  SUBROUTINE init_tplane_c_sphere (ptr_patch, ptr_int)
+  SUBROUTINE init_tplane_c_sphere (ptr_patch, pos_on_tplane_c_edge)
 #ifdef __INTEL_COMPILER
 !DIR$ OPTIMIZE:2
 #endif
-    TYPE(t_patch),     INTENT(inout) :: ptr_patch  !< patch
+    TYPE(t_patch),                    INTENT(in)    :: &
+      &  ptr_patch
 
-    TYPE(t_int_state), INTENT(inout) :: ptr_int    !< interpolation state
+    TYPE(t_geographical_coordinates), INTENT(inout) :: &
+      &  pos_on_tplane_c_edge(:,:,:,:)  !< positions of vertices and butterfly neighbors
+                                        !< on local plane tangent to the edge midpoint
+                                        !< (nproma,nblks_e,2,5)
+    ! local
+    TYPE(t_geographical_coordinates) :: &
+      &  origin                    !< origin of plane in geographical coordinates
 
-    REAL(wp) ::   &              !< geographical coords of edge midpoint
-      & xyloc_edge(2)
+    TYPE(t_geographical_coordinates) :: &
+      &  gc_v, &                   !< geographical coords of edge-vertices
+      &  gc_c, &                   !< geographical coords of adjacent cells
+      &  gc_bf                     !< geographical coords of butterfly cell centers
 
-    REAL(wp) ::   &              !< geographical coords of edge-vertices
-      & xyloc_v(4,2)
+    REAL(wp) ::               &
+      &  xyloc_v_plane(4,2),  &    !< local 2D cartesian coords of edge-vertices
+      &  xyloc_c_plane(2,2),  &    !< local 2D cartesian coords of adjacent cells
+      &  xyloc_bf1_plane(2,2),&    !< local 2D cartesian coords of butterfly cell centers
+      &  xyloc_bf2_plane(2,2)      !< local north and local east directions
+                                   !< (nelements,(/x,y/))
 
-    REAL(wp) ::   &              !< coords of vertices when projected onto
-      & xyloc_plane_v(4,2)      !< edge-based plane
-    REAL(wp) ::   &              !< same, but for rotated system (normal-tangential)
-      & xyloc_plane_nt_v(4,2)
+    REAL(wp) ::                  & !< same, but for rotated system
+      &  xyloc_v_plane_nt(4,2),  & !< normal and tangential directions
+      &  xyloc_c_plane_nt(2,2),  & !< (nelements,(/x,y/))
+      &  xyloc_bf1_plane_nt(2,2),&
+      &  xyloc_bf2_plane_nt(2,2)
 
-    REAL(wp) ::   &              !< geographical coords of neighboring cell centers
-      & xyloc_n1(2), xyloc_n2(2)
+    REAL(wp) ::                 &  !< same, but for translated rotated system
+      &  xyloc_v_trans1(4,2),   &  !< origin at adjacent cell center 1
+      &  xyloc_v_trans2(4,2),   &  !< origin at adjacent cell center 2
+      &  xyloc_bf1_trans1(2,2), &  !< origin at adjacent cell center 1
+      &  xyloc_bf2_trans2(2,2)     !< origin at adjacent cell center 2
+                                   !< (nelements,(/x,y/))
 
-    REAL(wp) ::   &              !< coords of cell centers when projected onto
-      & xyloc_plane_n1(2), xyloc_plane_n2(2) !< edge-based plane
-    REAL(wp) ::   &              !< same but for rotated system (normal-tangential)
-      & xyloc_plane_nt_n1(2), xyloc_plane_nt_n2(2)
+    TYPE(t_tangent_vectors) ::  &  !< primal and dual normal for adjacent cells
+      &  pn_cell1, pn_cell2,    &
+      &  dn_cell1, dn_cell2
 
-    REAL(wp) ::   &              !< coords of edge-vertices in translated system
-      & xyloc_trans1_v(4,2), xyloc_trans2_v(4,2)
-
-    REAL(wp) ::   &              !< primal and dual normals for neighboring cells
-      & pn_cell1(2), pn_cell2(2), dn_cell1(2), dn_cell2(2)
-
-    REAL(wp) ::   &              !< geographical coords of butterfly neighbors
-      & xyloc_bf1(2,2),       & !< for edge-neighbor 1 and 2
-      & xyloc_bf2(2,2)
-
-    REAL(wp) ::   &              !< coords of butterfly neighbors after projection
-      & xyloc_plane_bf1(2,2), & !< onto cell-based plane
-      & xyloc_plane_bf2(2,2)
-
-    INTEGER :: ilv(4), ibv(4)
-    INTEGER :: ilc1, ilc2, ibc1, ibc2
-    INTEGER :: ilc_bf1(2), ilc_bf2(2), ibc_bf1(2), ibc_bf2(2)
+    INTEGER :: jb, je ,nv, nc, nb              ! loop variables
+    INTEGER :: ilv, ibv, ilc, ibc, ilbf, ibbf  ! line and block indices
     INTEGER :: i_startblk, i_endblk, i_startidx, i_endidx
-    INTEGER :: i_rcstartlev
-    INTEGER :: nv, nc            !< loop indices for vertices and cells
-    INTEGER :: jb, je            !< loop indices for block and edges
+    INTEGER :: rl_start, rl_end
 
     !-------------------------------------------------------------------------
 
     CALL message('mo_interpolation:init_tplane_c_sphere','')
 
-    i_rcstartlev = 2
+    rl_start = 3
+    rl_end   = min_rledge
 
-    ! start and end block
-    i_startblk = ptr_patch%edges%start_blk(i_rcstartlev,1)
-    i_endblk   = ptr_patch%nblks_e
-
+    i_startblk = ptr_patch%edges%start_block(rl_start)
+    i_endblk   = ptr_patch%edges%end_block(rl_end)
 
 
 !$OMP PARALLEL
-!$OMP DO PRIVATE(jb,je,nv,i_startidx,i_endidx,xyloc_edge,ilv,ibv,          &
-!$OMP            xyloc_v,xyloc_plane_v,ilc1,ilc2,ibc1,ibc2,xyloc_n1,       &
-!$OMP            xyloc_n2,xyloc_plane_n1,xyloc_plane_n2,xyloc_plane_nt_n1, &
-!$OMP            xyloc_plane_nt_n2,xyloc_plane_nt_v,xyloc_trans1_v,        &
-!$OMP            xyloc_trans2_v,pn_cell1,pn_cell2,dn_cell1,dn_cell2)
+!$OMP DO PRIVATE(jb,je,nv,nc,nb,i_startidx,i_endidx,origin,                   &
+!$OMP            ilv,ibv,gc_v,xyloc_v_plane,ilc,ibc,gc_c,xyloc_c_plane,       &
+!$OMP            ilbf,ibbf,gc_bf,xyloc_bf1_plane,xyloc_bf2_plane,             &
+!$OMP            xyloc_v_plane_nt,xyloc_c_plane_nt,xyloc_bf1_plane_nt,        &
+!$OMP            xyloc_bf2_plane_nt,xyloc_v_trans1,xyloc_v_trans2,            &
+!$OMP            xyloc_bf1_trans1,xyloc_bf2_trans2,pn_cell1,pn_cell2,         &
+!$OMP            dn_cell1,dn_cell2)
     DO jb = i_startblk, i_endblk
 
       CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
-        & i_startidx, i_endidx, i_rcstartlev)
+        & i_startidx, i_endidx, rl_start, rl_end)
 
       DO je = i_startidx, i_endidx
 
         IF(.NOT.ptr_patch%edges%decomp_info%owner_mask(je,jb)) CYCLE
 
         !
-        ! 1. project edge-vertices and the centers of the neighboring cells
-        !    onto a plane tangent to the edge midpoint.
+        ! 1. project edge-vertices, the centers of the adjacent cells
+        !    and the butterfly cell centers onto a plane tangent
+        !    to the edge midpoint.
         !
 
-        ! get geographical coordinates of edge midpoint
-        xyloc_edge(1) = ptr_patch%edges%center(je,jb)%lon
-        xyloc_edge(2) = ptr_patch%edges%center(je,jb)%lat
-
-        ! get line and block indices of edge vertices (including the
-        ! non-edge-aligned vertices of the neighboring cells
-        ilv(1:4)=ptr_patch%edges%vertex_idx(je,jb,1:4)
-        ibv(1:4)=ptr_patch%edges%vertex_blk(je,jb,1:4)
+        ! get geographical coordinates of the edge midpoint, which will be
+        ! the origin of our 2D cartesian coordinate system.
+        origin%lon = ptr_patch%edges%center(je,jb)%lon
+        origin%lat = ptr_patch%edges%center(je,jb)%lat
 
         ! get geographical coordinates of edge vertices
+        ! and project them into the edge-based local system.
+        ! (including the non-edge-aligned vertices of the adjacent cells)
         DO nv=1,4
-          xyloc_v(nv,1)=ptr_patch%verts%vertex(ilv(nv),ibv(nv))%lon
-          xyloc_v(nv,2)=ptr_patch%verts%vertex(ilv(nv),ibv(nv))%lat
+          ilv = ptr_patch%edges%vertex_idx(je,jb,nv)
+          ibv = ptr_patch%edges%vertex_blk(je,jb,nv)
+
+          ! vertex coordinates
+          gc_v%lon = ptr_patch%verts%vertex(ilv,ibv)%lon
+          gc_v%lat = ptr_patch%verts%vertex(ilv,ibv)%lat
+
+          ! project vertex into edge-based local system
+          CALL gnomonic_proj( origin%lon, origin%lat,                  &! in
+            &                 gc_v%lon, gc_v%lat,                      &! in
+            &                 xyloc_v_plane(nv,1), xyloc_v_plane(nv,2) )! out
         ENDDO
 
 
-        ! project vertices into edge-based local system
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_v(1,1), xyloc_v(1,2), &! in
-          & xyloc_plane_v(1,1), xyloc_plane_v(1,2) )                   ! out
+        ! get geographical coordinates of adjacent cell centers
+        ! and project them into the edge-based local system.
+        DO nc=1,2
+          ! get line and block indices of adjacent cells
+          ilc = ptr_patch%edges%cell_idx(je,jb,nc)
+          ibc = ptr_patch%edges%cell_blk(je,jb,nc)
 
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_v(2,1), xyloc_v(2,2), &! in
-          & xyloc_plane_v(2,1), xyloc_plane_v(2,2) )                   ! out
+          ! get geographical coordinates of cell center
+          gc_c%lon = ptr_patch%cells%center(ilc,ibc)%lon
+          gc_c%lat = ptr_patch%cells%center(ilc,ibc)%lat
 
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_v(3,1), xyloc_v(3,2), &! in
-          & xyloc_plane_v(3,1), xyloc_plane_v(3,2) )                   ! out
-
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_v(4,1), xyloc_v(4,2), &! in
-          & xyloc_plane_v(4,1), xyloc_plane_v(4,2) )                   ! out
-
-
-        ! get line and block indices of neighbour cells
-        ilc1 = ptr_patch%edges%cell_idx(je,jb,1)
-        ibc1 = ptr_patch%edges%cell_blk(je,jb,1)
-        ilc2 = ptr_patch%edges%cell_idx(je,jb,2)
-        ibc2 = ptr_patch%edges%cell_blk(je,jb,2)
-
-        ! get geographical coordinates of first cell center
-        xyloc_n1(1)   = ptr_patch%cells%center(ilc1,ibc1)%lon
-        xyloc_n1(2)   = ptr_patch%cells%center(ilc1,ibc1)%lat
-
-        ! get geographical coordinates of second cell center
-        xyloc_n2(1)   = ptr_patch%cells%center(ilc2,ibc2)%lon
-        xyloc_n2(2)   = ptr_patch%cells%center(ilc2,ibc2)%lat
-
-        ! project first cell center into edge-based local system
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n1(1), xyloc_n1(2), &! in
-          & xyloc_plane_n1(1), xyloc_plane_n1(2) )                   ! out
-
-        ! project second cell center into edge-based local system local
-        CALL gnomonic_proj( xyloc_edge(1), xyloc_edge(2), xyloc_n2(1), xyloc_n2(2), &! in
-          & xyloc_plane_n2(1), xyloc_plane_n2(2) )                   ! out
+          ! project cell center into edge-based local system
+          CALL gnomonic_proj( origin%lon, origin%lat,                  &! in
+            &                 gc_c%lon, gc_c%lat,                      &! in
+            &                 xyloc_c_plane(nc,1), xyloc_c_plane(nc,2) )! out
+        ENDDO
 
 
         !
-        ! 2. rotate these vectors into a new local cartesian system. In this rotated
-        !    system the coordinate axes point into the local normal and tangential
-        !    direction at each edge.
+        ! Projection of butterfly cell centers
         !
+        ! project cell centers which are adjacent to the cells sharing edge je.
+        ! (from butterfly_idx)
 
-        ! centers
+        ! neighbors of edge neighbor 1
         !
-        xyloc_plane_nt_n1(1) =                                                &
-          & xyloc_plane_n1(1)  * ptr_patch%edges%primal_normal(je,jb)%v1  &
-          & + xyloc_plane_n1(2)  * ptr_patch%edges%primal_normal(je,jb)%v2
+        DO nb=1,2
+          ! get line and block indices of the neighbors of edge-neighbor 1
+          ilbf = ptr_patch%edges%butterfly_idx(je,jb,1,nb)
+          ibbf = ptr_patch%edges%butterfly_blk(je,jb,1,nb)
 
-        xyloc_plane_nt_n1(2) =                                                &
-          & xyloc_plane_n1(1)  * ptr_patch%edges%dual_normal(je,jb)%v1    &
-          & + xyloc_plane_n1(2)  * ptr_patch%edges%dual_normal(je,jb)%v2
+          ! get geographical coordinates of cell centers
+          gc_bf%lon = ptr_patch%cells%center(ilbf,ibbf)%lon
+          gc_bf%lat = ptr_patch%cells%center(ilbf,ibbf)%lat
 
-        xyloc_plane_nt_n2(1) =                                                &
-          & xyloc_plane_n2(1)  * ptr_patch%edges%primal_normal(je,jb)%v1  &
-          & + xyloc_plane_n2(2)  * ptr_patch%edges%primal_normal(je,jb)%v2
+          ! project butterfly cell centers into edge-based local system
+          CALL gnomonic_proj( origin%lon, origin%lat,                      &! in
+            &                 gc_bf%lon, gc_bf%lat,                        &! in
+            &                 xyloc_bf1_plane(nb,1), xyloc_bf1_plane(nb,2) )! out
+        ENDDO
 
-        xyloc_plane_nt_n2(2) =                                                &
-          & xyloc_plane_n2(1)  * ptr_patch%edges%dual_normal(je,jb)%v1    &
-          & + xyloc_plane_n2(2)  * ptr_patch%edges%dual_normal(je,jb)%v2
+        ! neighbors of edge neighbor 2
+        !
+        DO nb=1,2
+          ! get line and block indices of the neighbors of edge-neighbor 2
+          ilbf = ptr_patch%edges%butterfly_idx(je,jb,2,nb)
+          ibbf = ptr_patch%edges%butterfly_blk(je,jb,2,nb)
+
+          ! get geographical coordinates of cell centers
+          gc_bf%lon = ptr_patch%cells%center(ilbf,ibbf)%lon
+          gc_bf%lat = ptr_patch%cells%center(ilbf,ibbf)%lat
+
+          ! project butterfly cell centers into edge-based local system
+          CALL gnomonic_proj( origin%lon, origin%lat,                      &! in
+            &                 gc_bf%lon, gc_bf%lat,                        &! in
+            &                 xyloc_bf2_plane(nb,1), xyloc_bf2_plane(nb,2) )! out
+        ENDDO
+
+
+
+        !
+        ! 2. rotate these vectors into a new local cartesian system, with
+        !    the coordinate axes pointing into the direction normal and
+        !    tangential to the edge.
+        !
 
         ! vertices
         !
-        DO nv = 1,4
-          xyloc_plane_nt_v(nv,1) =                                              &
-            & xyloc_plane_v(nv,1) * ptr_patch%edges%primal_normal(je,jb)%v1 &
-            & + xyloc_plane_v(nv,2) * ptr_patch%edges%primal_normal(je,jb)%v2
+        DO nv=1,4
+          xyloc_v_plane_nt(nv,1) =                                            &
+            &   xyloc_v_plane(nv,1) * ptr_patch%edges%primal_normal(je,jb)%v1 &
+            & + xyloc_v_plane(nv,2) * ptr_patch%edges%primal_normal(je,jb)%v2
 
-          xyloc_plane_nt_v(nv,2) =                                              &
-            & xyloc_plane_v(nv,1) * ptr_patch%edges%dual_normal(je,jb)%v1   &
-            & + xyloc_plane_v(nv,2) * ptr_patch%edges%dual_normal(je,jb)%v2
+          xyloc_v_plane_nt(nv,2) =                                            &
+            &   xyloc_v_plane(nv,1) * ptr_patch%edges%dual_normal(je,jb)%v1   &
+            & + xyloc_v_plane(nv,2) * ptr_patch%edges%dual_normal(je,jb)%v2
         END DO
 
+        ! centers
+        !
+        DO nc=1,2
+          xyloc_c_plane_nt(nc,1) =                                              &
+            &   xyloc_c_plane(nc,1)  * ptr_patch%edges%primal_normal(je,jb)%v1  &
+            & + xyloc_c_plane(nc,2)  * ptr_patch%edges%primal_normal(je,jb)%v2
+
+          xyloc_c_plane_nt(nc,2) =                                              &
+            &   xyloc_c_plane(nc,1)  * ptr_patch%edges%dual_normal(je,jb)%v1    &
+            & + xyloc_c_plane(nc,2)  * ptr_patch%edges%dual_normal(je,jb)%v2
+        ENDDO
 
 
-        ! 3. Calculate position of vertices in a translated coordinate system.
+
+        ! butterfly cells
+        !
+        DO nb=1,2
+          xyloc_bf1_plane_nt(nb,1) = &
+            &   xyloc_bf1_plane(nb,1)  * ptr_patch%edges%primal_normal(je,jb)%v1  &
+            & + xyloc_bf1_plane(nb,2)  * ptr_patch%edges%primal_normal(je,jb)%v2
+
+          xyloc_bf1_plane_nt(nb,2) = &
+            &   xyloc_bf1_plane(nb,1)  * ptr_patch%edges%dual_normal(je,jb)%v1    &
+            & + xyloc_bf1_plane(nb,2)  * ptr_patch%edges%dual_normal(je,jb)%v2
+
+          xyloc_bf2_plane_nt(nb,1) = &
+            &   xyloc_bf2_plane(nb,1)  * ptr_patch%edges%primal_normal(je,jb)%v1  &
+            & + xyloc_bf2_plane(nb,2)  * ptr_patch%edges%primal_normal(je,jb)%v2
+
+          xyloc_bf2_plane_nt(nb,2) = &
+            &   xyloc_bf2_plane(nb,1)  * ptr_patch%edges%dual_normal(je,jb)%v1    &
+            & + xyloc_bf2_plane(nb,2)  * ptr_patch%edges%dual_normal(je,jb)%v2
+        ENDDO
+
+
+
+        ! 3. Calculate distance vectors in a translated coordinate system.
         !    This is done twice. The origin is located once at the circumcenter
-        !    of the neighboring cell 1 and once cell 2. The distance vectors point
-        !    from the cell center to the vertices.
-        xyloc_trans1_v(1:4,1) = xyloc_plane_nt_v(1:4,1) - xyloc_plane_nt_n1(1)
-        xyloc_trans1_v(1:4,2) = xyloc_plane_nt_v(1:4,2) - xyloc_plane_nt_n1(2)
+        !    of the adjacent cell 1 and once cell 2. The distance vectors
+        !    point from the cell center to the vertices and butterfly cell centers.
+        !
+        ! vertices
+        DO nv=1,4
+          xyloc_v_trans1(nv,1) = xyloc_v_plane_nt(nv,1) - xyloc_c_plane_nt(1,1)
+          xyloc_v_trans1(nv,2) = xyloc_v_plane_nt(nv,2) - xyloc_c_plane_nt(1,2)
+          xyloc_v_trans2(nv,1) = xyloc_v_plane_nt(nv,1) - xyloc_c_plane_nt(2,1)
+          xyloc_v_trans2(nv,2) = xyloc_v_plane_nt(nv,2) - xyloc_c_plane_nt(2,2)
+        ENDDO
 
-        xyloc_trans2_v(1:4,1) = xyloc_plane_nt_v(1:4,1) - xyloc_plane_nt_n2(1)
-        xyloc_trans2_v(1:4,2) = xyloc_plane_nt_v(1:4,2) - xyloc_plane_nt_n2(2)
+        ! butterfly cells
+        DO nb=1,2
+          xyloc_bf1_trans1(nb,1) = xyloc_bf1_plane_nt(nb,1) - xyloc_c_plane_nt(1,1)
+          xyloc_bf1_trans1(nb,2) = xyloc_bf1_plane_nt(nb,2) - xyloc_c_plane_nt(1,2)
 
+          xyloc_bf2_trans2(nb,1) = xyloc_bf2_plane_nt(nb,1) - xyloc_c_plane_nt(2,1)
+          xyloc_bf2_trans2(nb,2) = xyloc_bf2_plane_nt(nb,2) - xyloc_c_plane_nt(2,2)
+        ENDDO
 
 
         ! 4. Rotate points into coordinate system pointing into local north
         !    and local east direction. Store in edge-based data structure. This
-        !    is done twice (for both neighboring cells).
-        ! e_n= pn_cell1(1)*e_\lambda + pn_cell1(2)*e_\phi
-        ! e_t= dn_cell1(1)*e_\lambda + dn_cell1(2)*e_\phi
-        pn_cell1(1) = ptr_patch%edges%primal_normal_cell(je,jb,1)%v1
-        pn_cell1(2) = ptr_patch%edges%primal_normal_cell(je,jb,1)%v2
-        dn_cell1(1) = ptr_patch%edges%dual_normal_cell(je,jb,1)%v1
-        dn_cell1(2) = ptr_patch%edges%dual_normal_cell(je,jb,1)%v2
+        !    is done twice (for both adjacent cell centers).
+        ! e_n= pn_cell1%v1 * e_\lambda + pn_cell1%v2 * e_\phi
+        ! e_t= dn_cell1%v1 * e_\lambda + dn_cell1%v2 * e_\phi
+        pn_cell1%v1 = ptr_patch%edges%primal_normal_cell(je,jb,1)%v1
+        pn_cell1%v2 = ptr_patch%edges%primal_normal_cell(je,jb,1)%v2
+        dn_cell1%v1 = ptr_patch%edges%dual_normal_cell(je,jb,1)%v1
+        dn_cell1%v2 = ptr_patch%edges%dual_normal_cell(je,jb,1)%v2
 
-        pn_cell2(1) = ptr_patch%edges%primal_normal_cell(je,jb,2)%v1
-        pn_cell2(2) = ptr_patch%edges%primal_normal_cell(je,jb,2)%v2
-        dn_cell2(1) = ptr_patch%edges%dual_normal_cell(je,jb,2)%v1
-        dn_cell2(2) = ptr_patch%edges%dual_normal_cell(je,jb,2)%v2
+        pn_cell2%v1 = ptr_patch%edges%primal_normal_cell(je,jb,2)%v1
+        pn_cell2%v2 = ptr_patch%edges%primal_normal_cell(je,jb,2)%v2
+        dn_cell2%v1 = ptr_patch%edges%dual_normal_cell(je,jb,2)%v1
+        dn_cell2%v2 = ptr_patch%edges%dual_normal_cell(je,jb,2)%v2
 
+        ! vertices
+        !
         ! components in longitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,1:3)%lon =  grid_sphere_radius          &
-          & *( xyloc_trans1_v(1:3,1) * pn_cell1(1)       &
-          & +  xyloc_trans1_v(1:3,2) * dn_cell1(1) )
+        pos_on_tplane_c_edge(je,jb,1,1:3)%lon =  grid_sphere_radius &
+          & *( xyloc_v_trans1(1:3,1) * pn_cell1%v1                  &
+          & +  xyloc_v_trans1(1:3,2) * dn_cell1%v1 )
 
         ! components in latitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,1:3)%lat =  grid_sphere_radius          &
-          & *( xyloc_trans1_v(1:3,1) * pn_cell1(2)       &
-          & +  xyloc_trans1_v(1:3,2) * dn_cell1(2) )
+        pos_on_tplane_c_edge(je,jb,1,1:3)%lat =  grid_sphere_radius &
+          & *( xyloc_v_trans1(1:3,1) * pn_cell1%v2                  &
+          & +  xyloc_v_trans1(1:3,2) * dn_cell1%v2 )
 
         ! components in longitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,1:3)%lon =  grid_sphere_radius          &
-          & *( xyloc_trans2_v((/1,2,4/),1) * pn_cell2(1) &
-          & +  xyloc_trans2_v((/1,2,4/),2) * dn_cell2(1) )
+        pos_on_tplane_c_edge(je,jb,2,1:3)%lon =  grid_sphere_radius &
+          & *( xyloc_v_trans2((/1,2,4/),1) * pn_cell2%v1            &
+          & +  xyloc_v_trans2((/1,2,4/),2) * dn_cell2%v1 )
 
         ! components in latitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,1:3)%lat =  grid_sphere_radius          &
-          & *( xyloc_trans2_v((/1,2,4/),1) * pn_cell2(2) &
-          & +  xyloc_trans2_v((/1,2,4/),2) * dn_cell2(2) )
-
-      ENDDO  ! je
-    ENDDO  ! jb
-!$OMP END DO
-!$OMP END PARALLEL
+        pos_on_tplane_c_edge(je,jb,2,1:3)%lat =  grid_sphere_radius &
+          & *( xyloc_v_trans2((/1,2,4/),1) * pn_cell2%v2            &
+          & +  xyloc_v_trans2((/1,2,4/),2) * dn_cell2%v2 )
 
 
-
-    !
-    ! Projection of butterfly cell centers
-    !
-
-    i_rcstartlev = 3
-
-    ! start and end block
-    i_startblk = ptr_patch%edges%start_blk(i_rcstartlev,1)
-    i_endblk   = ptr_patch%nblks_e
-
-!$OMP PARALLEL
-!$OMP DO PRIVATE(jb,je,i_startidx,i_endidx,ilc1,ilc2,ibc1,ibc2,xyloc_n1,&
-!$OMP            xyloc_n2,ilc_bf1,ibc_bf1,ilc_bf2,ibc_bf2,xyloc_bf1,    &
-!$OMP            xyloc_bf2,xyloc_plane_bf1,xyloc_plane_bf2)
-    DO jb = i_startblk, i_endblk
-
-      CALL get_indices_e(ptr_patch, jb, i_startblk, i_endblk, &
-        & i_startidx, i_endidx, i_rcstartlev)
-
-      DO je = i_startidx, i_endidx
-
-        IF(.NOT.ptr_patch%edges%decomp_info%owner_mask(je,jb)) CYCLE
-
-
-        ! get line and block indices of edge-neighbours (cells)
-        ilc1 = ptr_patch%edges%cell_idx(je,jb,1)
-        ibc1 = ptr_patch%edges%cell_blk(je,jb,1)
-        ilc2 = ptr_patch%edges%cell_idx(je,jb,2)
-        ibc2 = ptr_patch%edges%cell_blk(je,jb,2)
-
-        ! get geographical coordinates of edge-neighbor 1
-        xyloc_n1(1)   = ptr_patch%cells%center(ilc1,ibc1)%lon
-        xyloc_n1(2)   = ptr_patch%cells%center(ilc1,ibc1)%lat
-
-        ! get geographical coordinates of edge-neighbor 2
-        xyloc_n2(1)   = ptr_patch%cells%center(ilc2,ibc2)%lon
-        xyloc_n2(2)   = ptr_patch%cells%center(ilc2,ibc2)%lat
-
-
-
-        ! 5a. project cell centers adjacent to the cells sharing edge je.
-        !    (from butterfly_idx)
-
-
-        ! get line and block indices of the neighbors of edge-neighbor 1
-        ilc_bf1(1:2) = ptr_patch%edges%butterfly_idx(je,jb,1,1:2)
-        ibc_bf1(1:2) = ptr_patch%edges%butterfly_blk(je,jb,1,1:2)
-
-        ! get line and block indices of the neighbors of edge-neighbor 2
-        ilc_bf2(1:2) = ptr_patch%edges%butterfly_idx(je,jb,2,1:2)
-        ibc_bf2(1:2) = ptr_patch%edges%butterfly_blk(je,jb,2,1:2)
-
-
-        ! get geographical coordinates of cell centers (neighbor 1)
-        xyloc_bf1(1,1) = ptr_patch%cells%center(ilc_bf1(1),ibc_bf1(1))%lon
-        xyloc_bf1(1,2) = ptr_patch%cells%center(ilc_bf1(1),ibc_bf1(1))%lat
-        xyloc_bf1(2,1) = ptr_patch%cells%center(ilc_bf1(2),ibc_bf1(2))%lon
-        xyloc_bf1(2,2) = ptr_patch%cells%center(ilc_bf1(2),ibc_bf1(2))%lat
-
-        ! get geographical coordinates of cell centers (neighbor 2)
-        xyloc_bf2(1,1) = ptr_patch%cells%center(ilc_bf2(1),ibc_bf2(1))%lon
-        xyloc_bf2(1,2) = ptr_patch%cells%center(ilc_bf2(1),ibc_bf2(1))%lat
-        xyloc_bf2(2,1) = ptr_patch%cells%center(ilc_bf2(2),ibc_bf2(2))%lon
-        xyloc_bf2(2,2) = ptr_patch%cells%center(ilc_bf2(2),ibc_bf2(2))%lat
-
-
-        ! project cell centers into cell-based local system (edge-neighbor 1)
-        CALL gnomonic_proj( xyloc_n1(1), xyloc_n1(2), xyloc_bf1(1,1), xyloc_bf1(1,2), &! in
-          & xyloc_plane_bf1(1,1), xyloc_plane_bf1(1,2) )               ! out
-
-        CALL gnomonic_proj( xyloc_n1(1), xyloc_n1(2), xyloc_bf1(2,1), xyloc_bf1(2,2), &! in
-          & xyloc_plane_bf1(2,1), xyloc_plane_bf1(2,2) )               ! out
-
-
-
-        ! project cell centers into cell-based local system (edge-neighbor 2)
-        CALL gnomonic_proj( xyloc_n2(1), xyloc_n2(2), xyloc_bf2(1,1), xyloc_bf2(1,2), &! in
-          & xyloc_plane_bf2(1,1), xyloc_plane_bf2(1,2) )               ! out
-
-        CALL gnomonic_proj( xyloc_n2(1), xyloc_n2(2), xyloc_bf2(2,1), xyloc_bf2(2,2), &! in
-          & xyloc_plane_bf2(2,1), xyloc_plane_bf2(2,2) )               ! out
-
-
+        ! butterfly cells
+        !
         ! components in longitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,4:5)%lon =  grid_sphere_radius * &
-          & xyloc_plane_bf1(1:2,1)
+        pos_on_tplane_c_edge(je,jb,1,4:5)%lon =  grid_sphere_radius * &
+          & ( xyloc_bf1_trans1(1:2,1) * pn_cell1%v1                   &
+          & + xyloc_bf1_trans1(1:2,2) * dn_cell1%v1 )
 
         ! components in latitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,4:5)%lat =  grid_sphere_radius * &
-          & xyloc_plane_bf1(1:2,2)
-
+        pos_on_tplane_c_edge(je,jb,1,4:5)%lat =  grid_sphere_radius * &
+          & ( xyloc_bf1_trans1(1:2,1) * pn_cell1%v2                   &
+          & + xyloc_bf1_trans1(1:2,2) * dn_cell1%v2 )
 
         ! components in longitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,4:5)%lon =  grid_sphere_radius * &
-          & xyloc_plane_bf2(1:2,1)
+        pos_on_tplane_c_edge(je,jb,2,4:5)%lon =  grid_sphere_radius * &
+          & ( xyloc_bf2_trans2(1:2,1) * pn_cell2%v1                   &
+          & + xyloc_bf2_trans2(1:2,2) * dn_cell2%v1 )
 
         ! components in latitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,4:5)%lat =  grid_sphere_radius * &
-          & xyloc_plane_bf2(1:2,2)
-
+        pos_on_tplane_c_edge(je,jb,2,4:5)%lat =  grid_sphere_radius * &
+          & ( xyloc_bf2_trans2(1:2,1) * pn_cell2%v2                   &
+          & + xyloc_bf2_trans2(1:2,2) * dn_cell2%v2 )
       ENDDO  ! je
     ENDDO  ! jb
 !$OMP END DO
@@ -2747,26 +2728,33 @@ CONTAINS
 
     DO nv=1,5
       DO nc=1,2
-        CALL sync_patch_array(sync_e, ptr_patch, ptr_int%pos_on_tplane_c_edge(:,:,nc,nv)%lon)
-        CALL sync_patch_array(sync_e, ptr_patch, ptr_int%pos_on_tplane_c_edge(:,:,nc,nv)%lat)
+        CALL sync_patch_array(sync_e, ptr_patch, pos_on_tplane_c_edge(:,:,nc,nv)%lon)
+        CALL sync_patch_array(sync_e, ptr_patch, pos_on_tplane_c_edge(:,:,nc,nv)%lat)
       ENDDO
     ENDDO
 
-
   END SUBROUTINE init_tplane_c_sphere
 
-  !----------------------------------------------------------------------------
 
   !----------------------------------------------------------------------------
   !!AD> This is torus version of "init_tplane_c_sphere"- everything remains same
   !!    just that for flat torus geometry there is no need of gnomonic projection.
-  !!    Radial vector between two point is just coordinate difference
+  !!    Radial vector between two point is just coordinate difference.
+  !!
+  !!    Please note that the latest changes to init_tplane_c_sphere have not been
+  !!    taken over to init_tplane_c_torus. The changes are related to the projection
+  !!    of the butterfly cell centers, which are now projected in the same way
+  !!    as all other points. Even though this modification has not been included
+  !!    the torus version is still fully functionable.
+  !!
+  SUBROUTINE init_tplane_c_torus (ptr_patch, pos_on_tplane_c_edge)
 
-  SUBROUTINE init_tplane_c_torus (ptr_patch, ptr_int)
+    TYPE(t_patch),                    INTENT(in)    :: ptr_patch  !< patch
 
-    TYPE(t_patch),     INTENT(inout) :: ptr_patch  !< patch
-
-    TYPE(t_int_state), INTENT(inout) :: ptr_int    !< interpolation state
+    TYPE(t_geographical_coordinates), INTENT(inout) :: &
+      &  pos_on_tplane_c_edge(:,:,:,:)  !< positions of vertices and butterfly neighbors
+                                        !< on local plane tangent to the edge midpoint
+                                        !< (nproma,nblks_e,2,5)
 
     !CC of points in the stencil
     TYPE(t_cartesian_coordinates) :: cc_edge, cc_vert(4), cc_cell(2), &
@@ -2934,22 +2922,22 @@ CONTAINS
         dn_cell2(2) = ptr_patch%edges%dual_normal_cell(je,jb,2)%v2
 
         ! components in longitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,1:3)%lon =  &
+        pos_on_tplane_c_edge(je,jb,1,1:3)%lon =          &
           &  ( xyloc_trans1_v(1:3,1) * pn_cell1(1)       &
           & +  xyloc_trans1_v(1:3,2) * dn_cell1(1) )
 
         ! components in latitudinal direction (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,1:3)%lat =   &
-          &  ( xyloc_trans1_v(1:3,1) * pn_cell1(2)        &
+        pos_on_tplane_c_edge(je,jb,1,1:3)%lat =          &
+          &  ( xyloc_trans1_v(1:3,1) * pn_cell1(2)       &
           & +  xyloc_trans1_v(1:3,2) * dn_cell1(2) )
 
         ! components in longitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,1:3)%lon =  &
+        pos_on_tplane_c_edge(je,jb,2,1:3)%lon =          &
           &  ( xyloc_trans2_v((/1,2,4/),1) * pn_cell2(1) &
           & +  xyloc_trans2_v((/1,2,4/),2) * dn_cell2(1) )
 
         ! components in latitudinal direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,1:3)%lat =  &
+        pos_on_tplane_c_edge(je,jb,2,1:3)%lat =          &
           &  ( xyloc_trans2_v((/1,2,4/),1) * pn_cell2(2) &
           & +  xyloc_trans2_v((/1,2,4/),2) * dn_cell2(2) )
 
@@ -3041,17 +3029,17 @@ CONTAINS
 
 
         ! components in longitudinal direction (or X for torus) (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,4:5)%lon = dist_bf1_cell1(1:2)%x(1)
+        pos_on_tplane_c_edge(je,jb,1,4:5)%lon = dist_bf1_cell1(1:2)%x(1)
 
         ! components in latitudinal direction (or Y for torus) (cell 1)
-        ptr_int%pos_on_tplane_c_edge(je,jb,1,4:5)%lat = dist_bf1_cell1(1:2)%x(2)
+        pos_on_tplane_c_edge(je,jb,1,4:5)%lat = dist_bf1_cell1(1:2)%x(2)
 
 
         ! components in longitudinal (or X for torus) direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,4:5)%lon =  dist_bf2_cell2(1:2)%x(1)
+        pos_on_tplane_c_edge(je,jb,2,4:5)%lon =  dist_bf2_cell2(1:2)%x(1)
 
         ! components in latitudinal (or Y for torus) direction (cell 2)
-        ptr_int%pos_on_tplane_c_edge(je,jb,2,4:5)%lat =  dist_bf2_cell2(1:2)%x(2)
+        pos_on_tplane_c_edge(je,jb,2,4:5)%lat =  dist_bf2_cell2(1:2)%x(2)
 
       ENDDO  ! je
     ENDDO  ! jb
@@ -3060,8 +3048,8 @@ CONTAINS
 
     DO nv=1,5
       DO nc=1,2
-        CALL sync_patch_array(sync_e, ptr_patch, ptr_int%pos_on_tplane_c_edge(:,:,nc,nv)%lon)
-        CALL sync_patch_array(sync_e, ptr_patch, ptr_int%pos_on_tplane_c_edge(:,:,nc,nv)%lat)
+        CALL sync_patch_array(sync_e, ptr_patch, pos_on_tplane_c_edge(:,:,nc,nv)%lon)
+        CALL sync_patch_array(sync_e, ptr_patch, pos_on_tplane_c_edge(:,:,nc,nv)%lat)
       ENDDO
     ENDDO
 

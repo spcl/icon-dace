@@ -1,8 +1,3 @@
-!
-! Sea and sea-ice handling for the NWP VDIFF interface.
-!
-! \note Do not use directly, use mo_nwp_vdiff_interface instead.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Sea and sea-ice handling for the NWP VDIFF interface.
+!
+! \note Do not use directly, use mo_nwp_vdiff_interface instead.
 
 MODULE mo_nwp_vdiff_sea
 

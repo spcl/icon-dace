@@ -1,6 +1,3 @@
-! Computes diagnostic parameters and some diagnostics in the wave model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,7 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Computes diagnostic parameters and some diagnostics in the wave model
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
@@ -42,13 +41,14 @@ CONTAINS
   !>
   !! Calculation of purely diagnostic parameters
   !!
-  SUBROUTINE calculate_output_diagnostics(p_patch, wave_config, sp10m, dir10m, tracer, p_diag)
+  SUBROUTINE calculate_output_diagnostics(p_patch, wave_config, sp10m, dir10m, depth, tracer, p_diag)
 
     TYPE(t_patch),         INTENT(IN)    :: p_patch
     TYPE(t_wave_config),   INTENT(IN)    :: wave_config
     REAL(wp),              INTENT(IN)    :: sp10m(:,:)
     REAL(wp),              INTENT(IN)    :: dir10m(:,:)
-    REAL(wp),              INTENT(IN)    :: tracer(:,:,:,:) !energy spectral bins
+    REAL(wp),              INTENT(IN)    :: depth(:,:)      ! water depth 
+    REAL(wp),              INTENT(IN)    :: tracer(:,:,:,:) ! energy spectral bins
     TYPE(t_wave_diag),     INTENT(INOUT) :: p_diag
 
     CHARACTER(len=*), PARAMETER ::  &
@@ -187,7 +187,7 @@ CONTAINS
     CALL stokes_drift(p_patch = p_patch, &
       &           wave_config = wave_config, &
       &            wave_num_c = p_diag%wave_num_c, &
-      &                 depth = p_diag%depth, &
+      &                 depth = depth,  &
       &                tracer = tracer, &
       &              u_stokes = p_diag%u_stokes, & ! OUT
       &              v_stokes = p_diag%v_stokes)   ! OUT

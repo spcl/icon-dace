@@ -14,8 +14,8 @@
 m4_ifndef([AC_CONFIG_MACRO_DIRS], [m4_defun([_AM_CONFIG_MACRO_DIRS], [])m4_defun([AC_CONFIG_MACRO_DIRS], [_AM_CONFIG_MACRO_DIRS($@)])])
 m4_ifndef([AC_AUTOCONF_VERSION],
   [m4_copy([m4_PACKAGE_VERSION], [AC_AUTOCONF_VERSION])])dnl
-m4_if(m4_defn([AC_AUTOCONF_VERSION]), [2.71],,
-[m4_warning([this file was generated for autoconf 2.71.
+m4_if(m4_defn([AC_AUTOCONF_VERSION]), [2.69],,
+[m4_warning([this file was generated for autoconf 2.69.
 You have another version of autoconf.  It may work, but is not guaranteed to.
 If you have problems, you may need to regenerate the build system entirely.
 To do so, use the procedure documented by the package, typically 'autoreconf'.])])
@@ -1545,13 +1545,16 @@ AC_SUBST([am__tar])
 AC_SUBST([am__untar])
 ]) # _AM_PROG_TAR
 
+m4_include([m4/acx_fc_line_length.m4])
 m4_include([m4/acx_fc_module.m4])
 m4_include([m4/acx_fc_pp.m4])
 m4_include([m4/acx_lang_lib.m4])
-m4_include([m4/acx_lang_openmp.m4])
 m4_include([m4/acx_lang_package.m4])
+m4_include([m4/acx_lt_problems.m4])
+m4_include([m4/acx_use_libtool_configuration.m4])
 m4_include([m4/asx_common.m4])
 m4_include([m4/ax_prog_doxygen.m4])
+m4_include([m4/kpse_libtool.m4])
 m4_include([m4/libtool.m4])
 m4_include([m4/ltoptions.m4])
 m4_include([m4/ltsugar.m4])

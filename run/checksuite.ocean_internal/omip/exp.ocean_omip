@@ -795,7 +795,8 @@ cat >> ${ocean_namelist} << EOF
 /
 
 &ocean_diagnostics_nml
-  use_age_tracer                  = .FALSE.
+  diagnose_age                    = .FALSE.
+  diagnose_green                  = .FALSE.
   diagnostics_level               = 1
   diagnose_for_horizontalvelocity = .FALSE.
   diagnose_for_heat_content       = .TRUE.

@@ -1,8 +1,3 @@
-#ifndef NOMPI
-! Distributed array implementation, optimized for read-only access in
-! parallel phase
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Distributed array implementation, optimized for read-only access in
+! parallel phase
+
+#ifndef NOMPI
 
 #if defined (__SX__) || defined (__NEC_VH__)
 #define __SXorVH__

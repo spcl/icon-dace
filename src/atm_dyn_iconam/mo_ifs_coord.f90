@@ -1,8 +1,3 @@
-!
-! Contains subroutines for calculating the pressure values and
-! some other auxiliary variables related to the pressure-sigma
-! hybrid vertical coordinate (the eta coordinate).
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains subroutines for calculating the pressure values and
+! some other auxiliary variables related to the pressure-sigma
+! hybrid vertical coordinate (the eta coordinate).
 
 MODULE mo_ifs_coord
 

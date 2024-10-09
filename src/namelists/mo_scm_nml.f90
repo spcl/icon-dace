@@ -1,6 +1,3 @@
-! Namelist for Single Column Model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for Single Column Model
 
 MODULE mo_scm_nml  
 !-------------------------------------------------------------------------  

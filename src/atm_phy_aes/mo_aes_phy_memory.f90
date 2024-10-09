@@ -1,16 +1,3 @@
-!NEC$ options "-O1"
-!
-! Data types and variables used by the AES physics package.
-!
-! This module contains
-! 
-!  definition of data types for organising the physical quantities in the
-!    AES physics package,
-!  the actual variables that are declared of these types, and
-!  subroutines for (de-)allocating memory for the variables.
-! 
-! This module uses derived data types in order to allow for local refinement.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -21,6 +8,19 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data types and variables used by the AES physics package.
+!
+! This module contains
+! 
+!  definition of data types for organising the physical quantities in the
+!    AES physics package,
+!  the actual variables that are declared of these types, and
+!  subroutines for (de-)allocating memory for the variables.
+! 
+! This module uses derived data types in order to allow for local refinement.
+
+!NEC$ options "-O1"
 
 MODULE mo_aes_phy_memory
 
@@ -41,6 +41,7 @@ MODULE mo_aes_phy_memory
   USE mtime,                  ONLY: timedelta, OPERATOR(>)
   USE mo_time_config,         ONLY: time_config
   USE mo_aes_phy_config,      ONLY: aes_phy_tc, dt_zero
+  USE mo_aes_rad_config,      ONLY: aes_rad_config
   USE mo_aes_vdf_config,      ONLY: aes_vdf_config
   USE mo_aes_sfc_indices,     ONLY: nsfc_type, csfc
   USE mo_model_domain,        ONLY: t_patch
@@ -154,6 +155,7 @@ MODULE mo_aes_phy_memory
       & pv        (:,:,:)=>NULL(),  &!< [K/m2/kg/s] Ertel potential vorticity (NWP pp)
       & geoi      (:,:,:)=>NULL(),  &!< [m2/s2] geopotential above ground at half levels (vertical interfaces)
       & geom      (:,:,:)=>NULL(),  &!< [m2/s2] geopotential above ground at full levels (layer ave. or mid-point value)
+      & geop      (:,:,:)=>NULL(),  &!< [m2/s2] geopotential at full levels (layer ave. or mid-point value)
       & pfull     (:,:,:)=>NULL(),  &!< [Pa]    air pressure at model levels
       & phalf     (:,:,:)=>NULL()    !< [Pa]    air pressure at model half levels
 
@@ -226,7 +228,6 @@ MODULE mo_aes_phy_memory
       & rlds        (:,  :)=>NULL(),  &!< [W/m2] surface downwelling longwave radiation
       & rlus        (:,  :)=>NULL(),  &!< [W/m2] surface upwelling   longwave radiation
       & rldscs      (:,  :)=>NULL(),  &!< [W/m2] surface downwelling clear-sky longwave radiation
-      & rluscs      (:,  :)=>NULL(),  &!< [W/m2] surface downwelling clear-sky longwave radiation
       & rlns        (:,  :)=>NULL(),  &!< [W/m2] surface net longwave radiation
       & o3          (:,:,:)=>NULL()    !< [mol/mol] ozone volume mixing ratio
     ! effective radius of ice
@@ -714,13 +715,14 @@ CONTAINS
 
     CHARACTER(LEN=vname_len) :: trc_name, cfstd_name, long_name, var_name, var_suffix
     CHARACTER(len=4) :: tl_suffix
+    LOGICAL :: lclrsky_lw, lclrsky_sw
     LOGICAL :: contvar_is_in_output
     LOGICAL :: use_tmx
 
     TYPE(t_cf_var)    ::    cf_desc
     TYPE(t_grib2_var) :: grib2_desc
 
-    INTEGER :: shape2d(2), shape3d(3), shapesfc(3), shapeice(3), shape3d_layer_interfaces(3)
+    INTEGER :: shape2d(2), shape3d(3), shapesfc(3), shapeice(3), shape3d_layer_interfaces(3), shape3d_1level(3), shape3d_wrk(3)
     INTEGER :: ibits, iextbits, ivarbits
     INTEGER :: datatype_flt
     INTEGER :: jsfc, jtrc
@@ -737,6 +739,7 @@ CONTAINS
     shape3d  = (/kproma, klev, kblks/)
     shapesfc = (/kproma, kblks, ksfc_type/)
     shape3d_layer_interfaces = (/kproma,klev+1,kblks/)
+    shape3d_1level = (/kproma,1,kblks/)
 
     tl_suffix = get_timelevel_string(jt)
 
@@ -1311,6 +1314,20 @@ CONTAINS
                 &               l_extrapol=.TRUE., l_pd_limit=.FALSE.)         )
     __acc_attach(field%geom)
 
+    ! &       field% geop      (nproma,nlev  ,nblks),          &
+    cf_desc    = t_cf_var('geopotential', 'm2 s-2', 'geopotential', datatype_flt)
+    grib2_desc = grib2_var(0, 3, 4, ibits, GRID_UNSTRUCTURED, GRID_CELL)
+    CALL add_ref( metrics_list, 'geopot',                                      &
+                & prefix//'geop', field%geop,                                  &
+                & GRID_UNSTRUCTURED_CELL, ZA_REFERENCE,                        &
+                & cf_desc, grib2_desc,                                         &
+                & ref_idx=1, ldims=shape3d,                                    &
+                & vert_interp = create_vert_interp_metadata(                   &
+                &               vert_intp_type=vintp_types("P","Z","I"),       &
+                &               vert_intp_method=VINTP_METHOD_LIN,             &
+                &               l_extrapol=.TRUE., l_pd_limit=.FALSE.)         )
+    __acc_attach(field%geom)
+
     ! &       field% pfull (nproma,nlev  ,nblks),          &
     cf_desc    = t_cf_var('air_pressure', 'Pa', 'air pressure on model levels', datatype_flt)
     grib2_desc = grib2_var(0, 3, 0, ibits, GRID_UNSTRUCTURED, GRID_CELL)
@@ -1414,6 +1431,23 @@ CONTAINS
     IF ( aes_phy_tc(jg)%dt_rad > dt_zero ) THEN
        !
        ! shortwave fluxes
+       !
+       ! - flag for clear sky computations
+       lclrsky_sw = is_variable_in_output(var_name=prefix//'rsdcs')  .OR. &
+            &       is_variable_in_output(var_name=prefix//'rsucs')  .OR. &
+            &       is_variable_in_output(var_name=prefix//'rsutcs') .OR. &
+            &       is_variable_in_output(var_name=prefix//'rsdscs') .OR. &
+            &       is_variable_in_output(var_name=prefix//'rsuscs')
+       aes_rad_config(jg)%lclrsky_sw = lclrsky_sw
+       !
+       ! - allocate clear sky 3d radiation fields with a single level only if
+       !   they are not used for computations, but still needed as arguments
+       IF (lclrsky_sw) THEN
+          shape3d_wrk = shape3d_layer_interfaces
+       ELSE
+          shape3d_wrk = shape3d_1level
+       END IF
+       !
        ! - through the atmosphere
        !
        cf_desc    = t_cf_var('downwelling_shortwave_flux_in_air', &
@@ -1457,7 +1491,7 @@ CONTAINS
             &       GRID_UNSTRUCTURED_CELL    , ZA_REFERENCE_HALF   , &
             &       cf_desc, grib2_desc                          , &
             &       lrestart = .TRUE.                            , &
-            &       ldims=shape3d_layer_interfaces               , &
+            &       ldims=shape3d_wrk                            , &
             &       vert_interp=create_vert_interp_metadata        &
             &         (vert_intp_type=vintp_types("P","Z","I") ,   &
             &          vert_intp_method=VINTP_METHOD_LIN_NLEVP1),  &
@@ -1473,7 +1507,7 @@ CONTAINS
             &       GRID_UNSTRUCTURED_CELL    , ZA_REFERENCE_HALF   , &
             &       cf_desc, grib2_desc                          , &
             &       lrestart = .TRUE.                            , &
-            &       ldims=shape3d_layer_interfaces               , &
+            &       ldims=shape3d_wrk                            , &
             &       vert_interp=create_vert_interp_metadata        &
             &         (vert_intp_type=vintp_types("P","Z","I") ,   &
             &          vert_intp_method=VINTP_METHOD_LIN_NLEVP1),  &
@@ -1865,6 +1899,22 @@ CONTAINS
     !
 
     ! longwave  fluxes
+    !
+    ! - flag for clear sky computations
+    lclrsky_lw = is_variable_in_output(var_name=prefix//'rldcs')  .OR. &
+         &       is_variable_in_output(var_name=prefix//'rlucs')  .OR. &
+         &       is_variable_in_output(var_name=prefix//'rlutcs') .OR. &
+         &       is_variable_in_output(var_name=prefix//'rldscs')
+    aes_rad_config(jg)%lclrsky_lw = lclrsky_lw
+    !
+    ! - allocate clear sky 3d radiation fields with a single level only if
+    !   they are not used for computations, but still needed as arguments
+    IF (lclrsky_lw) THEN
+       shape3d_wrk = shape3d_layer_interfaces
+    ELSE
+       shape3d_wrk = shape3d_1level
+    END IF
+    !
     ! - through the atmosphere
     !
     ! (rld_rt and rlu_rt are also needed in update_surface)
@@ -1912,7 +1962,7 @@ CONTAINS
             &       GRID_UNSTRUCTURED_CELL    , ZA_REFERENCE_HALF   , &
             &       cf_desc, grib2_desc                          , &
             &       lrestart = .TRUE.                            , &
-            &       ldims=shape3d_layer_interfaces               , &
+            &       ldims=shape3d_wrk                            , &
             &       vert_interp=create_vert_interp_metadata        &
             &         (vert_intp_type=vintp_types("P","Z","I") ,   &
             &          vert_intp_method=VINTP_METHOD_LIN_NLEVP1),  &
@@ -1928,7 +1978,7 @@ CONTAINS
             &       GRID_UNSTRUCTURED_CELL    , ZA_REFERENCE_HALF   , &
             &       cf_desc, grib2_desc                          , &
             &       lrestart = .TRUE.                            , &
-            &       ldims=shape3d_layer_interfaces               , &
+            &       ldims=shape3d_wrk                            , &
             &       vert_interp=create_vert_interp_metadata        &
             &         (vert_intp_type=vintp_types("P","Z","I") ,   &
             &          vert_intp_method=VINTP_METHOD_LIN_NLEVP1),  &
@@ -2007,22 +2057,7 @@ CONTAINS
             &       ldims=shape2d                             , &
             &       lopenacc=.TRUE.                           )
        __acc_attach(field%rldscs)
-
-       cf_desc    = t_cf_var('surface_upwelling_longwave_flux_in_air_assuming_clear_sky', &
-            &                'W m-2'                                                    , &
-            &                'surface upwelling clear-sky longwave radiation'           , &
-            &                datatype_flt                                               )
-       grib2_desc = grib2_var(0,5,4, ibits, GRID_UNSTRUCTURED, GRID_CELL)
-       CALL add_var(field_list, prefix//'rluscs', field%rluscs, &
-            &       GRID_UNSTRUCTURED_CELL      , ZA_SURFACE  , &
-            &       cf_desc, grib2_desc                       , &
-            &       lrestart = .FALSE.                        , &
-            &       ldims=shape2d                             , &
-            &       lopenacc=.TRUE.                           )
-       __acc_attach(field%rluscs)
-
        !
-
     END IF
 
     ! net longwave fluxes only needed for diagnostic output for destinE
@@ -3793,31 +3828,27 @@ CONTAINS
 
     __acc_attach(field%tas)
 
-    ! For now, allocate both dew2 and qv2m in order to avoid problems in output
-    ! namelists in run script depending on whether tmx or vdiff are used
-!     IF (use_tmx) THEN
-     CALL add_var( field_list, prefix//'qv2m', field%qv2m,                      &
-                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
-                    & t_cf_var('qv2m','kg kg-1','specific humidity in 2m',      &
-                    &          datatype_flt),                                   &
-                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
-                    & ldims=shape2d,                                            &
-                    & lrestart = .FALSE.,                                       &
-                    & isteptype=TSTEP_INSTANT,                                  &
-                    & lopenacc=.TRUE.)
-     __acc_attach(field%qv2m)
-!     ELSE
-     CALL add_var( field_list, prefix//'dew2', field%dew2,                      &
-                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
-                    & t_cf_var('dew2','K','dew point temperature in 2m',        &
-                    &          datatype_flt),                                   &
-                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
-                    & ldims=shape2d,                                            &
-                    & lrestart = .FALSE.,                                       &
-                    & isteptype=TSTEP_INSTANT,                                  &
-                    & lopenacc=.TRUE.)
-     __acc_attach(field%dew2)
-!     END IF
+    CALL add_var( field_list, prefix//'qv2m', field%qv2m,                      &
+                   & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                   & t_cf_var('qv2m','kg kg-1','specific humidity in 2m',      &
+                   &          datatype_flt),                                   &
+                   & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                   & ldims=shape2d,                                            &
+                   & lrestart = .FALSE.,                                       &
+                   & isteptype=TSTEP_INSTANT,                                  &
+                   & lopenacc=.TRUE.)
+    __acc_attach(field%qv2m)
+
+    CALL add_var( field_list, prefix//'dew2', field%dew2,                      &
+                   & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                   & t_cf_var('dew2','K','dew point temperature in 2m',        &
+                   &          datatype_flt),                                   &
+                   & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                   & ldims=shape2d,                                            &
+                   & lrestart = .FALSE.,                                       &
+                   & isteptype=TSTEP_INSTANT,                                  &
+                   & lopenacc=.TRUE.)
+    __acc_attach(field%dew2)
 
     CALL add_var( field_list, prefix//'tasmax', field%tasmax,                   &
                 & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                         &
@@ -3899,39 +3930,34 @@ CONTAINS
 
     __acc_attach(field%tas_tile)
 
-    IF (use_tmx) THEN
-     CALL add_var( field_list, prefix//'qv2m_tile', field%qv2m_tile,            &
-                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
-                    & t_cf_var('qv2m_tile','kg kg-1','specific humidity in 2m on tiles',&
-                    &          datatype_flt),                                   &
-                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
-                    & ldims=shapesfc,                                           &
-                    & lcontainer=.TRUE., lrestart=.FALSE.,                      &
-                    & isteptype=TSTEP_INSTANT,                                  &
-                    & lopenacc=.TRUE.)
-     __acc_attach(field%qv2m_tile)
-    ELSE
-     CALL add_var( field_list, prefix//'dew2_tile', field%dew2_tile,            &
-                    & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
-                    & t_cf_var('dew2_tile','K','dew point temperature in 2m on tiles',&
-                    &          datatype_flt),                                   &
-                    & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
-                    & ldims=shapesfc,                                           &
-                    & lcontainer=.TRUE., lrestart=.FALSE.,                      &
-                    & isteptype=TSTEP_INSTANT,                                  &
-                    & lopenacc=.TRUE.)
-     __acc_attach(field%dew2_tile)
-    END IF
+    CALL add_var( field_list, prefix//'qv2m_tile', field%qv2m_tile,            &
+                   & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                   & t_cf_var('qv2m_tile','kg kg-1','specific humidity in 2m on tiles',&
+                   &          datatype_flt),                                   &
+                   & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                   & ldims=shapesfc,                                           &
+                   & lcontainer=.TRUE., lrestart=.FALSE.,                      &
+                   & isteptype=TSTEP_INSTANT,                                  &
+                   & lopenacc=.TRUE.)
+    __acc_attach(field%qv2m_tile)
+
+    CALL add_var( field_list, prefix//'dew2_tile', field%dew2_tile,            &
+                   & GRID_UNSTRUCTURED_CELL, ZA_HEIGHT_2M,                     &
+                   & t_cf_var('dew2_tile','K','dew point temperature in 2m on tiles',&
+                   &          datatype_flt),                                   &
+                   & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),    &
+                   & ldims=shapesfc,                                           &
+                   & lcontainer=.TRUE., lrestart=.FALSE.,                      &
+                   & isteptype=TSTEP_INSTANT,                                  &
+                   & lopenacc=.TRUE.)
+    __acc_attach(field%dew2_tile)
 
     ALLOCATE(field%sfcwind_tile_ptr(ksfc_type))
     ALLOCATE(field%uas_tile_ptr(ksfc_type))
     ALLOCATE(field%vas_tile_ptr(ksfc_type))
     ALLOCATE(field%tas_tile_ptr(ksfc_type))
-    IF (use_tmx) THEN
-     ALLOCATE(field%qv2m_tile_ptr(ksfc_type))
-    ELSE
-     ALLOCATE(field%dew2_tile_ptr(ksfc_type))
-    END IF
+    ALLOCATE(field%qv2m_tile_ptr(ksfc_type))
+    ALLOCATE(field%dew2_tile_ptr(ksfc_type))
 
     DO jsfc = 1,ksfc_type
 
@@ -3975,27 +4001,25 @@ CONTAINS
                   & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
                   & lmiss=.TRUE., missval=cdimissval )
 
-      IF (use_tmx) THEN
-        CALL add_ref( field_list, prefix//'qv2m_tile',                              &
-                  & prefix//'qv2m_'//csfc(jsfc), field%qv2m_tile_ptr(jsfc)%p,       &
-                  & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
-                  & t_cf_var('qv2m_'//csfc(jsfc), 'kg kg-1',                        &
-                  &          'specific humidity in 2m on tile '//csfc(jsfc),        &
-                  &          datatype_flt),                                         &
-                  & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
-                  & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
-                  & lmiss=.TRUE., missval=cdimissval )
-      ELSE
-        CALL add_ref( field_list, prefix//'dew2_tile',                              &
-                  & prefix//'dew2_'//csfc(jsfc), field%dew2_tile_ptr(jsfc)%p,       &
-                  & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
-                  & t_cf_var('dew2_'//csfc(jsfc), 'K',                              &
-                  &          'dew point temperature in 2m on tile '//csfc(jsfc),    &
-                  &          datatype_flt),                                         &
-                  & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
-                  & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
-                  & lmiss=.TRUE., missval=cdimissval )
-      END IF
+      CALL add_ref( field_list, prefix//'qv2m_tile',                              &
+                & prefix//'qv2m_'//csfc(jsfc), field%qv2m_tile_ptr(jsfc)%p,       &
+                & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
+                & t_cf_var('qv2m_'//csfc(jsfc), 'kg kg-1',                        &
+                &          'specific humidity in 2m on tile '//csfc(jsfc),        &
+                &          datatype_flt),                                         &
+                & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
+                & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
+                & lmiss=.TRUE., missval=cdimissval )
+
+      CALL add_ref( field_list, prefix//'dew2_tile',                              &
+                & prefix//'dew2_'//csfc(jsfc), field%dew2_tile_ptr(jsfc)%p,       &
+                & GRID_UNSTRUCTURED_CELL, ZA_SURFACE,                             &
+                & t_cf_var('dew2_'//csfc(jsfc), 'K',                              &
+                &          'dew point temperature in 2m on tile '//csfc(jsfc),    &
+                &          datatype_flt),                                         &
+                & grib2_var(0,0,6, ibits, GRID_UNSTRUCTURED, GRID_CELL),          &
+                & ref_idx=jsfc, ldims=shape2d, lrestart=.FALSE.,                  &
+                & lmiss=.TRUE., missval=cdimissval )
 
     END DO
 

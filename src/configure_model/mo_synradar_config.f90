@@ -1,7 +1,3 @@
-! @brief Setup for synthetic radar data on the model grid
-!
-! configuration setup for synthetic radar data on the model grid
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Setup for synthetic radar data on the model grid
+!
+! configuration setup for synthetic radar data on the model grid
 
 MODULE mo_synradar_config
   

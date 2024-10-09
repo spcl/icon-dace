@@ -1,6 +1,3 @@
-!
-! Module containing subroutine computing the 0/1 cloud cover.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module containing subroutine computing the 0/1 cloud cover.
 
 MODULE mo_diagnose_cov
 

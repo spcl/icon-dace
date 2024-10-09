@@ -1,28 +1,18 @@
 pipeline {
     agent {
         node {
-            label 'daint'
+            label 'balfrin'
         }
     }
 
     stages {
-        stage('generate testdata') {
+        stage('Pytest') {
             steps {
-                sh './jenkins/scripts/step_generate_testdata.sh'
-            }
-        }
-
-        stage('run unittests amip') {
-            steps {
-                sh './jenkins/scripts/step_execute_unittest_amip.sh'
-            }
-        }
-
-        stage('run unittests mch') {
-            steps {
-                sh './jenkins/scripts/step_execute_unittest_mch.sh'
+                sh'''
+                source $SCRATCH/project/icon/probtest/conda/miniconda/bin/activate probtest
+                pytest -v tests/*
+                '''
             }
         }
     }
-
 }

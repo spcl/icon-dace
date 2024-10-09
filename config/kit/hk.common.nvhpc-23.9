@@ -61,6 +61,12 @@ XML2_INCLUDE_DIR='/usr/include/libxml2'
 XML2_LIBS='-lxml2'
 ZLIB_LIBS='-lz'
 
+# RTTOV: feature will only be activated if ${RTTOV_ROOT}/lib and ${RTTOV_ROOT}/include
+# are readable for the current user! The system installation has restricted permissions
+# and only grants read access to users in the 'hk-project-glori-init' group.
+RTTOV_ROOT='/hkfs/home/dataset/datasets/icon/sw/rttov/rttov13/nvhpc-23.9_hdf-1.12_netcdff-4.6'
+RTTOV_LIBS='-lrttov13'
+
 ################################################################################
 
 BUILD_ENV="export LD_LIBRARY_PATH=\"${PGI_ROOT}/lib:${MPI_ROOT}/lib:${CUDA_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${FYAML_ROOT}/lib:${SERIALBOX2_ROOT}/lib:/usr/lib64:/usr/lib\";export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\"; unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH INCLUDE LIBRARY_PATH;"
@@ -84,6 +90,18 @@ MPI_LAUNCH="${MPI_ROOT}/bin/mpirun ${HK_GPU_MPIRUN_FLAGS}"
 EXTRA_CONFIG_ARGS="--disable-loop-exchange --disable-coupling --disable-serialization --enable-grib2 --enable-art --enable-ecrad --enable-emvorado --enable-dace"
 #EXTRA_CONFIG_ARGS+=' --enable-emvorado --enable-dace --enable-fcgroup-WORKAROUND1'
 EXTRA_CONFIG_ARGS+=" --disable-mpi-checks"
+
+# Enable RTTOV if installation is available
+if [[ -r "${RTTOV_ROOT}/lib" ]] && [[ -r "${RTTOV_ROOT}/include" ]]; then
+    echo "Enabling RTTOV with RTTOV_ROOT=${RTTOV_ROOT}"
+    LDFLAGS="${LDFLAGS} -L${RTTOV_ROOT}/lib"
+    LIBS="${LIBS} ${RTTOV_LIBS}"
+    FCFLAGS="${FCFLAGS} -I${RTTOV_ROOT}/include"
+    EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --enable-rttov"
+else
+    echo "Disabling RTTOV due to missing read access for ${RTTOV_ROOT}."
+    EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-rttov"
+fi
 
 ################################################################################
 

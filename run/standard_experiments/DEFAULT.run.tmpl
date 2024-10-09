@@ -13,7 +13,7 @@
 #
 # %{mkexp_input}
 #
-# $Id: run/standard_experiments/DEFAULT.run.tmpl 18 2024-02-13 16:11:30Z m221078 $
+# $Id: run/standard_experiments/DEFAULT.run.tmpl 19 2024-05-13 14:32:08Z m221078 $
 #
 # %{VERSIONS_|join('\n# ')}
 #
@@ -58,7 +58,7 @@ exec > $pipe 2>&1
 
 #% do VARIABLES_.add('MODEL_DIR')
 #% do VARIABLES_.add('SCRIPT_DIR')
-#% do VARIABLES_.add('BUILD_DIR')
+#% do VARIABLES_.add('PREFIX')
 #% for var in VARIABLES_|sort:
 #%   if context(var):
 %{var}=%{context(var)}
@@ -70,7 +70,7 @@ exec > $pipe 2>&1
 ln -snvf %{LOG_DIR}/%{EXP_ID}.run.$(printf %08d ${%{JOB.id_environ}}).log $SCRIPT_DIR/%{EXP_ID}.run.log
 
 # Load traditional error handling
-. $BUILD_DIR/run/add_run_routines
+. $PREFIX/run/add_run_routines
 # Reset files and file names for check_error and check_final_status
 final_status_file=${SCRIPT_DIR}/${job_name}.final_status
 current_status_file=${SCRIPT_DIR}/${job_name}.status
@@ -208,20 +208,19 @@ ulimit -c 0
 #%  if JOB.share_nodes is set:
 oce_per_node=%{JOB.ocean_tasks_per_node}
 atm_per_node=$((mpi_procs_pernode - oce_per_node))
-oce_procs=$((no_of_nodes * oce_per_node))
-mpi_oce_procs=$oce_procs
-atm_procs=$((no_of_nodes * atm_per_node))
+mpi_oce_procs=$((no_of_nodes * oce_per_node))
+mpi_atm_procs=$((no_of_nodes * atm_per_node))
 #%  else:
 mpi_oce_nodes=%{JOB.ocean_nodes}
 mpi_oce_procs=$((mpi_oce_nodes * mpi_procs_pernode))
+mpi_atm_procs=$((mpi_total_procs - mpi_oce_procs))
 #%  endif
 #%  else:
 #%#     use_openmp_hack is set
 oce_per_node=16
 atm_per_node=$((mpi_procs_pernode - oce_per_node))
-oce_procs=$((no_of_nodes_comp * oce_per_node))
-mpi_oce_procs=$oce_procs
-atm_procs=$((no_of_nodes_comp * atm_per_node))
+mpi_oce_procs=$((no_of_nodes_comp * oce_per_node))
+mpi_atm_procs=$((no_of_nodes_comp * atm_per_node))
 #%  endif
 #
 #--------------------------------------------------------------------------------------------------
@@ -268,7 +267,7 @@ start_date = mtime.DateTime('$start_date')
 reference_date = initial_date + mtime.TimeDelta('-%{interval}')
 next_date = start_date + mtime.TimeDelta('%{interval}')
 if next_date > final_date:
-    logging.warn('next date after final date; setting next date to final date')
+    logging.warning('next date after final date; setting next date to final date')
     next_date = final_date
 end_date = next_date + mtime.TimeDelta('-%{atmo_time_step}')
 atmo_reference_jstep = (initial_date, reference_date)//mtime.TimeDelta('%{atmo_time_step}')
@@ -377,8 +376,8 @@ atm_inc_rank=1
 #%  endif
 #%  else:
 #%#     use_openmp_hack is set
-oce_min_rank=`expr ${atm_procs} + ${mpi_atm_io_procs}`
-oce_max_rank=`expr ${atm_procs} + ${mpi_atm_io_procs} + ${oce_procs} + ${mpi_oce_io_procs} - 1`
+oce_min_rank=`expr ${mpi_atm_procs} + ${mpi_atm_io_procs}`
+oce_max_rank=`expr ${mpi_atm_procs} + ${mpi_atm_io_procs} + ${mpi_oce_procs} + ${mpi_oce_io_procs} - 1`
 oce_group_size=1
 oce_inc_rank=1
 atm_min_rank=0
@@ -550,8 +549,8 @@ function fill_hostfile(){
    done
 }
 
-fill_hostfile $atm_procs $mpi_atm_io_procs 0 > $SLURM_HOSTFILE
-fill_hostfile $oce_procs $mpi_oce_io_procs 1 >> $SLURM_HOSTFILE
+fill_hostfile $mpi_atm_procs $mpi_atm_io_procs 0 > $SLURM_HOSTFILE
+fill_hostfile $mpi_oce_procs $mpi_oce_io_procs 1 >> $SLURM_HOSTFILE
 
 #%  endif
 #%  else:
@@ -627,28 +626,28 @@ mask=(0x7f 0x7f0000 0x7f00000000 0x7f000000000000 0x7f0000000000000000 0x7f00000
 
 mask_out=(0xf 0xf0000 0xf00000000 0xf000000000000 0xf0000000000000000 0xf00000000000000000000 0xf000000000000000000000000 0xf0000000000000000000000000000 0xf0 0xf00000 0xf000000000 0xf0000000000000 0xf00000000000000000 0xf000000000000000000000 0xf0000000000000000000000000 0xf00000000000000000000000000000 0xf00 0xf000000 0xf0000000000 0xf00000000000000 0xf000000000000000000 0xf0000000000000000000000 0xf00000000000000000000000000 0xf000000000000000000000000000000 0xf000 0xf0000000 0xf00000000000 0xf000000000000000 0xf0000000000000000000 0xf00000000000000000000000 0xf000000000000000000000000000 0xf0000000000000000000000000000000)
 
-if [ \$rank -lt $atm_procs ]; then
+if [ \$rank -lt $mpi_atm_procs ]; then
         export OMP_NUM_THREADS=7
         echo atmo \${mask[\$SLURM_LOCALID]}
         hwloc-bind \${mask[\$SLURM_LOCALID]} \$*
 #        exec \$*
-elif [ \$rank -lt $(($atm_procs +  $mpi_atm_io_procs)) ]; then
+elif [ \$rank -lt $(($mpi_atm_procs +  $mpi_atm_io_procs)) ]; then
         export OMP_NUM_THREADS=4
         echo atmoo \${mask_out[\$SLURM_LOCALID]}
         hwloc-bind \${mask_out[\$SLURM_LOCALID]} \$*
-elif [ \$rank -lt $(($atm_procs + $mpi_atm_io_procs + $oce_procs)) ]; then
+elif [ \$rank -lt $(($mpi_atm_procs + $mpi_atm_io_procs + $mpi_oce_procs)) ]; then
         export OMP_NUM_THREADS=1
         echo oce \${mask[\$SLURM_LOCALID]}
         hwloc-bind \${mask[\$SLURM_LOCALID]} \$*
 #        exec \$*
-elif [ \$rank -lt $(($atm_procs + $mpi_atm_io_procs + $oce_procs + $mpi_oce_io_procs)) ]; then
+elif [ \$rank -lt $(($mpi_atm_procs + $mpi_atm_io_procs + $mpi_oce_procs + $mpi_oce_io_procs)) ]; then
         export OMP_NUM_THREADS=4
         echo oceo \${mask_out[\$SLURM_LOCALID]}
         hwloc-bind \${mask_out[\$SLURM_LOCALID]} \$*
 else
         export OMP_NUM_THREADS=4
         echo hiopy
-        hwloc-bind \${mask_out[\$SLURM_LOCALID]} ${EXPDIR}/mpmd_jobs/run_\$(( \$SLURM_PROCID -$atm_procs - $mpi_atm_io_procs - $oce_procs - $mpi_oce_io_procs))
+        hwloc-bind \${mask_out[\$SLURM_LOCALID]} ${EXPDIR}/mpmd_jobs/run_\$(( \$SLURM_PROCID -$mpi_atm_procs - $mpi_atm_io_procs - $mpi_oce_procs - $mpi_oce_io_procs))
 fi
 EOF
 chmod +x ./set_mask
@@ -667,19 +666,19 @@ if [ $mpi_atm_io_procs -eq 0 ] ; then
   atm_io_line="0 numactl --interleave=0-3 -- ${MODEL}"
 else
   if [ $((atm_per_node*2)) -lt  $mpi_procs_pernode ] ; then
-    atm_io_line="$((atm_procs -1 - mpi_atm_io_procs))-$((atm_procs -1)) numactl --interleave=0-3 -- ${MODEL}"
+    atm_io_line="$((mpi_atm_procs -1 - mpi_atm_io_procs))-$((mpi_atm_procs -1)) numactl --interleave=0-3 -- ${MODEL}"
   else
-    atm_io_line="$((atm_procs -1 - mpi_atm_io_procs))-$((atm_procs -1)) numactl --interleave=4-7 -- ${MODEL}"
+    atm_io_line="$((mpi_atm_procs -1 - mpi_atm_io_procs))-$((mpi_atm_procs -1)) numactl --interleave=4-7 -- ${MODEL}"
   fi
 fi
 if [ $mpi_oce_io_procs -eq 0 ] ; then
   if [ $((atm_per_node*2)) -lt  $mpi_procs_pernode ] ; then
-    oce_io_line="$atm_procs numactl --interleave=0-3 -- ${MODEL}"
+    oce_io_line="$mpi_atm_procs numactl --interleave=0-3 -- ${MODEL}"
   else
-    oce_io_line="$atm_procs numactl --interleave=4-7 -- ${MODEL}"
+    oce_io_line="$mpi_atm_procs numactl --interleave=4-7 -- ${MODEL}"
   fi
 else
-  oce_io_line="$((atm_procs + oce_procs -1 - mpi_oce_io_procs))-$((atm_procs + oce_procs -1)) numactl --interleave=4-7 -- ${MODEL}"
+  oce_io_line="$((mpi_atm_procs + mpi_oce_procs -1 - mpi_oce_io_procs))-$((mpi_atm_procs + mpi_oce_procs -1)) numactl --interleave=4-7 -- ${MODEL}"
 fi
 
 #%  endif
@@ -709,7 +708,7 @@ exec 1>&3 # restore stdout
 
 # Set up python for hiopy component
 
-PYTHONPATH="$BUILD_DIR/externals/yac/python${PYTHONPATH:+:$PYTHONPATH}"
+PYTHONPATH="$PREFIX/externals/yac/python${PYTHONPATH:+:$PYTHONPATH}"
 echo "PYTHONPATH=$PYTHONPATH"
 export PYTHONPATH
 
@@ -749,6 +748,22 @@ srun -N1 -n1 -- ldd -v $(realpath ${MODEL}) 2>&1 | tee ldd.txt
 echo "#################################################"
 
 #%  endif
+
+#% for trigger in JOB['.control']|d([])|list:
+#%   set job = (trigger|split|list)[0]
+#%   set type = jobs[job]['.type']
+#%   if loop.first:
+#%#
+# Start control jobs in background
+
+#%   endif
+echo "starting '%{EXP_ID}.%{trigger}'"
+$SCRIPT_DIR/%{EXP_ID}.%{trigger} $start_date $EXPDIR &
+#%   if loop.last:
+#%#
+#%   endif
+#% endfor
+
 date
 #%  if JOB.use_openmp_hack is not set and (JOB.use_mpmd is set or hiopy is defined and hiopy.use_mpmd is set):
 ${START} --multi-prog icon_mpmd.conf

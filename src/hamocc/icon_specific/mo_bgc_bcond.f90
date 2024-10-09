@@ -1,5 +1,3 @@
-! Allocation/deallocation and reading of HAMOCC boundary conditions
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Allocation/deallocation and reading of HAMOCC boundary conditions
 
 MODULE mo_bgc_bcond
 

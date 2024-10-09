@@ -1,5 +1,3 @@
-! This class implements the asynchronous communication of the payload data to the restart processes.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This class implements the asynchronous communication of the payload data to the restart processes.
+
 #include "handle_mpi_error.inc"
 #include "icon_contiguous_defines.inc"
 #include "omp_definitions.inc"

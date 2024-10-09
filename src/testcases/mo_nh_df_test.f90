@@ -1,14 +1,3 @@
-! Module for class of deformational flow tests
-!
-! Test case for horizontal advection problems.
-!
-! Literature:
-! - Nair and Lauritzen (2010): A Class of Deformational Flow Test-Cases
-!   for the Advection Problems on the Sphere. Submitted to JCP
-! Modification by Daniel Reinert, DWD (2011-03-11)
-! - adapted to the NH-core
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,16 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module for class of deformational flow tests
+!
+! Test case for horizontal advection problems.
+!
+! Literature:
+! - Nair and Lauritzen (2010): A Class of Deformational Flow Test-Cases
+!   for the Advection Problems on the Sphere. Submitted to JCP
+! Modification by Daniel Reinert, DWD (2011-03-11)
+! - adapted to the NH-core
 
 MODULE mo_nh_df_test
 

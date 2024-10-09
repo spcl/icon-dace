@@ -1,3 +1,7 @@
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <inttypes.h>
 #include <limits.h>
 #include <stdio.h>

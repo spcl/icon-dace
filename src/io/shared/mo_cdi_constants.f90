@@ -1,5 +1,3 @@
-! Some CDI-specific constants
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Some CDI-specific constants
 
 MODULE mo_cdi_constants
 

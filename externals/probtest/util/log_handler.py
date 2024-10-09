@@ -1,3 +1,11 @@
+"""
+This module provides logging utilities for setting up and configuring loggers.
+
+This module provides functionality for:
+- Initializing a logger with specified log levels and output destinations.
+- Configuring logging to both console and file with a simple format.
+"""
+
 import logging
 import sys
 
@@ -19,4 +27,4 @@ def initialize_logger(log_level="DEBUG", log_file="probtest.log"):
     logger.addHandler(file_handler)
     logger.setLevel(log_level)
 
-    logger.info("initialized logger with level {}".format(log_level))
+    logger.info("initialized logger with level %s", log_level)

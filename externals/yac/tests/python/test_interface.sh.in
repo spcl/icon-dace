@@ -1,0 +1,12 @@
+#!@SHELL@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@TEST_MPI_FALSE@exit 77
+@PYTHON@ -c 'import mpi4py' || exit 77
+
+PYTHONPATH="@abs_top_builddir@/python:$PYTHONPATH"
+export PYTHONPATH
+
+@MPI_LAUNCH@ -n 2 @PYTHON@ '@srcdir@/test_interface.py'

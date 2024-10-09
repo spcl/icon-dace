@@ -1,5 +1,3 @@
-! Contains the ocean variables that hamocc uses
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the ocean variables that hamocc uses
+
 #include "iconfor_dsl_definitions.inc"
 !=============================================================================================
 MODULE mo_ocean_hamocc_couple_state

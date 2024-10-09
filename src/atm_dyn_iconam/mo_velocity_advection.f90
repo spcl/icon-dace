@@ -1,10 +1,3 @@
-!
-! This module contains the subroutine calculating the velocity advection tendencies
-! for the nonhydrostatic dynamical core. Separated from mo_solve_nonhydro in order
-! to speed up compile time
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the subroutine calculating the velocity advection tendencies
+! for the nonhydrostatic dynamical core. Separated from mo_solve_nonhydro in order
+! to speed up compile time
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -518,7 +515,7 @@ MODULE mo_velocity_advection
       ! At these points, additional diffusion is applied in order to prevent numerical 
       ! instability if lextra_diffu = .TRUE.
       ! WS:  We split out levmask in order to collapse the subsequent loop, and avoid problems with two levels of REDUCTION
-      !$ACC LOOP
+      !$ACC LOOP GANG VECTOR
       DO jk = MAX(3,nrdmax_jg-2), nlev-3
         levmask(jb,jk) = .FALSE.
       ENDDO
@@ -624,10 +621,10 @@ MODULE mo_velocity_advection
 
         ! Apply extra diffusion at grid points where w_con is close to or above the CFL stability limit
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-        !$ACC LOOP GANG
+        !$ACC LOOP SEQ
         DO jk = MAX(3,nrdmax_jg-2), nlev-3
           IF (levmask(jb,jk)) THEN
-            !$ACC LOOP VECTOR PRIVATE(difcoef)
+            !$ACC LOOP GANG VECTOR PRIVATE(difcoef)
             DO jc = i_startidx_2, i_endidx_2
               IF (cfl_clipping(jc,jk) .AND. p_patch%cells%decomp_info%owner_mask(jc,jb)) THEN
                 difcoef = scalfac_exdiff * MIN(0.85_wp - cfl_w_limit*dtime,                       &
@@ -818,10 +815,10 @@ MODULE mo_velocity_advection
 
         ie = 0
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-        !$ACC LOOP GANG
+        !$ACC LOOP SEQ
         DO jk = MAX(3,nrdmax_jg-2), nlev-4
           IF (levelmask(jk) .OR. levelmask(jk+1)) THEN
-            !$ACC LOOP VECTOR PRIVATE(difcoef, w_con_e)
+            !$ACC LOOP GANG VECTOR PRIVATE(difcoef, w_con_e)
             DO je = i_startidx, i_endidx
               w_con_e = p_int%c_lin_e(je,1,jb)*z_w_con_c_full(icidx(je,jb,1),jk,icblk(je,jb,1)) + &
                         p_int%c_lin_e(je,2,jb)*z_w_con_c_full(icidx(je,jb,2),jk,icblk(je,jb,2))

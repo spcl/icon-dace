@@ -1,6 +1,3 @@
-! Contains the types to set up the wave model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,11 +9,13 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Contains the types to set up the wave model.
+
 MODULE mo_wave_types
 
   USE mo_kind,                ONLY: wp, vp
   USE mo_var_list,            ONLY: t_var_list_ptr
-  USE mo_fortran_tools,       ONLY: t_ptr_2d3d
+  USE mo_fortran_tools,       ONLY: t_ptr_2d3d, t_ptr_2d_int
 
   IMPLICIT NONE
 
@@ -46,8 +45,9 @@ MODULE mo_wave_types
     INTEGER, POINTER, CONTIGUOUS ::  &
       &  llws(:,:,:)            ! 1 - where sinput is positive (nproma,nblks_c,ntracer) (-)
 
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: sl_ptr(:)   !< pointer array: one pointer for each tracer
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: fl_ptr(:)   !< pointer array: one pointer for each tracer
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: sl_ptr(:)   !< pointer array: one pointer for each tracer
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: fl_ptr(:)   !< pointer array: one pointer for each tracer
+    TYPE(t_ptr_2d_int), ALLOCATABLE :: llws_ptr(:) !< pointer array: one pointer for each tracer
   END TYPE t_wave_source
 
 
@@ -83,7 +83,6 @@ MODULE mo_wave_types
       &  AF11(:),             & ! for discrete approximation of nonlinear transfer (nfreqs+4) (-)
       &  FKLAP(:), FKLAP1(:), & ! --//-- (nfreqs+4) (-)
       &  FKLAM(:), FKLAM1(:), & ! --//-- (nfreqs+4) (-)
-      &  depth(:,:),          & ! water depth (nproma,nblks_c)  (m)
       ! total waves
       &  emean(:,:),          & ! total energy                   (nproma,nblks_c) (m^2)
       &  emeanws(:,:),        & ! total wind sea input energy    (nproma,nblks_c) (m^2)
@@ -130,10 +129,6 @@ MODULE mo_wave_types
       &  v_stokes(:,:)        & ! V-component of surface Stokes drift (nproma,nblks_c) (m/s)
       &  => NULL()
 
-    REAL(vp), POINTER, CONTIGUOUS :: &
-      &  geo_bath_grad_c(:,:,:,:) & ! bathymetry geographical gradient (2,nproma,nlev,nblks_c) (m/m)
-      &  => NULL()
-
     INTEGER, POINTER, CONTIGUOUS ::  &
       &  last_prog_freq_ind(:,:), & ! last frequency index of the prognostic range (nproma,nblks_c) (-)
       &  swell_mask(:,:),         & ! swell separation mask (nproma,nblks_c) (-)
@@ -146,10 +141,11 @@ MODULE mo_wave_types
       &  non_lin_tr_ind(:,:,:,:)  & ! tracer index for nonlinear interaction (nfreqs+4,2,ndirs,8) (-)
       &  => NULL()
 
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: gv_e_freq_ptr(:)  !< pointer array: one pointer for each frequence
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: gv_c_freq_ptr(:)  !< pointer array: one pointer for each frequence
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: wave_num_c_ptr(:) !< pointer array: one pointer for each frequence
-    TYPE(t_ptr_2d3d), ALLOCATABLE :: wave_num_e_ptr(:) !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: gv_e_freq_ptr(:)  !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: gv_c_freq_ptr(:)  !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: wave_num_c_ptr(:) !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d3d),   ALLOCATABLE :: wave_num_e_ptr(:) !< pointer array: one pointer for each frequence
+    TYPE(t_ptr_2d_int), ALLOCATABLE :: swmask_ptr(:)     !< pointer array: one pointer for each tracer
   END type t_wave_diag
 
   TYPE t_wave_state

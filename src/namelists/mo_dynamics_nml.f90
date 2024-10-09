@@ -1,7 +1,3 @@
-! Namelist variables shared by the hydrostatic and nonhydrostatic
-! dynamical cores
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist variables shared by the hydrostatic and nonhydrostatic
+! dynamical cores
 
 MODULE mo_dynamics_nml
 

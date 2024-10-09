@@ -47,11 +47,12 @@ def pntsrc_constructor():
     global pntsrc, ddt_pntsrc_turb, ddt_pntsrc_conv
 
     entry_points = [comin.EP_ATM_ADVECTION_BEFORE,comin.EP_ATM_PHYSICS_BEFORE]
-    pntsrc = comin.var_get(entry_points,("pntsrc", jg))
+    pntsrc = comin.var_get(entry_points, ("pntsrc", jg),
+                           comin.COMIN_FLAG_READ | comin.COMIN_FLAG_WRITE)
     # ICON prepends 'ddt_' and appends '_turb'/'_conv' for the respective tendencies
     entry_points = [comin.EP_ATM_PHYSICS_BEFORE]
-    ddt_pntsrc_turb = comin.var_get(entry_points,("ddt_pntsrc_turb", jg))
-    ddt_pntsrc_conv = comin.var_get(entry_points,("ddt_pntsrc_conv", jg))
+    ddt_pntsrc_turb = comin.var_get(entry_points,("ddt_pntsrc_turb", jg), comin.COMIN_FLAG_READ)
+    ddt_pntsrc_conv = comin.var_get(entry_points,("ddt_pntsrc_conv", jg), comin.COMIN_FLAG_READ)
 
     message("pntsrc_constructor successful", msgrank)
 

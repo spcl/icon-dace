@@ -1,6 +1,3 @@
-! An implementation of t_scatterPattern that uses MPI_Scatterv to distribute the data.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! An implementation of t_scatterPattern that uses MPI_Scatterv to distribute the data.
 
 MODULE mo_scatter_pattern_scatterv
     USE mo_impl_constants, ONLY: SUCCESS

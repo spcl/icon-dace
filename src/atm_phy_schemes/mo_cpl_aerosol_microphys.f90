@@ -1,6 +1,3 @@
-!
-! This module contains routines needed for basic coupling between cloud microphysics and the aerosol climatology
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains routines needed for basic coupling between cloud microphysics and the aerosol climatology
 
 MODULE mo_cpl_aerosol_microphys
 

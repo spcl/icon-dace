@@ -29,12 +29,12 @@ MODULE comin_callback_types
   !> information about each entry point/callback
   TYPE :: t_comin_callback_element
     INTEGER :: entry_point_id
-    TYPE(t_comin_plugin_info) :: thirdparty
+    TYPE(t_comin_plugin_info), POINTER :: plugin_info
     PROCEDURE(comin_callback_routine), POINTER, NOPASS:: comin_callback => NULL()
   END TYPE t_comin_callback_element
 
   !> linked list of all callbacks, items have TYPE(t_comin_callback_element)
-#include "comin_callback_linked_list_header.F90"
+#include "comin_callback_linked_list_header.inc"
 
   !> Array of variable lists (array of pointer lists)
   !  each entry stores the lists of callbacks registered for the
@@ -45,6 +45,6 @@ MODULE comin_callback_types
 
 CONTAINS
 
-#include "comin_callback_linked_list_body.F90"
+#include "comin_callback_linked_list_body.inc"
 
 END MODULE comin_callback_types

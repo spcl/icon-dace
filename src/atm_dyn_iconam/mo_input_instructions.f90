@@ -1,7 +1,3 @@
-!
-! This module provides an input instruction list that is used to
-! determine, which variables may be read from which input file.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides an input instruction list that is used to
+! determine, which variables may be read from which input file.
 
 MODULE mo_input_instructions
 
@@ -214,15 +213,16 @@ CONTAINS
         CHARACTER(len=vname_len), ALLOCATABLE :: jsbGroup(:)
         INTEGER :: jsbGroupSize
 
-        CALL add_to_list(outGroup, outGroupSize,                                            &
-          &    str_list2=(/'alb_si       ','rho_snow_mult','aer_ss       ','aer_or       ', &
-          &                'aer_bc       ','aer_su       ','aer_du       ','plantevap    ', &
-          &                't_sk         ','t2m_bias     ','hsnow_max    ','snow_age     ', &
-          &                'qg           ','qh           ','qnc          ','qni          ', &
-          &                'qnr          ','qns          ','qng          ','qnh          ', &
-          &                'rh_avginc    ','t_avginc     ','t_wgt_avginc ','p_avginc     ', &
-          &                'clmf_a       ','clmf_p       ','clmf_d       ','clnum_a      ', &
-          &                'clnum_p      ','clnum_d      ','vabs_avginc  '/))
+        CALL add_to_list(outGroup, outGroupSize,                                                        &
+          &    str_list2=(/'alb_si          ','rho_snow_mult   ','aer_ss          ','aer_or          ', &
+          &                'aer_bc          ','aer_su          ','aer_du          ','plantevap       ', &
+          &                't_sk            ','t2m_bias        ','hsnow_max       ','snow_age        ', &
+          &                'qg              ','qh              ','qnc             ','qni             ', &
+          &                'qnr             ','qns             ','qng             ','qnh             ', &
+          &                'rh_avginc       ','t_avginc        ','t_wgt_avginc    ','p_avginc        ', &
+          &                'clmf_a          ','clmf_p          ','clmf_d          ','clnum_a         ', &
+          &                'clnum_p         ','clnum_d         ','vabs_avginc     ','t_daywgt_avginc ', &
+          &                'rh_daywgt_avginc'/))
 
         CALL vlr_group('jsb_init_vars', jsbGroup, jsbGroupSize, loutputvars_only=.FALSE., lremap_lonlat=.FALSE.)
         CALL add_to_list(outGroup, outGroupSize, jsbGroup, jsbGroupSize)

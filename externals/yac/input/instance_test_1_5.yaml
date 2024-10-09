@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   time_config: &time_config
     coupling_period: 60
@@ -8,6 +12,8 @@ predef:
 start_date: 2008-03-09T16:05:07
 end_date: 2008-03-10T16:05:07
 timestep_unit: second
+debug:
+  missing_definition_is_fatal: false
 coupling:
   - src_component: comp_1
     src_grid: grid1

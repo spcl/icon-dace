@@ -41,6 +41,18 @@ variables:
     long_name: Energy flux available for surface melting
     units: W/m^2
     vgrid: generic_ice
+  TopBC_WindStress_u:
+    component: ocean
+    hgrid: cell
+    long_name: Zonal Wind Stress
+    units: Pa
+    vgrid: surface
+  TopBC_WindStress_v:
+    component: ocean
+    hgrid: cell
+    long_name: Meridional Wind Stress
+    units: Pa
+    vgrid: surface
   Wind_Speed_10m:
     component: ocean
     hgrid: cell
@@ -326,6 +338,12 @@ variables:
     long_name: specific snow content
     units: kg kg-1
     vgrid: reference
+#   qv:
+#     component: atmo
+#     hgrid: cell
+#     long_name: specific water vapor content
+#     units: kg kg-1
+#     vgrid: reference
   qv2m:
     component: atmo
     hgrid: cell

@@ -1,12 +1,3 @@
-!OPTION! -cont
-! this command should fix the problem of copying arrays in a subroutine call
-!
-! This module is the interface between nwp_nh_interface to the
-! convection parameterisation(s):
-! inwp_conv == 1 == Tiedtke-Bechtold convection
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module is the interface between nwp_nh_interface to the
+! convection parameterisation(s):
+! inwp_conv == 1 == Tiedtke-Bechtold convection
+
+!OPTION! -cont
+! this command should fix the problem of copying arrays in a subroutine call
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -253,7 +251,7 @@ CONTAINS
 #ifndef __PGI
 !FIXME: PGI + OpenMP produce deadlock in this loop. Compiler bug suspected
 !$OMP PARALLEL DO PRIVATE(jb,jc,jk,jt,i_startidx,i_endidx,z_omega_p,z_plitot,z_qhfl,z_shfl,z_dtdqv,&
-!$OMP            z_dtdt,z_dtdt_sv,zk850,zk950,u850,u950,v850,v950,wfac,z_ddspeed,convfac,&
+!$OMP            z_dtdt,z_dtdt_sv,zk850,zk950,u850,u950,v850,v950,wfac,z_ddspeed,convfac,nconv, &
 !$OMP            iseed,presmean,umean,vmean,qvmean,tempmean,qhfl_avg,shfl_avg,l,jc2,jb2,area_norm, &
 !$OMP            p_pres,p_u,p_v,p_qv,p_temp,p_qhfl_avg,p_shfl_avg,p_cloud_ensemble), ICON_OMP_GUIDED_SCHEDULE
 #endif
@@ -299,9 +297,8 @@ CONTAINS
         END SELECT
 
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG
+        !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = 1, kstart_moist(jg)-1
-          !$ACC LOOP VECTOR
           DO jc = 1, nproma
             z_omega_p (jc,jk) = 0._wp
             z_dtdqv   (jc,jk) = 0._wp
@@ -342,9 +339,8 @@ CONTAINS
         ! The following input fields must be reset to zero because the convective
         ! tendencies are added to them
         !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
-        !$ACC LOOP GANG
+        !$ACC LOOP GANG VECTOR COLLAPSE(2)
         DO jk = 1, nlev
-          !$ACC LOOP VECTOR
           DO jc = 1, nproma
             prm_nwp_tend%ddt_u_pconv (jc,jk,jb) = 0._wp
             prm_nwp_tend%ddt_v_pconv (jc,jk,jb) = 0._wp

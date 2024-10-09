@@ -2,155 +2,154 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-module mo_event_manager
+MODULE mo_event_manager
 
-  use mtime
+  USE mtime
 
-  implicit none
+  IMPLICIT NONE
 
-  private
+  PRIVATE
 
-  public :: initEventManager 
-  public :: getModelReferenceDate
-  public :: addEventGroup
-  public :: getEventGroup 
-  public :: printEventGroup 
-  public :: getEventComponents
+  PUBLIC :: initEventManager
+  PUBLIC :: getModelReferenceDate
+  PUBLIC :: addEventGroup
+  PUBLIC :: getEventGroup
+  PUBLIC :: printEventGroup
+  PUBLIC :: getEventComponents
 
-  type event_group_list
-    type(eventgroup), pointer :: group
-  end type event_group_list
+  TYPE event_group_list
+    TYPE(eventgroup), POINTER :: group
+  END TYPE event_group_list
 
-  type(event_group_list), allocatable :: model_event_groups(:)
+  TYPE(event_group_list), ALLOCATABLE :: model_event_groups(:)
 
-  integer :: model_event_groups_list_member
-  integer :: model_event_groups_list_size = 16
+  INTEGER :: model_event_groups_list_member
+  INTEGER :: model_event_groups_list_size = 16
 
-  type(datetime), pointer :: model_reference_date => null()
+  TYPE(datetime), POINTER :: model_reference_date => NULL()
 
-  logical :: linitialized = .false.
+  LOGICAL :: linitialized = .FALSE.
 
-contains
+CONTAINS
 
-  subroutine initEventManager(referenceDate)
-    type(datetime), pointer, intent(in) :: referenceDate
+  SUBROUTINE initEventManager(referenceDate)
+    TYPE(datetime), POINTER, INTENT(in) :: referenceDate
 
     model_reference_date => newDatetime(referenceDate)
 
-    allocate(model_event_groups(model_event_groups_list_size)) 
+    ALLOCATE (model_event_groups(model_event_groups_list_size))
     model_event_groups_list_member = 0
 
-    linitialized = .true.
+    linitialized = .TRUE.
 
-  end subroutine initEventManager
+  END SUBROUTINE initEventManager
 
-  function getModelReferenceDate() result(r)
-    type(datetime), pointer :: r
+  FUNCTION getModelReferenceDate() RESULT(r)
+    TYPE(datetime), POINTER :: r
 
-    r => null()
-    if (linitialized) then
+    r => NULL()
+    IF (linitialized) THEN
       r => model_reference_date
-    endif
+    END IF
 
-  end function getModelReferenceDate
+  END FUNCTION getModelReferenceDate
 
-  function addEventGroup(group) result(handle)
-    integer :: handle
-    character(len=*), intent(in) :: group
-    type(event_group_list), allocatable :: tmp(:)
-    character(len=max_groupname_str_len) :: gstring    
+  FUNCTION addEventGroup(group) RESULT(handle)
+    INTEGER :: handle
+    CHARACTER(len=*), INTENT(in) :: group
+    TYPE(event_group_list), ALLOCATABLE :: tmp(:)
+    CHARACTER(len=max_groupname_str_len) :: gstring
 
-    if (.not. linitialized) then
-      print *, 'ERROR: event manager not initialized.' 
-      stop
-    endif
+    IF (.NOT. linitialized) THEN
+      PRINT *, 'ERROR: event manager not initialized.'
+      STOP
+    END IF
 
-    if (model_event_groups_list_member == model_event_groups_list_size) then
-      print *, 'INFO: reallocating event group list.' 
-      allocate(tmp(model_event_groups_list_size)) 
+    IF (model_event_groups_list_member == model_event_groups_list_size) THEN
+      PRINT *, 'INFO: reallocating event group list.'
+      ALLOCATE (tmp(model_event_groups_list_size))
       tmp(:) = model_event_groups(:)
-      deallocate(model_event_groups)
-      allocate(model_event_groups(2*model_event_groups_list_size))
+      DEALLOCATE (model_event_groups)
+      ALLOCATE (model_event_groups(2*model_event_groups_list_size))
       model_event_groups(:model_event_groups_list_size) = tmp(:)
-      deallocate(tmp)
+      DEALLOCATE (tmp)
       model_event_groups_list_size = 2*model_event_groups_list_size
-      print *, 'INFO: new evcent group list size: ', model_event_groups_list_size 
-    endif
+      PRINT *, 'INFO: new evcent group list size: ', model_event_groups_list_size
+    END IF
 
     model_event_groups_list_member = model_event_groups_list_member + 1
 
-    model_event_groups(model_event_groups_list_member)%group => newEventGroup(trim(group))
-    call getEventGroupName(model_event_groups(model_event_groups_list_member)%group, gstring)
-    print *, 'INFO: Added event group: ', trim(gstring)
+    model_event_groups(model_event_groups_list_member)%group => newEventGroup(TRIM(group))
+    CALL getEventGroupName(model_event_groups(model_event_groups_list_member)%group, gstring)
+    PRINT *, 'INFO: Added event group: ', TRIM(gstring)
 
     handle = model_event_groups_list_member
 
-  end function addEventGroup
+  END FUNCTION addEventGroup
 
-  function getEventGroup(handle) result(eventGroupListMember)
-    type(eventGroup), pointer :: eventGroupListMember
-    integer, intent(in) :: handle
-    if (handle > model_event_groups_list_member) then
-       eventGroupListMember => null()
-     else
-       eventGroupListMember =>  model_event_groups(handle)%group
-     endif
-  end function getEventGroup
+  FUNCTION getEventGroup(handle) RESULT(eventGroupListMember)
+    TYPE(eventGroup), POINTER :: eventGroupListMember
+    INTEGER, INTENT(in) :: handle
+    IF (handle > model_event_groups_list_member) THEN
+      eventGroupListMember => NULL()
+    ELSE
+      eventGroupListMember => model_event_groups(handle)%group
+    END IF
+  END FUNCTION getEventGroup
 
-  subroutine printEventGroup(handle)
-    integer, intent(in) :: handle
-    type(eventGroup), pointer :: currentEventGroup
-    type(event), pointer :: currentEvent
-    character(len=max_eventname_str_len) :: estring
-    character(len=max_groupname_str_len) :: egstring
+  SUBROUTINE printEventGroup(handle)
+    INTEGER, INTENT(in) :: handle
+    TYPE(eventGroup), POINTER :: currentEventGroup
+    TYPE(event), POINTER :: currentEvent
+    CHARACTER(len=max_eventname_str_len) :: estring
+    CHARACTER(len=max_groupname_str_len) :: egstring
 
     currentEventGroup => getEventGroup(handle)
-    call getEventGroupName(currentEventGroup, egstring)
+    CALL getEventGroupName(currentEventGroup, egstring)
 
     currentEvent => getFirstEventFromEventGroup(model_event_groups(handle)%group)
 
-    print *, 'Event list: ', trim(egstring)
-    do while (associated(currentEvent))
-      call eventToString(currentEvent, estring)
-      print *,'   event ', trim(estring)
+    PRINT *, 'Event list: ', TRIM(egstring)
+    DO WHILE (ASSOCIATED(currentEvent))
+      CALL eventToString(currentEvent, estring)
+      PRINT *, '   event ', TRIM(estring)
       currentEvent => getNextEventFromEventGroup(currentEvent)
-    enddo
-  end subroutine printEventGroup
+    END DO
+  END SUBROUTINE printEventGroup
 
-  subroutine getEventComponents(eventString, referenceDate, timeInterval, startDate, endDate)
-    character(len=max_repetition_str_len), intent(in) :: eventString 
-    type(datetime),  pointer :: referenceDate
-    type(timedelta), pointer :: timeInterval
-    type(datetime),  pointer :: startDate
-    type(datetime),  pointer :: endDate
-    
-    character(len=max_repetition_str_len) :: r, s, e, d    
-    logical :: lr, ls, le, ld    
+  SUBROUTINE getEventComponents(eventString, timeInterval, startDate, endDate)
+    CHARACTER(len=max_repetition_str_len), INTENT(in) :: eventString
+    TYPE(timedelta), POINTER :: timeInterval
+    TYPE(datetime), POINTER :: startDate
+    TYPE(datetime), POINTER :: endDate
 
-    call splitRepetitionString(eventString, r, s, e, d, lr, ls, le, ld)
+    CHARACTER(len=max_repetition_str_len) :: r, s, e, d
+    LOGICAL :: lr, ls, le, ld
 
-    if (lr) then
-      if (getRepetitions(r) /= -1) then
-        print *, 'WARNING: event setup should not have explicit repeat count.'
-      endif
-    endif
-    
-    if (ls) then
-      startDate => newDatetime(trim(s))
-    endif
-    
-    if (le) then
-      endDate => newDatetime(trim(e))
-    endif
-    
-    if (ld) then
-      timeInterval => newTimeDelta(trim(d))
-    else
-      print *, 'ERROR: time interval should be given.'
-      stop
-    endif
+    CALL splitRepetitionString(eventString, r, s, e, d, lr, ls, le, ld)
 
-  end subroutine getEventComponents
+    IF (lr) THEN
+      IF (getRepetitions(r) /= -1) THEN
+        PRINT *, 'WARNING: event setup should not have explicit repeat count.'
+      END IF
+    END IF
 
-end module mo_event_manager
+    IF (ls) THEN
+      startDate => newDatetime(TRIM(s))
+    END IF
+
+    IF (le) THEN
+      endDate => newDatetime(TRIM(e))
+    END IF
+
+    IF (ld) THEN
+      timeInterval => newTimeDelta(TRIM(d))
+    ELSE
+      PRINT *, 'ERROR: time interval should be given.'
+      STOP
+    END IF
+
+  END SUBROUTINE getEventComponents
+
+END MODULE mo_event_manager
 

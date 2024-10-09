@@ -1,5 +1,14 @@
 /*
-  Example plugin to demonstrate the usage of yaxt in a ComIn plugin.
+  --------------------------------------------------------------------
+  Example plugin for the ICON Community Interface (ComIn)
+  to demonstrate the usage of YAXT.
+
+  @authors 08/2021 :: ICON Community Interface  <icon@dwd.de>
+
+  Note that in order to demonstrate ComIn's language interoperability,
+  a similary plugin has been implemented in Fortran, see the subdirectory
+  "yaxt_fortran".
+  --------------------------------------------------------------------
  */
 
 #include <stdio.h>
@@ -25,20 +34,12 @@ void offload();
 void destructor();
 
 void comin_main(){
-  int ierr = 0;
-
   rank = comin_parallel_get_host_mpi_rank();
-  comin_callback_register(EP_SECONDARY_CONSTRUCTOR, secondary_constructor, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yaxt_c_plugin", "callback registration (EP_SECONDARY_CONSTRUCTOR) failed");
+  comin_callback_register(EP_SECONDARY_CONSTRUCTOR, secondary_constructor);
 
-  comin_callback_register(EP_ATM_WRITE_OUTPUT_BEFORE, offload, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yaxt_c_plugin", "callback registration (EP_ATM_WRTITE_OUTPUT_BEFORE) failed");
+  comin_callback_register(EP_ATM_WRITE_OUTPUT_BEFORE, offload);
 
-  comin_callback_register(EP_DESTRUCTOR, destructor, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("yaxt_c_plugin", "callback registration (EP_DESTRUCTOR) failed");
+  comin_callback_register(EP_DESTRUCTOR, destructor);
 
   plugin_comm = MPI_Comm_f2c(comin_parallel_get_plugin_mpi_comm());
 
@@ -87,12 +88,11 @@ void secondary_constructor(){
 }
 
 void offload(){
-  int ierr = 0;
   // this callback is only called in entrypoints outside of domain loops
   ASSERT(comin_current_get_domain_id() == COMIN_DOMAIN_OUTSIDE_LOOP);
   double* temp_ptr = comin_var_to_3d(temp_var); // ensures [jc, jb, jk]
   int shape[5];
-  comin_var_get_shape(temp_var, shape, &ierr);
+  comin_var_get_shape(temp_var, shape);
   int nlev = comin_descrdata_get_domain_nlev(jg);
   for(int i=0; i<prognostic_cells; ++i){
     int idx = idxlist[i];

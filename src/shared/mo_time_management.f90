@@ -1,10 +1,3 @@
-! This module contains routines to set start date, end date etc.
-!
-! These routines are necessary, since (for reasons of backward
-! compatibility) different naemlist settings may be used to specify
-! this date information.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains routines to set start date, end date etc.
+!
+! These routines are necessary, since (for reasons of backward
+! compatibility) different naemlist settings may be used to specify
+! this date information.
 
 MODULE mo_time_management
 

@@ -1,8 +1,3 @@
-! Initialization/reading reading of external datasets
-!
-! This module contains read and initialization routines for the external data state.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,20 +9,23 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Initialization/reading reading of external datasets
+!
+! This module contains read and initialization routines for the external data state.
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 
 MODULE mo_wave_ext_data_init
 
-  USE mo_kind,                ONLY: wp
+  USE mo_kind,                ONLY: wp, vp
   USE mo_impl_constants,      ONLY: min_rlcell, min_rledge, SUCCESS
   USE mo_io_units,            ONLY: filename_max
   USE mo_io_config,           ONLY: default_read_method
   USE mo_exception,           ONLY: message, finish
   USE mo_model_domain,        ONLY: t_patch
   USE mo_grid_config,         ONLY: n_dom, nroot
-  USE mo_var_list,            ONLY: t_var_list_ptr
   USE mo_extpar_config,       ONLY: extpar_filename, generate_filename
   USE mo_read_interface,      ONLY: openInputFile, closeFile, t_stream_id, on_cells, read_2D
   USE mo_master_config,       ONLY: getModelBaseDir
@@ -38,13 +36,11 @@ MODULE mo_wave_ext_data_init
   USE mo_process_topo,        ONLY: compute_smooth_topo
 
   USE mo_wave_ext_data_types, ONLY: t_external_wave
-  USE mo_wave_ext_data_state, ONLY: construct_wave_ext_data_state
   USE mo_wave_config,         ONLY: wave_config
-
-
-
+  USE mo_math_gradients,      ONLY: grad_green_gauss_cell
 
   IMPLICIT NONE
+
   PRIVATE
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_wave_data_init'
@@ -54,16 +50,18 @@ MODULE mo_wave_ext_data_init
 CONTAINS
 
   !>
-  !! construct and read ext data state
+  !! read ext data state, and do some postprocessing which includes
+  !! - bathymetry smoothing
+  !! - computation of the bathymetry gradient
+  !! - initialization of water depth
   !!
-  SUBROUTINE init_wave_ext_data (p_patch, p_int_state, wave_ext_data, wave_ext_data_list)
+  SUBROUTINE init_wave_ext_data (p_patch, p_int_state, wave_ext_data)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':init_wave_ext_data'
 
-    TYPE(t_patch),                      INTENT(INOUT) :: p_patch(:)
-    TYPE(t_int_state),                  INTENT(IN)    :: p_int_state(:)
-    TYPE(t_external_wave), ALLOCATABLE, INTENT(INOUT) :: wave_ext_data(:)
-    TYPE(t_var_list_ptr),  ALLOCATABLE, INTENT(INOUT) :: wave_ext_data_list(:)
+    TYPE(t_patch),         INTENT(IN)    :: p_patch(:)
+    TYPE(t_int_state),     INTENT(IN)    :: p_int_state(:)
+    TYPE(t_external_wave), INTENT(INOUT) :: wave_ext_data(:)
 
     INTEGER :: jg
     INTEGER :: ist
@@ -72,7 +70,6 @@ CONTAINS
 
     REAL(wp), ALLOCATABLE :: topo_smt_c(:,:)
 
-    CALL construct_wave_ext_data_state(p_patch, wave_ext_data, wave_ext_data_list)
 
     DO jg = 1, n_dom
       IF (wave_config(jg)%depth > 0.0_wp) THEN
@@ -108,15 +105,27 @@ CONTAINS
                'deallocation of topo_smt_c array failed')
         END IF
       END IF
-    END DO
 
-    ! cell2edge interpolation of bathymetry
-    DO jg = 1, n_dom
+      ! cell2edge interpolation of bathymetry
       CALL cells2edges_bathymetry(p_patch      = p_patch(jg),                    &
         &                         p_int_state  = p_int_state(jg),                &
         &                         bathymetry_c = wave_ext_data(jg)%bathymetry_c, &
         &                         bathymetry_e = wave_ext_data(jg)%bathymetry_e)
-    END DO
+
+      ! init water depth
+!$OMP PARALLEL
+      CALL copy(src=wave_ext_data(jg)%bathymetry_c, dest=wave_ext_data(jg)%depth_c)
+      CALL copy(src=wave_ext_data(jg)%bathymetry_e, dest=wave_ext_data(jg)%depth_e)
+!$OMP END PARALLEL
+
+
+      ! calculate depth gradient
+      CALL compute_depth_gradient(p_patch          = p_patch(jg),                     & !in
+                                  p_int_state      = p_int_state(jg),                 & !in
+                                  depth_c          = wave_ext_data(jg)%depth_c,       & !in
+                                  geo_depth_grad_c = wave_ext_data(jg)%geo_depth_grad_c)!out
+    END DO  !jg
+
 
     CALL message(TRIM(routine),'finished.')
 
@@ -174,6 +183,38 @@ CONTAINS
 !$OMP END PARALLEL
 
   END SUBROUTINE cells2edges_bathymetry
+
+
+  !>
+  !! calculate bathymetry gradient
+  !!
+  !!
+  SUBROUTINE compute_depth_gradient(p_patch, p_int_state, depth_c, geo_depth_grad_c)
+
+    TYPE(t_patch),     INTENT(IN)    :: p_patch
+    TYPE(t_int_state), INTENT(IN)    :: p_int_state
+    REAL(wp),          INTENT(IN)    :: depth_c(:,:)
+    REAL(wp),          INTENT(INOUT) :: geo_depth_grad_c(:,:,:)
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':compute_depth_gradient'
+
+    REAL(wp) :: depth_c_3d(SIZE(depth_c,1),1,SIZE(depth_c,2))
+    REAL(vp) :: depth_grad_c_4d(SIZE(geo_depth_grad_c,1),SIZE(geo_depth_grad_c,2),1,SIZE(geo_depth_grad_c,3))
+
+!$OMP PARALLEL
+    CALL copy(src=depth_c, dest=depth_c_3d(:,1,:))
+    CALL init(depth_grad_c_4d(:,:,:,:))
+!$OMP END PARALLEL
+
+    CALL grad_green_gauss_cell(depth_c_3d, p_patch, p_int_state, depth_grad_c_4d, &
+         &                     opt_slev=1, opt_elev=1, &
+         &                     opt_rlstart=2, opt_rlend=min_rlcell)
+
+!$OMP PARALLEL
+    CALL copy(src=depth_grad_c_4d(:,:,1,:), dest=geo_depth_grad_c(:,:,:))
+!$OMP END PARALLEL
+
+  END SUBROUTINE compute_depth_gradient
 
 
   SUBROUTINE read_ext_data_wave(p_patch, wave_ext_data)

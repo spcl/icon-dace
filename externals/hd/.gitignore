@@ -1,0 +1,10 @@
+*.~
+*
+**/
+code/obj/*
+code/obj/*.*
+util/*
+util/*.*
+src/hd_domain.inc
+code/Fopts
+

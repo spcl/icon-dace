@@ -1,5 +1,3 @@
-! Setup of meteogram output.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Setup of meteogram output.
 
 MODULE mo_meteogram_config
 

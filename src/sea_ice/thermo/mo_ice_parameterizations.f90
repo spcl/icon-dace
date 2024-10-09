@@ -1,6 +1,3 @@
-! Provide an implementation of various sea ice parametrizations.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of various sea ice parametrizations.
 
 !----------------------------
 #include "omp_definitions.inc"

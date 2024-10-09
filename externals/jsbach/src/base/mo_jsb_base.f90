@@ -296,6 +296,11 @@ CONTAINS
 
         IF (model%config%init_from_ifs) THEN
           CALL message(TRIM(routine), 'Initialize JSBACH from IFS analysis file '//TRIM(model%config%ifs_filename))
+          IF (dsl4jsb_Config(HYDRO_)%l_read_initial_moist) THEN
+            CALL message(routine, 'Reading initial soil moisture from '//TRIM(dsl4jsb_Config(HYDRO_)%ic_filename))
+          END IF
+        ELSE
+          dsl4jsb_Config(HYDRO_)%l_read_initial_moist = .FALSE.
         END IF
 
         IF (.NOT. dsl4jsb_Config(SSE_)%l_snow) THEN
@@ -375,7 +380,7 @@ CONTAINS
     ! @TODO should always link to the same lctlib filename and do the rest by scripting environment
     SELECT CASE (TRIM(model%config%usecase))
     ! quincy model with 11 PFT tiles incl. bare soil
-    CASE ('quincy_11_pfts')
+    CASE ('quincy_11_pfts', 'quincy_11_pfts_for_coupling')
       lctlib_filename = 'lctlib_quincy_nlct14.def'
     ! jsbach_lite & jsbach_pfts
     CASE DEFAULT

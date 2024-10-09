@@ -21,7 +21,8 @@ MODULE mo_q_sb_update_pools
   USE mo_kind,                    ONLY: wp
   USE mo_jsb_control,             ONLY: debug_on
   USE mo_exception,               ONLY: message, message_text, finish
-  USE mo_jsb_math_constants,      ONLY: eps8
+  USE mo_jsb_math_constants,      ONLY: eps8, one_day, one_year
+  USE mo_jsb_physical_constants,  ONLY: lambda_C14
 
   USE mo_sb_config_class,         ONLY: get_number_of_sb_compartments
 
@@ -55,21 +56,19 @@ CONTAINS
     USE mo_jsb_tile_class,         ONLY: t_jsb_tile_abstract
     USE mo_jsb_task_class,         ONLY: t_jsb_task_options
     USE mo_jsb_model_class,        ONLY: t_jsb_model
-    USE mo_quincy_model_config,    ONLY: QSOIL
+    USE mo_quincy_model_config,    ONLY: QLAND, QSOIL
     USE mo_jsb_lctlib_class,       ONLY: t_lctlib_element
     USE mo_jsb_task_class,         ONLY: t_jsb_task_options
     USE mo_jsb_process_class,      ONLY: A2L_, L2A_, SEB_, TURB_, SPQ_, HYDRO_, VEG_, HD_, Q_RAD_, Q_ASSIMI_, Q_PHENO_, SB_
     USE mo_jsb_grid_class,         ONLY: t_jsb_vgrid
     USE mo_jsb_grid,               ONLY: Get_vgrid
-    USE mo_jsb_math_constants,     ONLY: dtime, eps8
-    USE mo_jsb_physical_constants, ONLY: lambda_C14
+    USE mo_jsb_math_constants,     ONLY: eps1, eps8
     USE mo_sb_constants
     USE mo_q_sb_jsm_processes,     ONLY: calc_bulk_soil_carbon, calc_bulk_density_correction, calc_Psorption_parameter, &
                                          calc_qmax_bulk_density_correction
     USE mo_q_sb_jsm_transport,     ONLY: calc_particle_fluxrate, calc_particle_transport_wrapper
     USE mo_isotope_util,           ONLY: calc_mixing_ratio_N15N14
     USE mo_spq_util,               ONLY: calc_qmax_texture
-
     ! Use of process configurations (t_PROC_config)
     dsl4jsb_Use_config(SB_)
 
@@ -102,6 +101,7 @@ CONTAINS
                                              rtm_sorption_act, rmm_sorption_act, &
                                              rtm_desorption_act, rmm_desorption_act, &
                                              partition_coef
+    REAL(wp)                              :: dtime                          !< timestep length
     INTEGER                               :: iblk, ics, ice, nc, ic, is     !< grid dimensions
     INTEGER                               :: nr_elements                    !< number of elements
     INTEGER                               :: nr_sb_parts                    !< number of sb compartments
@@ -133,11 +133,12 @@ CONTAINS
     dsl4jsb_Real2D_onChunk :: nhx_n15_deposition
     dsl4jsb_Real2D_onChunk :: noy_n15_deposition
     dsl4jsb_Real2D_onChunk :: p_deposition
+    dsl4jsb_Real2D_onChunk :: slow_sb_pool_accelerator_execute
     ! VEG_ 2D
     dsl4jsb_Real2D_onChunk :: f_n_demand
     dsl4jsb_Real2D_onChunk :: f_p_demand
-    dsl4jsb_Real2D_onChunk :: net_biosphere_production_l2aveghlp
-    dsl4jsb_Real2D_onChunk :: biological_n_fixation_l2aveghlp
+    dsl4jsb_Real2D_onChunk :: net_biosphere_production
+    dsl4jsb_Real2D_onChunk :: biological_n_fixation
     ! VEG_ 3D
     dsl4jsb_Real3D_onChunk :: root_fraction_sl
     ! SPQ_ 2D
@@ -179,6 +180,12 @@ CONTAINS
     dsl4jsb_Real2D_onChunk :: emission_n2
     dsl4jsb_Real2D_onChunk :: emission_n2_n15
     dsl4jsb_Real2D_onChunk :: ecosystem_total_n_loss
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_c
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_n
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_p
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_c13
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_c14
+    dsl4jsb_Real2D_onChunk :: sb_pool_total_ag_litter_n15
     ! SB_ 3D
     dsl4jsb_Real3D_onChunk :: het_respiration
     dsl4jsb_Real3D_onChunk :: het_respiration_c13
@@ -281,6 +288,15 @@ CONTAINS
     dsl4jsb_Real3D_onChunk :: rtm_desorption
     dsl4jsb_Real3D_onChunk :: rmm_sorption
     dsl4jsb_Real3D_onChunk :: rmm_desorption
+    dsl4jsb_Real3D_onChunk :: residue_som_c_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: residue_som_c14_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: residue_assoc_som_c_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: residue_assoc_som_c14_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: assoc_dom_c_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: assoc_dom_c14_form_mavg_sl
+    dsl4jsb_Real3D_onChunk :: residue_som_c_loss_mavg_sl
+    dsl4jsb_Real3D_onChunk :: residue_assoc_som_c_loss_mavg_sl
+    dsl4jsb_Real3D_onChunk :: assoc_dom_c_loss_mavg_sl
     dsl4jsb_Real3D_onChunk :: qmax_org
     dsl4jsb_Real3D_onChunk :: qmax_po4
     dsl4jsb_Real3D_onChunk :: qmax_fast_po4
@@ -303,18 +319,12 @@ CONTAINS
     dsl4jsb_Real3D_onChunk :: sb_pool_total_c13
     dsl4jsb_Real3D_onChunk :: sb_pool_total_c14
     dsl4jsb_Real3D_onChunk :: sb_pool_total_n15
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_c
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_n
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_p
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_c13
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_c14
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_som_n15
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_c
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_n
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_p
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_c13
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_c14
-    dsl4jsb_Real3D_onChunk :: sb_pool_total_litter_n15
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_c
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_n
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_p
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_c13
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_c14
+    dsl4jsb_Real3D_onChunk :: sb_pool_total_bg_soil_n15
     dsl4jsb_Real3D_onChunk :: sb_pool_woody_litter_c
     dsl4jsb_Real3D_onChunk :: total_soil_n
     dsl4jsb_Real3D_onChunk :: total_soil_inorg_n
@@ -323,6 +333,7 @@ CONTAINS
     ics       = options%ics
     ice       = options%ice
     nc        = options%nc
+    dtime     = options%dtime
     ! ---------------------------
     ! 0.4 Process Activity, Debug Option
     IF (.NOT. tile%Is_process_calculated(SB_)) RETURN
@@ -388,11 +399,14 @@ CONTAINS
     dsl4jsb_Get_var2D_onChunk(A2L_,      nhx_n15_deposition)          ! in
     dsl4jsb_Get_var2D_onChunk(A2L_,      noy_n15_deposition)          ! in
     dsl4jsb_Get_var2D_onChunk(A2L_,      p_deposition)                ! in
+    IF (model%config%flag_slow_sb_pool_spinup_accelerator) THEN
+      dsl4jsb_Get_var2D_onChunk(A2L_,      slow_sb_pool_accelerator_execute)  !in
+    ENDIF
     ! VEG_ 2D
     dsl4jsb_Get_var2D_onChunk(VEG_,   f_n_demand)                           ! in
     dsl4jsb_Get_var2D_onChunk(VEG_,   f_p_demand)                           ! in
-    dsl4jsb_Get_var2D_onChunk(VEG_,   net_biosphere_production_l2aveghlp)   ! out
-    dsl4jsb_Get_var2D_onChunk(VEG_,   biological_n_fixation_l2aveghlp)      ! out
+    dsl4jsb_Get_var2D_onChunk(VEG_,   net_biosphere_production)       ! out
+    dsl4jsb_Get_var2D_onChunk(VEG_,   biological_n_fixation)          ! out
     ! VEG_ 3D
     dsl4jsb_Get_var3D_onChunk(VEG_,   root_fraction_sl)                     ! in
     ! SPQ_ 2D
@@ -434,6 +448,12 @@ CONTAINS
     dsl4jsb_Get_var2D_onChunk(SB_,       emission_n2)                 ! in
     dsl4jsb_Get_var2D_onChunk(SB_,       emission_n2_n15)             ! in
     dsl4jsb_Get_var2D_onChunk(SB_,       ecosystem_total_n_loss)      ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_c)   ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_n)   ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_p)   ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_c13) ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_c14) ! out
+    dsl4jsb_Get_var2D_onChunk(SB_,       sb_pool_total_ag_litter_n15) ! out
     ! SB_ 3D
     dsl4jsb_Get_var3D_onChunk(SB_,       het_respiration)             ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       het_respiration_c13)         ! out
@@ -536,6 +556,17 @@ CONTAINS
     dsl4jsb_Get_var3D_onChunk(SB_,       rtm_desorption)              ! in
     dsl4jsb_Get_var3D_onChunk(SB_,       rmm_sorption)                ! in
     dsl4jsb_Get_var3D_onChunk(SB_,       rmm_desorption)              ! in
+    IF (model%config%flag_slow_sb_pool_spinup_accelerator) THEN
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_som_c_form_mavg_sl)         ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_som_c14_form_mavg_sl)       ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_assoc_som_c_form_mavg_sl)   ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_assoc_som_c14_form_mavg_sl) ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       assoc_dom_c_form_mavg_sl)           ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       assoc_dom_c14_form_mavg_sl)         ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_som_c_loss_mavg_sl)         ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       residue_assoc_som_c_loss_mavg_sl)   ! in
+      dsl4jsb_Get_var3D_onChunk(SB_,       assoc_dom_c_loss_mavg_sl)           ! in
+    END IF
     dsl4jsb_Get_var3D_onChunk(SB_,       qmax_org)                    ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       qmax_po4)                    ! inout
     dsl4jsb_Get_var3D_onChunk(SB_,       qmax_fast_po4)
@@ -558,18 +589,12 @@ CONTAINS
     dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_c13)           ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_c14)           ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_n15)           ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_c)         ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_n)         ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_p)         ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_c13)       ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_c14)       ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_som_n15)       ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_c)      ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_n)      ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_p)      ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_c13)    ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_c14)    ! out
-    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_litter_n15)    ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_c)     ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_n)     ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_p)     ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_c13)   ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_c14)   ! out
+    dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_total_bg_soil_n15)   ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       sb_pool_woody_litter_c)      ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       total_soil_n)                ! out
     dsl4jsb_Get_var3D_onChunk(SB_,       total_soil_inorg_n)          ! out
@@ -863,7 +888,7 @@ CONTAINS
       hlp1(:,1) = hlp1(:,1) + nhx_deposition(:) / 1.e6_wp / soil_depth_sl(:,1) * dtime
       hlp2(:,:) = -transport_nh4_assoc(:,:) * dtime / 1.e6_wp
 
-      CALL calc_langmuir_kinetics(hlp1(:,:), nh4_solute(:,:),nh4_assoc(:,:), &
+      CALL calc_langmuir_kinetics(dtime, hlp1(:,:), nh4_solute(:,:),nh4_assoc(:,:), &
                                                    km_adsorpt_nh4_act(:,:), qmax_nh4_mineral_act(:,:), &
                                                    partition_coef(:,:))
 
@@ -892,7 +917,7 @@ CONTAINS
     !> 10.3 update mineral P pools if not prescibed
     !!
     IF(.NOT. dsl4jsb_Config(SB_)%flag_sb_prescribe_po4) THEN
-      CALL calc_p_inorg_dynamics(nc, nsoil_sb, &
+      CALL calc_p_inorg_dynamics(nc, nsoil_sb, dtime, &
                                        TRIM(dsl4jsb_Config(SB_)%sb_model_scheme), &
                                        TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &
                                        dsl4jsb_Config(SB_)%flag_sb_double_langmuir, &
@@ -1048,19 +1073,19 @@ CONTAINS
 
     sb_pool_woody_litter_c(:,:)   = sb_pool_mt(ix_woody_litter, ixC, :, :)
 
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixC, sb_pool_total_som_c)
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixN, sb_pool_total_som_n)
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixP, sb_pool_total_som_p)
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixC13, sb_pool_total_som_c13)
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixC14, sb_pool_total_som_c14)
-    CALL calculate_sb_pool_som_for_element(sb_pool_mt, ixN15, sb_pool_total_som_n15)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixC, sb_pool_total_bg_soil_c)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixN, sb_pool_total_bg_soil_n)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixP, sb_pool_total_bg_soil_p)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixC13, sb_pool_total_bg_soil_c13)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixC14, sb_pool_total_bg_soil_c14)
+    CALL calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ixN15, sb_pool_total_bg_soil_n15)
 
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixC, sb_pool_total_litter_c)
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixN, sb_pool_total_litter_n)
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixP, sb_pool_total_litter_p)
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixC13, sb_pool_total_litter_c13)
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixC14, sb_pool_total_litter_c14)
-    CALL calculate_sb_pool_litter_for_element(sb_pool_mt, ixN15, sb_pool_total_litter_n15)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixC, sb_pool_total_ag_litter_c)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixN, sb_pool_total_ag_litter_n)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixP, sb_pool_total_ag_litter_p)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixC13, sb_pool_total_ag_litter_c13)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixC14, sb_pool_total_ag_litter_c14)
+    CALL calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ixN15, sb_pool_total_ag_litter_n15)
 
     !> 14.0 biosphere-level diagnostics (SB_ process)
     !>
@@ -1073,22 +1098,56 @@ CONTAINS
       & + SUM(lateral_loss_dom_nitrogen_sl(:,:) * soil_depth_sl(:,:), DIM=2) &
       & + SUM(lateral_loss_nh4_solute_sl(:,:) * soil_depth_sl(:,:), DIM=2) &
       & + SUM(lateral_loss_no3_solute_sl(:,:) * soil_depth_sl(:,:), DIM=2)
-    total_soil_n(:,:)         = sb_pool_total_som_n(:,:) + nh4_solute(:,:) + nh4_assoc(:,:) + no3_solute(:,:)
+    total_soil_n(:,:)         = sb_pool_total_bg_soil_n(:,:) + nh4_solute(:,:) + nh4_assoc(:,:) + no3_solute(:,:)
     total_soil_inorg_n(:,:)   = nh4_solute(:,:) + nh4_assoc(:,:) + no3_solute(:,:)
 
     !> 14.2 across multiple processes
     !>
     !>   see also 'update_veg_pools()'
-    !>
-    !>   TODO calculation may include 'fFire' and 'fLUC' (land-use change) once available
-    !>
-    ! could also be calc as: 'NPP - het_resp - fFire - fLUC'
-    net_biosphere_production_l2aveghlp(:) = net_biosphere_production_l2aveghlp(:) &
-      &                                     - SUM(het_respiration(:,:) * soil_depth_sl(:,:), DIM = 2)
+    net_biosphere_production(:) = net_biosphere_production(:) &
+      &          - SUM((het_respiration(:,:) + lateral_loss_dom_carbon_sl(:,:)) * soil_depth_sl(:,:), DIM = 2)
     ! biological N fixation (VEG_ and SB_ processes)
-    biological_n_fixation_l2aveghlp(:)    = biological_n_fixation_l2aveghlp &
+    biological_n_fixation(:)    = biological_n_fixation &
       &                                     + SUM(asymb_n_fixation(:,:) * soil_depth_sl(:,:), DIM = 2)
 
+    !> 15.0 spin-up accelerator
+    IF (model%config%flag_slow_sb_pool_spinup_accelerator) THEN
+      SELECT CASE(model%config%qmodel_id)
+      ! only execute spin-up accelerator when running in LAND or SOIL mode
+      CASE(QLAND, QSOIL)
+        DO ic = 1,nc
+          ! Determine if running a spin-up with acceleration
+          IF (slow_sb_pool_accelerator_execute(ic) == 1.0_wp) THEN
+            IF (debug_on() .AND. iblk == 1 .AND. ic == 1) &
+              & CALL message(TRIM(routine), 'Accelerate spin up for '//TRIM(tile%name)//' ...')
+
+            ! fasten the spinup for residual pool
+            CALL calc_accelerated_slow_soil_pool_spinup(nsoil_sb, dtime, soil_depth_sl(ic,:),&
+                                                      & model%config%slow_sb_pool_spinup_accelerator_length, &
+                                                      & residue_som_c_form_mavg_sl(ic,:), &
+                                                      & residue_som_c14_form_mavg_sl(ic,:), &
+                                                      & residue_som_c_loss_mavg_sl(ic,:), &
+                                                      & sb_pool_mt(ix_residue,:,ic,:))
+            IF(TRIM(dsl4jsb_Config(SB_)%sb_model_scheme) == "jsm") THEN
+              ! fasten the spinup for the associated residual pool
+              CALL calc_accelerated_slow_soil_pool_spinup(nsoil_sb, dtime, soil_depth_sl(ic,:), &
+                                                        & model%config%slow_sb_pool_spinup_accelerator_length, &
+                                                        & residue_assoc_som_c_form_mavg_sl(ic,:), &
+                                                        & residue_assoc_som_c14_form_mavg_sl(ic,:), &
+                                                        & residue_assoc_som_c_loss_mavg_sl(ic,:), &
+                                                        & sb_pool_mt(ix_residue_assoc,:,ic,:))
+              ! fasten the spinup for the associated dom pool
+              CALL calc_accelerated_slow_soil_pool_spinup(nsoil_sb, dtime, soil_depth_sl(ic,:), &
+                                                        & model%config%slow_sb_pool_spinup_accelerator_length, &
+                                                        & assoc_dom_c_form_mavg_sl(ic,:), &
+                                                        & assoc_dom_c14_form_mavg_sl(ic,:), &
+                                                        & assoc_dom_c_loss_mavg_sl(ic,:), &
+                                                        & sb_pool_mt(ix_dom_assoc,:,ic,:))
+            END IF ! simple soil or jsm
+          END IF
+        END DO
+      END SELECT
+    END IF
     !------------------------------------------------------------------------------------------------------ !
     DEALLOCATE(sb_particle_transport_hlp_mt, sb_pool_prev_timestep_hlp_mt)
 
@@ -1124,6 +1183,7 @@ CONTAINS
   !!
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_p_inorg_dynamics(nc, nsoil_sb, &
+                                   dtime, &
                                    sb_model_scheme, &
                                    sb_adsorp_scheme, &
                                    flag_sb_double_langmuir, &
@@ -1155,12 +1215,13 @@ CONTAINS
                                    fast_exchange_po4)
 
     USE mo_sb_constants
-    USE mo_jsb_math_constants,  ONLY: eps4, eps8, dtime
+    USE mo_jsb_math_constants,  ONLY: eps4, eps8
 
     IMPLICIT NONE
 
     INTEGER,                                          INTENT(in)    :: nc, &                         !< dimensions
                                                                        nsoil_sb
+    REAL(wp),                                         INTENT(in)    :: dtime                         !< timestep length
     CHARACTER(len=*),                                 INTENT(in)    :: sb_model_scheme               !< from sb config
     CHARACTER(len=*),                                 INTENT(in)    :: sb_adsorp_scheme              !< eca_full or eca_none
     LOGICAL ,                                         INTENT(in)    :: flag_sb_double_langmuir       !< T: double Langmuir; F: traditional Langmuir
@@ -1237,7 +1298,7 @@ CONTAINS
                    transport_po4_assoc_fast(:,:)) * dtime / 1000000._wp
       hlp2(:,:) = (slow_exchange_po4(:,:) - transport_po4_assoc_fast(:,:)) * dtime / 1000000._wp
 
-      CALL calc_langmuir_kinetics(hlp1(:,:), &
+      CALL calc_langmuir_kinetics(dtime, hlp1(:,:), &
                                   po4_solute(:,:),po4_assoc_fast(:,:), &
                                   km_adsorpt_po4_act(:,:), qmax_po4_mineral_act(:,:), &
                                   partition_coef(:,:))
@@ -1259,12 +1320,12 @@ CONTAINS
       DO ichunk = 1, nc
         DO isoil = 1, nsoil_sb
           IF (flag_arr(ichunk,isoil)) THEN
-            CALL calc_langmuir_kinetics(hlp1(ichunk,isoil), &
+            CALL calc_langmuir_kinetics(dtime, hlp1(ichunk,isoil), &
                                         po4_solute(ichunk,isoil),po4_assoc_fast(ichunk,isoil), &
                                         km_fast_po4_act(ichunk,isoil), qmax_fast_po4_act(ichunk,isoil), &
                                         partition_coef(ichunk,isoil))
           ELSE
-            CALL calc_langmuir_kinetics(hlp1(ichunk,isoil), &
+            CALL calc_langmuir_kinetics(dtime, hlp1(ichunk,isoil), &
                                         po4_solute(ichunk,isoil),po4_assoc_fast(ichunk,isoil), &
                                         km_adsorpt_po4_act(ichunk,isoil), qmax_po4_mineral_act(ichunk,isoil), &
                                         partition_coef(ichunk,isoil), &
@@ -1294,15 +1355,16 @@ CONTAINS
   !> Subroutine to calculate Langmuir kinetics (modified from Yang et al. 2014)
   !!
   !-----------------------------------------------------------------------------------------------------
-  ELEMENTAL SUBROUTINE calc_langmuir_kinetics(solute_flux, solute, assoc_fast, &
+  ELEMENTAL SUBROUTINE calc_langmuir_kinetics(dtime, solute_flux, solute, assoc_fast, &
                                               km, qmax, solute_partition_coef, &
                                               assoc_slow, km_fast, qmax_fast, km_slow, qmax_slow, &
                                               slow_partition_coef, slow_exchange)
     USE mo_sb_constants
-    USE mo_jsb_math_constants,  ONLY: eps4, eps8, dtime
+    USE mo_jsb_math_constants,  ONLY: eps4, eps8
 
     IMPLICIT NONE
     ! 0.1 inout
+    REAL(wp)          , INTENT(in)    :: dtime                  !< timestep length
     REAL(wp)          , INTENT(in)    :: solute_flux            !< total solute flux (mol/m3/dtime)
     REAL(wp)          , INTENT(in)    :: solute                 !< solute pool (mol/m3)
     REAL(wp)          , INTENT(in)    :: assoc_fast             !< adsorbed (fast) pool (mol/m3)
@@ -1410,37 +1472,142 @@ CONTAINS
 
   END SUBROUTINE calc_langmuir_kinetics
 
-  ! ======================================================================================================= !
-  !>
-  !> Small helper routine to calculate total SOM in sb_pool for a given element
-  !>
-  SUBROUTINE calculate_sb_pool_som_for_element(sb_pool_mt, ix_elem, sb_pool_total_som_elem)
+  !-----------------------------------------------------------------------------------------------------
+  ! Sub Task to update_sb_pools
+  !
+  !-----------------------------------------------------------------------------------------------------
+  !> Subroutine to fasten the spinup by separately balancing slow soil pools
+  !!
+  !-----------------------------------------------------------------------------------------------------
+  SUBROUTINE calc_accelerated_slow_soil_pool_spinup(nsoil_sb, dtime, &
+                                                  & soil_depth_sl, &
+                                                  & spinup_accelerator_length, &
+                                                  & formation_c_mavg_sl, &
+                                                  & formation_c14_mavg_sl, &
+                                                  & loss_c_mavg_sl, &
+                                                  & pool_slow_sl)
     ! ----------------------------------------------------------------------------------------------------- !
-    REAL(wp), INTENT(IN)       :: sb_pool_mt(:,:,:,:)         !< sb pool for which the SOM is to be calculated
-    INTEGER,  INTENT(IN)       :: ix_elem                     !< index of the queried element in the sp pool
-    REAL(wp), INTENT(INOUT)    :: sb_pool_total_som_elem(:,:) !< total SOM for given element
+    ! 0.1 inout
+    INTEGER,  INTENT(in)    :: nsoil_sb                  !> soil dimension
+    REAL(wp), INTENT(in)    :: dtime                     !> timestep length [s]
+    REAL(wp), INTENT(in)    :: soil_depth_sl(:)          !> soil depth at each layer[m]
+    INTEGER,  INTENT(in)    :: spinup_accelerator_length !> loop times of acceleration, read from namelist
+    REAL(wp), INTENT(in)    :: formation_c_mavg_sl(:)    !> averaged slow soil C pool formation rate [mol m-3 timestep-1]
+    REAL(wp), INTENT(in)    :: formation_c14_mavg_sl(:)  !> averaged slow soil C14 pool formation rate [mol m-3 timestep-1]
+    REAL(wp), INTENT(in)    :: loss_c_mavg_sl(:)         !> averaged slow soil C pool loss rate [mol m-3timestep-1]
+    REAL(wp), INTENT(inout) :: pool_slow_sl(:,:)         !> slow soil pool with all elements [mol m-3]
     ! ----------------------------------------------------------------------------------------------------- !
-    sb_pool_total_som_elem(:,:) &
-      & =  sb_pool_mt(ix_dom, ix_elem, :, :)       + sb_pool_mt(ix_dom_assoc, ix_elem, :, :)   &
-      &  + sb_pool_mt(ix_fungi, ix_elem, :, :)     + sb_pool_mt(ix_mycorrhiza, ix_elem, :, :)  &
-      &  + sb_pool_mt(ix_microbial, ix_elem, :, :) + sb_pool_mt(ix_residue, ix_elem, :, :)     &
-      &  + sb_pool_mt(ix_residue_assoc, ix_elem, :, :)
-  END SUBROUTINE calculate_sb_pool_som_for_element
+    ! 0.2 Local
+    REAL, DIMENSION(nsoil_sb) :: c13c_slow_sl, nc_slow_sl, n15n_slow_sl,pn_slow_sl !> stiochiometry factors [mol / mol]
+    REAL, DIMENSION(nsoil_sb) :: ratio_sl, ratio_c14_sl !> slow soil pool distributions across all soil layers[unitless]
+    REAL                      :: tau_slow !> slow soil pool turnover rate [timestep]
+    REAL                      :: pool_c_slow, pool_c14_slow !> the total slow soil pool [mol m-2]
+    REAL                      :: formation_c_mavg, formation_c14_mavg, loss_c_mavg ! formation and loss rates of the total slow soil pool [mol m-2 timestep-1]
+    INTEGER                   :: ilength, i_soil !counter for loops
+    ! ------------------------------------------------------------------------------------------------------------
+    !> accelerating the spin-up of slow pool
+    !!
+
+    !> 1.0 record current stoichiometry, apparent turnover rate of slow pool and slow pool distribution across all soil layers
+    !!
+    !> 1.1 record current stoichiometry
+    DO i_soil = 1,nsoil_sb
+      IF (pool_slow_sl(ixC,i_soil) > eps8) THEN
+        c13c_slow_sl(i_soil) = pool_slow_sl(ixC13,i_soil) / pool_slow_sl(ixC,i_soil)
+        nc_slow_sl(i_soil)   = pool_slow_sl(ixN,i_soil) / pool_slow_sl(ixC,i_soil)
+        n15n_slow_sl(i_soil) = pool_slow_sl(ixN15,i_soil) / pool_slow_sl(ixN,i_soil)
+        pn_slow_sl(i_soil)   = pool_slow_sl(ixP,i_soil) / pool_slow_sl(ixN,i_soil)
+      ELSE
+        c13c_slow_sl(i_soil) = 0._wp
+        nc_slow_sl(i_soil)   = 0._wp
+        n15n_slow_sl(i_soil) = 0._wp
+        pn_slow_sl(i_soil)   = 0._wp
+      END IF
+    END DO
+
+    !> 1.2 calculate the total turnover rate across all soil layers
+    pool_c_slow = SUM(pool_slow_sl(ixC,:) * soil_depth_sl(:))
+    pool_c14_slow = SUM(pool_slow_sl(ixC14,:) * soil_depth_sl(:))
+    formation_c_mavg = SUM(formation_c_mavg_sl(:) * soil_depth_sl(:))
+    formation_c14_mavg = SUM(formation_c14_mavg_sl(:) * soil_depth_sl(:))
+    loss_c_mavg = SUM(loss_c_mavg_sl(:) * soil_depth_sl(:))
+
+    !> 1.3 get the current slow soil pool profile
+    IF ((pool_c_slow > eps8) .AND. (loss_c_mavg > eps8)) THEN
+      tau_slow  = pool_c_slow / loss_c_mavg
+
+      DO i_soil = 1,nsoil_sb
+        ratio_sl(i_soil) = pool_slow_sl(ixC,i_soil) / pool_c_slow
+        ratio_c14_sl(i_soil) = pool_slow_sl(ixC14,i_soil) / pool_c14_slow
+      END DO
+
+      !> 2.0 do the spin-up acceleration
+      DO ilength = 1, spinup_accelerator_length
+        pool_c_slow   = pool_c_slow + &
+                            & ((-(pool_c_slow / tau_slow) + formation_c_mavg) / &
+                            & dtime * one_day * one_year)
+        !> C14 has the additional decay rate
+        pool_c14_slow = pool_c14_slow + &
+                            & ((-(pool_c14_slow / tau_slow) - (pool_c14_slow * lambda_C14 * dtime) + formation_c14_mavg) / &
+                            & dtime * one_day * one_year)
+      END DO
+
+      !> 2.1 re-distribute the slow soil pool at each soil layer
+      pool_slow_sl(ixC,:) = pool_c_slow * ratio_sl(:)
+      pool_slow_sl(ixC14,:) = pool_c14_slow * ratio_c14_sl(:)
+
+      !> 3.0 update other element pools
+      pool_slow_sl(ixC13,:) = pool_slow_sl(ixC,:) * c13c_slow_sl(:)
+      pool_slow_sl(ixN,:)   = pool_slow_sl(ixC,:) * nc_slow_sl(:)
+      pool_slow_sl(ixN15,:) = pool_slow_sl(ixN,:) * n15n_slow_sl(:)
+      pool_slow_sl(ixP,:)   = pool_slow_sl(ixN,:) * pn_slow_sl(:)
+    END IF
+
+  END SUBROUTINE calc_accelerated_slow_soil_pool_spinup
 
   ! ======================================================================================================= !
   !>
-  !> Small helper routine to calculate total litter in sb_pool for a given element
+  !> Small helper routine to sum up total sb pool below ground soil (SOM and below ground litter) for a given element
   !>
-  SUBROUTINE calculate_sb_pool_litter_for_element(sb_pool_mt, ix_elem, sb_pool_total_litter_elem)
+  SUBROUTINE calculate_sb_pool_bg_soil_for_element(sb_pool_mt, nsoil_sb, ix_elem, sb_pool_total_bg_soil_elem)
     ! ----------------------------------------------------------------------------------------------------- !
-    REAL(wp), INTENT(IN)       :: sb_pool_mt(:,:,:,:)         !< sb pool for which the SOM is to be calculated
-    INTEGER,  INTENT(IN)       :: ix_elem                     !< index of the queried element in the sp pool
-    REAL(wp), INTENT(INOUT)    :: sb_pool_total_litter_elem(:,:) !< total SOM for given element
+    REAL(wp), INTENT(IN)    :: sb_pool_mt(:,:,:,:)             !< sb pool for which the total BG soil is to be calculated
+    INTEGER,  INTENT(IN)    :: nsoil_sb                        !< number of soil layers
+    INTEGER,  INTENT(IN)    :: ix_elem                         !< index of the queried element in the sb pool
+    REAL(wp), INTENT(INOUT) :: sb_pool_total_bg_soil_elem(:,:) !< total sb pool SOM + BG litter for given element
     ! ----------------------------------------------------------------------------------------------------- !
-    sb_pool_total_litter_elem(:,:) =  sb_pool_mt(ix_soluable_litter, ix_elem, :, :)   &
-      &                             + sb_pool_mt(ix_polymeric_litter, ix_elem, :, :) &
-      &                             + sb_pool_mt(ix_woody_litter, ix_elem, :, :)
-  END SUBROUTINE calculate_sb_pool_litter_for_element
+    INTEGER :: isoil
+    ! ----------------------------------------------------------------------------------------------------- !
+    sb_pool_total_bg_soil_elem(:,:) &
+      & =  sb_pool_mt(ix_dom, ix_elem, :, :)       + sb_pool_mt(ix_dom_assoc, ix_elem, :, :)  &
+      &  + sb_pool_mt(ix_fungi, ix_elem, :, :)     + sb_pool_mt(ix_mycorrhiza, ix_elem, :, :) &
+      &  + sb_pool_mt(ix_microbial, ix_elem, :, :) + sb_pool_mt(ix_residue, ix_elem, :, :)    &
+      &  + sb_pool_mt(ix_residue_assoc, ix_elem, :, :)
+
+    DO isoil = 2,nsoil_sb
+      sb_pool_total_bg_soil_elem(:,isoil) = sb_pool_total_bg_soil_elem(:,isoil) &
+        & + sb_pool_mt(ix_soluable_litter, ix_elem, :, isoil)                   &
+        & + sb_pool_mt(ix_polymeric_litter, ix_elem, :, isoil)                  &
+        & + sb_pool_mt(ix_woody_litter, ix_elem, :, isoil)
+    END DO
+
+  END SUBROUTINE calculate_sb_pool_bg_soil_for_element
+
+  ! ======================================================================================================= !
+  !>
+  !> Small helper routine to calculate total above ground litter in sb_pool for a given element
+  !>
+  SUBROUTINE calculate_sb_pool_ag_litter_for_element(sb_pool_mt, soil_depth_sl, ix_elem, sb_pool_total_ag_litter_elem)
+    ! ----------------------------------------------------------------------------------------------------- !
+    REAL(wp), INTENT(IN)    :: sb_pool_mt(:,:,:,:)             !< sb pool for which the above ground litter is to be calculated
+    REAL(wp), INTENT(IN)    :: soil_depth_sl(:,:)              !< soil depth at each layer[m]
+    INTEGER,  INTENT(IN)    :: ix_elem                         !< index of the queried element in the sb pool
+    REAL(wp), INTENT(INOUT) :: sb_pool_total_ag_litter_elem(:) !< total above ground litter for given element [mol m-2]
+    ! ----------------------------------------------------------------------------------------------------- !
+    sb_pool_total_ag_litter_elem(:) = (sb_pool_mt(ix_soluable_litter, ix_elem, :, 1)    &
+      &                               + sb_pool_mt(ix_polymeric_litter, ix_elem, :, 1) &
+      &                               + sb_pool_mt(ix_woody_litter, ix_elem, :, 1)) * soil_depth_sl(:,1)
+  END SUBROUTINE calculate_sb_pool_ag_litter_for_element
 
 #endif
 END MODULE mo_q_sb_update_pools

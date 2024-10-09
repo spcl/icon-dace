@@ -1,6 +1,3 @@
-! Provides the master control methods and paramaters
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provides the master control methods and paramaters
 
 MODULE mo_master_control
  

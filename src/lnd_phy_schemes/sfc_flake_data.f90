@@ -1,6 +1,3 @@
-! This module contains common definitions, variables and constants
-! of the lake parameterization scheme FLake.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,7 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
 ! This module contains common definitions, variables and constants
 ! of the lake parameterization scheme FLake. These are
 !

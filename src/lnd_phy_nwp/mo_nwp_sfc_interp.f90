@@ -1,9 +1,3 @@
-! This module contains routines for the vertical interpolation of
-! surface/soil fields provided by external analyses to the ICON grid
-!
-! Soil moisture is read from IFS2ICON as soil moisture index and then
-! converted back to soil moisture mass [m] using TERRA soil types.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains routines for the vertical interpolation of
+! surface/soil fields provided by external analyses to the ICON grid
+!
+! Soil moisture is read from IFS2ICON as soil moisture index and then
+! converted back to soil moisture mass [m] using TERRA soil types.
 
 #include "consistent_fma.inc"
 MODULE mo_nwp_sfc_interp

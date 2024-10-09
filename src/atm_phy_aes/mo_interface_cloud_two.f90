@@ -1,6 +1,3 @@
-!
-! Subroutine interface_cloud_two calls NWP two-moment bulk microphysics
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine interface_cloud_two calls NWP two-moment bulk microphysics
 
 MODULE mo_interface_cloud_two
 

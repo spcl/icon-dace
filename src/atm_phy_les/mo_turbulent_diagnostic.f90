@@ -1,7 +1,3 @@
-!
-! turbulent diagnosis for LES physics
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! turbulent diagnosis for LES physics
 
 !----------------------------
 #include "omp_definitions.inc"

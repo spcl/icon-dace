@@ -84,8 +84,7 @@ ICON_EMVORADO_PATH='externals/emvorado'
 ICON_BUNDLED_FCFLAGS="${non_libtool_FCFLAGS} -C=all"
 
 # Do not pass Fortran compiler flags that cannot be handled by the libtool
-# scripts of the bundled MTIME and SCT:
-ICON_MTIME_FCFLAGS='-C=all'
+# script of the bundled SCT:
 ICON_SCT_FCFLAGS='-C=all'
 
 LDFLAGS="${RTTOV_LDFLAGS-} -L${sw_root}/lib"
@@ -123,7 +122,6 @@ ICON_EMVORADO_FCFLAGS="${ICON_EMVORADO_FCFLAGS}" \
 ICON_EMVORADO_PATH="${ICON_EMVORADO_PATH}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_LDFLAGS="${ICON_LDFLAGS}" \
-ICON_MTIME_FCFLAGS="${ICON_MTIME_FCFLAGS}" \
 ICON_SCT_FCFLAGS="${ICON_SCT_FCFLAGS}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \

@@ -18,7 +18,7 @@ MODULE mo_atmland_interface
   USE mo_kind,            ONLY: wp
 
   USE mo_jsb_control,        ONLY: jsbach_runs_standalone
-  USE mo_jsb_model_class,    ONLY: t_jsb_model, MODEL_QUINCY
+  USE mo_jsb_model_class,    ONLY: t_jsb_model
   USE mo_jsb_class,          ONLY: Get_model
   USE mo_jsb_grid,           ONLY: Get_grid
   USE mo_jsb_grid_class,     ONLY: t_jsb_grid
@@ -72,12 +72,6 @@ CONTAINS
     & pch,                    &
     & cos_zenith_angle,       &
     & CO2_air,                &
-    ! For QUINCY
-    & nhx_deposition,         &
-    & noy_deposition,         &
-    & nhx_n15_deposition,     &
-    & noy_n15_deposition,     &
-    & p_deposition,           &
     ! For lakes:
     & DEBUG_VAR,              &
     & drag_wtr,               &
@@ -96,9 +90,6 @@ CONTAINS
     USE mtime,                     ONLY: datetime
     USE mo_time_config,            ONLY: time_config
     USE mo_jsb_time,               ONLY: get_secs_of_day
-#ifndef __NO_QUINCY__
-    USE mo_iq_atm2land_process,     ONLY: update_local_time_and_daytime_counter
-#endif
     ! ----------------------------------------------------------------------------------------------------- !
     CLASS(t_jsb_tile_abstract), INTENT(inout)             :: tile
     TYPE(t_jsb_task_options),   INTENT(in)                :: options
@@ -106,9 +97,8 @@ CONTAINS
     ! REAL(wp), OPTIONAL, DIMENSION(options%nc), INTENT(in) ::                                                       &
     REAL(wp), OPTIONAL, DIMENSION(:), INTENT(in) ::                                                                &
       & t_air, q_air, press_air, rain, snow, wind_air, wind_10m, lw_srf_down, swvis_srf_down, swnir_srf_down, swpar_srf_down, &
-      & fract_par_diffuse, dz_srf, press_srf, rho_srf, drag_srf, t_acoef, t_bcoef, q_acoef, q_bcoef, pch, cos_zenith_angle,         &
+      & fract_par_diffuse, dz_srf, press_srf, rho_srf, drag_srf, t_acoef, t_bcoef, q_acoef, q_bcoef, pch, cos_zenith_angle,   &
       & CO2_air,                                                                                                   &
-      & nhx_deposition, noy_deposition, nhx_n15_deposition, noy_n15_deposition, p_deposition,                      &
       & DEBUG_VAR, drag_wtr, drag_ice,                                                                             &
       & t_acoef_wtr, t_bcoef_wtr, q_acoef_wtr, q_bcoef_wtr,                                                        &
       & t_acoef_ice, t_bcoef_ice, q_acoef_ice, q_bcoef_ice
@@ -152,14 +142,6 @@ CONTAINS
       & cos_zenith_angle_ptr,  &
       & CO2_air_ptr,           &
       & CO2_air_mol_ptr,       &
-#ifndef __NO_QUINCY__
-      & CO2_mixing_ratio_ptr,  &
-      & nhx_deposition_ptr,    &
-      & noy_deposition_ptr,    &
-      & nhx_n15_deposition_ptr,&
-      & noy_n15_deposition_ptr,&
-      & p_deposition_ptr,      &
-#endif
       & DEBUG_VAR_ptr,         &
       & drag_wtr_ptr,          &
       & drag_ice_ptr,          &
@@ -171,9 +153,6 @@ CONTAINS
       & t_bcoef_ice_ptr,       &
       & q_acoef_ice_ptr,       &
       & q_bcoef_ice_ptr
-    ! quincy
-    dsl4jsb_Real2D_onChunk :: daytime_counter
-    dsl4jsb_Real2D_onChunk :: local_time_day_seconds
     ! ----------------------------------------------------------------------------------------------------- !
     IF (ASSOCIATED(tile%parent)) CALL finish(TRIM(routine), 'Should only be called for the root tile')
 
@@ -270,29 +249,7 @@ CONTAINS
     IF (PRESENT(CO2_air)) THEN
       CO2_air_ptr           => dsl4jsb_var2D_onChunk(A2L_, CO2_air)
       CO2_air_mol_ptr       => dsl4jsb_var2D_onChunk(A2L_, CO2_air_mol)
-#ifndef __NO_QUINCY__
-      IF (model_scheme == MODEL_QUINCY) THEN
-        CO2_mixing_ratio_ptr  => dsl4jsb_var2D_onChunk(A2L_, CO2_mixing_ratio)
-      END IF
-#endif
     END IF
-#ifndef __NO_QUINCY__
-    IF (PRESENT(nhx_deposition)) THEN
-      nhx_deposition_ptr      => dsl4jsb_var2D_onChunk(A2L_, nhx_deposition)
-    END IF
-    IF (PRESENT(noy_deposition)) THEN
-      noy_deposition_ptr      => dsl4jsb_var2D_onChunk(A2L_, noy_deposition)
-    END IF
-    IF (PRESENT(nhx_n15_deposition)) THEN
-      nhx_n15_deposition_ptr  => dsl4jsb_var2D_onChunk(A2L_, nhx_n15_deposition)
-    END IF
-    IF (PRESENT(noy_n15_deposition)) THEN
-      noy_n15_deposition_ptr  => dsl4jsb_var2D_onChunk(A2L_, noy_n15_deposition)
-    END IF
-    IF (PRESENT(p_deposition)) THEN
-      p_deposition_ptr        => dsl4jsb_var2D_onChunk(A2L_, p_deposition)
-    END IF
-#endif
     IF (PRESENT(drag_wtr)) THEN
       drag_wtr_ptr          => dsl4jsb_var2D_onChunk(A2L_, drag_wtr)
     END IF
@@ -323,13 +280,6 @@ CONTAINS
     IF (PRESENT(q_bcoef_ice)) THEN
       q_bcoef_ice_ptr       => dsl4jsb_var2D_onChunk(A2L_, q_bcoef_ice)
     END IF
-
-#ifndef __NO_QUINCY__
-    IF (model_scheme == MODEL_QUINCY) THEN
-      daytime_counter             => dsl4jsb_var2D_onChunk(A2L_, daytime_counter)
-      local_time_day_seconds      => dsl4jsb_var2D_onChunk(A2L_, local_time_day_seconds)
-    END IF
-#endif
 
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
 
@@ -479,47 +429,8 @@ CONTAINS
         ! Convert CO2 mass mixing ratio [kg/kg] to particle mixing ratio [mol/mol]
         CO2_air_mol_ptr(i) = CO2_air(i) * molarMassDryAir / molarMassCO2
         ! convert CO2 from "molar ratio (volume)" to "co2 mixing ratio ppmv"
-#ifndef __NO_QUINCY__
-        IF (model_scheme == MODEL_QUINCY) THEN
-          CO2_mixing_ratio_ptr(i) = CO2_air_mol_ptr(i) * 1000000._wp
-        END IF
-#endif
       END DO
     END IF
-#ifndef __NO_QUINCY__
-    !> MODEL_QUINCY
-    !>
-    IF (PRESENT(nhx_deposition)) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO i=1,nc
-        nhx_deposition_ptr(i) = nhx_deposition(i)
-      END DO
-    END IF
-    IF (PRESENT(noy_deposition)) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO i=1,nc
-        noy_deposition_ptr(i) = noy_deposition(i)
-      END DO
-    END IF
-    IF (PRESENT(nhx_n15_deposition)) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO i=1,nc
-        nhx_n15_deposition_ptr(i) = nhx_n15_deposition(i)
-      END DO
-    END IF
-    IF (PRESENT(noy_n15_deposition)) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO i=1,nc
-        noy_n15_deposition_ptr(i) = noy_n15_deposition(i)
-      END DO
-    END IF
-    IF (PRESENT(p_deposition)) THEN
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO i=1,nc
-        p_deposition_ptr(i) = p_deposition(i)
-      END DO
-    END IF
-#endif
 
     !> lakes
     !>
@@ -590,18 +501,6 @@ CONTAINS
     !$ACC END PARALLEL
 
     !$ACC WAIT(1)
-
-#ifndef __NO_QUINCY__
-    IF (model_scheme == MODEL_QUINCY) THEN
-      IF (.NOT. PRESENT(cos_zenith_angle)) THEN
-        CALL finish(TRIM(routine), 'cos_zenith_angle not present but needed for QUINCY model')
-      END IF
-
-      ! Update local time and the daytime counter
-      CALL update_local_time_and_daytime_counter( &
-        &     global_seconds_day, dtime, lon, swpar_srf_down, daytime_counter, local_time_day_seconds)
-    END IF ! MODEL_QUINCY
-#endif
 
   END SUBROUTINE update_atm2land
 

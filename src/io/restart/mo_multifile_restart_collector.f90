@@ -1,6 +1,3 @@
-! Module for collecting the payload data onto the respective restart
-! processes.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module for collecting the payload data onto the respective restart
+! processes.
+
 #include "handle_mpi_error.inc"
 #include "omp_definitions.inc"
 MODULE mo_multifile_restart_collector

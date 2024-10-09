@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -567,14 +566,14 @@ CONTAINS
       &  i_count_lnd          !< Number of land grid points in current block
 
     relax_ss       = 1._wp/(3._wp*86400._wp)  ! 3 days
-    relax_du       = 1._wp/(8._wp*86400._wp)  ! 8 days
-    relax_so4      = 1._wp/(7._wp*86400._wp)  ! 7 days
-    relax_bc       = 1._wp/(10._wp*86400._wp) ! 10 days
-    relax_oc       = 1._wp/(14._wp*86400._wp) ! 14 days
-    washout_scale  = 1._wp/5._wp             ! e-folding scale 7.5 mm WE precipitation
+    relax_du       = 1._wp/(12._wp*86400._wp) ! 12 days
+    relax_so4      = 1._wp/(5._wp*86400._wp)  ! 5 days
+    relax_bc       = 1._wp/(5._wp*86400._wp)  ! 5 days
+    relax_oc       = 1._wp/(5._wp*86400._wp)  ! 5 days
+    washout_scale  = 1._wp/5._wp              ! e-folding scale 7.5 mm WE precipitation
     minfrac        = 0.025_wp
-    tunefac_bc_ant = 5.e3_wp
-    tunefac_org_ant= 2.e4_wp
+    tunefac_bc_ant = 3.e4_wp
+    tunefac_org_ant= 3.e4_wp
     tunefac_so4_ant= 3.e3_wp
     tunefac_bc_wf  = 3.e4_wp
     tunefac_org_wf = 2.e4_wp

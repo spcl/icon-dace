@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -9,7 +8,6 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-
 
 #include "omp_definitions.inc"
 

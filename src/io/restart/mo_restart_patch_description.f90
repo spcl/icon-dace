@@ -1,5 +1,3 @@
-! A CLASS that bundles all a patch's metadata together which IS relevant for restart purposes.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! A CLASS that bundles all a patch's metadata together which IS relevant for restart purposes.
 
 MODULE mo_restart_patch_description
   USE mo_communication, ONLY: t_comm_gather_pattern

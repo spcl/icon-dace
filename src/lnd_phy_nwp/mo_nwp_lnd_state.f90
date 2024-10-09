@@ -1,10 +1,3 @@
-! Contains the data structures to store the physical model state and
-! other auxiliary variables in order to run the NWP land physics.
-! Constructors and destructors for these data structures as well as
-! initialization of fields are also defined here.  This module should
-! be an analogon to 'mo_hydro_state.f90'
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,7 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Contains the data structures to store the physical model state and
+! other auxiliary variables in order to run the NWP land physics.
+! Constructors and destructors for these data structures as well as
+! initialization of fields are also defined here.  This module should
+! be an analogon to 'mo_hydro_state.f90'
 !
 !  TODO/To think about:
 !     - should physics be called before or after dynamics?

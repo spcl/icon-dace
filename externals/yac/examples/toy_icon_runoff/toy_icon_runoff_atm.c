@@ -1,64 +1,16 @@
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 //#define VERBOSE
-/**
- * @file toy_icon_atm.c
- *
- * @copyright Copyright  (C)  2013 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
 
-#include "yac_config.h"
-
-#if defined YAC_NETCDF_ENABLED
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
-#include "utils.h"
-#include "fields.h"
-#include "yac_interface.h"
-#include "geometry.h"
-#include "vtk_output.h"
-#include "read_icon_grid.h"
-#include "test_function.h"
+#include "yac.h"
+#include "yac_utils.h"
 
 /* ------------------------------------------------- */
 
@@ -80,6 +32,8 @@ const int num_steps = 1;
 
 static void parse_arguments(
   int argc, char ** argv, char const ** configFilename, char const ** gridFilename);
+static inline void LLtoXYZ(double lon, double lat, double p_out[]);
+static inline void XYZtoLL (double const p_in[], double * lon, double * lat);
 
 int main (int argc, char *argv[]) {
 
@@ -88,7 +42,7 @@ int main (int argc, char *argv[]) {
   MPI_Init (0, NULL);
 
   char const * configFilename = "toy_icon_runoff.yaml"; // default configuration file
-  char const * gridFilename = "icon_grid_R02B03_G.nc";
+  char const * gridFilename = "icon_grid_0043_R02B04_G.nc";
   parse_arguments(argc, argv, &configFilename, &gridFilename);
 
   /* The initialisation phase includes the reading of the configuration file file */
@@ -154,13 +108,13 @@ int main (int argc, char *argv[]) {
   int * global_corner_id;
   int * corner_core_mask;
 
-  read_part_icon_grid_information(gridFilename, &num_vertices, &num_cells,
-                                  &num_vertices_per_cell, &cell_to_vertex,
-                                  &x_vertices, &y_vertices, &x_cells,
-                                  &y_cells, &global_cell_id,
-                                  &cell_mask,
-                                  &cell_core_mask, &global_corner_id,
-                                  &corner_core_mask, rank, size);
+  yac_read_part_icon_grid_information(gridFilename, &num_vertices, &num_cells,
+                                      &num_vertices_per_cell, &cell_to_vertex,
+                                      &x_vertices, &y_vertices, &x_cells,
+                                      &y_cells, &global_cell_id,
+                                      &cell_mask,
+                                      &cell_core_mask, &global_corner_id,
+                                      &corner_core_mask, rank, size);
 
   double * x_center, * y_center;
 
@@ -170,12 +124,12 @@ int main (int argc, char *argv[]) {
   yac_cdef_grid_unstruct ( "atm_grid", num_vertices, num_cells, num_vertices_per_cell,
                            x_vertices, y_vertices, cell_to_vertex, &grid_id );
 
-  yac_cset_global_index(global_cell_id, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
+  yac_cset_global_index(global_cell_id, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
 
-  yac_cdef_points_unstruct ( grid_id, num_cells, CELL, x_center, y_center, &point_id );
+  yac_cdef_points_unstruct ( grid_id, num_cells, YAC_LOCATION_CELL, x_center, y_center, &point_id );
 
-  cell_mask_own = xmalloc (num_cells * sizeof(*cell_mask_own));
+  cell_mask_own = malloc (num_cells * sizeof(*cell_mask_own));
 
   // negative value represent sea, positive values represent land
   // -+2 inner, -+1 boundary
@@ -254,8 +208,8 @@ int main (int argc, char *argv[]) {
   if ( rank == 0 )
     printf ("toy-icon-atmosphere: Time for search         %f %f %f \n", time_min, time_max, time_ave );
 
-  double * cell_out_runoff_data = (double *) xmalloc(num_cells * sizeof(*cell_out_runoff_data));
-  double * cell_in_runoff_data  = (double *) xmalloc(num_cells * sizeof(*cell_in_runoff_data));
+  double * cell_out_runoff_data = (double *) malloc(num_cells * sizeof(*cell_out_runoff_data));
+  double * cell_in_runoff_data  = (double *) malloc(num_cells * sizeof(*cell_in_runoff_data));
 
   int err;
   int info;
@@ -295,7 +249,7 @@ int main (int argc, char *argv[]) {
 
     if ( cell_mask_own[i] ) {
       cell_in_runoff_data[i] = -10;
-      cell_out_runoff_data[i] = test_func(lon, lat);
+      cell_out_runoff_data[i] = yac_test_func(lon, lat);
     } else {
       cell_in_runoff_data[i]  = -99999;
       cell_out_runoff_data[i] = -99999;
@@ -357,28 +311,34 @@ int main (int argc, char *argv[]) {
 
     sprintf(vtk_filename, "toy-icon-atmosphere_out_%d_%d.vtk", rank, step);
 
-    VTK_FILE *vtk_file = vtk_open(vtk_filename, "toy-icon-atmosphere_out");
+    YAC_VTK_FILE *vtk_file =
+      yac_vtk_open(vtk_filename, "toy-icon-atmosphere_out");
 
     // mask out land points
 
-    vtk_write_point_data(vtk_file, (double *)point_data, num_vertices);
+    yac_vtk_write_point_data(vtk_file, (double *)point_data, num_vertices);
 
-    vtk_write_cell_data(vtk_file, (unsigned *)cell_to_vertex,
-                        (unsigned*)num_vertices_per_cell, num_cells);
-    vtk_write_point_scalars_int(vtk_file, corner_core_mask, num_vertices,
-                                "corner_core_mask");
-    vtk_write_point_scalars_int(vtk_file, global_corner_id, num_vertices,
-                                "global_corner_id");
-    vtk_write_cell_scalars_int(vtk_file, cell_core_mask, num_cells,
-                               "cell_core_mask");
-    vtk_write_cell_scalars_int(vtk_file, global_cell_id, num_cells,
-                               "global_cell_id");
+    yac_vtk_write_cell_data(
+      vtk_file, (unsigned *)cell_to_vertex,
+      (unsigned*)num_vertices_per_cell, num_cells);
+    yac_vtk_write_point_scalars_int(
+      vtk_file, corner_core_mask, num_vertices, "corner_core_mask");
+    yac_vtk_write_point_scalars_int(
+      vtk_file, global_corner_id, num_vertices, "global_corner_id");
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, cell_core_mask, num_cells, "cell_core_mask");
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, global_cell_id, num_cells, "global_cell_id");
 
-    vtk_write_cell_scalars_int(vtk_file, cell_mask, num_cells, "mask");
-    vtk_write_cell_scalars_int(vtk_file, cell_mask_own, num_cells, "cell_mask_own");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_runoff_data, num_cells, "cell_in_runoff");
-    vtk_write_cell_scalars_double(vtk_file, cell_out_runoff_data, num_cells, "cell_out_runoff");
-    vtk_close(vtk_file);
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, cell_mask, num_cells, "mask");
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, cell_mask_own, num_cells, "cell_mask_own");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_runoff_data, num_cells, "cell_in_runoff");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_out_runoff_data, num_cells, "cell_out_runoff");
+    yac_vtk_close(vtk_file);
 
     for ( int i = 0; i < num_cells; ++i ) {
       if ( cell_mask_own[i] ) {
@@ -400,17 +360,17 @@ int main (int argc, char *argv[]) {
 
   free (cell_mask_own);
 
-  delete_icon_grid_data ( &cell_mask,
-                          &global_cell_id,
-                          &cell_core_mask,
-                          &num_vertices_per_cell,
-                          &global_corner_id,
-                          &corner_core_mask,
-                          &cell_to_vertex,
-                          &x_cells,
-                          &y_cells,
-                          &x_vertices,
-                          &y_vertices );
+  yac_delete_icon_grid_data ( &cell_mask,
+                              &global_cell_id,
+                              &cell_core_mask,
+                              &num_vertices_per_cell,
+                              &global_corner_id,
+                              &corner_core_mask,
+                              &cell_to_vertex,
+                              &x_cells,
+                              &y_cells,
+                              &x_vertices,
+                              &y_vertices );
 
   yac_cfinalize();
 
@@ -441,11 +401,19 @@ static void parse_arguments(
   }
 }
 
-#else
-#include <stdlib.h>
-#include <stdio.h>
-int main () {
-  printf ("Examples requires compiling with NetCDF.\n");
-  return EXIT_FAILURE;
+static inline void LLtoXYZ(double lon, double lat, double p_out[]) {
+
+   while (lon < -M_PI) lon += 2.0 * M_PI;
+   while (lon >= M_PI) lon -= 2.0 * M_PI;
+
+   double cos_lat = cos(lat);
+   p_out[0] = cos_lat * cos(lon);
+   p_out[1] = cos_lat * sin(lon);
+   p_out[2] = sin(lat);
 }
-#endif
+
+static inline void XYZtoLL (double const p_in[], double * lon, double * lat) {
+
+   *lon = atan2(p_in[1] , p_in[0]);
+   *lat = M_PI_2 - acos(p_in[2]);
+}

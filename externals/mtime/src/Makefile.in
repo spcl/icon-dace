@@ -89,37 +89,33 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
+@ENABLE_FORTRAN_HL_TRUE@am__append_1 = \
+@ENABLE_FORTRAN_HL_TRUE@    libmtime_hl.f90 \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_datetime.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_event.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_juliandelta.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_timedelta.inc
 
-# We cannot simply append $(OPENMP_FCFLAG) to AM_FCFLAGS because this breaks
-# linking with NAG compiler:
-#   a) whenever libtool is called for linking, it duplicates the openmp flag,
-#      which is considered as an error by NAG;
-#   b) libmtime.la gets an entry inherited_linker_flags=' -openmp' and it
-#      becomes impossible to link a C application to libmtime with libtool if
-#      the C compiler is gcc, which misinterpretes the flag '-openmp'.
-# Therefore, we prepend $(OPENMP_FCFLAG) with '-Xcompiler', which solves both of
-# the aforementioned problems: the openmp flag is used when linking the shared
-# version of libmtime but is not duplicated, additionaly, it is not saved to
-# libmtime.la as an inherited linker flag.
-# However, due to a bug in the argument parsing procedure, libtool fails if the
-# first argument for the compiler is '-Xcompiler <flag>' or '-Wc,<flag>'.
-# Therefore, we additionaly prepend AM_FCFLAGS with a dummy flag '$(FCMODINC).'.
-@ENABLE_OPENMP_TRUE@am__append_1 = $(FCMODINC). -Xcompiler $(OPENMP_FCFLAG)
+@ENABLE_FORTRAN_HL_TRUE@am__append_2 = \
+@ENABLE_FORTRAN_HL_TRUE@    $(mtime_hl_mod)
+
 subdir = src
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_fc_module.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_fc_line_length.m4 \
+	$(top_srcdir)/m4/acx_fc_module.m4 \
 	$(top_srcdir)/m4/acx_fc_pp.m4 $(top_srcdir)/m4/acx_lang_lib.m4 \
-	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
+	$(top_srcdir)/m4/acx_lt_problems.m4 \
+	$(top_srcdir)/m4/acx_use_libtool_configuration.m4 \
 	$(top_srcdir)/m4/asx_common.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/kpse_libtool.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
-DIST_COMMON = $(srcdir)/Makefile.am $(python_PYTHON) \
-	$(am__DIST_COMMON)
+DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config/config.h
 CONFIG_CLEAN_FILES =
@@ -151,23 +147,32 @@ am__uninstall_files_from_dir = { \
     || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
          $(am__cd) "$$dir" && rm -f $$files; }; \
   }
-am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pythondir)" \
-	"$(DESTDIR)$(includedir)"
-LTLIBRARIES = $(lib_LTLIBRARIES)
-libmtime_la_LIBADD =
-am_libmtime_la_OBJECTS = kepler.lo libmtime.lo libmtime_hl.lo \
-	mtime_c_bindings.lo mtime_calendar.lo mtime_calendar360day.lo \
-	mtime_calendar365day.lo mtime_calendarGregorian.lo \
-	mtime_constants.lo mtime_date.lo mtime_datetime.lo \
-	mtime_error_handling.lo mtime_eventHandling.lo \
-	mtime_eventList.lo mtime_iso8601.lo mtime_julianDay.lo \
-	mtime_time.lo mtime_timedelta.lo mtime_utilities.lo orbit.lo \
-	vsop87.lo
+am__installdirs = "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"
+LTLIBRARIES = $(lib_LTLIBRARIES) $(noinst_LTLIBRARIES)
+libmtime_la_DEPENDENCIES = libmtime_c.la
+am__libmtime_la_SOURCES_DIST = libmtime.f90 mtime_c_bindings.f90 \
+	mtime_constants.f90 mtime_error_handling.f90 libmtime_hl.f90 \
+	mtime_t_datetime.inc mtime_t_event.inc mtime_t_juliandelta.inc \
+	mtime_t_timedelta.inc
+@ENABLE_FORTRAN_HL_TRUE@am__objects_1 = libmtime_hl.lo
+am_libmtime_la_OBJECTS = libmtime.lo mtime_c_bindings.lo \
+	mtime_constants.lo mtime_error_handling.lo $(am__objects_1)
 libmtime_la_OBJECTS = $(am_libmtime_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
+libmtime_la_LINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
+	$(libmtime_la_LDFLAGS) $(LDFLAGS) -o $@
+libmtime_c_la_LIBADD =
+am_libmtime_c_la_OBJECTS = kepler.lo mtime_calendar.lo \
+	mtime_calendar360day.lo mtime_calendar365day.lo \
+	mtime_calendarGregorian.lo mtime_date.lo mtime_datetime.lo \
+	mtime_eventHandling.lo mtime_eventList.lo mtime_iso8601.lo \
+	mtime_julianDay.lo mtime_time.lo mtime_timedelta.lo \
+	mtime_utilities.lo orbit.lo vsop87.lo
+libmtime_c_la_OBJECTS = $(am_libmtime_c_la_OBJECTS)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -175,11 +180,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -196,8 +201,6 @@ am__depfiles_remade = ./$(DEPDIR)/kepler.Plo \
 	./$(DEPDIR)/mtime_utilities.Plo ./$(DEPDIR)/orbit.Plo \
 	./$(DEPDIR)/vsop87.Plo
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
@@ -205,7 +208,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -213,14 +216,13 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
-FCCOMPILE = $(FC) $(AM_FCFLAGS) $(FCFLAGS)
+am__v_CCLD_1 =
 LTFCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(FC) $(AM_FCFLAGS) $(FCFLAGS)
 AM_V_FC = $(am__v_FC_@AM_V@)
 am__v_FC_ = $(am__v_FC_@AM_DEFAULT_V@)
 am__v_FC_0 = @echo "  FC      " $@;
-am__v_FC_1 = 
+am__v_FC_1 =
 FCLD = $(FC)
 FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) \
@@ -228,18 +230,15 @@ FCLINK = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
 AM_V_FCLD = $(am__v_FCLD_@AM_V@)
 am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
 am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
-SOURCES = $(libmtime_la_SOURCES)
-DIST_SOURCES = $(libmtime_la_SOURCES)
+am__v_FCLD_1 =
+SOURCES = $(libmtime_la_SOURCES) $(libmtime_c_la_SOURCES)
+DIST_SOURCES = $(am__libmtime_la_SOURCES_DIST) \
+	$(libmtime_c_la_SOURCES)
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
-am__py_compile = PYTHON=$(PYTHON) $(SHELL) $(py_compile)
-am__pep3147_tweak = \
-  sed -e 's|\.py$$||' -e 's|[^/]*$$|__pycache__/&.*.pyc __pycache__/&.*.pyo|'
-py_compile = $(top_srcdir)/config/py-compile
 HEADERS = $(nodist_include_HEADERS)
 am__extra_recursive_targets = doc-recursive install-doc-recursive \
 	man-recursive install-man-recursive
@@ -260,8 +259,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp \
-	$(top_srcdir)/config/py-compile
+am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -276,6 +274,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_CLIBS = @CHECK_CLIBS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
@@ -321,7 +320,6 @@ FCFLAGS_f90 = @FCFLAGS_f90@
 FCMODEXT = @FCMODEXT@
 FCMODINC = @FCMODINC@
 FGREP = @FGREP@
-FILECMD = @FILECMD@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -341,11 +339,13 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
+MTIME_VERSION_MAJOR = @MTIME_VERSION_MAJOR@
+MTIME_VERSION_MINOR = @MTIME_VERSION_MINOR@
+MTIME_VERSION_PATCH = @MTIME_VERSION_PATCH@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OPENMP_FCFLAG = @OPENMP_FCFLAG@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -376,6 +376,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 ac_ct_FC = @ac_ct_FC@
+acx_modext = @acx_modext@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -417,7 +418,6 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -431,44 +431,37 @@ top_srcdir = @top_srcdir@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
+noinst_LTLIBRARIES = libmtime_c.la
 lib_LTLIBRARIES = libmtime.la
+libmtime_la_LDFLAGS = -version-number $(MTIME_VERSION_MAJOR):$(MTIME_VERSION_MINOR):$(MTIME_VERSION_PATCH)
+libmtime_la_LIBADD = libmtime_c.la
 AM_CPPFLAGS = -I$(top_srcdir)/include
-AM_FCFLAGS = $(am__append_1)
-libmtime_la_SOURCES = \
-    kepler.c                  \
-    libmtime.f90              \
-    libmtime_hl.f90           \
-    mtime_c_bindings.f90      \
-    mtime_calendar.c          \
-    mtime_calendar360day.c    \
-    mtime_calendar365day.c    \
+libmtime_c_la_SOURCES = \
+    kepler.c \
+    mtime_calendar.c \
+    mtime_calendar360day.c \
+    mtime_calendar365day.c \
     mtime_calendarGregorian.c \
-    mtime_constants.f90       \
-    mtime_date.c              \
-    mtime_datetime.c          \
-    mtime_error_handling.f90  \
-    mtime_eventHandling.c     \
-    mtime_eventList.c         \
-    mtime_iso8601.c           \
-    mtime_julianDay.c         \
-    mtime_t_datetime.inc      \
-    mtime_t_event.inc         \
-    mtime_t_juliandelta.inc   \
-    mtime_t_timedelta.inc     \
-    mtime_time.c              \
-    mtime_timedelta.c         \
-    mtime_utilities.c         \
-    orbit.c                   \
+    mtime_date.c \
+    mtime_datetime.c \
+    mtime_eventHandling.c \
+    mtime_eventList.c \
+    mtime_iso8601.c \
+    mtime_julianDay.c \
+    mtime_time.c \
+    mtime_timedelta.c \
+    mtime_utilities.c \
+    orbit.c \
     vsop87.c
 
+libmtime_la_SOURCES = libmtime.f90 mtime_c_bindings.f90 \
+	mtime_constants.f90 mtime_error_handling.f90 $(am__append_1)
 @FCMODUC_FALSE@mtime_c_bindings_mod = mtime_c_bindings.$(FCMODEXT)
 @FCMODUC_TRUE@mtime_c_bindings_mod = MTIME_C_BINDINGS.$(FCMODEXT)
 @FCMODUC_FALSE@mtime_constants_mod = mtime_constants.$(FCMODEXT)
 @FCMODUC_TRUE@mtime_constants_mod = MTIME_CONSTANTS.$(FCMODEXT)
 @FCMODUC_FALSE@mtime_error_handling_mod = mtime_error_handling.$(FCMODEXT)
 @FCMODUC_TRUE@mtime_error_handling_mod = MTIME_ERROR_HANDLING.$(FCMODEXT)
-@FCMODUC_FALSE@mtime_hl_mod = mtime_hl.$(FCMODEXT)
-@FCMODUC_TRUE@mtime_hl_mod = MTIME_HL.$(FCMODEXT)
 @FCMODUC_FALSE@mtime_mod = mtime.$(FCMODEXT)
 @FCMODUC_TRUE@mtime_mod = MTIME.$(FCMODEXT)
 @FCMODUC_FALSE@mtime_other_mods = \
@@ -497,19 +490,24 @@ libmtime_la_SOURCES = \
 
 @FCMODUC_FALSE@mtime_print_by_callback_mod = mtime_print_by_callback.$(FCMODEXT)
 @FCMODUC_TRUE@mtime_print_by_callback_mod = MTIME_PRINT_BY_CALLBACK.$(FCMODEXT)
-all_mods = \
-    $(mtime_c_bindings_mod)        \
-    $(mtime_constants_mod)         \
-    $(mtime_error_handling_mod)    \
-    $(mtime_hl_mod)                \
-    $(mtime_mod)                   \
-    $(mtime_other_mods)            \
-    $(mtime_print_by_callback_mod)
-
+@ENABLE_FORTRAN_HL_TRUE@@FCMODUC_FALSE@mtime_hl_mod = mtime_hl.$(FCMODEXT)
+@ENABLE_FORTRAN_HL_TRUE@@FCMODUC_TRUE@mtime_hl_mod = MTIME_HL.$(FCMODEXT)
+all_mods = $(mtime_c_bindings_mod) $(mtime_constants_mod) \
+	$(mtime_error_handling_mod) $(mtime_mod) $(mtime_other_mods) \
+	$(mtime_print_by_callback_mod) $(am__append_2)
 nodist_include_HEADERS = $(all_mods)
 MOSTLYCLEANFILES = $(all_mods)
-python_PYTHON = libmtime.py mtime.py
 EXTRA_DIST = mtime_iso8601.rl
+
+# overrides to make regular compilations also use libtool
+COMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) -static $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+
+FCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(FC) -static $(AM_FCFLAGS) $(FCFLAGS)
+
 all: all-am
 
 .SUFFIXES:
@@ -579,8 +577,22 @@ clean-libLTLIBRARIES:
 	  rm -f $${locs}; \
 	}
 
-libmtime.la: $(libmtime_la_OBJECTS) $(libmtime_la_DEPENDENCIES) $(EXTRA_libmtime_la_DEPENDENCIES) 
-	$(AM_V_FCLD)$(FCLINK) -rpath $(libdir) $(libmtime_la_OBJECTS) $(libmtime_la_LIBADD) $(LIBS)
+clean-noinstLTLIBRARIES:
+	-test -z "$(noinst_LTLIBRARIES)" || rm -f $(noinst_LTLIBRARIES)
+	@list='$(noinst_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
+
+libmtime.la: $(libmtime_la_OBJECTS) $(libmtime_la_DEPENDENCIES) $(EXTRA_libmtime_la_DEPENDENCIES)
+	$(AM_V_FCLD)$(libmtime_la_LINK) -rpath $(libdir) $(libmtime_la_OBJECTS) $(libmtime_la_LIBADD) $(LIBS)
+
+libmtime_c.la: $(libmtime_c_la_OBJECTS) $(libmtime_c_la_DEPENDENCIES) $(EXTRA_libmtime_c_la_DEPENDENCIES)
+	$(AM_V_CCLD)$(LINK)  $(libmtime_c_la_OBJECTS) $(libmtime_c_la_LIBADD) $(LIBS)
 
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
@@ -646,49 +658,6 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-install-pythonPYTHON: $(python_PYTHON)
-	@$(NORMAL_INSTALL)
-	@list='$(python_PYTHON)'; dlist=; list2=; test -n "$(pythondir)" || list=; \
-	if test -n "$$list"; then \
-	  echo " $(MKDIR_P) '$(DESTDIR)$(pythondir)'"; \
-	  $(MKDIR_P) "$(DESTDIR)$(pythondir)" || exit 1; \
-	fi; \
-	for p in $$list; do \
-	  if test -f "$$p"; then b=; else b="$(srcdir)/"; fi; \
-	  if test -f $$b$$p; then \
-	    $(am__strip_dir) \
-	    dlist="$$dlist $$f"; \
-	    list2="$$list2 $$b$$p"; \
-	  else :; fi; \
-	done; \
-	for file in $$list2; do echo $$file; done | $(am__base_list) | \
-	while read files; do \
-	  echo " $(INSTALL_DATA) $$files '$(DESTDIR)$(pythondir)'"; \
-	  $(INSTALL_DATA) $$files "$(DESTDIR)$(pythondir)" || exit $$?; \
-	done || exit $$?; \
-	if test -n "$$dlist"; then \
-	  $(am__py_compile) --destdir "$(DESTDIR)" \
-	                    --basedir "$(pythondir)" $$dlist; \
-	else :; fi
-
-uninstall-pythonPYTHON:
-	@$(NORMAL_UNINSTALL)
-	@list='$(python_PYTHON)'; test -n "$(pythondir)" || list=; \
-	py_files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
-	test -n "$$py_files" || exit 0; \
-	dir='$(DESTDIR)$(pythondir)'; \
-	pyc_files=`echo "$$py_files" | sed 's|$$|c|'`; \
-	pyo_files=`echo "$$py_files" | sed 's|$$|o|'`; \
-	st=0; \
-	for files in "$$py_files" "$$pyc_files" "$$pyo_files"; do \
-	  $(am__uninstall_files_from_dir) || st=$$?; \
-	done; \
-	dir='$(DESTDIR)$(pythondir)'; \
-	echo "$$py_files" | $(am__pep3147_tweak) | $(am__base_list) | \
-	  while read files; do \
-	    $(am__uninstall_files_from_dir) || st=$$?; \
-	  done || exit $$?; \
-	exit $$st
 install-nodist_includeHEADERS: $(nodist_include_HEADERS)
 	@$(NORMAL_INSTALL)
 	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
@@ -710,10 +679,10 @@ uninstall-nodist_includeHEADERS:
 	@list='$(nodist_include_HEADERS)'; test -n "$(includedir)" || list=; \
 	files=`for p in $$list; do echo $$p; done | sed -e 's|^.*/||'`; \
 	dir='$(DESTDIR)$(includedir)'; $(am__uninstall_files_from_dir)
-doc-local: 
-install-doc-local: 
-man-local: 
-install-man-local: 
+doc-local:
+install-doc-local:
+man-local:
+install-man-local:
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -803,7 +772,7 @@ check-am: all-am
 check: check-am
 all-am: Makefile $(LTLIBRARIES) $(HEADERS)
 installdirs:
-	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(pythondir)" "$(DESTDIR)$(includedir)"; do \
+	for dir in "$(DESTDIR)$(libdir)" "$(DESTDIR)$(includedir)"; do \
 	  test -z "$$dir" || $(MKDIR_P) "$$dir"; \
 	done
 install: install-am
@@ -840,7 +809,7 @@ maintainer-clean-generic:
 clean: clean-am
 
 clean-am: clean-generic clean-libLTLIBRARIES clean-libtool \
-	mostlyclean-am
+	clean-noinstLTLIBRARIES mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/kepler.Plo
@@ -879,9 +848,8 @@ info: info-am
 
 info-am:
 
-install-data-am: install-nodist_includeHEADERS install-pythonPYTHON
-	@$(NORMAL_INSTALL)
-	$(MAKE) $(AM_MAKEFLAGS) install-data-hook
+install-data-am: install-nodist_includeHEADERS
+
 install-doc: install-doc-am
 
 install-doc-am: install-doc-local
@@ -941,7 +909,7 @@ man-am: man-local
 mostlyclean: mostlyclean-am
 
 mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-libtool mostlyclean-local
+	mostlyclean-libtool
 
 pdf: pdf-am
 
@@ -951,29 +919,27 @@ ps: ps-am
 
 ps-am:
 
-uninstall-am: uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
-	uninstall-pythonPYTHON
+uninstall-am: uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS
 
-.MAKE: install-am install-data-am install-strip
+.MAKE: install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-am clean \
-	clean-generic clean-libLTLIBRARIES clean-libtool cscopelist-am \
-	ctags ctags-am distclean distclean-compile distclean-generic \
-	distclean-libtool distclean-tags distdir doc-am doc-local dvi \
-	dvi-am html html-am info info-am install install-am \
-	install-data install-data-am install-data-hook install-doc-am \
-	install-doc-local install-dvi install-dvi-am install-exec \
-	install-exec-am install-html install-html-am install-info \
-	install-info-am install-libLTLIBRARIES install-man \
-	install-man-am install-man-local install-nodist_includeHEADERS \
-	install-pdf install-pdf-am install-ps install-ps-am \
-	install-pythonPYTHON install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	clean-generic clean-libLTLIBRARIES clean-libtool \
+	clean-noinstLTLIBRARIES cscopelist-am ctags ctags-am distclean \
+	distclean-compile distclean-generic distclean-libtool \
+	distclean-tags distdir doc-am doc-local dvi dvi-am html \
+	html-am info info-am install install-am install-data \
+	install-data-am install-doc-am install-doc-local install-dvi \
+	install-dvi-am install-exec install-exec-am install-html \
+	install-html-am install-info install-info-am \
+	install-libLTLIBRARIES install-man install-man-am \
+	install-man-local install-nodist_includeHEADERS install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic man-am man-local mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
-	mostlyclean-local pdf pdf-am ps ps-am tags tags-am uninstall \
-	uninstall-am uninstall-libLTLIBRARIES \
-	uninstall-nodist_includeHEADERS uninstall-pythonPYTHON
+	pdf pdf-am ps ps-am tags tags-am uninstall uninstall-am \
+	uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS
 
 .PRECIOUS: Makefile
 
@@ -981,8 +947,9 @@ uninstall-am: uninstall-libLTLIBRARIES uninstall-nodist_includeHEADERS \
 $(mtime_c_bindings_mod): mtime_c_bindings.lo
 $(mtime_constants_mod): mtime_constants.lo
 $(mtime_error_handling_mod) $(mtime_print_by_callback_mod): mtime_error_handling.lo
-$(mtime_hl_mod): libmtime_hl.lo
 $(mtime_mod) $(mtime_other_mods): libmtime.lo
+
+@ENABLE_FORTRAN_HL_TRUE@$(mtime_hl_mod): libmtime_hl.lo
 
 $(all_mods):
 	@if test -z $<; then \
@@ -994,33 +961,24 @@ $(all_mods):
 libmtime.lo:                       \
     $(mtime_c_bindings_mod)        \
     $(mtime_constants_mod)         \
-    $(mtime_error_handling_mod)    \
-    $(mtime_print_by_callback_mod)
-
-libmtime_hl.lo:                 \
-    $(mtime_c_bindings_mod)     \
-    $(mtime_constants_mod)      \
-    $(mtime_error_handling_mod) \
-    $(mtime_mod)                \
-    mtime_t_datetime.inc        \
-    mtime_t_event.inc           \
-    mtime_t_juliandelta.inc     \
-    mtime_t_timedelta.inc
+    $(mtime_error_handling_mod)
 
 mtime_c_bindings.lo:            \
     $(mtime_constants_mod)      \
     $(mtime_error_handling_mod)
 
-mtime_error_handling.lo: $(mtime_constants_mod)
-
 mtime_iso8601.c: @MAINTAINER_MODE_TRUE@ mtime_iso8601.rl
 	$(AM_V_GEN)$(RAGEL) -o $@ mtime_iso8601.rl
 
-mostlyclean-local:
-	rm -f *.i
-
-install-data-hook:
-	sed -i "s,SOFILE = '.*',SOFILE = '$(libdir)/libmtime.so'," $(DESTDIR)$(pythondir)/libmtime.py
+@ENABLE_FORTRAN_HL_TRUE@libmtime_hl.lo: \
+@ENABLE_FORTRAN_HL_TRUE@    $(mtime_c_bindings_mod) \
+@ENABLE_FORTRAN_HL_TRUE@    $(mtime_constants_mod) \
+@ENABLE_FORTRAN_HL_TRUE@    $(mtime_error_handling_mod) \
+@ENABLE_FORTRAN_HL_TRUE@    $(mtime_mod) \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_datetime.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_event.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_juliandelta.inc \
+@ENABLE_FORTRAN_HL_TRUE@    mtime_t_timedelta.inc
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

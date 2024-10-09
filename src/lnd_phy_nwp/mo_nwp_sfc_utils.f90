@@ -1,6 +1,3 @@
-! Utility routines related to the TERRA surface model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Utility routines related to the TERRA surface model
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -28,7 +27,7 @@ MODULE mo_nwp_sfc_utils
   USE mo_impl_constants,      ONLY: min_rlcell_int, min_rlcell, LSS_JSBACH, &
     &                               MODE_IAU, ALB_SI_MISSVAL, MAX_CHAR_LENGTH
   USE mo_impl_constants_grf,  ONLY: grf_bdywidth_c
-  USE sfc_flake_data,         ONLY: tpl_T_r, C_T_min, rflk_depth_bs_ref
+  USE sfc_flake_data,         ONLY: tpl_T_r, C_T_min, rflk_depth_bs_ref, h_Ice_min_flk
   USE mo_loopindices,         ONLY: get_indices_c
   USE mo_ext_data_types,      ONLY: t_external_data
   USE mo_ext_data_init,       ONLY: diagnose_ext_aggr, interpol_monthly_mean, vege_clim
@@ -45,13 +44,14 @@ MODULE mo_nwp_sfc_utils
                                     itype_snowevap, zml_soil, dzsoil, frsi_min, hice_min
   USE mo_atm_phy_nwp_config,  ONLY: atm_phy_nwp_config
   USE mo_nwp_tuning_config,   ONLY: tune_minsnowfrac
-  USE mo_initicon_config,     ONLY: init_mode_soil, ltile_coldstart, init_mode, lanaread_tseasfc, use_lakeiceana
+  USE mo_initicon_config,     ONLY: init_mode_soil, ltile_coldstart, init_mode, lanaread_tseasfc, use_lakeiceana, &
+                                    icpl_da_snowalb
   USE mo_run_config,          ONLY: msg_level
   USE sfc_terra_init,         ONLY: terra_init
   USE sfc_flake,              ONLY: flake_init
   USE sfc_seaice,             ONLY: seaice_init_nwp, seaice_coldinit_albsi_nwp
   USE sfc_terra_data,         ONLY: cadp, cf_snow, crhosmin_ml, crhosmax_ml
-  USE turb_data,              ONLY: c_lnd, c_sea
+  USE turb_data,              ONLY: c_lnd, c_sea, c_stm
   USE mo_satad,               ONLY: sat_pres_water, sat_pres_ice, spec_humi
   USE mo_sync,                ONLY: global_max, global_min
   USE mo_nonhydro_types,      ONLY: t_nh_diag
@@ -76,13 +76,14 @@ MODULE mo_nwp_sfc_utils
 
   PRIVATE
 
-
-
 #ifdef __SX__
 ! parameter for loop unrolling
 INTEGER, PARAMETER :: nlsoil= 8
 #endif
 
+  REAL(KIND=wp), PARAMETER ::            &
+   & csmall_hice = 0.5_wp*h_Ice_min_flk    !< small value to handle lake-ice fraction 
+                                           !< (1/2 of minimum lake-ice thickness)
 
   PUBLIC :: nwp_surface_init
   PUBLIC :: diag_snowfrac_tg
@@ -268,6 +269,9 @@ CONTAINS
     REAL(wp) :: hsnow_new(nproma)   ! snow thickness at new time level
     REAL(wp) :: albsi_new(nproma)   ! sea-ice albedo at new time level
 
+    ! local field for APT factors
+    REAL(wp) :: snowfrac_fac(nproma, ntiles_total)
+
     INTEGER  :: icount_flk          ! total number of lake points per block
     !
     INTEGER  :: icount_ice          ! total number of sea-ice points per block
@@ -302,7 +306,7 @@ CONTAINS
 !$OMP            h_snow_lk_now,t_ice_now,h_ice_now,t_mnw_lk_now,t_wml_lk_now,        &
 !$OMP            t_bot_lk_now,c_t_lk_now,h_ml_lk_now,t_b1_lk_now,h_b1_lk_now,        &
 !$OMP            t_scf_lk_now,zfrice_thrhld,lake_mask,albsi_now,albsi_new,           &
-!$OMP            iceana_mask,deglat,deglon), SCHEDULE(guided)
+!$OMP            iceana_mask,deglat,deglon,snowfrac_fac), SCHEDULE(guided)
     DO jb = i_startblk, i_endblk
 
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
@@ -387,16 +391,18 @@ CONTAINS
           rootdp_t(ic,jb,isubs)              =  ext_data%atm%rootdp_t(jc,jb,isubs)
           plcov_t(ic,jb,isubs)               =  ext_data%atm%plcov_t(jc,jb,isubs)
 
-          IF (isubs > ntiles_lnd) THEN
-            z0_t(ic,jb,isubs)                =  prm_diag%gz0_t(jc,jb,isubs-ntiles_lnd)/grav
-          ELSE
-            z0_t(ic,jb,isubs)                =  prm_diag%gz0_t(jc,jb,isubs)/grav
-          ENDIF
+          z0_t(ic,jb,isubs)                  =  prm_diag%gz0_t(jc,jb,isubs)/grav
 
           IF (itype_vegetation_cycle >= 2) THEN ! use climatological temperature to specify snow density on glaciers
             t_rhosnowini_t(ic,jb,isubs)      = ext_data%atm%t2m_clim_hc(jc,jb)
           ELSE
             t_rhosnowini_t(ic,jb,isubs)      = t_snow_now_t(ic,jb,isubs)
+          ENDIF
+
+          IF (icpl_da_snowalb >= 3) THEN
+            snowfrac_fac(ic,isubs)  = prm_diag%snowfrac_fac(jc,jb)
+          ELSE
+            snowfrac_fac(ic,isubs)  = 1._wp
           ENDIF
         ENDDO
 
@@ -465,6 +471,7 @@ CONTAINS
             &  freshsnow = freshsnow_t       (:,jb,isubs), & ! fresh snow fraction
             &  sso_sigma = sso_sigma_t       (:,jb,isubs), & ! sso stdev
             &  z0        = z0_t              (:,jb,isubs), & ! vegetation roughness length
+            &  snowfrac_fac = snowfrac_fac   (:,   isubs), & ! APT tuning factor for snow-cover fraction
             &  snowfrac  = snowfrac_t        (:,jb,isubs), & ! OUT: snow cover fraction
             &  t_g       = t_g_t             (:,jb,isubs)  ) ! OUT: averaged ground temp
 
@@ -545,6 +552,7 @@ CONTAINS
             &  freshsnow  = freshsnow_t             (:,jb,isubs), & ! fresh snow fraction
             &  sso_sigma  = sso_sigma_t             (:,jb,isubs), & ! sso stdev
             &  z0         = z0_t                    (:,jb,isubs), & ! vegetation roughness length
+            &  snowfrac_fac = snowfrac_fac          (:,   isubs), & ! APT tuning factor for snow-cover fraction
             &  snowfrac   = snowfrac_t              (:,jb,isubs), & ! OUT: snow cover fraction
             &  t_g        = t_g_t                   (:,jb,isubs)  ) ! OUT: averaged ground temperature
 
@@ -791,7 +799,7 @@ CONTAINS
           ! keep fr_seaice synchronized with h_ice
           ! i.e. set fr_seaice=1 for frozen lakes
           p_lnd_diag%fr_seaice(jc,jb) = MERGE(1.0_wp, 0.0_wp, &
-            &                           p_prog_wtr_now%h_ice(jc,jb)>0._wp)
+            &                           p_prog_wtr_now%h_ice(jc,jb) > csmall_hice)
         ENDDO  ! ic
 
         ! Re-Initialize lake-specific fields
@@ -807,7 +815,9 @@ CONTAINS
         ! for non-lake points, because values might be inconsistent due to GRIB-packing
         !
         ! Create lake-mask, in order to re-initialize only non-lake points
-        lake_mask(i_startidx:i_endidx) = .FALSE.
+        DO jc = i_startidx, i_endidx
+          lake_mask(jc) = .FALSE.
+        END DO
         ! set lake-mask to .TRUE. for lake points
         DO ic = 1, icount_flk
           jc = ext_data%atm%list_lake%idx(ic,jb)
@@ -2080,15 +2090,16 @@ CONTAINS
 
   !-------------------------------------------------------------------------
 
-  SUBROUTINE diag_snowfrac_tg(istart, iend, lc_class, i_lc_urban, t_snow, t_soiltop, w_snow, &
-    & rho_snow, freshsnow, sso_sigma, z0, snowfrac, t_g, meltrate, snowfrac_u, lacc, opt_acc_async_queue)
+  SUBROUTINE diag_snowfrac_tg(istart, iend, lc_class, i_lc_urban, t_snow, t_soiltop, w_snow,  &
+    & rho_snow, freshsnow, sso_sigma, z0, snowfrac_fac, snowfrac, t_g, meltrate,              &
+    & snowfrac_u, lacc, opt_acc_async_queue)
 
     INTEGER, INTENT (IN) :: istart, iend ! start and end-indices of the computation
 
     INTEGER, INTENT (IN) :: lc_class(:)  ! list of land-cover classes
     INTEGER, INTENT (IN) :: i_lc_urban   ! land-cover class index for urban / artificial surface
     REAL(wp), DIMENSION(:), INTENT(IN) :: t_snow, t_soiltop, w_snow, rho_snow, &
-      freshsnow, sso_sigma, z0
+      freshsnow, sso_sigma, z0, snowfrac_fac
     REAL(wp), DIMENSION(:), INTENT(IN), OPTIONAL :: meltrate ! snow melting rate in kg/(m**2*s)
 
     REAL(wp), DIMENSION(:), INTENT(INOUT) :: snowfrac, t_g
@@ -2136,7 +2147,7 @@ CONTAINS
           ELSE
             lc_limit = 1._wp
           ENDIF
-          snowfrac(ic) = MAX(0.05_wp,MIN(lc_limit,snowdepth_fac/lc_fac))
+          snowfrac(ic) = MAX(0.05_wp,MIN(lc_limit,snowfrac_fac(ic)*snowdepth_fac/lc_fac))
         ENDIF
         t_g(ic) = t_snow(ic) + (1.0_wp - snowfrac(ic))*(t_soiltop(ic) - t_snow(ic))
       ENDDO
@@ -3501,11 +3512,12 @@ CONTAINS
            ! surface area index
            IF (lterra_urb) THEN
              ext_data%atm%sai_t  (jc,jb,1)  = c_lnd * (1.0_wp - ext_data%atm%urb_isa_t(jc,jb,1))                 &
-                                            + ext_data%atm%urb_ai_t(jc,jb,1) * ext_data%atm%urb_isa_t(jc,jb,1)   &
-                                            + ext_data%atm%tai_t(jc,jb,1)
+                                            + ext_data%atm%urb_ai_t(jc,jb,1) * ext_data%atm%urb_isa_t(jc,jb,1)
            ELSE
-             ext_data%atm%sai_t  (jc,jb,1)  = c_lnd + ext_data%atm%tai_t(jc,jb,1)
+             ext_data%atm%sai_t  (jc,jb,1)  = c_lnd
            END IF
+           ext_data%atm%sai_t(jc,jb,1) = ext_data%atm%sai_t(jc,jb,1) + ext_data%atm%tai_t  (jc,jb,1)             &
+                                                                 + c_stm*ext_data%atm%plcov_t(jc,jb,1)
 
          END DO
        ELSE ! ntiles_lnd > 1
@@ -3536,11 +3548,12 @@ CONTAINS
              ! surface area index
              IF (lterra_urb) THEN
                ext_data%atm%sai_t(jc,jb,jt) = c_lnd * (1.0_wp - ext_data%atm%urb_isa_t(jc,jb,jt))                &
-                                            + ext_data%atm%urb_ai_t(jc,jb,jt) * ext_data%atm%urb_isa_t(jc,jb,jt) &
-                                            + ext_data%atm%tai_t(jc,jb,jt)
+                                            + ext_data%atm%urb_ai_t(jc,jb,jt) * ext_data%atm%urb_isa_t(jc,jb,jt)
              ELSE
-               ext_data%atm%sai_t(jc,jb,jt) = c_lnd + ext_data%atm%tai_t(jc,jb,jt)
+               ext_data%atm%sai_t(jc,jb,jt) = c_lnd
              END IF
+             ext_data%atm%sai_t  (jc,jb,jt) = ext_data%atm%sai_t(jc,jb,jt) + ext_data%atm%tai_t  (jc,jb,jt)      &
+                                                                     + c_stm*ext_data%atm%plcov_t(jc,jb,jt)
 
            END DO !ic
          END DO !jt

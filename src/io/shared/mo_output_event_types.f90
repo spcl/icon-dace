@@ -1,9 +1,3 @@
-! Type definitions for handling of regular output steps and ready
-! file events on multiple I/O PEs.
-!
-! See "mo_output_event_handler" for a detailed description.
-!
-! -----------------------------------------------------------------------------------!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Type definitions for handling of regular output steps and ready
+! file events on multiple I/O PEs.
+!
+! See "mo_output_event_handler" for a detailed description.
 
 MODULE mo_output_event_types
   USE mtime,                 ONLY: datetime

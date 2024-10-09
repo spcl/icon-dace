@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -40,6 +39,7 @@ MODULE mo_nonhydrostatic_config
     INTEGER :: ndyn_substeps_max        ! maximum number of dynamics substeps per fast-physics step
     INTEGER :: ndyn_substeps_var(max_dom)! current (variable) number of dynamics substeps per fast-physics step
     INTEGER :: nlev_hcfl(max_dom)       ! number of model levels (counted from top) for which the horizontal CFL number is monitored in addition
+    INTEGER :: cfl_monitoring_freq      ! monitoring frequency for CFL number (in units of fast-physics time steps of domain 1)
 
     LOGICAL :: lextra_diffu             ! if true: apply additional diffusion at grid points close
                                         ! to the CFL stability limit for vertical advection

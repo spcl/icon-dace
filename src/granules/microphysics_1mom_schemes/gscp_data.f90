@@ -1,8 +1,3 @@
-!
-! Description:
-!  This module contains variables that are used in the grid scale 
-!  parameterizations (Microphysics). 
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Description:
+!  This module contains variables that are used in the grid scale
+!  parameterizations (Microphysics).
 
 MODULE gscp_data
 

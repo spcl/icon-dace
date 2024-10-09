@@ -1,7 +1,3 @@
-!
-! Diagnosis of physics after physics call
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Diagnosis of physics after physics call
 
 !----------------------------
 #include "omp_definitions.inc"

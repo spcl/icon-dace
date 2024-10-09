@@ -1,6 +1,3 @@
-! @brief Inorganic carbon cycle.
-!        Calc dissolution, update of hydrogen ions
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Inorganic carbon cycle.
+!        Calc dissolution, update of hydrogen ions
+
 MODULE mo_carchm
   
 USE mo_bgc_memory_types, ONLY  : t_bgc_memory

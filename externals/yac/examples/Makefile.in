@@ -14,6 +14,10 @@
 
 @SET_MAKE@
 
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -88,38 +92,59 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-noinst_PROGRAMS = OASIS3_MCT_example/OASIS3_MCT_example.x$(EXEEXT) \
-	toy_dummy/dummy_atmosphere.x$(EXEEXT) \
-	toy_dummy/dummy_atmosphere_c.x$(EXEEXT) \
-	toy_dummy/dummy_io.x$(EXEEXT) toy_dummy/dummy_io_c.x$(EXEEXT) \
-	toy_dummy/dummy_ocean.x$(EXEEXT) \
-	toy_dummy/dummy_ocean_c.x$(EXEEXT) \
-	dynamic_config/dynamic_config.x$(EXEEXT) \
-	perf_toy/perf_toy_cube.x$(EXEEXT) \
-	perf_toy/perf_toy_icon.x$(EXEEXT) \
-	toy_coupling/toy_coupling.x$(EXEEXT) \
-	toy_callback/toy_icon_callback.x$(EXEEXT) \
-	toy_callback/toy_cube_callback.x$(EXEEXT) \
-	toy_icon_runoff/toy_icon_runoff_atm.x$(EXEEXT) \
-	toy_icon_runoff/toy_icon_runoff_ocn.x$(EXEEXT) \
-	toy_multi/toy_multi_cube.x$(EXEEXT) \
-	toy_multi/toy_multi_reg2d.x$(EXEEXT) \
-	toy_multi/toy_multi_unstruct.x$(EXEEXT) \
-	toy_multi/toy_multi_unstruct_2.x$(EXEEXT) \
-	interpolation_benchmark/toy_scrip.x$(EXEEXT) \
-	toy_atm_ocn/toy_icon_atm.x$(EXEEXT) \
-	toy_atm_ocn/toy_icon_ocn.x$(EXEEXT) \
-	toy_atm_ocn/toy_reg2d_atm.x$(EXEEXT) \
-	toy_atm_ocn/toy_reg2d_ocn.x$(EXEEXT) \
-	toy_atm_ocn/toy_mpiom_ocn.x$(EXEEXT) \
-	toy_atm_ocn/toy_woa_ocn.x$(EXEEXT) $(am__EXEEXT_1)
-@HAVE_NETCDF_TRUE@am__append_1 = \
-@HAVE_NETCDF_TRUE@        interpolation_benchmark/generate_OASIS_mask_file.x          \
-@HAVE_NETCDF_TRUE@        toy_output/toy_output.x
+noinst_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) $(am__EXEEXT_3) \
+	$(am__EXEEXT_4) $(am__EXEEXT_5) $(am__EXEEXT_6)
+
+# The following executables can be built without NetCDF but do not make sense
+# without the executables from the list above:
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@am__append_1 = OASIS3_MCT_example/OASIS3_MCT_example.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	interpolation_benchmark/toy_scrip.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	perf_toy/perf_toy_icon.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_icon_atm.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_icon_ocn.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_mpiom_ocn.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_woa_ocn.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_callback/toy_icon_callback.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_icon_runoff/toy_icon_runoff_atm.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_icon_runoff/toy_icon_runoff_ocn.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_unstruct.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_unstruct_2.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	perf_toy/perf_toy_cube.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_callback/toy_cube_callback.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_cube.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_reg2d.x
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@am__append_2 = \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@    toy_atm_ocn/toy_reg2d_atm.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@    toy_atm_ocn/toy_reg2d_ocn.x \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@    toy_coupling/toy_coupling.x
+
+@ENABLE_MCI_TRUE@@HAVE_NETCDF_TRUE@am__append_3 = \
+@ENABLE_MCI_TRUE@@HAVE_NETCDF_TRUE@    toy_output/toy_output.x
+
+@ENABLE_MCI_TRUE@am__append_4 = \
+@ENABLE_MCI_TRUE@    dynamic_config/dynamic_config.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_atmosphere.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_atmosphere_c.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_io.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_io_c.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_ocean.x \
+@ENABLE_MCI_TRUE@    toy_dummy/dummy_ocean_c.x
+
+@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@am__append_5 = \
+@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@    access_core/access_core.x
+
+@HAVE_NETCDF_TRUE@am__append_6 = \
+@HAVE_NETCDF_TRUE@    interpolation_benchmark/generate_OASIS_mask_file.x
+
+@ENABLE_UTILS_TRUE@am__append_7 = \
+@ENABLE_UTILS_TRUE@    $(top_builddir)/src/utils/libyac_utils.a
+
+@ENABLE_MCI_TRUE@am__append_8 = \
+@ENABLE_MCI_TRUE@    $(top_builddir)/src/mci/libyac_mci.a
 
 subdir = examples
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler_simple.m4 \
 	$(top_srcdir)/m4/acx_fc_c_compatible.m4 \
 	$(top_srcdir)/m4/acx_fc_include.m4 \
 	$(top_srcdir)/m4/acx_fc_line_length.m4 \
@@ -130,6 +155,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/acx_lang_lib.m4 \
 	$(top_srcdir)/m4/acx_lang_macro.m4 \
 	$(top_srcdir)/m4/acx_lang_mpi.m4 \
+	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
 	$(top_srcdir)/m4/acx_prog_mpirun.m4 \
 	$(top_srcdir)/m4/acx_prog_search.m4 \
@@ -142,99 +168,148 @@ DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/yac_config.h
-CONFIG_CLEAN_FILES = GR30_lsm.nc icon_grid_R02B03_G.nc \
-	icon_grid_R02B03_O.nc
+CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-@HAVE_NETCDF_TRUE@am__EXEEXT_1 = interpolation_benchmark/generate_OASIS_mask_file.x$(EXEEXT) \
-@HAVE_NETCDF_TRUE@	toy_output/toy_output.x$(EXEEXT)
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@am__EXEEXT_1 = OASIS3_MCT_example/OASIS3_MCT_example.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	interpolation_benchmark/toy_scrip.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	perf_toy/perf_toy_icon.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_icon_atm.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_icon_ocn.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_mpiom_ocn.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_atm_ocn/toy_woa_ocn.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_callback/toy_icon_callback.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_icon_runoff/toy_icon_runoff_atm.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_icon_runoff/toy_icon_runoff_ocn.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_unstruct.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_unstruct_2.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	perf_toy/perf_toy_cube.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_callback/toy_cube_callback.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_cube.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@	toy_multi/toy_multi_reg2d.x$(EXEEXT)
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@am__EXEEXT_2 = toy_atm_ocn/toy_reg2d_atm.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@	toy_atm_ocn/toy_reg2d_ocn.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@@ENABLE_UTILS_TRUE@	toy_coupling/toy_coupling.x$(EXEEXT)
+@ENABLE_MCI_TRUE@@HAVE_NETCDF_TRUE@am__EXEEXT_3 = toy_output/toy_output.x$(EXEEXT)
+@ENABLE_MCI_TRUE@am__EXEEXT_4 =  \
+@ENABLE_MCI_TRUE@	dynamic_config/dynamic_config.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_atmosphere.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_atmosphere_c.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_io.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_io_c.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_ocean.x$(EXEEXT) \
+@ENABLE_MCI_TRUE@	toy_dummy/dummy_ocean_c.x$(EXEEXT)
+@ENABLE_UTILS_TRUE@@HAVE_NETCDF_TRUE@am__EXEEXT_5 = access_core/access_core.x$(EXEEXT)
+@HAVE_NETCDF_TRUE@am__EXEEXT_6 = interpolation_benchmark/generate_OASIS_mask_file.x$(EXEEXT)
 PROGRAMS = $(noinst_PROGRAMS)
 OASIS3_MCT_example_OASIS3_MCT_example_x_SOURCES =  \
 	OASIS3_MCT_example/OASIS3_MCT_example.c
 am__dirstamp = $(am__leading_dot)dirstamp
 OASIS3_MCT_example_OASIS3_MCT_example_x_OBJECTS =  \
 	OASIS3_MCT_example/OASIS3_MCT_example.$(OBJEXT)
+OASIS3_MCT_example_OASIS3_MCT_example_x_LDADD = $(LDADD)
 am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/libyac.a \
+am__DEPENDENCIES_2 = $(am__append_7) $(am__append_8) \
+	$(top_builddir)/src/core/libyac_core.a $(am__DEPENDENCIES_1) \
 	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 OASIS3_MCT_example_OASIS3_MCT_example_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
+am_access_core_access_core_x_OBJECTS =  \
+	access_core/access_core.$(OBJEXT)
+access_core_access_core_x_OBJECTS =  \
+	$(am_access_core_access_core_x_OBJECTS)
+am__DEPENDENCIES_3 = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
+access_core_access_core_x_DEPENDENCIES = $(am__DEPENDENCIES_3)
 dynamic_config_dynamic_config_x_SOURCES =  \
 	dynamic_config/dynamic_config.c
 dynamic_config_dynamic_config_x_OBJECTS =  \
 	dynamic_config/dynamic_config.$(OBJEXT)
 dynamic_config_dynamic_config_x_LDADD = $(LDADD)
 dynamic_config_dynamic_config_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 interpolation_benchmark_generate_OASIS_mask_file_x_SOURCES =  \
 	interpolation_benchmark/generate_OASIS_mask_file.c
 interpolation_benchmark_generate_OASIS_mask_file_x_OBJECTS =  \
 	interpolation_benchmark/generate_OASIS_mask_file.$(OBJEXT)
 interpolation_benchmark_generate_OASIS_mask_file_x_LDADD = $(LDADD)
 interpolation_benchmark_generate_OASIS_mask_file_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 interpolation_benchmark_toy_scrip_x_SOURCES =  \
 	interpolation_benchmark/toy_scrip.c
 interpolation_benchmark_toy_scrip_x_OBJECTS =  \
 	interpolation_benchmark/toy_scrip.$(OBJEXT)
+interpolation_benchmark_toy_scrip_x_LDADD = $(LDADD)
 interpolation_benchmark_toy_scrip_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 perf_toy_perf_toy_cube_x_SOURCES = perf_toy/perf_toy_cube.c
 perf_toy_perf_toy_cube_x_OBJECTS = perf_toy/perf_toy_cube.$(OBJEXT)
-perf_toy_perf_toy_cube_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+perf_toy_perf_toy_cube_x_LDADD = $(LDADD)
+perf_toy_perf_toy_cube_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 perf_toy_perf_toy_icon_x_SOURCES = perf_toy/perf_toy_icon.c
 perf_toy_perf_toy_icon_x_OBJECTS = perf_toy/perf_toy_icon.$(OBJEXT)
-perf_toy_perf_toy_icon_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+perf_toy_perf_toy_icon_x_LDADD = $(LDADD)
+perf_toy_perf_toy_icon_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_icon_atm_x_SOURCES = toy_atm_ocn/toy_icon_atm.c
 toy_atm_ocn_toy_icon_atm_x_OBJECTS =  \
 	toy_atm_ocn/toy_icon_atm.$(OBJEXT)
-toy_atm_ocn_toy_icon_atm_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_icon_atm_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_icon_atm_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_icon_ocn_x_SOURCES = toy_atm_ocn/toy_icon_ocn.c
 toy_atm_ocn_toy_icon_ocn_x_OBJECTS =  \
 	toy_atm_ocn/toy_icon_ocn.$(OBJEXT)
-toy_atm_ocn_toy_icon_ocn_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_icon_ocn_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_icon_ocn_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_mpiom_ocn_x_SOURCES = toy_atm_ocn/toy_mpiom_ocn.c
 toy_atm_ocn_toy_mpiom_ocn_x_OBJECTS =  \
 	toy_atm_ocn/toy_mpiom_ocn.$(OBJEXT)
-toy_atm_ocn_toy_mpiom_ocn_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_mpiom_ocn_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_mpiom_ocn_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_reg2d_atm_x_SOURCES = toy_atm_ocn/toy_reg2d_atm.c
 toy_atm_ocn_toy_reg2d_atm_x_OBJECTS =  \
 	toy_atm_ocn/toy_reg2d_atm.$(OBJEXT)
-toy_atm_ocn_toy_reg2d_atm_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_reg2d_atm_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_reg2d_atm_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_reg2d_ocn_x_SOURCES = toy_atm_ocn/toy_reg2d_ocn.c
 toy_atm_ocn_toy_reg2d_ocn_x_OBJECTS =  \
 	toy_atm_ocn/toy_reg2d_ocn.$(OBJEXT)
-toy_atm_ocn_toy_reg2d_ocn_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_reg2d_ocn_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_reg2d_ocn_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_atm_ocn_toy_woa_ocn_x_SOURCES = toy_atm_ocn/toy_woa_ocn.c
 toy_atm_ocn_toy_woa_ocn_x_OBJECTS = toy_atm_ocn/toy_woa_ocn.$(OBJEXT)
-toy_atm_ocn_toy_woa_ocn_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_atm_ocn_toy_woa_ocn_x_LDADD = $(LDADD)
+toy_atm_ocn_toy_woa_ocn_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_callback_toy_cube_callback_x_SOURCES =  \
 	toy_callback/toy_cube_callback.c
 toy_callback_toy_cube_callback_x_OBJECTS =  \
 	toy_callback/toy_cube_callback.$(OBJEXT)
-toy_callback_toy_cube_callback_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_callback_toy_cube_callback_x_LDADD = $(LDADD)
+toy_callback_toy_cube_callback_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_callback_toy_icon_callback_x_SOURCES =  \
 	toy_callback/toy_icon_callback.c
 toy_callback_toy_icon_callback_x_OBJECTS =  \
 	toy_callback/toy_icon_callback.$(OBJEXT)
-toy_callback_toy_icon_callback_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_callback_toy_icon_callback_x_LDADD = $(LDADD)
+toy_callback_toy_icon_callback_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_coupling_toy_coupling_x_SOURCES = toy_coupling/toy_coupling.c
 toy_coupling_toy_coupling_x_OBJECTS =  \
 	toy_coupling/toy_coupling.$(OBJEXT)
-toy_coupling_toy_coupling_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_coupling_toy_coupling_x_LDADD = $(LDADD)
+toy_coupling_toy_coupling_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_dummy_dummy_atmosphere_x_OBJECTS =  \
 	toy_dummy/dummy_atmosphere.$(OBJEXT)
 toy_dummy_dummy_atmosphere_x_OBJECTS =  \
@@ -246,7 +321,7 @@ toy_dummy_dummy_atmosphere_c_x_OBJECTS =  \
 	toy_dummy/dummy_atmosphere_c.$(OBJEXT)
 toy_dummy_dummy_atmosphere_c_x_LDADD = $(LDADD)
 toy_dummy_dummy_atmosphere_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_dummy_dummy_io_x_OBJECTS = toy_dummy/dummy_io.$(OBJEXT)
 toy_dummy_dummy_io_x_OBJECTS = $(am_toy_dummy_dummy_io_x_OBJECTS)
 toy_dummy_dummy_io_x_DEPENDENCIES = $(am__DEPENDENCIES_3)
@@ -254,7 +329,7 @@ toy_dummy_dummy_io_c_x_SOURCES = toy_dummy/dummy_io_c.c
 toy_dummy_dummy_io_c_x_OBJECTS = toy_dummy/dummy_io_c.$(OBJEXT)
 toy_dummy_dummy_io_c_x_LDADD = $(LDADD)
 toy_dummy_dummy_io_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_dummy_dummy_ocean_x_OBJECTS = toy_dummy/dummy_ocean.$(OBJEXT)
 toy_dummy_dummy_ocean_x_OBJECTS =  \
 	$(am_toy_dummy_dummy_ocean_x_OBJECTS)
@@ -263,53 +338,61 @@ toy_dummy_dummy_ocean_c_x_SOURCES = toy_dummy/dummy_ocean_c.c
 toy_dummy_dummy_ocean_c_x_OBJECTS = toy_dummy/dummy_ocean_c.$(OBJEXT)
 toy_dummy_dummy_ocean_c_x_LDADD = $(LDADD)
 toy_dummy_dummy_ocean_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 toy_icon_runoff_toy_icon_runoff_atm_x_SOURCES =  \
 	toy_icon_runoff/toy_icon_runoff_atm.c
 toy_icon_runoff_toy_icon_runoff_atm_x_OBJECTS =  \
 	toy_icon_runoff/toy_icon_runoff_atm.$(OBJEXT)
+toy_icon_runoff_toy_icon_runoff_atm_x_LDADD = $(LDADD)
 toy_icon_runoff_toy_icon_runoff_atm_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 toy_icon_runoff_toy_icon_runoff_ocn_x_SOURCES =  \
 	toy_icon_runoff/toy_icon_runoff_ocn.c
 toy_icon_runoff_toy_icon_runoff_ocn_x_OBJECTS =  \
 	toy_icon_runoff/toy_icon_runoff_ocn.$(OBJEXT)
+toy_icon_runoff_toy_icon_runoff_ocn_x_LDADD = $(LDADD)
 toy_icon_runoff_toy_icon_runoff_ocn_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
+	$(am__DEPENDENCIES_1)
 am_toy_multi_toy_multi_cube_x_OBJECTS =  \
-	toy_multi/toy_multi_cube.$(OBJEXT) \
-	toy_multi/toy_multi_common.$(OBJEXT)
+	toy_multi/toy_multi_common.$(OBJEXT) \
+	toy_multi/toy_multi_cube.$(OBJEXT)
 toy_multi_toy_multi_cube_x_OBJECTS =  \
 	$(am_toy_multi_toy_multi_cube_x_OBJECTS)
-toy_multi_toy_multi_cube_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_multi_toy_multi_cube_x_LDADD = $(LDADD)
+toy_multi_toy_multi_cube_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_multi_toy_multi_reg2d_x_OBJECTS =  \
-	toy_multi/toy_multi_reg2d.$(OBJEXT) \
-	toy_multi/toy_multi_common.$(OBJEXT)
+	toy_multi/toy_multi_common.$(OBJEXT) \
+	toy_multi/toy_multi_reg2d.$(OBJEXT)
 toy_multi_toy_multi_reg2d_x_OBJECTS =  \
 	$(am_toy_multi_toy_multi_reg2d_x_OBJECTS)
-toy_multi_toy_multi_reg2d_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_multi_toy_multi_reg2d_x_LDADD = $(LDADD)
+toy_multi_toy_multi_reg2d_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_multi_toy_multi_unstruct_x_OBJECTS =  \
-	toy_multi/toy_multi_unstruct.$(OBJEXT) \
-	toy_multi/toy_multi_common.$(OBJEXT)
+	toy_multi/toy_multi_common.$(OBJEXT) \
+	toy_multi/toy_multi_unstruct.$(OBJEXT)
 toy_multi_toy_multi_unstruct_x_OBJECTS =  \
 	$(am_toy_multi_toy_multi_unstruct_x_OBJECTS)
-toy_multi_toy_multi_unstruct_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_multi_toy_multi_unstruct_x_LDADD = $(LDADD)
+toy_multi_toy_multi_unstruct_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_multi_toy_multi_unstruct_2_x_OBJECTS =  \
-	toy_multi/toy_multi_unstruct_2.$(OBJEXT) \
-	toy_multi/toy_multi_common.$(OBJEXT)
+	toy_multi/toy_multi_common.$(OBJEXT) \
+	toy_multi/toy_multi_unstruct_2.$(OBJEXT)
 toy_multi_toy_multi_unstruct_2_x_OBJECTS =  \
 	$(am_toy_multi_toy_multi_unstruct_2_x_OBJECTS)
-toy_multi_toy_multi_unstruct_2_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_3)
+toy_multi_toy_multi_unstruct_2_x_LDADD = $(LDADD)
+toy_multi_toy_multi_unstruct_2_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 am_toy_output_toy_output_x_OBJECTS = toy_output/toy_output.$(OBJEXT)
 toy_output_toy_output_x_OBJECTS =  \
 	$(am_toy_output_toy_output_x_OBJECTS)
 toy_output_toy_output_x_LDADD = $(LDADD)
 toy_output_toy_output_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1)
+	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -353,6 +436,17 @@ am__depfiles_remade =  \
 	toy_multi/$(DEPDIR)/toy_multi_unstruct_2.Po \
 	toy_output/$(DEPDIR)/toy_output.Po
 am__mv = mv -f
+AM_V_PPFC = $(am__v_PPFC_@AM_V@)
+am__v_PPFC_ = $(am__v_PPFC_@AM_DEFAULT_V@)
+am__v_PPFC_0 = @echo "  PPFC    " $@;
+am__v_PPFC_1 = 
+FCLD = $(FC)
+FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
+	$@
+AM_V_FCLD = $(am__v_FCLD_@AM_V@)
+am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
+am__v_FCLD_0 = @echo "  FCLD    " $@;
+am__v_FCLD_1 = 
 COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
 	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 AM_V_CC = $(am__v_CC_@AM_V@)
@@ -370,14 +464,8 @@ AM_V_FC = $(am__v_FC_@AM_V@)
 am__v_FC_ = $(am__v_FC_@AM_DEFAULT_V@)
 am__v_FC_0 = @echo "  FC      " $@;
 am__v_FC_1 = 
-FCLD = $(FC)
-FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
-	$@
-AM_V_FCLD = $(am__v_FCLD_@AM_V@)
-am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
-am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
 SOURCES = OASIS3_MCT_example/OASIS3_MCT_example.c \
+	$(access_core_access_core_x_SOURCES) \
 	dynamic_config/dynamic_config.c \
 	interpolation_benchmark/generate_OASIS_mask_file.c \
 	interpolation_benchmark/toy_scrip.c perf_toy/perf_toy_cube.c \
@@ -398,6 +486,7 @@ SOURCES = OASIS3_MCT_example/OASIS3_MCT_example.c \
 	$(toy_multi_toy_multi_unstruct_2_x_SOURCES) \
 	$(toy_output_toy_output_x_SOURCES)
 DIST_SOURCES = OASIS3_MCT_example/OASIS3_MCT_example.c \
+	$(access_core_access_core_x_SOURCES) \
 	dynamic_config/dynamic_config.c \
 	interpolation_benchmark/generate_OASIS_mask_file.c \
 	interpolation_benchmark/toy_scrip.c perf_toy/perf_toy_cube.c \
@@ -457,6 +546,7 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CURL = @CURL@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -484,7 +574,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LAPACK_CFLAGS = @LAPACK_CFLAGS@
 LAPACK_CLIBS = @LAPACK_CLIBS@
-LAPACK_FCLIBS = @LAPACK_FCLIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -502,6 +591,8 @@ MTIME_CLIBS = @MTIME_CLIBS@
 NETCDF_CFLAGS = @NETCDF_CFLAGS@
 NETCDF_CLIBS = @NETCDF_CLIBS@
 OBJEXT = @OBJEXT@
+OPENMP_CFLAGS = @OPENMP_CFLAGS@
+OPENMP_FCLIBS = @OPENMP_FCLIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -511,16 +602,19 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PIC_CFLAGS = @PIC_CFLAGS@
+PIC_FCFLAGS = @PIC_FCFLAGS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
+PYTHON_CFLAGS = @PYTHON_CFLAGS@
 RANLIB = @RANLIB@
+RPATH_CFLAGS = @RPATH_CFLAGS@
+RPATH_FCFLAGS = @RPATH_FCFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_ENVIRONMENT_MAKE = @SHLIB_ENVIRONMENT_MAKE@
 STRIP = @STRIP@
 VERSION = @VERSION@
 YAXT_CFLAGS = @YAXT_CFLAGS@
@@ -580,59 +674,73 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_CFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/contrib \
-        $(MPI_CFLAGS) \
-        $(YAXT_CFLAGS) \
-        $(NETCDF_CFLAGS) \
-        $(FYAML_CFLAGS) \
-        $(MTIME_CFLAGS)
+AM_CPPFLAGS = \
+    -I$(top_srcdir)/src/mci \
+    -I$(top_builddir)/src/core \
+    -I$(top_builddir)/src/utils
 
-AM_FCFLAGS = $(FCMODINC)$(top_builddir)/src $(FCPPINC)$(top_builddir)/src $(MPI_FCFLAGS)
-LDADD_COMMON = $(top_builddir)/src/libyac.a \
-        $(LAPACK_CLIBS) \
-        $(MTIME_CLIBS) \
-        $(FYAML_CLIBS) \
-        $(NETCDF_CLIBS) \
-        $(YAXT_CLIBS)
+AM_CFLAGS = \
+    $(OPENMP_CFLAGS) \
+    $(MPI_CFLAGS) \
+    $(YAXT_CFLAGS) \
+    $(NETCDF_CFLAGS) \
+    $(FYAML_CFLAGS) \
+    $(MTIME_CFLAGS)
 
-LDADD = $(LDADD_COMMON) $(MPI_CLIBS)
-FCLDADD = $(LDADD_COMMON) $(MPI_FCLIBS)
+AM_FCFLAGS = \
+    $(FCMODINC)$(top_builddir)/src/mci \
+    $(FCMODINC)$(top_builddir)/src/core \
+    $(FCMODINC)$(top_builddir)/src/utils \
+    $(MPI_FCFLAGS)
+
+LDADD_COMMON = $(am__append_7) $(am__append_8) \
+	$(top_builddir)/src/core/libyac_core.a $(LAPACK_CLIBS) \
+	$(MTIME_CLIBS) $(FYAML_CLIBS) $(NETCDF_CLIBS) $(YAXT_CLIBS)
+LDADD = $(LDADD_COMMON) $(MPI_CLIBS) $(RPATH_CFLAGS)
+FCLDADD = $(LDADD_COMMON) $(OPENMP_FCLIBS) $(MPI_FCLIBS) $(RPATH_FCFLAGS)
 AM_DEFAULT_SOURCE_EXT = .c
 EXTRA_DIST = toy_atm_ocn/toy_common.h
-OASIS3_MCT_example_OASIS3_MCT_example_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
+access_core_access_core_x_LDADD = $(FCLDADD)
+access_core_access_core_x_SOURCES = access_core/access_core.F90
 toy_dummy_dummy_atmosphere_x_LDADD = $(FCLDADD)
 toy_dummy_dummy_atmosphere_x_SOURCES = toy_dummy/dummy_atmosphere.f90
 toy_dummy_dummy_io_x_LDADD = $(FCLDADD)
 toy_dummy_dummy_io_x_SOURCES = toy_dummy/dummy_io.f90
 toy_dummy_dummy_ocean_x_LDADD = $(FCLDADD)
 toy_dummy_dummy_ocean_x_SOURCES = toy_dummy/dummy_ocean.f90
-toy_callback_toy_cube_callback_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_callback_toy_icon_callback_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-perf_toy_perf_toy_cube_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-perf_toy_perf_toy_icon_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_coupling_toy_coupling_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_icon_atm_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_icon_ocn_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_reg2d_atm_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_reg2d_ocn_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_mpiom_ocn_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_atm_ocn_toy_woa_ocn_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_icon_runoff_toy_icon_runoff_atm_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_icon_runoff_toy_icon_runoff_ocn_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_multi_toy_multi_cube_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_multi_toy_multi_cube_x_SOURCES = toy_multi/toy_multi_cube.c toy_multi/toy_multi_common.c toy_multi/toy_multi_common.h
-toy_multi_toy_multi_reg2d_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_multi_toy_multi_reg2d_x_SOURCES = toy_multi/toy_multi_reg2d.c toy_multi/toy_multi_common.c toy_multi/toy_multi_common.h
-toy_multi_toy_multi_unstruct_2_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_multi_toy_multi_unstruct_2_x_SOURCES = toy_multi/toy_multi_unstruct_2.c toy_multi/toy_multi_common.c toy_multi/toy_multi_common.h
-toy_multi_toy_multi_unstruct_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-toy_multi_toy_multi_unstruct_x_SOURCES = toy_multi/toy_multi_unstruct.c toy_multi/toy_multi_common.c toy_multi/toy_multi_common.h
-interpolation_benchmark_toy_scrip_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
+toy_multi_toy_multi_cube_x_SOURCES = \
+    toy_multi/toy_multi_common.c \
+    toy_multi/toy_multi_common.h \
+    toy_multi/toy_multi_cube.c
+
+toy_multi_toy_multi_reg2d_x_SOURCES = \
+    toy_multi/toy_multi_common.c \
+    toy_multi/toy_multi_common.h \
+    toy_multi/toy_multi_reg2d.c
+
+toy_multi_toy_multi_unstruct_2_x_SOURCES = \
+    toy_multi/toy_multi_common.c \
+    toy_multi/toy_multi_common.h \
+    toy_multi/toy_multi_unstruct_2.c
+
+toy_multi_toy_multi_unstruct_x_SOURCES = \
+    toy_multi/toy_multi_common.c \
+    toy_multi/toy_multi_common.h \
+    toy_multi/toy_multi_unstruct.c
+
 toy_output_toy_output_x_SOURCES = toy_output/toy_output.c
+
+# Compile *.F90 without CPPFLAGS, which are normally meant for the C compiler
+# and might not be compatible with the Fortran compiler:
+FCDEFS = $(FCPPDEF)HAVE_CONFIG_H
+DEFAULT_FCINCLUDES = $(FCPPINC).@yac_fcisrc@ $(FCPPINC)$(top_builddir)/src
+PPFCCOMPILE = $(FC) $(FCDEFS) $(DEFAULT_FCINCLUDES) $(FCINCLUDES) \
+	$(AM_FCFLAGS) $(FCFLAGS)
+
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .f90 .o .obj
+.SUFFIXES: .F90 .c .f90 .o .obj
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -678,6 +786,18 @@ OASIS3_MCT_example/OASIS3_MCT_example.$(OBJEXT):  \
 OASIS3_MCT_example/OASIS3_MCT_example.x$(EXEEXT): $(OASIS3_MCT_example_OASIS3_MCT_example_x_OBJECTS) $(OASIS3_MCT_example_OASIS3_MCT_example_x_DEPENDENCIES) $(EXTRA_OASIS3_MCT_example_OASIS3_MCT_example_x_DEPENDENCIES) OASIS3_MCT_example/$(am__dirstamp)
 	@rm -f OASIS3_MCT_example/OASIS3_MCT_example.x$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(OASIS3_MCT_example_OASIS3_MCT_example_x_OBJECTS) $(OASIS3_MCT_example_OASIS3_MCT_example_x_LDADD) $(LIBS)
+access_core/$(am__dirstamp):
+	@$(MKDIR_P) access_core
+	@: > access_core/$(am__dirstamp)
+access_core/$(DEPDIR)/$(am__dirstamp):
+	@$(MKDIR_P) access_core/$(DEPDIR)
+	@: > access_core/$(DEPDIR)/$(am__dirstamp)
+access_core/access_core.$(OBJEXT): access_core/$(am__dirstamp) \
+	access_core/$(DEPDIR)/$(am__dirstamp)
+
+access_core/access_core.x$(EXEEXT): $(access_core_access_core_x_OBJECTS) $(access_core_access_core_x_DEPENDENCIES) $(EXTRA_access_core_access_core_x_DEPENDENCIES) access_core/$(am__dirstamp)
+	@rm -f access_core/access_core.x$(EXEEXT)
+	$(AM_V_FCLD)$(FCLINK) $(access_core_access_core_x_OBJECTS) $(access_core_access_core_x_LDADD) $(LIBS)
 dynamic_config/$(am__dirstamp):
 	@$(MKDIR_P) dynamic_config
 	@: > dynamic_config/$(am__dirstamp)
@@ -871,9 +991,9 @@ toy_multi/$(am__dirstamp):
 toy_multi/$(DEPDIR)/$(am__dirstamp):
 	@$(MKDIR_P) toy_multi/$(DEPDIR)
 	@: > toy_multi/$(DEPDIR)/$(am__dirstamp)
-toy_multi/toy_multi_cube.$(OBJEXT): toy_multi/$(am__dirstamp) \
-	toy_multi/$(DEPDIR)/$(am__dirstamp)
 toy_multi/toy_multi_common.$(OBJEXT): toy_multi/$(am__dirstamp) \
+	toy_multi/$(DEPDIR)/$(am__dirstamp)
+toy_multi/toy_multi_cube.$(OBJEXT): toy_multi/$(am__dirstamp) \
 	toy_multi/$(DEPDIR)/$(am__dirstamp)
 
 toy_multi/toy_multi_cube.x$(EXEEXT): $(toy_multi_toy_multi_cube_x_OBJECTS) $(toy_multi_toy_multi_cube_x_DEPENDENCIES) $(EXTRA_toy_multi_toy_multi_cube_x_DEPENDENCIES) toy_multi/$(am__dirstamp)
@@ -913,6 +1033,7 @@ toy_output/toy_output.x$(EXEEXT): $(toy_output_toy_output_x_OBJECTS) $(toy_outpu
 mostlyclean-compile:
 	-rm -f *.$(OBJEXT)
 	-rm -f OASIS3_MCT_example/*.$(OBJEXT)
+	-rm -f access_core/*.$(OBJEXT)
 	-rm -f dynamic_config/*.$(OBJEXT)
 	-rm -f interpolation_benchmark/*.$(OBJEXT)
 	-rm -f perf_toy/*.$(OBJEXT)
@@ -959,6 +1080,12 @@ $(am__depfiles_remade):
 	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
 
 am--depfiles: $(am__depfiles_remade)
+
+.F90.o:
+	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ $<
+
+.F90.obj:
+	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
 
 .c.o:
 @am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
@@ -1098,6 +1225,8 @@ distclean-generic:
 	-test . = "$(srcdir)" || test -z "$(CONFIG_CLEAN_VPATH_FILES)" || rm -f $(CONFIG_CLEAN_VPATH_FILES)
 	-rm -f OASIS3_MCT_example/$(DEPDIR)/$(am__dirstamp)
 	-rm -f OASIS3_MCT_example/$(am__dirstamp)
+	-rm -f access_core/$(DEPDIR)/$(am__dirstamp)
+	-rm -f access_core/$(am__dirstamp)
 	-rm -f dynamic_config/$(DEPDIR)/$(am__dirstamp)
 	-rm -f dynamic_config/$(am__dirstamp)
 	-rm -f interpolation_benchmark/$(DEPDIR)/$(am__dirstamp)
@@ -1261,7 +1390,7 @@ uninstall-am:
 
 
 clean-local:
-	-rm -rf *.x.dSYM *.vtk *.0 *.i
+	-rm -f */*.vtk
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

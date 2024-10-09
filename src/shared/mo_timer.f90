@@ -80,8 +80,10 @@ MODULE mo_timer
   PUBLIC :: timer_coupling_init_def_comp, timer_coupling_init_enddef
   PUBLIC :: timer_coupling_very_1stget, timer_coupling_1stget
   PUBLIC :: timer_coupling_get, timer_coupling_put
+  PUBLIC :: timer_coupling_output, timer_coupling_output_buf_prep
+  PUBLIC :: timer_coupling_output_1stput, timer_coupling_output_put
 
-  ! iconam - aes coupling
+  ! iconam - aes physics coupling
   PUBLIC :: timer_iconam_aes
   PUBLIC :: timer_dyn2phy, timer_d2p_sync
   PUBLIC :: timer_aes_bcs, timer_aes_phy
@@ -98,15 +100,33 @@ MODULE mo_timer
   PUBLIC :: timer_qvi
   PUBLIC :: timer_uvi
   PUBLIC :: timer_ene
+  PUBLIC :: timer_atm_energy_diag
+  PUBLIC :: timer_atm_energy_hint
+  PUBLIC :: timer_atm_energy_vint
   !
-  ! aes radiation
-  PUBLIC :: timer_rrtm_prep, timer_rrtm_post
-  PUBLIC :: timer_lrtm, timer_srtm
-#ifdef PSRAD_TIMING
-  PUBLIC :: timer_gas_optics_lw, timer_gas_optics_sw, timer_cloud_optics, &
-    timer_sample_cloud_lw, timer_sample_cloud_sw, &
-    timer_rrtm_coeffs, timer_psrad_scaling, timer_psrad_aerosol
-#endif
+  ! rte-rrtmgp radiation
+  PUBLIC :: timer_rte_rrtmgp_rad
+  PUBLIC :: timer_rte_rrtmgp_int
+  PUBLIC :: timer_rte_rrtmgp_int_onb
+  PUBLIC :: timer_gas_concs
+  PUBLIC :: timer_clamp_pr_temp
+  PUBLIC :: timer_source_lw
+  PUBLIC :: timer_atmos_lw
+  PUBLIC :: timer_k_dist_lw
+  PUBLIC :: timer_aerosol_lw
+  PUBLIC :: timer_rte_lw_clrsky
+  PUBLIC :: timer_clouds_bnd_lw
+  PUBLIC :: timer_cloud_optics_lw
+  PUBLIC :: timer_snow_bnd_lw
+  PUBLIC :: timer_rte_lw_allsky
+  PUBLIC :: timer_atmos_sw
+  PUBLIC :: timer_k_dist_sw
+  PUBLIC :: timer_aerosol_sw
+  PUBLIC :: timer_rte_sw_clrsky
+  PUBLIC :: timer_clouds_bnd_sw
+  PUBLIC :: timer_cloud_optics_sw
+  PUBLIC :: timer_snow_bnd_sw
+  PUBLIC :: timer_rte_sw_allsky
 
   ! nwp physics
   PUBLIC :: timer_satad_v_3D
@@ -121,6 +141,8 @@ MODULE mo_timer
   PUBLIC :: timer_nwp_convection
   PUBLIC :: timer_nwp_radiation
   PUBLIC :: timer_pre_radiation_nwp
+  PUBLIC :: timer_rrtm_prep, timer_rrtm_post
+  PUBLIC :: timer_lrtm, timer_srtm
   PUBLIC :: timer_phys_acc, timer_phys_acc_1,timer_phys_acc_2, timer_phys_dpsdt
   PUBLIC :: timer_phys_sync_tracers
   PUBLIC :: timer_phys_sync_tempv
@@ -303,6 +325,8 @@ MODULE mo_timer
   INTEGER :: timer_radiaton_recv, timer_radiaton_comp, timer_radiaton_send, &
        &     timer_preradiaton
   INTEGER :: timer_pre_radiation_nwp
+  INTEGER :: timer_rrtm_prep, timer_rrtm_post
+  INTEGER :: timer_lrtm, timer_srtm
   INTEGER :: timer_phys_acc, timer_phys_acc_1,timer_phys_acc_2, timer_phys_dpsdt
   INTEGER :: timer_phys_sync_tracers
   INTEGER :: timer_phys_sync_tempv
@@ -349,10 +373,12 @@ MODULE mo_timer
   INTEGER :: timer_coupling_init_def_comp, timer_coupling_init_enddef
   INTEGER :: timer_coupling_very_1stget, timer_coupling_1stget
   INTEGER :: timer_coupling_get, timer_coupling_put
+  INTEGER :: timer_coupling_output, timer_coupling_output_buf_prep
+  INTEGER :: timer_coupling_output_1stput, timer_coupling_output_put
 
   ! Timer ID's for physics-dynamics coupling
 
-  ! iconam - aes coupling
+  ! iconam - aes physics coupling
   INTEGER :: timer_iconam_aes
   INTEGER :: timer_dyn2phy, timer_d2p_sync
   INTEGER :: timer_aes_bcs, timer_aes_phy
@@ -369,16 +395,33 @@ MODULE mo_timer
   INTEGER :: timer_qvi
   INTEGER :: timer_uvi
   INTEGER :: timer_ene
+  INTEGER :: timer_atm_energy_diag
+  INTEGER :: timer_atm_energy_hint
+  INTEGER :: timer_atm_energy_vint
   !
-  ! aes radiation
-  INTEGER :: timer_rrtm_prep, timer_rrtm_post
-  INTEGER :: timer_lrtm, timer_srtm
-#ifdef PSRAD_TIMING
-  ! Timers for EMVORADO
-  INTEGER :: timer_gas_optics_lw, timer_gas_optics_sw, timer_cloud_optics, &
-    timer_sample_cloud_lw, timer_sample_cloud_sw, &
-    timer_rrtm_coeffs, timer_psrad_scaling, timer_psrad_aerosol
-#endif
+  ! rte-rrtmgp radiation
+  INTEGER :: timer_rte_rrtmgp_rad
+  INTEGER :: timer_rte_rrtmgp_int
+  INTEGER :: timer_rte_rrtmgp_int_onb
+  INTEGER :: timer_gas_concs
+  INTEGER :: timer_clamp_pr_temp
+  INTEGER :: timer_source_lw
+  INTEGER :: timer_atmos_lw
+  INTEGER :: timer_k_dist_lw
+  INTEGER :: timer_aerosol_lw
+  INTEGER :: timer_rte_lw_clrsky
+  INTEGER :: timer_clouds_bnd_lw
+  INTEGER :: timer_cloud_optics_lw
+  INTEGER :: timer_snow_bnd_lw
+  INTEGER :: timer_rte_lw_allsky
+  INTEGER :: timer_atmos_sw
+  INTEGER :: timer_k_dist_sw
+  INTEGER :: timer_aerosol_sw
+  INTEGER :: timer_rte_sw_clrsky
+  INTEGER :: timer_clouds_bnd_sw
+  INTEGER :: timer_cloud_optics_sw
+  INTEGER :: timer_snow_bnd_sw
+  INTEGER :: timer_rte_sw_allsky
 
   INTEGER :: timer_omp_radiation
   INTEGER :: timer_write_output
@@ -500,7 +543,7 @@ CONTAINS
 #ifdef __SCT__
 
     USE mo_util_sysinfo,    ONLY: util_user_name, util_os_system, util_node_name
-    USE mo_util_vcs,        ONLY: util_repository_url, util_branch_name, util_revision_key
+    USE mo_util_vcs,        ONLY: get_revision, get_remote_url, get_local_branch
     USE mtime,              ONLY: timedelta, newTimedelta, deallocateTimedelta, &
          &                        OPERATOR(-), timedeltaToString, max_timedelta_str_len
     USE mo_time_config,     ONLY: time_config 
@@ -510,9 +553,6 @@ CONTAINS
     
     INTEGER :: istat
     
-    CHARACTER(len=256) :: repository  = ''
-    CHARACTER(len=256) :: branch      = ''
-    CHARACTER(len=256) :: revision    = ''
     CHARACTER(len=256) :: executable  = ''
     CHARACTER(len=256) :: user_name   = ''
     CHARACTER(len=256) :: os_name     = ''
@@ -523,19 +563,12 @@ CONTAINS
     CHARACTER(len=256) :: submit_date = ''        
     CHARACTER(len=256) :: tmp_string  = ''
     
-    INTEGER :: nlen, nlena, nlenb, nlenc, nlend
+    INTEGER :: nlena, nlenb, nlenc, nlend
 
     CHARACTER(len=max_timedelta_str_len) :: tdstring
     TYPE(timedelta), POINTER :: length_of_run
 
     CHARACTER(len=6) :: gridstring
-    
-    nlen = 256
-    call util_repository_url(repository, nlen)
-    nlen = 256
-    call util_branch_name(branch, nlen)
-    nlen = 256
-    call util_revision_key(revision, nlen)
     
     tmp_string = ''
     CALL util_os_system (tmp_string, nlena)
@@ -567,9 +600,9 @@ CONTAINS
     
     CALL sct_add_report_attribute('model',                 'icon')
     CALL sct_add_report_attribute('executable',            executable)
-    CALL sct_add_report_attribute('repository',            repository)
-    CALL sct_add_report_attribute('branch',                branch)
-    CALL sct_add_report_attribute('revision',              revision)
+    CALL sct_add_report_attribute('revision',              get_revision('icon'))
+    CALL sct_add_report_attribute('remote_url',            get_remote_url('icon'))
+    CALL sct_add_report_attribute('branch',                get_local_branch('icon'))
     CALL sct_add_report_attribute('user name',             user_name)
     CALL sct_add_report_attribute('operating system name', os_name)
     CALL sct_add_report_attribute('experiment name',       expname)
@@ -665,14 +698,18 @@ CONTAINS
     timer_intp      = new_timer("intp")
 
     ! atmosphere-ocean coupling
-    timer_coupling               = new_timer("coupling")
-    timer_coupling_init          = new_timer("coupling_init")
-    timer_coupling_init_def_comp = new_timer("coupling_init_def_comp")
-    timer_coupling_init_enddef   = new_timer("coupling_init_enddef")
-    timer_coupling_very_1stget   = new_timer("coupling_very_1stget")
-    timer_coupling_1stget        = new_timer("coupling_1stget")
-    timer_coupling_get           = new_timer("coupling_get")
-    timer_coupling_put           = new_timer("coupling_put")
+    timer_coupling                    = new_timer("coupling")
+    timer_coupling_init               = new_timer("coupling_init")
+    timer_coupling_init_def_comp      = new_timer("coupling_init_def_comp")
+    timer_coupling_init_enddef        = new_timer("coupling_init_enddef")
+    timer_coupling_very_1stget        = new_timer("coupling_very_1stget")
+    timer_coupling_1stget             = new_timer("coupling_1stget")
+    timer_coupling_get                = new_timer("coupling_get")
+    timer_coupling_put                = new_timer("coupling_put")
+    timer_coupling_output             = new_timer("coupling_output")
+    timer_coupling_output_buf_prep    = new_timer("coupling_output_buf_prep")
+    timer_coupling_output_1stput      = new_timer("coupling_output_1stput")
+    timer_coupling_output_put         = new_timer("coupling_output_put")
 
     IF (iforcing == iaes) THEN
        !
@@ -685,7 +722,7 @@ CONTAINS
        timer_phy2dyn     = new_timer("phy2dyn")
        timer_p2d_sync    = new_timer("p2d_sync")
        !
-       ! physics
+       ! aes physics
        timer_rad    = new_timer("interface_aes_rad")
        timer_rht    = new_timer("interface_aes_rht")
        timer_vdf    = new_timer("interface_aes_vdf")
@@ -700,10 +737,37 @@ CONTAINS
        timer_car    = new_timer("interface_aes_car")
        timer_wmo    = new_timer("interface_aes_wmo")
        !
+       ! rte-rrtmgp radiation
+       timer_rte_rrtmgp_rad     = new_timer("rte_rrtmgp_rad")
+       timer_rte_rrtmgp_int     = new_timer("rte_rrtmgp_int")
+       timer_rte_rrtmgp_int_onb = new_timer("rte_rrtmgp_int_onb")
+       timer_gas_concs          = new_timer("gas_concs")
+       timer_clamp_pr_temp      = new_timer("clamp_pr_temp")
+       timer_source_lw          = new_timer("source_lw")
+       timer_atmos_lw           = new_timer("atmos_lw")
+       timer_k_dist_lw          = new_timer("k_dist_lw")
+       timer_aerosol_lw         = new_timer("aerosol_lw")
+       timer_rte_lw_clrsky      = new_timer("rte_lw_clrsky")
+       timer_clouds_bnd_lw      = new_timer("clouds_bnd_lw")
+       timer_cloud_optics_lw    = new_timer("cloud_optics_lw")
+       timer_snow_bnd_lw        = new_timer("snow_bnd_lw")
+       timer_rte_lw_allsky      = new_timer("rte_lw_allsky")
+       timer_atmos_sw           = new_timer("atmos_sw")
+       timer_k_dist_sw          = new_timer("k_dist_sw")
+       timer_aerosol_sw         = new_timer("aerosol_sw")
+       timer_rte_sw_clrsky      = new_timer("rte_sw_clrsky")
+       timer_clouds_bnd_sw      = new_timer("clouds_bnd_sw")
+       timer_cloud_optics_sw    = new_timer("cloud_optics_sw")
+       timer_snow_bnd_sw        = new_timer("snow_bnd_sw")
+       timer_rte_sw_allsky      = new_timer("rte_sw_allsky")
+       !
        ! diagnostics
        timer_qvi    = new_timer("diagnose_qvi")
        timer_uvi    = new_timer("diagnose_uvi")
        timer_ene    = new_timer("diagnose_ene")
+       timer_atm_energy_diag = new_timer("atm_energy_diag")
+       timer_atm_energy_hint = new_timer("atm_energy_hint")
+       timer_atm_energy_vint = new_timer("atm_energy_vint")
        timer_cov    = new_timer("diagnose_cov")
        !
     END IF
@@ -713,16 +777,6 @@ CONTAINS
     timer_rrtm_post = new_timer("rrtm_post")
     timer_lrtm      = new_timer("lrtm")
     timer_srtm      = new_timer("srtm")
-#ifdef PSRAD_TIMING
-    timer_gas_optics_lw = new_timer("gas_optics_lw")
-    timer_gas_optics_sw = new_timer("gas_optics_sw")
-    timer_rrtm_coeffs = new_timer("rrtm_coeffs")
-    timer_cloud_optics = new_timer("cloud_optics")
-    timer_sample_cloud_lw = new_timer("sample_cloud")
-    timer_sample_cloud_sw = new_timer("sample_cloud")
-    timer_psrad_scaling = new_timer("psrad_scaling")
-    timer_psrad_aerosol = new_timer("psrad_aerosol")
-#endif
 
     ! nwp physics timers
     timer_omp_radiation = new_timer("omp_radiation")

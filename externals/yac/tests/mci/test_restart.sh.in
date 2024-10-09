@@ -1,0 +1,16 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+set -e
+
+@TEST_MPI_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
+
+GRID_DIR=@top_builddir@/grids/
+
+@MPI_LAUNCH@ -n 3 ./test_restart_c.x $GRID_DIR
+@MPI_LAUNCH@ -n 3 ./test_restart_dble.x $GRID_DIR
+

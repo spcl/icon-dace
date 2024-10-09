@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 The toy_scrip and generate_OASIS_mask_file tools were used to generate the data for:
   Valcke S, Piacentini A, Jonville G.
   Benchmarking Regridding Libraries Used in Earth System Modelling.

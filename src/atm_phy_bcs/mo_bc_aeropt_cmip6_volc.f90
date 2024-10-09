@@ -1,7 +1,3 @@
-!
-! Read and apply optical properties of aerosol climatology
-!        for volcanic stratospheric aerosols as provided for CMIP6
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Read and apply optical properties of aerosol climatology
+! for volcanic stratospheric aerosols as provided for CMIP6
 
 MODULE mo_bc_aeropt_cmip6_volc
 

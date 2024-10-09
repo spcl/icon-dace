@@ -13,6 +13,10 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -87,13 +91,14 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-@EXTERNAL_MTIME_FALSE@am__append_1 = mtime
+@ENABLE_MCI_TRUE@@EXTERNAL_MTIME_FALSE@am__append_1 = mtime
 @EXTERNAL_LAPACK_FALSE@am__append_2 = clapack
 @ENABLE_PYTHON_BINDINGS_TRUE@am__append_3 = python
-@ENABLE_LIB_ONLY_FALSE@am__append_4 = examples
+@ENABLE_EXAMPLES_TRUE@am__append_4 = examples
+@ENABLE_TOOLS_TRUE@am__append_5 = tools
 subdir = .
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler_simple.m4 \
 	$(top_srcdir)/m4/acx_fc_c_compatible.m4 \
 	$(top_srcdir)/m4/acx_fc_include.m4 \
 	$(top_srcdir)/m4/acx_fc_line_length.m4 \
@@ -104,6 +109,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/acx_lang_lib.m4 \
 	$(top_srcdir)/m4/acx_lang_macro.m4 \
 	$(top_srcdir)/m4/acx_lang_mpi.m4 \
+	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
 	$(top_srcdir)/m4/acx_prog_mpirun.m4 \
 	$(top_srcdir)/m4/acx_prog_search.m4 \
@@ -121,25 +127,18 @@ CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/yac_config.h
 CONFIG_CLEAN_FILES =  \
 	examples/OASIS3_MCT_example/OASIS3_MCT_example.sh \
-	examples/toy_coupling/toy_coupling.sh \
-	examples/toy_icon_runoff/toy_icon_runoff.sh \
-	examples/toy_multi/toy_multi.sh examples/perf_toy/perf_toy.sh \
-	examples/toy_atm_ocn/toy_atm_ocn.sh \
-	examples/toy_dummy/dummy_c.sh examples/toy_dummy/dummy.sh \
-	examples/toy_callback/toy_callback.sh \
 	examples/dynamic_config/dynamic_config.sh \
 	examples/interpolation_benchmark/toy_scrip_GEN_MASK.sh \
 	examples/interpolation_benchmark/toy_scrip_ICOS_ICOH.sh \
 	examples/interpolation_benchmark/toy_scrip_NOGT_ICOH.sh \
 	examples/interpolation_benchmark/toy_scrip_NOICOH.sh \
-	python/tests/seq_plot_noise_test.sh \
-	python/tests/par_plot_noise_test.sh \
-	python/tests/seq_noise2nc_test.sh \
-	python/tests/par_noise2nc_test.sh \
-	python/tests/seq_nc2plot_test.sh \
-	python/tests/par_nc2plot_test.sh \
-	python/tests/multithreading.sh python/tests/test_interface.sh \
-	src/pkgconfig/yac.pc
+	examples/perf_toy/perf_toy.sh \
+	examples/toy_atm_ocn/toy_atm_ocn.sh \
+	examples/toy_callback/toy_callback.sh \
+	examples/toy_coupling/toy_coupling.sh \
+	examples/toy_dummy/dummy.sh examples/toy_dummy/dummy_c.sh \
+	examples/toy_icon_runoff/toy_icon_runoff.sh \
+	examples/toy_multi/toy_multi.sh
 CONFIG_CLEAN_VPATH_FILES =
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
@@ -193,7 +192,7 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-DIST_SUBDIRS = src mtime clapack python contrib examples tests
+DIST_SUBDIRS = src grids mtime clapack python examples tools tests
 am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/compile \
 	$(top_srcdir)/config/config.guess \
 	$(top_srcdir)/config/config.sub \
@@ -211,49 +210,8 @@ am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/compile \
 	$(top_srcdir)/examples/toy_dummy/dummy.sh.in \
 	$(top_srcdir)/examples/toy_dummy/dummy_c.sh.in \
 	$(top_srcdir)/examples/toy_icon_runoff/toy_icon_runoff.sh.in \
-	$(top_srcdir)/examples/toy_multi/toy_multi.sh.in \
-	$(top_srcdir)/grids/GR30_lsm.nc \
-	$(top_srcdir)/grids/icon_grid_R02B00.nc \
-	$(top_srcdir)/grids/icon_grid_R02B02.nc \
-	$(top_srcdir)/grids/icon_grid_R02B03_G.nc \
-	$(top_srcdir)/grids/icon_grid_R02B03_O.nc \
-	$(top_srcdir)/input/couple_config_test.yaml \
-	$(top_srcdir)/input/coupling_test.yaml \
-	$(top_srcdir)/input/coupling_test2.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_a_comp_b.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_a_comp_c.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_a_intra.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_b_comp_c.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_b_intra.yaml \
-	$(top_srcdir)/input/coupling_test3_comp_c_intra.yaml \
-	$(top_srcdir)/input/coupling_test3_default.yaml \
-	$(top_srcdir)/input/coupling_test4.yaml \
-	$(top_srcdir)/input/coupling_test5.yaml \
-	$(top_srcdir)/input/coupling_test6.json \
-	$(top_srcdir)/input/coupling_test6_local.yaml \
-	$(top_srcdir)/input/coupling_test9.yaml \
-	$(top_srcdir)/input/cube_10x10.csv \
-	$(top_srcdir)/input/instance_test_1_1.yaml \
-	$(top_srcdir)/input/instance_test_1_10.yaml \
-	$(top_srcdir)/input/instance_test_1_2.yaml \
-	$(top_srcdir)/input/instance_test_1_3.yaml \
-	$(top_srcdir)/input/instance_test_1_4.yaml \
-	$(top_srcdir)/input/instance_test_1_5.yaml \
-	$(top_srcdir)/input/instance_test_1_6.yaml \
-	$(top_srcdir)/input/instance_test_1_7.yaml \
-	$(top_srcdir)/input/instance_test_1_8.yaml \
-	$(top_srcdir)/input/instance_test_1_9.yaml \
-	$(top_srcdir)/input/test_def_datetime.yaml \
-	$(top_srcdir)/python/tests/multithreading.sh.in \
-	$(top_srcdir)/python/tests/par_nc2plot_test.sh.in \
-	$(top_srcdir)/python/tests/par_noise2nc_test.sh.in \
-	$(top_srcdir)/python/tests/par_plot_noise_test.sh.in \
-	$(top_srcdir)/python/tests/seq_nc2plot_test.sh.in \
-	$(top_srcdir)/python/tests/seq_noise2nc_test.sh.in \
-	$(top_srcdir)/python/tests/seq_plot_noise_test.sh.in \
-	$(top_srcdir)/python/tests/test_interface.sh.in \
-	$(top_srcdir)/src/pkgconfig/yac.pc.in README config/compile \
-	config/config.guess config/config.sub config/depcomp \
+	$(top_srcdir)/examples/toy_multi/toy_multi.sh.in README \
+	config/compile config/config.guess config/config.sub \
 	config/install-sh config/missing
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 distdir = $(PACKAGE)-$(VERSION)
@@ -295,7 +253,6 @@ GZIP_ENV = --best
 DIST_TARGETS = dist-gzip
 # Exists only to be overridden by the user if desired.
 AM_DISTCHECK_DVI_TARGET = dvi
-distuninstallcheck_listfiles = find . -type f -print
 am__distuninstallcheck_listfiles = $(distuninstallcheck_listfiles) \
   | sed 's|^\./|$(prefix)/|' | grep -v '$(infodir)/dir$$'
 distcleancheck_listfiles = find . -type f -print
@@ -315,6 +272,7 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CURL = @CURL@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -342,7 +300,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LAPACK_CFLAGS = @LAPACK_CFLAGS@
 LAPACK_CLIBS = @LAPACK_CLIBS@
-LAPACK_FCLIBS = @LAPACK_FCLIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -360,6 +317,8 @@ MTIME_CLIBS = @MTIME_CLIBS@
 NETCDF_CFLAGS = @NETCDF_CFLAGS@
 NETCDF_CLIBS = @NETCDF_CLIBS@
 OBJEXT = @OBJEXT@
+OPENMP_CFLAGS = @OPENMP_CFLAGS@
+OPENMP_FCLIBS = @OPENMP_FCLIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -369,16 +328,19 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PIC_CFLAGS = @PIC_CFLAGS@
+PIC_FCFLAGS = @PIC_FCFLAGS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
+PYTHON_CFLAGS = @PYTHON_CFLAGS@
 RANLIB = @RANLIB@
+RPATH_CFLAGS = @RPATH_CFLAGS@
+RPATH_FCFLAGS = @RPATH_FCFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_ENVIRONMENT_MAKE = @SHLIB_ENVIRONMENT_MAKE@
 STRIP = @STRIP@
 VERSION = @VERSION@
 YAXT_CFLAGS = @YAXT_CFLAGS@
@@ -438,9 +400,43 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-SUBDIRS = src $(am__append_1) $(am__append_2) $(am__append_3) contrib \
-	$(am__append_4) tests
-EXTRA_DIST = config/checksrc config/checkdoc
+SUBDIRS = src grids $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4) $(am__append_5) tests
+EXTRA_DIST = \
+    config/checkdoc \
+    config/checksrc \
+    input/couple_config_test.yaml \
+    input/coupling_test.yaml \
+    input/coupling_test2.yaml \
+    input/coupling_test3_comp_a_comp_b.yaml \
+    input/coupling_test3_comp_a_comp_c.yaml \
+    input/coupling_test3_comp_a_intra.yaml \
+    input/coupling_test3_comp_b_comp_c.yaml \
+    input/coupling_test3_comp_b_intra.yaml \
+    input/coupling_test3_comp_c_intra.yaml \
+    input/coupling_test3_default.yaml \
+    input/coupling_test3_default_c.yaml \
+    input/coupling_test4.yaml \
+    input/coupling_test5.yaml \
+    input/coupling_test6.json \
+    input/coupling_test6_local.yaml \
+    input/coupling_test9.yaml \
+    input/cube_10x10.csv \
+    input/instance_test_1_1.yaml \
+    input/instance_test_1_10.yaml \
+    input/instance_test_1_2.yaml \
+    input/instance_test_1_3.yaml \
+    input/instance_test_1_4.yaml \
+    input/instance_test_1_5.yaml \
+    input/instance_test_1_6.yaml \
+    input/instance_test_1_7.yaml \
+    input/instance_test_1_8.yaml \
+    input/instance_test_1_9.yaml \
+    input/test_def_datetime.yaml
+
+
+# We do not have a clean way to uninstall the Python bindings yet:
+distuninstallcheck_listfiles = find . \( -name site-packages -o -name dist-packages \) -prune -o -type f -print
 all: all-recursive
 
 .SUFFIXES:
@@ -479,22 +475,6 @@ $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 $(am__aclocal_m4_deps):
 examples/OASIS3_MCT_example/OASIS3_MCT_example.sh: $(top_builddir)/config.status $(top_srcdir)/examples/OASIS3_MCT_example/OASIS3_MCT_example.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_coupling/toy_coupling.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_coupling/toy_coupling.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_icon_runoff/toy_icon_runoff.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_icon_runoff/toy_icon_runoff.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_multi/toy_multi.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_multi/toy_multi.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/perf_toy/perf_toy.sh: $(top_builddir)/config.status $(top_srcdir)/examples/perf_toy/perf_toy.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_atm_ocn/toy_atm_ocn.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_atm_ocn/toy_atm_ocn.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_dummy/dummy_c.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_dummy/dummy_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_dummy/dummy.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_dummy/dummy.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-examples/toy_callback/toy_callback.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_callback/toy_callback.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
 examples/dynamic_config/dynamic_config.sh: $(top_builddir)/config.status $(top_srcdir)/examples/dynamic_config/dynamic_config.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 examples/interpolation_benchmark/toy_scrip_GEN_MASK.sh: $(top_builddir)/config.status $(top_srcdir)/examples/interpolation_benchmark/toy_scrip_GEN_MASK.sh.in
@@ -505,23 +485,21 @@ examples/interpolation_benchmark/toy_scrip_NOGT_ICOH.sh: $(top_builddir)/config.
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 examples/interpolation_benchmark/toy_scrip_NOICOH.sh: $(top_builddir)/config.status $(top_srcdir)/examples/interpolation_benchmark/toy_scrip_NOICOH.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/seq_plot_noise_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/seq_plot_noise_test.sh.in
+examples/perf_toy/perf_toy.sh: $(top_builddir)/config.status $(top_srcdir)/examples/perf_toy/perf_toy.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/par_plot_noise_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/par_plot_noise_test.sh.in
+examples/toy_atm_ocn/toy_atm_ocn.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_atm_ocn/toy_atm_ocn.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/seq_noise2nc_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/seq_noise2nc_test.sh.in
+examples/toy_callback/toy_callback.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_callback/toy_callback.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/par_noise2nc_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/par_noise2nc_test.sh.in
+examples/toy_coupling/toy_coupling.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_coupling/toy_coupling.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/seq_nc2plot_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/seq_nc2plot_test.sh.in
+examples/toy_dummy/dummy.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_dummy/dummy.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/par_nc2plot_test.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/par_nc2plot_test.sh.in
+examples/toy_dummy/dummy_c.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_dummy/dummy_c.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/multithreading.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/multithreading.sh.in
+examples/toy_icon_runoff/toy_icon_runoff.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_icon_runoff/toy_icon_runoff.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
-python/tests/test_interface.sh: $(top_builddir)/config.status $(top_srcdir)/python/tests/test_interface.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $@
-src/pkgconfig/yac.pc: $(top_builddir)/config.status $(top_srcdir)/src/pkgconfig/yac.pc.in
+examples/toy_multi/toy_multi.sh: $(top_builddir)/config.status $(top_srcdir)/examples/toy_multi/toy_multi.sh.in
 	cd $(top_builddir) && $(SHELL) ./config.status $@
 
 # This directory's subdirectories are mostly independent; you can cd

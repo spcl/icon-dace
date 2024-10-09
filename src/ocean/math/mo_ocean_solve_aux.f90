@@ -1,5 +1,3 @@
-! contains implementation parameters of solver infrastructure
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! contains implementation parameters of solver infrastructure
+
 MODULE mo_ocean_solve_aux
 
   USE mo_kind, ONLY: wp

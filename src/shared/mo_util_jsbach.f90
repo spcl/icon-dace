@@ -1,6 +1,3 @@
-! Contains modules that provide interfaces to ICON infrastructure for JSBACH4
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains modules that provide interfaces to ICON infrastructure for JSBACH4
 
 #ifndef __NO_JSBACH__
 

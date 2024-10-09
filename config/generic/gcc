@@ -107,7 +107,7 @@ FCFLAGS="${FCFLAGS-} -fmodule-private -fimplicit-none -fmax-identifier-length=63
 ICON_FCFLAGS='-std=legacy'
 
 LDFLAGS="${LDFLAGS-}"
-LIBS="${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS}"
+LIBS="${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} -lstdc++"
 
 MPI_LAUNCH='mpiexec'
 

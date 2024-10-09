@@ -1,12 +1,3 @@
-! This module contains the routines for the calculation of 128bit
-! data checksums/fingerprints (which are called "UUID's" in ICON).
-!
-! The larger part of this functionality is implemented in C routines
-! in the "support" subdirectory, while this Fortran module acts
-! merely as a wrapper. For *parallel* fingerprint calculation,
-! however, the MPI-parallel communication is invoked on the Fortran
-! level only.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the routines for the calculation of 128bit
+! data checksums/fingerprints (which are called "UUID's" in ICON).
+!
+! The larger part of this functionality is implemented in C routines
+! in the "support" subdirectory, while this Fortran module acts
+! merely as a wrapper. For *parallel* fingerprint calculation,
+! however, the MPI-parallel communication is invoked on the Fortran
+! level only.
 
 MODULE mo_util_uuid
 

@@ -9,6 +9,10 @@
 #ifndef UTIL_H
 #define UTIL_H
 
+#include <comin_global.inc>
+#include <comin.h>
+#include <Python.h>
+
 // format characters - see: https://docs.python.org/3/library/struct.html#format-characters
 template<class T>
 const char* get_format_char();

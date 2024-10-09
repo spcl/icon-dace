@@ -68,7 +68,7 @@ if [[ $SERIALBOX2_STATIC_LINKING == no ]]; then
   SERIALBOX2_LIBS='-lSerialboxFortran -lSerialboxC -lSerialboxCore' # dynamical linking, if .so are present.
 else
   # Link serialbox statically
-  SERIALBOX2_LIBS="${SERIALBOX2_LIBDIR}/libSerialboxFortran.a ${SERIALBOX2_LIBDIR}/libSerialboxC.a ${SERIALBOX2_LIBDIR}/libSerialboxCore.a -lstdc++ -lstdc++fs"
+  SERIALBOX2_LIBS="${SERIALBOX2_LIBDIR}/libSerialboxFortran.a ${SERIALBOX2_LIBDIR}/libSerialboxC.a ${SERIALBOX2_LIBDIR}/libSerialboxCore.a"
 fi
 
 # Assume that lapack and blas reside under the GLOBAL_LIB_ROOT:
@@ -86,12 +86,13 @@ ZLIB_LIBS="-lz"
 
 CUDA_LIBDIR="${PGI_ROOT}/cuda/lib64"
 CUDA_LIBS='-lcudart'
-# The rest of libraries required by CUDA will be provided by PGI compiler:
+# The rest of libraries required by CUDA will be provided by GCC, hard-code the path to ensure
+# the right library version gets loaded at runtime.
+STDCPP_LIBDIR='/hpc/sw/gnu/gcc/11.2.0/lib64'
 STDCPP_LIBS='-lstdc++fs -lstdc++'
-# not sure if `-lstdc++fs ` is necessary
 
 # Make shared libraries available in build environment
-LD_LIBRARY_PATH="${HDF5_LIBDIR}:${NETCDF_LIBDIR}:${PGI_LIBDIR}:${CUDA_LIBDIR}"
+LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${HDF5_LIBDIR}:${NETCDF_LIBDIR}:${PGI_LIBDIR}:${CUDA_LIBDIR}"
 
 ################################################################################
 
@@ -129,14 +130,13 @@ ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:externals/emv
 
 
 # NVIDIA CUDA Compiler command
-NVCC="${PGI_ROOT}/compilers/bin/nvcc"
+CUDACXX="${PGI_ROOT}/cuda/bin/nvcc"
 # NVIDIA CUDA Compiler flags
-#NVCFLAGS='--std=c++11 -arch=sm_60 -g -O3'
-NVCFLAGS='--std=c++11 -arch=sm_80 -g -O3'
+CUDAFLAGS='--std=c++14 -arch=sm_80 -g -O3'
 
-LDFLAGS="-L${HDF5_LIBDIR} -L${NETCDF_LIBDIR} -L${ECCODES_LIBDIR} -L${PGI_LIBDIR} -L${CUDA_LIBDIR}"
+LDFLAGS="-L${HDF5_LIBDIR} -L${NETCDF_LIBDIR} -L${ECCODES_LIBDIR} -L${PGI_LIBDIR} -L${CUDA_LIBDIR} -L${STDCPP_LIBDIR}"
 
-LIBS="-Wl,--as-needed ${BLAS_LAPACK_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${SERIALBOX2_LIBS} ${STDCPP_LIBS} ${CUDA_LIBS}"
+LIBS="-Wl,--as-needed ${BLAS_LAPACK_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${SERIALBOX2_LIBS} ${CUDA_LIBS} ${STDCPP_LIBS}"
 LIBS+=" ${ZLIB_LIBS}"
 #LIBS+=" ${RTTOV_LIB}"
 
@@ -167,8 +167,8 @@ ICON_WORKAROUND1_PATH="${ICON_WORKAROUND1_PATH}" \
 FC="${FC}" \
 FCFLAGS="${FCFLAGS}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
-NVCC="${NVCC}" \
-NVCFLAGS="${NVCFLAGS}" \
+CUDACXX="${CUDACXX}" \
+CUDAFLAGS="${CUDAFLAGS}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \

@@ -1,3 +1,8 @@
+"""
+This module provides a command-line interface (CLI) for processing and
+displaying data from a CSV file.
+"""
+
 import click
 import pandas as pd
 
@@ -37,8 +42,7 @@ def cdo_table_reader(variables, file_id, times, histogram, cdo_table_file):
 
     if file_id:  # untested code
         file_ids = [
-            "{}:{}".format(file_type, file_pattern)
-            for file_type, file_pattern in file_id
+            f"{file_type}:{file_pattern}" for file_type, file_pattern in file_id
         ]
     else:
         file_ids = slice(None)

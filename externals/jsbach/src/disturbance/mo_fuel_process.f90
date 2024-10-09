@@ -26,7 +26,7 @@ MODULE mo_fuel_process
 CONTAINS
 
   ! Calculate fuel (JSBACH3 algorithm)
-  PURE ELEMENTAL SUBROUTINE calc_fuel_jsbach( &
+  SUBROUTINE calc_fuel_jsbach( &
     & c_acid_ag1_ta,                          & ! in
     & c_water_ag1_ta,                         & ! in
     & c_ethanol_ag1_ta,                       & ! in
@@ -39,27 +39,31 @@ CONTAINS
     & )
 
     ! Input Arguments
-    REAL(wp), INTENT(in)  :: c_acid_ag1_ta
-    REAL(wp), INTENT(in)  :: c_water_ag1_ta
-    REAL(wp), INTENT(in)  :: c_ethanol_ag1_ta
-    REAL(wp), INTENT(in)  :: c_nonsoluble_ag1_ta
-    REAL(wp), INTENT(in)  :: c_acid_ag2_ta
-    REAL(wp), INTENT(in)  :: c_water_ag2_ta
-    REAL(wp), INTENT(in)  :: c_ethanol_ag2_ta
-    REAL(wp), INTENT(in)  :: c_nonsoluble_ag2_ta
+    REAL(wp), INTENT(in)  :: c_acid_ag1_ta(:)
+    REAL(wp), INTENT(in)  :: c_water_ag1_ta(:)
+    REAL(wp), INTENT(in)  :: c_ethanol_ag1_ta(:)
+    REAL(wp), INTENT(in)  :: c_nonsoluble_ag1_ta(:)
+    REAL(wp), INTENT(in)  :: c_acid_ag2_ta(:)
+    REAL(wp), INTENT(in)  :: c_water_ag2_ta(:)
+    REAL(wp), INTENT(in)  :: c_ethanol_ag2_ta(:)
+    REAL(wp), INTENT(in)  :: c_nonsoluble_ag2_ta(:)
 
     ! Output Arguments
-    REAL(wp), INTENT(OUT)   :: fuel
+    REAL(wp), INTENT(OUT)   :: fuel(:)
 
-    ! Locals
+    ! Local Variables
+    INTEGER :: ic, nc
 
-    ! ---------------------------
-    ! Go
+    nc = SIZE(c_acid_ag1_ta)
 
-    fuel =      c_acid_ag1_ta    + c_water_ag1_ta       &
-      &       + c_ethanol_ag1_ta + c_nonsoluble_ag1_ta  &
-      &       + c_acid_ag2_ta    + c_water_ag2_ta       &
-      &       + c_ethanol_ag2_ta + c_nonsoluble_ag2_ta
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+    DO ic = 1, nc
+      fuel(ic) =  c_acid_ag1_ta(ic)    + c_water_ag1_ta(ic)       &
+        &       + c_ethanol_ag1_ta(ic) + c_nonsoluble_ag1_ta(ic)  &
+        &       + c_acid_ag2_ta(ic)    + c_water_ag2_ta(ic)       &
+        &       + c_ethanol_ag2_ta(ic) + c_nonsoluble_ag2_ta(ic)
+    END DO
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE calc_fuel_jsbach
 

@@ -1,6 +1,3 @@
-! Utilities for multifile restart writing.
-! These are mostly convenience functions for accessing the restart configuration.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Utilities for multifile restart writing.
+! These are mostly convenience functions for accessing the restart configuration.
+
 #include "handle_mpi_error.inc"
 
 MODULE mo_multifile_restart_util

@@ -110,6 +110,33 @@ add_required_file ${latbc_path}/bc_greenhouse_rcp45_1765-2500.nc .
 add_required_file ${latbc_path}/LOWBC_1979_02.nc .
 add_required_file ${latbc_path}/LOWBC_1979_02.nc .
 
+icon_preprocessing_source=${icon_data_rootFolder}/grids/private/mpim/icon_preprocessing/source
+# boundary conditions
+# horizontal grid(s)
+#
+# domain globe
+grids_folder_ozone=${icon_preprocessing_source}/ozone/cmip6/R02B04/
+#
+# range of years for yearly files
+# assume start_date and end_date have the format yyyy-...
+start_year=$(( ${start_date%%-*} - 1 ))
+end_year=$(( ${end_date%%-*} + 1 ))
+#
+# - ozone
+# -- for irad_o3=5
+year=$start_year
+datadir=${grids_folder_ozone}
+while [[ $year -le $end_year ]]
+do
+  if [[ $year -le 2014 ]]
+  then
+    add_link_file $datadir/bc_ozone_historical_${year}.nc               ./bc_ozone_${year}.nc
+  else
+    add_link_file $datadir/bc_ozone_historical_2014.nc                  ./bc_ozone_${year}.nc
+  fi
+  (( year = year+1 ))
+done
+
 # ===========================================================================
 # Create ICON master namelist
 # ==========================================================================
@@ -212,7 +239,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
   ltile_init                  = .TRUE.
   ltile_coldstart             = .true.
   pinit_seed                  = 0
-  pinit_amplitude             = 1e-14
+  pinit_amplitude             = 0
 /
 
 ! grid_nml: horizontal grid --------------------------------------------------
@@ -359,6 +386,10 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
  tune_rcucov = 0.075
  tune_rhebc_land = 0.825
  tune_gust_factor=7.0
+ tune_eiscrit = 6.
+ tune_sc_eis = 6.
+ tune_sc_invmin = 100.
+ tune_sc_invmax = 2500.
 /
 
 ! output_nml: control the output ------------------------------------------------ 
@@ -399,7 +430,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
   irad_n2o    = 4           ! 4: from greenhouse gas scenario
   irad_cfc11  = 4           ! 4: from greenhouse gas scenario
   irad_cfc12  = 4           ! 4: from greenhouse gas scenario
-  irad_o3     = 79
+  irad_o3     = 5
   irad_aero   = 6
   albedo_type = 2          ! Modis albedo
   direct_albedo = 4

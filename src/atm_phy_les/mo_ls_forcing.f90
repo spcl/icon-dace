@@ -1,11 +1,3 @@
-!
-! This module initializes and applies the large-scale forcing for idealized simulations
-! This module assumes that the model grid is FLAT
-! 2013-JUNE-04: AT THIS STAGE LS FORCING WILL WORK IN RESTART MODE ONLY IF ITS CALLED EVERY
-! DYNAMIC TIMESTEP. TO MAKE IT WORK "SMOOTHLY" ADD_VAR HAS TO WORK ON 1D VARS
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module initializes and applies the large-scale forcing for idealized simulations
+! This module assumes that the model grid is FLAT
+! 2013-JUNE-04: AT THIS STAGE LS FORCING WILL WORK IN RESTART MODE ONLY IF ITS CALLED EVERY
+! DYNAMIC TIMESTEP. TO MAKE IT WORK "SMOOTHLY" ADD_VAR HAS TO WORK ON 1D VARS
 
 !----------------------------
 #include "omp_definitions.inc"

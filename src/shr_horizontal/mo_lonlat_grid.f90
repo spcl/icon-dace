@@ -1,6 +1,3 @@
-! Type definition and utility routines of lon-lat grids used in the model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Type definition and utility routines of lon-lat grids used in the model.
 
 MODULE mo_lonlat_grid
 

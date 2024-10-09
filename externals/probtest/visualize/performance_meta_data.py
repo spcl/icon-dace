@@ -1,3 +1,12 @@
+"""
+CLI for performance meta data plotting script
+
+This script provides a CLI for plotting performance meta data based on timing logs.
+It reads timing data from a specified JSON database and generates plots showing
+runtime changes across different revisions for specified timers.
+The script can save the plots to a specified directory or display them directly.
+"""
+
 from datetime import datetime, timedelta
 from pathlib import Path
 
@@ -7,10 +16,11 @@ import pandas as pd
 from matplotlib import pyplot as plt
 
 from util.click_util import CommaSeperatedStrings, cli_help
-from util.constants import datetime_format
+from util.constants import DATETIME_FORMAT
 from util.log_handler import logger
 from util.tree import TimingTree
 from util.utils import unique_elements
+from util.visualize_util import create_figure
 
 
 def plot_meta_data_timer(timer, data, revs, ax, experiment_name, savedir):
@@ -25,7 +35,6 @@ def plot_meta_data_timer(timer, data, revs, ax, experiment_name, savedir):
     y = y[nonnan]
     revs = [r for r, n in zip(revs, nonnan) if n]
     x = range(len(revs))
-    y = y
     ax.bar(x, y)
     srevs = [s[:8] for s in revs]
     ax.set_xticks(x)
@@ -38,10 +47,8 @@ def plot_meta_data_timer(timer, data, revs, ax, experiment_name, savedir):
     plt.tight_layout()
     if savedir:
         Path(savedir).mkdir(exist_ok=True, parents=True)
-        path = "{}/{}".format(
-            savedir, "perf_meta_{}_{}.png".format(experiment_name, timer)
-        )
-        logger.info("saving figure to {}".format(path))
+        path = f"{savedir}/perf_meta_{experiment_name}_{timer}.png"
+        logger.info("saving figure to %s", path)
         fig.savefig(path)
     else:
         plt.show()
@@ -71,10 +78,7 @@ def performance_meta_data(
 ):
     tt = TimingTree.from_json(timing_database)
 
-    dates = tt.meta_data["finish_time"]
-    if isinstance(dates, str):
-        dates = [dates]
-    dates = sorted([datetime.strptime(s, datetime_format) for s in dates])
+    dates = tt.get_sorted_finish_times()
 
     # create dataframe for revisions and align to tt.data
     index = tt.data[i_table].index
@@ -90,7 +94,7 @@ def performance_meta_data(
     seltime = [
         t
         for t in tt.meta_data["finish_time"]
-        if datetime.strptime(t, datetime_format) > reftime
+        if datetime.strptime(t, DATETIME_FORMAT) > reftime
     ]
     data = pd.concat(
         [
@@ -115,21 +119,10 @@ def performance_meta_data(
     # plotting
     ncols = min(len(timing_names), 3)
     nrows = int(np.ceil(len(timing_names) / 3.0))
-    fig, ax = plt.subplots(
-        ncols=ncols,
-        nrows=nrows,
-        figsize=(5 * ncols, 3.5 * nrows),
-        sharey=True,
-        sharex=True,
-    )
-    if nrows == 1:
-        ax = np.expand_dims(ax, axis=0)
-    if ncols == 1:
-        ax = np.expand_dims(ax, axis=1)
+
+    _, ax = create_figure(ncols, nrows, fig_width=5 * ncols, fig_height=3.5 * nrows)
 
     for i, t in enumerate(timing_names):
         plot_meta_data_timer(
             t, data_mean, revs, ax[i // 3, i % 3], experiment_name, savedir
         )
-
-    return

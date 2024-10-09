@@ -1,0 +1,25 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+# Custom variables (C interface):
+cc=@CC@
+yac_cflags=-I${includedir}
+cflags=${yac_cflags} @MPI_CFLAGS@ @YAXT_CFLAGS@
+yac_clibs=-L${libdir} -lyac_core
+clibs=${yac_clibs} @LDFLAGS@ @OPENMP_CFLAGS@ @YAC_LAPACK_PKGCONF_CLIBS@ @NETCDF_CLIBS@ @YAXT_CLIBS@ @MPI_CLIBS@ @LIBS@
+
+# Custom variables (Fortran interface):
+fc=@FC@
+yac_fcflags=@FCMODINC@${includedir}
+fcflags=${yac_fcflags}
+yac_fclibs=${yac_clibs}
+fclibs=${yac_fclibs} @LDFLAGS@ @OPENMP_FCLIBS@ @YAC_LAPACK_PKGCONF_CLIBS@ @NETCDF_CLIBS@ @YAXT_CLIBS@ @MPI_CLIBS@ @LIBS@
+
+Name: YAC Core
+Description: Yet Another Coupler (Core library)
+URL: @PACKAGE_URL@
+Version: @VERSION@
+Cflags: ${cflags}
+Libs: ${clibs}

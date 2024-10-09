@@ -1,10 +1,3 @@
-!
-! This module contains the nonhydrostatic dynamical core for the triangular version
-! Its routines were previously contained in mo_divergent_modes and mo_vector_operations
-! but have been extracted for better memory efficiency
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the nonhydrostatic dynamical core for the triangular version
+! Its routines were previously contained in mo_divergent_modes and mo_vector_operations
+! but have been extracted for better memory efficiency
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -39,7 +36,7 @@ MODULE mo_solve_nonhydro
   USE mo_intp_data_strc,    ONLY: t_int_state
   USE mo_intp,              ONLY: cells2verts_scalar
   USE mo_nonhydro_types,    ONLY: t_nh_state
-  USE mo_physical_constants,ONLY: rd, cpd, cvd, cpv, grav, p0ref
+  USE mo_physical_constants,ONLY: rd, cpd, cvd, grav, p0ref
   USE mo_math_gradients,    ONLY: grad_green_gauss_cell
   USE mo_velocity_advection,ONLY: velocity_tendencies
   USE mo_math_constants,    ONLY: dbl_eps
@@ -55,7 +52,6 @@ MODULE mo_solve_nonhydro
   USE mo_timer,             ONLY: timer_solve_nh, timer_barrier, timer_start, timer_stop,       &
                                   timer_solve_nh_cellcomp, timer_solve_nh_edgecomp,             &
                                   timer_solve_nh_vnupd, timer_solve_nh_vimpl, timer_solve_nh_exch
-  USE mo_icon_comm_lib,     ONLY: icon_comm_sync
   USE mo_vertical_coord_table,ONLY: vct_a
   USE mo_prepadv_types,     ONLY: t_prepare_adv
   USE mo_initicon_config,   ONLY: is_iau_active, iau_wgt_dyn
@@ -187,7 +183,6 @@ MODULE mo_solve_nonhydro
     ! TODO :  of these, fairly easy to scalarize:  z_theta_v_pr_ic
     REAL(vp) :: z_alpha         (nproma,p_patch%nlevp1),          &
                 z_beta          (nproma,p_patch%nlev  ),          &
-                z_beta_q        (nproma,p_patch%nlev  ),          &
                 z_q             (nproma,p_patch%nlev  ),          &
                 z_graddiv2_vn   (nproma,p_patch%nlev  ),          &
                 z_theta_v_pr_ic (nproma,p_patch%nlevp1),          &
@@ -228,7 +223,7 @@ MODULE mo_solve_nonhydro
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_exner_ex_pr,z_gradh_exner,z_rth_pr,z_grad_rth
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_w_concorr_me,z_graddiv_vn,z_w_expl
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_vn_avg,z_mflx_top,z_contr_w_fl_l,z_rho_expl
-!DIR$ ATTRIBUTES ALIGN : 64 :: z_exner_expl,z_alpha,z_beta,z_beta_q,z_q,z_graddiv2_vn
+!DIR$ ATTRIBUTES ALIGN : 64 :: z_exner_expl,z_alpha,z_beta,z_q,z_graddiv2_vn
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_theta_v_pr_ic,z_exner_ic,z_w_concorr_mc
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_flxdiv_mass,z_flxdiv_theta,z_hydro_corr
 !DIR$ ATTRIBUTES ALIGN : 64 :: z_raylfac,scal_divdamp,bdy_divdamp,enh_divdamp_fac
@@ -382,7 +377,7 @@ MODULE mo_solve_nonhydro
     !$ACC   CREATE(z_dexner_dz_c, z_exner_ex_pr, z_gradh_exner, z_rth_pr, z_grad_rth) &
     !$ACC   CREATE(z_theta_v_pr_ic, z_th_ddz_exner_c, z_w_concorr_mc) &
     !$ACC   CREATE(z_vn_avg, z_rho_e, z_theta_v_e, z_dwdz_dd, z_mflx_top) &
-    !$ACC   CREATE(z_exner_ic, z_alpha, z_beta, z_beta_q, z_q, z_contr_w_fl_l, z_exner_expl) &
+    !$ACC   CREATE(z_exner_ic, z_alpha, z_beta, z_q, z_contr_w_fl_l, z_exner_expl) &
     !$ACC   CREATE(z_flxdiv_mass, z_flxdiv_theta, z_rho_expl, z_w_expl) &
     !$ACC   CREATE(z_rho_v, z_theta_v_v, z_graddiv_vn, z_hydro_corr, z_graddiv2_vn) &
     !$ACC   COPYIN(nflatlev, nflat_gradp, kstart_dd3d, kstart_moist, nrdmax) &
@@ -2113,7 +2108,7 @@ MODULE mo_solve_nonhydro
       ENDIF
 
 !$OMP DO PRIVATE(jb,i_startidx,i_endidx,jk,jc,z_w_expl,z_contr_w_fl_l,z_rho_expl,z_exner_expl, &
-!$OMP   z_a,z_b,z_c,z_g,z_q,z_alpha,z_beta,z_beta_q,z_gamma,ic,z_flxdiv_mass,z_flxdiv_theta) ICON_OMP_DEFAULT_SCHEDULE
+!$OMP   z_a,z_b,z_c,z_g,z_q,z_alpha,z_beta,z_gamma,ic,z_flxdiv_mass,z_flxdiv_theta) ICON_OMP_DEFAULT_SCHEDULE
       DO jb = i_startblk, i_endblk
 
         CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &

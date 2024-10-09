@@ -1,7 +1,3 @@
-!
-!  This module contains the interface routines for calling the RTTOV library
-!  for generating synthetic satellite images
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the interface routines for calling the RTTOV library
+! for generating synthetic satellite images
 
 MODULE mo_rttov_interface
   !

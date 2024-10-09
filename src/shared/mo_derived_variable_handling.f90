@@ -1,6 +1,3 @@
-! Routines for handling proxy variables e.g. accumulation buffers
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Routines for handling proxy variables e.g. accumulation buffers
 
 #include <omp_definitions.inc>
 MODULE mo_derived_variable_handling

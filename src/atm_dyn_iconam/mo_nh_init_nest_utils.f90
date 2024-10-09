@@ -1,9 +1,3 @@
-!
-! This module contains the driver routines needed for initializing nested
-! domains that are started sometime during the integration
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the driver routines needed for initializing nested
+! domains that are started sometime during the integration
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -195,8 +192,9 @@ MODULE mo_nh_init_nest_utils
     ! turned out to cause occasional conflicts with directly interpolating those variables here; thus
     ! the interpolation of the multi-layer snow fields has been completely removed from this routine
     num_lndvars = 2*nlev_soil+1+ &     ! multi-layer soil variables t_so and w_so (w_so_ice is initialized in terra_multlay_init)
-                  5+12+1               ! single-layer prognostic variables + t_g, t_sk, freshsnow, t_seasfc, qv_s, plantevap, hsnow_max, 
-                                       ! snow_age, t_avginc, t_sk, rh_avginc, t_wgt_avginc, vabs_avginc + aux variable for lake temp
+                  5+14+1               ! single-layer prognostic variables + t_g, t_sk, freshsnow, t_seasfc, qv_s, plantevap, hsnow_max, 
+                                       ! snow_age, t_avginc, t_sk, rh_avginc, t_wgt_avginc, rh_daywgt_avginc, t_daywgt_avginc, vabs_avginc
+                                       ! + aux variable for lake temp
     num_wtrvars  = 6                   ! water state fields + fr_seaice + alb_si
     num_phdiagvars = 32                ! number of physics diagnostic variables (copied from interpol_phys_grf)
 
@@ -428,6 +426,14 @@ MODULE mo_nh_init_nest_utils
           ELSE
             lndvars_par(jc,jk1+17,jb) = 0._wp
           ENDIF
+          IF (icpl_da_sfcevap >= 5) THEN
+            lndvars_par(jc,jk1+18,jb) = p_parent_diag%t_daywgt_avginc(jc,jb)
+            lndvars_par(jc,jk1+19,jb) = p_parent_diag%rh_daywgt_avginc(jc,jb)
+          ELSE
+            lndvars_par(jc,jk1+18,jb) = 0._wp
+            lndvars_par(jc,jk1+19,jb) = 0._wp
+          ENDIF
+
         ENDDO
       ENDIF
 
@@ -476,7 +482,7 @@ MODULE mo_nh_init_nest_utils
         f4din1=p_parent_prog_rcf%tracer, f4dout1=p_child_prog_rcf%tracer, llimit_nneg=l_limit)
     ENDIF
 
-    IF (ltransport .AND. iprog_aero >= 1) THEN
+    IF (ltransport .AND. iprog_aero >= 1 .AND. iforcing == inwp) THEN
       CALL interpol_scal_grf ( p_pp=p_patch(jg), p_pc=p_pc, p_grf=p_grf_state(jg)%p_dom(i_chidx), nfields=1, lacc=.FALSE.,  &
         f3din1=prm_diag(jg)%aerosol, f3dout1=prm_diag(jgc)%aerosol, llimit_nneg=(/.TRUE./), lnoshift=.TRUE.)
     ENDIF
@@ -520,7 +526,7 @@ MODULE mo_nh_init_nest_utils
         &                     RECV4D=tracer_lp, SEND4D=p_parent_prog_rcf%tracer    )
     ENDIF
 
-    IF (ltransport .AND. iprog_aero >= 1) THEN
+    IF (ltransport .AND. iprog_aero >= 1 .AND. iforcing == inwp) THEN
       CALL exchange_data(p_pat=p_pp%comm_pat_glb_to_loc_c, lacc=.FALSE., RECV=aero_lp, SEND=prm_diag(jg)%aerosol)
     ENDIF
 
@@ -567,7 +573,7 @@ MODULE mo_nh_init_nest_utils
       CALL sync_patch_array_mult(SYNC_C,p_pc,ntracer,f4din=p_child_prog_rcf%tracer)
     ENDIF
 
-    IF (ltransport .AND. iprog_aero >= 1) THEN
+    IF (ltransport .AND. iprog_aero >= 1 .AND. iforcing == inwp) THEN
       IF(l_parallel) CALL exchange_data(p_pat=p_pp%comm_pat_c, lacc=.FALSE., recv=aero_lp)
       CALL interpol_scal_nudging (p_pp, p_int, p_grf%p_dom(i_chidx),          &
          0, 1, 1, f3din1=aero_lp, f3dout1=prm_diag(jgc)%aerosol, llimit_nneg=(/.TRUE./))
@@ -755,6 +761,10 @@ MODULE mo_nh_init_nest_utils
             ENDIF
             IF (icpl_da_sfcfric >= 1) THEN
               p_child_diag%vabs_avginc(jc,jb) = lndvars_chi(jc,jk1+17,jb)
+            ENDIF
+            IF (icpl_da_sfcevap >= 5) THEN
+              p_child_diag%t_daywgt_avginc(jc,jb) = lndvars_chi(jc,jk1+18,jb)
+              p_child_diag%rh_daywgt_avginc(jc,jb) = lndvars_chi(jc,jk1+19,jb)
             ENDIF
           ENDDO
         ENDDO

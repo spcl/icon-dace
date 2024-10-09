@@ -1,12 +1,3 @@
-!   Contains the implementation of the nabla mathematical operators.
-!
-!   Contains the implementation of the mathematical operators
-!   employed by the shallow water prototype.
-!
-! @par To Do
-! Boundary exchange, nblks in presence of halos and dummy edge
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the nabla mathematical operators.
+!
+! Contains the implementation of the mathematical operators
+! employed by the shallow water prototype.
+!
+! @par To Do
+! Boundary exchange, nblks in presence of halos and dummy edge
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -35,13 +34,12 @@ MODULE mo_math_laplace
 USE mo_kind,                ONLY: wp
 USE mo_impl_constants,      ONLY: min_rlcell, min_rledge, min_rlvert
 USE mo_intp_data_strc,      ONLY: t_int_state
-USE mo_intp,                ONLY: edges2verts_scalar, verts2edges_scalar
 USE mo_model_domain,        ONLY: t_patch
 USE mo_grid_config,         ONLY: l_limited_area
 USE mo_parallel_config,     ONLY: nproma, p_test_run
 USE mo_exception,           ONLY: finish
 USE mo_loopindices,         ONLY: get_indices_c, get_indices_e
-USE mo_sync,                ONLY: SYNC_C, SYNC_E, SYNC_V, sync_patch_array
+USE mo_sync,                ONLY: SYNC_C, SYNC_E, sync_patch_array
 USE mo_math_gradients,      ONLY: grad_fd_norm
 USE mo_math_divrot,         ONLY: div, rot_vertex
 USE mo_fortran_tools,       ONLY: copy
@@ -113,7 +111,6 @@ INTEGER :: je, jk, jb
 INTEGER :: rl_start, rl_end
 INTEGER :: rl_start_c, rl_end_c, rl_start_v, rl_end_v
 INTEGER :: i_startblk, i_endblk, i_startidx, i_endidx, i_nchdom
-INTEGER :: nlen, nblks_e, npromz_e
 
 REAL(wp) ::  &
   &  z_div_c(nproma,ptr_patch%nlev,ptr_patch%nblks_c),  &
@@ -784,7 +781,7 @@ END SUBROUTINE nabla2_scalar_avg
 SUBROUTINE nabla4_scalar( psi_c, ptr_patch, ptr_int, nabla4_psi_c, &
   &                       slev, elev, rl_start, rl_end, p_nabla2  )
 
-TYPE(t_patch), TARGET, INTENT(inout) :: ptr_patch           !< patch on which computation is performed
+TYPE(t_patch), TARGET, INTENT(in)    :: ptr_patch           !< patch on which computation is performed
 TYPE(t_int_state),     INTENT(in)    :: ptr_int             !< interpolation state
 
 REAL(wp),              INTENT(in)    ::  &

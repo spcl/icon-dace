@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Solar heating due to absorption in Schumann-Runge continuum (SRC) and
 ! Schumann-Runge bands (SRB)
 !
@@ -19,17 +29,6 @@
 ! - make use of the new solvar_(low/high/norm) variables in mo_impl_constants
 ! Modification by Guidi Zhou, MPI-M (2017-03-03)
 ! - added the ability to compute SRBC heating only above a certain altitude for performance
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_upatmo_phy_srbc
 

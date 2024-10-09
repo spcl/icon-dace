@@ -1,8 +1,3 @@
-! Describe rectilinear partitions and partitionings
-! contains definition of extent and interval types and associated
-! functions
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Describe rectilinear partitions and partitionings
+! contains definition of extent and interval types and associated
+! functions
 
 MODULE ppm_extents
   USE mo_kind, ONLY: i4, dp, sp

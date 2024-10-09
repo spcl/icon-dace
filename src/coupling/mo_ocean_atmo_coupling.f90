@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -9,6 +8,7 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
 #include "omp_definitions.inc"
 !----------------------------
 
@@ -261,7 +261,7 @@ CONTAINS
 
     REAL(wp), ALLOCATABLE :: put_buffer(:,:,:)
     REAL(wp), ALLOCATABLE :: get_buffer(:,:)
-    REAL(wp):: diag_tmp 
+    REAL(wp):: diag_runoff
     LOGICAL :: received_data
 
     CHARACTER(LEN=*), PARAMETER   :: routine = str_module // ':couple_ocean_toatmo_fluxes'
@@ -761,15 +761,15 @@ CONTAINS
       'couple_ocean_toatmo_fluxes', field_id_freshflx_runoff, &
       'runoff', nbr_hor_cells, atmos_fluxes%FrshFlux_Runoff, &
       received_data=received_data)
-    !
-    ! Online diagnose for global total discharge (m3/s) received from YAC:
-    IF (msg_level >= 10) THEN
-      diag_tmp = global_sum_array(atmos_fluxes%FrshFlux_Runoff(:,:))
-      WRITE(message_text,'(a,f15.3)') 'HD-Ocean: Global total river discharge (m3/s) :' , diag_tmp
-      CALL message (TRIM(routine), TRIM(message_text))
-    ENDIF
-
+ 
     IF (received_data) THEN
+      !
+      ! Online diagnose for global total discharge (m3/s) received from YAC:
+      IF (msg_level >= 15) THEN
+        diag_runoff = global_sum_array(atmos_fluxes%FrshFlux_Runoff(:,:))
+        WRITE(message_text,'(a,f15.3)') 'HD-Ocean: Global total river discharge (m3/s) :' , diag_runoff
+        CALL message (TRIM(routine), TRIM(message_text))
+      ENDIF
       !
 !ICON_OMP_PARALLEL_DO PRIVATE(blockNo, cell_index, nn, nlen) ICON_OMP_DEFAULT_SCHEDULE
       DO blockNo = 1, patch_horz%nblks_c

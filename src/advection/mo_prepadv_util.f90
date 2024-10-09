@@ -1,9 +1,3 @@
-! This module contains subroutines that update the prep_adv state
-! with meaningful values for standalone advection runs.
-! Note that in real case runs, the prep_adv state is updated by the
-! dynamical core (nh_solve).
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains subroutines that update the prep_adv state
+! with meaningful values for standalone advection runs.
+! Note that in real case runs, the prep_adv state is updated by the
+! dynamical core (nh_solve).
 
 !----------------------------
 #include "omp_definitions.inc"

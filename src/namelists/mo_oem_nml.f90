@@ -1,6 +1,3 @@
-! This module provides parameters controlling online emission module.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides parameters controlling online emission module.
 
 MODULE mo_oem_nml
 

@@ -1,6 +1,3 @@
-! This is the high-level module that is used to write a restart.
-! Basically it reexports t_RestartDescriptor and provides a factory function to create restart descriptors.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This is the high-level module that is used to write a restart.
+! Basically it reexports t_RestartDescriptor and provides a factory function to create restart descriptors.
 
 MODULE mo_restart
 #ifndef NOMPI

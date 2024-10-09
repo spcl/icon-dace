@@ -1,6 +1,3 @@
-!
-!**** *CUCALCLPI*  ROUTINE FOR LPI COMPUTATION
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!**** *CUCALCLPI*  ROUTINE FOR LPI COMPUTATION
 
 MODULE mo_cucalclpi
   

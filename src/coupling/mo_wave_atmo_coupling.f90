@@ -1,6 +1,3 @@
-! Interface between ocean surface waves and atmosphere, through a coupler
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface between ocean surface waves and atmosphere, through a coupler
 
 MODULE mo_wave_atmo_coupling
 

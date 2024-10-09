@@ -2,266 +2,253 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-program iconatm
+PROGRAM iconatm
 
-  use mtime
-  use mo_event_manager
+  USE mtime
+  USE mo_event_manager
 
-  implicit none
+  IMPLICIT NONE
 
-  type(datetime), pointer :: experiment_reference_date => null()
+  TYPE(datetime), POINTER :: experiment_reference_date => NULL()
 
-  type(datetime), pointer :: experiment_start_date => null()
-  type(datetime), pointer :: experiment_end_date => null()
+  TYPE(datetime), POINTER :: experiment_start_date => NULL()
+  TYPE(datetime), POINTER :: experiment_end_date => NULL()
 
-  type(datetime), pointer :: start_date => null() 
-  type(datetime), pointer :: stop_date => null() 
+  TYPE(datetime), POINTER :: start_date => NULL()
+  TYPE(datetime), POINTER :: stop_date => NULL()
 
-  type(datetime), pointer :: next_checkpoint_date => null() 
-  type(datetime), pointer :: next_restart_date => null() 
+  TYPE(datetime), POINTER :: next_checkpoint_date => NULL()
+  TYPE(datetime), POINTER :: next_restart_date => NULL()
 
-  type(timedelta), pointer :: dynamic_time_step => null()
-  type(timedelta), pointer :: advection_time_step => null()
+  TYPE(timedelta), POINTER :: model_time_step => NULL()
 
-  type(timedelta), pointer :: radiation_time_step => null()
-  type(timedelta), pointer :: convection_time_step => null()
-  type(timedelta), pointer :: cloud_cover_time_step => null()
-  type(timedelta), pointer :: sso_time_step => null()
-  type(timedelta), pointer :: gwdrag_time_step => null()
+  TYPE(datetime), POINTER :: current_date => NULL()
 
-  type(timedelta), pointer :: checkpoint_time_step => null()
-  type(timedelta), pointer :: restart_time_step => null()
+  TYPE(eventgroup), POINTER :: outputEventGroup => NULL()
+  TYPE(eventgroup), POINTER :: physicsEventGroup => NULL()
 
-  type(timedelta), pointer :: coupling_time_step => null()
-  type(timedelta), pointer :: model_time_step => null()
+  TYPE(event), POINTER :: checkpointEvent => NULL()
+  TYPE(event), POINTER :: restartEvent => NULL()
 
-  type(datetime), pointer :: current_date => null() 
+  TYPE(event), POINTER :: advectionEvent => NULL()
 
-  type(eventgroup), pointer :: outputEventGroup => null()
-  type(eventgroup), pointer :: physicsEventGroup => null()
+  CHARACTER(len=max_calendar_str_len)  :: calendar_in_use
+  CHARACTER(len=max_datetime_str_len)  :: dstring
+  CHARACTER(len=max_timedelta_str_len) :: tdstring
 
-  type(event), pointer :: checkpointEvent => null()
-  type(event), pointer :: restartEvent => null()
-
-  type(event), pointer :: advectionEvent => null()
-
-  character(len=max_calendar_str_len)  :: calendar_in_use
-  character(len=max_datetime_str_len)  :: dstring
-  character(len=max_timedelta_str_len) :: tdstring
- 
   ! namelist variables
 
-  character(len=max_calendar_str_len) :: calendar
+  CHARACTER(len=max_calendar_str_len) :: calendar
 
-  character(len=max_datetime_str_len) :: experimentReferenceDate = ''   
-  character(len=max_datetime_str_len) :: experimentStartDate   
-  character(len=max_datetime_str_len) :: experimentEndDate     
-                                                                 
-  character(len=max_timedelta_str_len) :: modelTimeStep         
-                                                                 
-  character(len=max_repetition_str_len) :: advectionTimeInterval 
-  character(len=max_repetition_str_len) :: radiationTimeInterval 
-  character(len=max_repetition_str_len) :: convectionTimeInterval
-  character(len=max_repetition_str_len) :: cloudTimeInterval     
-  character(len=max_repetition_str_len) :: ssoTimeInterval       
-  character(len=max_repetition_str_len) :: gwdragTimeInterval    
-  character(len=max_repetition_str_len) :: checkpointTimeInterval
-  character(len=max_repetition_str_len) :: restartTimeInterval   
-  character(len=max_repetition_str_len) :: couplingTimeInterval
+  CHARACTER(len=max_datetime_str_len) :: experimentReferenceDate = ''
+  CHARACTER(len=max_datetime_str_len) :: experimentStartDate
+  CHARACTER(len=max_datetime_str_len) :: experimentEndDate
 
-  character(len=132) :: error_message
+  CHARACTER(len=max_timedelta_str_len) :: modelTimeStep
 
-  integer :: iunit, icalendar, ierror
-  integer :: outputEvents, physicsEvents
-  logical :: lret
+  CHARACTER(len=max_repetition_str_len) :: advectionTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: radiationTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: convectionTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: cloudTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: ssoTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: gwdragTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: checkpointTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: restartTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: couplingTimeInterval
 
-  character(len=max_groupname_str_len) :: egstring
+  CHARACTER(len=132) :: error_message
 
-  type(datetime),  pointer :: checkpointRefDate => null()
-  type(datetime),  pointer :: checkpointStartDate => null()
-  type(datetime),  pointer :: checkpointEndDate => null()
-  type(timedelta), pointer :: checkpointInterval => null()
-  
-  type(datetime),  pointer :: restartRefDate => null()
-  type(datetime),  pointer :: restartStartDate => null()
-  type(datetime),  pointer :: restartEndDate => null()
-  type(timedelta), pointer :: restartInterval => null()
+  INTEGER :: iunit, icalendar, ierror
+  INTEGER :: outputEvents, physicsEvents
+  LOGICAL :: lret
 
-  type(datetime),  pointer :: advectionRefDate => null()
-  type(datetime),  pointer :: advectionStartDate => null()
-  type(datetime),  pointer :: advectionEndDate => null()
-  type(timedelta), pointer :: advectionInterval => null()
+  CHARACTER(len=max_groupname_str_len) :: egstring
+
+  TYPE(datetime), POINTER :: checkpointRefDate => NULL()
+  TYPE(datetime), POINTER :: checkpointStartDate => NULL()
+  TYPE(datetime), POINTER :: checkpointEndDate => NULL()
+  TYPE(timedelta), POINTER :: checkpointInterval => NULL()
+
+  TYPE(datetime), POINTER :: restartRefDate => NULL()
+  TYPE(datetime), POINTER :: restartStartDate => NULL()
+  TYPE(datetime), POINTER :: restartEndDate => NULL()
+  TYPE(timedelta), POINTER :: restartInterval => NULL()
+
+  TYPE(datetime), POINTER :: advectionRefDate => NULL()
+  TYPE(datetime), POINTER :: advectionStartDate => NULL()
+  TYPE(datetime), POINTER :: advectionEndDate => NULL()
+  TYPE(timedelta), POINTER :: advectionInterval => NULL()
 
   !________________________________________________________________________________________________
   !
 
-  namelist /timeControl/ &
-       &    calendar, & 
+  NAMELIST /timeControl/ &
+       &    calendar, &
        &    experimentReferenceDate, &
-       &    experimentStartDate, &   
-       &    experimentEndDate, &        
-       &    modelTimeStep, &            
-       &    advectionTimeInterval, &    
-       &    radiationTimeInterval, &    
-       &    convectionTimeInterval, &   
-       &    cloudTimeInterval, &        
-       &    ssoTimeInterval, &          
-       &    gwdragTimeInterval, &       
-       &    checkpointTimeInterval, &   
-       &    restartTimeInterval, &      
+       &    experimentStartDate, &
+       &    experimentEndDate, &
+       &    modelTimeStep, &
+       &    advectionTimeInterval, &
+       &    radiationTimeInterval, &
+       &    convectionTimeInterval, &
+       &    cloudTimeInterval, &
+       &    ssoTimeInterval, &
+       &    gwdragTimeInterval, &
+       &    checkpointTimeInterval, &
+       &    restartTimeInterval, &
        &    couplingTimeInterval
 
-  open (file='test/iconatm.nml', newunit=iunit, iostat=ierror)
-  if (ierror /= 0) then
-    print *, 'ERROR: could not open namelist file.' 
-    stop 
-  else
-    read (unit=iunit, nml=timeControl, iostat=ierror, iomsg=error_message)
-    if (ierror /= 0) then
-      print *, 'ERROR: could not read namelist file.'
-      print *, '       ', trim(error_message)  
-      stop 
-    endif
-    close (unit=iunit)
-  endif
+  OPEN (file='iconatm.nml', newunit=iunit, iostat=ierror)
+  IF (ierror /= 0) THEN
+    PRINT *, 'ERROR: could not open namelist file.'
+    STOP
+  ELSE
+    READ (unit=iunit, nml=timeControl, iostat=ierror, iomsg=error_message)
+    IF (ierror /= 0) THEN
+      PRINT *, 'ERROR: could not read namelist file.'
+      PRINT *, '       ', TRIM(error_message)
+      STOP
+    END IF
+    CLOSE (unit=iunit)
+  END IF
 
   !________________________________________________________________________________________________
   !
 
-  select case (toLower(calendar))
-  case ('proleptic gregorian')
-    icalendar  = proleptic_gregorian
-  case ('365 day year')  
+  SELECT CASE (toLower(calendar))
+  CASE ('proleptic gregorian')
+    icalendar = proleptic_gregorian
+  CASE ('365 day year')
     icalendar = year_of_365_days
-  case ('360 day year')  
+  CASE ('360 day year')
     icalendar = year_of_360_days
-  case default
+  CASE default
     icalendar = calendar_not_set
-    print *, 'ERROR: calendar ', trim(calendar), ' not available/unknown.' 
-    stop 
-  end select
+    PRINT *, 'ERROR: calendar ', TRIM(calendar), ' not available/unknown.'
+    STOP
+  END SELECT
 
-  call setCalendar(icalendar)
-  call calendarToString(calendar_in_use)
-  print *, 'Calendar: ', trim(calendar_in_use)
-  
-  print *, ''
+  CALL setCalendar(icalendar)
+  CALL calendarToString(calendar_in_use)
+  PRINT *, 'Calendar: ', TRIM(calendar_in_use)
+
+  PRINT *, ''
 
   !________________________________________________________________________________________________
   !
 
   experiment_start_date => newDatetime(experimentStartDate)
 
-  if (experimentReferenceDate /= '') then
+  IF (experimentReferenceDate /= '') THEN
     experiment_reference_date => newDatetime(experimentReferenceDate)
-  endif
+  END IF
 
-  if (associated(experiment_reference_date)) then
-    call initEventManager(experiment_reference_date)
-  else
-    call initEventManager(experiment_start_date)
-  endif
+  IF (ASSOCIATED(experiment_reference_date)) THEN
+    CALL initEventManager(experiment_reference_date)
+  ELSE
+    CALL initEventManager(experiment_start_date)
+  END IF
 
   experiment_reference_date => getModelReferenceDate()
 
-  call datetimeToString(experiment_reference_date, dstring)
-  print *, 'Experiment reference date: ', dstring
+  CALL datetimeToString(experiment_reference_date, dstring)
+  PRINT *, 'Experiment reference date: ', dstring
 
-  call datetimeToString(experiment_start_date, dstring)
-  print *, 'Experiment start date    : ', dstring
+  CALL datetimeToString(experiment_start_date, dstring)
+  PRINT *, 'Experiment start date    : ', dstring
 
   experiment_end_date => newDatetime(experimentEndDate)
-  call datetimeToString(experiment_end_date, dstring)
-  print *, 'Experiment end date      : ', dstring
-  
-  print *, ''
+  CALL datetimeToString(experiment_end_date, dstring)
+  PRINT *, 'Experiment end date      : ', dstring
+
+  PRINT *, ''
 
   !________________________________________________________________________________________________
   !
   ! event_group_setup: block
 
-  outputEvents =  addEventGroup('outputEventGroup')
+  outputEvents = addEventGroup('outputEventGroup')
   outputEventGroup => getEventGroup(outputEvents)
-  print *, 'output event group handler: ', outputEvents
-  call getEventGroupName(outputEventGroup, egstring)
-  print *, 'output event group name   : ', trim(egstring)    
-  print *, ''
-  
-  physicsEvents =  addEventGroup('physicsEventGroup')
+  PRINT *, 'output event group handler: ', outputEvents
+  CALL getEventGroupName(outputEventGroup, egstring)
+  PRINT *, 'output event group name   : ', TRIM(egstring)
+  PRINT *, ''
+
+  physicsEvents = addEventGroup('physicsEventGroup')
   physicsEventGroup => getEventGroup(physicsEvents)
-  print *, 'physics event group handler: ', physicsEvents
-  call getEventGroupName(physicsEventGroup, egstring)
-  print *, 'physics event group name   : ', trim(egstring)    
-  print *, ''
-  
+  PRINT *, 'physics event group handler: ', physicsEvents
+  CALL getEventGroupName(physicsEventGroup, egstring)
+  PRINT *, 'physics event group name   : ', TRIM(egstring)
+  PRINT *, ''
+
   ! end block event_group_setup
   !________________________________________________________________________________________________
   !
   ! checkpoint_restart_time_intervals: block
 
-  checkpointRefDate   => experiment_reference_date
+  checkpointRefDate => experiment_reference_date
   checkpointStartDate => experiment_start_date
-  checkpointEndDate   => experiment_end_date
-  call getEventComponents(checkpointTimeInterval, checkpointRefDate, checkpointInterval, checkpointStartDate, checkpointEndDate)
+  checkpointEndDate => experiment_end_date
+  CALL getEventComponents(checkpointTimeInterval, checkpointInterval, checkpointStartDate, checkpointEndDate)
   checkpointEvent => newEvent('checkpoint', checkpointRefDate, checkpointStartDate, checkpointEndDate, &
   & checkpointInterval, errno=ierror)
-  if (ierror /= no_Error) then
-    print *, 'ERROR: ', ierror
-    stop
-  endif
+  IF (ierror /= no_Error) THEN
+    PRINT *, 'ERROR: ', ierror
+    STOP
+  END IF
   lret = addEventToEventGroup(checkpointEvent, outputEventGroup)
-  
-  restartRefDate   => experiment_reference_date
+
+  restartRefDate => experiment_reference_date
   restartStartDate => experiment_start_date
-  restartEndDate   => experiment_end_date
-  call getEventComponents(restartTimeInterval, restartRefDate, restartInterval, restartStartDate, restartEndDate)
+  restartEndDate => experiment_end_date
+  CALL getEventComponents(restartTimeInterval, restartInterval, restartStartDate, restartEndDate)
   restartEvent => newEvent('restart', restartRefDate, restartStartDate, restartEndDate, restartInterval,  &
   & errno=ierror)
-  if (ierror /= no_Error) then
-    print *, 'ERROR: ', ierror
-    stop
-  endif
+  IF (ierror /= no_Error) THEN
+    PRINT *, 'ERROR: ', ierror
+    STOP
+  END IF
   lret = addEventToEventGroup(restartEvent, outputEventGroup)
-  
+
   ! end block checkpoint_restart_time_intervals
 
-  call printEventGroup(outputEvents)
-  
+  CALL printEventGroup(outputEvents)
+
   !________________________________________________________________________________________________
   !
   ! physics_time_intervals: block
 
-  advectionRefDate   => experiment_reference_date
+  advectionRefDate => experiment_reference_date
   advectionStartDate => experiment_start_date
-  advectionEndDate   => experiment_end_date
-  
-  call getEventComponents(advectionTimeInterval, advectionRefDate, advectionInterval, advectionStartDate, advectionEndDate)
+  advectionEndDate => experiment_end_date
+
+  CALL getEventComponents(advectionTimeInterval, advectionInterval, advectionStartDate, advectionEndDate)
   advectionEvent => newEvent('advection', advectionRefDate, advectionStartDate, advectionEndDate, advectionInterval, &
   & errno=ierror)
-  if (ierror /= no_Error) then
-    print *, 'ERROR: ', ierror
-    stop
-  endif
+  IF (ierror /= no_Error) THEN
+    PRINT *, 'ERROR: ', ierror
+    STOP
+  END IF
   lret = addEventToEventGroup(advectionEvent, physicsEventGroup)
-  
-  call printEventGroup(physicsEvents)
-  
+
+  CALL printEventGroup(physicsEvents)
+
   ! end block physics_time_intervals
   !________________________________________________________________________________________________
   !
 
-  print *, ''
+  PRINT *, ''
   model_time_step => newTimedelta(modelTimeStep)
-  call timedeltaToString(model_time_step, tdstring)
-  print *, 'Dynamics (basic model) time step: ', trim(tdstring)
-  print *, ''
+  CALL timedeltaToString(model_time_step, tdstring)
+  PRINT *, 'Dynamics (basic model) time step: ', TRIM(tdstring)
+  PRINT *, ''
 
   !________________________________________________________________________________________________
-  ! 
+  !
 
   start_date => newDatetime(experiment_start_date)
   current_date => newDatetime(start_date)
-  stop_date => newDatetime(start_date) 
+  stop_date => newDatetime(start_date)
   stop_date = stop_date + getEventInterval(restartEvent)
 
   !________________________________________________________________________________________________
@@ -271,124 +258,124 @@ program iconatm
   !..............................................................................................
   ! 1. check, if restart is in the experiments time interval
   !
-  if (stop_date > experiment_end_date) then
-    print *, 'WARNING: run would not create a restart file.'
-    print *, '         Reset the stop_date to experiment end_date.'
+  IF (stop_date > experiment_end_date) THEN
+    PRINT *, 'WARNING: run would not create a restart file.'
+    PRINT *, '         Reset the stop_date to experiment end_date.'
     stop_date => experiment_end_date
-  endif
+  END IF
   !..............................................................................................
   ! 2. check, if checkpointing is
   !
   next_checkpoint_date => newDatetime(start_date)
   next_checkpoint_date = next_checkpoint_date + getEventInterval(checkpointEvent)
-  call datetimeToString(next_checkpoint_date, dstring)
-  print *, 'First checkpoint date: ', trim(dstring)
+  CALL datetimeToString(next_checkpoint_date, dstring)
+  PRINT *, 'First checkpoint date: ', TRIM(dstring)
   !..............................................................................................
   ! 3. check, if restarting is
   !
   next_restart_date => newDatetime(start_date)
   next_restart_date = next_restart_date + getEventInterval(restartEvent)
-  call datetimeToString(next_restart_date, dstring)
-  print *, 'First restart date: ', trim(dstring)
+  CALL datetimeToString(next_restart_date, dstring)
+  PRINT *, 'First restart date: ', TRIM(dstring)
   !..............................................................................................
-  
+
   ! end block check_time_interval_consistency
   !________________________________________________________________________________________________
   !
 
-  call datetimeToString(current_date, dstring)
-  print *, 'Model date starting the time integration loop: ', trim(dstring)
-  
-  time_integration: do 
+  CALL datetimeToString(current_date, dstring)
+  PRINT *, 'Model date starting the time integration loop: ', TRIM(dstring)
+
+  time_integration: DO
     !............................................................................................
     ! print date and time
-    call datetimeToString(current_date, dstring)
-    print *, 'Model time loop  : ', trim(dstring)
+    CALL datetimeToString(current_date, dstring)
+    PRINT *, 'Model time loop  : ', TRIM(dstring)
     !............................................................................................
     ! need to run advection
-    if (isCurrentEventActive(advectionEvent, current_date))then
-      print *, 'Calculate advection: ', trim(dstring)
-    endif
+    IF (isCurrentEventActive(advectionEvent, current_date)) THEN
+      PRINT *, 'Calculate advection: ', TRIM(dstring)
+    END IF
     !............................................................................................
     ! initiate restart
-    if ((isCurrentEventActive(restartEvent, current_date) .and. start_date /= current_date) &
-         .or. current_date == experiment_end_date) then
-      call writeRestart(current_date)
-      print *, 'INFO: write restart.'
-      exit time_integration
-    endif
+    IF ((isCurrentEventActive(restartEvent, current_date) .AND. start_date /= current_date) &
+        .OR. current_date == experiment_end_date) THEN
+      CALL writeRestart(current_date)
+      PRINT *, 'INFO: write restart.'
+      EXIT time_integration
+    END IF
     !............................................................................................
     ! initiate checkpoint, we do not checkpoint/restart
-    if (isCurrentEventActive(checkpointEvent, current_date) .and. start_date /= current_date) then
-      call writeRestart(current_date)
-      print *, 'INFO: write checkpoint.'
-    endif
+    IF (isCurrentEventActive(checkpointEvent, current_date) .AND. start_date /= current_date) THEN
+      CALL writeRestart(current_date)
+      PRINT *, 'INFO: write checkpoint.'
+    END IF
     !............................................................................................
     ! calculate next date and time
     current_date = current_date + model_time_step
     !............................................................................................
     ! if new date and time is larger than end of run exit time integration: should never hit
-    if (current_date > stop_date) exit time_integration
-  enddo time_integration
-  
-  call datetimeToString(current_date, dstring)
-  print *, 'Model date leaving the time integration loop : ', trim(dstring)
-    
-  !________________________________________________________________________________________________
-  !
+    IF (current_date > stop_date) EXIT time_integration
+  END DO time_integration
 
-contains
+  CALL datetimeToString(current_date, dstring)
+  PRINT *, 'Model date leaving the time integration loop : ', TRIM(dstring)
 
   !________________________________________________________________________________________________
   !
-  subroutine writeRestart(currentDate)
-    type(datetime), pointer :: currentDate
-    character(len=max_datetime_str_len)  :: dstring
-    character(len=max_datetime_str_len+12)  :: filename
 
-    integer :: iunit, ierror
+CONTAINS
 
-    call datetimeToString(currentDate, dstring)
-    print *, 'Write restart/ceckpoint file for ', trim(dstring)
-
-    write (filename,'(a,a,a)') 'restart_', trim(dstring), '.dat'
-
-    open (file='test/'//trim(filename), newunit=iunit, iostat=ierror)
-    if (ierror /= 0) then
-      print *, 'ERROR: could not open namelist file.' 
-      stop 
-    else
-      write (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a,a)') &
-           &  'restart: ', trim(dstring)
-      if (ierror /= 0) then
-        print *, 'ERROR: could not write restart/checkpoint file.'
-        print *, '       ', trim(error_message)  
-        stop 
-      endif
-      close (unit=iunit)
-    endif
-
-  end subroutine writeRestart
   !________________________________________________________________________________________________
   !
-  
-  pure function toLower (str) result (string)
-    
-    character(*), intent(in) :: str
-    character(len(str))      :: string
-    
-    integer :: ic, i
-    
-    character(len=26), parameter :: capitel = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    character(len=26), parameter :: lower   = 'abcdefghijklmnopqrstuvwxyz'
-    
+  SUBROUTINE writeRestart(currentDate)
+    TYPE(datetime), POINTER :: currentDate
+    CHARACTER(len=max_datetime_str_len)  :: dstring
+    CHARACTER(len=max_datetime_str_len + 12)  :: filename
+
+    INTEGER :: iunit, ierror
+
+    CALL datetimeToString(currentDate, dstring)
+    PRINT *, 'Write restart/ceckpoint file for ', TRIM(dstring)
+
+    WRITE (filename, '(a,a,a)') 'restart_', TRIM(dstring), '.dat'
+
+    OPEN (file=TRIM(filename), newunit=iunit, iostat=ierror)
+    IF (ierror /= 0) THEN
+      PRINT *, 'ERROR: could not open namelist file.'
+      STOP
+    ELSE
+      WRITE (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a,a)') &
+           &  'restart: ', TRIM(dstring)
+      IF (ierror /= 0) THEN
+        PRINT *, 'ERROR: could not write restart/checkpoint file.'
+        PRINT *, '       ', TRIM(error_message)
+        STOP
+      END IF
+      CLOSE (unit=iunit)
+    END IF
+
+  END SUBROUTINE writeRestart
+  !________________________________________________________________________________________________
+  !
+
+  PURE FUNCTION toLower(str) RESULT(string)
+
+    CHARACTER(*), INTENT(in) :: str
+    CHARACTER(LEN(str))      :: string
+
+    INTEGER :: ic, i
+
+    CHARACTER(len=26), PARAMETER :: capitel = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    CHARACTER(len=26), PARAMETER :: lower = 'abcdefghijklmnopqrstuvwxyz'
+
     string = str
-    do i = 1, LEN_TRIM(str)
+    DO i = 1, LEN_TRIM(str)
       ic = INDEX(capitel, str(i:i))
-      if (ic > 0) string(i:i) = lower(ic:ic)
-    end do
-    
-  end function toLower
+      IF (ic > 0) string(i:i) = lower(ic:ic)
+    END DO
+
+  END FUNCTION toLower
 
   !________________________________________________________________________________________________
   !
@@ -406,11 +393,10 @@ contains
 !     character(len=max_groupname_str_len) :: bb
 !     character(len=max_datetime_str_len)  :: current_date_string_tmp
 
-
 !     outputEvent => newEvent('output', '2000-01-01T00:00:00', '2010-01-01T00:00:01', '2013-01-01T00:00:02', 'PT06H')
 !     lret = addEventToEventGroup(outputEvent, outputEventGroup)
 
-!     dtt => getEventReferenceDateTime(outputEvent) 
+!     dtt => getEventReferenceDateTime(outputEvent)
 !     call datetimeToString(dtt, current_date_string_tmp)
 !     print *, trim(current_date_string_tmp)
 
@@ -442,8 +428,8 @@ contains
 !     enddo
 
 !     print *,'HELLO' ,getEventId(restartEvent);
-   
-!     print *, 'GOOGLE', getEventisFirstInMonth(outputEvent) 
+
+!     print *, 'GOOGLE', getEventisFirstInMonth(outputEvent)
 
 !     !type(datetime), pointer :: current_date_test
 !     current_date_test => newDatetime('2010-01-02T00:00:00')
@@ -452,13 +438,11 @@ contains
 !     call datetimeToString(tmp_date_test_1, current_date_string)
 !     print *, current_date_string
 
-
 !     call getEventGroupName(outputEventGroup, bb);
 !     print *, bb
-    
 
 !     call deallocateEventGroup(outputEventGroup)
 
 !   end subroutine event_tests
 
-end program iconatm
+END PROGRAM iconatm

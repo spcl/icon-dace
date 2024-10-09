@@ -1,52 +1,6 @@
-/**
- * @file OASIS3_MCT_example.c
- *
- * @copyright Copyright  (C)  2013 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- * This example is based on a example presented in the following paper:
- * "Development and performance of a new version of the OASIS coupler, OASIS3-MCT_3.0"
- * (http://www.geosci-model-dev-discuss.net/gmd-2017-64/)
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-#include "yac_config.h"
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 #define EXACT
 
@@ -57,13 +11,8 @@
 #include <unistd.h>
 #include <string.h>
 
-#include "yac_interface.h"
-#include "read_icon_grid.h"
-#include "event.h"
-#include "test_function.h"
-#include "utils.h"
-
-#define MIN(a,b) ((a) < (b) ? (a) : (b))
+#include "yac.h"
+#include "yac_utils.h"
 
 struct {
 
@@ -108,10 +57,6 @@ struct {
 
 /* -------------------------------------------------------------------- */
 
-static void setup_process_config();
-
-/* -------------------------------------------------------------------- */
-
 // redefine YAC assert macros
 #undef YAC_ASSERT
 #define STR_USAGE "Usage: %s -c configFilename -x num_cells_x -y num_cells_y\n"
@@ -123,11 +68,14 @@ static void setup_process_config();
     } \
   }
 
+/* -------------------------------------------------------------------- */
+
+static void setup_process_config();
 static void parse_arguments(
   int argc, char ** argv, char const ** configFilename);
 
+
 int main (int argc, char *argv[]) {
-#ifdef YAC_NETCDF_ENABLED
 
   setup_process_config();
 
@@ -173,7 +121,8 @@ int main (int argc, char *argv[]) {
 
   for (unsigned i = 0; i < num_components; ++i) {
 
-    if (config_per_global_rank[global_rank].grid_idx[i] == -1) {
+    if (config_per_global_rank[global_rank].grid_idx[i] ==
+        (unsigned)-1) {
       num_fields_per_grid[i] = 0;
       continue;
     }
@@ -193,7 +142,7 @@ int main (int argc, char *argv[]) {
     int * global_corner_id;
     int * corner_core_mask;
 
-    read_part_icon_grid_information(
+    yac_read_part_icon_grid_information(
       grid_config[config_per_global_rank[global_rank].grid_idx[i]].file_name,
       &nbr_vertices, &nbr_cells, &num_vertices_per_cell, &cell_to_vertex,
       &x_vertices, &y_vertices, &x_cells, &y_cells, &global_cell_id, &cell_mask,
@@ -232,24 +181,25 @@ int main (int argc, char *argv[]) {
           component_ids[i], &cell_point_id, 1, 1, "1", YAC_TIME_UNIT_SECOND,
           &field_ids[num_fields]);
 
-      field_data[i][j] = xmalloc(nbr_cells * sizeof(*(field_data[i][j])));
+      field_data[i][j] = malloc(nbr_cells * sizeof(*(field_data[i][j])));
       for (int k = 0; k < nbr_cells; ++k)
-        field_data[i][j][k] = test_func_deg(x_cells[k], y_cells[k]);
+        field_data[i][j][k] =
+          yac_test_func_deg(x_cells[k], y_cells[k]);
 
       num_fields++;
     }
 
-    delete_icon_grid_data ( &cell_mask,
-                            &global_cell_id,
-                            &cell_core_mask,
-                            &num_vertices_per_cell,
-                            &global_corner_id,
-                            &corner_core_mask,
-                            &cell_to_vertex,
-                            &x_cells,
-                            &y_cells,
-                            &x_vertices,
-                            &y_vertices );
+    yac_delete_icon_grid_data ( &cell_mask,
+                                &global_cell_id,
+                                &cell_core_mask,
+                                &num_vertices_per_cell,
+                                &global_corner_id,
+                                &corner_core_mask,
+                                &cell_to_vertex,
+                                &x_cells,
+                                &y_cells,
+                                &x_vertices,
+                                &y_vertices );
   }
 
   yac_cenddef( );
@@ -292,13 +242,6 @@ int main (int argc, char *argv[]) {
       free(field_data[i][j]);
 
   yac_cfinalize();
-
-#else
-
-  fprintf(stderr, "YAC configured without NetCDF\n");
-  exit(EXIT_FAILURE);
-
-#endif
 }
 
 /* -------------------------------------------------------------------- */
@@ -322,7 +265,7 @@ static void setup_process_config() {
     config_per_global_rank[rank].component_idx[1] = 3;
     config_per_global_rank[rank].component_idx[2] = 5;
     config_per_global_rank[rank].num_components = 3;
-    config_per_global_rank[rank].grid_idx[0] = -1;
+    config_per_global_rank[rank].grid_idx[0] = (unsigned)-1;
     config_per_global_rank[rank].grid_idx[1] = 2;
     config_per_global_rank[rank].grid_idx[2] = 4;
   }
@@ -331,7 +274,7 @@ static void setup_process_config() {
     config_per_global_rank[rank].component_idx[1] = 4;
     config_per_global_rank[rank].component_idx[2] = 5;
     config_per_global_rank[rank].num_components = 3;
-    config_per_global_rank[rank].grid_idx[0] = -1;
+    config_per_global_rank[rank].grid_idx[0] = (unsigned)-1;
     config_per_global_rank[rank].grid_idx[1] = 3;
     config_per_global_rank[rank].grid_idx[2] = 4;
   }
@@ -339,18 +282,18 @@ static void setup_process_config() {
     config_per_global_rank[rank].component_idx[0] = 2;
     config_per_global_rank[rank].component_idx[1] = 4;
     config_per_global_rank[rank].num_components = 2;
-    config_per_global_rank[rank].grid_idx[0] = -1;
+    config_per_global_rank[rank].grid_idx[0] = (unsigned)-1;
     config_per_global_rank[rank].grid_idx[1] = 3;
   }
   for (; rank < 34; ++rank) {
     config_per_global_rank[rank].component_idx[0] = 2;
     config_per_global_rank[rank].num_components = 1;
-    config_per_global_rank[rank].grid_idx[0] = -1;
+    config_per_global_rank[rank].grid_idx[0] = (unsigned)-1;
   }
   for (; rank < 38; ++rank) {
     config_per_global_rank[rank].component_idx[0] = 6;
     config_per_global_rank[rank].num_components = 1;
-    config_per_global_rank[rank].grid_idx[0] = -1;
+    config_per_global_rank[rank].grid_idx[0] = (unsigned)-1;
   }
 }
 

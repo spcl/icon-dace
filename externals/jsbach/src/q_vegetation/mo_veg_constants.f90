@@ -168,6 +168,8 @@ MODULE mo_veg_constants
       carbon_per_dryweight_leaf   , & !< carbon mass per unit dry weight of leaves (gC / g DW)
       ! minimum permissable height of an individual
       min_height                  , & !< minimum permissable height of an individual
+      ! stem area to leaf area ratio for trees
+      k_sai2lai                   , & !< stem area to leaf area ratio for trees (--)
       ! stem mass to leaf mass ratio of grasses
       sm2lm_grass                 , & !< stem mass to leaf mass ratio of grasses
       ! Parameters controlling fruit allocation in: exp(-(lambda * reserve_use+offset)^k)
@@ -185,13 +187,21 @@ MODULE mo_veg_constants
       ! maximum change in photosynthetic N fractions
       delta_n_fraction    , & !< maximum fractional change for optimal adjustment of photosynthetic N fraction
       ! maximum change in CN ratio of canopy
-      delta_n_leaf            !< maximum fractional change for optimal adjsutment of canopy N allocation
+      delta_n_leaf            !< maximum fractional change for optimal adjustment of canopy N allocation
 
+  ! parameters used for product pool decay
+  REAL(wp), SAVE :: &
+      tau_pp_fuelwood,   & !< exponential time constants for the decay of the fuel product pool
+      tau_pp_paper,      & !< exponential time constants for the decay of the paper product pool
+      tau_pp_fiberboard, & !< exponential time constants for the decay of the fiberboard product pool
+      tau_pp_oirw,       & !< exponential time constants for the decay of the other IRW product pool
+      tau_pp_pv,         & !< exponential time constants for the decay of the plywood and veneer product pool
+      tau_pp_sawnwood      !< exponential time constants for the decay of the sawnwood product pool
 
   ! some useful numbers for easy identification of photosynthetic pathways and growth forms
   ! need to be parameters (i.e. constant across model runtime)
-      INTEGER, PARAMETER ::    &
-      itree         = 1  ,     &
+  INTEGER, PARAMETER ::    &
+      itree         = 1,   &
       igrass        = 2
 
 
@@ -320,9 +330,9 @@ CONTAINS
       k2_mort_greff               = 0.3_wp
       k3_mort_greff               = 25.0_wp
       min_greff                   = 1.0_wp
-      max_crown_area              = 15._wp
+      max_crown_area              = 100._wp ! adjusted to conform with observations by Pretsch et al. 2015; but cutting off extremes
       min_diameter                = 0.01_wp
-      k_crown_area                = 100._wp
+      k_crown_area                = 175._wp ! adjusted to medium size trees analysed by Pretch et al. 2015; https://doi.org/10.1016/j.ufug.2015.04.006
       k_rp                        = 1.6_wp
       k_fpc                       = 0.5_wp
       fpc_max                     = 0.95_wp
@@ -330,6 +340,7 @@ CONTAINS
   ! other
       carbon_per_dryweight_leaf   = 0.48_wp
       min_height                  = 0.1_wp
+      k_sai2lai                   = 0.05_wp ! calibrated to get fapar < 0.2 when no leaves at canopy closure
       sm2lm_grass                 = 0.05_wp
       lambda_fruit_alloc          = 10.0_wp
       k1_fruit_alloc              = 0.01_wp
@@ -343,6 +354,15 @@ CONTAINS
 !@todo:should this be 1/20days?
       delta_n_fraction            = 0.048_wp        ! 0.001_wp (changed to account for multiplication with dtime/one_day in the code)
       delta_n_leaf                = 0.0048_wp       ! 0.0001 (changed to account for multiplication with dtime/one_day in the code)
+
+    ! parameters used for product pool decay [years] - these need to be > 0.0_wp
+    ! following values are all taken from Nuetzel (2021, LMU master thesis)
+    tau_pp_fuelwood = 0.53
+    tau_pp_paper = 1.50
+    tau_pp_fiberboard = 13.2
+    tau_pp_oirw = 16.5
+    tau_pp_pv = 24.9
+    tau_pp_sawnwood = 49.9
 
   END SUBROUTINE init_veg_constants
 

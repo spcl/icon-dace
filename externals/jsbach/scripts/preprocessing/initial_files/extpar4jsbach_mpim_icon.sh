@@ -31,20 +31,21 @@ echo "------------------------------------------------------------------------"
 echo "-- Running $0"
 echo "------------------------------------------------------------------------"
 
-icon_grid=${icon_grid:-/pool/data/ICON/grids/public/mpim/0043/icon_grid_0043_R02B04_G.nc}
+icon_grid=${icon_grid}
 
-tile_mode=0
+tile_mode=1    # land variables are also defined where land fraction < 0.5
 urban_mode=0
 
-bindir=${extpar_dir:-/work/mj0060/m212070/test_extpar4jsbach/extpar4jsbach}/bin
-pydir=${extpar_dir:-/work/mj0060/m212070/test_extpar4jsbach/extpar4jsbach}/python
+bindir=${extpar_source_dir}/bin
+pydir=${extpar_source_dir}/python
 
-workdir=${work_dir:-/work/mj0060/m212070/test_extpar4jsbach/extpar4jsbach/work}
-extpar_file=${extpar_file:-icon_extpar__20230404.nc}
+workdir=${work_dir}
+extpar_file=${extpar_file}
 
-datadir=/work/mj0060/m212005/data/extpar-input-data
+datadir=${extpar_data_dir}
 
 clean_up=true
+
 cdo="cdo -s"
 
 if [[ ! -d ${workdir} ]] ; then
@@ -54,12 +55,14 @@ cd ${workdir}
 echo "$0: Working directory: $(pwd)"
 
 griddir=${icon_grid%/*}
-icon_grid_file=${icon_grid##*/}  # i.e. ${atmGridID}_${refinement}_G
+icon_grid_file=${icon_grid##*/}  # i.e. ${atmGridID}_${atmRes}_G
 
 export OMP_NUM_THREADS=1
 export NETCDF_OUTPUT_FILETYPE=NETCDF4
 
-export PYTHONPATH=$PYTHONPATH:${pydir}/lib
+# Include extpar python lib in PYTHONPATH
+# Also include current working directory "." for locally generated namelist.py module
+export PYTHONPATH=$PYTHONPATH:.:${pydir}/lib
 
 if [ "${tile_mode}" = 1 ]
 then
@@ -105,13 +108,18 @@ EOF
 
 if [ "${tile_mode}" = 1 ]
 then
-    grib_output_filename="${extpar_file%.nc}_tiles.g2"
-    netcdf_output_filename="${extpar_file%.nc}_tiles.nc"
-    echo "$0: Output file is $netcdf_output_filename"
+    if [[ $(echo ${extpar_file%.nc} | grep _tiles) == ${extpar_file%.nc} ]]; then
+      # file name already has suffix _tiles.nc
+      grib_output_filename="${extpar_file%.nc}.g2"
+      netcdf_output_filename="${extpar_file}"
+    else
+      # add _tiles extention
+      grib_output_filename="${extpar_file%.nc}_tiles.g2"
+      netcdf_output_filename="${extpar_file%.nc}_tiles.nc"
+    fi
 else
     grib_output_filename="${extpar_file%.nc}.g2"
     netcdf_output_filename="${extpar_file}"
-    echo "$0: Output file is $netcdf_output_filename"
 fi
 
 raw_data_alb='MODIS_alb.nc'
@@ -137,31 +145,31 @@ buffer_glcc='glcc_landuse_BUFFER.nc'
 output_glcc='glcc_landuse_ICON.nc'
 
 # raw_data_globcover='GLOBCOVER_L4_200901_200912_V2.3_int16.nc'
-raw_data_globcover_0='/landuse/GLOBCOVER_0_16bit.nc'
-raw_data_globcover_1='/landuse/GLOBCOVER_1_16bit.nc'
-raw_data_globcover_2='/landuse/GLOBCOVER_2_16bit.nc'
-raw_data_globcover_3='/landuse/GLOBCOVER_3_16bit.nc'
-raw_data_globcover_4='/landuse/GLOBCOVER_4_16bit.nc'
-raw_data_globcover_5='/landuse/GLOBCOVER_5_16bit.nc'
+raw_data_globcover_0='landuse/GLOBCOVER_0_16bit.nc'
+raw_data_globcover_1='landuse/GLOBCOVER_1_16bit.nc'
+raw_data_globcover_2='landuse/GLOBCOVER_2_16bit.nc'
+raw_data_globcover_3='landuse/GLOBCOVER_3_16bit.nc'
+raw_data_globcover_4='landuse/GLOBCOVER_4_16bit.nc'
+raw_data_globcover_5='landuse/GLOBCOVER_5_16bit.nc'
 buffer_lu='extpar_landuse_BUFFER.nc'
 output_lu='extpar_landuse_ICON.nc'
 
-raw_data_globe_A10='/topo/globe/GLOBE_A10.nc'
-raw_data_globe_B10='/topo/globe/GLOBE_B10.nc'
-raw_data_globe_C10='/topo/globe/GLOBE_C10.nc'
-raw_data_globe_D10='/topo/globe/GLOBE_D10.nc'
-raw_data_globe_E10='/topo/globe/GLOBE_E10.nc'
-raw_data_globe_F10='/topo/globe/GLOBE_F10.nc'
-raw_data_globe_G10='/topo/globe/GLOBE_G10.nc'
-raw_data_globe_H10='/topo/globe/GLOBE_H10.nc'
-raw_data_globe_I10='/topo/globe/GLOBE_I10.nc'
-raw_data_globe_J10='/topo/globe/GLOBE_J10.nc'
-raw_data_globe_K10='/topo/globe/GLOBE_K10.nc'
-raw_data_globe_L10='/topo/globe/GLOBE_L10.nc'
-raw_data_globe_M10='/topo/globe/GLOBE_M10.nc'
-raw_data_globe_N10='/topo/globe/GLOBE_N10.nc'
-raw_data_globe_O10='/topo/globe/GLOBE_O10.nc'
-raw_data_globe_P10='/topo/globe/GLOBE_P10.nc'
+raw_data_globe_A10='topo/globe/GLOBE_A10.nc'
+raw_data_globe_B10='topo/globe/GLOBE_B10.nc'
+raw_data_globe_C10='topo/globe/GLOBE_C10.nc'
+raw_data_globe_D10='topo/globe/GLOBE_D10.nc'
+raw_data_globe_E10='topo/globe/GLOBE_E10.nc'
+raw_data_globe_F10='topo/globe/GLOBE_F10.nc'
+raw_data_globe_G10='topo/globe/GLOBE_G10.nc'
+raw_data_globe_H10='topo/globe/GLOBE_H10.nc'
+raw_data_globe_I10='topo/globe/GLOBE_I10.nc'
+raw_data_globe_J10='topo/globe/GLOBE_J10.nc'
+raw_data_globe_K10='topo/globe/GLOBE_K10.nc'
+raw_data_globe_L10='topo/globe/GLOBE_L10.nc'
+raw_data_globe_M10='topo/globe/GLOBE_M10.nc'
+raw_data_globe_N10='topo/globe/GLOBE_N10.nc'
+raw_data_globe_O10='topo/globe/GLOBE_O10.nc'
+raw_data_globe_P10='topo/globe/GLOBE_P10.nc'
 
 buffer_topo='topography_BUFFER.nc'
 output_topo='topography_ICON.nc'
@@ -187,7 +195,7 @@ raw_data_flake='flake/GLDB_lakedepth.nc'
 buffer_flake='flake_BUFFER.nc'
 output_flake='ext_par_flake_ICON.nc'
 
-# NOAA imperviou surface area dataset (default)
+# NOAA impervious surface area dataset (default)
 raw_data_isa_0='NOAA_ISA_16bit.nc'
 
 # # EEA impervious surface area dataset
@@ -217,9 +225,9 @@ cat > INPUT_AOT << EOF
 /
 EOF
 #---
-cat >> ${pydir}/lib/namelist.py << EOF
+cat > namelist.py << EOF
 input_tclim = {
-    'raw_data_t_clim_path': '${datadir}/cru/',
+    'raw_data_t_clim_path': '${datadir}/cru',
     'raw_data_tclim_coarse': '${raw_data_tclim_coarse}',
     'raw_data_tclim_fine': '${raw_data_tclim_fine}',
     't_clim_buffer_file': 'crutemp_climC_extpar_BUFFER.nc',
@@ -231,7 +239,7 @@ EOF
 cat > INPUT_LU << EOF
 &lu_raw_data
    raw_data_lu_path='',
-   raw_data_lu_filename='${datadir}${raw_data_globcover_0}' '${datadir}${raw_data_globcover_1}' '${datadir}${raw_data_globcover_2}' '${datadir}${raw_data_globcover_3}' '${datadir}${raw_data_globcover_4}' '${datadir}${raw_data_globcover_5}',
+   raw_data_lu_filename='${datadir}/${raw_data_globcover_0}' '${datadir}/${raw_data_globcover_1}' '${datadir}/${raw_data_globcover_2}' '${datadir}/${raw_data_globcover_3}' '${datadir}/${raw_data_globcover_4}' '${datadir}/${raw_data_globcover_5}',
    i_landuse_data=1,
    ilookup_table_lu=1,
    ntiles_globcover=6
@@ -263,7 +271,7 @@ cat > INPUT_ORO << EOF
  raw_data_orography_path='',
  ntiles_column=4,
  ntiles_row=4,
- topo_files='${datadir}${raw_data_globe_A10}' '${datadir}${raw_data_globe_B10}' '${datadir}${raw_data_globe_C10}' '${datadir}${raw_data_globe_D10}' '${datadir}${raw_data_globe_E10}' '${datadir}${raw_data_globe_F10}' '${datadir}${raw_data_globe_G10}' '${datadir}${raw_data_globe_H10}' '${datadir}${raw_data_globe_I10}' '${datadir}${raw_data_globe_J10}' '${datadir}${raw_data_globe_K10}' '${datadir}${raw_data_globe_L10}' '${datadir}${raw_data_globe_M10}' '${datadir}${raw_data_globe_N10}' '${datadir}${raw_data_globe_O10}' '${datadir}${raw_data_globe_P10}'
+ topo_files='${datadir}/${raw_data_globe_A10}' '${datadir}/${raw_data_globe_B10}' '${datadir}/${raw_data_globe_C10}' '${datadir}/${raw_data_globe_D10}' '${datadir}/${raw_data_globe_E10}' '${datadir}/${raw_data_globe_F10}' '${datadir}/${raw_data_globe_G10}' '${datadir}/${raw_data_globe_H10}' '${datadir}/${raw_data_globe_I10}' '${datadir}/${raw_data_globe_J10}' '${datadir}/${raw_data_globe_K10}' '${datadir}/${raw_data_globe_L10}' '${datadir}/${raw_data_globe_M10}' '${datadir}/${raw_data_globe_N10}' '${datadir}/${raw_data_globe_O10}' '${datadir}/${raw_data_globe_P10}'
 /
 EOF
 cat > INPUT_OROSMOOTH << EOF
@@ -279,10 +287,10 @@ cat > INPUT_RADTOPO << EOF
 /
 EOF
 #---
-cat >> ${pydir}/lib/namelist.py << EOF
+cat >> namelist.py << EOF
 input_era = {
     'iera_type': 1,
-    'raw_data_era_path': '${datadir}/era/',
+    'raw_data_era_path': '${datadir}/era',
     'raw_data_era_ORO': 'ERA5_ORO_1990.nc',
     'raw_data_era_T2M': 'ERA5_T2M_1990_2019.nc',
     'raw_data_era_SST': 'ERA5_SST_1990_2019.nc',
@@ -291,7 +299,7 @@ input_era = {
 }
 EOF
 #---
-cat >> ${pydir}/lib/namelist.py << EOF
+cat >> namelist.py << EOF
 input_ndvi = {
     'raw_data_ndvi_path': '${datadir}/ndvi',
     'raw_data_ndvi_filename': '${raw_data_ndvi}',
@@ -324,8 +332,8 @@ if [ "${urban_mode}" = 1 ]
 then
     cat > INPUT_ISA << EOF
 &isa_raw_data
-   raw_data_isa_path='',
-   raw_data_isa_filename='${datadir}${raw_data_isa_0}'
+   raw_data_isa_path='${datadir}/urban',
+   raw_data_isa_filename='${raw_data_isa_0}'
    ntiles_isa=1
 /
 &isa_io_extpar
@@ -357,10 +365,10 @@ cat > INPUT_FLAKE << EOF
 EOF
 #   flake_output_file='${output_flake}'
 #---
-cat >> ${pydir}/lib/namelist.py << EOF
+cat >> namelist.py << EOF
 input_alb = {
     'ialb_type': 1,
-    'raw_data_alb_path': '${datadir}/albedo/',
+    'raw_data_alb_path': '${datadir}/albedo',
     'raw_data_alb_filename': '${raw_data_alb}',
     'raw_data_alnid_filename': '${raw_data_alnid}',
     'raw_data_aluvd_filename': '${raw_data_aluvd}',
@@ -428,26 +436,24 @@ cat > INPUT_TCLIM_FINAL << EOF
 EOF
 ${bindir}/${binary_extpar_consistency_check}
 
-# Final corrections for the Extpar output file
-#   - Use SOILTYPE_2 instead of SOILTYP (zero everywhere)
-#   - Set the ICON grid (clon and clat first removed to avoid conflict)
-${cdo} delvar,SOILTYP,clon,clat $workdir/${netcdf_output_filename} $workdir/${netcdf_output_filename}.tmp
-${cdo} chname,SOILTYP_2,SOILTYP $workdir/${netcdf_output_filename}.tmp $workdir/${netcdf_output_filename}.tmp2
+# There might be two SOILTYP variables in the extpar file, the first one only containing 0.
+# Use the second SOILTYP variable (SOILTYP_2) to correct the first one.
+if [[ $(cdo showvar $workdir/${netcdf_output_filename} | grep SOILTYP_2 ) != "" ]]; then
+  $cdo -setname,SOILTYP -selvar,SOILTYP_2 $workdir/${netcdf_output_filename} $workdir/SOILTYP
+  $cdo replace $workdir/${netcdf_output_filename} $workdir/SOILTYP $workdir/${netcdf_output_filename}.tmp
+  $cdo delname,SOILTYP_2 $workdir/${netcdf_output_filename}.tmp    $workdir/${netcdf_output_filename}
+fi
 
-#    - Use the glacier fraction from ${binary_lu} output, as the glacier mask correction
-#      within the consistency check is not helpful in coupled setups, where the model land
-#      sea mask does not match FR_LAND.
-${cdo} setvar,ICE     -setlevel,0 -selvar,ICE_GLCC     glcc_landuse_BUFFER.nc ICE_GLCC.nc
-${cdo} setvar,FR_LAND -setlevel,0 -selvar,FR_LAND_GLCC glcc_landuse_BUFFER.nc FR_LAND_GLCC.nc
-${cdo} -O merge ICE_GLCC.nc FR_LAND_GLCC.nc  glcc_lu_vars.nc
-${cdo} replace ${netcdf_output_filename}.tmp2 glcc_lu_vars.nc ${netcdf_output_filename}.tmp3
-
-${cdo} setgrid,${griddir}/${icon_grid_file} $workdir/${netcdf_output_filename}.tmp3 \
+${cdo} setgrid,${griddir}/${icon_grid_file} $workdir/${netcdf_output_filename} \
     ${extpar_dir}/${netcdf_output_filename}
 
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 echo "External parameters for ICON-Land model generated:"
 echo "      ${extpar_dir}/${netcdf_output_filename}"
+echo ""
+echo "This file should probably be copied to"
+echo "      /pool/data/JSBACH/icon/extpar4jsbach/{mpim,dwd}"
+echo "by someone with write permission so it can be re-used"
 echo "++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++"
 
 # Clean up
@@ -458,7 +464,7 @@ fi
 
 exit 0
 
-#echo 'Generation of global NetCDF attributes' 
+#echo 'Generation of global NetCDF attributes'
 #
 #sed -n '/Code information/,/code information/p' log_consistency_check.txt > attrib_comment.txt
 #library_name=$(fgrep  "Library name" attrib_comment.txt | awk -F ":"  '{print $2}')

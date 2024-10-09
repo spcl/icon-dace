@@ -1,14 +1,3 @@
-! Aqua Planet experiments for the NH-Core
-!
-! Literature
-! - Neale, R. B. and Hoskins B. J.(2001): "A standard test for AGCMs
-!   including their physical parametrizations:I: The Proposal", Atmospheric
-!   Science Letters (2001)
-! - Neale, R. B. and Hoskins B. J.(2001): "A standard test for AGCMs
-!   including their physical parametrizations: II: Results for The Met
-!   Office Model", Atmospheric Science Letters (2001)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,16 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Aqua Planet experiments for the NH-Core
+!
+! Literature
+! - Neale, R. B. and Hoskins B. J.(2001): "A standard test for AGCMs
+!   including their physical parametrizations:I: The Proposal", Atmospheric
+!   Science Letters (2001)
+! - Neale, R. B. and Hoskins B. J.(2001): "A standard test for AGCMs
+!   including their physical parametrizations: II: Results for The Met
+!   Office Model", Atmospheric Science Letters (2001)
 
 MODULE mo_nh_ape_exp
 !-------------------------------------------------------------------------

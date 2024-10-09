@@ -17,10 +17,9 @@ MODULE comin_plugin_types
   PRIVATE
 
   PUBLIC :: t_comin_plugin_description
-  PUBLIC :: t_comin_plugin_info, t_comin_plugin_info_c
+  PUBLIC :: t_comin_plugin_info
 
 #include "comin_global.inc"
-
 
   !> Data type, describing the dynamic libraries
   !! @ingroup host_interface
@@ -46,20 +45,13 @@ MODULE comin_plugin_types
   END TYPE t_comin_plugin_description
 
   !> The elements of this derived data type describe a 3rd party plugin.
-  TYPE, BIND(C) :: t_comin_plugin_info_c
-    INTEGER(kind=c_int)                                         :: id
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_PRIMARY_CONSTRUCTOR) :: name
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_OPTIONS)   :: options
-    CHARACTER(LEN=1, kind=c_char), DIMENSION(MAX_LEN_COMM)      :: comm
-  END TYPE t_comin_plugin_info_c
-
-  !> The elements of this derived data type describe a 3rd party plugin.
   !! @ingroup plugin_interface
   TYPE :: t_comin_plugin_info
     INTEGER                       :: id
     CHARACTER(LEN=:), ALLOCATABLE :: name
     CHARACTER(LEN=:), ALLOCATABLE :: options
     CHARACTER(LEN=:), ALLOCATABLE :: comm
+    LOGICAL                       :: errors_return = .FALSE.
   END TYPE t_comin_plugin_info
 
 END MODULE comin_plugin_types

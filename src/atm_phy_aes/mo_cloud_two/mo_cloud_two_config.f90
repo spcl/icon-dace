@@ -1,9 +1,3 @@
-!
-! Configuration of the parameterization for two-moment bulk microphysics by
-! Seifert and Beheng (2006) with prognostic cloud droplet number from DWD
-! (inwp_gscp=4) to be used in the sapphire physics package.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the parameterization for two-moment bulk microphysics by
+! Seifert and Beheng (2006) with prognostic cloud droplet number from DWD
+! (inwp_gscp=4) to be used in the sapphire physics package.
 
 MODULE mo_cloud_two_config
 

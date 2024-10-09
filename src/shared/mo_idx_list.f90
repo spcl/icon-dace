@@ -1,6 +1,3 @@
-! Basic derived types for blocked and non-blocked 1D index lists.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Basic derived types for blocked and non-blocked 1D index lists.
 
 MODULE mo_idx_list
 

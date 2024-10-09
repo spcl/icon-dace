@@ -1,6 +1,3 @@
-! Module determines some constants to be used by wave model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module determines some constants to be used by wave model.
 
 MODULE mo_wave_constants
 

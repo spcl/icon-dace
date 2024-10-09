@@ -1,6 +1,3 @@
-! @brief sediment pore water diffusion
-! routines: dipowa, powadi
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief sediment pore water diffusion
+! routines: dipowa, powadi
 
 MODULE mo_sedmnt_diffusion
 

@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! This module is the interface between ICON:nwp_radiation to the radiation scheme ecRad
 !
 ! - There are two interfaces within this module: nwp_ecrad_radiation and
@@ -17,19 +27,6 @@
 ! - The transfer of data from ICON to ecRad and vice versa is performed within
 !   routines from mo_nwp_ecrad_utilities and mo_nwp_ecrad_prep_aerosol, independent of
 !   the choice to use a reduced radiation grid or not.
-!
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -115,17 +112,16 @@ CONTAINS
     TYPE(t_patch), TARGET,   INTENT(in)    :: pt_patch         !< Current domain info
     TYPE(t_external_data),   INTENT(in)    :: ext_data         !< External data container
 
-    REAL(wp),                INTENT(in)    ::             &
-      & zaeq1(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq2(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq3(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq4(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq5(nproma,pt_patch%nlev,pt_patch%nblks_c)        !< Climatological aerosol (Tegen)
-    REAL(wp), TARGET, ALLOCATABLE, INTENT(in) ::          &
-      & od_lw (:,:,:,:)                             ,     & !< LW aerosol optical thickness
-      & od_sw (:,:,:,:)                             ,     & !< SW aerosol optical thickness
-      & g_sw  (:,:,:,:)                             ,     & !< SW aerosol asymmetry factor
-      & ssa_sw(:,:,:,:)                                     !< SW aerosol single scattering albedo
+    REAL(wp), ALLOCATABLE, TARGET, INTENT(in) :: &
+      & zaeq1 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq2 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq3 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq4 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq5 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & od_lw (:,:,:,:),  & !< LW aerosol optical thickness
+      & od_sw (:,:,:,:),  & !< SW aerosol optical thickness
+      & g_sw  (:,:,:,:),  & !< SW aerosol asymmetry factor
+      & ssa_sw(:,:,:,:)     !< SW aerosol single scattering albedo
 
     TYPE(t_nh_diag), TARGET, INTENT(in)         :: pt_diag       !< ICON diagnostic variables
     TYPE(t_nwp_phy_diag), TARGET, INTENT(inout) :: prm_diag      !< ICON physics diagnostics
@@ -547,17 +543,16 @@ CONTAINS
     TYPE(t_patch), TARGET,   INTENT(in)    :: pt_par_patch     !< Parent domain info
     TYPE(t_external_data),   INTENT(in)    :: ext_data         !< External data container
 
-    REAL(wp),                INTENT(in)    ::             &
-      & zaeq1(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq2(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq3(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq4(nproma,pt_patch%nlev,pt_patch%nblks_c),     & !< Climatological aerosol (Tegen)
-      & zaeq5(nproma,pt_patch%nlev,pt_patch%nblks_c)        !< Climatological aerosol (Tegen)
-    REAL(wp), ALLOCATABLE,   INTENT(in)    ::             &
-      & od_lw (:,:,:,:)                             ,     & !< LW aerosol optical thickness
-      & od_sw (:,:,:,:)                             ,     & !< SW aerosol optical thickness
-      & g_sw  (:,:,:,:)                             ,     & !< SW aerosol asymmetry factor
-      & ssa_sw(:,:,:,:)                                     !< SW aerosol single scattering albedo
+    REAL(wp), ALLOCATABLE, TARGET, INTENT(in) :: &
+      & zaeq1 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq2 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq3 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq4 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & zaeq5 (:,:,:),    & !< Climatological aerosol (Tegen)
+      & od_lw (:,:,:,:),  & !< LW aerosol optical thickness
+      & od_sw (:,:,:,:),  & !< SW aerosol optical thickness
+      & g_sw  (:,:,:,:),  & !< SW aerosol asymmetry factor
+      & ssa_sw(:,:,:,:)     !< SW aerosol single scattering albedo
 
     TYPE(t_nh_diag), TARGET, INTENT(in)    :: pt_diag       !< ICON diagnostic variables
     TYPE(t_nwp_phy_diag),    INTENT(inout) :: prm_diag      !< ICON physics diagnostics
@@ -621,11 +616,6 @@ CONTAINS
       &  zrg_o3(:,:,:),              & !< Ozone mass mixing ratio on reduced grid
       &  zrg_tot_cld(:,:,:,:),       & !< Mass mixing ratio of water vapor, cloud water and cloud ice on reduced grid
       &  zrg_clc(:,:,:),             & !< Cloud cover on reduced grid
-      &  zrg_aeq1(:,:,:),            & !< Climatological aerosol on reduced grid
-      &  zrg_aeq2(:,:,:),            & !< Climatological aerosol on reduced grid
-      &  zrg_aeq3(:,:,:),            & !< Climatological aerosol on reduced grid
-      &  zrg_aeq4(:,:,:),            & !< Climatological aerosol on reduced grid
-      &  zrg_aeq5(:,:,:),            & !< Climatological aerosol on reduced grid
       &  zrg_trsolall(:,:,:),        & !< solar transmissivity, all sky, net down on reduced grid
       &  zrg_lwflxall(:,:,:),        & !< Terrestrial flux, all sky, net down on reduced grid
       &  zrg_lwflx_up_sfc(:,:),      & !< Longwave upward flux at surface on reduced grid
@@ -661,14 +651,17 @@ CONTAINS
     ! Indices and pointers of extra (optional) fields that are needed by radiation
     ! and therefore have to be aggregated to the radiation grid
     INTEGER :: irg_acdnc, irg_fr_glac, irg_fr_land,  irg_qr, irg_qs, irg_qg,  &
-      &        irg_reff_qr, irg_reff_qs, irg_reff_qg, irg_camsaermr(n_camsaermr)
+      &        irg_reff_qr, irg_reff_qs, irg_reff_qg, irg_camsaermr(n_camsaermr), &
+      &        irg_zaeq1, irg_zaeq2, irg_zaeq3, irg_zaeq4, irg_zaeq5
     INTEGER, DIMENSION (ecrad_conf%n_bands_lw) :: irg_od_lw
     INTEGER, DIMENSION (ecrad_conf%n_bands_sw) :: irg_od_sw, irg_ssa_sw, irg_g_sw
     REAL(wp), DIMENSION(:,:),  POINTER :: &
       &  ptr_acdnc => NULL(),                                                 &
       &  ptr_qr => NULL(),      ptr_qs => NULL(),      ptr_qg => NULL(),      &
       &  ptr_reff_qc => NULL(), ptr_reff_qi => NULL(), ptr_reff_qr => NULL(), &
-      &  ptr_reff_qs => NULL(), ptr_reff_qg => NULL()
+      &  ptr_reff_qs => NULL(), ptr_reff_qg => NULL(),                        &
+      &  ptr_aeq1 => NULL(), ptr_aeq2 => NULL(), ptr_aeq3 => NULL(),          &
+      &  ptr_aeq4 => NULL(), ptr_aeq5 => NULL()
 
     TYPE(t_opt_ptrs),ALLOCATABLE :: &
       &  opt_ptrs_lw(:), opt_ptrs_sw(:)    !< Contains pointers to aerosol optical properties
@@ -788,14 +781,8 @@ CONTAINS
     ALLOCATE(zrg_pres     (nproma,nlev_rg  ,nblks_par_c),   &
       &      zrg_temp     (nproma,nlev_rg  ,nblks_par_c),   &
       &      zrg_o3       (nproma,nlev_rg  ,nblks_par_c),   &
-      &      zrg_aeq1     (nproma,nlev_rg  ,nblks_par_c),   &
-      &      zrg_aeq2     (nproma,nlev_rg  ,nblks_par_c),   &
-      &      zrg_aeq3     (nproma,nlev_rg  ,nblks_par_c),   &
-      &      zrg_aeq4     (nproma,nlev_rg  ,nblks_par_c),   &
-      &      zrg_aeq5     (nproma,nlev_rg  ,nblks_par_c),   &
       &      zrg_clc      (nproma,nlev_rg  ,nblks_par_c))
-    !$ACC ENTER DATA CREATE(zrg_pres, zrg_temp, zrg_o3, zrg_aeq1, zrg_aeq2) &
-    !$ACC   CREATE(zrg_aeq3, zrg_aeq4, zrg_aeq5, zrg_clc) ASYNC(1)
+    !$ACC ENTER DATA CREATE(zrg_pres, zrg_temp, zrg_o3, zrg_clc) ASYNC(1)
 
     IF (atm_phy_nwp_config(jg)%icpl_rad_reff > 0) THEN
       ALLOCATE(zrg_reff_liq (nproma,nlev_rg,nblks_par_c),   &
@@ -830,31 +817,44 @@ CONTAINS
     irg_ssa_sw       = 0
     irg_g_sw         = 0
     irg_camsaermr(:) = 0
+    irg_zaeq1        = 0
+    irg_zaeq2        = 0
+    irg_zaeq3        = 0
+    irg_zaeq4        = 0
+    irg_zaeq5        = 0
 
     CALL input_extra_flds%construct(nlev_rg)  ! Extra fields in upscaling routine: 3D fields with nlev_rg
     CALL input_extra_2D%construct(1)          ! Extra fields in upscaling routine: 2D fields
     CALL input_extra_reff%construct(nlev_rg)  ! Extra fields in upscaling routine: extra Reff
 
     SELECT CASE (atm_phy_nwp_config(jg)%icpl_rad_reff)
-    CASE (0)  ! Own calculation of reff inside ecrad_set_clouds()
-      CALL input_extra_flds%assign(prm_diag%acdnc, irg_acdnc)
-      CALL input_extra_2D%assign(ext_data%atm%fr_land, irg_fr_land)
-      CALL input_extra_2D%assign(ext_data%atm%fr_glac, irg_fr_glac)
-    CASE (2) ! Option to use all hydrometeors reff individually
-      ! Set extra hydrometeors and extra effective radius (in different array due to different interpolation)
-      IF (ANY(ecrad_iqr == ecrad_hyd_list) ) THEN
-        CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqr), irg_qr)
-        CALL input_extra_reff%assign(prm_diag%reff_qr(:,:,:), irg_reff_qr, assoc_hyd = irg_qr )
-      ENDIF
-      IF (ANY(ecrad_iqs == ecrad_hyd_list) ) THEN
-        CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqs), irg_qs)
-        CALL input_extra_reff%assign(prm_diag%reff_qs(:,:,:), irg_reff_qs, assoc_hyd = irg_qs )
-      ENDIF
-      IF ( iqg >0 .AND. ANY(ecrad_iqg == ecrad_hyd_list) ) THEN
-        CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqg), irg_qg)
-        CALL input_extra_reff%assign(prm_diag%reff_qg(:,:,:), irg_reff_qg, assoc_hyd = irg_qg )
-      ENDIF
+      CASE (0)  ! Own calculation of reff inside ecrad_set_clouds()
+        CALL input_extra_flds%assign(prm_diag%acdnc, irg_acdnc)
+        CALL input_extra_2D%assign(ext_data%atm%fr_land, irg_fr_land)
+        CALL input_extra_2D%assign(ext_data%atm%fr_glac, irg_fr_glac)
+      CASE (2) ! Option to use all hydrometeors reff individually
+        ! Set extra hydrometeors and extra effective radius (in different array due to different interpolation)
+        IF (ANY(ecrad_iqr == ecrad_hyd_list) ) THEN
+          CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqr), irg_qr)
+          CALL input_extra_reff%assign(prm_diag%reff_qr(:,:,:), irg_reff_qr, assoc_hyd = irg_qr )
+        ENDIF
+        IF (ANY(ecrad_iqs == ecrad_hyd_list) ) THEN
+          CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqs), irg_qs)
+          CALL input_extra_reff%assign(prm_diag%reff_qs(:,:,:), irg_reff_qs, assoc_hyd = irg_qs )
+        ENDIF
+        IF ( iqg >0 .AND. ANY(ecrad_iqg == ecrad_hyd_list) ) THEN
+          CALL input_extra_flds%assign(pt_prog%tracer(:,:,:,iqg), irg_qg)
+          CALL input_extra_reff%assign(prm_diag%reff_qg(:,:,:), irg_reff_qg, assoc_hyd = irg_qg )
+        ENDIF
     END SELECT
+
+    IF (irad_aero == iRadAeroTegen) THEN
+      CALL input_extra_flds%assign(zaeq1(:,:,:), irg_zaeq1)
+      CALL input_extra_flds%assign(zaeq2(:,:,:), irg_zaeq2)
+      CALL input_extra_flds%assign(zaeq3(:,:,:), irg_zaeq3)
+      CALL input_extra_flds%assign(zaeq4(:,:,:), irg_zaeq4)
+      CALL input_extra_flds%assign(zaeq5(:,:,:), irg_zaeq5)
+    ENDIF
 
     IF (ANY( irad_aero == (/iRadAeroConstKinne,iRadAeroKinne,iRadAeroVolc,iRadAeroART,  &
       &                     iRadAeroKinneVolc,iRadAeroKinneVolcSP,iRadAeroKinneSP/) )) THEN
@@ -867,13 +867,13 @@ CONTAINS
         CALL input_extra_flds%assign(ssa_sw(:,:,:,jw), irg_ssa_sw(jw))
         CALL input_extra_flds%assign(g_sw(:,:,:,jw), irg_g_sw(jw))
       ENDDO
-    END IF
+    ENDIF
 
      IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
        DO jt = 1, n_camsaermr
          CALL input_extra_flds%assign(pt_diag%camsaermr(:,:,:,jt), irg_camsaermr(jt))
        ENDDO
-     END IF
+     ENDIF
 
     !$ACC DATA COPYIN(input_extra_flds, input_extra_2D, input_extra_reff)
     CALL input_extra_flds%acc_attach()
@@ -888,11 +888,11 @@ CONTAINS
     IF ( input_extra_2D%ntot > 0 )  THEN
       ALLOCATE( zrg_extra_2D(nproma,nblks_par_c,input_extra_2D%ntot) )
       !$ACC ENTER DATA CREATE(zrg_extra_2D) ASYNC(1)
-    END IF
+    ENDIF
     IF ( input_extra_reff%ntot  > 0 ) THEN
       ALLOCATE( zrg_extra_reff(nproma,input_extra_reff%nlev_rg,nblks_par_c,input_extra_reff%ntot) )
       !$ACC ENTER DATA CREATE(zrg_extra_reff) ASYNC(1)
-    END IF
+    ENDIF
 
 
     rl_start = 1 ! SR radiation is not set up to handle boundaries of nested domains
@@ -936,7 +936,7 @@ CONTAINS
       CALL init(zrg_swflx_dn_clr(:,:,:), 0._wp, lacc=.TRUE., opt_acc_async=.TRUE.)
     END IF
 
-!$OMP DO PRIVATE(jb, i_startidx, i_endidx), ICON_OMP_GUIDED_SCHEDULE
+!$OMP DO PRIVATE(jb, jc, i_startidx, i_endidx), ICON_OMP_GUIDED_SCHEDULE
     DO jb = i_startblk, i_endblk
       CALL get_indices_c(pt_patch, jb, i_startblk, i_endblk, &
         &                       i_startidx, i_endidx, rl_start, rl_end)
@@ -960,13 +960,11 @@ CONTAINS
       &                    prm_diag%albnirdif, prm_diag%albdif, prm_diag%tsfctrad,       &
       &                    prm_diag%ktype, pt_diag%pres_ifc, pt_diag%pres,               &
       &                    pt_diag%temp, prm_diag%tot_cld, ptr_clc,                      &
-      &                    ext_data%atm%o3, zaeq1, zaeq2, zaeq3, zaeq4, zaeq5,           &
-      &                    zrg_emis_rad,                                                 &
+      &                    ext_data%atm%o3, zrg_emis_rad,                                &
       &                    zrg_cosmu0, zrg_albvisdir, zrg_albnirdir, zrg_albvisdif,      &
       &                    zrg_albnirdif, zrg_albdif, zrg_tsfc, zrg_rtype, zrg_pres_ifc, &
       &                    zrg_pres, zrg_temp,                                           &
       &                    zrg_tot_cld, zrg_clc, zrg_o3,                                 &
-      &                    zrg_aeq1, zrg_aeq2, zrg_aeq3, zrg_aeq4, zrg_aeq5,             &
       &                    zlp_pres_ifc, zlp_tot_cld, prm_diag%buffer_rrg,               &
       &                    atm_phy_nwp_config(jg)%icpl_rad_reff,                         &
       &                    prm_diag%reff_qc, prm_diag%reff_qi,                           &
@@ -1038,8 +1036,7 @@ CONTAINS
     !$ACC DATA PRESENT(cosmu0mask, zrg_cosmu0, zrg_tsfc) &
     !$ACC   PRESENT(zrg_albvisdif, zrg_albnirdif, zrg_albvisdir, zrg_albnirdir) &
     !$ACC   PRESENT(zrg_emis_rad, zrg_pres_ifc, zrg_temp, zrg_pres, zrg_o3) &
-    !$ACC   PRESENT(zrg_tot_cld, zrg_clc, zrg_aeq1, zrg_aeq2, zrg_aeq3, zrg_aeq4) &
-    !$ACC   PRESENT(zrg_aeq5)
+    !$ACC   PRESENT(zrg_tot_cld, zrg_clc)
 
 
 !$OMP DO PRIVATE(jb, jc, i_startidx, i_endidx,                  &
@@ -1047,7 +1044,9 @@ CONTAINS
 !$OMP            i_startidx_rad,i_endidx_rad,                   &
 !$OMP            ptr_acdnc, ptr_fr_land, ptr_fr_glac,           &
 !$OMP            ptr_reff_qc, ptr_reff_qi, ptr_qr, ptr_reff_qr, &
-!$OMP            ptr_qs, ptr_reff_qs, ptr_qg, ptr_reff_qg),     &
+!$OMP            ptr_qs, ptr_reff_qs, ptr_qg, ptr_reff_qg,      &
+!$OMP            ptr_aeq1, ptr_aeq2, ptr_aeq3, ptr_aeq4,        &
+!$OMP            ptr_aeq5),                                     &
 !$OMP ICON_OMP_GUIDED_SCHEDULE
     DO jb = i_startblk, i_endblk
       CALL get_indices_c(ptr_pp, jb, i_startblk, i_endblk, &
@@ -1089,6 +1088,23 @@ CONTAINS
         IF ( irg_reff_qr > 0 ) ptr_reff_qr => zrg_extra_reff(jcs:jce,:,jb,irg_reff_qr)
         IF ( irg_reff_qs > 0 ) ptr_reff_qs => zrg_extra_reff(jcs:jce,:,jb,irg_reff_qs)
         IF ( irg_reff_qg > 0 ) ptr_reff_qg => zrg_extra_reff(jcs:jce,:,jb,irg_reff_qg)
+
+        IF (irad_aero == iRadAeroTegen) THEN
+          IF ( ALL((/irg_zaeq1, irg_zaeq2, irg_zaeq3, irg_zaeq4, irg_zaeq5/) > 0) ) THEN
+            ptr_aeq1 => zrg_extra_flds(jcs:jce,:,jb,irg_zaeq1)
+            !$ACC ENTER DATA ATTACH(ptr_aeq1) IF(ASSOCIATED(ptr_aeq1))
+            ptr_aeq2 => zrg_extra_flds(jcs:jce,:,jb,irg_zaeq2)
+            !$ACC ENTER DATA ATTACH(ptr_aeq2) IF(ASSOCIATED(ptr_aeq2))
+            ptr_aeq3 => zrg_extra_flds(jcs:jce,:,jb,irg_zaeq3)
+            !$ACC ENTER DATA ATTACH(ptr_aeq3) IF(ASSOCIATED(ptr_aeq3))
+            ptr_aeq4 => zrg_extra_flds(jcs:jce,:,jb,irg_zaeq4)
+            !$ACC ENTER DATA ATTACH(ptr_aeq4) IF(ASSOCIATED(ptr_aeq4))
+            ptr_aeq5 => zrg_extra_flds(jcs:jce,:,jb,irg_zaeq5)
+            !$ACC ENTER DATA ATTACH(ptr_aeq5) IF(ASSOCIATED(ptr_aeq5))
+          ELSE
+            CALL finish(routine, 'Upscaling of Tegen fields not successful')
+          ENDIF
+        ENDIF
 
         IF (irad_aero == iRadAeroCAMSclim .OR. irad_aero == iRadAeroCAMStd) THEN
           IF ( ALL(irg_camsaermr(:)  > 0) ) THEN
@@ -1170,9 +1186,7 @@ CONTAINS
           CASE(iRadAeroTegen)
             ! Fill aerosol configuration type with Tegen aerosol
             CALL nwp_ecrad_prep_aerosol(1, nlev_rg, i_startidx_rad, i_endidx_rad,         &
-              &                         zrg_aeq1(jcs:jce,:,jb), zrg_aeq2(jcs:jce,:,jb),   &
-              &                         zrg_aeq3(jcs:jce,:,jb), zrg_aeq4(jcs:jce,:,jb),   &
-              &                         zrg_aeq5(jcs:jce,:,jb),                           &
+              &                         ptr_aeq1, ptr_aeq2, ptr_aeq3, ptr_aeq4, ptr_aeq5, &
               &                         ecrad_conf, ecrad_aerosol, lacc=.TRUE.)
           CASE(iRadAeroCAMSclim,iRadAeroCAMStd)
             ! Fill aerosol configuration type with CAMS 3D climatology/forecasted aerosols
@@ -1280,7 +1294,7 @@ CONTAINS
     !$ACC END DATA
     !$ACC EXIT DATA DELETE(zrg_cosmu0, zrg_tsfc, zrg_emis_rad, zrg_albvisdir) &
     !$ACC   DELETE(zrg_albnirdir, zrg_albvisdif, zrg_albnirdif, zrg_pres_ifc, zrg_o3) &
-    !$ACC   DELETE(zrg_aeq1, zrg_aeq2, zrg_aeq3, zrg_clc, zrg_aeq4, zrg_aeq5) &
+    !$ACC   DELETE(zrg_clc) &
     !$ACC   DELETE(zrg_tot_cld, zrg_pres, zrg_temp, zrg_trsolall, zrg_lwflxall) &
     !$ACC   DELETE(zrg_lwflx_up_sfc, zrg_trsol_up_toa, zrg_trsol_up_sfc) &
     !$ACC   DELETE(zrg_trsol_dn_sfc_diff, zrg_trsol_clr_sfc, zrg_aclcov) &
@@ -1291,8 +1305,8 @@ CONTAINS
     !$ACC   DELETE(zrg_swflx_up, zrg_swflx_dn, zrg_lwflx_up_clr, zrg_lwflx_dn_clr) &
     !$ACC   DELETE(zrg_swflx_up_clr, zrg_swflx_dn_clr)
     DEALLOCATE (zrg_cosmu0, zrg_tsfc, zrg_emis_rad, zrg_albvisdir, zrg_albnirdir, zrg_albvisdif,   &
-      &         zrg_albnirdif, zrg_pres_ifc, zrg_o3, zrg_aeq1, zrg_aeq2, zrg_aeq3, zrg_clc,        &
-      &         zrg_aeq4, zrg_aeq5, zrg_tot_cld, zrg_pres, zrg_temp, zrg_trsolall, zrg_lwflxall,   &
+      &         zrg_albnirdif, zrg_pres_ifc, zrg_o3, zrg_clc,                                      &
+      &         zrg_tot_cld, zrg_pres, zrg_temp, zrg_trsolall, zrg_lwflxall,                       &
       &         zrg_lwflx_up_sfc, zrg_trsol_up_toa, zrg_trsol_up_sfc, zrg_trsol_dn_sfc_diff,       &
       &         zrg_trsol_clr_sfc, zrg_aclcov, zrg_trsol_nir_sfc, zrg_trsol_vis_sfc,               &
       &         zrg_trsol_par_sfc, zrg_fr_nir_sfc_diff, zrg_fr_vis_sfc_diff,                       &
@@ -1311,6 +1325,17 @@ CONTAINS
     IF (input_extra_2D%ntot   > 0 ) DEALLOCATE(zrg_extra_2D)
     !$ACC EXIT DATA DELETE(zrg_extra_reff) IF(input_extra_reff%ntot>0)
     IF (input_extra_reff%ntot > 0 ) DEALLOCATE(zrg_extra_reff)
+
+    !$ACC EXIT DATA DETACH(ptr_aeq1) IF(ASSOCIATED(ptr_aeq1))
+    NULLIFY(ptr_aeq1)
+    !$ACC EXIT DATA DETACH(ptr_aeq2) IF(ASSOCIATED(ptr_aeq2))
+    NULLIFY(ptr_aeq2)
+    !$ACC EXIT DATA DETACH(ptr_aeq3) IF(ASSOCIATED(ptr_aeq3))
+    NULLIFY(ptr_aeq3)
+    !$ACC EXIT DATA DETACH(ptr_aeq4) IF(ASSOCIATED(ptr_aeq4))
+    NULLIFY(ptr_aeq4)
+    !$ACC EXIT DATA DETACH(ptr_aeq5) IF(ASSOCIATED(ptr_aeq5))
+    NULLIFY(ptr_aeq5)
 
     CALL input_extra_flds%destruct()
     CALL input_extra_2D%destruct()

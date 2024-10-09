@@ -1,6 +1,3 @@
-! Contains sea ice advection routines (on ICON grid).
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains sea ice advection routines (on ICON grid).
 
 !----------------------------
 #include "omp_definitions.inc"

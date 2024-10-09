@@ -1,5 +1,3 @@
-!  Module to calculate weather interpretation, WW.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module to calculate weather interpretation, WW.
 
 MODULE mo_nwp_ww
 

@@ -1,6 +1,3 @@
-! Function for setting up idealized tropical cyclone initial conditions
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,7 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Function for setting up idealized tropical cyclone initial conditions
 !
 ! Given a point specified by:
 !

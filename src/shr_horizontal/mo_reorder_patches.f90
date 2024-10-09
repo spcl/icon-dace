@@ -1,7 +1,3 @@
-! Utility module: reorder cells, edges, vertices of a patch according
-! to a given permutation array.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Utility module: reorder cells, edges, vertices of a patch according
+! to a given permutation array.
 
 MODULE mo_reorder_patches
 

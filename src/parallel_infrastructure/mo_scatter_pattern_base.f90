@@ -1,9 +1,3 @@
-! A small class to encapsulate the information of how the grid is decomposed,
-! in order to allow quick and easy distribution of input data.
-!
-! All calls within this class are collective.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! A small class to encapsulate the information of how the grid is decomposed,
+! in order to allow quick and easy distribution of input data.
+!
+! All calls within this class are collective.
 
 MODULE mo_scatter_pattern_base
     USE mo_exception, ONLY: finish

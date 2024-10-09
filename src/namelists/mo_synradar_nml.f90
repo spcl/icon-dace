@@ -1,6 +1,3 @@
-! Namelist reading for synthetic radar data on the model grid
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist reading for synthetic radar data on the model grid
 
 MODULE mo_synradar_nml
 

@@ -1,0 +1,35 @@
+--- a/config/ltmain.sh
++++ b/config/ltmain.sh
+@@ -7250,7 +7250,9 @@ func_mode_link ()
+ 	arg=$func_stripname_result
+ 	;;
+ 
+-      -Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\))
++      -Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\)| \
++      -Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
++      -Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
+ 	func_append deplibs " $arg"
+ 	continue
+ 	;;
+@@ -7911,7 +7913,9 @@ func_mode_link ()
+ 	  alldeplibs=:
+ 	  continue
+ 	  ;;
+-	-Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\))
++	-Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\)| \
++	-Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
++	-Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
+ 	  if test "$linkmode,$pass" = "prog,link"; then
+ 	    compile_deplibs="$deplib $compile_deplibs"
+ 	    finalize_deplibs="$deplib $finalize_deplibs"
+@@ -8684,6 +8688,10 @@ func_mode_link ()
+                 func_stripname '-R' '' "$deplib"
+                 func_add2xrpath "$func_stripname_result"
+                 ;;
++	    -Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
++	    -Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
++                new_libs="$deplib $new_libs"
++                ;;
+ 	    *)
+ 	      # And here is the reason: when a library appears more
+ 	      # than once as an explicit dependence of a library, or

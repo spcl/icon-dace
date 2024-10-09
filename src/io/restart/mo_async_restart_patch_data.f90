@@ -1,9 +1,3 @@
-! Contains routines for asynchronous restart output
-!
-! Note: The synchronous implementation of the restart output can be
-!       found in the module "mo_sync_restart". See module header for
-!       more details on generated files.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains routines for asynchronous restart output
+!
+! Note: The synchronous implementation of the restart output can be
+!       found in the module "mo_sync_restart". See module header for
+!       more details on generated files.
 
 MODULE mo_async_restart_patch_data
 #ifndef NOMPI

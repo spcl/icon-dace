@@ -1,7 +1,3 @@
-! This module provides the communication routines
-! for parallel runs
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,8 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! This module provides the communication routines
+! for parallel runs
+
 ! (GZ, 2013-08-30): So far, the Cray compiler is the only one for which an OpenMP parallelization
 ! of copying data into / back from the MPI-buffer seems to give a benefit. Further compilers may
 ! be added here once the OpenMP implementation is sufficiently efficient

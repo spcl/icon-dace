@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -9,7 +8,7 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
 ! Conceptual copy of:
 ! * src/atm_dyn_iconam/mo_nonhydro_state
 ! * src/atm_phy_nwp/mo_nwp_phy_state

@@ -1,7 +1,3 @@
-! This module provides basic methods for reading
-! a NetCDF file in parallel or sequential in a transparent way.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides basic methods for reading
+! a NetCDF file in parallel or sequential in a transparent way.
 
 #define define_fill_target REAL(wp), TARGET, OPTIONAL
 #define define_return_pointer REAL(wp), POINTER, OPTIONAL

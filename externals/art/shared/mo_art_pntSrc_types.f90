@@ -17,7 +17,7 @@ MODULE mo_art_pntSrc_types
 ! ICON
   USE mo_kind,                          ONLY: wp
   USE mo_model_domain,                  ONLY: t_patch
-  USE mo_math_constants,                ONLY: rad2deg
+  USE mo_math_constants,                ONLY: deg2rad
   USE mo_exception,                     ONLY: message, message_text, finish
   USE mo_expression,                    ONLY: expression
   USE mo_fortran_tools,                 ONLY: init
@@ -29,6 +29,8 @@ MODULE mo_art_pntSrc_types
   USE mo_grid_config,                   ONLY: grid_sphere_radius
   USE mtime,                            ONLY: datetime, newDatetime, datetimeToString,   &
                                           &   max_datetime_str_len, newEvent, timedelta, &
+                                          &   newTimedelta, ASSIGNMENT(=), OPERATOR(+),  &
+                                          &   deallocateTimedelta, deallocateDatetime,   &
                                           &   event, isCurrentEventActive
 ! ART
   USE mo_art_impl_constants,            ONLY: IART_VARNAMELEN, UNDEF_REAL_ART, UNDEF_INT_ART
@@ -85,8 +87,8 @@ CONTAINS
 !!-------------------------------------------------------------------------
 !!
 SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc, id, lon, lat,    &
-  &                    height, itr, source_strength, startTime, endTime, emiss_profile,           &
-  &                    height_bot, itr0, emiss_rate0 )
+  &                    height, itr, source_strength, startTime, endTime, lexclude_end,            &
+  &                    emiss_profile, height_bot, itr0, emiss_rate0 )
 !<
 ! SUBROUTINE init_pntSrc
 ! This routine initializes one point source based on a given patch,
@@ -102,7 +104,7 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
 ! - expression for emission profile can be handed in which is evaluated during init routine
 !
 !>
-  CLASS(t_art_pntSrc),INTENT(inout)     :: &
+  CLASS(t_art_pntSrc), INTENT(inout)    :: &
     &  this_pntSrc                           !< Point source to be initialized
   TYPE(timedelta), POINTER, INTENT(in)  :: &
     &  tc_dt_model                           !< Model timestep
@@ -118,10 +120,12 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
     &  source_strength                       !< Source strength of tracer per s-1
   INTEGER, INTENT(in)                   :: &
     &  itr                                   !< Index of tracer to apply this source scenario
-  CHARACTER(LEN=*),INTENT(in)           :: &
+  CHARACTER(LEN=*), INTENT(in)          :: &
     &  id                                    !< Name of source
-  CHARACTER(LEN=*),INTENT(in)           :: &
+  CHARACTER(LEN=*), INTENT(in)          :: &
     &  startTime, endTime                    !< Start and end time of source scenario, format: 'YYYY-MM-DDTHH:MM:SS'
+  LOGICAL, INTENT(in), OPTIONAL         :: &
+    &  lexclude_end                          !< Exclude endTime from active time interval of point source
   CHARACTER(LEN=*),INTENT(in), OPTIONAL :: &
     &  emiss_profile                         !< arithmetic expression of emission profile
   REAL(wp), INTENT(in), OPTIONAL        :: &
@@ -134,6 +138,8 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
     &  gnat                      !< Grid search object
   TYPE(expression)          :: &
     &  emiss_expr                !< expression of emission profile
+  TYPE(timedelta), POINTER  :: &
+    &  td_minus_second           !< time delta of minus one second
   INTEGER                   :: &
     &  nblks, npromz,          & !< calculated for call to GNAT
     &  nlocsrc,                & !< counter for number of local sources
@@ -176,8 +182,8 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
   lat_idx(gnat_jc,gnat_jb) = lat
   lon_idx(gnat_jc,gnat_jb) = lon
 
-  in_points(gnat_jc,gnat_jb,1) = lon_idx(gnat_jc,gnat_jb) * rad2deg
-  in_points(gnat_jc,gnat_jb,2) = lat_idx(gnat_jc,gnat_jb) * rad2deg
+  in_points(gnat_jc,gnat_jb,1) = lon_idx(gnat_jc,gnat_jb) * deg2rad
+  in_points(gnat_jc,gnat_jb,2) = lat_idx(gnat_jc,gnat_jb) * deg2rad
 
   ! --- Build GNAT data structure
   CALL gnat_init_grid(gnat, p_patch)
@@ -240,23 +246,25 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
 
     IF (height >= 0._wp) THEN
       this_pntSrc%height      = height + z_ifc(jc,p_patch%nlev+1,jb)      ! Adding surface height
-      IF (PRESENT(height_bot) .AND. height_bot /= UNDEF_REAL_ART) THEN
+      IF (PRESENT(height_bot)) THEN
+        IF (height_bot /= UNDEF_REAL_ART) THEN
 
-        ! emission with (uniform) profile from height_bot to height above surface
-        this_pntSrc%height_bot = height_bot + z_ifc(jc,p_patch%nlev+1,jb) ! Adding surface height
+          ! emission with (uniform) profile from height_bot to height above surface
+          this_pntSrc%height_bot = height_bot + z_ifc(jc,p_patch%nlev+1,jb) ! Adding surface height
 
-        ! Find index of layer that contains the release height_bot
-        DO jk= 1, p_patch%nlev
-          IF( this_pntSrc%height_bot >= z_ifc(jc, jk+1 ,jb) .AND. &
-            & this_pntSrc%height_bot <  z_ifc(jc, jk ,  jb)) THEN
-            this_pntSrc%k_index_bot = jk
-            EXIT
-          ELSE
-            ! value given for height_bot might be out of range, emission is set to single level
-            ! emission
-          ENDIF
-        ENDDO
+          ! Find index of layer that contains the release height_bot
+          DO jk= 1, p_patch%nlev
+            IF( this_pntSrc%height_bot >= z_ifc(jc, jk+1 ,jb) .AND. &
+              & this_pntSrc%height_bot <  z_ifc(jc, jk ,  jb)) THEN
+              this_pntSrc%k_index_bot = jk
+              EXIT
+            ELSE
+              ! value given for height_bot might be out of range, emission is set to single level
+              ! emission
+            ENDIF
+          ENDDO
 
+        ENDIF
       ELSE ! no height_bot given
         ! emission in a single model level
         ! this_pntSrc%height_bot and this_pntSrc%k_index_bot stay UNDEF
@@ -375,9 +383,16 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
   this_pntSrc%start_time => newDatetime(startTime, errno=ierror)
     IF(ierror /= SUCCESS) CALL finish(TRIM(routine)//':init_pntSrc', &
                             &         'Could not create datetime object from string '//TRIM(startTime)//'.')
-  this_pntSrc%end_time   => newDatetime(endTime, errno=ierror)
+  this_pntSrc%end_time => newDatetime(endTime, errno=ierror)
     IF(ierror /= SUCCESS) CALL finish(TRIM(routine)//':init_pntSrc', &
                             &         'Could not create datetime object from string '//TRIM(endTime)//'.')
+  IF (PRESENT(lexclude_end)) THEN
+    IF (lexclude_end) THEN
+      td_minus_second => newTimedelta('-',0,0,0,0,0,second=1,ms=0)
+      this_pntSrc%end_time = this_pntSrc%end_time + td_minus_second
+      CALL deallocateTimedelta(td_minus_second)
+    ENDIF
+  ENDIF
 
   this_pntSrc%emissEvent => newEvent('Emission',               &
     &                                tc_exp_refdate,           &
@@ -396,7 +411,6 @@ SUBROUTINE init_pntSrc(this_pntSrc, tc_dt_model, tc_exp_refdate, p_patch, z_ifc,
   DEALLOCATE(min_dist)
   DEALLOCATE(lat_idx)
   DEALLOCATE(lon_idx)
-
 
 END SUBROUTINE init_pntSrc
 !!

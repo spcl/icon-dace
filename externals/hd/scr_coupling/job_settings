@@ -1,0 +1,126 @@
+# job_settings - Setting for running the HD model in a coupled system, i.e. with YAC
+# 
+# Copyright (C) 2021, Institute of Coastal Systems - Analysis and Modelling, Helmholtz-Zentrum Hereon
+# SPDX-License-Identifier: Apache-2.0
+# See ./LICENSES/ for license information
+#
+# Author: Ha Ho-Hagemann (Hereon, Germany)
+# Contact: ha.hagemann@hereon.de
+#_________________________________________
+#
+# ***** User paths ***********************************************************
+#
+export HDMAIN=/work/gg0302/g260062/GCOAST_oas5/HD_couple # HD main Directory that includes script, grid and log directories.
+export HDDIR=/scratch/g/g260062/hd                       # Run Directory
+
+#export HDFILE=/work/gg0302/g260122/HD/input             # HD input data Directory, e.g. HD parameter and start files.
+export HDFILE=/work/gg0302/g260062/HD/run_hd/input       # HD input data Directory, e.g. HD parameter and start files.
+
+#export HDFORCING=/work/gg0302/g260122/HD/forcing        # HD directory with forcing data in subdirectories
+export HDFORCING=/work/gg0302/g260062/HD/run_hd/forcing  # HD directory with forcing data in subdirectories
+#
+# ***** Experiment no. and directories ****************************************
+#
+EXP=hd_gl05deg
+#EXP=hd_eu5min
+
+#runmod="UNCPL"	# Stand-alone HD, then ntasks=1 (sbatch above)
+runmod="CPL"	# Coupled HD via YAC
+
+YYYY=2014          # First year of simulation
+YEND=2016          # Last year of simulation
+IWORK=1            # Run time: 1=1 year, 2=1 month, 3=year with 30 day months
+MM=01              # Start month
+
+#..........................................
+#### ATTENTION: if coupling either via OASIS or YAC: ICOUPLE > 0 !!!
+if [ $runmod == "UNCPL" ];then
+ ICOUPLE=0       # Coupling type: 0=no, 1=no interpolation, 2=interpolation in HD
+ DNCOUPLE='""'
+else
+ ICOUPLE=1       # 1=no interpolation in HD but by YAC
+# ICOUPLE=2       # 2=interpolation in HD, not by OASIS3-MCT
+ DNCOUPLE=${HDFILE}/hdcouple_nemo.nc
+fi
+
+#..........................................
+if [ $EXP == "hd_gl05deg" ];then
+EXPINP=55059    # Exp. no. of forcing - used for CCLM, HydroPy, Remo
+                #   ERA5 (55053/54) & JSBACH forcing (25288,25410)
+IFORCE=1        # Forcing: 1 = HydroPy, 2 = JSBACH-PF, 3 = CCLM, 4 = REMO
+                # Note that JSBACH forcing must be shifed by cdo remapnn,grid_0_5.txt
+HDRES=0         # HD Resolution: 0=0.5 Grad, 1=5 Min, 2= Euro 5 Min with 0.5° or 5 Min. input
+                # 3 = Australia
+RES_INP='05'    # Inputdata resolution (05, t106, 5min), after interpolation with cdo
+
+elif [ $EXP == "hd_eu5min" ];then
+EXPINP=62030    # Exp. no. of forcing - used for CCLM, HydroPy, Remo
+                #   ERA5 (55053/54) & JSBACH forcing (25288,25410)
+IFORCE=3        # Forcing: 1 = HydroPy, 2 = JSBACH-PF, 3 = CCLM, 4 = REMO
+                # Note that JSBACH forcing must be shifed by cdo remapnn,grid_0_5.txt
+HDRES=2         # HD Resolution: 0=0.5 Grad, 1=5 Min, 2= Euro 5 Min with 0.5° or 5 Min. input
+                # 3 = Australia
+RES_INP='5min'  # Inputdata resolution (05, t106, 5min), after interpolation with cdo
+fi
+
+#..........................................
+#Executable directory:
+if [ $runmod == "UNCPL" ];then
+ exe_dir="build_HD5.1_levante"
+else
+ exe_dir="build_HD5.1_yac_levante"
+fi
+
+#..........................................
+CFORM=nc        # Format of forcing files: 'srv' = Service Format (Default), 'nc' = NetCDCF
+
+#..........................................
+# Log output for nhd_diag=100 - Elbe river on 0.5°
+xlon1=8.5
+xlat1=54.5
+xlon2=10.5
+xlat2=53.5
+cdocom="setmisstoc,0."
+
+#..........................................
+if [ $runmod == "CPL" ];then
+#
+# (1) Fill model list
+#defined:modelname; modelcomponent; modelgrid;    model_id
+MODEL1=("OCEAN"     "ocean"         "ocean_grid"  "1"  )
+MODEL2=("LAND"      "land"          "land_grid"   "2"  )
+MODEL3=("HD"        "hd"            "HD_GRID"     "3"  )
+#
+# (2) Define the model time stepping
+#oceTimeStep="24"       # ocean time step (h)
+#lndTimeStep="24"       # land time step (h)
+#rivTimeStep="24"       # river time step (h)
+#couplingTimeStep="24"  # coupling time step (h)
+####longcouplingTimeStep="10e+20"     # no coupling (long coupling period)
+#
+oceTimeStep="86400"       # ocean time step (s)
+lndTimeStep="86400"       # land time step (s)
+rivTimeStep="86400"       # river time step (s)
+couplingTimeStep="86400"  # coupling time step (s)
+#
+# (3) Define the model time lag
+oce_lag=0
+lnd_lag=0
+riv_lag=0
+#
+# (4) exchanged variables
+#defined:      transient_id; varname;     collsize
+exchanged_var1=("1"          "RDC2NEMO"   "1" )
+exchanged_var2=("2"          "RUNOFF_S"   "1" )
+exchanged_var3=("3"          "RUNOFF_G"   "1" )
+#
+fi #$runmod="CPL"
+
+#..........................................
+# User specific settings that will be put as attributes in the output file
+# via namelist HDUSER_CTL in file namelist.hduser
+HD_USER="Ha Hagemann"
+HD_CONT="ha.hagemann@hereon.de"
+HD_INST="Helmholtz-Zentrum Hereon, Institute of Coastal Systems, Germany"
+HD_INSTID="ROR: 03qjp1d79"
+

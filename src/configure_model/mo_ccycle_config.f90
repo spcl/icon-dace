@@ -1,5 +1,3 @@
-! Configuration of the Carbon cycle settings
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the Carbon cycle settings
 
 MODULE mo_ccycle_config
 

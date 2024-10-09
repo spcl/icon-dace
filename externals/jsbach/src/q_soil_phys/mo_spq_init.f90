@@ -22,7 +22,7 @@ MODULE mo_spq_init
   USE mo_exception,               ONLY: message_text, finish, message
   USE mo_jsb_control,             ONLY: debug_on
   USE mo_jsb_math_constants,      ONLY: eps8
-  USE mo_jsb_process_class,       ONLY: SPQ_, VEG_
+  USE mo_jsb_process_class,       ONLY: SPQ_
 
 #ifdef __QUINCY_STANDALONE__
   USE mo_qs_process_init_util,    ONLY: init_spq_soil_properties_spp1685_sites
@@ -84,7 +84,6 @@ CONTAINS
     USE mo_jsb_tile_class,         ONLY: t_jsb_tile_abstract
     USE mo_jsb_model_class,        ONLY: t_jsb_model
     USE mo_quincy_model_config,    ONLY: QLAND, QPLANT, QSOIL, QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION
-    USE mo_jsb_lctlib_class,       ONLY: t_lctlib_element
     USE mo_jsb_grid_class,         ONLY: t_jsb_grid, t_jsb_vgrid
     USE mo_jsb_grid,               ONLY: Get_grid, Get_vgrid
     USE mo_util,                   ONLY: soil_depth_to_layers_2d
@@ -96,14 +95,11 @@ CONTAINS
       &                                  wpot_pwp, wpot_fc, wpot_fc
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Use_config(SPQ_)
-    dsl4jsb_Use_config(VEG_)
     dsl4jsb_Use_memory(SPQ_)
-    dsl4jsb_Use_memory(VEG_)
     ! ----------------------------------------------------------------------------------------------------- !
     CLASS(t_jsb_tile_abstract), INTENT(inout)     :: tile         !< one tile with data structure for one lct
     ! ----------------------------------------------------------------------------------------------------- !
     TYPE(t_jsb_model),      POINTER         :: model              !< the model
-    TYPE(t_lctlib_element), POINTER         :: lctlib             !< land-cover-type library - parameter across pft's
     TYPE(t_jsb_grid),       POINTER         :: hgrid              !< Horizontal grid
     TYPE(t_jsb_vgrid),      POINTER         :: vgrid_soil_sb      !< Vertical grid
     TYPE(t_jsb_vgrid),      POINTER         :: vgrid_snow_spq     !< Vertical grid snow
@@ -124,16 +120,20 @@ CONTAINS
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':spq_init_ic_bc'
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Def_config(SPQ_)
-    dsl4jsb_Def_config(VEG_)
     dsl4jsb_Def_memory(SPQ_)
-    dsl4jsb_Def_memory(VEG_)
     ! ----------------------------------------------------------------------------------------------------- !
-    ! VEG_ 3D
-    dsl4jsb_Real3D_onDomain    :: root_fraction_sl
     ! SPQ_ 2D
     dsl4jsb_Real2D_onDomain    :: soil_depth
     dsl4jsb_Real2D_onDomain    :: root_depth
+    dsl4jsb_Real2D_onDomain    :: t_srf_new
     dsl4jsb_Real2D_onDomain    :: t_srf_old
+    dsl4jsb_Real2D_onDomain    :: temp_srf_eff_4
+    dsl4jsb_Real2D_onDomain    :: qsat_star
+    dsl4jsb_Real2D_onDomain    :: s_star
+    dsl4jsb_Real2D_onDomain    :: fact_q_air
+    dsl4jsb_Real2D_onDomain    :: fact_qsat_srf
+    dsl4jsb_Real2D_onDomain    :: z0h
+    dsl4jsb_Real2D_onDomain    :: z0m
     dsl4jsb_Real2D_onDomain    :: w_skin
     dsl4jsb_Real2D_onDomain    :: w_soil_root
     dsl4jsb_Real2D_onDomain    :: w_soil_root_pwp
@@ -168,11 +168,9 @@ CONTAINS
     dsl4jsb_Real3D_onDomain    :: t_soil_sl
     ! ----------------------------------------------------------------------------------------------------- !
     IF (.NOT. tile%Is_process_calculated(SPQ_)) RETURN
-    IF (tile%lcts(1)%lib_id == 0) RETURN                !< run this init only if the present tile is a pft
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
     ! ----------------------------------------------------------------------------------------------------- !
     model          => Get_model(tile%owner_model_id)
-    lctlib         => model%lctlib(tile%lcts(1)%lib_id)
     hgrid          => Get_grid(model%grid_id)
     vgrid_soil_sb  => Get_vgrid('soil_layer_sb')
     vgrid_snow_spq => Get_vgrid('snow_layer_spq')
@@ -182,9 +180,7 @@ CONTAINS
     nsnow          =  vgrid_snow_spq%n_levels
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Get_config(SPQ_)
-    dsl4jsb_Get_config(VEG_)
     dsl4jsb_Get_memory(SPQ_)
-    dsl4jsb_Get_memory(VEG_)
     ! ----------------------------------------------------------------------------------------------------- !
     ALLOCATE(soil_awc(nproma, nblks))
     ALLOCATE(hlp2(nproma, nblks))
@@ -196,12 +192,18 @@ CONTAINS
     ALLOCATE(clay_spq_init_sl(nproma, nsoil_sb, nblks))
     ALLOCATE(silt_spq_init_sl(nproma, nsoil_sb, nblks))
     ! ----------------------------------------------------------------------------------------------------- !
-    ! VEG_ 3D
-    dsl4jsb_Get_var3D_onDomain(VEG_,  root_fraction_sl)
     ! SPQ_ 2D
     dsl4jsb_Get_var2D_onDomain(SPQ_, soil_depth)
     dsl4jsb_Get_var2D_onDomain(SPQ_, root_depth)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, t_srf_new)
     dsl4jsb_Get_var2D_onDomain(SPQ_, t_srf_old)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, temp_srf_eff_4)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, qsat_star)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, s_star)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, fact_q_air)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, fact_qsat_srf)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, z0h)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, z0m)
     dsl4jsb_Get_var2D_onDomain(SPQ_, w_skin)
     dsl4jsb_Get_var2D_onDomain(SPQ_, w_soil_root)
     dsl4jsb_Get_var2D_onDomain(SPQ_, w_soil_root_pwp)
@@ -295,7 +297,7 @@ CONTAINS
       ENDDO
     ENDDO
 
-    !> 3.0 init soil-property variables
+    !> 3.0 init soil-property variables and land2atmosphere variables
     !>
 
     !>   3.1 init with one site-specific value for all soil layers
@@ -307,8 +309,18 @@ CONTAINS
     silt_sl(:,:,:)        = SPREAD(spq_init_vars%soil_silt(:,:), DIM = 2, ncopies = nsoil_sb)
     clay_sl(:,:,:)        = SPREAD(spq_init_vars%soil_clay(:,:), DIM = 2, ncopies = nsoil_sb)
     volume_min_sl(:,:,:)  = 1._wp
+    ! land2atmosphere
+    !   these variables are initialized with the mem%Add_var() routine in addition (same values) !
     t_soil_sl(:,:,:)      = 273.15_wp
+    t_srf_new(:,:)        = 273.15_wp
     t_srf_old(:,:)        = 273.15_wp
+    temp_srf_eff_4(:,:)   = 273.15_wp ** 4.0_wp
+    qsat_star(:,:)        = 0.0075_wp   ! value from JSBACH
+    s_star(:,:)           = 2.9E5_wp    ! value from JSBACH
+    fact_q_air(:,:)       = 0.5_wp      ! value from JSBACH
+    fact_qsat_srf(:,:)    = 0.5_wp      ! value from JSBACH
+    z0h(:,:)              = 1.0_wp      ! value from JSBACH
+    z0m(:,:)              = 1.0_wp      ! value from JSBACH
 
 #ifdef __QUINCY_STANDALONE__
     !>     3.1.1 soil-layer specific init for sites of the "SPP 1685" site-set
@@ -438,64 +450,9 @@ CONTAINS
     w_soil_root_pot(:,:)    = saxtonA(:, 1, :) * (MIN(w_soil_root_fc,w_soil_root(:,:)) / root_depth(:,:)) ** saxtonB(:, 1, :)
 
     !>   5.3 root fraction
-    !>    root_fraction_sl(:,:,:) is a variable of veg_mem and depends on the init of root_depth(:,:), see section 6.0
+    !>    root_fraction_sl(:,:,:) is a variable of veg_mem and depends on the init of root_depth(:,:)
+    !> ... moved to veg_init!
     !>
-    ! by default use: fixed roots for QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION
-    !                 because these models are not growing roots, suffering water limitations with dyn roots
-    SELECT CASE(model%config%qmodel_id)
-    CASE(QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION)
-      dsl4jsb_Config(VEG_)%flag_dynamic_roots = .FALSE.
-      CALL message(TRIM(routine), ' set "flag_dynamic_roots = .FALSE." (using the canopy, test_canopy or test_radiation model)')
-      print*,      TRIM(routine), ' set "flag_dynamic_roots = .FALSE."', &
-        &                         ' (which is the default for the canopy, test_canopy or test_radiation models)'
-    END SELECT
-
-    ! init root fraction
-    IF (dsl4jsb_Config(VEG_)%flag_dynamic_roots) THEN
-      !>     5.3.1 dynamic root fractions across soil layers (see mo_q_veg_growth)
-      !>
-      root_fraction_sl(:, 1, :)          = 1.0_wp
-      root_fraction_sl(:, 2:nsoil_sb, :) = 0.0_wp
-    ELSE
-      !>     5.3.2 fixed root fractions across soil layers (no changes after init)
-      !>
-      ! root fractions assuming an exponential distribution of roots \n
-      !   Cr_l = Cr_0 * exp(-lctlib%k_root_dist*depth) \n
-      ! integral to bottom of root zone: 1/lctlib%k_root_dist * (1 - exp(-lctlib%k_root_dist*depth) \n
-      !   thus for each layer
-      !
-      ! NOTE: upper bound of a layer is the larger value compared to lower bound !
-      !
-      ! soil layer 1
-      root_fraction_sl(:, 1, :) = (1._wp - EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(:, 1, :))) &
-        &                         / (1._wp - EXP(-lctlib%k_root_dist * root_depth(:,:)))
-      ! soil layers 2 to x
-      DO iblk = 1,nblks
-        DO ic = 2,nproma
-          DO is = 1,INT(num_sl_above_bedrock(ic, iblk))
-            IF (root_depth(ic, iblk) > soil_lay_depth_ubound_sl(ic, is-1, iblk)) THEN
-              IF (root_depth(ic, iblk) > soil_lay_depth_ubound_sl(ic, is, iblk)) THEN
-                root_fraction_sl(ic, is, iblk) = (EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is-1, iblk)) &
-                  &                                - EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is, iblk))) &
-                  &                                / (1._wp - EXP(-lctlib%k_root_dist * root_depth(ic, iblk)))
-              ELSE
-                root_fraction_sl(ic, is, iblk) = (EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is-1, iblk)) &
-                  &                                - EXP(-lctlib%k_root_dist * root_depth(ic, iblk))) &
-                  &                                / (1._wp - EXP(-lctlib%k_root_dist * root_depth(ic, iblk)))
-              ENDIF
-            ELSE
-              root_fraction_sl(ic, is, iblk) = 0.0_wp
-            ENDIF
-          ENDDO
-        ENDDO
-      ENDDO
-    ENDIF  ! flag_dynamic_roots
-
-    !>   5.4 set root fraction to zero for tiles such as bare soil and urban area
-    !>
-    IF (lctlib%BareSoilFlag) THEN
-      root_fraction_sl(:, :, :) = 0.0_wp
-    END IF
 
     !> 6.0 soil water and ice pwp, fc and sat per layer depth
     !>

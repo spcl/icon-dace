@@ -56,6 +56,13 @@ test_handler = {
             "levante_gpu_nvhpc": "mpi_procs_pernode=3",
         },
     },
+    "exp.atm_tracer_df4_base": {
+        "refgen": "checksuite.icon-dev/pp.refgen_atm_tracer_df4_update-ref",
+        "extra_builders": {
+            "levante_intel_hybrid": "",
+            "levante_nag": "",
+        },
+    },
 }
 
 # Collect all extra builders from test_handler:

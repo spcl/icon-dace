@@ -1,9 +1,3 @@
-! Geometric computations which are specific to the transport algorithm.
-!
-! Module contains procedures for geometric computations which are
-! specific to the horizontal transport schemes.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Geometric computations which are specific to the transport algorithm.
+!
+! Module contains procedures for geometric computations which are
+! specific to the horizontal transport schemes.
 
 !----------------------------
 #include "omp_definitions.inc"

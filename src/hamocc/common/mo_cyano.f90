@@ -1,9 +1,3 @@
-! @brief N2 fixation and cyanobateria dynamics.
-!
-! Contains computation of diagnostic and prognostic N2 fixation and.
-! cyanobacteria dyanmics (growth, decay, buouyancy)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief N2 fixation and cyanobateria dynamics.
+!
+! Contains computation of diagnostic and prognostic N2 fixation and.
+! cyanobacteria dyanmics (growth, decay, buouyancy)
 
 MODULE mo_cyano
 

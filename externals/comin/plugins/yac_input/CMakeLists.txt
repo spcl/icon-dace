@@ -7,6 +7,8 @@ if(YAC_FOUND)
   add_executable(yac_input_external yac_input_external.c)
   target_link_libraries(yac_input_external YAC::YAC)
 
+  if(BUILD_TESTING)
+
   comin_add_test(NAME yac_input
     REFERENCE_OUTPUT yac_input_reference)
   comin_test_add_plugin(TEST yac_input
@@ -18,6 +20,8 @@ if(YAC_FOUND)
     NUM_PROCS 1
     COMMAND "$<TARGET_FILE:yac_input_external> yac_input_var"
   )
+
+  endif(BUILD_TESTING)
 else()
   message(STATUS "YAC not found yac_plugin disabled")
 endif()

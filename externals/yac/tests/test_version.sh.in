@@ -1,8 +1,0 @@
-#!@SHELL@
-
-expected=' YAC Version: v@PACKAGE_VERSION@'
-
-# Filter out VERBOSE output:
-returned=`./test_version.x | sed -n '/YAC Version/p'`
-
-test x"$expected" = x"$returned" || exit 1

@@ -41,6 +41,7 @@ MODULE mo_lnd_time_averages
     REAL(wp),SAVE :: mavg_period_tlabile           = 7.0_wp               !< labile pool
     REAL(wp),SAVE :: mavg_period_tphen             = 7.0_wp               !< phenological processes
     REAL(wp),SAVE :: mavg_period_tenzyme           = 7.0_wp               !< memory time-scale for enzyme allocation (SB_)
+    REAL(wp),SAVE :: mavg_period_tresidual         = 365.0_wp * 30.0_wp   !< memory time-scale for SOM spinup accelarator (SB_)
     REAL(wp),SAVE :: mavg_period_tfrac             = 10.0_wp              !< leaf N fractions
     REAL(wp),SAVE :: mavg_period_tcnl              = 20.0_wp              !< leaf stoichiometry
     REAL(wp),SAVE :: mavg_period_talloc            = 30.0_wp              !< biomass allocation
@@ -71,16 +72,18 @@ CONTAINS
   !! if the optional parameter 'do_calc' is present: the moving average is calculated only if do_calc = TRUE !
   !!
   !-----------------------------------------------------------------------------------------------------
-  PURE ELEMENTAL FUNCTION calc_time_mavg(current_avg, new_value, avg_period_length, &   ! default  input arguments
+  PURE ELEMENTAL FUNCTION calc_time_mavg(dtime, &
+                                         current_avg, new_value, avg_period_length, &   ! default  input arguments
                                          do_calc, avg_period_unit) &                    ! optional input arguments
                                          RESULT(new_avg)
 
     USE mo_kind,                ONLY: wp
-    USE mo_jsb_math_constants,  ONLY: dtime, one_day, one_year
+    USE mo_jsb_math_constants,  ONLY: one_day, one_year
 
     IMPLICIT NONE
     ! ---------------------------
     ! 0.1 InOut
+    REAL(wp), INTENT(in)                      :: dtime              !< timestep length
     REAL(wp), INTENT(in)                      :: current_avg        !< current average value
     REAL(wp), INTENT(in)                      :: new_value          !< new value
     REAL(wp), INTENT(in)                      :: avg_period_length  !< length of the period over which the variable is averaged

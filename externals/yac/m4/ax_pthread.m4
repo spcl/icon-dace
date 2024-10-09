@@ -56,6 +56,7 @@
 #   Updated for Autoconf 2.68 by Daniel Richard G.
 #
 # LICENSE
+#   SPDX-License-Identifier: GPL-3.0-or-later WITH Autoconf-exception-3.0
 #
 #   Copyright (c) 2008 Steven G. Johnson <stevenj@alum.mit.edu>
 #   Copyright (c) 2011 Daniel Richard G. <skunk@iSKUNK.ORG>

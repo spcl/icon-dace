@@ -1,13 +1,3 @@
-!
-! Computation of cloud cover and grid mean cloud liquid water and cloud ice
-!
-! This routine takes information from turbulence, convection and grid-scale
-! to produce cloud properties used in radiation (and microphysics).
-!
-! Possible future options
-! - simple diagnostic (from turbulence, convection and grid scale)
-! - prognostic total water variance AND prognostic ice
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Computation of cloud cover and grid mean cloud liquid water and cloud ice
+!
+! This routine takes information from turbulence, convection and grid-scale
+! to produce cloud properties used in radiation (and microphysics).
+!
+! Possible future options
+! - simple diagnostic (from turbulence, convection and grid scale)
+! - prognostic total water variance AND prognostic ice
 
 !----------------------------
 #include "consistent_fma.inc"
@@ -263,10 +262,6 @@ REAL(KIND=wp), PARAMETER :: lvocv = alv/cvd
 
   CALL set_acc_host_or_device(lzacc, lacc)
 
-!$ACC DATA CREATE(cc_turb, qc_turb, qi_turb, cc_conv, qc_conv, qi_conv, cc_turb_liq, cc_turb_ice) &
-!$ACC   CREATE(p0, zqlsat, zqisat, zagl_lim, zdqlsat_dT, stratocumulus, zsc_top) &
-!$ACC   IF(lzacc)
-
 ! saturation mixing ratio at -50 C and 200 hPa
 zqisat_m50 = fgqs ( fgee(223.15_wp), 0._wp, 20000._wp )
 
@@ -292,9 +287,12 @@ l_addsnow = (cover_koe_config%inwp_cpl_re == 0) .OR. (cover_koe_config%inwp_reff
             (cover_koe_config%inwp_reff == 101)
 
 ! Set cloud fields for stratospheric levels to zero
-!$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-!$ACC LOOP GANG VECTOR COLLAPSE(2)
+!$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1) &
+!$ACC   CREATE(cc_turb, qc_turb, qi_turb, cc_conv, qc_conv, qi_conv, cc_turb_liq, cc_turb_ice) &
+!$ACC   CREATE(p0, zqlsat, zqisat, zagl_lim, zdqlsat_dT, stratocumulus, zsc_top)
+!$ACC LOOP SEQ
 DO jk = 1,kstart-1
+  !$ACC LOOP GANG(STATIC: 1) VECTOR
   DO jl = kidia,kfdia
     qv_tot(jl,jk) = qv(jl,jk)
     qc_tot(jl,jk) = 0.0_wp
@@ -302,16 +300,15 @@ DO jk = 1,kstart-1
     cc_tot(jl,jk) = 0.0_wp
   ENDDO
 ENDDO
-!$ACC END PARALLEL
 
 !-----------------------------------------------------------------------
 ! Calculate water vapour saturation mixing ratios of over water
 ! and over ice (from mo_cover_cosmo.f90)
 !-----------------------------------------------------------------------
 
-!$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-!$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(vap_pres)
+!$ACC LOOP SEQ
 DO jk = kstart,klev
+  !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(vap_pres)
   DO jl = kidia,kfdia
     vap_pres = qv(jl,jk) * rho(jl,jk) * rv * tt(jl,jk)
     ! specific humidity at saturation over water (zqlsat) and ice (zqisat)
@@ -323,7 +320,6 @@ DO jk = kstart,klev
     zagl_lim(jl,jk) = cover_koe_config%tune_box_liq_sfc_fac * box_liq_sv * (0.5_wp + 1.e-3_wp*pgeo(jl,jk)*grav_i)
   ENDDO
 ENDDO
-!$ACC END PARALLEL
 
 !-----------------------------------------------------------------------
 ! Calculate averaged vertical velocity for stratocumulus diagnostic
@@ -332,8 +328,7 @@ ENDDO
 ! For enhanced diagnostic cloud cover in stratocumulus regime, identify
 ! Sc region based on EIS criterion exceeding threshold, plus inversion height
 ! falling between a critical min/max level.
-!$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-!$ACC LOOP GANG VECTOR
+!$ACC LOOP GANG(STATIC: 1) VECTOR
 DO jl = kidia,kfdia
   IF (linversion(jl)) THEN
     zsc_top(jl) = pgeo(jl,kcinv(jl))*grav_i   
@@ -343,7 +338,6 @@ DO jl = kidia,kfdia
   stratocumulus(jl) = ( linversion(jl)  .and. peis(jl) > 0.75_wp*tune_sc_eis    &
                &       .and. zsc_top(jl) > tune_sc_invmin .and. zsc_top(jl) < tune_sc_invmax )
 END DO
-!$ACC END PARALLEL
 
 !-----------------------------------------------------------------------
 ! Select desired cloud cover framework
@@ -356,27 +350,25 @@ SELECT CASE( cover_koe_config%icldscheme )
 ! no clouds
 CASE( 0 )
 
-  !$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
+  !$ACC LOOP SEQ
   DO jk = kstart,klev
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
     DO jl = kidia,kfdia
       qc_tot(jl,jk) = 0.0_wp
       qi_tot(jl,jk) = 0.0_wp
       cc_tot(jl,jk) = 0.0_wp
     ENDDO
   ENDDO
-  !$ACC END PARALLEL
 
 !-----------------------------------------------------------------------
 
 ! diagnostic cloud cover
 CASE( 1 )
 
-  !$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG
+  !$ACC LOOP SEQ PRIVATE(jkp1)
   DO jk = kstart,klev
     jkp1 = MIN(jk+1,klev)
-    !$ACC LOOP VECTOR PRIVATE(thicklay_fac, zdeltaq, zrcld, deltaq, fac_sfc) &
+    !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(thicklay_fac, zdeltaq, zrcld, deltaq, fac_sfc) &
     !$ACC   PRIVATE(box_liq_asy, par1, zaux, fac_aux, rhcrit_sgsice) &
     !$ACC   PRIVATE(qi_mod, qisat_grid, tfac, satdef_fac, qcc)
     DO jl = kidia,kfdia
@@ -512,18 +504,16 @@ CASE( 1 )
 
     ENDDO
   ENDDO
-  !$ACC END PARALLEL
 
-  !$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
+  !$ACC LOOP SEQ
   DO jk = kstart,klev
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
     DO jl = kidia,kfdia
       cc_tot(jl,jk)  = max( cc_turb(jl,jk), cc_conv(jl,jk) )
       qc_tot(jl,jk)  = max( qc_turb(jl,jk), qc_conv(jl,jk) )
       qi_tot(jl,jk)  = max( qi_turb(jl,jk), qi_conv(jl,jk) )
     ENDDO
   ENDDO
-  !$ACC END PARALLEL
 
 
 !-----------------------------------------------------------------------
@@ -531,13 +521,20 @@ CASE( 1 )
 ! prognostic total water variance
 CASE( 2 )
 
-  cc_tot = 0.0_wp
-  qc_tot = 0.0_wp
-  qi_tot = 0.0_wp
+  !$ACC LOOP SEQ
+  DO jk = 1,klev
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
+    DO jl = kidia,kfdia
+      cc_tot(jl,jk) = 0.0_wp
+      qc_tot(jl,jk) = 0.0_wp
+      qi_tot(jl,jk) = 0.0_wp
+    ENDDO
+  ENDDO
 
 !-----------------------------------------------------------------------
 
 ! clouds as in COSMO
+#ifndef _OPENACC
 CASE( 3 )
 
   lprog_qi   = .true.       ! .true.: running with cloud ice
@@ -597,15 +594,16 @@ CASE( 4 )
                     itype_wcld )
 
   qi_tot     = 0.0_wp
+#endif
 
 !-----------------------------------------------------------------------
 
 ! grid-scale cloud cover [1 or 0]
 CASE( 5 )
 
-  !$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(2)
+  !$ACC LOOP SEQ
   DO jk = kstart,klev
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
     DO jl = kidia,kfdia
       IF ( qc(jl,jk) + qi(jl,jk) > zcldlim ) THEN
         cc_tot(jl,jk) = 1.0_wp
@@ -616,7 +614,6 @@ CASE( 5 )
       qi_tot(jl,jk) = qi(jl,jk)
     ENDDO
   ENDDO
-  !$ACC END PARALLEL
 
 !-----------------------------------------------------------------------
 
@@ -626,9 +623,9 @@ END SELECT
 ! total water vapor by conservation of grid-scale total water
 
 !PREVENT_INCONSISTENT_IFORT_FMA
-!$ACC PARALLEL IF(lzacc) DEFAULT(PRESENT) ASYNC(1)
-!$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(zf_ice)
+!$ACC LOOP SEQ
 DO jk = kstart,klev
+  !$ACC LOOP GANG(STATIC: 1) VECTOR PRIVATE(zf_ice)
   DO jl = kidia,kfdia
     qv_tot(jl,jk) = qv(jl,jk) + qc(jl,jk) + qi(jl,jk) - qc_tot(jl,jk) - qi_tot(jl,jk)
 
@@ -666,9 +663,6 @@ DO jk = kstart,klev
   ENDDO
 ENDDO
 !$ACC END PARALLEL
-
-!$ACC WAIT
-!$ACC END DATA
 
 END SUBROUTINE cover_koe
 

@@ -1,15 +1,3 @@
-!
-! Module to collect routines that write radiation diagnostics on
-!        output variables
-!
-! Remarks
-!   collect routines here that write variables of the radiation part onto
-!   output variables contained in mo_echam_phy_memory.f90
-!
-! Origin
-! Old rad_aero_diag of mo_radiation relocated here because it is needed in
-! in the psrad radiation also.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -20,6 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module to collect routines that write radiation diagnostics on
+!        output variables
+!
+! Remarks
+!   collect routines here that write variables of the radiation part onto
+!   output variables contained in mo_echam_phy_memory.f90
+!
+! Origin
+! Old rad_aero_diag of mo_radiation relocated here because it is needed in
+! in the psrad radiation also.
 
 MODULE mo_rad_diag
 

@@ -1,6 +1,3 @@
-!
-! This module provides a polymorphic (generic) linked list
-! 
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides a polymorphic (generic) linked list
 !
 ! This code is based on Appendix C of
 !
@@ -23,7 +22,6 @@
 ! It has been downloaded from ftp://ftp.numerical.rl.ac.uk/pub/MRandC/oo.f90
 ! (now only available from https://archive.org/details/ftp.numerical.rl.ac.uk)
 ! and adapted to this implementation.
-!
 
 module mo_generic_linked_list
   !

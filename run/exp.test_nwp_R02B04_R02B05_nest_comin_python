@@ -140,7 +140,7 @@ cat > ${basedir}/run/${atmo_namelist} << EOF
 !
   plugin_list(2)%name           = "simple_python_plugin"
   plugin_list(2)%plugin_library = "libpython_adapter.so"
-  plugin_list(2)%options        = "${basedir}/externals/comin/plugins/python_adapter/examples/simple_python_plugin.py" 
+  plugin_list(2)%options        = "${basedir}/externals/comin/plugins/python_adapter/examples/simple_python_plugin.py dummy_argument"
 !
   plugin_list(3)%name           = "point_source"
   plugin_list(3)%plugin_library = "libpython_adapter.so"
@@ -288,6 +288,9 @@ EOF
 #EOF
 #   START_MODEL="${START} --multi-prog mpmd.conf"
 #fi
+
+# load the python venv used for building comin
+[ ! -z $BB_NAME ] && . /fastdata/mh0156/buildbot/venv/bin/activate
 
 #-----------------------------------------------------------------------------
 #-----------------------------------------------------------------------------

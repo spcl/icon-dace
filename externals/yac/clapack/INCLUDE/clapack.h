@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 /* header file for clapack 3.2.1 */
 
 #ifndef __CLAPACK_H

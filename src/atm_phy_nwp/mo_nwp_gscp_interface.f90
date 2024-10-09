@@ -1,6 +1,14 @@
-!OPTION! -cont
-! this command should fix the problem of copying arrays in a subroutine call
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! This module is the interface between nwp_nh_interface to the
 ! microphysical parameterisations:
 !
@@ -24,19 +32,9 @@
 ! inwp_gscp == 8 : SBM warm phase scheme
 !
 ! inwp_gscp == 9 : a simple Kessler-type warm rain scheme
-!
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
+
+!OPTION! -cont
+! this command should fix the problem of copying arrays in a subroutine call
 
 !----------------------------
 #include "omp_definitions.inc"

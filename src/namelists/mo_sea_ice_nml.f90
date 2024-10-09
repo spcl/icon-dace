@@ -1,6 +1,3 @@
-! namelist setup for the sea-ice model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! namelist setup for the sea-ice model
 
 MODULE mo_sea_ice_nml
 

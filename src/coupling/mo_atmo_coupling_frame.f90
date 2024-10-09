@@ -1,6 +1,3 @@
-! @brief Initialisation of atmosphere coupling
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Initialisation of atmosphere coupling
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -118,7 +117,7 @@ CONTAINS
     patch_horz => p_patch(jg)
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     ! Do basic initialisation of the component
@@ -143,7 +142,7 @@ CONTAINS
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_DEFCOMP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     ! get model timestep
@@ -170,7 +169,7 @@ CONTAINS
       ! Define coupling of runoff if HD model is present and interface is coded
       !  - discrimination between Proto2 (no HD) and Proto3 (with HD) is needed
       ! preliminary: coupling to jsbach/hd is active
-      IF ( iforcing /= INWP .OR. ( atm_phy_nwp_config(jg)%inwp_surface == LSS_JSBACH .AND. .NOT. is_coupled_to_hydrodisc() ) ) THEN
+      IF ( (iforcing /= INWP .AND. aes_phy_config(jg)%ljsb) .OR. ( atm_phy_nwp_config(jg)%inwp_surface == LSS_JSBACH .AND. .NOT. is_coupled_to_hydrodisc() ) ) THEN
 
         ! Construct coupling frame for atmosphere/JSBACH-hydrological discharge
         CALL message(str_module, 'Constructing the coupling frame atmosphere/JSBACH-hydrological discharge.')
@@ -203,14 +202,14 @@ CONTAINS
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     ! Synchronize all definitions until this point with other components
     CALL cpl_sync_def(str_module)
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_SYNCDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     ! add Ozone data field if needed
@@ -237,13 +236,13 @@ CONTAINS
     ! End definition of coupling fields and search
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     CALL cpl_enddef(str_module)
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_YAC_ENDDEF_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.FALSE.)
 #endif
 
     ! finalizes the output coupling

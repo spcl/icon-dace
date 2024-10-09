@@ -1,8 +1,3 @@
-! Namelist for ART-package
-!
-!
-! Subroutine is called by read_atmo_namelists for setting up the ART-package
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for ART-package
+!
+! Subroutine is called by read_atmo_namelists for setting up the ART-package
 
 MODULE mo_art_nml
  
@@ -50,6 +49,7 @@ MODULE mo_art_nml
                                      !< path to FPlume input files (use without file extension)
   LOGICAL :: lart_diag_out           !< Enable output of diagnostic fields
   LOGICAL :: lart_pntSrc             !< Enables point sources
+  LOGICAL :: lart_excl_end_pntSrc    !< Main switch to exclude endTime from active time interval of point sources
   LOGICAL :: lart_emiss_turbdiff     !< Switch if emissions should be included as surface flux condition
   CHARACTER(LEN=20) :: & 
    &  cart_io_suffix(1:max_dom)      !< user given suffix instead of automatically generated grid number 
@@ -116,8 +116,8 @@ MODULE mo_art_nml
   INTEGER :: iart_ari                !< Direct interaction of aerosol with radiation
 
   LOGICAL :: lart_dusty_cirrus       !< Dusty cirrus parameterization in cloud cover scheme
-  REAL(wp):: rart_dustyci_crit            !< Dust threshold for dusty cirrus  [mug/kg]
-  REAL(wp):: rart_dustyci_rhi             !< RHi  threshold for dusty cirrus  [-]
+  REAL(wp):: rart_dustyci_crit       !< Dust threshold for dusty cirrus  [mug/kg]
+  REAL(wp):: rart_dustyci_rhi        !< RHi  threshold for dusty cirrus  [-]
 
   ! Treatment of grid scale and convective precipitation in dust washout
   INTEGER :: iart_aero_washout       !< 0:gscp+con; 1:gscp,con; 2:gscp,rcucov*con
@@ -143,7 +143,7 @@ MODULE mo_art_nml
    &                iart_fplume, iart_volc_numb, cart_fplume_inp, iart_radioact,        &
    &                cart_radioact_file, iart_pollen, iart_nonsph, iart_isorropia,       &
    &                iart_seas_water, lart_dusty_cirrus, rart_dustyci_crit,              &
-   &                rart_dustyci_rhi, &
+   &                rart_dustyci_rhi, lart_excl_end_pntSrc,                             &
    &                iart_modeshift, iart_aci_warm, iart_aci_cold, iart_ari,             &
    &                iart_aero_washout, lart_conv, lart_turb, iart_init_aero,            &
    &                iart_init_gas, lart_diag_out, cart_emiss_xml_file,                  &
@@ -190,6 +190,7 @@ CONTAINS
     iart_init_gas(:)           = 0
     lart_diag_out              = .FALSE.
     lart_pntSrc                = .FALSE.
+    lart_excl_end_pntSrc       = .FALSE.
     lart_emiss_turbdiff        = .FALSE.
     cart_io_suffix(1:max_dom)  = 'grid-number'
     iart_fplume                = 0
@@ -374,16 +375,17 @@ CONTAINS
 
     DO jg= 1,max_dom !< Do not take into account reduced radiation grid
       ! General variables (Details: cf. Tab. 2.1 ICON-ART User Guide)
-      art_config(jg)%cart_input_folder   = TRIM(cart_input_folder)
-      art_config(jg)%iart_init_aero      = iart_init_aero(jg)
-      art_config(jg)%iart_init_gas       = iart_init_gas(jg)
-      art_config(jg)%lart_diag_out       = lart_diag_out
-      art_config(jg)%lart_pntSrc         = lart_pntSrc
-      art_config(jg)%lart_emiss_turbdiff = lart_emiss_turbdiff
-      art_config(jg)%cart_io_suffix      = TRIM(cart_io_suffix(jg))
-      art_config(jg)%iart_fplume         = iart_fplume
-      art_config(jg)%iart_volc_numb      = iart_volc_numb
-      art_config(jg)%cart_fplume_inp     = TRIM(cart_fplume_inp)
+      art_config(jg)%cart_input_folder    = TRIM(cart_input_folder)
+      art_config(jg)%iart_init_aero       = iart_init_aero(jg)
+      art_config(jg)%iart_init_gas        = iart_init_gas(jg)
+      art_config(jg)%lart_diag_out        = lart_diag_out
+      art_config(jg)%lart_pntSrc          = lart_pntSrc
+      art_config(jg)%lart_excl_end_pntSrc = lart_excl_end_pntSrc
+      art_config(jg)%lart_emiss_turbdiff  = lart_emiss_turbdiff
+      art_config(jg)%cart_io_suffix       = TRIM(cart_io_suffix(jg))
+      art_config(jg)%iart_fplume          = iart_fplume
+      art_config(jg)%iart_volc_numb       = iart_volc_numb
+      art_config(jg)%cart_fplume_inp      = TRIM(cart_fplume_inp)
       
       ! Atmospheric Chemistry (Details: cf. Tab. 2.2 ICON-ART User Guide)
       art_config(jg)%lart_chem             = lart_chem

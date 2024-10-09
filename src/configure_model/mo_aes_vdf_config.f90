@@ -1,14 +1,3 @@
-! Configuration of the parameterization for vertical diffusion,
-! that is used in the AES physics package.
-!
-! References:
-!     Angevine, W. M., Jiang, H., & Mauritsen T. (2010).
-!           Performance of an eddy diffusivity- mass flux scheme for shallow cumulus boundary layers.
-!           Monthly Weather Review, 138(7), 2895-2912. https://doi.org/10.1175/2010MWR3142.1
-!     Mauritsen, T., & Svensson, G. (2007).
-!           Observations of stably stratified shear-driven atmospheric turbulence at low and high Richardson numbers.
-!           Journal of the Atmospheric Sciences, 64(2), 645-655. https://doi.org/10.1175/JAS3856.1
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the parameterization for vertical diffusion,
+! that is used in the AES physics package.
+!
+! References:
+!     Angevine, W. M., Jiang, H., & Mauritsen T. (2010).
+!           Performance of an eddy diffusivity- mass flux scheme for shallow cumulus boundary layers.
+!           Monthly Weather Review, 138(7), 2895-2912. https://doi.org/10.1175/2010MWR3142.1
+!     Mauritsen, T., & Svensson, G. (2007).
+!           Observations of stably stratified shear-driven atmospheric turbulence at low and high Richardson numbers.
+!           Journal of the Atmospheric Sciences, 64(2), 645-655. https://doi.org/10.1175/JAS3856.1
 
 MODULE mo_aes_vdf_config
 

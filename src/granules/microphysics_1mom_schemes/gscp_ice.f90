@@ -1,5 +1,14 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Description of *gscp_ice*:
 !   This module procedure calculates the rates of change of temperature, cloud
 !   water, cloud ice, water vapor, rain and snow due to cloud microphysical
@@ -18,19 +27,8 @@
 !  of the COSMO-Model. Equation numbers refer to
 !  Doms, Foerstner, Heise, Herzog, Raschendorfer, Schrodin, Reinhardt, Vogel
 !    (September 2005): "A Description of the Nonhydrostatic Regional Model LM",
-!
-!------------------------------------------------------------------------------
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
 
 MODULE gscp_ice
 

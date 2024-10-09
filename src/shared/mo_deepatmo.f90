@@ -1,6 +1,3 @@
-! This module contains routines related to the deep atmosphere.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains routines related to the deep atmosphere.
 
 !----------------------------
 #include "omp_definitions.inc"

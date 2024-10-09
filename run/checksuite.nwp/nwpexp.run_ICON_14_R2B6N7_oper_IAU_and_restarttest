@@ -201,6 +201,10 @@ elif [ $iter -eq 3 ] ; then
   start_date="2018-10-01T00:00:00Z"
   stop_date="2018-10-01T13:30:00Z"
 
+  # remove output files written after restart because existing output files are opened
+  # in append mode in case of a restart (only relevant for manually executed tests)
+  rm -f NWP3_winds*.nc
+
 elif [ $iter -eq 4 ] ; then
 
   echo "#############################################################"
@@ -349,10 +353,11 @@ cat > ${atmo_namelist} << EOF
  lp2cintp_incr			= .true.
  lp2cintp_sfcana		= .true.
  use_lakeiceana                 = .true.
- icpl_da_sfcevap                = 4
+ icpl_da_sfcevap                = 5
  icpl_da_skinc                  = 2
  adjust_tso_tsnow               = .TRUE.
- icpl_da_snowalb                = 2
+ icpl_da_snowalb                = 3
+ icpl_da_landalb                = 1
  icpl_da_sfcfric                = 1
  icpl_da_tkhmin                 = 1
 /

@@ -1,5 +1,3 @@
-! @brief Testbed for ocean
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Testbed for ocean
 
 MODULE mo_testbed_ocean_performance
 

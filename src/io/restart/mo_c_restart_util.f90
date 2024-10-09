@@ -1,7 +1,3 @@
-! Interfaces to the functions defined in support/util_multifile_restart.c
-!
-! Initial implementation: Nathanael Huebbe
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interfaces to the functions defined in support/util_multifile_restart.c
+!
+! Initial implementation: Nathanael Huebbe
 
 MODULE mo_c_restart_util
     USE ISO_C_BINDING, ONLY: C_CHAR, C_INT, C_NULL_CHAR

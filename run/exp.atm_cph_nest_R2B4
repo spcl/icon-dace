@@ -769,10 +769,10 @@ add_required_file ${basedir}/run/${dict_file}                             ./
 # initial and boundary conditions
 #
 # grid independent
-datadir=${icon_data_poolFolder}/independent
+datadir=${icon_data_poolFolder}/common
 add_link_file $datadir/greenhouse_gases/greenhouse_ssp370.nc              ./bc_greenhouse_gases.nc
 #
-datadir=${icon_data_poolFolder}/independent/solar_radiation/3.2
+datadir=${icon_data_poolFolder}/common/solar_radiation
 add_link_file $datadir/swflux_14band_cmip6_1850-2299-v3.2.nc              ./bc_solar_irradiance_sw_b14.nc
 #
 #

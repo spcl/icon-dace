@@ -1,7 +1,3 @@
-! Contains the implementation of velocity advection in vector invariant form
-! that is used in the ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of velocity advection in vector invariant form
+! that is used in the ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"

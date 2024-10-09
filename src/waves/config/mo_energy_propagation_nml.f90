@@ -1,8 +1,3 @@
-! Namelist for wave energy propagation
-!
-! The following routine is called by read_wave_namelist and controls
-! specifics of the wave energy propagation.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,7 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for wave energy propagation
 !
+! The following routine is called by read_wave_namelist and controls
+! specifics of the wave energy propagation.
+
 MODULE mo_energy_propagation_nml
 
   USE mo_kind,                      ONLY: wp
@@ -146,9 +146,8 @@ CONTAINS
     !
     CALL message(routine,'Setting default names for tracers: q<no>')
     DO it=1, MAX_NTRACER
-      WRITE(tname,'(i3)') it
+      WRITE(tname,'(i4)') it
       tracer_names(it) = 'q'//TRIM(ADJUSTL(tname))
-      CALL print_value('tracer name '//TRIM(ADJUSTL(tracer_names(it)))//' in position',it)
     END DO
     CALL message(' ',' ')
 

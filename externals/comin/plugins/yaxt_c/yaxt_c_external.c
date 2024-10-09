@@ -1,3 +1,16 @@
+/*
+  --------------------------------------------------------------------
+  Example plugin for the ICON Community Interface (ComIn)
+  to demonstrate the usage of YAXT: External process.
+
+  @authors 08/2021 :: ICON Community Interface  <icon@dwd.de>
+
+  Note that in order to demonstrate ComIn's language interoperability,
+  a similar plugin has been implemented in Fortran, see the subdirectory
+  "yaxt_fortran".
+  --------------------------------------------------------------------
+ */
+
 #include <stdio.h>
 
 #include <yaxt.h>

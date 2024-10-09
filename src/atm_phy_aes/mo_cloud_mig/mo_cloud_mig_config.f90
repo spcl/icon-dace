@@ -1,8 +1,3 @@
-!
-! Configuration of the parameterization for cloud microphysics "graupel",
-! from DWD that is used in the sapphire physics package.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the parameterization for cloud microphysics "graupel",
+! from DWD that is used in the sapphire physics package.
 
 MODULE mo_cloud_mig_config
 

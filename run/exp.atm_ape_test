@@ -175,6 +175,7 @@ cat > ${atmo_namelist} << EOF
  aes_rad_config(1)%irad_cfc11 =  0
  aes_rad_config(1)%irad_cfc12 =  0
  aes_rad_config(1)%irad_aero  =  0
+ aes_rad_config(1)%lrad_aero_diag = .FALSE.
 /
 &aes_vdf_nml
 /
@@ -215,13 +216,25 @@ start_year=$(( ${start_date%%-*} - 1 ))
 end_year=$(( ${end_date%%-*} + 1 ))
 #
 # - well mixed greenhouse gases
-datadir=${icon_data_poolFolder}/independent/greenhouse_gases
+datadir=${icon_data_poolFolder}/common/greenhouse_gases
 add_link_file $datadir/greenhouse_historical_plus.nc                    ./bc_greenhouse_gases.nc
 #
 # - ozone
 datadir=${icon_data_poolFolder}/${grid_id}/ozone/r0002/
 add_link_file ${datadir}/bc_ozone_ape.nc                                ./bc_ozone.nc
-
+#
+# - aerosols
+# Aerosols do no make sense in the aqua planet and are here for tests only. They are switched off. Please, do no remove the following links.
+dataaero=${icon_data_poolFolder}/${grid_id}/aerosol_kinne/r0002
+add_link_file $dataaero/bc_aeropt_kinne_sw_b14_fin_1978.nc                ./bc_aeropt_kinne_sw_b14_fin_1978.nc
+add_link_file $dataaero/bc_aeropt_kinne_sw_b14_fin_1979.nc                ./bc_aeropt_kinne_sw_b14_fin_1979.nc
+add_link_file $dataaero/bc_aeropt_kinne_sw_b14_fin_1980.nc                ./bc_aeropt_kinne_sw_b14_fin_1980.nc
+#climatological
+add_link_file $dataaero/bc_aeropt_kinne_sw_b14_fin_1850.nc                ./bc_aeropt_kinne_sw_b14_fin.nc
+# Kinne aerosol 
+add_link_file $dataaero/bc_aeropt_kinne_lw_b16_coa.nc                     ./
+add_link_file $dataaero/bc_aeropt_kinne_sw_b14_coa.nc                     ./
+#
 #--------------------------------------------------------------------------------------------------
 
 # (5) Define the output
@@ -288,7 +301,7 @@ if [[ "$output_atm_3d" == "yes" ]]; then
                     'rho'     , 'ta'      ,
                     'ua'      , 'va'      , 'wap'     ,
                     'hus'     , 'clw'     , 'cli'     ,
-                    'cl'      ,
+                    'cl'      , 'tau_snow'
 /
 EOF
 fi
@@ -360,4 +373,27 @@ if [[ "$output_phy_3d" == "yes" ]]; then
 EOF
 fi
 
+output_aer_3d=no # "yes" needs lrad_aero_diag=.TRUE. in radiation_nml
+#
+if [[ "$output_aer_3d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_aer_3d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}"
+ include_last     = .FALSE.
+ ml_varlist       = 'ps'          , 'pfull'       , 'zg'          ,
+                    'aer_aod_533' , 'aer_ssa_533',  'aer_asy_533' , 
+                    'aer_aod_2325', 'aer_ssa_2325', 'aer_asy_2325', 
+                    'aer_aod_9731',
+/
+EOF
+fi
 #--------------------------------------------------------------------------------------------------

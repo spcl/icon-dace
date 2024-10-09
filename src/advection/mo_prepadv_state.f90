@@ -1,9 +1,3 @@
-! Construction of a data object which is used to store mass fluxes
-! and velocities that are used to drive the tracer transport schemes.
-! In contrast to the mass fluxes in the dynamical core, these mass fluxes
-! are averaged over the dynamics substeps.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Construction of a data object which is used to store mass fluxes
+! and velocities that are used to drive the tracer transport schemes.
+! In contrast to the mass fluxes in the dynamical core, these mass fluxes
+! are averaged over the dynamics substeps.
 
 MODULE mo_prepadv_state
 

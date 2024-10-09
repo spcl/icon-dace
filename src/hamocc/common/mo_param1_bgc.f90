@@ -1,7 +1,3 @@
-! @brief bgc tracer parameters
-!
-! Definition of parameters
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief bgc tracer parameters
+!
+! Definition of parameters
 
 MODULE mo_param1_bgc
   USE mo_kind, ONLY : wp

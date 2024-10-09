@@ -1,5 +1,3 @@
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +14,7 @@ MODULE mo_surface_diag
   USE mo_kind,              ONLY: wp
   USE mo_physical_constants,ONLY: grav, als, alv, cpd, rdv, tmelt, vtmpc1, rd
   USE mo_aes_convect_tables,ONLY: lookup_ua_list_spline
+  USE mo_aes_thermo,        ONLY: dewpoint_temperature
   USE mo_turb_vdiff_params, ONLY: tpfac2
   USE mo_aes_phy_memory,    ONLY: cdimissval
   USE mo_index_list,        ONLY: generate_index_list_batched
@@ -388,6 +387,7 @@ CONTAINS
                        & psfcWind_gbm,                    &! out 10m windspeed
                        & ptas_gbm,                        &! out temperature in 2m
                        & pdew2_gbm,                       &! out dew point temperature in 2m
+                       & pqv2m_gbm,                       &! out specific humidity in 2m
                        & puas_gbm,                        &! out zonal wind in 10m
                        & pvas_gbm,                        &! out meridional wind in 10m
                        & ptasmax,                         &! inout max 2m temperature
@@ -395,6 +395,7 @@ CONTAINS
                        & psfcWind_tile,                   &! out 10m windspeed
                        & ptas_tile,                       &! out temperature in 2m
                        & pdew2_tile,                      &! out dew point temperature in 2m
+                       & pqv2m_tile,                      &! out specific humidity in 2m
                        & puas_tile,                       &! out zonal wind in 10m
                        & pvas_tile                        )! out meridional wind in 10m
 
@@ -419,6 +420,7 @@ CONTAINS
     REAL(wp), INTENT(out)    :: psfcWind_gbm(:)             !< (kbdim)
     REAL(wp), INTENT(out)    :: ptas_gbm(:)                 !< (kbdim)
     REAL(wp), INTENT(out)    :: pdew2_gbm(:)                !< (kbdim)
+    REAL(wp), INTENT(out)    :: pqv2m_gbm(:)                !< (kbdim)
     REAL(wp), INTENT(out)    :: puas_gbm(:)                 !< (kbdim)
     REAL(wp), INTENT(out)    :: pvas_gbm(:)                 !< (kbdim)
     REAL(wp), INTENT(inout)  :: ptasmax(:), ptasmin(:)      !< (kbdim)
@@ -426,6 +428,7 @@ CONTAINS
                                 psfcWind_tile,    &
                                 ptas_tile,        &
                                 pdew2_tile,       &
+                                pqv2m_tile,       &
                                 puas_tile,        &
                                 pvas_tile
 
@@ -434,9 +437,9 @@ CONTAINS
     INTEGER  :: loidx  (kbdim,ksfc_type), icond  (kbdim,ksfc_type) !< counter for masks
     INTEGER  :: is     (ksfc_type)       !< counter for masks
     INTEGER  :: jls, jl, jsfc, js
-    REAL(wp)     :: zhuv, zhtq, zephum, zc2es, zc3les, zc3ies, zc4les, zc4ies
+    REAL(wp)     :: zhuv, zhtq, zephum
     REAL(wp)     :: zrat, zcbn, zcbs, zcbu, zmerge, zred
-    REAL(wp)     :: zh2m, zqs1, zqs2, zq2m, zcvm3, zcvm4
+    REAL(wp)     :: zh2m, zqs1, zqs2, zcvm3, zcvm4
     REAL(wp)     :: zrh2m(kbdim)
     REAL(wp)     :: zaph2m(kbdim), zfrac(kbdim)
     REAL(wp)     :: ua(kbdim)
@@ -455,12 +458,6 @@ CONTAINS
     zhuv          =  10._wp ! 10m
     zhtq          =   2._wp !  2m
     zephum        = 0.05_wp ! epsilon for rel. humidity
-
-    zc2es         = 610.78_wp * rdv
-    zc3les        = 17.269_wp
-    zc3ies        = 21.875_wp
-    zc4les        = 35.86_wp
-    zc4ies        = 7.66_wp
 
     ! set total- and tile-fields to zero in order to avoid uninitialised values
 
@@ -536,21 +533,13 @@ CONTAINS
       CALL lookup_ua_list_spline('nsurf_diag(2)', jcs, kbdim, is(jsfc), loidx(:,jsfc), ptas_tile(:,jsfc), ua)
 
       !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP GANG VECTOR PRIVATE(jl, zqs2, zq2m, zcvm3, zcvm4)
+      !$ACC LOOP GANG VECTOR PRIVATE(jl, zqs2, zcvm3, zcvm4)
       DO jls=jcs,is(jsfc)
         jl = loidx(jls,jsfc)
-        IF(ptas_tile(jl,jsfc) .GT. tmelt) THEN
-          zcvm3 = zc3les
-          zcvm4 = zc4les
-        ELSE
-          zcvm3 = zc3ies
-          zcvm4 = zc4ies
-        ENDIF
         zqs2      = ua(jls) / zaph2m(jl)
         zqs2      = zqs2 / (1._wp - vtmpc1 * zqs2)
-        zq2m      = zrh2m(jl) * zqs2
-        zfrac(jl) = LOG(zaph2m(jl) * zq2m / (zc2es * (1._wp + vtmpc1 * zq2m))) / zcvm3
-        pdew2_tile(jl,jsfc) = MIN(ptas_tile(jl,jsfc), (tmelt - zfrac(jl) * zcvm4) / (1._wp - zfrac(jl)))
+        pqv2m_tile(jl,jsfc) = zrh2m(jl) * zqs2
+        pdew2_tile(jl,jsfc) = dewpoint_temperature(ptas_tile(jl,jsfc), pqv2m_tile(jl,jsfc), zaph2m(jl))
        ENDDO
        !$ACC END PARALLEL
     ENDDO
@@ -589,6 +578,7 @@ CONTAINS
       pvas_gbm     (jl)   = 0._wp
       ptas_gbm     (jl)   = 0._wp
       pdew2_gbm    (jl)   = 0._wp
+      pqv2m_gbm    (jl)   = 0._wp
     END DO
     !$ACC END PARALLEL LOOP
 
@@ -603,6 +593,7 @@ CONTAINS
         pvas_gbm    (js) = pvas_gbm    (js) + pfrc(js,jsfc)*pvas_tile    (js,jsfc)
         ptas_gbm    (js) = ptas_gbm    (js) + pfrc(js,jsfc)*ptas_tile    (js,jsfc)
         pdew2_gbm   (js) = pdew2_gbm   (js) + pfrc(js,jsfc)*pdew2_tile   (js,jsfc)
+        pqv2m_gbm   (js) = pqv2m_gbm   (js) + pfrc(js,jsfc)*pqv2m_tile   (js,jsfc)
       END DO
       !$ACC END PARALLEL LOOP
     END DO

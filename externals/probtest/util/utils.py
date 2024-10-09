@@ -1,3 +1,8 @@
+""""
+This module provides utility functions for list and string operations, as well as
+a function to generate seeds based on a member number for probtest.
+"""
+
 import re
 
 import numpy as np
@@ -11,12 +16,12 @@ def unique_elements(inlist):
     return unique
 
 
-def first_idx_of(list, element):
-    return list.index(element)
+def first_idx_of(li, el):
+    return li.index(el)
 
 
-def last_idx_of(list, element):
-    return len(list) - list[::-1].index(element) - 1
+def last_idx_of(li, el):
+    return len(li) - li[::-1].index(el) - 1
 
 
 def numbers(s):
@@ -31,7 +36,7 @@ def get_seed_from_member_num(member_num, use_64_bits=True):
             "Invalid member number: only values between 1 and 100 are valid."
         )
 
-    SEEDS = [
+    seeds = [
         4820203056152078343,
         -2050370216167377885,
         5288723146233497607,
@@ -134,8 +139,27 @@ def get_seed_from_member_num(member_num, use_64_bits=True):
         -4677366596323783742,
     ]
 
-    seed = SEEDS[member_num - 1]
+    seed = seeds[member_num - 1]
     if not use_64_bits:
         seed = np.uint32(seed & 0xFFFFFFFF)
 
     return seed
+
+
+def process_member_num(member_num):
+    """
+    Processes the member numbers.
+    If a single number is provided, it generates a list of numbers from 1 to
+    that number.
+    It then converts each number to a string.
+
+    Args:
+        member_num (list): A list containing either a single integer or multiple
+                           integers.
+
+    Returns:
+        list: A list of strings representing the processed member numbers.
+    """
+    if len(member_num) == 1:
+        member_num = list(range(1, member_num[0] + 1))
+    return [(m_num, str(m_num)) for m_num in member_num]

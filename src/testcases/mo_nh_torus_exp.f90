@@ -1,6 +1,3 @@
-! Subroutine to initialize the CBL case for HDCP2
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialize the CBL case for HDCP2
 
 MODULE mo_nh_torus_exp
 

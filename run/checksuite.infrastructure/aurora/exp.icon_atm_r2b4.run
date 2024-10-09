@@ -396,7 +396,7 @@ cat > ${jsbach_namelist} << EOF
  usecase             = "${jsbach_usecase}"
  use_lakes           = ${llake}
  fract_filename      = 'bc_land_frac.nc'
- enforce_water_budget = .FALSE.        ! True: stop in case of water conservation problem
+ enforce_water_budget = 'ignore'       ! Error: stop in case of water conservation problem
 /
 &jsb_seb_nml
  bc_filename         = 'bc_land_phys.nc'

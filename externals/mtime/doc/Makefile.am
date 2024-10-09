@@ -85,4 +85,3 @@ install-doc: install-man install-html install-pdf install-ps
 EXTRA_DIST = libmtime.css libmtime.dox libmtime.tex
 
 MOSTLYCLEANFILES = $(DX_CLEANFILES) -r $(DX_DOCDIR)
-

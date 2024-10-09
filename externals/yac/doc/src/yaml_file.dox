@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /**
  * \page yaml_file YAML configuration file
    \tableofcontents
@@ -39,6 +43,62 @@ respective components are being ignored.
   time step unit\n
   (available options: *millisecond*, *second*, *minute*, *hour*, *day*, *month*, *year*, and *ISO_format*)
 
+- **debug**
+
+  Debugging options
+
+  - **global_config** \anchor yaml_file_desc_global_config
+
+    Write out configuration to a file after synchronisation between processes
+
+    - <b><i>sync_location</i></b>
+
+      `sync_location` has to be replaced with a valid synchronisation location in the
+      YAC initialisation (valid values are \ref phase_def_comp "def_comp",
+      \ref phase_sync_def "sync_def", and \ref phase_enddef "enddef")
+
+      \code{.yaml}
+        enddef: coupling_config_after_enddef.yaml
+      \endcode
+
+      By default, the configuration will be in the YAML format. But it is also
+      possible to explicitly set the filetype
+      (valid filetypes are: *yaml* and *json*):
+
+      \code{.yaml}
+        enddef:
+          filename: coupling_config_after_enddef.json
+          filetype: json
+      \endcode
+
+      The configuration file can also include the user definitions
+      (information about defined components, grids, and fields): \anchor yaml_include_definitions
+
+      \code{.yaml}
+        enddef:
+          filename: coupling_config_after_enddef.json
+          include_definitions: true
+      \endcode
+
+  - **output_grids** \anchor yaml_file_desc_output_grids
+
+    Write out grids defined by the user to file in parallel (see \ref io_config_detail).
+    The user can provide a list of grids to be written to file
+
+    - **grid_name**
+
+      Name of the grid (as provided in the \ref phase_def_grid)
+
+    - **file_name**
+
+      Name of the grid file\n
+      Multiple grids can be written to the same file
+
+  - **missing_definition_is_fatal**  (optional; default value: *true*) \anchor yaml_missing_definition_is_fatal
+
+    Determines whether YAC aborts if for a defined couple at least one
+    associated field was not defined by the user
+
 - **coupling**
 
   List of fields to be coupled and their configuration.\n
@@ -57,9 +117,31 @@ respective components are being ignored.
 
     Name of the source grid
 
+    \code{.yaml}
+      src_grid: atmosphere_grid
+    \endcode
+
+    If multiple source grids have the same coupling configuration, a\n
+    list of grid names can be provided.
+
+    \code{.yaml}
+      src_grid: [atmosphere_grid_dom1, atmosphere_grid_dom2]
+    \endcode
+
   - **tgt_grid**
 
     Name of the target grid
+
+    \code{.yaml}
+      tgt_grid: ocean_grid
+    \endcode
+
+    If multiple target grids have the same coupling configuration, a\n
+    list of grid names can be provided.
+
+    \code{.yaml}
+      tgt_grid: [ocean_grid_dom1, ocean_grid_dom2]
+    \endcode
 
   - **src_lag** (optional; default value: *0*)
 
@@ -126,19 +208,25 @@ respective components are being ignored.
 
     Name of the field to be coupled.
 
-        field: TAUX
+    \code{.yaml}
+      field: TAUX
+    \endcode
 
     If multiple fields have the same coupling configuration, a\n
     list of field names can be provided.
 
-        field: [TAUX, TAUY]
+    \code{.yaml}
+      field: [TAUX, TAUY]
+    \endcode
 
     If the source and target component use a different field name,
     the names are specified as follows:
 
-        field:
-          src: TAUX_out
-          tgt: TAUX_in
+    \code{.yaml}
+      field:
+        src: TAUX_out
+        tgt: TAUX_in
+    \endcode
 
   - **interpolation**
 
@@ -156,9 +244,9 @@ respective components are being ignored.
 
     Name of target mask (see \ref phase_def_mask_named_desc "Named masks")
 
-  - \b *
+- \b *
 
-    Any unknown root key will be ignored by YAC.
+  Any unknown root key will be ignored by YAC.
 
 \section yaml_file_example Example
 
@@ -246,6 +334,10 @@ start_date: 2008-03-09T16:05:07
 end_date: 2008-03-10T16:05:07
 timestep_unit: second
 calendar: proleptic-gregorian
+debug:
+  global_config:
+    enddef: coupling_config_after_enddef.yaml
+  missing_definition_is_fatal: false
 coupling:
   - src_component: dummy_atmosphere
     src_grid: dummy_atmosphere_grid

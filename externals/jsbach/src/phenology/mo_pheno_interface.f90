@@ -315,7 +315,6 @@ CONTAINS
     clumpinessFactor_param   = dsl4jsb_Lctlib_param(clumpinessFactor)
     specificLeafArea_C_param = dsl4jsb_Lctlib_param(specificLeafArea_C)
     MaxLAI_param             = dsl4jsb_Lctlib_param(MaxLAI)
-    specificLeafArea_C_param = dsl4jsb_Lctlib_param(specificLeafArea_C)
 
     ! Set pointers to process configs and memory
     dsl4jsb_Get_config(PHENO_)

@@ -1,6 +1,3 @@
-! Contains the subroutines with wave physics parametrisation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the subroutines with wave physics parametrisation
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -43,18 +42,75 @@ MODULE mo_wave_physics
   PUBLIC :: total_energy
   PUBLIC :: wave_stress
   PUBLIC :: mean_frequency_energy
-  PUBLIC :: wave_group_velocity_c
-  PUBLIC :: wave_group_velocity_e
-  PUBLIC :: wave_group_velocity_nt
-  PUBLIC :: wave_group_velocity_bnd
-  PUBLIC :: wave_number_c
-  PUBLIC :: wave_number_e
+  PUBLIC :: compute_wave_number
+  PUBLIC :: compute_group_velocity
   PUBLIC :: set_energy2emin
   PUBLIC :: mask_energy
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_wave_physics'
 
 CONTAINS
+
+
+  !>
+  !! Calculation of group velocity.
+  !!
+  !! Wrapper routine for computing group velocity absolute values at
+  !! cell centers and edge midpoints, as well as the components in
+  !! normal and tangential direction at edge midpoints.
+  !!
+  SUBROUTINE compute_group_velocity(p_patch, wave_config, bathymetry_c, depth_e, &
+    &                               wave_num_c, wave_num_e, gv_c, gv_e, gvn_e, gvt_e)
+
+    TYPE(t_patch),       INTENT(IN)   :: p_patch
+    TYPE(t_wave_config), INTENT(IN)   :: wave_config
+    REAL(wp),            INTENT(IN)   :: bathymetry_c(:,:) !< bathymetric height at cell centers ( m )
+    REAL(wp),            INTENT(IN)   :: depth_e(:,:)      !< water depth at edge midpoints ( m )
+    REAL(wp),            INTENT(IN)   :: wave_num_c(:,:,:) !< wave number at cell center (1/m)
+    REAL(wp),            INTENT(IN)   :: wave_num_e(:,:,:) !< wave number at edge midpoints (1/m)
+    REAL(wp),            INTENT(INOUT):: gv_c(:,:,:)       !< group velocity at cell center (absolute value)  ( m/s )
+    REAL(wp),            INTENT(INOUT):: gv_e(:,:,:)       !< group velocity edge midpoint (absolute value)  ( m/s )
+    REAL(wp),            INTENT(INOUT):: gvn_e(:,:,:,:)    !< edge-normal group velocity ( m/s )
+    REAL(wp),            INTENT(INOUT):: gvt_e(:,:,:,:)    !< edge-tangential group velocity  ( m/s )
+
+    ! compute absolute value of group velocity at cell centers
+    !
+    CALL wave_group_velocity_c(            & !in
+      &  p_patch      = p_patch,           & !in
+      &  p_config     = wave_config,       & !in
+      &  wave_num_c   = wave_num_c(:,:,:), & !in
+      &  bathymetry_c = bathymetry_c(:,:), & !in
+      &  gv_c         = gv_c(:,:,:))         !out
+
+    ! compute absolute value of group velocity at edge midpoints
+    !
+    CALL wave_group_velocity_e(            & !in
+      &  p_patch      = p_patch,           & !in
+      &  p_config     = wave_config,       & !in
+      &  wave_num_e   = wave_num_e(:,:,:), & !in
+      &  depth_e      = depth_e(:,:), & !in
+      &  gv_e         = gv_e(:,:,:))         !out
+
+
+    ! compute normal and tangential components of group velocity vector
+    ! at edge midpoints
+    CALL wave_group_velocity_nt(           &
+      &  p_patch      = p_patch,           & !in
+      &  p_config     = wave_config,       & !in
+      &  gv_e         = gv_e(:,:,:),       & !in
+      &  gvn_e        = gvn_e(:,:,:,:),    & !out
+      &  gvt_e        = gvt_e(:,:,:,:))      !out
+
+    ! Set the wave group velocity to zero at the boundary edge
+    ! in case of wave energy propagation towards the ocean,
+    ! and set gn = deep water group velocity otherwise.
+    CALL wave_group_velocity_bnd(          &
+      &  p_patch      = p_patch,           & !in
+      &  p_config     = wave_config,       & !in
+      &  gvn_e        = gvn_e(:,:,:,:))      !inout
+
+  END SUBROUTINE compute_group_velocity
+
 
   !>
   !! Calculation of wave group velocity
@@ -122,7 +178,7 @@ CONTAINS
   !! Calculation of shallow water edges centered
   !! wave group velocities
   !!
-  SUBROUTINE wave_group_velocity_e(p_patch, p_config, wave_num_e, bathymetry_e, gv_e)
+  SUBROUTINE wave_group_velocity_e(p_patch, p_config, wave_num_e, depth_e, gv_e)
 
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
          &  routine = modname//':wave_group_velocity_e'
@@ -130,7 +186,7 @@ CONTAINS
     TYPE(t_patch),       INTENT(IN)   :: p_patch
     TYPE(t_wave_config), INTENT(IN)   :: p_config
     REAL(wp),            INTENT(IN)   :: wave_num_e(:,:,:) !< wave number (1/m)
-    REAL(wp),            INTENT(IN)   :: bathymetry_e(:,:) !< bathymetric height at cell centers (nproma,nblks_c) ( m )
+    REAL(wp),            INTENT(IN)   :: depth_e(:,:)      !< water depth at cell edges (nproma,nblks_e) ( m )
     REAL(wp),            INTENT(INOUT):: gv_e(:,:,:)     !< group velocity (nproma,nlev,nblks_c,ndirs*nfreqs)  ( m/s )
 
     INTEGER :: i_rlstart, i_rlend, i_startblk, i_endblk
@@ -160,7 +216,7 @@ CONTAINS
         DO je = i_startidx, i_endidx
           ! shallow water group velocity
           ak = wave_num_e(je,jb,jf)
-          akd = ak * bathymetry_e(je,jb)
+          akd = ak * depth_e(je,jb)
 
           IF (akd <= 10.0_wp) THEN
             gv = 0.5_wp * SQRT(grav * TANH(akd)/ak) * (1.0_wp + 2.0_wp*akd/SINH(2.0_wp*akd))
@@ -1327,6 +1383,38 @@ CONTAINS
 !$OMP END PARALLEL
 
   END SUBROUTINE wm1_wm2_wavenumber
+
+
+  !>
+  !! Calculation of wave number at centers and edges.
+  !!
+  !! Wrapper routine for computing wave number at cell centers and
+  !! edge midpoints.
+  !!
+  SUBROUTINE compute_wave_number(p_patch, wave_config, depth_c, depth_e, wave_num_c, wave_num_e)
+
+    TYPE(t_patch),       INTENT(IN)    :: p_patch
+    TYPE(t_wave_config), INTENT(IN)    :: wave_config
+    REAL(wp),            INTENT(IN)    :: depth_c(:,:)      !< bathymetric height at cell centers
+    REAL(wp),            INTENT(IN)    :: depth_e(:,:)      !< bathymetric height at edge midpoints
+    REAL(wp),            INTENT(INOUT) :: wave_num_c(:,:,:) !< Wave number as a function of circular frequency
+    REAL(wp),            INTENT(INOUT) :: wave_num_e(:,:,:) !< Wave number as a function of circular frequency
+
+    ! get wave number as a function of circular frequency and water depth
+    ! at cell center
+    CALL wave_number_c(p_patch     = p_patch,              & !IN
+      &                wave_config = wave_config,          & !IN
+      &                depth       = depth_c(:,:),         & !IN
+      &                wave_num_c  = wave_num_c(:,:,:))      !OUT
+
+    ! get wave number as a function of circular frequency and water depth
+    ! at edge midpoint
+    CALL wave_number_e(p_patch     = p_patch,             & !IN
+      &                wave_config = wave_config,         & !IN
+      &                depth       = depth_e(:,:),        & !IN
+      &                wave_num_e  = wave_num_e(:,:,:))     !OUT
+
+  END SUBROUTINE compute_wave_number
 
 
   !>

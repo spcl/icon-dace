@@ -2,239 +2,232 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-program iconoce
+PROGRAM iconoce
 
-  use mtime
-  use mo_event_manager
+  USE mtime
+  USE mo_event_manager
 
-  implicit none
+  IMPLICIT NONE
 
-  type(datetime), pointer :: experiment_reference_date => null()
+  TYPE(datetime), POINTER :: experiment_reference_date => NULL()
 
-  type(datetime), pointer :: checkpoint_reference_date => null()  
+  TYPE(datetime), POINTER :: checkpoint_reference_date => NULL()
 
-  type(datetime), pointer :: experiment_start_date => null()
-  type(datetime), pointer :: experiment_end_date => null()
+  TYPE(datetime), POINTER :: experiment_start_date => NULL()
+  TYPE(datetime), POINTER :: experiment_end_date => NULL()
 
-  type(datetime), pointer :: start_date => null() 
-  type(datetime), pointer :: stop_date => null() 
+  TYPE(datetime), POINTER :: start_date => NULL()
+  TYPE(datetime), POINTER :: stop_date => NULL()
 
-  type(datetime), pointer :: next_checkpoint_date => null() 
-  type(datetime), pointer :: next_restart_date => null() 
+  TYPE(datetime), POINTER :: next_checkpoint_date => NULL()
+  TYPE(datetime), POINTER :: next_restart_date => NULL()
 
-  type(timedelta), pointer :: dynamic_time_step => null()
+  TYPE(timedelta), POINTER :: model_time_step => NULL()
 
-  type(timedelta), pointer :: checkpoint_time_step => null()
-  type(timedelta), pointer :: restart_time_step => null()
+  TYPE(datetime), POINTER :: current_date => NULL()
 
-  type(timedelta), pointer :: coupling_time_step => null()
-  type(timedelta), pointer :: model_time_step => null()
+  TYPE(eventgroup), POINTER :: outputEventGroup => NULL()
 
-  type(datetime), pointer :: current_date => null() 
+  TYPE(event), POINTER :: checkpointEvent => NULL()
+  TYPE(event), POINTER :: restartEvent => NULL()
 
-  type(eventgroup), pointer :: outputEventGroup => null()
+  CHARACTER(len=max_calendar_str_len)  :: calendar_in_use
+  CHARACTER(len=max_datetime_str_len)  :: dstring
+  CHARACTER(len=max_timedelta_str_len) :: tdstring
 
-  type(event), pointer :: checkpointEvent => null()
-  type(event), pointer :: restartEvent => null()
-
-
-  character(len=max_calendar_str_len)  :: calendar_in_use
-  character(len=max_datetime_str_len)  :: dstring
-  character(len=max_timedelta_str_len) :: tdstring
-
-  character(len=max_mtime_error_str_len  ) :: errstring
+  CHARACTER(len=max_mtime_error_str_len) :: errstring
   ! namelist variables
 
-  character(len=max_calendar_str_len) :: calendar
+  CHARACTER(len=max_calendar_str_len) :: calendar
 
-  character(len=max_datetime_str_len) :: experimentReferenceDate = ''   
-  character(len=max_datetime_str_len) :: experimentStartDate = ''  
-  character(len=max_datetime_str_len) :: experimentEndDate
+  CHARACTER(len=max_datetime_str_len) :: experimentReferenceDate = ''
+  CHARACTER(len=max_datetime_str_len) :: experimentStartDate = ''
+  CHARACTER(len=max_datetime_str_len) :: experimentEndDate
 
-  character(len=max_datetime_str_len) :: startDate     
-                                                                 
-  character(len=max_timedelta_str_len) :: modelTimeStep         
-                                                                 
-  character(len=max_repetition_str_len) :: checkpointTimeInterval
-  character(len=max_repetition_str_len) :: restartTimeInterval   
+  CHARACTER(len=max_datetime_str_len) :: startDate
 
-  character(len=max_repetition_str_len) :: couplingTimeInterval
+  CHARACTER(len=max_timedelta_str_len) :: modelTimeStep
 
-  character(len=132) :: error_message
+  CHARACTER(len=max_repetition_str_len) :: checkpointTimeInterval
+  CHARACTER(len=max_repetition_str_len) :: restartTimeInterval
 
-  integer :: iunit, icalendar, ierror
-  integer :: outputEvents
-  logical :: lret, isRestart, isRestartTimeRelative
+  CHARACTER(len=max_repetition_str_len) :: couplingTimeInterval
 
-  character(len=max_groupname_str_len) :: egstring
+  CHARACTER(len=132) :: error_message
 
-  type(datetime),  pointer :: checkpointRefDate => null()
-  type(datetime),  pointer :: checkpointStartDate => null()
-  type(datetime),  pointer :: checkpointEndDate => null()
-  type(timedelta), pointer :: checkpointInterval => null()
-  
-  type(datetime),  pointer :: restartRefDate => null()
-  type(datetime),  pointer :: restartStartDate => null()
-  type(datetime),  pointer :: restartEndDate => null()
-  type(timedelta), pointer :: restartInterval => null()
-  
+  INTEGER :: iunit, icalendar, ierror
+  INTEGER :: outputEvents
+  LOGICAL :: lret, isRestart, isRestartTimeRelative
+
+  CHARACTER(len=max_groupname_str_len) :: egstring
+
+  TYPE(datetime), POINTER :: checkpointRefDate => NULL()
+  TYPE(datetime), POINTER :: checkpointStartDate => NULL()
+  TYPE(datetime), POINTER :: checkpointEndDate => NULL()
+  TYPE(timedelta), POINTER :: checkpointInterval => NULL()
+
+  TYPE(datetime), POINTER :: restartRefDate => NULL()
+  TYPE(datetime), POINTER :: restartStartDate => NULL()
+  TYPE(datetime), POINTER :: restartEndDate => NULL()
+  TYPE(timedelta), POINTER :: restartInterval => NULL()
+
   !________________________________________________________________________________________________
   !
 
-  namelist /timeControl/ &
-       &    calendar, & 
+  NAMELIST /timeControl/ &
+       &    calendar, &
        &    experimentReferenceDate, &
-       &    experimentStartDate, &   
-       &    experimentEndDate, &        
-       &    modelTimeStep, &            
-       &    checkpointTimeInterval, &   
-       &    restartTimeInterval, &      
+       &    experimentStartDate, &
+       &    experimentEndDate, &
+       &    modelTimeStep, &
+       &    checkpointTimeInterval, &
+       &    restartTimeInterval, &
        &    couplingTimeInterval, &
        &    isRestart, &
        &    isRestartTimeRelative
 
-  open (file='examples/iconoce.nml', newunit=iunit, iostat=ierror)
-  if (ierror /= 0) then
-    print *, 'ERROR: could not open namelist file.' 
-    stop 
-  else
-    read (unit=iunit, nml=timeControl, iostat=ierror, iomsg=error_message)
-    if (ierror /= 0) then
-      print *, 'ERROR: could not read namelist file.'
-      print *, '       ', trim(error_message)  
-      stop 
-    endif
-    close (unit=iunit)
-  endif
+  OPEN (file='iconoce.nml', newunit=iunit, iostat=ierror)
+  IF (ierror /= 0) THEN
+    PRINT *, 'ERROR: could not open namelist file.'
+    STOP
+  ELSE
+    READ (unit=iunit, nml=timeControl, iostat=ierror, iomsg=error_message)
+    IF (ierror /= 0) THEN
+      PRINT *, 'ERROR: could not read namelist file.'
+      PRINT *, '       ', TRIM(error_message)
+      STOP
+    END IF
+    CLOSE (unit=iunit)
+  END IF
 
   !________________________________________________________________________________________________
   !
 
-  select case (toLower(calendar))
-  case ('proleptic gregorian')
-    icalendar  = proleptic_gregorian
-  case ('365 day year')  
+  SELECT CASE (toLower(calendar))
+  CASE ('proleptic gregorian')
+    icalendar = proleptic_gregorian
+  CASE ('365 day year')
     icalendar = year_of_365_days
-  case ('360 day year')  
+  CASE ('360 day year')
     icalendar = year_of_360_days
-  case default
+  CASE default
     icalendar = calendar_not_set
-    print *, 'ERROR: calendar ', trim(calendar), ' not available/unknown.' 
-    stop 
-  end select
+    PRINT *, 'ERROR: calendar ', TRIM(calendar), ' not available/unknown.'
+    STOP
+  END SELECT
 
-  call setCalendar(icalendar)
-  call calendarToString(calendar_in_use)
-  print *, 'Calendar: ', trim(calendar_in_use)
-  
-  print *, ''
+  CALL setCalendar(icalendar)
+  CALL calendarToString(calendar_in_use)
+  PRINT *, 'Calendar: ', TRIM(calendar_in_use)
+
+  PRINT *, ''
 
   !________________________________________________________________________________________________
   !
 
-  if (experimentReferenceDate /= '') then
+  IF (experimentReferenceDate /= '') THEN
     experiment_reference_date => newDatetime(experimentReferenceDate)
-  endif
+  END IF
 
-  if (isRestart) then
-    call readRestart(startDate)
+  IF (isRestart) THEN
+    CALL readRestart(startDate)
     start_date => newDatetime(startDate)
-  else
-    start_date => newDatetime(experimentStartDate)    
-  endif
+  ELSE
+    start_date => newDatetime(experimentStartDate)
+  END IF
 
   experiment_start_date => newDatetime(experimentStartDate)
 
-  if (isRestartTimeRelative) then
-    checkpoint_reference_date => newDatetime(start_date)    
-  else
-    checkpoint_reference_date => newDatetime(experiment_reference_date)    
-  endif
-  
-  if (associated(experiment_reference_date)) then
-    call initEventManager(experiment_reference_date)
-  else
-    call initEventManager(experiment_start_date)
-  endif
+  IF (isRestartTimeRelative) THEN
+    checkpoint_reference_date => newDatetime(start_date)
+  ELSE
+    checkpoint_reference_date => newDatetime(experiment_reference_date)
+  END IF
+
+  IF (ASSOCIATED(experiment_reference_date)) THEN
+    CALL initEventManager(experiment_reference_date)
+  ELSE
+    CALL initEventManager(experiment_start_date)
+  END IF
 
   experiment_reference_date => getModelReferenceDate()
 
-  call datetimeToString(experiment_reference_date, dstring)
-  print *, 'Experiment reference date: ', dstring
+  CALL datetimeToString(experiment_reference_date, dstring)
+  PRINT *, 'Experiment reference date: ', dstring
 
-  call datetimeToString(experiment_start_date, dstring)
-  print *, 'Experiment start date    : ', dstring
+  CALL datetimeToString(experiment_start_date, dstring)
+  PRINT *, 'Experiment start date    : ', dstring
 
   experiment_end_date => newDatetime(experimentEndDate)
-  call datetimeToString(experiment_end_date, dstring)
-  print *, 'Experiment end date      : ', dstring
-  
-  print *, ''
+  CALL datetimeToString(experiment_end_date, dstring)
+  PRINT *, 'Experiment end date      : ', dstring
+
+  PRINT *, ''
 
   !________________________________________________________________________________________________
   !
   ! event_group_setup: block
 
-  outputEvents =  addEventGroup('outputEventGroup')
+  outputEvents = addEventGroup('outputEventGroup')
   outputEventGroup => getEventGroup(outputEvents)
-  print *, 'output event group handler: ', outputEvents
-  call getEventGroupName(outputEventGroup, egstring)
-  print *, 'output event group name   : ', trim(egstring)    
-  print *, ''
+  PRINT *, 'output event group handler: ', outputEvents
+  CALL getEventGroupName(outputEventGroup, egstring)
+  PRINT *, 'output event group name   : ', TRIM(egstring)
+  PRINT *, ''
 
   ! end block event_group_setup
   !________________________________________________________________________________________________
   !
   ! checkpoint_restart_time_intervals: block
 
-  checkpointRefDate   => checkpoint_reference_date
+  checkpointRefDate => checkpoint_reference_date
   checkpointStartDate => experiment_start_date
-  checkpointEndDate   => experiment_end_date
-  call getEventComponents(checkpointTimeInterval, checkpointRefDate, &
+  checkpointEndDate => experiment_end_date
+  CALL getEventComponents(checkpointTimeInterval, &
        &                  checkpointInterval, checkpointStartDate, checkpointEndDate)
   checkpointEvent => newEvent('checkpoint', checkpointRefDate, &
        &                      checkpointStartDate, checkpointEndDate, checkpointInterval, &
        &                      errno=ierror)
-  if (ierror /= no_Error) then
+  IF (ierror /= no_Error) THEN
     CALL mtime_strerror(ierror, errstring)
-    print *, 'ERROR: ', trim(errstring)
-    stop
-  endif
+    PRINT *, 'ERROR: ', TRIM(errstring)
+    STOP
+  END IF
   lret = addEventToEventGroup(checkpointEvent, outputEventGroup)
-  
-  restartRefDate   => checkpoint_reference_date
+
+  restartRefDate => checkpoint_reference_date
   restartStartDate => experiment_start_date
-  restartEndDate   => experiment_end_date
-  call getEventComponents(restartTimeInterval, restartRefDate, &
+  restartEndDate => experiment_end_date
+  CALL getEventComponents(restartTimeInterval, &
        &                  restartInterval, restartStartDate, restartEndDate)
   restartEvent => newEvent('restart', restartRefDate, &
        &                   restartStartDate, restartEndDate, restartInterval, &
        &                   errno=ierror)
-  if (ierror /= no_Error) then
+  IF (ierror /= no_Error) THEN
     CALL mtime_strerror(ierror, errstring)
-    print *, 'ERROR: ', trim(errstring)
-    stop
-  endif
+    PRINT *, 'ERROR: ', TRIM(errstring)
+    STOP
+  END IF
   lret = addEventToEventGroup(restartEvent, outputEventGroup)
 
   ! end block checkpoint_restart_time_intervals
-  
-  call printEventGroup(outputEvents)
-  
+
+  CALL printEventGroup(outputEvents)
+
   !________________________________________________________________________________________________
   !
 
-  print *, ''
+  PRINT *, ''
   model_time_step => newTimedelta(modelTimeStep)
-  call timedeltaToString(model_time_step, tdstring)
-  print *, 'Dynamics (basic model) time step: ', trim(tdstring)
-  print *, ''
+  CALL timedeltaToString(model_time_step, tdstring)
+  PRINT *, 'Dynamics (basic model) time step: ', TRIM(tdstring)
+  PRINT *, ''
 
   !________________________________________________________________________________________________
-  ! 
+  !
 
   current_date => newDatetime(start_date)
-  stop_date => newDatetime(start_date) 
+  stop_date => newDatetime(start_date)
   stop_date = stop_date + getEventInterval(restartEvent)
 
   !________________________________________________________________________________________________
@@ -243,170 +236,170 @@ program iconoce
   !..............................................................................................
   ! 1. check, if restart is in the experiments time interval
   !
-  if (stop_date > experiment_end_date) then
-    print *, 'WARNING: run would not create a restart file.'
-    print *, '         Reset the stop_date to experiment end_date.'
+  IF (stop_date > experiment_end_date) THEN
+    PRINT *, 'WARNING: run would not create a restart file.'
+    PRINT *, '         Reset the stop_date to experiment end_date.'
     stop_date => experiment_end_date
-  endif
+  END IF
   !..............................................................................................
   ! 2. check, if checkpointing is
   !
   next_checkpoint_date => newDatetime(start_date)
   next_checkpoint_date = next_checkpoint_date + getEventInterval(checkpointEvent)
-  call datetimeToString(next_checkpoint_date, dstring)
-  print *, 'First checkpoint date: ', trim(dstring)
+  CALL datetimeToString(next_checkpoint_date, dstring)
+  PRINT *, 'First checkpoint date: ', TRIM(dstring)
   !..............................................................................................
   ! 3. check, if restarting is
   !
   next_restart_date => newDatetime(start_date)
   next_restart_date = next_restart_date + getEventInterval(restartEvent)
-  call datetimeToString(next_restart_date, dstring)
-  print *, 'First restart date: ', trim(dstring)
+  CALL datetimeToString(next_restart_date, dstring)
+  PRINT *, 'First restart date: ', TRIM(dstring)
   !..............................................................................................
   !end block check_time_interval_consistency
   !________________________________________________________________________________________________
   !
-  
-  call datetimeToString(current_date, dstring)
-  print *, 'Model date starting the time integration loop: ', trim(dstring)
-  
-  time_integration: do 
+
+  CALL datetimeToString(current_date, dstring)
+  PRINT *, 'Model date starting the time integration loop: ', TRIM(dstring)
+
+  time_integration: DO
     !............................................................................................
     ! print date and time
-    call datetimeToString(current_date, dstring)
+    CALL datetimeToString(current_date, dstring)
 !    print *, 'Model time loop  : ', trim(dstring)
     !............................................................................................
     ! initiate restart
-    if ((isCurrentEventActive(restartEvent, current_date) .and. start_date /= current_date) &
-         .or. current_date == experiment_end_date) then
-      print *, 'INFO: write restart.'
-      call writeRestart(current_date)
-      exit time_integration
-    endif
+    IF ((isCurrentEventActive(restartEvent, current_date) .AND. start_date /= current_date) &
+        .OR. current_date == experiment_end_date) THEN
+      PRINT *, 'INFO: write restart.'
+      CALL writeRestart(current_date)
+      EXIT time_integration
+    END IF
     !............................................................................................
     ! initiate checkpoint, we do not checkpoint/restart
-    if (isCurrentEventActive(checkpointEvent, current_date) .and. start_date /= current_date) then
-      print *, 'INFO: write checkpoint.'
-      call writeRestart(current_date)
-    endif
+    IF (isCurrentEventActive(checkpointEvent, current_date) .AND. start_date /= current_date) THEN
+      PRINT *, 'INFO: write checkpoint.'
+      CALL writeRestart(current_date)
+    END IF
     !............................................................................................
     ! calculate next date and time
     current_date = current_date + model_time_step
     !............................................................................................
     ! if new date and time is larger than end of run exit time integration: should never hit
-    if (current_date > stop_date) exit time_integration
-  enddo time_integration
-  
-  call datetimeToString(current_date, dstring)
-  print *, 'Model date leaving the time integration loop : ', trim(dstring)
-    
-  !________________________________________________________________________________________________
-  !
+    IF (current_date > stop_date) EXIT time_integration
+  END DO time_integration
 
-contains
+  CALL datetimeToString(current_date, dstring)
+  PRINT *, 'Model date leaving the time integration loop : ', TRIM(dstring)
 
   !________________________________________________________________________________________________
   !
-  subroutine writeRestart(currentDate)
-    type(datetime), pointer :: currentDate
-    character(len=max_datetime_str_len)  :: dstring
-    character(len=max_datetime_str_len+16)  :: filename
 
-    integer :: iunit, ierror
+CONTAINS
 
-    call datetimeToString(currentDate, dstring)
-    print *, '      Writing restart/checkpoint file for ', trim(dstring)
+  !________________________________________________________________________________________________
+  !
+  SUBROUTINE writeRestart(currentDate)
+    TYPE(datetime), POINTER :: currentDate
+    CHARACTER(len=max_datetime_str_len)  :: dstring
+    CHARACTER(len=max_datetime_str_len + 16)  :: filename
 
-    write (filename,'(a,a,a)') 'restart_oce_', trim(dstring), '.dat'
+    INTEGER :: iunit, ierror
 
-    open (file='examples/'//trim(filename), newunit=iunit, iostat=ierror)
-    if (ierror /= 0) then
-      print *, 'ERROR: could not open restart file for writing.' 
-      stop 
-    else
-      write (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a,a)') &
-           & 'restart: ', trim(dstring)
-      if (ierror /= 0) then
-        print *, 'ERROR: could not write restart/checkpoint file.'
-        print *, '       ', trim(error_message)  
-        stop 
-      else
-        close (unit=iunit)
+    CALL datetimeToString(currentDate, dstring)
+    PRINT *, '      Writing restart/checkpoint file for ', TRIM(dstring)
+
+    WRITE (filename, '(a,a,a)') 'restart_oce_', TRIM(dstring), '.dat'
+
+    OPEN (file=TRIM(filename), newunit=iunit, iostat=ierror)
+    IF (ierror /= 0) THEN
+      PRINT *, 'ERROR: could not open restart file for writing.'
+      STOP
+    ELSE
+      WRITE (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a,a)') &
+           & 'restart: ', TRIM(dstring)
+      IF (ierror /= 0) THEN
+        PRINT *, 'ERROR: could not write restart/checkpoint file.'
+        PRINT *, '       ', TRIM(error_message)
+        STOP
+      ELSE
+        CLOSE (unit=iunit)
         !..........................................................................................
         !
         ierror = 0
         error_message = ''
-        call execute_command_line('rm -f examples/restart_oce.dat', &
+        CALL execute_command_line('rm -f restart_oce.dat', &
              &                    cmdstat=ierror, cmdmsg=error_message)
-        if (ierror /= 0) then
-          print *, 'ERROR: could not remove previous soft link restart/checkpoint file.'
-          print *, '       ', trim(error_message)  
-          stop
-        endif
+        IF (ierror /= 0) THEN
+          PRINT *, 'ERROR: could not remove previous soft link restart/checkpoint file.'
+          PRINT *, '       ', TRIM(error_message)
+          STOP
+        END IF
         !..........................................................................................
         !
         ierror = 0
         error_message = ''
-        call execute_command_line('ln -s '//trim(filename)//' examples/restart_oce.dat', &
+        CALL execute_command_line('ln -s '//TRIM(filename)//' restart_oce.dat', &
              &                     cmdstat=ierror, cmdmsg=error_message)
-        if (ierror /= 0) then
-          print *, 'ERROR: could not soft link restart/checkpoint file.'
-          print *, '       ', trim(error_message)  
-          stop
-        endif
-      endif
-    endif
+        IF (ierror /= 0) THEN
+          PRINT *, 'ERROR: could not soft link restart/checkpoint file.'
+          PRINT *, '       ', TRIM(error_message)
+          STOP
+        END IF
+      END IF
+    END IF
 
-  end subroutine writeRestart
+  END SUBROUTINE writeRestart
   !________________________________________________________________________________________________
   !
-  subroutine readRestart(currentDate)
-    character(len=max_datetime_str_len), intent(out) :: currentDate
-    character(len=132) :: line
-    
-    integer :: iunit, ierror
-    
-    open (file='examples/restart_oce.dat', status='old', newunit=iunit, iostat=ierror)
-    if (ierror /= 0) then
-      print *, 'ERROR: could not open restart file for reading'
-      print *, '       check isRestart in namelist.' 
-      stop 
-    else
-      read (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a)') line
-      if (ierror /= 0) then
-        print *, 'ERROR: could not read restart/checkpoint file.'
-        print *, '       ', trim(error_message)  
-        stop 
-      endif
-      currentDate=line(10:33)
-      close (unit=iunit)
-    endif
+  SUBROUTINE readRestart(currentDate)
+    CHARACTER(len=max_datetime_str_len), INTENT(out) :: currentDate
+    CHARACTER(len=132) :: line
 
-    print *, 'Read restart/checkpoint file for ', trim(currentDate)
+    INTEGER :: iunit, ierror
 
-  end subroutine readRestart
+    OPEN (file='restart_oce.dat', status='old', newunit=iunit, iostat=ierror)
+    IF (ierror /= 0) THEN
+      PRINT *, 'ERROR: could not open restart file for reading'
+      PRINT *, '       check isRestart in namelist.'
+      STOP
+    ELSE
+      READ (unit=iunit, iostat=ierror, iomsg=error_message, fmt='(a)') line
+      IF (ierror /= 0) THEN
+        PRINT *, 'ERROR: could not read restart/checkpoint file.'
+        PRINT *, '       ', TRIM(error_message)
+        STOP
+      END IF
+      currentDate = line(10:33)
+      CLOSE (unit=iunit)
+    END IF
+
+    PRINT *, 'Read restart/checkpoint file for ', TRIM(currentDate)
+
+  END SUBROUTINE readRestart
   !________________________________________________________________________________________________
   !
-  
-  pure function toLower (str) result (string)
-    
-    character(*), intent(in) :: str
-    character(len(str))      :: string
-    
-    integer :: ic, i
-    
-    character(len=26), parameter :: capitel = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
-    character(len=26), parameter :: lower   = 'abcdefghijklmnopqrstuvwxyz'
-    
+
+  PURE FUNCTION toLower(str) RESULT(string)
+
+    CHARACTER(*), INTENT(in) :: str
+    CHARACTER(LEN(str))      :: string
+
+    INTEGER :: ic, i
+
+    CHARACTER(len=26), PARAMETER :: capitel = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'
+    CHARACTER(len=26), PARAMETER :: lower = 'abcdefghijklmnopqrstuvwxyz'
+
     string = str
-    do i = 1, LEN_TRIM(str)
+    DO i = 1, LEN_TRIM(str)
       ic = INDEX(capitel, str(i:i))
-      if (ic > 0) string(i:i) = lower(ic:ic)
-    end do
-    
-  end function toLower
+      IF (ic > 0) string(i:i) = lower(ic:ic)
+    END DO
+
+  END FUNCTION toLower
 
   !________________________________________________________________________________________________
   !
 
-end program iconoce
+END PROGRAM iconoce

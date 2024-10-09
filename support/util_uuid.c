@@ -1,16 +1,16 @@
+// ICON
+//
+// ---------------------------------------------------------------
+// Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+// Contact information: icon-model.org
+//
+// See AUTHORS.TXT for a list of authors
+// See LICENSES/ for license information
+// SPDX-License-Identifier: BSD-3-Clause
+// ---------------------------------------------------------------
+
 /* 128 bit UUID computation / Rabin fingerprinting algorithm                                        */
-/*                                                                                                  */
-/* ICON                                                                                             */
-/*                                                                                                  */
-/* ---------------------------------------------------------------                                  */
-/* Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss                                  */
-/* Contact information: icon-model.org                                                              */
-/*                                                                                                  */
-/* See AUTHORS.TXT for a list of authors                                                            */
-/* See LICENSES/ for license information                                                            */
-/* SPDX-License-Identifier: BSD-3-Clause                                                            */
-/* ---------------------------------------------------------------                                  */
-/*                                                                                                  */
+
 /* ("A fingerprinting algorithm is a procedure that maps an arbitrarily large data item             */
 /* to a much shorter bit string" [Wikipedia-en]).                                                   */
 /*                                                                                                  */

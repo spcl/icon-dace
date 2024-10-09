@@ -1,9 +1,3 @@
-! Public interfaces to the 1moment microhpysics-schemes
-! This includes routines to
-!   - initialize the microphysics
-!   - run the microphysics
-!   - getters and setters for variables private to microphysics
-! 
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Public interfaces to the 1moment microhpysics-schemes
+! This includes routines to
+!   - initialize the microphysics
+!   - run the microphysics
+!   - getters and setters for variables private to microphysics
+
 MODULE microphysics_1mom_schemes
 
   USE, INTRINSIC :: iso_fortran_env, ONLY: wp => real64

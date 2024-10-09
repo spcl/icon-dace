@@ -85,7 +85,8 @@ CONTAINS
     dsl4jsb_Real2D_onDomain    :: growing_season
     dsl4jsb_Real2D_onDomain    :: lai_max
     ! ---------------------------
-    ! 0.4 Debug Option
+    ! 0.4
+    IF (.NOT. tile%Is_process_active(Q_PHENO_)) RETURN
     IF (debug_on()) CALL message(routine, 'Setting boundary conditions of pheno memory (quincy) for tile '// &
       &                          TRIM(tile%name))
     ! ---------------------------
@@ -101,27 +102,18 @@ CONTAINS
 
     !> 1.0 init
     !>
-    !>   differs between QS and IQ
-    !>
-    ! init growing_season, lai_max, lai
+    ! init growing_season and lai_max
+    ! in case the confgi%lai_max value is less than zero, the lctlib value is used
+    !
     ! work with lctlib only if the present tile is a pft
     IF (tile%lcts(1)%lib_id /= 0) THEN
-#ifdef __QUINCY_STANDALONE__
-      !> QS - QUINCY standalone
-      !>
-      ! set lai_max from the site specific LAI from all_site_list.dat (saved in pheno_config:lai_max) and check for sensible values
-      IF (dsl4jsb_Config(Q_PHENO_)%lai_max > 0.5_wp .AND. dsl4jsb_Config(Q_PHENO_)%lai_max < 8.0_wp) THEN
-        lai_max(:,:) = dsl4jsb_Config(Q_PHENO_)%lai_max
-      ELSE
-        lai_max(:,:) = 6.0_wp
+      IF (dsl4jsb_Config(Q_PHENO_)%lai_max > 0.0_wp) THEN ! value is set in config script
+        ! use configuration script value but constrain to plausbile values between 0.1 and 10
+        lai_max(:,:) = MAX(0.1_wp, MIN(10.0_wp, dsl4jsb_Config(Q_PHENO_)%lai_max))
+      ELSE ! use lctlib parameter if config%lai_max was not set (i.e., -1.0)
+        lai_max(:,:) = dsl4jsb_Lctlib_param(lai_max)
       END IF
-#else
-      !> IQ - QUINCY in ICON-Land
-      !>
-      ! lai_max
-      ! for jsbach4 a lctlib parameter 'dsl4jsb_Lctlib_param(MaxLAI)' is available
-      lai_max(:,:) = 6.0_wp
-#endif
+
       ! growing season flag, set depending on whether this is a evergreen plant (TRUE) or not (FALSE)
       ! NOTE: false and true are of type REAL(wp)
       IF(dsl4jsb_Lctlib_param(phenology_type) == ievergreen) THEN

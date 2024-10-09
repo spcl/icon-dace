@@ -1,5 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
 !
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 !------------------------------------------------------------------------------
 ! This module provides the interface between dynamics&transport and physics.
 !
@@ -16,7 +25,6 @@
 ! - Prepare the input fields from the prognostic state,
 ! - Call a subroutine to prepare the physics boundary conditions,
 ! - Call a subroutine to calculate the physics tendencies,
-! - Call a subroutine to couple atmosphere and ocean, if needed,
 ! - Update the prognostic state with the physics tendencies,
 ! - Synchronize the prognostic state
 !
@@ -28,17 +36,6 @@
 ! - Tendencies dx/dt resulting from physics are stored in the 'tend' (t) data
 !   type, which has its own memory. These physics tendencies are used for the
 !   final update of the prognostic variables before the end of the interface.
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -87,8 +84,6 @@ MODULE mo_interface_iconam_aes
 #endif
 
   USE mo_timer                 ,ONLY: timer_coupling
-  USE mo_coupling_config       ,ONLY: is_coupled_to_ocean
-  USE mo_aes_ocean_coupling    ,ONLY: interface_aes_ocean
 
 #if defined(_OPENACC)
   USE mo_var_list_gpu          ,ONLY: gpu_update_var_list
@@ -415,18 +410,6 @@ CONTAINS
 #ifndef __NO_JSBACH__
     IF (aes_phy_config(jg)%ljsb) CALL jsbach_finish_timestep(jg, datetime, dt)
 #endif
-    !
-    !=====================================================================================
-
-    !=====================================================================================
-    !
-    ! Couple atmosphere and ocean, if needed
-    !
-    IF (is_coupled_to_ocean()) THEN
-      IF (ltimer) CALL timer_start(timer_coupling)
-      CALL interface_aes_ocean(patch, diag)
-      IF (ltimer) CALL timer_stop(timer_coupling)
-    END IF
     !
     !=====================================================================================
 

@@ -42,6 +42,7 @@ MODULE mo_sse_config_class
     LOGICAL  :: l_soil_texture  !< T: Deduce mineral soil thermal parameters from soil texture
     LOGICAL  :: l_freeze        !< T: Consider freezing and thawing of soil water
     LOGICAL  :: l_supercool     !< T: Allow for supercooled soil water
+    LOGICAL  :: l_uniform_snow  !< T: Temporary bugfix to use zero or one snow fraction for soil temperature computation
     REAL(wp) :: w_soil_critical !< Critical water/ice content in upper soil layer for correction of new surface
                                 !! temperature for freezing/melting [m water equivalent]
     !! quincy
@@ -81,7 +82,7 @@ CONTAINS
     CLASS(t_sse_config), INTENT(inout) :: config
 
     LOGICAL  :: active, l_snow, l_dynsnow, l_heat_cap_dyn, l_heat_cond_dyn, l_heat_cap_map, l_heat_cond_map
-    LOGICAL  :: l_freeze, l_supercool, l_soil_texture
+    LOGICAL  :: l_freeze, l_supercool, l_soil_texture, l_uniform_snow
     REAL(wp) :: w_soil_critical
     INTEGER  :: nsnow
     REAL(wp) :: dz_snow(max_snow_layers)
@@ -92,7 +93,7 @@ CONTAINS
       & nsnow, dz_snow, l_snow, l_dynsnow,      &
       & l_heat_cap_dyn, l_heat_cond_dyn,        &
       & l_heat_cap_map, l_heat_cond_map,        &
-      & l_soil_texture,                         &
+      & l_soil_texture, l_uniform_snow,         &
       & l_freeze, l_supercool, w_soil_critical, &
       & ic_filename, bc_filename
 
@@ -122,6 +123,7 @@ CONTAINS
     l_soil_texture   = .FALSE.
     l_freeze         = .TRUE.
     l_supercool      = .TRUE.
+    l_uniform_snow   = .TRUE.
     w_soil_critical  = 5.85036E-3_wp
     ic_filename      = 'ic_land_soil.nc'
     bc_filename      = 'bc_land_soil.nc'
@@ -177,6 +179,10 @@ CONTAINS
     END IF
     config%l_freeze        = l_freeze
     config%l_supercool     = l_supercool
+    config%l_uniform_snow  = l_uniform_snow
+    IF (l_uniform_snow) THEN
+      CALL message(TRIM(routine), 'Assuming uniform snow cover for soil temperature computation')
+    END IF
 
     config%w_soil_critical     = w_soil_critical
     CALL message(TRIM(routine), 'Critical water/ice content in upper soil layer for correction of '// &

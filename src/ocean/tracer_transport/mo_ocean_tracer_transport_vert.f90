@@ -1,7 +1,3 @@
-! Contains the implementation of the vertical tracer transport routines for the ICON ocean model.
-! This comprises vertical advection.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the vertical tracer transport routines for the ICON ocean model.
+! This comprises vertical advection.
 
 !----------------------------
 #include "omp_definitions.inc"

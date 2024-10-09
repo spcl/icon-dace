@@ -1,8 +1,3 @@
-! The module <i>mo_util_dbg_prnt</i> prints out max and min as well as single
-! cell and neighbouring values of 2- and 3-dim arrays of the icon core for
-! debug purposes
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The module <i>mo_util_dbg_prnt</i> prints out max and min as well as single
+! cell and neighbouring values of 2- and 3-dim arrays of the icon core for
+! debug purposes
 
 !----------------------------
 #include "icon_definitions.inc"

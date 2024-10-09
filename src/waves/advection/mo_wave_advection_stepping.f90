@@ -1,12 +1,3 @@
-! Horizontal transport and refraction of spectral surface wave energy
-!
-! Main routine for the horizontal transport of surface wave energy.
-! Here, we integrate the spectral energy equation in time without
-! sources and sinks, only taking into account advection and refraction.
-!
-! For the advection part, we make use of the horizontal transport scheme for
-! tracers of the atmospheric model.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,14 +8,23 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Horizontal transport and refraction of spectral surface wave energy
 !
+! Main routine for the horizontal transport of surface wave energy.
+! Here, we integrate the spectral energy equation in time without
+! sources and sinks, only taking into account advection and refraction.
+!
+! For the advection part, we make use of the horizontal transport scheme for
+! tracers of the atmospheric model.
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 
 MODULE mo_wave_advection_stepping
 
-  USE mo_kind,                      ONLY: wp, vp
+  USE mo_kind,                      ONLY: wp
   USE mo_impl_constants,            ONLY: min_rlcell_int, min_rledge_int
   USE mo_impl_constants_grf,        ONLY: grf_bdywidth_c
   USE mo_loopindices,               ONLY: get_indices_c
@@ -54,7 +54,7 @@ CONTAINS
 
 
   SUBROUTINE wave_step_advection( p_patch, p_int_state, wave_config, energy_propagation_config, &
-    &                             p_dtime, wave_num_c, gv_c, bathymetry_c, geo_bath_grad_c, &
+    &                             p_dtime, wave_num_c, gv_c, bathymetry_c, geo_depth_grad_c, &
     &                             p_mflx_h, p_vn_traj, p_vt_traj, p_tracer_now, p_tracer_new )
 
     TYPE(t_patch), TARGET,            INTENT(IN):: &  !< patch on which computation is performed
@@ -81,8 +81,8 @@ CONTAINS
     REAL(wp),                         INTENT(IN):: & !< bathymetry at cell center [m]
       &  bathymetry_c(:,:)                           !< dim: (nproma,nblks_c)
 
-    REAL(vp),                         INTENT(IN):: & !< gradient of bathymetry [m/m]
-      &  geo_bath_grad_c(:,:,:,:)                    !< dim: (2,nproma,nlev,nblks_c)
+    REAL(wp),                         INTENT(IN):: & !< gradient of bathymetry [m/m]
+      &  geo_depth_grad_c(:,:,:)                      !< dim: (2,nproma,nblks_c)
 
     REAL(wp),                         INTENT(IN):: & !< horizontal mass flux at edge midpoints
       &  p_mflx_h(:,:,:,:)                           !< WAVE: gv_n  [m/s]
@@ -311,7 +311,7 @@ CONTAINS
         &                  wave_num_c  = wave_num_c(:,:,:),        & !in
         &                  gv_c        = gv_c(:,:,:),              & !in
         &                  depth       = bathymetry_c(:,:),        & !in
-        &                  depth_grad  = geo_bath_grad_c(:,:,:,:), & !in
+        &                  depth_grad  = geo_depth_grad_c(:,:,:),  & !in
         &                  tracer_now  = p_tracer_now(:,:,:,:),    & !in
         &                  tracer_new  = p_tracer_new(:,:,:,:))      !inout
 

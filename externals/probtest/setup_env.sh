@@ -1,32 +1,31 @@
 #!/bin/bash
 #
-# Create conda environment with pinned or unpinned run and/or dev requirements
-#
-# - 2022-08 (D. Regenass) Write original script
-# - 2022-09 (S. Ruedisuehli) Refactor; add some options
-#
+# Create conda environment with pinned or unpinned requirements
+
+
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  echo "Please simply call the script instead of sourcing it!"
+  return
+fi
 
 # Default env names
 DEFAULT_ENV_NAME="probtest"
-DEFAULT_DEV_ENV_NAME="${DEFAULT_ENV_NAME}-dev"
 
 # Default options
-ENV_NAME=""
-PYVERSION=3.10
+ENV_NAME="${DEFAULT_ENV_NAME}"
+PYVERSION=3.11
 PINNED=true
-DEV=false
 EXPORT=false
 CONDA=conda
 HELP=false
 
-help_msg="Usage: $(basename "${0}") [-n NAME] [-p VER] [-u] [-e] [-d] [-m] [-h]
+help_msg="Usage: $(basename "${0}") [-n NAME] [-p VER] [-u] [-e] [-m] [-h]
 
 Options:
- -n NAME    Env name [default: ${DEFAULT_ENV_NAME}; with -d: ${DEFAULT_DEV_ENV_NAME}]
+ -n NAME    Env name [default: ${DEFAULT_ENV_NAME}
  -p VER     Python version [default: ${PYVERSION}]
  -u         Use unpinned requirements (minimal version restrictions)
  -e         Export environment files (requires -u)
- -d         Install additional dev requirements
  -m         Use mamba instead of conda
  -h         Print this help message and exit
 "
@@ -36,7 +35,6 @@ while getopts n:p:defhimu flag; do
     case ${flag} in
         n) ENV_NAME=${OPTARG};;
         p) PYVERSION=${OPTARG};;
-        d) DEV=true;;
         e) EXPORT=true;;
         h) HELP=true;;
         m) CONDA=mamba;;
@@ -44,14 +42,6 @@ while getopts n:p:defhimu flag; do
         ?) echo -e "\n${help_msg}" >&2; exit 1;;
     esac
 done
-
-# Set prod and dev env names depending on whether -n has been passed
-if [[ "${ENV_NAME}" != "" ]]; then
-    DEV_ENV_NAME="${ENV_NAME}"
-else
-    ENV_NAME="${DEFAULT_ENV_NAME}"
-    DEV_ENV_NAME="${DEFAULT_DEV_ENV_NAME}"
-fi
 
 if ${HELP}; then
     echo "${help_msg}"
@@ -69,40 +59,12 @@ ${CONDA} create -n ${ENV_NAME} python=${PYVERSION} --yes || exit
 # Install requirements in new env
 if ${PINNED}; then
     echo "Pinned installation"
-    if ! ${DEV}; then
-        echo "Prod installation"
-        ${CONDA} env update --name ${ENV_NAME} --file requirements/environment.yml || exit
-    else
-        echo "Dev installation"
-        ${CONDA} env update --name ${DEV_ENV_NAME} --file requirements/dev-environment.yml || exit
-    fi
+    ${CONDA} env update --name ${ENV_NAME} --file requirements/environment.yml || exit
 else
-    # First, always create a prod env from unpinned deps
-    # Use the prod env name even if -d has been passed, so the prod env is
-    # exported with its correct name if -e has been passed along with -d
     echo "Unpinned installation"
     ${CONDA} env update --name ${ENV_NAME} --file requirements/requirements.yml || exit
     if ${EXPORT}; then
         echo "Export pinned prod environment"
         ${CONDA} env export --name ${ENV_NAME} --no-builds | \grep -v '^prefix:' > requirements/environment.yml || exit
-    fi
-    if ! ${DEV}; then
-        echo "WARNING: Unpinned prod installation!!!" >&2
-    else
-        # If -d has been passed, install unpinned dev deps on top of prod deps
-        echo "Dev installation"
-        if [[ "${ENV_NAME}" != "${DEV_ENV_NAME}" ]]; then
-            # Use prod env as basis for dev env (unless they are named the same due to -n)
-            # Note: Starting with v4.14.0, `conda rename` command is available to rename an env
-            # TODO: Once v4.14.0 is readily available, replace `conda create/remove` by `conda rename`
-            ${CONDA} create --name ${DEV_ENV_NAME} --clone ${ENV_NAME}
-            ${CONDA} remove --name ${ENV_NAME} --all
-            #${CONDA} rename --name ${ENV_NAME} ${DEV_ENV_NAME}
-        fi
-        ${CONDA} env update --name ${DEV_ENV_NAME} --file requirements/dev-requirements.yml || exit
-        if ${EXPORT}; then
-            echo "Export pinned dev environment"
-            ${CONDA} env export --name ${DEV_ENV_NAME} --no-builds| \grep -v '^prefix:' > requirements/dev-environment.yml || exit
-        fi
     fi
 fi

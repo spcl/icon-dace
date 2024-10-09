@@ -1,10 +1,3 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
-!
-! Routines for optional diagnostic output variables in NWP
-! (formerly located in mo_util_phys)
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Routines for optional diagnostic output variables in NWP
+! (formerly located in mo_util_phys)
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=1000"
 
 !----------------------------
 #include "omp_definitions.inc"

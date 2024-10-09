@@ -82,7 +82,7 @@ final_date = mtime.DateTime('%{FINAL_DATE}')
 next_date = start_date + interval
 
 if next_date > final_date:
-    logging.warn('next date after final date; setting next date to final date')
+    logging.warning('next date after final date; setting next date to final date')
     next_date = final_date
 
 end_date = next_date + mtime.TimeDelta('-%{atmo_time_step}')

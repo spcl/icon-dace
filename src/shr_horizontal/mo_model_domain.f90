@@ -1,9 +1,3 @@
-! The module contains the definition of the grid and patch data
-! structure that is actually used by the model.  It contains abstract
-! data types that are copies of those in m_grid, m_hierarchy and
-! m_base_geometry.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,7 +9,11 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
-  
+! The module contains the definition of the grid and patch data
+! structure that is actually used by the model.  It contains abstract
+! data types that are copies of those in m_grid, m_hierarchy and
+! m_base_geometry.
+
 !! I can't say why xlf takes ages to optimize this file,
 !! but since it contains declarations only, it's sufficient to leave
 !! it unoptimized
@@ -41,7 +39,7 @@ MODULE mo_model_domain
     &                                   t_p_comm_pattern
   USE mo_io_units,                ONLY: filename_max
   USE mo_util_uuid_types,         ONLY: t_uuid
-  USE mo_grid_geometry_info,      ONLY: t_grid_geometry_info
+  USE mo_lib_grid_geometry_info,  ONLY: t_grid_geometry_info
   USE mo_decomposition_tools,     ONLY: t_grid_domain_decomp_info
   USE mo_read_netcdf_types,       ONLY: t_distrib_read_data
   USE ppm_distributed_array,      ONLY: dist_mult_array

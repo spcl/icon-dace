@@ -1,11 +1,3 @@
-!NEC$ options "-finline-max-depth=3 -finline-max-function-size=10000"
-!
-! Two-moment bulk microphysics after Seifert, Beheng and Blahak
-!
-! Description:
-! This module contains the main subroutine for the two-moment microphysics, and
-! the initialization subroutines that calculated the run-time coefficients
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Two-moment bulk microphysics after Seifert, Beheng and Blahak
+!
+! Description:
+! This module contains the main subroutine for the two-moment microphysics, and
+! the initialization subroutines that calculated the run-time coefficients
+
+!NEC$ options "-finline-max-depth=3 -finline-max-function-size=10000"
 
 MODULE mo_2mom_mcrph_main
 

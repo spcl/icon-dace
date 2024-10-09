@@ -33,6 +33,13 @@ MODULE mo_q_pheno_constants
       iraingreen              = 3         , &
       iperennial              = 4
 
+  !> types with a specific phenological trigger for growing season
+  !>
+  INTEGER, PARAMETER ::                        &
+    & ipheno_type_cold_deciduous     = 1     , &   !< cold decidious
+    & ipheno_type_drought_deciduous  = 2     , &   !< drought deciduous
+    & ipheno_type_cbalance_deciduous = 3           !< deciduous because of carbon deficit
+
   CHARACTER(len=*), PARAMETER, PRIVATE :: modname = 'mo_q_pheno_constants'
 
 #endif

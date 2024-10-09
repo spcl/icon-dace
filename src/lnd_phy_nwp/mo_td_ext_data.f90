@@ -1,9 +1,3 @@
-! Subroutines needed for updating the climatological boundary conditions
-! in NWP physics.
-!
-! includes, e.g. updating time dependent SST and Sea Ice fraction
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutines needed for updating the climatological boundary conditions
+! in NWP physics.
+!
+! includes, e.g. updating time dependent SST and Sea Ice fraction
 
 MODULE mo_td_ext_data
 

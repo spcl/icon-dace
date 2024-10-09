@@ -1,47 +1,6 @@
-/**
- * @file toy_reg2d_ocn.c
- *
- * @copyright Copyright  (C)  2013 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
 #undef VERBOSE
 
@@ -57,13 +16,9 @@
 #include <stdio.h>
 #include <unistd.h>
 #include <math.h>
-#include "utils.h"
-#include "fields.h"
-#include "yac_interface.h"
-#include "geometry.h"
-#include "vtk_output.h"
-#include "generate_reg2d.h"
-#include "test_function.h"
+#include "yac.h"
+#include "yac_core.h"
+#include "yac_utils.h"
 
 /* ------------------------------------------------- */
 
@@ -200,7 +155,7 @@ int main (int argc, char *argv[]) {
   total_nbr_cells[0] = (int)num_cells_x;
   total_nbr_cells[1] = (int)num_cells_y;
 
-  generate_reg2d_decomp(total_nbr_cells, size, num_procs);
+  yac_generate_reg2d_decomp(total_nbr_cells, size, num_procs);
 
   int block_pos[2];
   int block_size[2];
@@ -236,8 +191,8 @@ int main (int argc, char *argv[]) {
 
   // the grid
 
-  double * global_x_vertices = xmalloc((NUM_CELLS_X+3) * sizeof(*global_x_vertices));
-  double * global_y_vertices = xmalloc((NUM_CELLS_Y+1) * sizeof(*global_y_vertices));;
+  double * global_x_vertices = malloc((NUM_CELLS_X+3) * sizeof(*global_x_vertices));
+  double * global_y_vertices = malloc((NUM_CELLS_Y+1) * sizeof(*global_y_vertices));;
   double * x_vertices;
   double * y_vertices;
   double * x_points;
@@ -265,9 +220,9 @@ int main (int argc, char *argv[]) {
 
   yac_cdef_grid_reg2d ( "grid2", nbr_points, cyclic, x_vertices, y_vertices, &grid_id );
 
-  int * global_global_cell_id = xmalloc(NUM_CELLS_Y * (NUM_CELLS_X + 2) * sizeof(*global_global_cell_id));
-  int * global_global_cell_id_rank = xmalloc(NUM_CELLS_Y * (NUM_CELLS_X + 2) * sizeof(*global_global_cell_id_rank));
-  int * global_global_corner_id = xmalloc((NUM_CELLS_Y + 1) * (NUM_CELLS_X + 3) * sizeof(*global_global_corner_id));
+  int * global_global_cell_id = malloc(NUM_CELLS_Y * (NUM_CELLS_X + 2) * sizeof(*global_global_cell_id));
+  int * global_global_cell_id_rank = malloc(NUM_CELLS_Y * (NUM_CELLS_X + 2) * sizeof(*global_global_cell_id_rank));
+  int * global_global_corner_id = malloc((NUM_CELLS_Y + 1) * (NUM_CELLS_X + 3) * sizeof(*global_global_corner_id));
 
   for (int j = 0, id = 0; j < NUM_CELLS_Y; ++j) {
 
@@ -312,10 +267,10 @@ int main (int argc, char *argv[]) {
   for (int i = 0; i < (NUM_CELLS_Y)*(NUM_CELLS_X + 2); ++i)
     if(global_global_cell_id_rank[i] == rank) global_global_cell_id_rank[i] = -1;
 
-  int * local_global_cell_id = xmalloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_cell_id));
-  int * local_global_cell_id_rank = xmalloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_cell_id_rank));
-  int * local_global_corner_id = xmalloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id));
-  int * local_global_corner_id_rank = xmalloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id_rank));
+  int * local_global_cell_id = malloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_cell_id));
+  int * local_global_cell_id_rank = malloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_cell_id_rank));
+  int * local_global_corner_id = malloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id));
+  int * local_global_corner_id_rank = malloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id_rank));
 
   int offset_x, offset_y;
 
@@ -359,20 +314,21 @@ int main (int argc, char *argv[]) {
   local_global_corner_id_rank[(nbr_points[1]-2) * nbr_points[0] + nbr_points[0]-1] = local_global_cell_id_rank[(nbr_cells[1]-2) * nbr_cells[0] + nbr_cells[0]-1];
   local_global_corner_id_rank[(nbr_points[1]-1) * nbr_points[0] + nbr_points[0]-2] = local_global_cell_id_rank[(nbr_cells[1]-1) * nbr_cells[0] + nbr_cells[0]-2];
 
-  int * cell_core_mask = xmalloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_corner_id_rank));
-  int * corner_core_mask = xmalloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id_rank));
+  int * cell_core_mask = malloc(nbr_cells[1] * nbr_cells[0] * sizeof(*local_global_corner_id_rank));
+  int * corner_core_mask = malloc(nbr_points[1] * nbr_points[0] * sizeof(*local_global_corner_id_rank));
 
   for (int i = 0; i < nbr_cells[1]*nbr_cells[0]; ++i)
     cell_core_mask[i] = local_global_cell_id_rank[i] == -1;
   for (int i = 0; i < nbr_points[1]*nbr_points[0]; ++i)
     corner_core_mask[i] = local_global_corner_id_rank[i] == -1;
 
-  yac_cset_global_index(local_global_cell_id, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
-  yac_cset_global_index(local_global_corner_id, CORNER, grid_id);
-  yac_cset_core_mask(corner_core_mask, CORNER, grid_id);
+  yac_cset_global_index(local_global_cell_id, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
+  yac_cset_global_index(local_global_corner_id, YAC_LOCATION_CORNER, grid_id);
+  yac_cset_core_mask(corner_core_mask, YAC_LOCATION_CORNER, grid_id);
 
-  yac_cdef_points_reg2d ( grid_id, nbr_cells, CELL, x_points, y_points, &point_id );
+  yac_cdef_points_reg2d(
+    grid_id, nbr_cells, YAC_LOCATION_CELL, x_points, y_points, &point_id);
 
   /* Field definition for toy-reg2d-ocean */
 
@@ -419,21 +375,21 @@ int main (int argc, char *argv[]) {
 
   unsigned num_cells = nbr_cells[0] * nbr_cells[1];
 
-  double * cell_data_field = xmalloc(num_cells * sizeof(*cell_data_field));
-  double * cell_out_conserv_data = xmalloc(num_cells * sizeof(*cell_out_conserv_data));
-  double * cell_out_hcsbb_data = xmalloc(num_cells * sizeof(*cell_out_hcsbb_data));
-  double * cell_in_conserv_data = xmalloc(num_cells * sizeof(*cell_in_conserv_data));
-  double * cell_in_hcsbb_data = xmalloc(num_cells * sizeof(*cell_in_hcsbb_data));
-  double * cell_in_conserv_err_abs = xmalloc(num_cells * sizeof(*cell_in_conserv_err_abs));
-  double * cell_in_hcsbb_err_abs = xmalloc(num_cells * sizeof(*cell_in_hcsbb_err_abs));
-  double * cell_in_conserv_err_rel = xmalloc(num_cells * sizeof(*cell_in_conserv_err_rel));
-  double * cell_in_hcsbb_err_rel = xmalloc(num_cells * sizeof(*cell_in_hcsbb_err_rel));
+  double * cell_data_field = malloc(num_cells * sizeof(*cell_data_field));
+  double * cell_out_conserv_data = malloc(num_cells * sizeof(*cell_out_conserv_data));
+  double * cell_out_hcsbb_data = malloc(num_cells * sizeof(*cell_out_hcsbb_data));
+  double * cell_in_conserv_data = malloc(num_cells * sizeof(*cell_in_conserv_data));
+  double * cell_in_hcsbb_data = malloc(num_cells * sizeof(*cell_in_hcsbb_data));
+  double * cell_in_conserv_err_abs = malloc(num_cells * sizeof(*cell_in_conserv_err_abs));
+  double * cell_in_hcsbb_err_abs = malloc(num_cells * sizeof(*cell_in_hcsbb_err_abs));
+  double * cell_in_conserv_err_rel = malloc(num_cells * sizeof(*cell_in_conserv_err_rel));
+  double * cell_in_hcsbb_err_rel = malloc(num_cells * sizeof(*cell_in_hcsbb_err_rel));
 
   int err;
   int info;
 
-  unsigned * cell_corners = xmalloc(num_cells * 4 * sizeof(*cell_corners));
-  unsigned * num_points_per_cell = xmalloc(num_cells * sizeof(*num_points_per_cell));
+  unsigned * cell_corners = malloc(num_cells * 4 * sizeof(*cell_corners));
+  unsigned * num_points_per_cell = malloc(num_cells * sizeof(*num_points_per_cell));
 
   for (unsigned i = 0; i < num_cells; ++i) {
 
@@ -444,16 +400,16 @@ int main (int argc, char *argv[]) {
       x_index = i - y_index * nbr_cells[0];
 
       if (!cyclic[0]) {
-      
+
         cell_corners[i*4+0] =  y_index      * (nbr_cells[0] + 1) + x_index;
         cell_corners[i*4+1] =  y_index      * (nbr_cells[0] + 1) + x_index + 1;
         cell_corners[i*4+2] = (y_index + 1) * (nbr_cells[0] + 1) + x_index + 1;
         cell_corners[i*4+3] = (y_index + 1) * (nbr_cells[0] + 1) + x_index;
 
       } else {
-      
+
         cell_corners[i*4+0] = y_index * nbr_cells[0] + x_index;
-        if (x_index + 1 != nbr_cells[0]) {
+        if (x_index + 1 != (unsigned)(nbr_cells[0])) {
           cell_corners[i*4+1] =  y_index      * nbr_cells[0] + x_index + 1;
           cell_corners[i*4+2] = (y_index + 1) * nbr_cells[0] + x_index + 1;
         } else {
@@ -475,7 +431,7 @@ int main (int argc, char *argv[]) {
     curr_y = (y_vertices[cell_corners[i*4+1]/nbr_points[0]] +
               y_vertices[cell_corners[i*4+2]/nbr_points[0]]) * 0.5;
 
-    cell_data_field[i] = test_func(curr_x, curr_y);
+    cell_data_field[i] = yac_test_func(curr_x, curr_y);
   }
 
   for (unsigned i = 0; i < num_cells; ++i) {
@@ -487,7 +443,7 @@ int main (int argc, char *argv[]) {
     cell_in_hcsbb_data[i]   = -999;
   }
 
-  double * point_data = xmalloc(nbr_points[0] * nbr_points[1] * 3 * sizeof(*point_data));
+  double * point_data = malloc(nbr_points[0] * nbr_points[1] * 3 * sizeof(*point_data));
   for (int i = 0; i < nbr_points[1]; ++i) {
     for (int j = 0; j < nbr_points[0]; ++j) {
 
@@ -609,31 +565,41 @@ int main (int argc, char *argv[]) {
 
     sprintf(vtk_filename, "toy-reg2d-ocean_out_%d_%d.vtk", rank, step);
 
-    VTK_FILE *vtk_file = vtk_open(vtk_filename, "toy-reg2d-ocean_out");
+    YAC_VTK_FILE *vtk_file = yac_vtk_open(vtk_filename, "toy-reg2d-ocean_out");
 
-    vtk_write_point_data(vtk_file, point_data, nbr_points[0]*nbr_points[1]);
+    yac_vtk_write_point_data(vtk_file, point_data, nbr_points[0]*nbr_points[1]);
 
-    vtk_write_cell_data(vtk_file, cell_corners, num_points_per_cell, num_cells);
+    yac_vtk_write_cell_data(vtk_file, cell_corners, num_points_per_cell, num_cells);
 
-    vtk_write_point_scalars_int(vtk_file, corner_core_mask,
-                                nbr_points[0]*nbr_points[1], "corner_core_mask");
-    vtk_write_point_scalars_int(vtk_file, local_global_corner_id,
-                                nbr_points[0]*nbr_points[1], "global_corner_id");
-    vtk_write_cell_scalars_int(vtk_file, cell_core_mask, num_cells,
-                               "cell_core_mask");
-    vtk_write_cell_scalars_int(vtk_file, local_global_cell_id, num_cells,
-                               "global_cell_id");
+    yac_vtk_write_point_scalars_int(
+      vtk_file, corner_core_mask, nbr_points[0]*nbr_points[1],
+      "corner_core_mask");
+    yac_vtk_write_point_scalars_int(
+      vtk_file, local_global_corner_id, nbr_points[0]*nbr_points[1],
+      "global_corner_id");
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, cell_core_mask, num_cells, "cell_core_mask");
+    yac_vtk_write_cell_scalars_int(
+      vtk_file, local_global_cell_id, num_cells, "global_cell_id");
 
-    vtk_write_cell_scalars_double(vtk_file, cell_in_conserv_data, num_cells, "cell_in_conserv");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_hcsbb_data, num_cells, "cell_in_hcsbb");
-    vtk_write_cell_scalars_double(vtk_file, cell_out_conserv_data, num_cells, "cell_out_conserv");
-    vtk_write_cell_scalars_double(vtk_file, cell_out_hcsbb_data, num_cells, "cell_out_hcsbb");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_conserv_err_abs, num_cells, "cell_in_conserv_err_abs");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_hcsbb_err_abs, num_cells, "cell_in_hcsbb_err_abs");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_conserv_err_rel, num_cells, "cell_in_conserv_err_rel");
-    vtk_write_cell_scalars_double(vtk_file, cell_in_hcsbb_err_rel, num_cells, "cell_in_hcsbb_err_rel");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_conserv_data, num_cells, "cell_in_conserv");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_hcsbb_data, num_cells, "cell_in_hcsbb");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_out_conserv_data, num_cells, "cell_out_conserv");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_out_hcsbb_data, num_cells, "cell_out_hcsbb");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_conserv_err_abs, num_cells, "cell_in_conserv_err_abs");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_hcsbb_err_abs, num_cells, "cell_in_hcsbb_err_abs");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_conserv_err_rel, num_cells, "cell_in_conserv_err_rel");
+    yac_vtk_write_cell_scalars_double(
+      vtk_file, cell_in_hcsbb_err_rel, num_cells, "cell_in_hcsbb_err_rel");
 
-    vtk_close(vtk_file);
+    yac_vtk_close(vtk_file);
 
     for ( unsigned i = 0; i < num_cells; ++i ) {
       cell_out_conserv_data[i] = cell_in_conserv_data[i];

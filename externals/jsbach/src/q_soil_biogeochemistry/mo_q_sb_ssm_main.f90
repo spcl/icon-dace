@@ -28,7 +28,7 @@ MODULE mo_q_sb_ssm_main
   USE mo_lnd_bgcm_store_class,    ONLY: SB_BGCM_POOL_ID, SB_BGCM_FORMATION_ID, SB_BGCM_LOSS_ID, SB_BGCM_TRANSPORT_ID, &
     &                                   SB_BGCM_MYCO_EXPORT_ID
 
-  USE mo_jsb_math_constants,      ONLY: dtime, one_day, one_year, eps8, eps4
+  USE mo_jsb_math_constants,      ONLY: one_day, one_year, eps8, eps4
 
   IMPLICIT NONE
 
@@ -94,6 +94,7 @@ CONTAINS
                                              k_desorpt_po4_act, &
                                              km_dip_biochem_po4_act, &
                                              qmax_po4_mineral_act
+    REAL(wp)                              :: dtime
     INTEGER                               :: iblk, ics, ice, nc             !< dimensions
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':update_sb_simple_model'
     ! ----------------------------------------------------------------------------------------------------- !
@@ -253,6 +254,7 @@ CONTAINS
     ics       = options%ics
     ice       = options%ice
     nc        = options%nc
+    dtime     = options%dtime
     ! ----------------------------------------------------------------------------------------------------- !
     IF (.NOT. tile%Is_process_calculated(SB_)) RETURN
     ! ----------------------------------------------------------------------------------------------------- !
@@ -444,6 +446,7 @@ CONTAINS
     CALL calc_local_soil_profile_values( &
       & nc, &                                   ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & soil_depth_sl(:,:), &
       & bulk_dens_sl(:,:), &
@@ -485,6 +488,7 @@ CONTAINS
     CALL calc_potential_plant_uptake_rate( &
       & nc, &                                     ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & lctlib%vmax_uptake_n, &
       & lctlib%vmax_uptake_p, &
@@ -516,6 +520,7 @@ CONTAINS
       CALL calc_potential_mycorrhiza_uptake_rate( &
         & nc, &                                     ! in
         & nsoil_sb, &
+        & dtime, &
         & lctlib%vmax_uptake_n, &
         & lctlib%vmax_uptake_p, &
         & soil_depth_sl(:,:), &
@@ -543,6 +548,7 @@ CONTAINS
     CALL calc_potential_decomposition_rate( &
       & nc, &                                       ! in
       & nsoil_sb, &
+      & dtime, &
       & soil_depth_sl(:,:), &
       & model%config%elements_index_map(:), &
       & model%config%is_element_used(:), &
@@ -566,6 +572,7 @@ CONTAINS
       CALL calc_potential_nitrification_denitrification_rate( &
         & nc, &                                     ! in
         & nsoil_sb, &
+        & dtime, &
         & num_sl_above_bedrock(:), &
         & rtm_nitrification(:,:), &
         & rmm_nitrification(:,:), &
@@ -582,6 +589,7 @@ CONTAINS
       CALL calc_inorganic_transport_rate( &
         & nc, &                                   ! in
         & nsoil_sb, &
+        & dtime, &
         & num_sl_above_bedrock(:), &
         & soil_depth_sl(:,:), &
         & percolation_sl(:,:), &
@@ -639,6 +647,7 @@ CONTAINS
     CALL calc_bioturbation_transport_wrapper_s1d( &
       & nc, &                                 ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & soil_depth_sl(:,:), &
       & model%config%elements_index_map(:), &
@@ -671,6 +680,7 @@ CONTAINS
     CALL calc_potential_p_flux_rate( &
       & nc, &                                         ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & dsl4jsb_Config(SB_)%flag_sb_prescribe_po4, &
       & rtm_decomposition(:,:), &
@@ -772,6 +782,7 @@ CONTAINS
     CALL calc_sb_inorganic_n15_fluxes( &
       & nc, &                                         ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & TRIM(dsl4jsb_Config(SB_)%sb_model_scheme), &
       & nh4_solute(:,:), &
@@ -856,6 +867,7 @@ CONTAINS
     CALL calc_mycorrhiza_dynamics( &
       & nc, &                                       ! in
       & nsoil_sb, &
+      & dtime, &
       & soil_depth_sl(:,:), &
       & model%config%elements_index_map(:), &
       & model%config%is_element_used(:), &
@@ -1043,6 +1055,7 @@ CONTAINS
   SUBROUTINE calc_local_soil_profile_values( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & num_sl_above_bedrock, &
     & soil_depth_sl, &
     & bulk_dens_sl, &
@@ -1084,6 +1097,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                                     INTENT(in)  :: nc                           !< dimensions
     INTEGER,                                     INTENT(in)  :: nsoil_sb                     !< number of soil layers
+    REAL(wp),                                    INTENT(in)  :: dtime                        !< timestep length
     REAL(wp), DIMENSION(nc),                     INTENT(in)  :: num_sl_above_bedrock         !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc),                     INTENT(in)  :: p_deposition                 !< p deposition, [micro-mol m-2 s-1]
     REAL(wp), DIMENSION(nc, nsoil_sb),           INTENT(in)  :: &
@@ -1188,6 +1202,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_potential_plant_uptake_rate(nc, &                         ! in
                                               nsoil_sb, &
+                                              dtime, &
                                               num_sl_above_bedrock, &
                                               lctlib_vmax_uptake_n, &
                                               lctlib_vmax_uptake_p, &
@@ -1220,6 +1235,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                                     INTENT(in)  :: nc, &                      !< dimensions
                                                                 nsoil_sb
+    REAL(wp),                                    INTENT(in)  :: dtime                      !< timestep length
     REAL(wp), DIMENSION(nc),                     INTENT(in)  :: num_sl_above_bedrock       !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp),                                    INTENT(in)  :: lctlib_vmax_uptake_n       !< lctlib parameter
     REAL(wp),                                    INTENT(in)  :: lctlib_vmax_uptake_p       !< lctlib parameter
@@ -1332,6 +1348,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_potential_mycorrhiza_uptake_rate(nc, &                         ! in
                                                    nsoil_sb, &
+                                                   dtime, &
                                                    lctlib_vmax_uptake_n, &
                                                    lctlib_vmax_uptake_p, &
                                                    soil_depth_sl, &
@@ -1361,6 +1378,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                                          INTENT(in)  :: nc                           !< dimensions
     INTEGER,                                          INTENT(in)  :: nsoil_sb                     !< number of soil layers
+    REAL(wp),                                         INTENT(in)  :: dtime                        !< timestep length
     REAL(wp),                                         INTENT(in)  :: lctlib_vmax_uptake_n         !< lctlib parameter
     REAL(wp),                                         INTENT(in)  :: lctlib_vmax_uptake_p         !< lctlib parameter
     REAL(wp), DIMENSION(nc, nsoil_sb),                INTENT(in)  :: soil_depth_sl                !< soil depth per layer [m]
@@ -1454,6 +1472,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_potential_nitrification_denitrification_rate(nc, &                            ! in
                                                                nsoil_sb, &
+                                                               dtime, &
                                                                num_sl_above_bedrock, &
                                                                rtm_nitrification, &
                                                                rmm_nitrification, &
@@ -1474,6 +1493,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                                          INTENT(in)  :: nc                             !< dimensions
     INTEGER,                                          INTENT(in)  :: nsoil_sb                       !< number of soil layers
+    REAL(wp),                                         INTENT(in)  :: dtime                          !< timestep length
     REAL(wp), DIMENSION(nc),                          INTENT(in)  :: num_sl_above_bedrock           !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb),                INTENT(in)  :: rtm_nitrification, &           !< actual temperature response for nitrification
                                                                      rmm_nitrification, &           !< actual moisture response for nitrification
@@ -1525,6 +1545,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_inorganic_transport_rate(nc, &                              ! in
                                            nsoil_sb, &
+                                           dtime, &
                                            num_sl_above_bedrock, &
                                            soil_depth_sl, &
                                            percolation_sl, &
@@ -1578,6 +1599,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                           INTENT(in)    :: nc                                 !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                           !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                              !< timestep length
     REAL(wp), DIMENSION(nc),           INTENT(in)    :: num_sl_above_bedrock               !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: soil_depth_sl                      !< soil layer depth [m]
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: percolation_sl, &                  !< fraction of water lost for 1d model [s-1]
@@ -1656,23 +1678,23 @@ CONTAINS
     !>
     ! For the 1D scheme with multiple soil hydrology layers, use adjection-diffusion scheme of JSM
     ! reduction of layer concentration in mol m-3 timestep-1, leaching rate in mol m-2 timestep-1
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
                                      percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
                                      nh4_solute(:,:), transport_nh4_solute(:,:), leaching_nh4_solute(:), &
                                      lateral_loss_nh4_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
                                      percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
                                      nh4_n15_solute(:,:), transport_nh4_n15_solute(:,:), leaching_nh4_n15_solute(:), &
                                      lateral_loss_nh4_n15_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
                                      percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
                                      no3_solute(:,:), transport_no3_solute(:,:), leaching_no3_solute(:), &
                                      lateral_loss_no3_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
                                      percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
                                      no3_n15_solute(:,:), transport_no3_n15_solute(:,:), leaching_no3_n15_solute(:), &
                                      lateral_loss_no3_n15_solute_sl(:,:))
-    CALL calc_liquid_phase_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_liquid_phase_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
                                      percolation_sl(:,:), frac_w_lat_loss_sl(:,:), soil_depth_sl(:,:), &
                                      po4_solute(:,:), transport_po4_solute(:,:), leaching_po4_solute(:), &
                                      lateral_loss_po4_solute_sl(:,:))
@@ -1704,6 +1726,7 @@ CONTAINS
   SUBROUTINE calc_potential_decomposition_rate( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & soil_depth_sl, &
     & elements_index_map, &
     & is_element_used, &
@@ -1726,6 +1749,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                            INTENT(in)    :: nc                       !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb                 !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                    !< timestep length
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: soil_depth_sl            !< soil layer depth [m]
     INTEGER,                            INTENT(in)    :: elements_index_map(:)    !< map bgcm element ID -> IDX
     LOGICAL,                            INTENT(in)    :: is_element_used(:)       !< is element in 'elements_index_map' used
@@ -1849,6 +1873,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_potential_p_flux_rate(nc, &
                                         nsoil_sb, &
+                                        dtime, &
                                         num_sl_above_bedrock, &
                                         flag_sb_prescribe_po4, &
                                         rtm_decomposition, &
@@ -1878,6 +1903,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                           INTENT(in)  :: nc                            !< dimensions
     INTEGER,                           INTENT(in)  :: nsoil_sb                      !< number of soil layers
+    REAL(wp),                          INTENT(in)  :: dtime                         !< timestep length
     REAL(wp), DIMENSION(nc),           INTENT(in)  :: num_sl_above_bedrock          !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     LOGICAL,                           INTENT(in)  :: flag_sb_prescribe_po4         !< whether or not solute PO4 is prescribed
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)  :: rtm_decomposition, &          !< temperature response of decomposition
@@ -2404,6 +2430,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_sb_inorganic_n15_fluxes(nc, &
                                           nsoil_sb, &
+                                          dtime, &
                                           num_sl_above_bedrock, &
                                           sb_model_scheme, &
                                           nh4_solute, &
@@ -2446,6 +2473,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                            INTENT(in)    :: nc, &                       !< dimensions
                                                          nsoil_sb
+    REAL(wp),                           INTENT(in)    :: dtime                       !< timestep length
     REAL(wp), DIMENSION(nc),            INTENT(in)    :: num_sl_above_bedrock        !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     CHARACTER(len=*),                   INTENT(in)    :: sb_model_scheme             !< simple_1d / jsm from sb config
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: nh4_solute, &               !< soil solute NH4 concentration [mol m-3]
@@ -3091,6 +3119,7 @@ CONTAINS
   SUBROUTINE calc_bioturbation_transport_wrapper_s1d( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & num_sl_above_bedrock, &
     & soil_depth_sl, &
     & elements_index_map, &
@@ -3113,6 +3142,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                           INTENT(in)    :: nc                          !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                    !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                       !< timestep length
     REAL(wp), DIMENSION(nc),           INTENT(in)    :: num_sl_above_bedrock        !< number of soil layers above bedrock, i.e., with layer thickness > eps8
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: soil_depth_sl               !< depth of each soil layer [m]
     INTEGER,                           INTENT(in)    :: elements_index_map(:)       !< map bgcm element ID -> IDX
@@ -3144,24 +3174,24 @@ CONTAINS
         ix_elem = elements_index_map(ielem)    ! get element index in bgcm
         !>  1.1 fast SOM pool
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_soluable_litter, ix_elem, :, :), &
           &                              sb_transport_mt(ix_soluable_litter, ix_elem, :, :))
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_polymeric_litter, ix_elem, :, :), &
           &                              sb_transport_mt(ix_polymeric_litter, ix_elem, :, :))
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_microbial, ix_elem, :, :), &
           &                              sb_transport_mt(ix_microbial, ix_elem, :, :))
         !>  1.1 slow SOM pool
         !>
-        CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+        CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
           &                              k_bioturb(:,:), &
           &                              soil_depth_sl(:,:), &
           &                              sb_pool_mt(ix_residue, ix_elem, :, :), &
@@ -3171,23 +3201,23 @@ CONTAINS
 
     !>2.0 inorganic pools
     !>
-    CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              k_bioturb(:,:),&
       &                              soil_depth_sl(:,:), &
       &                              nh4_assoc(:,:), transport_nh4_assoc(:,:))
-    CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              k_bioturb(:,:),&
       &                              soil_depth_sl(:,:), &
       &                              nh4_n15_assoc(:,:), transport_nh4_n15_assoc(:,:))
-    CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              k_bioturb(:,:),&
       &                              soil_depth_sl(:,:), &
       &                              po4_assoc_fast(:,:), transport_po4_assoc_fast(:,:))
-    CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              k_bioturb(:,:),&
       &                              soil_depth_sl(:,:), &
       &                              po4_assoc_slow(:,:), transport_po4_assoc_slow(:,:))
-    CALL calc_bioturbation_transport(nc, nsoil_sb, num_sl_above_bedrock(:), &
+    CALL calc_bioturbation_transport(nc, nsoil_sb, dtime, num_sl_above_bedrock(:), &
       &                              k_bioturb(:,:),&
       &                              soil_depth_sl(:,:), &
       &                              po4_occluded(:,:), transport_po4_occluded(:,:))
@@ -3261,6 +3291,7 @@ CONTAINS
   SUBROUTINE calc_mycorrhiza_dynamics( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & soil_depth_sl, &
     & elements_index_map, &
     & is_element_used, &
@@ -3296,6 +3327,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                           INTENT(in)    :: nc                                !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                          !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                             !< timestep length
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: soil_depth_sl                     !< depth per soil layer
     INTEGER,                           INTENT(in)    :: elements_index_map(:)             !< map bgcm element ID -> IDX
     LOGICAL,                           INTENT(in)    :: is_element_used(:)                !< is element in 'elements_index_map' used

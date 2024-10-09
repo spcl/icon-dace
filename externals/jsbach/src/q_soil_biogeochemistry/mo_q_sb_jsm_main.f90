@@ -48,7 +48,7 @@ CONTAINS
     USE mo_jsb_process_class,     ONLY: SB_, SPQ_, VEG_, A2L_
     USE mo_jsb_grid_class,        ONLY: t_jsb_vgrid
     USE mo_jsb_grid,              ONLY: Get_vgrid
-    USE mo_jsb_math_constants,    ONLY: dtime, eps8
+    USE mo_jsb_math_constants,    ONLY: eps8
     USE mo_isotope_util,          ONLY: calc_fractionation
     USE mo_sb_constants
     USE mo_q_sb_litter_processes, ONLY: calc_litter_partitioning
@@ -95,6 +95,7 @@ CONTAINS
     REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: growth_p_limit_smoothed_sl               !<
     REAL(wp), ALLOCATABLE, DIMENSION(:,:) :: asymb_n_fixation_rel_rate_sl             !< asymbiotic N fixation rate (relativ to N demand)
     INTEGER                               :: iblk, ics, ice, nc             !< dimensions
+    REAL(wp)                              :: dtime                          !< timestep length
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':update_sb_jsm'
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Def_mt2L2D :: veg_pool_mt
@@ -293,6 +294,7 @@ CONTAINS
     ics       = options%ics
     ice       = options%ice
     nc        = options%nc
+    dtime     = options%dtime
     ! ----------------------------------------------------------------------------------------------------- !
     IF (.NOT. tile%Is_process_calculated(SB_)) RETURN
     ! ----------------------------------------------------------------------------------------------------- !
@@ -539,6 +541,7 @@ CONTAINS
     !!   NOTE: it is an ELEMENTAL routine, hence, not using a bgcm matrices as argument
     !!
     CALL calc_sourcing_flux( &
+      & dtime, &
       & dsl4jsb_Config(SB_)%flag_sb_prescribe_po4, &  ! in
       & sb_pool_mt(ix_microbial, ixC, :, :), &
       & sb_pool_mt(ix_microbial, ixN, :, :), &
@@ -593,6 +596,7 @@ CONTAINS
     CALL calc_litter_turnover( &
       & nc, &                                           ! in
       & nsoil_sb, &
+      & dtime, &
       & tau_soluable_litter, &
       & fc_soluable2dom, &
       & rtm_depolymerisation(:,:), &
@@ -609,6 +613,7 @@ CONTAINS
     CALL calc_litter_turnover( &
       & nc, &                                           ! in
       & nsoil_sb, &
+      & dtime, &
       & tau_woody_litter, &
       & fc_woody2polymeric, &
       & rtm_depolymerisation(:,:), &
@@ -642,6 +647,7 @@ CONTAINS
     CALL calc_liquid_phase_transport_wrapper( &
       & nc, &                                   ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & soil_depth_sl(:,:), &
       & rtm_gasdiffusion(:,:), &
@@ -717,6 +723,7 @@ CONTAINS
     CALL calc_bioturbation_transport_wrapper_jsm( &
       & nc, &                                 ! in
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & soil_depth_sl(:,:), &
       & model%config%elements_index_map(:), &
@@ -746,7 +753,7 @@ CONTAINS
     km2_uptake_act(:,:)  = km2_up_po4 *  rtm_hsc(:,:) * rmm_hsc(:,:)  * 1000._wp * (w_soil_sl(:,:) / soil_depth_sl(:,:))
     km_array(:,:)        = km_adsorpt_po4_sl(:,:)
     avail_soil_surface_sorption_capacity_sl(:,:) = MAX(0._wp, qmax_po4(:,:) - po4_assoc_fast(:,:))
-    CALL calc_sinking_flux(lctlib%vmax_uptake_p, "po4", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                       ! in
+    CALL calc_sinking_flux(dtime, lctlib%vmax_uptake_p, "po4", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                ! in
       &                    sb_pool_mt(ix_microbial, ixC, :, :), fine_root_carbon_sl(:,:), po4_solute(:,:), &                ! in
       &                    rtm_mic_uptake(:,:), rmm_mic_uptake(:,:), rtm_hsc(:,:), rmm_hsc(:,:), &                          ! in
       &                    rtm_plant_uptake(:,:), rmm_plant_uptake(:,:), km1_uptake_act(:,:), km2_uptake_act(:,:), &        ! in
@@ -775,7 +782,7 @@ CONTAINS
     km2_uptake_act(:,:)  = km2_up_nh4 *  rtm_hsc(:,:) * rmm_hsc(:,:)  * 1000._wp * (w_soil_sl(:,:) / soil_depth_sl(:,:))
     km_array(:,:)        = km_adsorpt_nh4_sl(:,:)
     avail_soil_surface_sorption_capacity_sl(:,:) = MAX(0._wp, qmax_nh4(:,:) - nh4_assoc(:,:))
-    CALL calc_sinking_flux(lctlib%vmax_uptake_n, "nh4", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                       ! in
+    CALL calc_sinking_flux(dtime, lctlib%vmax_uptake_n, "nh4", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                ! in
       &                    sb_pool_mt(ix_microbial, ixC, :, :), fine_root_carbon_sl(:,:), nh4_solute(:,:), &                ! in
       &                    rtm_mic_uptake(:,:), rmm_mic_uptake(:,:), rtm_hsc(:,:), rmm_hsc(:,:), &                          ! in
       &                    rtm_plant_uptake(:,:), rmm_plant_uptake(:,:), km1_uptake_act(:,:), km2_uptake_act(:,:), &        ! in
@@ -806,7 +813,7 @@ CONTAINS
     km2_uptake_act(:,:)  = km2_up_no3 *  rtm_hsc(:,:) * rmm_hsc(:,:)  * 1000._wp * (w_soil_sl(:,:) / soil_depth_sl(:,:))
     km_array(:,:)        = 1._wp
     avail_soil_surface_sorption_capacity_sl(:,:) = 1._wp
-    CALL calc_sinking_flux(lctlib%vmax_uptake_n, "no3", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                         ! in
+    CALL calc_sinking_flux(dtime, lctlib%vmax_uptake_n, "no3", TRIM(dsl4jsb_Config(SB_)%sb_adsorp_scheme), &                  ! in
       &                    sb_pool_mt(ix_microbial, ixC, :, :), fine_root_carbon_sl(:,:), no3_solute(:,:), &                  ! in
       &                    rtm_mic_uptake(:,:), rmm_mic_uptake(:,:), rtm_hsc(:,:), rmm_hsc(:,:), &                            ! in
       &                    rtm_plant_uptake(:,:), rmm_plant_uptake(:,:), km1_uptake_act(:,:), km2_uptake_act(:,:), &          ! in
@@ -858,6 +865,7 @@ CONTAINS
     CALL calc_sb_inorganic_n15_fluxes( &
       & nc, &
       & nsoil_sb, &
+      & dtime, &
       & num_sl_above_bedrock(:), &
       & TRIM(dsl4jsb_Config(SB_)%sb_model_scheme), &
       & nh4_solute(:,:), &
@@ -899,6 +907,7 @@ CONTAINS
     CALL calc_depolymerisation_SESAM( &
       & nc, &                                 ! in
       & nsoil_sb, &
+      & dtime, &
       & rtm_hsc(:,:), &
       & rmm_hsc(:,:), &
       & rtm_depolymerisation(:,:), &
@@ -928,6 +937,7 @@ CONTAINS
     CALL calc_microbial_turnover( &
       & nc, &                                 ! in
       & nsoil_sb, &
+      & dtime, &
       & fact_n_status_mic_c_growth(:,:), &
       & fact_p_status_mic_c_growth(:,:), &
       & sb_pool_mt(ix_microbial,:,:,:), &     ! in
@@ -942,6 +952,7 @@ CONTAINS
     CALL calc_sorption_desorption_of_org_material( &
       & nc, &                                 ! in
       & nsoil_sb, &
+      & dtime, &
       & model%config%elements_index_map(:), &
       & model%config%is_element_used(:), &
       & qmax_org(:,:), &
@@ -967,6 +978,7 @@ CONTAINS
     !>
     CALL calc_microbial_growth(nc, &
       & nsoil_sb, &                               ! in
+      & dtime, &
       & TRIM(dsl4jsb_Config(SB_)%bnf_scheme), &
       & rtm_mic_uptake(:,:), &
       & rmm_mic_uptake(:,:), &

@@ -1,14 +1,3 @@
-! Subroutines to initialize the Baldauf, Brdar (2013) QJRMS test case
-! (linear gravity/sound waves expansion in a channel)
-! for the NH-Core in a quasi-2D limited area mode
-!
-! Literature
-! - Baldauf, Brdar (2013):
-!    An analytic solution for linear gravity waves in a channel
-!    as a test for numerical models using the non-hydrostatic, compressible Euler equations,
-!    Quart. J. Royal Met. Soc., 139, 1977-1989
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,16 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutines to initialize the Baldauf, Brdar (2013) QJRMS test case
+! (linear gravity/sound waves expansion in a channel)
+! for the NH-Core in a quasi-2D limited area mode
+!
+! Literature
+! - Baldauf, Brdar (2013):
+!    An analytic solution for linear gravity waves in a channel
+!    as a test for numerical models using the non-hydrostatic, compressible Euler equations,
+!    Quart. J. Royal Met. Soc., 139, 1977-1989
 
 MODULE mo_nh_bb13_exp
 

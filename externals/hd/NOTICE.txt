@@ -1,0 +1,24 @@
+HD model - Hydrological Discharge model
+(C) Copyright 2021- Institute of Coastal Systems - Analysis and Modelling, Helmholtz-Zentrum Hereon
+
+This software is licensed under the terms of the Apache Licence Version 2.0 
+which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.  
+
+The source code of the Hydrological Discharge model includes also some 
+infrastructure routines that originate (year 2014) from MPI-ESM, the Earth System Model of the 
+Max Planck Institute for Meteorology (Mauritsen et al. 2019). These routines are available 
+under the BSD-3-Clause license.
+
+Reference: Mauritsen, T., et al. (2019) Developments in the MPI-M Earth System Model 
+  version 1.2 (MPI-ESM1.2) and its response to increasing CO2. J. Adv. Model. Earth Syst., 11, 
+  doi: 10.1029/2018MS001400.
+
+Note that these infrastructure routines originally fell under the license of the Max Planck Institute for Meteorology
+(./LICENSES/mpim_licence.txt). However, in December 2023, this was changed to the BSD-3-Clause license for all those infrastructure routines. 
+
+In addition, a few routines written by Moritz Hanke (DKRZ) that are related to the coupling of the HD model via YAC are also associated with the BSD-3-Clause license.
+
+Further, the HD model repository comprises a few readme files (e.g. in ./docu) that are associated with the CC-BY-4.0 license. 
+
+Finally, running the HD model requires parameter fields that are not part of this code repository. However, they are published on Zenodo (https://zenodo.org/records/5707703) under the CC BY-SA 4.0 license. This published dataset comprises parameter fields at 0.5° global resolution and at 5 Min. resolution (global, Europe).  
+

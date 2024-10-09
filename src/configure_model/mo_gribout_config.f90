@@ -1,8 +1,3 @@
-! @brief configuration setup for Grib output
-!
-! configuration setup for tracer transport
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,10 +9,16 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! @brief configuration setup for Grib output
+!
+! configuration setup for tracer transport
+
 MODULE mo_gribout_config
 
   USE mo_impl_constants,     ONLY: max_phys_dom
+  USE mo_exception,          ONLY: message
   USE mo_grib2_tile,         ONLY: t_grib2_template_tile
+  USE mo_cdi,                ONLY: gribapiLibraryVersion
 
   IMPLICIT NONE
   PRIVATE
@@ -26,6 +27,19 @@ MODULE mo_gribout_config
   PUBLIC :: t_gribout_config
   PUBLIC :: gribout_config
   PUBLIC :: configure_gribout
+  PUBLIC :: gribout_crosscheck
+
+  PUBLIC :: GRIB_UNDEFVAL
+  PUBLIC :: GRIB_NOTINUSEVAL
+  PUBLIC :: GRIB_LIB_COMPAT_ECC_2_31_0
+
+  !> module name
+  CHARACTER(LEN=*), PARAMETER :: modname = 'mo_gribout_config'
+
+  INTEGER, PARAMETER :: GRIB_UNDEFVAL    = -1
+  INTEGER, PARAMETER :: GRIB_NOTINUSEVAL = 0
+
+  INTEGER, PARAMETER :: GRIB_LIB_COMPAT_ECC_2_31_0 = 1
 
   !!--------------------------------------------------------------------------
   !! Basic configuration setup for grib output
@@ -115,6 +129,10 @@ MODULE mo_gribout_config
       &  typeOfGrib2TileTemplate          !  'wmo': official WMO templates 55, 59, ...
                                           !  'dwd': local 'DWD' templates 40455, 40456, ...
 
+    INTEGER :: grib_lib_compat            !< Type of GRIB library backward compatibility adjustment:
+                                          !< 0: none
+                                          !< 1: for ecCodes versions >= 2.32.0
+
     ! derived variables
     !
     TYPE(t_grib2_template_tile)::  &      !< defines set of employed GRIB2 tile templates for writing
@@ -158,14 +176,14 @@ CONTAINS
       !
       ! check, whether generatingCenter was set in gribout_nml
       !
-      IF ( gribout_config(jg)%generatingCenter == -1 ) THEN
+      IF ( gribout_config(jg)%generatingCenter == GRIB_UNDEFVAL ) THEN
         ! If not, then fill with grid generating center
         gribout_config(jg)%generatingCenter = grid_generatingCenter(jg)
       ENDIF
 
       ! check, whether generatingSubcenter was set in gribout_nml
       !
-      IF ( gribout_config(jg)%generatingSubcenter == -1 ) THEN
+      IF ( gribout_config(jg)%generatingSubcenter == GRIB_UNDEFVAL ) THEN
         ! If not, then fill with grid generating subcenter
         gribout_config(jg)%generatingSubcenter = grid_generatingSubcenter(jg)
       ENDIF
@@ -173,5 +191,61 @@ CONTAINS
     ENDDO  ! jg
 
   END SUBROUTINE configure_gribout
+
+  !> Crosscheck with settings beyond gribout_nml
+  !!
+  SUBROUTINE gribout_crosscheck(n_dom, verbose)
+
+    ! Arguments
+    INTEGER, INTENT(IN) :: n_dom
+    LOGICAL, INTENT(IN) :: verbose
+
+    ! Local variables
+    INTEGER :: eccodes_version(3)
+    INTEGER :: jg
+    LOGICAL :: is_ecc_vers_ge_2_32_0
+
+    CHARACTER(LEN=*), PARAMETER :: routine = modname//'::gribout_crosscheck'
+
+    !-----------------------------------------------------------------------
+
+    ! Inquire ecCodes version
+    CALL gribapiLibraryVersion(eccodes_version(1), eccodes_version(2), eccodes_version(3))
+
+    ! For GRIB library backward compatibility: gribout_nml / grib_lib_compat:
+
+    ! The compatibility adjustment is only necessary for ecCodes versions >= 2.32.0
+    is_ecc_vers_ge_2_32_0 = ( version_compare(eccodes_version, [2, 32, 0]) >= 0 )
+
+    IF (.NOT. is_ecc_vers_ge_2_32_0) THEN
+      DO jg = 1, n_dom
+        gribout_config(jg)%grib_lib_compat = GRIB_NOTINUSEVAL
+      END DO
+      IF (verbose) CALL message(routine, "ecCodes version < 2.32.0: Compatiblity adjustment switched off.")
+    ENDIF
+
+  END SUBROUTINE gribout_crosscheck
+
+  !> Auxiliary function for (three-part) version number comparison
+  !!
+  INTEGER FUNCTION version_compare(a, b)
+
+    INTEGER, INTENT(IN) :: a(3)
+    INTEGER, INTENT(IN) :: b(3)
+
+    INTEGER :: i
+
+    !---------------------------------
+
+    DO i = 1, 3
+      IF (a(i) /= b(i)) THEN
+        version_compare = a(i) - b(i)
+        RETURN
+      ENDIF
+    END DO
+
+    version_compare = 0
+
+  END FUNCTION version_compare
 
 END MODULE mo_gribout_config

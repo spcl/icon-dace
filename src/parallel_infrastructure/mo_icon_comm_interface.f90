@@ -1,6 +1,3 @@
-! A collection of MPI communication tools
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! A collection of MPI communication tools
 
 MODULE mo_icon_comm_interface
 

@@ -1,9 +1,3 @@
-!
-! This module contains utility routines needed for the initialization of the
-! NH model
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains utility routines needed for the initialization of the
+! NH model
+
+!----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 

@@ -195,6 +195,10 @@ ofile_prfx="UPATMO_REST"
 imode_rad_dom1=0
 imode_rad_dom2=2
 
+# remove output files written after restart because existing output files are opened
+# in append mode in case of a restart (only relevant for manually executed tests)
+rm -f ${ofile_prfx}*.nc
+
 fi
 
 # ----------------------------------------------------------------------------

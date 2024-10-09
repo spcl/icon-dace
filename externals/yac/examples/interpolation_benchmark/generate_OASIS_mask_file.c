@@ -1,49 +1,13 @@
-/**
- * @file generate_OASIS_mask_file.c
- *
- * @copyright Copyright  (C)  2020 DKRZ
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <netcdf.h>
 
-#include "utils.h"
-#include "io_utils.h"
+#include "yac_core.h"
 
 static void get_grid_dimensions(
   char const * grids_file_name,
@@ -56,10 +20,9 @@ static double * read_interp_field(
   char const * path, char const * ocean_grid_name,
   char const * atmo_grid_name, size_t atmo_size, double const threshold);
 static void write_mask(
-  int ncid, int var_ids[2], char const * atmo_grid_name,
-  double * frac, int * mask);
+  int ncid, int var_ids[2], double * frac, int * mask);
 
-int main(int argc, char* argv[]) {
+int main(void) {
 
   char const vtk_path[] = "./output";
   char const grids_file_name[] = "./input/grids.nc";
@@ -100,12 +63,12 @@ int main(int argc, char* argv[]) {
         read_interp_field(vtk_path, ocean_names[i], atmo_names[j], atmo_size, threshold);
 
       // generate integer mask
-      int * mask = xmalloc(atmo_size * sizeof(*mask));
+      int * mask = malloc(atmo_size * sizeof(*mask));
       for (size_t k = 0; k < atmo_size; ++k)
         mask[k] = frac[k] > 0.0 ? 0 : 1;
 
       // write masks
-      write_mask(mask_file_ncid, var_ids[j], atmo_names[i], frac, mask);
+      write_mask(mask_file_ncid, var_ids[j], frac, mask);
 
       free(mask);
       free(frac);
@@ -139,15 +102,15 @@ static void get_grid_dimensions(
     // get dimension ids
     int x_dim_id;
     int y_dim_id;
-    HANDLE_ERROR(nc_inq_dimid(ncid, x_dim_name, &x_dim_id));
-    HANDLE_ERROR(nc_inq_dimid(ncid, y_dim_name, &y_dim_id));
+    yac_nc_inq_dimid(ncid, x_dim_name, &x_dim_id);
+    yac_nc_inq_dimid(ncid, y_dim_name, &y_dim_id);
 
     // get dimension length
-    HANDLE_ERROR(nc_inq_dimlen(ncid, x_dim_id, grid_size + 0));
-    HANDLE_ERROR(nc_inq_dimlen(ncid, y_dim_id, grid_size + 1));
+    YAC_HANDLE_ERROR(nc_inq_dimlen(ncid, x_dim_id, grid_size + 0));
+    YAC_HANDLE_ERROR(nc_inq_dimlen(ncid, y_dim_id, grid_size + 1));
   }
 
-  HANDLE_ERROR(nc_close(ncid));
+  YAC_HANDLE_ERROR(nc_close(ncid));
 }
 
 static int create_mask_file(
@@ -163,7 +126,7 @@ static int create_mask_file(
   int ncid;
   int dim_ids[atmo_count][2];
 
-  HANDLE_ERROR(nc_create(mask_file_name, NC_CLOBBER, &ncid));
+  YAC_HANDLE_ERROR(nc_create(mask_file_name, NC_CLOBBER, &ncid));
 
   // write dimensions
   for (size_t i = 0; i < atmo_count; ++i) {
@@ -175,9 +138,9 @@ static int create_mask_file(
     snprintf(y_dim_name, 2 + grid_name_len, "y_%s", grid_name);
     snprintf(x_dim_name, 2 + grid_name_len, "x_%s", grid_name);
 
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_def_dim(ncid, y_dim_name, atmo_grid_sizes[i][1], &(dim_ids[i][0])));
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_def_dim(ncid, x_dim_name, atmo_grid_sizes[i][0], &(dim_ids[i][1])));
   }
 
@@ -191,21 +154,21 @@ static int create_mask_file(
     snprintf(frac_var_name, 5 + grid_name_len, "%s.frc", grid_name);
     snprintf(mask_var_name, 5 + grid_name_len, "%s.msk", grid_name);
 
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_def_var(
         ncid, frac_var_name, NC_DOUBLE, 2, dim_ids[i], &(var_ids[i][0])));
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_put_att_text(
         ncid, var_ids[i][0], "coherent_with_grid",
         strlen(ocean_grid_name), ocean_grid_name));
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_def_var(
         ncid, mask_var_name, NC_INT, 2, dim_ids[i], &(var_ids[i][1])));
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_put_att_text(
         ncid, var_ids[i][1], "coherent_with_grid",
         strlen(ocean_grid_name), ocean_grid_name));
-    HANDLE_ERROR(
+    YAC_HANDLE_ERROR(
       nc_put_att_double(
         ncid, var_ids[i][1], "threshold", NC_DOUBLE, 1, &threshold));
   }
@@ -213,15 +176,15 @@ static int create_mask_file(
   // write global attributes
   char str_description[] = "Created by YAC";
   char str_remapper[] = "YAC";
-  HANDLE_ERROR(
+  YAC_HANDLE_ERROR(
     nc_put_att_text(
       ncid, NC_GLOBAL, "description",
       strlen(str_description), str_description));
-  HANDLE_ERROR(
+  YAC_HANDLE_ERROR(
     nc_put_att_text(
       ncid, NC_GLOBAL, "remapper", strlen(str_remapper), str_remapper));
 
-  HANDLE_ERROR(nc_enddef(ncid));
+  YAC_HANDLE_ERROR(nc_enddef(ncid));
 
   return ncid;
 }
@@ -236,7 +199,7 @@ static double * read_interp_field(
   char field_name[1024];
   snprintf(field_name, 1024, "test_one_%s_CONSERV_DESTAREA", ocean_grid_name);
 
-  double * frac = xmalloc(atmo_size * sizeof(*frac));
+  double * frac = malloc(atmo_size * sizeof(*frac));
 
   FILE * vtk_file = fopen(vtk_file_name, "r");
 
@@ -299,9 +262,8 @@ static double * read_interp_field(
 
 
 static void write_mask(
-  int ncid, int var_ids[2], char const * atmo_grid_name,
-  double * frac, int * mask) {
+  int ncid, int var_ids[2], double * frac, int * mask) {
 
-  HANDLE_ERROR(nc_put_var_double(ncid, var_ids[0], frac));
-  HANDLE_ERROR(nc_put_var_int(ncid, var_ids[1], mask));
+  YAC_HANDLE_ERROR(nc_put_var_double(ncid, var_ids[0], frac));
+  YAC_HANDLE_ERROR(nc_put_var_int(ncid, var_ids[1], mask));
 }

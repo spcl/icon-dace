@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 This toy can be used to measure performance. The setup can be launched with
 an arbitrary number of processes for each component. The two components are:
 

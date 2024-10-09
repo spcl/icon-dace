@@ -22,7 +22,7 @@ MODULE mo_iq_atm2land_process
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: update_local_time_and_daytime_counter
+  PUBLIC :: update_local_time_and_daytime_counter, update_slow_sb_pool_accelerator_bookkeeping
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_iq_atm2land_process'
 
@@ -65,6 +65,34 @@ CONTAINS
     local_time_day_seconds  = REAL(MODULO(global_seconds_day + (time_shift_in_hours * 3600), 86400),wp)
 
   END SUBROUTINE update_local_time_and_daytime_counter
+
+  ! ======================================================================================================= !
+  !>
+  !> updates counters and flag for the sb slow pool spin-up accelerator
+  !>
+  PURE ELEMENTAL SUBROUTINE update_slow_sb_pool_accelerator_bookkeeping( dtime, current_year, max_executions, frequency, start_year, &
+      &                                                                execution_counter, execute_accelerator)
+    ! ----------------------------------------------------------------------------------------------------- !
+    REAL(wp),  INTENT(in)    :: dtime               !< timestep
+    INTEGER ,  INTENT(in)    :: current_year        !< simulation year
+    INTEGER ,  INTENT(in)    :: max_executions      !< maximum number of executions of the accelerator
+    INTEGER ,  INTENT(in)    :: frequency           !< frequency (years) in which the accelerator is executed
+    INTEGER ,  INTENT(in)    :: start_year          !< years after which the spin-up accelerator should first be executed
+    REAL(wp),  INTENT(inout) :: execution_counter   !< the number of timesteps since the beginning of spinup [#]
+    REAL(wp),  INTENT(inout) :: execute_accelerator !< represents logical: execute the spin-up accelerator (0 = FALSE, 1= True)
+    ! ----------------------------------------------------------------------------------------------------- !
+    CHARACTER(len=*), PARAMETER :: routine = modname//':update_slow_sb_pool_accelerator_bookkeeping'
+    ! ----------------------------------------------------------------------------------------------------- !
+    !> stop increasing the time counter if the maximum execution time is already exceeded
+    IF(execution_counter <= max_executions) THEN
+      !> if accelerator was executed, set the logical value 'execute' as True (1.0_wp); the 'execution counter' +1
+      IF ((current_year >= start_year) .AND. (MOD(current_year, frequency) < eps1 )) THEN
+        execute_accelerator = 1.0_wp
+        execution_counter = execution_counter + 1.0_wp
+      ENDIF
+    ENDIF
+  END SUBROUTINE update_slow_sb_pool_accelerator_bookkeeping
+
 
 #endif
 END MODULE mo_iq_atm2land_process

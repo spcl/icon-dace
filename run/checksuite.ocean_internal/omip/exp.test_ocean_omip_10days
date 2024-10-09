@@ -87,6 +87,20 @@ cat > ${ocean_namelist} << EOF
   ml_varlist       = 'group:oce_default','group:oce_essentials', 'group:ice_default'
 /
 &output_nml
+  filetype         = 5
+  output_filename  = "${EXPNAME}_layers"
+  output_start     = "${start_date}"
+  output_end       = "${end_date}"
+  output_interval  = "${daily}"
+  operation        = "mean"
+  file_interval    = "${file_interval}"
+  mode             = 1
+  include_last     = .FALSE.
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'group:oce_layers'
+/
+&output_nml
   filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
   output_filename  = "${EXPNAME}_inst"
   output_start     = "${start_date}"                  ! start in ISO-format
@@ -98,6 +112,19 @@ cat > ${ocean_namelist} << EOF
   output_grid      = .TRUE.
   filename_format  = "<output_filename>_<datetime2>"
   ml_varlist       = 'group:oce_default','group:oce_essentials', 'group:ice_default'
+/
+&output_nml
+  filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
+  output_filename  = "${EXPNAME}_age"
+  output_start     = "${start_date}"                  ! start in ISO-format
+  output_end       = "${end_date}"                    ! end in ISO-format
+  output_interval  = "${daily}"
+  file_interval    = "${file_interval}"
+  mode             =  1                               ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+  include_last     = .false.
+  output_grid      = .TRUE.
+  filename_format  = "<output_filename>_<datetime2>"
+  ml_varlist       = 'age_tracer','green_tracer'
 /
 &output_nml
   filetype         =  5 ! output format: 2=GRIB2, 4=NETCDFv2
@@ -195,6 +222,7 @@ cat > ${ocean_namelist} << EOF
   fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
   fct_limiter_horz      = 100    ! zalesak
   threshold_min_T       = -2.0   ! to avoid abort
+  no_tracer             = 4      ! 2 normal setup; 3 with age tracer; 4 with age tracer squared
 /
 &ocean_horizontal_diffusion_nml
   laplacian_form = 1                   ! 1=curlcurl-graddiv
@@ -327,6 +355,24 @@ cat > ${ocean_namelist} << EOF
    agulhas(1:10)                = 8024,8022
    agulhas_long(1:10)           = 8024,8022,6036
    agulhas_longer(1:10)         = 8024,8022,6036,6025
+   diagnose_age = .true.
+   diagnose_green = .true.
+   greenStartDate = '2001-01-01'
+   greenStopDate = '2001-01-10'
+   use_layers = .true.
+   n_dlev = 84
+   mode_layers = 2
+   rho_lev_in = 0.   , 30.   , 31.   , 32.   , 33.   , 33.2  , 33.4  , 33.6  ,
+               33.8  , 34.   , 34.2  , 34.4  , 34.6  , 34.8  , 35.   , 35.2  ,
+               35.4  , 35.6  , 35.8  , 36.   , 36.05 , 36.1  , 36.15 , 36.2  ,
+               36.25 , 36.3  , 36.35 , 36.4  , 36.45 , 36.5  , 36.55 , 36.6  ,
+               36.65 , 36.7  , 36.75 , 36.76 , 36.78 , 36.8  , 36.82 , 36.84 ,
+               36.86 , 36.88 , 36.9  , 36.92 , 36.94 , 36.96 , 36.98 , 
+               37.   , 37.01 , 37.02 , 37.03 , 37.04 , 37.045, 37.05 , 37.055,
+               37.06 , 37.065, 37.07 , 37.075, 37.08 , 37.085, 37.09 , 37.095,
+               37.1  , 37.105, 37.11 , 37.115, 37.12 , 37.125, 37.13 , 37.135,
+               37.14 , 37.145, 37.15 , 37.155, 37.16 , 37.165, 37.17 , 37.175,
+               37.18 , 37.185, 37.19 , 37.195, 37.2  , 42.    
 /
 &io_nml
   restart_file_type = 5

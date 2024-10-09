@@ -2,7 +2,7 @@
 #include <math.h>
 #include <assert.h>
 #include <stdio.h>
-#include "yac_interface.h"
+#include "yac.h"
 
 int main(int argc, char** argv){
   if(argc != 2){

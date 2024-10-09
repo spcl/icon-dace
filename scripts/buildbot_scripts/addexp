@@ -15,14 +15,9 @@
 # create an experiment list
 #==============================================================================
 
-from buildbot_config import BuildbotConfig
-from util import WhitespaceSeperatedList, WhitespaceSeperatedFiles, WhitespaceSeperatedDict
-from icon_paths import buildbot_list_path
-
-from pathlib import Path
-import pickle
 import click
-import sys
+from exp_utils import addexp
+from util import WhitespaceSeperatedList, WhitespaceSeperatedFiles, WhitespaceSeperatedDict
 
 @click.command()
 @click.argument("experiment_names", type=WhitespaceSeperatedFiles())
@@ -32,21 +27,11 @@ import sys
 @click.option("--machines", type=WhitespaceSeperatedList(), help="the machine name to add the builder")
 @click.option("--runflags", type=WhitespaceSeperatedDict(), help="arguments to be added to the runscript generator")
 @click.option("--list", "list_name", type=str, help="the buildbot configuration list", required=True)
-def addexp(experiment_names, builders, with_configureflags, without_configureflags, machines, runflags, list_name):
 
-    full_list_name = buildbot_list_path / list_name
-
-    if Path(full_list_name).exists():
-      thisList = BuildbotConfig.from_pickle(full_list_name)
-    else:
-      print("did not find experiment list {}".format(full_list_name))
-      sys.exit(1)
-
-    thisList.add_experiments(experiment_names, builders=builders, machines=machines, with_config=with_configureflags, without_config=without_configureflags, run_flags=runflags)
-
-    thisList.to_pickle(full_list_name)
+def addexp_wrap(experiment_names, builders, with_configureflags, without_configureflags, machines, runflags, list_name):
+    addexp(experiment_names, builders, with_configureflags, without_configureflags, machines, runflags, list_name)
 
 if __name__ == "__main__":
-    addexp()
+    addexp_wrap()
 
 

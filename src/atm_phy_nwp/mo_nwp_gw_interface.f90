@@ -1,11 +1,3 @@
-!
-! This module is the interface between nwp_nh_interface to the
-! gravity wave drag related parameterisations:
-! inwp_sso == 1 == COSMO subgrid scale orographic gravity wave drag
-! inwp_gwd == 1 == IFS non-orographic gravity wave drag
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module is the interface between nwp_nh_interface to the
+! gravity wave drag related parameterisations:
+! inwp_sso == 1 == COSMO subgrid scale orographic gravity wave drag
+! inwp_gwd == 1 == IFS non-orographic gravity wave drag
 
 !----------------------------
 #include "omp_definitions.inc"

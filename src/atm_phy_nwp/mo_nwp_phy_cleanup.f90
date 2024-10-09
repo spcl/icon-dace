@@ -1,10 +1,3 @@
-!
-! Cleanup/Destruction wrapper for NWP physics suite
-!
-! This routine destructs all variable lists related to the NWP physics suite,
-! and calls deallocation routines for specific parameterizations,
-! if necessary.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Cleanup/Destruction wrapper for NWP physics suite
+!
+! This routine destructs all variable lists related to the NWP physics suite,
+! and calls deallocation routines for specific parameterizations,
+! if necessary.
 
 MODULE mo_nwp_phy_cleanup
 

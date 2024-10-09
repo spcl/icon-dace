@@ -19,14 +19,20 @@ if [ ! -z "${BB_NAME-}" ]; then
   set -x
 
   set MPI_LAUNCH='srun -A mh0156 -p compute -N 1 -t 2'
+
+  # use python environment suited for this icon build
+  PYTHON='PYTHON=/fastdata/mh0156/buildbot/venv/bin/python3'
+  # help comin find the python installation
+  export Python3_ROOT_DIR='/fastdata/mh0156/buildbot/venv'
 else
+  PYTHON=''
   # Setting MPI_LAUNCH to an empty string is not the same as not setting it at
   # all for the configure script of YAC. With the following, we make sure that
   # we do not pass any additional arguments:
   set dummy; shift
 fi
 
-${ICON_DIR}/config/dkrz/levante.intel --enable-openmp --enable-separate-mods "$@"
+${ICON_DIR}/config/dkrz/levante.intel --enable-openmp --enable-separate-mods --enable-bundled-python=yac,comin,mtime "${PYTHON}" "$@"
 
 if [ ! -z "${BB_NAME-}" ] ; then
   MAKE_PROCS=22
@@ -35,12 +41,6 @@ else
 fi
 
 make -j ${MAKE_PROCS}
-
-# Create shared mtime library for use in scripting
-# TODO: 'module rm' works around module python3 being hidden in buildbot
-module rm python3
-module load $ICON_DIR/etc/Modules/icon-levante intel-oneapi-compilers
-"$ICON_DIR/scripts/building/build_mtime_shared" icc ifort
 
 if [ ! -z "${BB_NAME-}" ] ; then
   "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh"

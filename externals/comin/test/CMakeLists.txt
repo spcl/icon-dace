@@ -1,6 +1,8 @@
+add_subdirectory(minimal_example)
+
 add_executable(mpi_communicator_test_external
   mpi_communicator_test_external.c
-  ${CMAKE_SOURCE_DIR}/src/mpi_handshake.c)
+  ${PROJECT_SOURCE_DIR}/src/mpi_handshake.c)
 target_link_libraries(mpi_communicator_test_external MPI::MPI_C)
 
 add_library(mpi_communicator_test_plugin MODULE mpi_communicator_test.c)
@@ -46,7 +48,7 @@ comin_test_add_external_process(TEST mpi_communicator2
 
 
 add_library(test_parallel_plugin MODULE test_parallel_plugin.F90)
-target_link_libraries(test_parallel_plugin ComIn MPI::MPI_Fortran)
+target_link_libraries(test_parallel_plugin ComIn::ComIn MPI::MPI_Fortran)
 
 comin_add_test(NAME parallel
   NUM_PROCS 2
@@ -69,11 +71,11 @@ comin_add_test(NAME finish_test)
   )
 
 add_executable(test_ep_names test_ep_names.c)
-target_link_libraries(test_ep_names ComIn)
+target_link_libraries(test_ep_names ComIn::ComIn)
 add_test(test_ep_names test_ep_names)
 
 add_library(test_lmodexclusive_plugin MODULE test_lmodexclusive_plugin.c)
-target_link_libraries(test_lmodexclusive_plugin ComIn)
+target_link_libraries(test_lmodexclusive_plugin ComIn::ComIn)
 comin_add_test(NAME test_lmodexclusive
   REFERENCE_OUTPUT test_lmodexclusive_reference)
 comin_test_add_plugin(TEST test_lmodexclusive
@@ -84,7 +86,7 @@ comin_test_add_plugin(TEST test_lmodexclusive
   PLUGIN_LIBRARY "$<TARGET_FILE:test_lmodexclusive_plugin>")
 
 add_library(test_errorcodes_plugin MODULE test_errorcodes_plugin.c)
-target_link_libraries(test_errorcodes_plugin ComIn)
+target_link_libraries(test_errorcodes_plugin ComIn::ComIn)
 comin_add_test(NAME test_errorcodes
   REFERENCE_OUTPUT test_errorcodes_reference)
 comin_test_add_plugin(TEST test_errorcodes
@@ -92,7 +94,7 @@ comin_test_add_plugin(TEST test_errorcodes
   PLUGIN_LIBRARY "$<TARGET_FILE:test_errorcodes_plugin>")
 
 add_library(test_index_mapping_plugin MODULE test_index_mapping_plugin.c)
-target_link_libraries(test_index_mapping_plugin ComIn)
+target_link_libraries(test_index_mapping_plugin ComIn::ComIn)
 comin_add_test(NAME test_index_mapping
   NUM_PROCS 2
   REFERENCE_OUTPUT test_index_mapping_reference)
@@ -102,18 +104,19 @@ comin_test_add_plugin(TEST test_index_mapping
 
 if(COMIN_ENABLE_STATIC_LINKING_TEST)
   add_library(static_plugin STATIC static_shared_test_plugin.c)
-  target_link_libraries(static_plugin ComIn)
+  target_link_libraries(static_plugin ComIn::ComIn)
   target_compile_definitions(static_plugin PRIVATE -DCOMIN_STATIC_PLUGIN_IS_STATIC)
 
   add_library(shared_plugin MODULE static_shared_test_plugin.c)
-  target_link_libraries(shared_plugin ComIn)
+  target_link_libraries(shared_plugin ComIn::ComIn)
 
   # link static_plugin into minimal example and ensure that the needed symbols
   # are exported to the dynamic symbol table
   target_link_libraries(minimal_example
-    -Wl,--dynamic-list=${CMAKE_CURRENT_SOURCE_DIR}/dynamic_list.sym
-    -Wl,-ustatic_linking_test_comin_main
-    static_plugin)
+    "-Wl,-ustatic_linking_test_comin_main"
+    static_plugin
+    "-Wl,--export-dynamic-symbol=static_linking_test_comin_main"
+  )
 
   comin_add_test(NAME static_linking_test
     REFERENCE_OUTPUT static_linking_test_reference)

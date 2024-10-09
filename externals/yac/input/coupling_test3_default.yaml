@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   interp_stacks:
     interp_stack_a: &interp_stack_a
@@ -15,6 +19,9 @@ predef:
         - fixed:
             user_value: -10.0
 
+debug:
+  global_config:
+    enddef: coupling_test3_default_enddef.yaml
 start_date: +1800-01-01T00:00:00.000
 end_date: +2100-01-01T00:00:00.000
 timestep_unit: second

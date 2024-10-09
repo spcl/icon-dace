@@ -1,6 +1,3 @@
-!
-! Subroutine aes_phy_main calls all the parameterization schemes
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine aes_phy_main calls all the parameterization schemes
 
 MODULE mo_interface_aes_wmo
 

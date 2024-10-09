@@ -1,8 +1,3 @@
-! Module defining the derived types for the selection of vertical
-! levels for the output module.
-!
-! Details of the implementation: see "mo_level_selection".
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module defining the derived types for the selection of vertical
+! levels for the output module.
+!
+! Details of the implementation: see "mo_level_selection".
 
 MODULE mo_level_selection_types
 

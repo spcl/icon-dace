@@ -378,6 +378,7 @@ use_ensemble_pert=.TRUE.,
  localNumberOfExperiment         = 52
  productionStatusOfProcessedData = 2
  generatingProcessIdentifier     = 1, 2                              ! 2 .. nest
+ grib_lib_compat                 = 'eccodes:2.31.0'
 /
 &synsat_nml
 lsynsat=.false. ! .false.,.true., ! requires RTTOV library - left out for this test
@@ -878,7 +879,7 @@ fi
 #          But when you worry you make it double ..."
 # ----------------------------------------------------------------------
 
-refdir="${DATAROOT}/ref_data_exp09/6a59ea02"
+refdir="${DATAROOT}/ref_data_exp09/e7195dc89a"
 
 module unload eccodes sx ; module load x86 eccodes/2.28.0-x86-python
 

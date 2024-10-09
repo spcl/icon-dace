@@ -1,6 +1,3 @@
-! Contains the main stepping routine the 3-dim hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the main stepping routine the 3-dim hydrostatic ocean model.
 
 !----------------------------
 #include "icon_definitions.inc"

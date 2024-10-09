@@ -1,8 +1,3 @@
-!
-! Initialization and clean-up of fields for upper-atmosphere physics.
-!
-!----------------------------
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initialization and clean-up of fields for upper-atmosphere physics.
 
 !----------------------------
 #include "omp_definitions.inc"

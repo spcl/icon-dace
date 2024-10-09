@@ -1,6 +1,3 @@
-! Read configuration parameters as Fortran namelist from an external file.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Read configuration parameters as Fortran namelist from an external file.
 
 MODULE mo_aes_phy_nml
 

@@ -18,6 +18,7 @@
 *.clw.d
 *.cu.d
 *.f90.d
+*.hip.cc.d
 .dirstamp
 /Makefile
 /c_binding.d

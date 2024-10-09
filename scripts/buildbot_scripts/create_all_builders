@@ -37,7 +37,7 @@ machine=breeze
 #CSCS builders
 machine=daint
 ./addmachine $machine --list $list
-./addbuilder DAINT_CPU_cce          --machine $machine --build_script="./config/buildbot/daint_cpu_cray" --builderflags="Active"  --list $list
+./addbuilder DAINT_CPU_cce          --machine $machine --build_script="./config/buildbot/daint_cpu_cce" --builderflags="Active"  --list $list
 ./addbuilder DAINT_CPU_nvidia       --machine $machine --build_script="./config/buildbot/daint_cpu_nvidia"  --builderflags="Active"  --list $list
 ./addbuilder DAINT_GPU_nvidia       --machine $machine --build_script="./config/buildbot/daint_gpu_nvidia"  --builderflags="Active"  --list $list
 ./addbuilder DAINT_CPU_nvidia_mixed --machine $machine --build_script="./config/buildbot/daint_cpu_nvidia_mixed" --configureflags="--enable-mixed" --builderflags="Active"  --list $list

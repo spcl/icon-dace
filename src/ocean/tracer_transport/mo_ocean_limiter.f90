@@ -1,6 +1,3 @@
-! Contains the implementation of the limter of the ocean model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the limter of the ocean model
 
 !----------------------------
 #include "omp_definitions.inc"

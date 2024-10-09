@@ -1,7 +1,3 @@
-!
-! Read and apply monthly aerosol optical properties of S. Kinne
-! from yearly files.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +9,9 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Read and apply monthly aerosol optical properties of S. Kinne
+! from yearly files.
+
 MODULE mo_bc_aeropt_kinne
 
   USE mo_kind,                 ONLY: wp, i8
@@ -20,7 +19,7 @@ MODULE mo_bc_aeropt_kinne
   USE mo_impl_constants,       ONLY: max_dom
   USE mo_grid_config,          ONLY: n_dom
   USE mo_parallel_config,      ONLY: nproma
-  USE mo_exception,            ONLY: finish, message, message_text, warning
+  USE mo_exception,            ONLY: finish, message, message_text
   USE mo_io_config,            ONLY: default_read_method
   USE mo_time_config,          ONLY: time_config
   USE mo_read_interface,       ONLY: openInputFile, closeFile, on_cells, &
@@ -380,35 +379,35 @@ END SUBROUTINE read_bc_aeropt_kinne
 !! The height profile is taken into account.
 SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
           & jg,                                                           &
-          & jcs,                    kproma,             kbdim,            &
-          & klev,                   krow,                                 &
+          & jcs,                    jce,                nproma,           &
+          & klev,                   jb,                                   &
           & nb_sw,                  nb_lw,                                &
           & zf,                     dz,                                   &
           & paer_tau_sw_vr,         paer_piz_sw_vr,     paer_cg_sw_vr,    &
           & paer_tau_lw_vr,                                               & 
-          & opt_use_acc, opt_from_coupler )
+          & opt_use_acc,            opt_from_coupler                      )
 
   ! !INPUT PARAMETERS
 
   TYPE(datetime), POINTER, INTENT(in) :: current_date
   INTEGER,INTENT(in)  :: jg,     &! grid index
-                         jcs,    &! actual block length (start)
-                         kproma, &! actual block length (end)
-                         kbdim,  &! maximum block length (=nproma)
+                         jcs,    &! actual block, start at column with index jcs
+                         jce,    &! actual block, end at column with index jce 
+                         nproma, &! maximum block length
                          klev,   &! number of vertical levels
-                         krow,   &! block index
+                         jb,     &! block index
                          nb_sw,  &! number of wave length bands (solar)
                          nb_lw    ! number of wave length bands (far IR)
-  REAL(wp),INTENT(in) :: zf(kbdim,klev)  ,& ! geometric height at full level [m]
-                         dz(kbdim,klev)     ! geometric height thickness     [m]
+  REAL(wp),INTENT(in) :: zf(nproma,klev)  ,& ! geometric height at full level [m]
+                         dz(nproma,klev)     ! geometric height thickness     [m]
 ! !OUTPUT PARAMETERS
-  REAL(wp),INTENT(out),DIMENSION(kbdim,klev,nb_sw):: &
+  REAL(wp),INTENT(out),DIMENSION(nproma,klev,nb_sw):: &
    paer_tau_sw_vr,   & !aerosol optical depth (solar), sum_i(tau_i)
    paer_piz_sw_vr,   & !weighted sum of single scattering albedos, 
                        !sum_i(tau_i*omega_i)
    paer_cg_sw_vr       !weighted sum of asymmetry factors, 
                        !sum_i(tau_i*omega_i*g_i)
-  REAL(wp),INTENT(out),DIMENSION(kbdim,klev,nb_lw):: &
+  REAL(wp),INTENT(out),DIMENSION(nproma,klev,nb_lw):: &
    paer_tau_lw_vr      !aerosol optical depth (far IR)
   LOGICAL, INTENT(IN), OPTIONAL                          :: opt_use_acc
   LOGICAL, INTENT(IN), OPTIONAL                          :: opt_from_coupler
@@ -416,11 +415,11 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
 ! !LOCAL VARIABLES
   
   INTEGER                           :: jl,jk,jwl
-  REAL(wp), DIMENSION(kbdim,klev)   :: zh_vr, &
+  REAL(wp), DIMENSION(nproma,klev)   :: zh_vr, &
                                        zdeltag_vr
-  REAL(wp), DIMENSION(kbdim)        :: zq_int ! integral height profile
-  REAL(wp), DIMENSION(kbdim,nb_lw)  :: zs_i
-  REAL(wp), DIMENSION(kbdim,nb_sw)  :: zt_c, zt_f, &
+  REAL(wp), DIMENSION(nproma)        :: zq_int ! integral height profile
+  REAL(wp), DIMENSION(nproma,nb_lw)  :: zs_i
+  REAL(wp), DIMENSION(nproma,nb_sw)  :: zt_c, zt_f, &
                                        zs_c, zs_f, &
                                        zg_c, zg_f, & ! time interpolated
                                        ! aod, ssa ,ssa*asy 
@@ -428,7 +427,7 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
                                        !  fine anthropogenic (a))
                                        ztaua_c,ztaua_f ! optical depths
                                        ! at various altitudes
-  REAL(wp), DIMENSION(kbdim,klev)   :: zq_aod_c, zq_aod_f ! altitude profile
+  REAL(wp), DIMENSION(nproma,klev)   :: zq_aod_c, zq_aod_f ! altitude profile
                                        ! on echam grid (coarse and fine mode)
   INTEGER                           :: kindex ! index field
   TYPE(t_time_interpolation_weights) :: tiw
@@ -456,7 +455,7 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
 !     echam for altitude profiles
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
   DO jk=1,klev
-     DO jl=jcs,kproma
+     DO jl=jcs,jce
         zdeltag_vr(jl,jk)=dz(jl,klev-jk+1)
         zh_vr(jl,jk)=zf(jl,klev-jk+1)
      END DO
@@ -464,35 +463,35 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
 
 ! (ii) calculate height profiles on echam grid for coarse and fine mode
   !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
-  zq_aod_f(jcs:kproma,1:klev)=0._wp
-  zq_aod_c(jcs:kproma,1:klev)=0._wp
+  zq_aod_f(jcs:jce,1:klev)=0._wp
+  zq_aod_c(jcs:jce,1:klev)=0._wp
   !$ACC END KERNELS
 
   IF ( from_coupler ) THEN
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
     DO jk=1,klev
-      DO jl=jcs,kproma
+      DO jl=jcs,jce
         kindex = MAX(INT(zh_vr(jl,jk)*rdz_clim+0.5_wp),1)
         IF (kindex > 0 .and. kindex <= lev_clim ) THEN
           zq_aod_c(jl,jk)= &
-            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,krow,1)
+            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,jb,1)
           zq_aod_f(jl,jk)= &
-            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,krow,1)
+            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,jb,1)
         END IF
       END DO
     END DO
   ELSE
     !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
     DO jk=1,klev
-      DO jl=jcs,kproma
+      DO jl=jcs,jce
         kindex = MAX(INT(zh_vr(jl,jk)*rdz_clim+0.5_wp),1)
         IF (kindex > 0 .and. kindex <= lev_clim ) THEN
           zq_aod_c(jl,jk)= &
-            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,krow,tiw%month1_index)*tiw%weight1+ &
-            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,krow,tiw%month2_index)*tiw%weight2
+            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,jb,tiw%month1_index)*tiw%weight1+ &
+            & ext_aeropt_kinne(jg)% z_km_aer_c_mo(jl,kindex,jb,tiw%month2_index)*tiw%weight2
           zq_aod_f(jl,jk)= &
-            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,krow,tiw%month1_index)*tiw%weight1+ &
-            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,krow,tiw%month2_index)*tiw%weight2
+            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,jb,tiw%month1_index)*tiw%weight1+ &
+            & ext_aeropt_kinne(jg)% z_km_aer_f_mo(jl,kindex,jb,tiw%month2_index)*tiw%weight2
         END IF
       END DO
     END DO
@@ -500,14 +499,14 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
   
 ! normalize height profile for coarse mode
   !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
-  zq_int(jcs:kproma)=0._wp
+  zq_int(jcs:jce)=0._wp
   !$ACC END KERNELS
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
   !$ACC LOOP SEQ
   DO jk=1,klev
      !$ACC LOOP GANG VECTOR
-     DO jl=jcs,kproma
+     DO jl=jcs,jce
         zq_int(jl)=zq_int(jl)+ &
                        & zq_aod_c(jl,jk)*zdeltag_vr(jl,jk)
      END DO
@@ -515,40 +514,40 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
   !$ACC END PARALLEL
 
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) IF(use_acc)
-  DO jl=jcs,kproma
+  DO jl=jcs,jce
      IF (zq_int(jl) <= 0._wp) zq_int(jl)=1._wp
   END DO
 
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
   DO jk=1,klev
-     DO jl=jcs,kproma
+     DO jl=jcs,jce
         zq_aod_c(jl,jk)=zdeltag_vr(jl,jk)*zq_aod_c(jl,jk) / zq_int(jl)
      END DO
   END DO
 
 ! normalize height profile for fine mode
   !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
-  zq_int(jcs:kproma)=0._wp
+  zq_int(jcs:jce)=0._wp
   !$ACC END KERNELS
 
   !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(use_acc)
   !$ACC LOOP SEQ
   DO jk=1,klev
     !$ACC LOOP GANG VECTOR
-    DO jl=jcs,kproma
+    DO jl=jcs,jce
        zq_int(jl)=zq_int(jl) + zq_aod_f(jl,jk)*zdeltag_vr(jl,jk)
     END DO
   END DO
   !$ACC END PARALLEL
 
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) IF(use_acc)
-  DO jl=jcs,kproma
+  DO jl=jcs,jce
     IF (zq_int(jl) <= 0._wp) zq_int(jl)=1._wp
   END DO
 
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
   DO jk=1,klev
-    DO jl=jcs,kproma
+    DO jl=jcs,jce
       zq_aod_f(jl,jk)=zdeltag_vr(jl,jk)*zq_aod_f(jl,jk)/zq_int(jl)
     END DO
   END DO
@@ -556,26 +555,26 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
 ! (iii) far infrared
 !  !$ACC KERNELS DEFAULT(PRESENT) COPYIN(tiw) ASYNC(1) IF(use_acc)
 !  IF ( from_coupler ) THEN
-!     zs_i(jcs:kproma,1:nb_lw)=1._wp-ext_aeropt_kinne(jg)%ssa_c_f(jcs:kproma,1:nb_lw,krow,1)
+!     zs_i(jcs:jce,1:nb_lw)=1._wp-ext_aeropt_kinne(jg)%ssa_c_f(jcs:jce,1:nb_lw,jb,1)
 !  ELSE
-!     zs_i(jcs:kproma,1:nb_lw)=1._wp-(tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_f(jcs:kproma,1:nb_lw,krow,tiw%month1_index)+ &
-!                                     tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_f(jcs:kproma,1:nb_lw,krow,tiw%month2_index))
+!     zs_i(jcs:jce,1:nb_lw)=1._wp-(tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_f(jcs:jce,1:nb_lw,jb,tiw%month1_index)+ &
+!                                     tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_f(jcs:jce,1:nb_lw,jb,tiw%month2_index))
 !  END IF
 !  !$ACC END KERNELS
 
   IF ( from_coupler ) THEN
      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
       DO jwl=1,nb_lw
-         DO jl=jcs,kproma
-            zs_i(jl,jwl)=1._wp-ext_aeropt_kinne(jg)%ssa_c_f(jl, jwl, krow, 1)
+         DO jl=jcs,jce
+            zs_i(jl,jwl)=1._wp-ext_aeropt_kinne(jg)%ssa_c_f(jl, jwl, jb, 1)
          END DO
       END DO
   ELSE
      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
       DO jwl=1,nb_lw
-         DO jl=jcs,kproma
-            zs_i(jl,jwl)=1._wp-(tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_f(jl, jwl, krow, tiw%month1_index)+ &
-                                tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_f(jl, jwl, krow, tiw%month2_index))
+         DO jl=jcs,jce
+            zs_i(jl,jwl)=1._wp-(tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_f(jl, jwl, jb, tiw%month1_index)+ &
+                                tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_f(jl, jwl, jb, tiw%month2_index))
          END DO
       END DO
   END IF
@@ -583,19 +582,16 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(3) ASYNC(1) IF(use_acc)
   DO jk=1,klev
      DO jwl=1,nb_lw
-        DO jl=jcs,kproma
-           !
-           ! ATTENTION: The output data in paer_tau_lw_vr are stored with indices 1:kproma-jcs+1
-           !
+        DO jl=jcs,jce
            IF ( from_coupler ) THEN
               paer_tau_lw_vr(jl,jk,jwl)=zq_aod_c(jl,jk) * &
                    zs_i(jl,jwl) * &
-                   ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,krow,1)
+                   ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,jb,1)
            ELSE
               paer_tau_lw_vr(jl,jk,jwl)=zq_aod_c(jl,jk) * &
                     zs_i(jl,jwl) * &
-                    (tiw%weight1*ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,krow,tiw%month1_index) + &
-                    tiw%weight2*ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,krow,tiw%month2_index))
+                    (tiw%weight1*ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,jb,tiw%month1_index) + &
+                    tiw%weight2*ext_aeropt_kinne(jg)% aod_c_f(jl,jwl,jb,tiw%month2_index))
            END IF
         END DO
      END DO
@@ -606,36 +602,36 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
   IF ( from_coupler ) THEN
       !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
       DO jwl=1,nb_sw
-         DO jl=jcs,kproma
-            zs_c(jl, jwl) = ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,krow,1)
-            zs_f(jl, jwl) = ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,krow,1)
+         DO jl=jcs,jce
+            zs_c(jl, jwl) = ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,jb,1)
+            zs_f(jl, jwl) = ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,jb,1)
 
-            zg_c(jl, jwl) = ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,krow,1)
-            zg_f(jl, jwl) = ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,krow,1)
+            zg_c(jl, jwl) = ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,jb,1)
+            zg_f(jl, jwl) = ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,jb,1)
 
-            zt_c(jl, jwl) = ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,krow,1)
-            zt_f(jl, jwl) = ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,krow,1)
+            zt_c(jl, jwl) = ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,jb,1)
+            zt_f(jl, jwl) = ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,jb,1)
          END DO
       END DO
       !$ACC END PARALLEL LOOP
   ELSE
      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(2) ASYNC(1) IF(use_acc)
       DO jwl=1,nb_sw
-         DO jl=jcs,kproma
-            zs_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,krow,tiw%month2_index)
-            zs_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,krow,tiw%month2_index)
+         DO jl=jcs,jce
+            zs_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% ssa_c_s(jl, jwl,jb,tiw%month2_index)
+            zs_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% ssa_f_s(jl, jwl,jb,tiw%month2_index)
 
-            zg_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,krow,tiw%month2_index)
-            zg_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,krow,tiw%month2_index)
+            zg_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% asy_c_s(jl, jwl,jb,tiw%month2_index)
+            zg_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% asy_f_s(jl, jwl,jb,tiw%month2_index)
 
-            zt_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,krow,tiw%month2_index)
-            zt_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,krow,tiw%month1_index) + &
-                            tiw%weight2*ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,krow,tiw%month2_index)
+            zt_c(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% aod_c_s(jl, jwl,jb,tiw%month2_index)
+            zt_f(jl, jwl) = tiw%weight1*ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,jb,tiw%month1_index) + &
+                            tiw%weight2*ext_aeropt_kinne(jg)% aod_f_s(jl, jwl,jb,tiw%month2_index)
          END DO
       END DO
       !$ACC END PARALLEL LOOP
@@ -646,7 +642,7 @@ SUBROUTINE set_bc_aeropt_kinne (    current_date,                         &
   !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR COLLAPSE(3) ASYNC(1) IF(use_acc)
   DO jk=1,klev
      DO jwl=1,nb_sw
-        DO jl=jcs,kproma
+        DO jl=jcs,jce
            ! aerosol optical depth 
            ztaua_c(jl,jwl) = zt_c(jl,jwl)*zq_aod_c(jl,jk)
            ztaua_f(jl,jwl) = zt_f(jl,jwl)*zq_aod_f(jl,jk)

@@ -1,11 +1,3 @@
-! Subroutine to initialize testcase 12 (Hadley-like meridional circulation) proposed
-! for the DCMIP summer school
-!
-! Literature
-! - Dynamical Core Model Intercomparison Project (DCMIP)
-!   Test Case Document (P. Ullrich et al, 2012)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialize testcase 12 (Hadley-like meridional circulation) proposed
+! for the DCMIP summer school
+!
+! Literature
+! - Dynamical Core Model Intercomparison Project (DCMIP)
+!   Test Case Document (P. Ullrich et al, 2012)
 
 MODULE mo_nh_dcmip_hadley
 

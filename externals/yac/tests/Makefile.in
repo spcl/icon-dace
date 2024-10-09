@@ -13,6 +13,10 @@
 # PARTICULAR PURPOSE.
 
 @SET_MAKE@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
 VPATH = @srcdir@
 am__is_gnu_make = { \
   if test -z '$(MAKELEVEL)'; then \
@@ -87,104 +91,13 @@ PRE_UNINSTALL = :
 POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
-check_PROGRAMS = $(am__EXEEXT_1) $(am__EXEEXT_2) \
-	test_abort_c.x$(EXEEXT) test_abort.x$(EXEEXT) \
-	test_def_comps.x$(EXEEXT) test_def_datetime.x$(EXEEXT) \
-	test_def_grid.x$(EXEEXT) test_def_mask.x$(EXEEXT) \
-	test_def_points.x$(EXEEXT) test_init_final.x$(EXEEXT) \
-	test_init_comm_final.x$(EXEEXT) test_version.x$(EXEEXT) \
-	$(am__EXEEXT_3) $(am__EXEEXT_4) $(am__EXEEXT_5) \
-	$(am__EXEEXT_6) $(am__EXEEXT_7) $(am__EXEEXT_8)
-@TEST_NETCDF_TRUE@am__append_1 = \
-@TEST_NETCDF_TRUE@        test_read_fesom.x                \
-@TEST_NETCDF_TRUE@        test_read_icon.x                 \
-@TEST_NETCDF_TRUE@        test_read_scrip.x                \
-@TEST_NETCDF_TRUE@        test_read_mpiom.x                \
-@TEST_NETCDF_TRUE@        test_read_woa_data.x             \
-@TEST_NETCDF_TRUE@        test_weights2vtk.x
-
-@TEST_MPI_TRUE@am__append_2 = \
-@TEST_MPI_TRUE@        test_component_config.x          \
-@TEST_MPI_TRUE@        test_couple_config.x             \
-@TEST_MPI_TRUE@        test_group_comm.x                \
-@TEST_MPI_TRUE@        test_mpi_handshake_c.x           \
-@TEST_MPI_TRUE@        test_interpolation_exchange.x    \
-@TEST_MPI_TRUE@        test_interpolation_parallel1.x   \
-@TEST_MPI_TRUE@        test_interpolation_parallel2.x   \
-@TEST_MPI_TRUE@        test_interpolation_parallel6.x   \
-@TEST_MPI_TRUE@        test_instance_parallel2.x        \
-@TEST_MPI_TRUE@        test_instance_parallel3.x        \
-@TEST_MPI_TRUE@        test_instance_parallel4.x        \
-@TEST_MPI_TRUE@        test_dummy_coupling_dble.x       \
-@TEST_MPI_TRUE@        test_dummy_coupling_real.x       \
-@TEST_MPI_TRUE@        test_dummy_coupling_c.x          \
-@TEST_MPI_TRUE@        test_dummy_coupling4_c.x         \
-@TEST_MPI_TRUE@        test_dummy_coupling5_dble.x      \
-@TEST_MPI_TRUE@        test_dummy_coupling5_real.x      \
-@TEST_MPI_TRUE@        test_dummy_coupling5_c.x         \
-@TEST_MPI_TRUE@        test_dummy_coupling6_c.x         \
-@TEST_MPI_TRUE@        test_dummy_coupling7_c.x         \
-@TEST_MPI_TRUE@        test_dummy_coupling8_c.x         \
-@TEST_MPI_TRUE@        test_dummy_coupling9.x           \
-@TEST_MPI_TRUE@        test_dummy_coupling9_c.x         \
-@TEST_MPI_TRUE@        test_mpi_error.x                 \
-@TEST_MPI_TRUE@        test_proc_sphere_part_parallel.x \
-@TEST_MPI_TRUE@        test_redirstdout.x               \
-@TEST_MPI_TRUE@        test_redirstdout_c.x             \
-@TEST_MPI_TRUE@        test_restart2.x                  \
-@TEST_MPI_TRUE@        test_io_config.x
-
-@TEST_MPI_TRUE@@TEST_PTHREAD_TRUE@am__append_3 = \
-@TEST_MPI_TRUE@@TEST_PTHREAD_TRUE@        test_multithreading.x
-
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@am__append_4 = \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling6_dble.x \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling6_real.x \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling7_dble.x \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling7_real.x \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_mpi_handshake.x        \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_query_routines_c.x     \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@        test_query_routines.x
-
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@am__append_5 = \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_instance_parallel1.x             \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_dummy_coupling2_c.x              \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_dummy_coupling3_c.x              \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interpolation_parallel3.x        \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interpolation_parallel4.x        \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interpolation_parallel5.x        \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_read_icon_parallel.x             \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_restart_c.x                      \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_restart_dble.x                   \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_dist_grid_pair_parallel.x        \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_grid_parallel.x           \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_parallel.x         \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_avg_parallel.x     \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_nnn_parallel.x     \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_nnn_parallel2.x    \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_rbf_parallel.x     \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_file_parallel.x    \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_hcsbb_parallel.x   \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_spmap_parallel.x   \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_weights_parallel.x        \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_conserv_parallel.x \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_callback_parallel.x \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_interp_method_creep_parallel.x    \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@        test_dynamic_config_c.x
-
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@am__append_6 = \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling3_dble.x \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@        test_dummy_coupling3_real.x \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@        test_dynamic_config.x
-
-TESTS = $(am__EXEEXT_1) $(test_SCRIPTS_) $(am__EXEEXT_2) \
-	$(xfail_test_SCRIPTS_)
-XFAIL_TESTS = $(am__EXEEXT_2) $(xfail_test_SCRIPTS_)
-@TEST_YAXT_FC_TRUE@am__append_7 = $(YAXT_FCLIBS)
-@TEST_YAXT_FC_FALSE@am__append_8 = $(YAXT_CLIBS)
+@ENABLE_UTILS_TRUE@am__append_1 = utils
+@ENABLE_MCI_TRUE@am__append_2 = mci
+@ENABLE_TOOLS_TRUE@am__append_3 = tools
+@ENABLE_PYTHON_BINDINGS_TRUE@am__append_4 = python
 subdir = tests
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler_simple.m4 \
 	$(top_srcdir)/m4/acx_fc_c_compatible.m4 \
 	$(top_srcdir)/m4/acx_fc_include.m4 \
 	$(top_srcdir)/m4/acx_fc_line_length.m4 \
@@ -195,6 +108,7 @@ am__aclocal_m4_deps = $(top_srcdir)/m4/acx_compiler.m4 \
 	$(top_srcdir)/m4/acx_lang_lib.m4 \
 	$(top_srcdir)/m4/acx_lang_macro.m4 \
 	$(top_srcdir)/m4/acx_lang_mpi.m4 \
+	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
 	$(top_srcdir)/m4/acx_prog_mpirun.m4 \
 	$(top_srcdir)/m4/acx_prog_search.m4 \
@@ -207,833 +121,8 @@ DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/src/config.h \
 	$(top_builddir)/src/yac_config.h
-CONFIG_CLEAN_FILES = test_abort.sh test_component_config.sh \
-	test_couple_config.sh test_def_comps.sh test_def_datetime.sh \
-	test_def_grid.sh test_def_mask.sh test_def_points.sh \
-	test_dist_grid_pair_parallel.sh test_dummy_coupling.sh \
-	test_dummy_coupling2_c.sh test_dummy_coupling3.sh \
-	test_dummy_coupling3_c.sh test_dummy_coupling4_c.sh \
-	test_dummy_coupling5.sh test_dummy_coupling6.sh \
-	test_dummy_coupling6_c.sh test_dummy_coupling7.sh \
-	test_dummy_coupling7_c.sh test_dummy_coupling8_c.sh \
-	test_dummy_coupling9.sh test_group_comm.sh \
-	test_init_comm_final.sh test_init_final.sh \
-	test_mpi_handshake.sh test_mpi_handshake_c.sh \
-	test_instance_parallel1.sh test_instance_parallel2.sh \
-	test_instance_parallel3.sh test_instance_parallel4.sh \
-	test_interp_grid_parallel.sh \
-	test_interp_method_avg_parallel.sh \
-	test_interp_method_callback_parallel.sh \
-	test_interp_method_conserv_parallel.sh \
-	test_interp_method_creep_parallel.sh \
-	test_interp_method_file_parallel.sh \
-	test_interp_method_hcsbb_parallel.sh \
-	test_interp_method_nnn_parallel.sh \
-	test_interp_method_nnn_parallel2.sh \
-	test_interp_method_parallel.sh \
-	test_interp_method_rbf_parallel.sh \
-	test_interp_method_spmap_parallel.sh \
-	test_interp_weights_parallel.sh test_interpolation_exchange.sh \
-	test_interpolation_parallel1.sh \
-	test_interpolation_parallel2.sh \
-	test_interpolation_parallel3.sh \
-	test_interpolation_parallel4.sh \
-	test_interpolation_parallel5.sh \
-	test_interpolation_parallel6.sh test_mpi_error.sh \
-	test_proc_sphere_part_parallel.sh test_read_fesom.sh \
-	test_read_icon.sh test_read_icon_parallel.sh \
-	test_read_mpiom.sh test_read_scrip.sh test_read_woa_data.sh \
-	test_redirstdout.sh test_restart.sh test_restart2.sh \
-	test_version.sh test_weights2vtk.sh test_dynamic_config.sh \
-	test_query_routines.sh test_multithreading.sh \
-	test_io_config.sh couple_config_test.yaml coupling_test.yaml \
-	coupling_test2.yaml coupling_test3_comp_a_comp_b.yaml \
-	coupling_test3_comp_a_comp_c.yaml \
-	coupling_test3_comp_a_intra.yaml \
-	coupling_test3_comp_b_comp_c.yaml \
-	coupling_test3_comp_b_intra.yaml \
-	coupling_test3_comp_c_intra.yaml coupling_test3_default.yaml \
-	coupling_test4.yaml coupling_test5.yaml coupling_test6.json \
-	coupling_test6_local.yaml coupling_test9.yaml cube_10x10.csv \
-	instance_test_1_1.yaml instance_test_1_10.yaml \
-	instance_test_1_2.yaml instance_test_1_3.yaml \
-	instance_test_1_4.yaml instance_test_1_5.yaml \
-	instance_test_1_6.yaml instance_test_1_7.yaml \
-	instance_test_1_8.yaml instance_test_1_9.yaml \
-	test_def_datetime.yaml GR30_lsm.nc icon_grid_R02B00.nc \
-	icon_grid_R02B02.nc icon_grid_R02B03_G.nc
+CONFIG_CLEAN_FILES =
 CONFIG_CLEAN_VPATH_FILES =
-am__EXEEXT_1 = test_angle.x$(EXEEXT) test_area.x$(EXEEXT) \
-	test_cell_bnd_circle.x$(EXEEXT) test_circle.x$(EXEEXT) \
-	test_clipping.x$(EXEEXT) test_lat_clipping.x$(EXEEXT) \
-	test_compute_overlap_area.x$(EXEEXT) \
-	test_dist_grid_utils.x$(EXEEXT) test_events.x$(EXEEXT) \
-	test_pxgc.x$(EXEEXT) test_gcxgc.x$(EXEEXT) \
-	test_gcxlatc.x$(EXEEXT) test_generate_cubed_sphere.x$(EXEEXT) \
-	test_geometry.x$(EXEEXT) test_grid.x$(EXEEXT) \
-	test_grid2vtk.x$(EXEEXT) test_interval_tree.x$(EXEEXT) \
-	test_latcxlatc.x$(EXEEXT) test_loncxlatc.x$(EXEEXT) \
-	test_loncxlonc.x$(EXEEXT) test_mergesort.x$(EXEEXT) \
-	test_partial_areas.x$(EXEEXT) test_point_in_cell.x$(EXEEXT) \
-	test_bnd_sphere_part.x$(EXEEXT) \
-	test_point_sphere_part.x$(EXEEXT) test_quicksort.x$(EXEEXT) \
-	test_read_cube_csv.x$(EXEEXT) test_vtk_output.x$(EXEEXT) \
-	test_interp_stack_config.x$(EXEEXT)
-am__EXEEXT_2 =
-@TEST_NETCDF_TRUE@am__EXEEXT_3 = test_read_fesom.x$(EXEEXT) \
-@TEST_NETCDF_TRUE@	test_read_icon.x$(EXEEXT) \
-@TEST_NETCDF_TRUE@	test_read_scrip.x$(EXEEXT) \
-@TEST_NETCDF_TRUE@	test_read_mpiom.x$(EXEEXT) \
-@TEST_NETCDF_TRUE@	test_read_woa_data.x$(EXEEXT) \
-@TEST_NETCDF_TRUE@	test_weights2vtk.x$(EXEEXT)
-@TEST_MPI_TRUE@am__EXEEXT_4 = test_component_config.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_couple_config.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_group_comm.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_mpi_handshake_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_interpolation_exchange.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_interpolation_parallel1.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_interpolation_parallel2.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_interpolation_parallel6.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_instance_parallel2.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_instance_parallel3.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_instance_parallel4.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling_real.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling4_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling5_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling5_real.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling5_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling6_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling7_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling8_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling9.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_dummy_coupling9_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_mpi_error.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_proc_sphere_part_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_redirstdout.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_redirstdout_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_restart2.x$(EXEEXT) \
-@TEST_MPI_TRUE@	test_io_config.x$(EXEEXT)
-@TEST_MPI_TRUE@@TEST_PTHREAD_TRUE@am__EXEEXT_5 = test_multithreading.x$(EXEEXT)
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@am__EXEEXT_6 = test_dummy_coupling6_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_dummy_coupling6_real.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_dummy_coupling7_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_dummy_coupling7_real.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_mpi_handshake.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_query_routines_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_YAXT_FC_TRUE@	test_query_routines.x$(EXEEXT)
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@am__EXEEXT_7 = test_instance_parallel1.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_dummy_coupling2_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_dummy_coupling3_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interpolation_parallel3.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interpolation_parallel4.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interpolation_parallel5.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_read_icon_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_restart_c.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_restart_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_dist_grid_pair_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_grid_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_avg_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_nnn_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_nnn_parallel2.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_rbf_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_file_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_hcsbb_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_spmap_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_weights_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_conserv_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_callback_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_interp_method_creep_parallel.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@	test_dynamic_config_c.x$(EXEEXT)
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@am__EXEEXT_8 = test_dummy_coupling3_dble.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@	test_dummy_coupling3_real.x$(EXEEXT) \
-@TEST_MPI_TRUE@@TEST_NETCDF_TRUE@@TEST_YAXT_FC_TRUE@	test_dynamic_config.x$(EXEEXT)
-am_test_abort_x_OBJECTS = test_abort.$(OBJEXT)
-test_abort_x_OBJECTS = $(am_test_abort_x_OBJECTS)
-am__DEPENDENCIES_1 =
-am__DEPENDENCIES_2 = $(top_builddir)/src/libyac.a \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-@TEST_YAXT_FC_TRUE@am__DEPENDENCIES_3 = $(am__DEPENDENCIES_1)
-@TEST_YAXT_FC_FALSE@am__DEPENDENCIES_4 = $(am__DEPENDENCIES_1)
-am__DEPENDENCIES_5 = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_3) \
-	$(am__DEPENDENCIES_4) $(am__DEPENDENCIES_1) utest.$(OBJEXT)
-test_abort_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_abort_c_x_OBJECTS = test_abort_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_abort_c_x_OBJECTS = $(am_test_abort_c_x_OBJECTS)
-test_abort_c_x_LDADD = $(LDADD)
-test_abort_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_angle_x_OBJECTS = test_angle.$(OBJEXT) tests.$(OBJEXT)
-test_angle_x_OBJECTS = $(am_test_angle_x_OBJECTS)
-test_angle_x_LDADD = $(LDADD)
-test_angle_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_area_x_OBJECTS = test_area.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_area_x_OBJECTS = $(am_test_area_x_OBJECTS)
-test_area_x_LDADD = $(LDADD)
-test_area_x_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_bnd_sphere_part_x_OBJECTS = test_bnd_sphere_part.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_bnd_sphere_part_x_OBJECTS = $(am_test_bnd_sphere_part_x_OBJECTS)
-test_bnd_sphere_part_x_LDADD = $(LDADD)
-test_bnd_sphere_part_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_cell_bnd_circle_x_OBJECTS = test_cell_bnd_circle.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_cell_bnd_circle_x_OBJECTS = $(am_test_cell_bnd_circle_x_OBJECTS)
-test_cell_bnd_circle_x_LDADD = $(LDADD)
-test_cell_bnd_circle_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_circle_x_OBJECTS = test_circle.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_circle_x_OBJECTS = $(am_test_circle_x_OBJECTS)
-test_circle_x_LDADD = $(LDADD)
-test_circle_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_clipping_x_OBJECTS = test_clipping.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_clipping_x_OBJECTS = $(am_test_clipping_x_OBJECTS)
-test_clipping_x_LDADD = $(LDADD)
-test_clipping_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_component_config_x_OBJECTS = test_component_config.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_component_config_x_OBJECTS =  \
-	$(am_test_component_config_x_OBJECTS)
-test_component_config_x_LDADD = $(LDADD)
-test_component_config_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_compute_overlap_area_x_OBJECTS =  \
-	test_compute_overlap_area.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_compute_overlap_area_x_OBJECTS =  \
-	$(am_test_compute_overlap_area_x_OBJECTS)
-test_compute_overlap_area_x_LDADD = $(LDADD)
-test_compute_overlap_area_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_couple_config_x_OBJECTS = test_couple_config.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_couple_config_x_OBJECTS = $(am_test_couple_config_x_OBJECTS)
-test_couple_config_x_LDADD = $(LDADD)
-test_couple_config_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_def_comps_x_OBJECTS = test_def_comps.$(OBJEXT)
-test_def_comps_x_OBJECTS = $(am_test_def_comps_x_OBJECTS)
-test_def_comps_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_def_datetime_x_OBJECTS = test_def_datetime.$(OBJEXT)
-test_def_datetime_x_OBJECTS = $(am_test_def_datetime_x_OBJECTS)
-test_def_datetime_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_def_grid_x_OBJECTS = test_def_grid.$(OBJEXT)
-test_def_grid_x_OBJECTS = $(am_test_def_grid_x_OBJECTS)
-test_def_grid_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_def_mask_x_OBJECTS = test_def_mask.$(OBJEXT)
-test_def_mask_x_OBJECTS = $(am_test_def_mask_x_OBJECTS)
-test_def_mask_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_def_points_x_OBJECTS = test_def_points.$(OBJEXT)
-test_def_points_x_OBJECTS = $(am_test_def_points_x_OBJECTS)
-test_def_points_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dist_grid_pair_parallel_x_OBJECTS =  \
-	test_dist_grid_pair_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dist_grid_pair_parallel_x_OBJECTS =  \
-	$(am_test_dist_grid_pair_parallel_x_OBJECTS)
-am__DEPENDENCIES_6 = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-test_dist_grid_pair_parallel_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_dist_grid_utils_x_OBJECTS = test_dist_grid_utils.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_dist_grid_utils_x_OBJECTS = $(am_test_dist_grid_utils_x_OBJECTS)
-test_dist_grid_utils_x_LDADD = $(LDADD)
-test_dist_grid_utils_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling2_c_x_OBJECTS =  \
-	test_dummy_coupling2_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling2_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling2_c_x_OBJECTS)
-test_dummy_coupling2_c_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_dummy_coupling3_c_x_OBJECTS =  \
-	test_dummy_coupling3_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling3_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling3_c_x_OBJECTS)
-test_dummy_coupling3_c_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_dummy_coupling3_dble_x_OBJECTS =  \
-	test_dummy_coupling3_dble.$(OBJEXT)
-test_dummy_coupling3_dble_x_OBJECTS =  \
-	$(am_test_dummy_coupling3_dble_x_OBJECTS)
-test_dummy_coupling3_dble_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_5)
-am_test_dummy_coupling3_real_x_OBJECTS =  \
-	test_dummy_coupling3_real.$(OBJEXT)
-test_dummy_coupling3_real_x_OBJECTS =  \
-	$(am_test_dummy_coupling3_real_x_OBJECTS)
-test_dummy_coupling3_real_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_5)
-am_test_dummy_coupling4_c_x_OBJECTS =  \
-	test_dummy_coupling4_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling4_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling4_c_x_OBJECTS)
-test_dummy_coupling4_c_x_LDADD = $(LDADD)
-test_dummy_coupling4_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling5_c_x_OBJECTS =  \
-	test_dummy_coupling5_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling5_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling5_c_x_OBJECTS)
-test_dummy_coupling5_c_x_LDADD = $(LDADD)
-test_dummy_coupling5_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling5_dble_x_OBJECTS =  \
-	test_dummy_coupling5_dble.$(OBJEXT)
-test_dummy_coupling5_dble_x_OBJECTS =  \
-	$(am_test_dummy_coupling5_dble_x_OBJECTS)
-test_dummy_coupling5_dble_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling5_real_x_OBJECTS =  \
-	test_dummy_coupling5_real.$(OBJEXT)
-test_dummy_coupling5_real_x_OBJECTS =  \
-	$(am_test_dummy_coupling5_real_x_OBJECTS)
-test_dummy_coupling5_real_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling6_c_x_OBJECTS =  \
-	test_dummy_coupling6_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling6_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling6_c_x_OBJECTS)
-test_dummy_coupling6_c_x_LDADD = $(LDADD)
-test_dummy_coupling6_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling6_dble_x_OBJECTS =  \
-	test_dummy_coupling6_dble.$(OBJEXT)
-test_dummy_coupling6_dble_x_OBJECTS =  \
-	$(am_test_dummy_coupling6_dble_x_OBJECTS)
-test_dummy_coupling6_dble_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling6_real_x_OBJECTS =  \
-	test_dummy_coupling6_real.$(OBJEXT)
-test_dummy_coupling6_real_x_OBJECTS =  \
-	$(am_test_dummy_coupling6_real_x_OBJECTS)
-test_dummy_coupling6_real_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling7_c_x_OBJECTS =  \
-	test_dummy_coupling7_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling7_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling7_c_x_OBJECTS)
-test_dummy_coupling7_c_x_LDADD = $(LDADD)
-test_dummy_coupling7_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling7_dble_x_OBJECTS =  \
-	test_dummy_coupling7_dble.$(OBJEXT)
-test_dummy_coupling7_dble_x_OBJECTS =  \
-	$(am_test_dummy_coupling7_dble_x_OBJECTS)
-test_dummy_coupling7_dble_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling7_real_x_OBJECTS =  \
-	test_dummy_coupling7_real.$(OBJEXT)
-test_dummy_coupling7_real_x_OBJECTS =  \
-	$(am_test_dummy_coupling7_real_x_OBJECTS)
-test_dummy_coupling7_real_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling8_c_x_OBJECTS =  \
-	test_dummy_coupling8_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling8_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling8_c_x_OBJECTS)
-test_dummy_coupling8_c_x_LDADD = $(LDADD)
-test_dummy_coupling8_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling9_x_OBJECTS = test_dummy_coupling9.$(OBJEXT)
-test_dummy_coupling9_x_OBJECTS = $(am_test_dummy_coupling9_x_OBJECTS)
-test_dummy_coupling9_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling9_c_x_OBJECTS =  \
-	test_dummy_coupling9_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_dummy_coupling9_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling9_c_x_OBJECTS)
-test_dummy_coupling9_c_x_LDADD = $(LDADD)
-test_dummy_coupling9_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling_c_x_OBJECTS = test_dummy_coupling_c.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_dummy_coupling_c_x_OBJECTS =  \
-	$(am_test_dummy_coupling_c_x_OBJECTS)
-test_dummy_coupling_c_x_LDADD = $(LDADD)
-test_dummy_coupling_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_dummy_coupling_dble_x_OBJECTS =  \
-	test_dummy_coupling_dble.$(OBJEXT)
-test_dummy_coupling_dble_x_OBJECTS =  \
-	$(am_test_dummy_coupling_dble_x_OBJECTS)
-test_dummy_coupling_dble_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dummy_coupling_real_x_OBJECTS =  \
-	test_dummy_coupling_real.$(OBJEXT)
-test_dummy_coupling_real_x_OBJECTS =  \
-	$(am_test_dummy_coupling_real_x_OBJECTS)
-test_dummy_coupling_real_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dynamic_config_x_OBJECTS = test_dynamic_config.$(OBJEXT)
-test_dynamic_config_x_OBJECTS = $(am_test_dynamic_config_x_OBJECTS)
-test_dynamic_config_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_dynamic_config_c_x_OBJECTS = test_dynamic_config_c.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_dynamic_config_c_x_OBJECTS =  \
-	$(am_test_dynamic_config_c_x_OBJECTS)
-test_dynamic_config_c_x_LDADD = $(LDADD)
-test_dynamic_config_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_events_x_OBJECTS = test_events.$(OBJEXT) tests.$(OBJEXT)
-test_events_x_OBJECTS = $(am_test_events_x_OBJECTS)
-test_events_x_LDADD = $(LDADD)
-test_events_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_gcxgc_x_OBJECTS = test_gcxgc.$(OBJEXT) test_cxc.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_gcxgc_x_OBJECTS = $(am_test_gcxgc_x_OBJECTS)
-test_gcxgc_x_LDADD = $(LDADD)
-test_gcxgc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_gcxlatc_x_OBJECTS = test_gcxlatc.$(OBJEXT) test_cxc.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_gcxlatc_x_OBJECTS = $(am_test_gcxlatc_x_OBJECTS)
-test_gcxlatc_x_LDADD = $(LDADD)
-test_gcxlatc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_generate_cubed_sphere_x_OBJECTS =  \
-	test_generate_cubed_sphere.$(OBJEXT) tests.$(OBJEXT)
-test_generate_cubed_sphere_x_OBJECTS =  \
-	$(am_test_generate_cubed_sphere_x_OBJECTS)
-test_generate_cubed_sphere_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_geometry_x_OBJECTS = test_geometry.$(OBJEXT) tests.$(OBJEXT)
-test_geometry_x_OBJECTS = $(am_test_geometry_x_OBJECTS)
-test_geometry_x_LDADD = $(LDADD)
-test_geometry_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_grid_x_OBJECTS = test_grid.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_grid_x_OBJECTS = $(am_test_grid_x_OBJECTS)
-test_grid_x_LDADD = $(LDADD)
-test_grid_x_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_grid2vtk_x_OBJECTS = test_grid2vtk.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_grid2vtk_x_OBJECTS = $(am_test_grid2vtk_x_OBJECTS)
-test_grid2vtk_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_group_comm_x_OBJECTS = test_group_comm.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_group_comm_x_OBJECTS = $(am_test_group_comm_x_OBJECTS)
-test_group_comm_x_LDADD = $(LDADD)
-test_group_comm_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_init_comm_final_x_OBJECTS = test_init_comm_final.$(OBJEXT)
-test_init_comm_final_x_OBJECTS = $(am_test_init_comm_final_x_OBJECTS)
-test_init_comm_final_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_init_final_x_OBJECTS = test_init_final.$(OBJEXT)
-test_init_final_x_OBJECTS = $(am_test_init_final_x_OBJECTS)
-test_init_final_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_instance_parallel1_x_OBJECTS =  \
-	test_instance_parallel1.$(OBJEXT) weight_file_common.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_instance_parallel1_x_OBJECTS =  \
-	$(am_test_instance_parallel1_x_OBJECTS)
-test_instance_parallel1_x_LDADD = $(LDADD)
-test_instance_parallel1_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_instance_parallel2_x_OBJECTS =  \
-	test_instance_parallel2.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_instance_parallel2_x_OBJECTS =  \
-	$(am_test_instance_parallel2_x_OBJECTS)
-test_instance_parallel2_x_LDADD = $(LDADD)
-test_instance_parallel2_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_instance_parallel3_x_OBJECTS =  \
-	test_instance_parallel3.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_instance_parallel3_x_OBJECTS =  \
-	$(am_test_instance_parallel3_x_OBJECTS)
-test_instance_parallel3_x_LDADD = $(LDADD)
-test_instance_parallel3_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_instance_parallel4_x_OBJECTS =  \
-	test_instance_parallel4.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_instance_parallel4_x_OBJECTS =  \
-	$(am_test_instance_parallel4_x_OBJECTS)
-test_instance_parallel4_x_LDADD = $(LDADD)
-test_instance_parallel4_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interp_grid_parallel_x_OBJECTS =  \
-	test_interp_grid_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_grid_parallel_x_OBJECTS =  \
-	$(am_test_interp_grid_parallel_x_OBJECTS)
-test_interp_grid_parallel_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_interp_method_avg_parallel_x_OBJECTS =  \
-	test_interp_method_avg_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_avg_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_avg_parallel_x_OBJECTS)
-test_interp_method_avg_parallel_x_LDADD = $(LDADD)
-test_interp_method_avg_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_callback_parallel_x_OBJECTS =  \
-	test_interp_method_callback_parallel.$(OBJEXT) \
-	weight_file_common.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_callback_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_callback_parallel_x_OBJECTS)
-test_interp_method_callback_parallel_x_LDADD = $(LDADD)
-test_interp_method_callback_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_conserv_parallel_x_OBJECTS =  \
-	test_interp_method_conserv_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_conserv_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_conserv_parallel_x_OBJECTS)
-test_interp_method_conserv_parallel_x_LDADD = $(LDADD)
-test_interp_method_conserv_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_creep_parallel_x_OBJECTS =  \
-	test_interp_method_creep_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_creep_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_creep_parallel_x_OBJECTS)
-test_interp_method_creep_parallel_x_LDADD = $(LDADD)
-test_interp_method_creep_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_file_parallel_x_OBJECTS =  \
-	test_interp_method_file_parallel.$(OBJEXT) \
-	weight_file_common.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_file_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_file_parallel_x_OBJECTS)
-test_interp_method_file_parallel_x_LDADD = $(LDADD)
-test_interp_method_file_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_hcsbb_parallel_x_OBJECTS =  \
-	test_interp_method_hcsbb_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_hcsbb_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_hcsbb_parallel_x_OBJECTS)
-test_interp_method_hcsbb_parallel_x_LDADD = $(LDADD)
-test_interp_method_hcsbb_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_nnn_parallel_x_OBJECTS =  \
-	test_interp_method_nnn_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_nnn_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_nnn_parallel_x_OBJECTS)
-test_interp_method_nnn_parallel_x_LDADD = $(LDADD)
-test_interp_method_nnn_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_nnn_parallel2_x_OBJECTS =  \
-	test_interp_method_nnn_parallel2.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_nnn_parallel2_x_OBJECTS =  \
-	$(am_test_interp_method_nnn_parallel2_x_OBJECTS)
-test_interp_method_nnn_parallel2_x_LDADD = $(LDADD)
-test_interp_method_nnn_parallel2_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_parallel_x_OBJECTS =  \
-	test_interp_method_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_parallel_x_OBJECTS)
-test_interp_method_parallel_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_interp_method_rbf_parallel_x_OBJECTS =  \
-	test_interp_method_rbf_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_rbf_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_rbf_parallel_x_OBJECTS)
-test_interp_method_rbf_parallel_x_LDADD = $(LDADD)
-test_interp_method_rbf_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_method_spmap_parallel_x_OBJECTS =  \
-	test_interp_method_spmap_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_method_spmap_parallel_x_OBJECTS =  \
-	$(am_test_interp_method_spmap_parallel_x_OBJECTS)
-test_interp_method_spmap_parallel_x_LDADD = $(LDADD)
-test_interp_method_spmap_parallel_x_DEPENDENCIES =  \
-	$(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_interp_stack_config_x_OBJECTS =  \
-	test_interp_stack_config.$(OBJEXT) tests.$(OBJEXT)
-test_interp_stack_config_x_OBJECTS =  \
-	$(am_test_interp_stack_config_x_OBJECTS)
-test_interp_stack_config_x_LDADD = $(LDADD)
-test_interp_stack_config_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interp_weights_parallel_x_OBJECTS =  \
-	test_interp_weights_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interp_weights_parallel_x_OBJECTS =  \
-	$(am_test_interp_weights_parallel_x_OBJECTS)
-test_interp_weights_parallel_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_interpolation_exchange_x_OBJECTS =  \
-	test_interpolation_exchange.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_exchange_x_OBJECTS =  \
-	$(am_test_interpolation_exchange_x_OBJECTS)
-test_interpolation_exchange_x_LDADD = $(LDADD)
-test_interpolation_exchange_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel1_x_OBJECTS =  \
-	test_interpolation_parallel1.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_parallel1_x_OBJECTS =  \
-	$(am_test_interpolation_parallel1_x_OBJECTS)
-test_interpolation_parallel1_x_LDADD = $(LDADD)
-test_interpolation_parallel1_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel2_x_OBJECTS =  \
-	test_interpolation_parallel2.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_parallel2_x_OBJECTS =  \
-	$(am_test_interpolation_parallel2_x_OBJECTS)
-test_interpolation_parallel2_x_LDADD = $(LDADD)
-test_interpolation_parallel2_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel3_x_OBJECTS =  \
-	test_interpolation_parallel3.$(OBJEXT) \
-	weight_file_common.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_parallel3_x_OBJECTS =  \
-	$(am_test_interpolation_parallel3_x_OBJECTS)
-test_interpolation_parallel3_x_LDADD = $(LDADD)
-test_interpolation_parallel3_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel4_x_OBJECTS =  \
-	test_interpolation_parallel4.$(OBJEXT) \
-	weight_file_common.$(OBJEXT) tests.$(OBJEXT)
-test_interpolation_parallel4_x_OBJECTS =  \
-	$(am_test_interpolation_parallel4_x_OBJECTS)
-test_interpolation_parallel4_x_LDADD = $(LDADD)
-test_interpolation_parallel4_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel5_x_OBJECTS =  \
-	test_interpolation_parallel5.$(OBJEXT) \
-	weight_file_common.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_parallel5_x_OBJECTS =  \
-	$(am_test_interpolation_parallel5_x_OBJECTS)
-test_interpolation_parallel5_x_LDADD = $(LDADD)
-test_interpolation_parallel5_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interpolation_parallel6_x_OBJECTS =  \
-	test_interpolation_parallel6.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_interpolation_parallel6_x_OBJECTS =  \
-	$(am_test_interpolation_parallel6_x_OBJECTS)
-test_interpolation_parallel6_x_LDADD = $(LDADD)
-test_interpolation_parallel6_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_interval_tree_x_OBJECTS = test_interval_tree.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_interval_tree_x_OBJECTS = $(am_test_interval_tree_x_OBJECTS)
-test_interval_tree_x_LDADD = $(LDADD)
-test_interval_tree_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_io_config_x_OBJECTS = test_io_config.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_io_config_x_OBJECTS = $(am_test_io_config_x_OBJECTS)
-test_io_config_x_LDADD = $(LDADD)
-test_io_config_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_lat_clipping_x_OBJECTS = test_lat_clipping.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_lat_clipping_x_OBJECTS = $(am_test_lat_clipping_x_OBJECTS)
-test_lat_clipping_x_LDADD = $(LDADD)
-test_lat_clipping_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_latcxlatc_x_OBJECTS = test_latcxlatc.$(OBJEXT) \
-	test_cxc.$(OBJEXT) tests.$(OBJEXT)
-test_latcxlatc_x_OBJECTS = $(am_test_latcxlatc_x_OBJECTS)
-test_latcxlatc_x_LDADD = $(LDADD)
-test_latcxlatc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_loncxlatc_x_OBJECTS = test_loncxlatc.$(OBJEXT) \
-	test_cxc.$(OBJEXT) tests.$(OBJEXT)
-test_loncxlatc_x_OBJECTS = $(am_test_loncxlatc_x_OBJECTS)
-test_loncxlatc_x_LDADD = $(LDADD)
-test_loncxlatc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_loncxlonc_x_OBJECTS = test_loncxlonc.$(OBJEXT) \
-	test_cxc.$(OBJEXT) tests.$(OBJEXT)
-test_loncxlonc_x_OBJECTS = $(am_test_loncxlonc_x_OBJECTS)
-test_loncxlonc_x_LDADD = $(LDADD)
-test_loncxlonc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_mergesort_x_OBJECTS = test_mergesort.$(OBJEXT) tests.$(OBJEXT)
-test_mergesort_x_OBJECTS = $(am_test_mergesort_x_OBJECTS)
-test_mergesort_x_LDADD = $(LDADD)
-test_mergesort_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-test_mpi_error_x_SOURCES = test_mpi_error.c
-test_mpi_error_x_OBJECTS = test_mpi_error.$(OBJEXT)
-test_mpi_error_x_LDADD = $(LDADD)
-test_mpi_error_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_mpi_handshake_x_OBJECTS = test_mpi_handshake.$(OBJEXT)
-test_mpi_handshake_x_OBJECTS = $(am_test_mpi_handshake_x_OBJECTS)
-test_mpi_handshake_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_mpi_handshake_c_x_OBJECTS = test_mpi_handshake_c.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_mpi_handshake_c_x_OBJECTS = $(am_test_mpi_handshake_c_x_OBJECTS)
-test_mpi_handshake_c_x_LDADD = $(LDADD)
-test_mpi_handshake_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_multithreading_x_OBJECTS =  \
-	test_multithreading_x-test_multithreading.$(OBJEXT)
-test_multithreading_x_OBJECTS = $(am_test_multithreading_x_OBJECTS)
-test_multithreading_x_DEPENDENCIES = $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_6)
-test_multithreading_x_LINK = $(CCLD) $(test_multithreading_x_CFLAGS) \
-	$(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-am_test_partial_areas_x_OBJECTS = test_partial_areas.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_partial_areas_x_OBJECTS = $(am_test_partial_areas_x_OBJECTS)
-test_partial_areas_x_LDADD = $(LDADD)
-test_partial_areas_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_point_in_cell_x_OBJECTS = test_point_in_cell.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_point_in_cell_x_OBJECTS = $(am_test_point_in_cell_x_OBJECTS)
-test_point_in_cell_x_LDADD = $(LDADD)
-test_point_in_cell_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_point_sphere_part_x_OBJECTS =  \
-	test_point_sphere_part.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_point_sphere_part_x_OBJECTS =  \
-	$(am_test_point_sphere_part_x_OBJECTS)
-test_point_sphere_part_x_LDADD = $(LDADD)
-test_point_sphere_part_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_proc_sphere_part_parallel_x_OBJECTS =  \
-	test_proc_sphere_part_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_proc_sphere_part_parallel_x_OBJECTS =  \
-	$(am_test_proc_sphere_part_parallel_x_OBJECTS)
-test_proc_sphere_part_parallel_x_LDADD = $(LDADD)
-test_proc_sphere_part_parallel_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_pxgc_x_OBJECTS = test_pxgc.$(OBJEXT) test_cxc.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_pxgc_x_OBJECTS = $(am_test_pxgc_x_OBJECTS)
-test_pxgc_x_LDADD = $(LDADD)
-test_pxgc_x_DEPENDENCIES = $(am__DEPENDENCIES_2) $(am__DEPENDENCIES_1) \
-	$(am__DEPENDENCIES_1)
-am_test_query_routines_x_OBJECTS = test_query_routines.$(OBJEXT)
-test_query_routines_x_OBJECTS = $(am_test_query_routines_x_OBJECTS)
-test_query_routines_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_query_routines_c_x_OBJECTS = test_query_routines_c.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_query_routines_c_x_OBJECTS =  \
-	$(am_test_query_routines_c_x_OBJECTS)
-test_query_routines_c_x_LDADD = $(LDADD)
-test_query_routines_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_quicksort_x_OBJECTS = test_quicksort.$(OBJEXT) tests.$(OBJEXT)
-test_quicksort_x_OBJECTS = $(am_test_quicksort_x_OBJECTS)
-test_quicksort_x_LDADD = $(LDADD)
-test_quicksort_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_read_cube_csv_x_OBJECTS = test_read_cube_csv.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_read_cube_csv_x_OBJECTS = $(am_test_read_cube_csv_x_OBJECTS)
-test_read_cube_csv_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_read_fesom_x_OBJECTS = test_read_fesom.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_read_fesom_x_OBJECTS = $(am_test_read_fesom_x_OBJECTS)
-test_read_fesom_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_read_icon_x_OBJECTS = test_read_icon.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_read_icon_x_OBJECTS = $(am_test_read_icon_x_OBJECTS)
-test_read_icon_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_read_icon_parallel_x_OBJECTS =  \
-	test_read_icon_parallel.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_read_icon_parallel_x_OBJECTS =  \
-	$(am_test_read_icon_parallel_x_OBJECTS)
-test_read_icon_parallel_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_read_mpiom_x_OBJECTS = test_read_mpiom.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_read_mpiom_x_OBJECTS = $(am_test_read_mpiom_x_OBJECTS)
-test_read_mpiom_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_read_scrip_x_OBJECTS = test_read_scrip.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_read_scrip_x_OBJECTS = $(am_test_read_scrip_x_OBJECTS)
-test_read_scrip_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_read_woa_data_x_OBJECTS = test_read_woa_data.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_read_woa_data_x_OBJECTS = $(am_test_read_woa_data_x_OBJECTS)
-test_read_woa_data_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_6)
-am_test_redirstdout_x_OBJECTS = test_redirstdout.$(OBJEXT)
-test_redirstdout_x_OBJECTS = $(am_test_redirstdout_x_OBJECTS)
-test_redirstdout_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_redirstdout_c_x_OBJECTS = test_redirstdout_c.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT)
-test_redirstdout_c_x_OBJECTS = $(am_test_redirstdout_c_x_OBJECTS)
-test_redirstdout_c_x_LDADD = $(LDADD)
-test_redirstdout_c_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
-am_test_restart2_x_OBJECTS = test_restart2.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_restart2_x_OBJECTS = $(am_test_restart2_x_OBJECTS)
-test_restart2_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_restart_c_x_OBJECTS = test_restart_c.$(OBJEXT) tests.$(OBJEXT) \
-	test_common.$(OBJEXT)
-test_restart_c_x_OBJECTS = $(am_test_restart_c_x_OBJECTS)
-test_restart_c_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_restart_dble_x_OBJECTS = test_restart_dble.$(OBJEXT)
-test_restart_dble_x_OBJECTS = $(am_test_restart_dble_x_OBJECTS)
-test_restart_dble_x_DEPENDENCIES =  \
-	$(top_builddir)/contrib/libgridio.a $(am__DEPENDENCIES_5)
-am_test_version_x_OBJECTS = test_version.$(OBJEXT)
-test_version_x_OBJECTS = $(am_test_version_x_OBJECTS)
-test_version_x_DEPENDENCIES = $(am__DEPENDENCIES_5)
-am_test_vtk_output_x_OBJECTS = test_vtk_output.$(OBJEXT) \
-	tests.$(OBJEXT)
-test_vtk_output_x_OBJECTS = $(am_test_vtk_output_x_OBJECTS)
-test_vtk_output_x_DEPENDENCIES = $(top_builddir)/contrib/libgridio.a \
-	$(am__DEPENDENCIES_6)
-am_test_weights2vtk_x_OBJECTS = test_weights2vtk.$(OBJEXT) \
-	tests.$(OBJEXT) test_common.$(OBJEXT) \
-	weight_file_common.$(OBJEXT)
-test_weights2vtk_x_OBJECTS = $(am_test_weights2vtk_x_OBJECTS)
-test_weights2vtk_x_LDADD = $(LDADD)
-test_weights2vtk_x_DEPENDENCIES = $(am__DEPENDENCIES_2) \
-	$(am__DEPENDENCIES_1) $(am__DEPENDENCIES_1)
 AM_V_P = $(am__v_P_@AM_V@)
 am__v_P_ = $(am__v_P_@AM_DEFAULT_V@)
 am__v_P_0 = false
@@ -1046,284 +135,29 @@ AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
 am__v_at_1 = 
-DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/src
-depcomp = $(SHELL) $(top_srcdir)/config/depcomp
-am__maybe_remake_depfiles = depfiles
-am__depfiles_remade = ./$(DEPDIR)/test_abort_c.Po \
-	./$(DEPDIR)/test_angle.Po ./$(DEPDIR)/test_area.Po \
-	./$(DEPDIR)/test_bnd_sphere_part.Po \
-	./$(DEPDIR)/test_cell_bnd_circle.Po ./$(DEPDIR)/test_circle.Po \
-	./$(DEPDIR)/test_clipping.Po ./$(DEPDIR)/test_common.Po \
-	./$(DEPDIR)/test_component_config.Po \
-	./$(DEPDIR)/test_compute_overlap_area.Po \
-	./$(DEPDIR)/test_couple_config.Po ./$(DEPDIR)/test_cxc.Po \
-	./$(DEPDIR)/test_dist_grid_pair_parallel.Po \
-	./$(DEPDIR)/test_dist_grid_utils.Po \
-	./$(DEPDIR)/test_dummy_coupling2_c.Po \
-	./$(DEPDIR)/test_dummy_coupling3_c.Po \
-	./$(DEPDIR)/test_dummy_coupling4_c.Po \
-	./$(DEPDIR)/test_dummy_coupling5_c.Po \
-	./$(DEPDIR)/test_dummy_coupling6_c.Po \
-	./$(DEPDIR)/test_dummy_coupling7_c.Po \
-	./$(DEPDIR)/test_dummy_coupling8_c.Po \
-	./$(DEPDIR)/test_dummy_coupling9_c.Po \
-	./$(DEPDIR)/test_dummy_coupling_c.Po \
-	./$(DEPDIR)/test_dynamic_config_c.Po \
-	./$(DEPDIR)/test_events.Po ./$(DEPDIR)/test_gcxgc.Po \
-	./$(DEPDIR)/test_gcxlatc.Po \
-	./$(DEPDIR)/test_generate_cubed_sphere.Po \
-	./$(DEPDIR)/test_geometry.Po ./$(DEPDIR)/test_grid.Po \
-	./$(DEPDIR)/test_grid2vtk.Po ./$(DEPDIR)/test_group_comm.Po \
-	./$(DEPDIR)/test_instance_parallel1.Po \
-	./$(DEPDIR)/test_instance_parallel2.Po \
-	./$(DEPDIR)/test_instance_parallel3.Po \
-	./$(DEPDIR)/test_instance_parallel4.Po \
-	./$(DEPDIR)/test_interp_grid_parallel.Po \
-	./$(DEPDIR)/test_interp_method_avg_parallel.Po \
-	./$(DEPDIR)/test_interp_method_callback_parallel.Po \
-	./$(DEPDIR)/test_interp_method_conserv_parallel.Po \
-	./$(DEPDIR)/test_interp_method_creep_parallel.Po \
-	./$(DEPDIR)/test_interp_method_file_parallel.Po \
-	./$(DEPDIR)/test_interp_method_hcsbb_parallel.Po \
-	./$(DEPDIR)/test_interp_method_nnn_parallel.Po \
-	./$(DEPDIR)/test_interp_method_nnn_parallel2.Po \
-	./$(DEPDIR)/test_interp_method_parallel.Po \
-	./$(DEPDIR)/test_interp_method_rbf_parallel.Po \
-	./$(DEPDIR)/test_interp_method_spmap_parallel.Po \
-	./$(DEPDIR)/test_interp_stack_config.Po \
-	./$(DEPDIR)/test_interp_weights_parallel.Po \
-	./$(DEPDIR)/test_interpolation_exchange.Po \
-	./$(DEPDIR)/test_interpolation_parallel1.Po \
-	./$(DEPDIR)/test_interpolation_parallel2.Po \
-	./$(DEPDIR)/test_interpolation_parallel3.Po \
-	./$(DEPDIR)/test_interpolation_parallel4.Po \
-	./$(DEPDIR)/test_interpolation_parallel5.Po \
-	./$(DEPDIR)/test_interpolation_parallel6.Po \
-	./$(DEPDIR)/test_interval_tree.Po \
-	./$(DEPDIR)/test_io_config.Po ./$(DEPDIR)/test_lat_clipping.Po \
-	./$(DEPDIR)/test_latcxlatc.Po ./$(DEPDIR)/test_loncxlatc.Po \
-	./$(DEPDIR)/test_loncxlonc.Po ./$(DEPDIR)/test_mergesort.Po \
-	./$(DEPDIR)/test_mpi_error.Po \
-	./$(DEPDIR)/test_mpi_handshake_c.Po \
-	./$(DEPDIR)/test_multithreading_x-test_multithreading.Po \
-	./$(DEPDIR)/test_partial_areas.Po \
-	./$(DEPDIR)/test_point_in_cell.Po \
-	./$(DEPDIR)/test_point_sphere_part.Po \
-	./$(DEPDIR)/test_proc_sphere_part_parallel.Po \
-	./$(DEPDIR)/test_pxgc.Po ./$(DEPDIR)/test_query_routines_c.Po \
-	./$(DEPDIR)/test_quicksort.Po \
-	./$(DEPDIR)/test_read_cube_csv.Po \
-	./$(DEPDIR)/test_read_fesom.Po ./$(DEPDIR)/test_read_icon.Po \
-	./$(DEPDIR)/test_read_icon_parallel.Po \
-	./$(DEPDIR)/test_read_mpiom.Po ./$(DEPDIR)/test_read_scrip.Po \
-	./$(DEPDIR)/test_read_woa_data.Po \
-	./$(DEPDIR)/test_redirstdout_c.Po ./$(DEPDIR)/test_restart2.Po \
-	./$(DEPDIR)/test_restart_c.Po ./$(DEPDIR)/test_vtk_output.Po \
-	./$(DEPDIR)/test_weights2vtk.Po ./$(DEPDIR)/tests.Po \
-	./$(DEPDIR)/weight_file_common.Po
-am__mv = mv -f
-AM_V_PPFC = $(am__v_PPFC_@AM_V@)
-am__v_PPFC_ = $(am__v_PPFC_@AM_DEFAULT_V@)
-am__v_PPFC_0 = @echo "  PPFC    " $@;
-am__v_PPFC_1 = 
-FCLD = $(FC)
-FCLINK = $(FCLD) $(AM_FCFLAGS) $(FCFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o \
-	$@
-AM_V_FCLD = $(am__v_FCLD_@AM_V@)
-am__v_FCLD_ = $(am__v_FCLD_@AM_DEFAULT_V@)
-am__v_FCLD_0 = @echo "  FCLD    " $@;
-am__v_FCLD_1 = 
-AM_V_lt = $(am__v_lt_@AM_V@)
-am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
-am__v_lt_0 = --silent
-am__v_lt_1 = 
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
-AM_V_CC = $(am__v_CC_@AM_V@)
-am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
-am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
-CCLD = $(CC)
-LINK = $(CCLD) $(AM_CFLAGS) $(CFLAGS) $(AM_LDFLAGS) $(LDFLAGS) -o $@
-AM_V_CCLD = $(am__v_CCLD_@AM_V@)
-am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
-am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
-SOURCES = $(test_abort_x_SOURCES) $(test_abort_c_x_SOURCES) \
-	$(test_angle_x_SOURCES) $(test_area_x_SOURCES) \
-	$(test_bnd_sphere_part_x_SOURCES) \
-	$(test_cell_bnd_circle_x_SOURCES) $(test_circle_x_SOURCES) \
-	$(test_clipping_x_SOURCES) $(test_component_config_x_SOURCES) \
-	$(test_compute_overlap_area_x_SOURCES) \
-	$(test_couple_config_x_SOURCES) $(test_def_comps_x_SOURCES) \
-	$(test_def_datetime_x_SOURCES) $(test_def_grid_x_SOURCES) \
-	$(test_def_mask_x_SOURCES) $(test_def_points_x_SOURCES) \
-	$(test_dist_grid_pair_parallel_x_SOURCES) \
-	$(test_dist_grid_utils_x_SOURCES) \
-	$(test_dummy_coupling2_c_x_SOURCES) \
-	$(test_dummy_coupling3_c_x_SOURCES) \
-	$(test_dummy_coupling3_dble_x_SOURCES) \
-	$(test_dummy_coupling3_real_x_SOURCES) \
-	$(test_dummy_coupling4_c_x_SOURCES) \
-	$(test_dummy_coupling5_c_x_SOURCES) \
-	$(test_dummy_coupling5_dble_x_SOURCES) \
-	$(test_dummy_coupling5_real_x_SOURCES) \
-	$(test_dummy_coupling6_c_x_SOURCES) \
-	$(test_dummy_coupling6_dble_x_SOURCES) \
-	$(test_dummy_coupling6_real_x_SOURCES) \
-	$(test_dummy_coupling7_c_x_SOURCES) \
-	$(test_dummy_coupling7_dble_x_SOURCES) \
-	$(test_dummy_coupling7_real_x_SOURCES) \
-	$(test_dummy_coupling8_c_x_SOURCES) \
-	$(test_dummy_coupling9_x_SOURCES) \
-	$(test_dummy_coupling9_c_x_SOURCES) \
-	$(test_dummy_coupling_c_x_SOURCES) \
-	$(test_dummy_coupling_dble_x_SOURCES) \
-	$(test_dummy_coupling_real_x_SOURCES) \
-	$(test_dynamic_config_x_SOURCES) \
-	$(test_dynamic_config_c_x_SOURCES) $(test_events_x_SOURCES) \
-	$(test_gcxgc_x_SOURCES) $(test_gcxlatc_x_SOURCES) \
-	$(test_generate_cubed_sphere_x_SOURCES) \
-	$(test_geometry_x_SOURCES) $(test_grid_x_SOURCES) \
-	$(test_grid2vtk_x_SOURCES) $(test_group_comm_x_SOURCES) \
-	$(test_init_comm_final_x_SOURCES) $(test_init_final_x_SOURCES) \
-	$(test_instance_parallel1_x_SOURCES) \
-	$(test_instance_parallel2_x_SOURCES) \
-	$(test_instance_parallel3_x_SOURCES) \
-	$(test_instance_parallel4_x_SOURCES) \
-	$(test_interp_grid_parallel_x_SOURCES) \
-	$(test_interp_method_avg_parallel_x_SOURCES) \
-	$(test_interp_method_callback_parallel_x_SOURCES) \
-	$(test_interp_method_conserv_parallel_x_SOURCES) \
-	$(test_interp_method_creep_parallel_x_SOURCES) \
-	$(test_interp_method_file_parallel_x_SOURCES) \
-	$(test_interp_method_hcsbb_parallel_x_SOURCES) \
-	$(test_interp_method_nnn_parallel_x_SOURCES) \
-	$(test_interp_method_nnn_parallel2_x_SOURCES) \
-	$(test_interp_method_parallel_x_SOURCES) \
-	$(test_interp_method_rbf_parallel_x_SOURCES) \
-	$(test_interp_method_spmap_parallel_x_SOURCES) \
-	$(test_interp_stack_config_x_SOURCES) \
-	$(test_interp_weights_parallel_x_SOURCES) \
-	$(test_interpolation_exchange_x_SOURCES) \
-	$(test_interpolation_parallel1_x_SOURCES) \
-	$(test_interpolation_parallel2_x_SOURCES) \
-	$(test_interpolation_parallel3_x_SOURCES) \
-	$(test_interpolation_parallel4_x_SOURCES) \
-	$(test_interpolation_parallel5_x_SOURCES) \
-	$(test_interpolation_parallel6_x_SOURCES) \
-	$(test_interval_tree_x_SOURCES) $(test_io_config_x_SOURCES) \
-	$(test_lat_clipping_x_SOURCES) $(test_latcxlatc_x_SOURCES) \
-	$(test_loncxlatc_x_SOURCES) $(test_loncxlonc_x_SOURCES) \
-	$(test_mergesort_x_SOURCES) test_mpi_error.c \
-	$(test_mpi_handshake_x_SOURCES) \
-	$(test_mpi_handshake_c_x_SOURCES) \
-	$(test_multithreading_x_SOURCES) \
-	$(test_partial_areas_x_SOURCES) \
-	$(test_point_in_cell_x_SOURCES) \
-	$(test_point_sphere_part_x_SOURCES) \
-	$(test_proc_sphere_part_parallel_x_SOURCES) \
-	$(test_pxgc_x_SOURCES) $(test_query_routines_x_SOURCES) \
-	$(test_query_routines_c_x_SOURCES) $(test_quicksort_x_SOURCES) \
-	$(test_read_cube_csv_x_SOURCES) $(test_read_fesom_x_SOURCES) \
-	$(test_read_icon_x_SOURCES) \
-	$(test_read_icon_parallel_x_SOURCES) \
-	$(test_read_mpiom_x_SOURCES) $(test_read_scrip_x_SOURCES) \
-	$(test_read_woa_data_x_SOURCES) $(test_redirstdout_x_SOURCES) \
-	$(test_redirstdout_c_x_SOURCES) $(test_restart2_x_SOURCES) \
-	$(test_restart_c_x_SOURCES) $(test_restart_dble_x_SOURCES) \
-	$(test_version_x_SOURCES) $(test_vtk_output_x_SOURCES) \
-	$(test_weights2vtk_x_SOURCES)
-DIST_SOURCES = $(test_abort_x_SOURCES) $(test_abort_c_x_SOURCES) \
-	$(test_angle_x_SOURCES) $(test_area_x_SOURCES) \
-	$(test_bnd_sphere_part_x_SOURCES) \
-	$(test_cell_bnd_circle_x_SOURCES) $(test_circle_x_SOURCES) \
-	$(test_clipping_x_SOURCES) $(test_component_config_x_SOURCES) \
-	$(test_compute_overlap_area_x_SOURCES) \
-	$(test_couple_config_x_SOURCES) $(test_def_comps_x_SOURCES) \
-	$(test_def_datetime_x_SOURCES) $(test_def_grid_x_SOURCES) \
-	$(test_def_mask_x_SOURCES) $(test_def_points_x_SOURCES) \
-	$(test_dist_grid_pair_parallel_x_SOURCES) \
-	$(test_dist_grid_utils_x_SOURCES) \
-	$(test_dummy_coupling2_c_x_SOURCES) \
-	$(test_dummy_coupling3_c_x_SOURCES) \
-	$(test_dummy_coupling3_dble_x_SOURCES) \
-	$(test_dummy_coupling3_real_x_SOURCES) \
-	$(test_dummy_coupling4_c_x_SOURCES) \
-	$(test_dummy_coupling5_c_x_SOURCES) \
-	$(test_dummy_coupling5_dble_x_SOURCES) \
-	$(test_dummy_coupling5_real_x_SOURCES) \
-	$(test_dummy_coupling6_c_x_SOURCES) \
-	$(test_dummy_coupling6_dble_x_SOURCES) \
-	$(test_dummy_coupling6_real_x_SOURCES) \
-	$(test_dummy_coupling7_c_x_SOURCES) \
-	$(test_dummy_coupling7_dble_x_SOURCES) \
-	$(test_dummy_coupling7_real_x_SOURCES) \
-	$(test_dummy_coupling8_c_x_SOURCES) \
-	$(test_dummy_coupling9_x_SOURCES) \
-	$(test_dummy_coupling9_c_x_SOURCES) \
-	$(test_dummy_coupling_c_x_SOURCES) \
-	$(test_dummy_coupling_dble_x_SOURCES) \
-	$(test_dummy_coupling_real_x_SOURCES) \
-	$(test_dynamic_config_x_SOURCES) \
-	$(test_dynamic_config_c_x_SOURCES) $(test_events_x_SOURCES) \
-	$(test_gcxgc_x_SOURCES) $(test_gcxlatc_x_SOURCES) \
-	$(test_generate_cubed_sphere_x_SOURCES) \
-	$(test_geometry_x_SOURCES) $(test_grid_x_SOURCES) \
-	$(test_grid2vtk_x_SOURCES) $(test_group_comm_x_SOURCES) \
-	$(test_init_comm_final_x_SOURCES) $(test_init_final_x_SOURCES) \
-	$(test_instance_parallel1_x_SOURCES) \
-	$(test_instance_parallel2_x_SOURCES) \
-	$(test_instance_parallel3_x_SOURCES) \
-	$(test_instance_parallel4_x_SOURCES) \
-	$(test_interp_grid_parallel_x_SOURCES) \
-	$(test_interp_method_avg_parallel_x_SOURCES) \
-	$(test_interp_method_callback_parallel_x_SOURCES) \
-	$(test_interp_method_conserv_parallel_x_SOURCES) \
-	$(test_interp_method_creep_parallel_x_SOURCES) \
-	$(test_interp_method_file_parallel_x_SOURCES) \
-	$(test_interp_method_hcsbb_parallel_x_SOURCES) \
-	$(test_interp_method_nnn_parallel_x_SOURCES) \
-	$(test_interp_method_nnn_parallel2_x_SOURCES) \
-	$(test_interp_method_parallel_x_SOURCES) \
-	$(test_interp_method_rbf_parallel_x_SOURCES) \
-	$(test_interp_method_spmap_parallel_x_SOURCES) \
-	$(test_interp_stack_config_x_SOURCES) \
-	$(test_interp_weights_parallel_x_SOURCES) \
-	$(test_interpolation_exchange_x_SOURCES) \
-	$(test_interpolation_parallel1_x_SOURCES) \
-	$(test_interpolation_parallel2_x_SOURCES) \
-	$(test_interpolation_parallel3_x_SOURCES) \
-	$(test_interpolation_parallel4_x_SOURCES) \
-	$(test_interpolation_parallel5_x_SOURCES) \
-	$(test_interpolation_parallel6_x_SOURCES) \
-	$(test_interval_tree_x_SOURCES) $(test_io_config_x_SOURCES) \
-	$(test_lat_clipping_x_SOURCES) $(test_latcxlatc_x_SOURCES) \
-	$(test_loncxlatc_x_SOURCES) $(test_loncxlonc_x_SOURCES) \
-	$(test_mergesort_x_SOURCES) test_mpi_error.c \
-	$(test_mpi_handshake_x_SOURCES) \
-	$(test_mpi_handshake_c_x_SOURCES) \
-	$(test_multithreading_x_SOURCES) \
-	$(test_partial_areas_x_SOURCES) \
-	$(test_point_in_cell_x_SOURCES) \
-	$(test_point_sphere_part_x_SOURCES) \
-	$(test_proc_sphere_part_parallel_x_SOURCES) \
-	$(test_pxgc_x_SOURCES) $(test_query_routines_x_SOURCES) \
-	$(test_query_routines_c_x_SOURCES) $(test_quicksort_x_SOURCES) \
-	$(test_read_cube_csv_x_SOURCES) $(test_read_fesom_x_SOURCES) \
-	$(test_read_icon_x_SOURCES) \
-	$(test_read_icon_parallel_x_SOURCES) \
-	$(test_read_mpiom_x_SOURCES) $(test_read_scrip_x_SOURCES) \
-	$(test_read_woa_data_x_SOURCES) $(test_redirstdout_x_SOURCES) \
-	$(test_redirstdout_c_x_SOURCES) $(test_restart2_x_SOURCES) \
-	$(test_restart_c_x_SOURCES) $(test_restart_dble_x_SOURCES) \
-	$(test_version_x_SOURCES) $(test_vtk_output_x_SOURCES) \
-	$(test_weights2vtk_x_SOURCES)
+SOURCES =
+DIST_SOURCES =
+RECURSIVE_TARGETS = all-recursive check-recursive cscopelist-recursive \
+	ctags-recursive dvi-recursive html-recursive info-recursive \
+	install-data-recursive install-dvi-recursive \
+	install-exec-recursive install-html-recursive \
+	install-info-recursive install-pdf-recursive \
+	install-ps-recursive install-recursive installcheck-recursive \
+	installdirs-recursive pdf-recursive ps-recursive \
+	tags-recursive uninstall-recursive
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
     *) (install-info --version) >/dev/null 2>&1;; \
   esac
+RECURSIVE_CLEAN_TARGETS = mostlyclean-recursive clean-recursive	\
+  distclean-recursive maintainer-clean-recursive
+am__recursive_targets = \
+  $(RECURSIVE_TARGETS) \
+  $(RECURSIVE_CLEAN_TARGETS) \
+  $(am__extra_recursive_targets)
+AM_RECURSIVE_TARGETS = $(am__recursive_targets:-recursive=) TAGS CTAGS \
+	distdir distdir-am
 am__tagged_files = $(HEADERS) $(SOURCES) $(TAGS_FILES) $(LISP)
 # Read a list of newline-separated strings from the standard input,
 # and print each of them once, without duplicates.  Input order is
@@ -1341,274 +175,34 @@ am__define_uniq_tagged_files = \
   unique=`for i in $$list; do \
     if test -f "$$i"; then echo $$i; else echo $(srcdir)/$$i; fi; \
   done | $(am__uniquify_input)`
-am__tty_colors_dummy = \
-  mgn= red= grn= lgn= blu= brg= std=; \
-  am__color_tests=no
-am__tty_colors = { \
-  $(am__tty_colors_dummy); \
-  if test "X$(AM_COLOR_TESTS)" = Xno; then \
-    am__color_tests=no; \
-  elif test "X$(AM_COLOR_TESTS)" = Xalways; then \
-    am__color_tests=yes; \
-  elif test "X$$TERM" != Xdumb && { test -t 1; } 2>/dev/null; then \
-    am__color_tests=yes; \
-  fi; \
-  if test $$am__color_tests = yes; then \
-    red='[0;31m'; \
-    grn='[0;32m'; \
-    lgn='[1;32m'; \
-    blu='[1;34m'; \
-    mgn='[0;35m'; \
-    brg='[1m'; \
-    std='[m'; \
-  fi; \
-}
-am__vpath_adj_setup = srcdirstrip=`echo "$(srcdir)" | sed 's|.|.|g'`;
-am__vpath_adj = case $$p in \
-    $(srcdir)/*) f=`echo "$$p" | sed "s|^$$srcdirstrip/||"`;; \
-    *) f=$$p;; \
-  esac;
-am__strip_dir = f=`echo $$p | sed -e 's|^.*/||'`;
-am__install_max = 40
-am__nobase_strip_setup = \
-  srcdirstrip=`echo "$(srcdir)" | sed 's/[].[^$$\\*|]/\\\\&/g'`
-am__nobase_strip = \
-  for p in $$list; do echo "$$p"; done | sed -e "s|$$srcdirstrip/||"
-am__nobase_list = $(am__nobase_strip_setup); \
-  for p in $$list; do echo "$$p $$p"; done | \
-  sed "s| $$srcdirstrip/| |;"' / .*\//!s/ .*/ ./; s,\( .*\)/[^/]*$$,\1,' | \
-  $(AWK) 'BEGIN { files["."] = "" } { files[$$2] = files[$$2] " " $$1; \
-    if (++n[$$2] == $(am__install_max)) \
-      { print $$2, files[$$2]; n[$$2] = 0; files[$$2] = "" } } \
-    END { for (dir in files) print dir, files[dir] }'
-am__base_list = \
-  sed '$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;$$!N;s/\n/ /g' | \
-  sed '$$!N;$$!N;$$!N;$$!N;s/\n/ /g'
-am__uninstall_files_from_dir = { \
-  test -z "$$files" \
-    || { test ! -d "$$dir" && test ! -f "$$dir" && test ! -r "$$dir"; } \
-    || { echo " ( cd '$$dir' && rm -f" $$files ")"; \
-         $(am__cd) "$$dir" && rm -f $$files; }; \
-  }
-am__recheck_rx = ^[ 	]*:recheck:[ 	]*
-am__global_test_result_rx = ^[ 	]*:global-test-result:[ 	]*
-am__copy_in_global_log_rx = ^[ 	]*:copy-in-global-log:[ 	]*
-# A command that, given a newline-separated list of test names on the
-# standard input, print the name of the tests that are to be re-run
-# upon "make recheck".
-am__list_recheck_tests = $(AWK) '{ \
-  recheck = 1; \
-  while ((rc = (getline line < ($$0 ".trs"))) != 0) \
-    { \
-      if (rc < 0) \
-        { \
-          if ((getline line2 < ($$0 ".log")) < 0) \
-	    recheck = 0; \
-          break; \
-        } \
-      else if (line ~ /$(am__recheck_rx)[nN][Oo]/) \
-        { \
-          recheck = 0; \
-          break; \
-        } \
-      else if (line ~ /$(am__recheck_rx)[yY][eE][sS]/) \
-        { \
-          break; \
-        } \
-    }; \
-  if (recheck) \
-    print $$0; \
-  close ($$0 ".trs"); \
-  close ($$0 ".log"); \
-}'
-# A command that, given a newline-separated list of test names on the
-# standard input, create the global log from their .trs and .log files.
-am__create_global_log = $(AWK) ' \
-function fatal(msg) \
-{ \
-  print "fatal: making $@: " msg | "cat >&2"; \
-  exit 1; \
-} \
-function rst_section(header) \
-{ \
-  print header; \
-  len = length(header); \
-  for (i = 1; i <= len; i = i + 1) \
-    printf "="; \
-  printf "\n\n"; \
-} \
-{ \
-  copy_in_global_log = 1; \
-  global_test_result = "RUN"; \
-  while ((rc = (getline line < ($$0 ".trs"))) != 0) \
-    { \
-      if (rc < 0) \
-         fatal("failed to read from " $$0 ".trs"); \
-      if (line ~ /$(am__global_test_result_rx)/) \
-        { \
-          sub("$(am__global_test_result_rx)", "", line); \
-          sub("[ 	]*$$", "", line); \
-          global_test_result = line; \
-        } \
-      else if (line ~ /$(am__copy_in_global_log_rx)[nN][oO]/) \
-        copy_in_global_log = 0; \
-    }; \
-  if (copy_in_global_log) \
-    { \
-      rst_section(global_test_result ": " $$0); \
-      while ((rc = (getline line < ($$0 ".log"))) != 0) \
-      { \
-        if (rc < 0) \
-          fatal("failed to read from " $$0 ".log"); \
-        print line; \
-      }; \
-      printf "\n"; \
-    }; \
-  close ($$0 ".trs"); \
-  close ($$0 ".log"); \
-}'
-# Restructured Text title.
-am__rst_title = { sed 's/.*/   &   /;h;s/./=/g;p;x;s/ *$$//;p;g' && echo; }
-# Solaris 10 'make', and several other traditional 'make' implementations,
-# pass "-e" to $(SHELL), and POSIX 2008 even requires this.  Work around it
-# by disabling -e (using the XSI extension "set +e") if it's set.
-am__sh_e_setup = case $$- in *e*) set +e;; esac
-# Default flags passed to test drivers.
-am__common_driver_flags = \
-  --color-tests "$$am__color_tests" \
-  --enable-hard-errors "$$am__enable_hard_errors" \
-  --expect-failure "$$am__expect_failure"
-# To be inserted before the command running the test.  Creates the
-# directory for the log if needed.  Stores in $dir the directory
-# containing $f, in $tst the test, in $log the log.  Executes the
-# developer- defined test setup AM_TESTS_ENVIRONMENT (if any), and
-# passes TESTS_ENVIRONMENT.  Set up options for the wrapper that
-# will run the test scripts (or their associated LOG_COMPILER, if
-# thy have one).
-am__check_pre = \
-$(am__sh_e_setup);					\
-$(am__vpath_adj_setup) $(am__vpath_adj)			\
-$(am__tty_colors);					\
-srcdir=$(srcdir); export srcdir;			\
-case "$@" in						\
-  */*) am__odir=`echo "./$@" | sed 's|/[^/]*$$||'`;;	\
-    *) am__odir=.;; 					\
-esac;							\
-test "x$$am__odir" = x"." || test -d "$$am__odir" 	\
-  || $(MKDIR_P) "$$am__odir" || exit $$?;		\
-if test -f "./$$f"; then dir=./;			\
-elif test -f "$$f"; then dir=;				\
-else dir="$(srcdir)/"; fi;				\
-tst=$$dir$$f; log='$@'; 				\
-if test -n '$(DISABLE_HARD_ERRORS)'; then		\
-  am__enable_hard_errors=no; 				\
-else							\
-  am__enable_hard_errors=yes; 				\
-fi; 							\
-case " $(XFAIL_TESTS) " in				\
-  *[\ \	]$$f[\ \	]* | *[\ \	]$$dir$$f[\ \	]*) \
-    am__expect_failure=yes;;				\
-  *)							\
-    am__expect_failure=no;;				\
-esac; 							\
-$(AM_TESTS_ENVIRONMENT) $(TESTS_ENVIRONMENT)
-# A shell command to get the names of the tests scripts with any registered
-# extension removed (i.e., equivalently, the names of the test logs, with
-# the '.log' extension removed).  The result is saved in the shell variable
-# '$bases'.  This honors runtime overriding of TESTS and TEST_LOGS.  Sadly,
-# we cannot use something simpler, involving e.g., "$(TEST_LOGS:.log=)",
-# since that might cause problem with VPATH rewrites for suffix-less tests.
-# See also 'test-harness-vpath-rewrite.sh' and 'test-trs-basic.sh'.
-am__set_TESTS_bases = \
-  bases='$(TEST_LOGS)'; \
-  bases=`for i in $$bases; do echo $$i; done | sed 's/\.log$$//'`; \
-  bases=`echo $$bases`
-AM_TESTSUITE_SUMMARY_HEADER = ' for $(PACKAGE_STRING)'
-RECHECK_LOGS = $(TEST_LOGS)
-AM_RECURSIVE_TARGETS = check recheck
-TEST_SUITE_LOG = test-suite.log
-am__test_logs1 = $(TESTS:=.log)
-am__test_logs2 = $(am__test_logs1:@EXEEXT@.log=.log)
-am__test_logs3 = $(am__test_logs2:.x.log=.log)
-X_LOG_DRIVER = $(SHELL) $(top_srcdir)/config/test-driver
-X_LOG_COMPILE = $(X_LOG_COMPILER) $(AM_X_LOG_FLAGS) $(X_LOG_FLAGS)
-am__set_b = \
-  case '$@' in \
-    */*) \
-      case '$*' in \
-        */*) b='$*';; \
-          *) b=`echo '$@' | sed 's/\.log$$//'`; \
-       esac;; \
-    *) \
-      b='$*';; \
-  esac
-TEST_LOGS = $(am__test_logs3:.sh.log=.log)
-SH_LOG_DRIVER = $(SHELL) $(top_srcdir)/config/test-driver
-SH_LOG_COMPILE = $(SH_LOG_COMPILER) $(AM_SH_LOG_FLAGS) $(SH_LOG_FLAGS)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/test_abort.sh.in \
-	$(srcdir)/test_component_config.sh.in \
-	$(srcdir)/test_couple_config.sh.in \
-	$(srcdir)/test_def_comps.sh.in \
-	$(srcdir)/test_def_datetime.sh.in \
-	$(srcdir)/test_def_grid.sh.in $(srcdir)/test_def_mask.sh.in \
-	$(srcdir)/test_def_points.sh.in \
-	$(srcdir)/test_dist_grid_pair_parallel.sh.in \
-	$(srcdir)/test_dummy_coupling.sh.in \
-	$(srcdir)/test_dummy_coupling2_c.sh.in \
-	$(srcdir)/test_dummy_coupling3.sh.in \
-	$(srcdir)/test_dummy_coupling3_c.sh.in \
-	$(srcdir)/test_dummy_coupling4_c.sh.in \
-	$(srcdir)/test_dummy_coupling5.sh.in \
-	$(srcdir)/test_dummy_coupling6.sh.in \
-	$(srcdir)/test_dummy_coupling6_c.sh.in \
-	$(srcdir)/test_dummy_coupling7.sh.in \
-	$(srcdir)/test_dummy_coupling7_c.sh.in \
-	$(srcdir)/test_dummy_coupling8_c.sh.in \
-	$(srcdir)/test_dummy_coupling9.sh.in \
-	$(srcdir)/test_dynamic_config.sh.in \
-	$(srcdir)/test_group_comm.sh.in \
-	$(srcdir)/test_init_comm_final.sh.in \
-	$(srcdir)/test_init_final.sh.in \
-	$(srcdir)/test_instance_parallel1.sh.in \
-	$(srcdir)/test_instance_parallel2.sh.in \
-	$(srcdir)/test_instance_parallel3.sh.in \
-	$(srcdir)/test_instance_parallel4.sh.in \
-	$(srcdir)/test_interp_grid_parallel.sh.in \
-	$(srcdir)/test_interp_method_avg_parallel.sh.in \
-	$(srcdir)/test_interp_method_callback_parallel.sh.in \
-	$(srcdir)/test_interp_method_conserv_parallel.sh.in \
-	$(srcdir)/test_interp_method_creep_parallel.sh.in \
-	$(srcdir)/test_interp_method_file_parallel.sh.in \
-	$(srcdir)/test_interp_method_hcsbb_parallel.sh.in \
-	$(srcdir)/test_interp_method_nnn_parallel.sh.in \
-	$(srcdir)/test_interp_method_nnn_parallel2.sh.in \
-	$(srcdir)/test_interp_method_parallel.sh.in \
-	$(srcdir)/test_interp_method_rbf_parallel.sh.in \
-	$(srcdir)/test_interp_method_spmap_parallel.sh.in \
-	$(srcdir)/test_interp_weights_parallel.sh.in \
-	$(srcdir)/test_interpolation_exchange.sh.in \
-	$(srcdir)/test_interpolation_parallel1.sh.in \
-	$(srcdir)/test_interpolation_parallel2.sh.in \
-	$(srcdir)/test_interpolation_parallel3.sh.in \
-	$(srcdir)/test_interpolation_parallel4.sh.in \
-	$(srcdir)/test_interpolation_parallel5.sh.in \
-	$(srcdir)/test_interpolation_parallel6.sh.in \
-	$(srcdir)/test_io_config.sh.in $(srcdir)/test_mpi_error.sh.in \
-	$(srcdir)/test_mpi_handshake.sh.in \
-	$(srcdir)/test_mpi_handshake_c.sh.in \
-	$(srcdir)/test_multithreading.sh.in \
-	$(srcdir)/test_proc_sphere_part_parallel.sh.in \
-	$(srcdir)/test_query_routines.sh.in \
-	$(srcdir)/test_read_fesom.sh.in $(srcdir)/test_read_icon.sh.in \
-	$(srcdir)/test_read_icon_parallel.sh.in \
-	$(srcdir)/test_read_mpiom.sh.in \
-	$(srcdir)/test_read_scrip.sh.in \
-	$(srcdir)/test_read_woa_data.sh.in \
-	$(srcdir)/test_redirstdout.sh.in $(srcdir)/test_restart.sh.in \
-	$(srcdir)/test_restart2.sh.in $(srcdir)/test_version.sh.in \
-	$(srcdir)/test_weights2vtk.sh.in $(top_srcdir)/config/depcomp \
-	$(top_srcdir)/config/test-driver
+DIST_SUBDIRS = common core utils mci tools python
+am__DIST_COMMON = $(srcdir)/Makefile.in
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
+am__relativize = \
+  dir0=`pwd`; \
+  sed_first='s,^\([^/]*\)/.*$$,\1,'; \
+  sed_rest='s,^[^/]*/*,,'; \
+  sed_last='s,^.*/\([^/]*\)$$,\1,'; \
+  sed_butlast='s,/*[^/]*$$,,'; \
+  while test -n "$$dir1"; do \
+    first=`echo "$$dir1" | sed -e "$$sed_first"`; \
+    if test "$$first" != "."; then \
+      if test "$$first" = ".."; then \
+        dir2=`echo "$$dir0" | sed -e "$$sed_last"`/"$$dir2"; \
+        dir0=`echo "$$dir0" | sed -e "$$sed_butlast"`; \
+      else \
+        first2=`echo "$$dir2" | sed -e "$$sed_first"`; \
+        if test "$$first2" = "$$first"; then \
+          dir2=`echo "$$dir2" | sed -e "$$sed_rest"`; \
+        else \
+          dir2="../$$dir2"; \
+        fi; \
+        dir0="$$dir0"/"$$first"; \
+      fi; \
+    fi; \
+    dir1=`echo "$$dir1" | sed -e "$$sed_rest"`; \
+  done; \
+  reldir="$$dir2"
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
 AM_DEFAULT_VERBOSITY = @AM_DEFAULT_VERBOSITY@
@@ -1625,6 +219,7 @@ CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
+CURL = @CURL@
 CYGPATH_W = @CYGPATH_W@
 DEFS = @DEFS@
 DEPDIR = @DEPDIR@
@@ -1652,7 +247,6 @@ INSTALL_SCRIPT = @INSTALL_SCRIPT@
 INSTALL_STRIP_PROGRAM = @INSTALL_STRIP_PROGRAM@
 LAPACK_CFLAGS = @LAPACK_CFLAGS@
 LAPACK_CLIBS = @LAPACK_CLIBS@
-LAPACK_FCLIBS = @LAPACK_FCLIBS@
 LDFLAGS = @LDFLAGS@
 LIBOBJS = @LIBOBJS@
 LIBS = @LIBS@
@@ -1670,6 +264,8 @@ MTIME_CLIBS = @MTIME_CLIBS@
 NETCDF_CFLAGS = @NETCDF_CFLAGS@
 NETCDF_CLIBS = @NETCDF_CLIBS@
 OBJEXT = @OBJEXT@
+OPENMP_CFLAGS = @OPENMP_CFLAGS@
+OPENMP_FCLIBS = @OPENMP_FCLIBS@
 PACKAGE = @PACKAGE@
 PACKAGE_BUGREPORT = @PACKAGE_BUGREPORT@
 PACKAGE_NAME = @PACKAGE_NAME@
@@ -1679,16 +275,19 @@ PACKAGE_URL = @PACKAGE_URL@
 PACKAGE_VERSION = @PACKAGE_VERSION@
 PATH_SEPARATOR = @PATH_SEPARATOR@
 PIC_CFLAGS = @PIC_CFLAGS@
+PIC_FCFLAGS = @PIC_FCFLAGS@
 PTHREAD_CC = @PTHREAD_CC@
 PTHREAD_CFLAGS = @PTHREAD_CFLAGS@
 PTHREAD_CXX = @PTHREAD_CXX@
 PTHREAD_LIBS = @PTHREAD_LIBS@
 PYTHON = @PYTHON@
+PYTHON_CFLAGS = @PYTHON_CFLAGS@
 RANLIB = @RANLIB@
+RPATH_CFLAGS = @RPATH_CFLAGS@
+RPATH_FCFLAGS = @RPATH_FCFLAGS@
 SED = @SED@
 SET_MAKE = @SET_MAKE@
 SHELL = @SHELL@
-SHLIB_ENVIRONMENT_MAKE = @SHLIB_ENVIRONMENT_MAKE@
 STRIP = @STRIP@
 VERSION = @VERSION@
 YAXT_CFLAGS = @YAXT_CFLAGS@
@@ -1748,313 +347,11 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-AM_TESTS_ENVIRONMENT = $(SHLIB_ENVIRONMENT_MAKE)
-TEST_EXTENSIONS = .x .sh
-test_PROGRAMS_ = \
-        test_angle.x                                \
-        test_area.x                                 \
-        test_cell_bnd_circle.x                      \
-        test_circle.x                               \
-        test_clipping.x                             \
-        test_lat_clipping.x                         \
-        test_compute_overlap_area.x                 \
-        test_dist_grid_utils.x                      \
-        test_events.x                               \
-        test_pxgc.x                                 \
-        test_gcxgc.x                                \
-        test_gcxlatc.x                              \
-        test_generate_cubed_sphere.x                \
-        test_geometry.x                             \
-        test_grid.x                                 \
-        test_grid2vtk.x                             \
-        test_interval_tree.x                        \
-        test_latcxlatc.x                            \
-        test_loncxlatc.x                            \
-        test_loncxlonc.x                            \
-        test_mergesort.x                            \
-        test_partial_areas.x                        \
-        test_point_in_cell.x                        \
-        test_bnd_sphere_part.x                      \
-        test_point_sphere_part.x                    \
-        test_quicksort.x                            \
-        test_read_cube_csv.x                        \
-        test_vtk_output.x                           \
-        test_interp_stack_config.x
-
-xfail_test_PROGRAMS_ = 
-test_SCRIPTS_ = \
-        test_abort.sh                                  \
-        test_component_config.sh                       \
-        test_couple_config.sh                          \
-        test_instance_parallel1.sh                     \
-        test_instance_parallel2.sh                     \
-        test_instance_parallel3.sh                     \
-        test_instance_parallel4.sh                     \
-        test_def_comps.sh                              \
-        test_def_datetime.sh                           \
-        test_def_grid.sh                               \
-        test_def_mask.sh                               \
-        test_def_points.sh                             \
-        test_dist_grid_pair_parallel.sh                \
-        test_group_comm.sh                             \
-        test_interp_grid_parallel.sh                   \
-        test_interp_method_parallel.sh                 \
-        test_interp_method_avg_parallel.sh             \
-        test_interp_method_callback_parallel.sh        \
-        test_interp_method_conserv_parallel.sh         \
-        test_interp_method_creep_parallel.sh           \
-        test_interp_method_nnn_parallel.sh             \
-        test_interp_method_nnn_parallel2.sh            \
-        test_interp_method_rbf_parallel.sh             \
-        test_interp_method_file_parallel.sh            \
-        test_interp_method_hcsbb_parallel.sh           \
-        test_interp_method_spmap_parallel.sh           \
-        test_interp_weights_parallel.sh                \
-        test_mpi_handshake.sh                          \
-        test_mpi_handshake_c.sh                        \
-        test_dummy_coupling.sh                         \
-        test_dummy_coupling2_c.sh                      \
-        test_dummy_coupling3.sh                        \
-        test_dummy_coupling3_c.sh                      \
-        test_dummy_coupling4_c.sh                      \
-        test_dummy_coupling5.sh                        \
-        test_dummy_coupling6.sh                        \
-        test_dummy_coupling6_c.sh                      \
-        test_dummy_coupling7.sh                        \
-        test_dummy_coupling7_c.sh                      \
-        test_dummy_coupling8_c.sh                      \
-        test_dummy_coupling9.sh                        \
-        test_interpolation_exchange.sh                 \
-        test_interpolation_parallel1.sh                \
-        test_interpolation_parallel2.sh                \
-        test_interpolation_parallel3.sh                \
-        test_interpolation_parallel4.sh                \
-        test_interpolation_parallel5.sh                \
-        test_interpolation_parallel6.sh                \
-        test_init_final.sh                             \
-        test_init_comm_final.sh                        \
-        test_proc_sphere_part_parallel.sh              \
-        test_read_fesom.sh                             \
-        test_read_icon.sh                              \
-        test_read_icon_parallel.sh                     \
-        test_read_mpiom.sh                             \
-        test_read_scrip.sh                             \
-        test_read_woa_data.sh                          \
-        test_redirstdout.sh                            \
-        test_restart.sh                                \
-        test_restart2.sh                               \
-        test_version.sh                                \
-        test_weights2vtk.sh                            \
-        test_dynamic_config.sh                         \
-        test_query_routines.sh                         \
-        test_multithreading.sh                         \
-        test_io_config.sh
-
-xfail_test_SCRIPTS_ = \
-        test_mpi_error.sh
-
-AM_CPPFLAGS = -DVERBOSE
-AM_CFLAGS = -I$(top_srcdir)/src -I$(top_srcdir)/contrib \
-        $(MPI_CFLAGS) \
-        $(YAXT_CFLAGS) \
-        $(NETCDF_CFLAGS) \
-        $(FYAML_CFLAGS) \
-        $(MTIME_CFLAGS)
-
-AM_FCFLAGS = $(FCPPDEF)VERBOSE \
-        $(FCMODINC)$(top_builddir)/src \
-        $(FCPPINC)$(top_builddir)/src \
-        $(MPI_FCFLAGS) \
-        $(YAXT_FCFLAGS)
-
-LDADD_COMMON = $(top_builddir)/src/libyac.a \
-        $(LAPACK_CLIBS) \
-        $(MTIME_CLIBS) \
-        $(FYAML_CLIBS) \
-        $(NETCDF_CLIBS)
-
-LDADD = $(LDADD_COMMON) $(YAXT_CLIBS) $(MPI_CLIBS)
-FCLDADD = $(LDADD_COMMON) $(am__append_7) $(am__append_8) \
-	$(MPI_FCLIBS) utest.$(OBJEXT)
-@FCMODUC_FALSE@utest_mod = utest.$(FCMODEXT)
-@FCMODUC_TRUE@utest_mod = UTEST.$(FCMODEXT)
-EXTRA_DIST = utest.F90 test_macros.inc
-utest_FCDEPS = $(utest_mod) test_macros.inc
-test_angle_x_SOURCES = test_angle.c tests.c
-test_area_x_SOURCES = test_area.c tests.c test_common.c test_common.h
-test_cell_bnd_circle_x_SOURCES = test_cell_bnd_circle.c tests.c test_common.c test_common.h
-test_circle_x_SOURCES = test_circle.c tests.c test_common.c test_common.h
-test_clipping_x_SOURCES = test_clipping.c tests.c test_common.c test_common.h
-test_lat_clipping_x_SOURCES = test_lat_clipping.c tests.c test_common.c test_common.h
-test_compute_overlap_area_x_SOURCES = test_compute_overlap_area.c tests.c test_common.c test_common.h
-test_couple_config_x_SOURCES = test_couple_config.c tests.c
-test_component_config_x_SOURCES = test_component_config.c tests.c test_common.c test_common.h
-test_instance_parallel1_x_SOURCES = test_instance_parallel1.c weight_file_common.c weight_file_common.h  \
-                                    tests.c test_common.c test_common.h
-
-test_instance_parallel2_x_SOURCES = test_instance_parallel2.c tests.c \
-                                    test_common.c test_common.h
-
-test_instance_parallel3_x_SOURCES = test_instance_parallel3.c tests.c \
-                                    test_common.c test_common.h
-
-test_instance_parallel4_x_SOURCES = test_instance_parallel4.c tests.c \
-                                    test_common.c test_common.h
-
-test_def_comps_x_LDADD = $(FCLDADD)
-test_def_comps_x_SOURCES = test_def_comps.F90
-test_def_datetime_x_LDADD = $(FCLDADD)
-test_def_datetime_x_SOURCES = test_def_datetime.F90
-test_def_grid_x_LDADD = $(FCLDADD)
-test_def_grid_x_SOURCES = test_def_grid.F90
-test_def_mask_x_LDADD = $(FCLDADD)
-test_def_mask_x_SOURCES = test_def_mask.F90
-test_def_points_x_LDADD = $(FCLDADD)
-test_def_points_x_SOURCES = test_def_points.F90
-test_dummy_coupling_c_x_SOURCES = test_dummy_coupling_c.c tests.c test_common.c test_common.h
-test_dummy_coupling2_c_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_dummy_coupling2_c_x_SOURCES = test_dummy_coupling2_c.c tests.c test_common.c test_common.h
-test_dummy_coupling3_c_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_dummy_coupling3_c_x_SOURCES = test_dummy_coupling3_c.c tests.c test_common.c test_common.h
-test_dummy_coupling4_c_x_SOURCES = test_dummy_coupling4_c.c tests.c test_common.c test_common.h
-test_dummy_coupling5_c_x_SOURCES = test_dummy_coupling5_c.c tests.c test_common.c test_common.h
-test_dummy_coupling6_c_x_SOURCES = test_dummy_coupling6_c.c tests.c test_common.c test_common.h
-test_dummy_coupling7_c_x_SOURCES = test_dummy_coupling7_c.c tests.c test_common.c test_common.h
-test_dummy_coupling8_c_x_SOURCES = test_dummy_coupling8_c.c tests.c test_common.c test_common.h
-test_dummy_coupling9_x_LDADD = $(FCLDADD)
-test_dummy_coupling9_x_SOURCES = test_dummy_coupling9.F90
-test_dummy_coupling9_c_x_SOURCES = test_dummy_coupling9_c.c tests.c test_common.c test_common.h
-test_dummy_coupling_dble_x_LDADD = $(FCLDADD)
-test_dummy_coupling_dble_x_SOURCES = test_dummy_coupling_dble.F90 test_dummy_coupling.inc
-test_dummy_coupling_real_x_LDADD = $(FCLDADD)
-test_dummy_coupling_real_x_SOURCES = test_dummy_coupling_real.F90 test_dummy_coupling.inc
-test_dummy_coupling3_dble_x_LDADD = $(top_builddir)/contrib/libgridio.a $(FCLDADD)
-test_dummy_coupling3_dble_x_SOURCES = test_dummy_coupling3_dble.F90 test_dummy_coupling3.inc
-test_dummy_coupling3_real_x_LDADD = $(top_builddir)/contrib/libgridio.a $(FCLDADD)
-test_dummy_coupling3_real_x_SOURCES = test_dummy_coupling3_real.F90 test_dummy_coupling3.inc
-test_dummy_coupling5_dble_x_LDADD = $(FCLDADD)
-test_dummy_coupling5_dble_x_SOURCES = test_dummy_coupling5_dble.F90 test_dummy_coupling5.inc
-test_dummy_coupling5_real_x_LDADD = $(FCLDADD)
-test_dummy_coupling5_real_x_SOURCES = test_dummy_coupling5_real.F90 test_dummy_coupling5.inc
-test_dummy_coupling6_dble_x_LDADD = $(FCLDADD)
-test_dummy_coupling6_dble_x_SOURCES = test_dummy_coupling6_dble.F90 test_dummy_coupling6.inc
-test_dummy_coupling6_real_x_LDADD = $(FCLDADD)
-test_dummy_coupling6_real_x_SOURCES = test_dummy_coupling6_real.F90 test_dummy_coupling6.inc
-test_dummy_coupling7_dble_x_LDADD = $(FCLDADD)
-test_dummy_coupling7_dble_x_SOURCES = test_dummy_coupling7_dble.F90 test_dummy_coupling7.inc
-test_dummy_coupling7_real_x_LDADD = $(FCLDADD)
-test_dummy_coupling7_real_x_SOURCES = test_dummy_coupling7_real.F90 test_dummy_coupling7.inc
-test_redirstdout_c_x_SOURCES = test_redirstdout_c.c tests.c test_common.c test_common.h
-test_redirstdout_x_LDADD = $(FCLDADD)
-test_redirstdout_x_SOURCES = test_redirstdout.F90
-test_restart_c_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_restart_c_x_SOURCES = test_restart_c.c tests.c test_common.c test_common.h
-test_restart_dble_x_LDADD = $(top_builddir)/contrib/libgridio.a $(FCLDADD)
-test_restart_dble_x_SOURCES = test_restart_dble.F90
-test_restart2_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_restart2_x_SOURCES = test_restart2.c tests.c test_common.c test_common.h
-test_events_x_SOURCES = test_events.c tests.c tests.h
-test_mpi_handshake_c_x_SOURCES = test_mpi_handshake_c.c tests.c
-test_mpi_handshake_x_LDADD = $(FCLDADD)
-test_mpi_handshake_x_SOURCES = test_mpi_handshake.F90
-test_interpolation_exchange_x_SOURCES = test_interpolation_exchange.c tests.c test_common.c test_common.h
-test_interpolation_parallel1_x_SOURCES = test_interpolation_parallel1.c tests.c test_common.c test_common.h
-test_interpolation_parallel2_x_SOURCES = test_interpolation_parallel2.c tests.c test_common.c test_common.h
-test_interpolation_parallel3_x_SOURCES = test_interpolation_parallel3.c weight_file_common.c weight_file_common.h tests.c test_common.c test_common.h
-test_interpolation_parallel4_x_SOURCES = test_interpolation_parallel4.c weight_file_common.c weight_file_common.h tests.c
-test_interpolation_parallel5_x_SOURCES = test_interpolation_parallel5.c weight_file_common.c weight_file_common.h tests.c test_common.c test_common.h
-test_interpolation_parallel6_x_SOURCES = test_interpolation_parallel6.c tests.c test_common.c test_common.h
-test_pxgc_x_SOURCES = test_pxgc.c test_cxc.c tests.c test_cxc.h
-test_gcxgc_x_SOURCES = test_gcxgc.c test_cxc.c tests.c test_cxc.h
-test_gcxlatc_x_SOURCES = test_gcxlatc.c test_cxc.c tests.c test_cxc.h
-test_generate_cubed_sphere_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_generate_cubed_sphere_x_SOURCES = test_generate_cubed_sphere.c tests.c
-test_geometry_x_SOURCES = test_geometry.c tests.c
-test_grid_x_SOURCES = test_grid.c tests.c test_common.c test_common.h
-test_grid2vtk_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_grid2vtk_x_SOURCES = test_grid2vtk.c tests.c test_common.c test_common.h
-test_init_final_x_LDADD = $(FCLDADD)
-test_init_final_x_SOURCES = test_init_final.F90
-test_init_comm_final_x_LDADD = $(FCLDADD)
-test_init_comm_final_x_SOURCES = test_init_comm_final.F90
-test_interval_tree_x_SOURCES = test_interval_tree.c tests.c
-test_latcxlatc_x_SOURCES = test_latcxlatc.c test_cxc.c tests.c test_cxc.h
-test_loncxlatc_x_SOURCES = test_loncxlatc.c test_cxc.c tests.c test_cxc.h
-test_loncxlonc_x_SOURCES = test_loncxlonc.c test_cxc.c tests.c test_cxc.h
-test_mergesort_x_SOURCES = test_mergesort.c tests.c
-test_partial_areas_x_SOURCES = test_partial_areas.c tests.c test_common.c test_common.h
-test_point_in_cell_x_SOURCES = test_point_in_cell.c tests.c test_common.c test_common.h
-test_bnd_sphere_part_x_SOURCES = test_bnd_sphere_part.c tests.c test_common.c test_common.h
-test_point_sphere_part_x_SOURCES = test_point_sphere_part.c tests.c test_common.c test_common.h
-test_proc_sphere_part_parallel_x_SOURCES = test_proc_sphere_part_parallel.c tests.c test_common.c test_common.h
-test_quicksort_x_SOURCES = test_quicksort.c tests.c
-test_read_cube_csv_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_cube_csv_x_SOURCES = test_read_cube_csv.c tests.c
-test_vtk_output_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_vtk_output_x_SOURCES = test_vtk_output.c tests.c
-test_read_fesom_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_fesom_x_SOURCES = test_read_fesom.c tests.c
-test_read_icon_parallel_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_icon_parallel_x_SOURCES = test_read_icon_parallel.c tests.c test_common.c test_common.h
-test_read_icon_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_icon_x_SOURCES = test_read_icon.c tests.c test_common.c test_common.h
-test_read_mpiom_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_mpiom_x_SOURCES = test_read_mpiom.c tests.c test_common.c test_common.h
-test_read_scrip_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_scrip_x_SOURCES = test_read_scrip.c tests.c test_common.c test_common.h
-test_read_woa_data_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_read_woa_data_x_SOURCES = test_read_woa_data.c tests.c test_common.c test_common.h
-test_weights2vtk_x_SOURCES = test_weights2vtk.c tests.c test_common.c test_common.h weight_file_common.c weight_file_common.h
-test_dist_grid_utils_x_SOURCES = test_dist_grid_utils.c tests.c
-test_dist_grid_pair_parallel_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_dist_grid_pair_parallel_x_SOURCES = test_dist_grid_pair_parallel.c tests.c test_common.c test_common.h
-test_interp_grid_parallel_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_interp_grid_parallel_x_SOURCES = test_interp_grid_parallel.c tests.c test_common.c test_common.h
-test_interp_method_parallel_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_interp_method_parallel_x_SOURCES = test_interp_method_parallel.c tests.c test_common.c test_common.h
-test_interp_method_avg_parallel_x_SOURCES = test_interp_method_avg_parallel.c tests.c test_common.c test_common.h
-test_interp_method_conserv_parallel_x_SOURCES = test_interp_method_conserv_parallel.c tests.c test_common.c test_common.h
-test_interp_method_creep_parallel_x_SOURCES = test_interp_method_creep_parallel.c tests.c test_common.c test_common.h
-test_interp_method_nnn_parallel_x_SOURCES = test_interp_method_nnn_parallel.c tests.c test_common.c test_common.h
-test_interp_method_nnn_parallel2_x_SOURCES = test_interp_method_nnn_parallel2.c tests.c test_common.c test_common.h
-test_interp_method_rbf_parallel_x_SOURCES = test_interp_method_rbf_parallel.c tests.c test_common.c test_common.h
-test_interp_method_callback_parallel_x_SOURCES = test_interp_method_callback_parallel.c weight_file_common.h weight_file_common.c tests.c test_common.c test_common.h
-test_interp_method_file_parallel_x_SOURCES = test_interp_method_file_parallel.c weight_file_common.h weight_file_common.c tests.c test_common.c test_common.h
-test_interp_method_hcsbb_parallel_x_SOURCES = test_interp_method_hcsbb_parallel.c tests.c test_common.c test_common.h
-test_interp_method_spmap_parallel_x_SOURCES = test_interp_method_spmap_parallel.c tests.c test_common.c test_common.h
-test_interp_weights_parallel_x_LDADD = $(top_builddir)/contrib/libgridio.a $(LDADD)
-test_interp_weights_parallel_x_SOURCES = test_interp_weights_parallel.c tests.c test_common.c test_common.h
-test_group_comm_x_SOURCES = test_group_comm.c tests.c test_common.c test_common.h
-test_multithreading_x_CFLAGS = $(AM_CFLAGS) $(PTHREAD_CFLAGS)
-test_multithreading_x_LDADD = $(PTHREAD_LIBS) $(LDADD)
-test_multithreading_x_SOURCES = test_multithreading.c
-test_version_x_LDADD = $(FCLDADD)
-test_version_x_SOURCES = test_version.F90
-test_abort_x_LDADD = $(FCLDADD)
-test_abort_x_SOURCES = test_abort.F90
-test_abort_c_x_SOURCES = test_abort_c.c  tests.c test_common.c test_common.h
-test_dynamic_config_c_x_SOURCES = test_dynamic_config_c.c tests.c test_common.c test_common.h
-test_dynamic_config_x_LDADD = $(FCLDADD)
-test_dynamic_config_x_SOURCES = test_dynamic_config.F90
-test_query_routines_c_x_SOURCES = test_query_routines_c.c tests.c
-test_query_routines_x_LDADD = $(FCLDADD)
-test_query_routines_x_SOURCES = test_query_routines.F90
-test_interp_stack_config_x_SOURCES = test_interp_stack_config.c tests.c
-test_io_config_x_SOURCES = test_io_config.c tests.c test_common.c test_common.h
-AUTOMAKE_OPTIONS = color-tests
-CLEANFILES = weights_additiona_b.nc
-
-# Compile *.F90 without CPPFLAGS, which are normally meant for the C compiler
-# and might not be compatible with the Fortran compiler:
-FCDEFS = $(FCPPDEF)HAVE_CONFIG_H
-DEFAULT_FCINCLUDES = $(FCPPINC).@yac_fcisrc@
-PPFCCOMPILE = $(FC) $(FCDEFS) $(DEFAULT_FCINCLUDES) $(FCINCLUDES) \
-	$(AM_FCFLAGS) $(FCFLAGS)
-
-all: all-am
+SUBDIRS = common core $(am__append_1) $(am__append_2) $(am__append_3) \
+	$(am__append_4)
+all: all-recursive
 
 .SUFFIXES:
-.SUFFIXES: .F90 .c .log .o .obj .sh .sh$(EXEEXT) .trs .x .x$(EXEEXT)
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -2084,725 +381,62 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
-test_abort.sh: $(top_builddir)/config.status $(srcdir)/test_abort.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_component_config.sh: $(top_builddir)/config.status $(srcdir)/test_component_config.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_couple_config.sh: $(top_builddir)/config.status $(srcdir)/test_couple_config.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_def_comps.sh: $(top_builddir)/config.status $(srcdir)/test_def_comps.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_def_datetime.sh: $(top_builddir)/config.status $(srcdir)/test_def_datetime.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_def_grid.sh: $(top_builddir)/config.status $(srcdir)/test_def_grid.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_def_mask.sh: $(top_builddir)/config.status $(srcdir)/test_def_mask.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_def_points.sh: $(top_builddir)/config.status $(srcdir)/test_def_points.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dist_grid_pair_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_dist_grid_pair_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling2_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling2_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling3.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling3.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling3_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling3_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling4_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling4_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling5.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling5.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling6.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling6.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling6_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling6_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling7.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling7.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling7_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling7_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling8_c.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling8_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dummy_coupling9.sh: $(top_builddir)/config.status $(srcdir)/test_dummy_coupling9.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_group_comm.sh: $(top_builddir)/config.status $(srcdir)/test_group_comm.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_init_comm_final.sh: $(top_builddir)/config.status $(srcdir)/test_init_comm_final.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_init_final.sh: $(top_builddir)/config.status $(srcdir)/test_init_final.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_mpi_handshake.sh: $(top_builddir)/config.status $(srcdir)/test_mpi_handshake.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_mpi_handshake_c.sh: $(top_builddir)/config.status $(srcdir)/test_mpi_handshake_c.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_instance_parallel1.sh: $(top_builddir)/config.status $(srcdir)/test_instance_parallel1.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_instance_parallel2.sh: $(top_builddir)/config.status $(srcdir)/test_instance_parallel2.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_instance_parallel3.sh: $(top_builddir)/config.status $(srcdir)/test_instance_parallel3.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_instance_parallel4.sh: $(top_builddir)/config.status $(srcdir)/test_instance_parallel4.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_grid_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_grid_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_avg_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_avg_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_callback_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_callback_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_conserv_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_conserv_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_creep_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_creep_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_file_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_file_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_hcsbb_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_hcsbb_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_nnn_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_nnn_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_nnn_parallel2.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_nnn_parallel2.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_rbf_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_rbf_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_method_spmap_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_method_spmap_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interp_weights_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_interp_weights_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_exchange.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_exchange.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel1.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel1.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel2.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel2.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel3.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel3.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel4.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel4.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel5.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel5.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_interpolation_parallel6.sh: $(top_builddir)/config.status $(srcdir)/test_interpolation_parallel6.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_mpi_error.sh: $(top_builddir)/config.status $(srcdir)/test_mpi_error.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_proc_sphere_part_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_proc_sphere_part_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_fesom.sh: $(top_builddir)/config.status $(srcdir)/test_read_fesom.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_icon.sh: $(top_builddir)/config.status $(srcdir)/test_read_icon.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_icon_parallel.sh: $(top_builddir)/config.status $(srcdir)/test_read_icon_parallel.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_mpiom.sh: $(top_builddir)/config.status $(srcdir)/test_read_mpiom.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_scrip.sh: $(top_builddir)/config.status $(srcdir)/test_read_scrip.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_read_woa_data.sh: $(top_builddir)/config.status $(srcdir)/test_read_woa_data.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_redirstdout.sh: $(top_builddir)/config.status $(srcdir)/test_redirstdout.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_restart.sh: $(top_builddir)/config.status $(srcdir)/test_restart.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_restart2.sh: $(top_builddir)/config.status $(srcdir)/test_restart2.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_version.sh: $(top_builddir)/config.status $(srcdir)/test_version.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_weights2vtk.sh: $(top_builddir)/config.status $(srcdir)/test_weights2vtk.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_dynamic_config.sh: $(top_builddir)/config.status $(srcdir)/test_dynamic_config.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_query_routines.sh: $(top_builddir)/config.status $(srcdir)/test_query_routines.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_multithreading.sh: $(top_builddir)/config.status $(srcdir)/test_multithreading.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
-test_io_config.sh: $(top_builddir)/config.status $(srcdir)/test_io_config.sh.in
-	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
-clean-checkPROGRAMS:
-	-test -z "$(check_PROGRAMS)" || rm -f $(check_PROGRAMS)
-
-test_abort.x$(EXEEXT): $(test_abort_x_OBJECTS) $(test_abort_x_DEPENDENCIES) $(EXTRA_test_abort_x_DEPENDENCIES) 
-	@rm -f test_abort.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_abort_x_OBJECTS) $(test_abort_x_LDADD) $(LIBS)
-
-test_abort_c.x$(EXEEXT): $(test_abort_c_x_OBJECTS) $(test_abort_c_x_DEPENDENCIES) $(EXTRA_test_abort_c_x_DEPENDENCIES) 
-	@rm -f test_abort_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_abort_c_x_OBJECTS) $(test_abort_c_x_LDADD) $(LIBS)
-
-test_angle.x$(EXEEXT): $(test_angle_x_OBJECTS) $(test_angle_x_DEPENDENCIES) $(EXTRA_test_angle_x_DEPENDENCIES) 
-	@rm -f test_angle.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_angle_x_OBJECTS) $(test_angle_x_LDADD) $(LIBS)
-
-test_area.x$(EXEEXT): $(test_area_x_OBJECTS) $(test_area_x_DEPENDENCIES) $(EXTRA_test_area_x_DEPENDENCIES) 
-	@rm -f test_area.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_area_x_OBJECTS) $(test_area_x_LDADD) $(LIBS)
-
-test_bnd_sphere_part.x$(EXEEXT): $(test_bnd_sphere_part_x_OBJECTS) $(test_bnd_sphere_part_x_DEPENDENCIES) $(EXTRA_test_bnd_sphere_part_x_DEPENDENCIES) 
-	@rm -f test_bnd_sphere_part.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_bnd_sphere_part_x_OBJECTS) $(test_bnd_sphere_part_x_LDADD) $(LIBS)
-
-test_cell_bnd_circle.x$(EXEEXT): $(test_cell_bnd_circle_x_OBJECTS) $(test_cell_bnd_circle_x_DEPENDENCIES) $(EXTRA_test_cell_bnd_circle_x_DEPENDENCIES) 
-	@rm -f test_cell_bnd_circle.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_cell_bnd_circle_x_OBJECTS) $(test_cell_bnd_circle_x_LDADD) $(LIBS)
-
-test_circle.x$(EXEEXT): $(test_circle_x_OBJECTS) $(test_circle_x_DEPENDENCIES) $(EXTRA_test_circle_x_DEPENDENCIES) 
-	@rm -f test_circle.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_circle_x_OBJECTS) $(test_circle_x_LDADD) $(LIBS)
-
-test_clipping.x$(EXEEXT): $(test_clipping_x_OBJECTS) $(test_clipping_x_DEPENDENCIES) $(EXTRA_test_clipping_x_DEPENDENCIES) 
-	@rm -f test_clipping.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_clipping_x_OBJECTS) $(test_clipping_x_LDADD) $(LIBS)
-
-test_component_config.x$(EXEEXT): $(test_component_config_x_OBJECTS) $(test_component_config_x_DEPENDENCIES) $(EXTRA_test_component_config_x_DEPENDENCIES) 
-	@rm -f test_component_config.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_component_config_x_OBJECTS) $(test_component_config_x_LDADD) $(LIBS)
-
-test_compute_overlap_area.x$(EXEEXT): $(test_compute_overlap_area_x_OBJECTS) $(test_compute_overlap_area_x_DEPENDENCIES) $(EXTRA_test_compute_overlap_area_x_DEPENDENCIES) 
-	@rm -f test_compute_overlap_area.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_compute_overlap_area_x_OBJECTS) $(test_compute_overlap_area_x_LDADD) $(LIBS)
-
-test_couple_config.x$(EXEEXT): $(test_couple_config_x_OBJECTS) $(test_couple_config_x_DEPENDENCIES) $(EXTRA_test_couple_config_x_DEPENDENCIES) 
-	@rm -f test_couple_config.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_couple_config_x_OBJECTS) $(test_couple_config_x_LDADD) $(LIBS)
-
-test_def_comps.x$(EXEEXT): $(test_def_comps_x_OBJECTS) $(test_def_comps_x_DEPENDENCIES) $(EXTRA_test_def_comps_x_DEPENDENCIES) 
-	@rm -f test_def_comps.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_def_comps_x_OBJECTS) $(test_def_comps_x_LDADD) $(LIBS)
-
-test_def_datetime.x$(EXEEXT): $(test_def_datetime_x_OBJECTS) $(test_def_datetime_x_DEPENDENCIES) $(EXTRA_test_def_datetime_x_DEPENDENCIES) 
-	@rm -f test_def_datetime.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_def_datetime_x_OBJECTS) $(test_def_datetime_x_LDADD) $(LIBS)
-
-test_def_grid.x$(EXEEXT): $(test_def_grid_x_OBJECTS) $(test_def_grid_x_DEPENDENCIES) $(EXTRA_test_def_grid_x_DEPENDENCIES) 
-	@rm -f test_def_grid.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_def_grid_x_OBJECTS) $(test_def_grid_x_LDADD) $(LIBS)
-
-test_def_mask.x$(EXEEXT): $(test_def_mask_x_OBJECTS) $(test_def_mask_x_DEPENDENCIES) $(EXTRA_test_def_mask_x_DEPENDENCIES) 
-	@rm -f test_def_mask.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_def_mask_x_OBJECTS) $(test_def_mask_x_LDADD) $(LIBS)
-
-test_def_points.x$(EXEEXT): $(test_def_points_x_OBJECTS) $(test_def_points_x_DEPENDENCIES) $(EXTRA_test_def_points_x_DEPENDENCIES) 
-	@rm -f test_def_points.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_def_points_x_OBJECTS) $(test_def_points_x_LDADD) $(LIBS)
-
-test_dist_grid_pair_parallel.x$(EXEEXT): $(test_dist_grid_pair_parallel_x_OBJECTS) $(test_dist_grid_pair_parallel_x_DEPENDENCIES) $(EXTRA_test_dist_grid_pair_parallel_x_DEPENDENCIES) 
-	@rm -f test_dist_grid_pair_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dist_grid_pair_parallel_x_OBJECTS) $(test_dist_grid_pair_parallel_x_LDADD) $(LIBS)
-
-test_dist_grid_utils.x$(EXEEXT): $(test_dist_grid_utils_x_OBJECTS) $(test_dist_grid_utils_x_DEPENDENCIES) $(EXTRA_test_dist_grid_utils_x_DEPENDENCIES) 
-	@rm -f test_dist_grid_utils.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dist_grid_utils_x_OBJECTS) $(test_dist_grid_utils_x_LDADD) $(LIBS)
-
-test_dummy_coupling2_c.x$(EXEEXT): $(test_dummy_coupling2_c_x_OBJECTS) $(test_dummy_coupling2_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling2_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling2_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling2_c_x_OBJECTS) $(test_dummy_coupling2_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling3_c.x$(EXEEXT): $(test_dummy_coupling3_c_x_OBJECTS) $(test_dummy_coupling3_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling3_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling3_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling3_c_x_OBJECTS) $(test_dummy_coupling3_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling3_dble.x$(EXEEXT): $(test_dummy_coupling3_dble_x_OBJECTS) $(test_dummy_coupling3_dble_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling3_dble_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling3_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling3_dble_x_OBJECTS) $(test_dummy_coupling3_dble_x_LDADD) $(LIBS)
-
-test_dummy_coupling3_real.x$(EXEEXT): $(test_dummy_coupling3_real_x_OBJECTS) $(test_dummy_coupling3_real_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling3_real_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling3_real.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling3_real_x_OBJECTS) $(test_dummy_coupling3_real_x_LDADD) $(LIBS)
-
-test_dummy_coupling4_c.x$(EXEEXT): $(test_dummy_coupling4_c_x_OBJECTS) $(test_dummy_coupling4_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling4_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling4_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling4_c_x_OBJECTS) $(test_dummy_coupling4_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling5_c.x$(EXEEXT): $(test_dummy_coupling5_c_x_OBJECTS) $(test_dummy_coupling5_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling5_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling5_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling5_c_x_OBJECTS) $(test_dummy_coupling5_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling5_dble.x$(EXEEXT): $(test_dummy_coupling5_dble_x_OBJECTS) $(test_dummy_coupling5_dble_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling5_dble_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling5_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling5_dble_x_OBJECTS) $(test_dummy_coupling5_dble_x_LDADD) $(LIBS)
-
-test_dummy_coupling5_real.x$(EXEEXT): $(test_dummy_coupling5_real_x_OBJECTS) $(test_dummy_coupling5_real_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling5_real_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling5_real.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling5_real_x_OBJECTS) $(test_dummy_coupling5_real_x_LDADD) $(LIBS)
-
-test_dummy_coupling6_c.x$(EXEEXT): $(test_dummy_coupling6_c_x_OBJECTS) $(test_dummy_coupling6_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling6_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling6_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling6_c_x_OBJECTS) $(test_dummy_coupling6_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling6_dble.x$(EXEEXT): $(test_dummy_coupling6_dble_x_OBJECTS) $(test_dummy_coupling6_dble_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling6_dble_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling6_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling6_dble_x_OBJECTS) $(test_dummy_coupling6_dble_x_LDADD) $(LIBS)
-
-test_dummy_coupling6_real.x$(EXEEXT): $(test_dummy_coupling6_real_x_OBJECTS) $(test_dummy_coupling6_real_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling6_real_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling6_real.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling6_real_x_OBJECTS) $(test_dummy_coupling6_real_x_LDADD) $(LIBS)
-
-test_dummy_coupling7_c.x$(EXEEXT): $(test_dummy_coupling7_c_x_OBJECTS) $(test_dummy_coupling7_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling7_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling7_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling7_c_x_OBJECTS) $(test_dummy_coupling7_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling7_dble.x$(EXEEXT): $(test_dummy_coupling7_dble_x_OBJECTS) $(test_dummy_coupling7_dble_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling7_dble_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling7_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling7_dble_x_OBJECTS) $(test_dummy_coupling7_dble_x_LDADD) $(LIBS)
-
-test_dummy_coupling7_real.x$(EXEEXT): $(test_dummy_coupling7_real_x_OBJECTS) $(test_dummy_coupling7_real_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling7_real_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling7_real.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling7_real_x_OBJECTS) $(test_dummy_coupling7_real_x_LDADD) $(LIBS)
-
-test_dummy_coupling8_c.x$(EXEEXT): $(test_dummy_coupling8_c_x_OBJECTS) $(test_dummy_coupling8_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling8_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling8_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling8_c_x_OBJECTS) $(test_dummy_coupling8_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling9.x$(EXEEXT): $(test_dummy_coupling9_x_OBJECTS) $(test_dummy_coupling9_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling9_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling9.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling9_x_OBJECTS) $(test_dummy_coupling9_x_LDADD) $(LIBS)
-
-test_dummy_coupling9_c.x$(EXEEXT): $(test_dummy_coupling9_c_x_OBJECTS) $(test_dummy_coupling9_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling9_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling9_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling9_c_x_OBJECTS) $(test_dummy_coupling9_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling_c.x$(EXEEXT): $(test_dummy_coupling_c_x_OBJECTS) $(test_dummy_coupling_c_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling_c_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dummy_coupling_c_x_OBJECTS) $(test_dummy_coupling_c_x_LDADD) $(LIBS)
-
-test_dummy_coupling_dble.x$(EXEEXT): $(test_dummy_coupling_dble_x_OBJECTS) $(test_dummy_coupling_dble_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling_dble_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling_dble_x_OBJECTS) $(test_dummy_coupling_dble_x_LDADD) $(LIBS)
-
-test_dummy_coupling_real.x$(EXEEXT): $(test_dummy_coupling_real_x_OBJECTS) $(test_dummy_coupling_real_x_DEPENDENCIES) $(EXTRA_test_dummy_coupling_real_x_DEPENDENCIES) 
-	@rm -f test_dummy_coupling_real.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dummy_coupling_real_x_OBJECTS) $(test_dummy_coupling_real_x_LDADD) $(LIBS)
-
-test_dynamic_config.x$(EXEEXT): $(test_dynamic_config_x_OBJECTS) $(test_dynamic_config_x_DEPENDENCIES) $(EXTRA_test_dynamic_config_x_DEPENDENCIES) 
-	@rm -f test_dynamic_config.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_dynamic_config_x_OBJECTS) $(test_dynamic_config_x_LDADD) $(LIBS)
-
-test_dynamic_config_c.x$(EXEEXT): $(test_dynamic_config_c_x_OBJECTS) $(test_dynamic_config_c_x_DEPENDENCIES) $(EXTRA_test_dynamic_config_c_x_DEPENDENCIES) 
-	@rm -f test_dynamic_config_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_dynamic_config_c_x_OBJECTS) $(test_dynamic_config_c_x_LDADD) $(LIBS)
-
-test_events.x$(EXEEXT): $(test_events_x_OBJECTS) $(test_events_x_DEPENDENCIES) $(EXTRA_test_events_x_DEPENDENCIES) 
-	@rm -f test_events.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_events_x_OBJECTS) $(test_events_x_LDADD) $(LIBS)
-
-test_gcxgc.x$(EXEEXT): $(test_gcxgc_x_OBJECTS) $(test_gcxgc_x_DEPENDENCIES) $(EXTRA_test_gcxgc_x_DEPENDENCIES) 
-	@rm -f test_gcxgc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_gcxgc_x_OBJECTS) $(test_gcxgc_x_LDADD) $(LIBS)
-
-test_gcxlatc.x$(EXEEXT): $(test_gcxlatc_x_OBJECTS) $(test_gcxlatc_x_DEPENDENCIES) $(EXTRA_test_gcxlatc_x_DEPENDENCIES) 
-	@rm -f test_gcxlatc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_gcxlatc_x_OBJECTS) $(test_gcxlatc_x_LDADD) $(LIBS)
-
-test_generate_cubed_sphere.x$(EXEEXT): $(test_generate_cubed_sphere_x_OBJECTS) $(test_generate_cubed_sphere_x_DEPENDENCIES) $(EXTRA_test_generate_cubed_sphere_x_DEPENDENCIES) 
-	@rm -f test_generate_cubed_sphere.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_generate_cubed_sphere_x_OBJECTS) $(test_generate_cubed_sphere_x_LDADD) $(LIBS)
-
-test_geometry.x$(EXEEXT): $(test_geometry_x_OBJECTS) $(test_geometry_x_DEPENDENCIES) $(EXTRA_test_geometry_x_DEPENDENCIES) 
-	@rm -f test_geometry.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_geometry_x_OBJECTS) $(test_geometry_x_LDADD) $(LIBS)
-
-test_grid.x$(EXEEXT): $(test_grid_x_OBJECTS) $(test_grid_x_DEPENDENCIES) $(EXTRA_test_grid_x_DEPENDENCIES) 
-	@rm -f test_grid.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_grid_x_OBJECTS) $(test_grid_x_LDADD) $(LIBS)
-
-test_grid2vtk.x$(EXEEXT): $(test_grid2vtk_x_OBJECTS) $(test_grid2vtk_x_DEPENDENCIES) $(EXTRA_test_grid2vtk_x_DEPENDENCIES) 
-	@rm -f test_grid2vtk.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_grid2vtk_x_OBJECTS) $(test_grid2vtk_x_LDADD) $(LIBS)
-
-test_group_comm.x$(EXEEXT): $(test_group_comm_x_OBJECTS) $(test_group_comm_x_DEPENDENCIES) $(EXTRA_test_group_comm_x_DEPENDENCIES) 
-	@rm -f test_group_comm.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_group_comm_x_OBJECTS) $(test_group_comm_x_LDADD) $(LIBS)
-
-test_init_comm_final.x$(EXEEXT): $(test_init_comm_final_x_OBJECTS) $(test_init_comm_final_x_DEPENDENCIES) $(EXTRA_test_init_comm_final_x_DEPENDENCIES) 
-	@rm -f test_init_comm_final.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_init_comm_final_x_OBJECTS) $(test_init_comm_final_x_LDADD) $(LIBS)
-
-test_init_final.x$(EXEEXT): $(test_init_final_x_OBJECTS) $(test_init_final_x_DEPENDENCIES) $(EXTRA_test_init_final_x_DEPENDENCIES) 
-	@rm -f test_init_final.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_init_final_x_OBJECTS) $(test_init_final_x_LDADD) $(LIBS)
-
-test_instance_parallel1.x$(EXEEXT): $(test_instance_parallel1_x_OBJECTS) $(test_instance_parallel1_x_DEPENDENCIES) $(EXTRA_test_instance_parallel1_x_DEPENDENCIES) 
-	@rm -f test_instance_parallel1.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_instance_parallel1_x_OBJECTS) $(test_instance_parallel1_x_LDADD) $(LIBS)
-
-test_instance_parallel2.x$(EXEEXT): $(test_instance_parallel2_x_OBJECTS) $(test_instance_parallel2_x_DEPENDENCIES) $(EXTRA_test_instance_parallel2_x_DEPENDENCIES) 
-	@rm -f test_instance_parallel2.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_instance_parallel2_x_OBJECTS) $(test_instance_parallel2_x_LDADD) $(LIBS)
-
-test_instance_parallel3.x$(EXEEXT): $(test_instance_parallel3_x_OBJECTS) $(test_instance_parallel3_x_DEPENDENCIES) $(EXTRA_test_instance_parallel3_x_DEPENDENCIES) 
-	@rm -f test_instance_parallel3.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_instance_parallel3_x_OBJECTS) $(test_instance_parallel3_x_LDADD) $(LIBS)
-
-test_instance_parallel4.x$(EXEEXT): $(test_instance_parallel4_x_OBJECTS) $(test_instance_parallel4_x_DEPENDENCIES) $(EXTRA_test_instance_parallel4_x_DEPENDENCIES) 
-	@rm -f test_instance_parallel4.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_instance_parallel4_x_OBJECTS) $(test_instance_parallel4_x_LDADD) $(LIBS)
-
-test_interp_grid_parallel.x$(EXEEXT): $(test_interp_grid_parallel_x_OBJECTS) $(test_interp_grid_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_grid_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_grid_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_grid_parallel_x_OBJECTS) $(test_interp_grid_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_avg_parallel.x$(EXEEXT): $(test_interp_method_avg_parallel_x_OBJECTS) $(test_interp_method_avg_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_avg_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_avg_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_avg_parallel_x_OBJECTS) $(test_interp_method_avg_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_callback_parallel.x$(EXEEXT): $(test_interp_method_callback_parallel_x_OBJECTS) $(test_interp_method_callback_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_callback_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_callback_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_callback_parallel_x_OBJECTS) $(test_interp_method_callback_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_conserv_parallel.x$(EXEEXT): $(test_interp_method_conserv_parallel_x_OBJECTS) $(test_interp_method_conserv_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_conserv_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_conserv_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_conserv_parallel_x_OBJECTS) $(test_interp_method_conserv_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_creep_parallel.x$(EXEEXT): $(test_interp_method_creep_parallel_x_OBJECTS) $(test_interp_method_creep_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_creep_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_creep_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_creep_parallel_x_OBJECTS) $(test_interp_method_creep_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_file_parallel.x$(EXEEXT): $(test_interp_method_file_parallel_x_OBJECTS) $(test_interp_method_file_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_file_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_file_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_file_parallel_x_OBJECTS) $(test_interp_method_file_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_hcsbb_parallel.x$(EXEEXT): $(test_interp_method_hcsbb_parallel_x_OBJECTS) $(test_interp_method_hcsbb_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_hcsbb_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_hcsbb_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_hcsbb_parallel_x_OBJECTS) $(test_interp_method_hcsbb_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_nnn_parallel.x$(EXEEXT): $(test_interp_method_nnn_parallel_x_OBJECTS) $(test_interp_method_nnn_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_nnn_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_nnn_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_nnn_parallel_x_OBJECTS) $(test_interp_method_nnn_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_nnn_parallel2.x$(EXEEXT): $(test_interp_method_nnn_parallel2_x_OBJECTS) $(test_interp_method_nnn_parallel2_x_DEPENDENCIES) $(EXTRA_test_interp_method_nnn_parallel2_x_DEPENDENCIES) 
-	@rm -f test_interp_method_nnn_parallel2.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_nnn_parallel2_x_OBJECTS) $(test_interp_method_nnn_parallel2_x_LDADD) $(LIBS)
-
-test_interp_method_parallel.x$(EXEEXT): $(test_interp_method_parallel_x_OBJECTS) $(test_interp_method_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_parallel_x_OBJECTS) $(test_interp_method_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_rbf_parallel.x$(EXEEXT): $(test_interp_method_rbf_parallel_x_OBJECTS) $(test_interp_method_rbf_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_rbf_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_rbf_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_rbf_parallel_x_OBJECTS) $(test_interp_method_rbf_parallel_x_LDADD) $(LIBS)
-
-test_interp_method_spmap_parallel.x$(EXEEXT): $(test_interp_method_spmap_parallel_x_OBJECTS) $(test_interp_method_spmap_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_method_spmap_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_method_spmap_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_method_spmap_parallel_x_OBJECTS) $(test_interp_method_spmap_parallel_x_LDADD) $(LIBS)
-
-test_interp_stack_config.x$(EXEEXT): $(test_interp_stack_config_x_OBJECTS) $(test_interp_stack_config_x_DEPENDENCIES) $(EXTRA_test_interp_stack_config_x_DEPENDENCIES) 
-	@rm -f test_interp_stack_config.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_stack_config_x_OBJECTS) $(test_interp_stack_config_x_LDADD) $(LIBS)
-
-test_interp_weights_parallel.x$(EXEEXT): $(test_interp_weights_parallel_x_OBJECTS) $(test_interp_weights_parallel_x_DEPENDENCIES) $(EXTRA_test_interp_weights_parallel_x_DEPENDENCIES) 
-	@rm -f test_interp_weights_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interp_weights_parallel_x_OBJECTS) $(test_interp_weights_parallel_x_LDADD) $(LIBS)
-
-test_interpolation_exchange.x$(EXEEXT): $(test_interpolation_exchange_x_OBJECTS) $(test_interpolation_exchange_x_DEPENDENCIES) $(EXTRA_test_interpolation_exchange_x_DEPENDENCIES) 
-	@rm -f test_interpolation_exchange.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_exchange_x_OBJECTS) $(test_interpolation_exchange_x_LDADD) $(LIBS)
-
-test_interpolation_parallel1.x$(EXEEXT): $(test_interpolation_parallel1_x_OBJECTS) $(test_interpolation_parallel1_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel1_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel1.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel1_x_OBJECTS) $(test_interpolation_parallel1_x_LDADD) $(LIBS)
-
-test_interpolation_parallel2.x$(EXEEXT): $(test_interpolation_parallel2_x_OBJECTS) $(test_interpolation_parallel2_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel2_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel2.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel2_x_OBJECTS) $(test_interpolation_parallel2_x_LDADD) $(LIBS)
-
-test_interpolation_parallel3.x$(EXEEXT): $(test_interpolation_parallel3_x_OBJECTS) $(test_interpolation_parallel3_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel3_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel3.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel3_x_OBJECTS) $(test_interpolation_parallel3_x_LDADD) $(LIBS)
-
-test_interpolation_parallel4.x$(EXEEXT): $(test_interpolation_parallel4_x_OBJECTS) $(test_interpolation_parallel4_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel4_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel4.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel4_x_OBJECTS) $(test_interpolation_parallel4_x_LDADD) $(LIBS)
-
-test_interpolation_parallel5.x$(EXEEXT): $(test_interpolation_parallel5_x_OBJECTS) $(test_interpolation_parallel5_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel5_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel5.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel5_x_OBJECTS) $(test_interpolation_parallel5_x_LDADD) $(LIBS)
-
-test_interpolation_parallel6.x$(EXEEXT): $(test_interpolation_parallel6_x_OBJECTS) $(test_interpolation_parallel6_x_DEPENDENCIES) $(EXTRA_test_interpolation_parallel6_x_DEPENDENCIES) 
-	@rm -f test_interpolation_parallel6.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interpolation_parallel6_x_OBJECTS) $(test_interpolation_parallel6_x_LDADD) $(LIBS)
-
-test_interval_tree.x$(EXEEXT): $(test_interval_tree_x_OBJECTS) $(test_interval_tree_x_DEPENDENCIES) $(EXTRA_test_interval_tree_x_DEPENDENCIES) 
-	@rm -f test_interval_tree.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_interval_tree_x_OBJECTS) $(test_interval_tree_x_LDADD) $(LIBS)
-
-test_io_config.x$(EXEEXT): $(test_io_config_x_OBJECTS) $(test_io_config_x_DEPENDENCIES) $(EXTRA_test_io_config_x_DEPENDENCIES) 
-	@rm -f test_io_config.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_io_config_x_OBJECTS) $(test_io_config_x_LDADD) $(LIBS)
-
-test_lat_clipping.x$(EXEEXT): $(test_lat_clipping_x_OBJECTS) $(test_lat_clipping_x_DEPENDENCIES) $(EXTRA_test_lat_clipping_x_DEPENDENCIES) 
-	@rm -f test_lat_clipping.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_lat_clipping_x_OBJECTS) $(test_lat_clipping_x_LDADD) $(LIBS)
-
-test_latcxlatc.x$(EXEEXT): $(test_latcxlatc_x_OBJECTS) $(test_latcxlatc_x_DEPENDENCIES) $(EXTRA_test_latcxlatc_x_DEPENDENCIES) 
-	@rm -f test_latcxlatc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_latcxlatc_x_OBJECTS) $(test_latcxlatc_x_LDADD) $(LIBS)
-
-test_loncxlatc.x$(EXEEXT): $(test_loncxlatc_x_OBJECTS) $(test_loncxlatc_x_DEPENDENCIES) $(EXTRA_test_loncxlatc_x_DEPENDENCIES) 
-	@rm -f test_loncxlatc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_loncxlatc_x_OBJECTS) $(test_loncxlatc_x_LDADD) $(LIBS)
-
-test_loncxlonc.x$(EXEEXT): $(test_loncxlonc_x_OBJECTS) $(test_loncxlonc_x_DEPENDENCIES) $(EXTRA_test_loncxlonc_x_DEPENDENCIES) 
-	@rm -f test_loncxlonc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_loncxlonc_x_OBJECTS) $(test_loncxlonc_x_LDADD) $(LIBS)
-
-test_mergesort.x$(EXEEXT): $(test_mergesort_x_OBJECTS) $(test_mergesort_x_DEPENDENCIES) $(EXTRA_test_mergesort_x_DEPENDENCIES) 
-	@rm -f test_mergesort.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_mergesort_x_OBJECTS) $(test_mergesort_x_LDADD) $(LIBS)
-
-test_mpi_error.x$(EXEEXT): $(test_mpi_error_x_OBJECTS) $(test_mpi_error_x_DEPENDENCIES) $(EXTRA_test_mpi_error_x_DEPENDENCIES) 
-	@rm -f test_mpi_error.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_mpi_error_x_OBJECTS) $(test_mpi_error_x_LDADD) $(LIBS)
-
-test_mpi_handshake.x$(EXEEXT): $(test_mpi_handshake_x_OBJECTS) $(test_mpi_handshake_x_DEPENDENCIES) $(EXTRA_test_mpi_handshake_x_DEPENDENCIES) 
-	@rm -f test_mpi_handshake.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_mpi_handshake_x_OBJECTS) $(test_mpi_handshake_x_LDADD) $(LIBS)
-
-test_mpi_handshake_c.x$(EXEEXT): $(test_mpi_handshake_c_x_OBJECTS) $(test_mpi_handshake_c_x_DEPENDENCIES) $(EXTRA_test_mpi_handshake_c_x_DEPENDENCIES) 
-	@rm -f test_mpi_handshake_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_mpi_handshake_c_x_OBJECTS) $(test_mpi_handshake_c_x_LDADD) $(LIBS)
-
-test_multithreading.x$(EXEEXT): $(test_multithreading_x_OBJECTS) $(test_multithreading_x_DEPENDENCIES) $(EXTRA_test_multithreading_x_DEPENDENCIES) 
-	@rm -f test_multithreading.x$(EXEEXT)
-	$(AM_V_CCLD)$(test_multithreading_x_LINK) $(test_multithreading_x_OBJECTS) $(test_multithreading_x_LDADD) $(LIBS)
-
-test_partial_areas.x$(EXEEXT): $(test_partial_areas_x_OBJECTS) $(test_partial_areas_x_DEPENDENCIES) $(EXTRA_test_partial_areas_x_DEPENDENCIES) 
-	@rm -f test_partial_areas.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_partial_areas_x_OBJECTS) $(test_partial_areas_x_LDADD) $(LIBS)
-
-test_point_in_cell.x$(EXEEXT): $(test_point_in_cell_x_OBJECTS) $(test_point_in_cell_x_DEPENDENCIES) $(EXTRA_test_point_in_cell_x_DEPENDENCIES) 
-	@rm -f test_point_in_cell.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_point_in_cell_x_OBJECTS) $(test_point_in_cell_x_LDADD) $(LIBS)
-
-test_point_sphere_part.x$(EXEEXT): $(test_point_sphere_part_x_OBJECTS) $(test_point_sphere_part_x_DEPENDENCIES) $(EXTRA_test_point_sphere_part_x_DEPENDENCIES) 
-	@rm -f test_point_sphere_part.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_point_sphere_part_x_OBJECTS) $(test_point_sphere_part_x_LDADD) $(LIBS)
-
-test_proc_sphere_part_parallel.x$(EXEEXT): $(test_proc_sphere_part_parallel_x_OBJECTS) $(test_proc_sphere_part_parallel_x_DEPENDENCIES) $(EXTRA_test_proc_sphere_part_parallel_x_DEPENDENCIES) 
-	@rm -f test_proc_sphere_part_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_proc_sphere_part_parallel_x_OBJECTS) $(test_proc_sphere_part_parallel_x_LDADD) $(LIBS)
-
-test_pxgc.x$(EXEEXT): $(test_pxgc_x_OBJECTS) $(test_pxgc_x_DEPENDENCIES) $(EXTRA_test_pxgc_x_DEPENDENCIES) 
-	@rm -f test_pxgc.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_pxgc_x_OBJECTS) $(test_pxgc_x_LDADD) $(LIBS)
-
-test_query_routines.x$(EXEEXT): $(test_query_routines_x_OBJECTS) $(test_query_routines_x_DEPENDENCIES) $(EXTRA_test_query_routines_x_DEPENDENCIES) 
-	@rm -f test_query_routines.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_query_routines_x_OBJECTS) $(test_query_routines_x_LDADD) $(LIBS)
-
-test_query_routines_c.x$(EXEEXT): $(test_query_routines_c_x_OBJECTS) $(test_query_routines_c_x_DEPENDENCIES) $(EXTRA_test_query_routines_c_x_DEPENDENCIES) 
-	@rm -f test_query_routines_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_query_routines_c_x_OBJECTS) $(test_query_routines_c_x_LDADD) $(LIBS)
-
-test_quicksort.x$(EXEEXT): $(test_quicksort_x_OBJECTS) $(test_quicksort_x_DEPENDENCIES) $(EXTRA_test_quicksort_x_DEPENDENCIES) 
-	@rm -f test_quicksort.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_quicksort_x_OBJECTS) $(test_quicksort_x_LDADD) $(LIBS)
-
-test_read_cube_csv.x$(EXEEXT): $(test_read_cube_csv_x_OBJECTS) $(test_read_cube_csv_x_DEPENDENCIES) $(EXTRA_test_read_cube_csv_x_DEPENDENCIES) 
-	@rm -f test_read_cube_csv.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_cube_csv_x_OBJECTS) $(test_read_cube_csv_x_LDADD) $(LIBS)
-
-test_read_fesom.x$(EXEEXT): $(test_read_fesom_x_OBJECTS) $(test_read_fesom_x_DEPENDENCIES) $(EXTRA_test_read_fesom_x_DEPENDENCIES) 
-	@rm -f test_read_fesom.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_fesom_x_OBJECTS) $(test_read_fesom_x_LDADD) $(LIBS)
-
-test_read_icon.x$(EXEEXT): $(test_read_icon_x_OBJECTS) $(test_read_icon_x_DEPENDENCIES) $(EXTRA_test_read_icon_x_DEPENDENCIES) 
-	@rm -f test_read_icon.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_icon_x_OBJECTS) $(test_read_icon_x_LDADD) $(LIBS)
-
-test_read_icon_parallel.x$(EXEEXT): $(test_read_icon_parallel_x_OBJECTS) $(test_read_icon_parallel_x_DEPENDENCIES) $(EXTRA_test_read_icon_parallel_x_DEPENDENCIES) 
-	@rm -f test_read_icon_parallel.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_icon_parallel_x_OBJECTS) $(test_read_icon_parallel_x_LDADD) $(LIBS)
-
-test_read_mpiom.x$(EXEEXT): $(test_read_mpiom_x_OBJECTS) $(test_read_mpiom_x_DEPENDENCIES) $(EXTRA_test_read_mpiom_x_DEPENDENCIES) 
-	@rm -f test_read_mpiom.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_mpiom_x_OBJECTS) $(test_read_mpiom_x_LDADD) $(LIBS)
-
-test_read_scrip.x$(EXEEXT): $(test_read_scrip_x_OBJECTS) $(test_read_scrip_x_DEPENDENCIES) $(EXTRA_test_read_scrip_x_DEPENDENCIES) 
-	@rm -f test_read_scrip.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_scrip_x_OBJECTS) $(test_read_scrip_x_LDADD) $(LIBS)
-
-test_read_woa_data.x$(EXEEXT): $(test_read_woa_data_x_OBJECTS) $(test_read_woa_data_x_DEPENDENCIES) $(EXTRA_test_read_woa_data_x_DEPENDENCIES) 
-	@rm -f test_read_woa_data.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_read_woa_data_x_OBJECTS) $(test_read_woa_data_x_LDADD) $(LIBS)
-
-test_redirstdout.x$(EXEEXT): $(test_redirstdout_x_OBJECTS) $(test_redirstdout_x_DEPENDENCIES) $(EXTRA_test_redirstdout_x_DEPENDENCIES) 
-	@rm -f test_redirstdout.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_redirstdout_x_OBJECTS) $(test_redirstdout_x_LDADD) $(LIBS)
-
-test_redirstdout_c.x$(EXEEXT): $(test_redirstdout_c_x_OBJECTS) $(test_redirstdout_c_x_DEPENDENCIES) $(EXTRA_test_redirstdout_c_x_DEPENDENCIES) 
-	@rm -f test_redirstdout_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_redirstdout_c_x_OBJECTS) $(test_redirstdout_c_x_LDADD) $(LIBS)
-
-test_restart2.x$(EXEEXT): $(test_restart2_x_OBJECTS) $(test_restart2_x_DEPENDENCIES) $(EXTRA_test_restart2_x_DEPENDENCIES) 
-	@rm -f test_restart2.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_restart2_x_OBJECTS) $(test_restart2_x_LDADD) $(LIBS)
-
-test_restart_c.x$(EXEEXT): $(test_restart_c_x_OBJECTS) $(test_restart_c_x_DEPENDENCIES) $(EXTRA_test_restart_c_x_DEPENDENCIES) 
-	@rm -f test_restart_c.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_restart_c_x_OBJECTS) $(test_restart_c_x_LDADD) $(LIBS)
-
-test_restart_dble.x$(EXEEXT): $(test_restart_dble_x_OBJECTS) $(test_restart_dble_x_DEPENDENCIES) $(EXTRA_test_restart_dble_x_DEPENDENCIES) 
-	@rm -f test_restart_dble.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_restart_dble_x_OBJECTS) $(test_restart_dble_x_LDADD) $(LIBS)
-
-test_version.x$(EXEEXT): $(test_version_x_OBJECTS) $(test_version_x_DEPENDENCIES) $(EXTRA_test_version_x_DEPENDENCIES) 
-	@rm -f test_version.x$(EXEEXT)
-	$(AM_V_FCLD)$(FCLINK) $(test_version_x_OBJECTS) $(test_version_x_LDADD) $(LIBS)
-
-test_vtk_output.x$(EXEEXT): $(test_vtk_output_x_OBJECTS) $(test_vtk_output_x_DEPENDENCIES) $(EXTRA_test_vtk_output_x_DEPENDENCIES) 
-	@rm -f test_vtk_output.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_vtk_output_x_OBJECTS) $(test_vtk_output_x_LDADD) $(LIBS)
-
-test_weights2vtk.x$(EXEEXT): $(test_weights2vtk_x_OBJECTS) $(test_weights2vtk_x_DEPENDENCIES) $(EXTRA_test_weights2vtk_x_DEPENDENCIES) 
-	@rm -f test_weights2vtk.x$(EXEEXT)
-	$(AM_V_CCLD)$(LINK) $(test_weights2vtk_x_OBJECTS) $(test_weights2vtk_x_LDADD) $(LIBS)
-
-mostlyclean-compile:
-	-rm -f *.$(OBJEXT)
-
-distclean-compile:
-	-rm -f *.tab.c
-
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_abort_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_angle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_area.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_bnd_sphere_part.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_cell_bnd_circle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_circle.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_clipping.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_common.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_component_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_compute_overlap_area.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_couple_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_cxc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dist_grid_pair_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dist_grid_utils.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling2_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling3_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling4_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling5_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling6_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling7_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling8_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling9_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dummy_coupling_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_dynamic_config_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_events.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_gcxgc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_gcxlatc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_generate_cubed_sphere.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_geometry.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_grid.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_grid2vtk.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_group_comm.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_instance_parallel1.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_instance_parallel2.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_instance_parallel3.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_instance_parallel4.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_grid_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_avg_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_callback_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_conserv_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_creep_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_file_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_hcsbb_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_nnn_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_nnn_parallel2.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_rbf_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_method_spmap_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_stack_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interp_weights_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_exchange.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel1.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel2.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel3.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel4.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel5.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interpolation_parallel6.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_interval_tree.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_io_config.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_lat_clipping.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_latcxlatc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_loncxlatc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_loncxlonc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_mergesort.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_mpi_error.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_mpi_handshake_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_multithreading_x-test_multithreading.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_partial_areas.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_point_in_cell.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_point_sphere_part.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_proc_sphere_part_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_pxgc.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_query_routines_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_quicksort.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_cube_csv.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_fesom.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_icon.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_icon_parallel.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_mpiom.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_scrip.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_read_woa_data.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_redirstdout_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_restart2.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_restart_c.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_vtk_output.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/test_weights2vtk.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/tests.Po@am__quote@ # am--include-marker
-@AMDEP_TRUE@@am__include@ @am__quote@./$(DEPDIR)/weight_file_common.Po@am__quote@ # am--include-marker
-
-$(am__depfiles_remade):
-	@$(MKDIR_P) $(@D)
-	@echo '# dummy' >$@-t && $(am__mv) $@-t $@
-
-am--depfiles: $(am__depfiles_remade)
-
-.F90.o:
-	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ $<
-
-.F90.obj:
-	$(AM_V_PPFC)$(PPFCCOMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-.c.o:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.o$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ $< &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ $<
-
-.c.obj:
-@am__fastdepCC_TRUE@	$(AM_V_CC)depbase=`echo $@ | sed 's|[^/]*$$|$(DEPDIR)/&|;s|\.obj$$||'`;\
-@am__fastdepCC_TRUE@	$(COMPILE) -MT $@ -MD -MP -MF $$depbase.Tpo -c -o $@ `$(CYGPATH_W) '$<'` &&\
-@am__fastdepCC_TRUE@	$(am__mv) $$depbase.Tpo $$depbase.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='$<' object='$@' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(COMPILE) -c -o $@ `$(CYGPATH_W) '$<'`
-
-test_multithreading_x-test_multithreading.o: test_multithreading.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_multithreading_x_CFLAGS) $(CFLAGS) -MT test_multithreading_x-test_multithreading.o -MD -MP -MF $(DEPDIR)/test_multithreading_x-test_multithreading.Tpo -c -o test_multithreading_x-test_multithreading.o `test -f 'test_multithreading.c' || echo '$(srcdir)/'`test_multithreading.c
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_multithreading_x-test_multithreading.Tpo $(DEPDIR)/test_multithreading_x-test_multithreading.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test_multithreading.c' object='test_multithreading_x-test_multithreading.o' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_multithreading_x_CFLAGS) $(CFLAGS) -c -o test_multithreading_x-test_multithreading.o `test -f 'test_multithreading.c' || echo '$(srcdir)/'`test_multithreading.c
-
-test_multithreading_x-test_multithreading.obj: test_multithreading.c
-@am__fastdepCC_TRUE@	$(AM_V_CC)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_multithreading_x_CFLAGS) $(CFLAGS) -MT test_multithreading_x-test_multithreading.obj -MD -MP -MF $(DEPDIR)/test_multithreading_x-test_multithreading.Tpo -c -o test_multithreading_x-test_multithreading.obj `if test -f 'test_multithreading.c'; then $(CYGPATH_W) 'test_multithreading.c'; else $(CYGPATH_W) '$(srcdir)/test_multithreading.c'; fi`
-@am__fastdepCC_TRUE@	$(AM_V_at)$(am__mv) $(DEPDIR)/test_multithreading_x-test_multithreading.Tpo $(DEPDIR)/test_multithreading_x-test_multithreading.Po
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	$(AM_V_CC)source='test_multithreading.c' object='test_multithreading_x-test_multithreading.obj' libtool=no @AMDEPBACKSLASH@
-@AMDEP_TRUE@@am__fastdepCC_FALSE@	DEPDIR=$(DEPDIR) $(CCDEPMODE) $(depcomp) @AMDEPBACKSLASH@
-@am__fastdepCC_FALSE@	$(AM_V_CC@am__nodep@)$(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) $(test_multithreading_x_CFLAGS) $(CFLAGS) -c -o test_multithreading_x-test_multithreading.obj `if test -f 'test_multithreading.c'; then $(CYGPATH_W) 'test_multithreading.c'; else $(CYGPATH_W) '$(srcdir)/test_multithreading.c'; fi`
+# This directory's subdirectories are mostly independent; you can cd
+# into them and run 'make' without going through this Makefile.
+# To change the values of 'make' variables: instead of editing Makefiles,
+# (1) if the variable is set in 'config.status', edit 'config.status'
+#     (which will cause the Makefiles to be regenerated when you run 'make');
+# (2) otherwise, pass the desired values on the 'make' command line.
+$(am__recursive_targets):
+	@fail=; \
+	if $(am__make_keepgoing); then \
+	  failcom='fail=yes'; \
+	else \
+	  failcom='exit 1'; \
+	fi; \
+	dot_seen=no; \
+	target=`echo $@ | sed s/-recursive//`; \
+	case "$@" in \
+	  distclean-* | maintainer-clean-*) list='$(DIST_SUBDIRS)' ;; \
+	  *) list='$(SUBDIRS)' ;; \
+	esac; \
+	for subdir in $$list; do \
+	  echo "Making $$target in $$subdir"; \
+	  if test "$$subdir" = "."; then \
+	    dot_seen=yes; \
+	    local_target="$$target-am"; \
+	  else \
+	    local_target="$$target"; \
+	  fi; \
+	  ($(am__cd) $$subdir && $(MAKE) $(AM_MAKEFLAGS) $$local_target) \
+	  || eval $$failcom; \
+	done; \
+	if test "$$dot_seen" = "no"; then \
+	  $(MAKE) $(AM_MAKEFLAGS) "$$target-am" || exit 1; \
+	fi; test -z "$$fail"
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
-tags: tags-am
+tags: tags-recursive
 TAGS: tags
 
 tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	set x; \
 	here=`pwd`; \
+	if ($(ETAGS) --etags-include --version) >/dev/null 2>&1; then \
+	  include_option=--etags-include; \
+	  empty_fix=.; \
+	else \
+	  include_option=--include; \
+	  empty_fix=; \
+	fi; \
+	list='$(SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    test ! -f $$subdir/TAGS || \
+	      set "$$@" "$$include_option=$$here/$$subdir/TAGS"; \
+	  fi; \
+	done; \
 	$(am__define_uniq_tagged_files); \
 	shift; \
 	if test -z "$(ETAGS_ARGS)$$*$$unique"; then :; else \
@@ -2815,7 +449,7 @@ tags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
 	      $$unique; \
 	  fi; \
 	fi
-ctags: ctags-am
+ctags: ctags-recursive
 
 CTAGS: ctags
 ctags-am: $(TAGS_DEPENDENCIES) $(am__tagged_files)
@@ -2828,7 +462,7 @@ GTAGS:
 	here=`$(am__cd) $(top_builddir) && pwd` \
 	  && $(am__cd) $(top_srcdir) \
 	  && gtags -i $(GTAGS_ARGS) "$$here"
-cscopelist: cscopelist-am
+cscopelist: cscopelist-recursive
 
 cscopelist-am: $(am__tagged_files)
 	list='$(am__tagged_files)'; \
@@ -2846,176 +480,6 @@ cscopelist-am: $(am__tagged_files)
 
 distclean-tags:
 	-rm -f TAGS ID GTAGS GRTAGS GSYMS GPATH tags
-
-# Recover from deleted '.trs' file; this should ensure that
-# "rm -f foo.log; make foo.trs" re-run 'foo.test', and re-create
-# both 'foo.log' and 'foo.trs'.  Break the recipe in two subshells
-# to avoid problems with "make -n".
-.log.trs:
-	rm -f $< $@
-	$(MAKE) $(AM_MAKEFLAGS) $<
-
-# Leading 'am--fnord' is there to ensure the list of targets does not
-# expand to empty, as could happen e.g. with make check TESTS=''.
-am--fnord $(TEST_LOGS) $(TEST_LOGS:.log=.trs): $(am__force_recheck)
-am--force-recheck:
-	@:
-
-$(TEST_SUITE_LOG): $(TEST_LOGS)
-	@$(am__set_TESTS_bases); \
-	am__f_ok () { test -f "$$1" && test -r "$$1"; }; \
-	redo_bases=`for i in $$bases; do \
-	              am__f_ok $$i.trs && am__f_ok $$i.log || echo $$i; \
-	            done`; \
-	if test -n "$$redo_bases"; then \
-	  redo_logs=`for i in $$redo_bases; do echo $$i.log; done`; \
-	  redo_results=`for i in $$redo_bases; do echo $$i.trs; done`; \
-	  if $(am__make_dryrun); then :; else \
-	    rm -f $$redo_logs && rm -f $$redo_results || exit 1; \
-	  fi; \
-	fi; \
-	if test -n "$$am__remaking_logs"; then \
-	  echo "fatal: making $(TEST_SUITE_LOG): possible infinite" \
-	       "recursion detected" >&2; \
-	elif test -n "$$redo_logs"; then \
-	  am__remaking_logs=yes $(MAKE) $(AM_MAKEFLAGS) $$redo_logs; \
-	fi; \
-	if $(am__make_dryrun); then :; else \
-	  st=0;  \
-	  errmsg="fatal: making $(TEST_SUITE_LOG): failed to create"; \
-	  for i in $$redo_bases; do \
-	    test -f $$i.trs && test -r $$i.trs \
-	      || { echo "$$errmsg $$i.trs" >&2; st=1; }; \
-	    test -f $$i.log && test -r $$i.log \
-	      || { echo "$$errmsg $$i.log" >&2; st=1; }; \
-	  done; \
-	  test $$st -eq 0 || exit 1; \
-	fi
-	@$(am__sh_e_setup); $(am__tty_colors); $(am__set_TESTS_bases); \
-	ws='[ 	]'; \
-	results=`for b in $$bases; do echo $$b.trs; done`; \
-	test -n "$$results" || results=/dev/null; \
-	all=`  grep "^$$ws*:test-result:"           $$results | wc -l`; \
-	pass=` grep "^$$ws*:test-result:$$ws*PASS"  $$results | wc -l`; \
-	fail=` grep "^$$ws*:test-result:$$ws*FAIL"  $$results | wc -l`; \
-	skip=` grep "^$$ws*:test-result:$$ws*SKIP"  $$results | wc -l`; \
-	xfail=`grep "^$$ws*:test-result:$$ws*XFAIL" $$results | wc -l`; \
-	xpass=`grep "^$$ws*:test-result:$$ws*XPASS" $$results | wc -l`; \
-	error=`grep "^$$ws*:test-result:$$ws*ERROR" $$results | wc -l`; \
-	if test `expr $$fail + $$xpass + $$error` -eq 0; then \
-	  success=true; \
-	else \
-	  success=false; \
-	fi; \
-	br='==================='; br=$$br$$br$$br$$br; \
-	result_count () \
-	{ \
-	    if test x"$$1" = x"--maybe-color"; then \
-	      maybe_colorize=yes; \
-	    elif test x"$$1" = x"--no-color"; then \
-	      maybe_colorize=no; \
-	    else \
-	      echo "$@: invalid 'result_count' usage" >&2; exit 4; \
-	    fi; \
-	    shift; \
-	    desc=$$1 count=$$2; \
-	    if test $$maybe_colorize = yes && test $$count -gt 0; then \
-	      color_start=$$3 color_end=$$std; \
-	    else \
-	      color_start= color_end=; \
-	    fi; \
-	    echo "$${color_start}# $$desc $$count$${color_end}"; \
-	}; \
-	create_testsuite_report () \
-	{ \
-	  result_count $$1 "TOTAL:" $$all   "$$brg"; \
-	  result_count $$1 "PASS: " $$pass  "$$grn"; \
-	  result_count $$1 "SKIP: " $$skip  "$$blu"; \
-	  result_count $$1 "XFAIL:" $$xfail "$$lgn"; \
-	  result_count $$1 "FAIL: " $$fail  "$$red"; \
-	  result_count $$1 "XPASS:" $$xpass "$$red"; \
-	  result_count $$1 "ERROR:" $$error "$$mgn"; \
-	}; \
-	{								\
-	  echo "$(PACKAGE_STRING): $(subdir)/$(TEST_SUITE_LOG)" |	\
-	    $(am__rst_title);						\
-	  create_testsuite_report --no-color;				\
-	  echo;								\
-	  echo ".. contents:: :depth: 2";				\
-	  echo;								\
-	  for b in $$bases; do echo $$b; done				\
-	    | $(am__create_global_log);					\
-	} >$(TEST_SUITE_LOG).tmp || exit 1;				\
-	mv $(TEST_SUITE_LOG).tmp $(TEST_SUITE_LOG);			\
-	if $$success; then						\
-	  col="$$grn";							\
-	 else								\
-	  col="$$red";							\
-	  test x"$$VERBOSE" = x || cat $(TEST_SUITE_LOG);		\
-	fi;								\
-	echo "$${col}$$br$${std}"; 					\
-	echo "$${col}Testsuite summary"$(AM_TESTSUITE_SUMMARY_HEADER)"$${std}";	\
-	echo "$${col}$$br$${std}"; 					\
-	create_testsuite_report --maybe-color;				\
-	echo "$$col$$br$$std";						\
-	if $$success; then :; else					\
-	  echo "$${col}See $(subdir)/$(TEST_SUITE_LOG)$${std}";		\
-	  if test -n "$(PACKAGE_BUGREPORT)"; then			\
-	    echo "$${col}Please report to $(PACKAGE_BUGREPORT)$${std}";	\
-	  fi;								\
-	  echo "$$col$$br$$std";					\
-	fi;								\
-	$$success || exit 1
-
-check-TESTS: $(check_PROGRAMS)
-	@list='$(RECHECK_LOGS)';           test -z "$$list" || rm -f $$list
-	@list='$(RECHECK_LOGS:.log=.trs)'; test -z "$$list" || rm -f $$list
-	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
-	@set +e; $(am__set_TESTS_bases); \
-	log_list=`for i in $$bases; do echo $$i.log; done`; \
-	trs_list=`for i in $$bases; do echo $$i.trs; done`; \
-	log_list=`echo $$log_list`; trs_list=`echo $$trs_list`; \
-	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
-	exit $$?;
-recheck: all $(check_PROGRAMS)
-	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
-	@set +e; $(am__set_TESTS_bases); \
-	bases=`for i in $$bases; do echo $$i; done \
-	         | $(am__list_recheck_tests)` || exit 1; \
-	log_list=`for i in $$bases; do echo $$i.log; done`; \
-	log_list=`echo $$log_list`; \
-	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) \
-	        am__force_recheck=am--force-recheck \
-	        TEST_LOGS="$$log_list"; \
-	exit $$?
-.x.log:
-	@p='$<'; \
-	$(am__set_b); \
-	$(am__check_pre) $(X_LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_X_LOG_DRIVER_FLAGS) $(X_LOG_DRIVER_FLAGS) -- $(X_LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-@am__EXEEXT_TRUE@.x$(EXEEXT).log:
-@am__EXEEXT_TRUE@	@p='$<'; \
-@am__EXEEXT_TRUE@	$(am__set_b); \
-@am__EXEEXT_TRUE@	$(am__check_pre) $(X_LOG_DRIVER) --test-name "$$f" \
-@am__EXEEXT_TRUE@	--log-file $$b.log --trs-file $$b.trs \
-@am__EXEEXT_TRUE@	$(am__common_driver_flags) $(AM_X_LOG_DRIVER_FLAGS) $(X_LOG_DRIVER_FLAGS) -- $(X_LOG_COMPILE) \
-@am__EXEEXT_TRUE@	"$$tst" $(AM_TESTS_FD_REDIRECT)
-.sh.log:
-	@p='$<'; \
-	$(am__set_b); \
-	$(am__check_pre) $(SH_LOG_DRIVER) --test-name "$$f" \
-	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_SH_LOG_DRIVER_FLAGS) $(SH_LOG_DRIVER_FLAGS) -- $(SH_LOG_COMPILE) \
-	"$$tst" $(AM_TESTS_FD_REDIRECT)
-@am__EXEEXT_TRUE@.sh$(EXEEXT).log:
-@am__EXEEXT_TRUE@	@p='$<'; \
-@am__EXEEXT_TRUE@	$(am__set_b); \
-@am__EXEEXT_TRUE@	$(am__check_pre) $(SH_LOG_DRIVER) --test-name "$$f" \
-@am__EXEEXT_TRUE@	--log-file $$b.log --trs-file $$b.trs \
-@am__EXEEXT_TRUE@	$(am__common_driver_flags) $(AM_SH_LOG_DRIVER_FLAGS) $(SH_LOG_DRIVER_FLAGS) -- $(SH_LOG_COMPILE) \
-@am__EXEEXT_TRUE@	"$$tst" $(AM_TESTS_FD_REDIRECT)
 distdir: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
 
@@ -3049,21 +513,45 @@ distdir-am: $(DISTFILES)
 	    || exit 1; \
 	  fi; \
 	done
+	@list='$(DIST_SUBDIRS)'; for subdir in $$list; do \
+	  if test "$$subdir" = .; then :; else \
+	    $(am__make_dryrun) \
+	      || test -d "$(distdir)/$$subdir" \
+	      || $(MKDIR_P) "$(distdir)/$$subdir" \
+	      || exit 1; \
+	    dir1=$$subdir; dir2="$(distdir)/$$subdir"; \
+	    $(am__relativize); \
+	    new_distdir=$$reldir; \
+	    dir1=$$subdir; dir2="$(top_distdir)"; \
+	    $(am__relativize); \
+	    new_top_distdir=$$reldir; \
+	    echo " (cd $$subdir && $(MAKE) $(AM_MAKEFLAGS) top_distdir="$$new_top_distdir" distdir="$$new_distdir" \\"; \
+	    echo "     am__remove_distdir=: am__skip_length_check=: am__skip_mode_fix=: distdir)"; \
+	    ($(am__cd) $$subdir && \
+	      $(MAKE) $(AM_MAKEFLAGS) \
+	        top_distdir="$$new_top_distdir" \
+	        distdir="$$new_distdir" \
+		am__remove_distdir=: \
+		am__skip_length_check=: \
+		am__skip_mode_fix=: \
+	        distdir) \
+	      || exit 1; \
+	  fi; \
+	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
-	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
-check: check-am
+check: check-recursive
 all-am: Makefile
-installdirs:
-install: install-am
-install-exec: install-exec-am
-install-data: install-data-am
-uninstall: uninstall-am
+installdirs: installdirs-recursive
+installdirs-am:
+install: install-recursive
+install-exec: install-exec-recursive
+install-data: install-data-recursive
+uninstall: uninstall-recursive
 
 install-am: all-am
 	@$(MAKE) $(AM_MAKEFLAGS) install-exec-am install-data-am
 
-installcheck: installcheck-am
+installcheck: installcheck-recursive
 install-strip:
 	if test -z '$(STRIP)'; then \
 	  $(MAKE) $(AM_MAKEFLAGS) INSTALL_PROGRAM="$(INSTALL_STRIP_PROGRAM)" \
@@ -3075,12 +563,8 @@ install-strip:
 	    "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'" install; \
 	fi
 mostlyclean-generic:
-	-test -z "$(TEST_LOGS)" || rm -f $(TEST_LOGS)
-	-test -z "$(TEST_LOGS:.log=.trs)" || rm -f $(TEST_LOGS:.log=.trs)
-	-test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
 
 clean-generic:
-	-test -z "$(CLEANFILES)" || rm -f $(CLEANFILES)
 
 distclean-generic:
 	-test -z "$(CONFIG_CLEAN_FILES)" || rm -f $(CONFIG_CLEAN_FILES)
@@ -3089,358 +573,88 @@ distclean-generic:
 maintainer-clean-generic:
 	@echo "This command is intended for maintainers to use"
 	@echo "it deletes files that may require special tools to rebuild."
-clean: clean-am
+clean: clean-recursive
 
-clean-am: clean-checkPROGRAMS clean-generic clean-local mostlyclean-am
+clean-am: clean-generic mostlyclean-am
 
-distclean: distclean-am
-		-rm -f ./$(DEPDIR)/test_abort_c.Po
-	-rm -f ./$(DEPDIR)/test_angle.Po
-	-rm -f ./$(DEPDIR)/test_area.Po
-	-rm -f ./$(DEPDIR)/test_bnd_sphere_part.Po
-	-rm -f ./$(DEPDIR)/test_cell_bnd_circle.Po
-	-rm -f ./$(DEPDIR)/test_circle.Po
-	-rm -f ./$(DEPDIR)/test_clipping.Po
-	-rm -f ./$(DEPDIR)/test_common.Po
-	-rm -f ./$(DEPDIR)/test_component_config.Po
-	-rm -f ./$(DEPDIR)/test_compute_overlap_area.Po
-	-rm -f ./$(DEPDIR)/test_couple_config.Po
-	-rm -f ./$(DEPDIR)/test_cxc.Po
-	-rm -f ./$(DEPDIR)/test_dist_grid_pair_parallel.Po
-	-rm -f ./$(DEPDIR)/test_dist_grid_utils.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling2_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling3_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling4_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling5_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling6_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling7_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling8_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling9_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling_c.Po
-	-rm -f ./$(DEPDIR)/test_dynamic_config_c.Po
-	-rm -f ./$(DEPDIR)/test_events.Po
-	-rm -f ./$(DEPDIR)/test_gcxgc.Po
-	-rm -f ./$(DEPDIR)/test_gcxlatc.Po
-	-rm -f ./$(DEPDIR)/test_generate_cubed_sphere.Po
-	-rm -f ./$(DEPDIR)/test_geometry.Po
-	-rm -f ./$(DEPDIR)/test_grid.Po
-	-rm -f ./$(DEPDIR)/test_grid2vtk.Po
-	-rm -f ./$(DEPDIR)/test_group_comm.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel1.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel3.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel4.Po
-	-rm -f ./$(DEPDIR)/test_interp_grid_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_avg_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_callback_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_conserv_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_creep_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_file_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_hcsbb_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_nnn_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_nnn_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_rbf_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_spmap_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_stack_config.Po
-	-rm -f ./$(DEPDIR)/test_interp_weights_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_exchange.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel1.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel3.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel4.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel5.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel6.Po
-	-rm -f ./$(DEPDIR)/test_interval_tree.Po
-	-rm -f ./$(DEPDIR)/test_io_config.Po
-	-rm -f ./$(DEPDIR)/test_lat_clipping.Po
-	-rm -f ./$(DEPDIR)/test_latcxlatc.Po
-	-rm -f ./$(DEPDIR)/test_loncxlatc.Po
-	-rm -f ./$(DEPDIR)/test_loncxlonc.Po
-	-rm -f ./$(DEPDIR)/test_mergesort.Po
-	-rm -f ./$(DEPDIR)/test_mpi_error.Po
-	-rm -f ./$(DEPDIR)/test_mpi_handshake_c.Po
-	-rm -f ./$(DEPDIR)/test_multithreading_x-test_multithreading.Po
-	-rm -f ./$(DEPDIR)/test_partial_areas.Po
-	-rm -f ./$(DEPDIR)/test_point_in_cell.Po
-	-rm -f ./$(DEPDIR)/test_point_sphere_part.Po
-	-rm -f ./$(DEPDIR)/test_proc_sphere_part_parallel.Po
-	-rm -f ./$(DEPDIR)/test_pxgc.Po
-	-rm -f ./$(DEPDIR)/test_query_routines_c.Po
-	-rm -f ./$(DEPDIR)/test_quicksort.Po
-	-rm -f ./$(DEPDIR)/test_read_cube_csv.Po
-	-rm -f ./$(DEPDIR)/test_read_fesom.Po
-	-rm -f ./$(DEPDIR)/test_read_icon.Po
-	-rm -f ./$(DEPDIR)/test_read_icon_parallel.Po
-	-rm -f ./$(DEPDIR)/test_read_mpiom.Po
-	-rm -f ./$(DEPDIR)/test_read_scrip.Po
-	-rm -f ./$(DEPDIR)/test_read_woa_data.Po
-	-rm -f ./$(DEPDIR)/test_redirstdout_c.Po
-	-rm -f ./$(DEPDIR)/test_restart2.Po
-	-rm -f ./$(DEPDIR)/test_restart_c.Po
-	-rm -f ./$(DEPDIR)/test_vtk_output.Po
-	-rm -f ./$(DEPDIR)/test_weights2vtk.Po
-	-rm -f ./$(DEPDIR)/tests.Po
-	-rm -f ./$(DEPDIR)/weight_file_common.Po
+distclean: distclean-recursive
 	-rm -f Makefile
-distclean-am: clean-am distclean-compile distclean-generic \
-	distclean-tags
+distclean-am: clean-am distclean-generic distclean-tags
 
-dvi: dvi-am
+dvi: dvi-recursive
 
 dvi-am:
 
-html: html-am
+html: html-recursive
 
 html-am:
 
-info: info-am
+info: info-recursive
 
 info-am:
 
 install-data-am:
 
-install-dvi: install-dvi-am
+install-dvi: install-dvi-recursive
 
 install-dvi-am:
 
 install-exec-am:
 
-install-html: install-html-am
+install-html: install-html-recursive
 
 install-html-am:
 
-install-info: install-info-am
+install-info: install-info-recursive
 
 install-info-am:
 
 install-man:
 
-install-pdf: install-pdf-am
+install-pdf: install-pdf-recursive
 
 install-pdf-am:
 
-install-ps: install-ps-am
+install-ps: install-ps-recursive
 
 install-ps-am:
 
 installcheck-am:
 
-maintainer-clean: maintainer-clean-am
-		-rm -f ./$(DEPDIR)/test_abort_c.Po
-	-rm -f ./$(DEPDIR)/test_angle.Po
-	-rm -f ./$(DEPDIR)/test_area.Po
-	-rm -f ./$(DEPDIR)/test_bnd_sphere_part.Po
-	-rm -f ./$(DEPDIR)/test_cell_bnd_circle.Po
-	-rm -f ./$(DEPDIR)/test_circle.Po
-	-rm -f ./$(DEPDIR)/test_clipping.Po
-	-rm -f ./$(DEPDIR)/test_common.Po
-	-rm -f ./$(DEPDIR)/test_component_config.Po
-	-rm -f ./$(DEPDIR)/test_compute_overlap_area.Po
-	-rm -f ./$(DEPDIR)/test_couple_config.Po
-	-rm -f ./$(DEPDIR)/test_cxc.Po
-	-rm -f ./$(DEPDIR)/test_dist_grid_pair_parallel.Po
-	-rm -f ./$(DEPDIR)/test_dist_grid_utils.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling2_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling3_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling4_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling5_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling6_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling7_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling8_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling9_c.Po
-	-rm -f ./$(DEPDIR)/test_dummy_coupling_c.Po
-	-rm -f ./$(DEPDIR)/test_dynamic_config_c.Po
-	-rm -f ./$(DEPDIR)/test_events.Po
-	-rm -f ./$(DEPDIR)/test_gcxgc.Po
-	-rm -f ./$(DEPDIR)/test_gcxlatc.Po
-	-rm -f ./$(DEPDIR)/test_generate_cubed_sphere.Po
-	-rm -f ./$(DEPDIR)/test_geometry.Po
-	-rm -f ./$(DEPDIR)/test_grid.Po
-	-rm -f ./$(DEPDIR)/test_grid2vtk.Po
-	-rm -f ./$(DEPDIR)/test_group_comm.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel1.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel3.Po
-	-rm -f ./$(DEPDIR)/test_instance_parallel4.Po
-	-rm -f ./$(DEPDIR)/test_interp_grid_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_avg_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_callback_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_conserv_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_creep_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_file_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_hcsbb_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_nnn_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_nnn_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_rbf_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_method_spmap_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interp_stack_config.Po
-	-rm -f ./$(DEPDIR)/test_interp_weights_parallel.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_exchange.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel1.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel2.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel3.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel4.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel5.Po
-	-rm -f ./$(DEPDIR)/test_interpolation_parallel6.Po
-	-rm -f ./$(DEPDIR)/test_interval_tree.Po
-	-rm -f ./$(DEPDIR)/test_io_config.Po
-	-rm -f ./$(DEPDIR)/test_lat_clipping.Po
-	-rm -f ./$(DEPDIR)/test_latcxlatc.Po
-	-rm -f ./$(DEPDIR)/test_loncxlatc.Po
-	-rm -f ./$(DEPDIR)/test_loncxlonc.Po
-	-rm -f ./$(DEPDIR)/test_mergesort.Po
-	-rm -f ./$(DEPDIR)/test_mpi_error.Po
-	-rm -f ./$(DEPDIR)/test_mpi_handshake_c.Po
-	-rm -f ./$(DEPDIR)/test_multithreading_x-test_multithreading.Po
-	-rm -f ./$(DEPDIR)/test_partial_areas.Po
-	-rm -f ./$(DEPDIR)/test_point_in_cell.Po
-	-rm -f ./$(DEPDIR)/test_point_sphere_part.Po
-	-rm -f ./$(DEPDIR)/test_proc_sphere_part_parallel.Po
-	-rm -f ./$(DEPDIR)/test_pxgc.Po
-	-rm -f ./$(DEPDIR)/test_query_routines_c.Po
-	-rm -f ./$(DEPDIR)/test_quicksort.Po
-	-rm -f ./$(DEPDIR)/test_read_cube_csv.Po
-	-rm -f ./$(DEPDIR)/test_read_fesom.Po
-	-rm -f ./$(DEPDIR)/test_read_icon.Po
-	-rm -f ./$(DEPDIR)/test_read_icon_parallel.Po
-	-rm -f ./$(DEPDIR)/test_read_mpiom.Po
-	-rm -f ./$(DEPDIR)/test_read_scrip.Po
-	-rm -f ./$(DEPDIR)/test_read_woa_data.Po
-	-rm -f ./$(DEPDIR)/test_redirstdout_c.Po
-	-rm -f ./$(DEPDIR)/test_restart2.Po
-	-rm -f ./$(DEPDIR)/test_restart_c.Po
-	-rm -f ./$(DEPDIR)/test_vtk_output.Po
-	-rm -f ./$(DEPDIR)/test_weights2vtk.Po
-	-rm -f ./$(DEPDIR)/tests.Po
-	-rm -f ./$(DEPDIR)/weight_file_common.Po
+maintainer-clean: maintainer-clean-recursive
 	-rm -f Makefile
 maintainer-clean-am: distclean-am maintainer-clean-generic
 
-mostlyclean: mostlyclean-am
+mostlyclean: mostlyclean-recursive
 
-mostlyclean-am: mostlyclean-compile mostlyclean-generic \
-	mostlyclean-local
+mostlyclean-am: mostlyclean-generic
 
-pdf: pdf-am
+pdf: pdf-recursive
 
 pdf-am:
 
-ps: ps-am
+ps: ps-recursive
 
 ps-am:
 
 uninstall-am:
 
-.MAKE: check-am install-am install-strip
+.MAKE: $(am__recursive_targets) install-am install-strip
 
-.PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am clean clean-checkPROGRAMS clean-generic clean-local \
-	cscopelist-am ctags ctags-am distclean distclean-compile \
-	distclean-generic distclean-tags distdir dvi dvi-am html \
-	html-am info info-am install install-am install-data \
+.PHONY: $(am__recursive_targets) CTAGS GTAGS TAGS all all-am check \
+	check-am clean clean-generic cscopelist-am ctags ctags-am \
+	distclean distclean-generic distclean-tags distdir dvi dvi-am \
+	html html-am info info-am install install-am install-data \
 	install-data-am install-dvi install-dvi-am install-exec \
 	install-exec-am install-html install-html-am install-info \
 	install-info-am install-man install-pdf install-pdf-am \
 	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
-	maintainer-clean-generic mostlyclean mostlyclean-compile \
-	mostlyclean-generic mostlyclean-local pdf pdf-am ps ps-am \
-	recheck tags tags-am uninstall uninstall-am
+	installcheck-am installdirs installdirs-am maintainer-clean \
+	maintainer-clean-generic mostlyclean mostlyclean-generic pdf \
+	pdf-am ps ps-am tags tags-am uninstall uninstall-am
 
 .PRECIOUS: Makefile
 
-
-# Run MPI tests ony by one:
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_def_comps.log: test_component_config.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_def_datetime.log: test_def_comps.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_def_grid.log: test_def_datetime.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_def_mask.log: test_def_grid.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_def_points.log: test_def_mask.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dist_grid_pair_parallel.log: test_def_points.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling.log: test_dist_grid_pair_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling2_c.log: test_dummy_coupling.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling3.log: test_dummy_coupling2_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling3_c.log: test_dummy_coupling3.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling4_c.log: test_dummy_coupling3_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling5.log: test_dummy_coupling4_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling6.log: test_dummy_coupling5.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling6_c.log: test_dummy_coupling6.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling7.log: test_dummy_coupling6_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling7_c.log: test_dummy_coupling7.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling8_c.log: test_dummy_coupling7_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dummy_coupling9.log: test_dummy_coupling8_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_init_comm_final.log: test_dummy_coupling9.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_init_final.log: test_init_comm_final.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_mpi_handshake.log: test_init_final.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_mpi_handshake_c.log: test_mpi_handshake.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_instance_parallel1.log: test_mpi_handshake_c.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_instance_parallel2.log: test_instance_parallel1.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_instance_parallel3.log: test_instance_parallel2.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_instance_parallel4.log: test_instance_parallel3.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_grid_parallel.log: test_instance_parallel4.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_avg_parallel.log: test_interp_grid_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_conserv_parallel.log: test_interp_method_avg_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_creep_parallel.log: test_interp_method_conserv_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_file_parallel.log: test_interp_method_creep_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_hcsbb_parallel.log: test_interp_method_file_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_nnn_parallel.log: test_interp_method_hcsbb_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_nnn_parallel2.log: test_interp_method_nnn_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_parallel.log: test_interp_method_nnn_parallel2.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_rbf_parallel.log: test_interp_method_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_method_spmap_parallel.log: test_interp_method_rbf_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interp_weights_parallel.log: test_interp_method_spmap_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_exchange.log: test_interp_weights_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel1.log: test_interpolation_exchange.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel2.log: test_interpolation_parallel1.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel3.log: test_interpolation_parallel2.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel4.log: test_interpolation_parallel3.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel5.log: test_interpolation_parallel4.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_interpolation_parallel6.log: test_interpolation_parallel5.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_proc_sphere_part_parallel.log: test_interpolation_parallel6.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_read_icon_parallel.log: test_proc_sphere_part_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_redirstdout.log: test_read_icon_parallel.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_restart.log: test_redirstdout.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_restart2.log: test_restart.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_dynamic_config.log:test_restart2.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_query_routines.log:test_dynamic_config.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_multithreading.log:test_query_routines.log
-@ENABLE_CONCURRENT_MPI_TESTS_FALSE@test_query_routines.log:test_io_config.log
-
-$(utest_mod): utest.$(OBJEXT)
-	@if test ! -f $@; then rm -f $<; $(MAKE) $<; fi
-test_def_comps.$(OBJEXT): $(utest_FCDEPS)
-test_def_datetime.$(OBJEXT): $(utest_FCDEPS)
-test_def_grid.$(OBJEXT): $(utest_FCDEPS)
-test_def_mask.$(OBJEXT): $(utest_FCDEPS)
-test_def_points.$(OBJEXT): $(utest_FCDEPS)
-test_dummy_coupling9.$(OBJEXT): $(utest_FCDEPS)
-test_dummy_coupling_dble.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling.inc
-test_dummy_coupling_real.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling.inc
-test_dummy_coupling3_dble.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling3.inc
-test_dummy_coupling3_real.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling3.inc
-test_dummy_coupling5_dble.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling5.inc
-test_dummy_coupling5_real.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling5.inc
-test_dummy_coupling6_dble.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling6.inc
-test_dummy_coupling6_real.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling6.inc
-test_dummy_coupling7_dble.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling7.inc
-test_dummy_coupling7_real.$(OBJEXT): $(utest_FCDEPS) test_dummy_coupling7.inc
-test_redirstdout.$(OBJEXT): $(utest_FCDEPS)
-test_restart_dble.$(OBJEXT): $(utest_FCDEPS)
-test_mpi_handshake.$(OBJEXT): $(utest_FCDEPS)
-test_init_final.$(OBJEXT): $(utest_FCDEPS)
-test_init_comm_final.$(OBJEXT): $(utest_FCDEPS)
-test_version.$(OBJEXT): $(utest_FCDEPS)
-test_dynamic_config.$(OBJEXT): $(utest_FCDEPS)
-test_query_routines.$(OBJEXT): $(utest_FCDEPS)
-
-clean-local:
-	-rm -rf *.0 *.1 *.2 *.err *.log *.vtk
-
-mostlyclean-local:
-	-rm -f *.$(FCMODEXT) i.*.L *.i
-	-rm -rf *.x.dSYM
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

@@ -1,6 +1,3 @@
-! @brief Interface between atmosphere physics and the ocean, through a coupler
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Interface between atmosphere physics and the ocean, through a coupler
 
 !----------------------------
 #include "omp_definitions.inc"

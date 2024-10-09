@@ -1,7 +1,3 @@
-! This module provides communication pattern types.
-! for parallel runs
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides communication pattern types.
+! for parallel runs
 
 #include "crayftn_ptr_fail.inc"
 MODULE mo_communication_types

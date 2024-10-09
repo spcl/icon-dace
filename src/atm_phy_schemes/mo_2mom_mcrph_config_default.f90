@@ -1,8 +1,3 @@
-!
-! Setup for 2-moment cloud microphysics scheme
-!
-! default configuration setup for synthetic radar data on the model grid
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Setup for 2-moment cloud microphysics scheme
+!
+! default configuration setup for synthetic radar data on the model grid
 
 MODULE mo_2mom_mcrph_config_default
   

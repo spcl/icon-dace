@@ -1,11 +1,3 @@
-! @brief Routines for the dummy initialisation of YAC
-!
-! The purpose of routines construct_dummy_coupling and destruct_dummy_coupling is
-! to initialise YAC on asynchronous processes that do not take part in any
-! coupling exchanges. The component definition and enddef operations are collective
-! operations in the MPI sense. Thus all MPI processes must take part in the
-! component initialisation and enddef operation.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,14 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Routines for the dummy initialisation of YAC
+!
+! The purpose of routines construct_dummy_coupling and destruct_dummy_coupling is
+! to initialise YAC on asynchronous processes that do not take part in any
+! coupling exchanges. The component definition and enddef operations are collective
+! operations in the MPI sense. Thus all MPI processes must take part in the
+! component initialisation and enddef operation.
 
 MODULE mo_dummy_coupling_frame
 

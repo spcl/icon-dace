@@ -1,9 +1,3 @@
-! Provide an implementation of the sea-ice model.
-!
-! Provide an implementation of the parameters of the surface module (sea ice)
-! used between the atmopshere and the hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the sea-ice model.
+!
+! Provide an implementation of the parameters of the surface module (sea ice)
+! used between the atmopshere and the hydrostatic ocean model.
 
 MODULE mo_ice_winton
 

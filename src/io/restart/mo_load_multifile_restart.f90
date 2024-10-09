@@ -1,15 +1,3 @@
-! Module for reading multifile restart files
-!
-! Note: The single file implementation of the restart input can be
-!       found in the module "mo_load_singlefile_restart"
-!
-!
-! All work processes are used to read the data from the
-! multifile. Each processor handles all domains of its horizontal
-! "chunk", since the domain loop is located outside of this routine,
-! in the calling "src/drivers" routine.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -20,6 +8,18 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module for reading multifile restart files
+!
+! Note: The single file implementation of the restart input can be
+!       found in the module "mo_load_singlefile_restart"
+!
+!
+! All work processes are used to read the data from the
+! multifile. Each processor handles all domains of its horizontal
+! "chunk", since the domain loop is located outside of this routine,
+! in the calling "src/drivers" routine.
+
 #include "omp_definitions.inc"
 
 MODULE mo_load_multifile_restart

@@ -1,10 +1,3 @@
-!
-! Surface radiation fluxes for the NWP VDIFF interface.
-!
-! This module is separate because it is required by the interface and sea model. Due to the
-! dependence on mo_nwp_phy_types it cannot be included with mo_nwp_vdiff_types because that would
-! introduce a cycle.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Surface radiation fluxes for the NWP VDIFF interface.
+!
+! This module is separate because it is required by the interface and sea model. Due to the
+! dependence on mo_nwp_phy_types it cannot be included with mo_nwp_vdiff_types because that would
+! introduce a cycle.
 
 MODULE mo_nwp_vdiff_radfluxes
 

@@ -1,12 +1,3 @@
-! @brief Shifting of solid components
-!
-! By this routine solid components are shifted (upward and) downward
-! to account for sedimant gain and loss. This includes a layer for
-! permanent local_sediment_mem%burial which collects the partical matter (P, Si, C, clay)
-! over the full time of integration.
-!
-! Upward shift is currently disabled.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Shifting of solid components
+!
+! By this routine solid components are shifted (upward and) downward
+! to account for sedimant gain and loss. This includes a layer for
+! permanent local_sediment_mem%burial which collects the partical matter (P, Si, C, clay)
+! over the full time of integration.
+!
+! Upward shift is currently disabled.
 
 MODULE mo_sedshi
 

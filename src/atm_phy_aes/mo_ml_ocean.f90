@@ -1,10 +1,3 @@
-!
-! Subroutine ml_ocean computes the surface temperature of a mixed
-! layer slab ocean based only on the vertical energy budget.  currently
-! there is no land/lakes, no ice, and no flux heat correction
-!
-! original purpose: use for a Radiative Convective Equilibrium APE exp
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine ml_ocean computes the surface temperature of a mixed
+! layer slab ocean based only on the vertical energy budget.  currently
+! there is no land/lakes, no ice, and no flux heat correction
+!
+! original purpose: use for a Radiative Convective Equilibrium APE exp
 
 MODULE mo_ml_ocean
 

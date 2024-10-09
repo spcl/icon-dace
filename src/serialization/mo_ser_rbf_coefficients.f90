@@ -1,6 +1,3 @@
-! Write and read RBF coefficients
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Write and read RBF coefficients
 
 MODULE mo_ser_rbf_coefficients
 

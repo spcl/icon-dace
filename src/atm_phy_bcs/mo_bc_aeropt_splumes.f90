@@ -1,7 +1,3 @@
-!
-! Read and apply monthly aerosol optical properties of S. Kinne
-! from yearly files.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Read and apply monthly aerosol optical properties of S. Kinne
+! from yearly files.
 
 ! ---------------------------
 #include "consistent_fma.inc"
@@ -25,8 +24,6 @@ MODULE mo_bc_aeropt_splumes
                                    & read_bcast_real_2D, read_bcast_real_3D, &
                                    & closeFile
   USE mo_model_domain,         ONLY: p_patch
-  USE mo_impl_constants,       ONLY: min_rlcell_int, grf_bdywidth_c
-  USE mo_loopindices,          ONLY: get_indices_c
   USE mo_math_constants,       ONLY: rad2deg
   USE mtime,                   ONLY: datetime, getDayOfYearFromDateTime, &
        &                             getNoOfSecondsElapsedInDayDateTime, &
@@ -430,8 +427,8 @@ MODULE mo_bc_aeropt_splumes
   !                         aerosol subroutine and incrementing the background aerosol properties
   !                         (and effective radius) with the anthropogenic plumes.
   !
-  SUBROUTINE add_bc_aeropt_splumes                                                ( &
-     & jg, jcs        ,kproma         ,kbdim          ,klev           ,krow        ,&
+  SUBROUTINE add_bc_aeropt_splumes( jg                                             ,&
+     & jcs            ,jce            ,nproma         ,klev           ,jb          ,&
      & nb_sw          ,this_datetime  ,zf             ,dz             ,z_sfc       ,&
      & sw_wv1         ,sw_wv2         ,aod_sw_vr      ,ssa_sw_vr      ,asy_sw_vr   ,&
      & x_cdnc                                                                      )                                                  
@@ -440,26 +437,27 @@ MODULE mo_bc_aeropt_splumes
     INTEGER, INTENT(IN) ::            &
          jg                          ,& !< domain index
          jcs                         ,& !< start index in current block
-         kproma                      ,& !< end index in current block
-         kbdim                       ,& !< block dimension (greater than or equal to kproma)
+         jce                         ,& !< end index in current block
+         nproma                      ,& !< block dimension
          klev                        ,& !< number of full levels
-         krow                        ,& !< index for current block
+         jb                          ,& !< index for current block
          nb_sw                          !< number of bands in short wave
 
     TYPE(datetime), POINTER      :: this_datetime
 
     REAL(wp), INTENT (IN)        :: &
-         zf(kbdim,klev),            & !< geometric height at full level [m]
-         dz(kbdim,klev),            & !< geometric height thickness     [m]
-         z_sfc(kbdim),              & !< geometric height of surface    [m]
-         sw_wv1(nb_sw),             & !< smallest wave number in each of the sw bands
+         zf(nproma,klev),            & !< geometric height at full level [m]
+         dz(nproma,klev),            & !< geometric height thickness     [m]
+         z_sfc(nproma),              & !< geometric height of surface    [m]
+         sw_wv1(nb_sw),              & !< smallest wave number in each of the sw bands
          sw_wv2(nb_sw)                !< largest  wave number in each of the sw bands
 
     REAL(wp), INTENT (INOUT) ::       &
-         aod_sw_vr(kbdim,klev,nb_sw) ,& !< Aerosol shortwave optical depth
-         ssa_sw_vr(kbdim,klev,nb_sw) ,& !< Aerosol single scattering albedo
-         asy_sw_vr(kbdim,klev,nb_sw) ,& !< Aerosol asymmetry parameter
-         x_cdnc(kbdim)                  !< Scale factor for Cloud Droplet Number Concentration
+         aod_sw_vr(nproma,klev,nb_sw) ,& !< Aerosol shortwave optical depth
+         ssa_sw_vr(nproma,klev,nb_sw) ,& !< Aerosol single scattering albedo
+         asy_sw_vr(nproma,klev,nb_sw)    !< Aerosol asymmetry parameter
+    REAL(wp), INTENT(OUT), OPTIONAL:: &
+         x_cdnc(nproma)                  !< Scale factor for Cloud Droplet Number Concentration
   
     !
     ! --- 0.2 Dummy variables
@@ -473,14 +471,14 @@ MODULE mo_bc_aeropt_splumes
     REAL(wp) ::                       &
          year_fr                     ,& !< time in year fraction (1989.0 is 0Z on Jan 1 1989)
          lambda                      ,& !< wavelength at central band wavenumber [nm]
-         lon_sp(kproma)              ,& !< longitude passed to sp
-         lat_sp(kproma)              ,& !< latitude passed to sp
-         z_fl_vr(kbdim,klev)         ,& !< level height [m], vertically reversed indexing (1=lowest level)
-         dz_vr(kbdim,klev)           ,& !< level thickness [m], vertically reversed 
-         sp_aod_vr(kbdim,klev)       ,& !< simple plume aerosol optical depth, vertically reversed 
-         sp_ssa_vr(kbdim,klev)       ,& !< simple plume single scattering albedo, vertically reversed
-         sp_asy_vr(kbdim,klev)       ,& !< simple plume asymmetry factor, vertically reversed indexing
-         sp_xcdnc(kproma)               !< drop number scale factor
+         lon_sp(nproma)              ,& !< longitude passed to sp
+         lat_sp(nproma)              ,& !< latitude passed to sp
+         z_fl_vr(nproma,klev)        ,& !< level height [m], vertically reversed indexing (1=lowest level)
+         dz_vr(nproma,klev)          ,& !< level thickness [m], vertically reversed 
+         sp_aod_vr(nproma,klev)      ,& !< simple plume aerosol optical depth, vertically reversed 
+         sp_ssa_vr(nproma,klev)      ,& !< simple plume single scattering albedo, vertically reversed
+         sp_asy_vr(nproma,klev)      ,& !< simple plume asymmetry factor, vertically reversed indexing
+         sp_xcdnc(nproma)               !< drop number scale factor
 
     year_fr = REAL(this_datetime%date%year,wp) &
          +((REAL(getDayOfYearFromDateTime(this_datetime),wp) &
@@ -492,14 +490,16 @@ MODULE mo_bc_aeropt_splumes
       !
       DO jk=1,klev
         jki=klev-jk+1
-        DO jl=jcs,kproma
+        DO jl=jcs,jce
           dz_vr  (jl,jk) = dz(jl,jki)
           z_fl_vr(jl,jk) = zf(jl,jki)
         END DO
       END DO
 
-      lon_sp(jcs:kproma) = p_patch(jg)%cells%center(jcs:kproma,krow)%lon*rad2deg
-      lat_sp(jcs:kproma) = p_patch(jg)%cells%center(jcs:kproma,krow)%lat*rad2deg
+      lon_sp(jcs:jce) = p_patch(jg)%cells%center(jcs:jce,jb)%lon*rad2deg
+      lat_sp(jcs:jce) = p_patch(jg)%cells%center(jcs:jce,jb)%lat*rad2deg
+
+      ! 
       ! --- 1.2 Aerosol Shortwave properties
       !
       ! get aerosol optical properties in each band, and adjust effective radius
@@ -507,23 +507,18 @@ MODULE mo_bc_aeropt_splumes
       DO jwl = 1,nb_sw
         lambda = 1.e7_wp/ (0.5_wp * (sw_wv1(jwl) + sw_wv2(jwl)))
         CALL sp_aop_profile(                                              klev                , &
-           & jcs                ,kproma             ,kbdim               ,lambda              , &
+           & jcs                ,jce                ,nproma              ,lambda              , &
            & z_sfc(:)           ,lon_sp(:)          ,lat_sp(:)           ,year_fr             , &
            & z_fl_vr(:,:)       ,dz_vr(:,:)         ,sp_xcdnc(:)         ,sp_aod_vr(:,:)      , &
            & sp_ssa_vr(:,:)     ,sp_asy_vr(:,:)                                               )
 
         DO jk=1,klev
-          DO jl=jcs,kproma
+          DO jl=jcs,jce
             asy_sw_vr(jl,jk,jwl) = asy_sw_vr(jl,jk,jwl) * ssa_sw_vr(jl,jk,jwl) * aod_sw_vr(jl,jk,jwl)    &
                  + sp_asy_vr(jl,jk)   * sp_ssa_vr(jl,jk)    * sp_aod_vr(jl,jk)
             ssa_sw_vr(jl,jk,jwl) = ssa_sw_vr(jl,jk,jwl) * aod_sw_vr(jl,jk,jwl)                           &
                  + sp_ssa_vr(jl,jk)   * sp_aod_vr(jl,jk)
             aod_sw_vr(jl,jk,jwl) = aod_sw_vr(jl,jk,jwl) + sp_aod_vr(jl,jk)
-
-            !asy_sw_vr(jl,jk,jwl) = MERGE(asy_sw_vr(jl,jk,jwl)/ssa_sw_vr(jl,jk,jwl),asy_sw_vr(jl,jk,jwl), &
-                 !ssa_sw_vr(jl,jk,jwl) > TINY(1.0_wp))
-            !ssa_sw_vr(jl,jk,jwl) = MERGE(ssa_sw_vr(jl,jk,jwl)/aod_sw_vr(jl,jk,jwl),ssa_sw_vr(jl,jk,jwl), &
-                 !aod_sw_vr(jl,jk,jwl) > TINY(1.0_wp))
             IF (ssa_sw_vr(jl,jk,jwl) > TINY(1.0_wp)) THEN
               asy_sw_vr(jl,jk,jwl) = asy_sw_vr(jl,jk,jwl)/ssa_sw_vr(jl,jk,jwl)
             ELSE
@@ -540,9 +535,11 @@ MODULE mo_bc_aeropt_splumes
         END DO
       END DO
 
-      DO jl=jcs,kproma
-        x_cdnc(jl) = sp_xcdnc(jl)
-      END DO
+      IF (PRESENT (x_cdnc)) THEN
+        DO jl=jcs,jce
+          x_cdnc(jl) = sp_xcdnc(jl)
+        END DO
+      END IF
       RETURN
     END IF
  

@@ -184,7 +184,6 @@ CONTAINS
     dsl4jsb_Aggregate_onChunk(Q_RAD_, appfd                     , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_RAD_, rfr_ratio_boc             , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_RAD_, albedo                    , weighted_by_fract)
-    dsl4jsb_Aggregate_onChunk(Q_RAD_, net_radiation             , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_RAD_, albedo_noon               , weighted_by_fract)
     ! Q_RAD_ 3D
     dsl4jsb_Aggregate_onChunk(Q_RAD_, ppfd_sunlit_cl            , weighted_by_fract)
@@ -366,28 +365,28 @@ CONTAINS
     !>
 
     ! docu:
-    ! calc_time_mavg(current average, new value, length of avg_period,  !
+    ! calc_time_mavg(dtime, current average, new value, length of avg_period,  !
     !                do_calc=LOGICAL, avg_period_unit='day')            ! OPTIONAL
     !                RETURN(new current average)
     ! the unit of the averaging period is 'day' by default, but can also be 'week' or 'year'
 
     !>  2.1 tfrac (averages at the time-scale of within-leaf N allocation fractions)
     !>
-    ppfd_sunlit_tfrac_mavg_cl(:,:) = calc_time_mavg(ppfd_sunlit_tfrac_mavg_cl(:,:), ppfd_sunlit_daytime_cl(:,:), &
+    ppfd_sunlit_tfrac_mavg_cl(:,:) = calc_time_mavg(dtime, ppfd_sunlit_tfrac_mavg_cl(:,:), ppfd_sunlit_daytime_cl(:,:), &
                                                     mavg_period_tfrac, do_calc=l_growing_season_cl(:,:))
-    ppfd_shaded_tfrac_mavg_cl(:,:) = calc_time_mavg(ppfd_shaded_tfrac_mavg_cl(:,:), ppfd_shaded_daytime_cl(:,:), &
+    ppfd_shaded_tfrac_mavg_cl(:,:) = calc_time_mavg(dtime, ppfd_shaded_tfrac_mavg_cl(:,:), ppfd_shaded_daytime_cl(:,:), &
                                                     mavg_period_tfrac, do_calc=l_growing_season_cl(:,:))
 
     !>  2.2 tcnl (averages at the time-scale of leaf N allocation fractions)
     !>
-    ppfd_sunlit_tcnl_mavg_cl(:,:) = calc_time_mavg(ppfd_sunlit_tcnl_mavg_cl(:,:), ppfd_sunlit_cl(:,:), &
+    ppfd_sunlit_tcnl_mavg_cl(:,:) = calc_time_mavg(dtime, ppfd_sunlit_tcnl_mavg_cl(:,:), ppfd_sunlit_cl(:,:), &
                                                     mavg_period_tcnl, do_calc=l_growing_season_cl(:,:))
-    ppfd_shaded_tcnl_mavg_cl(:,:) = calc_time_mavg(ppfd_shaded_tcnl_mavg_cl(:,:), ppfd_shaded_cl(:,:), &
+    ppfd_shaded_tcnl_mavg_cl(:,:) = calc_time_mavg(dtime, ppfd_shaded_tcnl_mavg_cl(:,:), ppfd_shaded_cl(:,:), &
                                                     mavg_period_tcnl, do_calc=l_growing_season_cl(:,:))
 
     !>  2.3 tvegdyn (averages at the vegetation dynamics time-scale)
     !!
-    rfr_ratio_boc_tvegdyn_mavg(:) = calc_time_mavg(rfr_ratio_boc_tvegdyn_mavg(:), rfr_ratio_boc(:), &
+    rfr_ratio_boc_tvegdyn_mavg(:) = calc_time_mavg(dtime, rfr_ratio_boc_tvegdyn_mavg(:), rfr_ratio_boc(:), &
       &                               mavg_period_tvegdyn, do_calc=(veg_pool_mt(ix_leaf,ixC,:) > eps8))
 
     IF (debug_on() .AND. options%iblk==1) CALL message(routine, 'Finished.')

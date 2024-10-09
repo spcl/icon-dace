@@ -1,7 +1,3 @@
-! The module <i>mo_communication</i>
-! provides functionality for boundary exchange and global sums.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The module <i>mo_communication</i>
+! provides functionality for boundary exchange and global sums.
 
 !----------------------------
 #include "icon_definitions.inc"

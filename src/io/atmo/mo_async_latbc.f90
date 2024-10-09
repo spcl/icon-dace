@@ -1,6 +1,3 @@
-! This module contains the I/O routines for lateral boundary nudging
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! This module contains the I/O routines for lateral boundary nudging
+
 ! ------------------------------------------------------------------------
 ! Which fields are read from the lateral boundary conditions file?
 ! ------------------------------------------------------------------------
@@ -237,8 +235,6 @@ MODULE mo_async_latbc
 
   IMPLICIT NONE
   PRIVATE
-
-  INCLUDE 'netcdf.inc'
 
 #ifndef NOMPI
     PUBLIC :: prefetch_main_proc

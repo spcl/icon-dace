@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 A set of dummy components are used to test the c user interface
 and the coupling between three components. The grids are defined
 internally and are kept simple.

@@ -1,7 +1,3 @@
-!
-! Subroutine interface_aes_tmx calls the turbulent mixing scheme
-! and the surface schemes using tmx.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine interface_aes_tmx calls the turbulent mixing scheme
+! and the surface schemes using tmx.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -526,7 +525,7 @@ CONTAINS
     INTEGER :: nlev, nlevp1, jg
     INTEGER :: rls, rle, jbs, jbe, jcs, jce, jb, jc
     REAL(wp), POINTER :: ptr_r2d(:,:), ptr_r3d(:,:,:)
-    REAL(sp), POINTER :: ptr_s2d(:,:)
+    REAL(sp), POINTER :: ptr_s2d(:,:), ptr_s3d(:,:,:)
     INTEGER, ALLOCATABLE :: sfc_types(:)
 
     REAL(wp), POINTER :: dz_srf(:,:)
@@ -598,6 +597,8 @@ CONTAINS
     ! Bind variables to atmo config list
     CALL bind_variable(vdf%atmo%config%list%Search('cpd'), cpd)
     CALL bind_variable(vdf%atmo%config%list%Search('cvd'), cvd)
+    CALL bind_variable(vdf%atmo%config%list%Search('Smagorinsky constant'), aes_vdf_config(jg)%smag_constant)
+    CALL bind_variable(vdf%atmo%config%list%Search('maximum turbulence length scale'), aes_vdf_config(jg)%max_turb_scale)
     CALL bind_variable(vdf%atmo%config%list%Search('minimum Km'),aes_vdf_config(jg)%km_min)
     CALL bind_variable(vdf%atmo%config%list%Search('reverse prandtl number'),aes_vdf_config(jg)%rturb_prandtl)
     CALL bind_variable(vdf%atmo%config%list%Search('prandtl number'),aes_vdf_config(jg)%turb_prandtl)
@@ -638,8 +639,17 @@ CONTAINS
     CALL bind_variable(vdf%atmo%inputs%list%Search('full level pressure'), field%pfull)
     CALL bind_variable(vdf%atmo%inputs%list%Search('half level pressure'), field%phalf)
     CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness'), field%dz)
+    CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness full'), p_nh_metrics%ddqz_z_full)
     CALL bind_variable(vdf%atmo%inputs%list%Search('inverse layer thickness full'), p_nh_metrics%inv_ddqz_z_full)
     CALL bind_variable(vdf%atmo%inputs%list%Search('inverse layer thickness half'), p_nh_metrics%inv_ddqz_z_half)
+#ifdef __MIXED_PRECISION
+    ptr_s3d => p_nh_metrics%ddqz_z_half(:,:,:)
+    CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness half'), ptr_s3d)
+#else
+    ptr_r3d => p_nh_metrics%ddqz_z_half(:,:,:)
+    CALL bind_variable(vdf%atmo%inputs%list%Search('layer thickness half'), ptr_r3d)
+#endif
+    CALL bind_variable(vdf%atmo%inputs%list%Search('geopotential above groundlevel at interface and cell center'), p_nh_metrics%geopot_agl_ifc)
     ! 2d
     ! CALL bind_variable(vdf%atmo%inputs%list%Search('area fraction with wet land surface'), field%csat)
     ! CALL bind_variable(vdf%atmo%inputs%list%Search('area fraction with wet land surface (air)'), field%cair)
@@ -795,6 +805,8 @@ CONTAINS
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('2m temperature, tile'),                         field%tas_tile)
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('2m specific humidity'),                         field%qv2m)
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('2m specific humidity, tile'),                   field%qv2m_tile)
+    CALL bind_variable(vdf%sfc%diagnostics%list%Search('2m dewpoint temperature'),                      field%dew2)
+    CALL bind_variable(vdf%sfc%diagnostics%list%Search('2m dewpoint temperature, tile'),                field%dew2_tile)
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('10m wind speed'),                               field%sfcwind)
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('10m zonal wind'),                               field%uas)
     CALL bind_variable(vdf%sfc%diagnostics%list%Search('10m meridional wind'),                          field%vas)
@@ -805,6 +817,8 @@ CONTAINS
     CALL vdf%Lock_variable_sets()
 
     vdf_dom(jg)%p => vdf
+    
+    CALL vdf%atmo%Init()
 
   END SUBROUTINE init_tmx
 

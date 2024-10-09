@@ -1,7 +1,3 @@
-! Routines for handling of regular output steps and ready file events
-! on multiple I/O PEs.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,7 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Routines for handling of regular output steps and ready file events
+! on multiple I/O PEs.
 !
 ! Note that this module contains the abstract implementation of the
 ! output event handling, while the actual control of the trigger

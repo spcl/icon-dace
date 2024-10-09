@@ -8,10 +8,11 @@
 #include <check.h>
 #include "mtime_date.h"
 
-void add_mtime_date_test_to_suite(Suite* suite);
+void add_mtime_date_test_to_suite(Suite *suite);
 
 /*** SPECIAL ASSERT FUNCTIONS ***/
-void assertDate(const char* input_string, int64_t year, int month, int day, const char* expected_output_string, const char* expected_basic_string);
-void assertInvalidDate(const char* input_string);
+void assertDate(const char *input_string, int64_t year, int month, int day, const char *expected_output_string,
+                const char *expected_basic_string);
+void assertInvalidDate(const char *input_string);
 
 #endif

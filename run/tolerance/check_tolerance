@@ -92,8 +92,8 @@ if [[ ! -d "$CPU_REFERENCE" ]] ; then
     exit 1
 fi
 
-# find relevant config
-source "${SCRIPT_DIR}/set_probtest_file_id" "$EXPERIMENT"
+# get probtest file_id from yml-config
+probtest_file_id=($(${SCRIPT_DIR}/../../scripts/experiments/get_probtest_file_id --experiment ${EXPERIMENT}))
 
 echo "Running tolerance check with compiler-specific reference at ${CPU_REFERENCE}"
 
@@ -105,10 +105,9 @@ if ! "${PROBTEST}" --log-file "${LOG}.init" init \
     --codebase-install "${MODEL_DIR1}" \
     --reference "not-used" \
     --experiment-name "${EXP_BASE}" \
-    "${probtest_file_id[@]}" \
+    "${probtest_file_id[@]}"  \
     --config "${PROBTEST_CONFIG}"
 then
-    cat "${LOG}.init"
     echo "probtest did not initialized successfully"
     exit 1
 fi
@@ -118,7 +117,6 @@ if ! "${PROBTEST}" --log-file "${LOG}.stats" stats \
     --stats-file-name "${EXPERIMENT}.csv" \
     --no-ensemble
 then
-    cat "${LOG}.stats"
     echo "probtest did not generate stats successfully"
     exit 1
 fi
@@ -130,7 +128,6 @@ if ! "${PROBTEST}" --log-file "${LOG}.check" check \
     --tolerance-file-name "${CPU_REFERENCE}/${EXPERIMENT}_tolerance.csv" \
     --factor $FACTOR
 then
-    cat "${LOG}.check"
     echo "probtest tolerance test did not complete successfully"
     exit 1
 fi

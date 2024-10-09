@@ -1,6 +1,3 @@
-! Namelist variables for assimilation schemes
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist variables for assimilation schemes
 
 MODULE mo_assimilation_nml
 

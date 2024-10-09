@@ -1,15 +1,3 @@
-! This module provides physical constants for the ICON general circulation models.
-!
-! Physical constants are grouped as follows:
-! - Natural constants
-! - Molar weights
-! - Earth and Earth orbit constants
-! - Thermodynamic constants for the dry and moist atmosphere
-! - Constants used for the computation of lookup tables of the saturation
-!    mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
-!    (to be shifted to the module that computes the lookup tables)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -20,6 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides physical constants for the ICON general circulation models.
+!
+! Physical constants are grouped as follows:
+! - Natural constants
+! - Molar weights
+! - Earth and Earth orbit constants
+! - Thermodynamic constants for the dry and moist atmosphere
+! - Constants used for the computation of lookup tables of the saturation
+!    mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
+!    (to be shifted to the module that computes the lookup tables)
 
 MODULE mo_physical_constants
 
@@ -131,7 +130,7 @@ MODULE mo_physical_constants
   REAL(wp), PARAMETER :: rhoice=  916.7_wp        !> [kg/m3]  density of pure ice
 
  !REAL(wp), PARAMETER :: clw   = 4186.84_wp       !! [J/K/kg] specific heat of water
-                                                  !!  see below 
+                                                  !!  see below
   REAL(wp), PARAMETER ::  cv_i =  2000.0_wp
   !> - phase changes
   REAL(wp), PARAMETER :: alv   = 2.5008e6_wp      !> [J/kg]   latent heat for vaporisation
@@ -206,7 +205,7 @@ MODULE mo_physical_constants
 !----------below are parameters for sea-ice and lake model---------------
   REAL(wp), PARAMETER ::            &
     ks           = 0.31_wp,         & ! heat conductivity snow     [J  / (m s K)]
-    ki           = 2.1656_wp,       & ! heat conductivity ice      [J  / (m s K)]   
+    ki           = 2.1656_wp,       & ! heat conductivity ice      [J  / (m s K)]
     rhoi         = 917.0_wp,        & ! density of sea ice         [kg / m**3]
     rhos         = 300.0_wp,        & ! density of snow            [kg / m**3]
     ci           = 2106.0_wp,       & ! Heat capacity of ice       [J / (kg K)]
@@ -239,11 +238,6 @@ MODULE mo_physical_constants
 !_cdm<
   REAL (wp), PARAMETER ::                             &
     &  tf_salt      = 271.45_wp     !< salt-water freezing point [K]
-                                    !< (note that it differs from Tf) 
-
-  ! Length of day in seconds, as integer and real
-  !
-  INTEGER,  PARAMETER :: idaylen=86400     ! [s]
-  REAL(wp), PARAMETER :: rdaylen=86400._wp ! [s]
+                                    !< (note that it differs from Tf)
 
 END MODULE mo_physical_constants

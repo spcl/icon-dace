@@ -1,3 +1,7 @@
+// Copyright (c) 1992-2008 The University of Tennessee.  All rights reserved.
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 #define FMAX 40
 #define EXPMAXDIGS 8
 #define EXPMAX 99999999

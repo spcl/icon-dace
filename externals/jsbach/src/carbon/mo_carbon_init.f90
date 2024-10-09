@@ -31,67 +31,12 @@ MODULE mo_carbon_init
   IMPLICIT NONE
   PRIVATE
 
-  PUBLIC :: carbon_init, carbon_read_cpools
+  PUBLIC :: carbon_read_cpools
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_carbon_init'
 
 CONTAINS
 
-  !
-  !> Intialize carbon process (after memory has been set up)
-  !
-  SUBROUTINE carbon_init(tile)
-
-    CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
-    !TYPE(t_jsb_model), POINTER                :: model
-    REAL(wp)                                  :: dtime
-
-    CHARACTER(len=*), PARAMETER :: routine = modname//':carbon_init'
-
-    dsl4jsb_Def_memory(CARBON_)
-    !dsl4jsb_Def_config(CARBON_)
-
-    dsl4jsb_Real3D_onChunk :: F_pseudo_temp
-    dsl4jsb_Real3D_onChunk :: N_pseudo_temp
-    dsl4jsb_Real3D_onChunk :: F_pseudo_precip
-    dsl4jsb_Real3D_onChunk :: N_pseudo_precip
-
-    !model => get_model(tile%owner_model_id)
-
-    dsl4jsb_Get_memory(CARBON_)
-    !dsl4jsb_Get_config(CARBON_)
-
-    dtime = get_time_dt(tile%owner_model_id)
-
-    !CALL carbon_init_ic(tile)
-    !CALL carbon_init_bc(tile)
-
-    ! R: This should stand here because these variables are more technical constants (only depending on dtime)
-    !    than a part of the carbon process parametrization. Furthermore they should be calculated only once when a simulation
-    !    is started or restarted and not for each tile and for each time step again!
-    !    It is not necessary to write and read them to/from the restart files.
-    !    It is not necessary to write them to the output file.
-    !    However, we could think about to kick them also out of the memory...
-    !    AND we should make them 1D, later, as soon as we do not want them in the output for debugging!
-
-     !dsl4jsb_Get_var2D_onChunk(CARBON_,   F_pseudo_temp)    ! for this we would need iblk, but we want the whole field!
-     F_pseudo_temp   => carbon__mem%F_pseudo_temp%ptr(:,:)   ! out
-     N_pseudo_temp   => carbon__mem%N_pseudo_temp%ptr(:,:)   ! out
-     F_pseudo_precip => carbon__mem%F_pseudo_precip%ptr(:,:) ! out
-     N_pseudo_precip => carbon__mem%N_pseudo_precip%ptr(:,:) ! out
-
-    ! R: Note, I changed the "writing style" as compared to JSBACH3.
-    ! F_pseudo_temp and N_pseudo_temp are constants used for updating the pseudo-15-day mean temperature.
-    ! These constants define the contributions of t_air and pseudo_temp to the new pseudo_temp.
-    F_pseudo_temp = EXP(-dtime / (15._wp * 86400._wp))   ! F_pseudo_temp decreases expotentially from 1 with higher
-                                                         ! (dtime/15DaysInSeconds). For (dtime/15DaysInSeconds)
-                                                         !  =1 it would be 0.368 and =0.5 it would be 0.607.
-    N_pseudo_temp = 1._wp - F_pseudo_temp                ! Rises with the same amout as F_pseudo_temp falls.
-
-    F_pseudo_precip = EXP(-dtime / (15._wp * 86400._wp))
-    N_pseudo_precip = 1._wp - F_pseudo_precip
-
-  END SUBROUTINE carbon_init
 
   SUBROUTINE carbon_init_bc(tile)
     !-----------------------------------------------------------------------

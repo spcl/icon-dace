@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /**
  * \page init_yac_detail Initialising YAC
    \tableofcontents

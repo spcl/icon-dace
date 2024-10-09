@@ -1,53 +1,9 @@
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
+
 // #define VERBOSE
 
-/**
- * @file toy_scrip.c
- *
- * @copyright Copyright  (C)  2013 DKRZ, MPI-M
- *
- * @author Moritz Hanke <hanke@dkrz.de>
- *         Rene Redler  <rene.redler@mpimet.mpg.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
-
-#include "yac_config.h"
-
-#if defined YAC_NETCDF_ENABLED
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
@@ -55,14 +11,9 @@
 #include <math.h>
 #include <netcdf.h>
 #include <string.h>
-#include "utils.h"
-#include "fields.h"
-#include "yac_interface.h"
-#include "geometry.h"
-#include "vtk_output.h"
-#include "read_scrip_grid.h"
-#include "test_function.h"
-#include "io_utils.h"
+#include <stdbool.h>
+#include "yac.h"
+#include "yac_utils.h"
 
 enum interp_stack_type {
   INTERP_STACK_CONSERV_DESTAREA,
@@ -148,24 +99,25 @@ struct {
   double (*p)(double lon, double lat);
   char const * name;
 } test_functions[] =
-  {{.p = test_func,
+  {{.p = yac_test_func,
     .name = "yac"},
-    {.p = test_ana_fcos,
+    {.p = yac_test_ana_fcos,
     .name = "fcos"},
-    {.p = test_ana_fcossin,
+    {.p = yac_test_ana_fcossin,
     .name = "fcossin"},
-    {.p = test_one,
+    {.p = yac_test_one,
     .name = "one"},
-    {.p = test_gulfstream,
+    {.p = yac_test_gulfstream,
     .name = "gulfstream"},
-    {.p = test_harmonic,
+    {.p = yac_test_harmonic,
     .name = "harmonic"},
-    {.p = test_vortex,
+    {.p = yac_test_vortex,
     .name = "vortex"}};
 enum{NUM_TEST_FUNCTIONS = sizeof(test_functions)/sizeof(test_functions[0])};
 
 static void generate_interp_stacks(void);
 static void free_interp_stacks(void);
+static void LLtoXYZ(double lon, double lat, double p_out[]);
 
 static int * read_mask(char const * filename, char const * grid_name, int const valid_mask_value);
 
@@ -276,11 +228,11 @@ int main (int argc, char *argv[]) {
   double * y_cell;
   int * cell_to_vertex;
   int * cell_core_mask;
-  read_scrip_grid_information(
+  yac_read_scrip_grid_information(
     grid_filename, mask_filename, comp_name, valid_mask_value,
     &num_vertices, &num_cells, &num_vertices_per_cell,
     &x_vertices, &y_vertices, &x_cell, &y_cell, &cell_to_vertex,
-    &cell_core_mask);
+    &cell_core_mask, NULL, NULL, NULL);
 
   // register local grid
   int grid_id;
@@ -289,14 +241,14 @@ int main (int argc, char *argv[]) {
     x_vertices, y_vertices, cell_to_vertex, &grid_id);
 
   // set global ids and core masks
-  yac_int * global_cell_ids = xmalloc(num_cells * sizeof(*global_cell_ids));
+  yac_int * global_cell_ids = malloc(num_cells * sizeof(*global_cell_ids));
   yac_int * global_vertex_ids =
-    xmalloc(num_vertices * sizeof(*global_vertex_ids));
+    malloc(num_vertices * sizeof(*global_vertex_ids));
   for (size_t i = 0; i < num_cells; ++i) global_cell_ids[i] = i;
   for (size_t i = 0; i < num_vertices; ++i) global_vertex_ids[i] = i;
-  yac_cset_global_index(global_cell_ids, CELL, grid_id);
-  yac_cset_core_mask(cell_core_mask, CELL, grid_id);
-  yac_cset_global_index(global_vertex_ids, CORNER, grid_id);
+  yac_cset_global_index(global_cell_ids, YAC_LOCATION_CELL, grid_id);
+  yac_cset_core_mask(cell_core_mask, YAC_LOCATION_CELL, grid_id);
+  yac_cset_global_index(global_vertex_ids, YAC_LOCATION_CORNER, grid_id);
 
   int * nogt_mask = read_mask("./input/masks_nogt_yac.nc", comp_name, 0);
   int * torc_mask = read_mask("./input/masks_torc_yac.nc", comp_name, 0);
@@ -306,15 +258,18 @@ int main (int argc, char *argv[]) {
       cell_point_id_nogt_mask,
       cell_point_id_torc_mask;
   yac_cdef_points_unstruct(
-    grid_id, (int)num_cells, CELL, x_cell, y_cell, &cell_point_id_no_mask);
+    grid_id, (int)num_cells, YAC_LOCATION_CELL, x_cell, y_cell,
+    &cell_point_id_no_mask);
   if (nogt_mask != NULL) {
     yac_cdef_points_unstruct(
-      grid_id, (int)num_cells, CELL, x_cell, y_cell, &cell_point_id_nogt_mask);
+      grid_id, (int)num_cells, YAC_LOCATION_CELL, x_cell, y_cell,
+      &cell_point_id_nogt_mask);
     yac_cset_mask(nogt_mask, cell_point_id_nogt_mask);
   } else cell_point_id_nogt_mask = cell_point_id_no_mask;
   if (torc_mask != NULL) {
     yac_cdef_points_unstruct(
-      grid_id, (int)num_cells, CELL, x_cell, y_cell, &cell_point_id_torc_mask);
+      grid_id, (int)num_cells, YAC_LOCATION_CELL, x_cell, y_cell,
+      &cell_point_id_torc_mask);
     yac_cset_mask(torc_mask, cell_point_id_torc_mask);
   } else cell_point_id_torc_mask = cell_point_id_no_mask;
 
@@ -346,31 +301,31 @@ int main (int argc, char *argv[]) {
   yac_cenddef( );
 
   // initialise vtk output file
-  VTK_FILE *vtk_file;
+  YAC_VTK_FILE *vtk_file;
   {
     char vtk_filename[1024];
     sprintf(vtk_filename, "./output/%s.vtk", comp_name);
 
-    double (*point_data)[3] = xmalloc(num_vertices * sizeof(*point_data));
+    double (*point_data)[3] = malloc(num_vertices * sizeof(*point_data));
     for (size_t i = 0; i < num_vertices; ++i)
       LLtoXYZ(x_vertices[i], y_vertices[i], point_data[i]);
 
-    vtk_file = vtk_open(vtk_filename, comp_name);
-    vtk_write_point_data(vtk_file, &point_data[0][0], (int)num_vertices);
-    vtk_write_cell_data(
+    vtk_file = yac_vtk_open(vtk_filename, comp_name);
+    yac_vtk_write_point_data(vtk_file, &point_data[0][0], (int)num_vertices);
+    yac_vtk_write_cell_data(
       vtk_file, (unsigned *)cell_to_vertex,
       (unsigned*)num_vertices_per_cell, (int)num_cells);
-    vtk_write_point_scalars_int(
+    yac_vtk_write_point_scalars_int(
       vtk_file, global_vertex_ids, (int)num_vertices, "global_vertex_id");
-    vtk_write_cell_scalars_int(
+    yac_vtk_write_cell_scalars_int(
       vtk_file, cell_core_mask, (int)num_cells, "cell_core_mask");
-    vtk_write_cell_scalars_int(
+    yac_vtk_write_cell_scalars_int(
       vtk_file, global_cell_ids, (int)num_cells, "global_cell_id");
     if (nogt_mask != NULL)
-      vtk_write_cell_scalars_int(
+      yac_vtk_write_cell_scalars_int(
         vtk_file, nogt_mask, (int)num_cells, "nogt_mask");
     if (torc_mask != NULL)
-      vtk_write_cell_scalars_int(
+      yac_vtk_write_cell_scalars_int(
         vtk_file, torc_mask, (int)num_cells, "torc_mask");
     free(point_data);
   }
@@ -379,8 +334,8 @@ int main (int argc, char *argv[]) {
   if (torc_mask) free(torc_mask);
 
   // allocate memory for field data
-  double * out_data = xmalloc(num_cells * sizeof(*out_data));
-  double * in_data = xmalloc(num_cells * sizeof(*in_data));
+  double * out_data = malloc(num_cells * sizeof(*out_data));
+  double * in_data = malloc(num_cells * sizeof(*in_data));
 
   // "time loop"
   for (size_t test_idx = 0; test_idx < NUM_TEST_FUNCTIONS; ++test_idx) {
@@ -395,7 +350,7 @@ int main (int argc, char *argv[]) {
     {
       char field_name[1024];
       snprintf(field_name, 1024, "test_%s_out", test_functions[test_idx].name);
-      vtk_write_cell_scalars_double(
+      yac_vtk_write_cell_scalars_double(
         vtk_file, out_data, (int)num_cells, field_name);
     }
 
@@ -427,7 +382,7 @@ int main (int argc, char *argv[]) {
             test_functions[test_idx].name,
             exp_config.component_names[src_comp_idx],
             interp_stacks[interp_type].name);
-          vtk_write_cell_scalars_double(
+          yac_vtk_write_cell_scalars_double(
             vtk_file, in_data, (int)num_cells, field_name);
         }
       }
@@ -439,7 +394,7 @@ int main (int argc, char *argv[]) {
 
   // close vtk file
   {
-    vtk_close(vtk_file);
+    yac_vtk_close(vtk_file);
   }
 
   // finalize YAC and MPI
@@ -482,30 +437,30 @@ static int * read_mask(
   status = nc_inq_varid(ncid, mask_var_name, &mask_var_id);
 
   if (status == NC_ENOTVAR) {
-    HANDLE_ERROR(nc_close(ncid));
+    YAC_HANDLE_ERROR(nc_close(ncid));
     return NULL;
   } else if (status != NC_NOERR)
-    HANDLE_ERROR(status);
+    YAC_HANDLE_ERROR(status);
 
   int x_dim_id;
   int y_dim_id;
-  HANDLE_ERROR(nc_inq_dimid(ncid, x_dim_name, &x_dim_id));
-  HANDLE_ERROR(nc_inq_dimid(ncid, y_dim_name, &y_dim_id));
+  yac_nc_inq_dimid(ncid, x_dim_name, &x_dim_id);
+  yac_nc_inq_dimid(ncid, y_dim_name, &y_dim_id);
 
   size_t x_dim_len;
   size_t y_dim_len;
-  HANDLE_ERROR(nc_inq_dimlen(ncid, x_dim_id, &x_dim_len));
-  HANDLE_ERROR(nc_inq_dimlen(ncid, y_dim_id, &y_dim_len));
+  YAC_HANDLE_ERROR(nc_inq_dimlen(ncid, x_dim_id, &x_dim_len));
+  YAC_HANDLE_ERROR(nc_inq_dimlen(ncid, y_dim_id, &y_dim_len));
 
   size_t num_cells = x_dim_len * y_dim_len;
 
-  int * cell_mask = xmalloc(num_cells * sizeof(*cell_mask));
-  HANDLE_ERROR(nc_get_var_int(ncid, mask_var_id, cell_mask));
+  int * cell_mask = malloc(num_cells * sizeof(*cell_mask));
+  YAC_HANDLE_ERROR(nc_get_var_int(ncid, mask_var_id, cell_mask));
   for (size_t i = 0; i < num_cells; ++i)
     cell_mask[i] = cell_mask[i] == valid_mask_value;
 
 
-  HANDLE_ERROR(nc_close(ncid));
+  YAC_HANDLE_ERROR(nc_close(ncid));
 
   return cell_mask;
 }
@@ -564,20 +519,23 @@ static void generate_interp_stacks(void) {
         interp_stacks[interp_stack_type].name = strdup("DISTWGT_4");
         yac_cget_interp_stack_config(&(interp_stacks[interp_stack_type].id));
         yac_cadd_interp_stack_config_nnn(
-          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 4, -1.0);
+          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 4,
+          YAC_INTERP_NNN_MAX_SEARCH_DISTANCE_DEFAULT, -1.0);
         break;
       case(INTERP_STACK_DISTWGT_1):
         interp_stacks[interp_stack_type].name = strdup("DISTWGT_1");
         yac_cget_interp_stack_config(&(interp_stacks[interp_stack_type].id));
         yac_cadd_interp_stack_config_nnn(
-          interp_stacks[interp_stack_type].id, YAC_NNN_AVG, 1, -1.0);
+          interp_stacks[interp_stack_type].id, YAC_NNN_AVG, 1,
+          YAC_INTERP_NNN_MAX_SEARCH_DISTANCE_DEFAULT, -1.0);
         break;
       case(INTERP_STACK_HCSBB):
         interp_stacks[interp_stack_type].name = strdup("HCSBB");
         yac_cget_interp_stack_config(&(interp_stacks[interp_stack_type].id));
         yac_cadd_interp_stack_config_hcsbb(interp_stacks[interp_stack_type].id);
         yac_cadd_interp_stack_config_nnn(
-          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 4, -1.0);
+          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 4,
+          YAC_INTERP_NNN_MAX_SEARCH_DISTANCE_DEFAULT, -1.0);
         yac_cadd_interp_stack_config_fixed(
           interp_stacks[interp_stack_type].id, 0.0);
         break;
@@ -587,7 +545,8 @@ static void generate_interp_stacks(void) {
         yac_cadd_interp_stack_config_average(
           interp_stacks[interp_stack_type].id, YAC_AVG_ARITHMETIC, 1);
         yac_cadd_interp_stack_config_nnn(
-          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 2, -1.0);
+          interp_stacks[interp_stack_type].id, YAC_NNN_DIST, 2,
+          YAC_INTERP_NNN_MAX_SEARCH_DISTANCE_DEFAULT, -1.0);
         break;
     }
   }
@@ -601,12 +560,14 @@ static void free_interp_stacks(void) {
   }
 }
 
-#else
-#include <stdlib.h>
-#include <stdio.h>
-int main () {
-  printf ("Examples requires compiling with NetCDF.\n");
-  return EXIT_FAILURE;
-}
-#endif
 
+static void LLtoXYZ(double lon, double lat, double p_out[]) {
+
+   while (lon < -M_PI) lon += 2.0 * M_PI;
+   while (lon >= M_PI) lon -= 2.0 * M_PI;
+
+   double cos_lat = cos(lat);
+   p_out[0] = cos_lat * cos(lon);
+   p_out[1] = cos_lat * sin(lon);
+   p_out[2] = sin(lat);
+}

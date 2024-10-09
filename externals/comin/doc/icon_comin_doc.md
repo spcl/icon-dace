@@ -46,7 +46,7 @@ Note that combining ICON ComIn with a coupler software already offers another te
 ### Limitations
 
 - In the current version, the adapter library allows the access to *cell-based* ICON data fields, `REAL(wp)` arrays only. This implies in particular that data structures and arrays related to interpolated latitude-longitude grids are not exposed to the adapter library. However, geometrical information of vertices and edges, which is required for, e.g., interpolation, are provided.
-- For each variable the adapter library allows access to the process-local MPI partition only. Furthermore, most ICON-internal MPI communicators and exchange patterns are not exposed to 3rd party module(s). Only the MPI communicator which contains all MPI PEs (*P*rocessing *E*lements, is used here synonymously with the term *MPI task*) taking part in the primary constructor calls (ICON worker PEs) is exposed via the interface.
+- For each variable the adapter library allows access to the process-local MPI partition only. Furthermore, most ICON-internal MPI communicators and exchange patterns are not exposed to 3rd party module(s). Only the MPI communicator which contains all MPI PEs (*P*rocessing *E*lements, is used here synonymously with the term MPI task) taking part in the primary constructor calls (ICON worker PEs) is exposed via the interface.
 - The implementation of the function callbacks aims at a coarse-grained level with a moderate calling frequency (i.e. several times per time step but not dozens of times). In particular, callbacks are not intended to be used below ICON's "block-loop level".
 
 Not yet implemented in the current version of ICON ComIn:
@@ -112,19 +112,9 @@ Although ComIn is designed specifically for ICON, the code should remain agnosti
 
 ### Error handling in functions and subroutines
 
-The ComIn library has deliberately not implemented a comprehensive error handling mechanism.
-However, an error signalling using error codes defined in @ref comin_errhandler_constants "`comin_errhandler_constants`" is available.
-The main reasons for the decision against a comprehensive error handling are that in many situations runtime errors are not caught by the caller, cannot be handled automatically, and hinder the direct localization of the faulty code section with a debugger.
+By default ComIn calls @ref comin_errhandler::comin_plugin_finish on error, which is an exposed ICON subroutine (reverse callback): A function pointer to ICON's `finish` routine. It is initialized by the host model through the subroutine @ref comin_state::comin_setup_errhandler() "comin_setup_errhandler()". This setting is mandatory and must be done before calling the @ref comin_setup::comin_setup_check() "comin_setup_check()".
 
-In general, high-level routines (callbacks, constructors) do not return an error state, while lower-level helper functions return erroneous user input, e.g. in the form of an error state `ierr`.
-An error code is equal to `COMIN_SUCCESS` for a successful operation.
-However, the existence of an `ierr` argument does not imply that the function will always return to the caller in some way. Unrecoverable errors may be handled internally (abort), depending on the function.
-Generally, only `SUBROUTINE`s will return an error state, `FUNCTION`s will either return a null pointer or call @ref comin_errhandler::comin_plugin_finish() "comin_plugin_finish()" if essential information is not available.
-
-To evaluate an error status into an error message, @ref comin_errhandler::comin_error() "comin_error()" is available. This subroutine takes the error status and an optional argument to indicate the scope and writes the error message to the standard error stream.
-
-Within their plugin implementation, users can call the **finish routine**, which is an exposed ICON subroutine (reverse callback): A function pointer to ICON's `finish` can be retrieved via @ref comin_errhandler::comin_plugin_finish() "comin_plugin_finish()" (module `comin_plugin_interface`). It is initialized by the host model through the subroutine @ref comin_state::comin_setup_errhandler() "comin_setup_errhandler()". This setting is mandatory and must be done before calling the @ref comin_setup::comin_setup_check() "comin_setup_check()".
-
+Plugins have the option to manage errors independently by setting @ref comin_errhandler::comin_error_set_errors_return to .TRUE.. If this is the case, ComIn will not automatically call @ref comin_errhandler::comin_plugin_finish. Instead, the API call will return. The plugin will then need to verify every execution's success by obtaining the error code with @ref comin_errhandler::comin_error_get and comparing it to COMIN_SUCCESS. The relevant error message can be queried with @ref comin_errhandler::comin_error_get_message.
 
 ## Adapter library
 
@@ -150,7 +140,6 @@ Remarks:
 The variable descriptor is stored alongside with the data array (pointer) and metadata in a data structure of the internal type @ref comin_variable_types::t_comin_var_item "t_comin_var_item":
 ```fortran
 TYPE :: t_comin_var_item
-  TYPE(t_comin_var_descriptor)    :: descriptor
   TYPE(t_comin_var_metadata)      :: metadata
   TYPE(t_comin_var_ptr), POINTER  :: p  => NULL()
 END TYPE t_comin_var_item
@@ -160,14 +149,11 @@ The list of available (model) variables is managed in an internal data structure
 
 The ICON model (host code) accesses the list of exposed variables with procedures for adding variables, and for removing the entire variable list, freeing the memory.
 ```fortran
-SUBROUTINE comin_var_list_append(descriptor, p, ierr)
-  TYPE(t_comin_var_descriptor), INTENT(IN)  :: descriptor
+SUBROUTINE comin_var_list_append(p)
   TYPE(t_comin_var_ptr),        POINTER     :: p
-  INTEGER,                      INTENT(OUT) :: ierr
 END SUBROUTINE comin_var_list_append
 
-SUBROUTINE comin_var_list_finalize(ierr)
-  INTEGER,                INTENT(OUT) :: ierr
+SUBROUTINE comin_var_list_finalize()
 END SUBROUTINE comin_var_list_finalize
 ```
 
@@ -175,7 +161,7 @@ END SUBROUTINE comin_var_list_finalize
 
 Access to ICON data fields happens via an accessor function @ref comin_variable::comin_var_get "comin_var_get". This subroutine is intended to be called in the secondary constructor of the 3rd party module (see [Secondary constructor](#secondary-constructor)). It may not be called at an earlier or later time, and it serves the purpose of associating internal variable pointers of the 3rd party module to the ICON internal memory.
 
-Basically, `comin_var_get(context, var_descriptor, flag, var_pointer)` returns a 5-dimensional `REAL(wp)` pointer `var_pointer`. A return value `var_pointer /= NULL` means "success". The index ordering is defined within the ICON model and may change between different versions of the community interface. The interpretation of the different array dimensions is mostly left to the user. 
+Basically, `comin_var_get(context, var_descriptor, flag, var_pointer)` returns a 5-dimensional `REAL(wp)` pointer `var_pointer`. A return value `var_pointer /= NULL` means "success". The index ordering is defined within the ICON model and may change between different versions of the community interface. The interpretation of the different array dimensions is mostly left to the user.
 
 *Remark (array blocking).* In ICON, for reasons of cache efficiency nearly all `DO` loops over grid cells, edges, and vertices are organized in two nested loops: "jb loops" and "jc loops". Often, the outer loop `jb` is parallelized with OpenMP. With respect to the data layout, this means that arrays are split into several chunks of a much smaller length `nproma`. This array blocking is exposed via ComIn.
 
@@ -204,12 +190,13 @@ Here, the additional restriction holds that array slices for `(jc,jk,jb)` have t
 Regarding the data array, the @ref comin_variable::comin_var_get "comin_var_get" accessor function returns a pointer to an auxiliary data structure `t_comin_var_ptr` which wraps the `REAL(wp)` pointer. This indirection allows to switch between "old" and "new" time levels: The distinction between "old" and "new" (`nnow`, `nnew`) states, which is available in ICON for some data fields, is not exposed to the adapter library. Instead, for these fields the exposed pointers are always associated with the latest modified state. To access an "old" time level, 3rd party modules should allocate local buffers.
 
 ```fortran
- TYPE, BIND(C) :: t_comin_var_ptr
-   REAL(wp), POINTER :: ptr(:,:,:,:,:)
-   INTEGER :: pos_jc = -1, pos_jk = -1, pos_jb = -1, pos_jn = -1
-   INTEGER :: ncontained = 0
-   LOGICAL(kind=c_bool) :: lcontainer = .FALSE.
- END TYPE t_comin_var_ptr
+  TYPE :: t_comin_var_ptr
+    TYPE(t_comin_var_descriptor) :: descriptor
+    REAL(wp), POINTER :: ptr(:,:,:,:,:)
+    INTEGER :: pos_jc = -1, pos_jk = -1, pos_jb = -1, pos_jn = -1
+    INTEGER :: ncontained = 0
+    LOGICAL(kind=c_bool) :: lcontainer = .FALSE.
+  END TYPE t_comin_var_ptr
 ```
 
 An ICON model variable is always requested within a `context`, i.e. an entry point where the model variable is accessed (named integer constant, see the section "Entry points" below). The accessor function @ref comin_variable::comin_var_get "comin_var_get" accepts a list of (possibly) multiple entry points: `INTEGER, INTENT(IN) :: context(:)`
@@ -230,12 +217,14 @@ The optional argument `flag` provides information w.r.t. the data flow. Flags ma
  ENUMERATOR :: FLAG_NONE = 0, &
    & COMIN_FLAG_READ         = IBSET(0,1), &
    & COMIN_FLAG_WRITE        = IBSET(0,2), &
-   & COMIN_FLAG_SYNCHRONIZED = IBSET(0,3)
+   & COMIN_FLAG_SYNCHRONIZED = IBSET(0,3), &
+   & COMIN_FLAG_DEVICE       = IBSET(0,4)
  END ENUM
 ```
 Please note that as described in the [section on Limitations](#limitations) above: "The synchronization flag `COMIN_FLAG_SYNCHRONIZED` for the access of variables is currently not supported."
 If no `flag` is provided, read/write access to a non-synchronized field is assumed, i.e. the values in the halo region of the domain may be uninitialized or invalid, depending on the entry point and the particular field.
 Illegal write access to a data field is not detected by the ICON model due to efficiency reasons. In theory, this could be achieved by a debug version (compile-time switch) of the adapter library, which would allocate and compare local buffers.
+The flag `COMIN_FLAG_DEVICE` indicates that the plugin will access the device pointer. If this flag is passed, comin will *not* synchronize the data from the device to the host before the callbacks are called.
 
 
 #### Tracers
@@ -247,7 +236,7 @@ Note that tracer variables in ICON have multiple time levels.
 
 #### Turbulent & convective transport of tracers
 
-By setting the logical metadata switches `tracer_turb` and `tracer_conv` (see section on [metadata][#metadata] for more information), tracers requested by a plugin can be added to the calculation of turbulent or convective transport tendencies.
+By setting the logical metadata switches `tracer_turb` and `tracer_conv` (see section on [metadata](#metadata) for more information), tracers requested by a plugin can be added to the calculation of turbulent or convective transport tendencies.
 Please note the following remarks:
 - ICON's turbulence/convection parameterization needs to be capable of calculating the tendencies for additional tracers. This is currently the case for `inwp_turb=1`/`inwp_convection = 1`. There are no checks done for this.
 - Updating the mass mixing ratios of tracers requested by a plugin with the tendencies calculated by ICON's physical parameterizations is neither done by ICON nor ComIn. Dealing with these updates is thus left to the plugin. A `comin_request_add_var` with `tracer_turb=.TRUE.` and/or `tracer_conv=.TRUE.` requests an `add_var` of a variable for the respective tendency in addition. Pointers to these additional tendency variables can be accessed by plugins like any other variable. The naming conventions are `ddt_<tracername>_turb` and `ddt_<tracername>_conv`. Please note that in ICON these tendency variables are stored in containers. As a tracer is not necessarily subject to convective or turbulent transport, the indexing of the different containers might differ.
@@ -291,10 +280,9 @@ Remarks:
 
 The syntax for requesting a new variable is
 ```fortran
-  SUBROUTINE comin_var_request_add(var_descriptor, lmodexclusive, ierr)
+  SUBROUTINE comin_var_request_add(var_descriptor, lmodexclusive)
     TYPE (t_comin_var_descriptor), INTENT(IN)  :: var_descriptor
     LOGICAL,                       INTENT(IN)  :: lmodexclusive
-    INTEGER,                       INTENT(OUT) :: ierr
   END SUBROUTINE comin_var_request_add
 ```
 
@@ -322,22 +310,26 @@ DO jb = i_startblk, i_endblk
     &                      min_rlcell_int)
 END DO
 ```
-where `jg` denotes the logical domain ID.
+where `jg` denotes the logical domain ID and the loop covers the range from the start to the end of a block, i.e. from `i_startblk` to `i_endblk` in a `jb` loop in ICON.
+The indices `is` and `ie` in turn are associated with the block index (`jc` loop) and are the return values of this routine.
+The other two parameters, `grf_bdywidth_c` and `min_rlcell_in` further specify the `refin_ctrl` level where the do loop starts and ends. They take into account the local indexing after blocking and domain decmposition and their range is visualized in Fig. 9.2 of the [2024 ICON Model Tutorial](https://www.dwd.de/EN/ourservices/nwp_icon_tutorial/nwp_icon_tutorial_en.html). Section 9.1 of this tutorial provides an overview of the parameters and ideas presented here and also introduces the `get_indices_c` routine, after which `comin_descrdata_get_cell_indices` is modelled.
+
+An example application of the ICON routine `get_indices_c` is for example given in the ICON routine `nwp_nh_interface`.
 
 ### Metadata
 
-Metadata information can be set when requesting additional variables and retrieved for existing and newly created model variables. The instructions start with introducing which metadata is available and how to retrieve it before providing some details on how to set new metadata when requesting additional variables.
+Metadata information can be set when requesting additional variables and retrieved for existing and newly created model variables. The instructions start with introducing which metadata is set by default and how to retrieve it before providing some details on how to set new metadata when requesting additional variables. Finally, we introduce a method to iterate through all metadata which were set for a certain variable.
 
 Metadata are provided read-only to the 3rd party plugins. They are available from the secondary constructor and do not change over runtime. Examples for information provided as variable metadata are information about if the variable is a tracer, or if it is a restart variable. Note that some metadata is tracer-specific and therefore prepended by `tracer_`.
-Note that for optimal memory management all strings are provided as pointers.
-Also note that for tendency variables (like tendency due to turbulence), the metadata `tracer_turb` and `tracer_conv` are not set.
+Note that for tendency variables (like tendency due to turbulence), the metadata `tracer_turb` and `tracer_conv` are not set.
 
-Currently the metadata information for `zaxis_id` is incomplete. The interpretation of fields with the property `COMIN_ZAXIS_3D` is already possible (includes all fields described by `ZA_REFERENCE` in ICON), and also ICON's `ZA_SURFACE` fields (surface or other 2D fields like 10 m wind) are described by the property `COMIN_ZAXIS_2D`. All other vertical axis types are grouped under `COMIN_ZAXIS_UNDEF`. This includes information about soil layers. In a future release, the list of `zaxis_id` options will be expanded to more accurately describe the underlying data. For now, `pos_jk` as part of `t_comin_var_ptr` can be used to determine the vertical axis and its size.
+Currently the metadata information for `zaxis_id` is incomplete. The interpretation of fields with the property `COMIN_ZAXIS_3D` and `COMIN_ZAXIS_3D_HALF` is already possible (includes all fields described by `ZA_REFERENCE`, `ZA_REFERENCE_HALF` and `ZA_REFERENCE_HALF_HHL` in ICON), and also ICON's `ZA_SURFACE` fields (surface or other 2D fields like 10 m wind) are described by the property `COMIN_ZAXIS_2D`. All other vertical axis types are grouped under `COMIN_ZAXIS_UNDEF`. This includes information about soil layers. In a future release, the list of `zaxis_id` options will be expanded to more accurately describe the underlying data. For now, `pos_jk` as part of `t_comin_var_ptr` can be used to determine the vertical axis and its size.
 
 | metadata          |  data type  |description  | default |
 | ------------- | -------- | ------------------------------------------------------------ | ---------------- |
 | `zaxis_id` |`INTEGER`|  gives an interpretation of the vertical axis (2D = `COMIN_ZAXIS_2D`, atmospheric levels = `COMIN_ZAXIS_3D`, ...) | `COMIN_ZAXIS_3D` |
 | `restart` |`LOGICAL`| Flag. TRUE, if this is a restart variable | `.FALSE.` |
+| `multi_timelevel` |`LOGICAL`| Flag. TRUE, if this variable corresponds to an ICON variable with multiple time levels. | `.FALSE.` |
 | `tracer` |`LOGICAL`| Flag. TRUE, if this is a tracer variable | `.FALSE.` |
 | `tracer_turb` |`LOGICAL`| Flag. TRUE, if this tracer shall take part in turbulent transport  | `.FALSE.` |
 | `tracer_conv` |`LOGICAL`| Flag. TRUE, if this tracer shall take part in convective transport | `.FALSE.` |
@@ -351,53 +343,106 @@ Currently the metadata information for `zaxis_id` is incomplete. The interpretat
 | `short_name` |`CHARACTER`| short_name (as part of CF metadata convention) | empty string |
 
 In the above table the default value refers to the value ICON receives from ComIn when requesting an additional variables. Please be aware that setting `ihadv_tracer`, `ivadv_tracer`, `itype_hlimit` or `itype_vlimit` in ICON's `&transport_nml` overwrites settings coming from ComIn (for the ComIn metadata `tracer_hadv`, `tracer_vadv`, `tracer_hlimit` and `tracer_vlimit` respecively).
+The implementation behind the ComIn metadata is a generic key-value storage. As such, any metadata can be added to a variable, from the host model as well as from the plugin.
+These can, for example, be useful to transfer metadata between different plugins or to set properties which can be used by the same plugin in the following.
+However, only the above list of metadata is currently evaluated by the host model.
 
 The derived data type `t_comin_var_metadata` storing the metadata internally is not exposed to the host model or the plugins. ComIn plugins, for example, can access the data members via the subroutine @ref comin_metadata::comin_metadata_get "comin_metadata_get".
 
 ```fortran
-  SUBROUTINE comin_metadata_get_<val datatype>(var_descriptor, key, val, ierr)
+  SUBROUTINE comin_metadata_get_<val datatype>(var_descriptor, key, val)
     TYPE(t_comin_var_descriptor), INTENT(IN)  :: var_descriptor
     CHARACTER(LEN=*),             INTENT(IN)  :: key
     <val datatype>,               INTENT(OUT) :: val
-    INTEGER,                      INTENT(OUT) :: ierr
   END SUBROUTINE comin_metadata_get_<val datatype>
 ```
-An error code is equal to 0 for a successful request.
-
 While the Fortran and Python API of the ComIn can handle generic arguments of type `INTEGER`, `LOGICAL`, the C implementation of the interface does not support generic argument data types. Therefore, special variants of this subroutine exist:
 ```C
-void comin_metadata_get_integer(struct t_comin_var_descriptor* var_descriptor, const char* key, int* val, int* ierr);
-void comin_metadata_get_logical(struct t_comin_var_descriptor* var_descriptor, const char* key, _Bool* val, int* ierr);
-void comin_metadata_get_real(struct t_comin_var_descriptor* var_descriptor, const char* key, double* val, int* ierr);
-void comin_metadata_get_character(struct t_comin_var_descriptor* var_descriptor, const char* key, const char* val, int* ierr);
+void comin_metadata_get_integer(struct t_comin_var_descriptor* var_descriptor, const char* key, int* val);
+void comin_metadata_get_logical(struct t_comin_var_descriptor* var_descriptor, const char* key, _Bool* val);
+void comin_metadata_get_real(struct t_comin_var_descriptor* var_descriptor, const char* key, double* val);
+void comin_metadata_get_character(struct t_comin_var_descriptor* var_descriptor, const char* key, const char* val);
 ```
 
-Metadata items are identified by a character string `key`. 
+Similar to @ref comin_metadata::comin_metadata_get "comin_metadata_get", there is also the option to retrieve a user-defined default value in case the metadata is not available using the @ref comin_metadata::comin_metadata_get_or "comin_metadata_get_or" method:
+
+```fortran
+  SUBROUTINE comin_metadata_get_or_<val datatype>(var_descriptor, key, val, defaultval)
+    TYPE(t_comin_var_descriptor), INTENT(IN)    :: var_descriptor
+    CHARACTER(LEN=*),             INTENT(IN)    :: key
+    <val datatype>,               INTENT(OUT)   :: val
+    <val datatype>,               INTENT(INOUT) :: defaultval
+  END SUBROUTINE comin_metadata_get_or_<val datatype>
+```
+
+Metadata items are identified by a character string `key`.
 The data type of a particular metadata item can be retrieved by calling
 ```fortran
-  INTEGER FUNCTION comin_metadata_get_typeid(key)  RESULT(typeid)
+  INTEGER FUNCTION comin_metadata_get_typeid(descriptor, key)  RESULT(typeid)
+    TYPE(t_comin_var_descriptor), INTENT(IN) :: descriptor
     CHARACTER(LEN=*), INTENT(IN) :: key
   END FUNCTION comin_metadata_get_typeid
 ```
-This auxiliary function yields one of the IDs `TYPEID_UNDEFINED`, `TYPEID_INTEGER`, `TYPEID_LOGICAL`, `TYPEID_REAL`, , `TYPEID_CHARACTER`.
+This auxiliary function yields one of the IDs `COMIN_METADATA_TYPEID_UNDEFINED`, `COMIN_METADATA_TYPEID_INTEGER`, `COMIN_METADATA_TYPEID_REAL`, `COMIN_METADATA_TYPEID_CHARACTER` or `COMIN_METADATA_TYPEID_LOGICAL`.
+Note that `COMIN_METADATA_TYPEID_UNDEFINED` means that the metadata `key` has not been set in the container.
 
 On the host model side, the @ref comin_variable::comin_var_request_add "comin_var_request_add" operations expects information on the properties of the variable which should be registered. These are provided using the function
 ```fortran
-SUBROUTINE comin_metadata_set(descriptor, key, val, ierr)
+SUBROUTINE comin_metadata_set(descriptor, key, val)
   TYPE(t_comin_var_descriptor), INTENT(IN)  :: descriptor
   CHARACTER(LEN=*),             INTENT(IN)  :: key
   <val data type>,              INTENT(IN)  :: val
-  INTEGER,                      INTENT(OUT) :: ierr
 END SUBROUTINE comin_metadata_set
 ```
 
 If a metadata value cannot be added to a newly requested field a warning message is thrown (similarly also from the host model for its variables).
 The error code can be evaluated in addition and the plugin can decide to abort the simulation.
 
-For the C implementation, in analogy to the *read* accessor functions `comin_metadata_get_<data type>`, there exist special, type-specific *write* accessor functions `comin_metadata_set_<data type>`. 
+For the C implementation, in analogy to the *read* accessor functions `comin_metadata_get_<data type>`, there exist special, type-specific *write* accessor functions `comin_metadata_set_<data type>`.
 
-The `comin_var_request_add` procedure implies the following behavior when the same variable is added multiple times by different plugins, but with different metadata: In this case, the "first come, first serve" rule applies, i.e. the metadata will not be overwritten by plugins that are executed later.
+If the same variable is added multiple times by different plugins, the previously set metadata is not overwritten by default values.
+However, when invoking `comin_metadata_set_<data type>` explicitly, the existing metadata entry is overwritten without warning.
+Please note that when explicitely overwriting a metadata entry, there is by design no check for consistency between the previously set type and the newly set type.
+If needed, this check can be done on the plugin side by invoking `comin_metadata_get_typeid`.
 
+#### Metadata iterator
+
+Some applications may find it useful to have some way of inspecting all metadata entries that were set for a certain variable.
+For example, when writing the state of a variable including all metadata to a file.
+Thus, ComIn provides an iterator object `<iterator_object>` for the metadata.
+This iterator can be obtained by invoking the subroutine `comin_metadata_get_iterator` and returns an object of type `t_comin_var_metadata_iterator`.
+With the above described function `comin_metadata_get_typeid` and the integer constants `COMIN_METADATA_TYPEID_INTEGER`, `COMIN_METADATA_TYPEID_REAL`, `COMIN_METADATA_TYPEID_CHARACTER` and `COMIN_METADATA_TYPEID_LOGICAL`,
+the value associated to a key can be derived. The `<iterator_object>` provides the following methods:
+
+- Derive the `<key>` of the current entry (`<iterator_object>%key(<key>)`)
+- Iterate to the next metadata entry (`<iterator_object>%next()`)
+- Check if the end of the iterator was reached (`<iterator_object>%is_end()`).
+
+An example implementation to write out all integer metadata entries of a variable could be the following:
+
+```fortran
+TYPE(t_comin_var_descriptor) :: descriptor
+TYPE(t_comin_var_metadata_iterator) :: metadata_it
+CHARACTER(LEN=:), ALLOCATABLE :: current_metadata_key
+INTEGER :: my_integer
+
+! Here the descriptor should be set to the required variable
+
+CALL comin_metadata_get_iterator(descriptor ,metadata_it)
+DO WHILE(.NOT. metadata_it%is_end())
+  CALL metadata_it%key(current_metadata_key)
+  SELECT CASE(comin_metadata_get_typeid(descriptor, current_metadata_key))
+    CASE (COMIN_METADATA_TYPEID_INTEGER)
+      CALL comin_metadata_get(descriptor, TRIM(current_metadata_key), my_integer)
+      WRITE (0,*) TRIM(current_metadata_key), my_integer
+  END SELECT
+  CALL metadata_it%next()
+ENDDO
+CALL metadata_it%delete()
+```
+
+Please note that it is highly recommended to derive and delete the iterator object within the same scoping unit since changes in the metadata container after deriving the iterator can lead to unexpected behavior when using the iterator.
+Furthermore, since the metadata is stored unordered, the sequence of metadata is not known a priori and potentially subject to change if there is a change in a key.
 
 ### Descriptive data structures
 
@@ -429,10 +474,21 @@ List of global data:
 | `wp` | `INTEGER` | `KIND` value (`REAL`) |
 | `min_rlcell_int` | `INTEGER` | block index |
 | `min_rlcell`     | `INTEGER` | block index |
+| `max_rlcell`     | `INTEGER` | block index |
+| `min_rlvert_int` | `INTEGER` | block index |
+| `min_rlvert`     | `INTEGER` | block index |
+| `max_rlvert`     | `INTEGER` | block index |
+| `min_rledge_int` | `INTEGER` | block index |
+| `min_rledge`     | `INTEGER` | block index |
+| `max_rledge`     | `INTEGER` | block index |
 | `grf_bdywidth_c` | `INTEGER` | block index |
 | `grf_bdywidth_e` | `INTEGER` | block index |
 | `lrestartrun` | `LOGICAL` | if this simulation is a restart |
 | `vct_a` | 1D `REAL(dp)` array (1:(nlev+1)) | param. A of the vertical coordinate (without topography) |
+| `host_git_remote_url` | `CHARACTER(LEN=:)` | git remote url of the origin repository of the host model|
+| `host_git_branch`     | `CHARACTER(LEN=:)` | git branch name of the host model |
+| `host_git_tag`        | `CHARACTER(LEN=:)` | git tag of the host model |
+| `host_revision`       | `CHARACTER(LEN=:)` | revision of the host model |
 
 Some global data, e.g. the Fortran `KIND` value information `wp`, are required by the 3rd party module *at compile time*. However, due to the loose connection between the 3rd party module and the ICON model via the adapter library, the following implementation procedure is proposed:
 1. The 3rd party module is compiled with a fixed Fortran `KIND` value.
@@ -589,36 +645,28 @@ The current *simulation date time stamp* can be obtained as an ISO 8601 string f
 ```
 During the simulation the current date time stamp is updated by a call to @ref comin_descrdata::comin_current_set_datetime() "comin_current_set_datetime()" from the host, it is available beginning with the entry point `EP_ATM_TIMELOOP_BEFORE`.
 
-To access information on the *current entry point* being processed by ComIn, the currently executing plugin and the current domain selected in ICON routines are provided from within ComIn. 
+To access information on the *current entry point* being processed by ComIn, the currently executing plugin and the current domain selected in ICON routines are provided from within ComIn.
 @ref comin_state::comin_current_get_ep "comin_current_get_ep" can be called from within a plugin, for example when one procedure is registered for several entry points but slight deviations in behavior between the entry points are necessary.
 
 ```fortran
-  SUBROUTINE comin_current_get_ep(curr_ep, ierr)   &
+  SUBROUTINE comin_current_get_ep(curr_ep)   &
        BIND(C)
     INTEGER(c_int),           INTENT(OUT)  :: curr_ep
-    INTEGER(c_int),           INTENT(OUT)  :: ierr
 ```
 
 @ref comin_setup::comin_current_get_plugin_info() "comin_current_get_plugin_info()" gives access to components of the data type @ref comin_plugin_types::t_comin_plugin_info "t_comin_plugin_info". It can for example be used to access the `id` of the current plugin. The data type also stores information on the plugin name, associated options and, if present, its communicator.
 
 ```fortran
-  SUBROUTINE comin_current_get_plugin_info(comin_current_plugin, ierr)
+  SUBROUTINE comin_current_get_plugin_info(comin_current_plugin)
      TYPE(t_comin_plugin_info), INTENT(OUT)   :: comin_current_plugin
-     INTEGER, INTENT(OUT)                     :: ierr
-```
-
-```c
-  void comin_current_get_plugin_info(struct t_comin_plugin_info_c* comin_current_plugin);
 ```
 
 @ref comin_descrdata::comin_current_get_domain_id() "comin_current_get_domain_id()" is provided together with descriptive data as part of the adapter library. A C version of this routine is also available. Callbacks might be called from ICON from the global domain or from any nested domain. The currently selected domain can be accessed via this subroutine.
 
 ```fortran
-  SUBROUTINE comin_current_get_domain_id(domain_id, ierr)  &
+  SUBROUTINE comin_current_get_domain_id(domain_id)  &
        BIND(C)
     INTEGER(c_int),           INTENT(OUT)  :: domain_id
-    INTEGER(c_int),           INTENT(OUT)  :: ierr
-
 ```
 
 
@@ -656,9 +704,8 @@ This section describes the mechanism of registering new 3rd party modules. We di
 The primary constructor is called *before* the allocation of ICON variable lists and fields.
 Its call is automatically triggered by the host model through a call to the subroutine
 ```fortran
-SUBROUTINE comin_plugin_primaryconstructor(plugin_list, ierr)
+SUBROUTINE comin_plugin_primaryconstructor(plugin_list)
     TYPE(t_comin_plugin_description), INTENT(IN) :: plugin_list(:)
-    INTEGER, INTENT(OUT) :: ierr
 ```
 where
 ```fortran
@@ -705,8 +752,7 @@ The setup routine returns the @ref comin_plugin_types::t_comin_plugin_info "t_co
 
 ```fortran
 ABSTRACT INTERFACE
-  SUBROUTINE comin_primaryconstructor_fct(ierr)
-    INTEGER(C_INT),  INTENT(OUT) :: ierr
+  SUBROUTINE comin_primaryconstructor_fct()
   END SUBROUTINE comin_primaryconstructor_fct
 ```
 
@@ -749,21 +795,20 @@ The set of entry points may change between different versions of the adapter lib
 The name of a entry point based on the named integer constant can be determined with a call to @ref comin_callback::comin_callback_get_ep_name() "comin_callback_get_ep_name".
 
 ```fortran
-  SUBROUTINE comin_current_get_ep_name(iep, out_ep_name, ierr)
+  SUBROUTINE comin_current_get_ep_name(iep, out_ep_name)
      INTEGER, INTENT(IN)  :: iep   !< entry point ID
     CHARACTER(LEN=:), ALLOCATABLE, INTENT(OUT) :: out_ep_name !< entry point name string
-     INTEGER, INTENT(OUT)                     :: ierr
 ```
 
 ```c
-  void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1], int* ierr);
+  void comin_callback_get_ep_name(int iep, char out_ep_name[MAX_LEN_EP_NAME+1]);
 ```
 
 **Conventions:**
 - The entry point `EP_DESTRUCTOR` always denotes the last entry in the enumeration. This easily provides the total number of entry points to ComIn.
 - Apart from this, the entry point IDs may change and thus backward compatibility is not given in this respect.
 - Callbacks are not intended to be used below ICON's "block-loop level" but have a rather moderate calling frequency (i.e. several times per time step but not dozens of times).
-- If an entry point is located inside a domain loop the call to @ref comin_callback::comin_callback_context_call() "comin_callback_context_call()" is executed with the argument `DOMAIN_OUTSIDE_LOOP` instead of the domain id. The information from where in the host code the callback is executed is accessible from ComIn via the @ref comin_descrdata::comin_current_get_domain_id() "comin_current_get_domain_id()" routine. It returns the domain id, which can however be  `DOMAIN_OUTSIDE_LOOP` if it encompasses all domains, and `ierr`, which equals 0 in a successful call.
+- If an entry point is located inside a domain loop the call to @ref comin_callback::comin_callback_context_call() "comin_callback_context_call()" is executed with the argument `DOMAIN_OUTSIDE_LOOP` instead of the domain id. The information from where in the host code the callback is executed is accessible from ComIn via the @ref comin_descrdata::comin_current_get_domain_id() "comin_current_get_domain_id()" routine. It returns the domain id, which can however be  `DOMAIN_OUTSIDE_LOOP` if it encompasses all domains.
 
 Note that the adapter library exposes ICON model variables with respect to these entry points, together with in-/out-semantics (see the section on read/write access). Therefore, after the secondary constructor has been processed, the data flow for each entry point and every 3rd party module is known to the callback registry.
 
@@ -790,7 +835,7 @@ Exceptions from this naming scheme are `EP_SECONDARY_CONSTRUCTOR`, `EP_FINISH`, 
 | ------------------------------ | ------------------------------------------------------------ | -------------------------- |
 | `EP_SECONDARY_CONSTRUCTOR`     | secondary constructor, initial phase                         | once in simulation         |
 | `EP_ATM_YAC_DEFCOMP_BEFORE`    | just before the component definition of yac                  | once in simulation         |
-| `EP_ATM_YAC_DEFCOMP_AFTER`     | after the component definition of yac                        | once in simulation         | 
+| `EP_ATM_YAC_DEFCOMP_AFTER`     | after the component definition of yac                        | once in simulation         |
 | `EP_ATM_YAC_SYNCDEF_BEFORE`    | just before the config synchronisation of yac                | once in simulation         |
 | `EP_ATM_YAC_SYNCDEF_AFTER`     | after the config synchronisation of yac                      | once in simulation         |
 | `EP_ATM_YAC_ENDDEF_BEFORE`     | just before the end of the config definition of yac          | once in simulation         |
@@ -800,7 +845,7 @@ Exceptions from this naming scheme are `EP_SECONDARY_CONSTRUCTOR`, `EP_FINISH`, 
 | `EP_ATM_TIMELOOP_START`        | at the beginning of the time loop                            | every (global) time step   |
 | `EP_ATM_TIMELOOP_END`          | just before the end of the time loop                         | every (global) time step   |
 | `EP_ATM_TIMELOOP_AFTER`        | after the time loop is finished                              | once in simulation         |
-| `EP_ATM_INTEGRATE_BEFORE`      | before the integration is called                             | every (global) time step   | 
+| `EP_ATM_INTEGRATE_BEFORE`      | before the integration is called                             | every (global) time step   |
 | `EP_ATM_INTEGRATE_START`       | start of the integration loop                                | every (nested) time step   |
 | `EP_ATM_INTEGRATE_END`         | end of the integration loop                                  | every (nested) time step   |
 | `EP_ATM_INTEGRATE_AFTER`       | after the integration loop                                   | every (global) time step   |
@@ -836,6 +881,7 @@ Notes:
 - Entry points in the integration loop are called each (sub-)time step, regardless if the corresponding physical process is configured to operate on a reduced calling frequency (e.g. reduced calling frequency for radiation).
 - The entry points corresponding to the checkpointing are called only if the model's checkpointing is triggered for the current time step.
 - Depending on the model's configuration not all entry points may be called!
+- There is no specific entry point around ICON's namelist read-in routines. Instead, the primary constructor can be used to call an appropriate routine for each plugin to read namelists of the plugin.
 
 
 #### Appending function pointers to entry points
@@ -848,10 +894,9 @@ The primary constructor appends subroutines of the 3rd party module to the callb
     END SUBROUTINE comin_callback_routine
   END INTERFACE
 
-  SUBROUTINE comin_callback_register(entry_point_id, fct_ptr, ierr)  BIND(C)
+  SUBROUTINE comin_callback_register(entry_point_id, fct_ptr)  BIND(C)
     INTEGER, INTENT(IN), VALUE        :: entry_point_id
     PROCEDURE(comin_callback_routine) :: fct_ptr
-    INTEGER, INTENT(OUT)              :: ierr
   END SUBROUTINE comin_callback_register
 ```
 
@@ -860,6 +905,7 @@ Remarks:
 - Each 3rd party module may attach only a single function pointer to a given entry point. Each call to @ref comin_callback::comin_callback_register "comin_callback_register" overwrites previous callback settings.
 - Calls of the @ref comin_callback::comin_callback_register "comin_callback_register", which happen after the 3rd party module's primary constructor, are ignored. Internally, the callback register is "sealed" by a call to the subroutine `comin_callback_complete`.
 - During a simulation the current entry point can be requested via @ref comin_state::comin_current_get_ep() "comin_current_get_ep()". This is for example useful if one routine is called from several entry points but should exhibit slightly different behavior.
+- Note that the callback function has to be interoperable with and provide a corresponding entity in the C processor, and thus in Fortran requires the 'BIND(C)' attribute to comply with the abstract interface (recommended). Nevertheless, for some compilers it might work without the `BIND(C)` attribute (not recommended).
 
 
 For a specific entry point, each plugin may register only one callback routine. Allowing multiple callbacks per component would require complex extension of the relatively simple ComIn interface, especially if components are allowed to intertwine their callbacks. Advice to users: There is still the possibility to write wrappers (summarizing multiple callbacks), or to register the same 3rd party library as multiple independent ComIn components.
@@ -887,7 +933,7 @@ Note that the C interface for the MPI communicator query functions also provides
 
 #### Parallel plugin registration
 
-The ComIn allows plugins to be set PE-wise. This is deliberately provided as an option, for example to support the following use case: A diagnostic subroutine could be attached to the host model to perform some collective MPI operations. Afterwards it would write/plot them with Python - but only on the first PE. In practice, this PE could be a head node (vector host), and it would only need to support this task, as opposed to the other "worker" PEs. An elegant solution here would be to implement two different plugins, a Python plugin for PE#0 and a C plugin for the remaining PEs, using the same plugin communicator. 
+The ComIn allows plugins to be set PE-wise. This is deliberately provided as an option, for example to support the following use case: A diagnostic subroutine could be attached to the host model to perform some collective MPI operations. Afterwards it would write/plot them with Python - but only on the first PE. In practice, this PE could be a head node (vector host), and it would only need to support this task, as opposed to the other "worker" PEs. An elegant solution here would be to implement two different plugins, a Python plugin for PE#0 and a C plugin for the remaining PEs, using the same plugin communicator.
 
 
 #### MPI handshake at startup
@@ -951,14 +997,34 @@ To avoid potential conflicts, the following installation procedure is suggested 
 2. Configure the 3rd party module build based on this YAXT library.
 3. Configure ICON with the 3rd party module and the (common) YAXT library.
 
+#### YAC
+
+To use [YAC](https://dkrz-sw.gitlab-pages.dkrz.de/yac/) from within a
+plugin a few things must be taken into account:
+
+YAC has an internal lookup table for resolving IDs into actual YAC
+datastructures, e.g. the component ID.  As YAC is linked statically this
+lookup table is duplicated if it is linked into both the host model and
+into the plugin. This can be prevented by adding
+`-Wl,--export-dynamic-symbol=yac_*` to the `LDFLAGS` for the host model as
+well as for the plugin. This has the effect that all YAC symbols are
+resolved dynamically and are therefore not duplicated.
+
+ComIn provides access to the YAC instance ID of the host model. See
+@ref comin_descrdata_types::t_comin_descrdata_global::yac_instance_id. Plugins
+can use it to register its own YAC components.
+
+See @ref plugins/python_adapter/examples/yac.py for an example how to
+use YAC in a python plugin.
+
 
 ## C/C++ and Python interfaces
 
-The implementation covers the majority of routines for C/C++ plugins equivalent to Fortran features (see `$BASEDIR/comin/src/comin_plugin_interface.F90` for routines and types accessible to Fortran plugins). 
+The implementation covers the majority of routines for C/C++ plugins equivalent to Fortran features (see `$BASEDIR/comin/src/comin_plugin_interface.F90` for routines and types accessible to Fortran plugins).
 The C interface handles nearly all data structures through getter and setting functions. The alternative implementation method, namely the direct exposure of Fortran derived types as C structs via the `BIND(C)` attribute has not been chosen because the use of Fortran `ALLOCATABLE`, `POINTER` or `SEQUENCE` attributes causes subtle problems. There is the exception of `struct t_comin_var_descriptor` which represents the ubiquitous search key for variables. The routines accessible to C/C++ plugins are listed and explained in this section below (the C/C++ routine access is provided via `comin.h` and sub-header files).
 
 By `wp` the selection of the real kind used for global and parallel domain data
-grids is set in ICON ComIn. **Presently the default in ICON ComIn is to use `C_DOUBLE` as real kind.** 
+grids is set in ICON ComIn. **Presently the default in ICON ComIn is to use `C_DOUBLE` as real kind.**
 ```C
 int wp;
 ```
@@ -976,13 +1042,18 @@ Various auxiliary routines to expose specific grid data and domain information, 
 
 The Python interface (`import comin`) registers new callbacks through decorators (`@comin.register_callback(entrypoint)`). It provides the data structures and functions
 ```Python
-comin.Metadata()
+comin.metadata()
 comin.request_add_var(namestr, id, lmodexclusive)
 comin.var_get([entrypoint], (namestr, id))
 
 comin.get_host_mpi_rank()
 ```
 
+The python implementation of the variable metadata is written in such a way, that it can be accessed as a dictionary:
+```python
+    for key, data in comin.metadata(("test", 1)).items():
+        print(f"{key}: {data}")
+```
 
 ## Host model implementation
 
@@ -1009,7 +1080,7 @@ For each physical process of the host model the corresponding entry points shoul
 
 ```fortran
 #ifndef __NO_ICON_COMIN__
-        CALL comin_callback_context_call(EP_ATM_PHYSICS_BEFORE, jg)
+        CALL comin_callback_context_call(EP_ATM_PHYSICS_BEFORE, jg, lacc)
 #endif
 ```
 
@@ -1191,5 +1262,3 @@ To summarize the previous sections, the adapter library provides the following d
 | @ref comin_descrdata::comin_descrdata_get_global "comin_descrdata_get_global" | @ref include/comin_header_c_ext_descrdata_query_domain.h "comin_descrdata_get_domain_XXX" |  |
 | @ref comin_setup_utils::comin_setup_version_info "comin_setup_version_info" | @ref comin_h::comin_setup_get_version "void comin_setup_get_version(unsigned int*,unsigned int*,unsigned int*)" |  |
 | @ref comin_variable::comin_var_to_3d "comin_var_to_3d" | @ref comin_h::comin_var_to_3d "double* comin_var_to_3d(void*)" | `myvariable.to_3d` |
-
-

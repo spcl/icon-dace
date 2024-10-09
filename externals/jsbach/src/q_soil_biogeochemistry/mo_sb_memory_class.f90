@@ -62,25 +62,27 @@ MODULE mo_sb_memory_class
       & sb_pool_total_c13        , &        !< sum of all sb_pool%*%carbon13    [mol m-3]
       & sb_pool_total_c14        , &        !< sum of all sb_pool%*%carbon14    [mol m-3]
       & sb_pool_total_n15                   !< sum of all sb_pool%*%nitrogen15  [mol m-3]
-    ! som: dom & dom_assoc & fungi & mycorrhiza & microbial & residue & residue_assoc
-    TYPE(t_jsb_var_real3d)  :: &
-      & sb_pool_total_som_c        , &      !< sum of 'soil organic matter' components of sb_pool%*%carbon      [mol m-3]
-      & sb_pool_total_som_n        , &      !< sum of 'soil organic matter' components of sb_pool%*%nitrogen    [mol m-3]
-      & sb_pool_total_som_p        , &      !< sum of 'soil organic matter' components of sb_pool%*%phosphorus  [mol m-3]
-      & sb_pool_total_som_c13      , &      !< sum of 'soil organic matter' components of sb_pool%*%carbon13    [mol m-3]
-      & sb_pool_total_som_c14      , &      !< sum of 'soil organic matter' components of sb_pool%*%carbon14    [mol m-3]
-      & sb_pool_total_som_n15               !< sum of 'soil organic matter' components of sb_pool%*%nitrogen15  [mol m-3]
-    ! litter: soluable_litter & polymeric_litter & woody_litter
-    TYPE(t_jsb_var_real3d)  :: &
-      & sb_pool_total_litter_c    , &       !< sum of *litter of sb_pool%*%carbon      [mol m-3]
-      & sb_pool_total_litter_n    , &       !< sum of *litter of sb_pool%*%nitrogen    [mol m-3]
-      & sb_pool_total_litter_p    , &       !< sum of *litter of sb_pool%*%phosphorus  [mol m-3]
-      & sb_pool_total_litter_c13  , &       !< sum of *litter of sb_pool%*%carbon13    [mol m-3]
-      & sb_pool_total_litter_c14  , &       !< sum of *litter of sb_pool%*%carbon14    [mol m-3]
-      & sb_pool_total_litter_n15            !< sum of *litter of sb_pool%*%nitrogen15  [mol m-3]
+    ! Sum of
+    ! soil organic matter (som): dom & dom_assoc & fungi & mycorrhiza & microbial & residue & residue_assoc
+    ! and below ground (bg) litter: bg parts of soluble_litter & polymeric_litter & woody_litter
+    TYPE(t_jsb_var_real3d) ::  &
+      & sb_pool_total_bg_soil_c,   & !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%carbon     [mol m-3]
+      & sb_pool_total_bg_soil_n,   & !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%nitrogen   [mol m-3]
+      & sb_pool_total_bg_soil_p,   & !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%phosphorus [mol m-3]
+      & sb_pool_total_bg_soil_c13, & !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%carbon13   [mol m-3]
+      & sb_pool_total_bg_soil_c14, & !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%carbon14   [mol m-3]
+      & sb_pool_total_bg_soil_n15    !< sum of som and below ground litter (layers 2:nsoil) of sb_pool%*%nitrogen15 [mol m-3]
+    ! Sum of above ground (ag) litter: ag parts of soluble_litter & polymeric_litter & woody_litter
+    TYPE(t_jsb_var_real2d) ::        &
+      & sb_pool_total_ag_litter_c,   & !< sum of above ground litter (soil layer 1) of sb_pool%*%carbon     [mol m-2]
+      & sb_pool_total_ag_litter_n,   & !< sum of above ground litter (soil layer 1) of sb_pool%*%nitrogen   [mol m-2]
+      & sb_pool_total_ag_litter_p,   & !< sum of above ground litter (soil layer 1) of sb_pool%*%phosphorus [mol m-2]
+      & sb_pool_total_ag_litter_c13, & !< sum of above ground litter (soil layer 1) of sb_pool%*%carbon13   [mol m-2]
+      & sb_pool_total_ag_litter_c14, & !< sum of above ground litter (soil layer 1) of sb_pool%*%carbon14   [mol m-2]
+      & sb_pool_total_ag_litter_n15    !< sum of above ground litter (soil layer 1) of sb_pool%*%nitrogen15 [mol m-2]
     ! various bgcm diagnostics
     TYPE(t_jsb_var_real3d)  :: &
-      & sb_pool_woody_litter_c              !< woody litter or sb_pool [mol m-3]
+      & sb_pool_woody_litter_c         !< woody litter or sb_pool [mol m-3]
 
     !------------------------------------------------------------------------------------------------------ !
     !>pools 3D
@@ -149,31 +151,31 @@ MODULE mo_sb_memory_class
     !>  temperature response functions
     !>
     TYPE(t_jsb_var_real3d)  :: &
-                            rtm_decomposition, &              !< rate modifier for decomposition processes [--]
-                            rtm_depolymerisation, &           !< rate modifier for depolymerisation processes [--]
-                            rtm_mic_uptake, &                 !< rate modifier for microbial uptake [--]
-                            rtm_plant_uptake, &               !< rate modifier for plant uptake [--]
-                            rtm_sorption, &                   !< rate modifier for sorption [--]
-                            rtm_desorption, &                 !< rate modifier for desorption [--]
-                            rtm_hsc, &                        !< rate modifier for half-saturation constants [--]
-                            rtm_nitrification, &              !< rate modifier for nitrification [--]
-                            rtm_denitrification, &            !< rate modifier for denitrification [--]
-                            rtm_gasdiffusion, &               !< rate modifier for gasdiffusion [--]
-                            rtm_asymb_bnf                     !< rate modifier for n fixation [--]
+                            rtm_decomposition, &              !< rate modifier for decomposition processes [unitless]
+                            rtm_depolymerisation, &           !< rate modifier for depolymerisation processes [unitless]
+                            rtm_mic_uptake, &                 !< rate modifier for microbial uptake [unitless]
+                            rtm_plant_uptake, &               !< rate modifier for plant uptake [unitless]
+                            rtm_sorption, &                   !< rate modifier for sorption [unitless]
+                            rtm_desorption, &                 !< rate modifier for desorption [unitless]
+                            rtm_hsc, &                        !< rate modifier for half-saturation constants [unitless]
+                            rtm_nitrification, &              !< rate modifier for nitrification [unitless]
+                            rtm_denitrification, &            !< rate modifier for denitrification [unitless]
+                            rtm_gasdiffusion, &               !< rate modifier for gasdiffusion [unitless]
+                            rtm_asymb_bnf                     !< rate modifier for n fixation [unitless]
 
     !>  moisture response functions
     !>
     TYPE(t_jsb_var_real3d)  :: &
-                            rmm_decomposition, &              !< rate modifier for decomposition processes [--]
-                            rmm_depolymerisation, &           !< rate modifier for depolymerisation processes [--]
-                            rmm_mic_uptake, &                 !< rate modifier for microbial uptake [--]
-                            rmm_plant_uptake, &               !< rate modifier for plant uptake [--]
-                            rmm_sorption, &                   !< rate modifier for sorption [--]
-                            rmm_desorption, &                 !< rate modifier for desorption [--]
-                            rmm_hsc, &                        !< rate modifier for half-saturation constants [--]
-                            rmm_nitrification, &              !< rate modifier for nitrification [--]
-                            rmm_gasdiffusion, &               !< rate modifier for gasdiffusion [--]
-                            rmm_asymb_bnf                     !< rate modifier for n fixation [--]
+                            rmm_decomposition, &              !< rate modifier for decomposition processes [unitless]
+                            rmm_depolymerisation, &           !< rate modifier for depolymerisation processes [unitless]
+                            rmm_mic_uptake, &                 !< rate modifier for microbial uptake [unitless]
+                            rmm_plant_uptake, &               !< rate modifier for plant uptake [unitless]
+                            rmm_sorption, &                   !< rate modifier for sorption [unitless]
+                            rmm_desorption, &                 !< rate modifier for desorption [unitless]
+                            rmm_hsc, &                        !< rate modifier for half-saturation constants [unitless]
+                            rmm_nitrification, &              !< rate modifier for nitrification [unitless]
+                            rmm_gasdiffusion, &               !< rate modifier for gasdiffusion [unitless]
+                            rmm_asymb_bnf                     !< rate modifier for n fixation [unitless]
 
     !------------------------------------------------------------------------------------------------------ !
     !>fluxes 3D | respiration, mineralisation, uptake, nitrification, denitrification, ...
@@ -272,7 +274,7 @@ MODULE mo_sb_memory_class
                             km_slow_po4, &                        !< half-saturation concentration of po4 for the clay/silt pool [mol P m-3 soil]
                             km_adsorpt_po4_sl, &                  !< half saturation of po4 sorption isotherm [mol P m-3 soil]
                             km_adsorpt_nh4_sl, &                  !< half saturation of nh4 sorption isotherm [mol N m-3 soil]
-                            k_bioturb, &                          !< diffusion rate resulting from bioturbation
+                            k_bioturb, &                          !< diffusion rate resulting from bioturbation [m2 s-1]
                             bulk_dens_corr_sl, &                  !< organic fraction corrected bulk-density of the soil [kg m-3]
                             bulk_soil_carbon_sl, &                !< bulk soil density of carbon [kg m-3]
                             particle_fluxrate, &                  !< burial rate due to organic matter fall and decay [m s-1]
@@ -283,52 +285,64 @@ MODULE mo_sb_memory_class
                             microbial_nue_eff_tmic_mavg, &        !< time-averaged microbial NUE given NP constraints [unitless]
                             microbial_pue_eff, &                  !< instantaneous microbial PUE given NP constraints [unitless]
                             microbial_pue_eff_tmic_mavg, &        !< time-averaged microbial PUE given NP constraints [unitless]
-                            fact_n_status_mic_c_growth, &         !< microbial N status, used to scale up/down certain microbial processes (enzyme allocation and nutrient recycling)
-                            fact_p_status_mic_c_growth, &         !< microbial P status, used to scale up/down certain microbial processes (enzyme allocation and nutrient recycling)
-                            enzyme_frac_AP, &                     !< fraction of Acid (alkaline) phosphatase of the total enzyme
-                            dom_cn, &                             !< dom CN ratio
-                            dom_cp, &                             !< dom CP ratio
-                            dom_cn_mavg, &                        !< time-averaged dom CN ratio
-                            dom_cp_mavg                           !< time-averaged dom CP ratio
+                            fact_n_status_mic_c_growth, &         !< microbial N status, used to scale up/down certain microbial
+                                                                  !< processes (enzyme allocation and nutrient recycling) [unitless]
+                            fact_p_status_mic_c_growth, &         !< microbial P status, used to scale up/down certain microbial
+                                                                  !< processes (enzyme allocation and nutrient recycling) [unitless]
+                            enzyme_frac_AP, &                     !< fraction of Acid (alkaline) phosphatase of the total enzyme [unitless]
+                            dom_cn, &                             !< C:N ratio of DOM pool [mol mol-1]
+                            dom_cp, &                             !< C:P ratio of DOM pool [mol mol-1]
+                            dom_cn_mavg, &                        !< time-averaged C:N ratio of DOM pool [mol mol-1]
+                            dom_cp_mavg, &                        !< time-averaged C:P ratio of DOM pool [mol mol-1]
+                            residue_som_c_form_mavg_sl, &         !< time-averaged residual som C formation rate [micro-mol m-3 s-1]
+                            residue_som_c14_form_mavg_sl, &       !< time-averaged residual som C14 formation rate [micro-mol m-3 s-1]
+                            residue_assoc_som_c_form_mavg_sl, &   !< time-averaged associated residual som C formation rate [micro-mol m-3 s-1]
+                            residue_assoc_som_c14_form_mavg_sl, & !< time-averaged associated residual som C formation rate [micro-mol m-3 s-1]
+                            assoc_dom_c_form_mavg_sl, &           !< time-averaged associated dom C formation rate [micro-mol m-3 s-1]
+                            assoc_dom_c14_form_mavg_sl, &         !< time-averaged associated dom C formation rate [micro-mol m-3 s-1]
+                            residue_som_c_loss_mavg_sl, &         !< time-averaged residual som C loss rate [micro-mol m-3 s-1]
+                            residue_assoc_som_c_loss_mavg_sl, &   !< time-averaged residual associated som C loss rate [micro-mol m-3 s-1]
+                            assoc_dom_c_loss_mavg_sl              !< time-averaged associated dom C loss rate [micro-mol m-3 s-1]
+
 
 
     !------------------------------------------------------------------------------------------------------ !
     !>3D soil properties
     !>
     TYPE(t_jsb_var_real3d)  :: &
-                            ph_sl, &                              !< ph per soil layer
-                            vmax_weath_mineral_sl, &              !< weathering coefficient of mineral soil [mol P m-3 s-1]
-                            Qmax_AlFe_cor, &                      !< correlation factor for phosphate qmax due to the unknown Al/Fe content
-                            enzyme_frac_poly, &                   !< fraction of depolymerisation enzyme which depolymerises poly litter [unitless]
-                            enzyme_frac_residue, &                !< fraction of depolymerisation enzyme which depolymerises microbial residue [unitless]
-                            enzyme_frac_poly_c, &                 !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by C [unitless]
-                            enzyme_frac_poly_n, &                 !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by N [unitless]
-                            enzyme_frac_poly_p,&                  !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by P [unitless]
-                            enzyme_frac_poly_c_mavg, &            !< moving average of enzyme_frac_poly_c [unitless]
-                            enzyme_frac_poly_n_mavg, &            !< moving average of enzyme_frac_poly_n [unitless]
-                            enzyme_frac_poly_p_mavg               !< moving average of enzyme_frac_poly_p [unitless]
+      & ph_sl, &                   !< pH per soil layer [unitless]
+      & vmax_weath_mineral_sl, &   !< weathering coefficient of mineral soil [mol P m-3 s-1]
+      & Qmax_AlFe_cor, &           !< correction factor for phosphate Qmax due to the unknown Al/Fe [unitless]
+      & enzyme_frac_poly, &        !< fraction of depolymerisation enzyme which depolymerises poly litter [unitless]
+      & enzyme_frac_residue, &     !< fraction of depolymerisation enzyme which depolymerises microbial residue [unitless]
+      & enzyme_frac_poly_c, &      !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by C [unitless]
+      & enzyme_frac_poly_n, &      !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by N [unitless]
+      & enzyme_frac_poly_p,&       !< fraction of depolymerisation enzyme which depolymerises poly litter, determined by P [unitless]
+      & enzyme_frac_poly_c_mavg, & !< moving average of enzyme_frac_poly_c [unitless]
+      & enzyme_frac_poly_n_mavg, & !< moving average of enzyme_frac_poly_n [unitless]
+      & enzyme_frac_poly_p_mavg    !< moving average of enzyme_frac_poly_p [unitless]
 
     !------------------------------------------------------------------------------------------------------ !
     !>2D total fluxes for mass balance checks in soil_biogeochemistry model
     !>
     TYPE(t_jsb_var_real2d)  :: &
-                            total_flux_carbon, &                  !< carbon mass balance checks in soil_biogeochemistry model [mol C m-2 s-1]
-                            total_flux_nitrogen, &                !< nitrogen mass balance checks in soil_biogeochemistry model [mol N m-2 s-1]
-                            total_flux_phosphorus, &              !< phosphorus mass balance checks in soil_biogeochemistry model [mol P m-2 s-1]
-                            total_flux_carbon13, &                !< carbon13 mass balance checks in soil_biogeochemistry model [mol C13 m-2 s-1]
-                            total_flux_carbon14, &                !< carbon14 mass balance checks in soil_biogeochemistry model [mol C14 m-2 s-1]
-                            total_flux_nitrogen15                 !< nitrogen15 mass balance checks in soil_biogeochemistry model [mol N15 m-2 s-1]
+      & total_flux_carbon, &       !< carbon mass balance checks in soil_biogeochemistry model [mol C m-2 s-1]
+      & total_flux_nitrogen, &     !< nitrogen mass balance checks in soil_biogeochemistry model [mol N m-2 s-1]
+      & total_flux_phosphorus, &   !< phosphorus mass balance checks in soil_biogeochemistry model [mol P m-2 s-1]
+      & total_flux_carbon13, &     !< carbon13 mass balance checks in soil_biogeochemistry model [mol C13 m-2 s-1]
+      & total_flux_carbon14, &     !< carbon14 mass balance checks in soil_biogeochemistry model [mol C14 m-2 s-1]
+      & total_flux_nitrogen15      !< nitrogen15 mass balance checks in soil_biogeochemistry model [mol N15 m-2 s-1]
 
     !------------------------------------------------------------------------------------------------------ !
     !> biosphere-level diagnostics
     !>
     TYPE(t_jsb_var_real3d)  :: &
-      & total_soil_n, &                 !< sb_pool_total_som_n + nh4_solute + nh4_assoc + no3_solute [mol m-3]
-      & total_soil_inorg_n              !< nh4_solute + nh4_assoc + no3_solute [mol m-3]
+      & total_soil_n, &            !< sb_pool_total_bg_soil_n + nh4_solute + nh4_assoc + no3_solute [mol m-3]
+      & total_soil_inorg_n         !< nh4_solute + nh4_assoc + no3_solute [mol m-3]
 
     TYPE(t_jsb_var_real2d)  :: &
-      & ecosystem_total_n_loss          !< emission_noy + emission_n2o + emission_n2 + leaching_dom_nitrogen + leaching_nh4_solute + leaching_no3_solute
-                                        !<  + lateral_loss_dom_nitrogen_sl + lateral_loss_nh4_solute_sl + lateral_loss_no3_solute_sl [micro-mol m-2 s-1]
+      & ecosystem_total_n_loss     !< emission_noy + emission_n2o + emission_n2 + leaching_dom_nitrogen + leaching_nh4_solute + leaching_no3_solute
+                                   !<  + lateral_loss_dom_nitrogen_sl + lateral_loss_nh4_solute_sl + lateral_loss_no3_solute_sl [micro-mol m-2 s-1]
 
   CONTAINS
     PROCEDURE :: Init => Init_sb_memory
@@ -355,17 +369,16 @@ MODULE mo_sb_memory_class
   !> Type definition for sb_bgc_material_components
   !>
   TYPE, EXTENDS(t_jsb_pool) :: t_sb_bgcm_with_components
-    ! bgcm of TYPE t_sb_bgcm_with_elements included:
-    ! dom                  !< elements of dissolved organic matter
-    ! dom_assoc            !< elements of minerally associated disolved organic matter
-    ! soluable_litter      !< elements of metabolic litter (sugars, cellulose etc.)
-    ! polymeric_litter     !< elements of structural litter (lignified litter)
-    ! woody_litter         !< elements of physically protected wood litter
-    ! fungi                !< elements of saprophytic fungal biomass
-    ! mycorrhiza           !< elements of mycorrhizal fungal biomass
-    ! microbial            !< elements of microbial biomass (bacteria!)
-    ! residue              !< elements of necromass of fungi, microbial and mycorrhiza
-    ! residue_assoc        !< elements of minerally associated microbial necromass
+    TYPE(t_sb_bgcm_with_elements), POINTER :: dom              !< elements of dissolved organic matter
+    TYPE(t_sb_bgcm_with_elements), POINTER :: dom_assoc        !< elements of minerally associated dissolved organic matter
+    TYPE(t_sb_bgcm_with_elements), POINTER :: soluable_litter  !< elements of metabolic litter (sugars, cellulose etc.)
+    TYPE(t_sb_bgcm_with_elements), POINTER :: polymeric_litter !< elements of structural litter (lignified litter)
+    TYPE(t_sb_bgcm_with_elements), POINTER :: woody_litter     !< elements of physically protected wood litter
+    TYPE(t_sb_bgcm_with_elements), POINTER :: fungi            !< elements of saprophytic fungal biomass
+    TYPE(t_sb_bgcm_with_elements), POINTER :: mycorrhiza       !< elements of mycorrhizal fungal biomass
+    TYPE(t_sb_bgcm_with_elements), POINTER :: microbial        !< elements of microbial biomass (bacteria!)
+    TYPE(t_sb_bgcm_with_elements), POINTER :: residue          !< elements of necromass of fungi, microbial and mycorrhiza
+    TYPE(t_sb_bgcm_with_elements), POINTER :: residue_assoc    !< elements of minerally associated microbial necromass
   CONTAINS
     PROCEDURE :: Get_element_name_by_id     => sb_bgcm_with_components_get_element_name_by_id
     PROCEDURE :: Init                       => sb_bgcm_with_components_init
@@ -402,12 +415,13 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE Init_sb_memory(mem, prefix, suffix, lct_ids, model_id)
 
-    USE mo_jsb_varlist,       ONLY: BASIC, MEDIUM, FULL
-    USE mo_jsb_io,            ONLY: grib_bits, t_cf, t_grib1, t_grib2, tables
-    USE mo_jsb_grid_class,    ONLY: t_jsb_grid, t_jsb_vgrid
-    USE mo_jsb_grid,          ONLY: Get_grid, Get_vgrid
-    USE mo_jsb_model_class,   ONLY: t_jsb_model
-    USE mo_jsb_class,         ONLY: Get_model
+    USE mo_jsb_varlist,         ONLY: BASIC, MEDIUM, FULL
+    USE mo_jsb_io,              ONLY: grib_bits, t_cf, t_grib1, t_grib2, tables
+    USE mo_jsb_grid_class,      ONLY: t_jsb_grid, t_jsb_vgrid
+    USE mo_jsb_grid,            ONLY: Get_grid, Get_vgrid
+    USE mo_jsb_model_class,     ONLY: t_jsb_model
+    USE mo_jsb_class,           ONLY: Get_model
+    USE mo_quincy_output_class, ONLY: unitless
     dsl4jsb_Use_config(SB_)
     ! ----------------------------------------------------------------------------------------------------- !
     CLASS(t_sb_memory),   INTENT(inout), TARGET :: mem             !> SB_ memory
@@ -423,8 +437,6 @@ CONTAINS
     CHARACTER(len=30)                        :: unit_sb_pool                !< unit of element var
     CHARACTER(len=30)                        :: unit_sb_flux                !< unit of element var
     INTEGER                                  :: elem_idx_map(LAST_ELEM_ID)  !< element mapper ID -> IND
-    TYPE(t_sb_bgcm_with_components), POINTER :: sb_bgcm_components          !< bgc_material components
-    TYPE(t_sb_bgcm_with_elements),   POINTER :: sb_bgcm_elements            !< bgc_material elements
     INTEGER                                  :: table                       !< ...
     CHARACTER(len=*), PARAMETER              :: routine = TRIM(modname)//':Init_sb_memory'
     ! ----------------------------------------------------------------------------------------------------- !
@@ -476,50 +488,34 @@ CONTAINS
       !>
       ! "shortname" is used for model output names
       ! sb_pool
-      sb_bgcm_components => Create_sb_bgc_material_components( &
-        & name = 'soil_biogeochemistry_bgcm_pool', shortname = 'sb_bgcm_pool', unit = unit_sb_pool, &
-        & lct_ids = lct_ids, elements_index_map = elem_idx_map(:))        ! create the bgcm object (l_elements = .TRUE. by default)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_components, SB_BGCM_POOL_ID) ! add bgcm object to pool_list(:)
-      mem%sb_bgcm_main%sbbpool => sb_bgcm_components                      ! link to bgcm object in pool_list(:)
+      mem%sb_bgcm_main%sbbpool => Add_sb_bgc_material_with_components(mem%sb_bgcm_main,         &
+        & SB_BGCM_POOL_ID, name = 'soil_biogeochemistry_bgcm_pool', shortname = 'sb_bgcm_pool', &
+        & unit = unit_sb_pool, elements_index_map = elem_idx_map(:))
       ! sb_formation
-      sb_bgcm_components => Create_sb_bgc_material_components( &
-        & name = 'soil_biogeochemistry_bgcm_formation', shortname = 'sb_bgcm_formation', unit = unit_sb_flux, &
-        & lct_ids = lct_ids, elements_index_map = elem_idx_map(:))              ! create the bgcm object (l_elements = .TRUE. by default)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_components, SB_BGCM_FORMATION_ID)  ! add bgcm object to pool_list(:)
-      mem%sb_bgcm_main%sbbformation => sb_bgcm_components                       ! link to bgcm object in pool_list(:)
+      mem%sb_bgcm_main%sbbformation => Add_sb_bgc_material_with_components(mem%sb_bgcm_main,                   &
+        & SB_BGCM_FORMATION_ID, name = 'soil_biogeochemistry_bgcm_formation', shortname = 'sb_bgcm_formation', &
+        & unit = unit_sb_flux, elements_index_map = elem_idx_map(:))
       ! sb_loss
-      sb_bgcm_components => Create_sb_bgc_material_components( &
-        & name = 'soil_biogeochemistry_bgcm_loss', shortname = 'sb_bgcm_loss', unit = unit_sb_flux, &
-        & lct_ids = lct_ids, elements_index_map = elem_idx_map(:))        ! create the bgcm object (l_elements = .TRUE. by default)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_components, SB_BGCM_LOSS_ID) ! add bgcm object to pool_list(:)
-      mem%sb_bgcm_main%sbbloss => sb_bgcm_components                      ! link to bgcm object in pool_list(:)
+      mem%sb_bgcm_main%sbbloss => Add_sb_bgc_material_with_components(mem%sb_bgcm_main,         &
+        & SB_BGCM_LOSS_ID, name = 'soil_biogeochemistry_bgcm_loss', shortname = 'sb_bgcm_loss', &
+        & unit = unit_sb_flux, elements_index_map = elem_idx_map(:))
       ! sb_transport
-      sb_bgcm_components => Create_sb_bgc_material_components( &
-        & name = 'soil_biogeochemistry_bgcm_transport', shortname = 'sb_bgcm_transport', unit = unit_sb_flux, &
-        & lct_ids = lct_ids, elements_index_map = elem_idx_map(:))              ! create the bgcm object (l_elements = .TRUE. by default)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_components, SB_BGCM_TRANSPORT_ID)  ! add bgcm object to pool_list(:)
-      mem%sb_bgcm_main%sbbtransport => sb_bgcm_components                       ! link to bgcm object in pool_list(:)
+      mem%sb_bgcm_main%sbbtransport => Add_sb_bgc_material_with_components(mem%sb_bgcm_main,         &
+        & SB_BGCM_TRANSPORT_ID, name = 'soil_biogeochemistry_bgcm_transport', shortname = 'sb_bgcm_transport', &
+        & unit = unit_sb_flux, elements_index_map = elem_idx_map(:))
 
       ! --------------------------------------------------------------------------------------------------- !
       !> create the bgc_material elements structures
       !>
       ! "shortname" is used for model output names
       ! sb_delta_pools
-      ALLOCATE(sb_bgcm_elements)
-      CALL sb_bgcm_elements%Init(name = 'soil_biogeochemistry_bgcm_delta_pools', shortname = 'sb_bgcm_delta_pools', &
-        &                        elements_index_map = elem_idx_map(:), &
-        &                        l_elements = .TRUE., element_unit = unit_sb_pool)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_elements, SB_BGCM_DELTA_POOLS_ID)
-      mem%sb_bgcm_main%sbbdelta_pools => sb_bgcm_elements
-      NULLIFY(sb_bgcm_elements)
+      mem%sb_bgcm_main%sbbdelta_pools => Add_sb_bgc_material_with_elements(mem%sb_bgcm_main,            &
+        & name = 'soil_biogeochemistry_bgcm_delta_pools', shortname = 'sb_bgcm_delta_pools',            &
+        & elements_index_map = elem_idx_map(:), unit = unit_sb_pool, bgcm_id = SB_BGCM_DELTA_POOLS_ID)
       ! sb_myco_export
-      ALLOCATE(sb_bgcm_elements)
-      CALL sb_bgcm_elements%Init(name = 'soil_biogeochemistry_bgcm_myco_export', shortname = 'sb_bgcm_myc_exp', &
-        &                        elements_index_map = elem_idx_map(:), &
-        &                        l_elements = .TRUE., element_unit = unit_sb_flux)
-      CALL mem%sb_bgcm_main%Add_pool(sb_bgcm_elements, SB_BGCM_MYCO_EXPORT_ID)
-      mem%sb_bgcm_main%sbbmyco_export => sb_bgcm_elements
-      NULLIFY(sb_bgcm_elements)
+      mem%sb_bgcm_main%sbbmyco_export => Add_sb_bgc_material_with_elements(mem%sb_bgcm_main,        &
+        & name = 'soil_biogeochemistry_bgcm_myco_export', shortname = 'sb_bgcm_myc_exp',            &
+        & elements_index_map = elem_idx_map(:), unit = unit_sb_flux, bgcm_id = SB_BGCM_MYCO_EXPORT_ID)
 
       ! create list of CHARACTERs with names sb_bgcm_main to the "lowest childs" of bgcm structures
       CALL mem%bgc_material%Set_paths()
@@ -529,7 +525,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .TRUE.,                                                                           &
         & initval_r = 0.0_wp)
@@ -537,7 +533,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .FALSE.,                                                                          &
         & initval_r = 0.0_wp)
@@ -545,7 +541,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .FALSE.,                                                                          &
         & initval_r = 0.0_wp)
@@ -553,7 +549,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .FALSE.,                                                                          &
         & initval_r = 0.0_wp)
@@ -561,7 +557,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .FALSE.,                                                                          &
         & initval_r = 0.0_wp)
@@ -569,7 +565,7 @@ CONTAINS
         & hgrid, surface, vgrid_soil_sb,                                                               &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
         & prefix, suffix,                                                                              &
-        & output_level = MEDIUM,                                                                       &
+        & output_level = FULL,                                                                       &
         & loutput = .TRUE.,                                                                            &
         & lrestart = .FALSE.,                                                                          &
         & initval_r = 0.0_wp)
@@ -605,7 +601,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -616,7 +612,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -627,7 +623,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -638,14 +634,14 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_c', mem%sb_pool_total_som_c, &
+      CALL mem%Add_var('sb_pool_total_bg_soil_c', mem%sb_pool_total_bg_soil_c, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_c', 'mol m-3', 'total C, sum of all SOM sb_pool components'), &
+        & t_cf('sb_pool_total_bg_soil_c', 'mol m-3', 'total C, sum of SOM and below ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -654,9 +650,9 @@ CONTAINS
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_n', mem%sb_pool_total_som_n, &
+      CALL mem%Add_var('sb_pool_total_bg_soil_n', mem%sb_pool_total_bg_soil_n, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_n', 'mol m-3', 'total N, sum of all SOM sb_pool components'), &
+        & t_cf('sb_pool_total_bg_soil_n', 'mol m-3', 'total N, sum of SOM and below ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -665,9 +661,53 @@ CONTAINS
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_p', mem%sb_pool_total_som_p, &
+      CALL mem%Add_var('sb_pool_total_bg_soil_p', mem%sb_pool_total_bg_soil_p, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_p', 'mol m-3', 'total P, sum of all SOM sb_pool components'), &
+        & t_cf('sb_pool_total_bg_soil_p', 'mol m-3', 'total P, sum of SOM and below ground litter in sb_pool components'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .FALSE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('sb_pool_total_bg_soil_c13', mem%sb_pool_total_bg_soil_c13, &
+        & hgrid, vgrid_soil_sb, &
+        & t_cf('sb_pool_total_bg_soil_c13', 'mol m-3', 'total C13, sum of SOM and below ground litter in sb_pool components'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .FALSE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('sb_pool_total_bg_soil_c14', mem%sb_pool_total_bg_soil_c14, &
+        & hgrid, vgrid_soil_sb, &
+        & t_cf('sb_pool_total_bg_soil_c14', 'mol m-3', 'total C14, sum of SOM and below ground litter in sb_pool components'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .FALSE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('sb_pool_total_bg_soil_n15', mem%sb_pool_total_bg_soil_n15, &
+        & hgrid, vgrid_soil_sb, &
+        & t_cf('sb_pool_total_bg_soil_n15', 'mol m-3', 'total N15, sum of SOM and below ground litter in sb_pool components'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .FALSE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('sb_pool_total_ag_litter_c', mem%sb_pool_total_ag_litter_c, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_c', 'mol m-2', 'total C, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -676,9 +716,9 @@ CONTAINS
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_c13', mem%sb_pool_total_som_c13, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_c13', 'mol m-3', 'total C13, sum of all SOM sb_pool components'), &
+      CALL mem%Add_var('sb_pool_total_ag_litter_n', mem%sb_pool_total_ag_litter_n, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_n', 'mol m-2', 'total N, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -687,90 +727,46 @@ CONTAINS
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_c14', mem%sb_pool_total_som_c14, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_c14', 'mol m-3', 'total C14, sum of all SOM sb_pool components'), &
+      CALL mem%Add_var('sb_pool_total_ag_litter_p', mem%sb_pool_total_ag_litter_p, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_p', 'mol m-2', 'total P, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_som_n15', mem%sb_pool_total_som_n15, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_som_n15', 'mol m-3', 'total N15, sum of all SOM sb_pool components'), &
+      CALL mem%Add_var('sb_pool_total_ag_litter_c13', mem%sb_pool_total_ag_litter_c13, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_c13', 'mol m-2', 'total C13, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_litter_c', mem%sb_pool_total_litter_c, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_c', 'mol m-3', 'total C, sum of all litter sb_pool components'), &
+      CALL mem%Add_var('sb_pool_total_ag_litter_c14', mem%sb_pool_total_ag_litter_c14, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_c14', 'mol m-2', 'total C14, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('sb_pool_total_litter_n', mem%sb_pool_total_litter_n, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_n', 'mol m-3', 'total N, sum of all litter sb_pool components'), &
+      CALL mem%Add_var('sb_pool_total_ag_litter_n15', mem%sb_pool_total_ag_litter_n15, &
+        & hgrid, surface, &
+        & t_cf('sb_pool_total_ag_litter_n15', 'mol m-2', 'total N15, sum of the above ground litter in sb_pool components'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
-        & loutput = .TRUE., &
-        & lrestart = .FALSE., &
-        & initval_r = 0.0_wp)
-
-      CALL mem%Add_var('sb_pool_total_litter_p', mem%sb_pool_total_litter_p, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_p', 'mol m-3', 'total P, sum of all litter sb_pool components'), &
-        & t_grib1(table, 255, grib_bits), &
-        & t_grib2(255, 255, 255, grib_bits), &
-        & prefix, suffix, &
-        & output_level = BASIC, &
-        & loutput = .TRUE., &
-        & lrestart = .FALSE., &
-        & initval_r = 0.0_wp)
-
-      CALL mem%Add_var('sb_pool_total_litter_c13', mem%sb_pool_total_litter_c13, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_c13', 'mol m-3', 'total C13, sum of all litter sb_pool components'), &
-        & t_grib1(table, 255, grib_bits), &
-        & t_grib2(255, 255, 255, grib_bits), &
-        & prefix, suffix, &
-        & output_level = BASIC, &
-        & loutput = .TRUE., &
-        & lrestart = .FALSE., &
-        & initval_r = 0.0_wp)
-
-      CALL mem%Add_var('sb_pool_total_litter_c14', mem%sb_pool_total_litter_c14, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_c14', 'mol m-3', 'total C14, sum of all litter sb_pool components'), &
-        & t_grib1(table, 255, grib_bits), &
-        & t_grib2(255, 255, 255, grib_bits), &
-        & prefix, suffix, &
-        & output_level = BASIC, &
-        & loutput = .TRUE., &
-        & lrestart = .FALSE., &
-        & initval_r = 0.0_wp)
-
-      CALL mem%Add_var('sb_pool_total_litter_n15', mem%sb_pool_total_litter_n15, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('sb_pool_total_litter_n15', 'mol m-3', 'total N15, sum of all litter sb_pool components'), &
-        & t_grib1(table, 255, grib_bits), &
-        & t_grib2(255, 255, 255, grib_bits), &
-        & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -1286,7 +1282,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_decomposition', mem%rtm_decomposition, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_decomposition', '--', 'rate modifier for decomposition processes'), &
+        & t_cf('rtm_decomposition', unitless, 'rate modifier for decomposition processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1297,7 +1293,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_depolymerisation', mem%rtm_depolymerisation, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_depolymerisation', '--', 'rate modifier for depolymerisation processes'), &
+        & t_cf('rtm_depolymerisation', unitless, 'rate modifier for depolymerisation processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1308,7 +1304,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_mic_uptake', mem%rtm_mic_uptake, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_mic_uptake', '--', 'rate modifier for microbial uptake'), &
+        & t_cf('rtm_mic_uptake', unitless, 'rate modifier for microbial uptake'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1319,7 +1315,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_plant_uptake', mem%rtm_plant_uptake, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_plant_uptake', '--', 'rate modifier for plant uptake'), &
+        & t_cf('rtm_plant_uptake', unitless, 'rate modifier for plant uptake'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1330,7 +1326,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_sorption', mem%rtm_sorption, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_sorption', '--', 'rate modifier for sorption'), &
+        & t_cf('rtm_sorption', unitless, 'rate modifier for sorption'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1341,7 +1337,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_desorption', mem%rtm_desorption, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_desorption', '--', 'rate modifier for desorption'), &
+        & t_cf('rtm_desorption', unitless, 'rate modifier for desorption'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1352,7 +1348,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_hsc', mem%rtm_hsc, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_hsc', '--', 'rate modifier for half-saturation constants'), &
+        & t_cf('rtm_hsc', unitless, 'rate modifier for half-saturation constants'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1363,7 +1359,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_nitrification', mem%rtm_nitrification, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_nitrification', '--', 'rate modifier for nitrification'), &
+        & t_cf('rtm_nitrification', unitless, 'rate modifier for nitrification'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1374,7 +1370,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_denitrification', mem%rtm_denitrification, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_denitrification', '--', 'rate modifier for denitrification'), &
+        & t_cf('rtm_denitrification', unitless, 'rate modifier for denitrification'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1385,7 +1381,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_gasdiffusion', mem%rtm_gasdiffusion, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_gasdiffusion', '--', 'rate modifier for gasdiffusion'), &
+        & t_cf('rtm_gasdiffusion', unitless, 'rate modifier for gasdiffusion'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1396,7 +1392,7 @@ CONTAINS
 
       CALL mem%Add_var('rtm_asymb_bnf', mem%rtm_asymb_bnf, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rtm_asymb_bnf', '--', 'rate modifier for nfixation'), &
+        & t_cf('rtm_asymb_bnf', unitless, 'rate modifier for nfixation'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1407,7 +1403,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_decomposition', mem%rmm_decomposition, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_decomposition', '--', 'rate modifier for decomposition processes'), &
+        & t_cf('rmm_decomposition', unitless, 'rate modifier for decomposition processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1418,7 +1414,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_depolymerisation', mem%rmm_depolymerisation, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_depolymerisation', '--', 'rate modifier for depolymerisation processes'), &
+        & t_cf('rmm_depolymerisation', unitless, 'rate modifier for depolymerisation processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1429,7 +1425,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_mic_uptake', mem%rmm_mic_uptake, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_mic_uptake', '--', 'rate modifier for microbial uptake'), &
+        & t_cf('rmm_mic_uptake', unitless, 'rate modifier for microbial uptake'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1440,7 +1436,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_plant_uptake', mem%rmm_plant_uptake, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_plant_uptake', '--', 'rate modifier for plant uptake'), &
+        & t_cf('rmm_plant_uptake', unitless, 'rate modifier for plant uptake'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1451,7 +1447,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_sorption', mem%rmm_sorption, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_sorption', '--', 'rate modifier for sorption'), &
+        & t_cf('rmm_sorption', unitless, 'rate modifier for sorption'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1462,7 +1458,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_desorption', mem%rmm_desorption, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_desorption', '--', 'rate modifier for desorption'), &
+        & t_cf('rmm_desorption', unitless, 'rate modifier for desorption'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1473,7 +1469,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_hsc', mem%rmm_hsc, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_hsc', '--', 'rate modifier for half-saturation constants'), &
+        & t_cf('rmm_hsc', unitless, 'rate modifier for half-saturation constants'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1484,7 +1480,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_nitrification', mem%rmm_nitrification, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_nitrification', '--', 'rate modifier for nitrification'), &
+        & t_cf('rmm_nitrification', unitless, 'rate modifier for nitrification'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1495,7 +1491,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_gasdiffusion', mem%rmm_gasdiffusion, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_gasdiffusion', '--', 'rate modifier for gasdiffusion'), &
+        & t_cf('rmm_gasdiffusion', unitless, 'rate modifier for gasdiffusion'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1506,7 +1502,7 @@ CONTAINS
 
       CALL mem%Add_var('rmm_asymb_bnf', mem%rmm_asymb_bnf, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('rmm_asymb_bnf', '--', 'rate modifier for nfixation'), &
+        & t_cf('rmm_asymb_bnf', unitless, 'rate modifier for nfixation'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -1532,7 +1528,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -1543,7 +1539,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -1598,7 +1594,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -1620,7 +1616,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -1631,7 +1627,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -2027,7 +2023,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = MEDIUM, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -2302,7 +2298,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -2313,7 +2309,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -2324,7 +2320,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
@@ -2428,20 +2424,9 @@ CONTAINS
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
 
-      CALL mem%Add_var('vmax_weath_mineral_sl', mem%vmax_weath_mineral_sl, &
-        & hgrid, vgrid_soil_sb, &
-        & t_cf('vmax_weath_mineral_sl', 'mol P m-3 s-1', 'weathering coefficient of mineral soil'), &
-        & t_grib1(table, 255, grib_bits), &
-        & t_grib2(255, 255, 255, grib_bits), &
-        & prefix, suffix, &
-        & output_level = FULL, &
-        & loutput = .FALSE., &
-        & lrestart = .TRUE., &
-        & initval_r = 0.0_wp)
-
       CALL mem%Add_var('k_bioturb', mem%k_bioturb, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('k_bioturb', '', 'diffusion rate resulting from bioturbation'), &
+        & t_cf('k_bioturb', 'm2 s-1', 'diffusion rate resulting from bioturbation'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2496,7 +2481,7 @@ CONTAINS
 
       CALL mem%Add_var('anaerobic_volume_fraction_sl', mem%anaerobic_volume_fraction_sl, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('anaerobic_volume_fraction_sl', 'unitless', 'anaerobic volume fraction'), &
+        & t_cf('anaerobic_volume_fraction_sl', unitless, 'anaerobic volume fraction'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2507,7 +2492,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_cue_eff', mem%microbial_cue_eff, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_cue_eff', 'unitless', 'instantaneous microbial CUE given NP constraints'), &
+        & t_cf('microbial_cue_eff', unitless, 'instantaneous microbial CUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2518,7 +2503,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_cue_eff_tmic_mavg', mem%microbial_cue_eff_tmic_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_cue_eff_tmic_mavg', 'unitless', 'time-averaged microbial CUE given NP constraints'), &
+        & t_cf('microbial_cue_eff_tmic_mavg', unitless, 'time-averaged microbial CUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2529,7 +2514,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_nue_eff', mem%microbial_nue_eff, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_nue_eff', 'unitless', 'instantaneous microbial NUE given NP constraints'), &
+        & t_cf('microbial_nue_eff', unitless, 'instantaneous microbial NUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2540,7 +2525,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_nue_eff_tmic_mavg', mem%microbial_nue_eff_tmic_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_nue_eff_tmic_mavg', 'unitless', 'time-averaged microbial NUE given NP constraints'), &
+        & t_cf('microbial_nue_eff_tmic_mavg', unitless, 'time-averaged microbial NUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2551,7 +2536,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_pue_eff', mem%microbial_pue_eff, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_pue_eff', 'unitless', 'instantaneous microbial PUE given NP constraints'), &
+        & t_cf('microbial_pue_eff', unitless, 'instantaneous microbial PUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2562,7 +2547,7 @@ CONTAINS
 
       CALL mem%Add_var('microbial_pue_eff_tmic_mavg', mem%microbial_pue_eff_tmic_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('microbial_pue_eff_tmic_mavg', 'unitless', 'time-averaged microbial CUE given NP constraints'), &
+        & t_cf('microbial_pue_eff_tmic_mavg', unitless, 'time-averaged microbial CUE given NP constraints'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2573,7 +2558,7 @@ CONTAINS
 
       CALL mem%Add_var('fact_n_status_mic_c_growth', mem%fact_n_status_mic_c_growth, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('fact_n_status_mic_c_growth', '', 'microbial N status, scaling up/down microbial processes'), &
+        & t_cf('fact_n_status_mic_c_growth', unitless, 'microbial N status, scaling up/down microbial processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2584,7 +2569,7 @@ CONTAINS
 
       CALL mem%Add_var('fact_p_status_mic_c_growth', mem%fact_p_status_mic_c_growth, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('fact_p_status_mic_c_growth', '', 'microbial P status, scaling up/down microbial processes'), &
+        & t_cf('fact_p_status_mic_c_growth', unitless, 'microbial P status, scaling up/down microbial processes'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2595,7 +2580,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_AP', mem%enzyme_frac_AP, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_AP', '', 'fraction of Acid (alkaline) phosphatase of the total enzyme'), &
+        & t_cf('enzyme_frac_AP', unitless, 'fraction of Acid (alkaline) phosphatase of the total enzyme'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2606,7 +2591,7 @@ CONTAINS
 
       CALL mem%Add_var('dom_cn', mem%dom_cn, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('dom_cn', '', 'dom CN ratio'), &
+        & t_cf('dom_cn', 'mol mol-1', 'C:N ratio of DOM pool'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2617,7 +2602,7 @@ CONTAINS
 
       CALL mem%Add_var('dom_cp', mem%dom_cp, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('dom_cp', '', 'dom CP ratio'), &
+        & t_cf('dom_cp', 'mol mol-1', 'C:P ratio of DOM pool'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2628,7 +2613,7 @@ CONTAINS
 
       CALL mem%Add_var('dom_cn_mavg', mem%dom_cn_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('dom_cn_mavg', '', 'time-averaged dom CN ratio'), &
+        & t_cf('dom_cn_mavg', 'mol mol-1', 'time-averaged C:N ratio of DOM pool'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2639,7 +2624,7 @@ CONTAINS
 
       CALL mem%Add_var('dom_cp_mavg', mem%dom_cp_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('dom_cp_mavg', '', 'time-averaged dom CP ratio'), &
+        & t_cf('dom_cp_mavg', 'mol mol-1', 'time-averaged C:P ratio of DOM pool'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2648,9 +2633,121 @@ CONTAINS
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
 
+      IF (model%config%flag_slow_sb_pool_spinup_accelerator) THEN
+        CALL mem%Add_var('residue_som_c_form_mavg_sl', mem%residue_som_c_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_som_c_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged residual som C formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('residue_som_c14_form_mavg_sl', mem%residue_som_c14_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_som_c14_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged residual som C14 formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('residue_assoc_som_c_form_mavg_sl', mem%residue_assoc_som_c_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_assoc_som_c_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged assoc residual som C formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('residue_assoc_som_c14_form_mavg_sl', mem%residue_assoc_som_c14_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_assoc_som_c14_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged assoc resid som C14 formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('assoc_dom_c_form_mavg_sl', mem%assoc_dom_c_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('assoc_dom_c_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged associated dom C formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('assoc_dom_c14_form_mavg_sl', mem%assoc_dom_c14_form_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('assoc_dom_c14_form_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged associated dom C14 formation rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('residue_som_c_loss_mavg_sl', mem%residue_som_c_loss_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_som_c_loss_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged residual som C loss rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('residue_assoc_som_c_loss_mavg_sl', mem%residue_assoc_som_c_loss_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('residue_assoc_som_c_loss_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged associated residual som C loss rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+
+        CALL mem%Add_var('assoc_dom_c_loss_mavg_sl', mem%assoc_dom_c_loss_mavg_sl, &
+          & hgrid, vgrid_soil_sb, &
+          & t_cf('assoc_dom_c_loss_mavg_sl', 'micro-mol m-3 s-1', 'time-averaged associated dom C loss rate'), &
+          & t_grib1(table, 255, grib_bits), &
+          & t_grib2(255, 255, 255, grib_bits), &
+          & prefix, suffix, &
+          & output_level = FULL, &
+          & loutput = .FALSE., &
+          & lrestart = .TRUE., &
+          & initval_r = 0.0_wp)
+      END IF
+
       CALL mem%Add_var('ph_sl', mem%ph_sl, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('ph_sl', '', 'ph per soil layer'), &
+        & t_cf('ph_sl', unitless, 'pH per soil layer'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .FALSE., &
+        & lrestart = .TRUE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('vmax_weath_mineral_sl', mem%vmax_weath_mineral_sl, &
+        & hgrid, vgrid_soil_sb, &
+        & t_cf('vmax_weath_mineral_sl', 'mol P m-3 s-1', 'weathering coefficient of mineral soil'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2661,7 +2758,7 @@ CONTAINS
 
       CALL mem%Add_var('Qmax_AlFe_cor', mem%Qmax_AlFe_cor, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('Qmax_AlFe_cor', '', 'PO4 Qmax correction factor for clay/silt soil'), &
+        & t_cf('Qmax_AlFe_cor', unitless, 'correction factor for phosphate Qmax due to the unknown Al/Fe'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2672,7 +2769,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly', mem%enzyme_frac_poly, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly', '', ''), &
+        & t_cf('enzyme_frac_poly', unitless, 'fraction of depolymerisation enzyme which depolymerises poly litter'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2683,7 +2780,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_residue', mem%enzyme_frac_residue, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_residue', '', ''), &
+        & t_cf('enzyme_frac_residue', unitless, 'fraction of depolymerisation enzyme which depolymerises microbial residue'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2694,7 +2791,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_c', mem%enzyme_frac_poly_c, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_c', '', ''), &
+        & t_cf('enzyme_frac_poly_c', unitless, 'fract of depolymerisation enzyme depol. microbial residue, determined by C'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2705,7 +2802,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_n', mem%enzyme_frac_poly_n, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_n', '', ''), &
+        & t_cf('enzyme_frac_poly_n', unitless, 'fract of depolymerisation enzyme depol. microbial residue, determined by N'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2716,7 +2813,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_p', mem%enzyme_frac_poly_p, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_p', '', ''), &
+        & t_cf('enzyme_frac_poly_p', unitless, 'fract of depolymerisation enzyme depol. microbial residue, determined by P'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2727,7 +2824,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_c_mavg', mem%enzyme_frac_poly_c_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_c_mavg', '', ''), &
+        & t_cf('enzyme_frac_poly_c_mavg', unitless, 'moving average of enzyme_frac_poly_c'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2738,7 +2835,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_n_mavg', mem%enzyme_frac_poly_n_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_n_mavg', '', ''), &
+        & t_cf('enzyme_frac_poly_n_mavg', unitless, 'moving average of enzyme_frac_poly_n'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2749,7 +2846,7 @@ CONTAINS
 
       CALL mem%Add_var('enzyme_frac_poly_p_mavg', mem%enzyme_frac_poly_p_mavg, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('enzyme_frac_poly_p_mavg', 'unitless', 'moving average of enzyme_frac_poly_p'), &
+        & t_cf('enzyme_frac_poly_p_mavg', unitless, 'moving average of enzyme_frac_poly_p'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -2826,7 +2923,7 @@ CONTAINS
 
       CALL mem%Add_var('total_soil_n', mem%total_soil_n, &
         & hgrid, vgrid_soil_sb, &
-        & t_cf('total_soil_n', 'mol m-3', 'sb_pool_total_som_n + nh4_solute + nh4_assoc + no3_solute'), &
+        & t_cf('total_soil_n', 'mol m-3', 'sb_pool_total_bg_soil_n + nh4_solute + nh4_assoc + no3_solute'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -3027,114 +3124,85 @@ CONTAINS
 
   ! ======================================================================================================= !
   !>
-  !> create and init an object of the SB_ components bgcm "t_sb_bgcm_with_components"
-  !> used for SB_ memory init
-  !>   init and add all its objects of the "t_jsb_pool" with "pool_object%Init()"
-  !>   "object => Create_sb_bgc_material_components()"
+  !> create, init and append a sb bgcm with components
   !>
-  FUNCTION Create_sb_bgc_material_components(name, shortname, unit, lct_ids, elements_index_map, pool_prefix, pool_suffix) &
-    &      RESULT(sb_bgcm_components)
-    CHARACTER(LEN=*),                   INTENT(in)  :: name
-    CHARACTER(LEN=*),                   INTENT(in)  :: shortname
-    CHARACTER(LEN=*),                   INTENT(in)  :: unit
-    INTEGER,                            INTENT(in)  :: lct_ids(:)
-    INTEGER,                            INTENT(in)  :: elements_index_map(:)  ! elements ID -> IND
-    CHARACTER(LEN=*), OPTIONAL,         INTENT(in)  :: pool_prefix
-    CHARACTER(LEN=*), OPTIONAL,         INTENT(in)  :: pool_suffix
+  FUNCTION Add_sb_bgc_material_with_components(pool, bgcm_id, name, shortname, unit, elements_index_map) &
+      & RESULT(sb_bgcm_with_components)
     ! ----------------------------------------------------------------------------------------------------- !
-    TYPE(t_sb_bgcm_with_components), POINTER     :: sb_bgcm_components
-    TYPE(t_sb_bgcm_with_elements),   POINTER     :: sb_bgcm_elements
-    CHARACTER(LEN=:),                ALLOCATABLE :: prefix_loc
-    CHARACTER(LEN=:),                ALLOCATABLE :: suffix_loc
+    CLASS(t_jsb_pool), TARGET,  INTENT(INOUT) :: pool                  !< pool to which this pool with component should be added
+    INTEGER,                    INTENT(in)    :: bgcm_id               !< id of this sb bgcm with components
+    CHARACTER(LEN=*),           INTENT(in)    :: name                  !< name of this sb bgcm with components
+    CHARACTER(LEN=*),           INTENT(in)    :: shortname             !< shortname of this sb bgcm with components
+    CHARACTER(LEN=*),           INTENT(in)    :: unit                  !< unit of this sb bgcm with components
+    INTEGER,                    INTENT(in)    :: elements_index_map(:) !< elements ID -> IND
     ! ----------------------------------------------------------------------------------------------------- !
-    prefix_loc = ''
-    suffix_loc = ''
-    CALL assign_if_present_allocatable(prefix_loc, pool_prefix)
-    CALL assign_if_present_allocatable(suffix_loc, pool_suffix)
-    IF (prefix_loc /= '') prefix_loc = prefix_loc // '_'
-    IF (suffix_loc /= '') suffix_loc = '_' // suffix_loc
-
+    TYPE(t_sb_bgcm_with_components), POINTER  :: sb_bgcm_with_components !< the sb bgcm with components
+    ! ----------------------------------------------------------------------------------------------------- !
     ! bgcm_components init
-    ALLOCATE(sb_bgcm_components)
-    CALL sb_bgcm_components%Init(name, shortname, elements_index_map(:), l_elements = .FALSE., element_unit = unit)
+    ALLOCATE(sb_bgcm_with_components)
+    CALL sb_bgcm_with_components%Init(name, shortname, elements_index_map(:), l_elements = .FALSE., element_unit = unit)
 
     ! bgcm_elements allocate & init & add to bgcm_components
     !   "shortname" is used for model output
     !   "element_list" is optional and can be used to select specific elements (not needed when all elements may be added)
-    !! @TODO: maybe extract as a routine given two strings and returning the pointer
-    !!    routine should start with IF(ASSOCIATED) NULLIFY(sb_bgcm_elements)
-    !!    i.e. only left: function call with strings and subsequent assignment
+
     ! dom
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'dom_bgcm'//suffix_loc, shortname = 'dom', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%dom => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'dom_bgcm', shortname = 'dom', elements_index_map = elements_index_map(:), unit = unit)
     ! dom_assoc
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'dom_assoc_bgcm'//suffix_loc, shortname = 'dom_assoc', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%dom_assoc => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'dom_assoc_bgcm', shortname = 'dom_assoc', elements_index_map = elements_index_map(:), unit = unit)
     ! soluable_litter
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'soluable_litter_bgcm'//suffix_loc, shortname = 'sol_litter', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%soluable_litter => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'soluable_litter_bgcm', shortname = 'sol_litter', elements_index_map = elements_index_map(:), unit = unit)
     ! polymeric_litter
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'polymeric_litter_bgcm'//suffix_loc, shortname = 'pol_litter', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%polymeric_litter => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'polymeric_litter_bgcm', shortname = 'pol_litter', elements_index_map = elements_index_map(:), unit = unit)
     ! woody_litter
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'woody_litter_bgcm'//suffix_loc, shortname = 'woo_litter', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%woody_litter => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'woody_litter_bgcm', shortname = 'woo_litter', elements_index_map = elements_index_map(:), unit = unit)
     ! fungi
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'fungi_bgcm'//suffix_loc, shortname = 'fungi', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%fungi => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'fungi_bgcm', shortname = 'fungi', elements_index_map = elements_index_map(:), unit = unit)
     ! mycorrhiza
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'mycorrhiza_bgcm'//suffix_loc, shortname = 'mycorrhiza', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%mycorrhiza => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'mycorrhiza_bgcm', shortname = 'mycorrhiza', elements_index_map = elements_index_map(:), unit = unit)
     ! microbial
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'microbial_bgcm'//suffix_loc, shortname = 'microbial', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%microbial => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'microbial_bgcm', shortname = 'microbial', elements_index_map = elements_index_map(:), unit = unit)
     ! residue
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'residue_bgcm'//suffix_loc, shortname = 'residue', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
+    sb_bgcm_with_components%residue => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'residue_bgcm', shortname = 'residue', elements_index_map = elements_index_map(:), unit = unit)
     ! residue_assoc
-    ALLOCATE(sb_bgcm_elements)
-    CALL sb_bgcm_elements%Init(name = prefix_loc//'residue_assoc_bgcm'//suffix_loc, shortname = 'residue_assoc', &
-      &                        elements_index_map = elements_index_map(:), &
-      &                        l_elements = .TRUE., element_unit = unit)
-    CALL sb_bgcm_components%Add_pool(sb_bgcm_elements)
-    NULLIFY(sb_bgcm_elements)
-  END FUNCTION Create_sb_bgc_material_components
+    sb_bgcm_with_components%residue_assoc => Add_sb_bgc_material_with_elements(sb_bgcm_with_components, &
+      & name = 'residue_assoc_bgcm', shortname = 'residue_assoc', elements_index_map = elements_index_map(:), unit = unit)
+
+    ! Add the bookkeepoing for this sb bgcm with components
+    CALL pool%Add_pool(sb_bgcm_with_components, bgcm_id)
+  END FUNCTION Add_sb_bgc_material_with_components
+
+  ! ======================================================================================================= !
+  !>
+  !> create, init and append a sb bgcm with elements
+  !>
+  FUNCTION Add_sb_bgc_material_with_elements(pool,  name, shortname, elements_index_map, unit, bgcm_id) &
+      & RESULT(sb_bgcm_with_elements)
+    ! ----------------------------------------------------------------------------------------------------- !
+    CLASS(t_jsb_pool), TARGET,  INTENT(INOUT) :: pool                  !< pool to which this pool with elements should be added
+    CHARACTER(LEN=*),           INTENT(in)    :: name                  !< name of this sb bgcm with elements
+    CHARACTER(LEN=*),           INTENT(in)    :: shortname             !< shortname of this sb bgcm with elements
+    INTEGER,                    INTENT(in)    :: elements_index_map(:) !< mapping elements ID -> IND
+    CHARACTER(LEN=*),           INTENT(in)    :: unit                  !< unit of this sb bgcm with elements
+    INTEGER,          OPTIONAL, INTENT(in)    :: bgcm_id               !< optional: id of this bgcm with elements
+    ! ----------------------------------------------------------------------------------------------------- !
+    TYPE(t_sb_bgcm_with_elements), POINTER   :: sb_bgcm_with_elements !< the new sb bgcm with elements
+    ! ----------------------------------------------------------------------------------------------------- !
+    ALLOCATE(sb_bgcm_with_elements)
+
+    CALL sb_bgcm_with_elements%Init(name = name, shortname = shortname,  &
+      & elements_index_map = elements_index_map(:), l_elements = .TRUE., element_unit = unit)
+    CALL pool%Add_pool(sb_bgcm_with_elements, bgcm_id)
+  END FUNCTION Add_sb_bgc_material_with_elements
 
 #endif
 END MODULE mo_sb_memory_class

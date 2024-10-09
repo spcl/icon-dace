@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /*! \page rationale Rationale
 
 <p>\"A complete rewrite of legacy science software, with a specific

@@ -1,8 +1,3 @@
-! @brief configuration setup for z/i/p-level output
-!
-! configuration setup for z/i/p-level output
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief configuration setup for z/i/p-level output
+!
+! configuration setup for z/i/p-level output
 
 MODULE mo_nh_pzlev_config
 

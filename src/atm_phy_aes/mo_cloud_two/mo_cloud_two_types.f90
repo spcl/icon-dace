@@ -1,11 +1,3 @@
-!
-! Data types for the two-moment bulk microphysics by Seifert and Beheng (2006)
-!                  with prognostic cloud droplet number parameterization
-!
-! This module provides the data types for the variables used to
-! configure the parameterization and to store the input and output
-! for the parameterization.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data types for the two-moment bulk microphysics by Seifert and Beheng (2006)
+!            with prognostic cloud droplet number parameterization
+!
+! This module provides the data types for the variables used to
+! configure the parameterization and to store the input and output
+! for the parameterization.
 
 MODULE mo_cloud_two_types
 

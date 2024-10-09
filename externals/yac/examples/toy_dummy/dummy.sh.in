@@ -1,9 +1,15 @@
 #!@SHELL@
 
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@ENABLE_MCI_FALSE@exit 77
+@TEST_MPI_FALSE@exit 77
+
 CONFIG_FILE=@top_srcdir@/input/toy_dummy.yaml
 
-@TEST_MPI_FALSE@exit 77
 @TEST_MPI_TRUE@@MPI_LAUNCH@ \
-  -n 1 dummy_atmosphere.x -c $CONFIG_FILE : \
-  -n 1 dummy_ocean.x -c $CONFIG_FILE : \
-  -n 1 dummy_io.x -c $CONFIG_FILE
+  -n 1 ./dummy_atmosphere.x -c $CONFIG_FILE : \
+  -n 1 ./dummy_ocean.x -c $CONFIG_FILE : \
+  -n 1 ./dummy_io.x -c $CONFIG_FILE

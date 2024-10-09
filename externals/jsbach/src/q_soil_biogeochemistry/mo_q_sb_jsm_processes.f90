@@ -20,7 +20,7 @@ MODULE mo_q_sb_jsm_processes
 
   USE mo_kind,                ONLY: wp
   USE mo_exception,           ONLY: message, finish
-  USE mo_jsb_math_constants,  ONLY: dtime, one_day, eps8
+  USE mo_jsb_math_constants,  ONLY: one_day, eps8
   USE mo_lnd_bgcm_idx
 
   IMPLICIT NONE
@@ -52,6 +52,7 @@ CONTAINS
   SUBROUTINE calc_litter_turnover( &
     & nc                    , &
     & nsoil_sb              , &
+    & dtime                 , &
     & tau_litter_pool       , &
     & fc_litter2sink        , &
     & rtm_depolymerisation  , &
@@ -65,6 +66,7 @@ CONTAINS
 
     INTEGER,                            INTENT(in)    :: nc                       !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb                 !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                    !< timestep length
     REAL(wp),                           INTENT(in)    :: tau_litter_pool          !< turnover time of the litter pool [1/s]
     REAL(wp),                           INTENT(in)    :: fc_litter2sink           !< fraction of litter C entering sink pool (rest is respired)
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: rtm_depolymerisation     !< temperature rate modifier [-]
@@ -132,6 +134,7 @@ CONTAINS
   !!         weathering, occlusion and (slow) desorption, microbial uptake
   !-----------------------------------------------------------------------------------------------------
   ELEMENTAL SUBROUTINE calc_sourcing_flux( &
+    & dtime, &
     & flag_sb_prescribe_po4, &
     & microbial_carbon, &
     & microbial_nitrogen, &
@@ -180,6 +183,7 @@ CONTAINS
 
     USE mo_sb_constants
 
+    REAL(wp), INTENT(in)        :: dtime                        !< timestep length
     LOGICAL,  INTENT(in)        :: flag_sb_prescribe_po4        !< whether PO4 is prescribed or not
     REAL(wp), INTENT(in)        :: microbial_carbon             !< microbial carbon density (mol / m3)
     REAL(wp), INTENT(in)        :: microbial_nitrogen           !< nitrogen in the microbial biomass pool (mol / m3)
@@ -368,7 +372,8 @@ CONTAINS
   !! Output: microbial and plant inorganic uptake rates, fast adsorption rates (po4, nh4), \n
   !!         nitrification/denitrification rates (nh4/no3)
   !-----------------------------------------------------------------------------------------------------
-  ELEMENTAL SUBROUTINE calc_sinking_flux(lctlib_vmax_uptake, substrate, sb_adsorp_scheme, &           ! in
+  ELEMENTAL SUBROUTINE calc_sinking_flux(dtime, &
+    &                                        lctlib_vmax_uptake, substrate, sb_adsorp_scheme, &       ! in
     &                                        microbial_carbon, fine_root_carbon, solute, &            ! in
     &                                        rtm_mic_uptake, rmm_mic_uptake, rtm_hsc, rmm_hsc, &      ! in
     &                                        rtm_plant_uptake, rmm_plant_uptake, km1_upt, km2_upt, &  ! in
@@ -387,6 +392,7 @@ CONTAINS
 
     USE mo_sb_constants
     ! ----------------------------------------------------------------------------------------------------- !
+    REAL(wp)          , INTENT(in)    :: dtime                     !< timestep length
     REAL(wp)          , INTENT(in)    :: lctlib_vmax_uptake        !< lctlib uptake paramter, for eca_none
     CHARACTER(len=*)  , INTENT(in)    :: substrate                 !< po4, nh4, no3, determine the specific ECA paramaters
     CHARACTER(len=*)  , INTENT(in)    :: sb_adsorp_scheme          !< eca_full; eca_none; eca_part
@@ -707,6 +713,7 @@ CONTAINS
   SUBROUTINE calc_microbial_turnover( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & fact_n_status_mic_c_growth, &
     & fact_p_status_mic_c_growth, &
     & sb_pool_mt_microbial, &
@@ -718,6 +725,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                           INTENT(in)    :: nc                          !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                    !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                       !< timestep length
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: fact_n_status_mic_c_growth  !< scalor of N availability on microbial C growth
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: fact_p_status_mic_c_growth  !< scalor of P availability on microbial C growth
     REAL(wp),                          INTENT(in)    :: sb_pool_mt_microbial(:,:,:) !< bgcm sb_pool: microbial biomass [mol/m3]
@@ -842,6 +850,7 @@ CONTAINS
   SUBROUTINE calc_microbial_growth( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & bnf_scheme, &
     & rtm_mic_uptake, &
     & rmm_mic_uptake, &
@@ -881,6 +890,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                            INTENT(in)    :: nc                           !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb                     !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                        !< timestep length
     CHARACTER(len=*),                   INTENT(in)    :: bnf_scheme                   !< SB_ asymbiotic N fixation scheme
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: rtm_mic_uptake               !< temperature rate modifier [-]
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: rmm_mic_uptake               !< moisture rate modifier [-]
@@ -1236,7 +1246,8 @@ CONTAINS
   !>  Output: transfer of residue/polymeric pool to DOM
   !>
   SUBROUTINE calc_depolymerisation_SESAM( &
-    & nc, nsoil_sb,rtm_hsc,rmm_hsc,rtm_depolymerisation,rmm_depolymerisation, &
+    & nc, nsoil_sb, dtime, &
+    & rtm_hsc,rmm_hsc,rtm_depolymerisation,rmm_depolymerisation, &
     & enzyme_depoly, microbial_cue_mavg, microbial_nue_mavg, microbial_pue_mavg, &
     & fact_n_status_mic_c_growth, fact_p_status_mic_c_growth, &
     & sb_pool_mt, &
@@ -1251,6 +1262,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                           INTENT(in)    :: nc                           !< dimensions
     INTEGER,                           INTENT(in)    :: nsoil_sb                     !< number of soil layers
+    REAL(wp),                          INTENT(in)    :: dtime                        !< timestep length
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: rtm_hsc                      !< temperature rate modifier for half-saturation constants
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: rmm_hsc                      !< moisture rate modifier for half-saturation constants
     REAL(wp), DIMENSION(nc, nsoil_sb), INTENT(in)    :: rtm_depolymerisation         !< temperature rate modifier for depolymerisation
@@ -1659,7 +1671,8 @@ CONTAINS
     lit_dens_sl = soil_litter_carbon_sl * molar_mass_C / carbon_per_dryweight_SOM / 1000._wp  ! litter density [kg/m3]
     DO ic = 1,nc
       DO isoil = 1,INT(num_sl_above_bedrock(ic))
-        volume_min_sl(ic,isoil) = MAX(0._wp, 1._wp - om_dens_sl(ic,isoil) / rho_bulk_org - lit_dens_sl(ic,isoil) / rho_bulk_org)
+        volume_min_sl(ic,isoil) = MAX(0.01_wp, &
+          &   MIN( 0.99_wp, 1._wp - om_dens_sl(ic,isoil) / rho_bulk_org - lit_dens_sl(ic,isoil) / rho_bulk_org))
       ENDDO
     ENDDO
   END SUBROUTINE calc_bulk_soil_carbon
@@ -1733,6 +1746,7 @@ CONTAINS
   SUBROUTINE calc_sorption_desorption_of_org_material( &
     & nc, &
     & nsoil_sb, &
+    & dtime, &
     & elements_index_map, &
     & is_element_used, &
     & qmax_org, &
@@ -1748,6 +1762,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                            INTENT(in)    :: nc                       !< dimensions
     INTEGER,                            INTENT(in)    :: nsoil_sb                 !< number of soil layers
+    REAL(wp),                           INTENT(in)    :: dtime                    !< timestep length
     INTEGER,                            INTENT(in)    :: elements_index_map(:)    !< map bgcm element ID -> IDX
     LOGICAL,                            INTENT(in)    :: is_element_used(:)       !< is element in 'elements_index_map' used
     REAL(wp), DIMENSION(nc, nsoil_sb),  INTENT(in)    :: qmax_org                 !< ...

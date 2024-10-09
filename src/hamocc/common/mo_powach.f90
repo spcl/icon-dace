@@ -1,5 +1,3 @@
-! @brief sediment chemistry, implicit and explicit discretisation
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief sediment chemistry, implicit and explicit discretisation
 
 MODULE mo_powach
 

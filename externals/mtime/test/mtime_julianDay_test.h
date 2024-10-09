@@ -9,13 +9,16 @@
 #include <stdint.h>
 #include "mtime_julianDay.h"
 
-void add_mtime_julianDay_test_to_suite(Suite* suite);
+void add_mtime_julianDay_test_to_suite(Suite *suite);
 
 /*** SPECIAL ASSERT FUNCTIONS ***/
-void assertJulianDay(int64_t day, int64_t ms, const char* expected_string);
+void assertJulianDay(int64_t day, int64_t ms, const char *expected_string);
 void assertJulianDelta(char sign, int64_t day, int64_t ms, char expected_sign, int64_t expected_day, int64_t expected_ms);
-void assertAddJulianDelta(int64_t original_day, int64_t original_ms, int64_t delta_day, int64_t delta_ms, int64_t expected_day, int64_t expected_ms);
-void assertSubstractJulianDelta(int64_t original_day, int64_t original_ms, int64_t delta_day, int64_t delta_ms, int64_t expected_day, int64_t expected_ms);
-void assertSubstractJulianDay(int64_t day1, int64_t ms1, int64_t day2, int64_t ms2, char expected_delta_sign, int64_t expected_delta_day, int64_t expected_delta_ms);
+void assertAddJulianDelta(int64_t original_day, int64_t original_ms, int64_t delta_day, int64_t delta_ms, int64_t expected_day,
+                          int64_t expected_ms);
+void assertSubtractJulianDelta(int64_t original_day, int64_t original_ms, int64_t delta_day, int64_t delta_ms, int64_t expected_day,
+                               int64_t expected_ms);
+void assertSubtractJulianDay(int64_t day1, int64_t ms1, int64_t day2, int64_t ms2, char expected_delta_sign,
+                             int64_t expected_delta_day, int64_t expected_delta_ms);
 
 #endif

@@ -1,6 +1,3 @@
-! Contains the setup of variables related to horizontal diffusion
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the setup of variables related to horizontal diffusion
 
 MODULE mo_diffusion_nml
 

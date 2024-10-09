@@ -1,6 +1,3 @@
-! Contains utility routines for reading NetCDF and GRIB2 files (using
-! the CDI library) and communicating fields in parallel.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains utility routines for reading NetCDF and GRIB2 files (using
+! the CDI library) and communicating fields in parallel.
 
 MODULE mo_util_cdi
 
@@ -27,12 +27,13 @@ MODULE mo_util_cdi
   USE mo_dictionary,         ONLY: t_dictionary, DICT_MAX_STRLEN
   USE mo_cdi_constants,      ONLY: GRID_UNSTRUCTURED_CELL
   USE mo_var_metadata_types, ONLY: t_var_metadata
-  USE mo_gribout_config,     ONLY: t_gribout_config
+  USE mo_gribout_config,     ONLY: t_gribout_config, GRIB_LIB_COMPAT_ECC_2_31_0
   USE mo_cf_convention,      ONLY: t_cf_var
   USE mo_aes_phy_config,     ONLY: aes_phy_config
   USE mo_grib2_util,         ONLY: set_GRIB2_additional_keys, set_GRIB2_tile_keys, &
     &                              set_GRIB2_ensemble_keys, set_GRIB2_local_keys,  &
-    &                              set_GRIB2_synsat_keys, set_GRIB2_chem_keys
+    &                              set_GRIB2_synsat_keys, set_GRIB2_chem_keys,     &
+    &                              grib_lib_compatibility
   USE mo_nwp_sfc_tiles,      ONLY: t_tileinfo_icon, t_tileinfo_grb2, trivial_tile_att
 
   USE mo_cdi,                ONLY: FILETYPE_NC, FILETYPE_NC2, FILETYPE_NC4, streamInqVlist, vlistNvars, vlistInqVarDatatype, &
@@ -1292,6 +1293,18 @@ CONTAINS
         CALL vlistDefVarDblKey(vlistID, varID, TRIM(info%grib2%additional_keys%dbl_key(i)%key), &
           &                    info%grib2%additional_keys%dbl_key(i)%val)
       END DO
+
+      ! Adjustments for compensating non-backward-compatible
+      ! metadata changes after version updates of the GRIB library.
+      ! (For now, any adjustment presupposes additional integer GRIB keys being set.)
+      IF ((gribout_config%grib_lib_compat == GRIB_LIB_COMPAT_ECC_2_31_0) &
+        & .AND. (info%grib2%additional_keys%nint_keys > 0)) THEN
+        CALL grib_lib_compatibility(grib_lib_compat      = gribout_config%grib_lib_compat, & ! in
+          &                         vlistID              = vlistID,                        & ! in
+          &                         varID                = varID,                          & ! in
+          &                         zaxisID              = zaxisID,                        & ! in
+          &                         additional_grib_keys = info%grib2%additional_keys      ) ! in
+      ENDIF
 
     ELSE ! NetCDF
       CALL vlistDefVarDatatype(vlistID, varID, this_cf%datatype)

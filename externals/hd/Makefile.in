@@ -1,0 +1,191 @@
+# Path to the root source directory:
+srcdir:= @srcdir@
+
+# Relative path to the directory with the Fortran module files:
+moddir:= mod
+
+# Relative path to the directory with the generated executables:
+bindir:= bin
+
+# Paths to the installation directories:
+prefix:= @prefix@
+exec_prefix:= @exec_prefix@
+
+# Package tarname:
+PACKAGE_TARNAME= @PACKAGE_NAME@-@PACKAGE_VERSION@
+
+# Compilers and utilities:
+SHELL= @SHELL@
+FC= @FC@
+PYTHON= @PYTHON@
+DEPLIST= ${PYTHON} $(srcdir)/build-aux/mkhelper/deplist.py
+DEPGEN= ${PYTHON} $(srcdir)/build-aux/mkhelper/depgen.py --src-root='@srcdir@' \
+  --pp-enable --pp-eval-expr --pp-inc-flag='@FC_INC_FLAG_PP_f90@' \
+  --pp-inc-order='@FC_INC_ORDER_PP_f90@' --pp-macro-flag='@FC_PP_DEF@' \
+  --fc-enable --fc-mod-ext='@FC_MOD_FILE_EXT@.proxy' \
+  --fc-mod-upper='@FC_MOD_FILE_UPPER@' --fc-inc-flag='@FC_INC_FLAG@' \
+  --fc-inc-order='@FC_INC_ORDER@' --fc-mod-dir-flag='@FC_MOD_OUT@' \
+  --fc-external-mods='@DEPGEN_EXTERNAL_MODS@'
+MODCMP= ${PYTHON} $(srcdir)/build-aux/mkhelper/fortmodcmp.py
+INSTALL= @INSTALL@
+GIT= git
+BZIP2 = bzip2
+
+# Fortran compiler flags:
+FCFLAGS= @FC_MOD_IN@$(moddir) @FC_MOD_OUT@$(moddir) @FC_INC_FLAG@code/src @FCFLAGS@
+LDFLAGS= @LDFLAGS@
+LIBS= @LIBS@
+
+# Auxiliary function. Receives a space-separated list of subdirectories inside
+# $(srcdir) and a space-separated list of shell-like wildcards. Returns a
+# space-separated list of relative (with respect to $(srcdir)) paths to files
+# residing in the given subdirectories and matching at least one of the given
+# patterns. Files, as well as the second and higher order subdirectories, with
+# names starting with a dot are ignored. Files containing the preprocessor
+# infix '*$(pp_infix)*' are ignored. Duplicates are eliminated.
+find_files= $(sort $(patsubst $(srcdir)/%,%, \
+                $(shell find $(addprefix $(srcdir)/,$(1)) \
+                    \! \( -type d -o -name '.*' -o -path '*/.*' \) \
+                    -a \( $(foreach p,$(2),-name $(p) -o) -false \))))
+
+# Fortran '.f90' source files:
+f90_files:= $(call find_files,code,'*.f90')
+
+# Dependency files:
+dep_files:= $(addsuffix .d,$(f90_files)) extra_f90.d
+
+# Generated executable files:
+exec_files:= $(bindir)/@EXEC_FILE_NAME@
+
+# Stamp files of the building subdirectories:
+dir_files:= $(filter-out ./.dirstamp,$(addsuffix .dirstamp,$(sort $(dir $(dep_files) $(exec_files))) $(moddir)/))
+
+# Silent rule prefixes:
+V= @DEFAULT_VERBOSITY@
+ifeq ($(V), 0)
+silent_DEPGEN=  @echo "  DEPGEN  " $@;
+silent_FC=      @echo "  FC      " $@;
+silent_FCLD=    @echo "  FCLD    " $@;
+silent_MKDIR=   @echo "  MKDIR   " $(@D);
+endif
+
+# Disable built-in suffix rules:
+.SUFFIXES:
+# Delete partially updated files:
+.DELETE_ON_ERROR:
+# Targets not associated with files:
+.PHONY: all depend dummy-depend mostlyclean clean distclean install dist check \
+        sanitize-mod-proxies
+# Keep directory stamps:
+.PRECIOUS: $(dir_files)
+
+# Targets that do not need the dependency files:
+nodep_targets:= depend dummy-depend mostlyclean clean distclean dist \
+  $(dep_files)
+
+# Selective search paths:
+vpath %.f90 $(srcdir)
+
+# Default rule:
+all: $(exec_files)
+
+# Explicit dependency generation rule:
+depend: $(dep_files)
+
+# Delete the results of compilation and linking:
+mostlyclean:
+	rm -f $(exec_files) $(f90_files:.f90=.@OBJEXT@)
+	rm -f $(moddir)/*.@FC_MOD_FILE_EXT@ $(moddir)/*.@FC_MOD_FILE_EXT@.proxy
+
+# Delete files generated at the building stage:
+clean: mostlyclean
+
+# Delete everything generated at the configure stage (and clean the created
+# directories if they are empty):
+distclean: clean
+	rm -f config.log config.status code/src/hd_domain.inc
+	rm -f $(dep_files)
+	rm -f $(dir_files)
+	@for dir in $(bindir) $(moddir); do \
+	  if test -d "$$dir"; then \
+	    echo "find '$$dir' -type d -empty -delete"; \
+	    find "$$dir" -type d -empty -delete; \
+	  fi; \
+	done
+	@if test '.' != '$(srcdir)'; then \
+	  for dir in code; do \
+	    if test -d "$$dir"; then \
+	      echo "find '$$dir' -type d -empty -delete"; \
+	      find "$$dir" -type d -empty -delete; \
+	    fi; \
+	  done; \
+	fi
+	rm -f Makefile
+
+# Installation rule:
+install: all
+	$(INSTALL) -d $(DESTDIR)@bindir@ && $(INSTALL) $(exec_files) $(DESTDIR)@bindir@
+
+# Check rule:
+check: all
+
+# Tarball creation rule:
+dist:
+	@if test ! -e $(srcdir)/.git; then echo "'$(srcdir)' is not a git repository" >&2; exit 1; fi
+	$(GIT) -C $(srcdir) archive --prefix=$(PACKAGE_TARNAME)/ --format tar -o @abs_top_builddir@/$(PACKAGE_TARNAME).tar HEAD
+	rm -f $(PACKAGE_TARNAME).tar.bz2 && BZIP2=$${BZIP2--9} $(BZIP2) $(PACKAGE_TARNAME).tar
+
+# Dependencies of the driver executable:
+$(bindir)/@EXEC_FILE_NAME@: $(filter %.@OBJEXT@,$(shell $(DEPLIST) --inc-oo -t code/src/hd_driver.@OBJEXT@ -f $(dep_files)))
+
+# Common linking rule for the executables:
+$(exec_files): | $(dir_files)
+	$(silent_FCLD)$(FC) -o $@ $(FCFLAGS) $(LDFLAGS) $+ $(LIBS)
+
+# Fortran compilation rule:
+%.@OBJEXT@: %.f90 | $(dir_files)
+	$(silent_FC)$(FC) -o $@ -c $(FCFLAGS) @FCFLAGS_f90@ $<
+
+# Fortran module file rule:
+$(moddir)/%.@FC_MOD_FILE_EXT@.proxy:| sanitize-mod-proxies
+	@if test -n '$<'; then \
+	  if test ! -f '$(@:.proxy=)'; then rm -f '$<'; $(MAKE) -f Makefile '$<'; fi; \
+	  if cmp '$@' '$(@:.proxy=)' >/dev/null 2>&1 || $(MODCMP) '$@' '$(@:.proxy=)' @FC_VENDOR@ 2>/dev/null; then :; \
+	  else cp '$(@:.proxy=)' '$@' 2>/dev/null; fi; \
+	fi
+
+# Delete all Fortran module proxy files that do not have an existing module to
+# be a proxy of, i.e. if <filename>.proxy exists but <filename> does not,
+# delete <filename>.proxy:
+sanitize-mod-proxies:
+	@rm -f $(filter-out $(addsuffix .proxy,$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@)),$(wildcard $(moddir)/*.@FC_MOD_FILE_EXT@.proxy))
+
+# Directory creation rule:
+%/.dirstamp:
+	$(silent_MKDIR)@MKDIR_P@ $(@D) && touch $@
+
+# Fortran dependency generation rule:
+%.f90.d: %.f90 Makefile | $(dir_files)
+	$(silent_DEPGEN)$(DEPGEN) -o $@ --obj-name $(@:.f90.d=.@OBJEXT@) -i $< -- $(FCFLAGS)
+
+# Dependency generation rule for undetectable Fortran dependencies:
+extra_f90.d: Makefile
+	$(silent_DEPGEN):;{ \
+	  echo 'code/src/hd_driver.@OBJEXT@:| code/src/get_dates.@OBJEXT@'; \
+	} >$@
+
+# Dummy dependency file generation rule (called by config.status):
+dummy-depend: | $(dir_files)
+	@for file in $(dep_files); do \
+	  test -e "$$file" || touch "$$file"; \
+	done
+
+# Include dependencies if required:
+current_targets:= $(strip $(MAKECMDGOALS))
+ifeq (,$(current_targets))
+current_targets:= all
+endif
+
+ifneq (,$(filter-out $(nodep_targets),$(current_targets)))
+include $(dep_files)
+endif

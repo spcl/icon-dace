@@ -1,5 +1,3 @@
-! The multifile version of t_RestartPatchData.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The multifile version of t_RestartPatchData.
+
 #include "omp_definitions.inc"
 
 MODULE mo_multifile_restart_patch_data

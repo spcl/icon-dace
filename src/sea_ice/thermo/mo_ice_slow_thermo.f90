@@ -1,8 +1,3 @@
-! Provide an implementation of ice thermodynamic growth model: ice_slow_thermo.
-! Calculates ice growth rate over thick ice and open ocean. Updates heat
-! and fresh-water fluxes which are passed to the ocean for coupling.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of ice thermodynamic growth model: ice_slow_thermo.
+! Calculates ice growth rate over thick ice and open ocean. Updates heat
+! and fresh-water fluxes which are passed to the ocean for coupling.
 
 !----------------------------
 #include "omp_definitions.inc"

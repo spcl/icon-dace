@@ -1,7 +1,3 @@
-! This module contains debugging utilities, especially subroutines
-! for writing REAL arrays to NetCDF files (for debugging purposes).
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains debugging utilities, especially subroutines
+! for writing REAL arrays to NetCDF files (for debugging purposes).
 
 MODULE mo_util_debug
 

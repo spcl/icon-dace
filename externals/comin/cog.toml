@@ -1,0 +1,4 @@
+ignore_merge_commits = true
+
+[commit_types]
+doc = { changelog_title = "doc" }

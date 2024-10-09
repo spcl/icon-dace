@@ -80,6 +80,10 @@ CONTAINS
     CASE ('quincy_11_pfts')
       CALL init_usecase_quincy_11_pfts(model)
 
+    CASE ('quincy_11_pfts_for_coupling')
+      ! QUINCY 11 pfts but with SPQ running on the box tile
+      CALL init_usecase_quincy_11_pfts_for_coupling(model)
+
     ! catch wrong usecase setting
     CASE DEFAULT
       CALL finish(TRIM(routine), 'No such usecase defined.')
@@ -673,6 +677,113 @@ CONTAINS
     ! IF (ASSOCIATED(pft_tile)) CONTINUE
     NULLIFY(box_tile, land_tile, veg_tile, pft_tile)
   END SUBROUTINE init_usecase_quincy_11_pfts
+
+  ! ======================================================================================================= !
+  !> init routine for usecase quincy_11_pfts_for_coupling
+  !>
+  !>   works only in combination with 'model%config%model_scheme = MODEL_QUINCY',
+  !>   code for other options not available in this usecase
+  !>
+  !>   the data/lctlib_quincy_nlct14.def is used for this usecase (hardcoded in: mo_jsb_base:jsbach_setup_tiles)
+  !>
+  !>   the ONLY difference between this and the quincy_11_pfts usecase is that SPQ is running on the box tile with this usecase
+  !>
+  SUBROUTINE init_usecase_quincy_11_pfts_for_coupling(model)
+    !--------------------------------------------------------------------------------------------------------
+    TYPE(t_jsb_model), POINTER, INTENT(inout) :: model                       !< model instance
+    !--------------------------------------------------------------------------------------------------------
+    CLASS(t_jsb_tile), POINTER    :: box_tile, land_tile, veg_tile, pft_tile !< tiles used with this usecase
+    INTEGER                       :: i                                       !< for looping
+    INTEGER, PARAMETER            :: npft = 11
+    CHARACTER(len=5), PARAMETER   :: pft_shortnames(npft) = [character(len=5) :: &
+      &  'pft01', 'pft02', 'pft03', 'pft04', 'pft05', 'pft06', 'pft07', 'pft08', 'pft09', 'pft10', 'pft11' ]
+    CHARACTER(len=30), PARAMETER  :: pft_longnames(npft) = [character(len=30) ::    &
+      &                              'BEM:  moist broadleaved evergreen',           &
+      &                              'BED:  dry broadleaved evergreen',             &
+      &                              'BDR:  rain green broadleaved deciduous',      &
+      &                              'BDS:  summer green broadleaved deciduous',    &
+      &                              'NE :  needle-leaved evergreen',               &
+      &                              'NS :  summer green needle-leaved',            &
+      &                              'TeH:  C3 grass',                              &
+      &                              'TrH:  C4 grass',                              &
+      &                              'TeC:  C3 crop',                               &
+      &                              'TrC:  C4 crop',                               &
+      &                              'BSO:  bare soil' ]
+    ! index of PFT (columns) in the lctlib file
+    ! NOTE 'pft09/10/11' == the index, i.e., position in lctlib file, differs from PFT number (as used in the model)
+    INTEGER, PARAMETER            :: pft_ids(npft) = (/ 1,2,3,4,5,6,7,8,11,12,13 /)
+    CHARACTER(len=*), PARAMETER   :: routine = modname//':init_usecase_quincy_11_pfts_for_coupling'
+    !--------------------------------------------------------------------------------------------------------
+    ! overview of tile structure:
+    !
+    !  box
+    !   |
+    !   |
+    !   |
+    !  land
+    !   |
+    !   |
+    !   |
+    !  vegetation
+    !   |
+    !   |--------------------------
+    !   |      |      |        |
+    !  pft01  pft02  pftXX  baresoil
+    !--------------------------------------------------------------------------------------------------------
+    ! QUINCY model must be enabled for this usecase
+    SELECT CASE (model%config%model_scheme)
+    CASE (MODEL_QUINCY)
+      CALL message(TRIM(routine), 'Using the model_scheme MODEL_QUINCY')
+    CASE DEFAULT
+      CALL finish(TRIM(routine), 'The quincy_11_pfts_for_coupling usecase does work only with the model_scheme MODEL_QUINCY.')
+    END SELECT
+
+    !------------------------------------------------------------------------------------------------------ !
+    ! box tile
+    !
+    ! Create root of the tile structure representing the whole grid box
+    box_tile => t_jsb_tile('box', 'Top tile', &
+      & processes      =(/A2L_,     L2A_,     SPQ_,     Q_RAD_    /), &
+      & process_actions=(/ON_TILE_, ON_TILE_, ON_TILE_, ON_LEAFS_ /), &
+      & model_id=model%id, fract_varname='notsea')  ! fraction: all that "is not sea"
+    model%top => box_tile
+    !$ACC ENTER DATA COPYIN(box_tile)
+
+    !------------------------------------------------------------------------------------------------------ !
+    ! land tile w/o process
+    !
+    land_tile => t_jsb_tile('land', 'Land tile', &
+      ! add processes here only to make model init and jsb4_forcing working
+      ! none of the tasks of these processes is running via task queue
+      & lct=t_jsb_lct(LAND_TYPE), parent=box_tile, &
+      & fract_varname='equal')   ! Fraction of land tile = 1
+                                 ! "equal" specifically means, no fraction input file is read and all tiles have the same fraction
+    !$ACC ENTER DATA COPYIN(land_tile)
+
+    !------------------------------------------------------------------------------------------------------ !
+    ! vegetation tile with PFT tiles as leafs
+    !   fraction is "equal" because it is the only tile at this level (same as land tile)
+    !
+    veg_tile => t_jsb_tile('veg', 'Veg tile', &
+      & processes       = (/Q_ASSIMI_, Q_PHENO_,  VEG_,      SB_       /), &
+      & process_actions = (/ON_LEAFS_, ON_LEAFS_, ON_LEAFS_, ON_LEAFS_ /), &
+      & lct=t_jsb_lct(VEG_TYPE), parent=land_tile,  &
+      & fract_varname='equal')
+    !$ACC ENTER DATA COPYIN(veg_tile)
+
+    ! create PFT tiles 1:npft
+    DO i = 1,npft
+      ! via constructor of t_jsb_tile
+      pft_tile => t_jsb_tile(pft_shortnames(i), &
+        &                    TRIM(pft_longnames(i)), &
+        &                    lct = t_jsb_lct(VEG_TYPE, lib_id = pft_ids(i)), &
+        &                    parent = veg_tile)
+      !$ACC ENTER DATA COPYIN(pft_tile)
+    END DO
+
+    NULLIFY(box_tile, land_tile, veg_tile, pft_tile)
+  END SUBROUTINE init_usecase_quincy_11_pfts_for_coupling
+
 
 #endif
 END MODULE mo_jsb_model_usecases

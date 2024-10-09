@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /**
  * \page weight_files Creating weight files and visualise them
 
@@ -17,12 +21,16 @@ coupling:
     tgt_component: ...
     ...
     field: TAUX
-    weight_file_name: *weights_TAUX.nc*
+    weight_file_name: weights_TAUX.nc
   - ...
 
 \endcode
 
-The my_weight_file.nc can be converted to vtk using weights2vtk.x in the contrib directory
+\section visualisation Visualisation
+
+\subsection visualisation_paraview Paraview
+
+The my_weight_file.nc can be converted to vtk using weights2vtk.x in the src/utils directory
 
 \code{.sh}
 
@@ -32,4 +40,28 @@ weights2vtk.x -S I -T I -s <source_grid.nc> -t <target_grid.nc> -w my_weight_fil
 
 weights.vtk can be visualised with paraview.
 
- */
+\subsection visualisation_plot_weights plot_weights.py
+
+In the tools subdirectory you can find the python program
+`plot_weights.py` that can be used to visualise grids and weights files.
+It can be called as follows
+```bash
+python plot_weights.py source_grid target_grid weight_file
+```
+Where source_grid and target_grid follow the grid format (see below) and weight_file
+is the weight file as generated as above.
+
+It will open a matplotlib plot which shows a visualization of the weight file.
+
+Different grid types are available (see `tools/grid_utils.py`), including
+- ICON grid ("icon:<file>")
+- GaussianGrid ("(g|G)dx,dy[,lon1,lon2,lat1,lat2]", g = 0-based indexing, G = 1 based indexing. dx,dy are the resolution and lon1,lon2,lat1,lat2 is the extent)
+- HealPix ("[hH]l[rn]", h = 0-based indexing, H = 1-based indexing, l is the level, n = nest, r = ring. See (healpy){https://healpy.readthedocs.io/en/latest/})
+- Fesom grid ("fesom:<file>")
+- Scrip ("scrip:<file>:[<mask>:]<grid>")
+- Dual grid ("dual:<gridspec>")
+
+The format in the brackets denote how to specify the grid at the command line.
+
+To configure the visualization a variaty of options are avaiable. See
+`python plot_weights.py --help` for details.  */

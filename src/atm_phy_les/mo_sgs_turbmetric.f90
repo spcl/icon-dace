@@ -1,9 +1,3 @@
-!
-! Calculates 3D subgrid-scale (with metric terms) for viscosity and diffusivity
-! in the nonhydrostatic model
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,9 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Calculates 3D subgrid-scale (with metric terms) for viscosity and diffusivity
+! in the nonhydrostatic model
+
+!----------------------------
 #include "omp_definitions.inc"
 !----------------------------
-
 
 MODULE mo_sgs_turbmetric
 

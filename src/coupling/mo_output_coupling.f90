@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -9,7 +8,6 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
 
 MODULE mo_output_coupling
 
@@ -20,7 +18,8 @@ MODULE mo_output_coupling
   USE mo_run_config          ,ONLY: nlev, msg_level
   USE mo_run_config          ,ONLY: ltimer
   USE mo_timer               ,ONLY: timer_start, timer_stop, &
-       &                            timer_coupling_put
+       &                            timer_coupling_output_put, timer_coupling_output_1stput, &
+       &                            timer_coupling_output, timer_coupling_output_buf_prep
   USE mo_util_string         ,ONLY: int2string
   USE mo_exception           ,ONLY: message, finish
   USE mo_parallel_config     ,ONLY: nproma
@@ -66,7 +65,7 @@ CONTAINS
     USE mo_var,                 ONLY: level_type_ml
     USE mo_coupling_utils,      ONLY: cpl_get_instance_id
 #ifdef YAC_coupling
-    USE mo_yac_finterface      ,ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT, &
+    USE yac,                    ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT, &
          yac_fdef_field_metadata, yac_fget_component_name, yac_fget_grid_name
 #endif
 
@@ -258,7 +257,7 @@ CONTAINS
    CALL finish(str_module // 'construct_output_coupling_finalize', &
                "built without coupling support.")
 #else
-    USE mo_yac_finterface, ONLY: yac_fget_role_from_field_id, &
+    USE yac, ONLY: yac_fget_role_from_field_id, &
          YAC_EXCHANGE_TYPE_NONE, YAC_EXCHANGE_TYPE_SOURCE
     TYPE(t_exposed_var), POINTER :: exposed_var, tmp
     INTEGER :: role, count = 1
@@ -311,7 +310,7 @@ CONTAINS
     USE mo_impl_constants      ,ONLY: TLEV_NNOW, TLEV_NNEW, TLEV_NNOW_RCF, TLEV_NNEW_RCF
     USE mo_dynamics_config,     ONLY: nnow, nnow_rcf, nnew, nnew_rcf
 #ifdef YAC_coupling
-    USE mo_yac_finterface,      ONLY: yac_fget_field_collection_size, yac_fput, yac_fget_action, &
+    USE yac,                    ONLY: yac_fget_field_collection_size, yac_fput, yac_fget_action, &
       &                               yac_fupdate, YAC_ACTION_NONE, yac_dble_ptr
 #endif
 
@@ -321,18 +320,23 @@ CONTAINS
    CALL finish(str_module // 'output_coupling', &
                'built without coupling support')
 #else
-    INTEGER               :: info, ierror, collection_size, nn, now, ncontained, var_size, var_ref_pos
-    REAL(wp), ALLOCATABLE, TARGET, SAVE :: buffer(:,:)
-    REAL(wp), CONTIGUOUS, POINTER :: tmp_buffer(:,:)
-    TYPE(t_exposed_var), POINTER :: cur_field
-    TYPE(t_var_ptr) :: var_now
-    TYPE(yac_dble_ptr), ALLOCATABLE :: buffer_ptr(:, :)
+   INTEGER                             :: info, ierror, collection_size, nn, now
+   INTEGER                             :: ncontained, var_size, var_ref_pos, timer_put
+   REAL(wp), ALLOCATABLE, TARGET, SAVE :: buffer(:,:)
+   REAL(wp), CONTIGUOUS, POINTER       :: tmp_buffer(:,:)
+   TYPE(t_exposed_var), POINTER        :: cur_field
+   TYPE(t_var_ptr)                     :: var_now
+   TYPE(yac_dble_ptr), ALLOCATABLE     :: buffer_ptr(:, :)
+
+    IF (ltimer) CALL timer_start(timer_coupling_output)
+    timer_put = timer_coupling_output_1stput
 
     cur_field => exposed_vars_head
     IF (.NOT. ALLOCATED(buffer)) ALLOCATE(buffer(max_hor_size, max_collection_size))
     IF (.NOT. ALLOCATED(buffer_ptr)) ALLOCATE(buffer_ptr(1, max_collection_size))
 
     DO WHILE (ASSOCIATED(cur_field))
+       IF (ltimer) CALL timer_start(timer_coupling_output_buf_prep)
        IF (cur_field%tlev_source == -1) THEN
           now = 1
        ELSE
@@ -355,6 +359,7 @@ CONTAINS
           cur_field => cur_field%next
           IF (msg_level >= 15) &
              CALL message(str_module, " skipping field " // TRIM(var_now%p%info%name))
+          IF (ltimer) CALL timer_stop(timer_coupling_output_buf_prep)
           CYCLE
        ENDIF
        IF (msg_level >= 15) &
@@ -427,13 +432,16 @@ CONTAINS
              ENDWHERE
           ENDDO
        ENDIF
+       IF (ltimer) CALL timer_stop(timer_coupling_output_buf_prep)
 
-       IF (ltimer) CALL timer_start(timer_coupling_put)
+       IF (ltimer) CALL timer_start(timer_put)
        CALL yac_fput(cur_field%yac_field_id, 1, &
             collection_size, buffer_ptr(:, 1:collection_size), info, ierror)
-       IF (ltimer) CALL timer_stop(timer_coupling_put)
+       IF (ltimer) CALL timer_stop(timer_put)
+       timer_put = timer_coupling_output_put
        cur_field => cur_field%next
-    ENDDO
+     ENDDO
+     IF (ltimer) CALL timer_stop(timer_coupling_output)
 ! YAC_coupling
 #endif
   END SUBROUTINE output_coupling
@@ -460,7 +468,7 @@ CONTAINS
     USE mo_var_metadata,           ONLY: get_var_name
     USE mo_var_metadata_types,     ONLY: t_var_metadata
 #ifdef YAC_coupling
-    USE mo_yac_finterface,         ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT
+    USE yac,                       ONLY: yac_fdef_field, YAC_TIME_UNIT_ISO_FORMAT
 #endif
 
     INTEGER, INTENT(IN) :: comp_id

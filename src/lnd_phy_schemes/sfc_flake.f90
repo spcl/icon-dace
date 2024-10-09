@@ -1,6 +1,3 @@
-! The main program unit of the lake parameterization scheme FLake.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,7 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
 ! The main program unit of the lake parameterization scheme FLake.
 !
 ! It contains all FLake procedures except for the procedures used

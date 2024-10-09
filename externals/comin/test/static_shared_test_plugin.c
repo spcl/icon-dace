@@ -24,8 +24,5 @@ void static_linking_test_foo_printer(){
 }
 
 void static_linking_test_comin_main(){
-  int ierr = 0;
-  comin_callback_register(ep, static_linking_test_foo_printer, &ierr);
-  if(ierr != 0)
-    comin_plugin_finish("static_linking_test_comin_main", "cannot register callback");
+  comin_callback_register(ep, static_linking_test_foo_printer);
 }

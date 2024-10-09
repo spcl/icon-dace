@@ -1,7 +1,7 @@
  ICON running
     running with            1  MPI tasks and            1  thread(s) per task.
       compatibility check.
-        linked to ICON Community Interface v0.1.1
+        linked to ICON Community Interface v0.2.0
       minimal-example: working precision test successful.
     ICON model setup
       ICON // Fill descriptive data structure
@@ -13,12 +13,14 @@
        model variable 'temp.TL1', filled with value        40.00
        model variable 'rho.TL1', filled with value         0.00
        model variable 'pres_sfc.TL1', filled with value        50.00
+       model variable 'vn.TL1', filled with value        50.00
        model variable 'u.TL2', filled with value        10.00
        model variable 'v.TL2', filled with value        20.00
        model variable 'pres.TL2', filled with value        30.00
        model variable 'temp.TL2', filled with value        40.00
        model variable 'rho.TL2', filled with value         0.00
        model variable 'pres_sfc.TL2', filled with value        50.00
+       model variable 'vn.TL2', filled with value        50.00
       Associate ICON descriptive data structures and ComIn
       call of ComIn primary constructors.
 setup_python_adapter
@@ -85,8 +87,11 @@ simple_python_diagfct called!
  WARNING: Variable not found: name, nnow = qv           2
  WARNING: Variable not found: name, nnow = qs           2
  WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = qg           2
  WARNING: Variable not found: name, nnow = simple_python_var           2
  WARNING: Variable not found: name, nnow = simple_python_tracer           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_ATM_TIMELOOP_START
       no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
 
@@ -118,6 +123,8 @@ simple_python_diagfct called!
         temp: value =   45.0000
   
       nnow, nold =            1           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_ATM_TIMELOOP_START
       no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
 
@@ -155,8 +162,11 @@ simple_python_diagfct called!
  WARNING: Variable not found: name, nnow = qv           2
  WARNING: Variable not found: name, nnow = qs           2
  WARNING: Variable not found: name, nnow = qc           2
+ WARNING: Variable not found: name, nnow = qg           2
  WARNING: Variable not found: name, nnow = simple_python_var           2
  WARNING: Variable not found: name, nnow = simple_python_tracer           2
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
       CONTEXT EP_DESTRUCTOR
       current ep 'EP_DESTRUCTOR' (ep: 42) for library: python_adapter
 simple_python_destructor called!

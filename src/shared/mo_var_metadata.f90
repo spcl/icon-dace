@@ -1,10 +1,3 @@
-! Utility functions for handling field specific meta information
-!
-! Contains utility functions which are used for defining variable specific
-! meta information. These have nothing to do with var lists itself. That's
-! why they have been moved here from mo_var_list.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Utility functions for handling field specific meta information
+!
+! Contains utility functions which are used for defining variable specific
+! meta information. These have nothing to do with var lists itself. That's
+! why they have been moved here from mo_var_list.
 
 MODULE mo_var_metadata
 

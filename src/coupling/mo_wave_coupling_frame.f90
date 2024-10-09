@@ -1,6 +1,3 @@
-! Initialisation of wave-atmosphere coupling
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initialisation of wave-atmosphere coupling
 
 !----------------------------
 #include "omp_definitions.inc"

@@ -1,9 +1,3 @@
-! Provide an implementation of the ocean surface module.
-!
-! Provide an implementation of the parameters used for surface forcing
-! of the hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the ocean surface module.
+!
+! Provide an implementation of the parameters used for surface forcing
+! of the hydrostatic ocean model.
 
 MODULE mo_ocean_bulk_forcing
 !-------------------------------------------------------------------------
@@ -62,7 +61,7 @@ MODULE mo_ocean_bulk_forcing
   USE mtime,                  ONLY: datetime, getDayOfYearFromDateTime, getNoOfDaysInYearDateTime
   USE mo_ocean_time_events,   ONLY: isEndOfThisRun 
   USE mo_statistics,         ONLY: subset_sum
-  USE mo_grid_geometry_info,  ONLY: planar_torus_geometry
+  USE mo_lib_grid_geometry_info,  ONLY: planar_torus_geometry
   USE mo_fortran_tools,       ONLY: set_acc_host_or_device
 
 #ifdef _OPENACC
@@ -575,7 +574,6 @@ CONTAINS
  !  p_as%pao(:,:)   = 101300.0_wp
 
     !---------DEBUG DIAGNOSTICS-------------------------------------------
-#ifndef __SPEED_OVER_DEBUG__
     !$ACC DATA CREATE(z_c2) IF(lzacc)
 
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
@@ -588,7 +586,7 @@ CONTAINS
     !$ACC END KERNELS
     !$ACC WAIT(1)
     CALL dbg_print('FlxFil: Ext data4-ta/mon2' ,z_c2        ,str_module,3, in_subset=patch_2D%cells%owned)
-#endif
+
     CALL dbg_print('FlxFil: p_as%tafo'         ,p_as%tafo   ,str_module,3, in_subset=patch_2D%cells%owned)
     CALL dbg_print('FlxFil: p_as%windStr-u',p_as%topBoundCond_windStress_u, str_module,3,in_subset=patch_2D%cells%owned)
     CALL dbg_print('FlxFil: p_as%windStr-v',p_as%topBoundCond_windStress_v, str_module,4,in_subset=patch_2D%cells%owned)
@@ -626,7 +624,7 @@ CONTAINS
         &  ' mon1=',jmon1,' mon2=',jmon2,' day1=',rday1,' day2=',rday2
       CALL message (' ', message_text)
     END IF
-#ifndef __SPEED_OVER_DEBUG__
+
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     z_c2(:,:)=ext_data(1)%oce%flux_forc_mon_c(:,jmon1,:,1)
     !$ACC END KERNELS
@@ -665,8 +663,6 @@ CONTAINS
     !---------------------------------------------------------------------
 
     !$ACC END DATA
-#endif
-
   END SUBROUTINE update_flux_fromFile
 
 
@@ -985,6 +981,7 @@ CONTAINS
     ! subset range pointer
     all_cells => patch_2D%cells%all
 
+    !$ACC WAIT(1)
     !$ACC DATA CREATE(Tsurf, tafoK, fu10lim, esta, estw, sphumida, sphumidw, ftdewC, rhoair) &
     !$ACC   CREATE(dragl0, dragl1, dragl, drags, fakts, humi, fa, fw) &
     !$ACC   IF(lzacc)
@@ -1030,7 +1027,10 @@ CONTAINS
         !       is taken constant to 0.9815
 
     estw(:,:) = 0.9815_wp*fw(:,:)*aw*EXP((bw-Tsurf(:,:) /dw)*Tsurf(:,:) /(Tsurf(:,:) +cw))
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     sphumida(:,:)  = alpha * esta(:,:)/(p_as%pao(:,:)-beta*esta(:,:))
 
     sphumidw(:,:)  = alpha * estw(:,:)/(p_as%pao(:,:)-beta*estw(:,:))
@@ -1087,9 +1087,13 @@ CONTAINS
         ! bug
         !atmos_fluxes%LWnetw(:,:) = fakts(:,:) * humi(:,:) * zemiss_def*stbo * tafoK(:,:)**4  &
         !  &         - 4._wp*zemiss_def*stbo*tafoK(:,:)**3 * (Tsurf(:,:) - p_as%tafo(:,:))
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 
         ! Fractions of SWin in each band (from cice)
     fvisdir=0.28_wp; fvisdif=0.24_wp; fnirdir=0.31_wp; fnirdif=0.17_wp
+
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     atmos_fluxes%SWnetw(:,:) = ( 1._wp-atmos_fluxes%albvisdirw(:,:) )*fvisdir*p_as%fswr(:,:) +   &
       &                ( 1._wp-atmos_fluxes%albvisdifw(:,:) )*fvisdif*p_as%fswr(:,:) +   &
       &                ( 1._wp-atmos_fluxes%albnirdirw(:,:) )*fnirdir*p_as%fswr(:,:) +   &
@@ -1131,17 +1135,26 @@ CONTAINS
       &               - 0.0009_wp*fu10lim(:,:)*fu10lim(:,:))
 
     dragl(:,:)      = dragl0(:,:) + dragl1(:,:) * (Tsurf(:,:)-p_as%tafo(:,:))
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 
         ! A reasonable maximum and minimum is needed for dragl in case there's a large difference
         ! between the 2-m and surface temperatures.
 
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     dragl(:,:)      = MAX(0.5e-3_wp, MIN(3.0e-3_wp,dragl(:,:)))
 
     drags(:,:)      = 0.95_wp * dragl(:,:)
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     atmos_fluxes%sensw(:,:) = drags(:,:)*rhoair(:,:)*cpd*p_as%fu10(:,:) * fr_fac &
       &               * (p_as%tafo(:,:) -Tsurf(:,:))
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     atmos_fluxes%latw(:,:)  = dragl(:,:)*rhoair(:,:)*alv*p_as%fu10(:,:) * fr_fac &
       &               * (sphumida(:,:)-sphumidw(:,:))
     !$ACC END KERNELS
@@ -1478,9 +1491,9 @@ CONTAINS
     ! parallelize correctly
     ocean_are = p_patch_3D%p_patch_1D(1)%ocean_area(1)
     ! global_sum_array function does not currently works for G2G communication
-    !$ACC UPDATE HOST(patch_2D%cells%area) ASYNC(1) IF(lzacc .and. acc_is_present(patch_2D%cells%area))
-    !$ACC UPDATE HOST(h_old) ASYNC(1) IF(lzacc .and. acc_is_present(h_old))
-    !$ACC UPDATE HOST(p_patch_3D%wet_halo_zero_c) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch_3D%wet_halo_zero_c))
+    !$ACC UPDATE SELF(patch_2D%cells%area) ASYNC(1) IF(lzacc .and. acc_is_present(patch_2D%cells%area))
+    !$ACC UPDATE SELF(h_old) ASYNC(1) IF(lzacc .and. acc_is_present(h_old))
+    !$ACC UPDATE SELF(p_patch_3D%wet_halo_zero_c) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch_3D%wet_halo_zero_c))
     !$ACC WAIT(1) IF(lzacc)
     glob_slev = global_sum_array(patch_2D%cells%area(:,:)*h_old(:,:)*p_patch_3D%wet_halo_zero_c(:,1,:))
     corr_slev = glob_slev/ocean_are
@@ -1553,9 +1566,9 @@ CONTAINS
     ! parallelize correctly
     ocean_are = p_patch_3D%p_patch_1D(1)%ocean_area(1)
     ! global_sum_array function does not currently works for G2G communication
-    !$ACC UPDATE HOST(p_patch%cells%area) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch%cells%area))
-    !$ACC UPDATE HOST(eta_c) ASYNC(1) IF(lzacc .and. acc_is_present(eta_c))
-    !$ACC UPDATE HOST(p_patch_3D%wet_halo_zero_c) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch_3D%wet_halo_zero_c))
+    !$ACC UPDATE SELF(p_patch%cells%area) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch%cells%area))
+    !$ACC UPDATE SELF(eta_c) ASYNC(1) IF(lzacc .and. acc_is_present(eta_c))
+    !$ACC UPDATE SELF(p_patch_3D%wet_halo_zero_c) ASYNC(1) IF(lzacc .and. acc_is_present(p_patch_3D%wet_halo_zero_c))
     !$ACC WAIT(1) IF(lzacc)
     glob_slev = global_sum_array(p_patch%cells%area(:,:)*eta_c(:,:)*p_patch_3D%wet_halo_zero_c(:,1,:))
     corr_slev = glob_slev/ocean_are

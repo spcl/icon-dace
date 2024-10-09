@@ -1,6 +1,3 @@
-! contains extended lhs-matrix-generator type
-! provides surface height lhs for free ocean surface solve
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! contains extended lhs-matrix-generator type
+! provides surface height lhs for free ocean surface solve
 
 #if (defined(_OPENMP) && defined(OCE_SOLVE_OMP))
 #include "omp_definitions.inc"
@@ -72,12 +72,17 @@ CONTAINS
 
 !init generator object
   SUBROUTINE lhs_surface_height_construct(this, patch_3d, thick_e, &
-      & op_coeffs_wp, op_coeffs_sp)
+      & op_coeffs_wp, op_coeffs_sp, lacc)
     CLASS(t_surface_height_lhs), INTENT(INOUT) :: this
     TYPE(t_patch_3d), POINTER, INTENT(IN) :: patch_3d
     REAL(wp), POINTER, INTENT(IN) :: thick_e(:,:)
     TYPE(t_operator_coeff), TARGET, INTENT(IN) :: op_coeffs_wp
     TYPE(t_solverCoeff_singlePrecision), TARGET, INTENT(IN) :: op_coeffs_sp
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
+
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
 
     this%patch_3d => patch_3d
     this%patch_2d => patch_3d%p_patch_2d(1)
@@ -90,18 +95,23 @@ CONTAINS
       & CALL finish("t_surface_height_lhs::lhs_surface_height_construct", &
       &  "internal matrix implementation only works with triangular grids!")
     this%is_init = .true.
-    !$ACC ENTER DATA COPYIN(this, this%patch_3d)
+    !$ACC ENTER DATA COPYIN(this, this%patch_3d, this%patch_2d, this%thickness_e_wp) &
+    !$ACC   COPYIN(this%op_coeffs_wp, this%op_coeffs_sp) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
   END SUBROUTINE lhs_surface_height_construct
 
 ! interface routine for the left hand side computation
   SUBROUTINE lhs_surface_height_wp(this, x, ax, lacc)
     CLASS(t_surface_height_lhs), INTENT(INOUT) :: this
     REAL(wp), INTENT(IN) :: x(:,:)
-    REAL(wp), INTENT(OUT) :: ax(:,:)
+    REAL(wp), INTENT(INOUT) :: ax(:,:)
     LOGICAL, INTENT(IN), OPTIONAL :: lacc
     LOGICAL :: lzacc
 
     CALL set_acc_host_or_device(lzacc, lacc)
+
+    !$ACC WAIT(1)
+    !$ACC DATA PRESENT(x, ax) IF(lzacc)
 
     IF (this%use_shortcut) &
       & CALL finish("t_surface_height_lhs::lhs_surface_height_wp", &
@@ -111,26 +121,38 @@ CONTAINS
     IF (select_lhs .NE. select_lhs_matrix) THEN
       IF (ALLOCATED(this%z_e_wp)) THEN
         IF (nproma .NE. SIZE(this%z_e_wp, 1) .OR. &
-            & this%patch_2d%nblks_e .NE. SIZE(this%z_e_wp, 2)) &
-            & DEALLOCATE(this%z_e_wp, this%z_grad_h_wp)
+            & this%patch_2d%nblks_e .NE. SIZE(this%z_e_wp, 2)) THEN
+            !$ACC EXIT DATA DELETE(this%z_e_wp, this%z_grad_h_wp) ASYNC(1) IF(lzacc)
+            !$ACC WAIT(1)
+            DEALLOCATE(this%z_e_wp, this%z_grad_h_wp)
+        END IF
       END IF
-      IF (.NOT.ALLOCATED(this%z_e_wp)) &
-        & ALLOCATE(this%z_e_wp(nproma, this%patch_2d%nblks_e), &
-            & this%z_grad_h_wp(nproma, this%patch_2d%nblks_e))
+      IF (.NOT.ALLOCATED(this%z_e_wp)) THEN
+        ALLOCATE(this%z_e_wp(nproma, this%patch_2d%nblks_e), &
+          & this%z_grad_h_wp(nproma, this%patch_2d%nblks_e))
+        !$ACC ENTER DATA COPYIN(this%z_e_wp, this%z_grad_h_wp) ASYNC(1) IF(lzacc)
+        !$ACC WAIT(1)
+      END IF
     END IF
 ! call approriate backend depending on select_lhs choice
     IF (select_lhs == select_lhs_matrix) THEN
       CALL this%internal_matrix_wp(x, ax, lacc=lzacc)
     ELSE
-      CALL this%internal_wp(x, ax)
+#ifdef _OPENACC
+      IF (lzacc) CALL finish("t_surface_height_lhs::lhs_surface_height_wp", &
+        & "OpenACC version not implemented yet")
+#endif
+      CALL this%internal_wp(x, ax, lacc=lzacc)
     ENDIF
+
+    !$ACC END DATA
   END SUBROUTINE lhs_surface_height_wp
 
 ! internal backend routine to compute surface height lhs -- "matrix" implementation
   SUBROUTINE lhs_surface_height_ab_mim_matrix_wp(this, x, lhs, lacc)
     CLASS(t_surface_height_lhs), INTENT(INOUT) :: this
     REAL(wp), INTENT(IN), CONTIGUOUS :: x(:,:)
-    REAL(wp), INTENT(OUT), CONTIGUOUS :: lhs(:,:)
+    REAL(wp), INTENT(INOUT), CONTIGUOUS :: lhs(:,:)
     LOGICAL, INTENT(IN), OPTIONAL :: lacc
 
     INTEGER :: start_index, end_index, jc, blkNo, ico
@@ -147,7 +169,7 @@ CONTAINS
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
-    !$ACC DATA COPYIN(this) IF(lzacc)
+    !$ACC DATA PRESENT(x, lhs, this, this%patch_3d, this%patch_3d%lsm_c, lhs_coeffs, idx, blk) IF(lzacc)
 
 !ICON_OMP_PARALLEL_DO PRIVATE(start_index,end_index, jc) ICON_OMP_DEFAULT_SCHEDULE
     DO blkNo = cells_in_domain%start_block, cells_in_domain%end_block
@@ -183,7 +205,7 @@ CONTAINS
     !$ACC WAIT(1)
 !ICON_OMP_END_PARALLEL_DO
     IF (debug_check_level > 20) THEN
-      !$ACC UPDATE HOST(lhs) ASYNC(1) IF(lzacc)
+      !$ACC UPDATE SELF(lhs) ASYNC(1) IF(lzacc)
       !$ACC WAIT(1) IF(lzacc)
       DO blkNo = cells_in_domain%start_block, cells_in_domain%end_block
         CALL get_index_range(cells_in_domain, blkNo, start_index, end_index)
@@ -201,14 +223,22 @@ CONTAINS
   END SUBROUTINE lhs_surface_height_ab_mim_matrix_wp
 
 ! internal backend routine to compute surface height lhs -- "operator" implementation
-  SUBROUTINE lhs_surface_height_ab_mim_wp(this, x, lhs)
+  SUBROUTINE lhs_surface_height_ab_mim_wp(this, x, lhs, lacc)
     CLASS(t_surface_height_lhs), INTENT(INOUT) :: this
     REAL(wp), INTENT(IN), CONTIGUOUS :: x(:,:)
-    REAL(wp), INTENT(OUT), CONTIGUOUS :: lhs(:,:)
+    REAL(wp), INTENT(INOUT), CONTIGUOUS :: lhs(:,:)
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
     REAL(wp) :: gdt2_inv, gam_times_beta
     INTEGER :: start_index, end_index, jc, blkNo, je
     TYPE(t_subset_range), POINTER :: cells_in_domain, edges_in_domain
     CHARACTER(len=*), PARAMETER :: routine = modname//':lhs_surface_height_ab_mim_wp'
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+#ifdef _OPENACC
+    IF (lzacc) CALL finish(routine, "OpenACC version currently not implemented")
+#endif
 
     cells_in_domain => this%patch_2D%cells%in_domain
     edges_in_domain => this%patch_2D%edges%in_domain
@@ -265,13 +295,22 @@ CONTAINS
     ENDIF
   END SUBROUTINE lhs_surface_height_ab_mim_wp
 
-  SUBROUTINE lhs_surface_height_ab_mim_matrix_shortcut(this, idx, blk, coeff)
+  SUBROUTINE lhs_surface_height_ab_mim_matrix_shortcut(this, idx, blk, coeff, lacc)
     CLASS(t_surface_height_lhs), INTENT(INOUT) :: this
     INTEGER, INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:,:) :: idx, blk
     REAL(KIND=wp), INTENT(INOUT), ALLOCATABLE, DIMENSION(:,:,:) :: coeff
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
     INTEGER :: nidx, nblk, nnz, iidx, iblk, inz
     INTEGER, POINTER, DIMENSION(:,:,:), CONTIGUOUS :: opc_idx, opc_blk
     REAL(wp), POINTER, DIMENSION(:,:,:), CONTIGUOUS :: opc_coeff
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+#ifdef _OPENACC
+    IF (lzacc) CALL finish("t_surface_height_lhs::lhs_surface_height_ab_mim_matrix_shortcut", &
+      & "OpenACC version currently not implemented")
+#endif
 
     IF (.NOT.this%use_shortcut) &
       & CALL finish( &

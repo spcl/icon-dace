@@ -1,9 +1,3 @@
-! Flux limiter for horizontal tracer transport
-!
-! This module contains flux limiters for horizontal
-! tracer transport.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Flux limiter for horizontal tracer transport
+!
+! This module contains flux limiters for horizontal
+! tracer transport.
 
 !----------------------------
 #include "omp_definitions.inc"

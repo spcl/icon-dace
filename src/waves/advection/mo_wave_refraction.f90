@@ -1,7 +1,3 @@
-! Refraction of spectral surface wave energy
-!
-! Literature: The WAM model - A third Generation Ocean Wave Prediction Model, 1988
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,13 +8,17 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Refraction of spectral surface wave energy
 !
+! Literature: The WAM model - A third Generation Ocean Wave Prediction Model, 1988
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 MODULE mo_wave_refraction
 
-  USE mo_kind,                ONLY: wp, vp
+  USE mo_kind,                ONLY: wp
   USE mo_impl_constants,      ONLY: MAX_CHAR_LENGTH, min_rlcell
   USE mo_model_domain,        ONLY: t_patch
   USE mo_wave_config,         ONLY: t_wave_config
@@ -56,7 +56,7 @@ CONTAINS
     REAL(wp),                    INTENT(IN)   :: wave_num_c(:,:,:)
     REAL(wp),                    INTENT(IN)   :: gv_c(:,:,:)         ! group velocity at cell centers
     REAL(wp),                    INTENT(IN)   :: depth(:,:)
-    REAL(vp),                    INTENT(IN)   :: depth_grad(:,:,:,:) ! bathymetry gradient (2,jc,jk,jb)
+    REAL(wp),                    INTENT(IN)   :: depth_grad(:,:,:)   ! bathymetry gradient (2,jc,jb)
     REAL(wp),                    INTENT(IN)   :: tracer_now(:,:,:,:) ! energy before transport
     REAL(wp),                    INTENT(INOUT):: tracer_new(:,:,:,:)
 
@@ -96,8 +96,8 @@ CONTAINS
         DO jd = 1,wc%ndirs
           DO jc = i_startidx, i_endidx
 
-            temp = (SIN(wc%dirs(jd)) + SIN(wc%dirs(wc%dir_neig_ind(2,jd)))) * depth_grad(2,jc,jk,jb) &
-                 - (COS(wc%dirs(jd)) + COS(wc%dirs(wc%dir_neig_ind(2,jd)))) * depth_grad(1,jc,jk,jb)
+            temp = (SIN(wc%dirs(jd)) + SIN(wc%dirs(wc%dir_neig_ind(2,jd)))) * depth_grad(2,jc,jb) &
+                 - (COS(wc%dirs(jd)) + COS(wc%dirs(wc%dir_neig_ind(2,jd)))) * depth_grad(1,jc,jb)
 
             ak = wave_num_c(jc,jb,jf)
             akd = ak * depth(jc,jb)

@@ -1,53 +1,13 @@
-#define VERBOSE
+// Copyright (c) 2024 The YAC Authors
+//
+// SPDX-License-Identifier: BSD-3-Clause
 
-/**
- * @file dynamic_config.c
- *
- * @copyright Copyright  (C)  2021 DKRZ, MPI-M
- *
- * @author Nils-Arne Dreier <dreier@dkrz.de>
- *
- */
-/*
- * Keywords:
- * Maintainer: Moritz Hanke <hanke@dkrz.de>
- *             Rene Redler <rene.redler@mpimet.mpg.de>
- * URL: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
- *
- * This file is part of YAC.
- *
- * Redistribution and use in source and binary forms, with or without
- * modification, are  permitted provided that the following conditions are
- * met:
- *
- * Redistributions of source code must retain the above copyright notice,
- * this list of conditions and the following disclaimer.
- *
- * Redistributions in binary form must reproduce the above copyright
- * notice, this list of conditions and the following disclaimer in the
- * documentation and/or other materials provided with the distribution.
- *
- * Neither the name of the DKRZ GmbH nor the names of its contributors
- * may be used to endorse or promote products derived from this software
- * without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
- * IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
- * TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
- * PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
- * OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
- * PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
- * PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
- * LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
- * NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
- * SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
- */
+#define VERBOSE
 
 #include <mpi.h>
 #include <stdlib.h>
 #include <stdio.h>
-#include "yac_interface.h"
+#include "yac.h"
 
 int main () {
   // Initialisation of MPI
@@ -128,8 +88,8 @@ int main () {
   if(global_rank == 0){
     int interp_stack_config_id;
     yac_cget_interp_stack_config(&interp_stack_config_id);
-    yac_cadd_interp_stack_config_nnn(interp_stack_config_id,
-		YAC_NNN_AVG, 1,1.);
+    yac_cadd_interp_stack_config_nnn(
+      interp_stack_config_id, YAC_NNN_AVG, 1, 0.0, 1.);
     if(global_size > 1){
       yac_cdef_couple("ICON-atmosphere", "ICON-atmosphere", "t", // source (comp, grid, field)
         "ICON-ocean", "ICON-ocean", "t", // target (comp, grid, field)
@@ -148,8 +108,8 @@ int main () {
   }else if (global_rank == 2){
     int interp_stack_config_id;
     yac_cget_interp_stack_config(&interp_stack_config_id);
-    yac_cadd_interp_stack_config_nnn(interp_stack_config_id,
-		YAC_NNN_AVG, 1,1.);
+    yac_cadd_interp_stack_config_nnn(
+      interp_stack_config_id, YAC_NNN_AVG, 1, 0.0, 1.);
     yac_cdef_couple("ICON-atmosphere", "ICON-atmosphere", "t", // source (comp, grid, field)
       "VIZ", "VIZ", "t", // target (comp, grid, field)
       "1", YAC_TIME_UNIT_SECOND, YAC_REDUCTION_TIME_AVERAGE,
@@ -168,11 +128,11 @@ int main () {
   double * data = malloc(sizeof(double) * num_vert[0]*num_vert[1]);
   int info;
   if(global_rank == 0){
-    for(size_t i = 0; i < num_vert[0]*num_vert[1]; ++i)
+    for(int i = 0; i < num_vert[0]*num_vert[1]; ++i)
       data[i] = 42.+i;
     double ** data_ptr = &data;
     yac_cput(t_id, 1, &data_ptr, &info, &ierr);
-    for(size_t i = 0; i < num_vert[0]*num_vert[1]; ++i)
+    for(int i = 0; i < num_vert[0]*num_vert[1]; ++i)
       data[i] = -42.+i;
     yac_cput(t2_id, 1, &data_ptr, &info, &ierr);
   }else{

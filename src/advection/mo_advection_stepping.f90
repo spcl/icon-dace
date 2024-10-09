@@ -1,3 +1,14 @@
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Tracer transport module
 ! Contains solver for the tracer mass continuity equation(s)
 !
@@ -13,18 +24,6 @@
 ! @Literature:
 ! Reinert, D. (2020): A Mass Consistent Finite Volume Approach with Fractional Steps.
 !                     Reports on ICON, Issue 4
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -322,7 +321,7 @@ CONTAINS
       CALL vert_adv(p_patch           = p_patch,                        & !in
         &           p_dtime           = p_dtime,                        & !in
         &           k_step            = k_step,                         & !in
-        &           p_mflx_contra_v   = p_mflx_contra_v(:,:,:),         & !inout
+        &           p_mflx_contra_v   = p_mflx_contra_v(:,:,:),         & !in
         &           p_cellhgt_mc_now  = p_metrics%ddqz_z_full(:,:,:),   & !in
         &           rhodz_now         = rhodz_ast(:,:,:),               & !in
         &           rhodz_new         = rhodz_ast2(:,:,:),              & !in
@@ -421,7 +420,7 @@ CONTAINS
       CALL vert_adv(p_patch           = p_patch,                        & !in
         &           p_dtime           = p_dtime,                        & !in
         &           k_step            = k_step,                         & !in
-        &           p_mflx_contra_v   = p_mflx_contra_v(:,:,:),         & !inout
+        &           p_mflx_contra_v   = p_mflx_contra_v(:,:,:),         & !in
         &           p_cellhgt_mc_now  = p_metrics%ddqz_z_full(:,:,:),   & !in
         &           rhodz_now         = rhodz_ast2(:,:,:),              & !in
         &           rhodz_new         = p_rhodz_new(:,:,:),             & !in
@@ -661,7 +660,7 @@ CONTAINS
     INTEGER,       INTENT(IN   )   ::  & !< timestep counter
       &  k_step
 
-    REAL(wp),      INTENT(INOUT)   ::  & !< vertical mass flux
+    REAL(wp),      INTENT(IN   )   ::  & !< vertical mass flux
       &  p_mflx_contra_v(:,:,:)          !< [kg/m**2/s]
 
     REAL(wp),      INTENT(IN   )   ::  & !< cell height defined at full levels
@@ -725,7 +724,7 @@ CONTAINS
     CALL vert_upwind_flux(                                                         &
       &              p_patch             = p_patch,                                & !in
       &              p_cc                = tracer_now(:,:,:,:),                    & !in
-      &              p_mflx_contra_v     = p_mflx_contra_v(:,:,:),                 & !inout
+      &              p_mflx_contra_v     = p_mflx_contra_v(:,:,:),                 & !in
       &              p_dtime             = p_dtime,                                & !in
       &              p_cellhgt_mc_now    = p_cellhgt_mc_now(:,:,:),                & !in
       &              p_cellmass_now      = rhodz_now(:,:,:),                       & !in

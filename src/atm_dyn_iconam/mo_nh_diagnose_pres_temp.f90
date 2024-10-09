@@ -1,7 +1,3 @@
-! Contains utilities for diagnose pressure, temperature and air mass in nh model
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains utilities for diagnose pressure, temperature and air mass in nh model
 
 !----------------------------
 #include "omp_definitions.inc"

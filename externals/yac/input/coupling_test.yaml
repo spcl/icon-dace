@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   interp_stacks:
     nn_interp_stack: &nn_interp_stack

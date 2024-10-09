@@ -2,6 +2,11 @@
 #
 # SPDX-License-Identifier: BSD-3-Clause
 #
-SUBDIRS = include src doc examples test
-ACLOCAL_AMFLAGS = -I m4
+SUBDIRS = include src
 
+if ENABLE_PYTHON
+SUBDIRS += python
+endif ENABLE_PYTHON
+
+SUBDIRS += doc examples test
+ACLOCAL_AMFLAGS = -I m4

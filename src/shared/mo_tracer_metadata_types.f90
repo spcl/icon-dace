@@ -1,8 +1,3 @@
-! This module contains types for polymorphic tracer metadata. Additionally,
-! a type bound procedure (TBP) is given as a constructor for the base type
-! t_tracer_meta. This procedure is private and may only be adressed as TBP.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains types for polymorphic tracer metadata. Additionally,
+! a type bound procedure (TBP) is given as a constructor for the base type
+! t_tracer_meta. This procedure is private and may only be adressed as TBP.
 
 MODULE mo_tracer_metadata_types
 

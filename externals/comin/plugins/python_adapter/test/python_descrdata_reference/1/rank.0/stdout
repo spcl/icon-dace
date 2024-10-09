@@ -3,14 +3,14 @@ dir(domain)=['cells', 'dom_end', 'dom_start', 'edges', 'grid_filename', 'grid_uu
 dir(domain.cells)=['area', 'child_blk', 'child_id', 'child_idx', 'clat', 'clon', 'decomp_domain', 'edge_blk', 'edge_idx', 'end_block', 'end_index', 'glb_index', 'hhl', 'max_connectivity', 'nblks', 'ncells', 'ncells_global', 'neighbor_blk', 'neighbor_idx', 'num_edges', 'parent_glb_blk', 'parent_glb_idx', 'refin_ctrl', 'start_block', 'start_index', 'vertex_blk', 'vertex_idx']
 domain.cells.clon=<memory at BEEEEEEP>
  {name: getattr(domain, name) for name in dir(domain)}={'cells': <comin._descrdata object at BEEEEEEP>, 'dom_end': 1.0, 'dom_start': 0.0, 'edges': <comin._descrdata object at BEEEEEEP>, 'grid_filename': './grids/grid.1_0.nc', 'grid_uuid': <memory at BEEEEEEP>, 'id': 1, 'n_childdom': 2, 'nlev': 10, 'nshift': 42, 'nshift_total': 43, 'number_of_grid_used': <memory at BEEEEEEP>, 'verts': <comin._descrdata object at BEEEEEEP>}
- {name: getattr(glob, name) for name in dir(glob)}={'grf_bdywidth_c': 4, 'grf_bdywidth_e': 9, 'lrestartrun': False, 'max_dom': 10, 'min_rlcell': -8, 'min_rlcell_int': -4, 'n_dom': 1, 'nproma': 8, 'vct_a': <memory at BEEEEEEP>, 'wp': 0, 'yac_instance_id': 0}
+ {name: getattr(glob, name) for name in dir(glob)}={'device_driver': 'Dummy driver', 'device_name': 'Test device', 'device_vendor': 'Dummy vendor', 'grf_bdywidth_c': 4, 'grf_bdywidth_e': 9, 'has_device': False, 'host_git_branch': 'dummy_branch', 'host_git_remote_url': 'dummy_url', 'host_git_tag': 'dummy_tag', 'host_revision': 'dummy_revision', 'lrestartrun': False, 'max_dom': 10, 'max_rlcell': 5, 'max_rledge': 10, 'max_rlvert': 5, 'min_rlcell': -8, 'min_rlcell_int': -4, 'min_rledge': -13, 'min_rledge_int': -8, 'min_rlvert': -7, 'min_rlvert_int': -4, 'n_dom': 1, 'nproma': 8, 'vct_a': <memory at BEEEEEEP>, 'wp': 0, 'yac_instance_id': 0}
 comin.descrdata_get_simulation_interval()=simulation_interval(exp_start='1950-01-01T00:00:00', exp_stop='1950-01-01T00:30:00', run_start='1950-01-01T00:00:00', run_stop='1950-01-01T00:30:00')
 comin.descrdata_get_cell_indices(42, 1, 3, 2, 3, 4)=(1, 8)
 comin.descrdata_get_cell_npromz(1)=6
 comin.descrdata_get_edge_npromz(1)=6
 comin.descrdata_get_vert_npromz(1)=7
 comin.descrdata_index_lookup_glb2loc_cell(1,42)=42
-comin.setup_get_version()=(0, 1, 1)
+comin.setup_get_version()=(0, 2, 0)
 comin.setup_get_verbosity_level()=13
 comin.parallel_get_host_mpi_rank()=0
 comin.current_get_domain_id()=1

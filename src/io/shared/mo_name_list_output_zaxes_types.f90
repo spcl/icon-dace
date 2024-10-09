@@ -1,9 +1,3 @@
-! Module handling the meta-data types for vertical axes for the output
-! module.
-!
-! See module mo_name_list_output_zaxes for details of the
-! implementation.
-!!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module handling the meta-data types for vertical axes for the output
+! module.
+!
+! See module mo_name_list_output_zaxes for details of the
+! implementation.
 
 MODULE mo_name_list_output_zaxes_types
 

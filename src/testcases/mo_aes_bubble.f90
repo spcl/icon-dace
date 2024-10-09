@@ -1,9 +1,3 @@
-!
-! Module containing subroutines for the initialization of a bubble on a torus
-!
-! Literature  cr2021_08_03_jsr for further documentation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module containing subroutines for the initialization of a bubble on a torus
+!
+! Literature  cr2021_08_03_jsr for further documentation
 
 MODULE mo_aes_bubble
   USE mo_kind,                ONLY: wp

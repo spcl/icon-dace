@@ -15,7 +15,6 @@ MODULE mo_disturb_process
 #ifndef __NO_JSBACH__
 
   USE mo_kind,      ONLY: wp
-  USE mo_exception, ONLY: finish, message_text
 
   IMPLICIT NONE
   PRIVATE
@@ -26,7 +25,7 @@ MODULE mo_disturb_process
 
 CONTAINS
 
-  PURE ELEMENTAL SUBROUTINE burned_fract_jsbach( &
+  SUBROUTINE burned_fract_jsbach( &
     & fire_rel_hum_threshold,                    & ! in
     & fire_litter_threshold,                     & ! in
     & fire_minimum,                              & ! in
@@ -38,41 +37,42 @@ CONTAINS
 
     ! Input Arguments
     REAL(wp), INTENT(in) ::     &
-      & fire_rel_hum_threshold, &
-      & fire_litter_threshold,  &
-      & fire_minimum,           &
-      & fire_tau,               &
-      & q_rel_air_climbuf,      &
-      & fuel
+      & fire_rel_hum_threshold, &  ! Maximum relative humidity for fire
+      & fire_litter_threshold,  &  ! Minimum amount of litter necessary for fire [mol(C)/m^2(grid box)]
+      & fire_minimum,           &  ! Minimum fraction woody PFTs burning every year
+      & fire_tau,               &  ! Return period of fire at 0% relative humidity [year]
+      & q_rel_air_climbuf(:),   &  ! Relative humidity (smoothed) [%]
+      & fuel(:)                    ! Amount of fuel [mol(C)/m^2(grid box)]
 
     ! Output Arguments
-    REAL(wp), INTENT(inout) :: burned_fract
+    REAL(wp), INTENT(inout) :: burned_fract(:)
 
     ! Locals
-    REAL(wp) :: delta_time_yr
-                !fire_rel_hum_threshold, & ! maximal relative humidity for fire
-                !fire_litter_threshold,  & ! minimal amount of litter [mol(C)/m^2(grid box)] for fire
-                !fire_minimum_woody,     & ! minimal fraction of act_fpc of woody PFT to be burned each year
-                !fire_minimum_grass,     & ! minimal fraction of act_fpc of grass PFT to be burned each year
-                !fire_tau_woody,         & ! return period of fire for woody PFT [year] at 0% relative humidity
-                !fire_tau_grass,         & ! return period of fire for grass PFT [year] at 0% relative humidity
+    INTEGER  :: ic, nc
 
-    delta_time_yr = 1._wp / 365._wp
+    REAL(wp), PARAMETER :: delta_time_yr = 1._wp / 365._wp
 
-    burned_fract = fire_minimum * delta_time_yr
+    nc = SIZE(fuel)
 
-    IF (       q_rel_air_climbuf < fire_rel_hum_threshold   &
-         & .AND. fuel > fire_litter_threshold               &
-       ) THEN
-      burned_fract = burned_fract                                                                        &
-        &           + (fire_rel_hum_threshold - q_rel_air_climbuf) / (fire_tau * fire_rel_hum_threshold) &
-        &             * delta_time_yr
-    END IF
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+    DO ic = 1, nc
+      ! Minimum fraction burnt every day (needed with natural LCC)
+      burned_fract(ic) = fire_minimum * delta_time_yr
+
+      ! If conditions for fire are given ...
+      IF (q_rel_air_climbuf(ic) < fire_rel_hum_threshold .AND. fuel(ic) > fire_litter_threshold) THEN
+        burned_fract(ic) = burned_fract(ic)                                                                        &
+          &               + (fire_rel_hum_threshold - q_rel_air_climbuf(ic)) / (fire_tau * fire_rel_hum_threshold) &
+          &                 * delta_time_yr
+      END IF
+
+    END DO
+    !$END PARALLEL LOOP
 
   END SUBROUTINE burned_fract_jsbach
 
   ! Calculate windbreak for woody types
-  PURE ELEMENTAL SUBROUTINE broken_woody_fract_jsbach( &
+  SUBROUTINE broken_woody_fract_jsbach( &
     & wind_threshold,                                  & ! in
     & wind_damage_scale,                               & ! in
     & cover_fract_pot,                                 & ! in
@@ -82,95 +82,65 @@ CONTAINS
     & )
 
     ! Arguments
-    REAL(wp), INTENT(in) ::    &
-      & wind_threshold,        &
-      & wind_damage_scale,     &
-      & cover_fract_pot,       &
-      & prev_day_max_wind_10m, &
-      & max_wind_10m
+    REAL(wp), INTENT(in) ::       &
+      & wind_threshold,           &
+      & wind_damage_scale,        &
+      & cover_fract_pot(:),       &
+      & prev_day_max_wind_10m(:), &
+      & max_wind_10m(:)
 
     REAL(wp), INTENT(inout) :: &
-      & damaged_fract
+      & damaged_fract(:)
 
     ! Locals
-    REAL(wp) :: delta_time_yr
+    INTEGER  :: ic, nc
 
-    delta_time_yr = 1._wp / 365._wp
+    REAL(wp), PARAMETER :: delta_time_yr = 1._wp / 365._wp
 
-    IF (      cover_fract_pot > EPSILON(1._wp)                      &
-        .AND. prev_day_max_wind_10m > max_wind_10m * wind_threshold &
-       ) THEN
-      damaged_fract = MIN( 1._wp - EPSILON(1._wp) / cover_fract_pot,                                          &
-        &                 delta_time_yr * wind_damage_scale * prev_day_max_wind_10m ** 3._wp / max_wind_10m   &
-        &               )
-    ENDIF
+    nc = SIZE(max_wind_10m)
+
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1)
+    DO ic = 1, nc
+      IF (cover_fract_pot(ic) > EPSILON(1._wp) .AND. prev_day_max_wind_10m(ic) > max_wind_10m(ic) * wind_threshold) THEN
+        damaged_fract(ic) = MIN( 1._wp - EPSILON(1._wp) / cover_fract_pot(ic),                                          &
+        &                        delta_time_yr * wind_damage_scale * prev_day_max_wind_10m(ic) ** 3._wp / max_wind_10m(ic) )
+      ENDIF
+    END DO
+    !$ACC END PARALLEL LOOP
 
   END SUBROUTINE broken_woody_fract_jsbach
 
-  FUNCTION get_relative_humidity_air(nc, air_moisture, air_temperature, air_press) RESULT(relative_humidity_air)
+  FUNCTION get_relative_humidity_air(air_moisture, air_temperature, air_press) RESULT(relative_humidity_air)
 
     USE mo_jsb_physical_constants, ONLY: rd  ! gas constant for dry air [J/(K*kg)]
     USE mo_jsb_physical_constants, ONLY: rv  ! gas constant for water vapor [J/(K*kg)]
+    USE mo_phy_schemes,            ONLY: qsat_water
 
-    INTEGER, INTENT(in)  :: nc
     REAL(wp), INTENT(in) :: &
       air_moisture(:),      & ! Specific humidity of air [kg kg-1]
       air_temperature(:),   & ! Temperature of air [K]
       air_press(:)            ! Pressure of air [Pa]
 
-    REAL(wp) :: air_qsat(SIZE(air_moisture)), &
-                relative_humidity_air(SIZE(air_moisture))
+    REAL(wp) :: air_qsat      ! Saturation specific humidity
+    REAL(wp) :: relative_humidity_air(SIZE(air_moisture))
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':get_relative_humidity_air'
+    INTEGER :: ic, nc
 
-    CALL sat_specific_humidity( &
-      & nc,                     & ! in
-      & air_temperature,        & ! in
-      & air_press,              & ! in
-      & air_qsat                & ! out
-      & )
+    nc = SIZE(air_moisture)
 
-        IF (ANY( air_qsat(:) > 0.99_wp*HUGE(1._wp) )) THEN
-           CALL finish(TRIM(routine), 'lookup table overflow.')
-        END IF
-
-    relative_humidity_air(:) = 100._wp * air_moisture(:)                                       &
-                               * ( (1._wp - rd / rv)  * air_qsat(:)  + (rd / rv) )             &
-                               / ( ((1._wp - rd / rv) * air_moisture(:) + (rd / rv)) * air_qsat(:) )
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG VECTOR ASYNC(1) &
+    !$ACC   PRIVATE(air_qsat)
+    DO ic = 1, nc
+      air_qsat = qsat_water(air_temperature(ic), air_press(ic), use_convect_tables=.TRUE.)
+      relative_humidity_air(ic) = 100._wp * air_moisture(ic)                                       &
+                                 * (  (1._wp - rd / rv) * air_qsat + (rd / rv) )                   &
+                                 / ( ((1._wp - rd / rv) * air_moisture(ic) + (rd / rv)) * air_qsat )
+      relative_humidity_air(ic) = MIN(100._wp, relative_humidity_air(ic))
+    END DO
+    !$ACC END PARALLEL LOOP
 
   END FUNCTION get_relative_humidity_air
-
-  !>
-  !! Returns saturation specific humidity for given temperature and pressure
-  !!
-  SUBROUTINE sat_specific_humidity(nc, temp, pressure, qsat)
-
-    USE mo_phy_schemes, ONLY: qsat_water
-
-    ! Returns saturation specific humidity for given temperature and pressure (at some atmospheric level or at surface)
-    ! Uses Eq. 2.27 of Fundamentals of Atmospheric Modeling for the saturated case, but the saturation vapor pressure
-    ! of water over a liquid surface resp. ice (see pp 32-34 of Ref.) is computed as in ECHAM5 (mo_convect_tables)
-
-    INTEGER,  INTENT(in) :: nc
-    REAL(wp), INTENT(IN) :: temp(:)      ! Air temperature at level [K]
-    REAL(wp), INTENT(IN) :: pressure(:)  ! Pressure at level [Pa]
-    REAL(wp), INTENT(OUT):: qsat(:)
-
-    CHARACTER(len=*), PARAMETER :: routine = modname//':sat_specific_humidity'
-
-    INTEGER :: i
-
-    DO i = 1,nc
-      IF (temp(i) < 50._wp .OR. temp(i) > 400._wp) THEN
-        WRITE (message_text,*) &
-          & 'Temperature out of bound: ', temp(i), 'K. One thing to check: consistency of land-sea mask and forcing.'
-        CALL finish(TRIM(routine), TRIM(message_text))
-      ELSE
-        qsat(i) = qsat_water(temp(i), pressure(i), use_convect_tables=.TRUE.)
-      ENDIF
-    ENDDO
-
-  END SUBROUTINE sat_specific_humidity
 
 #endif
 END MODULE mo_disturb_process

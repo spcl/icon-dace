@@ -1,10 +1,3 @@
-! Module to provide parameters to radiation routines and avoid circular dependencies.
-!
-! Remarks
-!   This module contains the public parameters provided by the radiation module
-!   mo_radiation.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module to provide parameters to radiation routines and avoid circular dependencies.
+!
+! Remarks
+!   This module contains the public parameters provided by the radiation module
+!   mo_radiation.
 
 MODULE mo_cloud_optics_parameters
 

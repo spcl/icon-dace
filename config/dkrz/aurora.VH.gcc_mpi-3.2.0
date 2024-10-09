@@ -68,10 +68,6 @@ ICON_BUNDLED_FCFLAGS='-std=f2008'
 
 ICON_ECRAD_FCFLAGS='-finline-functions'
 
-# The current version of MTIME in use does not apply the line length flag
-# automatically:
-ICON_MTIME_FCFLAGS='-std=f2008 -ffree-line-length-none'
-
 LDFLAGS="-L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${BLAS_LAPACK_ROOT}/lib -L${ECCODES_ROOT}/lib -L${FYAML_ROOT}/lib -shared-mpi"
 
 # The compiler does not inject RPATHs to its runtime libraries:
@@ -100,7 +96,6 @@ ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
 ICON_DACE_PATH="${ICON_DACE_PATH}" \
 ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
-ICON_MTIME_FCFLAGS="${ICON_MTIME_FCFLAGS}" \
 LDFLAGS="${LDFLAGS}" \
 LIBS="${LIBS}" \
 MPI_LAUNCH="${MPI_LAUNCH}" \

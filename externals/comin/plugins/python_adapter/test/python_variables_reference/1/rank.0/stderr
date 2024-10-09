@@ -1,37 +1,22 @@
- ICON running
-    running with            1  MPI tasks and            1  thread(s) per task.
-      compatibility check.
-        linked to ICON Community Interface v0.1.1
-      minimal-example: working precision test successful.
-    ICON model setup
-      ICON // Fill descriptive data structure
-      read NetCDF file './grids/grid.1_0.nc'.
-      ICON // Fill variable structure
-       model variable 'u.TL1', filled with value        10.00
-       model variable 'v.TL1', filled with value        20.00
-       model variable 'pres.TL1', filled with value        30.00
-       model variable 'temp.TL1', filled with value        40.00
-       model variable 'rho.TL1', filled with value         0.00
-       model variable 'pres_sfc.TL1', filled with value        50.00
-       model variable 'u.TL2', filled with value        10.00
-       model variable 'v.TL2', filled with value        20.00
-       model variable 'pres.TL2', filled with value        30.00
-       model variable 'temp.TL2', filled with value        40.00
-       model variable 'rho.TL2', filled with value         0.00
-       model variable 'pres_sfc.TL2', filled with value        50.00
-      Associate ICON descriptive data structures and ComIn
-      call of ComIn primary constructors.
+ running with            3  MPI tasks
+ reading ../../../../replay_data/test_nwp_R02B04_R02B05_nest/0.nc
+      replay: working precision test successful.
+ using comin version                     0           2           0
+ file was written with version            0           2           0
+ Reading variables from ../../../../replay_data/test_nwp_R02B04_R02B05_nest/vars_0.nc
+     registration for 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) associated for 3rd party plugin comin_var_replay_plugin successful.
+     registration for 'EP_ATM_TIMELOOP_START' (ep: 10) associated for 3rd party plugin comin_var_replay_plugin successful.
 setup_python_adapter
      registration for 'EP_DESTRUCTOR' (ep: 42) associated for 3rd party plugin python_adapter successful.
 Running python script ../variables.py
      registration for 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) associated for 3rd party plugin python_adapter successful.
      registration for 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) associated for 3rd party plugin python_adapter successful.
       Complete primary constructors
-      Add tracer variable (container).
-         add variable 'test', requested by third party plugins.
-      Associate ICON varlist and ComIn
       CONTEXT EP_SECONDARY_CONSTRUCTOR
+      current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: comin_var_replay_plugin
       current ep 'EP_SECONDARY_CONSTRUCTOR' (ep: 1) for library: python_adapter
+      CONTEXT EP_ATM_INIT_FINALIZE
+      no calls associated with entry point 'EP_ATM_INIT_FINALIZE' (ep: 8).
       CONTEXT EP_ATM_YAC_DEFCOMP_BEFORE
       no calls associated with entry point 'EP_ATM_YAC_DEFCOMP_BEFORE' (ep: 2).
       CONTEXT EP_ATM_YAC_DEFCOMP_AFTER
@@ -44,113 +29,809 @@ Running python script ../variables.py
       no calls associated with entry point 'EP_ATM_YAC_ENDDEF_BEFORE' (ep: 6).
       CONTEXT EP_ATM_YAC_ENDDEF_AFTER
       no calls associated with entry point 'EP_ATM_YAC_ENDDEF_AFTER' (ep: 7).
-
-    ICON model time loop
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_TIMELOOP_BEFORE
+      no calls associated with entry point 'EP_ATM_TIMELOOP_BEFORE' (ep: 9).
       CONTEXT EP_ATM_TIMELOOP_START
-      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
-
-      time step 1
-      ===========
-
+      current ep 'EP_ATM_TIMELOOP_START' (ep: 10) for library: comin_var_replay_plugin
+       entry point 'EP_ATM_TIMELOOP_START' (ep: 10) not associated
+      CONTEXT EP_ATM_INTEGRATE_BEFORE
+      no calls associated with entry point 'EP_ATM_INTEGRATE_BEFORE' (ep: 13).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
       CONTEXT EP_ATM_ADVECTION_BEFORE
       no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
-
-        <advection>
-        u: value    =   12.0000
-        v: value    =   22.0000
-        pres: value =   32.0000
-        temp: value =   42.0000
-  
-      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
-      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
-
-        <output>
-
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
       CONTEXT EP_ATM_PHYSICS_BEFORE
       no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
-
-        <phys>
-        u: value    =   15.0000
-        v: value    =   25.0000
-        pres: value =   35.0000
-        temp: value =   45.0000
-  
-      nnow, nold =            2           1
- WARNING: Variable not found: name, nnow = tracer           2
- WARNING: Variable not found: name, nnow = qr           2
- WARNING: Variable not found: name, nnow = qi           2
- WARNING: Variable not found: name, nnow = qv           2
- WARNING: Variable not found: name, nnow = qs           2
- WARNING: Variable not found: name, nnow = qc           2
- WARNING: Variable not found: name, nnow = test           2
-      CONTEXT EP_ATM_TIMELOOP_START
-      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
-
-      time step 2
-      ===========
-
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
       CONTEXT EP_ATM_ADVECTION_BEFORE
       no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
-
-        <advection>
-        u: value    =   12.0000
-        v: value    =   22.0000
-        pres: value =   32.0000
-        temp: value =   42.0000
-  
-      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
-      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
-
-        <output>
-
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
       CONTEXT EP_ATM_PHYSICS_BEFORE
       no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
-
-        <phys>
-        u: value    =   15.0000
-        v: value    =   25.0000
-        pres: value =   35.0000
-        temp: value =   45.0000
-  
-      nnow, nold =            1           2
-      CONTEXT EP_ATM_TIMELOOP_START
-      no calls associated with entry point 'EP_ATM_TIMELOOP_START' (ep: 10).
-
-      time step 3
-      ===========
-
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
       CONTEXT EP_ATM_ADVECTION_BEFORE
       no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
-
-        <advection>
-        u: value    =   17.0000
-        v: value    =   27.0000
-        pres: value =   37.0000
-        temp: value =   47.0000
-  
-      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
-      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
-
-        <output>
-
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
       CONTEXT EP_ATM_PHYSICS_BEFORE
       no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
-
-        <phys>
-        u: value    =   20.0000
-        v: value    =   30.0000
-        pres: value =   40.0000
-        temp: value =   50.0000
-  
-      nnow, nold =            2           1
- WARNING: Variable not found: name, nnow = tracer           2
- WARNING: Variable not found: name, nnow = qr           2
- WARNING: Variable not found: name, nnow = qi           2
- WARNING: Variable not found: name, nnow = qv           2
- WARNING: Variable not found: name, nnow = qs           2
- WARNING: Variable not found: name, nnow = qc           2
- WARNING: Variable not found: name, nnow = test           2
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_AFTER
+      no calls associated with entry point 'EP_ATM_INTEGRATE_AFTER' (ep: 16).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
+      CONTEXT EP_ATM_TIMELOOP_START
+      current ep 'EP_ATM_TIMELOOP_START' (ep: 10) for library: comin_var_replay_plugin
+       entry point 'EP_ATM_TIMELOOP_START' (ep: 10) not associated
+      CONTEXT EP_ATM_INTEGRATE_BEFORE
+      no calls associated with entry point 'EP_ATM_INTEGRATE_BEFORE' (ep: 13).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_AFTER
+      no calls associated with entry point 'EP_ATM_INTEGRATE_AFTER' (ep: 16).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_CHECKPOINT_BEFORE
+      no calls associated with entry point 'EP_ATM_CHECKPOINT_BEFORE' (ep: 19).
+      CONTEXT EP_ATM_CHECKPOINT_AFTER
+      no calls associated with entry point 'EP_ATM_CHECKPOINT_AFTER' (ep: 20).
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
+      CONTEXT EP_ATM_TIMELOOP_START
+      current ep 'EP_ATM_TIMELOOP_START' (ep: 10) for library: comin_var_replay_plugin
+       entry point 'EP_ATM_TIMELOOP_START' (ep: 10) not associated
+      CONTEXT EP_ATM_INTEGRATE_BEFORE
+      no calls associated with entry point 'EP_ATM_INTEGRATE_BEFORE' (ep: 13).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_AFTER
+      no calls associated with entry point 'EP_ATM_INTEGRATE_AFTER' (ep: 16).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
+      CONTEXT EP_ATM_TIMELOOP_START
+      current ep 'EP_ATM_TIMELOOP_START' (ep: 10) for library: comin_var_replay_plugin
+       entry point 'EP_ATM_TIMELOOP_START' (ep: 10) not associated
+      CONTEXT EP_ATM_INTEGRATE_BEFORE
+      no calls associated with entry point 'EP_ATM_INTEGRATE_BEFORE' (ep: 13).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_AFTER
+      no calls associated with entry point 'EP_ATM_INTEGRATE_AFTER' (ep: 16).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_CHECKPOINT_BEFORE
+      no calls associated with entry point 'EP_ATM_CHECKPOINT_BEFORE' (ep: 19).
+      CONTEXT EP_ATM_CHECKPOINT_AFTER
+      no calls associated with entry point 'EP_ATM_CHECKPOINT_AFTER' (ep: 20).
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
+      CONTEXT EP_ATM_TIMELOOP_START
+      current ep 'EP_ATM_TIMELOOP_START' (ep: 10) for library: comin_var_replay_plugin
+       entry point 'EP_ATM_TIMELOOP_START' (ep: 10) not associated
+      CONTEXT EP_ATM_INTEGRATE_BEFORE
+      no calls associated with entry point 'EP_ATM_INTEGRATE_BEFORE' (ep: 13).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_START
+      no calls associated with entry point 'EP_ATM_INTEGRATE_START' (ep: 14).
+      CONTEXT EP_ATM_ADVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_ADVECTION_BEFORE' (ep: 21).
+      CONTEXT EP_ATM_ADVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_ADVECTION_AFTER' (ep: 22).
+      CONTEXT EP_ATM_PHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_PHYSICS_BEFORE' (ep: 23).
+      CONTEXT EP_ATM_SURFACE_BEFORE
+      no calls associated with entry point 'EP_ATM_SURFACE_BEFORE' (ep: 27).
+      CONTEXT EP_ATM_SURFACE_AFTER
+      no calls associated with entry point 'EP_ATM_SURFACE_AFTER' (ep: 28).
+      CONTEXT EP_ATM_TURBULENCE_BEFORE
+      no calls associated with entry point 'EP_ATM_TURBULENCE_BEFORE' (ep: 29).
+      CONTEXT EP_ATM_TURBULENCE_AFTER
+      no calls associated with entry point 'EP_ATM_TURBULENCE_AFTER' (ep: 30).
+      CONTEXT EP_ATM_MICROPHYSICS_BEFORE
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_BEFORE' (ep: 31).
+      CONTEXT EP_ATM_MICROPHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_MICROPHYSICS_AFTER' (ep: 32).
+      CONTEXT EP_ATM_CONVECTION_BEFORE
+      no calls associated with entry point 'EP_ATM_CONVECTION_BEFORE' (ep: 33).
+      CONTEXT EP_ATM_CONVECTION_AFTER
+      no calls associated with entry point 'EP_ATM_CONVECTION_AFTER' (ep: 34).
+      CONTEXT EP_ATM_RADIATION_BEFORE
+      no calls associated with entry point 'EP_ATM_RADIATION_BEFORE' (ep: 35).
+      CONTEXT EP_ATM_RADIATION_AFTER
+      no calls associated with entry point 'EP_ATM_RADIATION_AFTER' (ep: 36).
+      CONTEXT EP_ATM_RADHEAT_BEFORE
+      no calls associated with entry point 'EP_ATM_RADHEAT_BEFORE' (ep: 37).
+      CONTEXT EP_ATM_RADHEAT_AFTER
+      no calls associated with entry point 'EP_ATM_RADHEAT_AFTER' (ep: 38).
+      CONTEXT EP_ATM_GWDRAG_BEFORE
+      no calls associated with entry point 'EP_ATM_GWDRAG_BEFORE' (ep: 39).
+      CONTEXT EP_ATM_GWDRAG_AFTER
+      no calls associated with entry point 'EP_ATM_GWDRAG_AFTER' (ep: 40).
+      CONTEXT EP_ATM_PHYSICS_AFTER
+      no calls associated with entry point 'EP_ATM_PHYSICS_AFTER' (ep: 24).
+      CONTEXT EP_ATM_NUDGING_BEFORE
+      no calls associated with entry point 'EP_ATM_NUDGING_BEFORE' (ep: 25).
+      CONTEXT EP_ATM_NUDGING_AFTER
+      no calls associated with entry point 'EP_ATM_NUDGING_AFTER' (ep: 26).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_END
+      no calls associated with entry point 'EP_ATM_INTEGRATE_END' (ep: 15).
+      CONTEXT EP_ATM_INTEGRATE_AFTER
+      no calls associated with entry point 'EP_ATM_INTEGRATE_AFTER' (ep: 16).
+      CONTEXT EP_ATM_WRITE_OUTPUT_BEFORE
+       entry point 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) not associated
+      current ep 'EP_ATM_WRITE_OUTPUT_BEFORE' (ep: 17) for library: python_adapter
+      CONTEXT EP_ATM_WRITE_OUTPUT_AFTER
+      no calls associated with entry point 'EP_ATM_WRITE_OUTPUT_AFTER' (ep: 18).
+      CONTEXT EP_ATM_TIMELOOP_END
+      no calls associated with entry point 'EP_ATM_TIMELOOP_END' (ep: 11).
+      CONTEXT EP_ATM_TIMELOOP_AFTER
+      no calls associated with entry point 'EP_ATM_TIMELOOP_AFTER' (ep: 12).
       CONTEXT EP_DESTRUCTOR
+       entry point 'EP_DESTRUCTOR' (ep: 42) not associated
       current ep 'EP_DESTRUCTOR' (ep: 42) for library: python_adapter
-
-    ICON clean-up

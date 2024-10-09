@@ -1,0 +1,13 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@TEST_MPI_FALSE@exit 77
+@ENABLE_UTILS_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
+
+DEBUG_GRID2VTK=@top_builddir@/tools/debug_grid2vtk.x
+
+@MPI_LAUNCH@ -n 2 ./test_debug_grid2vtk.x $DEBUG_GRID2VTK

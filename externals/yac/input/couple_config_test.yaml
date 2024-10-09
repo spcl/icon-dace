@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 predef:
   ocn2atm: &ocn2atm
     src_component: ICON-O
@@ -8,6 +12,20 @@ predef:
     src_component: ICON-A
     src_grid: grid3
     tgt_component: ICON-O
+
+debug:
+  global_config:
+    def_comp: test_couple_config_def_comp.yaml
+    sync_def:
+      filename: test_couple_config_sync_def.json
+      filetype: json
+      include_definitions: false
+    enddef:
+      filename: test_couple_config_enddef.yaml
+      include_definitions: true
+  output_grids:
+    - grid_name: grid1
+      file_name: debug_grid.nc
 
 start_date: 2008-03-09T16:05:07
 end_date: 2008-03-10T16:05:07
@@ -40,7 +58,9 @@ coupling:
     tgt_lag: 3
     scale_factor: 10.0
     interpolation:
-      - average
+      - average:
+          weighted: distance_weighted
+          partial_coverage: TRUE
       - nnn:
           n: 2
           weighted: distance_weighted
@@ -85,10 +105,20 @@ coupling:
       - nnn:
           n: 8
           weighted: gauss_weighted
+          max_search_distance: 90.0
           gauss_scale: 0.2
       - source_to_target_map:
           spread_distance: 5.0
           weighted: distance_weighted
+          src_sphere_radius: 1.0
+          tgt_sphere_radius: 2.0
+      - ncc:
+          weighted: distance_weighted
+          partial_coverage: TRUE
+      - rbf:
+          n: 4
+          max_search_distance: 90.0
+          rbf_kernel: gauss_kernel
     field: grid_eastward_wind
   - <<: *ocn2atm
     src_grid: grid2
@@ -124,3 +154,12 @@ coupling:
       - fixed:
           user_value: -1.0
     field: grid_northward_wind
+  - src_component: src_comp
+    src_grid: [src_grid_1, src_grid_2]
+    tgt_component: tgt_comp
+    tgt_grid: [tgt_grid_1, tgt_grid_2]
+    coupling_period: 1
+    interpolation:
+      - fixed:
+          user_value: -1.0
+    field: multi_grid_field

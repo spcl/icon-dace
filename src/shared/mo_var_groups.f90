@@ -1,6 +1,3 @@
-! Group information for ICON variables.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Group information for ICON variables.
 
 MODULE mo_var_groups
 
@@ -53,7 +52,7 @@ MODULE mo_var_groups
   ! Note that the statically defined group list "var_groups" is
   ! non-public. Its contents are copied to a dynamically growing list
   ! "var_groups_dyn".
-  INTEGER, PARAMETER :: N_VAR_GROUPS_STATIC = 74
+  INTEGER, PARAMETER :: N_VAR_GROUPS_STATIC = 75
 
   CHARACTER(LEN=vname_len), PARAMETER :: VAR_GROUPS_STATIC(N_VAR_GROUPS_STATIC) = &
      [ "ALL                   ",  &
@@ -129,7 +128,9 @@ MODULE mo_var_groups
     &  "WAVE_PHY_EXT          ",  &  ! ICON-waves: extended wave physics
     &  "WAVE_SHORT            ",  &  ! ICON-waves: short/"standart"
     &  "WAVE_FORCING          ",  &  ! ICON-waves: wave forcing
+    &  "WAVE_DEBUG            ",  &
     &  "METEOGRAM             "]     ! ICON meteogram variable
+
 
   ! ---------------------------------------------------------------
   ! DYNAMICALLY DEFINED VARIABLE GROUPS

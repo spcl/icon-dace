@@ -1,9 +1,3 @@
-!
-! Auxiliary subroutines for the processing
-! of the external upper-atmosphere data.
-!
-!----------------------------
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Auxiliary subroutines for the processing
+! of the external upper-atmosphere data.
 
 !----------------------------
 #include "omp_definitions.inc"

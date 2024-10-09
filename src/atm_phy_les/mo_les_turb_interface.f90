@@ -1,11 +1,3 @@
-!OPTION! -cont -msg o
-! this command should fix the problem of copying arrays in a subroutine call
-!
-!AD: Interface between the les_phy_interface and various turbulence schems suitable
-!    for LES. At present it only has classical Smagorinsky scheme.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!AD: Interface between the les_phy_interface and various turbulence schems suitable
+!    for LES. At present it only has classical Smagorinsky scheme.
+
+!OPTION! -cont -msg o
+! this command should fix the problem of copying arrays in a subroutine call
 
 !----------------------------
 #include "omp_definitions.inc"

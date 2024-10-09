@@ -1,13 +1,3 @@
-! Some utilities which are specific to the transport algorithm.
-! Routines are mostly dealing with the computation of backward
-! trajectories and/or departure regions.
-!
-! Module contains some functions and procedures which are specifically related
-! to the transport schemes. These subroutines or functions are needed at
-! various places within the transport scheme. Therefore outsourcing these
-! routines protects from possible circular dependencies.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Some utilities which are specific to the transport algorithm.
+! Routines are mostly dealing with the computation of backward
+! trajectories and/or departure regions.
+!
+! Module contains some functions and procedures which are specifically related
+! to the transport schemes. These subroutines or functions are needed at
+! various places within the transport scheme. Therefore outsourcing these
+! routines protects from possible circular dependencies.
 
 !----------------------------
 #include "omp_definitions.inc"

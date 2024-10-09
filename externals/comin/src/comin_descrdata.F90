@@ -40,7 +40,6 @@ MODULE comin_descrdata
 
 #include "comin_global.inc"
 
-
 CONTAINS
 
   !> Fill global data.
@@ -72,13 +71,11 @@ CONTAINS
   END SUBROUTINE comin_current_get_datetime
 
   !> request simulation interval information, C interface
-  SUBROUTINE comin_current_get_datetime_c(val, len, ierr) &
+  SUBROUTINE comin_current_get_datetime_c(val, len) &
     & BIND(C, NAME="comin_current_get_datetime")
     TYPE(c_ptr),                    INTENT(OUT) :: val  !< datetime string (ISO 8601)
     INTEGER(kind=c_int),            INTENT(OUT) :: len  !< string length
-    INTEGER(kind=c_int),            INTENT(OUT) :: ierr !< error status code
 
-    ierr = COMIN_SUCCESS ! currently unused
     val = C_LOC(state%current_datetime)
     len = LEN_TRIM(state%current_datetime)
   END SUBROUTINE comin_current_get_datetime_c
@@ -99,7 +96,7 @@ CONTAINS
     comin_descrdata_get_global => NULL()
     comin_descrdata_get_global => state%comin_descrdata_global
     IF(.NOT. ASSOCIATED(comin_descrdata_get_global)) THEN
-       CALL comin_plugin_finish("comin_descrdata_get_global", " ERROR: Pointer not associated.")
+      CALL comin_plugin_finish("comin_descrdata_get_global", " ERROR: Pointer not associated.")
     END IF
   END FUNCTION comin_descrdata_get_global
 
@@ -113,7 +110,7 @@ CONTAINS
     comin_descrdata_get_domain => NULL()
     comin_descrdata_get_domain => state%comin_descrdata_domain(jg)
     IF(.NOT. ASSOCIATED(comin_descrdata_get_domain)) THEN
-       CALL comin_plugin_finish("comin_descrdata_get_domain", " ERROR: Pointer not associated.")
+      CALL comin_plugin_finish("comin_descrdata_get_domain", " ERROR: Pointer not associated.")
     END IF
 
   END FUNCTION comin_descrdata_get_domain
@@ -125,58 +122,46 @@ CONTAINS
 
     comin_descrdata_get_simulation_interval => state%comin_descrdata_simulation_interval
     IF(.NOT. ASSOCIATED(comin_descrdata_get_simulation_interval)) THEN
-       CALL comin_plugin_finish("comin_descrdata_get_simulation_interval", " ERROR: Pointer not associated.")
+      CALL comin_plugin_finish("comin_descrdata_get_simulation_interval", " ERROR: Pointer not associated.")
     END IF
   END FUNCTION comin_descrdata_get_simulation_interval
 
-
   !> request simulation interval information, C interface
-  SUBROUTINE comin_descrdata_get_simulation_interval_exp_start(val, len, ierr) &
+  SUBROUTINE comin_descrdata_get_simulation_interval_exp_start(val, len) &
     & BIND(C, NAME="comin_descrdata_get_simulation_interval_exp_start")
     TYPE(c_ptr),                    INTENT(OUT) :: val  !< datetime string (ISO 8601)
     INTEGER(kind=c_int),            INTENT(OUT) :: len  !< string length
-    INTEGER(kind=c_int),            INTENT(OUT) :: ierr !< error status code
 
-    ierr = COMIN_SUCCESS ! currently unused
     val = C_LOC(state%comin_descrdata_simulation_interval%exp_start)
     len = LEN_TRIM(state%comin_descrdata_simulation_interval%exp_start)
   END SUBROUTINE comin_descrdata_get_simulation_interval_exp_start
 
-
   !> request simulation interval information, C interface
-  SUBROUTINE comin_descrdata_get_simulation_interval_exp_stop(val, len, ierr) &
+  SUBROUTINE comin_descrdata_get_simulation_interval_exp_stop(val, len) &
     & BIND(C, NAME="comin_descrdata_get_simulation_interval_exp_stop")
     TYPE(c_ptr),                    INTENT(OUT) :: val  !< datetime string (ISO 8601)
     INTEGER(kind=c_int),            INTENT(OUT) :: len  !< string length
-    INTEGER(kind=c_int),            INTENT(OUT) :: ierr !< error status code
 
-    ierr = COMIN_SUCCESS ! currently unused
     val = C_LOC(state%comin_descrdata_simulation_interval%exp_stop)
     len = LEN_TRIM(state%comin_descrdata_simulation_interval%exp_stop)
   END SUBROUTINE comin_descrdata_get_simulation_interval_exp_stop
 
-
   !> request simulation interval information, C interface
-  SUBROUTINE comin_descrdata_get_simulation_interval_run_start(val, len, ierr) &
+  SUBROUTINE comin_descrdata_get_simulation_interval_run_start(val, len) &
     & BIND(C, NAME="comin_descrdata_get_simulation_interval_run_start")
     TYPE(c_ptr),                    INTENT(OUT) :: val  !< datetime string (ISO 8601)
     INTEGER(kind=c_int),            INTENT(OUT) :: len  !< string length
-    INTEGER(kind=c_int),            INTENT(OUT) :: ierr !< error status code
 
-    ierr = COMIN_SUCCESS ! currently unused
     val = C_LOC(state%comin_descrdata_simulation_interval%run_start)
     len = LEN_TRIM(state%comin_descrdata_simulation_interval%run_start)
   END SUBROUTINE comin_descrdata_get_simulation_interval_run_start
 
-
   !> request simulation interval information, C interface
-  SUBROUTINE comin_descrdata_get_simulation_interval_run_stop(val, len, ierr) &
+  SUBROUTINE comin_descrdata_get_simulation_interval_run_stop(val, len) &
     & BIND(C, NAME="comin_descrdata_get_simulation_interval_run_stop")
     TYPE(c_ptr),                    INTENT(OUT) :: val  !< datetime string (ISO 8601)
     INTEGER(kind=c_int),            INTENT(OUT) :: len  !< string length
-    INTEGER(kind=c_int),            INTENT(OUT) :: ierr !< error status code
 
-    ierr = COMIN_SUCCESS ! currently unused
     val = C_LOC(state%comin_descrdata_simulation_interval%run_stop)
     len = LEN_TRIM(state%comin_descrdata_simulation_interval%run_stop)
   END SUBROUTINE comin_descrdata_get_simulation_interval_run_stop
@@ -192,12 +177,10 @@ CONTAINS
 
   !> Fill array with timestep.
   !! @ingroup host_interface
-  SUBROUTINE comin_descrdata_set_timesteplength(jg, dt_current, ierr) BIND(C)
-    INTEGER(C_INT), VALUE, INTENT(IN)  :: jg
+  SUBROUTINE comin_descrdata_set_timesteplength(jg, dt_current)
+    INTEGER,               INTENT(IN)  :: jg
     REAL(wp),              INTENT(IN)  :: dt_current
-    INTEGER(C_INT),        INTENT(OUT) :: ierr
 
-    ierr = COMIN_SUCCESS ! currently unused
     IF (.NOT. ALLOCATED(state%comin_descrdata_timesteplength)) THEN
       ALLOCATE(state%comin_descrdata_timesteplength(state%comin_descrdata_global%n_dom+4))
     END IF
@@ -207,10 +190,8 @@ CONTAINS
   !> Clean descriptive data structure in ComIn
   !> currently no content but keep for future use
   !! @ingroup host_interface
-  SUBROUTINE comin_descrdata_finalize(ierr)
-    INTEGER, INTENT(OUT) :: ierr !< error code
+  SUBROUTINE comin_descrdata_finalize()
 
-    ierr = COMIN_SUCCESS ! currently unused: COMIN_ERROR_DESCRDATA_FINALIZE
   END SUBROUTINE comin_descrdata_finalize
 
   !!
@@ -324,7 +305,6 @@ CONTAINS
              &  (state%comin_descrdata_domain(jg)%edges%nblks-1)*state%comin_descrdata_global%nproma
   END FUNCTION comin_descrdata_get_edge_npromz
 
-
   !> Calculate `npromz` value for the blocking, needed for patch allocation.
   !> ... for the vertices
   !! @ingroup plugin_interface
@@ -350,9 +330,9 @@ CONTAINS
   END FUNCTION comin_descrdata_index_lookup_glb2loc_cell
 
   ! Query topo data routines generated by python script (comin_descrdata_get_domain.F90.py) in ../utils. !
-  INCLUDE 'comin_descrdata_query_domain.F90'
+#include "comin_descrdata_query_domain.inc"
 
   ! Query global data routines generated by python script (comin_descrdata_get_global.F90.py) in ../utils. !
-  INCLUDE 'comin_descrdata_query_global.F90'
+#include "comin_descrdata_query_global.inc"
 
 END MODULE comin_descrdata

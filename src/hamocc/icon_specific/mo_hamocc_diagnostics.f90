@@ -1,6 +1,3 @@
-! calculates HAMOCC diagnostics:
-! monitoring variables, global inventories!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! calculates HAMOCC diagnostics:
+! monitoring variables, global inventories!
 
 MODULE mo_hamocc_diagnostics
 !

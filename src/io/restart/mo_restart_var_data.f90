@@ -1,6 +1,3 @@
-! The glue layer between the restart writing code and the variables:
-! The restart writing code only ever sees 3D pointers returned by get_var_3d_ptr.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! The glue layer between the restart writing code and the variables:
+! The restart writing code only ever sees 3D pointers returned by get_var_3d_ptr.
 
 MODULE mo_restart_var_data
 

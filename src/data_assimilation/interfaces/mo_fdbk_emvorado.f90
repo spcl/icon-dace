@@ -1,5 +1,3 @@
-! 3DVAR/COSMO source module for feedback file interface to COSMO
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! 3DVAR/COSMO source module for feedback file interface to COSMO
 
 MODULE mo_fdbk_emvorado
 

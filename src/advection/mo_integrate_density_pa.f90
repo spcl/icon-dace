@@ -1,9 +1,3 @@
-! Offline integration of density for idealized test cases
-!
-! Integrates density for idealized test cases, i.e. when the dynamical core
-! is switched off.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Offline integration of density for idealized test cases
+!
+! Integrates density for idealized test cases, i.e. when the dynamical core
+! is switched off.
 
 MODULE mo_integrate_density_pa
 

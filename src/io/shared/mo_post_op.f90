@@ -1,13 +1,3 @@
-! This module defines small arithmetic operations ("post-ops") as
-! post-processing tasks.
-!
-! These post-processing tasks are restricted to point-wise
-! operations (no halo synchronization) of a single field, like
-! value scaling.
-!
-! @note The "post-ops" are performed at output time and DO NOT
-!       MODIFY THE FIELD ITSELF.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,16 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module defines small arithmetic operations ("post-ops") as
+! post-processing tasks.
+!
+! These post-processing tasks are restricted to point-wise
+! operations (no halo synchronization) of a single field, like
+! value scaling.
+!
+! @note The "post-ops" are performed at output time and DO NOT
+!       MODIFY THE FIELD ITSELF.
 
 MODULE mo_post_op
 

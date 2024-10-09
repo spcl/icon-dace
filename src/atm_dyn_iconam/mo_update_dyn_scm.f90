@@ -1,9 +1,3 @@
-!
-! Updates dynamical fields with slow physics tendencies in the special case
-! that dynamics are switched off (ldynamics=F). An option is added where Coriolis force
-! should be used (lcoriolis=T).
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Updates dynamical fields with slow physics tendencies in the special case
+! that dynamics are switched off (ldynamics=F). An option is added where Coriolis force
+! should be used (lcoriolis=T).
 
 MODULE mo_update_dyn_scm
 

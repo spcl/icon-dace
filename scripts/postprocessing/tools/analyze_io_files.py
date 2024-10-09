@@ -2,13 +2,14 @@
 
 # ICON
 #
-# ------------------------------------------
+# ---------------------------------------------------------------
 # Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
 # Contact information: icon-model.org
+#
 # See AUTHORS.TXT for a list of authors
 # See LICENSES/ for license information
 # SPDX-License-Identifier: BSD-3-Clause
-# ------------------------------------------
+# ---------------------------------------------------------------
 
 # ---------------------------------------------------------------------------
 #
@@ -25,8 +26,6 @@
 #                 in the format (hh:mm) on the _same date_!
 # NOTE #2:        We synchronize time stamps from "ls -l" and from the program
 #                 output by the time stamp of the first file.
-#
-# @author F. Prill, DWD (2012-03-05)
 #
 # Example usage
 #  python ~/svn/test_programs/analyze_io/analyze_io_files.py case1_7333172.log.o case1_7333172.log.e ls.txt > test.tex; pdflatex test.tex; gv test.pdf

@@ -1,6 +1,3 @@
-! Contains the variables for debugging icon model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the variables for debugging icon model
 
 MODULE mo_dbg_nml
 

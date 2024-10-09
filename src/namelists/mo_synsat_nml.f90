@@ -1,9 +1,3 @@
-! @brief Namelist for synthetic satellite images
-!
-! These subroutines are called by read_atmo_namelists and set the switches
-! for synthetic satellite images
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Namelist for synthetic satellite images
+!
+! These subroutines are called by read_atmo_namelists and set the switches
+! for synthetic satellite images
 
 MODULE mo_synsat_nml
 

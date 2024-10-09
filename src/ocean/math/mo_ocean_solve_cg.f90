@@ -18,6 +18,7 @@
 MODULE mo_ocean_solve_cg
 
   USE mo_kind, ONLY: wp, sp
+  USE mo_exception, ONLY: finish
   USE mo_ocean_solve_backend, ONLY: t_ocean_solve_backend
   USE mo_fortran_tools, ONLY: set_acc_host_or_device
 
@@ -49,12 +50,16 @@ MODULE mo_ocean_solve_cg
 CONTAINS
 
 ! get solver arrays (alloc them, if not done so, yet) - wp-variant
-  SUBROUTINE ocean_solve_cg_recover_arrays_wp(this, x, b, z, d, r, r2)
+  SUBROUTINE ocean_solve_cg_recover_arrays_wp(this, x, b, z, d, r, r2, lacc)
     CLASS(t_ocean_solve_cg), INTENT(INOUT), TARGET :: this
-    REAL(KIND=wp), INTENT(OUT), POINTER, DIMENSION(:,:) :: &
+    REAL(KIND=wp), INTENT(INOUT), POINTER, DIMENSION(:,:) :: &
       & x, b, z, d, r, r2
+    LOGICAL, INTENT(IN), OPTIONAL :: lacc
 
     INTEGER :: nblk_e
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
 
     nblk_e = MERGE(this%trans%nblk, 1, this%trans%nblk > 0)
 
@@ -64,7 +69,8 @@ CONTAINS
         & this%r_wp(this%trans%nidx, nblk_e), &
         & this%rsq_wp(this%trans%nidx, nblk_e))
       this%d_wp(:, this%trans%nblk+1:this%trans%nblk_a) = 0._wp
-      !$ACC ENTER DATA COPYIN(this%z_wp, this%d_wp, this%r_wp, this%rsq_wp)
+      !$ACC ENTER DATA COPYIN(this%z_wp, this%d_wp, this%r_wp, this%rsq_wp) ASYNC(1) IF(lzacc)
+      !$ACC WAIT(1)
     END IF
     x => this%x_wp
     b => this%b_wp
@@ -94,7 +100,9 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
     k_final = -1
 
 ! retrieve arrays
-    CALL this%recover_arrays(x, b, z, d, r, r2)
+    CALL this%recover_arrays(x, b, z, d, r, r2, lacc=lzacc)
+
+    !$ACC DATA PRESENT(x, b, z, d, r, r2) IF(lzacc)
 
     !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     b(nidx_e+1:, nblk_e) = 0._wp
@@ -102,11 +110,11 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
     !$ACC WAIT(1)
 
 ! compute initial residual and auxiliary vectors
-    !$ACC UPDATE HOST(x) ASYNC(1) IF(lzacc)
+    !$ACC UPDATE SELF(x) ASYNC(1) IF(lzacc)
     !$ACC WAIT(1)
     CALL this%trans%sync(x)
     !$ACC UPDATE DEVICE(x) ASYNC(1) IF(lzacc)
-    !$ACC WAIT(1) ! can be removed when all ACC compute regions are ASYNC(1)
+    !$ACC WAIT(1)
 
     CALL this%lhs%apply(x, z, lacc=lzacc)
 
@@ -128,7 +136,7 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
     END DO
 !ICON_OMP END PARALLEL DO
 
-    !$ACC UPDATE HOST(r2) ASYNC(1) IF(lzacc)
+    !$ACC UPDATE SELF(r2) ASYNC(1) IF(lzacc)
     !$ACC WAIT(1)
     CALL this%trans%global_sum(r2, rn)
 
@@ -169,7 +177,12 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
         !$ACC WAIT(1)
 !ICON_OMP END PARALLEL DO
       END IF
+
+      !$ACC UPDATE SELF(d) ASYNC(1) IF(lzacc)
+      !$ACC WAIT(1)
       CALL this%trans%sync(d)
+      !$ACC UPDATE DEVICE(d) ASYNC(1) IF(lzacc)
+      !$ACC WAIT(1)
 
       CALL this%lhs%apply(d, z, lacc=lzacc)
 
@@ -189,7 +202,7 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
       !$ACC END KERNELS
       !$ACC WAIT(1)
 
-      !$ACC UPDATE HOST(r2) ASYNC(1) IF(lzacc)
+      !$ACC UPDATE SELF(r2) ASYNC(1) IF(lzacc)
       !$ACC WAIT(1)
       CALL this%trans%global_sum(r2, dz_glob)
       alpha = rn / dz_glob
@@ -210,20 +223,26 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
 ! save old and compute new residual norm
       rn_last = rn
 
-      !$ACC UPDATE HOST(r2) ASYNC(1) IF(lzacc)
+      !$ACC UPDATE SELF(r2) ASYNC(1) IF(lzacc)
       !$ACC WAIT(1)
       CALL this%trans%global_sum(r2, rn)
     END DO
     this%niter_cal(1) = k_final
     this%res_wp(1) = SQRT(rn)
 
+    !$ACC UPDATE SELF(x) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
     CALL this%trans%sync(x)
+    !$ACC UPDATE DEVICE(x) ASYNC(1) IF(lzacc)
+    !$ACC WAIT(1)
+
+    !$ACC END DATA
   END SUBROUTINE ocean_solve_cg_cal_wp
 
 ! get solver arrays (alloc them, if not done so, yet) - sp-variant
   SUBROUTINE ocean_solve_cg_recover_arrays_sp(this, x, b, z, d, r, r2)
     CLASS(t_ocean_solve_cg), INTENT(INOUT), TARGET :: this
-    REAL(KIND=sp), INTENT(OUT), POINTER, DIMENSION(:,:) :: &
+    REAL(KIND=sp), INTENT(INOUT), POINTER, DIMENSION(:,:) :: &
       & x, b, z, d, r, r2
 
     IF (.NOT.ALLOCATED(this%z_sp)) THEN
@@ -249,6 +268,10 @@ SUBROUTINE ocean_solve_cg_cal_wp(this, lacc)
     REAL(KIND=sp), POINTER, DIMENSION(:,:), CONTIGUOUS :: &
       & x, b, z, d, r, r2
     LOGICAL :: done
+
+#ifdef _OPENACC
+    CALL finish("mo_ocean_solve_cg::ocean_solve_cg_cal_sp", "not ported to GPU")
+#endif
 
 ! retrieve extends of vector to solve
     nblk = this%trans%nblk

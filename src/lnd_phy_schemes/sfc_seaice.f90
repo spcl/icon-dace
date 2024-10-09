@@ -1,6 +1,3 @@
-! The main program unit of the sea-ice parameterization scheme for NWP.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,7 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
 ! The main program unit of the sea-ice parameterization scheme for NWP.
 !
 ! It contains a number of procedures.

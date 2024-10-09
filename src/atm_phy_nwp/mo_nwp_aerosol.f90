@@ -1,8 +1,3 @@
-!
-! This module prepares aerosol for the use in radiation
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module prepares aerosol for the use in radiation
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -32,7 +29,7 @@ MODULE mo_nwp_aerosol
   USE mo_impl_constants,          ONLY: min_rlcell_int, SUCCESS, &
                                     &   iss, iorg, ibc, iso4, idu, n_camsaermr
   USE mo_impl_constants_grf,      ONLY: grf_bdywidth_c
-  USE mo_physical_constants,      ONLY: rd, grav, cpd
+  USE mo_physical_constants,      ONLY: rd, grav, cpd, rdv, o_m_rdv
   USE mo_reader_cams,             ONLY: t_cams_reader
   USE mo_interpolate_time,        ONLY: t_time_intp, intModeLinearMonthlyClim, intModeLinear
   USE mo_io_units,                ONLY: filename_max
@@ -40,6 +37,8 @@ MODULE mo_nwp_aerosol
   USE mo_util_string,             ONLY: int2string, associate_keyword, t_keyword_list, with_keywords
 ! ICON configuration
   USE mo_atm_phy_nwp_config,      ONLY: atm_phy_nwp_config, iprog_aero, icpl_aero_conv
+  USE mo_run_config,              ONLY: iqv
+  USE mo_satad,                   ONLY: sat_pres_water
   USE mo_radiation_config,        ONLY: irad_aero, iRadAeroConstKinne, iRadAeroKinne, iRadAeroCAMSclim,     &
                                     &   iRadAeroCAMStd, iRadAeroVolc, iRadAeroKinneVolc, iRadAeroART, &
                                     &   iRadAeroKinneVolcSP, iRadAeroKinneSP, iRadAeroTegen,                &
@@ -152,7 +151,7 @@ CONTAINS
     REAL(wp), POINTER, INTENT(in) :: &
       &  wavenum1_sw(:),       & !< Shortwave wavenumber lower band bounds
       &  wavenum2_sw(:)          !< Shortwave wavenumber upper band bounds
-    REAL(wp), INTENT(inout) :: &
+    REAL(wp), ALLOCATABLE, TARGET, INTENT(inout) :: &
       &  zaeq1(:,:,:),         & !< Tegen optical thicknesses       1: continental
       &  zaeq2(:,:,:),         & !< relative to 550 nm, including   2: maritime
       &  zaeq3(:,:,:),         & !< a vertical profile              3: desert
@@ -196,7 +195,7 @@ CONTAINS
     jg     = pt_patch%id
 
     CALL set_acc_host_or_device(lzacc, lacc)
-  
+
     SELECT CASE(irad_aero)
 !---------------------------------------------------------------------------------------
 ! Tegen aerosol (+ART if chosen)
@@ -204,6 +203,13 @@ CONTAINS
       CASE(iRadAeroTegen, iRadAeroART)
 
         !$ACC DATA CREATE(latitude) IF(lzacc)
+
+        ALLOCATE( zaeq1( nproma, pt_patch%nlev, pt_patch%nblks_c), &
+          &       zaeq2( nproma, pt_patch%nlev, pt_patch%nblks_c), &
+          &       zaeq3( nproma, pt_patch%nlev, pt_patch%nblks_c), &
+          &       zaeq4( nproma, pt_patch%nlev, pt_patch%nblks_c), &
+          &       zaeq5( nproma, pt_patch%nlev, pt_patch%nblks_c)  )
+        !$ACC ENTER DATA CREATE(zaeq1, zaeq2, zaeq3, zaeq4, zaeq5) IF(lzacc)
 
         ! Outer two rows need dummy values as RRTM always starts at 1
         rl_start   = 1
@@ -224,7 +230,7 @@ CONTAINS
               zaeq3(jc,jk,jb) = 0._wp
               zaeq4(jc,jk,jb) = 0._wp
               zaeq5(jc,jk,jb) = 0._wp
-              ENDDO
+            ENDDO
           ENDDO
           !$ACC END PARALLEL
         ENDDO
@@ -252,8 +258,9 @@ CONTAINS
           ENDDO
           !$ACC END PARALLEL
 
-          CALL nwp_aerosol_tegen(i_startidx, i_endidx, pt_patch%nlev, pt_patch%nlevp1, &
-            &                    prm_diag%k850(:,jb), pt_diag%temp(:,:,jb), pt_diag%pres(:,:,jb), pt_diag%pres_ifc(:,:,jb), &
+          CALL nwp_aerosol_tegen(i_startidx, i_endidx, pt_patch%nlev, pt_patch%nlevp1, prm_diag%k850(:,jb), &
+            &                    pt_diag%temp(:,:,jb), pt_diag%pres(:,:,jb),                              &
+            &                    pt_diag%pres_ifc(:,:,jb),  prm_diag%tot_cld(:,:,jb,iqv),                 &
             &                    ext_data%atm_td%aer_ss(:,jb,imo1),   ext_data%atm_td%aer_org(:,jb,imo1), &
             &                    ext_data%atm_td%aer_bc(:,jb,imo1),   ext_data%atm_td%aer_so4(:,jb,imo1), &
             &                    ext_data%atm_td%aer_dust(:,jb,imo1), ext_data%atm_td%aer_ss(:,jb,imo2),  &
@@ -359,16 +366,6 @@ CONTAINS
 !---------------------------------------------------------------------------------------
       CASE(iRadAeroConstKinne, iRadAeroKinne, iRadAeroVolc, iRadAeroKinneVolc, iRadAeroKinneVolcSP, iRadAeroKinneSP)
 
-!$OMP PARALLEL
-        ! These Tegen climatological aerosol fields are not used here but need to be initialized
-        ! to avoid runtime error in the upscaling to the reduced radiation grid (upscale_rad_input)
-        CALL init(zaeq1(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq2(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq3(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq4(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq5(:,:,:), lacc=.FALSE.)
-!$OMP END PARALLEL
-
         rl_start   = grf_bdywidth_c-1
         rl_end     = min_rlcell_int
         i_startblk = pt_patch%cells%start_block(rl_start)
@@ -437,16 +434,6 @@ CONTAINS
 
       ! CAMS climatology/forecasted aerosols
       CASE(iRadAeroCAMSclim,iRadAeroCAMStd)
-
-!$OMP PARALLEL
-        ! These Tegen climatological aerosol fields are not used here but need to be initialized
-        ! to avoid runtime error in the upscaling to the reduced radiation grid (upscale_rad_input)
-        CALL init(zaeq1(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq2(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq3(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq4(:,:,:), lacc=.FALSE.)
-        CALL init(zaeq5(:,:,:), lacc=.FALSE.)
-!$OMP END PARALLEL
 
         rl_start   = grf_bdywidth_c+1
         rl_end     = min_rlcell_int
@@ -926,7 +913,7 @@ CONTAINS
 
   END SUBROUTINE cams_forecast_prep
   !---------------------------------------------------------------------------------------
-  SUBROUTINE nwp_aerosol_tegen ( istart, iend, nlev, nlevp1, k850, temp, pres, pres_ifc,                 &
+  SUBROUTINE nwp_aerosol_tegen ( istart, iend, nlev, nlevp1, k850, temp, pres, pres_ifc, qv,             &
     &                            aer_ss_mo1, aer_org_mo1, aer_bc_mo1, aer_so4_mo1, aer_dust_mo1,         &
     &                            aer_ss_mo2, aer_org_mo2, aer_bc_mo2, aer_so4_mo2, aer_dust_mo2,         &
     &                            pref_aerdis,latitude, dpres_mc, time_weight,                            &
@@ -939,7 +926,7 @@ CONTAINS
       &  k850(:)                             !< Index of 850 hPa layer
     REAL(wp), INTENT(in)                :: &
       &  temp(:,:), pres(:,:),             & !< temperature and pressure at full level
-      &  pres_ifc(:,:),                    & !< pressure at half level
+      &  pres_ifc(:,:), qv(:,:),           & !< pressure at half level, specific humidity
       &  aer_ss_mo1(:), aer_org_mo1(:),    & !< Month 1 climatology from extpar file (sea salt, organic)
       &  aer_bc_mo1(:), aer_so4_mo1(:),    & !< Month 1 climatology from extpar file (blck carbon, sulphate)
       &  aer_dust_mo1(:),                  & !< Month 1 climatology from extpar file (dust)
@@ -977,7 +964,7 @@ CONTAINS
       &  zaeqso (nproma), zaeqsn,          &
       &  zptrop (nproma), zdtdz(nproma),   &
       &  zlatfac(nproma), zstrfac,         &
-      &  zpblfac, zslatq
+      &  zpblfac, zslatq, tunefac_pbl, rh, humidity_fac
     REAL(wp), PARAMETER                 :: &
       & ztrbga = 0.03_wp  / (101325.0_wp - 19330.0_wp), &
       ! original value for zstbga of 0.045 is much higher than recently published climatologies
@@ -986,6 +973,9 @@ CONTAINS
       &  jc,jk                               !< Loop indices
     LOGICAL                             :: &
       &  lzacc                               !< non-optional version of lacc
+
+    ! increase aerosol enhancement in stable PBLs with prognostic aersosol
+    tunefac_pbl = MERGE(1._wp, 2._wp, iprog_aero <= 1)
 
     CALL set_acc_host_or_device(lzacc, lacc)
 
@@ -1077,7 +1067,7 @@ CONTAINS
     !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
     !$ACC LOOP SEQ
     DO jk = 1,nlev
-      !$ACC LOOP GANG VECTOR PRIVATE(zaeqsn, zaeqln, zaeqsun, zaequn, zaeqdn, zstrfac, zpblfac)
+      !$ACC LOOP GANG VECTOR PRIVATE(zaeqsn, zaeqln, zaeqsun, zaequn, zaeqdn, zstrfac, zpblfac, rh, humidity_fac)
       DO jc = istart, iend
         zaeqsn  = zvdaes(jc,jk+1) * aerosol(jc,iss)
         zaeqln  = zvdael(jc,jk+1) * aerosol(jc,iorg)
@@ -1087,8 +1077,11 @@ CONTAINS
 
         ! stratosphere factor: 1 in stratosphere, 0 in troposphere, width of transition zone 0.1*p_TP
         zstrfac = MIN(1._wp,MAX(0._wp,10._wp*(zptrop(jc)-pres(jc,jk))/zptrop(jc)))
-        ! PBL stability factor; enhance organic, sulfate and black carbon aerosol for stable stratification
-        zpblfac = 1._wp + MIN(1.5_wp,1.e2_wp*MAX(0._wp, zdtdz(jc) + grav/cpd))
+        ! PBL stability factor; enhance organic, sulfate and black carbon aerosol for stable stratification;
+        ! account for particle growth in nearly saturated air
+        rh = qv(jc,jk)*pres(jc,jk)/((rdv+o_m_rdv*qv(jc,jk))*sat_pres_water(temp(jc,jk)))
+        humidity_fac = MERGE(0._wp, 20._wp*MAX(0._wp,rh-0.8_wp), iprog_aero <= 1)
+        zpblfac = 1._wp + tunefac_pbl*MIN(1.5_wp,1.e2_wp*MAX(0._wp, zdtdz(jc) + grav/cpd)) + humidity_fac
 
         zaeq1(jc,jk) = (1._wp-zstrfac)*MAX(zpblfac*(zaeqln-zaeqlo(jc)), ztrbga*zlatfac(jc)*dpres_mc(jc,jk))
         zaeq2(jc,jk) = (1._wp-zstrfac)*(zaeqsn-zaeqso(jc))
@@ -1175,17 +1168,49 @@ CONTAINS
   END SUBROUTINE get_time_intp_weights
 
   !---------------------------------------------------------------------------------------
-  SUBROUTINE nwp_aerosol_cleanup(od_lw, od_sw, ssa_sw, g_sw)
+  SUBROUTINE nwp_aerosol_cleanup(zaeq1, zaeq2, zaeq3, zaeq4, zaeq5, od_lw, od_sw, ssa_sw, g_sw)
     CHARACTER(len=*), PARAMETER :: &
       &  routine = modname//':nwp_aerosol_cleanup'
 
     REAL(wp), ALLOCATABLE, INTENT(inout) :: &
+      &  zaeq1(:,:,:),         & !< Tegen optical thicknesses       1: continental
+      &  zaeq2(:,:,:),         & !< relative to 550 nm, including   2: maritime
+      &  zaeq3(:,:,:),         & !< a vertical profile              3: desert
+      &  zaeq4(:,:,:),         & !< for 5 different                 4: urban
+      &  zaeq5(:,:,:),         & !< aerosol species.                5: stratospheric background
       &  od_lw(:,:,:,:),       & !< Longwave optical thickness
       &  od_sw(:,:,:,:),       & !< Shortwave optical thickness
       &  ssa_sw(:,:,:,:),      & !< Shortwave asymmetry factor
       &  g_sw(:,:,:,:)           !< Shortwave single scattering albedo
     ! Local variables
     INTEGER :: istat
+
+    !$ACC WAIT
+    IF( ALLOCATED(zaeq1) ) THEN
+      !$ACC EXIT DATA DELETE(zaeq1)
+      DEALLOCATE(zaeq1, STAT=istat)
+      IF(istat /= SUCCESS) CALL finish(routine, 'Deallocation of zaeq1 failed.')
+    ENDIF
+    IF( ALLOCATED(zaeq2) ) THEN
+      !$ACC EXIT DATA DELETE(zaeq2)
+      DEALLOCATE(zaeq2, STAT=istat)
+      IF(istat /= SUCCESS) CALL finish(routine, 'Deallocation of zaeq2 failed.')
+    ENDIF
+    IF( ALLOCATED(zaeq3) ) THEN
+      !$ACC EXIT DATA DELETE(zaeq3)
+      DEALLOCATE(zaeq3, STAT=istat)
+      IF(istat /= SUCCESS) CALL finish(routine, 'Deallocation of zaeq3 failed.')
+    ENDIF
+    IF( ALLOCATED(zaeq4) ) THEN
+      !$ACC EXIT DATA DELETE(zaeq4)
+      DEALLOCATE(zaeq4, STAT=istat)
+      IF(istat /= SUCCESS) CALL finish(routine, 'Deallocation of zaeq4 failed.')
+    ENDIF
+    IF( ALLOCATED(zaeq5) ) THEN
+      !$ACC EXIT DATA DELETE(zaeq5)
+      DEALLOCATE(zaeq5, STAT=istat)
+      IF(istat /= SUCCESS) CALL finish(routine, 'Deallocation of zaeq5 failed.')
+    ENDIF
 
     IF( ALLOCATED(od_lw) ) THEN
       DEALLOCATE(od_lw, STAT=istat)

@@ -1,5 +1,3 @@
-! Auxiliary module: Print a list of all output variables.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Auxiliary module: Print a list of all output variables.
 
 MODULE mo_name_list_output_printvars
 

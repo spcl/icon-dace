@@ -1,9 +1,3 @@
-!
-! Additional storage for Spectral Bin Microphysics (SBM)
-!
-! Stores temperature and humidity fields, which are specific to the
-! Spectral Bin Microphysics scheme.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Additional storage for Spectral Bin Microphysics (SBM)
+!
+! Stores temperature and humidity fields, which are specific to the
+! Spectral Bin Microphysics scheme.
 
 MODULE mo_sbm_storage
 

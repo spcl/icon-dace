@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Computation of molecular diffusion of momentum, heat and amount of water vapor
 !
 ! vdf_mol calculates the temperature, humidity, u-wind, and v-wind
@@ -39,17 +49,6 @@
 ! - seperated frictional heating to mo_upatmo_fric
 ! Modification by Guidi Zhou, MPI-M (2017-03-07)
 ! - added the ability to compute molecular diffusion only above a certain altitude for performance
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_upatmo_phy_vdfmol
 

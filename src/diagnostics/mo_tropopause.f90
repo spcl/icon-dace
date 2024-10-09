@@ -1,7 +1,3 @@
-! This module contains parameters and routines needed for the
-! WMO defined tropopause height.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains parameters and routines needed for the
+! WMO defined tropopause height.
 
 !
 ! Hauke: Is this routine HAMMONIA save?

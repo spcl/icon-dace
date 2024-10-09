@@ -252,37 +252,37 @@ CONTAINS
     !>
 
     ! docu:
-    ! calc_time_mavg(current average, new value, length of avg_period,  !
+    ! calc_time_mavg(dtime, current average, new value, length of avg_period,  !
     !                do_calc=LOGICAL, avg_period_unit='day')            ! OPTIONAL
     !                RETURN(new current average)
     ! the unit of the averaging period is 'day' by default, but can also be 'week' or 'year'
 
     !>  2.1 tphen (averages at the time-scale of phenology)
     !>
-    beta_soil_gs_tphen_mavg(:) = calc_time_mavg(beta_soil_gs_tphen_mavg(:), beta_soil_gs(:), mavg_period_tphen)
-    beta_soa_tphen_mavg(:)     = calc_time_mavg(beta_soa_tphen_mavg(:), beta_soa(:), mavg_period_tphen)
+    beta_soil_gs_tphen_mavg(:) = calc_time_mavg(dtime, beta_soil_gs_tphen_mavg(:), beta_soil_gs(:), mavg_period_tphen)
+    beta_soa_tphen_mavg(:)     = calc_time_mavg(dtime, beta_soa_tphen_mavg(:), beta_soa(:), mavg_period_tphen)
 
     !>  2.2 soa time-scale
     !>
     hlp(:)                     = t_air(:) - Tzero     ! convert from Kelvin to deg Celsius
-    soa_tsoa_mavg(:)           = calc_time_mavg(soa_tsoa_mavg(:), hlp(:), mavg_period_tsoa)
+    soa_tsoa_mavg(:)           = calc_time_mavg(dtime, soa_tsoa_mavg(:), hlp(:), mavg_period_tsoa)
 
     !>  2.3 tfrac (averages at the time-scale of within-leaf N allocation fractions)
     !>
-    beta_soil_ps_tfrac_mavg(:) = calc_time_mavg(beta_soil_ps_tfrac_mavg(:), beta_soil_ps_daytime(:), &
+    beta_soil_ps_tfrac_mavg(:) = calc_time_mavg(dtime, beta_soil_ps_tfrac_mavg(:), beta_soil_ps_daytime(:), &
                                                 mavg_period_tfrac)
-    beta_soil_gs_tfrac_mavg(:) = calc_time_mavg(beta_soil_gs_tfrac_mavg(:), beta_soil_gs_daytime(:), &
+    beta_soil_gs_tfrac_mavg(:) = calc_time_mavg(dtime, beta_soil_gs_tfrac_mavg(:), beta_soil_gs_daytime(:), &
                                                 mavg_period_tfrac)
-    beta_air_tfrac_mavg(:)     = calc_time_mavg(beta_air_tfrac_mavg(:), beta_air_daytime(:), &
+    beta_air_tfrac_mavg(:)     = calc_time_mavg(dtime, beta_air_tfrac_mavg(:), beta_air_daytime(:), &
                                                 mavg_period_tfrac)
 
     !>  2.4 tcnl (averages at the time-scale of leaf N allocation fractions)
     !>
-    beta_soil_ps_tcnl_mavg(:)  = calc_time_mavg(beta_soil_ps_tcnl_mavg(:), beta_soil_ps(:), &
+    beta_soil_ps_tcnl_mavg(:)  = calc_time_mavg(dtime, beta_soil_ps_tcnl_mavg(:), beta_soil_ps(:), &
                                                 mavg_period_tcnl, do_calc=l_growing_season(:))
-    beta_soil_gs_tcnl_mavg(:)  = calc_time_mavg(beta_soil_gs_tcnl_mavg(:), beta_soil_gs(:), &
+    beta_soil_gs_tcnl_mavg(:)  = calc_time_mavg(dtime, beta_soil_gs_tcnl_mavg(:), beta_soil_gs(:), &
                                                 mavg_period_tcnl, do_calc=l_growing_season(:))
-    beta_air_tcnl_mavg(:)      = calc_time_mavg(beta_air_tcnl_mavg(:), beta_air(:), &
+    beta_air_tcnl_mavg(:)      = calc_time_mavg(dtime, beta_air_tcnl_mavg(:), beta_air(:), &
                                                 mavg_period_tcnl, do_calc=l_growing_season(:))
 
   END SUBROUTINE calculate_time_average_q_assimilation

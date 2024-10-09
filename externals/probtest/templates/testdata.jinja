@@ -8,6 +8,7 @@
         "tolerance_file_name": "{{reference}}/tolerance/{{experiment_name}}.csv",
         "member_num": "[{member_num}]",
         "member_type": "{{member_type}}",
+        "factor": 5,
         "file_id": [ ["NetCDF", "*.nc"]],
         "file_specification": [{
             "NetCDF": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["ncells", "ncells_2"] }
@@ -25,10 +26,14 @@
     "stats": {
         "ensemble": true
     },
+    "select-members":
+        {
+            "test_tolerance": false,
+            "selected_members_file_name": "{{reference}}/{{experiment_name}}_selected_members.csv"
+        },
     "check": {
         "input_file_ref": "{{reference}}/reference/{{experiment_name}}_{{member_num[0] if member_num|length>1 else 1}}.csv",
-        "input_file_cur": "{{reference}}/reference/{{experiment_name}}_{{member_num[1] if member_num|length>1 else 2}}.csv",
-        "factor": 5
+        "input_file_cur": "{{reference}}/reference/{{experiment_name}}_{{member_num[1] if member_num|length>1 else 2}}.csv"
     },
     "performance": {
         "timing_regex": "{{codebase_install}}/{{experiment_name}}/LOG.exp.{{experiment_name}}.run.12345678.o",

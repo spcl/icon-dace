@@ -1,7 +1,3 @@
-! Contains the setup of configuration of the
-! nonhydrostatic dynamical core
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the setup of configuration of the
+! nonhydrostatic dynamical core
 
 MODULE mo_nonhydrostatic_nml
 
@@ -32,6 +31,7 @@ MODULE mo_nonhydrostatic_nml
                                     & config_ndyn_substeps    => ndyn_substeps    , &
                                     & config_vcfl_threshold   => vcfl_threshold   , &
                                     & config_nlev_hcfl        => nlev_hcfl        , &
+                                    & config_cfl_monitoring_freq => cfl_monitoring_freq, &
                                     & config_lextra_diffu     => lextra_diffu     , &
                                     & config_divdamp_fac      => divdamp_fac      , &
                                     & config_divdamp_fac2     => divdamp_fac2     , &
@@ -108,6 +108,7 @@ CONTAINS
     REAL(wp):: vcfl_threshold          ! threshold for vertical advection CFL number at which the adaptive time step reduction
                                        ! (increase of ndyn_substeps w.r.t. the fixed fast-physics time step) is triggered
     INTEGER :: nlev_hcfl(max_dom)      ! number of model levels (counted from top) for which the horizontal CFL number is monitored in addition
+    INTEGER :: cfl_monitoring_freq     ! monitoring frequency for CFL number (in units of fast-physics time steps of domain 1)
     LOGICAL :: lextra_diffu            ! if true: apply additional diffusion at grid points close
     ! to the CFL stability limit for vertical advection
     REAL(wp):: divdamp_fac             ! Scaling factor for divergence damping at height divdamp_z and below
@@ -157,7 +158,7 @@ CONTAINS
          & thslp_zdiffu, thhgtd_zdiffu, divdamp_order, divdamp_type, &
          & rhotheta_offctr, lextra_diffu, veladv_offctr,             &
          & divdamp_trans_start, divdamp_trans_end, htop_aero_proc,   &
-         & vcfl_threshold, nlev_hcfl
+         & vcfl_threshold, nlev_hcfl, cfl_monitoring_freq
 
     !-----------------------
     ! 1. default settings
@@ -176,6 +177,9 @@ CONTAINS
 
     ! number of model levels (counted from top) for which the horizontal CFL number is monitored in addition
     nlev_hcfl(:) = 0
+
+    ! monitoring frequency for CFL number (in units of fast-physics time steps of domain 1)
+    cfl_monitoring_freq = 5
 
     ! apply additional horizontal diffusion on vn and w at grid points close to the stability
     ! limit for vertical advection
@@ -367,6 +371,7 @@ CONTAINS
        config_ndyn_substeps     = ndyn_substeps
        config_vcfl_threshold    = vcfl_threshold
        config_nlev_hcfl         = nlev_hcfl
+       config_cfl_monitoring_freq = cfl_monitoring_freq
        config_lextra_diffu      = lextra_diffu
        config_divdamp_fac       = divdamp_fac
        config_divdamp_fac2      = divdamp_fac2

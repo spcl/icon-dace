@@ -31,6 +31,10 @@
 --fc-external-mods=comin_host_interface
 #   FORTRAN-SUPPORT:
 --fc-external-mods=mo_exception,mo_expression,mo_fortran_tools,mo_hash_table,mo_io_units,mo_namelist,mo_octree,mo_random_number_generators,mo_util_backtrace,mo_util_file,mo_util_libc,mo_util_nml,mo_util_rusage,mo_util_signal,mo_util_sort,mo_util_stride,mo_util_string,mo_util_string_parse,mo_util_system,mo_util_table,mo_util_texthash,mo_util_timer
+#   MATH-SUPPORT:
+--fc-external-mods=mo_math_types,mo_gridman_constants,mo_math_constants,mo_lib_grid_geometry_info,mo_math_utilities,mo_lib_loopindices
+#   MATH-INTERPOLATION:
+--fc-external-mods=mo_lib_interpolation_scalar,mo_lib_interpolation_vector,mo_lib_intp_rbf
 #   MPI:
 --fc-external-mods=mpi
 #   RTE-RRTMGP:
@@ -48,9 +52,9 @@
 #   SERIALBOX2:
 --fc-external-mods=m_serialize,utils_ppser
 #   MTIME:
---fc-external-mods=mtime,mtime_datetime
+--fc-external-mods=mtime
 #   YAC:
---fc-external-mods=mo_yac_finterface
+--fc-external-mods=yac
 #   TIXI:
 --fc-external-mods=tixi
 #   NETCDF:

@@ -1,10 +1,3 @@
-!  Contains the data structures for the hydrostatic ocean model.
-!
-!  Contains the data structures to store the hydrostatic & boussinesq ocean model state.
-!  Implementation is based on ICON-Shallow-Water model
-!  to store the shallow water model state and other auxiliary variables.
-!  Constructors and destructors for these data structures are also defined here.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,13 +9,20 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Contains the data structures for the hydrostatic ocean model.
+!
+! Contains the data structures to store the hydrostatic & boussinesq ocean model state.
+! Implementation is based on ICON-Shallow-Water model
+! to store the shallow water model state and other auxiliary variables.
+! Constructors and destructors for these data structures are also defined here.
+
 MODULE mo_ocean_state
 #include "add_var_acc_macro.inc"
   !-------------------------------------------------------------------------
   USE mo_master_control,      ONLY: get_my_process_name
   USE mo_kind,                ONLY: wp
   USE mo_parallel_config,     ONLY: nproma
-  USE mo_impl_constants,      ONLY: success, TLEV_NNEW
+  USE mo_impl_constants,      ONLY: success, TLEV_NNEW, max_char_length
   USE mo_ocean_nml,           ONLY: n_zlev, dzlev_m, no_tracer, use_tracer_x_height, cfl_write,&
     &                               Cartesian_Mixing , &
     &                               k_tracer_dianeutral_parameter,                                &
@@ -32,7 +32,8 @@ MODULE mo_ocean_state
     &                               GMREDI_COMBINED_DIAGNOSTIC,GM_INDIVIDUAL_DIAGNOSTIC,          &
     &                               REDI_INDIVIDUAL_DIAGNOSTIC, eddydiag,                         &
     &                               diagnose_for_tendencies, diagnose_for_heat_content, lhamocc,  &
-    &                               use_tides_SAL, vert_cor_type
+    &                               use_tides_SAL, vert_cor_type, diagnose_age, diagnose_green,   &
+    &                               age_idx, green_idx
   USE mo_run_config,          ONLY: test_mode
   USE mo_ocean_types,         ONLY: t_hydro_ocean_base ,t_hydro_ocean_state ,t_hydro_ocean_prog ,t_hydro_ocean_diag, &
     &                               t_hydro_ocean_aux , t_oce_config
@@ -1036,7 +1037,9 @@ CONTAINS
        & za_depth_below_sea_half, &
        & t_cf_var('w_der','m s-1','physical vertical velocity at cells for zstar', datatype_flt),&
        & grib2_var(255, 255, 255, DATATYPE_PACK16, GRID_UNSTRUCTURED, grid_cell),&
-       & ldims=(/nproma,n_zlev+1,alloc_cell_blocks/),in_group=groups("oce_diag","oce_default"))
+       & ldims=(/nproma,n_zlev+1,alloc_cell_blocks/),in_group=groups("oce_diag","oce_default"),&
+       & lopenacc=.TRUE.)
+      __acc_attach(ocean_state_diag%w_deriv)
     ENDIF
 
     CALL add_var(ocean_default_list, 'ssh', ocean_state_diag%ssh , &
@@ -2275,7 +2278,8 @@ CONTAINS
     CALL add_var(ocean_default_list,'bc_tides_potential',ocean_state_aux%bc_tides_potential, grid_unstructured_cell,&
       & za_surface, t_cf_var('bc_tides_potential','fixme','bc_tides_potential', datatype_flt),&
       & dflt_g2_decl_cell,&
-      & ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_aux, initval=0.0_wp)
+      & ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_aux, lopenacc=.TRUE., initval=0.0_wp)
+    __acc_attach(ocean_state_aux%bc_tides_potential)
 
 !     this is used by default in the calculation of the total potential
 !    IF (use_tides_SAL) THEN
@@ -2296,7 +2300,8 @@ CONTAINS
       & grid_unstructured_cell,&
       & za_surface, t_cf_var('bc_SAL_potential','fixme','bc_SAL_potential', datatype_flt),&
       & dflt_g2_decl_cell,&
-      & ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_aux, initval=0.0_wp)
+      & ldims=(/nproma,alloc_cell_blocks/),in_group=groups_oce_aux, lopenacc=.TRUE., initval=0.0_wp)
+    __acc_attach(ocean_state_aux%bc_SAL_potential)
 
     CALL add_var(ocean_default_list,'bc_bot_tracer',ocean_state_aux%bc_bot_tracer,grid_unstructured_cell,&
       & za_surface, t_cf_var('bc_bot_tracer','fixme','bc_bot_tracer', datatype_flt),&
@@ -2530,7 +2535,10 @@ CONTAINS
   SUBROUTINE destruct_patch_3d(patch_3d)
 
     TYPE(t_patch_3d ),TARGET, INTENT(inout)    :: patch_3d
+    CHARACTER(LEN=max_char_length), PARAMETER :: &
+      & routine = 'mo_ocean_state:destruct_patch_3d'
 
+    CALL message (TRIM(routine), 'start')
     DEALLOCATE(patch_3d%p_patch_1d(n_dom)%del_zlev_m)
     DEALLOCATE(patch_3d%p_patch_1d(n_dom)%inv_del_zlev_m)
     DEALLOCATE(patch_3d%p_patch_1d(n_dom)%zlev_m)
@@ -2539,6 +2547,7 @@ CONTAINS
     DEALLOCATE(patch_3d%p_patch_1d(n_dom)%ocean_area)
     DEALLOCATE(patch_3d%p_patch_1d(n_dom)%ocean_volume)
     DEALLOCATE(patch_3d%p_patch_1d)
+    CALL message (routine, 'end')
 
   END SUBROUTINE destruct_patch_3d
 
@@ -2879,17 +2888,21 @@ CONTAINS
     ! discipline=10, parameterCategory=4, parameterNumber=21 encoded in one integer
     oce_config%tracer_codes(2)      = ISHFT(10,16)+ISHFT(4,8)+21
 
-    oce_config%tracer_shortnames(3) = 'age_tracer'
-    oce_config%tracer_stdnames(3)   = 'age_tracer'
-    oce_config%tracer_longnames(3)  = 'age tracer'
-    oce_config%tracer_units(3)      = 'sec'
-    oce_config%tracer_codes(3)      = 6
+    IF (diagnose_age) THEN
+      oce_config%tracer_shortnames(age_idx) = 'age_tracer'
+      oce_config%tracer_stdnames(age_idx)   = 'age_tracer'
+      oce_config%tracer_longnames(age_idx)  = 'age tracer'
+      oce_config%tracer_units(age_idx)      = 'sec'
+      oce_config%tracer_codes(age_idx)      = 6
+    END IF
 
-    oce_config%tracer_shortnames(4) = 'age_tracer_squared'
-    oce_config%tracer_stdnames(4)   = 'age_tracer_squared'
-    oce_config%tracer_longnames(4)  = 'age tracer squared'
-    oce_config%tracer_units(4)      = 'sec^2'
-    oce_config%tracer_codes(4)      = 7
+    IF (diagnose_green) THEN
+      oce_config%tracer_shortnames(green_idx) = 'green_tracer'
+      oce_config%tracer_stdnames(green_idx)   = 'green_tracer'
+      oce_config%tracer_longnames(green_idx)  = 'Greens function'
+      oce_config%tracer_units(green_idx)      = 'sec^-1'
+      oce_config%tracer_codes(green_idx)      = 7
+    END IF
   END SUBROUTINE setup_tracer_info
 
   SUBROUTINE transfer_ocean_state( patch_3d, operators_coefficients )
@@ -2922,31 +2935,31 @@ CONTAINS
     !$ACC   COPYIN(patch_3d%p_patch_1d(1)%prism_thick_e) &
     !$ACC   COPYIN(patch_3d%p_patch_1d(1)%inv_prism_thick_e) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%alloc_cell_blocks) &
-    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%nblks_v, patch_3d%p_patch_2D(1)%nblks_e) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%nblks_v, patch_3d%p_patch_2d(1)%nblks_e) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells, patch_3d%p_patch_2d(1)%edges) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%cell_idx, patch_3d%p_patch_2d(1)%edges%cell_blk) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%in_domain) &
-    !$ACC   COPYIN(patch_3D%p_patch_2d(1)%edges%area_edge) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%edges%vertex_idx) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%edges%vertex_blk) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%edges%primal_cart_normal) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%area_edge) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%vertex_idx) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%vertex_blk) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%primal_cart_normal) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%inv_dual_edge_length) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%primal_edge_length) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%tangent_orientation) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%edges%inv_primal_edge_length) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%edge_idx, patch_3d%p_patch_2d(1)%cells%edge_blk) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%neighbor_idx, patch_3d%p_patch_2d(1)%cells%neighbor_blk) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%cells%center) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%cells%owned, patch_3D%p_patch_2D(1)%cells%owned%vertical_levels) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%cells%all) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%cells%all%vertical_levels, patch_3D%p_patch_2D(1)%cells%area) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%center, patch_3d%p_patch_2d(1)%cells%num_edges) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%owned, patch_3d%p_patch_2d(1)%cells%owned%vertical_levels) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%all) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%all%vertical_levels, patch_3d%p_patch_2d(1)%cells%area) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%in_domain) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%cells%in_domain%vertical_levels) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%verts, patch_3D%p_patch_2D(1)%verts%cell_idx) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%verts%cell_blk, patch_3D%p_patch_2D(1)%verts%num_edges) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%verts%edge_idx, patch_3D%p_patch_2D(1)%verts%edge_blk) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%verts, patch_3d%p_patch_2d(1)%verts%cell_idx) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%verts%cell_blk, patch_3d%p_patch_2d(1)%verts%num_edges) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%verts%edge_idx, patch_3d%p_patch_2d(1)%verts%edge_blk) &
     !$ACC   COPYIN(patch_3d%p_patch_2d(1)%verts%f_v) &
-    !$ACC   COPYIN(patch_3D%p_patch_2D(1)%verts%all) &
+    !$ACC   COPYIN(patch_3d%p_patch_2d(1)%verts%all) &
     !$ACC   COPYIN(nold, nnew)
     
     !$ACC ENTER DATA COPYIN(operators_coefficients, operators_coefficients%verticaladvectionppmcoeffs)

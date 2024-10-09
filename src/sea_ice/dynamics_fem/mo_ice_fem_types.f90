@@ -1,6 +1,3 @@
-! Arrays used to store ice variables and organize coupling
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Arrays used to store ice variables and organize coupling
 
 MODULE mo_ice_fem_types
 

@@ -24,13 +24,13 @@
 #  Nov 10, 2016: Reiner Schnur, MPIM
 #
 
-import sys
-import getopt
-import re
-import os
 import fnmatch
-import io
+import getopt
 import hashlib
+import io
+import os
+import re
+import sys
 
 # Search pattern to find lines with dsl4jsb macros and extract macro name
 re_function = re.compile(r"dsl4jsb_(.*?) *( *$|,|\)| |\()", re.IGNORECASE)
@@ -61,11 +61,17 @@ macros = {
     ],
     "get_memory": [
         re.compile(r"dsl4jsb_Get_memory *\((.*)_ *\)", re.IGNORECASE),
-        r"SELECT TYPE (mm => tile%mem(\1_)%p); TYPE IS (t_\1_memory); \1__mem => mm ; END SELECT",
+        r"SELECT TYPE (mm => tile%mem(\1_)%p); "
+        r"TYPE IS (t_\1_memory); "
+        r"\1__mem => mm ; "
+        r"END SELECT",
     ],
     "get_memory_tile": [
         re.compile(r"dsl4jsb_Get_memory_tile *\((.*?)_ *, *(.*?) *\)", re.IGNORECASE),
-        r"SELECT TYPE (mm => \2%mem(\1_)%p); TYPE IS (t_\1_memory); \1__mem__\2 => mm ; END SELECT",
+        r"SELECT TYPE (mm => \2%mem(\1_)%p); "
+        r"TYPE IS (t_\1_memory); "
+        r"\1__mem__\2 => mm ; "
+        r"END SELECT",
     ],
     "memory": [re.compile(r"dsl4jsb_Memory *\((.*?)_ *\)", re.IGNORECASE), r"\1__mem"],
     "use_config": [
@@ -78,7 +84,10 @@ macros = {
     ],
     "get_config": [
         re.compile(r"dsl4jsb_Get_config *\((.*)_ *\)", re.IGNORECASE),
-        r"SELECT TYPE (cc => model%processes(\1_)%p%config); TYPE IS (t_\1_config) ; \1__conf => cc ; END SELECT",
+        r"SELECT TYPE (cc => model%processes(\1_)%p%config); "
+        r"TYPE IS (t_\1_config) ; "
+        r"\1__conf => cc ; "
+        r"END SELECT",
     ],
     "config": [re.compile(r"dsl4jsb_Config *\((.*?)_ *\)", re.IGNORECASE), r"\1__conf"],
     "get_lcc_relocations": [
@@ -266,7 +275,7 @@ help_text = """
         -k, --keep-dirs   keep directory tree structure of files in input directory (if -d and -t given)
         -p, --pp-add=STR  add string STR before .suffix in processed files (pp = pre-processed)
         -n, --no-header   don't create header with hash of source file
-    """
+    """  # noqa: E501
 
 __current_file = ""
 
@@ -305,9 +314,6 @@ def process_file(
                     break
     # If both hashes are equal, don't generate new file
     if hasher.hexdigest() == hash:
-        # Since input file hasn't changed, reset its modification time to the one
-        # of the output file, so that make doesn't think the input file is newer
-        os.utime(inputfile, (os.path.getatime(inputfile), os.path.getmtime(outputfile)))
         if verbose_more:
             print(
                 "File hasn't changed: " + os.path.realpath(os.path.abspath(inputfile))
@@ -322,18 +328,20 @@ def process_file(
         ) as outfile:
             if header:
                 outfile.write(
-                    "!\n! This file was automatically generated from JSBACH source file:\n"
+                    u"!\n"
+                    u"! This file was automatically generated from JSBACH source file:"
+                    u"\n"
                 )
                 outfile.write(
-                    "!    "
+                    u"!    "
                     + re.sub(
                         r".*/src", "src", os.path.realpath(os.path.abspath(inputfile))
                     )
                     + "\n"
                 )
-                outfile.write("! with md5 hash: " + hasher.hexdigest() + "\n!\n")
+                outfile.write(u"! with md5 hash: " + hasher.hexdigest() + "\n!\n")
                 outfile.write(
-                    '#line 1 "{}"\n'.format(
+                    u'#line 1 "{}"\n'.format(
                         os.path.realpath(os.path.abspath(inputfile))
                     )
                 )
@@ -372,7 +380,7 @@ def process_file(
                             pat, replace = macros[key]
                             line = pat.sub(replace, line)
                             line = re.sub(r"([A-Z2]*?)_", tolower, line)
-                        except:
+                        except KeyError:
                             print(
                                 "ERROR in "
                                 + inputfile
@@ -387,10 +395,6 @@ def process_file(
                         outfile.write(line.encode("utf-8"))
                 else:
                     outfile.write(line)
-    if outputfile != "":
-        os.utime(
-            outputfile, (os.path.getatime(outputfile), os.path.getmtime(inputfile))
-        )
 
 
 def main(argv):

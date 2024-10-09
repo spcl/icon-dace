@@ -25,6 +25,11 @@ MODULE mo_jsb_impl_constants
   INTEGER, PARAMETER :: SHORT_NAME_LEN = 10
   INTEGER, PARAMETER :: MEDIUM_NAME_LEN = 20
 
+  ! water balance check descriptors
+  INTEGER, PARAMETER :: WB_IGNORE  = 0
+  INTEGER, PARAMETER :: WB_LOGGING = 1
+  INTEGER, PARAMETER :: WB_ERROR   = 2
+
   ! using the functionality of LOGICAL var with REAL var
   REAL(wp), PARAMETER :: false            = 0.0_wp    !< zero
   REAL(wp), PARAMETER :: true             = 1.0_wp    !< one

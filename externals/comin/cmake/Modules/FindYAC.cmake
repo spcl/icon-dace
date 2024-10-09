@@ -4,7 +4,7 @@ find_package(LAPACK)
 
 if(YAXT_FOUND AND NetCDF_FOUND AND LAPACK_FOUND)
   find_path(YAC_C_INCLUDE_DIR
-    NAMES yac_interface.h
+    NAMES yac.h
     DOC "YAC include dir")
 
   find_path(YAC_FORTRAN_INCLUDE_DIR
@@ -33,8 +33,7 @@ if(YAXT_FOUND AND NetCDF_FOUND AND LAPACK_FOUND)
     if(NOT TARGET YAC::YAC)
       add_library(YAC::YAC INTERFACE IMPORTED)
       target_include_directories(YAC::YAC INTERFACE "${YAC_C_INCLUDE_DIR}" "${YAC_FORTRAN_INCLUDE_DIR}")
-      target_link_libraries(YAC::YAC INTERFACE "${YAC_C_LIBRARY}" "${YAC_C_MTIME_LIBRARY}" YAXT::YAXT_C NetCDF::NetCDF_C MPI::MPI_C LAPACK::LAPACK fyaml m)
+      target_link_libraries(YAC::YAC INTERFACE "-Wl,--export-dynamic-symbol=yac_*" "${YAC_C_LIBRARY}" "${YAC_C_MTIME_LIBRARY}" YAXT::YAXT_C NetCDF::NetCDF_C MPI::MPI_C LAPACK::LAPACK fyaml m)
     endif()
   endif()
 endif()
-

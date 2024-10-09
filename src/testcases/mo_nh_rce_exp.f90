@@ -1,6 +1,3 @@
-! Subroutine to initialize a Radiative Convective Equilibrium Exp
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialize a Radiative Convective Equilibrium Exp
 
 MODULE mo_nh_rce_exp
 

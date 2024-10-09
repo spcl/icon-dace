@@ -1,8 +1,3 @@
-! Namelist for tuning and/or perturbing nwp physics
-!
-! These subroutines are called by read_atmo_namelists and do some
-! nwp physics tuning
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for tuning and/or perturbing nwp physics
+!
+! These subroutines are called by read_atmo_namelists and do some
+! nwp physics tuning
 
 MODULE mo_nwp_tuning_nml
 

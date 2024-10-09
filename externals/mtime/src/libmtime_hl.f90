@@ -39,32 +39,50 @@
 !!
 MODULE mtime_hl
 
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int32_t, c_int64_t, c_double, &
-       &                                 c_null_char, c_ptr, c_loc, c_f_pointer
-  USE mtime_c_bindings
-  USE mtime_constants
-  use mtime_error_handling
-  USE mtime
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_char, c_double, c_f_pointer, c_int, c_int32_t, &
+    & c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: &
+    & max_datetime_str_len, max_event_str_len, max_eventname_str_len, &
+    & max_groupname_str_len, max_timedelta_str_len
+  USE mtime_error_handling
+  USE mtime_c_bindings, ONLY: &
+    & date, datetime, divisionquotienttimespan, handle_errno, julianday, &
+    & juliandelta, time, timedelta
+  USE mtime_c_bindings, ONLY: &
+    & my_addtimedeltatodatetime, my_comparedatetime, my_datetimetostring, &
+    & my_datetoposixstring, my_deallocatedatetime, my_deallocatejuliandelta, &
+    & my_deallocatetimedelta, my_elementwisescalarmultiplytimedelta, &
+    & my_elementwisescalarmultiplytimedeltadp, my_getdayofyearfromdatetime, &
+    & my_getjuliandayfromdatetime, my_getnoofdaysinmonthdatetime, &
+    & my_getnoofdaysinyeardatetime, my_getnoofsecondselapsedindaydatetime, &
+    & my_getnoofsecondselapsedinmonthdatetime, my_gettimedeltafromdate, &
+    & my_newdatetime, my_newjuliandelta, my_newrawdatetime, &
+    & my_newrawtimedelta, my_newtimedeltafromstring, my_timedeltatostring
+  USE mtime, ONLY: &
+    & OPERATOR(*), OPERATOR(/=), OPERATOR(<), OPERATOR(<=), OPERATOR(==), &
+    & OPERATOR(>), OPERATOR(>=), deallocateDatetime, deallocateJulianDay, &
+    & deallocateJulianDelta, deallocateTimedelta, &
+    & divideDatetimeDifferenceInSeconds, divideTimeDeltaInSeconds, &
+    & getDatetimeFromJulianDay, getPTStringFromMS, &
+    & getTotalMilliSecondsTimeDelta, getTotalSecondsTimeDelta, newDatetime, &
+    & newJulianDay, newJuliandelta, newTimedelta, timeDeltaToJulianDelta
 
   IMPLICIT NONE
 
 #ifndef __NVCOMPILER
-  
+
   PUBLIC :: t_datetime, t_timedelta, t_juliandelta, t_julianday, t_event, t_eventGroup
   PUBLIC :: t_timedeltaFromMilliseconds
   PUBLIC :: t_timedeltaFromSeconds
   PUBLIC :: min, max
   PUBLIC :: OPERATOR(*)
 
-  ! Re-export stuff
-  public :: register_finish_mtime_procedure, finish_mtime  
-
   !
-  ! TODO: simply repeat the implementation of "divisionquotienttimespan" in order to disentangle the mtime_hl and the mtime Fortran modules.
+  ! TODO: simply repeat the implementation of "divisionquotienttimespan" in
+  !       order to disentangle the mtime_hl and the mtime Fortran modules.
   !
   !PUBLIC :: divisionquotienttimespan
-
-
 
   !> NOTE / TODO:
   !
@@ -102,11 +120,11 @@ MODULE mtime_hl
   !
   TYPE t_datetime
 
-     !private
+    !private
 
-     !> wrapped datatype of the standard mtime interface
-     TYPE(datetime) :: dt = datetime(date(year=0_c_int64_t, month=0_c_int, day=0_c_int),&
-          &                          time(hour=0_c_int, minute=0_c_int, second=0_c_int, ms=0_c_int))
+    !> wrapped datatype of the standard mtime interface
+    TYPE(datetime) :: dt = datetime(date(year=0_c_int64_t, month=0_c_int, day=0_c_int),&
+         &                          time(hour=0_c_int, minute=0_c_int, second=0_c_int, ms=0_c_int))
 
   CONTAINS
 
@@ -114,45 +132,45 @@ MODULE mtime_hl
 
     PROCEDURE :: t_datetime_toString
     PROCEDURE :: t_datetime_to_posix_string
-    GENERIC   :: toString                          => t_datetime_toString, t_datetime_to_posix_string
+    GENERIC   :: toString => t_datetime_toString, t_datetime_to_posix_string
 
-    PROCEDURE :: toJulianDay                       => t_datetime_toJulianDay
+    PROCEDURE :: toJulianDay => t_datetime_toJulianDay
 
     ! --- inquire components
 
-    PROCEDURE :: getDay                            => t_datetime_getDay
+    PROCEDURE :: getDay => t_datetime_getDay
 
     ! --- derived quantities
 
-    PROCEDURE :: daysInEntireMonth                 => t_datetime_daysInEntireMonth
-    PROCEDURE :: daysInEntireYear                  => t_datetime_daysInEntireYear
-    PROCEDURE :: elapsedDaysInYear                 => t_datetime_elapsedDaysInYear
-    PROCEDURE :: elapsedSecondsInMonth             => t_datetime_elapsedSecondsInMonth
-    PROCEDURE :: elapsedSecondsInDay               => t_datetime_elapsedSecondsInDay
+    PROCEDURE :: daysInEntireMonth => t_datetime_daysInEntireMonth
+    PROCEDURE :: daysInEntireYear => t_datetime_daysInEntireYear
+    PROCEDURE :: elapsedDaysInYear => t_datetime_elapsedDaysInYear
+    PROCEDURE :: elapsedSecondsInMonth => t_datetime_elapsedSecondsInMonth
+    PROCEDURE :: elapsedSecondsInDay => t_datetime_elapsedSecondsInDay
 
     ! --- overloaded operators
 
-    PROCEDURE :: add_timedelta                     => t_datetime_add_timedelta
-    PROCEDURE :: sub_timedelta                     => t_datetime_sub_timedelta
-    PROCEDURE :: sub_datetime                      => t_datetime_sub_datetime
-    PROCEDURE :: equal_datetime                    => t_datetime_equal
-    PROCEDURE :: not_equal_datetime                => t_datetime_not_equal
-    PROCEDURE :: less_than_datetime                => t_datetime_less_than
-    PROCEDURE :: greater_than_datetime             => t_datetime_greater_than
-    PROCEDURE :: less_or_equal_datetime            => t_datetime_less_or_equal
-    PROCEDURE :: greater_or_equal_datetime         => t_datetime_greater_or_equal
+    PROCEDURE :: add_timedelta => t_datetime_add_timedelta
+    PROCEDURE :: sub_timedelta => t_datetime_sub_timedelta
+    PROCEDURE :: sub_datetime => t_datetime_sub_datetime
+    PROCEDURE :: equal_datetime => t_datetime_equal
+    PROCEDURE :: not_equal_datetime => t_datetime_not_equal
+    PROCEDURE :: less_than_datetime => t_datetime_less_than
+    PROCEDURE :: greater_than_datetime => t_datetime_greater_than
+    PROCEDURE :: less_or_equal_datetime => t_datetime_less_or_equal
+    PROCEDURE :: greater_or_equal_datetime => t_datetime_greater_or_equal
 
-    PROCEDURE :: get_c_pointer                     => t_datetime_get_c_pointer
+    PROCEDURE :: get_c_pointer => t_datetime_get_c_pointer
 
-    GENERIC   :: OPERATOR(+)                       =>  add_timedelta
-    GENERIC   :: OPERATOR(-)                       =>  sub_timedelta
-    GENERIC   :: OPERATOR(-)                       =>  sub_datetime
-    GENERIC   :: OPERATOR(==)                      =>  equal_datetime
-    GENERIC   :: OPERATOR(/=)                      =>  not_equal_datetime
-    GENERIC   :: OPERATOR(<)                       =>  less_than_datetime
-    GENERIC   :: OPERATOR(>)                       =>  greater_than_datetime
-    GENERIC   :: OPERATOR(<=)                      =>  less_or_equal_datetime
-    GENERIC   :: OPERATOR(>=)                      =>  greater_or_equal_datetime
+    GENERIC   :: OPERATOR(+) => add_timedelta
+    GENERIC   :: OPERATOR(-) => sub_timedelta
+    GENERIC   :: OPERATOR(-) => sub_datetime
+    GENERIC   :: OPERATOR(==) => equal_datetime
+    GENERIC   :: OPERATOR(/=) => not_equal_datetime
+    GENERIC   :: OPERATOR(<) => less_than_datetime
+    GENERIC   :: OPERATOR(>) => greater_than_datetime
+    GENERIC   :: OPERATOR(<=) => less_or_equal_datetime
+    GENERIC   :: OPERATOR(>=) => greater_or_equal_datetime
 
   END TYPE t_datetime
 
@@ -161,8 +179,6 @@ MODULE mtime_hl
     MODULE PROCEDURE t_datetime_assign_raw
   END INTERFACE t_datetime
 
-  
-
   !> Wrapper class for "mtime" data type "timedelta".
   !
   TYPE t_timedelta
@@ -170,61 +186,57 @@ MODULE mtime_hl
     !private
 
     !> wrapped datatype of the standard mtime interface
-     TYPE(timedelta) :: td = timedelta( flag_std_form = 0_c_int, sign = '+', year = 0_c_int64_t,   &
-          &                                month = 0_c_int, day = 0_c_int, hour = 0_c_int,         &
-          &                                minute = 0_c_int, second = 0_c_int, ms = 0_c_int )
-
+    TYPE(timedelta) :: td = timedelta(flag_std_form=0_c_int, sign='+', year=0_c_int64_t,   &
+         &                                month=0_c_int, day=0_c_int, hour=0_c_int,         &
+         &                                minute=0_c_int, second=0_c_int, ms=0_c_int)
 
   CONTAINS
 
     ! --- conversions
 
-    PROCEDURE :: toString                  => t_timedelta_toString
-    PROCEDURE :: toJulianDelta             => t_timedelta_toJulianDelta
-
+    PROCEDURE :: toString => t_timedelta_toString
+    PROCEDURE :: toJulianDelta => t_timedelta_toJulianDelta
 
     ! --- inquire components
 
     ! todo: [...]
 
-
     ! --- derived quantities
 
-    PROCEDURE :: toSeconds                 => t_timedelta_toSeconds
+    PROCEDURE :: toSeconds => t_timedelta_toSeconds
 
     ! t_timedelta_toMilliSeconds: todo: It would be convenient to have
     ! the reference date for this function as an optional argument;
     ! only in case of "non-well-definedness" an error should be
     ! thrown.
-    PROCEDURE :: toMilliSeconds            => t_timedelta_toMilliSeconds
+    PROCEDURE :: toMilliSeconds => t_timedelta_toMilliSeconds
 
-    PROCEDURE :: divideInSecondsBy         => t_timedelta_divideInSecondsBy
-
+    PROCEDURE :: divideInSecondsBy => t_timedelta_divideInSecondsBy
 
     ! --- overloaded operators
 
     ! note: the "+", "-" operators are not well-defined for timedelta
     ! objects!
 
-    PROCEDURE :: equal_datetime            => t_timedelta_equal
-    PROCEDURE :: not_equal_datetime        => t_timedelta_not_equal
-    PROCEDURE :: less_than_datetime        => t_timedelta_less_than
-    PROCEDURE :: greater_than_datetime     => t_timedelta_greater_than
-    PROCEDURE :: less_or_equal_datetime    => t_timedelta_less_than_or_equal
+    PROCEDURE :: equal_datetime => t_timedelta_equal
+    PROCEDURE :: not_equal_datetime => t_timedelta_not_equal
+    PROCEDURE :: less_than_datetime => t_timedelta_less_than
+    PROCEDURE :: greater_than_datetime => t_timedelta_greater_than
+    PROCEDURE :: less_or_equal_datetime => t_timedelta_less_than_or_equal
     PROCEDURE :: greater_or_equal_datetime => t_timedelta_greater_than_or_equal
-    PROCEDURE :: scalar_multiply_long      => t_timedelta_scalar_multiply_long
-    PROCEDURE :: scalar_multiply_int       => t_timedelta_scalar_multiply_int
-    PROCEDURE :: scalar_multiply_real      => t_timedelta_scalar_multiply_real
+    PROCEDURE :: scalar_multiply_long => t_timedelta_scalar_multiply_long
+    PROCEDURE :: scalar_multiply_int => t_timedelta_scalar_multiply_int
+    PROCEDURE :: scalar_multiply_real => t_timedelta_scalar_multiply_real
 
-    PROCEDURE :: get_c_pointer             => t_timedelta_get_c_pointer
+    PROCEDURE :: get_c_pointer => t_timedelta_get_c_pointer
 
-    GENERIC   :: OPERATOR(==)              =>  equal_datetime
-    GENERIC   :: OPERATOR(/=)              =>  not_equal_datetime
-    GENERIC   :: OPERATOR(<)               =>  less_than_datetime
-    GENERIC   :: OPERATOR(>)               =>  greater_than_datetime
-    GENERIC   :: OPERATOR(<=)              =>  less_or_equal_datetime
-    GENERIC   :: OPERATOR(>=)              =>  greater_or_equal_datetime
-    GENERIC   :: OPERATOR(*)               =>  scalar_multiply_long, scalar_multiply_int,         &
+    GENERIC   :: OPERATOR(==) => equal_datetime
+    GENERIC   :: OPERATOR(/=) => not_equal_datetime
+    GENERIC   :: OPERATOR(<) => less_than_datetime
+    GENERIC   :: OPERATOR(>) => greater_than_datetime
+    GENERIC   :: OPERATOR(<=) => less_or_equal_datetime
+    GENERIC   :: OPERATOR(>=) => greater_or_equal_datetime
+    GENERIC   :: OPERATOR(*) => scalar_multiply_long, scalar_multiply_int,         &
          &                                        scalar_multiply_real
 
   END TYPE t_timedelta
@@ -257,7 +269,6 @@ MODULE mtime_hl
     MODULE PROCEDURE t_datetime_max
   END INTERFACE max
 
-
   TYPE t_julianday
 
     !private
@@ -269,15 +280,14 @@ MODULE mtime_hl
 
     ! --- conversions
 
-    PROCEDURE :: toDateTime           => t_julianday_toDateTime
+    PROCEDURE :: toDateTime => t_julianday_toDateTime
 
     ! --- inquire components
 
-    PROCEDURE :: getDay               => t_julianDay_getDay
+    PROCEDURE :: getDay => t_julianDay_getDay
     PROCEDURE :: getFractionOfDayInMS => t_julianday_getFractionOfDayInMS
 
   END TYPE t_julianday
-
 
   !> Wrapper class for "mtime" data type "juliandelta".
   !
@@ -334,15 +344,14 @@ MODULE mtime_hl
 
     !> TODO: implement isAvtive ....
     ! PROCEDURE :: trigger                   => t_event_trigger
-    PROCEDURE :: getFirstDatetime          => t_event_getFirstDatetime
-    PROCEDURE :: getInterval               => t_event_getInterval
-    PROCEDURE :: getLastDatetime           => t_event_getLastDatetime
+    PROCEDURE :: getFirstDatetime => t_event_getFirstDatetime
+    PROCEDURE :: getInterval => t_event_getInterval
+    PROCEDURE :: getLastDatetime => t_event_getLastDatetime
     PROCEDURE :: getNextOccurrenceDatetime => t_event_getNextOccurrenceDatetime
     PROCEDURE :: getPrevOccurrenceDatetime => t_event_getPrevOccurrenceDatetime
 
-    PROCEDURE :: getName                   => t_event_getName
-    PROCEDURE :: nextEvent                 => t_event_next_event
-    PROCEDURE :: isActive                  => t_event_is_active
+    PROCEDURE :: getName => t_event_getName
+    PROCEDURE :: nextEvent => t_event_next_event
 
   END TYPE t_event
 
@@ -350,7 +359,6 @@ MODULE mtime_hl
     MODULE PROCEDURE t_event_assign_raw
     MODULE PROCEDURE t_event_assign_types
   END INTERFACE t_event
-
 
   TYPE t_eventGroup
 
@@ -363,15 +371,15 @@ MODULE mtime_hl
 
   CONTAINS
 
-    PROCEDURE :: append        => t_eventGroup_addToGroup
+    PROCEDURE :: append => t_eventGroup_addToGroup
 
     !> TODO: implement the removal of a event in a list
     !PROCEDURE :: remove        => t_eventGroup_removeFromGroup
 
     ! --- inquire components
 
-    PROCEDURE :: getID         => t_eventGroup_getGroupId
-    PROCEDURE :: getName       => t_eventGroup_getGroupName
+    PROCEDURE :: getID => t_eventGroup_getGroupId
+    PROCEDURE :: getName => t_eventGroup_getGroupName
 
     ! --- derived quantities
 
@@ -383,9 +391,8 @@ MODULE mtime_hl
     MODULE PROCEDURE t_eventGroup_constructor
   END INTERFACE t_eventGroup
 
-
   INTEGER :: event_group_id = 0
-  INTEGER :: event_id       = 0
+  INTEGER :: event_id = 0
 
 CONTAINS
 

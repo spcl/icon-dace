@@ -6,7 +6,7 @@
     <moment type="int">0</moment>
     <mode type="char">sol_ait,sol_acc,insol_acc,insol_coa,mixed_acc,mixed_coa,giant</mode>
     <unit type="char">kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
   </aerosol>
   <aerosol id="h2o">
     <moment type="int">3</moment>
@@ -24,7 +24,7 @@
     <mol_weight type="real">96.0576E-3</mol_weight>
     <rho type="real">1.8E3</rho>
     <unit type="char">mug kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
     <inucleation type="int">1</inucleation>
   </aerosol>
   <aerosol id="so4">
@@ -34,7 +34,7 @@
     <mol_weight type="real">96.0576E-3</mol_weight>
     <rho type="real">1.8E3</rho>
     <unit type="char">mug kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
     <inucleation type="int">0</inucleation>
   </aerosol>
   <aerosol id="nh4">
@@ -44,7 +44,7 @@
     <mol_weight type="real">18.03858E-3</mol_weight>
     <rho type="real">1.8E3</rho>
     <unit type="char">mug kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
   </aerosol>
   <aerosol id="no3">
     <moment type="int">3</moment>
@@ -53,7 +53,7 @@
     <mol_weight type="real">62.0049E-3</mol_weight>
     <rho type="real">1.8E3</rho>
     <unit type="char">mug kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
   </aerosol>
   <aerosol id="ash">
     <moment type="int">3</moment>
@@ -62,6 +62,6 @@
     <mol_weight type="real">50.00E-3</mol_weight>
     <rho type="real">2.650E3</rho>
     <unit type="char">mug kg-1</unit>
-    <transport type="char">stdaero</transport>
+    <transport type="char">hadv52aero</transport>
   </aerosol>
 </tracers>

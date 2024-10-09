@@ -1,6 +1,3 @@
-! Interface between NWP physics and the hydrological discharge model, through a coupler.
-! Based on the ocean coupling interface
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,7 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Interface between NWP physics and the hydrological discharge model, through a coupler.
+! Based on the ocean coupling interface
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
@@ -33,6 +33,9 @@ MODULE mo_nwp_hydrodisc_coupling
   USE mo_loopindices         ,ONLY: get_indices_c
 
   USE mo_coupling_utils      ,ONLY: cpl_def_field, cpl_put_field
+#if !defined NOMPI && defined YAC_coupling
+  USE yac                    ,ONLY: yac_fget_action, YAC_ACTION_NONE
+#endif
 
   USE mo_exception           ,ONLY: finish, message, message_text
   USE mo_sync                ,ONLY: global_sum_array
@@ -106,12 +109,14 @@ CONTAINS
     INTEGER               :: jb                    ! block loop count
     INTEGER               :: jc                    ! nproma loop count
     INTEGER               :: error
+    INTEGER               :: info
     INTEGER               :: i_startblk, i_endblk  ! blocks
     INTEGER               :: i_startidx, i_endidx  ! slices
     INTEGER               :: isubs                 ! tile index
     REAL(wp), TARGET, ALLOCATABLE :: buffer(:,:,:) ! buffer transferred to YAC coupler
+    REAL(wp)              :: diag_runoff
+
     CHARACTER(LEN=*), PARAMETER   :: routine = str_module // ':nwp_couple_hydrodisc'
-    REAL(wp)              :: diag_tmp
 
     ! This routine hasn't been ported yet.
     CALL assert_acc_host_only(routine, lacc)
@@ -158,17 +163,21 @@ CONTAINS
 
 !ICON_OMP_END_PARALLEL_DO
 
+#if !defined NOMPI && defined YAC_coupling
     ! Online diagnose for global sum of runoff (m3/s) before sending to YAC:
-    IF (msg_level >= 10) THEN
-      diag_tmp = global_sum_array(buffer(:,:,1) * p_patch%cells%area(:,:) / rhoh2o)
-      WRITE(message_text,'(a,f15.3)') ' NWP-HD: global total surface runoff (m3/s) :' , diag_tmp
-      CALL message(routine, message_text)
+    IF (msg_level >= 15) THEN
+      CALL yac_fget_action(field_id_runoffs, info)
+      IF ( info /= YAC_ACTION_NONE ) THEN 
+        diag_runoff = global_sum_array(buffer(:,:,1) * p_patch%cells%area(:,:) / rhoh2o)
+        WRITE(message_text,'(a,f15.3)') ' NWP-HD: global total surface runoff (m3/s) :' , diag_runoff
+        CALL message(routine, message_text)
 
-      diag_tmp = global_sum_array(buffer(:,:,2) * p_patch%cells%area(:,:) / rhoh2o)
-      WRITE(message_text,'(a,f15.3)') ' NWP-HD: global total ground runoff (m3/s) :' , diag_tmp
-      CALL message(routine, message_text)
+        diag_runoff = global_sum_array(buffer(:,:,2) * p_patch%cells%area(:,:) / rhoh2o)
+        WRITE(message_text,'(a,f15.3)') ' NWP-HD: global total ground runoff (m3/s) :' , diag_runoff
+        CALL message(routine, message_text)
+      ENDIF
     ENDIF
-
+#endif
     !------------------------------------------------
     !  Send surface water runoff
     !    "surface water runoff"

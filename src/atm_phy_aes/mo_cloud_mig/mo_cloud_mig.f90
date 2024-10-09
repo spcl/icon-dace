@@ -1,6 +1,3 @@
-!
-! Subroutine cloud_mig calls the saturation adjustment and cloud scheme
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine cloud_mig calls the saturation adjustment and cloud scheme
 
 MODULE mo_cloud_mig
 

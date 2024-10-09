@@ -1,7 +1,3 @@
-! Module handling the specification of vertical axes for the output
-! module.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,7 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
+
+! Module handling the specification of vertical axes for the output
+! module.
 !
 ! --------------------------------
 ! Details of the implementation
@@ -64,6 +62,7 @@ MODULE mo_name_list_output_zaxes
     &                                             ZA_PRES_FL_BOT_TOP,                                            &
     &                                             ZA_reference, ZA_reference_half, ZA_reference_half_hhl,        &
     &                                             ZA_sediment_bottom_tw_half, ZA_snow, ZA_snow_half, ZA_toa,     &
+    &                                             ZA_OCE_LAYER_INTERFACE, ZA_OCE_LAYER_CENTRE,                           &
     &                                             ZA_OCEAN_SEDIMENT, ZA_height_2m_layer, ZA_ECHOTOP,             &
     &                                             ZA_TROPOPAUSE, ZA_WSHEAR, ZA_PRESSURE_LAPSERATE, ZA_SRH
   USE mo_level_selection_types,             ONLY: t_level_selection
@@ -79,6 +78,7 @@ MODULE mo_name_list_output_zaxes
 #ifndef __NO_ICON_OCEAN__
   USE mo_ocean_nml,                         ONLY: dzlev_m,lhamocc, n_zlev
   USE mo_hamocc_nml,                        ONLY: ks, ksp, dzsed
+  USE mo_ocean_nml,                         ONLY: rho_lev_in, n_dlev, use_layers    ! by_nils
 #endif
 
   IMPLICIT NONE
@@ -434,6 +434,7 @@ CONTAINS
     ! local variables
     REAL(wp), ALLOCATABLE             :: levels_i(:), levels_m(:)
     REAL(wp), ALLOCATABLE             :: levels_s(:), levels_sp(:)
+    REAL(wp), ALLOCATABLE             :: layers_int(:), layers_cent(:)
     
 #ifndef __NO_ICON_OCEAN__
     ALLOCATE(levels_i(n_zlev+1), levels_m(n_zlev))
@@ -461,6 +462,21 @@ CONTAINS
     CALL verticalAxisList%append(t_verticalAxis(zaxisTypeList%getEntry(ZA_OCEAN_SEDIMENT), ks, &
       &                                         zaxisLevels=REAL(levels_s,dp)))
     DEALLOCATE(levels_s, levels_sp)
+    endif
+
+    if (use_layers) then
+    ALLOCATE(layers_int(1:n_dlev+1), layers_cent(1:n_dlev))
+    layers_int = rho_lev_in(1:n_dlev+1)
+    layers_cent = 0.5*(layers_int(1:n_dlev)+layers_int(2:n_dlev+1))
+    CALL verticalAxisList%append(vertical_axis(ZA_OCE_LAYER_INTERFACE, &
+      &                          n_dlev+1,                              &
+      &                          levels = REAL(layers_int,wp),            &
+      &                          level_selection=level_selection))
+    CALL verticalAxisList%append(vertical_axis(ZA_OCE_LAYER_CENTRE, &
+      &                          n_dlev,                              &
+      &                          levels = REAL(layers_cent,wp),            &
+      &                          level_selection=level_selection))
+    DEALLOCATE(layers_int, layers_cent)
     endif
 #endif
 

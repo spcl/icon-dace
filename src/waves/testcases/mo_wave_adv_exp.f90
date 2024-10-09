@@ -1,6 +1,3 @@
-! Subroutine to initialize the wave test case
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine to initialize the wave test case
 
 MODULE mo_wave_adv_exp
 

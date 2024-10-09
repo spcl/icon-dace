@@ -15,7 +15,8 @@ MODULE mo_hydro_config_class
 #ifndef __NO_JSBACH__
 
   USE mo_exception,         ONLY: message_text, message, finish
-  USE mo_util,              ONLY: real2string, logical2string
+  USE mo_jsb_impl_constants,ONLY: WB_IGNORE, WB_LOGGING, WB_ERROR
+  USE mo_util,              ONLY: real2string
   USE mo_util_string,       ONLY: tolower
   USE mo_io_units,          ONLY: filename_max
   USE mo_kind,              ONLY: wp
@@ -28,7 +29,8 @@ MODULE mo_hydro_config_class
   PUBLIC :: t_hydro_config
 
   TYPE, EXTENDS(t_jsb_config) :: t_hydro_config
-    CHARACTER(len=filename_max) :: bc_sso_filename !< For elevation and oro_stddev
+    CHARACTER(len=filename_max) :: bc_sso_filename   !< For elevation and oro_stddev
+    CHARACTER(len=filename_max) :: ic_moist_filename !< For `l_read_initial_moist=.TRUE.`
     REAL(wp)               :: &
       & w_skin_max,           & !< Maximum water holding capacity of the soil and canopy skins, as well as
                                 !  maximum snow depth on leaves  [m water equivalent]
@@ -43,21 +45,28 @@ MODULE mo_hydro_config_class
     CHARACTER(len=10)     ::  &
       & scheme_stom_cond        !< Scheme to use for computation of stomatal conductance (echam5 only for now)
     LOGICAL               ::  &
+      & l_read_initial_moist, & !< Force reading initial soil moisture for layers from `ic_moist_filename`
+                                !  even if `init_from_ifs=.TRUE.`
       & sanitize_restart,     & !< Sanitize water budget in case a restart file does not exacly match
-      & enforce_water_budget, & !< stop in case of water conservation problem
-      & l_organic,            & !< Use organic component of soil layers
-      & l_socmap,             & !< Replace computed organic layer with 3D map of soil carbon fraction
+      & l_organic,            & !< Calculate soil hydrological parameters depending on organic matter fractions
+      & l_socmap,             & !< Read organic matter fractions from 3D map
       & l_soil_texture,       & !< Deduce soil hydrological parameters from soil texture
       & l_glac_in_soil,       & !< Treat glacier as part of soil, not separate glacier tile
       & l_infil_subzero,      & !< Allow infiltration at soil temperatures below 0degC
       & l_ponds                 !< Additional surface water storage
     INTEGER               ::  &
-      & soilhydmodel,         & !< Choice of soil hydrological model:
-                                !! 'BrooksCorey' (default), 'ClappHornberger' or 'VanGenuchten'
+      & soilhydmodel,         & !< Choice of soil hydrological model to calc soil hydraulic properties:
+                                !! 'VanGenuchten' (default), 'BrooksCorey', or 'Campbell'
       & interpol_mean,        & !< Interpolation scheme, to optain K & D at layer interface:
                                 !! 'upstream' (default) or 'arithmetic' mean
-      & pond_dynamics           !< Choice of pond dynamics scheme (i.e. depth-area scaling)
-                                !! tanh (default), quadratic
+      & pond_dynamics,        & !< Choice of pond dynamics scheme (i.e. depth-area scaling)
+                                !! 'tanh' (default), 'quadratic'
+      & hydro_scale,          & !< 'semi_distributed': use the ARNO scheme assuming sub-grid scale variations in infiltration
+                                !! and subsurface drainage (default)
+                                !! 'uniform': assume uniform soil moisture distribution
+                                !! (e.g. for applications like HydroTiles, HighRes or sitelevel)
+      & enforce_water_budget    !< Set water balance check level: 'unset', 'ignore', 'logging', 'error'
+
 
   CONTAINS
     PROCEDURE             :: Init => Init_hydro_config
@@ -75,8 +84,8 @@ CONTAINS
     USE mo_jsb_grid,           ONLY: Register_vgrid
     USE mo_jsb_io,             ONLY: ZAXIS_DEPTH_BELOW_LAND
     USE mo_jsb_io_netcdf,      ONLY: t_input_file, jsb_netcdf_open_input
-    USE mo_hydro_constants,    ONLY: BrooksCorey_, ClappHornberger_, VanGenuchten_, &
-      &                              Upstream_, Arithmetic_, Quad_, Tanh_
+    USE mo_hydro_constants,    ONLY: BrooksCorey_, Campbell_, VanGenuchten_, Upstream_, Arithmetic_, &
+      &                              Quad_, Tanh_, Semi_Distributed_, Uniform_
 
     CLASS(t_hydro_config), INTENT(inout) :: config
 
@@ -84,9 +93,10 @@ CONTAINS
     CHARACTER(len=filename_max) :: ic_filename, bc_filename, bc_sso_filename
     REAL(wp)                    :: w_skin_max, snow_depth_max
     REAL(wp)                    :: w_soil_limit, w_soil_crit_fract, w_soil_wilt_fract
-    CHARACTER(len=15)           :: scheme_stom_cond, soilhydmodel, interpol_mean, pond_dynamics
-    LOGICAL                     :: sanitize_restart, enforce_water_budget, l_organic, l_socmap, &
-      &                            l_soil_texture, l_glac_in_soil, l_infil_subzero, l_ponds
+    CHARACTER(len=16)           :: scheme_stom_cond, soilhydmodel, interpol_mean, pond_dynamics, hydro_scale
+    CHARACTER(len=10)           :: enforce_water_budget
+    LOGICAL                     :: l_read_initial_moist, sanitize_restart, l_organic, &
+      &                            l_socmap, l_soil_texture, l_glac_in_soil, l_infil_subzero, l_ponds
 
     NAMELIST /jsb_hydro_nml/        &
       & active,                     &
@@ -99,6 +109,7 @@ CONTAINS
       & w_soil_wilt_fract,          &
       & snow_depth_max,             &
       & scheme_stom_cond,           &
+      & l_read_initial_moist,       &
       & sanitize_restart,           &
       & enforce_water_budget,       &
       & l_organic,                  &
@@ -109,7 +120,8 @@ CONTAINS
       & l_ponds,                    &
       & soilhydmodel,               &
       & interpol_mean,              &
-      & pond_dynamics
+      & pond_dynamics,              &
+      & hydro_scale
 
     INTEGER :: nml_handler, nml_unit, istat
     TYPE(t_input_file) :: input_file
@@ -139,17 +151,19 @@ CONTAINS
     w_soil_wilt_fract      = 0.35_wp
     snow_depth_max         = -1.0_wp             ! -1: no limitation
     scheme_stom_cond       = 'echam5'
+    l_read_initial_moist   = .FALSE.
     sanitize_restart       = .FALSE.
-    enforce_water_budget   = config%model_config%enforce_water_budget
+    enforce_water_budget   = 'unset'
     l_organic              = .TRUE.
     l_socmap               = .TRUE.
     l_soil_texture         = .FALSE.
     l_glac_in_soil         = .FALSE.
     l_infil_subzero        = .TRUE.
     l_ponds                = .FALSE.
-    soilhydmodel           = "BrooksCorey"
-    interpol_mean          = "upstream"
     pond_dynamics          = "tanh"
+    soilhydmodel           = "VanGenuchten"
+    interpol_mean          = "upstream"
+    hydro_scale            = "semi_distributed"
 
     nml_handler = open_nml(TRIM(config%namelist_filename))
 
@@ -180,34 +194,60 @@ CONTAINS
 
     config%scheme_stom_cond       = scheme_stom_cond
 
+    config%l_read_initial_moist   = l_read_initial_moist
+
     config%sanitize_restart       = sanitize_restart
     IF (config%sanitize_restart) THEN
       CALL message(TRIM(routine), 'Soil hydrology of the restart file is sanitized.')
     END IF
 
-    config%enforce_water_budget   = enforce_water_budget
-    IF (.NOT. enforce_water_budget) THEN
-      CALL message(TRIM(routine), 'WARNING: Model will not stop due to land surface water balance violation.')
-    END IF
-    IF (enforce_water_budget .AND. sanitize_restart) THEN
+    SELECT CASE (tolower(TRIM(enforce_water_budget)))
+    CASE ("unset")
+      config%enforce_water_budget = config%model_config%enforce_water_budget
+    CASE ("ignore")
+      config%enforce_water_budget = WB_IGNORE
+      CALL message(TRIM(routine), 'WARNING: Land surface water balance will not be checked during simulation.')
+    CASE ("logging")
+      config%enforce_water_budget = WB_LOGGING
+      CALL message(TRIM(routine), 'WARNING: Simulation will not stop due to any land surface water balance violation '// &
+        & 'but information will be added to the log file')
+    CASE ("error")
+      config%enforce_water_budget = WB_ERROR
+      CALL message(TRIM(routine), 'WARNING: Simulation will stop due to any land surface water balance violation.')
+    CASE DEFAULT
+      CALL finish(TRIM(routine), 'enforce_water_budget == '//tolower(TRIM(enforce_water_budget))//' not available.')
+    END SELECT
+    IF (config%enforce_water_budget == WB_ERROR .AND. sanitize_restart) THEN
       CALL message(TRIM(routine), 'WARNING: Sanitizing restart files causes water balance violations.' &
         &                       //' You should switch off enforce_water_budget in case sanitizing is needed.')
     END IF
 
-    config%l_organic              = l_organic
+    config%l_soil_texture = l_soil_texture
+    IF (l_soil_texture) THEN
+      CALL message(TRIM(routine), 'Calculate hydrological parameters for mineral soils from soil texture.')
+    END IF
+
+    config%l_organic = l_organic
     IF (l_organic) THEN
-      CALL message(TRIM(routine), 'Using organic component in soil hydrology')
+      CALL message(TRIM(routine), 'Include organic matter in calculation of hydrological soil parameters.')
     ELSE
-      IF (l_socmap) CALL message(TRIM(routine), 'Setting l_socmap=false since l_organic=false in soil hydrology')
-      l_socmap = .FALSE.
+      IF (l_soil_texture) THEN
+        CALL message (TRIM(routine), 'WARNING: l_organic=.F. and l_soil_texture=.T.' &
+                                   //' => Hydrological soil parameters represent purely mineral soils!')
+      ELSE
+        CALL message (TRIM(routine), 'Soil hydrological parameters read from bc file.')
+      END IF
     END IF
 
     config%l_socmap = l_socmap
-    IF (l_socmap .AND. l_organic) &
-      & CALL message(TRIM(routine), 'Replacing organic carbon fractions with map from bc file: ' //TRIM(logical2string(l_socmap)))
-
-    config%l_soil_texture      = l_soil_texture
-    IF (l_soil_texture) CALL message(TRIM(routine), 'Using soil texture in soil hydrology')
+    IF (l_socmap .AND. l_organic) THEN
+      CALL message(TRIM(routine), 'Read map with soil organic carbon fractions from bc file.')
+    ELSE IF (.NOT. l_socmap .AND. l_organic) THEN
+      CALL message(TRIM(routine), 'Calculate soil organic carbon fractions from forest fractions.')
+    ELSE IF (l_socmap .AND. .NOT. l_organic) THEN
+      CALL message(TRIM(routine), 'Setting l_socmap=false since l_organic=false and organic matter fractions are not used.')
+      config%l_socmap = .FALSE.
+    END IF
 
     config%l_glac_in_soil      = l_glac_in_soil
     config%l_infil_subzero     = l_infil_subzero
@@ -221,15 +261,15 @@ CONTAINS
     END IF
 
     SELECT CASE(TRIM(tolower(soilhydmodel)))
-    CASE("brookscorey")
-      config%soilhydmodel = BrooksCorey_
-      CALL message(TRIM(routine), 'Soil hydrology uses the Brooks & Corey model')
-    CASE("clapphornberger")
-      config%soilhydmodel = ClappHornberger_
-      CALL message(TRIM(routine), 'Soil hydrology uses the Clapp & Hornberger model')
     CASE("vangenuchten")
       config%soilhydmodel = VanGenuchten_
       CALL message(TRIM(routine), 'Soil hydrology uses the Van Genuchten model')
+    CASE("brookscorey")
+      config%soilhydmodel = BrooksCorey_
+      CALL message(TRIM(routine), 'Soil hydrology uses the Brooks & Corey model')
+    CASE("campbell")
+      config%soilhydmodel = Campbell_
+      CALL message(TRIM(routine), 'Soil hydrology uses the Campbell model')
     CASE default
       CALL finish(TRIM(routine), 'Soil hydrology model '//TRIM(soilhydmodel)//' not implemented')
     END SELECT
@@ -254,6 +294,17 @@ CONTAINS
       CALL message(TRIM(routine), 'Pond dynamics scheme uses tanh scaling')
     CASE default
       CALL finish(TRIM(routine), 'Pond dynamics scheme '//TRIM(pond_dynamics)//' not implemented')
+    END SELECT
+
+    SELECT CASE(TRIM(tolower(hydro_scale)))
+    CASE("semi_distributed")
+      config%hydro_scale = Semi_Distributed_
+      CALL message(TRIM(routine), 'Using semi-distributed scale parametrization (ARNO scheme) for soil hydrological fluxes')
+    CASE("uniform")
+      config%hydro_scale = Uniform_
+      CALL message(TRIM(routine), 'Using uniform scale process implementation for hydrological fluxes (still experimental)')
+    CASE default
+      CALL finish(TRIM(routine), 'Soil hydrology scale '//TRIM(hydro_scale)//' not implemented')
     END SELECT
 
     CALL close_nml(nml_handler)

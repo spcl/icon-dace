@@ -8,6 +8,7 @@
 #%#- See LICENSES/ for license information
 #%#- SPDX-License-Identifier: BSD-3-Clause
 #%#- ------------------------------------------
+#%include 'standard_environments/'+ENVIRONMENT+'.tmpl' ignore missing
 
 '''\
 Create intake directory entries for a given period
@@ -102,6 +103,8 @@ command_line.add_argument('-I', '--input-dir', help=
     'take files from a non-standard directory')
 command_line.add_argument('-f', '--force', action='store_true', help=
     'only warn about duplicated data instead of exiting with an error')
+command_line.add_argument('-m', '--maintenance', action='store_true', help=
+    'delete non-existing files from catalog')
 command_line.add_argument('-V', '--version', action='version', version="""
 $Id: DEFAULT.intake.tmpl 0 2021-08-31 12:37:44Z m221078 $
 %{VERSIONS_|join('\n')}
@@ -198,6 +201,7 @@ columns = attributes + (format_column_name, assets)
 
 try:
 
+    logging.debug("loading intake file '%s'", intake_name)
     with open(intake_name) as intake_file:
         intake_data = json.load(intake_file)
 
@@ -260,9 +264,12 @@ def get_coord(ds, axis):
 catalog_dict = {}
 catalog_index = {} # Contains an entry for each var name in var list
 
+if args.maintenance:
+    logging.debug("checking for non-existing files")
 for entry in intake_data['catalog_dict']:
     # Skip files that no longer exist
-    if os.path.isfile(entry[assets]):
+    if not args.maintenance or os.path.isfile(entry[assets]):
+        logging.debug("keeping '%s'", entry[assets])
         key = tuple(str(entry[att]) for att in attributes)
         catalog_dict[key] = entry
         for key in generate_keys(entry):

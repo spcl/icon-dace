@@ -1,7 +1,3 @@
-! Contains the implementation of interpolation onto regular grids
-! with barycentric interpolation.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,7 +7,10 @@
 ! See AUTHORS.TXT for a list of authors
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------  
+! ---------------------------------------------------------------
+
+! Contains the implementation of interpolation onto regular grids
+! with barycentric interpolation.
 
 #ifdef __xlC__
   @PROCESS smp=noopt

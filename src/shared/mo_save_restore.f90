@@ -1,9 +1,3 @@
-! Types and procedures for save/restore of 5D fields
-!
-! This module contains types and procedures for saving and
-! restoring arbitrary 5D fields to/from a key-value storage.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Types and procedures for save/restore of 5D fields
+!
+! This module contains types and procedures for saving and
+! restoring arbitrary 5D fields to/from a key-value storage.
 
 MODULE mo_save_restore
 

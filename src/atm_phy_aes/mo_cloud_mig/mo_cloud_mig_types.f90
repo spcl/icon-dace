@@ -1,10 +1,3 @@
-!
-! Data types for the cloud microphsics "graupel" parameterization
-!
-! This module provides the data types for the variables used to
-! configure the parameterization and to store the input and output
-! for the parameterization.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data types for the cloud microphsics "graupel" parameterization
+!
+! This module provides the data types for the variables used to
+! configure the parameterization and to store the input and output
+! for the parameterization.
 
 MODULE mo_cloud_mig_types
 

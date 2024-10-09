@@ -1,6 +1,3 @@
-!
-!**** *CUCALCLFD*  ROUTINE FOR LFD COMPUTATION
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!**** *CUCALCLFD*  ROUTINE FOR LFD COMPUTATION
 
 MODULE mo_cucalclfd
   

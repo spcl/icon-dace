@@ -1,9 +1,3 @@
-! Namelist for turbulent diffusion (turbdiff)
-!
-! These subroutines are called by read_atmo_namelists and do the turbulent
-! diffusion setup (for turbdiff).
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for turbulent diffusion (turbdiff)
+!
+! These subroutines are called by read_atmo_namelists and do the turbulent
+! diffusion setup (for turbdiff).
 
 MODULE mo_turbdiff_nml
 
@@ -29,14 +28,15 @@ MODULE mo_turbdiff_nml
   USE mo_turbdiff_config,     ONLY: turbdiff_config 
 
   USE turb_data,              ONLY: &
-    & itype_sher, imode_shshear, itype_wcld, &
-    & imode_tran, imode_turb, icldm_tran, icldm_turb, imode_tkesso, &
-    & ltkesso, ltkecon, lexpcor, ltmpcor, lprfcor, lnonloc, lcpfluc, lsflcnd, &
-    & tur_len, pat_len, a_stab, tkhmin, tkmmin, c_diff, ltkeshs, &
-    & rlam_heat, rlam_mom, rat_sea, tkesmot, frcsmot, impl_s, impl_t, q_crit, &
-    & a_hshr, imode_frcsmot, lfreeslip, alpha0, alpha1, alpha0_max, alpha0_pert, &
-    & tkhmin_strat, tkmmin_strat, rat_glac, imode_charpar, &
-    & rat_lam
+    & imode_tran, icldm_tran, imode_turb, icldm_turb, itype_wcld, itype_sher, &
+    & imode_shshear, imode_frcsmot, imode_tkesso, &
+    & ltkesso, ltkecon, ltkeshs, lexpcor, ltmpcor, lprfcor, lnonloc, lfreeslip, lcpfluc, lsflcnd, &
+    & tur_len, pat_len, a_stab, a_hshr, &
+    & impl_s, impl_t, c_diff, tkhmin, tkmmin, tkhmin_strat, tkmmin_strat, tkesmot, frcsmot, &
+    & imode_snowsmot, imode_charpar, alpha0, alpha0_max, alpha0_pert, alpha1, &
+    & rlam_heat, rlam_mom, rat_lam, rat_sea, rat_glac, & 
+    & q_crit
+
   USE mo_nml_annotate,        ONLY: temp_defaults, temp_settings
   
   IMPLICIT NONE
@@ -61,15 +61,16 @@ MODULE mo_turbdiff_nml
                          ! .FALSE.: OFF
 
   NAMELIST/turbdiff_nml/ &
-    & itype_sher, imode_shshear, itype_wcld, &
-    & imode_tran, imode_turb, icldm_tran, icldm_turb, imode_tkesso, &
-    & ltkesso, ltkecon, lexpcor, ltmpcor, lprfcor, lnonloc, lcpfluc, lsflcnd, lfreeslip, &
-    & tur_len, pat_len, a_stab, tkhmin, tkmmin, c_diff, ltkeshs, imode_charpar, &
-    & rlam_heat, rlam_mom, rat_sea, rat_glac, tkesmot, frcsmot, impl_s, impl_t, q_crit, &
-    & a_hshr, imode_frcsmot, alpha0, alpha1, alpha0_max, tkhmin_strat, tkmmin_strat, &
+    & imode_tran, icldm_tran, imode_turb, icldm_turb, itype_wcld, itype_sher, &
+    & imode_shshear, imode_frcsmot, imode_tkesso, &
+    & ltkesso, ltkecon, ltkeshs, lexpcor, ltmpcor, lprfcor, lnonloc, lfreeslip, lcpfluc, lsflcnd, &
+    & tur_len, pat_len, a_stab, a_hshr, &
+    & impl_s, impl_t, c_diff, tkhmin, tkmmin, tkhmin_strat, tkmmin_strat, tkesmot, frcsmot, &
+    & imode_snowsmot, imode_charpar, alpha0, alpha0_max,              alpha1, &
+    & rlam_heat, rlam_mom, rat_lam, rat_sea, rat_glac, & 
+    & q_crit, &
 !   additional namelist parameters:
-    & lconst_z0, const_z0, ldiff_qi, ldiff_qs, &
-    & rat_lam
+    & lconst_z0, const_z0, ldiff_qi, ldiff_qs
 
 CONTAINS
 
@@ -163,54 +164,66 @@ CONTAINS
     !----------------------------------------------------
 
     DO jg= 0,max_dom
-      turbdiff_config(jg)%imode_tran   = imode_tran
-      turbdiff_config(jg)%icldm_tran   = icldm_tran
-      turbdiff_config(jg)%imode_turb   = imode_turb
-      turbdiff_config(jg)%icldm_turb   = icldm_turb
-      turbdiff_config(jg)%itype_sher   = itype_sher
-      turbdiff_config(jg)%imode_shshear= imode_shshear
-      turbdiff_config(jg)%imode_frcsmot= imode_frcsmot
-      turbdiff_config(jg)%imode_tkesso = imode_tkesso
-      turbdiff_config(jg)%ltkesso      = ltkesso
-      turbdiff_config(jg)%ltkeshs      = ltkeshs
-      turbdiff_config(jg)%ltkecon      = ltkecon
-      turbdiff_config(jg)%lexpcor      = lexpcor
-      turbdiff_config(jg)%ltmpcor      = ltmpcor
-      turbdiff_config(jg)%lprfcor      = lprfcor
-      turbdiff_config(jg)%lnonloc      = lnonloc
-      turbdiff_config(jg)%lfreeslip    = lfreeslip
-      turbdiff_config(jg)%lcpfluc      = lcpfluc
-      turbdiff_config(jg)%lsflcnd      = lsflcnd
-      turbdiff_config(jg)%itype_wcld   = itype_wcld
-      turbdiff_config(jg)%tur_len      = tur_len
-      turbdiff_config(jg)%pat_len      = pat_len
-      turbdiff_config(jg)%a_stab       = a_stab
-      turbdiff_config(jg)%imode_charpar= imode_charpar
-      turbdiff_config(jg)%alpha0       = alpha0
-      turbdiff_config(jg)%alpha0_max   = alpha0_max
-      turbdiff_config(jg)%alpha0_pert  = alpha0_pert
-      turbdiff_config(jg)%alpha1       = alpha1
-      turbdiff_config(jg)%tkhmin       = tkhmin
-      turbdiff_config(jg)%tkmmin       = tkmmin
-      turbdiff_config(jg)%tkhmin_strat = tkhmin_strat
-      turbdiff_config(jg)%tkmmin_strat = tkmmin_strat
-      turbdiff_config(jg)%c_diff       = c_diff
+
+      ! namelist parameters from MODULE 'turb_data':
+
+      turbdiff_config(jg)%imode_tran     = imode_tran
+      turbdiff_config(jg)%icldm_tran     = icldm_tran
+      turbdiff_config(jg)%imode_turb     = imode_turb
+      turbdiff_config(jg)%icldm_turb     = icldm_turb
+      turbdiff_config(jg)%itype_wcld     = itype_wcld
+      turbdiff_config(jg)%itype_sher     = itype_sher
+      turbdiff_config(jg)%imode_shshear  = imode_shshear
+      turbdiff_config(jg)%imode_frcsmot  = imode_frcsmot
+      turbdiff_config(jg)%imode_tkesso   = imode_tkesso
+
+      turbdiff_config(jg)%ltkesso        = ltkesso
+      turbdiff_config(jg)%ltkeshs        = ltkeshs
+      turbdiff_config(jg)%ltkecon        = ltkecon
+      turbdiff_config(jg)%lexpcor        = lexpcor
+      turbdiff_config(jg)%ltmpcor        = ltmpcor
+      turbdiff_config(jg)%lprfcor        = lprfcor
+      turbdiff_config(jg)%lnonloc        = lnonloc
+      turbdiff_config(jg)%lfreeslip      = lfreeslip
+      turbdiff_config(jg)%lcpfluc        = lcpfluc
+      turbdiff_config(jg)%lsflcnd        = lsflcnd
+
+      turbdiff_config(jg)%tur_len        = tur_len
+      turbdiff_config(jg)%pat_len        = pat_len
+      turbdiff_config(jg)%a_stab         = a_stab
+      turbdiff_config(jg)%a_hshr         = a_hshr
+      turbdiff_config(jg)%impl_s         = impl_s
+      turbdiff_config(jg)%impl_t         = impl_t
+      turbdiff_config(jg)%c_diff         = c_diff
+      turbdiff_config(jg)%tkhmin         = tkhmin
+      turbdiff_config(jg)%tkmmin         = tkmmin
+      turbdiff_config(jg)%tkhmin_strat   = tkhmin_strat
+      turbdiff_config(jg)%tkmmin_strat   = tkmmin_strat
+
+      turbdiff_config(jg)%tkesmot        = tkesmot
+      turbdiff_config(jg)%frcsmot        = frcsmot
+
+      turbdiff_config(jg)%imode_snowsmot = imode_snowsmot
+      turbdiff_config(jg)%imode_charpar  = imode_charpar
+      turbdiff_config(jg)%alpha0         = alpha0
+      turbdiff_config(jg)%alpha0_max     = alpha0_max
+      turbdiff_config(jg)%alpha0_pert    = alpha0_pert
+      turbdiff_config(jg)%alpha1         = alpha1
+
       turbdiff_config(jg)%rlam_heat    = rlam_heat
       turbdiff_config(jg)%rlam_mom     = rlam_mom
-      turbdiff_config(jg)%rat_sea      = rat_sea
       turbdiff_config(jg)%rat_lam      = rat_lam
+      turbdiff_config(jg)%rat_sea      = rat_sea
       turbdiff_config(jg)%rat_glac     = rat_glac
-      turbdiff_config(jg)%tkesmot      = tkesmot
-      turbdiff_config(jg)%frcsmot      = frcsmot
-      turbdiff_config(jg)%impl_s       = impl_s
-      turbdiff_config(jg)%impl_t       = impl_t
-      turbdiff_config(jg)%a_hshr       = a_hshr
-      turbdiff_config(jg)%q_crit       = q_crit
 
-      turbdiff_config(jg)%lconst_z0    = lconst_z0
-      turbdiff_config(jg)%const_z0     = const_z0
-      turbdiff_config(jg)%ldiff_qi     = ldiff_qi
-      turbdiff_config(jg)%ldiff_qs     = ldiff_qs
+      turbdiff_config(jg)%q_crit         = q_crit
+
+      ! extra namelist parameters from MODULE 'mo_turbdiff_nml':
+
+      turbdiff_config(jg)%lconst_z0      = lconst_z0
+      turbdiff_config(jg)%const_z0       = const_z0
+      turbdiff_config(jg)%ldiff_qi       = ldiff_qi
+      turbdiff_config(jg)%ldiff_qs       = ldiff_qs
     ENDDO
 
     !-----------------------------------------------------

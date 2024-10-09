@@ -1,6 +1,3 @@
-!
-! Computation of frictional heating in a physically meaningful way.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Computation of frictional heating in a physically meaningful way.
 
 MODULE mo_upatmo_phy_fric
 

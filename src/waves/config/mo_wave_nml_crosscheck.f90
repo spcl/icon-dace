@@ -1,7 +1,3 @@
-! This module checks the read-in namelist parameters and, in case of
-! inconsistencies, it tries to correct these.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module checks the read-in namelist parameters and, in case of
+! inconsistencies, it tries to correct these.
 
 MODULE mo_wave_crosscheck
 
@@ -24,7 +23,6 @@ MODULE mo_wave_crosscheck
   USE mo_time_management,   ONLY: compute_timestep_settings,                        &
        &                          compute_restart_settings,                         &
        &                          compute_date_settings
-  USE mo_event_manager,     ONLY: initEventManager
   USE mo_wave_config,       ONLY: wave_config
 
   IMPLICIT NONE
@@ -53,10 +51,6 @@ CONTAINS
     CALL compute_timestep_settings()
     CALL compute_restart_settings()
     CALL compute_date_settings("wave", dt_restart, nsteps)
-    !
-    ! Create an event manager, ie. a collection of different events
-    !
-    CALL initEventManager(time_config%tc_exp_refdate)
 
     !--------------------------------------------------------------------
     ! Parallelization

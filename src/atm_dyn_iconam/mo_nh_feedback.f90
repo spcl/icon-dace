@@ -1,9 +1,3 @@
-!
-!  This module contains the routines needed for nesting in the nonhydrostatic
-!  version.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains the routines needed for nesting in the nonhydrostatic
+! version.
 
 !----------------------------
 #include "omp_definitions.inc"

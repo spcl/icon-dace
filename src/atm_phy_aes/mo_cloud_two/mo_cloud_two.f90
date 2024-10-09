@@ -1,8 +1,3 @@
-!
-! Subroutine cloud_two calls the saturation adjustment
-! and the two-moment bulk microphysics by Seifert and Beheng (2006)
-!                  with prognostic cloud droplet number
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine cloud_two calls the saturation adjustment
+! and the two-moment bulk microphysics by Seifert and Beheng (2006)
+!                  with prognostic cloud droplet number
 
 MODULE mo_cloud_two
 

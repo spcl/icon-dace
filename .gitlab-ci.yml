@@ -9,8 +9,14 @@
 # ---------------------------------------------------------------
 
 workflow:
+  auto_cancel:
+    on_new_commit: none
+    on_job_failure: none
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      auto_cancel:
+        on_new_commit: interruptible
+        on_job_failure: all
     - if: $CI_PIPELINE_SOURCE == "web"
 
 stages:
@@ -24,37 +30,34 @@ stages:
 
 Licenses:
   stage: basic
-
   variables:
     GIT_DEPTH: 1
     GIT_SUBMODULE_STRATEGY: none
-
   before_script:
     - python3 -m pip install --upgrade pip
     - python3 -m pip install reuse
     - reuse --version
-
   script:
     - reuse lint
-
+    # Additional license checks:
+    - ${CI_PROJECT_DIR}/scripts/ci_scripts/check_license.py
   tags:
     - sphinx
-
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always
   interruptible: true
 
 OpenACC Style:
   stage: basic
-
   extends: .colorized
-
   variables:
     BEAUTIFIER_TAG: "v0.3.0"
     BEAUTIFIER_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/dwd-sw/icon-openacc-beautifier.git"
     GIT_SUBMODULE_STRATEGY: none
-
   before_script:
     - git clone --branch "${BEAUTIFIER_TAG}" --depth 1 "${BEAUTIFIER_REPO}"
-
   script:
     # Apply beautifier:
     - python3 icon-openacc-beautifier/main.py src/
@@ -68,24 +71,28 @@ OpenACC Style:
       (see artifacts).${DEFAULT}\n" >&2
         exit 1
       }
-
   tags:
     # Choose python capable runner:
     - sphinx
-
   artifacts:
     paths:
       - acc_style.patch
     expire_in: 1 week
     expose_as: 'OpenACC Style Git Patch'
     when: on_failure
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always
+  interruptible: true
 
 General Style:
   stage: basic
-
   variables:
     GIT_SUBMODULE_STRATEGY: normal
 
+  before_script:
+    - pip install pyyaml click pandas
   script:
     # TODO: we should check all ICON source files, as well as all source files
     # of the bundled libraries that are built as part of ICON:
@@ -98,33 +105,50 @@ General Style:
     - ./scripts/ci_scripts/check_encoding.sh 'src' 'support'
     - ./scripts/ci_scripts/check_src_noexec.sh 'src' 'support'
     - ./scripts/ci_scripts/check_omp_sentinels.sh 'src' 'support' 'externals/jsbach' 'externals/emvorado' 'externals/art'
-    - ./scripts/ci_scripts/check_license.sh
     - ./scripts/ci_scripts/check_granule_encapsulation.sh
+    - python scripts/experiments/yaml_experiment_test_processor.py
 
   tags:
     # Choose a runner with GNU find, GNU grep and bash:
     - conda
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always
+  interruptible: true
 
 Autoreconf:
   stage: basic
-
   extends: .colorized
-
   variables:
     AUTOCONF_VERSION: "2.69"
     AUTOCONF_SHA256: 954bd69b391edc12d6a4a51a2dd1476543da5c6bbf05a95b59dc0dd6fd4c2969
+    AUTOCONF_DIR: ${CI_PROJECT_DIR}/autoconf
     GIT_SUBMODULE_STRATEGY: none
-
   before_script:
     - apk add --no-cache automake curl git m4 make perl
+    - |
+      # Fetching Autoconf
+      test -f "${AUTOCONF_DIR}/autoconf-${AUTOCONF_VERSION}.tar.gz" && \
+      echo "${AUTOCONF_SHA256} ${AUTOCONF_DIR}/autoconf-${AUTOCONF_VERSION}.tar.gz" | sha256sum -c || \
+      (
+        set -x
+        mkdir -p "${AUTOCONF_DIR}" && \
+        cd "${AUTOCONF_DIR}" && \
+        {
+          curl -OL --connect-timeout 10 "https://ftpmirror.gnu.org/gnu/autoconf/autoconf-${AUTOCONF_VERSION}.tar.gz" || \
+          curl -L -o "autoconf-${AUTOCONF_VERSION}.tar.gz" "https://mirror.spack.io/_source-cache/archive/${AUTOCONF_SHA256:0:2}/${AUTOCONF_SHA256}.tar.gz"
+        } && \
+        echo "${AUTOCONF_SHA256} autoconf-${AUTOCONF_VERSION}.tar.gz" | sha256sum -c
+      ) || {
+        printf "${RED}ERROR: failed to fetch Autoconf ${AUTOCONF_VERSION}${DEFAULT}\n"
+        exit 1
+      }
     - |
       # Installing Autoconf
       (
         set -x
-        mkdir autoconf && \
-        cd autoconf && \
-        curl -OL https://ftpmirror.gnu.org/gnu/autoconf/autoconf-${AUTOCONF_VERSION}.tar.gz && \
-        echo "${AUTOCONF_SHA256} autoconf-${AUTOCONF_VERSION}.tar.gz" | sha256sum -c && \
+        cd "${AUTOCONF_DIR}" && \
         tar xfz autoconf-${AUTOCONF_VERSION}.tar.gz --strip-components=1 && \
         ./configure && \
         make -j4 install
@@ -132,7 +156,6 @@ Autoreconf:
         printf "${RED}ERROR: failed to install Autoconf ${AUTOCONF_VERSION}${DEFAULT}\n"
         exit 1
       }
-
   script:
     - autoreconf -fvi
     - git diff --ignore-submodules --patch-with-raw > autoreconf.patch
@@ -144,21 +167,23 @@ Autoreconf:
       Autoconf ${AUTOCONF_VERSION} (see artifacts)${DEFAULT}\n"
         exit 1
       }
-
   tags:
     - alpine
-
+  cache:
+    policy: push
+    key: ${AUTOCONF_SHA256}
+    paths:
+      - ${AUTOCONF_DIR}/autoconf-${AUTOCONF_VERSION}.tar.gz
   artifacts:
     paths:
       - autoreconf.patch
     expire_in: 1 week
     expose_as: 'Autoreconf Git Patch'
     when: on_failure
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
-        - .gitlab-ci.yml
+        - ${CI_CONFIG_PATH}
         - config.h.in
         - configure
         - configure.ac
@@ -166,28 +191,62 @@ Autoreconf:
         - utils/config.guess
         - utils/config.sub
         - utils/install-sh
-    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always
+  interruptible: true
 
+Iconbot:
+  stage: basic
+  variables:
+    ICONBOT_TAG: production
+    ICONBOT_REPO: "https://gitlab-ci-token:${CI_JOB_TOKEN}@gitlab.dkrz.de/mpim-sw/iconbot.git"
+    ICONBOT_DIR: iconbot
+    ICONBOT_CONFIG: .gitlab/iconbot/notifier.yml
+    GIT_SUBMODULE_STRATEGY: none
+  before_script:
+    - git clone --branch "${ICONBOT_TAG}" --depth 1 "${ICONBOT_REPO}" "${ICONBOT_DIR}"
+  script:
+    - python3 -m pip install -r "${ICONBOT_DIR}/requirements/notifier/config.txt"
+    - python3 "${ICONBOT_DIR}/src/notifier/config.py" "${ICONBOT_CONFIG}"
+  tags:
+    - sphinx
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      changes:
+        - ${CI_CONFIG_PATH}
+        - ${ICONBOT_CONFIG}
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always
   interruptible: true
 
 Granules:
   stage: test
-
+  needs: []
   trigger:
     include: .gitlab/ci/granules.yml
     strategy: depend
-
   rules:
     - if: $CI_PIPELINE_SOURCE == "merge_request_event"
       changes:
-        - .gitlab-ci.yml
+        - ${CI_CONFIG_PATH}
         - .gitlab/ci/granules.yml
         - externals/fortran-support
+        - externals/math-support
         - externals/probtest
         - src/atm_phy_schemes/mo_lookup_tables_constants.f90
         - src/atm_phy_schemes/mo_satad.f90
         - src/granules/microphysics_1mom_schemes/**/*
+        - src/shared/mo_kind.f90
+        - src/shared/mo_physical_constants.f90
         - test/microphysics_1mom_schemes/**/*
-    - if: $CI_PIPELINE_SOURCE != "merge_request_event"
-
-  allow_failure: true
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "web"
+      when: manual
+    - when: always

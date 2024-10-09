@@ -1,5 +1,3 @@
-! Interface for the RTTOV12 library
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Interface for the RTTOV12 library
 
 MODULE mo_rtifc_12
 

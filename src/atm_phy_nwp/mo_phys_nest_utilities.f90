@@ -1,10 +1,3 @@
-!
-!  This module contains (not yet) utility programs for boundary interpolation and feedback
-!  of diagnostic variables and the upscaling and downscaling routines needed
-!  for the reduced physics grid
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains (not yet) utility programs for boundary interpolation and feedback
+! of diagnostic variables and the upscaling and downscaling routines needed
+! for the reduced physics grid
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -56,11 +53,12 @@ USE sfc_flake,              ONLY: flake_coldinit
 USE sfc_flake_data,         ONLY: tpl_T_r, C_T_min, rflk_depth_bs_ref
 USE mo_fortran_tools,       ONLY: init, copy, set_acc_host_or_device, assert_acc_host_only
 USE mo_io_config,           ONLY: var_in_output
+USE turb_data,              ONLY: imode_tkemini, rsur_sher
 
 ! ACC LOOP Comment "comment_collapse"
 ! ===================================
-! Collapsed loops in ACC are tagged with "comment_collapse" do denote that the inner loops
-! over all cells is actually is on the reduced grid, which has only 1/4 of the usual size.
+! Collapsed loops in ACC are tagged with "comment_collapse" to denote that the inner loops
+! over all cells are actually on the reduced grid, which has only 1/4 of the usual size.
 ! In this case, we collapse in order to have the most parallelism.
 
 IMPLICIT NONE
@@ -199,11 +197,10 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
   cosmu0, albvisdir, albnirdir, albvisdif, albnirdif, albdif,              &
   tsfc, ktype, pres_ifc, pres, temp,                                       &
   tot_cld, clc, q_o3,                                                      &
-  aeq1, aeq2, aeq3, aeq4, aeq5,                                            &
   rg_emis_rad,                                                             &
   rg_cosmu0, rg_albvisdir, rg_albnirdir, rg_albvisdif, rg_albnirdif,       &
   rg_albdif, rg_tsfc, rg_rtype, rg_pres_ifc, rg_pres, rg_temp,             &
-  rg_tot_cld, rg_clc, rg_q_o3, rg_aeq1, rg_aeq2, rg_aeq3, rg_aeq4, rg_aeq5,&
+  rg_tot_cld, rg_clc, rg_q_o3,                                             &
   z_pres_ifc, z_tot_cld, buffer_rrg,                                       &
   icpl_rad_reff, reff_liq, reff_frz, rg_reff_liq, rg_reff_frz,             &
   input_extra_flds, rg_extra_flds, input_extra_2D, rg_extra_2D,            &     
@@ -221,8 +218,7 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     emis_rad(:,:),                                                                        &
     cosmu0(:,:), albvisdir(:,:), albnirdir(:,:), albvisdif(:,:), albnirdif(:,:),          &
     albdif(:,:), tsfc(:,:), pres_ifc(:,:,:), pres(:,:,:), temp(:,:,:),                    &
-    tot_cld(:,:,:,:), clc(:,:,:), q_o3(:,:,:), aeq1(:,:,:), aeq2(:,:,:), aeq3(:,:,:),     &
-    aeq4(:,:,:), aeq5(:,:,:)
+    tot_cld(:,:,:,:), clc(:,:,:), q_o3(:,:,:)
 
   REAL(wp), INTENT(IN), OPTIONAL ::  reff_liq(:,:,:), reff_frz(:,:,:)
   
@@ -239,8 +235,7 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     rg_cosmu0(:,:), rg_albvisdir(:,:), rg_albnirdir(:,:), rg_albvisdif(:,:), &
     rg_albnirdif(:,:), rg_albdif(:,:), rg_tsfc(:,:), rg_rtype(:,:),          &
     rg_pres_ifc(:,:,:), rg_pres(:,:,:), rg_temp(:,:,:),                      &
-    rg_tot_cld(:,:,:,:), rg_clc(:,:,:), rg_q_o3(:,:,:), rg_aeq1(:,:,:),      &
-    rg_aeq2(:,:,:), rg_aeq3(:,:,:), rg_aeq4(:,:,:),rg_aeq5(:,:,:),           &
+    rg_tot_cld(:,:,:,:), rg_clc(:,:,:), rg_q_o3(:,:,:),                      &
     ! these have the same function as the intermediate storage fields below but are passed to the calling routine
     z_pres_ifc(:,:,:), z_tot_cld(:,:,:,:)
 
@@ -254,8 +249,7 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     z_emis_rad(:,:),                                                           &
     z_cosmu0(:,:), z_albvisdir(:,:), z_albnirdir(:,:), z_albvisdif(:,:),       &
     z_albnirdif(:,:), z_albdif(:,:), z_tsfc(:,:), z_rtype(:,:),                &
-    z_pres(:,:,:), z_temp(:,:,:), z_clc(:,:,:), z_q_o3(:,:,:),                 & 
-    z_aeq1(:,:,:), z_aeq2(:,:,:), z_aeq3(:,:,:), z_aeq4(:,:,:), z_aeq5(:,:,:), &
+    z_pres(:,:,:), z_temp(:,:,:), z_clc(:,:,:), z_q_o3(:,:,:),                 &
     z_aux3d(:,:,:), zrg_aux3d(:,:,:), z_reff_liq(:,:,:), z_reff_frz(:,:,:),    &
     z_extra_flds(:,:,:,:), z_extra_2D(:,:,:), z_extra_reff(:,:,:,:)
 
@@ -268,8 +262,7 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     p_pres_ifc(:,:,:), p_pres(:,:,:), p_temp(:,:,:),                     &
     p_reff_liq(:,:,:), p_reff_frz(:,:,:),                                &
     p_extra_flds(:,:,:,:), p_extra_2D(:,:,:), p_extra_reff(:,:,:,:),     &
-    p_tot_cld(:,:,:,:), p_clc(:,:,:), p_q_o3(:,:,:), p_aeq1(:,:,:),      &
-    p_aeq2(:,:,:), p_aeq3(:,:,:), p_aeq4(:,:,:),p_aeq5(:,:,:)
+    p_tot_cld(:,:,:,:), p_clc(:,:,:), p_q_o3(:,:,:)
 
   ! Buffer for auxiliary temperature and pressure levels above the vertical nest interface
   REAL(wp), INTENT(IN) :: buffer_rrg(:,:,:)
@@ -306,11 +299,11 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
   ! arguments intent(in/out)
   !$ACC DATA PRESENT(emis_rad, cosmu0, albvisdir, albnirdir, albvisdif, albnirdif) &
   !$ACC   PRESENT(albdif, tsfc, pres_ifc, pres, temp) &
-  !$ACC   PRESENT(tot_cld, clc, q_o3, aeq1, aeq2, aeq3, aeq4, aeq5) &
+  !$ACC   PRESENT(tot_cld, clc, q_o3) &
   !$ACC   PRESENT(ktype, buffer_rrg) &
   !$ACC   PRESENT(rg_emis_rad, rg_cosmu0, rg_albvisdir, rg_albnirdir, rg_albvisdif, rg_albnirdif) &
   !$ACC   PRESENT(rg_albdif, rg_tsfc, rg_pres_ifc, rg_pres, rg_temp) &
-  !$ACC   PRESENT(rg_tot_cld, rg_clc, rg_q_o3, rg_aeq1, rg_aeq2, rg_aeq3, rg_aeq4, rg_aeq5, z_pres_ifc, z_tot_cld) &
+  !$ACC   PRESENT(rg_tot_cld, rg_clc, rg_q_o3, z_pres_ifc, z_tot_cld) &
   !$ACC   PRESENT(input_extra_flds, input_extra_2D, input_extra_reff) &
   !$ACC   PRESENT(rg_extra_flds, rg_extra_2D, rg_extra_reff) IF(lzacc)
 
@@ -383,16 +376,13 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
              z_albnirdif(nproma,nblks_c_lp), z_albdif(nproma,nblks_c_lp),               &
              z_tsfc(nproma,nblks_c_lp), z_rtype(nproma,nblks_c_lp),                     &
              z_pres(nproma,nlev_rg,nblks_c_lp), z_temp(nproma,nlev_rg,nblks_c_lp),      &
-             z_clc(nproma,nlev_rg,nblks_c_lp),                                          &
-             z_q_o3(nproma,nlev_rg,nblks_c_lp), z_aeq1(nproma,nlev_rg,nblks_c_lp),      &
-             z_aeq2(nproma,nlev_rg,nblks_c_lp), z_aeq3(nproma,nlev_rg,nblks_c_lp),      &
-             z_aeq4(nproma,nlev_rg,nblks_c_lp), z_aeq5(nproma,nlev_rg,nblks_c_lp),      &
+             z_clc(nproma,nlev_rg,nblks_c_lp), z_q_o3(nproma,nlev_rg,nblks_c_lp),       &
              z_aux3d(nproma,n2d_upsc,nblks_c_lp), zrg_aux3d(nproma,n2d_upsc,p_patch(jgp)%nblks_c) )
 
     ! enter data for local arrays
     !$ACC ENTER DATA CREATE(z_emis_rad, z_cosmu0, z_albvisdir, z_albnirdir, z_albvisdif) &
     !$ACC   CREATE(z_albnirdif, z_albdif, z_tsfc, z_rtype, z_pres, z_temp, z_clc) &
-    !$ACC   CREATE(z_q_o3, z_aeq1, z_aeq2, z_aeq3, z_aeq4, z_aeq5, z_aux3d, zrg_aux3d) IF(lzacc)
+    !$ACC   CREATE(z_q_o3, z_aux3d, zrg_aux3d) IF(lzacc)
 
     IF ( l_upsc_reff ) THEN
       ALLOCATE ( z_reff_liq(nproma,nlev_rg,nblks_c_lp), z_reff_frz(nproma,nlev_rg,nblks_c_lp) )
@@ -438,11 +428,6 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     p_tot_cld    => z_tot_cld
     p_clc        => z_clc
     p_q_o3       => z_q_o3
-    p_aeq1       => z_aeq1
-    p_aeq2       => z_aeq2
-    p_aeq3       => z_aeq3
-    p_aeq4       => z_aeq4
-    p_aeq5       => z_aeq5
   ELSE
     p_emis_rad   => rg_emis_rad
     p_cosmu0     => rg_cosmu0
@@ -466,17 +451,12 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     p_tot_cld    => rg_tot_cld
     p_clc        => rg_clc
     p_q_o3       => rg_q_o3
-    p_aeq1       => rg_aeq1
-    p_aeq2       => rg_aeq2
-    p_aeq3       => rg_aeq3
-    p_aeq4       => rg_aeq4
-    p_aeq5       => rg_aeq5
   ENDIF
 
   ! data present for pointers
   !$ACC DATA PRESENT(p_patch, p_emis_rad, p_cosmu0, p_albvisdir, p_albnirdir, p_albvisdif, p_albnirdif) &
   !$ACC   PRESENT(p_albdif, p_tsfc, p_rtype, p_pres_ifc, p_pres, p_temp) &
-  !$ACC   PRESENT(p_tot_cld, p_clc, p_q_o3, p_aeq1, p_aeq2, p_aeq3, p_aeq4, p_aeq5) IF(lzacc)
+  !$ACC   PRESENT(p_tot_cld, p_clc, p_q_o3) IF(lzacc)
 
   ! data present for optional pointers
   !$ACC DATA PRESENT(p_extra_flds) IF(l_upsc_extra_flds .AND. lzacc)
@@ -508,11 +488,6 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     p_tot_cld    = 0._wp
     p_clc        = 0._wp
     p_q_o3       = 0._wp
-    p_aeq1       = 0._wp
-    p_aeq2       = 0._wp
-    p_aeq3       = 0._wp
-    p_aeq4       = 0._wp
-    p_aeq5       = 0._wp
     !$ACC END KERNELS
   ENDIF
 
@@ -694,36 +669,6 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
           q_o3(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
           q_o3(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
           q_o3(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
-
-        p_aeq1(jc,jk1,jb) =                                        &
-          aeq1(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
-          aeq1(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
-          aeq1(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
-          aeq1(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
-
-        p_aeq2(jc,jk1,jb) =                                        &
-          aeq2(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
-          aeq2(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
-          aeq2(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
-          aeq2(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
-
-        p_aeq3(jc,jk1,jb) =                                        &
-          aeq3(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
-          aeq3(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
-          aeq3(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
-          aeq3(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
-
-        p_aeq4(jc,jk1,jb) =                                        &
-          aeq4(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
-          aeq4(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
-          aeq4(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
-          aeq4(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
-
-        p_aeq5(jc,jk1,jb) =                                        &
-          aeq5(iidx(jc,jb,1),jk,iblk(jc,jb,1))*p_fbkwgt(jc,jb,1) + &
-          aeq5(iidx(jc,jb,2),jk,iblk(jc,jb,2))*p_fbkwgt(jc,jb,2) + &
-          aeq5(iidx(jc,jb,3),jk,iblk(jc,jb,3))*p_fbkwgt(jc,jb,3) + &
-          aeq5(iidx(jc,jb,4),jk,iblk(jc,jb,4))*p_fbkwgt(jc,jb,4)
 
 #ifndef _OPENACC
       ENDDO
@@ -952,11 +897,6 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
       DO jk = 1, nshift
 !$NEC ivdep
         DO jc = i_startidx, i_endidx
-          p_aeq1(jc,jk,jb) = p_aeq1(jc,jk1,jb)
-          p_aeq2(jc,jk,jb) = p_aeq2(jc,jk1,jb)
-          p_aeq3(jc,jk,jb) = p_aeq3(jc,jk1,jb)
-          p_aeq4(jc,jk,jb) = p_aeq4(jc,jk1,jb)
-          p_aeq5(jc,jk,jb) = p_aeq5(jc,jk1,jb)
           p_tot_cld(jc,jk,jb,1:3) = p_tot_cld(jc,jk1,jb,1:3)
           p_clc (jc,jk,jb) = p_clc(jc,jk1,jb)
           p_q_o3(jc,jk,jb) = p_q_o3(jc,jk1,jb)
@@ -1050,13 +990,8 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
 
     CALL exchange_data_mult(p_pat=p_pp%comm_pat_loc_to_glb_c_fbk,         &
                             lacc=lzacc,                                   &
-                            nfields=9, ndim2tot=9*nlev_rg,                &
-                            RECV1=rg_aeq1,     SEND1=z_aeq1,              &
-                            RECV2=rg_aeq2,     SEND2=z_aeq2,              &
-                            RECV3=rg_aeq3,     SEND3=z_aeq3,              &
-                            RECV4=rg_aeq4,     SEND4=z_aeq4,              &
-                            RECV5=rg_aeq5,     SEND5=z_aeq5,              &
-                            RECV6=rg_clc,      SEND6=z_clc,               &
+                            nfields=4, ndim2tot=4*nlev_rg,                &
+                            RECV1=rg_clc,      SEND1=z_clc,               &
                             RECV4D=rg_tot_cld, SEND4D=z_tot_cld           )
 
 ! Maximum number of SEND/RECIV is 7. Put this into first call when acdnc is not used
@@ -1147,11 +1082,11 @@ SUBROUTINE upscale_rad_input(jg, jgp, nlev_rg, emis_rad,                   &
     ! exit data for local arrays
     !$ACC EXIT DATA DELETE(z_emis_rad, z_cosmu0, z_albvisdir, z_albnirdir, z_albvisdif) &
     !$ACC   DELETE(z_albnirdif, z_albdif, z_tsfc, z_rtype, z_pres, z_temp, z_clc) &
-    !$ACC   DELETE(z_q_o3, z_aeq1, z_aeq2, z_aeq3, z_aeq4, z_aeq5, z_aux3d, zrg_aux3d) IF(lzacc)
+    !$ACC   DELETE(z_q_o3, z_aux3d, zrg_aux3d) IF(lzacc)
 
     DEALLOCATE(z_emis_rad, z_cosmu0, z_albvisdir, z_albnirdir,                       &
       & z_albvisdif, z_albnirdif, z_albdif, z_tsfc, z_rtype, z_pres, z_temp,         &
-      & z_clc, z_q_o3, z_aeq1, z_aeq2, z_aeq3, z_aeq4, z_aeq5, z_aux3d, zrg_aux3d)
+      & z_clc, z_q_o3, z_aux3d, zrg_aux3d)
 
     IF ( l_upsc_reff ) THEN
       !$ACC EXIT DATA DELETE(z_reff_liq, z_reff_frz) IF(lzacc)
@@ -2134,7 +2069,7 @@ SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc
   TYPE(t_wtr_prog),             POINTER :: ptr_wprogc ! child level water prog state
 
   ! Local fields
-  INTEGER, PARAMETER  :: nfields_p1=79   ! Number of positive-definite 2D physics fields for which boundary interpolation is needed
+  INTEGER, PARAMETER  :: nfields_p1=78   ! Number of positive-definite 2D physics fields for which boundary interpolation is needed
   INTEGER, PARAMETER  :: nfields_p2=19   ! Number of remaining 2D physics fields for which boundary interpolation is needed
   INTEGER, PARAMETER  :: nfields_l2=19   ! Number of 2D land state fields
 
@@ -2271,36 +2206,36 @@ SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc
 
       z_aux3dp1_p(jc,62,jb) = prm_diag(jg)%tvm(jc,jb)
       z_aux3dp1_p(jc,63,jb) = prm_diag(jg)%tvh(jc,jb)
-      z_aux3dp1_p(jc,64,jb) = prm_diag(jg)%tkr(jc,jb)
-      z_aux3dp1_p(jc,65,jb) = prm_diag(jg)%cldepth(jc,jb)
-      z_aux3dp1_p(jc,66,jb) = prm_diag(jg)%t_2m_land(jc,jb)
-      z_aux3dp1_p(jc,67,jb) = prm_diag(jg)%td_2m_land(jc,jb)
-      z_aux3dp1_p(jc,68,jb) = prm_diag(jg)%rh_2m_land(jc,jb)
+      z_aux3dp1_p(jc,64,jb) = prm_diag(jg)%cldepth(jc,jb)
+      z_aux3dp1_p(jc,65,jb) = prm_diag(jg)%t_2m_land(jc,jb)
+      z_aux3dp1_p(jc,66,jb) = prm_diag(jg)%td_2m_land(jc,jb)
+      z_aux3dp1_p(jc,67,jb) = prm_diag(jg)%rh_2m_land(jc,jb)
 
       IF (ANY((/1,2,4,5,6,7,8/) == atm_phy_nwp_config(jg)%inwp_gscp)) THEN
-        z_aux3dp1_p(jc,69,jb) = prm_diag(jg)%ice_gsp(jc,jb)
-        z_aux3dp1_p(jc,70,jb) = prm_diag(jg)%ice_gsp_rate(jc,jb)
+        z_aux3dp1_p(jc,68,jb) = prm_diag(jg)%ice_gsp(jc,jb)
+        z_aux3dp1_p(jc,69,jb) = prm_diag(jg)%ice_gsp_rate(jc,jb)
       ELSE
+        z_aux3dp1_p(jc,68,jb) = 0._wp
         z_aux3dp1_p(jc,69,jb) = 0._wp
-        z_aux3dp1_p(jc,70,jb) = 0._wp
       ENDIF
       
       IF (atm_phy_nwp_config(jg)%l2moment) THEN
-        z_aux3dp1_p(jc,71,jb) = prm_diag(jg)%hail_gsp(jc,jb)
-        z_aux3dp1_p(jc,72,jb) = prm_diag(jg)%hail_gsp_rate(jc,jb)
+        z_aux3dp1_p(jc,70,jb) = prm_diag(jg)%hail_gsp(jc,jb)
+        z_aux3dp1_p(jc,71,jb) = prm_diag(jg)%hail_gsp_rate(jc,jb)
       ELSE
+        z_aux3dp1_p(jc,70,jb) = 0._wp
         z_aux3dp1_p(jc,71,jb) = 0._wp
-        z_aux3dp1_p(jc,72,jb) = 0._wp
       ENDIF
       
-      z_aux3dp1_p(jc,73,jb)  = prm_diag(jg)%tot_prec_d(jc,jb)
-      z_aux3dp1_p(jc,74,jb)  = prm_diag(jg)%prec_gsp_d(jc,jb)
-      z_aux3dp1_p(jc,75,jb)  = prm_diag(jg)%prec_con_d(jc,jb)
-      z_aux3dp1_p(jc,76,jb)  = prm_diag(jg)%swflxclr_sfc(jc,jb)
-      z_aux3dp1_p(jc,77,jb)  = prm_diag(jg)%swflxclrsfc_a(jc,jb)
+      z_aux3dp1_p(jc,72,jb)  = prm_diag(jg)%tot_prec_d(jc,jb)
+      z_aux3dp1_p(jc,73,jb)  = prm_diag(jg)%prec_gsp_d(jc,jb)
+      z_aux3dp1_p(jc,74,jb)  = prm_diag(jg)%prec_con_d(jc,jb)
 
-      z_aux3dp1_p(jc,78,jb)  = prm_diag(jg)%rain_con_rate_corr(jc,jb)
-      z_aux3dp1_p(jc,79,jb)  = prm_diag(jg)%snow_con_rate_corr(jc,jb)
+      z_aux3dp1_p(jc,75,jb)  = prm_diag(jg)%swflxclr_sfc(jc,jb)
+      z_aux3dp1_p(jc,76,jb)  = prm_diag(jg)%swflxclrsfc_a(jc,jb)
+
+      z_aux3dp1_p(jc,77,jb)  = prm_diag(jg)%rain_con_rate_corr(jc,jb)
+      z_aux3dp1_p(jc,78,jb)  = prm_diag(jg)%snow_con_rate_corr(jc,jb)
 
       z_aux3dp2_p(jc,1,jb) = prm_diag(jg)%u_10m(jc,jb)
       z_aux3dp2_p(jc,2,jb) = prm_diag(jg)%v_10m(jc,jb)
@@ -2550,31 +2485,30 @@ SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc
 
       prm_diag(jgc)%tvm(jc,jb)            = z_aux3dp1_c(jc,62,jb)
       prm_diag(jgc)%tvh(jc,jb)            = z_aux3dp1_c(jc,63,jb)
-      prm_diag(jgc)%tkr(jc,jb)            = z_aux3dp1_c(jc,64,jb)
-      prm_diag(jgc)%cldepth(jc,jb)        = MIN(1._wp,z_aux3dp1_c(jc,65,jb))
-      prm_diag(jgc)%t_2m_land(jc,jb)      = z_aux3dp1_c(jc,66,jb)
-      prm_diag(jgc)%td_2m_land(jc,jb)     = z_aux3dp1_c(jc,67,jb)
-      prm_diag(jgc)%rh_2m_land(jc,jb)     = z_aux3dp1_c(jc,68,jb)
+      prm_diag(jgc)%cldepth(jc,jb)        = MIN(1._wp,z_aux3dp1_c(jc,64,jb))
+      prm_diag(jgc)%t_2m_land(jc,jb)      = z_aux3dp1_c(jc,65,jb)
+      prm_diag(jgc)%td_2m_land(jc,jb)     = z_aux3dp1_c(jc,66,jb)
+      prm_diag(jgc)%rh_2m_land(jc,jb)     = z_aux3dp1_c(jc,67,jb)
 
       IF (ANY((/1,2,4,5,6,7,8/) == atm_phy_nwp_config(jgc)%inwp_gscp)) THEN
-        prm_diag(jgc)%ice_gsp(jc,jb)       = MAX(z_aux3dp1_c(jc,69,jb),prm_diag(jgc)%ice_gsp(jc,jb))
-        prm_diag(jgc)%ice_gsp_rate(jc,jb)  = z_aux3dp1_c(jc,70,jb)
+        prm_diag(jgc)%ice_gsp(jc,jb)       = MAX(z_aux3dp1_c(jc,68,jb),prm_diag(jgc)%ice_gsp(jc,jb))
+        prm_diag(jgc)%ice_gsp_rate(jc,jb)  = z_aux3dp1_c(jc,69,jb)
       ENDIF
 
       IF (atm_phy_nwp_config(jgc)%l2moment) THEN
-        prm_diag(jgc)%hail_gsp(jc,jb)      = MAX(z_aux3dp1_c(jc,71,jb),prm_diag(jgc)%hail_gsp(jc,jb))
-        prm_diag(jgc)%hail_gsp_rate(jc,jb) = z_aux3dp1_c(jc,72,jb)
+        prm_diag(jgc)%hail_gsp(jc,jb)      = MAX(z_aux3dp1_c(jc,70,jb),prm_diag(jgc)%hail_gsp(jc,jb))
+        prm_diag(jgc)%hail_gsp_rate(jc,jb) = z_aux3dp1_c(jc,71,jb)
       END IF
       
-      prm_diag(jgc)%tot_prec_d(jc,jb)     = MAX(z_aux3dp1_c(jc,73,jb),prm_diag(jgc)%tot_prec_d(jc,jb))
-      prm_diag(jgc)%prec_gsp_d(jc,jb)     = MAX(z_aux3dp1_c(jc,74,jb),prm_diag(jgc)%prec_gsp_d(jc,jb))
-      prm_diag(jgc)%prec_con_d(jc,jb)     = MAX(z_aux3dp1_c(jc,75,jb),prm_diag(jgc)%prec_con_d(jc,jb))
-      
-      prm_diag(jgc)%swflxclr_sfc(jc,jb)   = z_aux3dp1_c(jc,76,jb)
-      prm_diag(jgc)%swflxclrsfc_a(jc,jb)  = z_aux3dp1_c(jc,77,jb)
+      prm_diag(jgc)%tot_prec_d(jc,jb)     = MAX(z_aux3dp1_c(jc,72,jb),prm_diag(jgc)%tot_prec_d(jc,jb))
+      prm_diag(jgc)%prec_gsp_d(jc,jb)     = MAX(z_aux3dp1_c(jc,73,jb),prm_diag(jgc)%prec_gsp_d(jc,jb))
+      prm_diag(jgc)%prec_con_d(jc,jb)     = MAX(z_aux3dp1_c(jc,74,jb),prm_diag(jgc)%prec_con_d(jc,jb))
 
-      prm_diag(jgc)%rain_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,78,jb)
-      prm_diag(jgc)%snow_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,79,jb)
+      prm_diag(jgc)%swflxclr_sfc(jc,jb)   = z_aux3dp1_c(jc,75,jb)
+      prm_diag(jgc)%swflxclrsfc_a(jc,jb)  = z_aux3dp1_c(jc,76,jb)
+
+      prm_diag(jgc)%rain_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,77,jb)
+      prm_diag(jgc)%snow_con_rate_corr(jc,jb) = z_aux3dp1_c(jc,78,jb)
 
       prm_diag(jgc)%u_10m(jc,jb)          = z_aux3dp2_c(jc,1,jb)
       prm_diag(jgc)%v_10m(jc,jb)          = z_aux3dp2_c(jc,2,jb)
@@ -2603,6 +2537,7 @@ SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc
       ELSE
         prm_diag(jgc)%htop_con(jc,jb) = z_aux3dp1_c(jc,38,jb) + prm_diag(jgc)%hbas_con(jc,jb)
       ENDIF
+
     ENDDO
     !$ACC END PARALLEL
 
@@ -2748,6 +2683,7 @@ SUBROUTINE interpol_phys_grf (ext_data, prm_diag, p_lnd_state, jg, jgc, jn, lacc
         ENDDO
       ENDDO
       !$ACC END PARALLEL
+
 
       IF (lmulti_snow) THEN
 #ifdef _OPENACC

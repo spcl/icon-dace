@@ -1,6 +1,3 @@
-!
-! Tests the mo_read_interface methods
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Tests the mo_read_interface methods
 
 MODULE mo_test_netcdf_read
 

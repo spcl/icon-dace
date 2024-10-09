@@ -1,9 +1,3 @@
-! Routines that describe when regular output steps and ready file
-! events shall be triggered. The definitions in this module control
-! the behaviour of "mo_output_event_handler".
-!
-! See "mo_output_event_handler" for a detailed description.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Routines that describe when regular output steps and ready file
+! events shall be triggered. The definitions in this module control
+! the behaviour of "mo_output_event_handler".
+!
+! See "mo_output_event_handler" for a detailed description.
 
 MODULE mo_output_event_control
 

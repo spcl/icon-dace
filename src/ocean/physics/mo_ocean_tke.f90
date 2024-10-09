@@ -1,5 +1,3 @@
-!NEC$ options "-O0"
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+!NEC$ options "-O0"
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -246,7 +246,7 @@ CONTAINS
 
 
     ! loop variables
-    INTEGER :: jc, blockNo, je,jk, tracer_index
+    INTEGER :: jc, blockNo, je,jk, tracer_index, jtrc
     INTEGER :: start_index, end_index
     INTEGER :: levels
 
@@ -559,8 +559,9 @@ CONTAINS
       !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       DO jc = start_index, end_index
         ! FIXME: nils: make loop over all tracer
-        params_oce%a_tracer_v(jc,:,blockNo,1) = tke_kv(jc,:,blockNo)
-        params_oce%a_tracer_v(jc,:,blockNo,2) = tke_kv(jc,:,blockNo)
+        DO jtrc = 1, no_tracer
+          params_oce%a_tracer_v(jc,:,blockNo,jtrc) = tke_kv(jc,:,blockNo)
+        ENDDO
       ENDDO
       !$ACC END PARALLEL LOOP
     ENDDO
@@ -609,7 +610,7 @@ CONTAINS
 
 
     ! loop variables
-    INTEGER :: jc, blockNo, je,jk, tracer_index
+    INTEGER :: jc, blockNo, je,jk, tracer_index, jtrc
     INTEGER :: start_index, end_index
     INTEGER :: levels
 
@@ -951,8 +952,9 @@ CONTAINS
         CALL get_index_range(all_cells, blockNo, start_index, end_index)
         DO jc = start_index, end_index
           ! FIXME: nils: make loop over all tracer
-          params_oce%a_tracer_v(jc,:,blockNo,1) = tke_kv(jc,:,blockNo)
-          params_oce%a_tracer_v(jc,:,blockNo,2) = tke_kv(jc,:,blockNo)
+          DO jtrc = 1, no_tracer
+            params_oce%a_tracer_v(jc,:,blockNo,jtrc) = tke_kv(jc,:,blockNo)
+          ENDDO
         ENDDO
       ENDDO
 !ICON_OMP_END_DO
@@ -1009,7 +1011,7 @@ CONTAINS
     INTEGER, POINTER :: dolic_c(:,:)
 
     ! loop variables
-    INTEGER :: jc, blockNo, je,jk
+    INTEGER :: jc, blockNo, je, jk, jtrc
     INTEGER :: start_index, end_index
     INTEGER :: max_levels
 
@@ -1389,9 +1391,9 @@ CONTAINS
 !ICON_OMP_DO PRIVATE(start_index, end_index, jc)
    DO blockNo = all_cells%start_block, all_cells%end_block
       CALL get_index_range(all_cells, blockNo, start_index, end_index)
-      ! FIXME: nils: make loop over all tracer
-      params_oce%a_tracer_v(start_index:end_index,:,blockNo,1) = tke_kv(start_index:end_index,:,blockNo)
-      params_oce%a_tracer_v(start_index:end_index,:,blockNo,2) = tke_kv(start_index:end_index,:,blockNo)
+      DO jtrc = 1, no_tracer
+        params_oce%a_tracer_v(start_index:end_index,:,blockNo,jtrc) = tke_kv(start_index:end_index,:,blockNo)
+      ENDDO
     ENDDO
 !ICON_OMP_END_DO
     end if

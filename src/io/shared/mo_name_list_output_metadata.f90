@@ -1,5 +1,3 @@
-! Module handling the transfer of variable meta info to asynchronous I/O PEs.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module handling the transfer of variable meta info to asynchronous I/O PEs.
 
 MODULE mo_name_list_output_metadata
 

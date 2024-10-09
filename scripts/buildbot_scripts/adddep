@@ -14,13 +14,10 @@
 #==============================================================================
 # create an experiment list
 #==============================================================================
-from buildbot_config import BuildbotConfig
-from icon_paths import buildbot_list_path
-from util import WhitespaceSeperatedFiles, WhitespaceSeperatedList, WhitespaceSeperatedDict
 
-from pathlib import Path
 import click
-import sys
+from exp_utils import adddep
+from util import WhitespaceSeperatedList, WhitespaceSeperatedFiles, WhitespaceSeperatedDict
 
 @click.command()
 @click.option("--from-builder", type=str, help="the builder that contains the dependent experiment")
@@ -32,21 +29,11 @@ import sys
 @click.option("--without-configureflags", type=WhitespaceSeperatedDict(), help="discard bulders with these configure options")
 @click.option("--machines", type=WhitespaceSeperatedList(), help="the machine name to add the builder")
 @click.option("--list", "list_name", type=str, help="the buildbot configuration list", required=True)
-def adddep(from_builder, from_experiment, to_builder, to_experiment, builders, with_configureflags, without_configureflags, machines, list_name):
 
-    full_list_name = buildbot_list_path / list_name
-
-    if Path(full_list_name).exists():
-      thisList = BuildbotConfig.from_pickle(full_list_name)
-    else:
-      print("did not find experiment list {}".format(full_list_name))
-      sys.exit(1)
-
-    thisList.add_dependency_manager(from_experiment, to_experiment, from_builder, to_builder, builders, machines, with_configureflags, without_configureflags)
-
-    thisList.to_pickle(full_list_name)
+def adddep_wrap(from_builder, from_experiment, to_builder, to_experiment, builders, with_configureflags, without_configureflags, machines, list_name):
+    adddep(from_builder, from_experiment, to_builder, to_experiment, builders, with_configureflags, without_configureflags, machines, list_name)
 
 if __name__ == "__main__":
-    adddep()
+    adddep_wrap()
 
 

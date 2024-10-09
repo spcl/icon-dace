@@ -1,6 +1,3 @@
-! Contains the implementation of velocity and tracer diffusion for the ICON ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of velocity and tracer diffusion for the ICON ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -93,7 +92,7 @@ CONTAINS
       !divgrad laplacian is chosen
       IF(laplacian_form==2)THEN
 #ifdef _OPENACC
-        IF (lzacc) CALL finish(method_name, 'OpenACC version currently for laplacian_form not implemented')
+        IF (lzacc) CALL finish(method_name, 'OpenACC version currently for laplacian_form==2 not implemented')
 #endif
         CALL finish(method_name, "form of harmonic Laplacian not recommended")
         CALL veloc_diff_harmonic_div_grad( patch_3D,      &
@@ -119,10 +118,10 @@ CONTAINS
       ENDIF
       
     ELSEIF(VelocityDiffusion_order==2 .or. VelocityDiffusion_order==21)THEN
-#ifdef _OPENACC
-      IF (lzacc) CALL finish(method_name, 'OpenACC version currently for VelocityDiffusion_order/=1 not implemented')
-#endif
       IF(laplacian_form==2)THEN
+#ifdef _OPENACC
+        IF (lzacc) CALL finish(method_name, 'OpenACC version currently for laplacian_form==2 not implemented')
+#endif
         !CALL finish("mo_ocean_velocity_diffusion:velocity_diffusion", "form of biharmonic Laplacian not recommended")
         CALL veloc_diff_biharmonic_div_grad( patch_3D,   &
           & physics_parameters,      &
@@ -139,10 +138,14 @@ CONTAINS
           & vn_in,               &
           & p_diag%vort,         &
           & operators_coeff,     &
-          & laplacian_vn_out)
+          & laplacian_vn_out,    &
+          & lacc=lzacc)
       ENDIF
     ELSEIF(VelocityDiffusion_order==0)THEN
+      !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       laplacian_vn_out = 0.0_wp
+      !$ACC END KERNELS
+      !$ACC WAIT(1)
     ELSE
       CALL finish(method_name, "unknown VelocityDiffusion_order")
     ENDIF
@@ -808,7 +811,7 @@ CONTAINS
   !!  mpi note: the result is not synced. Should be done in the calling method if required
   !!
   SUBROUTINE veloc_diff_biharmonic_curl_curl( patch_3D,physics_parameters,u_vec_e,vort, operators_coeff,&
-    & nabla4_vec_e)
+    & nabla4_vec_e, lacc)
 
     TYPE(t_patch_3d ),TARGET      :: patch_3D ! INTENT(in)
     TYPE(t_ho_params)             :: physics_parameters !mixing parameters  INTENT(in)
@@ -816,6 +819,7 @@ CONTAINS
     REAL(wp)                      :: vort   (:,:,:) ! INTENT(in)
     TYPE(t_operator_coeff),INTENT(IN) :: operators_coeff ! INTENT(in)
     REAL(wp)                      :: nabla4_vec_e(:,:,:) ! INTENT(out)
+    LOGICAL, INTENT(in), OPTIONAL :: lacc
     
     !Local variables
     REAL(wp), POINTER                      :: k_h(:,:,:)
@@ -828,9 +832,19 @@ CONTAINS
 !     REAL(wp) ::  HarmonicDiffusion(nproma,n_zlev,patch_3D%p_patch_2d(1)%nblks_e)
     REAL(wp) :: h_e        (nproma,patch_3D%p_patch_2d(1)%nblks_e)
     TYPE(t_cartesian_coordinates)  :: p_nabla2_dual(nproma,n_zlev,patch_3D%p_patch_2d(1)%nblks_v)
+#ifdef _OPENACC
+    REAL(wp), DIMENSION(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v) ::p_nabla2_dual_x, p_nabla2_dual_y, p_nabla2_dual_z
+#endif _OPENACC
     INTEGER,  DIMENSION(:,:,:), POINTER :: icidx, icblk, ividx, ivblk
     TYPE(t_subset_range), POINTER :: edges_in_domain
     TYPE(t_patch), POINTER :: patch_2D
+    LOGICAL :: lzacc
+
+    CALL set_acc_host_or_device(lzacc, lacc)
+
+    !$ACC DATA CREATE(z_div_c, z_rot_v, z_nabla2_e, p_nabla2_dual) &
+    !$ACC   CREATE(p_nabla2_dual_x, p_nabla2_dual_y, p_nabla2_dual_z) IF(lzacc)
+
     !-----------------------------------------------------------------------
     ! note that this will go through the lateral boundaries
     patch_2D         => patch_3D%p_patch_2d(1)
@@ -848,11 +862,19 @@ CONTAINS
     
 #ifdef NAGFOR
     ! this is only for sync with nag
+    !$ACC KERNELS DEFAUL(PRESENT) ASYNC(1) IF(lzacc)
     z_nabla2_e(:,:,:) = 0.0_wp
     z_div_c(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%alloc_cell_blocks) =0.0_wp
     p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(1)=0.0_wp
     p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(2)=0.0_wp
     p_nabla2_dual(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)%x(3)=0.0_wp
+#ifdef _OPENACC
+    p_nabla2_dual_x(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)=0.0_wp
+    p_nabla2_dual_y(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)=0.0_wp
+    p_nabla2_dual_z(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v)=0.0_wp
+#endif _OPENACC
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
 #endif
 !     z_rot_v(1:nproma,1:n_zlev,1:patch_3D%p_patch_2d(1)%nblks_v) =0.0_wp
 
@@ -871,7 +893,8 @@ CONTAINS
         & u_vec_e=u_vec_e,                    &
         & vort=vort,                          &
         & div_coeff=operators_coeff%div_coeff,&
-        & nabla2_vec_e=z_nabla2_e)
+        & nabla2_vec_e=z_nabla2_e,            &
+        & lacc=lzacc)
 !     ENDIF
   
     CALL sync_patch_array(sync_e,patch_2D,z_nabla2_e)
@@ -908,24 +931,48 @@ CONTAINS
     !     END DO
     
     ! compute divergence of vector field
-    CALL div_oce_3d( z_nabla2_e, patch_3D, operators_coeff%div_coeff, z_div_c, subset_range=patch_2D%cells%all)
+    CALL div_oce_3d( z_nabla2_e, patch_3D, operators_coeff%div_coeff, z_div_c, &
+      & subset_range=patch_2D%cells%all, lacc=lzacc)
 !     CALL sync_patch_array(sync_c,patch_2D,z_div_c)
     
     ! compute rotation of vector field for the ocean
     CALL map_edges2vert_3d( patch_2D, &
       & z_nabla2_e,&
       & operators_coeff%edge2vert_coeff_cc,&
-      & p_nabla2_dual)      
+      & p_nabla2_dual, lacc=lzacc)
+
+#ifdef _OPENACC
+    ! FIXME 2024-09 DKRZ-dzo: The call to sync_patch_array fails on GPU when the entries
+    !                         p_nabla2_dual(:,:,:)%x(1) to x(3) are passed directly.
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+    p_nabla2_dual_x = p_nabla2_dual(:,:,:)%x(1)
+    p_nabla2_dual_y = p_nabla2_dual(:,:,:)%x(2)
+    p_nabla2_dual_z = p_nabla2_dual(:,:,:)%x(3)
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
+
+    CALL sync_patch_array_mult(sync_v, patch_2D, 3, &
+      & p_nabla2_dual_x, p_nabla2_dual_y, p_nabla2_dual_z)
+
+    !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
+    p_nabla2_dual(:,:,:)%x(1) = p_nabla2_dual_x
+    p_nabla2_dual(:,:,:)%x(2) = p_nabla2_dual_y
+    p_nabla2_dual(:,:,:)%x(3) = p_nabla2_dual_z
+    !$ACC END KERNELS
+    !$ACC WAIT(1)
+#else
     CALL sync_patch_array_mult(sync_v, patch_2D, 3, &
       & p_nabla2_dual(:,:,:)%x(1), p_nabla2_dual(:,:,:)%x(2), p_nabla2_dual(:,:,:)%x(3))
-    
-    CALL rot_vertex_ocean_3d( patch_3D, z_nabla2_e, p_nabla2_dual, operators_coeff, z_rot_v)
+#endif
+
+    CALL rot_vertex_ocean_3d( patch_3D, z_nabla2_e, p_nabla2_dual, operators_coeff, z_rot_v, lacc=lzacc)
     
     !combine divergence and vorticity
 !ICON_OMP_PARALLEL
 !ICON_OMP_DO PRIVATE(start_index,end_index, edge_index, level) ICON_OMP_DEFAULT_SCHEDULE
     DO blockNo = edges_in_domain%start_block, edges_in_domain%end_block
       CALL get_index_range(edges_in_domain, blockNo, start_index, end_index)
+      !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
       DO edge_index = start_index, end_index
         DO level = start_level, patch_3D%p_patch_1d(1)%dolic_e(edge_index,blockNo)
           
@@ -942,13 +989,16 @@ CONTAINS
 
         END DO
       END DO
+      !$ACC END PARALLEL LOOP
     END DO
+    !$ACC WAIT(1)
 !ICON_OMP_END_DO
 
     IF (VelocityDiffusion_order==21) THEN
 !ICON_OMP_DO PRIVATE(start_index,end_index, edge_index, level) ICON_OMP_DEFAULT_SCHEDULE
       DO blockNo = edges_in_domain%start_block, edges_in_domain%end_block
         CALL get_index_range(edges_in_domain, blockNo, start_index, end_index)
+        !$ACC PARALLEL LOOP GANG VECTOR DEFAULT(PRESENT) ASYNC(1) IF(lzacc)
         DO edge_index = start_index, end_index
           DO level = start_level, patch_3D%p_patch_1d(1)%dolic_e(edge_index,blockNo)
 
@@ -959,11 +1009,14 @@ CONTAINS
 
           END DO
         END DO
+        !$ACC END PARALLEL LOOP
       END DO
+      !$ACC WAIT(1)
 !ICON_OMP_END_DO NOWAIT
     ENDIF
 !ICON_OMP_END_PARALLEL
 
+    !$ACC END DATA
   END SUBROUTINE veloc_diff_biharmonic_curl_curl
   
   !-------------------------------------------------------------------------

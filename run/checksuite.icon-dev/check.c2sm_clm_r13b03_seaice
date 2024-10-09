@@ -12,12 +12,12 @@
 
 #--------------------------------------------------------------------------------
 #
-# _bb_table_Description_  C2SM ICON-CLM experiment
+# _bb_table_Description_  MCH LAM experiment
 # _bb_table_Model_        non-hydrostatic atmosphere with NWP physics
 
 #--------------------------------------------------------------------------------
 #
-# 1. Define the experiment and the files to be checked
+# 1. Define the experiment
 #
 # EXPERIMENT is the name of the experiment, that defines the experiment descriptor
 # file run/exp.<EXPNAME>. EXPNAME is used also for:
@@ -30,43 +30,36 @@ export EXPERIMENT='c2sm_clm_r13b03_seaice'
 # TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export TYPES='atm_3d_ml'
+export TYPES=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param types)
 
 # DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
 # to be checked.
 #
-export DATES='19790201T180000Z'
+export DATES=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param dates)
+
 
 # RESTART_DATE defines the date and time from which restarts should be performed.
 # 
-export RESTART_DATE='19790201T180000Z'
+export RESTART_DATE=$("${basedir}/scripts/experiments/get_checksuite_parameter_by_name" --experiment "$EXPERIMENT" --param restart_date)
 
 #--------------------------------------------------------------------------------
 # 
-# 2. Define the checksuite mode
+# Define the checksuite mode
 #
-export MD='tm'
+export MD=$("${basedir}/scripts/experiments/get_param_for_exp_by_machine" --experiment "$EXPERIMENT" --param checksuite_modes)
 
-#--------------------------------------------------------------------------------
-# 
-# 3. Launch the checksuite from run/
+# Set the tolerance factor
+#
+export FACTOR=$("${basedir}/scripts/experiments/get_param_for_exp_by_machine" --experiment "$EXPERIMENT" --param tolerance_factor)
 
+# 2. Launch the checksuite from run/
 rundir=`pwd`
 cd checksuite.icon-dev
-
-case $HOST in
-    # balfrin (the current hostname is nid but will be changed to balfrin)
-    *nid*|*balfrin*)
-        # Jan 2023: Note that the MPI tests fail on Balfrin for unknown reasons
-        export MD='t'
-        ;;
-esac
 
 ./icon-dev.checksuite
 STATUS=$?
 
 check_final_status $STATUS "$EXPERIMENT"
-
 
 #--------------------------------------------------------------------------------
 exit

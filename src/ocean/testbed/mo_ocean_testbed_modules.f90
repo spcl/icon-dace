@@ -1,5 +1,3 @@
-! Contains the main stepping method_name the 3-dim hydrostatic ocean model.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the main stepping method_name the 3-dim hydrostatic ocean model.
+
 #include "omp_definitions.inc"
 #include "iconfor_dsl_definitions.inc"
 

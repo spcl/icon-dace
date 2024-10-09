@@ -1,7 +1,3 @@
-! Configuration of the upper and lower levels for WMO_tropopause calculation
-! that is used in the AES physics package.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration of the upper and lower levels for WMO_tropopause calculation
+! that is used in the AES physics package.
 
 MODULE mo_aes_wmo_config
 

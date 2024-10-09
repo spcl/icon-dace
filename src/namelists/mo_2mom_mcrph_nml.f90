@@ -1,5 +1,3 @@
-!  Namelist for configuration of 2-moment cloud microphysics scheme
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Namelist for configuration of 2-moment cloud microphysics scheme
 
 MODULE mo_2mom_mcrph_nml
 

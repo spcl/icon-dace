@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -221,7 +220,7 @@ CONTAINS
     INTEGER, POINTER :: kbot(:,:)
 
     ! loop variables
-    INTEGER :: jc, je, jk, blockNo, tracer_index
+    INTEGER :: jc, je, jk, blockNo, tracer_index, jtrc
     INTEGER :: start_index, end_index
     INTEGER :: levels
 
@@ -502,8 +501,9 @@ CONTAINS
         CALL get_index_range(all_cells, blockNo, start_index, end_index)
         DO jc = start_index, end_index
           ! FIXME: nils: make loop over all tracer
-          params_oce%a_tracer_v(jc,:,blockNo,1) = iwe_kv(jc,:,blockNo)
-          params_oce%a_tracer_v(jc,:,blockNo,2) = iwe_kv(jc,:,blockNo)
+          DO jtrc = 1, no_tracer
+            params_oce%a_tracer_v(jc,:,blockNo,jtrc) = iwe_kv(jc,:,blockNo)
+          ENDDO
         ENDDO
       ENDDO
     end if

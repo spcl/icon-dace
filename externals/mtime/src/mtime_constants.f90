@@ -2,39 +2,39 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-module mtime_constants
+MODULE mtime_constants
 
-  implicit none
-  public 
-
-  !> provides a string length for toString
-  integer, parameter :: max_calendar_str_len = 32
-  
-  !> provides a string length for toString
-  integer, parameter :: max_date_str_len = 32
+  IMPLICIT NONE
+  PUBLIC
 
   !> provides a string length for toString
-  integer, parameter :: max_datetime_str_len = 32
+  INTEGER, PARAMETER :: max_calendar_str_len = 32
 
   !> provides a string length for toString
-  integer, parameter :: max_time_str_len = 32
+  INTEGER, PARAMETER :: max_date_str_len = 32
 
   !> provides a string length for toString
-  integer, parameter :: max_julianday_str_len = 32
+  INTEGER, PARAMETER :: max_datetime_str_len = 32
 
   !> provides a string length for toString
-  integer, parameter :: max_timedelta_str_len = 32
+  INTEGER, PARAMETER :: max_time_str_len = 32
+
+  !> provides a string length for toString
+  INTEGER, PARAMETER :: max_julianday_str_len = 32
+
+  !> provides a string length for toString
+  INTEGER, PARAMETER :: max_timedelta_str_len = 32
 
   !> provides a string length for the maximum error string length
-  integer, parameter :: max_mtime_error_str_len = 132
+  INTEGER, PARAMETER :: max_mtime_error_str_len = 132
 
   !> provides a string length for toString
-  integer, parameter :: max_eventname_str_len = 132
-  integer, parameter :: max_event_str_len = 512
+  INTEGER, PARAMETER :: max_eventname_str_len = 132
+  INTEGER, PARAMETER :: max_event_str_len = 512
 
   !> provides a string length for toString
-  integer, parameter :: max_groupname_str_len = 132
+  INTEGER, PARAMETER :: max_groupname_str_len = 132
 
-contains
-  
-end module mtime_constants
+CONTAINS
+
+END MODULE mtime_constants

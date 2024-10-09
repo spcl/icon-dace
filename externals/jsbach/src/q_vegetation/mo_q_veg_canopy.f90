@@ -41,6 +41,7 @@ CONTAINS
   SUBROUTINE calc_canopy_layers( &
     & nc, &
     & ncanopy, &
+    & dtime, &
     & dz, &
     & lbounds, &
     & ubounds, &
@@ -72,7 +73,7 @@ CONTAINS
     & t_acclim, &
     & press_srf, &
     & co2_mixing_ratio, &
-    & ga, &
+    & aerodyn_cond, &
     & beta_air, &
     & beta_soa, &
     & beta_soil_ps, &
@@ -91,6 +92,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     INTEGER,                                INTENT(in)              :: nc                    !< dimensions
     INTEGER,                                INTENT(in)              :: ncanopy               !< number of canopy layers
+    REAL(wp),                               INTENT(in)              :: dtime                 !< timestep length
     REAL(wp), DIMENSION(ncanopy),           INTENT(in)              :: dz                    !< canopy layer thickness
     REAL(wp), DIMENSION(ncanopy),           INTENT(in)              :: lbounds               !< lower bound of canopy layer (lbounds < ubounds; lbounds is at top of canopy layer)
     REAL(wp), DIMENSION(ncanopy),           INTENT(in)              :: ubounds               !< upper bound of canopy layer (lbounds < ubounds; ubounds is at bottom of canopy layer)
@@ -122,7 +124,7 @@ CONTAINS
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: t_acclim              !< acclimation temperature (avg)
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: press_srf             !< air pressure (avg)
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: co2_mixing_ratio      !< CO2 concentration (avg)
-    REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: ga                    !< aerodynamic conductance (avg)
+    REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: aerodyn_cond          !< aerodynamic conductance (avg)
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: beta_air              !< beta air (avg)
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: beta_soa              !< beta soa (avg)
     REAL(wp), DIMENSION(nc),                INTENT(in),   OPTIONAL  :: beta_soil_ps          !< beta soil ps (avg)
@@ -174,7 +176,7 @@ CONTAINS
     !>
     IF(optimise_n_fractions)THEN
        IF(.NOT.PRESENT(t_air)            .OR..NOT.PRESENT(t_acclim)         .OR..NOT.PRESENT(press_srf)    .OR. &
-          .NOT.PRESENT(co2_mixing_ratio) .OR..NOT.PRESENT(ga)               .OR. &
+          .NOT.PRESENT(co2_mixing_ratio) .OR..NOT.PRESENT(aerodyn_cond)     .OR. &
           .NOT.PRESENT(beta_air)         .OR..NOT.PRESENT(beta_soa)         .OR. &
           .NOT.PRESENT(beta_soil_ps)     .OR..NOT.PRESENT(beta_sinklim_ps)  .OR..NOT.PRESENT(beta_soil_gs) .OR. &
           .NOT.PRESENT(t_jmax_opt)) THEN
@@ -214,7 +216,7 @@ CONTAINS
 
         ! make sure all LAI is represented by letting last layer go to the end of the canopy
         WHERE(icanopy==ncanopy .AND. ubounds(ncanopy) < lai(:) )
-          lai_cl(:,ncanopy) = lai(:)
+          lai_cl(:,ncanopy) = lai(:) - lbounds(ncanopy)
         ENDWHERE
 
         ! LAI mid-point of canopy layer
@@ -380,7 +382,8 @@ CONTAINS
 
         IF(optimise_n_fractions) THEN
           DO icanopy = 1,ncanopy
-            CALL optimise_canopy_n_fractions(  lctlib_gmin                , & ! lctlib
+            CALL optimise_canopy_n_fractions(  dtime                      , &
+                                               lctlib_gmin                , & ! lctlib
                                                lctlib_g0                  , &
                                                lctlib_g1                  , &
                                                lctlib_t_jmax_omega        , &
@@ -395,7 +398,7 @@ CONTAINS
                                                t_acclim(:)                , &
                                                press_srf(:)               , &
                                                co2_mixing_ratio(:)        , &
-                                               ga(:)                      , &
+                                               aerodyn_cond(:)            , &
                                                beta_air(:)                , &
                                                beta_soa(:)                , &
                                                beta_soil_ps(:)            , &
@@ -423,6 +426,7 @@ CONTAINS
   !! fractions that give maximum assimilation
   !-------------------------------------------------------------------------------------------------------
   ELEMENTAL SUBROUTINE optimise_canopy_n_fractions( &
+                                    dtime                      , &
                                     gmin                      , &   ! lctlib
                                     g0                        , &
                                     g1                        , &
@@ -438,7 +442,7 @@ CONTAINS
                                     t_acclim                  , &
                                     press_srf                 , &
                                     co2_mixing_ratio          , &
-                                    ga                        , &
+                                    aerodyn_cond              , &
                                     beta_air                  , &
                                     beta_soa                  , &
                                     beta_soil_ps              , &
@@ -451,13 +455,14 @@ CONTAINS
                                     fn_et_cl                  , &
                                     fn_pepc_cl)
 
-    USE mo_jsb_math_constants,  ONLY: dtime, one_day, eps8
+    USE mo_jsb_math_constants,  ONLY: one_day, eps8
     USE mo_veg_constants,       ONLY: delta_n_fraction
 
 
     IMPLICIT NONE
     ! ---------------------------
     ! 0.1 InOut
+    REAL(wp),                 INTENT(in)    :: dtime                  !< timestep length
     REAL(wp),                 INTENT(in)    :: gmin            , &    !< land-cover-type library parameter
                                                g0              , &    !< land-cover-type library parameter
                                                g1              , &    !< land-cover-type library parameter
@@ -475,7 +480,7 @@ CONTAINS
                                                t_acclim,         &    !< ..
                                                press_srf,        &    !< air pressure (day-time running mean, Pa)
                                                co2_mixing_ratio, &    !< CO2 mixing ratio (day-time running mean, ppm)
-                                               ga,               &    !< aerodynamic conductance (day-time running mean, m/s)
+                                               aerodyn_cond,     &    !< ga -- aerodynamic conductance (day-time running mean, m/s)
                                                beta_air,         &    !< beta air (day-time running mean, --)
                                                beta_soa,         &    !< beta soa (day-time running mean, --)
                                                beta_soil_ps,     &    !< beta soil for PS (day-time running mean, --)
@@ -531,7 +536,7 @@ CONTAINS
                                  t_air                         , &  ! in
                                  press_srf                     , &
                                  co2_mixing_ratio              , &
-                                 ga                            , &
+                                 aerodyn_cond                  , &
                                  t_acclim                      , &
                                  ppfd_sunlit_cl                , &
                                  ppfd_shaded_cl                , &
@@ -577,15 +582,15 @@ CONTAINS
       CALL calc_photosynthesis( &
                gmin, g0, g1, t_jmax_omega, ps_pathway, &
                canopy_cond_scheme, &  ! Q_ASSIMI_ config (medlyn/ballberry)
-               t_air,press_srf,co2_mixing_ratio,ga,t_acclim, &
-               ppfd_sunlit_cl,ppfd_shaded_cl,fleaf_sunlit_cl, &
-               beta_air,beta_soa,beta_soil_ps,beta_sinklim_ps,beta_soil_gs, &
-               fn_chl_cl*(1._wp-fn_oth_cl),fn_et_cl*(1._wp-fn_oth_cl),fn_rub_cl*(1._wp-fn_oth_cl), &
+               t_air, press_srf, co2_mixing_ratio, aerodyn_cond, t_acclim, &
+               ppfd_sunlit_cl, ppfd_shaded_cl, fleaf_sunlit_cl, &
+               beta_air, beta_soa,beta_soil_ps, beta_sinklim_ps, beta_soil_gs, &
+               fn_chl_cl*(1._wp-fn_oth_cl), fn_et_cl*(1._wp-fn_oth_cl), fn_rub_cl*(1._wp-fn_oth_cl), &
                fn_pepc_cl*(1._wp-fn_oth_cl),&
                lai_cl                        , &    ! used for: IF statement whether this routine may run or not
                leaf_nitrogen_cl, &
                t_jmax_opt, &
-               ag_cl,an_cl,r_cl,gs_cl,ci_cl,hlp1,hlp2,hlp3, &
+               ag_cl, an_cl, r_cl, gs_cl, ci_cl, hlp1, hlp2, hlp3, &
                hlp4  )
 
 
@@ -613,15 +618,15 @@ CONTAINS
         CALL calc_photosynthesis( &
                  gmin, g0, g1, t_jmax_omega, ps_pathway, &
                  canopy_cond_scheme, &  ! Q_ASSIMI_ config (medlyn/ballberry)
-                 t_air,press_srf,co2_mixing_ratio,ga,t_acclim, &
-                 ppfd_sunlit_cl,ppfd_shaded_cl,fleaf_sunlit_cl,&
-                 beta_air,beta_soa,beta_soil_ps,beta_sinklim_ps,beta_soil_gs, &
+                 t_air, press_srf, co2_mixing_ratio, aerodyn_cond, t_acclim, &
+                 ppfd_sunlit_cl, ppfd_shaded_cl, fleaf_sunlit_cl,&
+                 beta_air, beta_soa,beta_soil_ps, beta_sinklim_ps,beta_soil_gs, &
                  fn_chl_cl*(1._wp-fn_oth_cl), fn_et_cl*(1._wp-fn_oth_cl), fn_rub_cl*(1._wp-fn_oth_cl), &
                  fn_pepc_cl*(1._wp-fn_oth_cl),&
                  lai_cl                        , &    ! used for: IF statement whether this routine may run or not
                  leaf_nitrogen_cl, &
                  t_jmax_opt, &
-                 ag_cl,an_cl,r_cl,gs_cl,ci_cl,hlp1,hlp2,hlp3, &
+                 ag_cl, an_cl, r_cl, gs_cl, ci_cl, hlp1, hlp2, hlp3, &
                  hlp4 )
 
         ! if photosyntheis has still not increased, do not change fn_chl_cl
@@ -826,6 +831,7 @@ CONTAINS
   !-----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_marginal_canopy_flux_increment( nc                      , &
                                                   ncanopy                 , &
+                                                  dtime                   , &
                                                   dz                      , &
                                                   lbounds                 , &
                                                   ubounds                 , &
@@ -846,7 +852,7 @@ CONTAINS
                                                   press_srf               , &
                                                   q_air                   , &
                                                   co2_mixing_ratio        , &
-                                                  ga                      , &
+                                                  aerodyn_cond            , &
                                                   net_assimilation        , &
                                                   canopy_cond             , &
                                                   beta_air                , &
@@ -883,6 +889,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                                INTENT(in) :: nc                            !< dimensions
     INTEGER,                                INTENT(in) :: ncanopy                       !< number of canopy layers
+    REAL(wp),                               INTENT(in) :: dtime                         !< timestep length
     REAL(wp),DIMENSION(ncanopy),            INTENT(in) :: dz                      , &   !< canopy layer thickness
                                                           lbounds                 , &   !< lower bound of canopy layer (lbounds < ubounds; lbounds is at top of canopy layer)
                                                           ubounds                       !< upper bound of canopy layer (lbounds < ubounds; ubounds is at bottom of canopy layer)
@@ -903,7 +910,7 @@ CONTAINS
                                                           press_srf               , &   !< air pressure (Pa)
                                                           q_air                   , &   !< air specific humidity (--)
                                                           co2_mixing_ratio        , &   !< co2 mixing ratio (ppm)
-                                                          ga                      , &   !< air temperature (K)
+                                                          aerodyn_cond            , &   !< ga -- aerodynamic conductance (day-time running mean, m/s)
                                                           net_assimilation        , &   !< net assimilation rate (micro-mol CO2 / m2 / s)
                                                           canopy_cond             , &   !< canopy conductance (m/s)
                                                           beta_air                , &   !< air humidity limiting factor for photosynthesis
@@ -1001,6 +1008,7 @@ CONTAINS
     CALL calc_canopy_layers( &
                             nc                      = nc                          , & ! in
                             ncanopy                 = ncanopy                     , &
+                            dtime                   = dtime                       , &
                             dz                      = dz(:)                       , &
                             lbounds                 = lbounds(:)                  , &
                             ubounds                 = ubounds(:)                  , &
@@ -1050,7 +1058,7 @@ CONTAINS
                                     t_air(:)                        , & ! in
                                     press_srf(:)                    , &
                                     co2_mixing_ratio(:)             , &
-                                    ga(:)                           , &
+                                    aerodyn_cond(:)                 , &
                                     t_air_tacclim_mavg(:)           , &
                                     loc_ppfd_sunlit_cl(:,icanopy)   , &
                                     loc_ppfd_shaded_cl(:,icanopy)   , &
@@ -1093,12 +1101,12 @@ CONTAINS
     q_sat(:) = calc_spec_humidity_sat(t_air(:), press_srf(:))
     WHERE(canopy_cond(:) > eps8 .AND. canopy_cond_new(:) > eps8)
        unit_transpiration(:) = press_srf(:) / ( r_gas_dryair * t_air(:) ) * &
-                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond_new(:) + 1._wp / ga(:) ) - &
+                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond_new(:) + 1._wp / aerodyn_cond(:) ) - &
                                 press_srf(:) / ( r_gas_dryair * t_air(:) ) * &
-                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond(:) + 1._wp / ga(:) )
+                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond(:) + 1._wp / aerodyn_cond(:) )
     ELSEWHERE (canopy_cond_new(:) > eps8) ! this might cover only the points in the vector that are not true in the above where statement
        unit_transpiration(:) = press_srf(:) / ( r_gas_dryair * t_air(:) ) * &
-                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond_new(:) + 1._wp / ga(:) )
+                                (q_sat(:) - q_air(:)) / (1._wp / canopy_cond_new(:) + 1._wp / aerodyn_cond(:) )
     ELSEWHERE
       unit_transpiration(:) = 0.0_wp
     END WHERE
@@ -1116,6 +1124,7 @@ CONTAINS
   !----------------------------------------------------------------------------------------------------
   SUBROUTINE calc_dir_optimal_cn_leaf(  nc                            , & ! in
                                         ncanopy                       , &
+                                        dtime                         , &
                                         dz                            , &
                                         lbounds                       , &
                                         ubounds                       , &
@@ -1164,7 +1173,7 @@ CONTAINS
                                         labile_nitrogen               , & ! in
                                         leaf_cn_direction             )   ! inout
 
-    USE mo_jsb_math_constants,            ONLY: dtime, one_day, one_year, eps4, eps8
+    USE mo_jsb_math_constants,            ONLY: one_day, one_year, eps4, eps8
     USE mo_veg_constants,                 ONLY: delta_n_leaf, resorp_fract_leaf
     USE mo_lnd_time_averages,             ONLY: mavg_period_tgrowth
     USE mo_q_pheno_constants,             ONLY: ievergreen, iraingreen, isummergreen, iperennial
@@ -1174,6 +1183,7 @@ CONTAINS
     ! 0.1 InOut
     INTEGER,                                INTENT(in)    :: nc                             !< dimensions
     INTEGER,                                INTENT(in)    :: ncanopy                        !< number of canopy layers
+    REAL(wp),                               INTENT(in)    :: dtime                          !< timestep length
     REAL(wp),DIMENSION(ncanopy),            INTENT(in)    :: dz                         , & !< canopy layer thickness
                                                              lbounds                    , & !< lower bound of canopy layer (lbounds < ubounds; lbounds is at top of canopy layer)
                                                              ubounds                        !< upper bound of canopy layer (lbounds < ubounds; ubounds is at bottom of canopy layer)
@@ -1292,6 +1302,7 @@ CONTAINS
                 CALL calc_canopy_layers( &
                           nc                      = nc                                  , & ! in
                           ncanopy                 = ncanopy                             , &
+                          dtime                   = dtime                               , &
                           dz                      = dz(:)                               , &
                           lbounds                 = lbounds(:)                          , &
                           ubounds                 = ubounds(:)                          , &

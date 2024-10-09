@@ -1,7 +1,3 @@
-! This module contains the subroutine that Adds random perturbation
-! to the normal wind for the Non-Hyd core
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,12 +9,17 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! This module contains the subroutine that Adds random perturbation
+! to the normal wind for the Non-Hyd core
+
 MODULE mo_random_util
 
-  USE mo_kind,                ONLY: wp, i4, i8
-  USE mo_impl_constants,      ONLY: SUCCESS, ON_CELLS, ON_EDGES, ON_VERTICES
-  USE mo_exception,           ONLY: message, finish, message_text
-  USE mo_grid_subset,         ONLY: t_subset_range, get_index_range
+  USE mo_kind,                     ONLY: wp, i4, i8
+  USE mo_impl_constants,           ONLY: SUCCESS, ON_CELLS, ON_EDGES, ON_VERTICES
+  USE mo_exception,                ONLY: message, finish, message_text
+  USE mo_grid_subset,              ONLY: t_subset_range, get_index_range
+  USE mo_math_types,               ONLY: t_geographical_coordinates
+  USE mo_random_number_generators, ONLY: initialize_random_number_generator, generate_uniform_random_number
  ! USE mo_mpi,                 ONLY: get_my_global_mpi_id, global_mpi_barrier
 
   IMPLICIT NONE
@@ -144,74 +145,53 @@ CONTAINS
 
   END SUBROUTINE add_random_noise_global
 
-  SUBROUTINE add_random_noise_3d(subset, amplitude, field, seed_in)
+  SUBROUTINE add_random_noise_3d(subset, coordinates, amplitude, field, seed_in)
 
     TYPE(t_subset_range), INTENT(IN) :: subset
+    TYPE(t_geographical_coordinates), ALLOCATABLE, DIMENSION(:,:), INTENT(IN) :: coordinates
+
     REAL(wp), INTENT(IN) :: amplitude
-    INTEGER(i8), INTENT(IN), OPTIONAL :: seed_in
+    INTEGER(i8), INTENT(IN) :: seed_in
     REAL(wp), INTENT(INOUT) :: field(:,:,:)
 
-    REAL(wp) :: noise(SIZE(field,1), SIZE(field,2), SIZE(field,3))
-    INTEGER :: seed_size, start_idx, end_idx, i, jl, jk, jb
-    INTEGER, ALLOCATABLE :: seed(:)
+    INTEGER :: rng_state, iseed, jseed, start_idx, end_idx, jl, jk, jb
 
-    IF ( PRESENT(seed_in) ) THEN
-      CALL RANDOM_SEED(SIZE = seed_size)
-      ALLOCATE(seed(seed_size))
-
-      seed(1) = INT(seed_in, i4)
-      IF (seed_size>1) seed(2) = INT(seed_in/2_i8**32_i8, i4)
-
-      DO i=3,seed_size
-          seed(i) = ISHFTC(seed(i-2), 1)
-      ENDDO
-      CALL RANDOM_SEED(PUT = seed)
-    ENDIF
-
-    CALL RANDOM_NUMBER(noise)
+    iseed = IEOR(INT(seed_in/2_i8**32_i8, i4), INT(seed_in, i4))
 
     DO jb=subset%start_block,subset%end_block
       CALL get_index_range( subset, jb, start_idx, end_idx)
       DO jk=1,SIZE(field,2)
         DO jl=start_idx,end_idx
-          field(jl,jk,jb) = field(jl,jk,jb) * ((noise(jl,jk,jb) * 2._wp - 1._wp) * amplitude + 1._wp)
+          jseed = IEOR(TRANSFER(coordinates(jl,jb)%lat,jseed), TRANSFER(coordinates(jl,jb)%lon,jseed)*2**9)
+          jseed = IEOR(jseed, jk*2**7)
+          rng_state = initialize_random_number_generator(iseed, jseed)
+          field(jl,jk,jb) = field(jl,jk,jb) * ((generate_uniform_random_number(rng_state) * 2._wp - 1._wp) * amplitude + 1._wp)
         ENDDO !jl
       ENDDO !jk
     ENDDO !jb
 
   END SUBROUTINE add_random_noise_3d
 
-  SUBROUTINE add_random_noise_2d( subset, amplitude, field, seed_in)
+  SUBROUTINE add_random_noise_2d(subset, coordinates, amplitude, field, seed_in)
 
     TYPE(t_subset_range), INTENT(IN) :: subset
+    TYPE(t_geographical_coordinates), ALLOCATABLE, DIMENSION(:,:), INTENT(IN) :: coordinates
+
     REAL(wp), INTENT(IN) :: amplitude
-    INTEGER(i8), INTENT(IN), OPTIONAL :: seed_in
+    INTEGER(i8), INTENT(IN) :: seed_in
     REAL(wp), INTENT(INOUT) :: field(:,:)
 
-    REAL(wp) :: noise(SIZE(field,1), SIZE(field,2))
-    INTEGER :: seed_size, start_idx, end_idx, i, jl, jb
-    INTEGER, ALLOCATABLE :: seed(:)
+    INTEGER :: rng_state, iseed, jseed, start_idx, end_idx, jl, jb
 
-    IF ( PRESENT(seed_in) ) THEN
-      CALL RANDOM_SEED(SIZE = seed_size)
-      ALLOCATE(seed(seed_size))
-
-      seed(1) = INT(seed_in, i4)
-      IF (seed_size>1) seed(2) = INT(seed_in/2_i8**32_i8, i4)
-
-      DO i=3,seed_size
-          seed(i) = ISHFTC(seed(i-2), 1)
-      ENDDO
-      CALL RANDOM_SEED(PUT = seed)
-    ENDIF
-
-    CALL RANDOM_NUMBER(noise)
+    iseed = IEOR(INT(seed_in/2_i8**32_i8, i4), INT(seed_in, i4))
 
     DO jb=subset%start_block,subset%end_block
       CALL get_index_range( subset, jb, start_idx, end_idx)
-      DO jl=start_idx,end_idx
-        field(jl,jb) = field(jl,jb) * ((noise(jl,jb) * 2._wp - 1._wp) * amplitude + 1._wp)
-      ENDDO !jl
+        DO jl=start_idx,end_idx
+          jseed = IEOR(TRANSFER(coordinates(jl,jb)%lat,jseed), TRANSFER(coordinates(jl,jb)%lon,jseed)*2**9)
+          rng_state = initialize_random_number_generator(iseed, jseed)
+          field(jl,jb) = field(jl,jb) * ((generate_uniform_random_number(rng_state) * 2._wp - 1._wp) * amplitude + 1._wp)
+        ENDDO !jl
     ENDDO !jb
 
   END SUBROUTINE add_random_noise_2d

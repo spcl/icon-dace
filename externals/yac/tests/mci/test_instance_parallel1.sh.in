@@ -1,0 +1,12 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@TEST_MPI_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
+
+CONFIG_DIR=@top_srcdir@/input/
+
+@MPI_LAUNCH@ -n 3 ./test_instance_parallel1.x $CONFIG_DIR

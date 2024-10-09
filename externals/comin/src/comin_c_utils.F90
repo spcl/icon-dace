@@ -19,8 +19,8 @@ MODULE comin_c_utils
   PUBLIC :: convert_c_string, convert_f_string
 
   INTERFACE convert_c_string
-     MODULE PROCEDURE convert_c_string_cptr
-     MODULE PROCEDURE convert_c_string_arr
+    MODULE PROCEDURE convert_c_string_cptr
+    MODULE PROCEDURE convert_c_string_arr
   END INTERFACE convert_c_string
 
 CONTAINS
@@ -30,7 +30,7 @@ CONTAINS
   FUNCTION convert_c_string_cptr( cptr ) RESULT (string)
 
     USE, intrinsic :: iso_c_binding, only: c_ptr, c_char, &
-         c_f_pointer,c_size_t
+                                                                              c_f_pointer,c_size_t
 
     TYPE(c_ptr), intent(in) :: cptr
     CHARACTER(len=:), allocatable :: string
@@ -56,15 +56,14 @@ CONTAINS
     INTEGER :: i, strlen
 
     DO strlen=1,SIZE(arr)
-       IF (arr(strlen) .EQ. c_null_char) EXIT
+      IF (arr(strlen) .EQ. c_null_char) EXIT
     END DO
 
     ALLOCATE(CHARACTER(len=strlen-1) :: string)
     DO i=1,strlen-1
-       string(i:i) = arr(i)
+      string(i:i) = arr(i)
     END DO
   END FUNCTION convert_c_string_arr
-
 
   !> Convert Fortran string into C-style character array.
   !
@@ -75,7 +74,7 @@ CONTAINS
     INTEGER :: i
 
     DO i=1,LEN_TRIM(string)
-       arr(i) = string(i:i)
+      arr(i) = string(i:i)
     END DO
     arr(i) = c_null_char
   end subroutine  convert_f_string

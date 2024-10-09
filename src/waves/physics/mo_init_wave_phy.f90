@@ -1,8 +1,3 @@
-! Description:  Contains the data structures
-! for initialisation of the physical model state and other auxiliary variables
-! in order to run wave physics.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Description:  Contains the data structures
+! for initialisation of the physical model state and other auxiliary variables
+! in order to run wave physics.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -29,145 +28,63 @@ MODULE mo_init_wave_physics
   USE mo_math_constants,       ONLY: pi2, rpi_2, deg2rad, rad2deg
   USE mo_loopindices,          ONLY: get_indices_c
 
-  USE mo_wave_types,           ONLY: t_wave_prog, t_wave_diag
-  USE mo_wave_forcing_types,   ONLY: t_wave_forcing
+  USE mo_wave_types,           ONLY: t_wave_diag
   USE mo_wave_config,          ONLY: t_wave_config
-  USE mo_wave_ext_data_types,  ONLY: t_external_wave
   USE mo_wave_constants,       ONLY: EMIN
-  USE mo_wave_physics,         ONLY: wave_group_velocity_c,   &
-    &                                wave_group_velocity_e,   &
-    &                                wave_group_velocity_nt,  &
-    &                                wave_group_velocity_bnd, &
-    &                                wave_number_c, wave_number_e
 
   IMPLICIT NONE
 
   PRIVATE
 
-  PUBLIC :: init_wave_phy
+  PUBLIC :: init_wave_spectrum
+  PUBLIC :: init_wave_nonlinear
+  PUBLIC :: fetch_law
+  PUBLIC :: jonswap
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_init_wave_physics'
 
 CONTAINS
-
-  !>
-  !! Initialisation of the wave physics
-  !!
-  !! 1. Calculation of initial spectrum from the fetch law
-  !! and 1D JONSWAP spectum. The minimum of wave energy
-  !! is limited to FLMIN.
-  !! 2. tba
-  !!
-  SUBROUTINE init_wave_phy(p_patch, wave_config, p_prog, p_diag, wave_ext_data, p_forcing)
-
-    TYPE(t_patch),               INTENT(IN)    :: p_patch
-    TYPE(t_wave_config), TARGET, INTENT(IN)    :: wave_config
-    TYPE(t_wave_prog),           INTENT(INOUT) :: p_prog
-    TYPE(t_wave_diag),           INTENT(INOUT) :: p_diag
-    TYPE(t_external_wave),       INTENT(IN)    :: wave_ext_data
-    TYPE(t_wave_forcing),        INTENT(IN)    :: p_forcing
-
-    TYPE(t_wave_config), POINTER :: wc => NULL()
-
-    CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
-      &  routine = modname//':init_wave_phy'
-
-    ! save some paperwork
-    wc => wave_config
-
-    CALL FETCH_LAW(p_patch, wave_config, p_diag, p_forcing)
-
-    ! Set minimum values of energy allowed in the spectrum
-    CALL JONSWAP(p_patch,           &
-         wc%freqs,                  &
-         p_diag%ALPHAJ*0.01_wp,     &
-         wc%GAMMA_wave, wc%SIGMA_A, wc%SIGMA_B, &
-         p_diag%FP,                 &
-         p_diag%FLMINFR)           !OUT
-
-    ! Set JONSWAP spectrum
-    CALL JONSWAP(p_patch,           &
-         wc%freqs,                  &
-         p_diag%ALPHAJ,             &
-         wc%GAMMA_wave, wc%SIGMA_A, wc%SIGMA_B, &
-         p_diag%FP,                 &
-         p_diag%ET)           !OUT
-
-    CALL init_wave_spectrum(p_patch, wc, p_diag, p_forcing, p_prog%tracer)
-
-    ! get wave number as a function of circular frequency and water depth
-    ! at cell center
-    CALL wave_number_c(p_patch     = p_patch,                    & !IN
-      &                wave_config = wave_config,                & !IN
-      &                depth       = wave_ext_data%bathymetry_c, & !IN
-      &                wave_num_c  = p_diag%wave_num_c)            !OUT
-
-    ! get wave number as a function of circular frequency and water depth
-    ! at edge midpoint
-    CALL wave_number_e(p_patch     = p_patch,                    & !IN
-      &                wave_config = wave_config,                & !IN
-      &                depth       = wave_ext_data%bathymetry_e, & !IN
-      &                wave_num_e  = p_diag%wave_num_e)            !OUT
-
-
-    ! compute absolute value of group velocity at cell centers
-    !
-    CALL wave_group_velocity_c(p_patch, wc, &
-         p_diag%wave_num_c,          &  ! IN
-         wave_ext_data%bathymetry_c, &  ! IN
-         p_diag%gv_c)                   !INOUT
-
-    ! compute absolute value of group velocity at edge midpoints
-    !
-    CALL wave_group_velocity_e(p_patch, wc, &
-         p_diag%wave_num_e,          &  ! IN
-         wave_ext_data%bathymetry_e, &  ! IN
-         p_diag%gv_e)                   !INOUT
-
-    ! compute normal and tangential components of group velociy vector
-    ! at edge midpoints
-    CALL wave_group_velocity_nt(p_patch, wc, &
-         p_diag%gv_e, &
-         p_diag%gvn_e, & !INOUT
-         p_diag%gvt_e)   !INOUT
-
-    CALL wave_group_velocity_bnd(p_patch, wc, &
-         p_diag%gvn_e)  !INOUT
-
-    ! initialisation of the nonlinear transfer
-    CALL init_wave_nonlinear(wave_config = wave_config,                & !IN
-         &                   p_diag      = p_diag) !INOUT
-
-
-
-    CALL message(TRIM(routine),'finished')
-
-  END SUBROUTINE init_wave_phy
 
 
   !>
   !! Initialisation of the wave spectrum
   !!
   !! Calculation of wind dependent initial spectrum from
-  !! the fetch law and from the 1D JONSWAP spectum. The minimum
+  !! the fetch law and from the 1D JONSWAP spectrum. The minimum
   !! of wave energy is limited to FLMIN.
   !!
-  SUBROUTINE init_wave_spectrum(p_patch, wave_config, p_diag, p_forcing, tracer)
+  SUBROUTINE init_wave_spectrum(p_patch, wave_config, dir10m, fp, alphaj, et, tracer)
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
          &  routine = modname//':init_wave_spectrum'
 
-    TYPE(t_patch),        INTENT(IN)    :: p_patch
-    TYPE(t_wave_config),  INTENT(IN)    :: wave_config
-    TYPE(t_wave_diag),    INTENT(IN)    :: p_diag
-    TYPE(t_wave_forcing), INTENT(IN)    :: p_forcing
-    REAL(wp),             INTENT(INOUT) :: tracer(:,:,:,:)
+    TYPE(t_patch),               INTENT(IN)    :: p_patch
+    TYPE(t_wave_config), TARGET, INTENT(IN)    :: wave_config
+    REAL(wp),                    INTENT(IN)    :: dir10m(:,:)     !< wind direction (deg)
+    REAL(wp),                    INTENT(IN)    :: fp(:,:)         !< jonswap peak frequency (1/s)
+    REAL(wp),                    INTENT(IN)    :: alphaj(:,:)     !< jonswap alpha (-)
+    REAL(wp),                    INTENT(INOUT) :: et(:,:,:)       !< jonswap spectra (-)
+    REAL(wp),                    INTENT(INOUT) :: tracer(:,:,:,:) !< wave energy (spectral bins) (?)
 
     INTEGER :: i_rlstart, i_rlend, i_startblk, i_endblk
     INTEGER :: i_startidx, i_endidx
     INTEGER :: jc,jb,jd,jf,jk,jt
     REAL(wp):: st
 
+    TYPE(t_wave_config), POINTER :: wc => NULL()
+
     REAL(wp), PARAMETER :: FLMIN = 0.000001_wp !! absolute minimum energy in spectral bins
+
+    ! save some paperwork
+    wc => wave_config
+
+    ! Set JONSWAP spectrum
+    CALL JONSWAP(p_patch,                       & !in
+         wc%freqs,                              & !in
+         alphaj,                                & !in
+         wc%GAMMA_wave, wc%SIGMA_A, wc%SIGMA_B, & !in
+         fp,                                    & !in
+         et)                                      !out
+
 
     ! halo points must be included
     i_rlstart  = 1
@@ -183,20 +100,20 @@ CONTAINS
       CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,           &
            &                 i_startidx, i_endidx, i_rlstart, i_rlend)
 
-      DO jf = 1,wave_config%nfreqs
-        DO jd = 1,wave_config%ndirs
+      DO jf = 1,wc%nfreqs
+        DO jd = 1,wc%ndirs
           !
-          jt = wave_config%tracer_ind(jd,jf)
+          jt = wc%tracer_ind(jd,jf)
           !
         DO jc = i_startidx, i_endidx
-            st = rpi_2*MAX(0._wp, COS(wave_config%dirs(jd)-p_forcing%dir10m(jc,jb)*deg2rad) )**2
+            st = rpi_2*MAX(0._wp, COS(wc%dirs(jd)-dir10m(jc,jb)*deg2rad) )**2
             IF (st < 0.1E-08_wp) st = 0._wp
 
-            ! Avoid too small numbers of p_diag%ET
-            p_diag%ET(jc,jb,jf) = MAX(p_diag%ET(jc,jb,jf),FLMIN)
+            ! Avoid too small numbers of et
+            et(jc,jb,jf) = MAX(et(jc,jb,jf),FLMIN)
 
             ! WAM initialisation
-            tracer(jc,jk,jb,jt) = p_diag%ET(jc,jb,jf) * st
+            tracer(jc,jk,jb,jt) = et(jc,jb,jf) * st
             tracer(jc,jk,jb,jt) = MAX(tracer(jc,jk,jb,jt),EMIN)
           END DO  !jc
         END DO  !jd
@@ -208,6 +125,8 @@ CONTAINS
     CALL message(TRIM(routine),'finished')
 
   END SUBROUTINE init_wave_spectrum
+
+
 
   !>
   !! Calculation of the JONSWAP spectrum according to
@@ -287,15 +206,17 @@ CONTAINS
   !!
   !! Adopted from WAM 4.5.
   !!
-  SUBROUTINE FETCH_LAW (p_patch, wave_config, p_diag, p_forcing)
+  SUBROUTINE fetch_law(p_patch, wave_config, sp10m, fp, alphaj)
 
     CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER ::  &
-         &  routine = modname//':FETCH_LAW'
+         &  routine = modname//':fetch_law'
     !
     TYPE(t_patch),        INTENT(IN)    :: p_patch
     TYPE(t_wave_config),  INTENT(IN)    :: wave_config
-    TYPE(t_wave_diag),    INTENT(INOUT) :: p_diag
-    TYPE(t_wave_forcing), INTENT(IN)    :: p_forcing
+    REAL(wp),             INTENT(IN)    :: sp10m(:,:)  !< wind speed at 10m ASL
+    REAL(wp),             INTENT(INOUT) :: fp(:,:)     !< jonswap peak frequency (1/s)
+    REAL(wp),             INTENT(INOUT) :: alphaj(:,:) !< jonswap alpha (-)
+
 
     INTEGER :: i_rlstart, i_rlend, i_startblk, i_endblk
     INTEGER :: i_startidx, i_endidx
@@ -328,27 +249,27 @@ CONTAINS
       CALL get_indices_c( p_patch, jb, i_startblk, i_endblk,           &
            &                 i_startidx, i_endidx, i_rlstart, i_rlend)
       DO jc = i_startidx, i_endidx
-        IF (p_forcing%sp10m(jc,jb).GT.0.1E-08_wp) THEN
-          UG = grav / p_forcing%sp10m(jc,jb)
-          p_diag%FP(jc,jb) = MAX(0.13_wp, A*((grav*fetch)/(p_forcing%sp10m(jc,jb)**2))**D)
+        IF (sp10m(jc,jb).GT.0.1E-08_wp) THEN
+          UG = grav / sp10m(jc,jb)
+          fp(jc,jb) = MAX(0.13_wp, A*((grav*fetch)/(sp10m(jc,jb)**2))**D)
 
-          p_diag%FP(jc,jb) = MIN(p_diag%FP(jc,jb), fm/UG)
-          p_diag%ALPHAJ(jc,jb) = MAX(0.0081_wp, B * p_diag%FP(jc,jb)**E)
-          p_diag%FP(jc,jb) = p_diag%FP(jc,jb) * UG
+          fp(jc,jb) = MIN(fp(jc,jb), fm/UG)
+          alphaj(jc,jb) = MAX(0.0081_wp, B * fp(jc,jb)**E)
+          fp(jc,jb) = fp(jc,jb) * UG
         ELSE
-          p_diag%ALPHAJ(jc,jb) = 0.0081_wp
-          p_diag%FP(jc,jb) = fm
+          alphaj(jc,jb) = 0.0081_wp
+          fp(jc,jb) = fm
         END IF
-
       END DO
-
     END DO
 !$OMP ENDDO NOWAIT
 !$OMP END PARALLEL
 
     CALL message(TRIM(routine),'finished')
 
-  END SUBROUTINE FETCH_LAW
+  END SUBROUTINE fetch_law
+
+
 
   !>
   !! Calculation of index arrays and weights for the computation of

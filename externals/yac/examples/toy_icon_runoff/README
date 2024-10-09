@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 In order to easily check the source to target mapping, especially required
 to map the hydrological discharge from the atmosphere to the ocean, a pair
 of toys is provided

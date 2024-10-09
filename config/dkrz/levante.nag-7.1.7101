@@ -129,11 +129,6 @@ ICON_EMVORADO_PATH='externals/emvorado'
 ICON_BUNDLED_FCFLAGS="${non_libtool_FCFLAGS} -C=all"
 
 # Do not pass Fortran compiler flags that cannot be handled by the libtool
-# scripts of the bundled CDI and MTIME:
-ICON_CDI_FCFLAGS='-C=all'
-ICON_MTIME_FCFLAGS='-C=all'
-
-# Do not pass Fortran compiler flags that cannot be handled by the libtool
 # script of the bundled SCT and pass an additional flag enabling 'mpif.h':
 ICON_SCT_FCFLAGS="-I${MPI_ROOT}/include -C=all"
 
@@ -176,7 +171,6 @@ FC="${FC}" \
 FCFLAGS="${FCFLAGS}" \
 ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
 ICON_BUNDLED_FCFLAGS="${ICON_BUNDLED_FCFLAGS}" \
-ICON_CDI_FCFLAGS="${ICON_CDI_FCFLAGS}" \
 ICON_YAC_CFLAGS="${ICON_YAC_CFLAGS}" \
 ICON_CFLAGS="${ICON_CFLAGS}" \
 ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
@@ -185,7 +179,6 @@ ICON_EMVORADO_FCFLAGS="${ICON_EMVORADO_FCFLAGS}" \
 ICON_EMVORADO_PATH="${ICON_EMVORADO_PATH}" \
 ICON_FCFLAGS="${ICON_FCFLAGS}" \
 ICON_LDFLAGS="${ICON_LDFLAGS}" \
-ICON_MTIME_FCFLAGS="${ICON_MTIME_FCFLAGS}" \
 ICON_SCT_FCFLAGS="${ICON_SCT_FCFLAGS}" \
 ICON_YAC_FCFLAGS="${ICON_YAC_FCFLAGS}" \
 LDFLAGS="${LDFLAGS}" \

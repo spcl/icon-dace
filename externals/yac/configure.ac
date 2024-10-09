@@ -1,9 +1,21 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
+m4_define([yac_version], [3, 4, 0])
+
 AC_PREREQ([2.69])
-AC_INIT([yac], [3.0.3], [hanke@dkrz.de], [],
-  [https://dkrz-sw.gitlab-pages.dkrz.de/yac/])
+AC_INIT([yac],
+  m4_join([],
+    [m4_argn(1, yac_version).m4_argn(2, yac_version).m4_argn(3, yac_version)],
+    [m4_argn([4], yac_version)]),
+  [hanke@dkrz.de], [], [https://dkrz-sw.gitlab-pages.dkrz.de/yac/])
 AC_CONFIG_MACRO_DIR([m4])
+dnl Make sure all required m4 files are in place:
+m4_pattern_forbid([^(A[SC]?X|TJ)_])dnl
+m4_pattern_allow([^AX_PTHREAD_])
 AC_CONFIG_AUX_DIR([config])
-AC_CONFIG_SRCDIR([src/grid.c])
+AC_CONFIG_SRCDIR([src/config.h.in])
 
 dnl Generate the private and public config headers and avoid C-style block
 dnl comments in it to safely include it into a Fortran source file:
@@ -18,9 +30,12 @@ AC_MSG_ERROR([could not postprocess $ac_file])])],
 dnl Prevent yac_config from overriding macros defined in config.h when both
 dnl headers are included:
 AC_DEFINE([YAC_CONFIG_H], [], [do not include yac_config.h])
+AC_DEFINE([YAC_VERSION_MAJOR], [m4_argn([1], yac_version)], [YAC major version])
+AC_DEFINE([YAC_VERSION_MINOR], [m4_argn([2], yac_version)], [YAC minor version])
+AC_DEFINE([YAC_VERSION_PATCH], [m4_argn([3], yac_version)], [YAC patch version])
+AC_DEFINE_UNQUOTED([YAC_VERSION_TWEAK],
+  ["m4_argn([4], yac_version)"], [YAC tweak version])
 AC_DEFINE_UNQUOTED([YAC_VERSION], ["$PACKAGE_VERSION"], [YAC version])
-
-AC_CANONICAL_HOST
 
 dnl Enable silent rules by default with a workaround for the case when the
 dnl version constraint above is relaxed:
@@ -28,10 +43,126 @@ m4_ifdef([AM_SILENT_RULES], [AM_SILENT_RULES([yes])])
 AM_INIT_AUTOMAKE([1.16.1 foreign subdir-objects])
 AM_MAINTAINER_MODE
 
+AC_ARG_ENABLE([rpaths],
+  [AS_HELP_STRING([--enable-rpaths],
+     [link with automatically generated RPATH flags @<:@default=yes@:>@])], [],
+  [enable_rpaths=yes])
+
+AC_ARG_ENABLE([openmp],
+  [AS_HELP_STRING([--enable-openmp],
+     [enable OpenMP support @<:@default=no@:>@])], [],
+  [enable_openmp=no])
+AM_CONDITIONAL([ENABLE_OPENMP], [test x"$enable_openmp" = xyes])
+
+AC_ARG_ENABLE([mci],
+  [AS_HELP_STRING([--enable-mci],
+     [build the Model Coupling Interface @<:@default=yes@:>@])], [],
+  [enable_mci=yes])
+
+AC_ARG_ENABLE([utils],
+  [AS_HELP_STRING([--enable-utils],
+     [build the Utility library @<:@default=yes@:>@])], [],
+  [enable_utils=yes])
+
+AC_ARG_ENABLE([examples],
+  [AS_HELP_STRING([--enable-examples],
+     [build the example programs @<:@default=yes@:>@])], [],
+  [enable_examples=yes])
+
+AC_ARG_ENABLE([tools],
+  [AS_HELP_STRING([--enable-tools],
+     [build the utility programs @<:@default=yes@:>@])], [],
+  [enable_tools=yes])
+
+AC_ARG_ENABLE([lib-core-only],
+[  --enable-lib-core-only  omit building (deprecated option):
+                              - the Model Coupling Interface (--disable-mci);
+                              - the Utility library (--disable-utils);
+                              - examples (--disable-examples);
+                              - tools (--disable-tools).
+                          If set to 'yes', overrides the aforementioned
+                          options. Has no effect otherwise. @<:@default=no@:>@],
+[AC_MSG_WARN([option '--enable-lib-core-only' is deprecated: use dnl
+'--disable-mci --disable-utils --disable-examples --disable-tools' instead])],
+[enable_lib_core_only=no])
+
+AS_VAR_IF([enable_lib_core_only], [yes],
+  [enable_mci=no; enable_utils=no; enable_examples=no; enable_tools=no])
+AM_CONDITIONAL([ENABLE_MCI], [test x"$enable_mci" = xyes])
+AM_CONDITIONAL([ENABLE_UTILS], [test x"$enable_utils" = xyes])
+AM_CONDITIONAL([ENABLE_EXAMPLES], [test x"$enable_examples" = xyes])
+AM_CONDITIONAL([ENABLE_TOOLS], [test x"$enable_tools" = xyes])
+
+AC_ARG_ENABLE([deprecated],
+  [AS_HELP_STRING([--enable-deprecated],
+     [build the deprecated interfaces @<:@default=yes@:>@])], [],
+  [enable_deprecated=yes])
+AM_CONDITIONAL([ENABLE_DEPRECATED], [test x"$enable_deprecated" = xyes])
+
+AC_ARG_ENABLE([mpi-checks],
+  [AS_HELP_STRING([--enable-mpi-checks],
+     [enable configure-time checks of MPI library for known defects ]dnl
+[@<:@default=yes@:>@])], [],
+  [enable_mpi_checks=yes])
+
+AC_ARG_ENABLE([concurrent-mpi-tests],
+  [AS_HELP_STRING([--enable-concurrent-mpi-tests],
+     [allow for simultaneous runs of MPI tests @<:@default=no@:>@])], [],
+  [enable_concurrent_mpi_tests=no])
+AM_CONDITIONAL([ENABLE_CONCURRENT_MPI_TESTS],
+  [test x"$enable_concurrent_mpi_tests" = xyes])
+
+AC_ARG_ENABLE([netcdf],
+  [AS_HELP_STRING([--enable-netcdf],
+     [enable NetCDF support @<:@default=auto@:>@])], [],
+  [enable_netcdf=auto])
+
+AC_ARG_ENABLE([python-bindings],
+  [AS_HELP_STRING([--enable-python-bindings],
+     [enable Python bindings @<:@default=no@:>@])], [],
+  [enable_python_bindings=no])
+AM_CONDITIONAL([ENABLE_PYTHON_BINDINGS],
+  [test x"$enable_python_bindings" = xyes])
+
+AC_ARG_WITH([pic],
+  [AS_HELP_STRING([--with-pic],
+     [compile PIC objects @<:@default=auto@:>@])], [],
+  [with_pic=auto])
+
+AC_ARG_WITH([external-lapack],
+[  --with-external-lapack  specify the interface to be used for enabling LAPACK
+                          functions. The value of the argument is either 'yes',
+                          'no', 'auto' or a space-separated list of the
+                          following:
+                              'mkl' - Intel MKL LAPACKE interface;
+                              'lapacke' - Netlib LAPACKE interface;
+                              'atlas' - ATLAS CLAPACK interface;
+                              'clapack' - Netlib CLAPACK interface;
+                              'fortran' - Fortran LAPACK interface.
+                          If set to 'no', the bundled (very limited) version of
+                          CLAPACK library is used. @<:@default=auto@:>@], [],
+[with_external_lapack=auto])
+
+AC_ARG_WITH([external-mtime],
+  [AS_HELP_STRING([--with-external-mtime],
+     [use external mtime instead of the bundled one @<:@default=no@:>@])], [],
+  [with_external_mtime=no])
+
+AS_VAR_IF([enable_python_bindings], [yes],
+  [AS_VAR_IF([enable_mci], [no],
+     [AC_MSG_ERROR([options '--enable-python-bindings' and '--disable-mci' dnl
+are incompatible])])
+   AS_VAR_IF([with_pic], [no],
+     [AC_MSG_ERROR([options '--enable-python-bindings' and '--without-pic' dnl
+are incompatible])],
+     [with_pic=yes])])
+
+AS_VAR_IF([with_pic], [auto], [with_pic=no])
+
 dnl Tests for the C compiler:
 dnl   Make sure conftest.dSYM is removed when configured on MacOS with
 dnl   CFLAGS='-g':
-m4_pushdef([_AM_PROG_CC_C_O], m4_bpatsubst(m4_dquote(m4_defn([_AM_PROG_CC_C_O])),
+m4_pushdef([_AM_PROG_CC_C_O], m4_bpatsubst(m4_dquote(_AM_PROG_CC_C_O),
   [rm -f\(.* conftest\*.*\)], [rm -rf\1]))dnl
 dnl   Check for ISO C99 support
 dnl   (Autoconf 2.69- and 2.70+ have different documented ways for this):
@@ -48,8 +179,26 @@ dnl   Fix a bug in Autoconf 2.70 (see https://savannah.gnu.org/support/?110396):
 AS_VAR_IF([ac_cv_prog_cc_c99], [no],
   [AC_MSG_FAILURE([unable to detect C compiler flag needed to accept ISO C99])])
 m4_popdef([AC_PROG_CC_C_O])dnl
-ACX_COMPILER_CC_VENDOR
 AC_C_RESTRICT
+ACX_COMPILER_CC_VENDOR_SIMPLE
+AS_VAR_IF([enable_rpaths], [yes], [ACX_SHLIB_CC_RPATH_FLAG])
+AS_VAR_IF([with_pic], [yes], [ACX_SHLIB_CC_PIC_FLAG])
+AS_VAR_IF([enable_openmp], [yes],
+  [ACX_LANG_OPENMP_FLAG(
+     [AC_SUBST([OPENMP_CFLAGS], ["$acx_cv_c_openmp_flag"])])
+   AC_DEFINE([YAC_OPENMP_ENABLED], [], [Enable OpenMP support])],
+  [OPENMP_CFLAGS=])
+
+dnl Tests for static library generation tools:
+AC_ARG_VAR([AR], [archiver command])
+AC_CHECK_TOOL([AR], [ar], [:])
+AS_VAR_IF([AR], [:], [AC_MSG_ERROR([the archiver command not found])])
+AC_ARG_VAR([ARFLAGS], [archiver flags])
+ARFLAGS=${ARFLAGS-cr}
+AC_ARG_VAR([RANLIB], [archive indexer command])
+AC_PROG_RANLIB
+
+AC_ARG_VAR([MPI_LAUNCH], [MPI launcher command])
 
 dnl Tests for the Fortran compiler:
 AC_PROG_FC
@@ -71,14 +220,65 @@ ACX_FC_INCLUDE_FLAG_PP([AC_SUBST([FCPPINC], ["$acx_cv_fc_pp_include_flag"])])
 ACX_LANG_MACRO_FLAG([AC_SUBST([FCPPDEF], ["$acx_cv_fc_macro_flag"])])
 ACX_FC_MODULE_CHECK([ISO_C_BINDING])
 ACX_FC_PP_COMMENTS([], [:])
+ACX_COMPILER_FC_VENDOR_SIMPLE
+AS_VAR_IF([enable_rpaths], [yes], [ACX_SHLIB_FC_RPATH_FLAG])
+AS_VAR_IF([with_pic], [yes], [ACX_SHLIB_FC_PIC_FLAG])
+AS_VAR_IF([enable_openmp], [yes],
+  [AC_MSG_CHECKING([for Fortran compiler flag needed to link C code that dnl
+uses OpenMP])
+   AC_CACHE_VAL(
+     [yac_cv_fc_c_openmp_flag],
+     [yac_cv_fc_c_openmp_flag=unknown
+      yac_save_CFLAGS=$CFLAGS
+      CFLAGS="$CFLAGS $OPENMP_CFLAGS"
+      AC_LANG_PUSH([C])
+      AC_COMPILE_IFELSE([AC_LANG_SOURCE([[
+#include <omp.h>
+void conftest_foo () {omp_get_num_threads();}]])],
+        [mv ./conftest.$ac_objext ./conftest_c.$ac_objext
+         yac_save_LIBS=$LIBS
+         LIBS="./conftest_c.$ac_objext $LIBS"
+         AC_LANG_POP([C])
+         AC_LANG_CONFTEST([AC_LANG_SOURCE([[
+      program conftest
+      implicit none
+      interface
+      subroutine conftest_foo() bind(c)
+      end subroutine
+      end interface
+      call conftest_foo()
+      end program]])])
+         yac_save_FCFLAGS=$FCFLAGS
+         set dummy '' "$OPENMP_CFLAGS" "-Wl,$OPENMP_CFLAGS"; shift
+         for yac_flag in "$[]@"; do
+           FCFLAGS="$yac_save_FCFLAGS $yac_flag"
+           AC_LINK_IFELSE([], [yac_cv_fc_c_openmp_flag=$yac_flag])
+           test "x$yac_cv_fc_c_openmp_flag" != xunknown && break
+         done
+         FCFLAGS=$yac_save_FCFLAGS
+         rm -f conftest.$ac_ext
+         AC_LANG_PUSH([C])
+         LIBS=$yac_save_LIBS
+         rm -f conftest_c.$ac_objext])
+      AC_LANG_POP([C])
+      CFLAGS=$yac_save_CFLAGS])
+   AS_IF([test -n "$yac_cv_fc_c_openmp_flag"],
+     [AC_MSG_RESULT([$yac_cv_fc_c_openmp_flag])],
+     [AC_MSG_RESULT([none needed])])
+   AS_VAR_IF([yac_cv_fc_c_openmp_flag], [unknown],
+     [AC_MSG_FAILURE([unable to detect Fortran compiler flag needed to to dnl
+link C code that uses OpenMP])])
+   AC_SUBST([OPENMP_FCLIBS], ["$yac_cv_fc_c_openmp_flag"])],
+  [OPENMP_FCLIBS=])
 
 AS_IF([test "`cd $srcdir && pwd`" != "`pwd`"],
-  [AC_SUBST([yac_fcisrc], [" ${FCPPINC}\$(srcdir)"])dnl
+  [AC_SUBST([yac_fcisrc], [" \$(FCPPINC)\$(srcdir)"])dnl
    AM_SUBST_NOTMAKE([yac_fcisrc])])
 
-AC_CACHE_CHECK([whether $FC can properly detect non-contiguous data],
-  [yac_cv_fc_is_contiguous_works],
-  [AC_RUN_IFELSE([AC_LANG_PROGRAM([], [[
+AS_VAR_IF([enable_mci], [yes],
+  [AC_CACHE_CHECK([whether $FC can properly detect non-contiguous data],
+     [yac_cv_fc_is_contiguous_works],
+     [AC_RUN_IFELSE([AC_LANG_PROGRAM([], [[
       type dbl_ptr
       double precision, pointer :: ptr(:)
       end type
@@ -100,57 +300,17 @@ AC_CACHE_CHECK([whether $FC can properly detect non-contiguous data],
       stop 1
       end if
       end subroutine check_cont]])],
-     [yac_cv_fc_is_contiguous_works=yes],
-     [yac_cv_fc_is_contiguous_works=no],
-     [yac_cv_fc_is_contiguous_works=unknown])])
-AS_IF(
-  [test "x$yac_cv_fc_is_contiguous_works" = xno],
-  [AC_MSG_FAILURE([$FC cannot properly detect non-contiguous data])],
-  [test "x$yac_cv_fc_is_contiguous_works" = xunknown],
-  [AC_MSG_WARN([unable to check whether $FC can properly detect dnl
-non-contiguous data: this might result into a non-working YAC build])])
+        [yac_cv_fc_is_contiguous_works=yes],
+        [yac_cv_fc_is_contiguous_works=no],
+        [yac_cv_fc_is_contiguous_works=unknown])])
+   AS_IF(
+     [test "x$yac_cv_fc_is_contiguous_works" = xno],
+     [AC_MSG_FAILURE([$FC cannot properly detect non-contiguous data])],
+     [test "x$yac_cv_fc_is_contiguous_works" = xunknown],
+     [AC_MSG_WARN([unable to check whether $FC can properly detect dnl
+non-contiguous data: this might result into a non-working YAC build])])])
 
 AC_LANG_POP([Fortran])
-
-dnl Tests for static library generation tools:
-AC_ARG_VAR([AR], [archiver command])
-AC_CHECK_TOOL([AR], [ar], [:])
-AS_VAR_IF([AR], [:], [AC_MSG_ERROR([the archiver command not found])])
-AC_ARG_VAR([ARFLAGS], [archiver flags])
-ARFLAGS=${ARFLAGS-cr}
-AC_ARG_VAR([RANLIB], [archive indexer command])
-AC_PROG_RANLIB
-
-AC_ARG_VAR([MPI_LAUNCH], [MPI launcher command])
-
-AC_ARG_ENABLE([lib-only],
-  [AS_HELP_STRING([--enable-lib-only],
-     [omit building examples and utility programs @<:@default=no@:>@])], [],
-  [enable_lib_only=no])
-AM_CONDITIONAL([ENABLE_LIB_ONLY], [test x"$enable_lib_only" = xyes])
-
-dnl Variables for pkg-config file generation:
-AC_SUBST([YAC_PKGCONF_CLIBS], [''])
-AM_SUBST_NOTMAKE([YAC_PKGCONF_CLIBS])
-
-AC_ARG_WITH([external-lapack],
-[  --with-external-lapack  specify the interface to be used for enabling LAPACK
-                          functions. The value of the argument is either 'yes',
-                          'no', 'auto' or a space-separated list of the
-                          following:
-                              'mkl' - Intel MKL LAPACKE interface;
-                              'lapacke' - Netlib LAPACKE interface;
-                              'atlas' - ATLAS CLAPACK interface;
-                              'clapack' - Netlib CLAPACK interface;
-                              'fortran' - Fortran LAPACK interface.
-                          If set to 'no', the bundled (very limited) version of
-                          CLAPACK library is used. @<:@default=auto@:>@], [],
-[with_external_lapack=auto])
-
-AC_ARG_WITH([external-mtime],
-  [AS_HELP_STRING([--with-external-mtime],
-     [use external mtime instead of the bundled one @<:@default=no@:>@])], [],
-  [with_external_mtime=no])
 
 dnl Check for required libraries. There are several considerations regarding
 dnl how the detection of the required libraries should be implemented:
@@ -177,13 +337,11 @@ dnl      that does not have the NEEDED and RPATH entries for Fortran intrinsic
 dnl      and runtime Fortran libraries. The only exception implemented so far
 dnl      is for PGI compiler.
 
-dnl Get absolute paths to the source and build directories:
-_AC_SRCDIRS([.])
-yac_abs_top_srcdir=$ac_abs_top_srcdir
-yac_abs_top_builddir=$ac_abs_top_builddir
-
 dnl Check for libm.
 AC_SEARCH_LIBS([cos], [m])
+
+dnl Check for curl
+AM_MISSING_PROG([CURL], [curl])
 
 dnl Check for pthread.
 dnl We build and run the multithreading tests if pthread is found and does not
@@ -192,13 +350,6 @@ yac_have_pthread=no
 AX_PTHREAD([AS_VAR_IF([PTHREAD_CC], ["$CC"], [yac_have_pthread=yes])])
 AS_VAR_IF([yac_have_pthread], [no], [PTHREAD_LIBS=;PTHREAD_CFLAGS=])
 AM_CONDITIONAL([TEST_PTHREAD], [test x"$yac_have_pthread" = xyes])
-
-dnl Checks for MPI libraries.
-AC_ARG_ENABLE([mpi-checks],
-  [AS_HELP_STRING([--enable-mpi-checks],
-     [enable configure-time checks of MPI library for known defects ]dnl
-[@<:@default=yes@:>@])], [],
-  [enable_mpi_checks=yes])
 
 dnl Checks for C MPI headers and libraries.
 
@@ -212,8 +363,6 @@ CFLAGS="$MPI_CFLAGS $CFLAGS"
 AC_CHECK_HEADER([mpi.h],
   [ACX_LANG_LIB_SEARCH([MPI_CLIBS], [MPI_Init], [],
      [MPI_CLIBS=$acx_cv_c_lib_func_MPI_Init
-      AS_IF([test -n "$MPI_CLIBS"],
-        [YAC_PKGCONF_CLIBS="$MPI_CLIBS $YAC_PKGCONF_CLIBS"])
       LIBS="$MPI_CLIBS $LIBS"],
      [AC_MSG_FAILURE([cannot link to MPI C library])])],
   [AC_MSG_FAILURE([mpi.h not found])], [//])
@@ -274,13 +423,6 @@ CFLAGS=$yac_save_CFLAGS; MPI_LAUNCH=$yac_save_MPI_LAUNCH
 FCFLAGS=$yac_save_FCFLAGS; LIBS=$yac_save_LIBS
 AC_LANG_POP([Fortran])
 
-AC_ARG_ENABLE([concurrent-mpi-tests],
-  [AS_HELP_STRING([--enable-concurrent-mpi-tests],
-     [allow for simultaneous runs of MPI tests @<:@default=no@:>@])], [],
-  [enable_concurrent_mpi_tests=no])
-AM_CONDITIONAL([ENABLE_CONCURRENT_MPI_TESTS],
-  [test x"$enable_concurrent_mpi_tests" = xyes])
-
 dnl Checks for YAXT library.
 
 ACX_LANG_PACKAGE_INIT([YAXT], [-I], [-L])
@@ -291,9 +433,7 @@ CFLAGS="$MPI_CFLAGS $YAXT_CFLAGS $CFLAGS"
 AC_CHECK_HEADER([yaxt.h],
   [ACX_LANG_LIB_SEARCH([YAXT_CLIBS], [xt_initialized],
      [ASX_PREPEND_LDFLAGS([$acx_c_YAXT_lib_search_args], [-lyaxt_c])],
-     [YAXT_CLIBS=$acx_cv_c_lib_func_xt_initialized
-      AS_IF([test -n "$YAXT_CLIBS"],
-        [YAC_PKGCONF_CLIBS="$YAXT_CLIBS $YAC_PKGCONF_CLIBS"])],
+     [YAXT_CLIBS=$acx_cv_c_lib_func_xt_initialized],
      [AC_MSG_FAILURE([cannot link to YAXT library])])],
   [AC_MSG_FAILURE([yaxt.h not found])], [//])
 CFLAGS=$yac_save_CFLAGS
@@ -354,11 +494,6 @@ Alternatively, you can disable this test with the configure argument
 
 dnl Checks for NetCDF library.
 
-AC_ARG_ENABLE([netcdf],
-  [AS_HELP_STRING([--enable-netcdf],
-     [enable NetCDF support @<:@default=auto@:>@])], [],
-  [enable_netcdf=auto])
-
 ACX_LANG_PACKAGE_INIT([NetCDF], [-I], [-L])
 
 AS_IF([test x"$enable_netcdf" != xno],
@@ -369,8 +504,6 @@ AS_IF([test x"$enable_netcdf" != xno],
      [ACX_LANG_LIB_SEARCH([NETCDF_CLIBS], [nc_open],
         [ASX_PREPEND_LDFLAGS([$acx_c_NetCDF_lib_search_args], [-lnetcdf])],
         [NETCDF_CLIBS=$acx_cv_c_lib_func_nc_open
-         AS_IF([test -n "$NETCDF_CLIBS"],
-           [YAC_PKGCONF_CLIBS="$NETCDF_CLIBS $YAC_PKGCONF_CLIBS"])
          AC_DEFINE([YAC_NETCDF_ENABLED], [], [Enable NetCDF support])
          AC_MSG_NOTICE([NetCDF support is enabled])
          enable_netcdf=yes],
@@ -387,49 +520,54 @@ NetCDF support is disabled])
 
 AS_VAR_IF([enable_netcdf], [no], [NETCDF_CLIBS=;NETCDF_CFLAGS=])
 AM_CONDITIONAL([HAVE_NETCDF], [test x"$enable_netcdf" = xyes])
-AM_CONDITIONAL([TEST_NETCDF], [test x"$enable_netcdf" = xyes])
 
 dnl Checks for fyaml.
 
 ACX_LANG_PACKAGE_INIT([fyaml], [-I], [-L])
 
-yac_save_CFLAGS=$CFLAGS
-FYAML_CFLAGS=${FYAML_CFLAGS-$acx_c_fyaml_inc_search_args}
-CFLAGS="$FYAML_CFLAGS $CFLAGS"
-AC_CHECK_HEADER([libfyaml.h],
-  [ACX_LANG_LIB_SEARCH([FYAML_CLIBS],
-     [fy_node_mapping_lookup_scalar0_by_simple_key],
-     [ASX_PREPEND_LDFLAGS([$acx_c_fyaml_lib_search_args], [-lfyaml])],
-     [FYAML_CLIBS=$acx_cv_c_lib_func_fy_node_mapping_lookup_scalar0_by_simple_key
-      AS_IF([test -n "$FYAML_CLIBS"],
-        [YAC_PKGCONF_CLIBS="$FYAML_CLIBS $YAC_PKGCONF_CLIBS"])],
-     [AC_MSG_FAILURE([cannot link to libfyaml library])])],
-  [AC_MSG_FAILURE([libfyaml.h not found])], [//])
-CFLAGS=$yac_save_CFLAGS
+AS_VAR_IF([enable_mci], [yes],
+  [yac_save_CFLAGS=$CFLAGS
+   FYAML_CFLAGS=${FYAML_CFLAGS-$acx_c_fyaml_inc_search_args}
+   CFLAGS="$FYAML_CFLAGS $CFLAGS"
+   AC_CHECK_HEADER([libfyaml.h],
+     [ACX_LANG_LIB_SEARCH([FYAML_CLIBS],
+        [fy_node_mapping_lookup_scalar0_by_simple_key],
+        [ASX_PREPEND_LDFLAGS([$acx_c_fyaml_lib_search_args], [-lfyaml])],
+        [FYAML_CLIBS=dnl
+$acx_cv_c_lib_func_fy_node_mapping_lookup_scalar0_by_simple_key],
+        [AC_MSG_FAILURE([cannot link to libfyaml library])])],
+      [AC_MSG_FAILURE([libfyaml.h not found])], [//])
+   CFLAGS=$yac_save_CFLAGS],
+  [FYAML_CLIBS=;FYAML_CFLAGS=])
 
 dnl Checks for mtime library.
 
 ACX_LANG_PACKAGE_INIT([mtime], [-I], [-L])
 
-AS_VAR_IF([with_external_mtime], [yes],
-  [yac_save_CFLAGS=$CFLAGS
-   MTIME_CFLAGS=${MTIME_CFLAGS-$acx_c_mtime_inc_search_args}
-   CFLAGS="$MTIME_CFLAGS $CFLAGS"
-   AC_CHECK_HEADER([mtime_datetime.h],
-     [ACX_LANG_LIB_SEARCH([MTIME_CLIBS], [datetimeToString],
-        [ASX_PREPEND_LDFLAGS([$acx_c_mtime_lib_search_args], [-lmtime])],
-        [MTIME_CLIBS=$acx_cv_c_lib_func_datetimeToString
-         AS_IF([test -n "$MTIME_CLIBS"],
-           [YAC_PKGCONF_CLIBS="$MTIME_CLIBS $YAC_PKGCONF_CLIBS"])],
-        [AC_MSG_FAILURE([cannot link to mtime library])])],
-     [AC_MSG_FAILURE([mtime_datetime.h not found, enable usage of the dnl
+AS_VAR_IF([enable_mci], [yes],
+  [AS_VAR_IF([with_external_mtime], [yes],
+     [yac_save_CFLAGS=$CFLAGS
+      MTIME_CFLAGS=${MTIME_CFLAGS-$acx_c_mtime_inc_search_args}
+      CFLAGS="$MTIME_CFLAGS $CFLAGS"
+      AC_CHECK_HEADER([mtime_datetime.h],
+        [ACX_LANG_LIB_SEARCH([MTIME_CLIBS], [datetimeToString],
+           [ASX_PREPEND_LDFLAGS([$acx_c_mtime_lib_search_args], [-lmtime])],
+           [MTIME_CLIBS=$acx_cv_c_lib_func_datetimeToString],
+           [AC_MSG_FAILURE([cannot link to mtime library])])],
+        [AC_MSG_FAILURE([mtime_datetime.h not found, enable usage of the dnl
 bundled mtime library by re-configuring with the argument dnl
 --without-external-mtime])], [//])
-   CFLAGS=$yac_save_CFLAGS],
-  [MTIME_CFLAGS="-I$yac_abs_top_srcdir/mtime/include"
-   MTIME_CLIBS="$yac_abs_top_builddir/mtime/libyac_mtime.a"
-   YAC_PKGCONF_CLIBS="-lyac_mtime $YAC_PKGCONF_CLIBS"])
+      CFLAGS=$yac_save_CFLAGS],
+     [MTIME_CFLAGS='-I${abs_top_srcdir}/mtime/include'
+      MTIME_CLIBS='${abs_top_builddir}/mtime/libyac_mtime.a'])],
+  [MTIME_CLIBS=;MTIME_CFLAGS=])
 AM_CONDITIONAL([EXTERNAL_MTIME], [test x"$with_external_mtime" = xyes])
+
+dnl Variable for pkg-config file generation:
+AS_VAR_IF([with_external_mtime], [yes],
+  [AC_SUBST([YAC_MTIME_PKGCONF_CLIBS], [$MTIME_CLIBS])],
+  [AC_SUBST([YAC_MTIME_PKGCONF_CLIBS], ['-lyac_mtime'])])
+AM_SUBST_NOTMAKE([YAC_MTIME_PKGCONF_CLIBS])
 
 dnl Checks for LAPACK library functions LAPACKE_dgels/dgels.
 dnl There are several options for enabling LAPACK functions:
@@ -485,9 +623,8 @@ AM_SUBST_NOTMAKE([CLAPACK_CLIBS])
 ACX_LANG_PACKAGE_INIT([Fortran LAPACK], [], [-L])
 AM_SUBST_NOTMAKE([FORTRAN_LAPACK_CLIBS])
 
-AC_SUBST([LAPACK_CFLAGS])
-AC_SUBST([LAPACK_CLIBS])
-AC_SUBST([LAPACK_FCLIBS])
+AC_SUBST([LAPACK_CFLAGS], [''])
+AC_SUBST([LAPACK_CLIBS], [''])
 
 AS_CASE([$with_external_lapack],
   [yes|auto], [external_lapack_options='mkl lapacke atlas clapack fortran'],
@@ -566,9 +703,13 @@ for option in $external_lapack_options; do
      ACX_FC_MANGLING_SHVAR([dgels],
        [ACX_LANG_LIB_SEARCH([FORTRAN_LAPACK_CLIBS],
           [$acx_cv_fc_mangling_shvar_DGELS],
-          [ASX_PREPEND_LDFLAGS([$acx_c_Fortran_LAPACK_lib_search_args],
-             [-llapack], [-lopenblas], [-llapack -pgf77libs],
-             [-llapack -lblas -pgf77libs])],
+          [dnl
+dnl We skip the check for '-llapack -pgf77libs' below because it produces a
+dnl false positive result: one of the LAPACK functions (dgesv) of the NVHPC
+dnl implementation is erroneously put to the BLAS library (the combination of
+dnl flags works when using the LAPACKE interface though).
+           ASX_PREPEND_LDFLAGS([$acx_c_Fortran_LAPACK_lib_search_args],
+             [-llapack], [-lopenblas], [-llapack -lblas -pgf77libs])],
           [ACX_FC_MANGLING_DEFINE([YAC_FC],
              [LAPACK_CFLAGS=
               AS_VAR_COPY([LAPACK_CLIBS],
@@ -591,18 +732,15 @@ are 'mkl', 'lapacke', 'atlas', 'fortran', and 'clapack'])],
   AS_VAR_IF([lapack_interface_found], [yes], [break])
 done
 
-AS_VAR_IF([lapack_interface_found], [yes],
-  [AS_IF([test -n "$LAPACK_CLIBS"],
-     [YAC_PKGCONF_CLIBS="$LAPACK_CLIBS $YAC_PKGCONF_CLIBS"])],
+AS_VAR_IF([lapack_interface_found], [no],
   [AS_CASE([$with_external_lapack],
 
      [yes],
      [AC_MSG_FAILURE([none of the supported LAPACK interfaces is available])],
 
      [no|auto],
-     [LAPACK_CFLAGS="-I$yac_abs_top_srcdir/clapack/INCLUDE"
-      LAPACK_CLIBS="$yac_abs_top_builddir/clapack/libyac_clapack.a"
-      YAC_PKGCONF_CLIBS="-lyac_clapack $YAC_PKGCONF_CLIBS"
+     [LAPACK_CFLAGS='-I${abs_top_srcdir}/clapack/INCLUDE'
+      LAPACK_CLIBS='${abs_top_builddir}/clapack/libyac_clapack.a'
       AC_DEFINE([YAC_LAPACK_INTERFACE_ID], [4])
       AC_MSG_NOTICE([using bundled Netlib CLAPACK])
       with_external_lapack=no],
@@ -611,38 +749,51 @@ AS_VAR_IF([lapack_interface_found], [yes],
         [none of the requested LAPACK interfaces is available])])])
 AM_CONDITIONAL([EXTERNAL_LAPACK], [test x"$with_external_lapack" != xno])
 
+dnl Variable for pkg-config file generation:
+AS_VAR_IF([with_external_lapack], [no],
+  [AC_SUBST([YAC_LAPACK_PKGCONF_CLIBS], ['-lyac_clapack'])],
+  [AC_SUBST([YAC_LAPACK_PKGCONF_CLIBS], [$LAPACK_CLIBS])])
+AM_SUBST_NOTMAKE([YAC_LAPACK_PKGCONF_CLIBS])
+
 dnl Checks for Python bindings.
 
-AC_ARG_ENABLE([python-bindings],
-  [AS_HELP_STRING([--enable-python-bindings],
-     [enable Python bindings @<:@default=no@:>@])], [],
-  [enable_python_bindings=no])
-AM_CONDITIONAL([ENABLE_PYTHON_BINDINGS],
-  [test x"$enable_python_bindings" = xyes])
-yac_have_py_runtime_deps=$enable_python_bindings
-
 AS_VAR_IF([enable_python_bindings], [yes],
-  [ACX_SHLIB_CC_PIC_FLAG
-   AC_SUBST([PIC_CFLAGS], [$acx_cv_c_pic_flag])
-   ACX_SHLIB_PIC_FLAGS_CHECK([$PIC_CFLAGS], [], [PIC_CFLAGS=])
-dnl
-   AC_ARG_VAR([PYTHON], [Python interpreter command])dnl
+  [AC_ARG_VAR([PYTHON], [Python interpreter command])dnl
    ACX_PROG_SEARCH([PYTHON], [python3 python],
      [yac_python_try=dnl
-"$acx_candidate -c 'import sys; exit(sys.version_info@<:@0:2@:>@ < (3, 6))' dnl
+"$acx_candidate -c 'import sys; exit(sys.version_info@<:@0:2@:>@ < (3, 9))' dnl
 >&AS_MESSAGE_LOG_FD"
       _AC_DO_VAR([yac_python_try])],
      [PYTHON=$acx_cv_prog_PYTHON],
-     [AC_MSG_FAILURE([unable to find Python interpreter with version >= 3.6])])
+     [AC_MSG_FAILURE([unable to find Python interpreter with version >= 3.9])])
 dnl
-   yac_have_py_runtime_deps=yes
-   set 'setuptools' 'from setuptools import setup'       'build'     \
-       'pip'        'import pip'                         'build'     \
-       'cython'     'from Cython.Build import cythonize' 'build'     \
-       'numpy'      'import numpy'                       'build'     \
-       'mpi4py'     'import mpi4py'                      'run-extra' \
-       'netCDF4'    'import netCDF4'                     'test'      \
-       'matplotlib' 'import matplotlib.pyplot as plt'    'test-extra'
+   AC_ARG_VAR([PYTHON_CFLAGS],
+     [exact C compiler flags enabling compilation of a Python extension])
+   AS_VAR_SET_IF([PYTHON_CFLAGS], [],
+     [yac_python_include_cmd="$PYTHON -c '"'import sysconfig
+i = sysconfig.get_path("include")
+if i:
+    pi = sysconfig.get_path("platinclude")
+    print(" ".join("-I{0}".format(p) for p in ((i, pi) if i != pi else (i,))))
+'"' 2>&AS_MESSAGE_LOG_FD"
+      _AC_DO_ECHO([PYTHON_CFLAGS=\`$yac_python_include_cmd\`]) >&AS_MESSAGE_LOG_FD
+      PYTHON_CFLAGS=`eval "$yac_python_include_cmd"`])
+    yac_save_CFLAGS=$CFLAGS
+    CFLAGS="$PYTHON_CFLAGS $CFLAGS"
+    AC_CHECK_HEADER([Python.h], [],
+      [AC_MSG_FAILURE([Python.h not found])], [//])
+    CFLAGS=$yac_save_CFLAGS
+dnl
+   set 'setuptools' 'from setuptools import setup' 'build' \
+       'cython>=0.29.31' 'import cython; exit(tuple(map(int, cython.__version__.split("."))) < (0, 29, 31))' 'build' \
+       'numpy' 'import numpy' 'build' \
+       'mpi4py' 'import mpi4py' 'run-extra' \
+       'netCDF4' 'import netCDF4' 'test-extra' \
+       'matplotlib' 'import matplotlib.pyplot as plt' 'test-extra' \
+       'pip>=21.3' 'import pip; exit(tuple(map(int, pip.__version__.split("."))) < (21, 3))' 'install' \
+       'wheel' 'import wheel' 'install'
+   yac_pymodule_warn_extra_issued=no
+   yac_pymodule_warn_install_issued=no
    while test $[]@%:@ -gt 1; do
      m4_pushdef([yac_cache_var], [yac_cv_has_pymodule_[]AS_TR_SH([$][1])])dnl
      AC_CACHE_CHECK([whether Python module '$[]1' is available],
@@ -657,209 +808,222 @@ dnl
           [AC_MSG_FAILURE(
              [Python module '$[]1' needed to build the Python bindings is dnl
 not available])],
-          [run],
-          [AC_MSG_WARN([Python module '$[]1' needed to run the Python dnl
-bindings is not available, all Python tests will be skipped])
-           yac_have_py_runtime_deps=no
-           break],
-          [test],
-          [AC_MSG_WARN([Python module '$[]1' needed to test certain features dnl
-of the Python bindings is not available, the respective tests will be dnl
-skipped])])])
+          [install],
+          [AS_VAR_IF([yac_pymodule_warn_install_issued], [no],
+             [yac_pymodule_warn_install=yes
+              AS_VAR_IF([1], [wheel],
+                [yac_pymodule_try="$PYTHON -c '"'import pip
+exit(tuple(map(int, pip.__version__.split("."))) >= (23, 1))'"'"
+                 _AC_DO_VAR([yac_pymodule_try])
+                 AS_IF([test $? -eq 0], [yac_pymodule_warn_install=no])])
+              AS_VAR_IF([yac_pymodule_warn_install], [yes],
+                [AC_MSG_WARN([Python module '$[]1' needed to install the dnl
+Python bindings is not available])
+                 yac_pymodule_warn_install_issued=yes])])],
+          [AS_VAR_IF([yac_pymodule_warn_extra_issued], [no],
+             [AC_MSG_WARN([Python module '$[]1' needed to test certain dnl
+features of the Python bindings is not available, the respective tests will dnl
+be skipped])
+              yac_pymodule_warn_extra_issued=yes])])])
      shift; shift; shift
      m4_popdef([yac_cache_var])dnl
    done
    set dummy; shift])
-AM_CONDITIONAL([TEST_PYTHON_BINDINGS],
-  [test x"$yac_have_py_runtime_deps" = xyes])
 
-dnl Extract all paths provided with -L flag and prepend them to the
-dnl LD_LIBRARY_PATH (or its analogue) environment variable when running tests:
-dnl   variable for the shell scripts
-AC_SUBST([SHLIB_ENVIRONMENT_SHELL], [''])
-AM_SUBST_NOTMAKE([SHLIB_ENVIRONMENT_SHELL])
-dnl   variable for the makefiles (see also Automake docs for the description of
-dnl   the TESTS_ENVIRONMENT variable)
-AC_SUBST([SHLIB_ENVIRONMENT_MAKE], [''])
-AS_CASE([$host_os],
-  [darwin*],
-  [dnl
-dnl We should not do this for MacOS for the following reasons:
-dnl   1) the linker puts all the information required for locating the dynamic
-dnl      libraries into the executables by default;
-dnl   2) setting DYLD_LIBRARY_PATH (even if the System Integrity Protection is
-dnl      enabled) might break the dynamic linking due to incompatibilities of
-dnl      the system libraries and the libraries provided with MacPorts (e.g.
-dnl      see https://trac.macports.org/ticket/57821).
-  ],
-  [yac_libdirs=
-   ASX_EXTRACT_ARGS([yac_L_args],
-     ["$LDFLAGS $YAC_PKGCONF_CLIBS $MPI_FCLIBS $LIBS"], ['-L@<:@ @:>@*'])
+AC_SUBST([RPATH_CFLAGS], [''])
+AC_SUBST([RPATH_FCFLAGS], [''])
+
+AS_VAR_IF([enable_rpaths], [yes],
+  [link_vars="$LDFLAGS $PTHREAD_LIBS $LAPACK_CLIBS $MTIME_CLIBS $FYAML_CLIBS"
+   AS_VAR_APPEND([link_vars], [" $NETCDF_CLIBS $YAXT_CLIBS $MPI_CLIBS $LIBS"])
+   ASX_EXTRACT_ARGS([yac_L_args], [$link_vars], ['-L@<:@ @:>@*'])
    for yac_L_arg in $yac_L_args; do
-     if test -d "$yac_L_arg"; then
-       ASX_VAR_APPEND_UNIQ([yac_libdirs], ["$yac_L_arg"], ["$PATH_SEPARATOR"])
-     fi
+     ASX_VAR_APPEND_UNIQ([RPATH_CFLAGS],
+       ["$acx_cv_c_rpath_flag$yac_L_arg"], [' '])
    done
-   AS_IF([test -n "$yac_libdirs"],
-     [ACX_SHLIB_PATH_VAR
-      AS_VAR_SET([SHLIB_ENVIRONMENT_SHELL],
-        ["$acx_cv_shlib_path_var=dnl
-\"$yac_libdirs:\$$acx_cv_shlib_path_var\"; export $acx_cv_shlib_path_var;"])
-      AS_VAR_SET([SHLIB_ENVIRONMENT_MAKE],
-        [`echo "$SHLIB_ENVIRONMENT_SHELL" | sed 's/\\$/$$/g'`])])])
+   ACX_SHLIB_RPATH_FLAGS_CHECK([$RPATH_CFLAGS])
+   link_vars="$LDFLAGS $LAPACK_CLIBS $MTIME_CLIBS $FYAML_CLIBS $NETCDF_CLIBS"
+   AS_VAR_IF([yac_have_yaxt_fc], [yes],
+     [AS_VAR_APPEND([link_vars], [" $YAXT_FCLIBS"])],
+     [AS_VAR_APPEND([link_vars], [" $YAXT_CLIBS"])])
+   AS_VAR_APPEND([link_vars], [" $MPI_FCLIBS $LIBS"])
+   ASX_EXTRACT_ARGS([yac_L_args], [$link_vars], ['-L@<:@ @:>@*'])
+   for yac_L_arg in $yac_L_args; do
+     ASX_VAR_APPEND_UNIQ([RPATH_FCFLAGS],
+       ["$acx_cv_fc_rpath_flag$yac_L_arg"], [' '])
+   done
+   AC_LANG_PUSH([Fortran])dnl
+   ACX_SHLIB_RPATH_FLAGS_CHECK([$RPATH_FCFLAGS])
+   AC_LANG_POP([Fortran])])
 
-AS_IF([test -n "$LDFLAGS"], [YAC_PKGCONF_CLIBS="$LDFLAGS $YAC_PKGCONF_CLIBS"])
-AS_IF([test -n "$LIBS"], [AS_VAR_APPEND([YAC_PKGCONF_CLIBS], [" $LIBS"])])
+AS_VAR_IF([with_pic], [yes],
+  [ACX_SHLIB_PIC_FLAGS_CHECK([$PIC_CFLAGS])
+   AC_SUBST([PIC_CFLAGS], [$acx_cv_c_pic_flag])
+   AC_LANG_PUSH([Fortran])dnl
+   ACX_SHLIB_PIC_FLAGS_CHECK([$PIC_FCFLAGS])
+   AC_SUBST([PIC_FCFLAGS], [$acx_cv_fc_pic_flag])
+   AC_LANG_POP([Fortran])])
 
-AS_IF([test -n "$YAC_PKGCONF_CLIBS"],
-  [YAC_PKGCONF_CLIBS="-lyac $YAC_PKGCONF_CLIBS"],
-  [YAC_PKGCONF_CLIBS='-lyac'])
+AS_VAR_IF([enable_mci], [yes],
+  [AC_CONFIG_FILES([
+     tests/mci/test_abort.sh
+     tests/mci/test_component_config.sh
+     tests/mci/test_couple_config.sh
+     tests/mci/test_def_comps.sh
+     tests/mci/test_def_datetime.sh
+     tests/mci/test_def_grid.sh
+     tests/mci/test_def_mask.sh
+     tests/mci/test_def_points.sh
+     tests/mci/test_dummy_coupling.sh
+     tests/mci/test_dummy_coupling2_c.sh
+     tests/mci/test_dummy_coupling3.sh
+     tests/mci/test_dummy_coupling3_c.sh
+     tests/mci/test_dummy_coupling4_c.sh
+     tests/mci/test_dummy_coupling5.sh
+     tests/mci/test_dummy_coupling6.sh
+     tests/mci/test_dummy_coupling6_c.sh
+     tests/mci/test_dummy_coupling7.sh
+     tests/mci/test_dummy_coupling7_c.sh
+     tests/mci/test_dummy_coupling8_c.sh
+     tests/mci/test_dummy_coupling9.sh
+     tests/mci/test_dynamic_config.sh
+     tests/mci/test_init_comm_final.sh
+     tests/mci/test_init_final.sh
+     tests/mci/test_instance_parallel1.sh
+     tests/mci/test_instance_parallel2.sh
+     tests/mci/test_instance_parallel3.sh
+     tests/mci/test_instance_parallel4.sh
+     tests/mci/test_mpi_handshake.sh
+     tests/mci/test_mpi_handshake_c.sh
+     tests/mci/test_multithreading.sh
+     tests/mci/test_query_routines.sh
+     tests/mci/test_query_routines_c.sh
+     tests/mci/test_restart.sh
+     tests/mci/test_restart2.sh
+     tests/mci/test_version.sh
+], [chmod a+x "$ac_file"])
+   AC_CONFIG_FILES([
+     src/pkgconfig/yac-mci-uninstalled.pc
+     src/pkgconfig/yac-mci.pc
+])])
+
+AS_VAR_IF([enable_utils], [yes],
+  [AC_CONFIG_FILES([
+     tests/utils/test_duplicate_stencils_parallel.sh
+     tests/utils/test_generate_cubed_sphere.sh
+     tests/utils/test_read_cube_csv.sh
+     tests/utils/test_read_fesom.sh
+     tests/utils/test_read_icon.sh
+     tests/utils/test_read_icon_parallel.sh
+     tests/utils/test_read_mpiom.sh
+     tests/utils/test_read_scrip.sh
+     tests/utils/test_read_scrip_parallel.sh
+     tests/utils/test_read_woa_data.sh
+], [chmod a+x "$ac_file"])
+   AC_CONFIG_FILES([
+     src/pkgconfig/yac-utils-uninstalled.pc
+     src/pkgconfig/yac-utils.pc
+])])
+
+AS_VAR_IF([enable_examples], [yes],
+  [AC_CONFIG_FILES([
+     examples/OASIS3_MCT_example/OASIS3_MCT_example.sh
+     examples/dynamic_config/dynamic_config.sh
+     examples/interpolation_benchmark/toy_scrip_GEN_MASK.sh
+     examples/interpolation_benchmark/toy_scrip_ICOS_ICOH.sh
+     examples/interpolation_benchmark/toy_scrip_NOGT_ICOH.sh
+     examples/interpolation_benchmark/toy_scrip_NOICOH.sh
+     examples/perf_toy/perf_toy.sh
+     examples/toy_atm_ocn/toy_atm_ocn.sh
+     examples/toy_callback/toy_callback.sh
+     examples/toy_coupling/toy_coupling.sh
+     examples/toy_dummy/dummy.sh
+     examples/toy_dummy/dummy_c.sh
+     examples/toy_icon_runoff/toy_icon_runoff.sh
+     examples/toy_multi/toy_multi.sh
+], [chmod a+x "$ac_file"])])
+
+AS_VAR_IF([enable_tools], [yes],
+  [AC_CONFIG_FILES([
+     tests/tools/test_weights2vtk.sh
+     tests/tools/test_debug_grid2vtk.sh
+], [chmod a+x "$ac_file"])])
+
+AS_VAR_IF([enable_deprecated], [yes],
+  [AC_CONFIG_FILES([
+     src/pkgconfig/yac.pc
+])])
+
+AS_VAR_IF([enable_python_bindings], [yes],
+  [AC_CONFIG_FILES([
+     tests/python/test_coroutines.sh
+     tests/python/test_interface.sh
+     tests/python/test_multithreading.sh
+     tests/python/test_nc2plot.sh
+     tests/python/test_nc2plot_parallel.sh
+     tests/python/test_noise2nc.sh
+     tests/python/test_noise2nc_parallel.sh
+     tests/python/test_noise2plot.sh
+     tests/python/test_noise2plot_parallel.sh
+], [chmod a+x "$ac_file"])
+   AC_CONFIG_FILES([
+     python/setup.py
+])])
 
 AC_CONFIG_FILES([
-        examples/OASIS3_MCT_example/OASIS3_MCT_example.sh
-        examples/toy_coupling/toy_coupling.sh
-        examples/toy_icon_runoff/toy_icon_runoff.sh
-        examples/toy_multi/toy_multi.sh
-        examples/perf_toy/perf_toy.sh
-        examples/toy_atm_ocn/toy_atm_ocn.sh
-        examples/toy_dummy/dummy_c.sh
-        examples/toy_dummy/dummy.sh
-        examples/toy_callback/toy_callback.sh
-        examples/dynamic_config/dynamic_config.sh
-        examples/interpolation_benchmark/toy_scrip_GEN_MASK.sh
-        examples/interpolation_benchmark/toy_scrip_ICOS_ICOH.sh
-        examples/interpolation_benchmark/toy_scrip_NOGT_ICOH.sh
-        examples/interpolation_benchmark/toy_scrip_NOICOH.sh
-        python/tests/seq_plot_noise_test.sh
-        python/tests/par_plot_noise_test.sh
-        python/tests/seq_noise2nc_test.sh
-        python/tests/par_noise2nc_test.sh
-        python/tests/seq_nc2plot_test.sh
-        python/tests/par_nc2plot_test.sh
-        python/tests/multithreading.sh
-        python/tests/test_interface.sh
-        tests/test_abort.sh
-        tests/test_component_config.sh
-        tests/test_couple_config.sh
-        tests/test_def_comps.sh
-        tests/test_def_datetime.sh
-        tests/test_def_grid.sh
-        tests/test_def_mask.sh
-        tests/test_def_points.sh
-        tests/test_dist_grid_pair_parallel.sh
-        tests/test_dummy_coupling.sh
-        tests/test_dummy_coupling2_c.sh
-        tests/test_dummy_coupling3.sh
-        tests/test_dummy_coupling3_c.sh
-        tests/test_dummy_coupling4_c.sh
-        tests/test_dummy_coupling5.sh
-        tests/test_dummy_coupling6.sh
-        tests/test_dummy_coupling6_c.sh
-        tests/test_dummy_coupling7.sh
-        tests/test_dummy_coupling7_c.sh
-        tests/test_dummy_coupling8_c.sh
-        tests/test_dummy_coupling9.sh
-        tests/test_group_comm.sh
-        tests/test_init_comm_final.sh
-        tests/test_init_final.sh
-        tests/test_mpi_handshake.sh
-        tests/test_mpi_handshake_c.sh
-        tests/test_instance_parallel1.sh
-        tests/test_instance_parallel2.sh
-        tests/test_instance_parallel3.sh
-        tests/test_instance_parallel4.sh
-        tests/test_interp_grid_parallel.sh
-        tests/test_interp_method_avg_parallel.sh
-        tests/test_interp_method_callback_parallel.sh
-        tests/test_interp_method_conserv_parallel.sh
-        tests/test_interp_method_creep_parallel.sh
-        tests/test_interp_method_file_parallel.sh
-        tests/test_interp_method_hcsbb_parallel.sh
-        tests/test_interp_method_nnn_parallel.sh
-        tests/test_interp_method_nnn_parallel2.sh
-        tests/test_interp_method_parallel.sh
-        tests/test_interp_method_rbf_parallel.sh
-        tests/test_interp_method_spmap_parallel.sh
-        tests/test_interp_weights_parallel.sh
-        tests/test_interpolation_exchange.sh
-        tests/test_interpolation_parallel1.sh
-        tests/test_interpolation_parallel2.sh
-        tests/test_interpolation_parallel3.sh
-        tests/test_interpolation_parallel4.sh
-        tests/test_interpolation_parallel5.sh
-        tests/test_interpolation_parallel6.sh
-        tests/test_mpi_error.sh
-        tests/test_proc_sphere_part_parallel.sh
-        tests/test_read_fesom.sh
-        tests/test_read_icon.sh
-        tests/test_read_icon_parallel.sh
-        tests/test_read_mpiom.sh
-        tests/test_read_scrip.sh
-        tests/test_read_woa_data.sh
-        tests/test_redirstdout.sh
-        tests/test_restart.sh
-        tests/test_restart2.sh
-        tests/test_version.sh
-        tests/test_weights2vtk.sh
-        tests/test_dynamic_config.sh
-        tests/test_query_routines.sh
-        tests/test_multithreading.sh
-        tests/test_io_config.sh
+  tests/core/test_basic_grid_parallel.sh
+  tests/core/test_dist_grid_pair_parallel.sh
+  tests/core/test_fortran_api.sh
+  tests/core/test_group_comm.sh
+  tests/core/test_interp_grid_parallel.sh
+  tests/core/test_interp_method_avg_parallel.sh
+  tests/core/test_interp_method_callback_parallel.sh
+  tests/core/test_interp_method_conserv_parallel.sh
+  tests/core/test_interp_method_creep_parallel.sh
+  tests/core/test_interp_method_file_parallel.sh
+  tests/core/test_interp_method_hcsbb_parallel.sh
+  tests/core/test_interp_method_ncc_parallel.sh
+  tests/core/test_interp_method_nnn_parallel.sh
+  tests/core/test_interp_method_parallel.sh
+  tests/core/test_interp_method_rbf_parallel.sh
+  tests/core/test_interp_method_spmap_parallel.sh
+  tests/core/test_interp_weights_parallel.sh
+  tests/core/test_interpolation_exchange.sh
+  tests/core/test_interpolation_parallel1.sh
+  tests/core/test_interpolation_parallel2.sh
+  tests/core/test_interpolation_parallel3.sh
+  tests/core/test_interpolation_parallel4.sh
+  tests/core/test_interpolation_parallel5.sh
+  tests/core/test_interpolation_parallel6.sh
+  tests/core/test_io_config.sh
+  tests/core/test_mpi_error.sh
+  tests/core/test_openmp.sh
+  tests/core/test_proc_sphere_part_parallel.sh
 ],
 [chmod a+x "$ac_file"])
 
 AC_CONFIG_FILES([
-        Makefile
-        clapack/Makefile
-        contrib/Makefile
-        examples/Makefile
-        mtime/Makefile
-        python/Makefile
-        python/setup.py
-        src/Makefile
-        src/pkgconfig/yac.pc
-        tests/Makefile
-])
-
-AC_CONFIG_LINKS(m4_foreach_w([file],
-        couple_config_test.yaml
-        coupling_test.yaml
-        coupling_test2.yaml
-        coupling_test3_comp_a_comp_b.yaml
-        coupling_test3_comp_a_comp_c.yaml
-        coupling_test3_comp_a_intra.yaml
-        coupling_test3_comp_b_comp_c.yaml
-        coupling_test3_comp_b_intra.yaml
-        coupling_test3_comp_c_intra.yaml
-        coupling_test3_default.yaml
-        coupling_test4.yaml
-        coupling_test5.yaml
-        coupling_test6.json
-        coupling_test6_local.yaml
-        coupling_test9.yaml
-        cube_10x10.csv
-        instance_test_1_1.yaml
-        instance_test_1_10.yaml
-        instance_test_1_2.yaml
-        instance_test_1_3.yaml
-        instance_test_1_4.yaml
-        instance_test_1_5.yaml
-        instance_test_1_6.yaml
-        instance_test_1_7.yaml
-        instance_test_1_8.yaml
-        instance_test_1_9.yaml
-        test_def_datetime.yaml
-, [tests/file:input/file ]))
-
-AC_CONFIG_LINKS([
-        examples/GR30_lsm.nc:grids/GR30_lsm.nc
-        examples/icon_grid_R02B03_G.nc:grids/icon_grid_R02B03_G.nc
-        examples/icon_grid_R02B03_O.nc:grids/icon_grid_R02B03_O.nc
-        python/yac.pyx:python/yac.pyx
-        tests/GR30_lsm.nc:grids/GR30_lsm.nc
-        tests/icon_grid_R02B00.nc:grids/icon_grid_R02B00.nc
-        tests/icon_grid_R02B02.nc:grids/icon_grid_R02B02.nc
-        tests/icon_grid_R02B03_G.nc:grids/icon_grid_R02B03_G.nc
+  Makefile
+  clapack/Makefile
+  examples/Makefile
+  grids/Makefile
+  mtime/Makefile
+  python/Makefile
+  src/Makefile
+  src/core/Makefile
+  src/mci/Makefile
+  src/pkgconfig/Makefile
+  src/pkgconfig/yac-core-uninstalled.pc
+  src/pkgconfig/yac-core.pc
+  src/utils/Makefile
+  tests/Makefile
+  tests/common/Makefile
+  tests/core/Makefile
+  tests/mci/Makefile
+  tests/python/Makefile
+  tests/tools/Makefile
+  tests/utils/Makefile
+  tools/Makefile
 ])
 
 AC_OUTPUT

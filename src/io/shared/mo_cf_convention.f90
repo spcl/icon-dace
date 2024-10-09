@@ -80,7 +80,7 @@ MODULE mo_cf_convention
   TYPE t_cf_global
     CHARACTER(len=128) :: title         = ''
     CHARACTER(len=128) :: institution   = ''
-    CHARACTER(len=128) :: source        = ''
+    CHARACTER(len=256) :: source        = ''
     CHARACTER(len=128) :: history       = ''
     CHARACTER(len=128) :: references    = ''
     CHARACTER(len=128) :: comment       = ''

@@ -1,13 +1,3 @@
-!
-! Preliminary read and time interpolation of greenhouse gases data
-!
-! This is  a clone of the respective ECHAM routine
-!
-! Time series of various greenhouse gases are read from
-! file bc_greenhouse_gases.nc (CO2, CH4, N2O, and CFC's).
-! Provides interpolation in time and conversion from volume mixing ratio
-! to mass mixing ratio of CO2, CH4, and N2O - not for CFC's!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Preliminary read and time interpolation of greenhouse gases data
+!
+! This is  a clone of the respective ECHAM routine
+!
+! Time series of various greenhouse gases are read from
+! file bc_greenhouse_gases.nc (CO2, CH4, N2O, and CFC's).
+! Provides interpolation in time and conversion from volume mixing ratio
+! to mass mixing ratio of CO2, CH4, and N2O - not for CFC's!
 
 MODULE mo_bc_greenhouse_gases
 

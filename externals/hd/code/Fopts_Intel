@@ -1,0 +1,87 @@
+#  change compiler, options and libraries according to your needs
+#
+#########
+# Intel (Mistral)
+#########
+#
+#
+# Translation of Compiler directives
+ifeq ($(COUP_OAS), yes)
+  FOAS = -DCOUP_OAS
+else
+###  FOAS = -DCOUP_OAS=.FALSE.
+##  FOAS = -DCOUP_OAS=0
+  FOAS = 
+endif
+ifeq ($(HD_5MIN), yes)
+  FHD5 = -DHD_5MIN
+else
+  FHD5 = 
+endif
+ifeq ($(NOMPI), yes)
+  FNOMPI = -DNOMPI
+else
+  FNOMPI =
+endif
+
+SPECFLAG = $(FOAS) $(FHD5) $(FNOMPI)
+
+MPIINC = -I/sw/rhel6-x64/intel/impi/5.1.2.150/compilers_and_libraries/linux/mpi/intel64/include  
+
+MPILIB = -L//sw/rhel6-x64/intel/impi/5.0.3.048/intel64/lib   
+
+
+OTHLIBS1 = $(MPILIB) 
+
+OTHLIBS2 = -I/sw/rhel6-x64/hdf5/hdf5-1.8.14-threadsafe-gcc48/include -I/sw/rhel6-x64/sys/libaec-0.3.2-gcc48/include -I/usr/include
+
+XML_LIB = -lxml2 -lpthread 
+XML_INCLUDE = /usr/include/libxml2
+
+NC_INCLUDE = -I/sw/rhel6-x64/netcdf/netcdf_fortran-4.4.2-intel14/include -I/sw/rhel6-x64/netcdf/netcdf_c-4.3.2-gcc48/include 
+
+NC_LIB = -L/sw/rhel6-x64/netcdf/netcdf_c-4.3.2-gcc48/lib -lnetcdf -L/sw/rhel6-x64/netcdf/netcdf_fortran-4.4.2-intel14/lib -lnetcdff -Wl,-rpath,/sw/rhel6-x64/netcdf/netcdf_fortran-4.4.2-intel14/lib -Wl,-rpath,/sw/rhel6-x64/netcdf/netcdf_c-4.3.2-gcc48/lib
+
+
+LIBS = $(NC_LIB)
+
+FLAGS = -cpp 
+INC =
+#
+FFLAGS = $(FLAGS) $(MPIINC) $(NC_INCLUDE) $(INC) $(SPECFLAG)
+
+LDFLAGS = $(FFLAGS) $(LIBS) $(OTHLIBS1) $(OTHLIBS2)
+
+#
+OTHERFLAGS = -D__STANDALONE -DSTANDALONE
+#
+
+# standard binary
+PROGRAM      = hd.exe
+
+# compiler, options and libraries
+#
+###F90          = nagfor $(MPIINC) $(NC_INCLUDE) -I$(SRCDIR) -I$(OBJDIR)
+F90          = mpiifort -I$(SRCDIR) -I$(OBJDIR)
+#
+#
+# *** Compiler flags used in file ObjDependencies: $(F90) $(COMFLG)
+###COMFLG       = $(FFLAGS) $(MPIINC)
+COMFLG       = -c $(FFLAGS) $(OTHERFLAGS)
+COMFLG1      = $(COMFLG)
+
+
+#
+#LDSEQ        = scalasca -instrument mpxlf95_r
+#LDSEQ         = vtfort -vt:verbose -vt:inst compinst -vt:fc mpxlf95_r
+LDSEQ        = mpiifort
+#
+#LDPAR         = vtfort -vt:verbose -vt:inst compinst -vt:fc mpxlf95_r
+LDPAR        = mpiifort 
+#
+# **** Linking program with $(LDPAR) $(LDFLG)
+LDFLG         = $(LDFLAGS)
+
+
+
+

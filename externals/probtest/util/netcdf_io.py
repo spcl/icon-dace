@@ -1,12 +1,17 @@
+"""
+This module provides a function to copy a NetCDF file while converting variable
+data types.
+"""
+
 import numpy as np
-from netCDF4 import Dataset
+from netCDF4 import Dataset  # pylint: disable=no-name-in-module
 
 from util.log_handler import logger
 
 
 def nc4_get_copy(name_in, name_out):
     din = Dataset(name_in, "r")
-    logger.info("creating netCDF4 file: {}".format(name_out))
+    logger.info("creating netCDF4 file: %s", name_out)
     d_out = Dataset(name_out, "w")
 
     # Copy dimensions

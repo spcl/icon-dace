@@ -32,28 +32,24 @@
 !___________________________________________________________________________________________________________
 MODULE mtime_calendar
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_char, c_null_char, c_ptr, c_associated, c_int64_t
-  USE mtime_c_bindings
-  USE mtime_error_handling
-  USE mtime_constants
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_calendar_str_len
+  USE mtime_c_bindings, ONLY: my_calendartostring
   !
   IMPLICIT NONE
   !
   PRIVATE
   !
   ENUM, BIND(c)
-    ENUMERATOR :: calendar_not_set    = 0   ! calendar is not defined yet
+    ENUMERATOR :: calendar_not_set = 0   ! calendar is not defined yet
     ENUMERATOR :: proleptic_gregorian = 1   ! proleptic Gregorian calendar
-    ENUMERATOR :: year_of_365_days    = 2   ! 365 day year without leap years
-    ENUMERATOR :: year_of_360_days    = 3   ! 360 day year with 30 day months
+    ENUMERATOR :: year_of_365_days = 2   ! 365 day year without leap years
+    ENUMERATOR :: year_of_360_days = 3   ! 360 day year with 30 day months
   END ENUM
   !
   PUBLIC :: calendar_not_set, proleptic_gregorian, year_of_365_days, year_of_360_days
-  PUBLIC :: setCalendar
-  PUBLIC :: resetCalendar
-  PUBLIC :: calendarType
   PUBLIC :: calendarToString
-  !
   !
 CONTAINS
   !
@@ -86,33 +82,31 @@ CONTAINS
   !! @param[out]       string      the calendar type verbose
   !! @param[out]       errno       optional, error message
   !!
-  SUBROUTINE calendarToString(string, errno) !TESTED-OK
+  RECURSIVE SUBROUTINE calendarToString(string, errno) !TESTED-OK
     CHARACTER(len=max_calendar_str_len), INTENT(out) :: string
     INTEGER :: i
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_calendartostring(string)
-    IF (.NOT. c_ASSOCIATED(c_pointer)) THEN
-      IF (PRESENT(errno)) errno = 0 * 100 + 4
+    IF (.NOT. C_ASSOCIATED(c_pointer)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
+    IF (PRESENT(errno)) errno = MERGE(0, 0*100 + 4, C_ASSOCIATED(c_pointer))
   END SUBROUTINE calendarToString
   !
 END MODULE mtime_calendar
 
-
 MODULE mtime_juliandelta
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int64_t, c_char, c_ptr, c_loc, &
-       &                                 c_associated, c_f_pointer
-  USE mtime_c_bindings
-  USE mtime_error_handling
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_char, c_f_pointer, c_int64_t, c_loc, c_ptr
+  USE mtime_c_bindings, ONLY: &
+    & juliandelta, my_deallocatejuliandelta, my_newjuliandelta
   !
   IMPLICIT NONE
   !
@@ -124,25 +118,24 @@ MODULE mtime_juliandelta
   !
 CONTAINS
   !
-  FUNCTION newJuliandelta(sign,day, ms, errno) RESULT(ret_juliandelta) !OK-TESTED.
+  RECURSIVE FUNCTION newJuliandelta(sign, day, ms, errno) RESULT(ret_juliandelta) !OK-TESTED.
     TYPE(juliandelta), POINTER :: ret_juliandelta
-    CHARACTER(c_char),  VALUE, INTENT(in) :: sign
+    CHARACTER(c_char), VALUE, INTENT(in) :: sign
     INTEGER(c_int64_t), INTENT(in) :: day
     INTEGER(c_int64_t), INTENT(in) :: ms
     TYPE(c_ptr)                    :: c_pointer
     INTEGER, OPTIONAL              :: errno
 
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_newjuliandelta(sign,day, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 1 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_juliandelta)
+    c_pointer = my_newjuliandelta(sign, day, ms)
+    IF (PRESENT(errno)) errno = MERGE(0, 1*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_juliandelta)
   END FUNCTION newJuliandelta
   !
   !>
   !! @brief destructor for a Julian delta
-  SUBROUTINE deallocateJuliandelta(my_juliandelta) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateJuliandelta(my_juliandelta) !OK-TESTED.
     TYPE(juliandelta), POINTER :: my_juliandelta
-    CALL my_deallocatejuliandelta(c_LOC(my_juliandelta))
+    CALL my_deallocatejuliandelta(C_LOC(my_juliandelta))
     my_juliandelta => NULL()
   END SUBROUTINE deallocateJuliandelta
   !
@@ -154,65 +147,69 @@ END MODULE mtime_juliandelta
 !___________________________________________________________________________________________________________
 MODULE mtime_julianday
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int64_t, c_char, c_null_char, c_ptr, &
-       &                                 c_loc, c_f_pointer, c_associated
-  USE mtime_c_bindings
-  USE mtime_error_handling
-  USE mtime_constants
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_f_pointer, c_int, c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_julianday_str_len
+  USE mtime_c_bindings, ONLY: &
+    & julianday, my_addjuliandeltatojulianday, my_comparejulianday, &
+    & my_deallocatejulianday, my_juliandaytostring, my_newjulianday, &
+    & my_replacejulianday, my_subtractjulianday
+  USE mtime_juliandelta
   !
   IMPLICIT NONE
   !
   PRIVATE
   !
+  PUBLIC :: julianday
   PUBLIC :: newJulianday
   PUBLIC :: deallocateJulianday
   PUBLIC :: juliandayToString
   PUBLIC :: ASSIGNMENT(=)
   PUBLIC :: OPERATOR(+)
-  PUBLIC :: OPERATOR(-)  
+  PUBLIC :: OPERATOR(-)
   PUBLIC :: OPERATOR(>)
   PUBLIC :: OPERATOR(<)
   PUBLIC :: OPERATOR(<=)
   PUBLIC :: OPERATOR(>=)
   PUBLIC :: OPERATOR(==)
-  PUBLIC :: OPERATOR(/=)  
+  PUBLIC :: OPERATOR(/=)
   !
-  INTERFACE ASSIGNMENT (=)
+  INTERFACE ASSIGNMENT(=)
     MODULE PROCEDURE replacejulianday
-  END INTERFACE ASSIGNMENT (=)
+  END INTERFACE ASSIGNMENT(=)
   !
-  INTERFACE OPERATOR (+)
+  INTERFACE OPERATOR(+)
     MODULE PROCEDURE addjuliandeltatojulianday
     MODULE PROCEDURE addjuliandaytojuliandelta
-  END INTERFACE OPERATOR (+)
+  END INTERFACE OPERATOR(+)
   !
-  INTERFACE OPERATOR (-)
-    MODULE PROCEDURE substractjuliandayfromjulianday
-  END INTERFACE OPERATOR (-)
+  INTERFACE OPERATOR(-)
+    MODULE PROCEDURE subtractjuliandayfromjulianday
+  END INTERFACE OPERATOR(-)
   !
-  INTERFACE OPERATOR (>)
+  INTERFACE OPERATOR(>)
     MODULE PROCEDURE julianday_gt
-  END INTERFACE OPERATOR (>)
+  END INTERFACE OPERATOR(>)
   !
-  INTERFACE OPERATOR (<)
+  INTERFACE OPERATOR(<)
     MODULE PROCEDURE julianday_lt
-  END INTERFACE OPERATOR (<)
+  END INTERFACE OPERATOR(<)
   !
-  INTERFACE OPERATOR (<=)
+  INTERFACE OPERATOR(<=)
     MODULE PROCEDURE julianday_lt_or_eq
-  END INTERFACE OPERATOR (<=)
+  END INTERFACE OPERATOR(<=)
   !
-  INTERFACE OPERATOR (>=)
+  INTERFACE OPERATOR(>=)
     MODULE PROCEDURE julianday_gt_or_eq
-  END INTERFACE OPERATOR (>=)
+  END INTERFACE OPERATOR(>=)
   !
-  INTERFACE OPERATOR (==)
+  INTERFACE OPERATOR(==)
     MODULE PROCEDURE julianday_eq
-  END INTERFACE OPERATOR (==)
+  END INTERFACE OPERATOR(==)
   !
-  INTERFACE OPERATOR (/=)
+  INTERFACE OPERATOR(/=)
     MODULE PROCEDURE julianday_ne
-  END INTERFACE OPERATOR (/=)
+  END INTERFACE OPERATOR(/=)
   !
 CONTAINS
   !
@@ -223,34 +220,33 @@ CONTAINS
   !! @param[in] ms             an integer denoting the actual milli seconds of a day
   !! @param[out]       errno       optional, error message
   !! @return    ret_julianday  a pointer of type(julianday)
-  FUNCTION newJulianday(day, ms, errno) RESULT(ret_julianday) !OK-TESTED.
+  RECURSIVE FUNCTION newJulianday(day, ms, errno) RESULT(ret_julianday) !OK-TESTED.
     TYPE(julianday), POINTER :: ret_julianday
     INTEGER(c_int64_t), INTENT(in) :: day
     INTEGER(c_int64_t), INTENT(in) :: ms
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newjulianday(day, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 1 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_julianday)
+    IF (PRESENT(errno)) errno = MERGE(0, 1*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_julianday)
   END FUNCTION newJulianday
   !
   !>
   !! @brief destructor for a Julian date
   !!
   !! @param     my_julianday   a pointer of type(julianday)
-  SUBROUTINE deallocateJulianday(my_julianday) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateJulianday(my_julianday) !OK-TESTED.
     TYPE(julianday), POINTER :: my_julianday
-    CALL my_deallocatejulianday(c_LOC(my_julianday))
+    CALL my_deallocatejulianday(C_LOC(my_julianday))
     my_julianday => NULL()
   END SUBROUTINE deallocateJulianday
   !
   ! NOTE: Do not call the function using replacejulianday(.,.) directly; Use overloaded '=' instead as in "dest = src"
-  SUBROUTINE replacejulianday(dest, src) !OK-TESTED.
+  RECURSIVE SUBROUTINE replacejulianday(dest, src) !OK-TESTED.
     TYPE(julianday), TARGET, INTENT(inout) :: dest
     TYPE(julianday), TARGET, INTENT(in) :: src
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_replacejulianday(c_LOC(src), c_LOC(dest))
+    dummy_ptr = my_replacejulianday(C_LOC(src), C_LOC(dest))
   END SUBROUTINE replacejulianday
   !
   !>
@@ -259,123 +255,133 @@ CONTAINS
   !! @param[in]  my_julianday   a pointer to type(julianday). The Julian day to be converted to a string
   !! @param[out] string         the Julian day verbose
   !! @param[out]       errno       optional, error message
-  SUBROUTINE juliandayToString(my_julianday, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE juliandayToString(my_julianday, string, errno) !OK-TESTED.
     TYPE(julianday), POINTER :: my_julianday
     CHARACTER(len=max_julianday_str_len), INTENT(out) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_juliandaytostring(c_LOC(my_julianday), string)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 1 * 100 + 3
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_juliandaytostring(C_LOC(my_julianday), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 1*100 + 3, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
   END SUBROUTINE juliandayToString
   !
-  FUNCTION addJuliandeltaToJulianday(op1, op2) RESULT(ret)
+  RECURSIVE FUNCTION addJuliandeltaToJulianday(op1, op2) RESULT(ret)
     TYPE(julianday), TARGET :: ret
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(juliandelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addjuliandeltatojulianday(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = julianday(0, 0)
+    dummy_ptr = my_addjuliandeltatojulianday(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addJuliandeltaToJulianday
   !
-  FUNCTION addJuliandayToJuliandelta(op2, op1) RESULT(ret)
+  RECURSIVE FUNCTION addJuliandayToJuliandelta(op2, op1) RESULT(ret)
     TYPE(julianday), TARGET :: ret
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(juliandelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addjuliandeltatojulianday(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = julianday(0, 0)
+    dummy_ptr = my_addjuliandeltatojulianday(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addJuliandayToJuliandelta
   !
-  FUNCTION substractJuliandayFromJulianday(op1, op2) RESULT(ret)
+  RECURSIVE FUNCTION subtractJuliandayFromJulianday(op1, op2) RESULT(ret)
     TYPE(juliandelta), TARGET :: ret
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_substractjulianday(c_LOC(op1), c_LOC(op2), c_LOC(ret))
-  END FUNCTION substractJuliandayFromJulianday
+    ret = juliandelta("+", 0, 0)
+    dummy_ptr = my_subtractjulianday(C_LOC(op1), C_LOC(op2), C_LOC(ret))
+  END FUNCTION subtractJuliandayFromJulianday
   !
-  FUNCTION julianday_gt(op1, op2) RESULT(gt)
+#ifndef MTIME_PURE_IF_C_LOC_IS_PURE
+#  if defined(__NEC__) || (defined(NAGFOR) &&  __NAG_COMPILER_RELEASE <= 71)
+!    NEC and older versions of NAG do not consider C_LOC as PURE
+#    define MTIME_PURE_IF_C_LOC_IS_PURE
+#  else
+#    define MTIME_PURE_IF_C_LOC_IS_PURE PURE
+#  endif
+#endif
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_gt(op1, op2) RESULT(gt)
     LOGICAL :: gt
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF (ret == 1) THEN
       gt = .TRUE.
     ELSE
       gt = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_gt
   !
-  FUNCTION julianday_lt(op1, op2) RESULT(lt)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_lt(op1, op2) RESULT(lt)
     LOGICAL :: lt
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF (ret == -1) THEN
       lt = .TRUE.
     ELSE
       lt = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_lt
   !
-  FUNCTION julianday_lt_or_eq(op1, op2) RESULT(lt_or_eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_lt_or_eq(op1, op2) RESULT(lt_or_eq)
     LOGICAL :: lt_or_eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF ((ret == 0) .OR. (ret == -1)) THEN
       lt_or_eq = .TRUE.
     ELSE
       lt_or_eq = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_lt_or_eq
   !
-  FUNCTION julianday_gt_or_eq(op1, op2) RESULT(gt_or_eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_gt_or_eq(op1, op2) RESULT(gt_or_eq)
     LOGICAL :: gt_or_eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF ((ret == 0) .OR. (ret == 1)) THEN
       gt_or_eq = .TRUE.
     ELSE
       gt_or_eq = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_gt_or_eq
   !
-  FUNCTION julianday_eq(op1, op2) RESULT(eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_eq(op1, op2) RESULT(eq)
     LOGICAL :: eq
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF (ret == 0) THEN
       eq = .TRUE.
     ELSE
       eq = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_eq
   !
-  FUNCTION julianday_ne(op1, op2) RESULT(ne)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION julianday_ne(op1, op2) RESULT(ne)
     LOGICAL :: ne
     TYPE(julianday), TARGET, INTENT(in) :: op1
     TYPE(julianday), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparejulianday(c_LOC(op1), c_LOC(op2))
+    ret = my_comparejulianday(C_LOC(op1), C_LOC(op2))
     IF (ret /= 0) THEN
       ne = .TRUE.
     ELSE
       ne = .FALSE.
-    ENDIF
+    END IF
   END FUNCTION julianday_ne
-  !  
+  !
 END MODULE mtime_julianday
 !>
 !! @brief Date and some operations supported on Date.
@@ -385,23 +391,23 @@ END MODULE mtime_julianday
 !___________________________________________________________________________________________________________
 MODULE mtime_date
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_int64_t, c_char, c_ptr, c_null_char, &
-                                       & c_loc, c_f_pointer, c_associated
-  USE mtime_c_bindings
-  USE mtime_constants
-  USE mtime_error_handling
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_f_pointer, c_int, c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_date_str_len
+  USE mtime_c_bindings, ONLY: &
+    & date, my_constructandcopydate, my_datetoposixstring, my_datetostring, &
+    & my_deallocatedate, my_newdatefromstring, my_newrawdate, my_replacedate
   !
   IMPLICIT NONE
   !
   PRIVATE
   !
+  PUBLIC :: date
   PUBLIC :: newdate
   PUBLIC :: deallocateDate
   PUBLIC :: replaceDate
   PUBLIC :: dateToString
   PUBLIC :: dateToPosixString
-  !
-  !
   !
   INTERFACE newdate
     MODULE PROCEDURE newdatefromstring
@@ -418,15 +424,14 @@ CONTAINS
   !! @param[in] string         an ISO 8601 conforming date string
   !! @param[out]       errno       optional, error message
   !! @return    ret_date       a pointer of type(date)
-  FUNCTION newdatefromstring(string,errno) RESULT(ret_date)  !OK-TESTED.
+  RECURSIVE FUNCTION newdatefromstring(string, errno) RESULT(ret_date)  !OK-TESTED.
     TYPE(date), POINTER :: ret_date
     CHARACTER(len=*), INTENT(in) :: string
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL :: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newdatefromstring(TRIM(ADJUSTL(string))//c_null_char)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 2 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_date)
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_date)
   END FUNCTION newdatefromstring
   !>
   !! @brief construct a new date from raw date
@@ -436,16 +441,15 @@ CONTAINS
   !! @param[in] day            the day
   !! @param[out]       errno       optional, error message
   !! @return    ret_date       a pointer of type(date)
-  FUNCTION newdatefromraw_yi8(year, month, day, errno) RESULT(ret_date) !OK-TESTED.
+  RECURSIVE FUNCTION newdatefromraw_yi8(year, month, day, errno) RESULT(ret_date) !OK-TESTED.
     TYPE(date), POINTER :: ret_date
     INTEGER(c_int64_t), INTENT(in) :: year
     INTEGER(c_int), INTENT(in) :: month, day
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newrawdate(year, month, day)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 2 * 100 + 2
-    CALL c_f_POINTER(c_pointer, ret_date)
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 2, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_date)
   END FUNCTION newdatefromraw_yi8
   !>
   !! @brief construct a new date from raw date
@@ -455,15 +459,14 @@ CONTAINS
   !! @param[in] day            the day
   !! @param[out]       errno       optional, error message
   !! @return    ret_date       a pointer of type(date)
-  FUNCTION newdatefromraw(year, month, day, errno) RESULT(ret_date) !OK-TESTED.
+  RECURSIVE FUNCTION newdatefromraw(year, month, day, errno) RESULT(ret_date) !OK-TESTED.
     TYPE(date), POINTER :: ret_date
     INTEGER(c_int), INTENT(in) :: year, month, day
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_newrawdate(INT(year,c_int64_t), month, day)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 2 * 100 + 3
-    CALL c_f_POINTER(c_pointer, ret_date)
+    c_pointer = my_newrawdate(INT(year, c_int64_t), month, day)
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 3, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_date)
   END FUNCTION newdatefromraw
   !>
   !! @brief construct a new date from an existing by construct and copy
@@ -471,23 +474,22 @@ CONTAINS
   !! @param[in] src            a pointer of type(date)
   !! @param[out]       errno       optional, error message
   !! @return    ret_date       a pointer of type(date)
-  FUNCTION newdatefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED
+  RECURSIVE FUNCTION newdatefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED
     TYPE(date), POINTER :: dest
     TYPE(date), TARGET :: src
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_constructandcopydate(c_LOC(src))
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 2 * 100 + 4
-    CALL c_f_POINTER(c_pointer, dest)
+    c_pointer = my_constructandcopydate(C_LOC(src))
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 4, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, dest)
   END FUNCTION newdatefromconstructandcopy
   !>
   !! @brief destructor for a date
   !!
   !! @param[in] my_date        a pointer of type(date)
-  SUBROUTINE deallocateDate(my_date) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateDate(my_date) !OK-TESTED.
     TYPE(date), POINTER :: my_date
-    CALL my_deallocatedate(c_LOC(my_date))
+    CALL my_deallocatedate(C_LOC(my_date))
     my_date => NULL()
   END SUBROUTINE deallocateDate
   !>
@@ -496,14 +498,13 @@ CONTAINS
   !! @param[in]  src            a pointer of type(date)
   !! @param[out] dest           a pointer of type(date)
   !! @param[out] errno          optional, error message
-  SUBROUTINE replaceDate(dest, src, errno)  !OK-TESTED.
+  RECURSIVE SUBROUTINE replaceDate(dest, src, errno)  !OK-TESTED.
     TYPE(date), TARGET, INTENT(inout) :: dest
     TYPE(date), TARGET, INTENT(in) :: src
     TYPE(c_ptr) :: dummy_ptr
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_replacedate(c_LOC(src), c_LOC(dest))
-    IF ((.NOT. c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 2 * 100 + 6
+    dummy_ptr = my_replacedate(C_LOC(src), C_LOC(dest))
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 6, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE replaceDate
   !>
   !! @brief Get Date as an extended string.
@@ -518,16 +519,15 @@ CONTAINS
   !!
   !! @param[out]  errno
   !!         Optional, error message
-  SUBROUTINE dateToString(my_date, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE dateToString(my_date, string, errno) !OK-TESTED.
     TYPE(date), POINTER :: my_date
     CHARACTER(len=max_date_str_len) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_datetostring(c_LOC(my_date), string)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 2 * 100 + 7
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_datetostring(C_LOC(my_date), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 7, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -547,17 +547,16 @@ CONTAINS
   !!         Desired Format string. CRITICAL: Inappropriate fmt string will cause dump.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE dateToPosixString(my_date, string, fmtstr, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE dateToPosixString(my_date, string, fmtstr, errno) !OK-TESTED.
     TYPE(date), POINTER :: my_date
     CHARACTER(len=max_date_str_len) :: string
     CHARACTER(len=*) :: fmtstr
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_datetoposixstring(c_LOC(my_date), string, fmtstr)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 2 * 100 + 8
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_datetoposixstring(C_LOC(my_date), string, fmtstr)
+    IF (PRESENT(errno)) errno = MERGE(0, 2*100 + 8, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -575,22 +574,24 @@ END MODULE mtime_date
 !___________________________________________________________________________________________________________
 MODULE mtime_time
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_char, c_ptr, c_null_char, &
-       &                                 c_loc, c_f_pointer, c_associated
-  USE mtime_constants
-  USE mtime_c_bindings
-  USE mtime_error_handling
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_f_pointer, c_int, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_time_str_len
+  USE mtime_c_bindings, ONLY: &
+    & my_constructandcopytime, my_deallocatetime, my_newrawtime, &
+    & my_newtimefromstring, my_replacetime, my_timetoposixstring, &
+    & my_timetostring, time
   !
   IMPLICIT NONE
   !
   PRIVATE
   !
+  PUBLIC :: time
   PUBLIC :: newtime
   PUBLIC :: deallocateTime
   PUBLIC :: replaceTime
   PUBLIC :: timeToString
   PUBLIC :: timeToPosixString
-  !
   !
   INTERFACE newtime
     MODULE PROCEDURE newtimefromstring
@@ -601,48 +602,45 @@ MODULE mtime_time
 CONTAINS
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimefromstring(string, errno) RESULT(ret_time) !OK-TESTED.
+  RECURSIVE FUNCTION newtimefromstring(string, errno) RESULT(ret_time) !OK-TESTED.
     TYPE(time), POINTER :: ret_time
     CHARACTER(len=*), INTENT(in) :: string
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newtimefromstring(TRIM(ADJUSTL(string))//c_null_char)
-    IF ((.NOT.c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 3 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_time)
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_time)
   END FUNCTION newtimefromstring
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimefromraw(hour, minute, second, ms, errno) RESULT(ret_time) !OK-TESTED.
+  RECURSIVE FUNCTION newtimefromraw(hour, minute, second, ms, errno) RESULT(ret_time) !OK-TESTED.
     TYPE(time), POINTER :: ret_time
     INTEGER(c_int), INTENT(in) :: hour, minute, second, ms
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newrawtime(hour, minute, second, ms)
-    IF ((.NOT.c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 3 * 100 + 2
-    CALL c_f_POINTER(c_pointer, ret_time)
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 2, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_time)
   END FUNCTION newtimefromraw
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
+  RECURSIVE FUNCTION newtimefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
     TYPE(time), POINTER :: dest
     TYPE(time), TARGET :: src
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_constructandcopytime(c_LOC(src))
-    IF ((.NOT.c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 3 * 100 + 3
-    CALL c_f_POINTER(c_pointer, dest)
+    c_pointer = my_constructandcopytime(C_LOC(src))
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 3, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, dest)
   END FUNCTION newtimefromconstructandcopy
   !>
   !! @brief Destructor of Time.
   !!
   !! @param  my_time
   !!         A pointer to type time. my_time is deallocated.
-  SUBROUTINE deallocateTime(my_time) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateTime(my_time) !OK-TESTED.
     TYPE(time), POINTER :: my_time
-    CALL my_deallocatetime(c_LOC(my_time))
+    CALL my_deallocatetime(C_LOC(my_time))
     my_time => NULL()
   END SUBROUTINE deallocateTime
   !>
@@ -657,14 +655,13 @@ CONTAINS
   !!      A pointer to type time. Copy "TO" time object.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE replaceTime(dest,src,errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE replaceTime(dest, src, errno) !OK-TESTED.
     TYPE(time), TARGET, INTENT(in) :: src
     TYPE(time), TARGET, INTENT(inout) :: dest
     TYPE(c_ptr) :: dummy_ptr
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_replacetime(c_LOC(src), c_LOC(dest))
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 3 * 100 + 5
+    dummy_ptr = my_replacetime(C_LOC(src), C_LOC(dest))
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 5, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE replaceTime
   !>
   !! @brief Get time as an extended string.
@@ -678,16 +675,15 @@ CONTAINS
   !!         String where time is to be written.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE timeToString(my_time, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE timeToString(my_time, string, errno) !OK-TESTED.
     TYPE(time), POINTER :: my_time
     CHARACTER(len=max_time_str_len) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_timetostring(c_LOC(my_time), string)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 3 * 100 + 6
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_timetostring(C_LOC(my_time), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 6, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -705,17 +701,16 @@ CONTAINS
   !!         Desired Format string. CRITICAL: Inappropriate fmt string will cause dump.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE timeToPosixString(my_time, string, fmtstr, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE timeToPosixString(my_time, string, fmtstr, errno) !OK-TESTED.
     TYPE(time), POINTER :: my_time
     CHARACTER(len=max_time_str_len) :: string
     CHARACTER(len=32) :: fmtstr
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_timetoposixstring(c_LOC(my_time), string, fmtstr)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 3 * 100 + 7
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_timetoposixstring(C_LOC(my_time), string, fmtstr)
+    IF (PRESENT(errno)) errno = MERGE(0, 3*100 + 7, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -733,20 +728,24 @@ END MODULE mtime_time
 !___________________________________________________________________________________________________________
 MODULE mtime_datetime
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_int64_t, c_char, c_null_char, c_ptr, &
-       &                                 c_loc, c_f_pointer, c_associated
-  USE mtime_constants
-  USE mtime_c_bindings
-  USE mtime_error_handling
-  !
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_f_pointer, c_int, c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_datetime_str_len
+  USE mtime_c_bindings, ONLY: &
+    & datetime, my_comparedatetime, my_constructandcopydatetime, &
+    & my_datetimetoposixstring, my_datetimetostring, my_deallocatedatetime, &
+    & my_getdatetimefromjulianday, my_getdayofyearfromdatetime, &
+    & my_getjuliandayfromdatetime, my_getnoofdaysinmonthdatetime, &
+    & my_getnoofdaysinyeardatetime, my_getnoofsecondselapsedindaydatetime, &
+    & my_getnoofsecondselapsedinmonthdatetime, my_newdatetime, &
+    & my_newrawdatetime, my_replacedatetime
   USE mtime_julianday
-  USE mtime_date
-  USE mtime_time
   !
   IMPLICIT NONE
   !
   PRIVATE
   !
+  PUBLIC :: datetime
   PUBLIC :: newDatetime
   PUBLIC :: deallocateDatetime
   PUBLIC :: datetimeToString
@@ -768,117 +767,109 @@ MODULE mtime_datetime
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(/=)
   !
-
-  !
   INTERFACE newDatetime
     MODULE PROCEDURE newdatetimefromstring
     MODULE PROCEDURE newdatetimefromraw
     MODULE PROCEDURE newdatetimefromraw_yi8
     MODULE PROCEDURE newdatetimefromconstructandcopy
   END INTERFACE newDatetime
-
   !
   INTERFACE min
-     MODULE PROCEDURE datetime_min
+    MODULE PROCEDURE datetime_min
   END INTERFACE min
   !
   INTERFACE max
-     MODULE PROCEDURE datetime_max
+    MODULE PROCEDURE datetime_max
   END INTERFACE max
   !
-  INTERFACE ASSIGNMENT (=)
+  INTERFACE ASSIGNMENT(=)
     MODULE PROCEDURE replacedatetime
-  END INTERFACE ASSIGNMENT (=)
+  END INTERFACE ASSIGNMENT(=)
   !
-  INTERFACE OPERATOR (>)
+  INTERFACE OPERATOR(>)
     MODULE PROCEDURE datetime_gt
-  END INTERFACE OPERATOR (>)
+  END INTERFACE OPERATOR(>)
   !
-  INTERFACE OPERATOR (<)
+  INTERFACE OPERATOR(<)
     MODULE PROCEDURE datetime_lt
-  END INTERFACE OPERATOR (<)
+  END INTERFACE OPERATOR(<)
   !
-  INTERFACE OPERATOR (<=)
+  INTERFACE OPERATOR(<=)
     MODULE PROCEDURE datetime_lt_or_eq
-  END INTERFACE OPERATOR (<=)
+  END INTERFACE OPERATOR(<=)
   !
-  INTERFACE OPERATOR (>=)
+  INTERFACE OPERATOR(>=)
     MODULE PROCEDURE datetime_gt_or_eq
-  END INTERFACE OPERATOR (>=)
+  END INTERFACE OPERATOR(>=)
   !
-  INTERFACE OPERATOR (==)
+  INTERFACE OPERATOR(==)
     MODULE PROCEDURE datetime_eq
-  END INTERFACE OPERATOR (==)
+  END INTERFACE OPERATOR(==)
   !
-  INTERFACE OPERATOR (/=)
+  INTERFACE OPERATOR(/=)
     MODULE PROCEDURE datetime_ne
-  END INTERFACE OPERATOR (/=)
+  END INTERFACE OPERATOR(/=)
   !
 CONTAINS
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newdatetimefromstring(string, errno) RESULT(ret_datetime) !OK-TESTED
+  RECURSIVE FUNCTION newdatetimefromstring(string, errno) RESULT(ret_datetime) !OK-TESTED
     TYPE(datetime), POINTER :: ret_datetime
     CHARACTER(len=*), INTENT(in) :: string
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newdatetime(TRIM(ADJUSTL(string))//c_null_char)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 4 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_datetime)
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_datetime)
   END FUNCTION newdatetimefromstring
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newdatetimefromraw_yi8(year, month, day, hour, minute, second, ms, errno) RESULT(ret_datetime) !OK-TESTED
+  RECURSIVE FUNCTION newdatetimefromraw_yi8(year, month, day, hour, minute, second, ms, errno) RESULT(ret_datetime) !OK-TESTED
     TYPE(datetime), POINTER :: ret_datetime
     INTEGER(c_int64_t), INTENT(in) :: year
     INTEGER(c_int), INTENT(in) :: month, day, hour, minute, second, ms
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_pointer = my_newrawdatetime(year, month, day, hour, minute, second, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 4 * 100 + 2
-    CALL c_f_POINTER(c_pointer, ret_datetime)
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 2, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_datetime)
   END FUNCTION newdatetimefromraw_yi8
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newdatetimefromraw(year, month, day, hour, minute, second, ms, errno) RESULT(ret_datetime) !OK-TESTED
+  RECURSIVE FUNCTION newdatetimefromraw(year, month, day, hour, minute, second, ms, errno) RESULT(ret_datetime) !OK-TESTED
     TYPE(datetime), POINTER :: ret_datetime
     INTEGER(c_int), INTENT(in) :: year, month, day, hour, minute, second, ms
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_newrawdatetime(INT(year,c_int64_t), month, day, hour, minute, second, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 4 * 100 + 3
-    CALL c_f_POINTER(c_pointer, ret_datetime)
+    c_pointer = my_newrawdatetime(INT(year, c_int64_t), month, day, hour, minute, second, ms)
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 3, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_datetime)
   END FUNCTION newdatetimefromraw
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newdatetimefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
+  RECURSIVE FUNCTION newdatetimefromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
     TYPE(datetime), POINTER :: dest
     TYPE(datetime), TARGET :: src
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_constructandcopydatetime(c_LOC(src))
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 4 * 100 + 4
-    CALL c_f_POINTER(c_pointer, dest)
+    c_pointer = my_constructandcopydatetime(C_LOC(src))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 4, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, dest)
   END FUNCTION newdatetimefromconstructandcopy
-
 
   ! @return Minimum of two date time. In case of equality we return @p a.
   !
   ! @note This function does not return a copy of one of the arguments
   ! but returns only the corresponding result point to avoid
   ! unnecessary deallocate calls.
-  FUNCTION datetime_min(a,b) RESULT(res)
+  RECURSIVE FUNCTION datetime_min(a, b) RESULT(res)
     TYPE(datetime), POINTER :: res
-    TYPE(datetime), POINTER :: a,b
+    TYPE(datetime), POINTER :: a, b
 
     IF (a > b) THEN
-       res => b
+      res => b
     ELSE
-       res => a
+      res => a
     END IF
   END FUNCTION datetime_min
 
@@ -887,14 +878,14 @@ CONTAINS
   ! @note This function does not return a copy of one of the arguments
   ! but returns only the corresponding result point to avoid
   ! unnecessary deallocate calls.
-  FUNCTION datetime_max(a,b) RESULT(res)
+  RECURSIVE FUNCTION datetime_max(a, b) RESULT(res)
     TYPE(datetime), POINTER :: res
-    TYPE(datetime), POINTER :: a,b
+    TYPE(datetime), POINTER :: a, b
 
     IF (a < b) THEN
-       res => b
+      res => b
     ELSE
-       res => a
+      res => a
     END IF
   END FUNCTION datetime_max
 
@@ -903,10 +894,10 @@ CONTAINS
   !!
   !! @param  my_datetime
   !!         A pointer to type datetime. my_datetime is deallocated.
-  SUBROUTINE deallocateDatetime(my_datetime) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateDatetime(my_datetime) !OK-TESTED.
     TYPE(datetime), POINTER :: my_datetime
-    CALL my_deallocatedatetime(c_LOC(my_datetime))
-    NULLIFY(my_datetime)
+    CALL my_deallocatedatetime(C_LOC(my_datetime))
+    NULLIFY (my_datetime)
   END SUBROUTINE deallocateDatetime
   !>
   !! @brief Get DateTime as a string.
@@ -920,23 +911,22 @@ CONTAINS
   !!         String where datetime is to be written.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE datetimeToString(my_datetime, string, errno) !OK-TESTED
+  RECURSIVE SUBROUTINE datetimeToString(my_datetime, string, errno) !OK-TESTED
     TYPE(datetime), TARGET, INTENT(in) :: my_datetime
     CHARACTER(len=max_datetime_str_len) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_datetimetostring(c_LOC(my_datetime), string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 4 * 100 + 6
-      string ='<null>'
+    dummy_ptr = my_datetimetostring(C_LOC(my_datetime), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 6, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
+      string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE datetimeToString
   !>
   !! @brief Get DateTime in 'struct tm' format and return as a string.
@@ -953,106 +943,81 @@ CONTAINS
   !!         Desired Format string. CRITICAL: Inappropriate fmt string will cause dump.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE datetimeToPosixString(my_datetime, string, fmtstr, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE datetimeToPosixString(my_datetime, string, fmtstr, errno) !OK-TESTED.
     TYPE(datetime), TARGET, INTENT(in) :: my_datetime
     CHARACTER(len=max_datetime_str_len) :: string
     CHARACTER(len=*) :: fmtstr
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_datetimetoposixstring(c_LOC(my_datetime), string, fmtstr)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 4 * 100 + 7
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_datetimetoposixstring(C_LOC(my_datetime), string, fmtstr)
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 7, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
   END SUBROUTINE datetimeToPosixString
   !
   ! NOTE: Do not call the function using replacedatetime(.,.) directly; Use overloaded '=' instead as in "dest = src"
-  SUBROUTINE replacedatetime(dest, src) !OK-TESTED.
+  RECURSIVE SUBROUTINE replacedatetime(dest, src) !OK-TESTED.
     TYPE(datetime), TARGET, INTENT(inout) :: dest
     TYPE(datetime), TARGET, INTENT(in) :: src
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_replacedatetime(c_LOC(src), c_LOC(dest))
+    dummy_ptr = my_replacedatetime(C_LOC(src), C_LOC(dest))
   END SUBROUTINE replacedatetime
   !
-  FUNCTION datetime_gt(op1, op2) RESULT(gt) !OK-TESTED.
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_gt(op1, op2) RESULT(gt) !OK-TESTED.
     LOGICAL :: gt
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF (ret == 1) THEN
-      gt = .TRUE.
-    ELSE
-      gt = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    gt = (ret == 1_c_int)
   END FUNCTION datetime_gt
   !
-  FUNCTION datetime_lt(op1, op2) RESULT(lt) !OK-TESTED.
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_lt(op1, op2) RESULT(lt) !OK-TESTED.
     LOGICAL :: lt
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF (ret == -1) THEN
-      lt = .TRUE.
-    ELSE
-      lt = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    lt = (ret == -1_c_int)
   END FUNCTION datetime_lt
   !
-  FUNCTION datetime_lt_or_eq(op1, op2) RESULT(lt_or_eq) !OK-TESTED.
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_lt_or_eq(op1, op2) RESULT(lt_or_eq) !OK-TESTED.
     LOGICAL :: lt_or_eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF ((ret == 0) .OR. (ret == -1)) THEN
-      lt_or_eq = .TRUE.
-    ELSE
-      lt_or_eq = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    lt_or_eq = (ret == 0_c_int) .OR. (ret == -1_c_int)
   END FUNCTION datetime_lt_or_eq
   !
-  FUNCTION datetime_gt_or_eq(op1, op2) RESULT(gt_or_eq) !OK-TESTED
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_gt_or_eq(op1, op2) RESULT(gt_or_eq) !OK-TESTED
     LOGICAL :: gt_or_eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF ((ret == 0) .OR. (ret == 1)) THEN
-      gt_or_eq = .TRUE.
-    ELSE
-      gt_or_eq = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    gt_or_eq = (ret == 0_c_int) .OR. (ret == 1_c_int)
   END FUNCTION datetime_gt_or_eq
   !
-  FUNCTION datetime_eq(op1, op2) RESULT(eq) !OK-TESTED.
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_eq(op1, op2) RESULT(eq) !OK-TESTED.
     LOGICAL :: eq
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF (ret == 0) THEN
-      eq = .TRUE.
-    ELSE
-      eq = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    eq = ret == 0_c_int
   END FUNCTION datetime_eq
   !
-  FUNCTION datetime_ne(op1, op2) RESULT(ne) !OK-TESTED.
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION datetime_ne(op1, op2) RESULT(ne) !OK-TESTED.
     LOGICAL :: ne
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(datetime), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparedatetime(c_LOC(op1), c_LOC(op2))
-    IF (ret /= 0) THEN
-      ne = .TRUE.
-    ELSE
-      ne = .FALSE.
-    ENDIF
+    ret = my_comparedatetime(C_LOC(op1), C_LOC(op2))
+    ne = ret /= 0_c_int
   END FUNCTION datetime_ne
   !>
   !! @brief Get nod (number of Days) in the month of DateTime.
@@ -1070,13 +1035,12 @@ CONTAINS
   !!         Integer value of nod. The value depends on the month and the calendar type. Zero indicates error.
   !!
   !! @param[out]       errno       optional, error message
-  FUNCTION getNoOfDaysInMonthDateTime(dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getNoOfDaysInMonthDateTime(dt, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     INTEGER(c_int) :: getNoOfDaysInMonthDateTime
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getNoOfDaysInMonthDateTime = my_getnoofdaysinmonthdatetime(c_LOC(dt))
-    IF (getNoOfDaysInMonthDateTime == 0 .AND. PRESENT(errno)) errno = 4 * 100 + 15
+    getNoOfDaysInMonthDateTime = my_getnoofdaysinmonthdatetime(C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 15, getNoOfDaysInMonthDateTime /= 0)
   END FUNCTION getNoOfDaysInMonthDateTime
   !>
   !! @brief Get number of days in the Year of DateTime.
@@ -1093,13 +1057,12 @@ CONTAINS
   !!         Integer value of nod. The value depends on the year and the calendar type. Zero indicates error.
   !!
   !! @param[out]       errno       optional, error message
-  FUNCTION getNoOfDaysInYearDateTime(dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getNoOfDaysInYearDateTime(dt, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     INTEGER(c_int) :: getNoOfDaysInYearDateTime
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getNoOfDaysInYearDateTime = my_getnoofdaysinyeardatetime(c_LOC(dt))
-    IF (getNoOfDaysInYearDateTime == 0 .AND. PRESENT(errno)) errno = 4 * 100 + 16
+    getNoOfDaysInYearDateTime = my_getnoofdaysinyeardatetime(C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 16, getNoOfDaysInYearDateTime /= 0)
   END FUNCTION getNoOfDaysInYearDateTime
   !>
   !! @brief Get the 'day-of-year' value of a DateTime.
@@ -1117,13 +1080,12 @@ CONTAINS
   !!         Integer value of doy. The value depends on the calendar type. Zero indicates error.
   !!
   !! @param[out]       errno       optional, error message
-  FUNCTION getDayOfYearFromDateTime(dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getDayOfYearFromDateTime(dt, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     INTEGER(c_int) :: getDayOfYearFromDateTime
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getDayOfYearFromDateTime = my_getdayofyearfromdatetime(c_LOC(dt))
-    IF (getDayOfYearFromDateTime == 0 .AND. PRESENT(errno)) errno = 4 * 100 + 17
+    getDayOfYearFromDateTime = my_getdayofyearfromdatetime(C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 17, getDayOfYearFromDateTime /= 0)
   END FUNCTION getDayOfYearFromDateTime
   !>
   !! @brief Get number of seconds elapsed in the month of DateTime.
@@ -1135,13 +1097,12 @@ CONTAINS
   !!         int(i8) value of no_of_seconds. -1 indicates error.
   !!
   !! @param[out]       errno       optional, error message
-  FUNCTION getNoOfSecondsElapsedInMonthDateTime(dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getNoOfSecondsElapsedInMonthDateTime(dt, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     INTEGER(c_int64_t) :: getNoOfSecondsElapsedInMonthDateTime
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getNoOfSecondsElapsedInMonthDateTime = my_getnoofsecondselapsedinmonthdatetime(c_LOC(dt))
-    IF (getNoOfSecondsElapsedInMonthDateTime == -1 .AND. PRESENT(errno)) errno = 4 * 100 + 18
+    getNoOfSecondsElapsedInMonthDateTime = my_getnoofsecondselapsedinmonthdatetime(C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 18, getNoOfSecondsElapsedInMonthDateTime /= -1)
   END FUNCTION getNoOfSecondsElapsedInMonthDateTime
   !>
   !! @brief Get number of seconds elapsed in the day of DateTime.
@@ -1153,13 +1114,12 @@ CONTAINS
   !!         int value of no_of_seconds. -1 indicates error.
   !!
   !! @param[out]       errno       optional, error message
-  FUNCTION getNoOfSecondsElapsedInDayDateTime(dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getNoOfSecondsElapsedInDayDateTime(dt, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     INTEGER(c_int) :: getNoOfSecondsElapsedInDayDateTime
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getNoOfSecondsElapsedInDayDateTime = my_getnoofsecondselapsedindaydatetime(c_LOC(dt))
-    IF (getNoOfSecondsElapsedInDayDateTime == -1 .AND. PRESENT(errno)) errno = 4 * 100 + 19
+    getNoOfSecondsElapsedInDayDateTime = my_getnoofsecondselapsedindaydatetime(C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 19, getNoOfSecondsElapsedInDayDateTime /= -1)
   END FUNCTION getNoOfSecondsElapsedInDayDateTime
   !>
   !! @brief Get the Julian Day from DateTime.
@@ -1174,14 +1134,13 @@ CONTAINS
   !!         A pointer to type julianday. JD where the converted value is stored.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getJulianDayFromDatetime(dt, jd, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getJulianDayFromDatetime(dt, jd, errno) !OK-TESTED.
     TYPE(datetime), TARGET :: dt
     TYPE(julianday), TARGET :: jd
     TYPE(c_ptr) :: dummy_ptr
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_getjuliandayfromdatetime(c_LOC(dt), c_LOC(jd))
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 4 * 100 + 20
+    dummy_ptr = my_getjuliandayfromdatetime(C_LOC(dt), C_LOC(jd))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 20, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE getJulianDayFromDatetime
   !>
   !! @brief Get the DateTime from Julian Day.
@@ -1196,14 +1155,13 @@ CONTAINS
   !!         A pointer to type datetime. The DT where the converted value is stored.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getDatetimeFromJulianDay(jd, dt, errno)
+  RECURSIVE SUBROUTINE getDatetimeFromJulianDay(jd, dt, errno)
     TYPE(julianday), TARGET, INTENT(in) :: jd
     TYPE(datetime), TARGET, INTENT(out) :: dt
     TYPE(c_ptr) :: dummy_ptr
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_getdatetimefromjulianday(c_LOC(jd), c_LOC(dt))
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 4 * 100 + 21
+    dummy_ptr = my_getdatetimefromjulianday(C_LOC(jd), C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 4*100 + 21, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE getDatetimeFromJulianDay
   !
 END MODULE mtime_datetime
@@ -1218,22 +1176,36 @@ END MODULE mtime_datetime
 !___________________________________________________________________________________________________________
 MODULE mtime_timedelta
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_int32_t, c_int64_t, c_float, c_double, c_char, &
-       &                                 c_ptr, c_null_char, c_loc, c_f_pointer, c_associated
-  USE mtime_c_bindings
-  USE mtime_constants
-  USE mtime_error_handling
-  !
-  USE mtime_datetime
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_char, c_double, c_f_pointer, c_float, c_int, c_int32_t, &
+    & c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_timedelta_str_len
+  USE mtime_c_bindings, ONLY: &
+    & divisionquotienttimespan, my_addtimedeltatodate, &
+    & my_addtimedeltatodatetime, my_comparetimedelta, &
+    & my_constructandcopytimedelta, my_deallocatetimedelta, &
+    & my_dividedatetimedifferenceinseconds, my_dividetimedeltainseconds, &
+    & my_dividetwodatetimediffsinseconds, &
+    & my_elementwiseaddtimedeltatotimedelta, &
+    & my_elementwisescalarmultiplytimedelta, &
+    & my_elementwisescalarmultiplytimedeltadp, my_getptstringfromhours, &
+    & my_getptstringfromminutes, my_getptstringfromms, &
+    & my_getptstringfromsecondsdouble, my_getptstringfromsecondsfloat, &
+    & my_getptstringfromsecondsint, my_gettimedeltafromdate, &
+    & my_gettimedeltafromdatetime, my_gettimedeltafromdatetime, &
+    & my_gettotalmillisecondstimedelta, my_gettotalsecondstimedelta, &
+    & my_modulotimedelta, my_newrawtimedelta, my_newtimedeltafromstring, &
+    & my_timedeltatojuliandelta, my_timedeltatostring, timedelta
   USE mtime_date
+  USE mtime_datetime
   USE mtime_juliandelta
-  !use mtime_time
+  USE mtime_time
   !
   IMPLICIT NONE
   !
-!  private
+  PRIVATE
   !
-  PUBLIC :: divisionquotienttimespan
+  PUBLIC :: timedelta
   PUBLIC :: newTimedelta
   PUBLIC :: deallocateTimedelta
   PUBLIC :: getTimeDeltaFromDate
@@ -1260,9 +1232,6 @@ MODULE mtime_timedelta
   PUBLIC :: OPERATOR(==)
   PUBLIC :: OPERATOR(/=)
   !
-  !
-  !
-  !
   INTERFACE newTimedelta
     MODULE PROCEDURE newtimedeltafromstring
     MODULE PROCEDURE newtimedeltafromraw
@@ -1270,50 +1239,50 @@ MODULE mtime_timedelta
     MODULE PROCEDURE newtimedeltafromconstructandcopy
   END INTERFACE newTimedelta
   !
-  INTERFACE OPERATOR (+)
+  INTERFACE OPERATOR(+)
     MODULE PROCEDURE addtimedeltatodatetime
     MODULE PROCEDURE adddatetimetotimedelta
     MODULE PROCEDURE addtimedeltatodate
     MODULE PROCEDURE adddatetotimedelta
     MODULE PROCEDURE elementwiseAddTimeDeltatoTimeDelta
-  END INTERFACE OPERATOR (+)
+  END INTERFACE OPERATOR(+)
   !
-  INTERFACE OPERATOR (-)
+  INTERFACE OPERATOR(-)
     MODULE PROCEDURE getTimeDeltaFromDate
     MODULE PROCEDURE getTimeDeltaFromDateTime
-  END INTERFACE OPERATOR (-)
+  END INTERFACE OPERATOR(-)
   !
-  INTERFACE OPERATOR (*)
+  INTERFACE OPERATOR(*)
     MODULE PROCEDURE elementwiseScalarMultiplyTimeDelta
     MODULE PROCEDURE elementwiseScalarMultiplyTimeDeltaInv
     MODULE PROCEDURE elementwiseScalarMultiplyTimeDelta_long
     MODULE PROCEDURE elementwiseScalarMultiplyTimeDeltaInv_long
     MODULE PROCEDURE elementwiseScalarMultiplyTimeDelta_real
-  END INTERFACE OPERATOR (*)
+  END INTERFACE OPERATOR(*)
   !
-  INTERFACE OPERATOR (>)
-  MODULE PROCEDURE timedelta_gt
-  END INTERFACE OPERATOR (>)
+  INTERFACE OPERATOR(>)
+    MODULE PROCEDURE timedelta_gt
+  END INTERFACE OPERATOR(>)
   !
-  INTERFACE OPERATOR (<)
-  MODULE PROCEDURE timedelta_lt
-  END INTERFACE OPERATOR (<)
+  INTERFACE OPERATOR(<)
+    MODULE PROCEDURE timedelta_lt
+  END INTERFACE OPERATOR(<)
   !
-  INTERFACE OPERATOR (<=)
-  MODULE PROCEDURE timedelta_lt_or_eq
-  END INTERFACE OPERATOR (<=)
+  INTERFACE OPERATOR(<=)
+    MODULE PROCEDURE timedelta_lt_or_eq
+  END INTERFACE OPERATOR(<=)
   !
-  INTERFACE OPERATOR (>=)
-  MODULE PROCEDURE timedelta_gt_or_eq
-  END INTERFACE OPERATOR (>=)
+  INTERFACE OPERATOR(>=)
+    MODULE PROCEDURE timedelta_gt_or_eq
+  END INTERFACE OPERATOR(>=)
   !
-  INTERFACE OPERATOR (==)
-  MODULE PROCEDURE timedelta_eq
-  END INTERFACE OPERATOR (==)
+  INTERFACE OPERATOR(==)
+    MODULE PROCEDURE timedelta_eq
+  END INTERFACE OPERATOR(==)
   !
-  INTERFACE OPERATOR (/=)
-  MODULE PROCEDURE timedelta_ne
-  END INTERFACE OPERATOR (/=)
+  INTERFACE OPERATOR(/=)
+    MODULE PROCEDURE timedelta_ne
+  END INTERFACE OPERATOR(/=)
   !
   INTERFACE getPTStringFromSeconds
     MODULE PROCEDURE getPTStringFromSecondsInt
@@ -1324,38 +1293,40 @@ MODULE mtime_timedelta
 CONTAINS
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimedeltafromstring(string, errno) RESULT(ret_timedelta) !OK-TESTED.
+  RECURSIVE FUNCTION newtimedeltafromstring(string, errno) RESULT(ret_timedelta) !OK-TESTED.
     TYPE(timedelta), POINTER :: ret_timedelta
     CHARACTER(len=*), INTENT(in) :: string
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    ret_timedelta => NULL()
     c_pointer = my_newtimedeltafromstring(TRIM(ADJUSTL(string))//c_null_char)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) THEN
-      errno = 5 * 100 + 1
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 1, C_ASSOCIATED(c_pointer))
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_timedelta)
     ELSE
-      CALL c_f_POINTER(c_pointer, ret_timedelta)
-    ENDIF
+      NULLIFY (ret_timedelta)
+    END IF
   END FUNCTION newtimedeltafromstring
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimedeltafromraw(sign, year, month, day, hour, minute, second, ms, errno) RESULT(ret_timedelta)
+  RECURSIVE FUNCTION newtimedeltafromraw(sign, year, month, day, hour, minute, second, ms, errno) RESULT(ret_timedelta)
     TYPE(timedelta), POINTER :: ret_timedelta
     CHARACTER(len=*), INTENT(in) :: sign
     INTEGER(c_int), INTENT(in) :: year, month, day, hour, minute, second, ms
     TYPE(c_ptr) :: c_pointer
     CHARACTER(c_char) ::c_sign
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_sign = SIGN(1:1)
-    c_pointer = my_newrawtimedelta(c_sign, INT(year,c_int64_t), month, day, hour, minute, second, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 5 * 100 + 2
-    CALL c_f_POINTER(c_pointer, ret_timedelta)
+    c_pointer = my_newrawtimedelta(c_sign, INT(year, c_int64_t), month, day, hour, minute, second, ms)
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 2, C_ASSOCIATED(c_pointer))
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_timedelta)
+    ELSE
+      NULLIFY (ret_timedelta)
+    END IF
   END FUNCTION newtimedeltafromraw
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimedeltafromraw_yi8(sign, year, month, day, hour, minute, second, ms, errno) RESULT(ret_timedelta)
+  RECURSIVE FUNCTION newtimedeltafromraw_yi8(sign, year, month, day, hour, minute, second, ms, errno) RESULT(ret_timedelta)
     TYPE(timedelta), POINTER :: ret_timedelta
     CHARACTER(len=*), INTENT(in) :: sign
     INTEGER(c_int64_t), INTENT(in) :: year
@@ -1363,116 +1334,98 @@ CONTAINS
     TYPE(c_ptr) :: c_pointer
     CHARACTER(c_char) ::c_sign
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     c_sign = SIGN(1:1)
     c_pointer = my_newrawtimedelta(c_sign, year, month, day, hour, minute, second, ms)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 5 * 100 + 3
-    CALL c_f_POINTER(c_pointer, ret_timedelta)
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 3, C_ASSOCIATED(c_pointer))
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_timedelta)
+    ELSE
+      NULLIFY (ret_timedelta)
+    END IF
   END FUNCTION newtimedeltafromraw_yi8
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newtimedeltafromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
+  RECURSIVE FUNCTION newtimedeltafromconstructandcopy(src, errno) RESULT(dest) !OK-TESTED.
     TYPE(timedelta), POINTER :: dest
     TYPE(timedelta), TARGET :: src
     TYPE(c_ptr) :: c_pointer
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_constructandcopytimedelta(c_LOC(src))
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 5 * 100 + 4
-    CALL c_f_POINTER(c_pointer, dest)
+    c_pointer = my_constructandcopytimedelta(C_LOC(src))
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 4, C_ASSOCIATED(c_pointer))
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, dest)
+    ELSE
+      NULLIFY (dest)
+    END IF
   END FUNCTION newtimedeltafromconstructandcopy
   !>
   !! @brief Destructor of TimeDelta.
   !!
   !! @param  my_timedelta
   !!         A pointer to typetimedelta. my_timedelta is deallocated.
-  SUBROUTINE deallocateTimedelta(my_timedelta) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateTimedelta(my_timedelta) !OK-TESTED.
     TYPE(timedelta), POINTER :: my_timedelta
-    CALL my_deallocatetimedelta(c_LOC(my_timedelta))
-    NULLIFY(my_timedelta)
+    CALL my_deallocatetimedelta(C_LOC(my_timedelta))
+    NULLIFY (my_timedelta)
   END SUBROUTINE deallocateTimedelta
   !
-  FUNCTION timedelta_gt(op1, op2) RESULT(gt)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_gt(op1, op2) RESULT(gt)
     LOGICAL :: gt
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF (ret == 1) THEN
-      gt = .TRUE.
-    ELSE
-      gt = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    gt = ret == 1_c_int
   END FUNCTION timedelta_gt
   !
-  FUNCTION timedelta_lt(op1, op2) RESULT(lt)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_lt(op1, op2) RESULT(lt)
     LOGICAL :: lt
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF (ret == -1) THEN
-      lt = .TRUE.
-    ELSE
-      lt = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    lt = ret == -1_c_int
   END FUNCTION timedelta_lt
   !
-  FUNCTION timedelta_lt_or_eq(op1, op2) RESULT(lt_or_eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_lt_or_eq(op1, op2) RESULT(lt_or_eq)
     LOGICAL :: lt_or_eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF ((ret == 0) .OR. (ret == -1)) THEN
-      lt_or_eq = .TRUE.
-    ELSE
-      lt_or_eq = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    lt_or_eq = ret == 0_c_int .OR. ret == -1_c_int
   END FUNCTION timedelta_lt_or_eq
   !
-  FUNCTION timedelta_gt_or_eq(op1, op2) RESULT(gt_or_eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_gt_or_eq(op1, op2) RESULT(gt_or_eq)
     LOGICAL :: gt_or_eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF ((ret == 0) .OR. (ret == 1)) THEN
-      gt_or_eq = .TRUE.
-    ELSE
-      gt_or_eq = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    gt_or_eq = ret == 0_c_int .OR. ret == 1_c_int
   END FUNCTION timedelta_gt_or_eq
   !
-  FUNCTION timedelta_eq(op1, op2) RESULT(eq)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_eq(op1, op2) RESULT(eq)
     LOGICAL :: eq
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF (ret == 0) THEN
-      eq = .TRUE.
-    ELSE
-      eq = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    eq = ret == 0_c_int
   END FUNCTION timedelta_eq
   !
-  FUNCTION timedelta_ne(op1, op2) RESULT(ne)
+  MTIME_PURE_IF_C_LOC_IS_PURE RECURSIVE FUNCTION timedelta_ne(op1, op2) RESULT(ne)
     LOGICAL :: ne
     TYPE(timedelta), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     INTEGER(c_int) :: ret
-    ret = my_comparetimedelta(c_LOC(op1), c_LOC(op2))
-    IF (ret /= 0) THEN
-      ne = .TRUE.
-    ELSE
-      ne = .FALSE.
-    ENDIF
+    ret = my_comparetimedelta(C_LOC(op1), C_LOC(op2))
+    ne = ret /= 0_c_int
   END FUNCTION timedelta_ne
   !>
   !! @brief Get the TimeDelta between two Dates op1 and op2 as (op1-op22).
   !!
-  !! Routine getTimeDeltaFromDate 'substracts' two Dates and returns the TimeDelta between
+  !! Routine getTimeDeltaFromDate 'subtracts' two Dates and returns the TimeDelta between
   !! them. Internally, Dates are converted to DateTimes and then delta is calculated using
   !! getTimeDeltaFromDateTime().
   !!
@@ -1489,18 +1442,19 @@ CONTAINS
   !!         A pointer to type date.
   !!
   !! @return ret
-  !!         A pointer to TimeDelta containing the result of substraction.
-  FUNCTION getTimeDeltaFromDate(op1,op2) RESULT(ret) !OK-TESTED.
+  !!         A pointer to TimeDelta containing the result of subtraction.
+  RECURSIVE FUNCTION getTimeDeltaFromDate(op1, op2) RESULT(ret) !OK-TESTED.
     TYPE(timedelta), TARGET :: ret
     TYPE(date), TARGET, INTENT(in)  :: op1, op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_gettimedeltafromdate(c_LOC(op1),c_LOC(op2),c_LOC(ret))
+    ret = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_gettimedeltafromdate(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION getTimeDeltaFromDate
   !>
   !! @brief Get the TimeDelta between two DateTimes op1 and op2 as (op1-op2).
   !!
-  !! Routine getTimeDeltaFromDateTime 'substracts' two DateTime's and returns the TimeDelta between
-  !! them. Each datetime is converted to an equivalent Julian Date. Substraction is then performed
+  !! Routine getTimeDeltaFromDateTime 'subtracts' two DateTime's and returns the TimeDelta between
+  !! them. Each datetime is converted to an equivalent Julian Date. Subtraction is then performed
   !! on Julian axis. The "Julian delta" is finally converted back to normal calendar delta.
   !!
   !! This routine handles all supported Calendar types; i.e. the translation from Calendar date
@@ -1517,12 +1471,13 @@ CONTAINS
   !!         A pointer to type datetime.
   !!
   !! @return ret
-  !!        A pointer to TimeDelta containing the result of substraction.
-  FUNCTION getTimeDeltaFromDateTime(op1,op2) RESULT(ret) !OK-TESTED.
+  !!        A pointer to TimeDelta containing the result of subtraction.
+  RECURSIVE FUNCTION getTimeDeltaFromDateTime(op1, op2) RESULT(ret) !OK-TESTED.
     TYPE(timedelta), TARGET :: ret
     TYPE(datetime), TARGET, INTENT(in) :: op1, op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_gettimedeltafromdatetime(c_LOC(op1),c_LOC(op2),c_LOC(ret))
+    ret = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_gettimedeltafromdatetime(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION getTimeDeltaFromDateTime
   !>
   !! @brief Get total number of milliseconds in timedelta.
@@ -1545,14 +1500,13 @@ CONTAINS
   !!         Integer value of totalmilliSeconds. 0 indicates error.
   !!
   !! WARNING: TD 0 is error. If you know your TD is 0, ignore the error flag.
-  FUNCTION getTotalMilliSecondsTimeDelta(td, dt, errno)  !OK-TESTED.
+  RECURSIVE FUNCTION getTotalMilliSecondsTimeDelta(td, dt, errno)  !OK-TESTED.
     INTEGER(c_int64_t) :: getTotalMilliSecondsTimeDelta
     TYPE(timedelta), TARGET, INTENT(in):: td
     TYPE(datetime), TARGET, INTENT(in) :: dt
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    getTotalMilliSecondsTimeDelta = my_gettotalmillisecondstimedelta(c_LOC(td), c_LOC(dt))
-    IF ((getTotalMilliSecondsTimeDelta == 0) .AND. PRESENT(errno)) errno = 5 * 100 + 8
+    getTotalMilliSecondsTimeDelta = my_gettotalmillisecondstimedelta(C_LOC(td), C_LOC(dt))
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 8, getTotalMilliSecondsTimeDelta /= 0)
   END FUNCTION getTotalMilliSecondsTimeDelta
   !>
   !! @brief Get total number of seconds in timedelta.
@@ -1575,13 +1529,13 @@ CONTAINS
   !!         Integer value of totalSeconds. 0 indicates error.
   !!
   !! WARNING: TD 0 is error. If you know your TD is 0, ignore the error flag.
-  FUNCTION getTotalSecondsTimeDelta(td, dt, errno) !OK-TESTED.
+  RECURSIVE FUNCTION getTotalSecondsTimeDelta(td, dt, errno) !OK-TESTED.
     INTEGER(c_int64_t) :: getTotalSecondsTimeDelta
     TYPE(timedelta), TARGET, INTENT(in) :: td
     TYPE(datetime), TARGET, INTENT(in) :: dt
     INTEGER, OPTIONAL:: errno
     IF (PRESENT(errno)) errno = 0
-    getTotalSecondsTimeDelta = my_gettotalsecondstimedelta(c_LOC(td), c_LOC(dt))
+    getTotalSecondsTimeDelta = my_gettotalsecondstimedelta(C_LOC(td), C_LOC(dt))
     ! error handling with "errno" not yet implemented.
   END FUNCTION getTotalSecondsTimeDelta
   !>
@@ -1596,107 +1550,116 @@ CONTAINS
   !!         String where timedelta is to be written.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE timedeltaToString(my_timedelta, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE timedeltaToString(my_timedelta, string, errno) !OK-TESTED.
     TYPE(timedelta), TARGET :: my_timedelta
     CHARACTER(len=max_timedelta_str_len) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    string(:) = ''
-    dummy_ptr = my_timedeltatostring(c_LOC(my_timedelta), string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 10
-      string ='<null>'
+    string = ''
+    dummy_ptr = my_timedeltatostring(C_LOC(my_timedelta), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 10, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
+      string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE timedeltaToString
   !
-  FUNCTION addTimedeltaToDatetime(op1, op2) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION addTimedeltaToDatetime(op1, op2) RESULT(ret) !OK-TESTED.
     TYPE(datetime), TARGET :: ret
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addtimedeltatodatetime(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = datetime(date(0, 0, 0), time(0, 0, 0, 0))
+    dummy_ptr = my_addtimedeltatodatetime(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addTimedeltaToDatetime
   !
-  FUNCTION addDatetimeToTimedelta(op2, op1) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION addDatetimeToTimedelta(op2, op1) RESULT(ret) !OK-TESTED.
     TYPE(datetime), TARGET :: ret
     TYPE(datetime), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addtimedeltatodatetime(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = datetime(date(0, 0, 0), time(0, 0, 0, 0))
+    dummy_ptr = my_addtimedeltatodatetime(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addDatetimeToTimedelta
   !
-  FUNCTION addTimedeltaToDate(op1, op2) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION addTimedeltaToDate(op1, op2) RESULT(ret) !OK-TESTED.
     TYPE(date), TARGET :: ret
     TYPE(date), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addtimedeltatodate(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = date(0, 0, 0)
+    dummy_ptr = my_addtimedeltatodate(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addTimedeltaToDate
   !
-  FUNCTION addDateToTimedelta(op2, op1) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION addDateToTimedelta(op2, op1) RESULT(ret) !OK-TESTED.
     TYPE(date), TARGET :: ret
     TYPE(date), TARGET, INTENT(in) :: op1
     TYPE(timedelta), TARGET, INTENT(in) :: op2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_addtimedeltatodate(c_LOC(op1), c_LOC(op2), c_LOC(ret))
+    ret = date(0, 0, 0)
+    dummy_ptr = my_addtimedeltatodate(C_LOC(op1), C_LOC(op2), C_LOC(ret))
   END FUNCTION addDateToTimedelta
   !
-  FUNCTION elementwiseScalarMultiplyTimeDelta(base_td, ilambda) RESULT(scaled_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwiseScalarMultiplyTimeDelta(base_td, ilambda) RESULT(scaled_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: scaled_td
     INTEGER(c_int32_t), INTENT(in) :: ilambda
     TYPE(timedelta), TARGET, INTENT(in) :: base_td
     INTEGER(c_int64_t) :: lambda
     TYPE(c_ptr) :: dummy_ptr
     lambda = INT(ilambda, c_int64_t)
-    dummy_ptr = my_elementwisescalarmultiplytimedelta(c_LOC(base_td), lambda, c_LOC(scaled_td))
+    scaled_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwisescalarmultiplytimedelta(C_LOC(base_td), lambda, C_LOC(scaled_td))
   END FUNCTION elementwiseScalarMultiplyTimeDelta
   !
-  FUNCTION elementwiseScalarMultiplyTimeDeltaInv(ilambda, base_td) RESULT(scaled_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwiseScalarMultiplyTimeDeltaInv(ilambda, base_td) RESULT(scaled_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: scaled_td
     INTEGER(c_int32_t), INTENT(in) :: ilambda
     TYPE(timedelta), TARGET, INTENT(in) :: base_td
     INTEGER(c_int64_t) :: lambda
     TYPE(c_ptr) :: dummy_ptr
     lambda = INT(ilambda, c_int64_t)
-    dummy_ptr = my_elementwisescalarmultiplytimedelta(c_LOC(base_td), lambda, c_LOC(scaled_td))
+    scaled_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwisescalarmultiplytimedelta(C_LOC(base_td), lambda, C_LOC(scaled_td))
   END FUNCTION elementwiseScalarMultiplyTimeDeltaInv
   !
-  FUNCTION elementwiseScalarMultiplyTimeDelta_long(base_td, lambda) RESULT(scaled_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwiseScalarMultiplyTimeDelta_long(base_td, lambda) RESULT(scaled_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: scaled_td
     INTEGER(c_int64_t), INTENT(in) :: lambda
     TYPE(timedelta), TARGET, INTENT(in) :: base_td
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_elementwisescalarmultiplytimedelta(c_LOC(base_td), lambda, c_LOC(scaled_td))
+    scaled_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwisescalarmultiplytimedelta(C_LOC(base_td), lambda, C_LOC(scaled_td))
   END FUNCTION elementwiseScalarMultiplyTimeDelta_long
   !
-  FUNCTION elementwiseScalarMultiplyTimeDeltaInv_long(lambda, base_td) RESULT(scaled_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwiseScalarMultiplyTimeDeltaInv_long(lambda, base_td) RESULT(scaled_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: scaled_td
     INTEGER(c_int64_t), INTENT(in) :: lambda
     TYPE(timedelta), TARGET, INTENT(in) :: base_td
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_elementwisescalarmultiplytimedelta(c_LOC(base_td), lambda, c_LOC(scaled_td))
+    scaled_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwisescalarmultiplytimedelta(C_LOC(base_td), lambda, C_LOC(scaled_td))
   END FUNCTION elementwiseScalarMultiplyTimeDeltaInv_long
   !
-  FUNCTION elementwisescalarmultiplytimedelta_real(base_td, lambda) RESULT(scaled_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwisescalarmultiplytimedelta_real(base_td, lambda) RESULT(scaled_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: scaled_td
     REAL(c_double), INTENT(in) :: lambda
     TYPE(timedelta), TARGET, INTENT(in) :: base_td
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_elementwisescalarmultiplytimedeltadp(c_LOC(base_td), lambda, c_LOC(scaled_td))
+    scaled_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwisescalarmultiplytimedeltadp(C_LOC(base_td), lambda, C_LOC(scaled_td))
   END FUNCTION elementwisescalarmultiplytimedelta_real
   !
-  FUNCTION elementwiseAddTimeDeltatoTimeDelta(td1, td2) RESULT(added_td) !OK-TESTED.
+  RECURSIVE FUNCTION elementwiseAddTimeDeltatoTimeDelta(td1, td2) RESULT(added_td) !OK-TESTED.
     TYPE(timedelta), TARGET :: added_td
     TYPE(timedelta), TARGET, INTENT(in) :: td1, td2
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_elementwiseaddtimedeltatotimedelta(c_LOC(td1), c_LOC(td2), c_LOC(added_td))
+    added_td = timedelta(0, "+", 0, 0, 0, 0, 0, 0, 0)
+    dummy_ptr = my_elementwiseaddtimedeltatotimedelta(C_LOC(td1), C_LOC(td2), C_LOC(added_td))
   END FUNCTION elementwiseAddTimeDeltatoTimeDelta
   !>
   !! @brief Returns modulo(a,p) and the quotient.
@@ -1712,12 +1675,12 @@ CONTAINS
   !!
   !! @return rem
   !!       modulo(a, p)
-  FUNCTION moduloTimedelta(a, p, quot) RESULT(rem)
+  RECURSIVE FUNCTION moduloTimedelta(a, p, quot) RESULT(rem)
     TYPE(timedelta), TARGET, INTENT(in) :: a
     TYPE(timedelta), TARGET, INTENT(in) :: p
     INTEGER(c_int64_t), TARGET, INTENT(out) :: quot
     INTEGER(c_int64_t) :: rem
-    rem = my_modulotimedelta(c_LOC(a), c_LOC(p), c_LOC(quot))
+    rem = my_modulotimedelta(C_LOC(a), C_LOC(p), C_LOC(quot))
   END FUNCTION moduloTimedelta
   !>
   !! @brief Return a PT String corresponding to arbitrary number of milliseconds.
@@ -1731,84 +1694,80 @@ CONTAINS
   !! @param[out]  string
   !!         Translated string is written here.
   !!
-  SUBROUTINE getPTStringFromMS(ms, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromMS(ms, string, errno) !OK-TESTED.
     INTEGER(c_int64_t), INTENT(in) :: ms
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
     string(:) = ''
     dummy_ptr = my_getptstringfromms(ms, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromMS
   !
-  SUBROUTINE getPTStringFromSecondsInt(s, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromSecondsInt(s, string, errno) !OK-TESTED.
     INTEGER(c_int64_t) :: s
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
     string(:) = ''
-    IF (PRESENT(errno)) errno = 0
     dummy_ptr = my_getptstringfromsecondsint(s, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromSecondsInt
   !
-  SUBROUTINE getPTStringFromSecondsFloat(s, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromSecondsFloat(s, string, errno) !OK-TESTED.
     REAL(c_float) :: s
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
     string(:) = ''
-    IF (PRESENT(errno)) errno = 0
     dummy_ptr = my_getptstringfromsecondsfloat(s, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromSecondsFloat
   !
-  SUBROUTINE getPTStringFromSecondsDouble(s, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromSecondsDouble(s, string, errno) !OK-TESTED.
     REAL(c_double) :: s
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
     string(:) = ''
-    IF (PRESENT(errno)) errno = 0
     dummy_ptr = my_getptstringfromsecondsdouble(s, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromSecondsDouble
   !>
   !! @brief Return a PT String corresponding to arbitrary number of minutes.
@@ -1822,24 +1781,23 @@ CONTAINS
   !! @param[out] string
   !!         Translated string is written here.
   !!
-  SUBROUTINE getPTStringFromMinutes(m, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromMinutes(m, string, errno) !OK-TESTED.
     INTEGER(c_int64_t) :: m
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
     string(:) = ''
-    IF (PRESENT(errno)) errno = 0
     dummy_ptr = my_getptstringfromminutes(m, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromMinutes
   !>
   !! @brief Return a PT String corresponding to arbitrary number of Hours.
@@ -1853,35 +1811,34 @@ CONTAINS
   !! @param[out]  string
   !!         Translated string is written here.
   !!
-  SUBROUTINE getPTStringFromHours(h, string, errno) !OK-TESTED.
+  RECURSIVE SUBROUTINE getPTStringFromHours(h, string, errno) !OK-TESTED.
     INTEGER(c_int64_t)                   :: h
     CHARACTER(len=*) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
     string(:) = ''
-    IF (PRESENT(errno)) errno = 0
     dummy_ptr = my_getptstringfromhours(h, string)
-    IF (.NOT. c_ASSOCIATED(dummy_ptr)) THEN
-      IF (PRESENT(errno)) errno = 5 * 100 + 11
+    IF (PRESENT(errno)) errno = MERGE(0, 5*100 + 11, C_ASSOCIATED(dummy_ptr))
+    IF (.NOT. C_ASSOCIATED(dummy_ptr)) THEN
       string = '<null>'
     ELSE
-      char_loop: DO i = 1 , LEN(string)
+      char_loop: DO i = 1, LEN(string)
         IF (string(i:i) == c_null_char) EXIT char_loop
       END DO char_loop
       string(i:LEN(string)) = ' '
-    ENDIF
+    END IF
   END SUBROUTINE getPTStringFromHours
 
   !>
   !! @brief Convert time delta to "Julian calendar delta".
   !!
-  SUBROUTINE timeDeltaToJulianDelta(td,dt,jd)
+  RECURSIVE SUBROUTINE timeDeltaToJulianDelta(td, dt, jd)
     TYPE(c_ptr) :: dummy_ptr
     TYPE(timedelta), TARGET, INTENT(in) :: td
-    TYPE(datetime),  TARGET, INTENT(in) :: dt
-    TYPE(juliandelta),  TARGET, INTENT(out) :: jd
-    dummy_ptr = my_timedeltatojuliandelta(c_LOC(td),c_LOC(dt),c_LOC(jd))
+    TYPE(datetime), TARGET, INTENT(in) :: dt
+    TYPE(juliandelta), TARGET, INTENT(out) :: jd
+    dummy_ptr = my_timedeltatojuliandelta(C_LOC(td), C_LOC(dt), C_LOC(jd))
   END SUBROUTINE timeDeltaToJulianDelta
 
   !>
@@ -1896,17 +1853,17 @@ CONTAINS
   !! @param[out]  quotient
   !!         A pointer to type divisionquotienttimespan
   !!
-  SUBROUTINE divideTimeDeltaInSeconds(dividend, divisor, quotient, errna)!OK-UNTESTED.
+  RECURSIVE SUBROUTINE divideTimeDeltaInSeconds(dividend, divisor, quotient, errna)!OK-UNTESTED.
     TYPE(timedelta), TARGET, INTENT(in) :: dividend
     TYPE(timedelta), TARGET, INTENT(in) :: divisor
     TYPE(divisionquotienttimespan), TARGET, INTENT(out) :: quotient
     INTEGER, INTENT(out), OPTIONAL :: errna
     TYPE(c_ptr) :: dummy_ptr
     IF (PRESENT(errna)) errna = 0 ! FIXME: no_error
-    dummy_ptr = my_dividetimedeltainseconds(c_LOC(dividend), c_LOC(divisor), c_LOC(quotient))
-    IF (PRESENT(errna) .AND. .NOT. c_ASSOCIATED(dummy_ptr)) THEN
+    dummy_ptr = my_dividetimedeltainseconds(C_LOC(dividend), C_LOC(divisor), C_LOC(quotient))
+    IF (PRESENT(errna) .AND. .NOT. C_ASSOCIATED(dummy_ptr)) THEN
       errna = errna + 2  ! increment error number by 2, see below for an explanation.
-    ENDIF
+    END IF
   END SUBROUTINE divideTimeDeltaInSeconds
   !>
   !! @brief division of two differences in datetimes.
@@ -1918,7 +1875,7 @@ CONTAINS
   !!         Interval given in seconds.
   !!
   !! @return result of division. NULL indicates error.
-  SUBROUTINE divideTwoDatetimeDiffsInSeconds(dt1_dividend,dt2_dividend, &
+  RECURSIVE SUBROUTINE divideTwoDatetimeDiffsInSeconds(dt1_dividend, dt2_dividend, &
       &                                      dt1_divisor, dt2_divisor,  &
       &                                      denominator, quotient)
     TYPE(datetime), TARGET, INTENT(in) :: dt1_dividend
@@ -1928,9 +1885,9 @@ CONTAINS
     INTEGER(c_int64_t), TARGET, INTENT(out) :: denominator
     TYPE(divisionquotienttimespan), TARGET, INTENT(out) :: quotient
     TYPE(c_ptr) :: dummy_ptr
-    dummy_ptr = my_dividetwodatetimediffsinseconds(c_LOC(dt1_dividend), c_LOC(dt2_dividend),  &
-        &                                                c_LOC(dt1_divisor), c_LOC(dt2_divisor),  &
-        &                                                c_LOC(denominator), c_LOC(quotient))
+    dummy_ptr = my_dividetwodatetimediffsinseconds(C_LOC(dt1_dividend), C_LOC(dt2_dividend),  &
+        &                                                C_LOC(dt1_divisor), C_LOC(dt2_divisor),  &
+        &                                                C_LOC(denominator), C_LOC(quotient))
   END SUBROUTINE divideTwoDatetimeDiffsInSeconds
 
   !>
@@ -1950,7 +1907,7 @@ CONTAINS
   !! @param[out]  quotient
   !!         A pointer to type divisionquotienttimespan
   !!
-  SUBROUTINE divideDatetimeDifferenceInSeconds(dt1, dt2, divisor, quotient, errna)
+  RECURSIVE SUBROUTINE divideDatetimeDifferenceInSeconds(dt1, dt2, divisor, quotient, errna)
     TYPE(datetime), TARGET, INTENT(in) :: dt1
     TYPE(datetime), TARGET, INTENT(in) :: dt2
     TYPE(timedelta), TARGET, INTENT(in) :: divisor
@@ -1958,10 +1915,10 @@ CONTAINS
     INTEGER, INTENT(out), OPTIONAL :: errna
     TYPE(c_ptr) :: dummy_ptr
     IF (PRESENT(errna)) errna = 0 ! FIXME: no_error
-    dummy_ptr = my_dividedatetimedifferenceinseconds(c_LOC(dt1), c_LOC(dt2), c_LOC(divisor), c_LOC(quotient))
-    IF (PRESENT(errna) .AND. .NOT. c_ASSOCIATED(dummy_ptr)) THEN
+    dummy_ptr = my_dividedatetimedifferenceinseconds(C_LOC(dt1), C_LOC(dt2), C_LOC(divisor), C_LOC(quotient))
+    IF (PRESENT(errna) .AND. .NOT. C_ASSOCIATED(dummy_ptr)) THEN
       errna = errna + 2  ! increment error number by 2, see below for an explanation.
-    ENDIF
+    END IF
   END SUBROUTINE divideDatetimeDifferenceInSeconds
   !
 END MODULE mtime_timedelta
@@ -1973,12 +1930,19 @@ END MODULE mtime_timedelta
 !___________________________________________________________________________________________________________
 MODULE mtime_events
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int64_t, c_char, c_null_char, c_bool, c_ptr, &
-       &                                 c_null_ptr, c_loc, c_f_pointer, c_associated
-  USE mtime_c_bindings
-  USE mtime_constants
-  USE mtime_error_handling
-  !
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_bool, c_f_pointer, c_int64_t, c_loc, c_null_char, &
+    & c_null_ptr, c_ptr
+  USE mtime_constants, ONLY: max_eventname_str_len
+  USE mtime_c_bindings, ONLY: &
+    & event, my_constructandcopyevent, my_deallocateevent, my_eventtostring, &
+    & my_geteventisfirstinday, my_geteventisfirstinmonth, &
+    & my_geteventisfirstinyear, my_geteventislastinday, &
+    & my_geteventislastinmonth, my_geteventislastinyear, my_geteventname, &
+    & my_getnexteventisfirst, my_gettriggeredpreviouseventatdatetime, &
+    & my_gettriggernexteventatdatetime, my_iscurrenteventactive, &
+    & my_iseventnextinnextday, my_iseventnextinnextmonth, &
+    & my_iseventnextinnextyear, my_newevent, my_neweventwithdatatypes
   USE mtime_datetime
   USE mtime_timedelta
   !
@@ -1986,6 +1950,7 @@ MODULE mtime_events
   !
   PRIVATE
   !
+  PUBLIC :: event
   PUBLIC :: newEvent
   PUBLIC :: deallocateEvent
   PUBLIC :: eventToString
@@ -2009,8 +1974,6 @@ MODULE mtime_events
   PUBLIC :: getEventisLastInMonth
   PUBLIC :: getEventisLastInYear
   !
-  !
-  !
   INTERFACE newEvent
     MODULE PROCEDURE newEventWithString
     MODULE PROCEDURE newEventWithDataTypes
@@ -2020,58 +1983,53 @@ MODULE mtime_events
 CONTAINS
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newEventWithString(name, referenceDate, firstdate, lastDate, interval, offset, errno) RESULT(ret_event) !OK-TESTED.
+  RECURSIVE FUNCTION newEventWithString(name, referenceDate, firstdate, lastDate, interval, offset, errno) RESULT(ret_event) !OK-TESTED.
     TYPE(event), POINTER :: ret_event
     CHARACTER(len=*), INTENT(in)           :: name
     CHARACTER(len=*), INTENT(in)           :: referenceDate
     CHARACTER(len=*), INTENT(in)           :: firstDate
     CHARACTER(len=*), INTENT(in)           :: lastDate
     CHARACTER(len=*), INTENT(in)           :: interval
-    CHARACTER(len=*), INTENT(in), OPTIONAL :: offset
-    CHARACTER(len=32)                      :: zeroOffset = "PT00S" !Optional offset's proxy string.
+    CHARACTER(len=*), TARGET, INTENT(in), OPTIONAL :: offset
+    CHARACTER(len=5), SAVE, TARGET :: zeroOffset = "PT00S" !Optional offset's proxy string.
     TYPE(c_ptr) :: c_pointer
+    CHARACTER(len=:), POINTER :: offset_arg
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    IF(PRESENT(offset)) THEN !offset is not null.
-         c_pointer = my_newevent(TRIM(ADJUSTL(name))//c_null_char,          &
-         &                  TRIM(ADJUSTL(referenceDate))//c_null_char,      &
-         &                  TRIM(ADJUSTL(firstDate))//c_null_char,          &
-         &                  TRIM(ADJUSTL(lastDate))//c_null_char,           &
-         &                  TRIM(ADJUSTL(interval))//c_null_char,           &
-         &                  TRIM(ADJUSTL(offset))//c_null_char)
-    ELSE                     !offset is null. Pass a 0 offset.
-         c_pointer = my_newevent(TRIM(ADJUSTL(name))//c_null_char,    &
-         &                  TRIM(ADJUSTL(referenceDate))//c_null_char,      &
-         &                  TRIM(ADJUSTL(firstDate))//c_null_char,          &
-         &                  TRIM(ADJUSTL(lastDate))//c_null_char,           &
-         &                  TRIM(ADJUSTL(interval))//c_null_char,           &
-         &                  TRIM(ADJUSTL(zeroOffset))//c_null_char)
+    IF (PRESENT(offset)) THEN
+      offset_arg => offset(VERIFY(offset, " "):LEN_TRIM(offset))
+    ELSE
+      offset_arg => zeroOffset
     END IF
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 6 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_event)
+    c_pointer = my_newevent(TRIM(ADJUSTL(name))//c_null_char,          &
+         &                  TRIM(ADJUSTL(referenceDate))//c_null_char,      &
+         &                  TRIM(ADJUSTL(firstDate))//c_null_char,          &
+         &                  TRIM(ADJUSTL(lastDate))//c_null_char,           &
+         &                  TRIM(ADJUSTL(interval))//c_null_char,           &
+         &                  offset_arg//c_null_char)
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_event)
   END FUNCTION newEventWithString
   !
   !! @param[out]       errno       optional, error message
-  FUNCTION newEventWithDataTypes(name, referenceDate, firstdate, lastDate, interval, offset, errno) RESULT(ret_event) !OK-TESTED.
+  RECURSIVE FUNCTION newEventWithDataTypes(name, referenceDate, firstdate, lastDate, interval, offset, errno) RESULT(ret_event) !OK-TESTED.
     TYPE(event), POINTER :: ret_event
     CHARACTER(len=*), INTENT(in) :: name
-    TYPE(datetime), POINTER :: referenceDate
-    TYPE(datetime), POINTER :: firstDate
-    TYPE(datetime), POINTER :: lastDate
-    TYPE(timedelta), POINTER :: interval
-    TYPE(timedelta), POINTER, OPTIONAL :: offset
-    TYPE(c_ptr) :: c_pointer
-    INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
+    TYPE(datetime), POINTER, INTENT(in) :: referenceDate
+    TYPE(datetime), POINTER, INTENT(in) :: firstDate
+    TYPE(datetime), POINTER, INTENT(in) :: lastDate
+    TYPE(timedelta), POINTER, INTENT(in) :: interval
+    TYPE(timedelta), POINTER, OPTIONAL, INTENT(in) :: offset
+    TYPE(c_ptr) :: c_pointer, offset_c
+    INTEGER, OPTIONAL, INTENT(out) :: errno
     IF (PRESENT(offset)) THEN
-    c_pointer = my_neweventwithdatatypes(TRIM(ADJUSTL(name))//c_null_char, &
-         &                  c_LOC(referenceDate), c_LOC(firstDate), c_LOC(lastDate), c_LOC(interval), c_LOC(offset))
+      offset_c = C_LOC(offset)
     ELSE
-    c_pointer = my_neweventwithdatatypes(TRIM(ADJUSTL(name))//c_null_char, &
-         &                  c_LOC(referenceDate), c_LOC(firstDate), c_LOC(lastDate), c_LOC(interval), c_null_ptr)
+      offset_c = c_null_ptr
     END IF
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 6 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_event)
+    c_pointer = my_neweventwithdatatypes(TRIM(ADJUSTL(name))//c_null_char, &
+         &                  C_LOC(referenceDate), C_LOC(firstDate), C_LOC(lastDate), C_LOC(interval), offset_c)
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_event)
   END FUNCTION newEventWithDataTypes
   !>
   !! @brief Destructor of Event.
@@ -2081,21 +2039,20 @@ CONTAINS
   !!
   !! WARNING: If my_event was added to a group, this should never be called;
   !! use removeEventFromEventGroup instead.
-  SUBROUTINE deallocateEvent(my_event)
+  RECURSIVE SUBROUTINE deallocateEvent(my_event)
     TYPE(event), POINTER :: my_event
-    CALL my_deallocateevent(c_LOC(my_event))
+    CALL my_deallocateevent(C_LOC(my_event))
     my_event => NULL()
   END SUBROUTINE deallocateEvent
   !>
-  FUNCTION constructAndCopyEvent(my_event, errno) RESULT(ret_event) !OK-TESTED.
+  RECURSIVE FUNCTION constructAndCopyEvent(my_event, errno) RESULT(ret_event) !OK-TESTED.
     TYPE(event), POINTER :: ret_event
-    TYPE(event), TARGET  :: my_event
-    INTEGER, OPTIONAL:: errno
+    TYPE(event), TARGET, INTENT(in) :: my_event
+    INTEGER, OPTIONAL, INTENT(out) :: errno
     TYPE(c_ptr) :: c_pointer
-    IF (PRESENT(errno)) errno = 0
-    c_pointer = my_constructandcopyevent(c_LOC(my_event))
-    IF ((.NOT. C_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 6 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_event)
+    c_pointer = my_constructandcopyevent(C_LOC(my_event))
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_event)
   END FUNCTION constructAndCopyEvent
   !>
   !! @brief Get Event as a string.
@@ -2107,16 +2064,15 @@ CONTAINS
   !!         String where event is to be written.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE eventToString(my_event, string, errno) !TODO:C code still incomplete.
-    TYPE(event), POINTER :: my_event
-    CHARACTER(len=max_eventname_str_len) :: string
+  RECURSIVE SUBROUTINE eventToString(my_event, string, errno) !TODO:C code still incomplete.
+    TYPE(event), POINTER, INTENT(in) :: my_event
+    CHARACTER(len=max_eventname_str_len), INTENT(out) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
-    INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_eventtostring(c_LOC(my_event), string)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 6 * 100 + 3
-    char_loop: DO i = 1 , LEN(string)
+    INTEGER, OPTIONAL, INTENT(out) :: errno
+    dummy_ptr = my_eventtostring(C_LOC(my_event), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 3, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -2138,7 +2094,7 @@ CONTAINS
   !!         A pointer to type event. This is the event being tested.
   !!
   !! @param  my_datetime
-  !!         A pointer to type datetime. This is the 'current' datetime of the system.
+  !!         A variable of type datetime. This is the 'current' datetime of the system.
   !!
   !! @param  plus_slack
   !!         A pointer to type timedelta. Events are triggered between [actual_trigger_time, actual_trigger_time + plus_slack].
@@ -2150,29 +2106,25 @@ CONTAINS
   !!
   !! @return ret
   !!        true/false indicating if the event is active.
-  FUNCTION isCurrentEventActive(my_event, my_datetime, plus_slack, minus_slack) RESULT(ret)
-    TYPE(event), POINTER :: my_event
-    TYPE(datetime), TARGET :: my_datetime
-    TYPE(timedelta), POINTER, OPTIONAL :: plus_slack
-    TYPE(timedelta), POINTER, OPTIONAL :: minus_slack
+  RECURSIVE FUNCTION isCurrentEventActive(my_event, my_datetime, plus_slack, minus_slack) RESULT(ret)
+    TYPE(event), POINTER, INTENT(in) :: my_event
+    TYPE(datetime), TARGET, INTENT(in) :: my_datetime
+    TYPE(timedelta), POINTER, OPTIONAL, INTENT(in) :: plus_slack
+    TYPE(timedelta), POINTER, OPTIONAL, INTENT(in) :: minus_slack
+    TYPE(c_ptr) :: plus_slack_c, minus_slack_c
     LOGICAL(c_bool) :: ret
-    IF (PRESENT(plus_slack) .AND. PRESENT(minus_slack)) THEN
-      ret = my_isCurrentEventActive(c_LOC(my_event), c_LOC(my_datetime), &
-            &                   c_LOC(plus_slack),  c_LOC(minus_slack))
-
-    ELSE IF (PRESENT(plus_slack) .AND. .NOT.PRESENT(minus_slack)) THEN
-      ret = my_isCurrentEventActive(c_LOC(my_event), c_LOC(my_datetime), &
-            &                           c_LOC(plus_slack),  c_null_ptr)
-
-    ELSE IF (.NOT.PRESENT(plus_slack) .AND. PRESENT(minus_slack)) THEN
-      ret = my_isCurrentEventActive(c_LOC(my_event), c_LOC(my_datetime), &
-            &                          c_null_ptr,  c_LOC(minus_slack))
-
+    IF (PRESENT(plus_slack)) THEN
+      plus_slack_c = C_LOC(plus_slack)
     ELSE
-      ret = my_isCurrentEventActive(c_LOC(my_event), c_LOC(my_datetime), &
-            &                                   c_null_ptr, c_null_ptr)
-
+      plus_slack_c = c_null_ptr
     END IF
+    IF (PRESENT(minus_slack)) THEN
+      minus_slack_c = C_LOC(minus_slack)
+    ELSE
+      minus_slack_c = c_null_ptr
+    END IF
+    ret = my_isCurrentEventActive(C_LOC(my_event), C_LOC(my_datetime), &
+         &                        plus_slack_c, minus_slack_c)
   END FUNCTION isCurrentEventActive
   !>
   !! @brief Checks, if next event is on a new day
@@ -2182,10 +2134,10 @@ CONTAINS
   !!
   !! @returns ret
   !!        Logical: true if next event is on new day
-  FUNCTION isEventNextInNextDay(my_event) RESULT(ret)
-    TYPE(event), POINTER :: my_event
+  RECURSIVE FUNCTION isEventNextInNextDay(my_event) RESULT(ret)
+    TYPE(event), POINTER, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_iseventnextinnextday(c_LOC(my_event))
+    ret = my_iseventnextinnextday(C_LOC(my_event))
   END FUNCTION isEventNextInNextDay
   !>
   !! @brief Checks, if next event is in a new month
@@ -2195,10 +2147,10 @@ CONTAINS
   !!
   !! @returns ret
   !!        Logical: true if next event is in a new month
-  FUNCTION iseventNextInNextMonth(my_event) RESULT(ret)
-    TYPE(event), POINTER :: my_event
+  RECURSIVE FUNCTION iseventNextInNextMonth(my_event) RESULT(ret)
+    TYPE(event), POINTER, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_iseventnextinnextmonth(c_LOC(my_event))
+    ret = my_iseventnextinnextmonth(C_LOC(my_event))
   END FUNCTION iseventNextInNextMonth
   !>
   !! @brief Checks, if next event is in a new year
@@ -2208,10 +2160,10 @@ CONTAINS
   !!
   !! @returns ret
   !!        Logical: true if next event is in a new year
-  FUNCTION iseventNextInNextYear(my_event) RESULT(ret)
-    TYPE(event), POINTER :: my_event
+  RECURSIVE FUNCTION iseventNextInNextYear(my_event) RESULT(ret)
+    TYPE(event), POINTER, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_iseventnextinnextyear(c_LOC(my_event))
+    ret = my_iseventnextinnextyear(C_LOC(my_event))
   END FUNCTION iseventNextInNextYear
   !>
   !! @brief Get the Datetime when 'this' event will be triggered next.
@@ -2221,24 +2173,23 @@ CONTAINS
   !!          data structure.
   !!
   !! @param[in] my_event
-  !!         A pointer to type event. This is the event being queried.
+  !!         A variable of type event. This is the event being queried.
   !!
   !! @param[in]  my_currentdatetime
-  !!         A pointer to type datetime. The next trigger datetime is copied here.
+  !!         A variable of type datetime. The next trigger datetime is copied here.
   !!
   !! @param[out] my_datetime
-  !!         A pointer to type datetime with next-trigger datetime.
+  !!         A variable of type datetime with next-trigger datetime.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getTriggerNextEventAtDateTime(my_event,my_currentdatetime,my_datetime, errno)
+  RECURSIVE SUBROUTINE getTriggerNextEventAtDateTime(my_event, my_currentdatetime, my_datetime, errno)
     TYPE(event), TARGET, INTENT(in) :: my_event
     TYPE(datetime), TARGET, INTENT(in) :: my_currentdatetime
-    TYPE(datetime), TARGET :: my_datetime
+    TYPE(datetime), TARGET, INTENT(out) :: my_datetime
     TYPE(c_ptr) :: dummy_ptr
-    INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_gettriggernexteventatdatetime(c_LOC(my_event),c_LOC(my_currentdatetime),c_LOC(my_datetime))
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 6 * 100 + 8
+    INTEGER, OPTIONAL, INTENT(out) :: errno
+    dummy_ptr = my_gettriggernexteventatdatetime(C_LOC(my_event), C_LOC(my_currentdatetime), C_LOC(my_datetime))
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 8, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE getTriggerNextEventAtDateTime
   !>
   !! @brief Get the Datetime when 'this' event will be triggered last.
@@ -2250,17 +2201,16 @@ CONTAINS
   !!         A pointer to type event. This is the event being queried.
   !!
   !! @param[out] my_datetime
-  !!         A pointer to type datetime with last-trigger datetime.
+  !!         A variable of type datetime with last-trigger datetime.
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getTriggeredPreviousEventAtDateTime(my_event,my_datetime,errno)
+  RECURSIVE SUBROUTINE getTriggeredPreviousEventAtDateTime(my_event, my_datetime, errno)
     TYPE(event), TARGET, INTENT(in) :: my_event
-    TYPE(datetime), TARGET :: my_datetime
+    TYPE(datetime), TARGET, INTENT(out) :: my_datetime
     TYPE(c_ptr) :: dummy_ptr
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_gettriggeredpreviouseventatdatetime(c_LOC(my_event),c_LOC(my_datetime))
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 6 * 100 + 9
+    dummy_ptr = my_gettriggeredpreviouseventatdatetime(C_LOC(my_event), C_LOC(my_datetime))
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 9, C_ASSOCIATED(dummy_ptr))
   END SUBROUTINE getTriggeredPreviousEventAtDateTime
   !>
   !! @brief get the event id
@@ -2271,7 +2221,7 @@ CONTAINS
   !! @returns ret_evtid
   !!        the event id
   !!
-  FUNCTION getEventId(my_event) RESULT(ret_evtid) !OK-TESTED.
+  RECURSIVE FUNCTION getEventId(my_event) RESULT(ret_evtid) !OK-TESTED.
     INTEGER(c_int64_t) :: ret_evtid
     TYPE(event), POINTER :: my_event
     ret_evtid = my_event%eventId
@@ -2285,16 +2235,15 @@ CONTAINS
   !! @param[out]       string      the name of the event
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getEventName(my_event, string, errno) !OK-TESTED.
-    TYPE(event), POINTER :: my_event
-    CHARACTER(len=max_eventname_str_len) :: string
+  RECURSIVE SUBROUTINE getEventName(my_event, string, errno) !OK-TESTED.
+    TYPE(event), POINTER, INTENT(in) :: my_event
+    CHARACTER(len=max_eventname_str_len), INTENT(out) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL :: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_geteventname(c_LOC(my_event), string)
-    IF ((.NOT.c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 6 * 100 + 11
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_geteventname(C_LOC(my_event), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 6*100 + 11, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -2308,16 +2257,16 @@ CONTAINS
   !! @returns ret_referenceDateTime
   !!        A pointer of type datetime. The event's reference date.
   !!
-  FUNCTION getEventReferenceDateTime(my_event) RESULT(ret_referenceDateTime) !OK-TESTED.
+  RECURSIVE FUNCTION getEventReferenceDateTime(my_event) RESULT(ret_referenceDateTime) !OK-TESTED.
     TYPE(datetime), POINTER :: ret_referenceDateTime
-    TYPE(event), POINTER :: my_event
+    TYPE(event), POINTER, INTENT(in) :: my_event
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_event%eventReferenceDatetime
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_referenceDateTime)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_referenceDateTime)
     ELSE
       ret_referenceDateTime => NULL()
-    ENDIF
+    END IF
   END FUNCTION getEventReferenceDateTime
   !>
   !! @brief get the event first date
@@ -2328,16 +2277,16 @@ CONTAINS
   !! @returns ret_eventFirstDateTime
   !!        A pointer of type datetime. The event's first date.
   !!
-  FUNCTION getEventFirstDateTime(my_event) RESULT(ret_eventFirstDateTime) !OK-TESTED.
+  RECURSIVE FUNCTION getEventFirstDateTime(my_event) RESULT(ret_eventFirstDateTime) !OK-TESTED.
     TYPE(datetime), POINTER :: ret_eventFirstDateTime
-    TYPE(event), POINTER :: my_event
+    TYPE(event), POINTER, INTENT(in) :: my_event
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_event%eventFirstDateTime
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_eventFirstDateTime)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_eventFirstDateTime)
     ELSE
       ret_eventFirstDateTime => NULL()
-    ENDIF
+    END IF
   END FUNCTION getEventFirstDateTime
   !>
   !! @brief get the event last date
@@ -2348,16 +2297,16 @@ CONTAINS
   !! @returns ret_eventLastDateTime
   !!        A pointer of type datetime. The event's last date.
   !!
-  FUNCTION getEventLastDateTime(my_event) RESULT(ret_eventLastDateTime) !OK-TESTED.
+  RECURSIVE FUNCTION getEventLastDateTime(my_event) RESULT(ret_eventLastDateTime) !OK-TESTED.
     TYPE(datetime), POINTER :: ret_eventLastDateTime
-    TYPE(event), POINTER :: my_event
+    TYPE(event), POINTER, INTENT(in) :: my_event
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_event%eventLastDateTime
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_eventLastDateTime)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_eventLastDateTime)
     ELSE
       ret_eventLastDateTime => NULL()
-    ENDIF
+    END IF
   END FUNCTION getEventLastDateTime
   !>
   !! @brief get the event interval
@@ -2368,115 +2317,115 @@ CONTAINS
   !! @returns ret_eventInterval
   !!        A pointer of type timedelta. The event's last date.
   !!
-  FUNCTION getEventInterval(my_event) RESULT(ret_eventInterval) !OK-TESTED.
+  RECURSIVE FUNCTION getEventInterval(my_event) RESULT(ret_eventInterval) !OK-TESTED.
     TYPE(timedelta), POINTER :: ret_eventInterval
-    TYPE(event), POINTER :: my_event
+    TYPE(event), POINTER, INTENT(in) :: my_event
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_event%eventInterval
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_eventInterval)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_eventInterval)
     ELSE
       ret_eventInterval => NULL()
-    ENDIF
+    END IF
   END FUNCTION getEventInterval
   !>
   !! @brief Check if event is first
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is first
   !!
-  FUNCTION getNextEventIsFirst(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getNextEventIsFirst(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_getnexteventisfirst(c_LOC(my_event))
+    ret = my_getnexteventisfirst(C_LOC(my_event))
   END FUNCTION getNextEventIsFirst
   !>
   !! @brief Check if event is first in day
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is first in day
   !!
-  FUNCTION getEventisFirstInDay(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisFirstInDay(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventisfirstinday(c_LOC(my_event))
+    ret = my_geteventisfirstinday(C_LOC(my_event))
   END FUNCTION getEventisFirstInDay
   !>
   !! @brief Check if event is first in month
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is first in month
   !!
-  FUNCTION getEventisFirstInMonth(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisFirstInMonth(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventisfirstinmonth(c_LOC(my_event))
+    ret = my_geteventisfirstinmonth(C_LOC(my_event))
   END FUNCTION getEventisFirstInMonth
   !>
   !! @brief Check if event is first in year
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is first in year
   !!
-  FUNCTION getEventisFirstInYear(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisFirstInYear(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventisfirstinyear(c_LOC(my_event))
+    ret = my_geteventisfirstinyear(C_LOC(my_event))
   END FUNCTION getEventisFirstInYear
   !>
   !! @brief Check if event is last in day
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is last in day
   !!
 
-  FUNCTION getEventisLastInDay(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisLastInDay(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventislastinday(c_LOC(my_event))
+    ret = my_geteventislastinday(C_LOC(my_event))
   END FUNCTION getEventisLastInDay
   !>
   !! @brief Check if event is last in month
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is last in month
   !!
-  FUNCTION getEventisLastInMonth(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisLastInMonth(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventislastinmonth(c_LOC(my_event))
+    ret = my_geteventislastinmonth(C_LOC(my_event))
   END FUNCTION getEventisLastInMonth
   !>
   !! @brief Check if event is last in year
   !!
   !! @param[in] my_event
-  !!        A pointer of type event.
+  !!        A reference of type event.
   !!
   !! @returns ret
   !!        Logical: true if event is last in year
   !!
-  FUNCTION getEventisLastInYear(my_event) RESULT(ret)
+  RECURSIVE FUNCTION getEventisLastInYear(my_event) RESULT(ret)
     TYPE(event), TARGET, INTENT(in) :: my_event
     LOGICAL(c_bool) :: ret
-    ret = my_geteventislastinyear(c_LOC(my_event))
+    ret = my_geteventislastinyear(C_LOC(my_event))
   END FUNCTION getEventisLastInYear
   !
 END MODULE mtime_events
@@ -2491,12 +2440,12 @@ END MODULE mtime_events
 !___________________________________________________________________________________________________________
 MODULE mtime_eventgroups
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int64_t, c_ptr, c_char, c_null_char, c_bool, &
-       &                                 c_loc, c_f_pointer, c_associated
-  USE mtime_c_bindings
-  USE mtime_error_handling
-  USE mtime_constants
-  !
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: &
+    & c_associated, c_f_pointer, c_int64_t, c_loc, c_null_char, c_ptr
+  USE mtime_constants, ONLY: max_groupname_str_len
+  USE mtime_c_bindings, ONLY: &
+    & eventgroup, my_addeventtoeventgroup, my_deallocateeventgroup, &
+    & my_geteventgroupname, my_neweventgroup, my_removeeventfromeventgroup
   USE mtime_events
   !
   IMPLICIT NONE
@@ -2513,8 +2462,6 @@ MODULE mtime_eventgroups
   PUBLIC :: getFirstEventFromEventGroup
   PUBLIC :: getNextEventFromEventGroup
   !
-  !
-  !
 CONTAINS
   !>
   !! @brief Construct new event-Group using a string.
@@ -2527,15 +2474,14 @@ CONTAINS
   !! @return ret_eventgroup
   !!         A pointer to an initialized event-Group.
   !!
-  FUNCTION newEventGroup(name, errno) RESULT(ret_eventgroup) !OK-TESTED.
+  RECURSIVE FUNCTION newEventGroup(name, errno) RESULT(ret_eventgroup) !OK-TESTED.
     TYPE(eventgroup), POINTER :: ret_eventgroup
     CHARACTER(len=*), INTENT(in) :: name
     TYPE(c_ptr) :: c_pointer
-    INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
+    INTEGER, OPTIONAL, INTENT(out):: errno
     c_pointer = my_neweventgroup(TRIM(ADJUSTL(name))//c_null_char)
-    IF ((.NOT. c_ASSOCIATED(c_pointer)) .AND. PRESENT(errno)) errno = 7 * 100 + 1
-    CALL c_f_POINTER(c_pointer, ret_eventgroup)
+    IF (PRESENT(errno)) errno = MERGE(0, 7*100 + 1, C_ASSOCIATED(c_pointer))
+    CALL C_F_POINTER(c_pointer, ret_eventgroup)
   END FUNCTION newEventGroup
   !>
   !! @brief Destructor of EventGroup.
@@ -2543,27 +2489,27 @@ CONTAINS
   !! @param[in] my_eventgroup
   !!         A pointer to type eventGroup. my_eventgroup is deallocated.
   !!
-  SUBROUTINE deallocateEventGroup(my_eventgroup) !OK-TESTED.
+  RECURSIVE SUBROUTINE deallocateEventGroup(my_eventgroup) !OK-TESTED.
     TYPE(eventgroup), POINTER :: my_eventgroup
-    CALL my_deallocateeventgroup(c_LOC(my_eventgroup))
+    CALL my_deallocateeventgroup(C_LOC(my_eventgroup))
     my_eventgroup => NULL()
   END SUBROUTINE deallocateEventGroup
   !>
   !! @brief Add new event to an eventgroup.
   !!
   !! @param  my_event
-  !!         A pointer to type event. The event to be added.
+  !!         A reference to type event. The event to be added.
   !!
   !! @param  my_eventgroup
-  !!         A pointer to type eventgroup. The eventgroup where the event is added.
+  !!         A reference to type eventgroup. The eventgroup where the event is added.
   !!
   !! @return ret
   !!         true/false indicating success or failure of addition.
-  FUNCTION addEventToEventGroup(my_event, my_eventgroup) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION addEventToEventGroup(my_event, my_eventgroup) RESULT(ret) !OK-TESTED.
     LOGICAL :: ret
-    TYPE(event), POINTER :: my_event
-    TYPE(eventgroup), POINTER :: my_eventgroup
-    ret = my_addeventtoeventgroup(c_LOC(my_event), c_LOC(my_eventgroup))
+    TYPE(event), TARGET, INTENT(in) :: my_event
+    TYPE(eventgroup), TARGET, INTENT(inout) :: my_eventgroup
+    ret = my_addeventtoeventgroup(C_LOC(my_event), C_LOC(my_eventgroup))
   END FUNCTION addEventToEventGroup
   !>
   !! @brief Remove event from eventgroup. CRITICAL: Also, deallocate the event.
@@ -2576,11 +2522,11 @@ CONTAINS
   !!
   !! @return ret
   !!         true/false indicating success or failure of removal.
-  FUNCTION removeEventfromEventGroup(my_name, my_eventgroup) RESULT(ret) !OK-TESTED.
+  RECURSIVE FUNCTION removeEventfromEventGroup(my_name, my_eventgroup) RESULT(ret) !OK-TESTED.
     LOGICAL :: ret
     CHARACTER(len=*), INTENT(in) :: my_name
-    TYPE(eventgroup), POINTER :: my_eventgroup
-    ret = my_removeeventfromeventgroup(TRIM(ADJUSTL(my_name))//c_null_char, c_LOC(my_eventgroup))
+    TYPE(eventgroup), POINTER, INTENT(inout) :: my_eventgroup
+    ret = my_removeeventfromeventgroup(TRIM(ADJUSTL(my_name))//c_null_char, C_LOC(my_eventgroup))
   END FUNCTION removeEventFromEventGroup
   !>
   !! @brief Get event group id
@@ -2590,9 +2536,9 @@ CONTAINS
   !!
   !! @return ret_grpid
   !!         The event group id
-  FUNCTION getEventGroupId(my_eventgroup) RESULT(ret_grpid) !OK-TESTED.
+  RECURSIVE FUNCTION getEventGroupId(my_eventgroup) RESULT(ret_grpid) !OK-TESTED.
     INTEGER(c_int64_t) :: ret_grpid
-    TYPE(eventgroup), POINTER :: my_eventgroup
+    TYPE(eventgroup), POINTER, INTENT(in) :: my_eventgroup
     ret_grpid = my_eventgroup%eventGroupId
   END FUNCTION getEventGroupId
   !>
@@ -2604,16 +2550,15 @@ CONTAINS
   !! @param[out]       string      the name of the event group
   !!
   !! @param[out]       errno       optional, error message
-  SUBROUTINE getEventGroupName(my_eventgroup, string, errno)  !TESTED-OK.
-    TYPE(eventgroup), POINTER :: my_eventgroup
+  RECURSIVE SUBROUTINE getEventGroupName(my_eventgroup, string, errno)  !TESTED-OK.
+    TYPE(eventgroup), POINTER, INTENT(in) :: my_eventgroup
     CHARACTER(len=max_groupname_str_len) :: string
     TYPE(c_ptr) :: dummy_ptr
     INTEGER :: i
     INTEGER, OPTIONAL:: errno
-    IF (PRESENT(errno)) errno = 0
-    dummy_ptr = my_geteventgroupname(c_LOC(my_eventgroup), string)
-    IF ((.NOT. c_ASSOCIATED(dummy_ptr)) .AND. PRESENT(errno)) errno = 7 * 100 + 6
-    char_loop: DO i = 1 , LEN(string)
+    dummy_ptr = my_geteventgroupname(C_LOC(my_eventgroup), string)
+    IF (PRESENT(errno)) errno = MERGE(0, 7*100 + 6, C_ASSOCIATED(dummy_ptr))
+    char_loop: DO i = 1, LEN(string)
       IF (string(i:i) == c_null_char) EXIT char_loop
     END DO char_loop
     string(i:LEN(string)) = ' '
@@ -2626,16 +2571,16 @@ CONTAINS
   !!
   !! @returns ret_event
   !!        A pointer of type event. The first event in eventgroup
-  FUNCTION getFirstEventFromEventGroup(my_eventgroup) RESULT(ret_event) !OK-TESTED.
+  RECURSIVE FUNCTION getFirstEventFromEventGroup(my_eventgroup) RESULT(ret_event) !OK-TESTED.
     TYPE(event), POINTER :: ret_event
-    TYPE(eventgroup), POINTER :: my_eventgroup
+    TYPE(eventgroup), POINTER, INTENT(in) :: my_eventgroup
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_eventgroup%firstEventInGroup
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_event)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_event)
     ELSE
       ret_event => NULL()
-    ENDIF
+    END IF
   END FUNCTION getFirstEventFromEventGroup
   !>
   !! @brief get the next event in an event group an event belongs to
@@ -2645,16 +2590,16 @@ CONTAINS
   !!
   !! @returns ret_event
   !!        A pointer of type event. The next event in eventgroup
-  FUNCTION getNextEventFromEventGroup(my_event) RESULT(ret_event) !OK-TESTED.
+  RECURSIVE FUNCTION getNextEventFromEventGroup(my_event) RESULT(ret_event) !OK-TESTED.
     TYPE(event), POINTER :: ret_event
-    TYPE(event), POINTER :: my_event
+    TYPE(event), POINTER, INTENT(in) :: my_event
     TYPE(c_ptr) :: c_pointer
     c_pointer = my_event%nextEventInGroup
-    IF (c_ASSOCIATED(c_pointer)) THEN
-      CALL c_f_POINTER(c_pointer, ret_event)
+    IF (C_ASSOCIATED(c_pointer)) THEN
+      CALL C_F_POINTER(c_pointer, ret_event)
     ELSE
       ret_event => NULL()
-    ENDIF
+    END IF
   END FUNCTION getNextEventFromEventGroup
   !
 END MODULE mtime_eventgroups
@@ -2669,10 +2614,8 @@ END MODULE mtime_eventgroups
 !___________________________________________________________________________________________________________
 MODULE mtime_utilities
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_char, c_null_char
-  USE mtime_c_bindings
-  USE mtime_error_handling
-  USE mtime_constants
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_null_char
+  USE mtime_c_bindings, ONLY: my_getrepetitions, my_splitrepetitionstring
   !
   IMPLICIT NONE
   !
@@ -2696,7 +2639,7 @@ CONTAINS
   !! @return r
   !!         An int representing the number of repetitions.
   !!
-  FUNCTION getRepetitions(repetitionString) RESULT(r)
+  RECURSIVE FUNCTION getRepetitions(repetitionString) RESULT(r)
     INTEGER :: r
     CHARACTER(len=*), INTENT(in) :: repetitionString
     r = my_getRepetitions(TRIM(ADJUSTL(repetitionString))//c_null_char)
@@ -2725,7 +2668,9 @@ CONTAINS
   !! @param[out] lduration
   !!         Logical: true, if duration is available
   !!
-  SUBROUTINE splitRepetitionString(recurringTimeInterval, repetitor, start, END, duration, lrepetitor, lstart, lend, lduration)
+  RECURSIVE SUBROUTINE splitRepetitionString(recurringTimeInterval, &
+                                           & repetitor, start, END, duration, &
+                                           & lrepetitor, lstart, lend, lduration)
     CHARACTER(len=*), INTENT(in) :: recurringTimeInterval
     CHARACTER(len=*), INTENT(out) :: repetitor
     CHARACTER(len=*), INTENT(out) :: start
@@ -2739,39 +2684,34 @@ CONTAINS
 
     INTEGER :: i
 
-    lrepetitor = .FALSE.
-    lstart = .FALSE.
-    lend = .FALSE.
-    lduration = .FALSE.
-
     CALL my_splitRepetitionString(TRIM(ADJUSTL(recurringTimeInterval))//c_null_char, repetitor, start, END, duration)
 
-    IF (repetitor(1:1) /= c_null_char) lrepetitor = .TRUE.
-    char_loop1: DO i = 1 , LEN(repetitor)
+    lrepetitor = repetitor(1:1) /= c_null_char
+    char_loop1: DO i = 1, LEN(repetitor)
       IF (repetitor(i:i) == c_null_char) EXIT char_loop1
     END DO char_loop1
     repetitor(i:LEN(repetitor)) = ' '
 
-    IF (start(1:1) /= c_null_char) lstart = .TRUE.
-    char_loop2: DO i = 1 , LEN(start)
+    lstart = start(1:1) /= c_null_char
+    char_loop2: DO i = 1, LEN(start)
       IF (start(i:i) == c_null_char) EXIT char_loop2
     END DO char_loop2
     start(i:LEN(start)) = ' '
 
-    IF (END(1:1) /= c_null_char) lend = .TRUE.
-    char_loop3: DO i = 1 , LEN(END)
+    lend = END(1:1) /= c_null_char
+    char_loop3: DO i = 1, LEN(END)
       IF (END(i:i) == c_null_char) EXIT char_loop3
     END DO char_loop3
     END(i:LEN(END)) = ' '
 
-    IF (duration(1:1) /= c_null_char) lduration = .TRUE.
-    char_loop4: DO i = 1 , LEN(duration)
+    lduration = duration(1:1) /= c_null_char
+    char_loop4: DO i = 1, LEN(duration)
       IF (duration(i:i) == c_null_char) EXIT char_loop4
     END DO char_loop4
     duration(i:LEN(duration)) = ' '
 
   END SUBROUTINE splitRepetitionString
-  !
+!
 END MODULE mtime_utilities
 !>
 !! @}
@@ -2786,8 +2726,12 @@ END MODULE mtime_utilities
 !___________________________________________________________________________________________________________
 MODULE mtime
   !
-  USE, INTRINSIC :: iso_c_binding, ONLY: c_int, c_int64_t, c_bool, c_ptr, c_char
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_int
   !
+  USE mtime_constants
+  USE mtime_error_handling
+  USE mtime_c_bindings, ONLY: &
+    & calendarType, divisionquotienttimespan, resetCalendar, setCalendar
   USE mtime_calendar
   USE mtime_juliandelta
   USE mtime_julianday
@@ -2798,38 +2742,33 @@ MODULE mtime
   USE mtime_events
   USE mtime_eventgroups
   USE mtime_utilities
-  USE mtime_print_by_callback
-  USE mtime_error_handling
-  USE mtime_c_bindings
   !
   IMPLICIT NONE
   !
   PUBLIC
-
   !
 #ifdef DOXYGEN_DOCUMENTATION_ONLY
-  INTEGER, PARAMETER :: no_of_sec_in_a_day    =    86400  !!< number of seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_hour   =     3600  !!< number of seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_sec_in_a_minute =       60  !!< number of seconds per minute, defined in C
+  INTEGER, PARAMETER :: no_of_sec_in_a_day = 86400  !!< number of seconds per day, defined in C
+  INTEGER, PARAMETER :: no_of_sec_in_a_hour = 3600  !!< number of seconds per hour, defined in C
+  INTEGER, PARAMETER :: no_of_sec_in_a_minute = 60  !!< number of seconds per minute, defined in C
   !
-  INTEGER, PARAMETER :: no_of_ms_in_a_day     = 86400000  !!< number of milli-seconds per day, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_half_day  = 43200000  !!< number of milli-seconds per 12 hours, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_hour    =  3600000  !!< number of milli-seconds per hour, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_minute  =    60000  !!< number of milli-seconds per minute, defined in C
-  INTEGER, PARAMETER :: no_of_ms_in_a_second  =     1000  !!< number of milli-seconds per second, defined in C
+  INTEGER, PARAMETER :: no_of_ms_in_a_day = 86400000  !!< number of milli-seconds per day, defined in C
+  INTEGER, PARAMETER :: no_of_ms_in_half_day = 43200000  !!< number of milli-seconds per 12 hours, defined in C
+  INTEGER, PARAMETER :: no_of_ms_in_a_hour = 3600000  !!< number of milli-seconds per hour, defined in C
+  INTEGER, PARAMETER :: no_of_ms_in_a_minute = 60000  !!< number of milli-seconds per minute, defined in C
+  INTEGER, PARAMETER :: no_of_ms_in_a_second = 1000  !!< number of milli-seconds per second, defined in C
 #endif
   !
   !> @cond DOXYGEN_IGNORE_THIS
-  INTEGER(c_int), BIND(c,name='NO_OF_SEC_IN_A_DAY') :: no_of_sec_in_a_day
-  INTEGER(c_int), BIND(c,name='NO_OF_SEC_IN_A_HOUR') :: no_of_sec_in_a_hour
-  INTEGER(c_int), BIND(c,name='NO_OF_SEC_IN_A_MINUTE') :: no_of_sec_in_a_minute
+  INTEGER(c_int), BIND(c, name='NO_OF_SEC_IN_A_DAY') :: no_of_sec_in_a_day
+  INTEGER(c_int), BIND(c, name='NO_OF_SEC_IN_A_HOUR') :: no_of_sec_in_a_hour
+  INTEGER(c_int), BIND(c, name='NO_OF_SEC_IN_A_MINUTE') :: no_of_sec_in_a_minute
   !
-  INTEGER(c_int), BIND(c,name='NO_OF_MS_IN_A_DAY') :: no_of_ms_in_a_day
-  INTEGER(c_int), BIND(c,name='NO_OF_MS_IN_HALF_DAY') :: no_of_ms_in_half_day
-  INTEGER(c_int), BIND(c,name='NO_OF_MS_IN_A_HOUR') :: no_of_ms_in_a_hour
-  INTEGER(c_int), BIND(c,name='NO_OF_MS_IN_A_MINUTE') :: no_of_ms_in_a_minute
-  INTEGER(c_int), BIND(c,name='NO_OF_MS_IN_A_SECOND') :: no_of_ms_in_a_second
+  INTEGER(c_int), BIND(c, name='NO_OF_MS_IN_A_DAY') :: no_of_ms_in_a_day
+  INTEGER(c_int), BIND(c, name='NO_OF_MS_IN_HALF_DAY') :: no_of_ms_in_half_day
+  INTEGER(c_int), BIND(c, name='NO_OF_MS_IN_A_HOUR') :: no_of_ms_in_a_hour
+  INTEGER(c_int), BIND(c, name='NO_OF_MS_IN_A_MINUTE') :: no_of_ms_in_a_minute
+  INTEGER(c_int), BIND(c, name='NO_OF_MS_IN_A_SECOND') :: no_of_ms_in_a_second
   !> @endcond DOXYGEN_IGNORE_THIS
-
 
 END MODULE mtime

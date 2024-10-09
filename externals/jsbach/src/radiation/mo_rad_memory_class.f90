@@ -20,8 +20,9 @@ MODULE mo_rad_memory_class
   USE mo_jsb_var_class,    ONLY: t_jsb_var_real2d, t_jsb_var_real3d
   USE mo_jsb_lct_class,    ONLY: BARE_TYPE, VEG_TYPE, LAND_TYPE, GLACIER_TYPE, LAKE_TYPE
 
-  dsl4jsb_Use_processes SEB_
+  dsl4jsb_Use_processes SEB_, HYDRO_
   dsl4jsb_Use_config(SEB_)
+  dsl4jsb_Use_config(HYDRO_)
 
   IMPLICIT NONE
   PRIVATE
@@ -144,11 +145,13 @@ CONTAINS
     INTEGER,             INTENT(in)            :: model_id
 
     dsl4jsb_Def_config(SEB_)
+    dsl4jsb_Def_config(HYDRO_)
 
     TYPE(t_jsb_model), POINTER  :: model                        !< model
     TYPE(t_jsb_grid),  POINTER  :: hgrid                        !< Horizontal grid
     TYPE(t_jsb_vgrid), POINTER  :: surface, canopy_layer        !< Vertical grids
     INTEGER                     :: table                        !< ...
+    LOGICAL                     :: l_ponds
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':Init_rad_memory'
 
@@ -161,6 +164,9 @@ CONTAINS
     canopy_layer => Get_vgrid('canopy_layer')
 
     dsl4jsb_Get_config(SEB_)
+    dsl4jsb_Get_config(HYDRO_)
+
+    l_ponds = dsl4jsb_Config(HYDRO_)%l_ponds
 
     CALL mem%Add_var( 'sw_srf_net', mem%sw_srf_net,                        &
       & hgrid, surface,                                                    &
@@ -317,7 +323,7 @@ CONTAINS
         & t_cf('alb_vis_pond', '', ''),                       &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix,                                                    &
-        & lrestart=.TRUE.,                                                   &
+        & lrestart=l_ponds, lrestart_cont=.TRUE.,                            &
         & initval_r=0.0_wp )
 
       CALL mem%Add_var( 'alb_nir_pond', mem%alb_nir_pond,                    &
@@ -325,7 +331,7 @@ CONTAINS
         & t_cf('alb_nir_pond', '', ''),                       &
         & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix,                                                    &
-        & lrestart=.TRUE.,                                                   &
+        & lrestart=l_ponds, lrestart_cont=.TRUE.,                            &
         & initval_r=0.0_wp )
     END IF
 

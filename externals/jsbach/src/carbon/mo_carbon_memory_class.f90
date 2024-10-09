@@ -41,13 +41,6 @@ MODULE mo_carbon_memory_class
 
   !> Type definition for memory
   TYPE, EXTENDS(t_jsb_memory) :: t_carbon_memory
-    ! 1d reals:
-    !REAL(wp) ::            &
-    TYPE(t_jsb_var_real2d) ::     &
-       N_pseudo_temp,       & ! Constants used for updating the pseudo-15-day mean temperature
-       F_pseudo_temp,       & ! Constants used for updating the pseudo-15-day mean temperature
-       N_pseudo_precip,     & ! Constants used for updating the pseudo-15-day mean precipitation
-       F_pseudo_precip        ! Constants used for updating the pseudo-15-day mean precipitation
 
     ! cbalance_type variables
     TYPE(t_jsb_var_real2d) ::     &
@@ -280,36 +273,6 @@ CONTAINS
 
     dsl4jsb_Get_config(PHENO_)
     dsl4jsb_Get_config(CARBON_)
-
-    ! R: only if we would want to have these variables in 2d (see mo_carbon_init.f90 for their initialization):
-    CALL mem%Add_var('n_pseudo_temp', mem%N_pseudo_temp,                                             &
-      & hgrid, surface,                                                                              &
-      & t_cf('N_pseudo_temp', 'K', 'Normalization for computing pseudo-15-day mean air temperature'),    &
-      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
-      & prefix, suffix,                                                                                &
-      & lrestart=.FALSE., initval_r=0.0_wp )
-
-    CALL mem%Add_var('f_pseudo_temp', mem%F_pseudo_temp,                                             &
-      & hgrid, surface,                                                                              &
-      & t_cf('F_pseudo_temp', '-', 'Exponential factor used for updating the pseudo-15-day mean temperature'),    &
-      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
-      & prefix, suffix,                                                                                &
-      & lrestart=.FALSE., initval_r=0.0_wp )
-
-    CALL mem%Add_var('n_pseudo_precip', mem%N_pseudo_precip,                                         &
-      & hgrid, surface,                                                                              &
-      & t_cf('N_pseudo_precip', 'Kg m-2 s-1', 'Normalization for computing pseudo-15-day mean precipitation rate'),  &
-      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
-      & prefix, suffix,                                                                                &
-      & lrestart=.FALSE., initval_r=0.0_wp, l_aggregate_all=.TRUE. )
-
-    CALL mem%Add_var('f_pseudo_precip', mem%F_pseudo_precip,                                         &
-      & hgrid, surface,                                                                              &
-      & t_cf('F_pseudo_precip', '-', 'Exponential factor used for updating the pseudo-15-day mean precip'),    &
-      & t_grib1(table, 255, grib_bits), t_grib2(255, 255, 255, grib_bits),                           &
-      & prefix, suffix,                                                                                &
-      & lrestart=.FALSE., initval_r=0.0_wp )
-
 
     CALL mem%Add_var('pseudo_temp', mem%pseudo_temp,                                                 &
       & hgrid, surface,                                                                              &

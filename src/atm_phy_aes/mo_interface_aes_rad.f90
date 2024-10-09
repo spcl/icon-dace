@@ -1,8 +1,3 @@
-!
-! Subroutine interface_aes_rad calls the radiative transfer scheme.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine interface_aes_rad calls the radiative transfer scheme.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -25,8 +22,9 @@ MODULE mo_interface_aes_rad
 
   USE mo_aes_phy_dims,         ONLY: aes_phy_dims
   USE mo_aes_phy_config,       ONLY: aes_phy_tc
+  USE mo_aes_rad_config,       ONLY: aes_rad_config
   USE mo_aes_phy_memory,       ONLY: t_aes_phy_field, prm_field
-  USE mo_snow_ice_reff,        ONLY: ice_reff_moss, snow_reff_funeedles, ice_reff_funeedles, snow_x, ice_x
+  USE mo_snow_ice_reff,        ONLY: ice_reff_moss, snow_reff_funeedles, snow_x, ice_x
   USE mo_run_config,           ONLY: iqs, iqi
   USE mo_aes_graupel,          ONLY: snow_number, snow_lambda, ice_number
 
@@ -66,6 +64,8 @@ CONTAINS
     !
     ! temp variable since non-contiguous slicing is not supported in OpenACC
     REAL(wp):: qtrc_phy(aes_phy_dims(jg)%nproma,aes_phy_dims(jg)%nlev,aes_phy_dims(jg)%ntracer)
+    !
+    LOGICAL :: lclrsky_lw, lclrsky_sw
 
     IF (ltimer) CALL timer_start(timer_rad)
 
@@ -76,6 +76,9 @@ CONTAINS
     datetime             => aes_phy_tc(jg)%datetime
     is_in_sd_ed_interval =  aes_phy_tc(jg)%is_in_sd_ed_interval_rad
     is_active            =  aes_phy_tc(jg)%is_active_rad
+
+    lclrsky_lw = aes_rad_config(jg)%lclrsky_lw
+    lclrsky_sw = aes_rad_config(jg)%lclrsky_sw
 
     ! associate pointers
     field => prm_field(jg)
@@ -204,14 +207,10 @@ CONTAINS
           !
           ! LW
           !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
-          field%rldcs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net longwave  at all levels
-          field%rlucs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net longwave  at all levels
           field%rld_rt  (:,:,:)  = 0.0_wp !< out  All-sky net longwave  at all levels
           field%rlu_rt  (:,:,:)  = 0.0_wp !< out  All-sky net longwave  at all levels
           !
           ! SW all
-          field%rsdcs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net shortwave at all levels
-          field%rsucs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net shortwave at all levels
           field%rsd_rt  (:,:,:)  = 0.0_wp !< out  All-sky net longwave  at all levels
           field%rsu_rt  (:,:,:)  = 0.0_wp !< out  All-sky net longwave  at all levels
           !
@@ -233,7 +232,22 @@ CONTAINS
           field%tau_snow(:,:,:) = 0.0_wp
           !$ACC END KERNELS
           !
-       !
+          ! LW clear sky
+          IF (lclrsky_lw) THEN
+             !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
+             field%rldcs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net longwave  at all levels
+             field%rlucs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net longwave  at all levels
+             !$ACC END KERNELS
+          END IF
+          !
+          ! SW clear sky
+          IF (lclrsky_sw) THEN
+             !$ACC KERNELS DEFAULT(PRESENT) ASYNC(1)
+             field%rsdcs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net shortwave at all levels
+             field%rsucs_rt(:,:,:)  = 0.0_wp !< out  Clear-sky net shortwave at all levels
+             !$ACC END KERNELS
+          END IF
+          !
        END IF
 
      IF (ltimer) CALL timer_stop(timer_rad)

@@ -84,8 +84,8 @@ XML2_LIBS="-lxml2"
 # Assume that zlib (needed for EMVORADO) resides under the GLOBAL_LIB_ROOT:
 ZLIB_LIBS="-lz"
 
+STDCPP_LIBDIR='/hpc/sw/gnu/gcc/11.2.0/lib64'
 STDCPP_LIBS='-lstdc++fs -lstdc++'
-# not sure if `-lstdc++fs ` is necessary
 
 # Make shared libraries available in build environment
 LD_LIBRARY_PATH="${HDF5_LIBDIR}:${NETCDF_LIBDIR}:${PGI_LIBDIR}"
@@ -120,7 +120,7 @@ ICON_FCFLAGS='-O2'
 ICON_WORKAROUND1_FCFLAGS="-O1 "
 ICON_WORKAROUND1_PATH='externals/dace_icon/src_for_icon/mo_rad.f90:externals/emvorado/src_iface_icon/radar_interface.f90'
 
-LDFLAGS="-L${HDF5_LIBDIR} -L${NETCDF_LIBDIR} -L${ECCODES_LIBDIR} -L${PGI_LIBDIR}"
+LDFLAGS="-L${HDF5_LIBDIR} -L${NETCDF_LIBDIR} -L${ECCODES_LIBDIR} -L${PGI_LIBDIR} -L${STDCPP_LIBDIR}"
 
 LIBS="-Wl,--as-needed ${BLAS_LAPACK_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${SERIALBOX2_LIBS} ${STDCPP_LIBS}"
 LIBS+=" ${ZLIB_LIBS}"

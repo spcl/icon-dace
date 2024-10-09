@@ -1,9 +1,3 @@
-! Provide an implementation of the ocean forcing.
-!
-! Provide an implementation of the parameters used for surface forcing
-! of the hydrostatic ocean model.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the ocean forcing.
+!
+! Provide an implementation of the parameters used for surface forcing
+! of the hydrostatic ocean model.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -527,6 +526,9 @@ CONTAINS
     !-------------------------------------------------------------------------
     CALL message(TRIM(routine), 'start' )
 
+    !$ACC EXIT DATA &
+    !$ACC   DELETE(p_as%tafo, p_as%ftdew, p_as%fclou, p_as%fu10, p_as%co2) &
+    !$ACC   DELETE(p_as%co2flx, p_as%fswr, p_as%pao, p_as%u, p_as%v)
 
     DEALLOCATE(p_as%tafo, STAT=ist)
     IF (ist/=SUCCESS) THEN

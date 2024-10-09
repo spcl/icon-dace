@@ -1,3 +1,10 @@
+"""
+This module provides a function to compute statistics over specified horizontal
+dimensions of an `xarray.DataArray`.
+The function supports calculating various statistics (mean, max, min, etc.) and
+handling missing values based on attributes defined in the dataset.
+"""
+
 import sys
 
 from util.log_handler import logger
@@ -24,21 +31,20 @@ def statistics_over_horizontal_dim(
     dims = xarray_da.dims
     for hor_dim in horizontal_dims:
         hor_dim = hor_dim.split(":")
-        if all([d in dims for d in hor_dim]):
+        if all(d in dims for d in hor_dim):
             if mask is None:
                 return [
                     getattr(xarray_da, s)(dim=hor_dim, skipna=False)
                     for s in compute_statistics
                 ]
-            else:
-                return [
-                    getattr(xarray_da.where(mask), s)(dim=hor_dim, skipna=True)
-                    for s in compute_statistics
-                ]
+            return [
+                getattr(xarray_da.where(mask), s)(dim=hor_dim, skipna=True)
+                for s in compute_statistics
+            ]
 
     logger.error(
-        "Could not find horizontal dimension for variable '{}'. Dims: {}".format(
-            xarray_da.name, dims
-        )
+        "Could not find horizontal dimension for variable '%s'. Dims: %s",
+        xarray_da.name,
+        dims,
     )
     sys.exit(1)

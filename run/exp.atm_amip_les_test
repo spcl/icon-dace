@@ -220,7 +220,7 @@ cat > ${jsbach_namelist} << EOF
   use_lakes       = ${llake}
   fract_filename  = "bc_land_frac.nc"
   output_tiles    = ${output_tiles}     ! List of tiles to output
-  enforce_water_budget = .TRUE.         ! True: stop in case of water conservation problem
+  enforce_water_budget = 'error'        ! Error: stop in case of water conservation problem
 /
 &jsb_seb_nml
   bc_filename     = 'bc_land_phys.nc'
@@ -349,7 +349,7 @@ start_year=$(( ${start_date%%-*} - 1 ))
 end_year=$(( ${end_date%%-*} + 1 ))
 #
 # - well mixed greenhouse gases
-datadir=${icon_data_poolFolder}/independent/greenhouse_gases
+datadir=${icon_data_poolFolder}/common/greenhouse_gases
 add_link_file $datadir/greenhouse_historical_plus.nc                    ./bc_greenhouse_gases.nc
 #
 # - ozone
@@ -409,7 +409,7 @@ add_link_file $datadir/bc_sic_1979_2016.nc          ./bc_sic.nc
 add_link_file $datadir/bc_sst_1979_2016.nc          ./bc_sst.nc
 #
 # - ssi and tsi
-datadir=${icon_data_poolFolder}/independent/solar_radiation/3.2
+datadir=${icon_data_poolFolder}/common/solar_radiation
 add_link_file $datadir/swflux_14band_cmip6_1850-2299-v3.2.nc            ./bc_solar_irradiance_sw_b14.nc
 #
 # - topography and sso parameters

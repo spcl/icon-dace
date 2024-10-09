@@ -1,8 +1,3 @@
-!
-! Processing of the external data for the upper atmosphere.
-!
-!----------------------------
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Processing of the external data for the upper atmosphere.
 
 !----------------------------
 #include "omp_definitions.inc"

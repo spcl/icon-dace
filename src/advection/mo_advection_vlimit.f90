@@ -1,9 +1,3 @@
-! Flux and reconstruction limiter for vertical tracer transport
-!
-! This module contains various filters and flux limiters for
-! vertical tracer transport.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Flux and reconstruction limiter for vertical tracer transport
+!
+! This module contains various filters and flux limiters for
+! vertical tracer transport.
 
 !----------------------------
 #include "omp_definitions.inc"

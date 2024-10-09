@@ -1,0 +1,35 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+experiments:
+
+  - name: atm_qubicc_nc_test
+    check: checksuite.icon-dev/check.atm_qubicc_nc
+    dates: ['19790101T000040Z', '19790101T000120Z', '19790101T000200Z',
+      '19790101T000240Z', '19790101T000320Z', '19790101T000400Z']
+    restart_date: ['19790101T000200Z']
+    types: ['pfull_ml', 'ta_ml', 'rho_ml', 'ua_ml', 'va_ml', 'wa_ml', 'hus_ml', 'cli_ml', 'clw_ml', 'qr_ml', 'qs_ml', 'qg_ml',
+            'atm2d_ml', 'flx2d_ml', 'ddt_ua_dyn_ml', 'ddt_va_dyn_ml', 'ddt_ua_adv_ml', 'ddt_ua_cor_ml',
+            'ddt_ua_dmp_ml', 'ddt_ua_hdf_ml', 'ddt_ua_pgr_ml', 'ddt_va_adv_ml', 'ddt_va_cor_ml',
+            'ddt_va_dmp_ml', 'ddt_va_hdf_ml', 'ddt_va_pgr_ml', 'tend_ta_rlw_ml', 'tend_ta_rsw_ml',
+            'tend_ta_vdf_ml', 'tend_ua_vdf_ml', 'tend_va_vdf_ml', 'tend_hus_vdf_ml', 'tend_clw_vdf_ml',
+            'tend_cli_vdf_ml', 'tend_ta_mig_ml', 'tend_hus_mig_ml', 'tend_clw_mig_ml', 'tend_cli_mig_ml']
+    tolerance:
+      file_id:
+        - NetCDF: ['*atm2d_ml*.nc', '*cli_ml*.nc', '*clw_ml*.nc', '*ddt_ua_adv_ml*.nc', '*ddt_ua_cor_ml*.nc', 
+                   '*ddt_ua_dmp_ml*.nc', '*ddt_ua_dyn_ml*.nc', '*ddt_ua_hdf_ml*.nc', '*ddt_ua_pgr_ml*.nc', 
+                   '*ddt_va_adv_ml*.nc', '*ddt_va_cor_ml*.nc', '*ddt_va_dmp_ml*.nc', '*ddt_va_dyn_ml*.nc', 
+                   '*ddt_va_hdf_ml*.nc', '*ddt_va_pgr_ml*.nc', '*flx2d_ml*.nc', '*hus_ml*.nc', '*pfull_ml*.nc', 
+                   '*qg_ml*.nc', '*qr_ml*.nc', '*qs_ml*.nc', '*rho_ml*.nc', '*ta_ml*.nc', '*tend_cli_mig_ml*.nc', 
+                   '*tend_cli_vdf_ml*.nc', '*tend_clw_mig_ml*.nc', '*tend_clw_vdf_ml*.nc', '*tend_hus_mig_ml*.nc', 
+                   '*tend_hus_vdf_ml*.nc', '*tend_ta_mig_ml*.nc', '*tend_ta_rlw_ml*.nc', '*tend_ta_rsw_ml*.nc', 
+                   '*tend_ta_vdf_ml*.nc', '*tend_ua_vdf_ml*.nc', '*tend_va_vdf_ml*.nc', '*ua_ml*.nc', '*va_ml*.nc', 
+                   '*wa_ml*.nc']
+    

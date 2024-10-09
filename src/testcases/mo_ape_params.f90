@@ -1,6 +1,3 @@
-! Physical constants and SST specification for the Aqua-Planet Experiments.
-! See <http://www.met.reading.ac.uk/~mike/APE/ape_spec.html>
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Physical constants and SST specification for the Aqua-Planet Experiments.
+! See <http://www.met.reading.ac.uk/~mike/APE/ape_spec.html>
 
 MODULE mo_ape_params
 

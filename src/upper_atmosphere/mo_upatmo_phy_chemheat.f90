@@ -1,14 +1,3 @@
-!
-! Chemical heating rate
-!
-! This module allows to compute chemical heating by interpolating from zonal mean climatology (12-month)
-!
-!  Modification by Guidi Zhou, MPI-M, 2017-02-28:
-!  - added support for using chemical heating only above a certain level
-!  - added output of efficiency factor for standard shortwave radiation
-!  Modification by Guidi Zhou, MPI-M (2017-03-06)
-!  - added the ability to compute chemical heating only above a certain altitude for performance
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -19,6 +8,16 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Chemical heating rate
+!
+! This module allows to compute chemical heating by interpolating from zonal mean climatology (12-month)
+!
+!  Modification by Guidi Zhou, MPI-M, 2017-02-28:
+!  - added support for using chemical heating only above a certain level
+!  - added output of efficiency factor for standard shortwave radiation
+!  Modification by Guidi Zhou, MPI-M (2017-03-06)
+!  - added the ability to compute chemical heating only above a certain altitude for performance
 
 MODULE mo_upatmo_phy_chemheat
 

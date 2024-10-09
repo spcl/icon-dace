@@ -300,7 +300,7 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
 
     IF (debug_on()) &
-      & CALL message(TRIM(routine), 'Store bgcms in matrices for - tile '//TRIM(tile_name))
+      & CALL message(TRIM(routine), 'Write back matrices to bgcms for - tile '//TRIM(tile_name))
 
     DO i_bgcm = 1, this%nr_of_bgc_materials
       SELECT CASE(this%nr_of_levels(i_bgcm))

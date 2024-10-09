@@ -1,3 +1,165 @@
+# Release notes for icon-2024.10
+
+The following lists give an overview on the main changes since the last release icon-2024.07.
+Note that this release now also contains the external model HD-couple, which is ready for
+open source now.
+
+
+### ICON-Atmo
+
+DyCore:
+
+- Revise projection to tangent plane for the FFSL scheme
+- Algorithmic optimization of the MIURA3 transport scheme
+- Optimize quadrature routines for tracer transport
+- Bug fix for linear advection quadrature
+- Namelist option for CFL monitoring frequency
+- Fixed accumulation of small epsilon on contravariant mass flux (in PPM)
+- AES: Fix faulty usage of NWP variable `prm_diag` with nested domains
+- OpenACC bugfix in interpolation of ozone from pressure levels to model levels
+- Cleaned up some time-related constants (wrong place / doubled definitions)
+
+NWP Physics:
+- Extension of adaptive parameter tuning
+- Preparing a major revision of the NWP turbulence code including the integration of some not yet
+  considered effects of surface roughness
+- Tuning for prognostic 2D aerosol scheme
+- VDIFF turbulence: deep-atmosphere fixes
+  - Consistently use full geopotential when converting between dry static energy and temperature
+  - Relax limits on vapor pressure table lookups
+- Cleanup in radiation and aerosol code parts
+- Initialise aerosol fields in case of Kinne/CAMS Aerosol
+
+AES Physics:
+
+- VDIFF turbulence: deep-atmosphere fixes (similar to NWP Physics)
+  - Consistently use full geopotential when converting between dry static energy and temperature
+  - Relax limits on vapor pressure table lookups
+- TMX turbulence
+  - Refactoring for increased modularization
+  - Add 2m dewpoint temperature diagnostic
+  - Fixes for OpenACC
+- Add diagnostics to trace atmospheric energy
+- Re-activate output of aerosol optical properties with RTE-RRTMGP
+- Revise clear sky radiation computations
+
+
+### ICON-Ocean
+
+- Add ocean isopycnal transport diagnostic 
+- Bug fix: calculate sea water density always on fixed depth levels
+- Bug fix and refactoring of the ocean age tracer
+- Optimize ocean surface solver
+- Continue GPU porting of ocean
+- ICON-Waves: prepare coupling of surface waves to the ocean
+- ICON-Waves: Add restart and checkpointing functionality
+
+
+### Soil and Surface
+
+Climate: ICON-Land
+
+- Fixes for using older restart files from before the JSBACH pond scheme was implemented
+- Improvements in JSBACH soil hydrology
+  - Change lower and upper limits of soil moisture
+  - Add option to use uniform distribution of soil moisture for infiltration and drainage as alternative
+    to semi-distributed parameterization that accounts for sub-grid variability (Arno scheme)
+  - New option to force initialization of soil moisture from a file instead of from IFS analysis
+  - Fixes for OpenACC loops in JSBACH hydrology
+  - Bug fixes for JSBACH pond scheme
+- Update of the scripts to generate ICON-Land initial (ic) and boundary condition (bc) files
+- Implement daily execution of anthropogenic land cover change by interpolation of annual maps
+- QUINCY development
+  - Refactoring of the quincy soil physics process
+  - Updates incl. first implementation of coupling with ICON-Atmo
+  - Implementation of a spin-up accelerator for the slow biogeochemical soil pools
+  - Implementation of wood product pools
+  - Implementation of a carbon conservation test
+  - Minor code fixes towards usability and style recommendations
+  - Minor scientific updates
+    - First step to include stem area (SAI, stem area index) into radiation scheme
+    - Fix of slow growth in early season in cold grassland sites
+    - Calibration of self-thinning for trees
+- Switch from deprecated YAC interface in HD model
+- Several fixes for DSL pre-processor script `dsl4jsb.py`
+- Port JSBACH carbon and disturbance modules to GPU
+- New options to reduce diagnostic output in log file from water balance checks
+- Fix for the land cover fraction diagnostics of simulations with natural or anthropogenic
+  land cover change
+- Fix too cold soil temperatures for partially snow-covered grid cells
+- Fixes for natural land cover change
+
+NWP: TERRA
+
+- Encapsulate initialization of land use-related parameters for NWP
+- Add option for ICON-internal soil moisture adjustment
+
+
+### Externals
+
+- Update HD model
+- ComIn 0.2.0
+- Updates for YAC
+  - Switch to version 3.4.0_p2
+  - Fix output coupling and enable python interfaces (yac,mtime,comin) for testing
+- Introduce the math-support and math-interpolation libraries
+- Update to MTIME 1.2.2
+
+
+### Infrastructure
+
+- MPI: check worker architecture during communicator creation
+- Restructured Subroutine initicon_inverse_post_op
+- Update the mechanism for source provenance collection
+
+
+#### Coupling
+
+- Add detailed timers for output_coupling
+- Fix OpenACC bugs that affect coupled het jobs
+- Do runoff diagnostic only when new data are received from YAC
+- Interface aes/ocean: move ocean coupling call from `mo_interface_iconam_aes.f90` to `mo_nh_stepping.f90`
+
+
+#### Scripting and testing
+
+- Fix component names in mkexp experiment to prevent wrong coupling setups 
+- New option -P for mars4icon_smi to use surface pressure instead of lnsp
+- Activate test for lgrayzone_deepconv
+- Several improvements to the experiment setup with the `mkexp` run script generation system
+- Adjust LUMI-G defaults in create_target_header
+- Additional experiment runscript template `run/exp.atm_nwp_jsbach-C` to test carbon cycle with ICON-XPP
+   (NWP atmosphere simulations with jsbach)
+- DCMIP Tropical Cyclone experiments: removed `dcmip_tc_51` test case and activated 
+   `dcmip_tc_52` also for AES physics
+- Clean up and consolidate several run script templates with AES physics (NextGEMS, AMIP, nested, land)
+- Update of JSC run scripts
+- Fix buildbot test scripts for Juwels and Booster
+
+
+#### Building
+
+- Several minor fixes for the configure script
+- Fix `USE mtime`, `INCLUDE netcdf.inc` and check for NetCDF Fortran 77 API
+- New makefile target 'env' to retrieve the build environment (`BUILD_ENV`) set in a configure wrapper
+- Expose BUILD_ENV to the runscript generators
+- Several minor fixes and improvements for the build system
+- Introduce configure option `--enable-bundled-python` to build the Python 
+   interfaces of `MTIME`, `YAC` and `COMIN`
+
+
+#### GPU port, technical developments and optimizations
+
+- GPU port of radiation namelist switch irad_o3=5
+- Prepare for eccodes versions >= 2.32.0
+- GPU port for stratocumulus tuning parameters `tune_sc_*`
+- Disentangle ext_data state construction, separates the state construction from its initialization
+- Adjust nproma to 256 B alignment to improve GPU performance
+- Optionally suppress HIP event handling of the Cray OpenACC runtime
+- Move and split CUDA/HIP source files
+- Several bug fixes for OpenMP and OpenACC
+
+
 # Release notes for icon-2024.07
 
 These are the release notes of the ICON model.

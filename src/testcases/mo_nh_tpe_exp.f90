@@ -1,6 +1,3 @@
-! Terra Planet experiments for the NH-Core
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Terra Planet experiments for the NH-Core
 
 MODULE mo_nh_tpe_exp
 

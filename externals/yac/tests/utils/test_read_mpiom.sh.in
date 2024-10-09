@@ -1,0 +1,11 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@HAVE_NETCDF_FALSE@exit 77
+
+GRID_DIR=@top_srcdir@/grids/
+
+./test_read_mpiom.x $GRID_DIR

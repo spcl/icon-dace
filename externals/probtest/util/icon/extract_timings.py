@@ -1,21 +1,26 @@
+"""
+This module provides utilities for parsing log files and converting them into
+timing data.
+"""
+
 import re
 import sys
 from datetime import datetime
 
 import numpy as np
 
-from util.constants import datetime_format
+from util.constants import DATETIME_FORMAT
 from util.log_handler import logger
 
-timing_start_regex = r"(?: +L? ?[a-zA-Z_.]+)"
-timing_element_regex = r"(?:\[?\d+[.msh]?\d*s?\]? +)"
-timing_regex = timing_start_regex + " +" + timing_element_regex + "{6,20} *(?!.)"
-header_regex = r"name +.*calls.*"
-indent_regex = r"^ *L? "
-hour_regex = r"(\d+)h(\d+)m(\d+)s"
-minute_regex = r"(\d+[.]?\d*)m(\d+[.]?\d*)s"
-sec_regex = r"(\d+[.]?\d*)s"
-number_regex = r"(\d+[.]?\d*)"
+TIMING_START_REGEX = r"(?: +L? ?[a-zA-Z_.]+)"
+TIMING_ELEMENT_REGEX = r"(?:\[?\d+[.msh]?\d*s?\]? +)"
+TIMING_REGEX = TIMING_START_REGEX + " +" + TIMING_ELEMENT_REGEX + "{6,20} *(?!.)"
+HEADER_REGEX = r"name +.*calls.*"
+INDENT_REGEX = r"^ *L? "
+HOUR_REGEX = r"(\d+)h(\d+)m(\d+)s"
+MINUTE_REGEX = r"(\d+[.]?\d*)m(\d+[.]?\d*)s"
+SEC_REGEX = r"(\d+[.]?\d*)s"
+NUMBER_REGEX = r"(\d+[.]?\d*)"
 
 dateline_regexs = (
     r"(?:[A-Z][a-z]{2} +){2}\d{1,2} \d{2}:\d{2}:\d{2} [A-Z]{3,4} 20\d{2}",
@@ -26,7 +31,7 @@ dateline_regexs = (
 )
 icon_date_formats = ("%a %b %d %H:%M:%S %Z %Y", "%a %d %b %Y %H:%M:%S %p %Z")
 
-dict_regex = "({} *:) *(.*)"
+DICT_REGEX = "({} *:) *(.*)"
 
 
 def _convert_dateline_to_start_end_datetime(dateline, icon_date_format):
@@ -38,10 +43,10 @@ def _convert_dateline_to_start_end_datetime(dateline, icon_date_format):
     start_time, finish_time = dateline
 
     finish_datetime = datetime.strptime(finish_time, icon_date_format)
-    finish_datetime_converted = finish_datetime.strftime(datetime_format)
+    finish_datetime_converted = finish_datetime.strftime(DATETIME_FORMAT)
 
     start_datetime = datetime.strptime(start_time, icon_date_format)
-    start_datetime_converted = start_datetime.strftime(datetime_format)
+    start_datetime_converted = start_datetime.strftime(DATETIME_FORMAT)
 
     return (start_datetime_converted, finish_datetime_converted)
 
@@ -54,11 +59,11 @@ def read_logfile(filename):
 
         # filter by timing headers and elements
         data = [
-            e for e in data if re.search(header_regex, e) or re.search(timing_regex, e)
+            e for e in data if re.search(HEADER_REGEX, e) or re.search(TIMING_REGEX, e)
         ]
 
         # store line numbers of timing table headers
-        header_lines = [i for i, e in enumerate(data) if re.search(header_regex, e)]
+        header_lines = [i for i, e in enumerate(data) if re.search(HEADER_REGEX, e)]
 
         # initialize storage for all tables
         timing_data = []
@@ -92,15 +97,17 @@ def read_logfile(filename):
                 if len(elements) != len(header_elements):
                     logger.critical(
                         (
-                            "Number of header elements ({}) "
-                            + "does not match number of table elements ({})"
-                        ).format(len(header_elements), len(elements))
+                            "Number of header elements (%s) "
+                            + "does not match number of table elements (%s)"
+                        ),
+                        len(header_elements),
+                        len(elements),
                     )
-                    logger.critical("header: {}".format(" -- ".join(header_elements)))
-                    logger.critical("table : {}".format(" -- ".join(elements)))
+                    logger.critical("header: %s", " -- ".join(header_elements))
+                    logger.critical("table : %s", " -- ".join(elements))
                     sys.exit(1)
                 # find indentation level for each table line
-                first = re.search(indent_regex, table_line).group(0)
+                first = re.search(INDENT_REGEX, table_line).group(0)
                 # assume 1 indent is 3 white spaces
                 timing_data_k["indent"].append(len(first) // 3)
 
@@ -115,6 +122,8 @@ def read_logfile(filename):
 
         # get start and finish time from job
         found_dateline_yes = False
+        start_datetime_converted = ""
+        finish_datetime_converted = ""
         for dateline_regex, icon_date_format in zip(dateline_regexs, icon_date_formats):
             dateline = re.findall(dateline_regex, full_file)
 
@@ -130,8 +139,8 @@ def read_logfile(filename):
         meta_data["finish_time"] = finish_datetime_converted
 
         # get meta data from ICON log (in the form "Key : Value")
-        revision = re.search(dict_regex.format("Revision"), full_file)
-        branch = re.search(dict_regex.format("Branch"), full_file)
+        revision = re.search(DICT_REGEX.format("Revision"), full_file)
+        branch = re.search(DICT_REGEX.format("Branch"), full_file)
 
         meta_data["revision"] = revision.group(2)
         meta_data["branch"] = branch.group(2)
@@ -142,10 +151,10 @@ def read_logfile(filename):
 
 
 def parse_time(time_string):
-    m1 = re.match(hour_regex, time_string)
-    m2 = re.match(minute_regex, time_string)
-    m3 = re.match(sec_regex, time_string)
-    m4 = re.match(number_regex, time_string)
+    m1 = re.match(HOUR_REGEX, time_string)
+    m2 = re.match(MINUTE_REGEX, time_string)
+    m3 = re.match(SEC_REGEX, time_string)
+    m4 = re.match(NUMBER_REGEX, time_string)
     if m1:
         h, m, s = [m1.group(i) for i in [1, 2, 3]]
     elif m2:
@@ -160,6 +169,9 @@ def parse_time(time_string):
         h = 0
         m = 0
     else:
-        logger.error("did not match regex")
+        s = 0
+        m = 0
+        h = 0
+        logger.warning("did not match regex")
     out = float(h) * 60 * 60 + float(m) * 60 + float(s)
     return out

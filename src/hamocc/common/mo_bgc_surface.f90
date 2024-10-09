@@ -1,6 +1,3 @@
-! @brief module contains gas exchange, weathering fluxes,
-!        dust & nitrogen deposition
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief module contains gas exchange, weathering fluxes,
+!        dust & nitrogen deposition
+
 MODULE mo_bgc_surface
 
   USE mo_kind, ONLY           : wp

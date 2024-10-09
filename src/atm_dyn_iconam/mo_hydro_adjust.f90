@@ -1,11 +1,3 @@
-!
-! Routines for computing hydrostatically balanced initial conditions
-!
-! A hydrostatically balanced state is achieved by integrating the discretized (!)
-! third equation of motion, assuming dw/dt=0.
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -16,6 +8,13 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Routines for computing hydrostatically balanced initial conditions
+!
+! A hydrostatically balanced state is achieved by integrating the discretized (!)
+! third equation of motion, assuming dw/dt=0.
+
+!----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 

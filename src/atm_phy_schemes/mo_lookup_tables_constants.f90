@@ -1,6 +1,3 @@
-! Constants used for the computation of lookup tables of the saturation
-! mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Constants used for the computation of lookup tables of the saturation
+! mixing ratio over liquid water (*c_les*) or ice(*c_ies*)
+
 MODULE mo_lookup_tables_constants
 
   USE, INTRINSIC :: iso_fortran_env, ONLY: wp => real64

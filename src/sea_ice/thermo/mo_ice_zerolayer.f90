@@ -1,7 +1,3 @@
-! Provide an implementation of the zero-layer sea ice thermodynamics (Semtner, 1976).
-! Used by both the atmopshere and ocean models.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Provide an implementation of the zero-layer sea ice thermodynamics (Semtner, 1976).
+! Used by both the atmopshere and ocean models.
 
 !----------------------------
 #include "omp_definitions.inc"

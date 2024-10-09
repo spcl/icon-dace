@@ -153,6 +153,8 @@ MODULE mo_jsb_lctlib_class
     INTEGER  :: growthform
     INTEGER  :: ps_pathway
     INTEGER  :: phenology_type
+    REAL(wp) :: lai_max
+    REAL(wp) :: vegetation_height
     REAL(wp) :: sla
     REAL(wp) :: sigma_vis
     REAL(wp) :: sigma_nir
@@ -219,7 +221,10 @@ MODULE mo_jsb_lctlib_class
                 fstore_target
 
     ! Soil
-    REAL(wp) :: k_root_dist
+    REAL(wp) :: &
+      & k_root_dist                   , &
+      & k_som_fast_init               , &
+      & k_som_slow_init
     ! --- END QUINCY model parameters (MPI-BGC Jena) -----------------------------------------------------------------------------
 
   END TYPE t_lctlib_element
@@ -372,6 +377,8 @@ CONTAINS
     LOGICAL            :: exists_growthform = .FALSE.
     LOGICAL            :: exists_ps_pathway = .FALSE.
     LOGICAL            :: exists_phenology_type = .FALSE.
+    LOGICAL            :: exists_lai_max = .FALSE.
+    LOGICAL            :: exists_vegetation_height = .FALSE.
     LOGICAL            :: exists_sla = .FALSE.
     LOGICAL            :: exists_sigma_vis = .FALSE.
     LOGICAL            :: exists_sigma_nir = .FALSE.
@@ -427,6 +434,8 @@ CONTAINS
     LOGICAL            :: exists_c0_allom = .FALSE.
     LOGICAL            :: exists_fstore_target = .FALSE.
     LOGICAL            :: exists_k_root_dist = .FALSE.
+    LOGICAL            :: exists_k_som_fast_init = .FALSE.
+    LOGICAL            :: exists_k_som_slow_init = .FALSE.
     ! quincy model - end
 
     !> Read lctlib data and eventually allocate also memory for lctlib data on io-processor
@@ -792,6 +801,12 @@ CONTAINS
             CASE ('phenology_type')
               READ(line(pos:length),*) lctlib(1:nlct)%phenology_type
               exists_phenology_type = .TRUE.
+            CASE ('lai_max')
+              READ(line(pos:length),*) lctlib(1:nlct)%lai_max
+              exists_lai_max = .TRUE.
+            CASE ('vegetation_height')
+              READ(line(pos:length),*) lctlib(1:nlct)%vegetation_height
+              exists_vegetation_height = .TRUE.
             CASE ('sla')
               READ(line(pos:length),*) lctlib(1:nlct)%sla
               exists_sla = .TRUE.
@@ -963,6 +978,12 @@ CONTAINS
             CASE ('k_root_dist')
               READ(line(pos:length),*) lctlib(1:nlct)%k_root_dist
               exists_k_root_dist = .TRUE.
+            CASE ('k_som_fast_init')
+              READ(line(pos:length),*) lctlib(1:nlct)%k_som_fast_init
+              exists_k_som_fast_init = .TRUE.
+            CASE ('k_som_slow_init')
+              READ(line(pos:length),*) lctlib(1:nlct)%k_som_slow_init
+              exists_k_som_slow_init = .TRUE.
             CASE default
               ! nothing to do
             END SELECT
@@ -1148,6 +1169,10 @@ CONTAINS
           CALL finish('init_lctlib','No data for ps_pathway found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_phenology_type) &
           CALL finish('init_lctlib','No data for phenology_type found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_lai_max) &
+          CALL finish('init_lctlib','No data for lai_max found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_vegetation_height) &
+          CALL finish('init_lctlib','No data for vegetation_height found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_sla) &
           CALL finish('init_lctlib','No data for sla found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_sigma_vis) &
@@ -1258,6 +1283,10 @@ CONTAINS
           CALL finish('init_lctlib','No data for fstore_target found in '//TRIM(lctlib_file_name))
         IF(.NOT. exists_k_root_dist) &
           CALL finish('init_lctlib','No data for k_root_dist found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_k_som_fast_init) &
+          CALL finish('init_lctlib','No data for k_som_fast_init found in '//TRIM(lctlib_file_name))
+        IF(.NOT. exists_k_som_slow_init) &
+          CALL finish('init_lctlib','No data for k_som_slow_init found in '//TRIM(lctlib_file_name))
        END IF
        ! quincy end
 #endif
@@ -1532,6 +1561,8 @@ CONTAINS
         CALL p_bcast(lctlib(:)%growthform, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%ps_pathway, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%phenology_type, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%lai_max, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%vegetation_height, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%sla, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%sigma_vis, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%sigma_nir, p_io, mpi_comm)
@@ -1587,6 +1618,8 @@ CONTAINS
         CALL p_bcast(lctlib(:)%c0_allom, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%fstore_target, p_io, mpi_comm)
         CALL p_bcast(lctlib(:)%k_root_dist, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%k_som_fast_init, p_io, mpi_comm)
+        CALL p_bcast(lctlib(:)%k_som_slow_init, p_io, mpi_comm)
       END IF
 #endif
     END IF
@@ -1598,7 +1631,7 @@ CONTAINS
     SELECT CASE (usecase)
 #ifndef __NO_QUINCY__
     ! quincy model with 8 / 11 PFT tiles
-    CASE ('quincy_eight_pfts', 'quincy_11_pfts')
+    CASE ('quincy_eight_pfts', 'quincy_11_pfts', 'quincy_11_pfts_for_coupling')
       ALLOCATE(return_value(nlct))
       return_value(1:nlct) = lctlib(1:nlct)
 #endif

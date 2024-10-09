@@ -1,9 +1,3 @@
-! This module supports src/configure_model/mo_upatmo_config
-!
-! In order to unburden mo_upatmo_config,
-! we moved most of the type definitions and subroutines
-! related to the upper-atmosphere physics here.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module supports src/configure_model/mo_upatmo_config
+!
+! In order to unburden mo_upatmo_config,
+! we moved most of the type definitions and subroutines
+! related to the upper-atmosphere physics here.
 
 MODULE mo_upatmo_phy_config
 

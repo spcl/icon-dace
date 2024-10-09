@@ -9,18 +9,18 @@
 #%#- ------------------------------------------
 definitions:
   atm2oce: &atm2oce
-    src_component: %{atmo.name}
+    src_component: %{atmo['name']}
     src_grid: icon_atmos_grid
-    tgt_component: %{ocean.name}
+    tgt_component: %{ocean['name']}
     tgt_grid: icon_ocean_grid
     coupling_period: %{timestep}
     time_reduction: average
     src_lag: %{atmo.lag}
     tgt_lag: %{ocean.lag}
   oce2atm: &oce2atm
-    src_component: %{ocean.name}
+    src_component: %{ocean['name']}
     src_grid: icon_ocean_grid
-    tgt_component: %{atmo.name}
+    tgt_component: %{atmo['name']}
     tgt_grid: icon_atmos_grid
     coupling_period: %{timestep}
     time_reduction: average

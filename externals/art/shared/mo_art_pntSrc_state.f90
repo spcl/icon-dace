@@ -48,9 +48,10 @@ CONTAINS
 !!
 !!-------------------------------------------------------------------------
 !!
-SUBROUTINE art_emiss_init_pntSrc(p_patch, z_ifc, tc_dt_model, tc_exp_refdate,                     &
-  &                              cpntSrc_xml_file, iart_radioact, radioactfile, p_prog_list,      &
-  &                              p_art_data)
+SUBROUTINE art_emiss_init_pntSrc(p_patch, z_ifc, tc_dt_model, tc_exp_refdate,  &
+  &                              cpntSrc_xml_file, lexcl_end_pntSrc,           &
+  &                              iart_radioact, radioactfile,                  &
+  &                              p_prog_list, p_art_data)
 !<
 ! SUBROUTINE art_emiss_init_pntSrc
 ! This subroutine initializes the data structure required by mo_art_emission_pntSrc
@@ -74,6 +75,8 @@ SUBROUTINE art_emiss_init_pntSrc(p_patch, z_ifc, tc_dt_model, tc_exp_refdate,   
     &  tc_exp_refdate                 !< Experiment reference date
   CHARACTER(LEN=*),INTENT(in)    :: &
     &  cpntSrc_xml_file               !< XML file containing point source information
+  LOGICAL, INTENT(in)            :: &
+    &  lexcl_end_pntSrc               !< Main switch to exclude endTime from active time interval of point sources
   INTEGER, INTENT(in)            :: &
     &  iart_radioact                  !< Radioactive emission configuration
   TYPE(t_var_list_ptr),INTENT(in)    :: &
@@ -110,8 +113,10 @@ SUBROUTINE art_emiss_init_pntSrc(p_patch, z_ifc, tc_dt_model, tc_exp_refdate,   
     &  jsource_str                    !< jsource as character
   CHARACTER(:), ALLOCATABLE  :: &
     &  startTime, endTime,          & !< Start and end time of source scenario, format: 'YYYY-MM-DDTHH:MM:SS'
+    &  excludeEndTime,              & !< Source specific tag (true/false) to exclude endTime from active time interval
     &  emiss_profile                  !< arithmetic expression of emission profile
   LOGICAL                        :: &
+    &  lexclude_end,                & !< Source specific switch to exclude endTime from active time interval
     &  lexist
 
   CALL art_check_filename(TRIM(cpntSrc_xml_file), lrequired=.TRUE.)
@@ -205,10 +210,21 @@ SUBROUTINE art_emiss_init_pntSrc(p_patch, z_ifc, tc_dt_model, tc_exp_refdate,   
         WRITE (message_text,*) 'ART: WARNING: endTime of  '//TRIM(id)//' not found: Setting to 9999-12-31T00:00:00.'
         CALL message (TRIM(routine)//':art_emiss_init_pntSrc', message_text)
       ENDIF
+    CALL key_value_storage_as_string(key_value_store,'excludeEndTime',excludeEndTime,ierror)
+      ! main switch
+      lexclude_end = lexcl_end_pntSrc
+      ! specific switch
+      IF (ierror == SUCCESS) THEN
+        IF     (TRIM(excludeEndTime) == 'true') THEN
+          lexclude_end = .TRUE.
+        ELSEIF (TRIM(excludeEndTime) == 'false') THEN
+          lexclude_end = .FALSE.
+        ENDIF
+      ENDIF
 
     CALL p_art_data%pntSrc%p(jsource)%init(tc_dt_model, tc_exp_refdate, p_patch, z_ifc, id,       &
       &                                    lon, lat, height, itr, source_strength,                &
-      &                                    startTime, endTime,                                    &
+      &                                    startTime, endTime, lexclude_end,                      &
       &                                    emiss_profile=TRIM(ADJUSTL(emiss_profile)),            &
       &                                    height_bot=height_bot, itr0=itr0,                      &
       &                                    emiss_rate0=emiss_rate0 )

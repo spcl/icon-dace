@@ -1,6 +1,3 @@
-! Module contains some constants needed for grid refinement implementation.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module contains some constants needed for grid refinement implementation.
 
 MODULE mo_impl_constants_grf
 !-------------------------------------------------------------------------

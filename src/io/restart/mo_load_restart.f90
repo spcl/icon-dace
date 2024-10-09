@@ -1,8 +1,3 @@
-! Module for reading restart files
-!
-! Note: The asynchronous implementation of the restart output can be
-!       found in the module "mo_async_restart"
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module for reading restart files
+!
+! Note: The asynchronous implementation of the restart output can be
+!       found in the module "mo_async_restart"
 
 MODULE mo_load_restart
   USE mo_exception,          ONLY: message, finish, warning

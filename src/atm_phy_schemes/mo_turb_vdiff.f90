@@ -1,7 +1,3 @@
-!
-! VDIFF turbulent mixing scheme
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! VDIFF turbulent mixing scheme
 
 #if defined __xlC__ && !defined NOXLFPROCESS
 @PROCESS HOT
@@ -164,7 +162,7 @@ CONTAINS
                        & pdtime,  pcoriol,                              &! in
                        & patch,                                         &! in
                        & l2moment,                                      &! in
-                       & pzf, pzh,                                      &! in
+                       & pzf, pzh, pgeom1,                              &! in
                        & pfrc,                                          &! in
                        & ptsfc_tile, pocu,      pocv,       ppsfc,      &! in
                        & pum1,       pvm1,      pwm1,                   &! in
@@ -210,6 +208,7 @@ CONTAINS
       & pcoriol   (:,:)   ,&!< (kbdim) Coriolis parameter: 2*omega*sin(lat)
       & pzf       (:,:,:) ,&!< (kbdim,klev) geopotential height above sea level, full level
       & pzh       (:,:,:) ,&!< (kbdim,klevp1) geopotential height above sea level, half level
+      & pgeom1    (:,:,:) ,&!< (kbdim,klev) Geopotential above ground, full level [m2/s2]
       & pfrc      (:,:,:) ,&!< (kbdim,ksfc_type) area fraction of each surface type
       & ptsfc_tile(:,:,:) ,&!< (kbdim,ksfc_type) surface temperature
       & pocu      (:,:)   ,&!< (kbdim) eastward  velocity of ocean sfc current
@@ -461,15 +460,15 @@ CONTAINS
       !##############################################################################
 
         ! DA: this routine is async aware, so it's safe not not wait here
-        CALL atm_exchange_coeff( jb,                                                         &! in, for debugging only
+        CALL atm_exchange_coeff( jb,                                                        &! in, for debugging only
                               & jcs, jce, kbdim, klev, klevm1,                              &! in
                               & pdtime, pcoriol(:,jb),                                      &! in
-                              & zghf(:,:,jb), zghh(:,:,jb),                                 &! in
+                              & zghf(:,:,jb), zghh(:,:,jb), pgeom1(:,:,jb),                 &! in
                               & pum1(:,:,jb), pvm1(:,:,jb), ptm1(:,:,jb), ptvm1(:,:,jb),    &! in
                               & pqm1(:,:,jb), pxm1(:,:,jb),                                 &! in
                               & papm1(:,:,jb), paphm1(:,:,jb), paclc(:,:,jb), pustar(:,jb), &! in
                               & pthvvar(:,:,jb), ptottem1(:,:,jb),                          &! in
-                              & vdiff_config,                                           &! in
+                              & vdiff_config,                                               &! in
                               & pcptgz(:,:,jb), phdtcbl(:,jb),                              &! out
                               & pzthvvar(:,1:klevm1,jb),                                    &! out
                               & pztottevn(:,1:klevm1,jb),                                   &! out
@@ -550,7 +549,7 @@ CONTAINS
                             & patch,                                                  &! in
                             & pz0m_tile(:,:,:), ptsfc_tile(:,:,:), pfrc(:,:,:),       &! in
                             & ppsfc(:,:),                                             &! in
-                            & zghf(:,:,:),                                            &! in
+                            & zghf(:,:,:), pgeom1(:,:,:),                             &! in
                             & pum1(:,:,:), pvm1(:,:,:), pwm1(:,:,:),                  &! in
                             & ptm1(:,:,:), ptvm1(:,:,:),                              &! in
                             & pqm1(:,:,:), pxm1(:,:,:),                               &! in

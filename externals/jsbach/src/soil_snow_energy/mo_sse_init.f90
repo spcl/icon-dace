@@ -127,6 +127,7 @@ CONTAINS
     CLASS(t_jsb_tile_abstract), INTENT(inout) :: tile
 
     dsl4jsb_Def_config(SSE_)
+    dsl4jsb_Def_config(HYDRO_)
 
     REAL(wp), POINTER :: ptr_2D(:,:), ptr_3D(:,:,:) !< temporary pointers
 
@@ -149,8 +150,9 @@ CONTAINS
 
     IF (debug_on()) CALL message(TRIM(routine), 'Reading soil energy boundary conditions for tile '//TRIM(tile%name))
 
-    ! Get soil config
+    ! Get config parameters
     dsl4jsb_Get_config(SSE_)
+    dsl4jsb_Get_config(HYDRO_)
 
     ALLOCATE(                                          &
       & sse_init_vars%vol_heat_cap(nproma, nblks    ), &
@@ -242,17 +244,30 @@ CONTAINS
 
       IF (dsl4jsb_Config(SSE_)%l_heat_cap_map) THEN
         ! Volumetric heat capacity of dry soil [J/(m^3*K)]
-        ptr_2D => input_file%Read_2d(         &
-          & variable_name='heat_capacity',            &
-          & fill_array = sse_init_vars%vol_heat_cap)
+
+        IF (dsl4jsb_Config(HYDRO_)%l_organic) THEN
+          ptr_2D => input_file%Read_2d(                   &
+            & variable_name='heat_capacity_mineral',      &
+            & fill_array = sse_init_vars%vol_heat_cap)
+        ELSE
+          ptr_2D => input_file%Read_2d(                   &
+            & variable_name='heat_capacity',              &
+            & fill_array = sse_init_vars%vol_heat_cap)
+        END IF
         ptr_2D(:,:) = MERGE(ptr_2D(:,:), 2.e6_wp, ptr_2D(:,:) > 0._wp)
       END IF
 
       IF (dsl4jsb_Config(SSE_)%l_heat_cond_map) THEN
         ! Heat conductivity of mineral soil
-        ptr_2D => input_file%Read_2d(         &
-          & variable_name='heat_conductivity',         &
-          & fill_array = sse_init_vars%heat_cond)
+        IF (dsl4jsb_Config(HYDRO_)%l_organic) THEN
+          ptr_2D => input_file%Read_2d(                   &
+            & variable_name='heat_conductivity_mineral',  &
+            & fill_array = sse_init_vars%heat_cond)
+        ELSE
+          ptr_2D => input_file%Read_2d(                   &
+            & variable_name='heat_conductivity',          &
+            & fill_array = sse_init_vars%heat_cond)
+        END IF
         ptr_2D(:,:) = MERGE(ptr_2D(:,:), 0.2_wp, ptr_2D(:,:) > 0._wp)
       END IF
 
@@ -442,13 +457,12 @@ CONTAINS
       & wtr_soil_sl, &
       & ice_soil_sl, &
       & t_soil_sl, &
-      & matrix_pot_sl, &
+      & matric_pot_sl, &
       & bclapp_sl, &
       & fract_org_sl, &
       & vol_heat_cap_sl, &
       & heat_cond_sl, &
-      & vol_porosity_sl, &
-      & vol_field_cap_sl
+      & vol_porosity_sl
 
     ! Locally allocated vectors
     !
@@ -529,7 +543,7 @@ CONTAINS
     IF (model%config%init_from_ifs .AND. dsl4jsb_Config(SSE_)%l_freeze) THEN
 
       dsl4jsb_Get_var3D_onDomain(SSE_,   t_soil_sl)
-      dsl4jsb_Get_var3D_onDomain(HYDRO_, matrix_pot_sl)
+      dsl4jsb_Get_var3D_onDomain(HYDRO_, matric_pot_sl)
       dsl4jsb_Get_var3D_onDomain(HYDRO_, bclapp_sl)
 
       ALLOCATE(liquid_max (nproma, nsoil, nblks))
@@ -544,7 +558,7 @@ CONTAINS
               liquid_max(ic,is,ib) = Get_liquid_max( &
                 & t_soil_sl    (ic,is,ib), &
                 & ws_max_sl              , &
-                & matrix_pot_sl(ic,is,ib), &
+                & matric_pot_sl(ic,is,ib), &
                 & bclapp_sl    (ic,is,ib)  &
                 & )
             END DO
@@ -596,7 +610,6 @@ CONTAINS
 
     END IF
 
-    dsl4jsb_Get_var3D_onDomain(HYDRO_, vol_field_cap_sl)
     dsl4jsb_Get_var2D_onDomain(SSE_,   heat_cond)
 
     IF (dsl4jsb_Config(HYDRO_)%l_organic .AND. tile%contains_soil) THEN
@@ -741,7 +754,6 @@ CONTAINS
               &                                  wtr_soil_sl         (ic,is,ib)   , &
               &                                  ice_soil_sl         (ic,is,ib)   , &
               &                                  vol_porosity_sl     (ic,is,ib)   , &
-              &                                  vol_field_cap_sl    (ic,is,ib)   , &
               &                                  fract_org_sl        (ic,is,ib)   , &
               &                                  vol_porosity_org_tmp(ic,is,ib)   , &
               &                                  hcond_org_tmp       (ic,is,ib)   , &

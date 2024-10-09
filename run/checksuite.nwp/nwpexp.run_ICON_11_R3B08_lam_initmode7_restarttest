@@ -129,6 +129,10 @@ nrest_procs="        1   "
 restart_write_mode=""
 nproma=$nproma_default # was 744 for NEC
 
+# remove output files written after restart because existing output files are opened
+# in append mode in case of a restart (only relevant for manually executed tests)
+rm -f NWP_LAM_3*.nc
+
 fi
 
 

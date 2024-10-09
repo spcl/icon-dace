@@ -1,13 +1,3 @@
-! Initialization routines for the (moist) baroclinic instability as used in DCMIP2016
-!
-! Initialization routines for the Ullrich, Melvin, Staniforth and Jablonowski
-! baroclinic instability, including moisture and terminator toy chemistry.
-! This baroclinic instability test is part of the DCMIP2016 test case suite.
-!
-! Literature
-! Dynamical Core Model Intercomparison Project (DCMIP2016) Test Case Document
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -18,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initialization routines for the (moist) baroclinic instability as used in DCMIP2016
+!
+! Initialization routines for the Ullrich, Melvin, Staniforth and Jablonowski
+! baroclinic instability, including moisture and terminator toy chemistry.
+! This baroclinic instability test is part of the DCMIP2016 test case suite.
+!
+! Literature
+! Dynamical Core Model Intercomparison Project (DCMIP2016) Test Case Document
 
 MODULE mo_nh_dcmip_bw
 

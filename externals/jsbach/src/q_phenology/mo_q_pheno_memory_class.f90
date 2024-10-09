@@ -45,7 +45,8 @@ MODULE mo_q_pheno_memory_class
       & growing_season, &           !< logical: growing season for the plant [0 = FALSE, 1 = TRUE]
       & gdd, &                      !< growing degree days above 5degC [K day]
       & nd_dormance, &              !< number of days since last growing season [# days]
-      & lai_max                     !< maximum lai - from site specific (i.e. local) lai data [m2 m-2]
+      & lai_max, &                  !< maximum lai - from site specific (i.e. local) lai data [m2 m-2]
+      & root_phenology_type         !< category (values 1, 2, 3) based on trigger for end of season in grasses [category]
 
   CONTAINS
     PROCEDURE :: Init => Init_q_pheno_memory
@@ -90,7 +91,7 @@ CONTAINS
 
       CALL mem%Add_var('growing_season', mem%growing_season, &
         & hgrid, surface, &
-        & t_cf('growing_season', 'logical', 'logical to identify whether the plant is in the growing season'), &
+        & t_cf('growing_season', '[0 FALSE, 1 TRUE]', 'logical to identify whether the plant is in the growing season'), &
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
@@ -129,6 +130,17 @@ CONTAINS
         & prefix, suffix, &
         & output_level = FULL, &
         & loutput = .FALSE., &
+        & lrestart = .TRUE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('root_phenology_type', mem%root_phenology_type, &
+        & hgrid, surface, &
+        & t_cf('root_phenology_type', 'category', 'category to identify end of season trigger in grasses'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = BASIC, &
+        & loutput = .TRUE., &
         & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
     END IF

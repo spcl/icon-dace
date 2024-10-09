@@ -1,7 +1,3 @@
-! This is  a clone of the respective ECHAM routine
-!
-! TODO: ctfreez in echam = 271.38, this is 271.45 K
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This is  a clone of the respective ECHAM routine
+!
+! TODO: ctfreez in echam = 271.38, this is 271.45 K
 
 MODULE mo_bc_sst_sic
   

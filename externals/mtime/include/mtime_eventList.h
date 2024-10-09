@@ -22,19 +22,16 @@
 #ifndef _MTIME_EVENTLIST_H
 #define _MTIME_EVENTLIST_H
 
-#include <stdbool.h> 
+#include <stdbool.h>
 
 struct _eventGroup;
 struct _event;
 
-void
-deallocateEventsInGroup(struct _eventGroup* eg);
+void deallocateEventsInGroup(struct _eventGroup *eg);
 
-bool
-addNewEventToGroup(struct _event* ev, struct _eventGroup* eg);
+bool addNewEventToGroup(struct _event *ev, struct _eventGroup *eg);
 
-bool
-removeEventWithNameFromGroup(char* nodeName, struct _eventGroup* eg);
+bool removeEventWithNameFromGroup(char *nodeName, struct _eventGroup *eg);
 
 /**
  * @}

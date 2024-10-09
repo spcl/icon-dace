@@ -1,4 +1,11 @@
 #!/usr/bin/env python
+"""
+Command-line interface (CLI) for the probabilistic testing and analysis tool.
+
+This script uses the Click library to define a command-line interface for
+various subcommands related to probabilistic testing, performance analysis, and
+visualization.
+"""
 import click
 import matplotlib
 
@@ -9,6 +16,7 @@ from engine.performance import performance
 from engine.performance_check import performance_check
 from engine.perturb import perturb
 from engine.run_ensemble import run_ensemble
+from engine.select_members import select_members
 from engine.stats import stats
 from engine.tolerance import tolerance
 from util.click_util import load_defaults
@@ -35,7 +43,6 @@ def cli(ctx, log_level, log_file):
     if "init" not in sections:
         defaults = load_defaults(sections)
         ctx.default_map = {subcommand: defaults}
-    pass
 
 
 cli.add_command(init)
@@ -43,6 +50,7 @@ cli.add_command(perturb)
 cli.add_command(stats)
 cli.add_command(check)
 cli.add_command(tolerance)
+cli.add_command(select_members)
 cli.add_command(run_ensemble)
 cli.add_command(performance)
 cli.add_command(check_plot)

@@ -1,9 +1,3 @@
-!
-! This module contains routines for the vertical interpolation of
-! atmospheric data provided by external analyses to the ICON grid
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains routines for the vertical interpolation of
+! atmospheric data provided by external analyses to the ICON grid
 
 !----------------------------
 #include "omp_definitions.inc"

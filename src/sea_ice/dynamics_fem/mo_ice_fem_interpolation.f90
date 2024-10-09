@@ -1,6 +1,3 @@
-! Contains averaging and interpolation routines (ICON <--> FEM)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains averaging and interpolation routines (ICON <--> FEM)
 
 !----------------------------
 #include "omp_definitions.inc"

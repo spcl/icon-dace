@@ -1,5 +1,5 @@
 from templates import gen_c, gen_c_properties
-from structs import domain
+from fortran_parse_type import find_type
 
 print("""/* @authors 11/2023 :: ICON Community Interface  <comin@icon-model.org>
 
@@ -14,6 +14,7 @@ print("""/* @authors 11/2023 :: ICON Community Interface  <comin@icon-model.org>
 extern "C"{
 #endif""")
 
+domain = find_type("../src/comin_descrdata_types.F90", "t_comin_descrdata_domain")
 
 gen_c("domain", domain, True)
 gen_c_properties("domain", domain, True)

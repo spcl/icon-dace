@@ -1,7 +1,3 @@
-! control variables for bgc modules
-!
-! Definition of variables
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! control variables for bgc modules
+!
+! Definition of variables
 
 MODULE mo_control_bgc
 

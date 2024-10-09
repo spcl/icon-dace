@@ -1,6 +1,3 @@
-!
-! Subroutine interface_aes_rht calls the radiative heating scheme.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +9,8 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Subroutine interface_aes_rht calls the radiative heating scheme.
+
 MODULE mo_interface_aes_rht
 
   USE mo_kind,                       ONLY: wp
@@ -22,6 +21,7 @@ MODULE mo_interface_aes_rht
   USE mo_aes_phy_memory,             ONLY: t_aes_phy_field, prm_field, &
     &                                      t_aes_phy_tend,  prm_tend
 
+  USE mo_aes_rad_config,             ONLY: aes_rad_config
   USE mo_radheating,                 ONLY: radheating
   USE mo_radiation_solar_data,       ONLY: psctm
 
@@ -57,6 +57,8 @@ CONTAINS
     LOGICAL  :: is_in_sd_ed_interval
     LOGICAL  :: is_active
     !
+    LOGICAL  :: lclrsky_lw, lclrsky_sw
+    !
     INTEGER  :: nlevp1, jc, jk
     !
     REAL(wp) :: q_rad(aes_phy_dims(jg)%nproma,aes_phy_dims(jg)%nlev)
@@ -73,6 +75,9 @@ CONTAINS
     pdtime               = aes_phy_tc(jg)%dt_phy_sec
     is_in_sd_ed_interval = aes_phy_tc(jg)%is_in_sd_ed_interval_rad
     is_active            = aes_phy_tc(jg)%is_active_rad
+
+    lclrsky_lw           = aes_rad_config(jg)%lclrsky_lw
+    lclrsky_sw           = aes_rad_config(jg)%lclrsky_sw
 
     ! associate pointers
     field  => prm_field(jg)
@@ -98,6 +103,9 @@ CONTAINS
                & kbdim      = nproma                         ,&! dimension size
                & klev       = nlev                           ,&! vertical dimension size
                & klevp1     = nlevp1                         ,&! vertical dimension size
+               !
+               & lclrsky_lw = lclrsky_lw                     ,&! switch for computation of LW clear sky fluxes
+               & lclrsky_sw = lclrsky_sw                     ,&! switch for computation of SW clear sky fluxes
                !
                & rsdt0      = psctm(jg)                      ,&! toa incident shortwave radiation for sun in zenith
                & cosmu0     = field%cosmu0    (:,jb)         ,&! solar zenith angle at current time

@@ -40,17 +40,7 @@ find_package(Python3 COMPONENTS Interpreter REQUIRED)
 
 add_subdirectory("${ICON_SOURCE_DIR}/externals/fortran-support" fortran-support)
 
-# Math-support is not a git submodule yet
-include(FetchContent)
-if ("${CMAKE_VERSION}" VERSION_GREATER_EQUAL "3.24")
-  cmake_policy(SET CMP0135 NEW)
-endif()
-message(CHECK_START "${PROJECT_NAME}: Fetching the math-support library")
-FetchContent_Declare(math-support
-  GIT_REPOSITORY git@gitlab.dkrz.de:icon-libraries/libmath-support.git
-  GIT_TAG f652d75b61b533b7c546c593983b3cb9e9238275)
-FetchContent_MakeAvailable(math-support)
-message(CHECK_PASS "done")
+add_subdirectory("${ICON_SOURCE_DIR}/externals/math-support" math-support)
 
 #### Targets
 set(MICROPHYSICS_PATH "${ICON_SOURCE_DIR}/src/granules/microphysics_1mom_schemes")
@@ -67,6 +57,8 @@ add_library(microphysics_1mom_schemes
   ${MICROPHYSICS_PATH}/gscp_cloudice.f90
   ${MICROPHYSICS_PATH}/gscp_ice.f90
   ${MICROPHYSICS_PATH}/microphysics_1mom_schemes.f90
+  ${ICON_SOURCE_DIR}/src/shared/mo_kind.f90
+  ${ICON_SOURCE_DIR}/src/shared/mo_physical_constants.f90
 )
 
 target_link_libraries(microphysics_1mom_schemes

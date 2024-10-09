@@ -1,5 +1,12 @@
 #!@SHELL@
 
-@TEST_NETCDF_FALSE@exit 77
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@ENABLE_MCI_FALSE@exit 77
+@ENABLE_UTILS_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
 @TEST_MPI_FALSE@exit 77
+
 @TEST_MPI_TRUE@@MPI_LAUNCH@ -n 2 ./toy_scrip.x -e NOGT_ICOH

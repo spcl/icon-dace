@@ -47,14 +47,14 @@ MODULE mo_jsb_varlist
   PUBLIC :: add_var_list_element_r2d, add_var_list_element_r3d
   PUBLIC :: jsb_add_var, Get_varlist, Get_var_group_name
   PUBLIC :: VARNAME_LEN
-  PUBLIC :: BASIC, MEDIUM, FULL
+  PUBLIC :: BASIC, MEDIUM, FULL, NONE
 
   INTERFACE jsb_add_var
     MODULE PROCEDURE jsb_add_var_list_element_r2d
   END INTERFACE jsb_add_var
 
   ENUM, BIND(C)
-    ENUMERATOR :: BASIC=1, MEDIUM, FULL
+    ENUMERATOR :: NONE=0, BASIC, MEDIUM, FULL
   END ENUM
 
   CHARACTER(len=*), PARAMETER :: modname = 'mo_jsb_varlist'

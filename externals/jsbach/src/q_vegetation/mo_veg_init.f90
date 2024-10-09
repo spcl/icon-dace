@@ -47,9 +47,9 @@ CONTAINS
     USE mo_jsb_model_class,                 ONLY: t_jsb_model
     USE mo_quincy_model_config,             ONLY: QLAND, QPLANT, QSOIL, QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION
     USE mo_jsb_lctlib_class,                ONLY: t_lctlib_element
-    USE mo_jsb_process_class,               ONLY: VEG_
-    USE mo_jsb_grid_class,                  ONLY: t_jsb_grid
-    USE mo_jsb_grid,                        ONLY: Get_grid
+    USE mo_jsb_process_class,               ONLY: VEG_, SPQ_
+    USE mo_jsb_grid_class,                  ONLY: t_jsb_grid, t_jsb_vgrid
+    USE mo_jsb_grid,                        ONLY: Get_grid, Get_vgrid
     USE mo_q_assimi_parameters,             ONLY: CiCa_default_C3, CiCa_default_C4
     USE mo_q_assimi_constants,              ONLY: ic3phot, ic4phot
     USE mo_atmland_constants,               ONLY: def_co2_mixing_ratio, def_co2_mixing_ratio_C13, def_co2_mixing_ratio_C14, &
@@ -63,25 +63,34 @@ CONTAINS
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Use_config(VEG_)
     dsl4jsb_Use_memory(VEG_)
+    dsl4jsb_Use_memory(SPQ_)
     ! ----------------------------------------------------------------------------------------------------- !
     CLASS(t_jsb_tile_abstract), INTENT(inout)     :: tile         !< one tile with data structure for one lct
     ! ----------------------------------------------------------------------------------------------------- !
     TYPE(t_jsb_model),              POINTER :: model                !< the model
     TYPE(t_lnd_bgcm_store),         POINTER :: bgcm_store           !< the bgcm store of this tile
     TYPE(t_jsb_grid),               POINTER :: hgrid                !< Horizontal grid
+    TYPE(t_jsb_vgrid),              POINTER :: vgrid_soil_sb        !< Vertical grid
     TYPE(t_lctlib_element),         POINTER :: lctlib               !< land-cover-type library - parameter across pft's
     REAL(wp)                                :: hlp1                 !< helper variable
     REAL(wp)                                :: ref_lai              !< LAI                                 | for canopy model init
     REAL(wp)                                :: ref_nleaf            !< N leaf per unit leaf area in gN/m2  | for canopy model init
-    INTEGER                                 :: iblk, ic             !< loop dimensions
+    INTEGER                                 :: iblk, ic, is         !< loop dimensions
     INTEGER                                 :: nproma, nblks        !< dimensions
+    INTEGER                                 :: nsoil_sb             !< number of soil layers as used/defined by the SB_ process
     INTEGER                                 :: veg_pool_idx         !< index of the veg pool within the bgcm store
     REAL(wp), POINTER           :: veg_pool_mt_domain(:,:,:,:)      !< dim: compartments, elements, nc, nblks -- on domain!
     CHARACTER(len=*), PARAMETER :: routine = TRIM(modname)//':veg_init'
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Def_config(VEG_)
     dsl4jsb_Def_memory(VEG_)
+    dsl4jsb_Def_memory(SPQ_)
     ! ----------------------------------------------------------------------------------------------------- !
+    ! SPQ_ 2D
+    dsl4jsb_Real2D_onDomain    :: root_depth
+    dsl4jsb_Real2D_onDomain    :: num_sl_above_bedrock
+    ! SPQ_ 3D
+    dsl4jsb_Real3D_onDomain    :: soil_lay_depth_ubound_sl
     ! VEG_ 2D
     dsl4jsb_Real2D_onDomain      :: target_cn_leaf
     dsl4jsb_Real2D_onDomain      :: target_np_leaf
@@ -158,13 +167,14 @@ CONTAINS
     dsl4jsb_Real2D_onDomain      :: w_root_lim_talloc_mavg
     dsl4jsb_Real2D_onDomain      :: exudation_c_tmyc_mavg
     ! VEG_ 3D
-    dsl4jsb_Real3D_onDomain      :: fleaf_sunlit_tfrac_mavg_cl
-    dsl4jsb_Real3D_onDomain      :: fleaf_sunlit_tcnl_mavg_cl
-    dsl4jsb_Real3D_onDomain      :: fn_oth_cl
-    dsl4jsb_Real3D_onDomain      :: leaf_nitrogen_cl
-    dsl4jsb_Real3D_onDomain      :: lai_cl
+    dsl4jsb_Real3D_onDomain    :: root_fraction_sl
+    dsl4jsb_Real3D_onDomain    :: fleaf_sunlit_tfrac_mavg_cl
+    dsl4jsb_Real3D_onDomain    :: fleaf_sunlit_tcnl_mavg_cl
+    dsl4jsb_Real3D_onDomain    :: fn_oth_cl
+    dsl4jsb_Real3D_onDomain    :: leaf_nitrogen_cl
+    dsl4jsb_Real3D_onDomain    :: lai_cl
     ! ----------------------------------------------------------------------------------------------------- !
-    IF (.NOT. tile%Is_process_calculated(VEG_)) RETURN
+    IF (.NOT. tile%Is_process_active(VEG_)) RETURN
     IF (tile%lcts(1)%lib_id == 0) RETURN                !< run this init only if the present tile is a pft
     IF (debug_on() .AND. iblk == 1) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
     ! ----------------------------------------------------------------------------------------------------- !
@@ -173,14 +183,22 @@ CONTAINS
     hgrid  => Get_grid(model%grid_id)
     nblks  =  hgrid%nblks
     nproma =  hgrid%nproma
+    vgrid_soil_sb => Get_vgrid('soil_layer_sb')
+    nsoil_sb      = vgrid_soil_sb%n_levels
     ! ----------------------------------------------------------------------------------------------------- !
     dsl4jsb_Get_config(VEG_)
     dsl4jsb_Get_memory(VEG_)
+    dsl4jsb_Get_memory(SPQ_)
     ! ----------------------------------------------------------------------------------------------------- !
     bgcm_store => tile%bgcm_store
     veg_pool_idx = get_bgcm_idx(bgcm_store, VEG_BGCM_POOL_ID, tile%name, routine)
     veg_pool_mt_domain => bgcm_store%store_2l_2d_bgcms(bgcm_store%idx_in_store(veg_pool_idx))%mt_2l_2d_bgcm(:,:,:,:)
     ! ----------------------------------------------------------------------------------------------------- !
+    ! SPQ_ 2D
+    dsl4jsb_Get_var2D_onDomain(SPQ_, root_depth)
+    dsl4jsb_Get_var2D_onDomain(SPQ_, num_sl_above_bedrock)
+    ! SPQ_ 3D
+    dsl4jsb_Get_var3D_onDomain(SPQ_, soil_lay_depth_ubound_sl)
     ! VEG_ 2D
     dsl4jsb_Get_var2D_onDomain(VEG_, target_cn_leaf)
     dsl4jsb_Get_var2D_onDomain(VEG_, target_np_leaf)
@@ -257,6 +275,7 @@ CONTAINS
     dsl4jsb_Get_var2D_onDomain(VEG_, w_root_lim_talloc_mavg)
     dsl4jsb_Get_var2D_onDomain(VEG_, exudation_c_tmyc_mavg)
     ! VEG_ 3D
+    dsl4jsb_Get_var3D_onDomain(VEG_, root_fraction_sl)
     dsl4jsb_Get_var3D_onDomain(VEG_, fleaf_sunlit_tfrac_mavg_cl)
     dsl4jsb_Get_var3D_onDomain(VEG_, fleaf_sunlit_tcnl_mavg_cl)
     dsl4jsb_Get_var3D_onDomain(VEG_, fn_oth_cl)
@@ -278,11 +297,6 @@ CONTAINS
     !>  1.1 Land & Plant & Soil
     !>
     CASE(QLAND, QPLANT, QSOIL)
-#ifdef __QUINCY_STANDALONE__
-#else
-      ! lai init should also work with 0.0_wp
-      lai(:,:)     = 1.0_wp
-#endif
       target_cn_leaf(:,:)      = lctlib%cn_leaf
       target_np_leaf(:,:)      = lctlib%np_leaf
       target_cn_fine_root(:,:) = target_cn_leaf(:,:) / root2leaf_cn
@@ -402,9 +416,13 @@ CONTAINS
         WRITE(message_text,'(2a)') 'not a valid veg_dynamics_scheme: ',TRIM(dsl4jsb_Config(VEG_)%veg_dynamics_scheme)
         CALL finish(TRIM(routine), message_text)
       ENDSELECT
-    !>  1.2 Canopy & Test_Canopy & Test_Radiation
+    !>  1.2 Canopy
     !>
-    CASE(QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION)
+    CASE(QCANOPY)
+      height(:,:) = dsl4jsb_Lctlib_param(vegetation_height)
+    !>  1.3 Test_Canopy & Test_Radiation
+    !>
+    CASE(Q_TEST_CANOPY, Q_TEST_RADIATION)
       ref_lai   = 6.0_wp  !! the ref_lai of 6.0 works great for all sites that are not too dry; but use 0.5_wp for dry sites like ZA-Kru
       ref_nleaf = 2.0_wp
       lai(:,:)  = ref_lai
@@ -431,19 +449,83 @@ CONTAINS
       ENDIF
       leaf_nitrogen_cl(:,:,:) = 0.0_wp  ! this is intentionally wrong; i.e., it will not work at the 1st timestep (which is probably night anyway)
       lai_cl(:,:,:)           = 0.0_wp  ! this is intentionally wrong; i.e., it will not work at the 1st timestep (which is probably night anyway)
-    !>  1.3 Default (error catching)
+    !>  1.4 Default (error catching)
     !>
     CASE DEFAULT
       CALL finish(TRIM(routine), 'Invalid QUINCY model name. Use either land, plant, soil, canopy, test_canopy or test_radiation.')
     ENDSELECT
 
-    !> 2.0 set veg_pool bgcm to zero for tiles such as bare soil and urban area
+    !> 2.0 root fraction
+    !>
+
+    ! QSOIL, QCANOPY, Q_TEST_CANOPY and Q_TEST_RADIATION need fixed roots.
+    ! (QSOIL cannot be properly initialised with dyn roots and
+    ! the other modes would be subject to water limitations with dyn roots.)
+    ! We thus switch off dynamic roots for these modes.
+    SELECT CASE(model%config%qmodel_id)
+    CASE(QSOIL, QCANOPY, Q_TEST_CANOPY, Q_TEST_RADIATION)
+      dsl4jsb_Config(VEG_)%flag_dynamic_roots = .FALSE.
+      CALL message(TRIM(routine), ' set "flag_dynamic_roots = .FALSE." (canopy, soil only, test_canopy or test_radiation model)')
+    END SELECT
+
+    ! init root fraction
+    IF (dsl4jsb_Config(VEG_)%flag_dynamic_roots) THEN
+      !>     - dynamic root fractions (see mo_q_veg_growth)
+      !>
+      root_fraction_sl(:, 1, :)          = 1.0_wp
+      root_fraction_sl(:, 2:nsoil_sb, :) = 0.0_wp
+    ELSE
+      !>     - fixed root fractions (no changes after init) depending on root_depth (SPQ variable)
+      !>
+      ! root fractions assuming an exponential distribution of roots \n
+      !   Cr_l = Cr_0 * exp(-lctlib%k_root_dist*depth) \n
+      ! integral to bottom of root zone: 1/lctlib%k_root_dist * (1 - exp(-lctlib%k_root_dist*depth) \n
+      !   thus for each layer
+      !
+      ! NOTE: upper bound of a layer is the larger value compared to lower bound !
+      !
+      DO iblk = 1,nblks
+        DO ic = 1,nproma
+          ! soil layer 1
+          IF (root_depth(ic, iblk) > soil_lay_depth_ubound_sl(ic, 1, iblk)) THEN
+            root_fraction_sl(:, 1, :) = (1._wp - EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(:, 1, :))) &
+              &                         / (1._wp - EXP(-lctlib%k_root_dist * root_depth(:,:)))
+          ELSE
+            root_fraction_sl(ic, 1, iblk) = 0.0_wp
+          END IF
+          ! soil layers 2 to x
+          DO is = 2,INT(num_sl_above_bedrock(ic, iblk))
+            IF (root_depth(ic, iblk) > soil_lay_depth_ubound_sl(ic, is-1, iblk)) THEN
+              IF (root_depth(ic, iblk) > soil_lay_depth_ubound_sl(ic, is, iblk)) THEN
+                root_fraction_sl(ic, is, iblk) = (EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is-1, iblk)) &
+                  &                                - EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is, iblk))) &
+                  &                                / (1._wp - EXP(-lctlib%k_root_dist * root_depth(ic, iblk)))
+              ELSE
+                root_fraction_sl(ic, is, iblk) = (EXP(-lctlib%k_root_dist * soil_lay_depth_ubound_sl(ic, is-1, iblk)) &
+                  &                                - EXP(-lctlib%k_root_dist * root_depth(ic, iblk))) &
+                  &                                / (1._wp - EXP(-lctlib%k_root_dist * root_depth(ic, iblk)))
+              ENDIF
+            ELSE
+              root_fraction_sl(ic, is, iblk) = 0.0_wp
+            ENDIF
+          ENDDO
+        ENDDO
+      ENDDO
+    ENDIF  ! flag_dynamic_roots
+
+    !>   2.1 set root fraction to zero for tiles such as bare soil and urban area
+    !>
+    IF (lctlib%BareSoilFlag) THEN
+      root_fraction_sl(:, :, :) = 0.0_wp
+    END IF
+
+    !> 3.0 set veg_pool bgcm to zero for tiles such as bare soil and urban area
     !>
     IF (lctlib%BareSoilFlag) THEN
       veg_pool_mt_domain(:,:,:,:) = 0.0_wp
     END IF
 
-    !> 3.0 vegetation init for all QUINCY models
+    !> 4.0 vegetation init for all QUINCY models
     !>
     ! plant variables
     dphi(:,:)                             = -1.0_wp * lctlib%phi_leaf_min

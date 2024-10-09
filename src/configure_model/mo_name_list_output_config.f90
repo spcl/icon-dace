@@ -1,12 +1,3 @@
-! @brief configuration setup for output name lists
-!
-! Configuration setup for output name lists
-!
-! @note This is only a preliminary implementation of a configure state
-!       for output name lists; based on R. Johanni's name list
-!       handling which was originally implemented in
-!       "shared/mo_name_list_output"
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -17,6 +8,15 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief configuration setup for output name lists
+!
+! Configuration setup for output name lists
+!
+! @note This is only a preliminary implementation of a configure state
+!       for output name lists; based on R. Johanni's name list
+!       handling which was originally implemented in
+!       "shared/mo_name_list_output"
 
 MODULE mo_name_list_output_config
 

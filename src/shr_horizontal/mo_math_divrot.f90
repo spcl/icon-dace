@@ -1,10 +1,3 @@
-! Contains the implementation of the div,rot,recon mathematical
-! operators employed by the shallow water prototype.
-!
-! @par To Do
-! Boundary exchange, nblks in presence of halos and dummy edge
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains the implementation of the div,rot,recon mathematical
+! operators employed by the shallow water prototype.
+!
+! @par To Do
+! Boundary exchange, nblks in presence of halos and dummy edge
 
 !----------------------------
 #include "omp_definitions.inc"

@@ -52,10 +52,12 @@ MODULE mo_initicon_nml
     & config_smi_relax_timescale => smi_relax_timescale, &
     & config_icpl_da_skinc       => icpl_da_skinc,       &
     & config_icpl_da_snowalb     => icpl_da_snowalb,     &
+    & config_icpl_da_landalb     => icpl_da_landalb,     &
     & config_icpl_da_sfcfric     => icpl_da_sfcfric,     &
     & config_scalfac_da_sfcfric  => scalfac_da_sfcfric,  &
     & config_icpl_da_tkhmin      => icpl_da_tkhmin,      &
     & config_icpl_da_seaice      => icpl_da_seaice,      &
+    & config_itype_sma           => itype_sma,           &
     & config_dt_ana              => dt_ana,              &
     & config_adjust_tso_tsnow    => adjust_tso_tsnow,    &
     & config_filetype            => filetype,            &
@@ -143,6 +145,8 @@ CONTAINS
 
   INTEGER  :: icpl_da_snowalb  ! Coupling between data assimilation and snow albedo
 
+  INTEGER  :: icpl_da_landalb  ! Coupling between data assimilation and land albedo
+
   INTEGER  :: icpl_da_sfcfric  ! Coupling between data assimilation and surface friction (roughness length and SSO blocking)
 
   REAL(wp) :: scalfac_da_sfcfric ! Scaling factor for adaptive surface friction
@@ -150,6 +154,8 @@ CONTAINS
   INTEGER  :: icpl_da_tkhmin   ! Coupling between data assimilation and near-surface profiles of minimum vertical diffusion
 
   INTEGER  :: icpl_da_seaice   ! Coupling between data assimilation and sea ice
+
+  INTEGER  :: itype_sma        ! Type of soil moisture analysis used
 
   REAL(wp) :: dt_ana           ! Time interval of assimilation cycle [s] (relevant for icpl_da_sfcevap >= 2)
 
@@ -243,7 +249,8 @@ CONTAINS
                           icpl_da_skinc, icpl_da_snowalb, adjust_tso_tsnow, &
                           icpl_da_sfcfric, lcouple_ocean_coldstart,         &
                           icpl_da_tkhmin, icpl_da_seaice, fire2d_filename,  &
-                          scalfac_da_sfcfric, smi_relax_timescale
+                          scalfac_da_sfcfric, smi_relax_timescale,          &
+                          icpl_da_landalb, itype_sma
 
   !------------------------------------------------------------
   ! 2.0 set up the default values for initicon
@@ -308,14 +315,21 @@ CONTAINS
                         ! 2: use filtered T2M bias and filtered RH increment at lowest model level
                         ! 3: use filtered T and RH increments at lowest model level
                         ! 4: as 3, but uses cr_bsmin instead of c_soil for adapting bare-soil evaporation
+                        ! 5: as 4, additionally uses daytime-weighted T and RH increments and adapts hydraulic diffusivity
 
   smi_relax_timescale = 20._wp ! Time scale (days) for ICON-internal soil moisture relaxation
+
+  itype_sma           = 1  ! 1: use external soil moisture analysis from the DA input file
+                           ! 2: use ICON-internal SMA based on adaptive parameter tuning
 
   icpl_da_skinc = 0     ! Coupling between data assimilation and skin conductivity
                         ! 0: off, 1: on, 2: as 1, plus soil heat conductivity and capacity
 
   icpl_da_snowalb = 0   ! Coupling between data assimilation and snow albedo
-                        ! 0: off, 1: on, 2: as 1, plus sea-ice albedo
+                        ! 0: off, 1: on, 2: as 1, plus sea-ice albedo, 3: plus snow-cover fraction diagnosis
+
+  icpl_da_landalb = 0   ! Coupling between data assimilation and land albedo
+                        ! 0: off, 1: on
 
   icpl_da_sfcfric = 0   ! Coupling between data assimilation and surface friction (roughness length and SSO blocking)
                         ! 0: off, 1:on
@@ -414,9 +428,18 @@ CONTAINS
     WRITE(message_text,'(a)') 'icpl_da_seaice >= 1 must be combined with icpl_da_sfcevap >= 3'
     CALL finish(TRIM(routine),message_text)
   ENDIF
+  IF (icpl_da_landalb >= 1 .AND. icpl_da_sfcevap < 5) THEN
+    WRITE(message_text,'(a)') 'icpl_da_landalb >= 1 must be combined with icpl_da_sfcevap >= 5'
+    CALL finish(TRIM(routine),message_text)
+  ENDIF
 
   IF (icpl_da_tkhmin >= 1 .AND. (icpl_da_skinc == 0 .OR. icpl_da_sfcevap <= 2) ) THEN
     WRITE(message_text,'(a)') 'icpl_da_tkhmin = 1 must be combined with icpl_da_sfcevap > 2 and icpl_da_skinc > 0'
+    CALL finish(TRIM(routine),message_text)
+  ENDIF
+
+  IF (itype_sma > 1 .AND. icpl_da_sfcevap < 3) THEN
+    WRITE(message_text,'(a)') 'itype_sma > 1 must be combined with icpl_da_sfcevap >= 3'
     CALL finish(TRIM(routine),message_text)
   ENDIF
 
@@ -461,10 +484,12 @@ CONTAINS
   config_smi_relax_timescale = smi_relax_timescale
   config_icpl_da_skinc       = icpl_da_skinc
   config_icpl_da_snowalb     = icpl_da_snowalb
+  config_icpl_da_landalb     = icpl_da_landalb
   config_icpl_da_sfcfric     = icpl_da_sfcfric
   config_scalfac_da_sfcfric  = scalfac_da_sfcfric
   config_icpl_da_tkhmin      = icpl_da_tkhmin
   config_icpl_da_seaice      = icpl_da_seaice
+  config_itype_sma           = itype_sma
   config_dt_ana              = dt_ana
   config_adjust_tso_tsnow    = adjust_tso_tsnow
   config_lvert_remap_fg      = lvert_remap_fg

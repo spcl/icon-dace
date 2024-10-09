@@ -1,6 +1,3 @@
-! Module handling the reading / on-the-fly generation and the writing of the vertical grid.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module handling the reading / on-the-fly generation and the writing of the vertical grid.
 
 MODULE mo_util_vgrid
 

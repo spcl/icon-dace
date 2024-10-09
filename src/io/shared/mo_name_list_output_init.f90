@@ -1,5 +1,3 @@
-! Module handling the initialization of synchronous and asynchronous output.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,7 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Module handling the initialization of synchronous and asynchronous output.
+
 !NEC$ options "-fno-loop-unroll"
+
 MODULE mo_name_list_output_init
 
   USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_ptr, c_f_pointer, c_int64_t, c_double
@@ -76,7 +78,7 @@ MODULE mo_name_list_output_init
 
 #ifndef __NO_ICON_ATMO__
   USE mo_nh_pzlev_config,                   ONLY: nh_pzlev_config
-  USE mo_extpar_config,                     ONLY: i_lctype
+  USE mo_extpar_config,                     ONLY: ext_atm_attr
   USE mo_lnd_nwp_config,                    ONLY: ntiles_lnd, ntiles_water, ntiles_total, tile_list, &
     &                                             isub_water, isub_lake, isub_seaice, lsnowtile
   USE mo_nwp_sfc_tiles,                     ONLY: setup_tile_list
@@ -950,7 +952,7 @@ CONTAINS
 
       this_i_lctype = 0
 #ifndef __NO_ICON_ATMO__
-      this_i_lctype = i_lctype(print_patch_id)
+      this_i_lctype = ext_atm_attr(print_patch_id)%i_lctype
 #endif
 
       CALL print_var_list(out_varnames_dict,              &
@@ -2862,7 +2864,7 @@ CONTAINS
 
       this_i_lctype = 0
 #ifndef __NO_ICON_ATMO__
-      this_i_lctype = i_lctype(of%phys_patch_id)
+      this_i_lctype = ext_atm_attr(of%phys_patch_id)%i_lctype
 #endif
 
       info%cdiVarID = create_cdi_variable(vlistID, gridID, zaxisID,         &
@@ -2980,7 +2982,7 @@ CONTAINS
     CALL p_bcast(gribout_config(1:n_dom_out)%generatingCenter,    bcast_root, p_comm_work_2_io)
     CALL p_bcast(gribout_config(1:n_dom_out)%generatingSubcenter, bcast_root, p_comm_work_2_io)
       ! from extpar config state
-    CALL p_bcast(i_lctype(1:n_dom_out)                          , bcast_root, p_comm_work_2_io)
+    CALL p_bcast(ext_atm_attr(1:n_dom_out)%i_lctype,              bcast_root, p_comm_work_2_io)
 
     IF (iforcing == INWP) THEN
       ! from nwp land config state

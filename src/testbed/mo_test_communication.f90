@@ -1,6 +1,3 @@
-!
-! @brief Main program for the ICON atmospheric model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! @brief Main program for the ICON atmospheric model
 
 MODULE mo_test_communication
 

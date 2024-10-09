@@ -1,10 +1,3 @@
-!
-! Initializes and controls the time stepping in the nonhydrostatic model.
-!
-! The time stepping does eventually perform an (iterative) Incremental Analysis
-! Update (IAU). See mo_iau.f90 for details.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initializes and controls the time stepping in the nonhydrostatic model.
+!
+! The time stepping does eventually perform an (iterative) Incremental Analysis
+! Update (IAU). See mo_iau.f90 for details.
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -36,7 +34,7 @@ MODULE mo_nh_stepping
   USE mo_nonhydrostatic_config,    ONLY: itime_scheme, divdamp_order,                                 &
     &                                    divdamp_fac, divdamp_fac_o2, ih_clch, ih_clcm, kstart_moist, &
     &                                    ndyn_substeps, ndyn_substeps_var, ndyn_substeps_max, vcfl_threshold, &
-    &                                    nlev_hcfl
+    &                                    nlev_hcfl, cfl_monitoring_freq
   USE mo_diffusion_config,         ONLY: diffusion_config
   USE mo_dynamics_config,          ONLY: nnow, nnew, nnow_rcf, nnew_rcf, nsav1, nsav2, lmoist_thdyn, ldeepatmo
   USE mo_io_config,                ONLY: is_totint_time, n_diag, var_in_output, checkpoint_on_demand
@@ -116,6 +114,7 @@ MODULE mo_nh_stepping
   USE mo_nh_interface_nwp,         ONLY: nwp_nh_interface
   USE mo_phy_events,               ONLY: mtime_ctrl_physics
   USE mo_nwp_phy_init,             ONLY: init_nwp_phy, init_cloud_aero_cpl, clim_cdnc
+  USE mo_apt_routines,             ONLY: apply_landalb_tuning
   USE mo_nwp_sfc_utils,            ONLY: aggregate_landvars, aggr_landvars, process_sst_and_seaice
   USE mo_nwp_diagnosis,            ONLY: nwp_diag_for_output, nwp_opt_diagnostics, nwp_diag_global
   USE mo_nwp_vdiff_interface,      ONLY: nwp_vdiff_update_seaice
@@ -133,6 +132,12 @@ MODULE mo_nh_stepping
   USE mo_diagnose_qvi,             ONLY: diagnose_qvi
   USE mo_diagnose_uvi,             ONLY: diagnose_uvd, diagnose_uvp
   USE mo_aes_diagnostics,          ONLY: aes_global_diagnostics
+  USE mo_atm_energy_memory,        ONLY: atm_energy_config
+  USE mo_atm_energy_diag,          ONLY: atm_energy_diag_d1, atm_energy_hint_1, &
+       &                                 atm_energy_diag_d2, atm_energy_hint_2, &
+       &                                 atm_energy_copy_2_3_3d_vi, atm_energy_copy_2_3_hi_ti, &
+       &                                 atm_energy_tend_dyn_3d_vi, atm_energy_tend_dyn_hi_ti, &
+       &                                 atm_energy_tend_phy_3d_vi, atm_energy_tend_phy_hi_ti
   USE mo_interface_iconam_aes,     ONLY: interface_iconam_aes
 #endif
   USE mo_phys_nest_utilities,      ONLY: interpol_phys_grf, feedback_phys_diag, interpol_rrg_grf, copy_rrg_ubc
@@ -260,6 +265,8 @@ MODULE mo_nh_stepping
     &                                    icon_call_callback
 #endif
 
+  USE mo_coupling_config       ,ONLY: is_coupled_to_ocean
+  USE mo_aes_ocean_coupling    ,ONLY: interface_aes_ocean
   USE mo_coupling_config       ,ONLY: is_coupled_to_output
   USE mo_output_coupling       ,ONLY: output_coupling
 
@@ -678,7 +685,7 @@ MODULE mo_nh_stepping
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     IF (output_mode%l_nml) THEN
@@ -686,7 +693,7 @@ MODULE mo_nh_stepping
     END IF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     !-----------------------------------------------
@@ -1003,7 +1010,7 @@ MODULE mo_nh_stepping
   !$ser verbatim ENDDO
   
 #ifndef __NO_ICON_COMIN__
-  CALL icon_call_callback(EP_ATM_TIMELOOP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+  CALL icon_call_callback(EP_ATM_TIMELOOP_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
   TIME_LOOP: DO
@@ -1021,7 +1028,7 @@ MODULE mo_nh_stepping
     ENDDO
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_TIMELOOP_START, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
 #ifndef __NO_NWP__
@@ -1142,6 +1149,10 @@ MODULE mo_nh_stepping
             &                      ref_datetime    = ref_datetime,     &
             &                      target_datetime = target_datetime,  &
             &                      mtime_old       = mtime_old         )
+
+          ! Apply adaptive parameter tuning if selected by namelist; the tuning needs to be re-applied
+          ! after each update of the time-interpolated albedo fields
+          CALL apply_landalb_tuning (p_patch(jg), prm_diag(jg), ext_data(jg))
 
         ENDDO  ! jg
 
@@ -1277,7 +1288,7 @@ MODULE mo_nh_stepping
 
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_INTEGRATE_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INTEGRATE_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     !--------------------------------------------------------------------------
@@ -1286,8 +1297,24 @@ MODULE mo_nh_stepping
     !
     CALL integrate_nh(time_config, datetime_current, 1, jstep-jstep_shift, iau_iter, dtime, model_time_step, 1, latbc)
 
+
+    !--------------------------------------------------------------------------
+    !
+    ! Couple atmosphere and ocean, if needed
+    !
+    IF (is_coupled_to_ocean()) THEN
+      IF ( iforcing==iaes ) THEN
+        IF (ltimer) CALL timer_start(timer_coupling)
+        ! CALL message("nh_stepping","CALL interface_aes_ocean...")
+        CALL interface_aes_ocean(p_patch(1) , p_nh_state(1)%diag)
+        IF (ltimer) CALL timer_stop(timer_coupling)
+      END IF
+    END IF
+    !
+    !=====================================================================================
+
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_INTEGRATE_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     ! --------------------------------------------------------------------------------
@@ -1461,7 +1488,7 @@ MODULE mo_nh_stepping
 
     ! Adapt number of dynamics substeps if necessary
     !
-    IF (lcfl_watch_mode .OR. MOD(jstep-jstep_shift,5) == 0 .OR. jstep-jstep_shift <= 2) THEN
+    IF (lcfl_watch_mode .OR. MOD(jstep-jstep_shift,cfl_monitoring_freq) == 0 .OR. jstep-jstep_shift <= 2) THEN
       IF (ANY((/MODE_IFSANA,MODE_COMBINED,MODE_COSMO,MODE_ICONVREMAP/) == init_mode)) THEN
         ! For interpolated initial conditions, apply more restrictive criteria for timestep reduction during the spinup phase
         CALL set_ndyn_substeps(lcfl_watch_mode,jstep <= 100)
@@ -1519,7 +1546,7 @@ MODULE mo_nh_stepping
     !$ser verbatim ENDDO
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     ! output of results
@@ -1529,7 +1556,7 @@ MODULE mo_nh_stepping
     ENDIF
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_WRITE_OUTPUT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     ! sample meteogram output
@@ -1585,7 +1612,7 @@ MODULE mo_nh_stepping
     !
     ! default is to assume we do not write a checkpoint/restart file
     lwrite_checkpoint = .FALSE.
-    ! if thwe model is not supposed to write output, do not write checkpoints
+    ! if the model is not supposed to write output, do not write checkpoints
     IF (.NOT. output_mode%l_none ) THEN
       ! to clarify the decision tree we use shorter and more expressive names:
 
@@ -1653,7 +1680,7 @@ MODULE mo_nh_stepping
 
     IF (lwrite_checkpoint) THEN
 #ifndef __NO_ICON_COMIN__
-      CALL icon_call_callback(EP_ATM_CHECKPOINT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP)
+      CALL icon_call_callback(EP_ATM_CHECKPOINT_BEFORE, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
       CALL diag_for_output_dyn (lacc=.TRUE.)
@@ -1710,7 +1737,7 @@ MODULE mo_nh_stepping
         ENDIF
 #endif
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_CHECKPOINT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+        CALL icon_call_callback(EP_ATM_CHECKPOINT_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
     END IF  ! lwrite_checkpoint
 
@@ -1740,7 +1767,7 @@ MODULE mo_nh_stepping
     !$ser verbatim ENDDO
 
 #ifndef __NO_ICON_COMIN__
-    CALL icon_call_callback(EP_ATM_TIMELOOP_END, COMIN_DOMAIN_OUTSIDE_LOOP)
+    CALL icon_call_callback(EP_ATM_TIMELOOP_END, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
     IF (mtime_current >= time_config%tc_stopdate .OR. lstop_on_demand) THEN
@@ -1755,7 +1782,7 @@ MODULE mo_nh_stepping
   ENDDO TIME_LOOP
 
 #ifndef __NO_ICON_COMIN__
-  CALL icon_call_callback(EP_ATM_TIMELOOP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP)
+  CALL icon_call_callback(EP_ATM_TIMELOOP_AFTER, COMIN_DOMAIN_OUTSIDE_LOOP, lacc=.TRUE.)
 #endif
 
   ! clean-up routine for mo_nh_supervise module (eg. closing of files)
@@ -1877,7 +1904,7 @@ MODULE mo_nh_stepping
 #endif
 
 #ifndef __NO_ICON_COMIN__
-      CALL icon_call_callback(EP_ATM_INTEGRATE_START, jg)
+      CALL icon_call_callback(EP_ATM_INTEGRATE_START, jg, lacc=.TRUE.)
 #endif
 
       IF (ifeedback_type == 1 .AND. (jstep == 1) .AND. jg > 1 ) THEN
@@ -1977,7 +2004,7 @@ MODULE mo_nh_stepping
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -2046,7 +2073,7 @@ MODULE mo_nh_stepping
           &       lacc              = .TRUE.                                 ) !optin
 
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -2083,6 +2110,38 @@ MODULE mo_nh_stepping
 
 
 
+#ifndef __NO_AES__
+        IF (iforcing==iaes) THEN
+           !
+           !$ACC WAIT(1)
+           !
+           ! energy diagnostics for initial state of the time step
+           ! -----------------------------------------------------
+           !
+           ! temperature
+           CALL diagnose_pres_temp   (p_nh_state(jg)%metrics,                     &
+                &                     p_nh_state(jg)%prog(nnow(jg)),              &
+                &                     p_nh_state(jg)%prog(nnow_rcf(jg)),          &
+                &                     p_nh_state(jg)%diag,                        &
+                &                     p_patch(jg),                                &
+                &                     opt_calc_temp=.TRUE.,                       &
+                &                     opt_calc_pres=.TRUE.                        )
+           !
+           ! wind (u,v)
+           CALL sync_patch_array     (SYNC_E, p_patch(jg),                        &!in
+                &                     p_nh_state(jg)%prog(nnow(jg))%vn            )!inout
+           CALL rbf_vec_interpol_cell(p_nh_state(jg)%prog(nnow(jg))%vn,           &!in
+                &                     p_patch(jg), p_int_state(jg),               &!in
+                &                     p_nh_state(jg)%diag%u, p_nh_state(jg)%diag%v)!out
+           !
+           ! energy
+           IF (atm_energy_config(jg)%l_atm_energy) THEN
+              CALL omp_block_loop_cell  (p_patch(jg), atm_energy_diag_d1) ; CALL atm_energy_hint_1(jg)
+           END IF
+           !
+        END IF
+#endif
+
         IF (ldynamics) THEN
 
           !$ser verbatim CALL serialize_all(nproma, jg, "dynamics", .TRUE., opt_dt=datetime_local(jg)%ptr, opt_id=iau_iter)
@@ -2115,7 +2174,7 @@ MODULE mo_nh_stepping
 
 #ifndef __NO_ICON_COMIN__
         CALL icon_update_expose_variables(TLEV_NNOW, nnew(jg))
-        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_BEFORE, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -2196,7 +2255,6 @@ MODULE mo_nh_stepping
 #ifdef _OPENACC
             CALL finish (routine, 'aerosol_2D_advection: OpenACC version currently not implemented')
 #endif
-            CALL sync_patch_array(SYNC_C, p_patch(jg), prm_diag(jg)%aerosol)
             CALL aerosol_2D_advection( p_patch(jg), p_int_state(jg), iprog_aero,   & !in
               &          dt_loc, prm_diag(jg)%aerosol, prep_adv(jg)%vn_traj,       & !in, inout, in
               &          prep_adv(jg)%mass_flx_me, prep_adv(jg)%mass_flx_ic,       & !in
@@ -2226,7 +2284,7 @@ MODULE mo_nh_stepping
         ENDIF !ltransport
 
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_ADVECTION_AFTER, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -2258,7 +2316,41 @@ MODULE mo_nh_stepping
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_PHYSICS_BEFORE, jg)
+        CALL icon_call_callback(EP_ATM_PHYSICS_BEFORE, jg, lacc=.TRUE.)
+#endif
+
+#ifndef __NO_AES__
+        IF (iforcing==iaes) THEN
+          !
+          !$ACC WAIT(1)
+          !
+          ! energy diagnostics after dynamics
+          !----------------------------------
+          !
+          ! temperature
+          CALL diagnose_pres_temp   (p_nh_state(jg)%metrics,                     &
+              &                      p_nh_state(jg)%prog(nnew(jg)),              &
+              &                      p_nh_state(jg)%prog(nnew_rcf(jg)),          &
+              &                      p_nh_state(jg)%diag,                        &
+              &                      p_patch(jg),                                &
+              &                      opt_calc_temp=.TRUE.,                       &
+              &                      opt_calc_pres=.TRUE.                        )
+          !
+          ! wind (u,v)
+          CALL sync_patch_array     (SYNC_E, p_patch(jg),                        & !in
+               &                     p_nh_state(jg)%prog(nnew(jg))%vn            ) !inout
+          CALL rbf_vec_interpol_cell(p_nh_state(jg)%prog(nnew(jg))%vn,           & !in
+               &                     p_patch(jg), p_int_state(jg),               & !in
+               &                     p_nh_state(jg)%diag%u, p_nh_state(jg)%diag%v) !out
+          !
+          ! energy
+          IF (atm_energy_config(jg)%l_atm_energy) THEN
+             CALL omp_block_loop_cell  (p_patch(jg), atm_energy_diag_d2)       ; CALL atm_energy_hint_2        (jg)
+             CALL omp_block_loop_cell  (p_patch(jg), atm_energy_tend_dyn_3d_vi); CALL atm_energy_tend_dyn_hi_ti(jg)
+             CALL omp_block_loop_cell  (p_patch(jg), atm_energy_copy_2_3_3d_vi); CALL atm_energy_copy_2_3_hi_ti(jg)
+          END IF
+          !
+        END IF
 #endif
 
         IF ( ( iforcing==inwp .OR. iforcing==iaes ) ) THEN
@@ -2313,15 +2405,6 @@ MODULE mo_nh_stepping
             ! aes physics
             IF (ltimer) CALL timer_start(timer_iconam_aes)
             !
-            !$ACC WAIT(1)
-            CALL diagnose_pres_temp  ( p_nh_state(jg)%metrics,                          &
-                &                      p_nh_state(jg)%prog(nnew(jg)),                   &
-                &                      p_nh_state(jg)%prog(nnew_rcf(jg)),               &
-                &                      p_nh_state(jg)%diag,                             &
-                &                      p_patch(jg),                                     &
-                &                      opt_calc_temp=.TRUE.,                            &
-                &                      opt_calc_pres=.TRUE.                             )
-            !
             CALL omp_block_loop_cell ( p_patch(jg), diagnose_uvd ) ! internal energy vertical integral after dynamics
             !
             CALL interface_iconam_aes(     dt_loc                                    & !in
@@ -2341,6 +2424,39 @@ MODULE mo_nh_stepping
             IF (ltimer) CALL timer_stop(timer_iconam_aes)
 #endif
           END SELECT ! iforcing
+
+#ifndef __NO_AES__
+          IF (iforcing==iaes) THEN
+            !
+            !$ACC WAIT(1)
+            !
+            ! energy diagnostics after physics
+            ! --------------------------------
+            !
+            ! temperature
+            CALL diagnose_pres_temp   (p_nh_state(jg)%metrics,                     &
+                &                      p_nh_state(jg)%prog(nnew(jg)),              &
+                &                      p_nh_state(jg)%prog(nnew_rcf(jg)),          &
+                &                      p_nh_state(jg)%diag,                        &
+                &                      p_patch(jg),                                &
+                &                      opt_calc_temp=.TRUE.,                       &
+                &                      opt_calc_pres=.TRUE.                        )
+            !
+            ! wind (u,v)
+            CALL sync_patch_array     (SYNC_E, p_patch(jg),                        &!in
+                 &                     p_nh_state(jg)%prog(nnew(jg))%vn            )!inout
+            CALL rbf_vec_interpol_cell(p_nh_state(jg)%prog(nnew(jg))%vn,           &!in
+                 &                     p_patch(jg), p_int_state(jg),               &!in
+                 &                     p_nh_state(jg)%diag%u, p_nh_state(jg)%diag%v)!out
+            !
+            ! energy
+            IF (atm_energy_config(jg)%l_atm_energy) THEN
+               CALL omp_block_loop_cell  (p_patch(jg), atm_energy_diag_d2)       ; CALL atm_energy_hint_2      (jg)
+               CALL omp_block_loop_cell  (p_patch(jg), atm_energy_tend_phy_3d_vi); CALL atm_energy_tend_phy_hi_ti(jg)
+            END IF
+            !
+         END IF
+#endif
 
           ! Boundary interpolation of land state variables entering into radiation computation
           ! if a reduced grid is used in the child domain(s)
@@ -2422,7 +2538,7 @@ MODULE mo_nh_stepping
         ENDIF
 
 #ifndef __NO_ICON_COMIN__
-        CALL icon_call_callback(EP_ATM_PHYSICS_AFTER, jg)
+        CALL icon_call_callback(EP_ATM_PHYSICS_AFTER, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -2433,7 +2549,7 @@ MODULE mo_nh_stepping
       ENDIF  ! itime_scheme
 
 #ifndef __NO_ICON_COMIN__
-      CALL icon_call_callback(EP_ATM_NUDGING_BEFORE, jg)
+      CALL icon_call_callback(EP_ATM_NUDGING_BEFORE, jg, lacc=.TRUE.)
 #endif
 
       !
@@ -2519,7 +2635,7 @@ MODULE mo_nh_stepping
       ENDIF
 
 #ifndef __NO_ICON_COMIN__
-      CALL icon_call_callback(EP_ATM_NUDGING_AFTER, jg)
+      CALL icon_call_callback(EP_ATM_NUDGING_AFTER, jg, lacc=.TRUE.)
 #endif
 
       ! Check if at least one of the nested domains is active
@@ -2565,9 +2681,15 @@ MODULE mo_nh_stepping
           IF (p_patch(jgc)%ldom_active) THEN
             !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .TRUE., opt_id=jstep + num_steps*iau_iter)
             !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .TRUE., opt_id=jstep + num_steps + num_steps*iau_iter)
-            CALL boundary_interpolation(jg, jgc,                   &
-              &  n_now_grf,nnow(jgc),n_now_rcf,nnow_rcf(jgc),      &
-              &  p_patch(1:),p_nh_state(:),prep_adv(:),prm_diag(:),p_grf_state(1:), lacc=.TRUE.)
+            IF (iforcing == inwp) THEN
+              CALL boundary_interpolation(jg, jgc,                   &
+                &  n_now_grf,nnow(jgc),n_now_rcf,nnow_rcf(jgc),      &
+                &  p_patch(1:),p_nh_state(:),prep_adv(:),p_grf_state(1:), prm_diag=prm_diag(:),lacc=.TRUE.)
+            ELSE !no use for prm_diag
+              CALL boundary_interpolation(jg, jgc,                   &
+                &  n_now_grf,nnow(jgc),n_now_rcf,nnow_rcf(jgc),      &
+                &  p_patch(1:),p_nh_state(:),prep_adv(:),p_grf_state(1:), lacc=.TRUE.)
+            ENDIF
             !$ser verbatim CALL serialize_all(nproma, jg, "nesting_boundary_interpolation", .FALSE., opt_id=jstep + num_steps*iau_iter)
             !$ser verbatim CALL serialize_all(nproma, jgc, "nesting_boundary_interpolation", .FALSE., opt_id=jstep + num_steps + num_steps*iau_iter)
           ENDIF
@@ -2794,7 +2916,7 @@ MODULE mo_nh_stepping
       ENDIF
 
 #ifndef __NO_ICON_COMIN__
-      CALL icon_call_callback(EP_ATM_INTEGRATE_END, jg)
+      CALL icon_call_callback(EP_ATM_INTEGRATE_END, jg, lacc=.TRUE.)
 #endif
 
 #ifdef MESSY
@@ -3280,7 +3402,10 @@ MODULE mo_nh_stepping
         &                      p_nh_state(jg)%prog(nnow_rcf(jg)),                     &
         &                      p_nh_state(jg)%diag,p_patch(jg),                       &
         &                      opt_calc_temp=.TRUE.,                                  &
-        &                      opt_calc_pres=.TRUE.                                   )
+        &                      opt_calc_pres=(p_patch(jg)%nlev>=3)                    )
+                                             ! avoid out-of-bounds memory access during
+                                             ! pres_sfc diagnosis for idealized test cases
+                                             ! with nlev<3.
 
     ENDDO ! jg-loop
 

@@ -1,5 +1,3 @@
-! Module for writing restart files (synchronously)
-! 
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! Module for writing restart files (synchronously)
+
 ! Note: The asynchronous implementation of the restart output can be
 !       found in the module "mo_async_restart"
 !

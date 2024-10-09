@@ -1,9 +1,3 @@
-! Calculate error norms as in Williamson et al. (1992)
-!
-! General subroutines to be used for any variable (scalar, or
-! vector with 2 or 3 components) and any test case
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Calculate error norms as in Williamson et al. (1992)
+!
+! General subroutines to be used for any variable (scalar, or
+! vector with 2 or 3 components) and any test case
 
 MODULE mo_err_norm
 !-------------------------------------------------------------------------

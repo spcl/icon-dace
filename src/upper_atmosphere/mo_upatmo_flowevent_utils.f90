@@ -1,8 +1,3 @@
-!
-! Tools for the upper-atmosphere
-! that could not be placed in 'mo_upatmo_utils',
-! due to circular dependencies, unfortunately.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Tools for the upper-atmosphere
+! that could not be placed in 'mo_upatmo_utils',
+! due to circular dependencies, unfortunately.
 
 MODULE mo_upatmo_flowevent_utils
 

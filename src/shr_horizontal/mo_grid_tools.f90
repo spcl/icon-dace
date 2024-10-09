@@ -1,6 +1,3 @@
-! Basic tools for the patch
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Basic tools for the patch
 
 !----------------------------
 #include "omp_definitions.inc"

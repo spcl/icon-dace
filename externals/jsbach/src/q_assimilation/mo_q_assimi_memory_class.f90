@@ -88,33 +88,6 @@ MODULE mo_q_assimi_memory_class
       tau_c_woods                   ! preliminary, to pass lct information on pft-tiles to a process running on the veg-tile
 
 
-!                                         CO2_conc_leaf,                  & ! CO2 concentration inside leaf [MOL(CO2)/MOL(AIR)]
-!                                         CO2_conc_leaf_acc,              & ! CO2 concentration inside leaf [MOL(CO2)/MOL(AIR)]
-!                                                                           ! (mean value)
-!                                         CO2_conc_leaf_unlimited_acc,    & ! CO2 concentration inside leaf for no water stress
-!                                                                           ! [MOL(CO2)/MOL(AIR)] (mean value)
-!
-!                                         carbox_rate_max,                & ! Maximum carboxylation rate (=VCmax)
-!                                                                           ! [MOL(CO2)/M^2 S]
-!                                         e_transport_rate_max,           & ! Maximum electron transport rate (=Jmax)
-!                                                                           ! (only C3 plants)[MOL(CO2)/M^2 S]
-!                                         carbox_rate,                    & ! Actual carboxylation rate (=JC)
-!                                                                           ! [MOL(CO2)/M^2 S]
-!                                         e_transport_rate,               & ! Actual electron transport rate (=JE)
-!                                                                           ! [MOL(CO2)/M^2 S]
-!                                         net_assimilation,               & ! Canopy net assimilation assimilation
-!                                                                           ! [MOL(CO2)/m^2 s] (mean value)
-
-!
-!      REAL(wp), POINTER, DIMENSION(:,:) ::                               &
-!                                         CO2_flux_net_acc,               & ! net CO2 flux to the atmosphere
-!                                         CO2_flux_herbivory_acc,         & ! CO2 flux to the atmosphere from grazing
-!                                         CO2_emission_landcover_change_acc, & ! CO2 flux to the atmosphere from land cover changes
-!                                         CO2_emission_harvest_acc,       & ! CO2 flux to the atmosphere from harvest
-!                                         CO2_flux_nlcc_acc                 ! CO2 flux to the atmosphere from vegetation dynamics
-!                                                                           ! (disturbance?)
-!
-
     ! t_canopy variables
     TYPE(t_jsb_var_real3d) ::     &
       & scaling_fact_cl,          &
@@ -145,6 +118,9 @@ MODULE mo_q_assimi_memory_class
       & maint_respiration_leaf         !< canopy-integrated foliar respiration rate [micro-mol CO2 m-2 s-1]
 
     TYPE(t_jsb_var_real3d)    :: &
+      & ftranspiration_sl              !< fraction of transpiration []
+
+    TYPE(t_jsb_var_real3d)    :: &
       & net_assimilation_cl       , &  !< net assimilation rate per canopy layer [micro-mol CO2 m-2 s-1]
       & maint_respiration_leaf_cl      !< foliar respiration rate per canopy layer [micro-mol CO2 m-2 s-1]
 
@@ -154,6 +130,7 @@ MODULE mo_q_assimi_memory_class
       & beta_soa       , &  !< scaling factor to account for the 'state of acclimation' of evergreen conifers in spring, calculated from soa_tsoa_mavg [unitless]
       & beta_soil_ps   , &  !< scaling factor to account for soil moisture constraints on photosynthesis [unitless]
       & beta_soil_gs   , &  !< scaling factor to account for soil moisture constraints on conductance [unitless]
+      & aerodyn_cond   , &  !< ga -- aerodynamic conductance [m s-1]
       & canopy_cond    , &  !< canopy-integrated conductance for water [m s-1]
       & co2_conc_leaf  , &  !< canopy-integrated internal leaf CO2 concentration [ppm]
       & t_jmax_opt     , &  !< optimal temperature for electron transport of photosynthesis [degC]
@@ -216,6 +193,7 @@ CONTAINS
     TYPE(t_jsb_grid),   POINTER :: hgrid                        ! Horizontal grid
     TYPE(t_jsb_vgrid),  POINTER :: surface                      ! Vertical grid
     TYPE(t_jsb_vgrid),  POINTER :: vgrid_canopy_q_assimi        ! Vertical grid
+    TYPE(t_jsb_vgrid),  POINTER :: vgrid_soil_sb                !< Vertical grid for soil layers
     INTEGER                     :: table                        ! ...
     CHARACTER(len=*), PARAMETER :: routine = modname//':Init_q_assimi_memory_quincy'
     ! ----------------------------------------------------------------------------------------------------- !
@@ -223,6 +201,7 @@ CONTAINS
     hgrid                 => Get_grid(mem%grid_id)
     surface               => Get_vgrid('surface')
     vgrid_canopy_q_assimi => Get_vgrid('q_canopy_layer')
+    vgrid_soil_sb         => Get_vgrid('soil_layer_sb')
 
     ! ----------------------------------------------------------------------------------------------------- !
     ! create memory at tiles of LAND_TYPE or VEG_TYPE
@@ -246,9 +225,31 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('ftranspiration_sl', mem%ftranspiration_sl, &
+        & hgrid, vgrid_soil_sb, &
+        & t_cf('ftranspiration_sl', '?', 'fraction of transpiration'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .TRUE., &
+        & initval_r = 0.0_wp)
+
+      CALL mem%Add_var('aerodyn_cond', mem%aerodyn_cond, &
+        & hgrid, surface, &
+        & t_cf('aerodyn_cond', 'm s-1', 'ga -- aerodynamic conductance'), &
+        & t_grib1(table, 255, grib_bits), &
+        & t_grib2(255, 255, 255, grib_bits), &
+        & prefix, suffix, &
+        & output_level = FULL, &
+        & loutput = .TRUE., &
+        & lrestart = .TRUE., &
         & initval_r = 0.0_wp)
 
       CALL mem%Add_var('canopy_cond_cl', mem%canopy_cond_cl, &
@@ -279,7 +280,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -290,7 +291,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = BASIC, &
+        & output_level = FULL, &
         & loutput = .TRUE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)
@@ -301,7 +302,7 @@ CONTAINS
         & t_grib1(table, 255, grib_bits), &
         & t_grib2(255, 255, 255, grib_bits), &
         & prefix, suffix, &
-        & output_level = FULL, &
+        & output_level = MEDIUM, &
         & loutput = .FALSE., &
         & lrestart = .FALSE., &
         & initval_r = 0.0_wp)

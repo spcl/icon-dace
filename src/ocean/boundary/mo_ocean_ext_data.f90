@@ -1,6 +1,3 @@
-! Allocation/deallocation and reading of ocean external datasets
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Allocation/deallocation and reading of ocean external datasets
+
 #include "omp_definitions.inc"
-!----------------------------
 
 MODULE mo_ocean_ext_data
 
@@ -441,6 +440,9 @@ CONTAINS
     !
     CALL closeFile(stream_id)
 
+    !$ACC ENTER DATA COPYIN(ext_data(jg)%oce%bathymetry_c, ext_data(jg)%oce%bathymetry_e) &
+    !$ACC   COPYIN(ext_data(jg)%oce%lsm_ctr_c, ext_data(jg)%oce%lsm_ctr_e)
+
     !ENDDO ! jg
 
     CALL message( TRIM(routine),'Ocean bathymetry for external data read' )
@@ -657,6 +659,8 @@ CONTAINS
       ! close file
       !
       CALL closeFile(stream_id)
+
+      !$ACC ENTER DATA COPYIN(ext_data(jg)%oce%flux_forc_mon_c)
 
     !ENDDO
 

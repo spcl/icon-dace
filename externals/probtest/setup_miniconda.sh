@@ -1,26 +1,29 @@
 #!/bin/bash
 #
 # Install miniconda if necessary
-#
-# - 2022-08 (D. Regenass) Write original script
-# - 2022-09 (S. Ruedisuehli) Refactor
-#
+
+
+if [[ "${BASH_SOURCE[0]}" != "${0}" ]]; then
+  echo "Please simply call the script instead of sourcing it!"
+  return
+fi
 
 # Default options
 INSTALL_PREFIX=${PWD}
-USER_INSTALL=true
+USER_INSTALL=false
 
-MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py310_22.11.1-1-Linux-x86_64.sh
-SHA256=00938c3534750a0e4069499baf8f4e6dc1c2e471c86a59caa0dd03f4a9269db6
+# here the conda version is fixed, the sha256 hash has to be set accordingly
+MINICONDA_URL=https://repo.anaconda.com/miniconda/Miniconda3-py310_23.11.0-1-Linux-x86_64.sh
+SHA256=6581658486be8e700d77e24eccafba586a0fbafafadcf73d35ab13eaee4b80b1
+
 
 # Eval command line options
-while getopts p:n flag; do
+while getopts p:u  flag; do
     case ${flag} in
         p) INSTALL_PREFIX=${OPTARG};;
-        n) USER_INSTALL=false;;
+        u) USER_INSTALL=true;;
     esac
 done
-
 
 # Install conda executable if not yet available
 if [[ -f $CONDA_EXE ]]; then
@@ -36,7 +39,7 @@ else
     if ${USER_INSTALL}; then
       conda init bash
     else
-      # this is a workaround as plain --no-user is not working
+      # this is a workaround as plain --no-user is not working as it should
       conda init bash --no-user --install --system
     fi
     conda activate

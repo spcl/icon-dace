@@ -5,3 +5,4 @@ build/
 *~
 *.dirstamp
 include/comin_version.inc
+__pycache__

@@ -1,6 +1,12 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 start_date: +1800-01-01T00:00:00.000
 end_date: +2100-01-01T00:00:00.000
 timestep_unit: second
+debug:
+  missing_definition_is_fatal: false
 coupling:
   - src_component: comp1
     src_grid: icon

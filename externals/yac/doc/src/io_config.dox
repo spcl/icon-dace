@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /**
  * \page io_config_detail Configuration of parallel IO in YAC
    \tableofcontents
@@ -17,7 +21,7 @@ component associated with the weights.
 \subsection io_config_detail_who_grid Grid files
 
 For a couple for common grid file formats YAC has some utility functions for
-reading them in (see contrib directory). Especially very high resolution
+reading them in (see src/utils directory). Especially very high resolution
 grids often have to be read in parallel due to memory constraints or in order
 to reduce time spend in the reading.
 

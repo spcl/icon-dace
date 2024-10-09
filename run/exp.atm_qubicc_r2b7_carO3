@@ -343,7 +343,6 @@ cat >> ${atmo_namelist} << EOF
  aes_rad_config(1)%irad_cfc11 =  3
  aes_rad_config(1)%irad_cfc12 =  3
  aes_rad_config(1)%irad_aero  =  0
- aes_rad_config(1)%lclearsky  = ${lclearsky}
  aes_rad_config(1)%rrtmgp_columns_chunk = ${rrtmgp_columns_chunk}
 /
 EOF

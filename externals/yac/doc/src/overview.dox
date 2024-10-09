@@ -1,3 +1,7 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
 /*! @page overview Interface Overview
 
 <p>The coupling and associated tasks can be grouped into four different phases, the
@@ -62,7 +66,7 @@ the ISO-C standard. The python bindings need to be enabled explicitly by passing
 `--enable-python-bindings` to `./configure`</p>
 
 A detailed description of the Fortran, Python and C interfaces can be found
-\subpage interface "here".
+\subpage reference "here".
 The python bindings are documented \subpage pythonbindings "here".
 
 */

@@ -1,7 +1,3 @@
-! This module provides basic methods to send
-! and receive file data using asynchronous
-! communication.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides basic methods to send
+! and receive file data using asynchronous
+! communication.
 
 MODULE mo_latbc_read_recv
 

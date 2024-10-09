@@ -1,5 +1,9 @@
 #!/bin/bash
 
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 tag=$1
 
 echo $tag

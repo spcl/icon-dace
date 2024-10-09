@@ -39,17 +39,18 @@
 #     (optionally turn on/off crwc/csw)
 #   * ERAinterm: only works until 2010! (fiv8 not available afterwards)
 #   * !!!!!!ATTENTION: Even though SWVL is converted to soil moisture index SMI, 
-#     this is not reflected within the corresponding metadata. Metadata still belong 
+#     this is not reflected in the corresponding metadata. Metadata still belong 
 #     to SWVL. !!!!!!!!!
 #
 # history:
+#   Helmut Frank    20240802  New option -P.
 #   Helmut Frank    20240229  Possible to get only boundary data (-E 0), and several
 #                             dates, steps, ensemble members with one request
 #   Helmut Frank    20230424  Correct setting of datadir.
-#   Helmut Frank    201107  adopted from GME equivalent
-#   Martin Koehler  201108  SMI soil moisture index
-#   Helmut Frank    201309  Rewrite with several options
-#   Helmut Frank    201501  Corrections retrieving IFS forecast data
+#   Helmut Frank    201107    adopted from GME equivalent
+#   Martin Koehler  201108    SMI soil moisture index
+#   Helmut Frank    201309    Rewrite with several options
+#   Helmut Frank    201501    Corrections retrieving IFS forecast data
 #   Helmut Frank    20150505  Introduce MARS_EXPVER to be able to set expver!=1.
 #   Helmut Frank    20160517  Automatically set n_st=1 for old operational data
 #   Helmut Frank    20170711  Add information and settings for ERA5
@@ -67,7 +68,7 @@ typeset    step=0           # forecast step [hours]
 typeset    res=auto  # 255  # resolution
 typeset    grd Fgrd         # grid, Full grid
 typeset    levs             # levels
-integer    lv_split=137 # 91 # fetch the atmospheric levels in portions of lv_split levels
+integer    lv_split=137     # 91 # fetch the atmospheric levels in portions of lv_split levels
 integer    parallel=0
 typeset    grib_file
 typeset    ozone
@@ -77,6 +78,7 @@ typeset -l stream_mars='oper'
 typeset    expv=${MARS_EXPVER:-1}
 typeset    expv_soil=1
 integer    fi_ana=0
+integer    p_sfc=0
 typeset    Dflag
 set -e
 
@@ -84,7 +86,7 @@ typeset target_format=${MARS_MULTITARGET_STRICT_FORMAT:-1}
 
 typeset name=${0##*/}
 
-while getopts +a:AC:Dd:E:g:hl:L:o:Op:r:s:S: option
+while getopts +a:AC:Dd:E:g:hl:L:o:Op:Pr:s:S:X option
 do
     case ${option} in
         A) fi_ana=1 ;;
@@ -105,7 +107,7 @@ do
 
 		${name} [-a area] [-A] [-C class_mars] [-d cymdg] [-D [-D]] [-E expv_soil]
                         [-g grid] [-h] [-l levelist] [-L lv_split] [-o grib_file] [-O|+O]
-                        [-p parallel] [-r resolution] [-s step] [-S stream]
+                        [-p parallel] [-r resolution] [-s step] [-S stream] [-X]
 
 		Most common usage: ${name} -d pdatin [-s step]
 
@@ -117,10 +119,17 @@ do
 		                    e4 for ERA-40, ei for ERA-Interim, ea for ERA5
 		  -d pdatin      Initial time. Format YYYYMMDDHH or something like g12, h00,
 		                 or the ICON time format. Default: ${pdatin}
-		                 Ranges like 2024020100/to/2024020212 are also possible with option -E 0.
+		                 Ranges like start/to/stop/by/hinc are possible, e.g. 2024020100/to/2024020212/by/6.
+		                 If 'by/hinc' is not given a default interval hinc=12 is used.
+		                 Also time differences like -D or -DHH are possible where D is the number of days
+		                 before today, and HH is the hour of that day.
+		                 If you write the range with uppercase 'start/TO/stop/by/hinc' a
+		                 shell script is executed which loops through the time range. This
+		                 can be usefull if you want to extract a range including soil data.
 		  -D             Debug flag. Repeating -D will not execute the MARS request, but write it to STDOUT.
 		  -E expv_soil   MARS parameter expver for soil data, or
-                                    expv_soil=0:    Do NOT retrieve soil data, i.e. only get boundary data.
+		                 expv_soil=0:  Do NOT retrieve soil data, i.e. only get boundary data.
+		                               For forecast data of older dates you might have to use -E 0 -P.
 		                 In combination with ERA-Interim data (-C ei):
 		                    expv_soil=fiv7: ERA-Interim forced land model
 		                    expv_soil=fiv8: ERA-Interim + GPCP corrected precip
@@ -130,18 +139,25 @@ do
                                  Use dlon/dlat (e.g. 0.25/0.25) for regular longitude-latitude grids.
 		  -h             This help
 		  -l levelist    Number of levels. A single number N will be used as levelist='1/to/N'.
+		                 A negative -N number retrieves levels (nlev-N)/to/nlev
 		                    Default: 1/to/137 since 2013062512,
 		                             1/to/91  after 2006020112,
 		                             1/to/60  before 2006020112
 		  -L lv_split    Fetch atmospheric data in portions of lv_split levels (Default: ${lv_split})
 		                    lv_split=35 is used for 137 levels with resolution=1279 in the backup suite of DWD.
-		  -o grib_file   Name of output GRIB-file
-                                 Remember to use MARS keywords in brackets if you use ranges
+		  -o grib_file   Name of output GRIB-file. 
+                                 Remember to use MARS keywords in brackets if you use ranges.
+                                 If grib_file=dir:DIRECTORY then the output is written do directory DIRECTORY
+                                 with default name for the GRIB-file.
 		  -O             Do not retrieve ozone. [Default]
 		  +O             Retrieve ozone.
 		  -p parallel    Number of parallel requests. Default: The number of MARS request which
 		                 is calculated from the number of levels and lv_split.
+		                 'parallel' is limited by \${MAX_PARALLEL_MARS_REQUESTS:-4}
 		                 Use parallel=1 for serial processing of mars requests.
+		  -P             Retrieve surface pressure sp instead of lnsp on model level 1.
+		                 Probably, this option is required for archived forecasts because the
+		                 orography FI on model levels is only stored for analyses.
 		  -r resolution  Spectral resolution.
 		                 Possible values: av (archived value), auto, max, or
                                        95, 106, 159, 213, 255, 319, 399, 511, 639, 799, 1023, 1279, 2047.
@@ -156,9 +172,10 @@ do
 		  -S stream      MARS stream. Default: ${stream_mars}
 		                    Use -S eda:N         for EDA member N.
 		                     or -S eda:N0/to/NN  for EDA members N0/to/NN with option -E 0.
+		  -X             Use 'set -x' in the script
 
 		Helmut Frank, 27.09.2013
-		Version 2024-03-08
+		Version 2024-08-07
 		HELP_EOF
            exit 0
            ;;
@@ -168,9 +185,11 @@ do
         O) ozone=''            ;;
        +O) ozone='/o3'         ;;
         p) parallel=${OPTARG}  ;;
+        P) p_sfc=1             ;;
         r) res=${OPTARG}       ;;
         s) step=${OPTARG}      ;;
         S) stream_mars=${OPTARG} ;;
+        X) set -x              ;;
     esac
 done
 
@@ -179,44 +198,90 @@ function f_date_time {
 #   convert date and time to format YYYYmmddHH or YYYYmmdd
 #   or the ICON time format is allowed.
 #
-    if [[ "${Dflag}" == '-D' ]]; then
-        set -x
-    fi
-    typeset dat_in=$1
-    typeset cymdg0
+ if [[ "${Dflag}" == '-D' ]]; then
+    set -x
+ fi
+ typeset date_in=$1
+ typeset cymdg
 
-    case ${dat_in} in
-        {2}(\d))  cymdg0=$(date +%Y%m%d)${dat_in}
-                   ;;
-        {8}(\d))   cymdg0=${dat_in}
-                   ;;
-        {10}(\d))  cymdg0=${dat_in}
-                   ;;
-        {1}(\d\d\d\d-\d\d-\d\dT\d\d)*) # ICON format
-                   integer     year
-                   typeset -Z2 mo dy hr rest
-                   print -- "${dat_in}" | IFS='-T:' read year mo dy hr rest
-                   cymdg0=${year}${mo}${dy}${hr}
-                   ;;
-        @(t|h){2}(\d)) cymdg0=$(date +%Y%m%d)${dat_in:1}
-                   ;;
-        g{2}(\d))  cymdg0=$(date +%Y%m%d -d -1day)${dat_in:1}
-                   ;;
-        v{2}(\d))  cymdg0=$(date +%Y%m%d -d -2day)${dat_in:1}
-                   ;;
-        -(\d))     cymdg0=$(date +%Y%m%d -d -${dat_in:1}day)
-                   ;;
-        -{3}(\d))  cymdg0=$(date +%Y%m%d -d -${dat_in:1:1}day)${dat_in:2}
-                   ;;
-            *)     print -- "Unknown format for initial time: ${dat_ini}" >&2
-                   exit 3
-                   ;;
-    esac
-    print -- ${cymdg0}
+ case ${date_in} in
+    {2}(\d))    cymdg=$(date +%Y%m%d)${date_in}   # today at $datin UTC
+                ;;
+    {8}(\d))    cymdg=${date_in} ;;     # %Y%m%d no hour
+    {10}(\d))   cymdg=${date_in} ;;     # %Y%m%d%H
+    {12}(\d))   cymdg=${date_in} ;;     # %Y%m%d%H%M
+    {12}(\d))   cymdg=${date_in} ;;     # %Y%m%d%H%M%S
+    {1}(\d\d\d\d-\d\d-\d\dT\d\d)*)     # ICON or ISO format
+                integer     year
+                typeset -Z2 mo dy hr rest
+                print -- "${date_in}" | IFS='-T:' read year mo dy hr rest
+                cymdg=${year}${mo}${dy}${hr}
+                ;;
+    @(t|h){2}(\d)) cymdg=$(date +%Y%m%d)${date_in:1}       ;;
+    g{2}(\d))   cymdg=$(date +%Y%m%d -d -1day)${date_in:1} ;;
+    v{2}(\d))   cymdg=$(date +%Y%m%d -d -2day)${date_in:1} ;;
+    now|j*)     cymdg=$(date +%Y%m%d%H)                   ;;
+    -(\d))      cymdg=$(date +%Y%m%d -d -${date_in:1}day)  ;;
+    -{3}(\d))   cymdg=$(date +%Y%m%d -d -${date_in:1:1}day)${date_in:2}
+                ;;
+    +(\S)[+-]+(\d)*) # date and time difference
+                typeset date0 dt cymdg0 fmt year month day hour minute second
+                typeset date_time
+                integer l
+                date0=${date_in%[+-]*}
+                dt=${date_in#*[+-]}
+                cymdg0=$(datConv ${date0})
+                l=${#cymdg0}
+                fmt='+%Y%m%d%H'
+                year=${cymdg0:0:4}
+                month=${cymdg0:4:2}
+                day=${cymdg0:6:2}
+                hour=${cymdg0:8:2}
+                minute='00'
+                second='00'
+                if (( l >= 12 )); then
+                    minute=${cymdg0:10:2}
+                    fmt='+%Y%m%d%H%M'
+                    if (( l >= 14 )); then
+                        second=${cymdg0:12:2}
+                        fmt='+%Y%m%d%H%M%S'
+                    fi
+                fi
+                if [[ ${date_in} == *-${dt} ]]; then
+                    delta=' ago'
+                else
+                    delta=''
+                fi
+                if [[ ${dt} == +(\d)+(\D) ]]; then
+                    unit=${dt: -1}
+                    dt=${dt%${unit}}
+                    case ${unit} in
+                        h*) unit=hour ;;
+                        d*) unit=day ;;
+                        m*) unit=minute
+                            fmt='+%Y%m%d%H%M'
+                            ;;
+                        s*) unit=second
+                            fmt='+%Y%m%d%H%M%S'
+                            ;;
+                    esac
+                else
+                       unit=hour
+                fi
+                date_time="${year}-${month}-${day} ${hour}:${minute}:${second}"
+                cymdg=$(date ${fmt} -d "${date_time} ${dt}${unit}${delta}")
+                ;;
+            *)  print -- "Unknown format for initial time: ${dat_ini}" >&2
+                exit 3
+                ;;
+ esac
+ print -- ${cymdg}
+ return 0
 }
 #
 #  Date and time of data
 #
+typeset tmpdir=${SCRATCHDIR:-${TMPDIR}}
 typeset -A multi_target
 integer cymdg
 typeset hhs dates
@@ -229,7 +294,34 @@ if [[ ${pdatin} == */* ]]; then
         dtime=12
     fi
     integer cymdg1 cymdg2 cymd1 cymd2 hh1 hh2
-    if [[ ":${date_arr[1]}" == ':to' ]]; then
+    if [[ ":${date_arr[1]}" == ':TO' ]]; then
+#       Loop over the forecast times calling the script
+        typeset mars4icon_loop=${tmpdir}/mars4icon_loop.$$
+        integer rc
+        typeset cmd_line="$0 $@"
+        print -- "#!/bin/ksh" > ${mars4icon_loop}
+        cymdg1=$(f_date_time ${date_arr[0]}) || exit 5
+        cymdg2=$(f_date_time ${date_arr[2]})
+        cymdg=${cymdg1}
+        while (( cymdg <= cymdg2 ))
+        do
+#           print -- "$0 $@ -d ${cymdg}" >> ${mars4icon_loop}
+            print -- "${cmd_line/\[date\]/${cymdg}} -d ${cymdg}" >> ${mars4icon_loop}
+            cymdg=$(f_date_time ${cymdg}+${dtime}h)
+        done
+        cat ${mars4icon_loop}
+        set +e
+        ksh ${mars4icon_loop}
+        rc=$?
+        set -e
+        if (( rc == 0 )); then
+            rm ${mars4icon_loop}
+            exit 0
+        else
+            print -- "Error ${rc} in loop of mars4icon_smi!" >&2
+            exit ${rc}
+        fi
+    elif [[ ":${date_arr[1]}" == ':to' ]]; then
        cymdg1=$(f_date_time ${date_arr[0]}) || exit 5
        cymdg2=$(f_date_time ${date_arr[2]})
        if (( ${#cymdg1} == 8 )); then cymdg1="${cymdg1}00"; fi
@@ -295,23 +387,34 @@ fi
 integer    n_st=7   # number of soil types
 typeset    soiltype='/slt'
 typeset    sr='sr'
+integer    nlev       # number of levels of model
 case ${class_mars} in
     ea|era5)    class_mars='ea'
-                levs=${levs:-137}
+                nlev=137
+#               levs=${levs:-$nlev}
                 sr='fsr'
                 rainsnow="/crwc/cswc"
                 ;;
     e4|era40)   class_mars='e4'
-                levs=${levs:-60}
+                nlev=60
+#               levs=${levs:-$nlev}
                 soiltype=''
                 rainsnow=''
                 ;;
     ei|*inter*) class_mars='ei'
-                levs=${levs:-60}
+                nlev=60
+#               levs=${levs:-$nlev}
                 soiltype=''
                 rainsnow=''
                 ;;
            od*) class_mars='od'
+                if (( cymdg >= 2013062512 )); then
+                    nlev=137
+                elif (( cymdg >= 2006020112 )); then
+                    nlev=91
+                else
+                    nlev=60
+                fi
                 if (( cymdg < 2007110612 )); then
 #                   old soil model of IFS with only one soil type.
                     soiltype=''
@@ -349,7 +452,7 @@ if [[ ${expv_soil} == fiv* ]]; then
     db_para_soil="class=rd, expver=${expv_soil}, stream=${stream_mars}"
 fi
 
-typeset type_mars z_type_step
+typeset type_mars sp_from_mars # z_type_step
 if [[ ${step} == */* ]]; then
     multi_target[step]=1
 fi
@@ -358,22 +461,29 @@ if [[ ${step} == 0 ]]; then
 else
     type_mars='fc'
 fi
-if (( fi_ana == 1 )); then
-    z_type_step=' type=an, step=0'
+if (( p_sfc == 1 )); then
+    sp_from_mars='retrieve, param=sp, levtype=surface, levelist=1'
 else
-    z_type_step=" type=${type_mars}, step=${step}"
+    sp_from_mars='retrieve, param=lnsp, levelist=1'
+    if (( fi_ana == 1 )); then
+#       z_type_step=' type=an, step=0'
+        sp_from_mars="${sp_from_mars}
+retrieve, param=z, type=an, step=0"
+    else
+#       z_type_step=" type=${type_mars}, step=${step}"
+        sp_from_mars="${sp_from_mars}
+retrieve, param=z, type=${type_mars}, step=${step}"
+    fi
 fi
 # 
 #  Number of levels
 #
 if [[ -z "${levs}" ]]; then
-    if (( cymdg >= 2013062512 )); then
-        levs='1/to/137'
-    elif (( cymdg >= 2006020112 )); then
-        levs='1/to/91'
-    else
-        levs='1/to/60'
-    fi
+    levs="1/to/${nlev}"
+elif [[ "${levs}" == +([0-9])/to/ ]]; then
+    levs="${levs}${nlev}"
+elif [[ "${levs}" == -+([0-9]) ]]; then
+    levs="$((${nlev}${levs}))/to/${nlev}"
 elif [[ "${levs}" == +([0-9]) ]]; then
     levs="1/to/${levs}"
 fi
@@ -412,7 +522,7 @@ if [[ -z "${grd}" ]]; then
     else
         grd=$(( (${res}+1)/2 ))
     fi
-    print -- "\n\t# Set grid=${grd} for resolution=${res}\n"
+    print -- "\n# Set grid=${grd} for resolution=${res}\n"
     Fgrd="F${grd}"
 else
     case ${grd} in
@@ -437,6 +547,10 @@ fi
 # define data directory (if not set otherwise)
 #
 typeset datadir
+if [[ ${grib_file} == dir:* ]]; then
+    IFSDATADIR=${grib_file#dir:}
+    grib_file=''
+fi
 if [[ -z "${grib_file}" ]]; then
     if [[ -n "${IFSDATADIR}" ]]; then
         datadir=${IFSDATADIR}
@@ -496,13 +610,13 @@ fi
 
 if (( lv_split < 1 )); then lv_split=1; fi
 integer n_rq n_mx
-n_rq=$(( (mlx+lv_split-ml1)/lv_split ))
+n_rq=$(( (mlx-ml1+lv_split)/lv_split ))
 
 # limit the maximum number of parallel requests
 n_mx=${MAX_PARALLEL_MARS_REQUESTS:-4}
 if (( n_rq > n_mx )); then
     n_rq=n_mx
-    lv_split=$(( (mlx+n_mx-1)/n_mx ))
+    lv_split=$(( (mlx-ml1+n_mx)/n_mx ))
 fi
 if (( parallel == 0 || parallel > n_rq )); then
     parallel=n_rq
@@ -522,6 +636,7 @@ while (( i_rq < n_rq ))
 do
     ml2=ml1+lv_split-1
     if (( ml2 > mlx )); then ml2=mlx; fi
+    if (( ml2 < ml1 )); then break; fi
 
     mars_req[$i_rq]=${tmpdir}/mars4icon_req${i_rq}.$$
     rm -f ${mars_req[$i_rq]}
@@ -558,12 +673,7 @@ MARS_IFSICON_EOF
   # single levels fields are retrieved by the first request
   #
     cat >> ${mars_req[$i_rq]} << MARS_IFSICON_SFC
-retrieve,
-        param    = lnsp,
-        levelist = 1
-retrieve,
-        param    = z, ${z_type_step},
-        levelist = 1
+${sp_from_mars}
 retrieve,
         type     = ${type_mars}, step=${step},
         param    = sst/src/z,
@@ -580,7 +690,7 @@ MARS_IFSICON_SFC
 # disabled (FP, 2014-06-12).
 #ci==================================ci
 #        fieldset = ci0
-#compute,formula  = "nobitmap(ci0,0)",                   # missing value -> 0
+#compute,formula  = "nobitmap(ci0,0)",        # missing value -> 0
 #        fieldset = ci
 #write,  fieldset = ci, 
 #ci==================================ci
@@ -792,9 +902,11 @@ if (( rc_mars )); then
     exit ${rc_mars}
 fi
 
-if [[ -z "${Dflag}" ]]; then
+if [[ -z "${Dflag}" && ${expv_soil} != 0 ]]; then
     print -- "Delete the following files:"
+    set +e
     ls -l ${swvl_file} ${smi_file}
+    set -e
     rm -f ${swvl_file} ${smi_file}
     print
 fi
@@ -802,7 +914,17 @@ fi
 print -- "\nRetrieved IFS data valid at ${cymdg} + ${step} h"
 print -- "Class ${class_mars}, stream ${stream_mars}, resolution=${res}, grid=${grd}, ${area} levels=${levs}"
 
-ls -al ${grib_file}
+set +e
+if [[ "${grib_file}" == *\[*\]* ]]; then
+    typeset grib_files
+    grib_files=${grib_file/\[date\]/\{8\}(\d)}
+    grib_files=${grib_files/\[time\]/\{4\}(\d)}
+    grib_files=${grib_files/\[step\]/+(\d)}
+    eval ls -al ${grib_files}
+else
+    ls -al ${grib_file}
+fi
+set -e
 rm -f ${mars_req[*]}
 
 exit 0

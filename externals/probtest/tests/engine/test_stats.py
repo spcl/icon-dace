@@ -1,8 +1,14 @@
+"""
+This module contains unit tests for the `create_stats_dataframe` function from
+the `engine.stats` module. It tests the functionality of creating statistical
+dataframes from both NetCDF and CSV files.
+"""
+
 import os
 import unittest
 
 import numpy as np
-from netCDF4 import Dataset
+from netCDF4 import Dataset  # pylint: disable=no-name-in-module
 
 from engine.stats import create_stats_dataframe
 
@@ -30,6 +36,15 @@ def initialize_dummy_netcdf_file(name):
 
 
 class TestStatsNetcdf(unittest.TestCase):
+    """
+    Unit test class for validating statistical calculations from NetCDF files.
+
+    This class tests the accuracy of statistical calculations (mean, max, min)
+    performed on data extracted from NetCDF files.
+    It ensures that the statistics DataFrame produced from the NetCDF data
+    matches expected values.
+    """
+
     nc_file_name = "test_stats.nc"
     nc_file_glob = "test_s*.nc"
     stats_file_names = "test_stats.csv"
@@ -57,18 +72,18 @@ class TestStatsNetcdf(unittest.TestCase):
 
         data.close()
 
-    def TearDown(self):
+    def tear_down(self):
         os.remove(self.nc_file_name)
         os.remove(self.stats_file_names)
 
     def test_stats(self):
         file_specification = {
-            "Test data": dict(
-                format="netcdf",
-                time_dim="t",
-                horizontal_dims=["x"],
-                fill_value_key="_FillValue",  # This should be the name for fill_value.
-            ),
+            "Test data": {
+                "format": "netcdf",
+                "time_dim": "t",
+                "horizontal_dims": ["x"],
+                "fill_value_key": "_FillValue",  # should be the name for fill_value
+            },
         }
 
         df = create_stats_dataframe(
@@ -93,11 +108,22 @@ class TestStatsNetcdf(unittest.TestCase):
 
         self.assertTrue(
             np.array_equal(df.values, expected),
-            "stats dataframe incorrect. Difference:\n{}".format(df.values == expected),
+            f"stats dataframe incorrect. Difference:\n{df.values == expected}",
         )
 
 
 class TestStatsCsv(unittest.TestCase):
+    """
+    Test suite for validating statistical calculations and CSV file handling.
+
+    This class contains unit tests for creating and validating statistics from a
+    CSV file.
+    The primary focus is on ensuring that the statistics calculated from the
+    input data match the expected values.
+    The CSV file used for testing is created and cleaned up during the test
+    lifecycle.
+    """
+
     dat_file_name = "test_stats_csv.dat"
     stats_file_name = "test_stats_csv.csv"
 
@@ -108,23 +134,23 @@ class TestStatsCsv(unittest.TestCase):
             "20   2.4 25 26 27 28",
             "30   3.4 35 36 37 38",
         )
-        with open(self.dat_file_name, "w") as f:
+        with open(self.dat_file_name, "w", encoding="utf-8") as f:
             f.write("\n".join(lines))
 
-    def TearDown(self):
+    def tear_down(self):
         os.remove(self.dat_file_name)
         os.remove(self.stats_file_name)
 
     def test_stats(self):
         file_specification = {
-            "Test data": dict(
-                format="csv",
-                parser_args=dict(
-                    delimiter="\\s+",
-                    header=0,
-                    index_col=0,
-                ),
-            ),
+            "Test data": {
+                "format": "csv",
+                "parser_args": {
+                    "delimiter": "\\s+",
+                    "header": 0,
+                    "index_col": 0,
+                },
+            },
         }
 
         df = create_stats_dataframe(
@@ -147,7 +173,7 @@ class TestStatsCsv(unittest.TestCase):
 
         self.assertTrue(
             np.array_equal(df.values, expected),
-            "stats dataframe incorrect. Difference:\n{}".format(df.values == expected),
+            f"stats dataframe incorrect. Difference:\n{df.values == expected}",
         )
 
 

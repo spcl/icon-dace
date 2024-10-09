@@ -10,14 +10,17 @@
 # SPDX-License-Identifier: BSD-3-Clause
 # ---------------------------------------------------------------
 
-# Define a variable with a name that is hardly owerriten by $BUILD_ENV:
+# Define a variable with a name that is hardly overwriten by $BUILD_ENV:
 _collected_set_up_info=
 
 # The first argument is our output file:
 test "$#" -gt 0 && test -n "$1" && rm -f "$1" && _collected_set_up_info=$1
 
 # Silently initialize the environment:
-{ @BUILD_ENV@:; } >/dev/null 2>&1
+BUILD_ENV=`cat <<\_EOF
+@BUILD_ENV@
+_EOF`
+eval "$BUILD_ENV" >/dev/null 2>&1
 
 # List of output variables
 output_vars='
@@ -26,6 +29,7 @@ use_compiler
 use_compiler_version
 use_gpu
 use_host
+use_build_env
 use_purge_modules
 use_load_modules
 use_load_profile
@@ -43,14 +47,18 @@ use_sync_submit
 use_target
 use_flags_group
 VERSION_
+BUNDLED_PYTHONPATH
 '
 
 # Set directories:
 use_srcdir='@abs_top_srcdir@'
 use_builddir='@abs_top_builddir@'
 
-# Version info required by mkexp
+# Version info required by mkexp:
 VERSION_='@PACKAGE_VERSION@'
+
+# PYTHONPATH to the bundled Python interfaces:
+BUNDLED_PYTHONPATH='@BUNDLED_PYTHONPATH@'
 
 # Set use_site:
 use_host='@host_fqdn@'
@@ -58,7 +66,7 @@ use_site='local.net'
 case "$use_host" in
   kfa-juelich.de|fz-juelich.de|*jureca*|*juwels*) use_site=juelich.de ;;
   l*.lvt.dkrz.de|aurora*) use_site=dkrz.de ;;
-  daint*|tave*|santis*|kesch*|tsa*|nid*|balfrin*|tasna*) use_site=cscs.ch ;;
+  daint*|tave*|santis*|kesch*|tsa*|balfrin*|tasna*) use_site=cscs.ch ;;
   uc2*|fh2*|hk*) use_site=kit.edu ;;
   xc*|rcnl*|oflws*|omlws*|gpnl*) use_site=dwd.de ;;
   *euler.ethz.ch) use_site=ethz.ch ;;
@@ -70,6 +78,18 @@ case "$use_host" in
     # server (buildmac1.mpimet.mpg.de) in the same way:
     echo "$use_host" | grep '^\([dw]14[6-9]-[1-9][0-9]\{0,2\}\|buildmac1\)\.mpimet\.mpg\.de$' >/dev/null 2>&1 || use_site=mpg.de ;;
   uan0?) use_site=csc.fi ;;
+  nid*)
+    case $(sacctmgr -nP show cluster Format=Cluster | head -1) in
+      balfrin|daint) use_site=cscs.ch ;;
+      lumi) use_site=csc.fi ;;
+      *)
+        case ${SLURM_CLUSTER_NAME} in
+          balfrin|daint) use_site=cscs.ch ;;
+          lumi) use_site=csc.fi ;;
+        esac
+        ;;
+    esac
+    ;;
   *.leonardo.local) use_site=cineca.it ;;
 esac
 test x"$ICON_DOCKER" = x1 && use_site=docker
@@ -103,6 +123,9 @@ use_gpu='no'
 # Set use_mpi_startrun:
 test -n '@MPI_LAUNCH@' && use_mpi_startrun='@MPI_LAUNCH@ -n $mpi_total_procs'
 
+# Set use_build_env:
+use_build_env=$BUILD_ENV
+
 # Set site-specific values:
 case "$use_site" in
   cscs.ch)
@@ -125,7 +148,7 @@ case "$use_site" in
           use_sync_submit='sbatch --wait'
           if test xyes = x"${use_gpu}"; then
             use_target='alps_mch_gpu'
-            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --distribution=cyclic ${basedir}/run/run_wrapper/alps_mch_gpu.sh'
+            use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1 --distribution=plane=4 ${basedir}/run/run_wrapper/alps_mch_gpu.sh'
           else
             use_target='alps_mch_cpu'
             use_mpi_startrun='srun -n $mpi_total_procs --ntasks-per-node $mpi_procs_pernode --threads-per-core=1'
@@ -180,7 +203,10 @@ case "$use_site" in
         use_shell='/bin/bash'
         use_mpi_startrun='@MPI_LAUNCH@'
         use_queue='sx_norm'
-        use_load_modules='mpi/3.5.0' # !!! must be adapted, if the configure wrapper does not use mpi 3.5.0.
+        # by using `load_runtime_modules` we optionally add modules to
+        # the runtime environment that are defined by the build configure
+        # wrapper:
+        use_load_modules="$load_runtime_modules mpi/3.5.0" # !!! must be adapted, if the configure wrapper does not use mpi 3.5.0.
       ;;
       xc*)
         use_submit='qsub'
@@ -228,9 +254,9 @@ case "$use_site" in
       jrl*|jwlogin*|*juwels*)
         use_submit='sbatch'
         use_sync_submit='sbatch --wait'
-        use_mpi_startrun='srun'
+        use_mpi_startrun='srun --label --ntasks=${mpi_total_procs}'
+        test xyes != x"${use_openmp}" || use_mpi_startrun+=' --cpus-per-task=${OMP_NUM_THREADS}'
         use_target='juwels'
-        use_load_profile='. /etc/profile'
       ;;
       juqueen*)
         use_submit='llsubmit'

@@ -1,7 +1,3 @@
-! Contains the subroutines for updating time-dependent
-! wave physics parameters
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,26 +9,25 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Contains the subroutines for updating time-dependent
+! wave physics parameters
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
 
 MODULE mo_wave_td_update
 
-  USE mo_kind,                ONLY: wp, vp
+  USE mo_kind,                ONLY: wp
   USE mo_model_domain,        ONLY: t_patch
   USE mo_impl_constants,      ONLY: MAX_CHAR_LENGTH, min_rlcell
   USE mo_loopindices,         ONLY: get_indices_c
-  USE mo_intp_data_strc,      ONLY: t_int_state
-  USE mo_fortran_tools,       ONLY: copy
-  USE mo_math_gradients,      ONLY: grad_green_gauss_cell
   USE mo_math_constants,      ONLY: rad2deg, dbl_eps
 
   IMPLICIT NONE
 
   PRIVATE
 
-  PUBLIC :: update_bathymetry_gradient
   PUBLIC :: update_speed_and_direction
   PUBLIC :: update_ice_free_mask
   PUBLIC :: update_water_depth
@@ -40,32 +35,6 @@ MODULE mo_wave_td_update
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_wave_td_update'
 
 CONTAINS
-
-  !>
-  !! calculate bathymetry gradient
-  !!
-  !!
-  SUBROUTINE update_bathymetry_gradient(p_patch, p_int_state, bathymetry_c, geo_bath_grad_c)
-
-    TYPE(t_patch),     INTENT(IN)    :: p_patch
-    TYPE(t_int_state), INTENT(IN)    :: p_int_state
-    REAL(wp),          INTENT(IN)    :: bathymetry_c(:,:)
-    REAL(vp),          INTENT(INOUT) :: geo_bath_grad_c(:,:,:,:)
-
-    CHARACTER(len=MAX_CHAR_LENGTH), PARAMETER :: routine = modname//':update_bathymetry_gradient'
-
-    REAL(wp) :: bath_c_3d(SIZE(bathymetry_c,1),1,SIZE(bathymetry_c,2))
-
-!$OMP PARALLEL
-    CALL copy(src=bathymetry_c, dest=bath_c_3d(:,1,:), lacc=.FALSE.)
-!$OMP END PARALLEL
-
-    CALL grad_green_gauss_cell(bath_c_3d, p_patch, p_int_state, geo_bath_grad_c, &
-         &                     opt_slev=1, opt_elev=1, &
-         &                     opt_rlstart=2, opt_rlend=min_rlcell)
-
-  END SUBROUTINE update_bathymetry_gradient
-
 
   !>
   !! calculate water depth from bathymetry and sea level height

@@ -1,21 +1,40 @@
+"""
+This module provides classes and functions for managing and manipulating timing
+tree data.
+"""
+
 import json
 import os
 import sys
+from datetime import datetime
 
 import numpy as np
 import pandas as pd
 
+from util.constants import DATETIME_FORMAT
 from util.log_handler import logger
 
-tree_name_separator = ">"
+TREE_NAME_SEPARATOR = ">"
 
-treefile_template = "{base}_tree.json"
-metafile_template = "{base}_meta.json"
-datafile_template = "{base}_data.json"
+TREEFILE_TEMPLATE = "{base}_tree.json"
+METAFILE_TEMPLATE = "{base}_meta.json"
+DATAFILE_TEMPLATE = "{base}_data.json"
 
 
 class TimingNode(dict):
-    def __init__(self, name, ancestry=[]):
+    """
+    Represents a node in a timing tree structure, which can have a hierarchical
+    relationship with other nodes.
+
+    The `TimingNode` class extends `dict` to store additional attributes like
+    `name`, `ancestry`, and `children`.
+    It supports various operations to manipulate and query nodes within a timing
+    tree.
+    """
+
+    def __init__(self, name, ancestry=None):
+        if ancestry is None:
+            ancestry = []
         super().__init__()
         self.__dict__ = self
         self.name = name
@@ -36,7 +55,7 @@ class TimingNode(dict):
 
     @staticmethod
     def name_from_ancestry_name(ancestry_name):
-        return ancestry_name.split(tree_name_separator)[-1]
+        return ancestry_name.split(TREE_NAME_SEPARATOR)[-1]
 
     def to_name_list(self):
         out = [c.get_name() for c in self.children]
@@ -51,7 +70,7 @@ class TimingNode(dict):
         return out
 
     def to_list(self):
-        out = [c for c in self.children]
+        out = list(self.children)
         for c in self.children:
             out += c.to_list()
         return out
@@ -78,7 +97,7 @@ class TimingNode(dict):
 
     def get_ancestry_name(self):
         tmp = self.ancestry + [self.get_name()]
-        return tree_name_separator.join(tmp)
+        return TREE_NAME_SEPARATOR.join(tmp)
 
     def get_name(self):
         return self.name
@@ -110,6 +129,16 @@ class TimingNode(dict):
 
 
 class TimingTree:
+    """
+    A class representing a tree structure for timing data with associated
+    metadata.
+
+    This class provides functionality for constructing, manipulating, and
+    storing timing data organized in a tree structure.
+    It supports loading data from log files or JSON files, adding and combining
+    data from different sources, and saving the tree and its data to files.
+    """
+
     def __init__(self, root, data, meta_data):
         self.root = root
         self.data = data
@@ -117,7 +146,7 @@ class TimingTree:
 
     @classmethod
     def from_logfile(cls, logfile, logfile_reader):
-        logger.info("initializing TimingTree from file {}".format(logfile))
+        logger.info("initializing TimingTree from file %s", logfile)
         timing_data, meta_data = logfile_reader(logfile)
 
         dfs = []
@@ -131,19 +160,19 @@ class TimingTree:
 
     @classmethod
     def from_json(cls, filename):
-        with open(metafile_template.format(base=filename)) as f:
+        with open(METAFILE_TEMPLATE.format(base=filename), encoding="utf-8") as f:
             meta_data = json.load(f)
 
         roots = []
         dfs = []
         for i in range(meta_data["n_tables"]):
-            filename_i = "{}_{}".format(filename, i)
-            with open(treefile_template.format(base=filename_i)) as f:
+            filename_i = f"{filename}_{i}"
+            with open(TREEFILE_TEMPLATE.format(base=filename_i), encoding="utf-8") as f:
                 json_dict = json.load(f)
             roots.append(TimingNode.from_dict(json_dict))
 
             dfs.append(
-                pd.read_json(datafile_template.format(base=filename_i), orient="table")
+                pd.read_json(DATAFILE_TEMPLATE.format(base=filename_i), orient="table")
             )
 
         return cls(roots, dfs, meta_data)
@@ -184,40 +213,42 @@ class TimingTree:
 
     @staticmethod
     def input_exists(filename):
-        treefile = treefile_template.format(base="{}_0".format(filename))
-        metafile = metafile_template.format(base="{}".format(filename))
-        datafile = datafile_template.format(base="{}_0".format(filename))
+        treefile = TREEFILE_TEMPLATE.format(base=f"{filename}_0")
+        metafile = METAFILE_TEMPLATE.format(base=f"{filename}")
+        datafile = DATAFILE_TEMPLATE.format(base=f"{filename}_0")
 
         tree_exists = os.path.exists(treefile)
         meta_exists = os.path.exists(metafile)
         data_exists = os.path.exists(datafile)
 
         if not tree_exists:
-            logger.info("Treefile does not exist: {}".format(treefile))
+            logger.info("Treefile does not exist: %s", treefile)
         if not meta_exists:
-            logger.info("Metafile does not exist: {}".format(metafile))
+            logger.info("Metafile does not exist: %s", metafile)
         if not data_exists:
-            logger.info("Datafile does not exist: {}".format(datafile))
+            logger.info("Datafile does not exist: %s", datafile)
 
         return tree_exists and meta_exists and data_exists
 
     def json_dump(self, filename):
         for i in range(self.meta_data["n_tables"]):
-            filename_i = "{}_{}".format(filename, i)
-            with open(treefile_template.format(base=filename_i), "w") as f:
+            filename_i = f"{filename}_{i}"
+            with open(
+                TREEFILE_TEMPLATE.format(base=filename_i), "w", encoding="utf-8"
+            ) as f:
                 json.dump(self.root[i], f, indent=2)
 
             self.data[i].to_json(
-                datafile_template.format(base=filename_i), orient="table", indent=2
+                DATAFILE_TEMPLATE.format(base=filename_i), orient="table", indent=2
             )
 
-        with open(metafile_template.format(base=filename), "w") as f:
+        with open(METAFILE_TEMPLATE.format(base=filename), "w", encoding="utf-8") as f:
             json.dump(self.meta_data, f, indent=2)
 
     def find(self, name, i_table):
         out = self.root[i_table].search_children(name)
         if not out:
-            logger.info("did not find node {}".format(name))
+            logger.info("did not find node %s", name)
         return out
 
     def find_ancestor(self, node, i_table, k=1):
@@ -230,7 +261,7 @@ class TimingTree:
             logger.critical("cannot add reports with unequal number of tables")
             sys.exit(1)
 
-        for i_table in range(len(self.data)):
+        for i_table, _ in enumerate(self.data):
             self.data[i_table], _ = self.data[i_table].align(other.data[i_table])
             self.data[i_table].loc[(slice(None), other.meta_data["finish_time"]), :] = (
                 other.data[i_table]
@@ -244,9 +275,9 @@ class TimingTree:
         for key, val in self.meta_data.items():
             if key not in other.meta_data.keys():
                 logger.critical(
-                    "incompatible meta_data keys:\nfound: {}\nexpected: {}".format(
-                        self.meta_data.keys(), other.meta_data.keys()
-                    )
+                    "incompatible meta_data keys:\nfound: %s\nexpected: %s",
+                    self.meta_data.keys(),
+                    other.meta_data.keys(),
                 )
                 sys.exit(1)
             other_val = other.meta_data[key]
@@ -256,7 +287,9 @@ class TimingTree:
                 if val != other_val:
                     logger.critical(
                         "Trying to add a timing file with different number of tables\n"
-                        + "expected {}, got {}".format(val, other_val)
+                        + "expected %s, got %s",
+                        val,
+                        other_val,
                     )
                     sys.exit(1)
             else:
@@ -264,13 +297,13 @@ class TimingTree:
                     self.meta_data[key] = [val]
                 self.meta_data[key].append(other_val)
 
-    def add_tree(self, other):
+    def add_tree(self, other, i_table):
         # manage tree
         new_nodes = other.root.sub(self.root)
         new_names = [n.get_name() for n in new_nodes]
-        logger.info("growing the tree by new nodes: {}".format(" ".join(new_names)))
+        logger.info("growing the tree by new nodes: %s", " ".join(new_names))
         if len(new_nodes) > 0:
-            self.grow(new_nodes)
+            self.grow(new_nodes, i_table)
 
     def add(self, other):
         self.add_data(other)
@@ -288,15 +321,26 @@ class TimingTree:
             if old_node:
                 logger.info(
                     "trying to grow tree by node which is already present: "
-                    + "{}. Remove.".format(old_node.get_ancestry_name())
+                    + "%s. Remove.",
+                    old_node.get_ancestry_name(),
                 )
                 old_parent = self.find_ancestor(old_node, i_table, k=1)
                 old_parent.remove_child(old_node)
             logger.info(
-                "adding new node {} to {}".format(
-                    n.get_ancestry_name(), n.get_ancestry()[-1]
-                )
+                "adding new node %s to %s", n.get_ancestry_name(), n.get_ancestry()[-1]
             )
             new_parent = self.find_ancestor(n, i_table, k=1)
             new_parent.add_child(n)
-        return
+
+    def get_sorted_finish_times(self):
+        """
+        Extract and sort finish times from the TimingTree's metadata.
+
+        Returns:
+            list of datetime: A sorted list of finish times.
+        """
+        dates = self.meta_data.get("finish_time", [])
+        if isinstance(dates, str):
+            dates = [dates]
+        sorted_dates = sorted([datetime.strptime(s, DATETIME_FORMAT) for s in dates])
+        return sorted_dates

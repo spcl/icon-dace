@@ -100,12 +100,12 @@ ICON_ECRAD_FCFLAGS="${common_extra_FCFLAGS} -fallow-invalid-boz"
 ICON_DACE_FCFLAGS="${common_extra_FCFLAGS} -fallow-argument-mismatch"
 ICON_DACE_PATH='externals/dace_icon'
 
-LDFLAGS="-L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib ${BLAS_LAPACK_LDFLAGS} -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib"
+LDFLAGS="-L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib ${BLAS_LAPACK_LDFLAGS} -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib -lstdc++"
 LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ZLIB_LIBS}"
 
 MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
 
-EXTRA_CONFIG_ARGS='--enable-parallel-netcdf --enable-yaxt --enable-coupling --enable-ecrad --enable-grib2 --enable-fcgroup-OCEAN=src/hamocc:src/ocean:src/sea_ice --enable-art --enable-fcgroup-DACE'
+EXTRA_CONFIG_ARGS='--enable-parallel-netcdf --enable-yaxt --enable-coupling --enable-ecrad --enable-grib2 --enable-fcgroup-OCEAN=src/hamocc:src/ocean:src/sea_ice --enable-art --enable-fcgroup-DACE --enable-comin --enable-bundled-python=mtime'
 
 ################################################################################
 

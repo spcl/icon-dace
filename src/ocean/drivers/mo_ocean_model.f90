@@ -1,6 +1,3 @@
-! Main program for the ICON ocean model
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,13 +9,15 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Main program for the ICON ocean model
+
 MODULE mo_ocean_model
 
   USE mo_exception,           ONLY: message, finish
   USE mo_master_control,      ONLY: get_my_process_name, get_my_process_type
   USE mo_master_config,       ONLY: isRestart
   USE mo_parallel_config,     ONLY: p_test_run, l_test_openmp, num_io_procs, &
-       &                            pio_type, num_test_pe, num_prefetch_proc
+       &                            pio_type, num_test_pe, num_prefetch_proc, proc0_shift
   USE mo_mpi,                 ONLY: set_mpi_work_communicators
 #ifdef HAVE_CDI_PIO
   USE mo_impl_constants,      ONLY: pio_type_cdipio
@@ -50,6 +49,7 @@ MODULE mo_ocean_model
 
   USE mo_ocean_nml_crosscheck,   ONLY: ocean_crosscheck
   USE mo_ocean_nml,              ONLY: i_sea_ice, no_tracer, &
+    & use_layers, & ! by_nils
     & initialize_fromRestart
 
   USE mo_model_domain,        ONLY: t_patch_3d, p_patch_local_parent
@@ -79,6 +79,7 @@ MODULE mo_ocean_model
   USE mo_ocean_physics_types,  ONLY: t_ho_params, construct_ho_params, v_params, &
                                    & destruct_ho_params
   USE mo_ocean_physics,          ONLY: init_ho_params
+  USE mo_ocean_layers,           ONLY: init_layers ! by_nils
   USE mo_operator_ocean_coeff_3d,ONLY: construct_operators_coefficients, &
     & destruct_operators_coefficients
 
@@ -391,7 +392,7 @@ MODULE mo_ocean_model
 !orig
 !pa
     num_io_procs_radar = 0
-    num_dio_procs      = 0
+    num_dio_procs      = proc0_shift
     radar_flag_doms_model(1) = .FALSE.
 
     CALL set_mpi_work_communicators(p_test_run, l_test_openmp, &
@@ -494,6 +495,10 @@ MODULE mo_ocean_model
     CALL init_oce_index(ocean_patch_3d%p_patch_2d,ocean_patch_3d, ocean_state, ext_data )
 
     CALL init_ho_params(ocean_patch_3d, v_params, p_as%fu10)
+
+    IF (use_layers) THEN
+      CALL init_layers(ocean_patch_3d, ocean_state(1)%p_diag) ! by_nils
+    ENDIF
 
 !    IF (.not. isRestart()) &
     CALL apply_initial_conditions(ocean_patch_3d, ocean_state(1), ext_data(1), operators_coefficients)

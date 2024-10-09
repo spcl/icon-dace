@@ -193,8 +193,8 @@ CONTAINS
     dsl4jsb_Real3D_onDomain :: enzyme_frac_AP
     ! ----------------------------------------------------------------------------------------------------- !
     IF (.NOT. tile%Is_process_calculated(SB_)) RETURN
-    IF (debug_on()) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
     IF (tile%lcts(1)%lib_id == 0) RETURN                !< run this init only if the present tile is a pft
+    IF (debug_on()) CALL message(TRIM(routine), 'Starting on tile '//TRIM(tile%name)//' ...')
     ! ----------------------------------------------------------------------------------------------------- !
     model         => Get_model(tile%owner_model_id)
     lctlib        => model%lctlib(tile%lcts(1)%lib_id)
@@ -363,6 +363,8 @@ CONTAINS
         & nblks, &
         & num_sl_above_bedrock(:,:), &
         & lctlib%growthform, &
+        & lctlib%k_som_fast_init, &
+        & lctlib%k_som_slow_init, &
         & TRIM(dsl4jsb_Config(SB_)%sb_model_scheme), &
         & dsl4jsb_Config(SB_)%flag_sb_double_langmuir, &
         & SPREAD(sb_init_vars%qmax_org_fine_particle(:,:), DIM = 2, ncopies = nsoil_sb), &
@@ -752,6 +754,8 @@ CONTAINS
     & nblks, &
     & num_sl_above_bedrock, &
     & lctlib_growthform, &
+    & lctlib_k_som_fast_init, &
+    & lctlib_k_som_slow_init, &
     & sb_model_scheme, &
     & flag_sb_double_langmuir, &
     & qmax_org_fine_particle, &
@@ -818,7 +822,9 @@ CONTAINS
       &                                         km_adsorpt_OM_nh4, km_adsorpt_mineral_nh4, &
       &                                         k_init_soluable_litter_cn, k_init_litter_np, k_init_polymeric_litter_cn, &
       &                                         k_init_woody_litter_cn, k_fast_som_np, k_fast_som_cn_min, k_fast_som_cn_max, &
-      &                                         k_slow_som_cn, k_slow_som_np
+      &                                         k_slow_som_cn, k_slow_som_np, &
+      &                                         reference_depth_som_init, k_som_init, &
+      &                                         sb_pool_total_som_at_ref_depth_init, fract_som_fast
     USE mo_jsb_physical_constants,        ONLY: molar_mass_C
 #ifdef __QUINCY_STANDALONE__
     USE mo_qs_process_init_util,          ONLY: init_sb_soil_properties_spp1685_sites, &
@@ -830,6 +836,8 @@ CONTAINS
     INTEGER,                    INTENT(in)    :: nblks
     REAL(wp),                   INTENT(in)    :: num_sl_above_bedrock(:,:)
     INTEGER,                    INTENT(in)    :: lctlib_growthform
+    REAL(wp),                   INTENT(in)    :: lctlib_k_som_fast_init
+    REAL(wp),                   INTENT(in)    :: lctlib_k_som_slow_init
     CHARACTER(len=*),           INTENT(in)    :: sb_model_scheme                  !< SB_ config
     LOGICAL,                    INTENT(in)    :: flag_sb_double_langmuir          !< SB_ config
     REAL(wp),                   INTENT(in)    :: qmax_org_fine_particle(:,:,:)    !< bc_quincy_soil input file
@@ -883,6 +891,14 @@ CONTAINS
     LOGICAL,          OPTIONAL, INTENT(in)    :: flag_spp1685
     CHARACTER(len=3), OPTIONAL, INTENT(in)    :: site_ID_spp1685
     ! ----------------------------------------------------------------------------------------------------- !
+    REAL(wp), ALLOCATABLE       :: hlp1(:,:)
+    REAL(wp), ALLOCATABLE       :: hlp2(:,:)
+    REAL(wp), ALLOCATABLE       :: weight_fast_sl(:,:,:)
+    REAL(wp), ALLOCATABLE       :: weight_slow_sl(:,:,:)
+    REAL(wp), ALLOCATABLE       :: init_soluable_litter(:,:)
+    REAL(wp), ALLOCATABLE       :: init_polymeric_litter(:,:)
+    REAL(wp), ALLOCATABLE       :: init_fast(:,:)
+    REAL(wp), ALLOCATABLE       :: init_slow(:,:)
     REAL(wp), ALLOCATABLE       :: p_labile(:,:,:)
     REAL(wp), ALLOCATABLE       :: p_labile_slow_site(:,:,:)
     INTEGER                     :: iblk, is, ic
@@ -907,46 +923,64 @@ CONTAINS
 
     !>0.9 allocate local var
     !>
+    ALLOCATE(hlp1(nproma, nblks))
+    ALLOCATE(hlp2(nproma, nblks))
+    ALLOCATE(weight_fast_sl(nproma, nsoil_sb, nblks))
+    ALLOCATE(weight_slow_sl(nproma, nsoil_sb, nblks))
+    ALLOCATE(init_soluable_litter(nproma, nblks))
+    ALLOCATE(init_polymeric_litter(nproma, nblks))
+    ALLOCATE(init_fast(nproma, nblks))
+    ALLOCATE(init_slow(nproma, nblks))
     ALLOCATE(p_labile(nproma, nsoil_sb, nblks))
     ALLOCATE(p_labile_slow_site(nproma, nsoil_sb, nblks))
 
     !>1.0 init
     !>
-    sb_pool_mt_domain(ix_soluable_litter, ixC, :, 1, :)  = def_sb_pool_metabol_litter &
-      &                                                        /  molar_mass_C / soil_lay_width_sl(:,1,:) &
-      &                                             * (frac_prod_not_root + (1.0_wp - frac_prod_not_root) &
-      &                                             * root_fraction_sl(:,1,:))
-    sb_pool_mt_domain(ix_polymeric_litter, ixC, :, 1, :) = def_sb_pool_simple_struct_litter &
-      &                                                    / molar_mass_C / soil_lay_width_sl(:,1,:) &
-      &                                             * (frac_prod_not_root + (1.0_wp - frac_prod_not_root) &
-      &                                             * root_fraction_sl(:,1,:))
-    IF (lctlib_growthform == ITREE) THEN
-      sb_pool_mt_domain(ix_woody_litter, ixC, :, 1, :) = def_sb_pool_woody_litter / molar_mass_C / soil_lay_width_sl(:,1,:)
-    ENDIF
-    sb_pool_mt_domain(ix_microbial, ixC, :, 1, :) = def_sb_pool_fast_som / molar_mass_C / soil_lay_width_sl(:,1,:) &
-      &                                      * (frac_prod_not_root + (1.0_wp - frac_prod_not_root) &
-      &                                      * root_fraction_sl(:,1,:))
-    sb_pool_mt_domain(ix_residue, ixC, :, 1, :)   = def_sb_pool_slow_som / molar_mass_C / soil_lay_width_sl(:,1,:) &
-      &                                      * (frac_prod_not_root + (1.0_wp - frac_prod_not_root) &
-      &                                      * root_fraction_sl(:,1,:))
+    hlp1(:,:)             = 0.0_wp
+    hlp2(:,:)             = 0.0_wp
+    weight_fast_sl(:,:,:) = 0.0_wp
+    weight_slow_sl(:,:,:) = 0.0_wp
     DO iblk = 1,nblks
       DO ic = 1,nproma
-        DO is = 2,INT(num_sl_above_bedrock(ic, iblk))
-          sb_pool_mt_domain(ix_soluable_litter, ixC, ic, is, iblk)  = def_sb_pool_metabol_litter /  molar_mass_C &
-            &                                                 / soil_lay_width_sl(ic, is, iblk) &
-            &                                                 * (1.0_wp - frac_prod_not_root) * root_fraction_sl(ic, is, iblk)
-          sb_pool_mt_domain(ix_polymeric_litter, ixC, ic, is, iblk) = def_sb_pool_simple_struct_litter / molar_mass_C &
-            &                                                 / soil_lay_width_sl(ic, is, iblk) &
-            &                                                 * (1.0_wp - frac_prod_not_root) * root_fraction_sl(ic, is, iblk)
-          sb_pool_mt_domain(ix_microbial, ixC, ic, is, iblk) = def_sb_pool_fast_som / molar_mass_C &
-            &                                             / soil_lay_width_sl(ic, is, iblk) &
-            &                                             * (1.0_wp - frac_prod_not_root) * root_fraction_sl(ic, is, iblk)
-          sb_pool_mt_domain(ix_residue, ixC, ic, is, iblk)   = def_sb_pool_slow_som / molar_mass_C &
-            &                                             / soil_lay_width_sl(ic, is, iblk) &
-            &                                             * (1.0_wp - frac_prod_not_root) * root_fraction_sl(ic, is, iblk)
+        DO is = 1,NINT(num_sl_above_bedrock(ic, iblk))
+          weight_fast_sl(ic, is, iblk) = EXP(-(lctlib_k_som_fast_init * soil_lay_depth_center_sl(ic, is, iblk)) ** k_som_init)
+          weight_slow_sl(ic, is, iblk) = EXP(-(lctlib_k_som_slow_init * soil_lay_depth_center_sl(ic, is, iblk)) ** k_som_init)
+          ! only count up to reference depth for scaling
+          IF (soil_lay_depth_center_sl(ic, is, iblk) < reference_depth_som_init) THEN
+            hlp1(ic, iblk) = hlp1(ic, iblk) + weight_fast_sl(ic, is, iblk) * soil_lay_width_sl(ic, is, iblk)
+            hlp2(ic, iblk) = hlp2(ic, iblk) + weight_slow_sl(ic, is, iblk) * soil_lay_width_sl(ic, is, iblk)
+          ENDIF
         ENDDO
       ENDDO
     ENDDO
+
+    ! calculate top-soil SOM concentration and convert from default gC/m2 to mol C / m3
+    WHERE(hlp1 > eps8)
+      init_soluable_litter(:,:)   = def_sb_pool_metabol_litter * fract_som_fast / molar_mass_C / hlp1(:,:)
+      init_polymeric_litter(:,:)  = def_sb_pool_simple_struct_litter * fract_som_fast / molar_mass_C / hlp1(:,:)
+      init_fast(:,:)              = sb_pool_total_som_at_ref_depth_init * fract_som_fast / molar_mass_C / hlp1(:,:)
+    END WHERE
+    WHERE(hlp2 > eps8)
+      init_slow(:,:) = sb_pool_total_som_at_ref_depth_init * (1._wp - fract_som_fast) / molar_mass_C / hlp2(:,:)
+    END WHERE
+
+    DO iblk = 1,nblks
+      DO ic = 1,nproma
+        DO is = 1,NINT(num_sl_above_bedrock(ic, iblk))
+          sb_pool_mt_domain(ix_soluable_litter, ixC, ic, is, iblk)  = init_soluable_litter(ic, iblk) &
+            &                                                         * weight_fast_sl(ic, is, iblk)
+          sb_pool_mt_domain(ix_polymeric_litter, ixC, ic, is, iblk) = init_polymeric_litter(ic, iblk) &
+            &                                                         * weight_fast_sl(ic, is, iblk)
+          sb_pool_mt_domain(ix_microbial, ixC, ic, is, iblk)        = init_fast(ic, iblk) * weight_fast_sl(ic, is, iblk)
+          sb_pool_mt_domain(ix_residue, ixC, ic, is, iblk)          = init_slow(ic, iblk) * weight_slow_sl(ic, is, iblk)
+        ENDDO
+      ENDDO
+    ENDDO
+    ! re-calculate the first layer of the wood litter pool for trees only
+    IF (lctlib_growthform == ITREE) THEN
+      sb_pool_mt_domain(ix_woody_litter, ixC, :, 1, :) = &
+        &   sb_pool_total_som_at_ref_depth_init / molar_mass_C / soil_lay_width_sl(:,1,:)
+    ENDIF
 
     ! NOTE: this differs on purpose from the calculation in mo_q_sb_update_pools for the prescribed option
     !       this is because here I'm trying to ensure that the models are initialised with the same amount of nutrient
@@ -954,11 +988,11 @@ CONTAINS
     !       to more nutrient in the soil column in 1d compared to 0d.
     DO iblk = 1,nblks
       DO ic = 1,nproma
-        DO is = 1,INT(num_sl_above_bedrock(ic, iblk))
+        DO is = 1,NINT(num_sl_above_bedrock(ic, iblk))
           nh4_solute(ic, is, iblk) = nh4_solute_prescribe &
-            &                           / soil_lay_depth_ubound_sl(ic, INT(num_sl_above_bedrock(ic, iblk)), iblk)
+            &                           / soil_lay_depth_ubound_sl(ic, NINT(num_sl_above_bedrock(ic, iblk)), iblk)
           no3_solute(ic, is, iblk) = no3_solute_prescribe &
-            &                           / soil_lay_depth_ubound_sl(ic, INT(num_sl_above_bedrock(ic, iblk)), iblk)
+            &                           / soil_lay_depth_ubound_sl(ic, NINT(num_sl_above_bedrock(ic, iblk)), iblk)
         ENDDO
       ENDDO
     ENDDO

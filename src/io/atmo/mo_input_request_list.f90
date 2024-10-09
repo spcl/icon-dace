@@ -1,6 +1,3 @@
-! A list of requests for input.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,8 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-!
-!
+
+! A list of requests for input.
+
 ! The use case for which this class has been developed is this:
 !  1. A list is created with `myList = t_InputRequestList()`, and the names (only the names) of the requested fields are added with `request()`.
 !  2. Files are read with readFile(). This reads all DATA ASSOCIATED with the requested variable names into memory (already distributing it to the worker PEs to keep memory footprint down).
@@ -823,7 +821,7 @@ CONTAINS
           this_att => tile_list%getTileAtt(t_tileinfo_icon(tile))
           CALL initicon_inverse_post_op( &
             &   TRIM(varName//TRIM(this_att%getTileSuffix())), &
-            &   optvar_out2D=outData)
+            &   outData)
         ELSE IF(debugInfo) THEN
             CALL message(routine, "InputContainer_fetch2d() returned an error")
         END IF
@@ -857,7 +855,7 @@ CONTAINS
           this_att => tile_list%getTileAtt(t_tileinfo_icon(tile))
           CALL initicon_inverse_post_op( &
             &   TRIM(varName//TRIM(this_att%getTileSuffix())), &
-            &   optvar_out3D=outData)
+            &   outData)
         ELSE IF(debugInfo) THEN
             CALL message(routine, "InputContainer_fetch3d() returned an error")
         END IF
@@ -904,7 +902,7 @@ CONTAINS
             this_att => tile_list%getTileAtt(t_tileinfo_icon(tile))
             CALL initicon_inverse_post_op( &
             &   TRIM(varName//TRIM(this_att%getTileSuffix())), &
-            &   optvar_out2D=outData)
+            &   outData)
         END IF
     END FUNCTION InputRequestList_fetchSurface
 
@@ -937,7 +935,7 @@ CONTAINS
             DO i = 1, SIZE(outData, 3)
                 this_att => tile_list%getTileAtt(t_tileinfo_icon(i))
                 CALL initicon_inverse_post_op(TRIM(varName//TRIM(this_att%getTileSuffix())), &
-                  &                           optvar_out2D=outData(:,:,i))
+                  &                           outData(:,:,i))
             END DO
         ELSE IF(debugInfo) THEN
             CALL message(routine, "InputContainer_fetchTiled2d() returned an error")
@@ -973,7 +971,7 @@ CONTAINS
             DO i = 1, SIZE(outData, 4)
                 this_att => tile_list%getTileAtt(t_tileinfo_icon(i))
                 CALL initicon_inverse_post_op(TRIM(varName//TRIM(this_att%getTileSuffix())), &
-                  &                           optvar_out3D=outData(:,:,:,i))
+                  &                           outData(:,:,:,i))
             END DO
         ELSE IF(debugInfo) THEN
             CALL message(routine, "InputContainer_fetchTiled3d() returned an error")
@@ -1022,7 +1020,7 @@ CONTAINS
             DO i = 1, SIZE(outData, 3)
                 this_att => tile_list%getTileAtt(t_tileinfo_icon(i))
                 CALL initicon_inverse_post_op(TRIM(varName//TRIM(this_att%getTileSuffix())), &
-                  &                           optvar_out2D=outData(:,:,i))
+                  &                           outData(:,:,i))
             END DO
         END IF
     END FUNCTION InputRequestList_fetchTiledSurface

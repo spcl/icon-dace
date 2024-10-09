@@ -1,10 +1,3 @@
-! Held-Suarez test for the NH-Core
-!
-! Literature
-! - Held, I. M. and Suarez, M. J. (1994): A Proposal for the Intercomparison
-!   of the Dynamical Cores of Atmospheric General Circulation Models
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -15,6 +8,12 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Held-Suarez test for the NH-Core
+!
+! Literature
+! - Held, I. M. and Suarez, M. J. (1994): A Proposal for the Intercomparison
+!   of the Dynamical Cores of Atmospheric General Circulation Models
 
 MODULE mo_nh_hs_test
 
@@ -29,7 +28,8 @@ MODULE mo_nh_hs_test
 !
 
   USE mo_kind,                ONLY: wp
-  USE mo_physical_constants,  ONLY: rd, rd_o_cpd, p0ref, grav, cpd, cvd, rdaylen
+  USE mo_physical_constants,  ONLY: rd, rd_o_cpd, p0ref, grav, cpd, cvd
+  USE mo_time_base,           ONLY: rdaylen
   USE mo_model_domain,        ONLY: t_patch
   USE mo_ext_data_types,      ONLY: t_external_data
   USE mo_nonhydro_types,      ONLY: t_nh_prog, t_nh_diag, t_nh_metrics

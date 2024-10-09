@@ -1,7 +1,3 @@
-!
-! Construction of a data object which is used to store fields used for SPPT
-! (Stochastic Perturbation of Physics Tendencies)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Construction of a data object which is used to store fields used for SPPT
+! (Stochastic Perturbation of Physics Tendencies)
 
 MODULE mo_sppt_state
 

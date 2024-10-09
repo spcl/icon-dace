@@ -21,20 +21,18 @@
 
 static PyObject* py_comin_current_get_plugin_info()
 {
-  int ierr = 0;
-
   int plugin_id = comin_current_get_plugin_id();
   int ilen_name = -1;
   const char* plugin_name = NULL;
-  comin_current_get_plugin_name(&plugin_name, &ilen_name, &ierr);
+  comin_current_get_plugin_name(&plugin_name, &ilen_name);
 
   int ilen_options = -1;
   const char* plugin_options = NULL;
-  comin_current_get_plugin_options(&plugin_options, &ilen_options, &ierr);
+  comin_current_get_plugin_options(&plugin_options, &ilen_options);
 
   int ilen_comm = -1;
   const char* plugin_comm = NULL;
-  comin_current_get_plugin_comm(&plugin_comm, &ilen_comm, &ierr);
+  comin_current_get_plugin_comm(&plugin_comm, &ilen_comm);
 
   return Py_BuildValue("{siss#ss#ss#}",
                        "id", plugin_id,
@@ -53,20 +51,18 @@ static PyObject* py_comin_descrdata_get_global(){
 }
 
 static PyObject* py_comin_descrdata_get_simulation_interval(){
-  int ierr = 0;
-
   int ilen_exp_start = -1;
   const char* exp_start = NULL;
-  comin_descrdata_get_simulation_interval_exp_start(&exp_start, &ilen_exp_start, &ierr);
+  comin_descrdata_get_simulation_interval_exp_start(&exp_start, &ilen_exp_start);
   int ilen_exp_stop = -1;
   const char* exp_stop = NULL;
-  comin_descrdata_get_simulation_interval_exp_stop(&exp_stop, &ilen_exp_stop, &ierr);
+  comin_descrdata_get_simulation_interval_exp_stop(&exp_stop, &ilen_exp_stop);
   int ilen_run_start = -1;
   const char* run_start = NULL;
-  comin_descrdata_get_simulation_interval_run_start(&run_start, &ilen_run_start, &ierr);
+  comin_descrdata_get_simulation_interval_run_start(&run_start, &ilen_run_start);
   int ilen_run_stop = -1;
   const char* run_stop = NULL;
-  comin_descrdata_get_simulation_interval_run_stop(&run_stop, &ilen_run_stop, &ierr);
+  comin_descrdata_get_simulation_interval_run_stop(&run_stop, &ilen_run_stop);
 
   return Py_BuildValue("{ss#ss#ss#ss#}",
                        "exp_start", &exp_start[0], ilen_exp_start,
@@ -145,17 +141,16 @@ static PyObject* py_comin_descrdata_get_vert_npromz(PyObject* /*self*/, PyObject
 }
 
 static PyObject* py_comin_current_get_datetime(){
-  int ierr = 0;
   int ilen_datetime_str = -1;
   const char* datetime_str = NULL;
-  comin_current_get_datetime(&datetime_str, &ilen_datetime_str, &ierr);
+  comin_current_get_datetime(&datetime_str, &ilen_datetime_str);
   return PyUnicode_FromStringAndSize(datetime_str, ilen_datetime_str);
 }
 
 static PyObject* py_comin_current_get_domain_id(){
   int jg = comin_current_get_domain_id();
   if(jg < 0)
-    return PyErr_Format(PyExc_ValueError, "comin_current_get_domain_id failed. (jg=%d)",
+    return PyErr_Format(PyExc_RuntimeError, "comin_current_get_domain_id failed. (jg=%d)",
                         jg);
   return PyLong_FromLong(jg);
 }

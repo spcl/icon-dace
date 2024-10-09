@@ -1,6 +1,3 @@
-! This module contains utilty types
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module contains utilty types
 
 MODULE mo_grid_subset
 

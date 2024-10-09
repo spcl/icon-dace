@@ -1,6 +1,3 @@
-! This module provides parameters controlling the radiation interface.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module provides parameters controlling the radiation interface.
 
 MODULE mo_radiation_nml
 

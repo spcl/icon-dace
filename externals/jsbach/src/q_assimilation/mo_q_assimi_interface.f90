@@ -252,6 +252,7 @@ CONTAINS
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, net_assimilation            , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, net_assimilation_boc        , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, maint_respiration_leaf      , weighted_by_fract)
+    dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, aerodyn_cond                , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, canopy_cond                 , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, co2_conc_leaf               , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, beta_air                    , weighted_by_fract)
@@ -260,6 +261,7 @@ CONTAINS
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, beta_soil_ps                , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, t_jmax_opt                  , weighted_by_fract)
     ! Q_ASSIMI_ 3D
+    dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, ftranspiration_sl           , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, net_assimilation_cl         , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, gross_assimilation_cl       , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, maint_respiration_leaf_cl   , weighted_by_fract)
@@ -267,11 +269,6 @@ CONTAINS
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, co2_conc_leaf_cl            , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, jmax_cl                     , weighted_by_fract)
     dsl4jsb_Aggregate_onChunk(Q_ASSIMI_, vcmax_cl                    , weighted_by_fract)
-    ! A2l_
-    ! not aggregated because A2L_ only runs at box tile and at runtime the error occurs:
-    ! "FATAL ERROR in mo_jsb_tile_class:Aggregate_weighted_by_fract_2d: ERROR - child_idx of ga on tile veg not allocated"
-    ! hence, 'ga' may be moved to VEG_ memory or any other that is running at veg tile
-    !dsl4jsb_Aggregate_onChunk(A2L_, ga                             , weighted_by_fract)
 
     IF (debug_on() .AND. iblk==1) CALL message(routine, 'Finished.')
   END SUBROUTINE aggregate_canopy_fluxes

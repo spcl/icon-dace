@@ -1,5 +1,3 @@
-! Setup of config-state for NWP physics package
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Setup of config-state for NWP physics package
 
 MODULE mo_atm_phy_nwp_config
 

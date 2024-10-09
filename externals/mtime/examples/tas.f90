@@ -2,64 +2,64 @@
 !!
 !! SPDX-License-Identifier: BSD-3-Clause
 !!
-program tas
+PROGRAM tas
 
-  use, intrinsic :: iso_c_binding, only: c_long
+  USE, INTRINSIC :: ISO_C_BINDING, ONLY: c_long
 
-  use mtime
+  USE mtime
 
-  implicit none
-  
-  integer, parameter :: i8 = selected_int_kind(14)
-  
-  call setCalendar(year_of_365_days)
+  IMPLICIT NONE
 
-  moduloTest: block
+  INTEGER, PARAMETER :: i8 = SELECTED_INT_KIND(14)
 
-    type(timedelta), pointer :: td1 => null()
-    type(timedelta), pointer :: td2 => null()
-    integer(i8) :: rem, quot
+  CALL setCalendar(year_of_365_days)
+
+  moduloTest: BLOCK
+
+    TYPE(timedelta), POINTER :: td1 => NULL()
+    TYPE(timedelta), POINTER :: td2 => NULL()
+    INTEGER(i8) :: rem, quot
 
     td1 => newTimedelta('PT2H')
     td2 => newTimedelta('PT10M')
-    
+
     rem = moduloTimedelta(td1, td2, quot)
 
-    print *, rem, quot
-    
-  end block moduloTest
-  
-  addSeconds: block 
+    PRINT *, rem, quot
 
-    type(datetime), pointer :: dti => null()
-    type(datetime), pointer :: dto => null()
-    integer :: secs
-    character(len=max_datetime_str_len)  :: date_string
+  END BLOCK moduloTest
+
+  addSeconds: BLOCK
+
+    TYPE(datetime), POINTER :: dti => NULL()
+    TYPE(datetime), POINTER :: dto => NULL()
+    INTEGER :: secs
+    CHARACTER(len=max_datetime_str_len)  :: date_string
 
     dti => newdatetime('2014-03-04T01:40:00')
 
-    call datetimeToString(dti, date_string)
-    print *, date_string
+    CALL datetimeToString(dti, date_string)
+    PRINT *, date_string
 
     secs = 600
 
-    dto => datetimeaddseconds(dti, secs) 
+    dto => datetimeaddseconds(dti, secs)
 
-    call datetimeToString(dto, date_string)
-    print *, date_string
+    CALL datetimeToString(dto, date_string)
+    PRINT *, date_string
 
-  end block addSeconds
+  END BLOCK addSeconds
 
-  divideBySeconds: block
+  divideBySeconds: BLOCK
 
-    type(datetime), pointer :: dt1 => null()
-    type(datetime), pointer :: dt2 => null()
+    TYPE(datetime), POINTER :: dt1 => NULL()
+    TYPE(datetime), POINTER :: dt2 => NULL()
 
-    character(len=max_timedelta_str_len) :: ctd
-    type(timedelta), pointer :: tdividend => null()
-    type(timedelta), pointer :: tdivisor => null()
+    CHARACTER(len=max_timedelta_str_len) :: ctd
+    TYPE(timedelta), POINTER :: tdividend => NULL()
+    TYPE(timedelta), POINTER :: tdivisor => NULL()
 
-    type(divisionquotienttimespan) :: tq 
+    TYPE(divisionquotienttimespan) :: tq
 
     dt1 => newdatetime('2014-03-04T00:00:00')
     dt2 => newdatetime('2014-03-07T00:00:00')
@@ -68,153 +68,151 @@ program tas
 
     tdividend = dt2 - dt1
 
-    call timedeltatostring(tdividend, ctd)
-    print *, ctd
+    CALL timedeltatostring(tdividend, ctd)
+    PRINT *, ctd
 
     tdivisor => newtimedelta('PT600S')
 
-    call timedeltatostring(tdivisor, ctd)
-    print *, ctd
+    CALL timedeltatostring(tdivisor, ctd)
+    PRINT *, ctd
 
-    call divideTimeDeltaInSeconds(tdividend, tdivisor, tq)
+    CALL divideTimeDeltaInSeconds(tdividend, tdivisor, tq)
 
-    print *, tq
+    PRINT *, tq
 
-  end block divideBySeconds
+  END BLOCK divideBySeconds
 
-  compute_step_test: block
+  compute_step_test: BLOCK
 
-    type(datetime), pointer  :: start   => null()
-    type(datetime), pointer  :: end     => null()
-    type(datetime), pointer  :: current => null()
+    TYPE(datetime), POINTER  :: start => NULL()
+    TYPE(datetime), POINTER  :: END => NULL()
+    TYPE(datetime), POINTER  :: current => NULL()
 
-    type(timedelta), pointer :: delta   => null()
+    TYPE(timedelta), POINTER :: delta => NULL()
 
-    real :: dtime = 150.0
+    REAL :: dtime = 150.0
 
-    integer :: iadv_rcf    = 4
-    integer :: step_offset = 0
+    INTEGER :: iadv_rcf = 4
+    INTEGER :: step_offset = 0
 
-    integer :: step
-    character(len=max_datetime_str_len) :: exact_date
+    INTEGER :: step
+    CHARACTER(len=max_datetime_str_len) :: exact_date
 
-    call setCalendar(year_of_365_days)    
+    CALL setCalendar(year_of_365_days)
 
-    start   => newDatetime('2014-01-01T00:00:00')
-    end => newDatetime('2014-01-10T00:00:00')
+    start => newDatetime('2014-01-01T00:00:00')
+    END => newDatetime('2014-01-10T00:00:00')
     current => newDatetime('2014-01-03T12:40:00')
 
     delta => newtimedelta('PT600S')
 
-    call compute_step(current, start, end, dtime, iadv_rcf, delta, step_offset, step, exact_date)
+    CALL compute_step(current, start, END, dtime, iadv_rcf, delta, step_offset, step, exact_date)
 
-    print *, 'Step: ', step
-    print *, 'Date: ', exact_date
-    
-  end block compute_step_test
+    PRINT *, 'Step: ', step
+    PRINT *, 'Date: ', exact_date
 
-contains
+  END BLOCK compute_step_test
 
-  function datetimeaddseconds(refdt, intvlsec) result(ret_datetime)
-    type(datetime), pointer :: ret_datetime
-    
-    type(datetime), pointer :: refdt
-    integer, intent(in) :: intvlsec
-    
-    character(len=max_timedelta_str_len) :: csec    
-    type(timedelta), pointer :: vlsec => null()
-    
-    call getptstringfromseconds(int(intvlsec,c_long), csec)
+CONTAINS
+
+  FUNCTION datetimeaddseconds(refdt, intvlsec) RESULT(ret_datetime)
+    TYPE(datetime), POINTER :: ret_datetime
+
+    TYPE(datetime), POINTER :: refdt
+    INTEGER, INTENT(in) :: intvlsec
+
+    CHARACTER(len=max_timedelta_str_len) :: csec
+    TYPE(timedelta), POINTER :: vlsec => NULL()
+
+    CALL getptstringfromseconds(INT(intvlsec, c_long), csec)
     vlsec => newtimedelta(csec)
-    
+
     ret_datetime => newDatetime("0000-01-01T00:00:00.000"); 
-    
     ret_datetime = refdt + vlsec
 
-    call deallocatetimedelta(vlsec)
-    
-  end function datetimeaddseconds
-  
-  subroutine compute_step(mtime_current, mtime_begin, mtime_end, dtime, iadv_rcf, delta, step_offset, step, exact_date)
-    
-    type(datetime),  pointer                         :: mtime_current       !< input date to translated into step
-    type(datetime),  pointer                         :: mtime_begin         !< begin of run (note: restart cases!)
-    type(datetime),  pointer                         :: mtime_end           !< end of run
-    
-    real,                                intent(in)  :: dtime               !< [s] length of a time step
-    integer,                             intent(in)  :: iadv_rcf            !< advection step: frequency ratio
-    type(timedelta), pointer                         :: delta
-    integer,                             intent(in)  :: step_offset
-    
-    integer,                             intent(out) :: step                !< result: corresponding simulations step
-    character(len=max_datetime_str_len), intent(out) :: exact_date          !< result: corresponding simulation date
-    
+    CALL deallocatetimedelta(vlsec)
+
+  END FUNCTION datetimeaddseconds
+
+  SUBROUTINE compute_step(mtime_current, mtime_begin, mtime_end, dtime, iadv_rcf, delta, step_offset, step, exact_date)
+
+    TYPE(datetime), POINTER                         :: mtime_current       !< input date to translated into step
+    TYPE(datetime), POINTER                         :: mtime_begin         !< begin of run (note: restart cases!)
+    TYPE(datetime), POINTER                         :: mtime_end           !< end of run
+
+    REAL, INTENT(in)  :: dtime               !< [s] length of a time step
+    INTEGER, INTENT(in)  :: iadv_rcf            !< advection step: frequency ratio
+    TYPE(timedelta), POINTER                         :: delta
+    INTEGER, INTENT(in)  :: step_offset
+
+    INTEGER, INTENT(out) :: step                !< result: corresponding simulations step
+    CHARACTER(len=max_datetime_str_len), INTENT(out) :: exact_date          !< result: corresponding simulation date
+
     ! local variables
 
-    integer                              :: i
-    integer                              :: intvlsec
-    
-    type(datetime), pointer              :: mtime_step
-    
-    character(len=max_datetime_str_len)  :: dt_string
-    character(len=max_timedelta_str_len) :: td_String    
-    
-    type(timedelta), pointer             :: tddiff => null()
-    
-    type(divisionquotienttimespan)      :: tq 
-    
-    type(timedelta), pointer             :: vlsec => null()
-    
+    INTEGER                              :: i
+    INTEGER                              :: intvlsec
+
+    TYPE(datetime), POINTER              :: mtime_step
+
+    CHARACTER(len=max_datetime_str_len)  :: dt_string
+    CHARACTER(len=max_timedelta_str_len) :: td_String
+
+    TYPE(timedelta), POINTER             :: tddiff => NULL()
+
+    TYPE(divisionquotienttimespan)      :: tq
+
+    TYPE(timedelta), POINTER             :: vlsec => NULL()
+
     ! first, we compute the dynamic time step which is *smaller* than
     ! the desired date "mtime_date1"
-    
-    intvlsec = int(dtime)
-    call getptstringfromseconds(int(intvlsec,c_long), td_string)
+
+    intvlsec = INT(dtime)
+    CALL getptstringfromseconds(INT(intvlsec, c_long), td_string)
     vlsec => newtimedelta(td_string)
-    
+
     tddiff => newtimedelta('PT0S')
     tddiff = mtime_current - mtime_begin
-    
-    call dividetimedeltainseconds(tddiff, vlsec, tq)
-    step = tq%quotient
-    
+
+    CALL dividetimedeltainseconds(tddiff, vlsec, tq)
+    step = INT(tq%quotient)
+
     mtime_step => newDatetime("0000-01-01T00:00:00.000"); 
-    
-    if (step >= 0) then
-    
-      mtime_step = mtime_begin + step * vlsec
+    IF (step >= 0) THEN
+
+      mtime_step = mtime_begin + step*vlsec
 
       ! starting from this step, we make (at most iadv_rcf) steps
       ! until we are *greater* than the desired date "mtime_date1" and
       ! we have reached an advection time step
-      loop : do i = 1, iadv_rcf
+      loop: DO i = 1, iadv_rcf
         !        if (ldebug) then
         !        dt_string = ''
-        call datetimetostring(mtime_step, dt_string)
-        write (0,*) 'mtime_step = ', trim(dt_string)
-        call datetimetostring(mtime_current, dt_string)
-        write (0,*) 'mtime_current = ', trim(dt_string)
-        write (0,*) ''
+        CALL datetimetostring(mtime_step, dt_string)
+        WRITE (0, *) 'mtime_step = ', TRIM(dt_string)
+        CALL datetimetostring(mtime_current, dt_string)
+        WRITE (0, *) 'mtime_current = ', TRIM(dt_string)
+        WRITE (0, *) ''
         !        end if
-        
-        if ((mtime_step >= mtime_current) .and. (mod(step, iadv_rcf) == 0) .or. (mtime_step == mtime_end)) then
-          exit loop
-        end if
-        
+
+        IF ((mtime_step >= mtime_current) .AND. (MOD(step, iadv_rcf) == 0) .OR. (mtime_step == mtime_end)) THEN
+          EXIT loop
+        END IF
+
         mtime_step = mtime_step + delta
         step = step + 1
-        
-      end do loop
-      
-      call datetimetostring(mtime_step, exact_date)
-      call deallocatedatetime(mtime_step)
 
-    end if
-    
+      END DO loop
+
+      CALL datetimetostring(mtime_step, exact_date)
+      CALL deallocatedatetime(mtime_step)
+
+    END IF
+
     ! then we add the offset "jstep0" (nonzero for restart cases):
-    
-    step        = step + step_offset
-    
-  end subroutine compute_step
-  
-end program
+
+    step = step + step_offset
+
+  END SUBROUTINE compute_step
+
+END PROGRAM

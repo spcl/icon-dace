@@ -1,6 +1,3 @@
-!
-! Classes and functions for the turbulent mixing package (tmx)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Classes and functions for the turbulent mixing package (tmx)
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -24,6 +23,7 @@ MODULE mo_tmx_numerics
   USE mo_surrogate_class,   ONLY: t_surrogate
   USE mo_tmx_process_class, ONLY: t_tmx_process
   USE mo_tmx_time_integration_class, ONLY: t_time_scheme
+  USE mo_model_domain,      ONLY: t_patch
   ! USE mo_variable_list, ONLY: t_variable_list
 
   IMPLICIT NONE
@@ -31,7 +31,9 @@ MODULE mo_tmx_numerics
 
   PUBLIC :: &
     & t_time_scheme_explicit_euler, &
-    & diffuse_scalar_vertical_explicit, diffuse_scalar_vertical_implicit
+    & diffuse_vertical_explicit, diffuse_vertical_implicit,                     &
+    & get_normal_velocity_vertex, get_tangential_velocity_vertex,               &
+    & vertical_interpolation_scalar_cell, vertical_interpolation_scalar_vertex
 
   TYPE, EXTENDS(t_time_scheme) :: t_time_scheme_explicit_euler
   CONTAINS
@@ -41,7 +43,7 @@ MODULE mo_tmx_numerics
   CHARACTER(len=*), PARAMETER :: modname = 'mo_tmx_numerics'
   
 CONTAINS
-
+  !============================================================================
   SUBROUTINE step_forward_explicit_euler(process, dt)
     CLASS(t_surrogate), INTENT(inout) :: process
     REAL(wp), INTENT(in) :: dt
@@ -58,186 +60,250 @@ CONTAINS
     END SELECT
 
   END SUBROUTINE step_forward_explicit_euler
-
-  SUBROUTINE diffuse_scalar_vertical_explicit( &
-    & ibs, ibe, ics, ice, &
-    & dz, zf, &
-    & k_ic, &
-    & var, &
-    & sfc_flx, &
-    & top_flx, &
-    & tend &
+  !============================================================================
+  ! Explicit vertical diffusion of any physical
+  ! quantity. The coefficients of the system of
+  ! equations are set in prepare_diffusion_matrix
+  ! in mo_vdf_atmo. They are the same as for the
+  ! implicit treatment.
+  !============================================================================
+  SUBROUTINE diffuse_vertical_explicit( &
+    & ics, ice,       & ! in
+    & minlvl, maxlvl, & ! in
+    & a, b, c, rhs,   & ! in
+    & var,            & ! in
+    & tend            & ! out
     & )
 
-    INTEGER, INTENT(in) :: &
-      & ibs, ibe, ics(:), ice(:)
+    ! Iteration boundaries for blocks, cells, and level
+    INTEGER, INTENT(in) :: ics, ice, minlvl, maxlvl
 
-    REAL(wp), INTENT(in), DIMENSION(:,:,:) :: &
-      & var, &
-      & k_ic, &
-      & dz, &
-      & zf
-
+    ! Solve system of equations of shape
+    ! a*x_(k-1) + b*x_(k) + c*x_(k+1) = d,
+    ! where x is the variable at time step t.
     REAL(wp), INTENT(in), DIMENSION(:,:) :: &
-      & sfc_flx, &
-      & top_flx
+      & var, &
+      & a,   &
+      & b,   &
+      & c,   &
+      & rhs
 
-    REAL(wp), INTENT(out), DIMENSION(:,:,:) :: &
-      & tend
+    ! Tendency of the vertically diffused physical quantity
+    REAL(wp), INTENT(inout), DIMENSION(:,:) :: tend
 
-    INTEGER :: nlev
-    INTEGER :: jb, jc, jk
+    ! Loop iterators
+    INTEGER  :: jc, jk
 
-    CHARACTER(len=*), PARAMETER :: routine = modname//':diffuse_scalar_vertical_explicit'
+    CHARACTER(len=*), PARAMETER :: routine = modname//':diffuse_vertical_explicit'
 
-    nlev = SIZE(var,2)
-
-!$OMP PARALLEL
-    CALL init(tend, lacc=.FALSE.)
-!$OMP END PARALLEL
-
-!$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_DEFAULT_SCHEDULE
-    DO jb = ibs, ibe
-
-      DO jk=2,nlev-1
-        DO jc = ics(jb), ice(jb)
-          tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
-          & ( &
-          &   k_ic(jc,jk  ,jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))&
-          & - k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))&
-          & )
-        END DO
+    ! Calculate the tendency explicitly.
+    ! Caution, the sign of the coefficients a, b, c must be negative, since they were
+    ! defined in prepare_diffusion_matrix for an implicit scheme. In the explicit scheme
+    ! they are transferred on the other side of the equation, so their sign changed.
+    !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
+    !$ACC LOOP GANG(STATIC: 1) VECTOR COLLAPSE(2)
+    DO jk=minlvl+1,maxlvl-1
+      DO jc = ics, ice
+        tend(jc,jk) = tend(jc,jk) -              &
+                       a(jc,jk) * var(jc,jk-1) - &
+                       b(jc,jk) * var(jc,jk) -   &
+                       c(jc,jk) * var(jc,jk+1) + &
+                       rhs(jc,jk)
       END DO
+    END DO
 
-      jk=1
-      DO jc = ics(jb), ice(jb)
-        tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
-        & ( &
-        &                      top_flx(jc,jb) &
-        & - k_ic(jc,jk+1,jb) * (var(jc,jk  ,jb)-var(jc,jk+1,jb)) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb)) &
-        & )
-      END DO
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
+    DO jc = ics, ice
+      tend(jc,minlvl) = tend(jc,minlvl) -                  &
+                         b(jc,minlvl) * var(jc,minlvl) -   &
+                         c(jc,minlvl) * var(jc,minlvl+1) + &
+                         rhs(jc,minlvl)
+    END DO
 
-      jk=nlev
-      DO jc = ics(jb), ice(jb)
-        tend(jc,jk,jb) =  1._wp/dz(jc,jk,jb) * &
-        & ( &
-        &   k_ic(jc,jk,  jb) * (var(jc,jk-1,jb)-var(jc,jk  ,jb)) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb)) &
-        & - sfc_flx(jc,jb) &
-        & )
-      END DO
+    !$ACC LOOP GANG(STATIC: 1) VECTOR
+    DO jc = ics, ice
+      tend(jc,maxlvl) = tend(jc,maxlvl) -                  &
+                         a(jc,maxlvl) * var(jc,maxlvl-1) - &
+                         b(jc,maxlvl) * var(jc,maxlvl) +   &
+                         rhs(jc,maxlvl)
+    END DO
+    !$ACC END PARALLEL
+    !$ACC WAIT(1)
 
-    ENDDO
-!$OMP END PARALLEL DO
-
-  END SUBROUTINE diffuse_scalar_vertical_explicit
-
-  SUBROUTINE diffuse_scalar_vertical_implicit( &
-    & ibs, ibe, ics, ice, &
-    & dtime, &
-    & dz, zf, &
-    & k_ic, &
-    & var, &
-    & sfc_flx, &
-    & top_flx, &
-    & tend &
+  END SUBROUTINE diffuse_vertical_explicit
+  !============================================================================
+  ! Implicit vertical diffusion of any physical
+  ! quantity. The coefficients of the system of
+  ! equations are set in prepare_diffusion_matrix
+  ! in mo_vdf_atmo.
+  !============================================================================
+  SUBROUTINE diffuse_vertical_implicit( &
+    & ics, ice,       & ! in
+    & minlvl, maxlvl, & ! in
+    & a, c,           & ! in
+    & bb, rhs,        & ! in
+    & rdtime,         & ! in
+    & var,            & ! in
+    & tend            & ! inout
     & )
 
     USE mo_math_utilities, ONLY: tdma_solver_vec
 
-    INTEGER, INTENT(in) :: &
-      & ibs, ibe, ics(:), ice(:)
+    ! Iteration boundaries for blocks, cells, and level
+    INTEGER, INTENT(in) :: ics, ice, minlvl, maxlvl
 
-    REAL(wp), INTENT(in) :: &
-      & dtime
-
-    REAL(wp), INTENT(in), DIMENSION(:,:,:) :: &
-      & var, &
-      & k_ic, &
-      & dz, &
-      & zf
-
+    ! Solve system of equations of shape
+    ! a*x_(k-1) + b*x_(k) + c*x_(k+1) = d,
+    ! where x is the variable at time step t+dt.
+    ! At this point, bb and rhs still lack a term
+    ! depending on the time increment (see module mo_vdf_atmo;
+    ! subroutine prepare_diffusion_matrix). Hence,
+    ! this term is added to bb and rhs to get the
+    ! correct coefficients b and d. 
     REAL(wp), INTENT(in), DIMENSION(:,:) :: &
-      & sfc_flx, &
-      & top_flx
+      & var, &
+      & a,   &
+      & bb,  &
+      & c,   &
+      & rhs
 
-    REAL(wp), INTENT(out), DIMENSION(:,:,:) :: &
-      & tend
+    ! Reziprocal time increment
+    REAL(wp), INTENT(in) :: rdtime
 
-    INTEGER  :: nlev
-    INTEGER  :: jb, jc, jk
-    REAL(wp) :: &
-      & new_var(SIZE(var,1),SIZE(var,2),SIZE(var,3)), &
-      & a      (SIZE(var,1),SIZE(var,2),SIZE(var,3)), &
-      & b      (SIZE(var,1),SIZE(var,2),SIZE(var,3)), &
-      & c      (SIZE(var,1),SIZE(var,2),SIZE(var,3)), &
-      & rhs    (SIZE(var,1),SIZE(var,2),SIZE(var,3))
+    ! Tendendy of the vertically diffused physical quantity.
+    REAL(wp), INTENT(inout), DIMENSION(:,:) :: tend
 
-    CHARACTER(len=*), PARAMETER :: routine = modname//':diffuse_scalar_vertical_implicit'
+    ! Loop iterators
+    INTEGER  :: jc, jk
 
-    nlev = SIZE(var,2)
+    ! Variable value at time step t+dt
+    REAL(wp) :: new_var(SIZE(var,1),SIZE(var,2))
 
-    !$ACC DATA CREATE(a, b, c, rhs, new_var)
+    ! Right hand side of the system of the equation
+    REAL(wp) :: d(SIZE(var,1),SIZE(var,2))
 
-!$OMP PARALLEL
-    CALL init(new_var, lacc=.TRUE.)
-    CALL init(tend, lacc=.TRUE.)
-!$OMP END PARALLEL
+    ! Coefficient b of the matrix including the time increment
+    REAL(wp) :: b(SIZE(var,1),SIZE(var,2))
 
-!$OMP PARALLEL DO PRIVATE(jb,jc,jk) ICON_OMP_RUNTIME_SCHEDULE
-    DO jb = ibs, ibe
+    CHARACTER(len=*), PARAMETER :: routine = modname//':diffuse_vertical_implicit'
 
-      !$ACC PARALLEL DEFAULT(PRESENT) ASYNC(1)
-      !$ACC LOOP SEQ
-      DO jk=2,nlev-1
-        !$ACC LOOP GANG(STATIC: 1) VECTOR
-        DO jc = ics(jb), ice(jb)
-          a(jc,jk,jb) = - k_ic(jc,jk  ,jb) / dz(jc,jk,jb) / (zf(jc,jk-1,jb)-zf(jc,jk  ,jb))
-          c(jc,jk,jb) = - k_ic(jc,jk+1,jb) / dz(jc,jk,jb) / (zf(jc,jk  ,jb)-zf(jc,jk+1,jb))
-          b(jc,jk,jb) = 1._wp / dtime - a(jc,jk,jb) - c(jc,jk,jb)
-          rhs(jc,jk,jb) = var(jc,jk,jb) / dtime
-        END DO
+    !$ACC DATA CREATE(new_var, b, d)
+
+    ! The reciprocal time increment is added at this point to b as it could not be
+    ! added earlier, for example in prepare_diffusion_matrix. The same applies for
+    ! the product of the physical quantity var and the reciprocal time increment.
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
+    DO jk=minlvl,maxlvl
+      DO jc = ics, ice
+        b(jc,jk) = rdtime + bb(jc,jk) 
+        d(jc,jk) = var(jc,jk) * rdtime + rhs(jc,jk)
       END DO
+    END DO
+    !$ACC END PARALLEL LOOP
+    !ACC WAIT(1)
 
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jc = ics(jb), ice(jb)
-        a(jc,1,jb) = 0._wp 
-        c(jc,1,jb) = - k_ic(jc,2,jb) / dz(jc,1,jb) / (zf(jc,1,jb)-zf(jc,2,jb))
-        b(jc,1,jb) = 1._wp / dtime - a(jc,1,jb) - c(jc,1,jb)
-        rhs(jc,1,jb) = var(jc,1,jb) / dtime  ! TODO: only correct for top_flx=0 !
+    ! Solve the system of equations.
+    CALL tdma_solver_vec(a(:,:), b(:,:), c(:,:), d(:,:), &
+                      minlvl, maxlvl, ics, ice, new_var(:,:))
+
+    ! Calculate the tendency.
+    !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
+    DO jk=minlvl,maxlvl
+      DO jc = ics, ice
+        tend(jc,jk) = tend(jc,jk) + (new_var(jc,jk) - var(jc,jk)) * rdtime
       END DO
-
-      !$ACC LOOP GANG(STATIC: 1) VECTOR
-      DO jc = ics(jb), ice(jb)
-        a(jc,nlev,jb) = - k_ic(jc,nlev  ,jb) / dz(jc,nlev,jb) / (zf(jc,nlev-1,jb)-zf(jc,nlev,jb))
-        c(jc,nlev,jb) = 0._wp 
-        b(jc,nlev,jb) = 1._wp / dtime - a(jc,nlev,jb) - c(jc,nlev,jb)
-        rhs(jc,nlev,jb) = var(jc,nlev,jb) / dtime - sfc_flx(jc,jb) / dz(jc,nlev,jb) 
-      END DO
-
-      !$ACC END PARALLEL
-
-      ! DO jc = ics(jb), ice(jb)
-      !   CALL tdma_solver(a(jc,:,jb), b(jc,:,jb), c(jc,:,jb), rhs(jc,:,jb), &
-      !                   nlev, new_var(jc,:,jb))
-      CALL tdma_solver_vec(a(:,:,jb), b(:,:,jb), c(:,:,jb), rhs(:,:,jb), &
-                        1, nlev, ics(jb), ice(jb), new_var(:,:,jb))
-      ! END DO
-
-      !$ACC PARALLEL LOOP DEFAULT(PRESENT) GANG(STATIC: 1) VECTOR COLLAPSE(2) ASYNC(1)
-      DO jk=1,nlev
-        DO jc = ics(jb), ice(jb)
-          tend(jc,jk,jb) = (new_var(jc,jk,jb)-var(jc,jk,jb)) / dtime
-        END DO
-      END DO
-      !$ACC END PARALLEL LOOP
-
-    ENDDO
-!$OMP END PARALLEL DO
-
+    END DO
+    !$ACC END PARALLEL LOOP
     !$ACC WAIT(1)
+
     !$ACC END DATA
 
-  END SUBROUTINE diffuse_scalar_vertical_implicit
+  END SUBROUTINE diffuse_vertical_implicit
+  !============================================================================
+  ! Determines horizontal velocity component at vertex. 
+  ! jv: vertex index of target edge following the numbering in figure 1 in Zaengl et al. 
+  ! 2015, Q. J. R. Meteorol. Soc..
+  !============================================================================
+  FUNCTION get_normal_velocity_vertex(                         &
+    u_vert, v_vert, patch, je, jb, jk, jv                           &
+    ) RESULT(vn_vert)
 
+    REAL(wp), INTENT(in), POINTER :: u_vert(:,:,:), v_vert(:,:,:)
+    TYPE(t_patch), INTENT(in), POINTER :: patch
+
+    INTEGER, INTENT(in) :: je, jb, jk, jv
+    REAL(wp) :: vn_vert
+   
+    vn_vert =   u_vert(patch%edges%vertex_idx(je,jb,jv),jk,patch%edges%vertex_blk(je,jb,jv)) &    
+                * patch%edges%primal_normal_vert(je,jb,jv)%v1                                &
+              + v_vert(patch%edges%vertex_idx(je,jb,jv),jk,patch%edges%vertex_blk(je,jb,jv)) &    
+                * patch%edges%primal_normal_vert(je,jb,jv)%v2
+
+  END FUNCTION get_normal_velocity_vertex
+  !============================================================================
+  ! Determines tangential velocity component at vertex. 
+  ! jv: vertex index of target edge following the numbering in figure 1 in Zaengl et al. 
+  ! 2015, Q. J. R. Meteorol. Soc..
+  !============================================================================
+  FUNCTION get_tangential_velocity_vertex(                          &
+    u_vert, v_vert, patch, je, jb, jk, jv                           &
+    ) RESULT(vt_vert)
+
+    REAL(wp), INTENT(in), POINTER :: u_vert(:,:,:), v_vert(:,:,:)
+    TYPE(t_patch), INTENT(in), POINTER :: patch
+
+    INTEGER, INTENT(in) :: je, jb, jk, jv
+    REAL(wp) :: vt_vert
+   
+    vt_vert =   u_vert(patch%edges%vertex_idx(je,jb,jv),jk,patch%edges%vertex_blk(je,jb,jv)) &    
+                * patch%edges%dual_normal_vert(je,jb,jv)%v1                                  &
+              + v_vert(patch%edges%vertex_idx(je,jb,jv),jk,patch%edges%vertex_blk(je,jb,jv)) &    
+                * patch%edges%dual_normal_vert(je,jb,jv)%v2
+
+  END FUNCTION get_tangential_velocity_vertex 
+  !============================================================================
+  ! Local vertical interpolation of pointer scalar variable at cell center. 
+  ! Interpolates between jk and jk+1. 
+  ! jc: cell index to interpolate (cell numbering see figure A1 in Zaengl et al. 
+  ! 2015, Q. J. R. Meteorol. Soc.).
+  !============================================================================
+  FUNCTION vertical_interpolation_scalar_cell(                      &
+    pc,patch,je,jb,jk,jc                                            &
+    ) RESULT(pcint)
+
+    REAL(wp), INTENT(in), POINTER :: pc(:,:,:)
+    TYPE(t_patch), INTENT(in), POINTER :: patch
+
+    INTEGER, INTENT(in) :: je, jb, jk, jc
+    REAL(wp) :: pcint
+   
+    pcint = 0.5_wp * ( & 
+                pc(patch%edges%cell_idx(je,jb,jc),jk,  patch%edges%cell_blk(je,jb,jc)) &   
+              + pc(patch%edges%cell_idx(je,jb,jc),jk+1,patch%edges%cell_blk(je,jb,jc)) &  
+              )
+
+  END FUNCTION vertical_interpolation_scalar_cell 
+  !============================================================================
+  ! Local vertical interpolation of pointer scalar variable at vertex. 
+  ! Interpolates between jk and jk+1. 
+  ! jv: vertex index to interpolate (vertex numbering see figure 1 in Zaengl et al. 
+  ! 2015, Q. J. R. Meteorol. Soc.).
+  !============================================================================
+  FUNCTION vertical_interpolation_scalar_vertex(                      &
+    pv,patch,je,jb,jk,jv                                            &
+    ) RESULT(pvint)
+
+    REAL(wp), INTENT(in), POINTER :: pv(:,:,:)
+    TYPE(t_patch), INTENT(in), POINTER :: patch
+
+    INTEGER, INTENT(in) :: je, jb, jk, jv
+    REAL(wp) :: pvint
+   
+    pvint = 0.5_wp * ( & 
+                pv(patch%edges%vertex_idx(je,jb,jv),jk,  patch%edges%vertex_blk(je,jb,jv)) &   
+              + pv(patch%edges%vertex_idx(je,jb,jv),jk+1,patch%edges%vertex_blk(je,jb,jv)) &  
+              )
+
+  END FUNCTION vertical_interpolation_scalar_vertex
+  !============================================================================
 END MODULE mo_tmx_numerics

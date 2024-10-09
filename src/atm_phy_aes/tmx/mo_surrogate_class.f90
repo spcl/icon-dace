@@ -1,6 +1,3 @@
-!
-! Basic class used in turbulent mixing package (tmx)
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Basic class used in turbulent mixing package (tmx)
 
 MODULE mo_surrogate_class
 

@@ -1,5 +1,3 @@
-! Configuration setup for wave energy transport
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -10,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Configuration setup for wave energy transport
 
 MODULE mo_energy_propagation_config
 

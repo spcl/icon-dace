@@ -40,6 +40,6 @@ else
   MAKE_PROCS=8
 fi
 
-cmake -DCOMIN_ENABLE_EXAMPLES=ON -DCOMIN_ENABLE_PYTHON_ADAPTER=ON ${basedir}/externals/comin/build
+cmake -DCOMIN_ENABLE_EXAMPLES=ON ${basedir}/externals/comin/build
 make -j ${MAKE_PROCS} -C ${basedir}/externals/comin/build
 

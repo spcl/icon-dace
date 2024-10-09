@@ -1,8 +1,3 @@
-! This module controls the namelist input for:
-! - Upper-atmosphere physics
-! - Upper-atmosphere extrapolation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,10 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module controls the namelist input for:
+! - Upper-atmosphere physics
+! - Upper-atmosphere extrapolation
 
 MODULE mo_upatmo_nml
 

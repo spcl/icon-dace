@@ -1,8 +1,3 @@
-! Initialization/reading reading of external datasets
-!
-! This module contains read and initialization routines for the external data state.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +9,10 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! Initialization/reading reading of external datasets
+!
+! This module contains read and initialization routines for the external data state.
+
 !----------------------------
 #include "omp_definitions.inc"
 !----------------------------
@@ -22,13 +21,12 @@ MODULE mo_ext_data_init
 
   USE mo_kind,               ONLY: wp
   USE mo_io_units,           ONLY: filename_max
-  USE mo_impl_constants,     ONLY: inwp, iaes, io3_clim, io3_ape,                                   &
-    &                              max_char_length, min_rlcell_int, min_rlcell,                     &
-    &                              MODIS, GLOBCOVER2009, GLC2000, SUCCESS, SSTICE_ANA_CLINC,        &
-    &                              SSTICE_CLIM, LSS_TERRA
+  USE mo_impl_constants,     ONLY: SUCCESS, inwp, iaes, io3_clim, io3_ape, max_char_length,   &
+    &                              min_rlcell_int, min_rlcell, MODIS, GLOBCOVER2009, &
+    &                              GLC2000, SSTICE_ANA_CLINC, SSTICE_CLIM
   USE mo_math_constants,     ONLY: dbl_eps, rad2deg
   USE mo_physical_constants, ONLY: ppmv2gg, zemiss_def, tmelt
-  USE mo_run_config,         ONLY: msg_level, iforcing, check_uuid_gracefully
+  USE mo_run_config,         ONLY: iforcing
   USE mo_impl_constants_grf, ONLY: grf_bdywidth_c
   USE mo_lnd_nwp_config,     ONLY: ntiles_total, ntiles_lnd, ntiles_water, lsnowtile, frlnd_thrhld, &
                                    frlndtile_thrhld, frlake_thrhld, frsea_thrhld, isub_water,       &
@@ -38,8 +36,9 @@ MODULE mo_ext_data_init
   USE mo_atm_phy_nwp_config, ONLY: atm_phy_nwp_config, iprog_aero
   USE mo_extpar_config,      ONLY: itopo, itype_lwemiss, extpar_filename, generate_filename,    &
     &                              generate_td_filename, extpar_varnames_map_file,              &
-    &                              n_iter_smooth_topo, i_lctype, nclass_lu, nhori, nmonths_ext, &
-    &                              itype_vegetation_cycle, read_nc_via_cdi, pp_sso
+    &                              n_iter_smooth_topo, itype_vegetation_cycle, read_nc_via_cdi, &
+    &                              pp_sso, ext_atm_attr, ext_o3_attr, t_ext_atm_attr, t_ext_o3_attr, &
+    &                              num_lcc, n_param_lcc
   USE mo_initicon_config,    ONLY: icpl_da_sfcevap, dt_ana, icpl_da_seaice, icpl_da_snowalb
   USE mo_radiation_config,   ONLY: irad_o3, albedo_type, islope_rad,    &
     &                              irad_aero, iRadAeroTegen, iRadAeroART, iRadAeroCAMSclim, iRadAeroCAMStd
@@ -55,8 +54,6 @@ MODULE mo_ext_data_init
   USE mo_parallel_config,    ONLY: p_test_run, nproma
   USE mo_nonhydro_types,     ONLY: t_nh_diag
   USE mo_ext_data_types,     ONLY: t_external_data
-  USE mo_ext_data_state,     ONLY: construct_ext_data, levelname, cellname, o3name, o3unit, &
-    &                              nlev_o3, nmonths
   USE mo_master_config,      ONLY: getModelBaseDir
   USE mo_time_config,        ONLY: time_config
   USE mo_io_config,          ONLY: default_read_method
@@ -64,22 +61,14 @@ MODULE mo_ext_data_init
     &                              read_2D, read_2D_int, read_3D_extdim, read_2D_extdim, read_inq_varexists
   USE mo_netcdf_errhandler,  ONLY: nf
   USE mo_netcdf
-  USE turb_data,             ONLY: c_lnd, c_sea
-  USE mo_util_cdi,           ONLY: get_cdi_varID, test_cdi_varID, read_cdi_2d,     &
-    &                              read_cdi_3d, t_inputParameters,                 &
-    &                              makeInputParameters, deleteInputParameters,     &
-    &                              has_filetype_netcdf
-  USE mo_util_uuid_types,    ONLY: t_uuid, uuid_string_length
-  USE mo_util_uuid,          ONLY: OPERATOR(==), uuid_unparse
+  USE turb_data,             ONLY: c_lnd, c_sea, c_stm
+  USE mo_util_cdi,           ONLY: read_cdi_2d, read_cdi_3d, t_inputParameters,   &
+    &                              makeInputParameters, deleteInputParameters
+  USE mo_cdi,                ONLY: FILETYPE_GRB2, streamClose, cdi_undefid
   USE mo_dictionary,         ONLY: t_dictionary
   USE mo_nwp_tuning_config,  ONLY: itune_albedo, tune_urbahf, tune_urbisa
-  USE mo_cdi,                ONLY: FILETYPE_GRB2, streamOpenRead, streamInqFileType, &
-    &                              streamInqVlist, vlistInqVarZaxis, zaxisInqSize,   &
-    &                              vlistNtsteps, vlistInqVarGrid, cdiInqAttTxt,    &
-    &                              vlistInqVarIntKey, CDI_GLOBAL, gridInqUUID, &
-    &                              streamClose, cdiStringError, cdi_undefid
   USE mo_math_gradients,     ONLY: grad_fe_cell
-  USE mo_fortran_tools,      ONLY: var_scale
+  USE mo_fortran_tools,      ONLY: var_scale, copy
   USE mtime,                 ONLY: datetime, newDatetime, deallocateDatetime,        &
     &                              MAX_DATETIME_STR_LEN, datetimetostring,           &
     &                              OPERATOR(+)
@@ -97,15 +86,6 @@ MODULE mo_ext_data_init
 
   CHARACTER(LEN=*), PARAMETER :: modname = 'mo_ext_data_init'
 
-  ! Number of landcover classes provided by external parameter data
-  ! Needs to be changed into a variable if landcover classifications
-  ! with a different number of classes become available
-  INTEGER, PARAMETER :: num_lcc = 23, n_param_lcc = 8
-
-  LOGICAL, ALLOCATABLE :: is_frglac_in(:) !< checks whether the extpar file contains fr_glac
-  LOGICAL :: read_netcdf_parallel         !< control variable if NetCDF extpar data are read via parallel NetCDF or cdilib
-
-
   PUBLIC :: init_ext_data
   PUBLIC :: init_index_lists
   PUBLIC :: interpol_monthly_mean
@@ -118,16 +98,14 @@ CONTAINS
 
 
   !-------------------------------------------------------------------------
-  !! Init external data for atmosphere
+  !! Init external data for the atmosphere
   !!
-  !! 1. Build data structure, including field lists and
-  !!    memory allocation.
-  !! 2. External data are read in from netCDF file or set analytically
+  !! External data are read from netCDF/GRIB2 file or set analytically
   !!
   SUBROUTINE init_ext_data (p_patch, p_int_state, ext_data)
 
-    TYPE(t_patch), INTENT(INOUT)         :: p_patch(:)
-    TYPE(t_int_state), INTENT(IN)        :: p_int_state(:)
+    TYPE(t_patch),         INTENT(IN)    :: p_patch(:)     !< note: starts with domain 1
+    TYPE(t_int_state),     INTENT(IN)    :: p_int_state(:) !< note: starts with domain 1
     TYPE(t_external_data), INTENT(INOUT) :: ext_data(:)
 
 
@@ -143,40 +121,25 @@ CONTAINS
     REAL(wp) :: emis_rad_scm                      ! emissivity
     REAL(wp) :: lu_class_fr_scm(num_lcc)          ! lu_class_fraction
     CHARACTER(len=max_char_length) :: lctype_scm  ! type of data source for land use
-    
+
     INTEGER :: jg, ilcc
-    INTEGER :: cdi_extpar_id(n_dom)  !< CDI stream ID (for each domain)
-    INTEGER :: cdi_filetype(n_dom)   !< CDI filetype (for each domain)
     ! dictionary which maps internal variable names onto
     ! GRIB2 shortnames or NetCDF var names.
     TYPE (t_dictionary) :: extpar_varnames_dict
 
+    LOGICAL :: read_netcdf_parallel                !< control variable if NetCDF extpar data
+                                                   !  are read via parallel NetCDF or cdilib
+
     TYPE(datetime), POINTER :: this_datetime
     CHARACTER(len=*), PARAMETER :: routine = modname//':init_ext_data'
-    LOGICAL :: is_mpi_workroot
-
-    is_mpi_workroot = my_process_is_mpi_workroot()
 
     !-------------------------------------------------------------------------
     CALL message(routine, 'Start')
 
-    !-------------------------------------------------------------------------
-    !  1.  inquire external files for their data structure
-    !-------------------------------------------------------------------------
-
-    ALLOCATE(is_frglac_in(n_dom))
-    ! Set default value for is_frglac_in. Will be overwritten, if external data
-    ! contain fr_glac
-    is_frglac_in(1:n_dom) = .FALSE.
-
-    ! initialize stream-IDs as "uninitialized"
-    cdi_extpar_id(:) = cdi_undefid
-    ! open CDI stream (files):
-    IF (iforcing == inwp) CALL inquire_external_files(p_patch, cdi_extpar_id, cdi_filetype)
 
     ! read the map file (internal -> GRIB2) into dictionary data structure:
     CALL extpar_varnames_dict%init(.FALSE.)
-    IF (ANY(cdi_filetype(:) == FILETYPE_GRB2)) THEN
+    IF (ANY(ext_atm_attr(1:n_dom)%cdi_filetype == FILETYPE_GRB2)) THEN
       IF (extpar_varnames_map_file /= ' ') &
         & CALL extpar_varnames_dict%loadfile(TRIM(extpar_varnames_map_file))
       read_netcdf_parallel = .FALSE. ! GRIB2 can only be read using cdi library
@@ -186,24 +149,13 @@ CONTAINS
       read_netcdf_parallel = .TRUE.
     END IF
 
-    !------------------------------------------------------------------
-    !  2.  construct external fields for the model
-    !------------------------------------------------------------------
-
-    ! top-level procedure for building data structures for
-    ! external data.
-
     IF (i_scm_netcdf > 0) THEN
-      nclass_lu = num_lcc ! 3rd dim of lu_class_fraction, has to agree with num_lcc
+      ext_atm_attr(1:n_dom)%nclass_lu = num_lcc ! 3rd dim of lu_class_fraction, has to agree with num_lcc
     ENDIF
 
-    ! Note that construct_ext_data must be called after inquire_external_files!
-    ! The latter routine retrieves the constants nlev_o3 and nmonths, which are used
-    ! by construct_ext_data, when constructing the state vector ext_atm_td.
-    CALL construct_ext_data(p_patch, ext_data)
 
     !-------------------------------------------------------------------------
-    !  3.  read the data into the fields
+    !  Read the external parameter data
     !-------------------------------------------------------------------------
 
     ! Check, whether external data should be read from file
@@ -247,20 +199,19 @@ CONTAINS
               ext_data(jg)%atm%lu_class_fraction(:,:,ilcc) = lu_class_fr_scm(ilcc) ! fraction of LU class
             ENDDO
             IF (TRIM(lctype_scm) .EQ. "GLC2000") THEN
-              i_lctype(jg) = GLC2000
+              ext_atm_attr(jg)%i_lctype = GLC2000
             ELSE IF (TRIM(lctype_scm) .EQ. "GLOBCOVER2009" ) THEN
-              i_lctype(jg) = GLOBCOVER2009
+              ext_atm_attr(jg)%i_lctype = GLOBCOVER2009
             ELSE
               CALL finish(routine,'Unknown landcover data source')
             ENDIF
             !ext_data(jg)%atm%i_lc_water        = 21
-  
+
             !Special setup for tiles
             ext_data(jg)%atm%soiltyp_t(:,:,:) = soiltyp_scm ! soil type
             ext_data(jg)%atm%frac_t(:,:,:)    = 0._wp       ! set all tiles to 0
             ext_data(jg)%atm%frac_t(:,:,isub_water) = 1._wp ! set only ocean to 1
             ext_data(jg)%atm%lc_class_t(:,:,:) = 1          ! land cover class
-            
           END DO
 
         ELSE
@@ -291,46 +242,47 @@ CONTAINS
             ext_data(jg)%atm%soiltyp(:,:)     = 8           ! soil type
             ext_data(jg)%atm%z0(:,:)          = 0.001_wp    ! roughness length
             ext_data(jg)%atm%topography_c(:,:)= 0.0_wp      ! topographic height
-            i_lctype(jg) = GLOBCOVER2009
-  
+            ext_atm_attr(jg)%i_lctype         = GLOBCOVER2009
+
             !Special setup for tiles
             ext_data(jg)%atm%soiltyp_t(:,:,:) = 8           ! soil type
             ext_data(jg)%atm%frac_t(:,:,:)    = 0._wp       ! set all tiles to 0
             ext_data(jg)%atm%frac_t(:,:,isub_water) = 1._wp ! set only ocean to 1
             ext_data(jg)%atm%lc_class_t(:,:,:) = 1          ! land cover class
-  
+
           END DO
 
         ENDIF
-     
+
         IF (l_scm_mode) THEN
-          ! necessary call to initialize some extpar variables without reading the extpar file
-          CALL read_ext_data_atm (p_patch, ext_data, nlev_o3, cdi_extpar_id, &
-            &                     extpar_varnames_dict)
-          CALL message(routine,'read_ext_data_atm completed' )
+          ! initialize landuse-related parameters from lookup table
+          CALL init_landuse_params(ext_data)
         ENDIF
 
-        DO jg = 1, n_dom
+        DO jg = 1,n_dom
           ext_data(jg)%atm%emis_rad(:,:)    = zemiss_def ! longwave surface emissivity
         END DO
 
         ! call read_ext_data_atm to read O3
         IF ( irad_o3 == io3_clim .OR. irad_o3 == io3_ape .OR. sstice_mode == SSTICE_CLIM) THEN
-          CALL read_ext_data_atm (p_patch, ext_data, nlev_o3, cdi_extpar_id, &
-            &                     extpar_varnames_dict)
-          CALL message(routine,'read_ext_data_atm completed' )
+          DO jg = 1,n_dom
+            CALL read_ext_o3_clim(p_patch      = p_patch(jg),              & !in
+              &                   ext_o3_attr  = ext_o3_attr(jg),          & !in
+              &                   pfoz         = ext_data(jg)%atm_td%pfoz, & !inout
+              &                   phoz         = ext_data(jg)%atm_td%phoz, & !inout
+              &                   o3           = ext_data(jg)%atm_td%O3 )    !inout
+          ENDDO
+          CALL message(routine,'read_ext_o3_clim completed' )
         END IF
 
-      END IF
+      END IF  ! iforcing = inwp
 
 
     CASE(1) ! itopo, read external data from file
 
       CALL message(routine,'Start reading external data from file' )
-
-      CALL read_ext_data_atm (p_patch, ext_data, nlev_o3, cdi_extpar_id, &
-        &                     extpar_varnames_dict)
-
+      CALL read_ext_data_atm (p_patch, ext_atm_attr, ext_o3_attr, read_netcdf_parallel, &
+        &                     extpar_varnames_dict, ext_data)
       CALL message(routine,'Finished reading external data' )
 
 
@@ -453,7 +405,7 @@ CONTAINS
                  &                     ext_data(jg)%atm%cdnc             )! out
           ENDDO
         ENDIF
-        
+
         ! clean up
         CALL deallocateDatetime(this_datetime)
 
@@ -466,10 +418,10 @@ CONTAINS
     END SELECT ! itopo
 
     ! close CDI stream (file):
-    IF (is_mpi_workroot) THEN
+    IF ( my_process_is_mpi_workroot() ) THEN
       DO jg=1,n_dom
-        IF (cdi_extpar_id(jg) /= cdi_undefid) &
-             CALL streamClose(cdi_extpar_id(jg))
+        IF (ext_atm_attr(jg)%cdi_extpar_id /= cdi_undefid) &
+             CALL streamClose(ext_atm_attr(jg)%cdi_extpar_id)
       END DO
     END IF
 
@@ -479,415 +431,328 @@ CONTAINS
   END SUBROUTINE init_ext_data
 
 
-  !-------------------------------------------------------------------------
-  ! Open ExtPar file and investigate the data structure of the
-  ! external parameters.
   !
-  ! Note: This subroutine opens the file and returns a CDI file ID.
-  !-------------------------------------------------------------------------
-  SUBROUTINE inquire_extpar_file(p_patch, jg, cdi_extpar_id, cdi_filetype, &
-    &                            is_frglac_in)
-    TYPE(t_patch), INTENT(IN)      :: p_patch(:)
-    INTEGER,       INTENT(IN)      :: jg
-    INTEGER,       INTENT(INOUT)   :: cdi_extpar_id     !< CDI stream ID
-    INTEGER,       INTENT(INOUT)   :: cdi_filetype      !< CDI filetype
-    LOGICAL,       INTENT(OUT)     :: is_frglac_in      !< check for fr_glac in Extpar file
+  !! Initialize landuse-specific parameters
+  !!
+  !! Initialize the following landuse-specific parameters
+  !! from lookup table data:
+  !!
+  !! land-cover related roughness length
+  !! minimum land-cover related roughness length
+  !! maximum plant cover fraction
+  !! maximum leaf area index
+  !! maximum root depth
+  !! skin conductivity
+  !! anthropogenic heat flux
+  !! minimum stomata resistance
+  !! snow albedo
+  !! existence of snow tiles for land-cover class
+  !!
+  SUBROUTINE init_landuse_params (ext_data)
 
-    ! local variables
-    CHARACTER(len=*), PARAMETER :: routine = modname//'::inquire_extpar_file'
-    INTEGER                 :: mpi_comm, vlist_id, lu_class_fraction_id, zaxis_id, var_id
-    INTEGER                 :: horizon_id
-    LOGICAL                 :: l_exist
-    CHARACTER(filename_max) :: extpar_file !< file name for reading in
-    INTEGER :: extpar_file_namelen
+    TYPE(t_external_data), INTENT(INOUT) :: ext_data(:)
 
-    TYPE(t_uuid)            :: extpar_uuidOfHGrid             ! uuidOfHGrid contained in the
-                                                              ! extpar file
+    CHARACTER(len=*), PARAMETER :: routine = modname//':init_landuse_params'
+    REAL(wp)         :: lu_glc2000   (num_lcc*n_param_lcc) ! < lookup table landuse class GLC2000
+    REAL(wp), TARGET :: lu_gcv2009   (num_lcc*n_param_lcc) ! < lookup table landuse class GlobCover2009
+    REAL(wp), TARGET :: lu_gcv2009_v2(num_lcc*n_param_lcc) ! < modified lookup table landuse class GlobCover2009
+    REAL(wp), TARGET :: lu_gcv2009_v3(num_lcc*n_param_lcc) ! < even less evaporating lookup table landuse class GlobCover2009
+    REAL(wp), TARGET :: lu_gcv2009_v4(num_lcc*n_param_lcc) ! < retuned lookup table landuse class GlobCover2009
 
-    CHARACTER(len=uuid_string_length) :: grid_uuid_unparsed   ! unparsed grid uuid (human readable)
-    CHARACTER(len=uuid_string_length) :: extpar_uuid_unparsed ! same for extpar-file uuid
+    INTEGER:: jg, ilu, i
+    REAL(wp), POINTER :: lu_gcv(:)  => NULL()
 
-    LOGICAL                 :: lmatch                         ! for comparing UUIDs
+    !                    z0         pcmx      laimx rd      rsmin      snowalb snowtile skinc
+    !
+    DATA lu_glc2000 /   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp, 100._wp, & ! evergreen broadleaf forest
+                    &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 150.0_wp,  0.31_wp, 1._wp, 100._wp, & ! deciduous broadleaf closed forest
+                    &   0.15_wp,  0.8_wp,  4.0_wp, 2.0_wp, 150.0_wp,  0.31_wp, 1._wp, 100._wp, & ! deciduous broadleaf open   forest
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.27_wp, 1._wp, 100._wp, & ! evergreen needleleaf forest
+                    &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.33_wp, 1._wp, 100._wp, & ! deciduous needleleaf forest
+                    &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 150.0_wp,  0.29_wp, 1._wp, 100._wp, & ! mixed leaf trees
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! fresh water flooded trees
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! saline water flooded trees
+                    &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic tree / natural vegetation
+                    &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! burnt tree cover
+                    &   0.20_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! evergreen shrubs closed-open
+                    &   0.15_wp,  0.8_wp,  1.5_wp, 2.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! decidous shrubs closed-open
+                    &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! herbaceous vegetation closed-open
+                    &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! sparse herbaceous or grass
+                    &   0.05_wp,  0.8_wp,  2.0_wp, 0.4_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! flooded shrubs or herbaceous
+                    &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! cultivated & managed areas
+                    &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic crop / tree / natural vegetation
+                    &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 100.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic crop / shrub / grass
+                    &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! bare areas
+                    &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp,-1._wp, 100._wp, & ! water
+                    &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! snow & ice
+                    &   1.00_wp,  0.2_wp,  1.0_wp, 0.6_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! artificial surface
+                    &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp,  40.0_wp,  -1.0_wp,-1._wp, 100._wp  / ! undefined
 
-    INTEGER                 :: cdiGridID
+    DATA lu_gcv2009 /   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
+                    &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
+                    &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
+                    &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 100.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
+                    &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 150.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
+                    &   0.15_wp,  0.8_wp,  4.0_wp, 2.0_wp, 150.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
+                    &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
+                    &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 150.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
+                    &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
+                    &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
+                    &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 120.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
+                    &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp,  40.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
+                    &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  40.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
+                    &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
+                    &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  40.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
+                    &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 120.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
+                    &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 120.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
+                    &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
+                    &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
+                    &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
 
-    INTEGER :: lu_var_id, localInformationNumber
-    INTEGER :: ret
-    CHARACTER(len=max_char_length) :: rawdata_attr
+    ! Tuned version of gcv2009 based on IFS values (Juergen Helmert und Martin Koehler)
+    DATA lu_gcv2009_v2 /  0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 180.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
+                      &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 140.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
+                      &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 130.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
+                      &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 175.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
+                      &   0.15_wp,  0.8_wp,  4.0_wp, 1.5_wp, 175.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 250.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 250.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 210.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
+                      &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
+                      &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
+                      &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 225.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
+                      &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp, 100.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
+                      &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  80.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
+                      &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  80.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
+                      &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 180.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
+                      &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 200.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
+                      &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
+                      &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
+                      &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
 
-    !---------------------------------------------!
-    ! Check validity of external parameter file   !
-    !---------------------------------------------!
-    IF (my_process_is_mpi_workroot()) THEN
-      ! generate file name
-      extpar_file = generate_filename(extpar_filename,                   &
-        &                             getModelBaseDir(),                 &
-        &                             TRIM(p_patch(jg)%grid_filename),   &
-        &                             nroot,                             &
-        &                             p_patch(jg)%level, p_patch(jg)%id)
-      extpar_file_namelen = LEN_TRIM(extpar_file)
-      CALL message(routine, "extpar_file = "//extpar_file(1:extpar_file_namelen))
+    ! Even more tuned version of gcv2009 by Guenther Zaengl (appears to produce the smallest temperature biases)
+    DATA lu_gcv2009_v3 /  0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 190.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
+                      &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 170.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
+                      &   0.25_wp,  0.8_wp,  3.0_wp, 0.5_wp, 160.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
+                      &   0.07_wp,  0.9_wp,  3.5_wp, 0.7_wp, 150.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 280.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 225.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
+                      &   0.15_wp,  0.8_wp,  4.0_wp, 1.5_wp, 225.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 270.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
+                      &   0.20_wp,  0.8_wp,  2.5_wp, 0.8_wp, 200.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
+                      &   0.20_wp,  0.8_wp,  2.5_wp, 0.6_wp, 200.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
+                      &   0.15_wp,  0.8_wp,  2.5_wp, 0.9_wp, 265.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
+                      &   0.03_wp,  0.9_wp,  3.1_wp, 0.4_wp, 140.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
+                      &   0.05_wp,  0.5_wp,  0.6_wp, 0.2_wp, 120.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
+                      &   0.05_wp,  0.8_wp,  2.0_wp, 0.7_wp, 120.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
+                      &   1.00_wp,  0.2_wp,  1.6_wp, 0.2_wp, 300.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
+                      &   0.05_wp,  0.05_wp, 0.6_wp,0.05_wp, 300.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
+                      &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
+                      &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
+                      &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
 
-      INQUIRE (FILE=extpar_file, EXIST=l_exist)
-      IF (.NOT.l_exist)  CALL finish(routine,'external data file is not found.')
-
-      ! open file
-      cdi_extpar_id = streamOpenRead(extpar_file(1:extpar_file_namelen))
-      IF (cdi_extpar_id < 0) THEN
-        WRITE (message_text, '(133a)') "Cannot open external parameter file ", &
-             cdiStringError(cdi_extpar_id)
-        CALL finish(routine, TRIM(message_text))
-      END IF
-      cdi_filetype  = streamInqFileType(cdi_extpar_id)
-
-      IF (islope_rad(jg) >= 2) THEN
-      ! get the number of horizon sectors
-        horizon_id = get_cdi_varID(cdi_extpar_id, "HORIZON")
-        vlist_id   = streamInqVlist(cdi_extpar_id)
-        zaxis_id   = vlistInqVarZaxis(vlist_id, horizon_id)
-        nhori = zaxisInqSize(zaxis_id)
-        !$ACC UPDATE DEVICE(nhori) ASYNC(1)
-        WRITE(message_text,'(A,I4)')  &
-          & 'Number of horizon sectors in external data file = ', nhori
-        CALL message(routine, TRIM(message_text))
-      ENDIF
-
-      ! get the number of landuse classes
-      lu_class_fraction_id = get_cdi_varID(cdi_extpar_id, "LU_CLASS_FRACTION")
-      vlist_id             = streamInqVlist(cdi_extpar_id)
-      zaxis_id             = vlistInqVarZaxis(vlist_id, lu_class_fraction_id)
-      IF (l_scm_mode) THEN
-        nclass_lu(jg)      = num_lcc
-      ELSE
-        nclass_lu(jg)      = zaxisInqSize(zaxis_id)
-      ENDIF
-
-      ! get time dimension from external data file
-      nmonths_ext(jg)      = vlistNtsteps(vlist_id)
-
-      ! make sure that num_lcc is equal to nclass_lu. If not, then the internal
-      ! land-use lookup tables and the external land-use class field are inconsistent.
-
-      IF (nclass_lu(jg) /= num_lcc) THEN
-        WRITE(message_text,'(A,I3,A,I3)')  &
-          & 'Number of land-use classes in external file ', nclass_lu(jg), &
-          & ' does not match ICON-internal value num_lcc ', num_lcc
-        CALL finish(routine,TRIM(message_text))
-      ENDIF
-
-      IF ( msg_level>10 ) THEN
-        WRITE(message_text,'(A,I4)')  &
-          & 'Number of land_use classes in external data file = ', nclass_lu(jg)
-        CALL message(routine,message_text)
-
-        WRITE(message_text,'(A,I4)')  &
-          & 'Number of months in external data file = ', nmonths_ext(jg)
-        CALL message(routine,message_text)
-      ENDIF
-
-
-      ! Compare UUID of external parameter file with UUID of grid.
-      !
-      ! get horizontal grid UUID contained in extpar file
-      ! use lu_class_fraction as sample field
-      cdiGridID = vlistInqVarGrid(vlist_id, lu_class_fraction_id)
-      CALL gridInqUUID(cdiGridID, extpar_uuidOfHGrid%DATA)
-      !
-      ! --- compare UUID of horizontal grid file with UUID from extpar file
-      lmatch = (p_patch(jg)%grid_uuid == extpar_uuidOfHGrid)
-
-      IF (.NOT. lmatch) THEN
-        CALL uuid_unparse(p_patch(jg)%grid_uuid, grid_uuid_unparsed)
-        CALL uuid_unparse(extpar_uuidOfHGrid   , extpar_uuid_unparsed)
-        WRITE(message_text,'(a,a)') 'uuidOfHgrid from gridfile: ', TRIM(grid_uuid_unparsed)
-        CALL message(routine,message_text)
-        WRITE(message_text,'(a,a)') 'uuidOfHgrid from extpar file: ', TRIM(extpar_uuid_unparsed)
-        CALL message(routine,message_text)
-
-        WRITE(message_text,'(a)') 'Extpar file and horizontal grid file do not match!'
-        IF (check_uuid_gracefully) THEN
-          CALL message(routine, TRIM(message_text))
-        ELSE
-          CALL finish(routine, TRIM(message_text))
-        END IF
-      ENDIF
+    ! Yet another tuned version by Guenther Zaengl (adjusted to resistance-based bare soil evaporation scheme)
+    DATA lu_gcv2009_v4 /  0.25_wp,  0.9_wp,  3.3_wp, 1.0_wp, 225.0_wp,  0.72_wp, 1._wp, 100._wp, & ! irrigated croplands
+                      &   0.10_wp,  0.9_wp,  3.3_wp, 1.0_wp, 140.0_wp,  0.72_wp, 1._wp,  50._wp, & ! rainfed croplands
+                      &   0.30_wp,  0.8_wp,  3.0_wp, 1.0_wp, 130.0_wp,  0.55_wp, 1._wp,  30._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
+                      &   0.10_wp,  0.9_wp,  3.5_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  40._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  40._wp, & ! closed broadleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp,1.25_wp, 300.0_wp,  0.31_wp, 1._wp,  30._wp, & ! closed broadleaved deciduous forest
+                      &   0.50_wp,  0.8_wp,  4.0_wp, 1.5_wp, 225.0_wp,  0.31_wp, 1._wp,  50._wp, & ! open broadleaved deciduous forest
+                      &   1.00_wp,  0.8_wp,  5.0_wp,0.75_wp, 300.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.33_wp, 1._wp,  10._wp, & ! open needleleaved deciduous forest
+                      &   1.00_wp,  0.9_wp,  5.0_wp, 1.0_wp, 270.0_wp,  0.29_wp, 1._wp,  15._wp, & ! mixed broadleaved and needleleaved forest
+                      &   0.15_wp,  0.8_wp,  2.5_wp, 1.1_wp, 170.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
+                      &   0.15_wp,  0.8_wp,  2.5_wp, 0.9_wp, 170.0_wp,  0.65_wp, 1._wp,  30._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
+                      &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 180.0_wp,  0.65_wp, 1._wp,  75._wp, & ! closed to open shrubland
+                      &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp, 100.0_wp,  0.76_wp, 1._wp,  70._wp, & ! closed to open herbaceous vegetation
+                      &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp, 140.0_wp,  0.76_wp, 1._wp,  15._wp, & ! sparse vegetation
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
+                      &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  80._wp, & ! closed forest or shrubland permanently flooded
+                      &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  80.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
+                      &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 300.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
+                      &   0.02_wp,  0.01_wp, 0.2_wp, 0.3_wp, 300.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
+                      &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
+                      &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
+                      &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
 
 
+    DO jg = 1,n_dom
 
-      ! Determine which data source has been used to generate the
-      ! external perameters: For NetCDF format, we check the
-      ! global attribute "rawdata". For GRIB2 format we check the
-      ! key "localInformationNumber".
-      IF (has_filetype_netcdf(cdi_filetype)) THEN
-        ret      = cdiInqAttTxt(vlist_id, CDI_GLOBAL, 'rawdata', max_char_length, rawdata_attr)
-        IF (INDEX(rawdata_attr,'GLC2000') /= 0) THEN
-          i_lctype(jg) = GLC2000
-        ELSE IF (INDEX(rawdata_attr,'GLOBCOVER2009') /= 0) THEN
-          i_lctype(jg) = GLOBCOVER2009
-        ELSE
-          CALL finish(routine,'Unknown landcover data source')
-        ENDIF
-      ELSE IF (cdi_filetype == FILETYPE_GRB2) THEN
-        lu_var_id              = get_cdi_varID(cdi_extpar_id, 'LU_CLASS_FRACTION')
-        localInformationNumber = vlistInqVarIntKey(vlist_id, lu_var_id, "localInformationNumber")
-        SELECT CASE (localInformationNumber)
-        CASE (2)  ! 2 = GLC2000
-          i_lctype(jg) = GLC2000
-        CASE (1)  ! 1 = ESA GLOBCOVER
-          i_lctype(jg) = GLOBCOVER2009
-        CASE DEFAULT
-          CALL finish(routine,'Unknown landcover data source')
+      ! Preset parameter fields with the correct table values
+      ilu = 0
+      IF (ext_atm_attr(jg)%i_lctype == GLC2000) THEN
+        ext_data(jg)%atm%i_lc_snow_ice = 21
+        ext_data(jg)%atm%i_lc_water    = 20
+        ext_data(jg)%atm%i_lc_urban    = 22
+        ext_data(jg)%atm%i_lc_shrub_eg = 11
+        ext_data(jg)%atm%i_lc_shrub    = 12
+        ext_data(jg)%atm%i_lc_grass    = 13
+        ext_data(jg)%atm%i_lc_bare_soil= 19
+        ext_data(jg)%atm%i_lc_sparse   = 14
+        DO i = 1, num_lcc*n_param_lcc, n_param_lcc
+          ilu=ilu+1
+          ext_data(jg)%atm%z0_lcc(ilu)          = lu_glc2000(i  )  ! Land-cover related roughness length
+          ext_data(jg)%atm%plcovmax_lcc(ilu)    = lu_glc2000(i+1)  ! Maximum plant cover fraction for each land-cover class
+          ext_data(jg)%atm%laimax_lcc(ilu)      = lu_glc2000(i+2)  ! Maximum leaf area index for each land-cover class
+          ext_data(jg)%atm%rootdmax_lcc(ilu)    = lu_glc2000(i+3)  ! Maximum root depth for each land-cover class
+          ext_data(jg)%atm%stomresmin_lcc(ilu)  = lu_glc2000(i+4)  ! Minimum stomata resistance for each land-cover class
+          ext_data(jg)%atm%snowalb_lcc(ilu)     = lu_glc2000(i+5)  ! Albedo in case of snow cover for each land-cover class
+          ext_data(jg)%atm%snowtile_lcc(ilu)    = &
+            &          MERGE(.TRUE.,.FALSE.,lu_glc2000(i+6)>0._wp) ! Existence of snow tiles for land-cover class
+        ENDDO
+      ELSE IF (ext_atm_attr(jg)%i_lctype == GLOBCOVER2009) THEN
+        SELECT CASE (itype_lndtbl)
+        CASE (1)
+          lu_gcv => lu_gcv2009
+        CASE (2)
+          lu_gcv => lu_gcv2009_v2
+        CASE (3)
+          lu_gcv => lu_gcv2009_v3
+        CASE (4)
+          lu_gcv => lu_gcv2009_v4
         END SELECT
-      END IF
 
-      ! Check whether external parameter file contains MODIS albedo-data
-      IF ( albedo_type == MODIS ) THEN
-        IF ( (test_cdi_varID(cdi_extpar_id, 'ALB')   == -1) .OR.    &
-          &  (test_cdi_varID(cdi_extpar_id, 'ALNID') == -1) .OR.    &
-          &  (test_cdi_varID(cdi_extpar_id, 'ALUVD') == -1) ) THEN
-          CALL finish(routine,'MODIS albedo fields missing in '//TRIM(extpar_filename))
-        ENDIF
+        ext_data(jg)%atm%i_lc_snow_ice    = 22
+        ext_data(jg)%atm%i_lc_water       = 21
+        ext_data(jg)%atm%i_lc_urban       = 19
+        ext_data(jg)%atm%i_lc_shrub_eg    = 12
+        ext_data(jg)%atm%i_lc_shrub       = 13
+        ext_data(jg)%atm%i_lc_grass       = 14
+        ext_data(jg)%atm%i_lc_bare_soil   = 20
+        ext_data(jg)%atm%i_lc_sparse      = 15
+        ext_data(jg)%atm%i_lc_crop_irrig  = 1
+        ext_data(jg)%atm%i_lc_crop_rain   = 2
+        ext_data(jg)%atm%i_lc_crop_mos    = 3
+        ext_data(jg)%atm%i_lc_veg_mos     = 4
+        ext_data(jg)%atm%i_lc_forest_b_eg = 5
+        ext_data(jg)%atm%i_lc_forest_b_d  = 6
+        ext_data(jg)%atm%i_lc_woodland    = 7
+        ext_data(jg)%atm%i_lc_forest_n_eg = 8
+        ext_data(jg)%atm%i_lc_forest_n_d  = 9
+        ext_data(jg)%atm%i_lc_forest_bn   = 10
+        ext_data(jg)%atm%i_lc_shrub_mos   = 11
+        ext_data(jg)%atm%i_lc_forest_rf   = 16
+        ext_data(jg)%atm%i_lc_forest_pf   = 17
+        ext_data(jg)%atm%i_lc_grass_rf    = 18
+
+        DO i = 1, num_lcc*n_param_lcc, n_param_lcc
+          ilu=ilu+1
+          ext_data(jg)%atm%z0_lcc(ilu)          = lu_gcv(i  )  ! Land-cover related roughness length
+          ext_data(jg)%atm%plcovmax_lcc(ilu)    = lu_gcv(i+1)  ! Maximum plant cover fraction for each land-cover class
+          ext_data(jg)%atm%laimax_lcc(ilu)      = lu_gcv(i+2)  ! Maximum leaf area index for each land-cover class
+          ext_data(jg)%atm%rootdmax_lcc(ilu)    = lu_gcv(i+3)  ! Maximum root depth for each land-cover class
+          ext_data(jg)%atm%stomresmin_lcc(ilu)  = lu_gcv(i+4)  ! Minimum stomata resistance for each land-cover class
+          ext_data(jg)%atm%snowalb_lcc(ilu)     = lu_gcv(i+5)  ! Albedo in case of snow cover for each land-cover class
+          ext_data(jg)%atm%snowtile_lcc(ilu)    = &
+            &          MERGE(.TRUE.,.FALSE.,lu_gcv(i+6)>0._wp) ! Existence of snow tiles for land-cover class
+          IF (cskinc <= 0._wp) THEN
+            ext_data(jg)%atm%skinc_lcc(ilu)     = lu_gcv(i+7)  ! Skin conductivity for each land use class
+          ELSE
+            ext_data(jg)%atm%skinc_lcc(ilu)     = cskinc       ! Constant value specified in namelist
+          ENDIF
+        ENDDO
       ENDIF
 
-      ! Check whether external parameter file contains monthly longwave surface emissivity data
-      IF ( itype_lwemiss == 2 ) THEN
-        IF (test_cdi_varID(cdi_extpar_id, 'EMISS')   == -1) THEN
-          CALL finish(routine,'Monthly longwave surface emissvity data missing in '//TRIM(extpar_filename))
-        ENDIF
-      ENDIF
+      !$ACC UPDATE &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_snow_ice) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_water) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_urban) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub_eg) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_grass) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_bare_soil) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_sparse) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_irrig) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_rain) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_mos) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_veg_mos) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_b_eg) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_b_d) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_woodland) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_n_eg) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_n_d) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_bn) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub_mos) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_rf) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_pf) &
+      !$ACC   DEVICE(ext_data(jg)%atm%i_lc_grass_rf) &
+      !$ACC   ASYNC(1)
 
-      ! Check whether external parameter file contains SST climatology
-      IF ( sstice_mode == SSTICE_ANA_CLINC ) THEN
-        IF ( test_cdi_varID(cdi_extpar_id, 'T_SEA')  == -1 ) THEN
-          CALL finish(routine,'SST climatology missing in '//TRIM(extpar_filename))
-        ENDIF
-      ENDIF
-      
-      IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
-        ! Check whether external parameter file contains cloud droplet number climatology
-        IF ( test_cdi_varID(cdi_extpar_id, 'cdnc')  == -1 ) THEN
-          CALL finish(routine,'icpl_aero_gscp=3 but cloud droplet number climatology missing in '//TRIM(extpar_filename))
+      ! Urban canopy parameters
+      DO ilu = 1, num_lcc
+        IF (ilu == ext_data(jg)%atm%i_lc_urban) THEN
+          ext_data(jg)%atm%ahf_lcc(ilu)      = tune_urbahf(1) ! Anthropogenic heat flux for urban land use class
         ELSE
-          CALL message(routine,'Found cloud droplet number in extpar file' )
+          ext_data(jg)%atm%ahf_lcc(ilu)      = 0._wp
         ENDIF
-      ENDIF
+      ENDDO
 
-      ! Search for glacier fraction in Extpar file
-      !
-      IF (has_filetype_netcdf(cdi_filetype)) THEN
-        var_id = test_cdi_varID(cdi_extpar_id,'ICE')
-      ELSE IF (cdi_filetype == FILETYPE_GRB2) THEN
-        var_id = test_cdi_varID(cdi_extpar_id,'FR_ICE')
-      ENDIF
-      IF (var_id == -1) THEN
-        is_frglac_in = .FALSE.
-      ELSE
-        is_frglac_in = .TRUE.
-      ENDIF
-
-    ENDIF ! my_process_is_mpi_workroot()
-
-    IF(p_test_run) THEN
-      mpi_comm = p_comm_work_test
-    ELSE
-      mpi_comm = p_comm_work
-    ENDIF
-    ! broadcast nhori from I-Pe to WORK Pes
-    CALL p_bcast(nhori, p_io, mpi_comm)
-    !$ACC UPDATE DEVICE(nhori) ASYNC(1)
-    ! broadcast nclass_lu from I-Pe to WORK Pes
-    CALL p_bcast(nclass_lu(jg), p_io, mpi_comm)
-    ! broadcast nmonths from I-Pe to WORK Pes
-    CALL p_bcast(nmonths_ext(jg), p_io, mpi_comm)
-    ! broadcast is_frglac_in from I-Pe to WORK Pes
-    CALL p_bcast(is_frglac_in, p_io, mpi_comm)
-    ! broadcast i_lctype from I-Pe to WORK Pes
-    CALL p_bcast(i_lctype(jg), p_io, mpi_comm)
-    ! broadcast cdi filetype
-    CALL p_bcast(cdi_filetype, p_io, mpi_comm)
-
-  END SUBROUTINE inquire_extpar_file
-
-  !-------------------------------------------------------------------------
-
-
-  !-------------------------------------------------------------------------
-  SUBROUTINE inquire_external_files(p_patch, cdi_extpar_id, cdi_filetype)
-
-    !-------------------------------------------------------
-    !
-    ! open netcdf files and investigate the data structure
-    ! of the external parameters
-    !
-    !-------------------------------------------------------
-
-    TYPE(t_patch), INTENT(IN)      :: p_patch(:)
-    INTEGER,       INTENT(INOUT)   :: cdi_extpar_id(:)  !< CDI stream ID
-    INTEGER,       INTENT(INOUT)   :: cdi_filetype(:)   !< CDI filetype
-
-    INTEGER :: jg, mpi_comm
-    INTEGER :: no_cells
-    INTEGER :: ncid, dimid
-
-    LOGICAL :: l_exist
-
-    CHARACTER(len=*), PARAMETER :: &
-      routine = modname//':inquire_external_files'
-
-    CHARACTER(filename_max) :: ozone_file  !< file name for reading in
-
-!--------------------------------------------------------------------------
-
-    IF(p_test_run) THEN
-      mpi_comm = p_comm_work_test
-    ELSE
-      mpi_comm = p_comm_work
-    ENDIF
-
-    DO jg= 1,n_dom
-
-      !------------------------------------------------!
-      ! 1. Check validity of external parameter file   !
-      !------------------------------------------------!
-
-      IF ( itopo == 1 ) THEN
-        CALL inquire_extpar_file(p_patch, jg, cdi_extpar_id(jg), cdi_filetype(jg), &
-          &                      is_frglac_in(jg))
-      END IF
-
-      !------------------------------------------------!
-      ! 2. Check validity of ozone file                !
-      !------------------------------------------------!
-
-      ! default values for nlev_o3 and nmonths
-      nlev_o3 = 1
-      nmonths   = 1
-
-      O3 : IF ( irad_o3 == io3_clim .OR. irad_o3 == io3_ape ) THEN
-
-        IF(iforcing == inwp .AND. irad_o3 == io3_ape) THEN
-          levelname = 'level'
-          cellname  = 'ncells'
-          o3name    = 'O3'
-          o3unit    = 'g/g'
-        ELSE ! o3_clim
-          levelname = 'plev'
-          cellname  = 'ncells'
-          o3name    = 'O3'
-          o3unit    = 'g/g' !this unit ozon will have after being read out and converted from ppmv
+      ! Derived parameter: minimum allowed land-cover related roughness length in the
+      ! presence of low ndvi and/or snow cover
+      DO ilu = 1, num_lcc
+        IF (ilu == ext_data(jg)%atm%i_lc_urban .OR. ilu == ext_data(jg)%atm%i_lc_water) THEN
+          ext_data(jg)%atm%z0_lcc_min(ilu) = ext_data(jg)%atm%z0_lcc(ilu) ! no reduction in urban regions and over water
+        ELSE IF (pp_sso == 2 .AND. ext_data(jg)%atm%z0_lcc(ilu) >= 0.5_wp) THEN   ! if MERIT/REMA orography is used:
+          ext_data(jg)%atm%z0_lcc_min(ilu) = 0.75_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 75% for nominal roughness lengths >= 50 cm
+        ELSE IF (ext_data(jg)%atm%z0_lcc(ilu) > 0.1_wp) THEN
+          ext_data(jg)%atm%z0_lcc_min(ilu) = 0.3_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 30% for nominal roughness lengths > 10 cm
+        ELSE
+          ext_data(jg)%atm%z0_lcc_min(ilu) = 0.1_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 10% otherwise
         ENDIF
+      ENDDO
 
-        IF_IO : IF(my_process_is_stdio()) THEN
+    ENDDO ! jg
 
-          WRITE(ozone_file,'(a,i2.2,a)') 'o3_icon_DOM',jg,'.nc'
+    CALL message(routine, 'Initialization of landuse-related parameters from lookup table completed' )
+  END SUBROUTINE init_landuse_params
 
-          ! Note resolution assignment is done per script by symbolic links
-
-          INQUIRE (FILE=ozone_file, EXIST=l_exist)
-          IF (.NOT.l_exist) THEN
-            WRITE(0,*) 'DOMAIN=',jg
-            CALL finish(routine,'ozone file of domain is not found.')
-          ENDIF
-
-          !
-          ! open file
-          !
-          CALL nf(nf90_open(TRIM(ozone_file), NF90_NOWRITE, ncid), routine)
-          WRITE(0,*)'open ozone file'
-
-          !
-          ! get number of cells
-          !
-          CALL nf(nf90_inq_dimid (ncid, TRIM(cellname), dimid), routine)
-          CALL nf(nf90_inquire_dimension(ncid, dimid, len = no_cells), routine)
-          WRITE(0,*)'number of cells are', no_cells
-
-          !
-          ! check the number of cells and verts
-          !
-          IF(p_patch(jg)%n_patch_cells_g /= no_cells) THEN
-            CALL finish(routine,&
-              & 'Number of patch cells and cells in ozone file do not match.')
-          ENDIF
-
-          !
-          ! check the time structure
-          !
-          CALL nf(nf90_inq_dimid (ncid, 'time', dimid), routine)
-          CALL nf(nf90_inquire_dimension(ncid, dimid, len = nmonths), routine)
-          WRITE(message_text,'(A,I4)')  &
-            & 'Number of months in ozone file = ', nmonths
-          CALL message(routine,message_text)
-
-          !
-          ! check the vertical structure
-          !
-          CALL nf(nf90_inq_dimid (ncid,TRIM(levelname), dimid), routine)
-          CALL nf(nf90_inquire_dimension(ncid, dimid, len = nlev_o3), routine)
-
-          WRITE(message_text,'(A,I4)')  &
-            & 'Number of pressure levels in ozone file = ', nlev_o3
-          CALL message(routine,message_text)
-
-          !
-          ! close file
-          !
-          CALL nf(nf90_close(ncid), routine)
-
-        END IF IF_IO ! pe
-
-        CALL p_bcast(nlev_o3, p_io, mpi_comm)
-        CALL p_bcast(nmonths,   p_io, mpi_comm)
-
-      END IF O3 !o3
-
-    ENDDO ! ndom
-
-  END SUBROUTINE inquire_external_files
 
   !-------------------------------------------------------------------------
   !! Read atmospheric external data from netcdf
   !!
-  SUBROUTINE read_ext_data_atm (p_patch, ext_data, nlev_o3, cdi_extpar_id, &
-    &                           extpar_varnames_dict)
+  SUBROUTINE read_ext_data_atm (p_patch, ext_atm_attr, ext_o3_attr, read_netcdf_parallel, &
+    &                           extpar_varnames_dict, ext_data)
 
-    TYPE(t_patch), TARGET, INTENT(IN)    :: p_patch(:)
+    TYPE(t_patch),         INTENT(IN)    :: p_patch(:)
+    TYPE(t_ext_atm_attr),  INTENT(IN)    :: ext_atm_attr(:)
+    TYPE(t_ext_o3_attr),   INTENT(IN)    :: ext_o3_attr(:)
+    LOGICAL,               INTENT(IN)    :: read_netcdf_parallel  !< TRUE/FALSE: read via parallel NetCDF or cdilib
+    TYPE(t_dictionary),    INTENT(IN)    :: extpar_varnames_dict  !< variable names dictionary (for GRIB2)
     TYPE(t_external_data), INTENT(INOUT) :: ext_data(:)
-    INTEGER,               INTENT(IN)    :: nlev_o3
-
-    INTEGER,               INTENT(IN)    :: cdi_extpar_id(:)      !< CDI stream ID
-    TYPE (t_dictionary),   INTENT(IN)    :: extpar_varnames_dict  !< variable names dictionary (for GRIB2)
 
     CHARACTER(len=*), PARAMETER :: routine = modname//':read_ext_data_atm'
     ! input file for topography_c for mpi-physics
     CHARACTER(len=max_char_length) :: land_sso_fn, land_frac_fn
 
-    CHARACTER(filename_max) :: ozone_file  !< file name for reading in
+    CHARACTER(filename_max) :: extpar_file
     CHARACTER(filename_max) :: sst_td_file !< file name for reading in
     CHARACTER(filename_max) :: ci_td_file  !< file name for reading in
 
-    INTEGER :: jg, jc, jb, i, mpi_comm, ilu,im
-    INTEGER :: jk
-    INTEGER :: ncid, varid
+    INTEGER :: jg, jc, jb, im
     TYPE(t_stream_id) :: stream_id
 
     INTEGER :: rl_start, rl_end
     INTEGER :: i_startblk, i_endblk   !> blocks
     INTEGER :: i_startidx, i_endidx   !< slices
-    INTEGER :: i_nchdom               !< domain index
 
-    REAL(wp):: zdummy_o3lev(nlev_o3) ! will be used for pressure and height levels
     REAL(wp):: albfac, albthresh             ! for MODIS albedo tuning
 
-    REAL(wp), DIMENSION(num_lcc*n_param_lcc)         :: lu_glc2000   ! < lookup table landuse class GLC2000
-    REAL(wp), DIMENSION(num_lcc*n_param_lcc), TARGET :: lu_gcv2009   ! < lookup table landuse class GlobCover2009
-    REAL(wp), DIMENSION(num_lcc*n_param_lcc), TARGET :: lu_gcv2009_v2 ! < modified lookup table landuse class GlobCover2009
-    REAL(wp), DIMENSION(num_lcc*n_param_lcc), TARGET :: lu_gcv2009_v3 ! < even less evaporating lookup table landuse class GlobCover2009
-    REAL(wp), DIMENSION(num_lcc*n_param_lcc), TARGET :: lu_gcv2009_v4 ! < retuned lookup table landuse class GlobCover2009
-    REAL(wp), POINTER :: lu_gcv(:)
-
     LOGICAL :: l_exist
-    CHARACTER(filename_max) :: extpar_file
+    INTEGER :: error_status
+    INTEGER, ALLOCATABLE :: ierr(:)
+    INTEGER :: nerror
 
     TYPE(t_inputParameters) :: parameters
     LOGICAL :: is_mpi_workroot
@@ -896,141 +761,10 @@ CONTAINS
     is_mpi_workroot = my_process_is_mpi_workroot()
     do_patch_land_sea_mask = .FALSE.
 
-!                    z0         pcmx      laimx rd      rsmin      snowalb snowtile skinc
-!
- DATA lu_glc2000 /   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp, 100._wp, & ! evergreen broadleaf forest
-                 &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 150.0_wp,  0.31_wp, 1._wp, 100._wp, & ! deciduous broadleaf closed forest
-                 &   0.15_wp,  0.8_wp,  4.0_wp, 2.0_wp, 150.0_wp,  0.31_wp, 1._wp, 100._wp, & ! deciduous broadleaf open   forest
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.27_wp, 1._wp, 100._wp, & ! evergreen needleleaf forest
-                 &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.33_wp, 1._wp, 100._wp, & ! deciduous needleleaf forest
-                 &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 150.0_wp,  0.29_wp, 1._wp, 100._wp, & ! mixed leaf trees
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! fresh water flooded trees
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! saline water flooded trees
-                 &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic tree / natural vegetation
-                 &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp, 150.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! burnt tree cover
-                 &   0.20_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! evergreen shrubs closed-open
-                 &   0.15_wp,  0.8_wp,  1.5_wp, 2.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! decidous shrubs closed-open
-                 &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! herbaceous vegetation closed-open
-                 &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! sparse herbaceous or grass
-                 &   0.05_wp,  0.8_wp,  2.0_wp, 0.4_wp,  40.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! flooded shrubs or herbaceous
-                 &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! cultivated & managed areas
-                 &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic crop / tree / natural vegetation
-                 &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 100.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! mosaic crop / shrub / grass
-                 &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! bare areas
-                 &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp,-1._wp, 100._wp, & ! water
-                 &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! snow & ice
-                 &   1.00_wp,  0.2_wp,  1.0_wp, 0.6_wp, 120.0_wp,  -1.0_wp, 1._wp, 100._wp, & ! artificial surface
-                 &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp,  40.0_wp,  -1.0_wp,-1._wp, 100._wp  / ! undefined
-
- DATA lu_gcv2009 /   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
-                 &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
-                 &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 120.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
-                 &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 100.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
-                 &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 150.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
-                 &   0.15_wp,  0.8_wp,  4.0_wp, 2.0_wp, 150.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
-                 &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 150.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
-                 &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 150.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
-                 &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
-                 &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
-                 &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 120.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
-                 &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp,  40.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
-                 &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  40.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
-                 &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
-                 &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  40.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
-                 &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 120.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
-                 &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 120.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
-                 &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
-                 &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
-                 &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
-
-! Tuned version of gcv2009 based on IFS values (Juergen Helmert und Martin Koehler)
- DATA lu_gcv2009_v2 /  0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 180.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
-                   &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 140.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
-                   &   0.25_wp,  0.8_wp,  3.0_wp, 1.0_wp, 130.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
-                   &   0.07_wp,  0.9_wp,  3.5_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 175.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
-                   &   0.15_wp,  0.8_wp,  4.0_wp, 1.5_wp, 175.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 250.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 250.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 210.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
-                   &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
-                   &   0.20_wp,  0.8_wp,  2.5_wp, 1.0_wp, 150.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
-                   &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 225.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
-                   &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp, 100.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
-                   &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp,  80.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 150.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
-                   &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  80.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
-                   &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 180.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
-                   &   0.05_wp,  0.05_wp, 0.6_wp, 0.3_wp, 200.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
-                   &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
-                   &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
-                   &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
-
-! Even more tuned version of gcv2009 by Guenther Zaengl (appears to produce the smallest temperature biases)
- DATA lu_gcv2009_v3 /  0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 190.0_wp,  0.72_wp, 1._wp,  30._wp, & ! irrigated croplands
-                   &   0.07_wp,  0.9_wp,  3.3_wp, 1.0_wp, 170.0_wp,  0.72_wp, 1._wp,  30._wp, & ! rainfed croplands
-                   &   0.25_wp,  0.8_wp,  3.0_wp, 0.5_wp, 160.0_wp,  0.55_wp, 1._wp,  10._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
-                   &   0.07_wp,  0.9_wp,  3.5_wp, 0.7_wp, 150.0_wp,  0.72_wp, 1._wp,  30._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 280.0_wp,  0.38_wp, 1._wp,  50._wp, & ! closed broadleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  6.0_wp, 1.0_wp, 225.0_wp,  0.31_wp, 1._wp,  50._wp, & ! closed broadleaved deciduous forest
-                   &   0.15_wp,  0.8_wp,  4.0_wp, 1.5_wp, 225.0_wp,  0.31_wp, 1._wp,  30._wp, & ! open broadleaved deciduous forest
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.33_wp, 1._wp,  50._wp, & ! open needleleaved deciduous forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 0.8_wp, 270.0_wp,  0.29_wp, 1._wp,  50._wp, & ! mixed broadleaved and needleleaved forest
-                   &   0.20_wp,  0.8_wp,  2.5_wp, 0.8_wp, 200.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
-                   &   0.20_wp,  0.8_wp,  2.5_wp, 0.6_wp, 200.0_wp,  0.65_wp, 1._wp,  10._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
-                   &   0.15_wp,  0.8_wp,  2.5_wp, 0.9_wp, 265.0_wp,  0.65_wp, 1._wp,  50._wp, & ! closed to open shrubland
-                   &   0.03_wp,  0.9_wp,  3.1_wp, 0.4_wp, 140.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open herbaceous vegetation
-                   &   0.05_wp,  0.5_wp,  0.6_wp, 0.2_wp, 120.0_wp,  0.76_wp, 1._wp,  10._wp, & ! sparse vegetation
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed forest or shrubland permanently flooded
-                   &   0.05_wp,  0.8_wp,  2.0_wp, 0.7_wp, 120.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
-                   &   1.00_wp,  0.2_wp,  1.6_wp, 0.2_wp, 300.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
-                   &   0.05_wp,  0.05_wp, 0.6_wp,0.05_wp, 300.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
-                   &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
-                   &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
-                   &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
-
-! Yet another tuned version by Guenther Zaengl (adjusted to resistance-based bare soil evaporation scheme)
- DATA lu_gcv2009_v4 /  0.25_wp,  0.9_wp,  3.3_wp, 1.0_wp, 225.0_wp,  0.72_wp, 1._wp, 100._wp, & ! irrigated croplands
-                   &   0.10_wp,  0.9_wp,  3.3_wp, 1.0_wp, 140.0_wp,  0.72_wp, 1._wp,  50._wp, & ! rainfed croplands
-                   &   0.30_wp,  0.8_wp,  3.0_wp, 1.0_wp, 130.0_wp,  0.55_wp, 1._wp,  30._wp, & ! mosaic cropland (50-70%) - vegetation (20-50%)
-                   &   0.10_wp,  0.9_wp,  3.5_wp, 1.0_wp, 120.0_wp,  0.72_wp, 1._wp,  40._wp, & ! mosaic vegetation (50-70%) - cropland (20-50%)
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 250.0_wp,  0.38_wp, 1._wp,  40._wp, & ! closed broadleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp,1.25_wp, 300.0_wp,  0.31_wp, 1._wp,  30._wp, & ! closed broadleaved deciduous forest
-                   &   0.50_wp,  0.8_wp,  4.0_wp, 1.5_wp, 225.0_wp,  0.31_wp, 1._wp,  50._wp, & ! open broadleaved deciduous forest
-                   &   1.00_wp,  0.8_wp,  5.0_wp,0.75_wp, 300.0_wp,  0.27_wp, 1._wp,  50._wp, & ! closed needleleaved evergreen forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 0.6_wp, 300.0_wp,  0.33_wp, 1._wp,  10._wp, & ! open needleleaved deciduous forest
-                   &   1.00_wp,  0.9_wp,  5.0_wp, 1.0_wp, 270.0_wp,  0.29_wp, 1._wp,  15._wp, & ! mixed broadleaved and needleleaved forest
-                   &   0.15_wp,  0.8_wp,  2.5_wp, 1.1_wp, 170.0_wp,  0.60_wp, 1._wp,  30._wp, & ! mosaic shrubland (50-70%) - grassland (20-50%)
-                   &   0.15_wp,  0.8_wp,  2.5_wp, 0.9_wp, 170.0_wp,  0.65_wp, 1._wp,  30._wp, & ! mosaic grassland (50-70%) - shrubland (20-50%)
-                   &   0.15_wp,  0.8_wp,  2.5_wp, 1.5_wp, 180.0_wp,  0.65_wp, 1._wp,  75._wp, & ! closed to open shrubland
-                   &   0.03_wp,  0.9_wp,  3.1_wp, 0.6_wp, 100.0_wp,  0.76_wp, 1._wp,  70._wp, & ! closed to open herbaceous vegetation
-                   &   0.05_wp,  0.5_wp,  0.6_wp, 0.3_wp, 140.0_wp,  0.76_wp, 1._wp,  15._wp, & ! sparse vegetation
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  50._wp, & ! closed to open forest regulary flooded
-                   &   1.00_wp,  0.8_wp,  5.0_wp, 1.0_wp, 190.0_wp,  0.30_wp, 1._wp,  80._wp, & ! closed forest or shrubland permanently flooded
-                   &   0.05_wp,  0.8_wp,  2.0_wp, 1.0_wp,  80.0_wp,  0.76_wp, 1._wp,  30._wp, & ! closed to open grassland regularly flooded
-                   &   1.00_wp,  0.2_wp,  1.6_wp, 0.6_wp, 300.0_wp,  0.50_wp, 1._wp, 200._wp, & ! artificial surfaces
-                   &   0.02_wp,  0.01_wp, 0.2_wp, 0.3_wp, 300.0_wp,  0.76_wp, 1._wp, 200._wp, & ! bare areas
-                   &   0.0002_wp,0.0_wp,  0.0_wp, 0.0_wp, 150.0_wp,  -1.0_wp,-1._wp, 200._wp, & ! water bodies
-                   &   0.01_wp,  0.0_wp,  0.0_wp, 0.0_wp, 120.0_wp,  -1.0_wp, 1._wp, 200._wp, & ! permanent snow and ice
-                   &   0.00_wp,  0.0_wp,  0.0_wp, 0.0_wp, 250.0_wp,  -1.0_wp,-1._wp, 200._wp  / ! undefined
-
     !----------------------------------------------------------------------
 
-    IF(p_test_run) THEN
-      mpi_comm = p_comm_work_test
-    ELSE
-      mpi_comm = p_comm_work
-    ENDIF
 
     IF ( itopo == 1 .AND. iforcing /= inwp ) THEN
-
       DO jg = 1,n_dom
 
         ! Read topography and land-sea mask
@@ -1054,7 +788,6 @@ CONTAINS
         CALL closeFile(stream_id)
 
       END DO
-
     END IF
 
     ! If ocean coupling is used, then read the land sea masks
@@ -1085,136 +818,12 @@ CONTAINS
     ! Read data from ExtPar file                     !
     !------------------------------------------------!
 
-    IF ( (itopo == 1 .OR. l_scm_mode) .AND. iforcing == inwp ) THEN
-      DO jg = 1,n_dom
-
-        ! Preset parameter fields with the correct table values
-        ilu = 0
-        IF (i_lctype(jg) == GLC2000) THEN
-          ext_data(jg)%atm%i_lc_snow_ice = 21
-          ext_data(jg)%atm%i_lc_water    = 20
-          ext_data(jg)%atm%i_lc_urban    = 22
-          ext_data(jg)%atm%i_lc_shrub_eg = 11
-          ext_data(jg)%atm%i_lc_shrub    = 12
-          ext_data(jg)%atm%i_lc_grass    = 13
-          ext_data(jg)%atm%i_lc_bare_soil= 19
-          ext_data(jg)%atm%i_lc_sparse   = 14
-          DO i = 1, num_lcc*n_param_lcc, n_param_lcc
-            ilu=ilu+1
-            ext_data(jg)%atm%z0_lcc(ilu)          = lu_glc2000(i  )  ! Land-cover related roughness length
-            ext_data(jg)%atm%plcovmax_lcc(ilu)    = lu_glc2000(i+1)  ! Maximum plant cover fraction for each land-cover class
-            ext_data(jg)%atm%laimax_lcc(ilu)      = lu_glc2000(i+2)  ! Maximum leaf area index for each land-cover class
-            ext_data(jg)%atm%rootdmax_lcc(ilu)    = lu_glc2000(i+3)  ! Maximum root depth for each land-cover class
-            ext_data(jg)%atm%stomresmin_lcc(ilu)  = lu_glc2000(i+4)  ! Minimum stomata resistance for each land-cover class
-            ext_data(jg)%atm%snowalb_lcc(ilu)     = lu_glc2000(i+5)  ! Albedo in case of snow cover for each land-cover class
-            ext_data(jg)%atm%snowtile_lcc(ilu)    = &
-              &          MERGE(.TRUE.,.FALSE.,lu_glc2000(i+6)>0._wp) ! Existence of snow tiles for land-cover class
-          ENDDO
-        ELSE IF (i_lctype(jg) == GLOBCOVER2009) THEN
-          SELECT CASE (itype_lndtbl)
-          CASE (1)
-            lu_gcv => lu_gcv2009
-          CASE (2)
-            lu_gcv => lu_gcv2009_v2
-          CASE (3)
-            lu_gcv => lu_gcv2009_v3
-          CASE (4)
-            lu_gcv => lu_gcv2009_v4
-          END SELECT
-
-          ext_data(jg)%atm%i_lc_snow_ice    = 22
-          ext_data(jg)%atm%i_lc_water       = 21
-          ext_data(jg)%atm%i_lc_urban       = 19
-          ext_data(jg)%atm%i_lc_shrub_eg    = 12
-          ext_data(jg)%atm%i_lc_shrub       = 13
-          ext_data(jg)%atm%i_lc_grass       = 14
-          ext_data(jg)%atm%i_lc_bare_soil   = 20
-          ext_data(jg)%atm%i_lc_sparse      = 15
-          ext_data(jg)%atm%i_lc_crop_irrig  = 1
-          ext_data(jg)%atm%i_lc_crop_rain   = 2
-          ext_data(jg)%atm%i_lc_crop_mos    = 3
-          ext_data(jg)%atm%i_lc_veg_mos     = 4 
-          ext_data(jg)%atm%i_lc_forest_b_eg = 5
-          ext_data(jg)%atm%i_lc_forest_b_d  = 6
-          ext_data(jg)%atm%i_lc_woodland    = 7
-          ext_data(jg)%atm%i_lc_forest_n_eg = 8
-          ext_data(jg)%atm%i_lc_forest_n_d  = 9
-          ext_data(jg)%atm%i_lc_forest_bn   = 10
-          ext_data(jg)%atm%i_lc_shrub_mos   = 11
-          ext_data(jg)%atm%i_lc_forest_rf   = 16
-          ext_data(jg)%atm%i_lc_forest_pf   = 17
-          ext_data(jg)%atm%i_lc_grass_rf    = 18
-          
-          DO i = 1, num_lcc*n_param_lcc, n_param_lcc
-            ilu=ilu+1
-            ext_data(jg)%atm%z0_lcc(ilu)          = lu_gcv(i  )  ! Land-cover related roughness length
-            ext_data(jg)%atm%plcovmax_lcc(ilu)    = lu_gcv(i+1)  ! Maximum plant cover fraction for each land-cover class
-            ext_data(jg)%atm%laimax_lcc(ilu)      = lu_gcv(i+2)  ! Maximum leaf area index for each land-cover class
-            ext_data(jg)%atm%rootdmax_lcc(ilu)    = lu_gcv(i+3)  ! Maximum root depth for each land-cover class
-            ext_data(jg)%atm%stomresmin_lcc(ilu)  = lu_gcv(i+4)  ! Minimum stomata resistance for each land-cover class
-            ext_data(jg)%atm%snowalb_lcc(ilu)     = lu_gcv(i+5)  ! Albedo in case of snow cover for each land-cover class
-            ext_data(jg)%atm%snowtile_lcc(ilu)    = &
-              &          MERGE(.TRUE.,.FALSE.,lu_gcv(i+6)>0._wp) ! Existence of snow tiles for land-cover class
-            IF (cskinc <= 0._wp) THEN
-              ext_data(jg)%atm%skinc_lcc(ilu)     = lu_gcv(i+7)  ! Skin conductivity for each land use class
-            ELSE
-              ext_data(jg)%atm%skinc_lcc(ilu)     = cskinc       ! Constant value specified in namelist
-            ENDIF
-          ENDDO
-        ENDIF
-
-        !$ACC UPDATE &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_snow_ice) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_water) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_urban) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub_eg) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_grass) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_bare_soil) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_sparse) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_irrig) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_rain) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_crop_mos) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_veg_mos) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_b_eg) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_b_d) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_woodland) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_n_eg) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_n_d) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_bn) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_shrub_mos) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_rf) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_forest_pf) &
-        !$ACC   DEVICE(ext_data(jg)%atm%i_lc_grass_rf) &
-        !$ACC   ASYNC(1)
-
-        ! Urban canopy parameters
-        DO ilu = 1, num_lcc
-          IF (ilu == ext_data(jg)%atm%i_lc_urban) THEN
-            ext_data(jg)%atm%ahf_lcc(ilu)      = tune_urbahf(1) ! Anthropogenic heat flux for urban land use class
-          ELSE
-            ext_data(jg)%atm%ahf_lcc(ilu)      = 0._wp
-          ENDIF
-        ENDDO
-
-        ! Derived parameter: minimum allowed land-cover related roughness length in the
-        ! presence of low ndvi and/or snow cover
-        DO ilu = 1, num_lcc
-          IF (ilu == ext_data(jg)%atm%i_lc_urban .OR. ilu == ext_data(jg)%atm%i_lc_water) THEN
-            ext_data(jg)%atm%z0_lcc_min(ilu) = ext_data(jg)%atm%z0_lcc(ilu) ! no reduction in urban regions and over water
-          ELSE IF (pp_sso == 2 .AND. ext_data(jg)%atm%z0_lcc(ilu) >= 0.5_wp) THEN   ! if MERIT/REMA orography is used:
-            ext_data(jg)%atm%z0_lcc_min(ilu) = 0.75_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 75% for nominal roughness lengths >= 50 cm
-          ELSE IF (ext_data(jg)%atm%z0_lcc(ilu) > 0.1_wp) THEN
-            ext_data(jg)%atm%z0_lcc_min(ilu) = 0.3_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 30% for nominal roughness lengths > 10 cm
-          ELSE
-            ext_data(jg)%atm%z0_lcc_min(ilu) = 0.1_wp*ext_data(jg)%atm%z0_lcc(ilu) ! 10% otherwise
-          ENDIF
-        ENDDO
-
-      ENDDO ! jg
-    END IF
-
     IF (itopo == 1 .AND. iforcing == inwp) THEN
+
+      ! initialize landuse-related parameters from lookup table
+      !
+      CALL init_landuse_params(ext_data)
+
       DO jg = 1,n_dom
         ! Start reading external parameter data
         ! The cdi-based read routines are used for GRIB2 input data only due to performance problems
@@ -1225,8 +834,8 @@ CONTAINS
             &                             p_patch(jg)%level, p_patch(jg)%id)
           CALL openinputfile(stream_id, extpar_file, p_patch(jg), default_read_method)
         ELSE
-          parameters = makeInputParameters(cdi_extpar_id(jg), p_patch(jg)%n_patch_cells_g, p_patch(jg)%comm_pat_scatter_c, &
-          &                                opt_dict=extpar_varnames_dict)
+          parameters = makeInputParameters(ext_atm_attr(jg)%cdi_extpar_id, p_patch(jg)%n_patch_cells_g, &
+            &                              p_patch(jg)%comm_pat_scatter_c, opt_dict=extpar_varnames_dict)
         ENDIF
 
         !--------------------------------------------------------------------
@@ -1260,194 +869,198 @@ CONTAINS
         !
         ! other external parameters on triangular grid
         !
-        CALL read_extdata('FR_LAND', ext_data(jg)%atm%fr_land)
+        CALL read_extdata('FR_LAND',   ext_data(jg)%atm%fr_land)
+        CALL read_extdata('NDVI_MAX',  ext_data(jg)%atm%ndvi_max)
+        CALL read_extdata('SOILTYP',   arr2di=ext_data(jg)%atm%soiltyp)
+        CALL read_extdata('T_CL',      ext_data(jg)%atm%t_cl)
+        CALL read_extdata('SSO_STDH',  ext_data(jg)%atm%sso_stdh)
+        CALL read_extdata('SSO_THETA', ext_data(jg)%atm%sso_theta)
+        CALL read_extdata('SSO_GAMMA', ext_data(jg)%atm%sso_gamma)
+        CALL read_extdata('SSO_SIGMA', ext_data(jg)%atm%sso_sigma)
+        CALL read_extdata('FR_LAKE',   ext_data(jg)%atm%fr_lake)
+        CALL read_extdata('DEPTH_LK',  ext_data(jg)%atm%depth_lk)
 
-        SELECT CASE ( iforcing )
-        CASE ( inwp )
-          CALL read_extdata('NDVI_MAX',  ext_data(jg)%atm%ndvi_max)
-          CALL read_extdata('SOILTYP',   arr2di=ext_data(jg)%atm%soiltyp)
-          CALL read_extdata('T_CL',      ext_data(jg)%atm%t_cl)
-          CALL read_extdata('SSO_STDH',  ext_data(jg)%atm%sso_stdh)
-          CALL read_extdata('SSO_THETA', ext_data(jg)%atm%sso_theta)
-          CALL read_extdata('SSO_GAMMA', ext_data(jg)%atm%sso_gamma)
-          CALL read_extdata('SSO_SIGMA', ext_data(jg)%atm%sso_sigma)
-          CALL read_extdata('FR_LAKE',   ext_data(jg)%atm%fr_lake)
-          CALL read_extdata('DEPTH_LK',  ext_data(jg)%atm%depth_lk)
+        IF (islope_rad(jg) >= 2) THEN
+          CALL read_extdata('HORIZON', arr3d=ext_data(jg)%atm%horizon,ltime=.FALSE.)
+          CALL read_extdata('SKYVIEW', ext_data(jg)%atm%skyview)
 
-          IF (islope_rad(jg) >= 2) THEN
-            CALL read_extdata('HORIZON', arr3d=ext_data(jg)%atm%horizon,ltime=.FALSE.)
-            CALL read_extdata('SKYVIEW', ext_data(jg)%atm%skyview)
-  
-            rl_start = 1
-            rl_end   = min_rlcell
-            i_startblk = p_patch(jg)%cells%start_block(rl_start)
-            i_endblk   = p_patch(jg)%cells%end_block(rl_end)
-  
-            ! Test consistency of horizon
+          rl_start = 1
+          rl_end   = min_rlcell
+          i_startblk = p_patch(jg)%cells%start_block(rl_start)
+          i_endblk   = p_patch(jg)%cells%end_block(rl_end)
+
+          ! Test consistency of horizon
+          ALLOCATE(ierr(p_patch(jg)%nblks_c), STAT=error_status)
+          IF (error_status /= SUCCESS) THEN
+            CALL finish(routine, 'allocation for ierr failed')
+          ENDIF
+!$OMP PARALLEL
 !$OMP DO PRIVATE(jb,jc,im,i_startidx,i_endidx)
+          DO jb = i_startblk, i_endblk
+            CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, &
+              &                rl_start, rl_end)
+            ierr(jb) = 0
+            DO im = 1, ext_atm_attr(jg)%nhori
+              DO jc = i_startidx,i_endidx
+                IF (ext_data(jg)%atm%horizon(jc,jb,im) > 90.0_wp .OR. &
+                    ext_data(jg)%atm%horizon(jc,jb,im) < 0.0_wp) THEN
+                  ierr(jb) = ierr(jb) + 1
+                ENDIF
+              ENDDO
+            ENDDO
+          ENDDO
+!$OMP END DO
+!$OMP END PARALLEL
+          nerror = SUM(ierr(:))
+          IF (nerror > 0) THEN
+            WRITE(message_text,'(a,i8,a)') 'HORIZON is out of bounds for ', nerror, ' cells!'
+            CALL finish(routine, message_text)
+          ENDIF
+          DEALLOCATE(ierr, STAT=error_status)
+          IF (error_status /= SUCCESS) THEN
+            CALL finish(routine, 'deallocation for ierr failed')
+          ENDIF
+        ENDIF ! islope_rad >= 2
+
+        CALL read_extdata('LU_CLASS_FRACTION', arr3d=ext_data(jg)%atm%lu_class_fraction,ltime=.FALSE.) 
+
+        ! The following fields are only required without surface tiles
+        IF (ntiles_lnd == 1) THEN
+          CALL read_extdata('PLCOV_MX', ext_data(jg)%atm%plcov_mx)
+          CALL read_extdata('LAI_MX',   ext_data(jg)%atm%lai_mx)
+          CALL read_extdata('ROOTDP',   ext_data(jg)%atm%rootdp)
+          CALL read_extdata('RSMIN',    ext_data(jg)%atm%rsmin)
+          CALL read_extdata('FOR_D',    ext_data(jg)%atm%for_d)
+          CALL read_extdata('FOR_E',    ext_data(jg)%atm%for_e)
+        ENDIF
+
+        IF (atm_phy_nwp_config(jg)%itype_z0 == 1) THEN
+          ! only read, if contribution from sub-scale orography should be included in z0
+          CALL read_extdata('Z0', ext_data(jg)%atm%z0)
+        ENDIF
+
+        IF (ext_atm_attr(jg)%is_frglac_in) THEN
+           CALL read_extdata('ICE', ext_data(jg)%atm%fr_glac)
+        ELSE
+          ext_data(jg)%atm%fr_glac(:,:) = ext_data(jg)%atm%lu_class_fraction(:,:,ext_data(jg)%atm%i_lc_snow_ice)
+        ENDIF
+
+        IF (itype_lwemiss == 2) THEN
+          CALL read_extdata('EMISS',   arr3d=ext_data(jg)%atm_td%lw_emiss)
+        ELSE IF (itype_lwemiss == 1) THEN
+          CALL read_extdata('EMIS_RAD', ext_data(jg)%atm%emis_rad)
+        ELSE
+          ext_data(jg)%atm%emis_rad(:,:)= zemiss_def
+        ENDIF
+
+        ! Copy sso_stdh to sso_stdh_raw before applying correction for orography filtering
+!$OMP PARALLEL
+        CALL copy(src=ext_data(jg)%atm%sso_stdh, dest=ext_data(jg)%atm%sso_stdh_raw, lacc=.FALSE.)
+!$OMP END PARALLEL
+
+        IF ( iprog_aero > 1) THEN
+          CALL read_extdata('emi_bc',  arr2d=ext_data(jg)%atm%emi_bc )
+          CALL read_extdata('emi_oc',  arr2d=ext_data(jg)%atm%emi_oc )
+          CALL read_extdata('emi_so2', arr2d=ext_data(jg)%atm%emi_so2)
+        ENDIF
+        ! Read time dependent data
+        IF (ANY (irad_aero == (/iRadAeroTegen, iRadAeroART, iRadAeroCAMSclim, iRadAeroCAMStd/))) THEN
+          CALL read_extdata('AER_SS',   arr3d=ext_data(jg)%atm_td%aer_ss)
+          CALL read_extdata('AER_DUST', arr3d=ext_data(jg)%atm_td%aer_dust)
+          CALL read_extdata('AER_ORG',  arr3d=ext_data(jg)%atm_td%aer_org)
+          CALL read_extdata('AER_SO4',  arr3d=ext_data(jg)%atm_td%aer_so4)
+          CALL read_extdata('AER_BC',   arr3d=ext_data(jg)%atm_td%aer_bc)
+        ENDIF  ! irad_aero
+        CALL read_extdata('NDVI_MRAT', arr3d=ext_data(jg)%atm_td%ndvi_mrat)
+
+        IF (sstice_mode == SSTICE_ANA_CLINC) THEN
+          CALL read_extdata('T_SEA', arr3d=ext_data(jg)%atm_td%sst_m)
+        ENDIF
+
+        IF (itype_vegetation_cycle > 1) THEN
+          CALL read_extdata('T_2M_CLIM', arr3d=ext_data(jg)%atm_td%t2m_m)
+          CALL read_extdata('TOPO_CLIM',   ext_data(jg)%atm%topo_t2mclim)
+        ENDIF
+
+        IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
+          ! cloud droplet climatology (time dependent monthly means)
+          CALL read_extdata('cdnc',   arr3d=ext_data(jg)%atm_td%cdnc)
+!$OMP PARALLEL
+          ! cdnc climatology is in cm**-3, here is the conversion to m**-3
+          CALL var_scale(ext_data(jg)%atm_td%cdnc, 1.0e6_wp, lacc=.FALSE.)
+!$OMP END PARALLEL
+        END IF
+
+        !--------------------------------
+        ! If MODIS albedo is used
+        !--------------------------------
+        IF ( albedo_type == MODIS) THEN
+          CALL read_extdata('ALB',   arr3d=ext_data(jg)%atm_td%alb_dif)
+          CALL read_extdata('ALUVD', arr3d=ext_data(jg)%atm_td%albuv_dif)
+          CALL read_extdata('ALNID', arr3d=ext_data(jg)%atm_td%albni_dif)
+
+!$OMP PARALLEL
+          ! Scale from [%] to [1]
+          CALL var_scale(ext_data(jg)%atm_td%alb_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
+          CALL var_scale(ext_data(jg)%atm_td%albuv_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
+          CALL var_scale(ext_data(jg)%atm_td%albni_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
+!$OMP BARRIER
+
+          rl_start = 1
+          rl_end   = min_rlcell
+          i_startblk = p_patch(jg)%cells%start_block(rl_start)
+          i_endblk   = p_patch(jg)%cells%end_block(rl_end)
+
+          albthresh = 0.3_wp ! threshold value for albedo modification
+
+          IF (itune_albedo >= 1) THEN
+            ! Test: reduce albedo over land where modis albedo is higher than 0.3 (variable albthresh)
+!$OMP DO PRIVATE(jb,jc,im,i_startidx,i_endidx,albfac)
             DO jb = i_startblk, i_endblk
               CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-              DO im = 1, nhori
+
+              DO im = 1, 12
                 DO jc = i_startidx,i_endidx
-                  IF (ext_data(jg)%atm%horizon(jc,jb,im) > 90.0_wp .OR. &
-                      ext_data(jg)%atm%horizon(jc,jb,im) < 0.0_wp) THEN
-                    WRITE (message_text,'(A,F8.3)') 'ext_data(jg)%atm%horizon(jc,jb,im) = ',&
-                                                     ext_data(jg)%atm%horizon(jc,jb,im)
-                    CALL message(routine, message_text)
-                    WRITE (message_text,'(A,3I8)') '   DEBUG point: ', jc, jb, im
-                    CALL message(routine, message_text)
-                    CALL finish(routine,'HORIZON is out of bounds!')
+                  IF (ext_data(jg)%atm%soiltyp(jc,jb) >= 2 .AND. ext_data(jg)%atm%soiltyp(jc,jb) <= 8) THEN
+                    IF (ext_data(jg)%atm_td%alb_dif(jc,jb,im) > albthresh) THEN
+                      albfac = (albthresh+2._wp*ext_data(jg)%atm_td%alb_dif(jc,jb,im))/ &
+                        (3._wp*ext_data(jg)%atm_td%alb_dif(jc,jb,im))
+                      ext_data(jg)%atm_td%alb_dif(jc,jb,im)   = albfac*ext_data(jg)%atm_td%alb_dif(jc,jb,im)
+                      ext_data(jg)%atm_td%albuv_dif(jc,jb,im) = albfac*ext_data(jg)%atm_td%albuv_dif(jc,jb,im)
+                      ext_data(jg)%atm_td%albni_dif(jc,jb,im) = albfac*ext_data(jg)%atm_td%albni_dif(jc,jb,im)
+                    ENDIF
+                  ENDIF
+                ENDDO
+             ENDDO
+            ENDDO
+!$OMP END DO
+          ENDIF  ! Sahara albedo tuning
+
+          IF (itune_albedo >= 2) THEN
+            ! Increase albedo over the Antarctic plateau by 5% (from 70% to 75%) in order to get rid of summertime warm bias
+!$OMP DO PRIVATE(jb,jc,im,i_startidx,i_endidx,albfac)
+            DO jb = i_startblk, i_endblk
+              CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
+
+              DO im = 1, 12
+                DO jc = i_startidx,i_endidx
+                  IF (ext_data(jg)%atm%soiltyp(jc,jb) == 1 .AND. p_patch(jg)%cells%center(jc,jb)%lat*rad2deg < -65._wp ) THEN
+                    IF (ext_data(jg)%atm%topography_c(jc,jb) > 1000._wp) THEN
+                      albfac = MIN(1._wp,1.e-3_wp*(ext_data(jg)%atm%topography_c(jc,jb)-1000._wp))
+                      ext_data(jg)%atm_td%alb_dif(jc,jb,im)   = 0.05_wp*albfac + ext_data(jg)%atm_td%alb_dif(jc,jb,im)
+                      ext_data(jg)%atm_td%albuv_dif(jc,jb,im) = 0.05_wp*albfac + ext_data(jg)%atm_td%albuv_dif(jc,jb,im)
+                      ext_data(jg)%atm_td%albni_dif(jc,jb,im) = 0.05_wp*albfac + ext_data(jg)%atm_td%albni_dif(jc,jb,im)
+                    ENDIF
                   ENDIF
                 ENDDO
               ENDDO
             ENDDO
 !$OMP END DO
-          ENDIF
-  
-          CALL read_extdata('LU_CLASS_FRACTION', arr3d=ext_data(jg)%atm%lu_class_fraction,ltime=.FALSE.) 
-
-          ! The following fields are only required without surface tiles
-          IF (ntiles_lnd == 1) THEN
-            CALL read_extdata('PLCOV_MX', ext_data(jg)%atm%plcov_mx)
-            CALL read_extdata('LAI_MX',   ext_data(jg)%atm%lai_mx)
-            CALL read_extdata('ROOTDP',   ext_data(jg)%atm%rootdp)
-            CALL read_extdata('RSMIN',    ext_data(jg)%atm%rsmin)
-            CALL read_extdata('FOR_D',    ext_data(jg)%atm%for_d)
-            CALL read_extdata('FOR_E',    ext_data(jg)%atm%for_e)
-          ENDIF
-
-          IF (atm_phy_nwp_config(jg)%itype_z0 == 1) THEN
-            ! only read, if contribution from sub-scale orography should be included in z0
-            CALL read_extdata('Z0', ext_data(jg)%atm%z0)
-          ENDIF
-
-          IF (is_frglac_in(jg)) THEN
-            ! for backward compatibility with extpar files generated prior to 2014-01-31
-             CALL read_extdata('ICE', ext_data(jg)%atm%fr_glac)
-          ELSE
-            ! for new extpar files (generated after 2014-01-31)
-            ! take it from lu_class_fraction
-            ext_data(jg)%atm%fr_glac(:,:) = ext_data(jg)%atm%lu_class_fraction(:,:,ext_data(jg)%atm%i_lc_snow_ice)
-          ENDIF
-
-          IF (itype_lwemiss == 2) THEN
-            CALL read_extdata('EMISS',   arr3d=ext_data(jg)%atm_td%lw_emiss)
-          ELSE IF (itype_lwemiss == 1) THEN
-            CALL read_extdata('EMIS_RAD', ext_data(jg)%atm%emis_rad)
-          ELSE
-            ext_data(jg)%atm%emis_rad(:,:)= zemiss_def
-          ENDIF
-
-          ! Copy sso_stdh to sso_stdh_raw before applying correction for orography filtering
-          ext_data(jg)%atm%sso_stdh_raw(:,:) = ext_data(jg)%atm%sso_stdh(:,:)
-
-
-          IF ( iprog_aero > 1) THEN
-            CALL read_extdata('emi_bc',  arr2d=ext_data(jg)%atm%emi_bc )
-            CALL read_extdata('emi_oc',  arr2d=ext_data(jg)%atm%emi_oc )
-            CALL read_extdata('emi_so2', arr2d=ext_data(jg)%atm%emi_so2)
-          ENDIF
-          ! Read time dependent data
-          IF (ANY (irad_aero == (/iRadAeroTegen, iRadAeroART, iRadAeroCAMSclim, iRadAeroCAMStd/))) THEN
-            CALL read_extdata('AER_SS',   arr3d=ext_data(jg)%atm_td%aer_ss)
-            CALL read_extdata('AER_DUST', arr3d=ext_data(jg)%atm_td%aer_dust)
-            CALL read_extdata('AER_ORG',  arr3d=ext_data(jg)%atm_td%aer_org)
-            CALL read_extdata('AER_SO4',  arr3d=ext_data(jg)%atm_td%aer_so4)
-            CALL read_extdata('AER_BC',   arr3d=ext_data(jg)%atm_td%aer_bc)
-          ENDIF  ! irad_aero
-          CALL read_extdata('NDVI_MRAT', arr3d=ext_data(jg)%atm_td%ndvi_mrat)
-
-          IF (sstice_mode == SSTICE_ANA_CLINC) THEN
-            CALL read_extdata('T_SEA', arr3d=ext_data(jg)%atm_td%sst_m)
-          ENDIF
-
-          IF (itype_vegetation_cycle > 1) THEN
-            CALL read_extdata('T_2M_CLIM', arr3d=ext_data(jg)%atm_td%t2m_m)
-            CALL read_extdata('TOPO_CLIM',   ext_data(jg)%atm%topo_t2mclim)
-          ENDIF
-
-          IF ( atm_phy_nwp_config(jg)%icpl_aero_gscp == 3  ) THEN
-            ! cloud droplet climatology (time dependent monthly means)
-            CALL read_extdata('cdnc',   arr3d=ext_data(jg)%atm_td%cdnc)
-!$OMP PARALLEL
-            ! cdnc climatology is in cm**-3, here is the conversion to m**-3
-            CALL var_scale(ext_data(jg)%atm_td%cdnc, 1.0e6_wp, lacc=.FALSE.)
-!$OMP END PARALLEL
-          END IF
-
-          !--------------------------------
-          ! If MODIS albedo is used
-          !--------------------------------
-          IF ( albedo_type == MODIS) THEN
-            CALL read_extdata('ALB',   arr3d=ext_data(jg)%atm_td%alb_dif)
-            CALL read_extdata('ALUVD', arr3d=ext_data(jg)%atm_td%albuv_dif)
-            CALL read_extdata('ALNID', arr3d=ext_data(jg)%atm_td%albni_dif)
-
-            rl_start = 1
-            rl_end   = min_rlcell
-
-            i_startblk = p_patch(jg)%cells%start_block(rl_start)
-            i_endblk   = p_patch(jg)%cells%end_block(rl_end)
-
-            albthresh = 0.3_wp ! threshold value for albedo modification
-
-!$OMP PARALLEL
-            ! Scale from [%] to [1]
-            CALL var_scale(ext_data(jg)%atm_td%alb_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
-            CALL var_scale(ext_data(jg)%atm_td%albuv_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
-            CALL var_scale(ext_data(jg)%atm_td%albni_dif(:,:,:), 1._wp/100._wp, lacc=.FALSE.)
-!$OMP BARRIER
-
-
-            IF (itune_albedo >= 1) THEN
-              ! Test: reduce albedo over land where modis albedo is higher than 0.3 (variable albthresh)
-!$OMP DO PRIVATE(jb,jc,im,i_startidx,i_endidx,albfac)
-              DO jb = i_startblk, i_endblk
-                CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
-                DO im = 1, 12
-                  DO jc = i_startidx,i_endidx
-                    IF (ext_data(jg)%atm%soiltyp(jc,jb) >= 2 .AND. ext_data(jg)%atm%soiltyp(jc,jb) <= 8) THEN
-                      IF (ext_data(jg)%atm_td%alb_dif(jc,jb,im) > albthresh) THEN
-                        albfac = (albthresh+2._wp*ext_data(jg)%atm_td%alb_dif(jc,jb,im))/ &
-                          (3._wp*ext_data(jg)%atm_td%alb_dif(jc,jb,im))
-                        ext_data(jg)%atm_td%alb_dif(jc,jb,im)   = albfac*ext_data(jg)%atm_td%alb_dif(jc,jb,im)
-                        ext_data(jg)%atm_td%albuv_dif(jc,jb,im) = albfac*ext_data(jg)%atm_td%albuv_dif(jc,jb,im)
-                        ext_data(jg)%atm_td%albni_dif(jc,jb,im) = albfac*ext_data(jg)%atm_td%albni_dif(jc,jb,im)
-                      ENDIF
-                    ENDIF
-                  ENDDO
-               ENDDO
-              ENDDO
-!$OMP END DO
-            ENDIF  ! Sahara albedo tuning
-
-            IF (itune_albedo >= 2) THEN
-              ! Increase albedo over the Antarctic plateau by 5% (from 70% to 75%) in order to get rid of summertime warm bias
-!$OMP DO PRIVATE(jb,jc,im,i_startidx,i_endidx,albfac)
-              DO jb = i_startblk, i_endblk
-                CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, i_startidx, i_endidx, rl_start, rl_end)
-
-                DO im = 1, 12
-                  DO jc = i_startidx,i_endidx
-                    IF (ext_data(jg)%atm%soiltyp(jc,jb) == 1 .AND. p_patch(jg)%cells%center(jc,jb)%lat*rad2deg < -65._wp ) THEN
-                      IF (ext_data(jg)%atm%topography_c(jc,jb) > 1000._wp) THEN
-                        albfac = MIN(1._wp,1.e-3_wp*(ext_data(jg)%atm%topography_c(jc,jb)-1000._wp))
-                        ext_data(jg)%atm_td%alb_dif(jc,jb,im)   = 0.05_wp*albfac + ext_data(jg)%atm_td%alb_dif(jc,jb,im)
-                        ext_data(jg)%atm_td%albuv_dif(jc,jb,im) = 0.05_wp*albfac + ext_data(jg)%atm_td%albuv_dif(jc,jb,im)
-                        ext_data(jg)%atm_td%albni_dif(jc,jb,im) = 0.05_wp*albfac + ext_data(jg)%atm_td%albni_dif(jc,jb,im)
-                      ENDIF
-                    ENDIF
-                  ENDDO
-                ENDDO
-              ENDDO
-!$OMP END DO
-            ENDIF  ! Antarctic albedo tuning
+          ENDIF  ! Antarctic albedo tuning
 !$OMP END PARALLEL
 
-          END IF  !  albedo_type
+        END IF  !  albedo_type
 
-        END SELECT ! iforcing
 
         IF (read_netcdf_parallel) THEN
           CALL closeFile(stream_id)
@@ -1473,13 +1086,11 @@ CONTAINS
           END IF
         ENDIF
 
-        i_nchdom  = MAX(1,p_patch(jg)%n_childdom)
-
         rl_start = 1
         rl_end   = min_rlcell
 
-        i_startblk = p_patch(jg)%cells%start_blk(rl_start,1)
-        i_endblk   = p_patch(jg)%cells%end_blk(rl_end,i_nchdom)
+        i_startblk = p_patch(jg)%cells%start_block(rl_start)
+        i_endblk   = p_patch(jg)%cells%end_block(rl_end)
 
         DO jb = i_startblk, i_endblk
           CALL get_indices_c(p_patch(jg), jb, i_startblk, i_endblk, &
@@ -1513,66 +1124,12 @@ CONTAINS
     IF ( iforcing == inwp .AND. (irad_o3 == io3_clim .OR. irad_o3 == io3_ape) ) THEN
 
       DO jg = 1,n_dom
-
-        WRITE(ozone_file,'(a,I2.2,a)') 'o3_icon_DOM',jg,'.nc'
-
-        IF(my_process_is_stdio()) THEN
-          ! open file
-          !
-          CALL nf(nf90_open(TRIM(ozone_file), NF90_NOWRITE, ncid), routine)
-          WRITE(0,*)'read ozone levels'
-          CALL nf(nf90_inq_varid(ncid, TRIM(levelname), varid), routine)
-          CALL nf(nf90_get_var(ncid, varid, zdummy_o3lev(:)), routine)
-          CALL nf(nf90_close(ncid), routine)
-          !
-        ENDIF ! pe
-
-        CALL p_bcast(zdummy_o3lev(:), p_io, mpi_comm)
-
-        DO jk=1,nlev_o3
-          ext_data(jg)%atm_td%pfoz(jk)=zdummy_o3lev(jk)
-        ENDDO
-
-        ! define half levels of ozone pressure grid
-        ! upper boundary: ph =      0.Pa -> extrapolation of uppermost value
-        ! lower boundary: ph = 125000.Pa -> extrapolation of lowermost value
-        ext_data(jg)%atm_td%phoz(1)           = 0._wp
-        ext_data(jg)%atm_td%phoz(2:nlev_o3) = (ext_data(jg)%atm_td%pfoz(1:nlev_o3-1) &
-          &                                   +  ext_data(jg)%atm_td%pfoz(2:nlev_o3))*.5_wp
-        ext_data(jg)%atm_td%phoz(nlev_o3+1) = 125000._wp
-
-        DO i=1,nlev_o3
-
-          WRITE(message_text,'(a,i4,f12.4,f12.4)')'full/half level press ozone ', &
-                              i, ext_data(jg)%atm_td%pfoz(i), ext_data(jg)%atm_td%phoz(i+1)
-          CALL message(routine, TRIM(message_text))
-        ENDDO
-
-        CALL openinputfile(stream_id, ozone_file, p_patch(jg), default_read_method)
-
-        CALL read_3D_extdim(stream_id, on_cells, TRIM(o3name), &
-          &                 ext_data(jg)%atm_td%O3)
-
-        ! convert from ppmv to g/g only in case of APE ozone
-        ! whether o3mr2gg or ppmv2gg is used to convert O3 to gg depends on the units of
-        ! the incoming ozone file.  Often, the incoming units are not ppmv.
-        !
-        IF(iforcing == inwp .AND. irad_o3 == io3_ape) THEN
-           ! ozone input expected in units of ppmv
-           WRITE(message_text,'(a,f12.4,f12.4)')'MAX/MIN o3 ppmv', &
-                & MAXVAL(ext_data(jg)%atm_td%O3(:,:,:,:)), MINVAL(ext_data(jg)%atm_td%O3(:,:,:,:))
-           CALL message(routine, TRIM(message_text))
-           ext_data(jg)%atm_td%O3(:,:,:,:)= ext_data(jg)%atm_td%O3(:,:,:,:)*ppmv2gg
-        END IF
-
-        WRITE(message_text,'(a,e12.4,e12.4)')'MAX/MIN o3 g/g', &
-           MAXVAL(ext_data(jg)%atm_td%O3(:,:,:,:)), MINVAL(ext_data(jg)%atm_td%O3(:,:,:,:))
-        CALL message(routine, TRIM(message_text))
-
-        ! close file
-        CALL closeFile(stream_id)
-
-      ENDDO ! ndom
+        CALL read_ext_o3_clim(p_patch     = p_patch(jg),              & !in
+          &                   ext_o3_attr = ext_o3_attr(jg),          & !in
+          &                   pfoz        = ext_data(jg)%atm_td%pfoz, & !inout
+          &                   phoz        = ext_data(jg)%atm_td%phoz, & !inout
+          &                   o3          = ext_data(jg)%atm_td%O3 )    !inout
+      ENDDO
     END IF ! irad_o3 and inwp
 
 
@@ -1681,6 +1238,116 @@ CONTAINS
   !-------------------------------------------------------------------------
 
 
+  ! Read climatological ozone field
+  !
+  !
+  SUBROUTINE read_ext_o3_clim(p_patch, ext_o3_attr, pfoz, phoz, o3)
+
+    TYPE(t_patch),       INTENT(IN)    :: p_patch
+    TYPE(t_ext_o3_attr), INTENT(IN)    :: ext_o3_attr
+    REAL(wp),            INTENT(INOUT) :: pfoz(:)
+    REAL(wp),            INTENT(INOUT) :: phoz(:)
+    REAL(wp),            INTENT(INOUT) :: o3(:,:,:,:)
+
+    ! local
+    INTEGER :: i, jk
+    INTEGER :: nlev_o3                       ! number of levels in O3 file
+    INTEGER :: mpi_comm
+    INTEGER :: error_status
+    INTEGER :: ncid, varid
+    TYPE(t_stream_id) :: stream_id
+    REAL(wp), ALLOCATABLE:: zdummy_o3lev(:)  ! will be used for pressure and height levels
+
+    CHARACTER(filename_max) :: ozone_file    ! file name for reading in
+
+    CHARACTER(len=*), PARAMETER :: routine = modname//':read_ext_o3_clim'
+  !-------------------------------------------------------------------------
+
+    IF(p_test_run) THEN
+      mpi_comm = p_comm_work_test
+    ELSE
+      mpi_comm = p_comm_work
+    ENDIF
+
+    ! sanity check
+    IF (.NOT. ext_o3_attr%have_inquired) THEN
+      CALL finish(routine, "File attributes for O3 file have not been inquired")
+    ENDIF
+
+    nlev_o3 = ext_o3_attr%nlev_o3
+
+    ALLOCATE(zdummy_o3lev(nlev_o3), STAT=error_status)
+    IF (error_status /= SUCCESS) THEN
+      CALL finish(routine, 'allocation for zdummy_o3lev failed')
+    ENDIF
+
+    WRITE(ozone_file,'(a,I2.2,a)') 'o3_icon_DOM',p_patch%id,'.nc'
+
+    IF(my_process_is_stdio()) THEN
+      ! open file
+      !
+      CALL nf(nf90_open(TRIM(ozone_file), NF90_NOWRITE, ncid), routine)
+      CALL message(routine, 'read ozone levels')
+      CALL nf(nf90_inq_varid(ncid, ext_o3_attr%levelname, varid), routine)
+      CALL nf(nf90_get_var(ncid, varid, zdummy_o3lev(:)), routine)
+      CALL nf(nf90_close(ncid), routine)
+      !
+    ENDIF ! pe
+
+    CALL p_bcast(zdummy_o3lev(:), p_io, mpi_comm)
+
+    DO jk=1,nlev_o3
+      pfoz(jk)=zdummy_o3lev(jk)
+    ENDDO
+
+    ! define half levels of ozone pressure grid
+    ! upper boundary: ph =      0.Pa -> extrapolation of uppermost value
+    ! lower boundary: ph = 125000.Pa -> extrapolation of lowermost value
+    phoz(1)         = 0._wp
+    phoz(2:nlev_o3) = (pfoz(1:nlev_o3-1) +  pfoz(2:nlev_o3))*.5_wp
+    phoz(nlev_o3+1) = 125000._wp
+
+    DO jk=1,nlev_o3
+      WRITE(message_text,'(a,i4,f12.4,f12.4)')'full/half level press ozone ', &
+                          jk, pfoz(jk), phoz(jk+1)
+      CALL message(routine, TRIM(message_text))
+    ENDDO
+
+    CALL openinputfile(stream_id, ozone_file, p_patch, default_read_method)
+
+    CALL read_3D_extdim(stream_id, on_cells, ext_o3_attr%o3name, O3(:,:,:,:))
+
+    ! convert from ppmv to g/g only in case of APE ozone
+    ! whether o3mr2gg or ppmv2gg is used to convert O3 to gg depends on the units of
+    ! the incoming ozone file.  Often, the incoming units are not ppmv.
+    !
+    IF(irad_o3 == io3_ape) THEN
+       ! ozone input expected in units of ppmv
+       WRITE(message_text,'(a,f12.4,f12.4)')'MAX/MIN o3 ppmv', &
+            & MAXVAL(O3(:,:,:,:)), MINVAL(O3(:,:,:,:))
+       CALL message(routine, TRIM(message_text))
+
+       DO i=1,SIZE(O3(:,:,:,:),4)
+!$OMP PARALLEL
+         CALL var_scale(O3(:,:,:,i), ppmv2gg, lacc=.FALSE.)
+!$OMP END PARALLEL
+       ENDDO
+    END IF
+
+    WRITE(message_text,'(a,e12.4,e12.4)')'MAX/MIN o3 g/g', &
+      MAXVAL(O3(:,:,:,:)), MINVAL(O3(:,:,:,:))
+    CALL message(routine, TRIM(message_text))
+
+    ! close file
+    CALL closeFile(stream_id)
+
+    DEALLOCATE(zdummy_o3lev, STAT=error_status)
+    IF (error_status /= SUCCESS) THEN
+      CALL finish(routine, 'deallocation for zdummy_o3lev failed')
+    ENDIF
+
+  END SUBROUTINE read_ext_o3_clim
+
 
   SUBROUTINE init_index_lists (p_patch, ext_data)
 
@@ -1692,7 +1359,6 @@ CONTAINS
     INTEGER :: rl_start, rl_end
     INTEGER :: i_startblk, i_endblk    !> blocks
     INTEGER :: i_startidx, i_endidx    !< slices
-    INTEGER :: i_nchdom                !< domain index
     LOGICAL  :: tile_mask(num_lcc), lhave_urban
     REAL(wp) :: tile_frac(num_lcc), sum_frac, dtdz_clim, t2mclim_hc, lat
     INTEGER  :: lu_subs, it_count(ntiles_total)
@@ -1725,8 +1391,6 @@ CONTAINS
 
        ptr_ndviratio => ext_data(jg)%atm%ndviratio(:,:)
 
-       i_nchdom  = MAX(1,p_patch(jg)%n_childdom)
-
        i_lc_water = ext_data(jg)%atm%i_lc_water
 
        ! Initialization of index list counts - moved here in order to avoid uninitialized elements
@@ -1744,8 +1408,8 @@ CONTAINS
        rl_start = grf_bdywidth_c+1
        rl_end   = min_rlcell_int
 
-       i_startblk = p_patch(jg)%cells%start_blk(rl_start,1)
-       i_endblk   = p_patch(jg)%cells%end_blk(rl_end,i_nchdom)
+       i_startblk = p_patch(jg)%cells%start_block(rl_start)
+       i_endblk   = p_patch(jg)%cells%end_block(rl_end)
 #ifdef __SX__
 ! turn off OpenMP on the NEC until MAXLOC bug (not threadsafe) is fixed
 !$OMP SINGLE
@@ -1850,11 +1514,12 @@ CONTAINS
                ! surface area index
                IF (lterra_urb) THEN
                  ext_data(jg)%atm%sai_t  (jc,jb,1)  = c_lnd * (1.0_wp - ext_data(jg)%atm%urb_isa_t(jc,jb,1))                 &
-                                                    + ext_data(jg)%atm%urb_ai_t(jc,jb,1)*ext_data(jg)%atm%urb_isa_t(jc,jb,1) &
-                                                    + ext_data(jg)%atm%tai_t(jc,jb,1)
+                                   + ext_data(jg)%atm%urb_ai_t(jc,jb,1)*ext_data(jg)%atm%urb_isa_t(jc,jb,1)
                ELSE
-                 ext_data(jg)%atm%sai_t  (jc,jb,1)  = c_lnd + ext_data(jg)%atm%tai_t(jc,jb,1)
+                 ext_data(jg)%atm%sai_t  (jc,jb,1)  = c_lnd
                END IF
+               ext_data(jg)%atm%sai_t    (jc,jb,1)  = ext_data(jg)%atm%sai_t(jc,jb,1) + ext_data(jg)%atm%tai_t  (jc,jb,1)    &
+                                                                                + c_stm*ext_data(jg)%atm%plcov_t(jc,jb,1)
 
                ! evaporative soil area index
                IF (icpl_da_sfcevap >= 4 .OR. itype_evsl == 5) THEN
@@ -1883,7 +1548,7 @@ CONTAINS
 
                ! Workaround for GLC2000 hole below 60 deg S
                ! (only necesary for old extpar files generated prior to 2014-01-31)
-               IF (is_frglac_in(jg)) THEN
+               IF (ext_atm_attr(jg)%is_frglac_in) THEN
                  IF (tile_frac(ext_data(jg)%atm%lc_class_t(jc,jb,1))<=0._wp) &
                    ext_data(jg)%atm%lc_class_t(jc,jb,1) = ext_data(jg)%atm%i_lc_snow_ice
                ENDIF
@@ -1972,7 +1637,7 @@ CONTAINS
 
                  !  Workaround for GLC2000 hole below 60 deg S
                  ! (only necesary for old extpar files generated prior to 2014-01-31)
-                 IF (is_frglac_in(jg)) THEN
+                 IF (ext_atm_attr(jg)%is_frglac_in) THEN
                    IF ( sum_frac < 1.e-10_wp) THEN
                      IF (i_lu == 1) THEN
                        it_count(i_lu)    = it_count(i_lu) + 1
@@ -1995,7 +1660,7 @@ CONTAINS
                        ext_data(jg)%atm%lc_frac_t(jc,jb,i_lu)  = 0._wp
                      ENDIF
                    END IF  ! sum_frac < 1.e-10_wp
-                 ENDIF  ! is_frglac_in(jg)
+                 ENDIF  ! is_frglac_in
 
                  ! consistency corrections for glaciered points
                  !
@@ -2089,11 +1754,13 @@ CONTAINS
                  ! surface area index
                  IF (lterra_urb) THEN
                    ext_data(jg)%atm%sai_t  (jc,jb,i_lu)  = c_lnd * (1.0_wp - ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu))       &
-                                          + ext_data(jg)%atm%urb_ai_t(jc,jb,i_lu) * ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu) &
-                                          + ext_data(jg)%atm%tai_t(jc,jb,i_lu)
+                                     + ext_data(jg)%atm%urb_ai_t(jc,jb,i_lu)*ext_data(jg)%atm%urb_isa_t(jc,jb,i_lu)
                  ELSE
-                   ext_data(jg)%atm%sai_t  (jc,jb,i_lu)  = c_lnd + ext_data(jg)%atm%tai_t(jc,jb,i_lu)
+                   ext_data(jg)%atm%sai_t  (jc,jb,i_lu)  = c_lnd
                  END IF
+                 ext_data(jg)%atm%sai_t    (jc,jb,i_lu)  = ext_data(jg)%atm%sai_t  (jc,jb,i_lu)                            &
+                                                         + ext_data(jg)%atm%tai_t  (jc,jb,i_lu)                            &
+                                                   + c_stm*ext_data(jg)%atm%plcov_t(jc,jb,i_lu)
 
                  ! evaporative soil area index
                  IF (icpl_da_sfcevap >= 4 .OR. itype_evsl == 5) THEN
@@ -2298,7 +1965,6 @@ CONTAINS
 
          ENDDO  ! jc
 
-
          IF (lsnowtile) THEN ! copy external data fields to snow tile grid points
            DO jt = ntiles_lnd+1, ntiles_total
 
@@ -2410,8 +2076,8 @@ CONTAINS
        rl_start = 1
        rl_end   = min_rlcell_int
 
-       i_startblk = p_patch(jg)%cells%start_blk(rl_start,1)
-       i_endblk   = p_patch(jg)%cells%end_blk(rl_end,i_nchdom)
+       i_startblk = p_patch(jg)%cells%start_block(rl_start)
+       i_endblk   = p_patch(jg)%cells%end_block(rl_end)
 
 !$OMP DO PRIVATE(jb,jc,i_startidx,i_endidx)
        DO jb=i_startblk, i_endblk
@@ -2485,7 +2151,6 @@ CONTAINS
       CALL get_indices_c(p_patch, jb, i_startblk, i_endblk, &
         & i_startidx, i_endidx, rl_start, rl_end)
 
-!
       ext_data%atm%urb_isa    (i_startidx:i_endidx,jb) = 0._wp
       IF (lterra_urb) THEN
         ext_data%atm%urb_ai     (i_startidx:i_endidx,jb) = 0._wp
@@ -2842,13 +2507,14 @@ CONTAINS
             (wfac*ext_data%atm%laimax_lcc(ilu) + (1._wp-wfac)*laimin(ilu))/MAX(0.01_wp,ext_data%atm%laimax_lcc(ilu))
 
           IF (lterra_urb) THEN
-            ext_data%atm%sai_t(jc,jb,jt) = c_lnd * (1.0_wp - ext_data%atm%urb_isa_t(jc,jb,jt))                &
-                                         + ext_data%atm%urb_ai_t(jc,jb,jt) * ext_data%atm%urb_isa_t(jc,jb,jt) &
-                                         + ext_data%atm%tai_t(jc,jb,jt)
+            ext_data%atm%sai_t(jc,jb,jt) = c_lnd * (1.0_wp - ext_data%atm%urb_isa_t(jc,jb,jt)) &
+                                         + ext_data%atm%urb_ai_t(jc,jb,jt)*ext_data%atm%urb_isa_t(jc,jb,jt)
           ELSE
-            ext_data%atm%sai_t(jc,jb,jt) = c_lnd + ext_data%atm%tai_t(jc,jb,jt)
+            ext_data%atm%sai_t(jc,jb,jt) = c_lnd
           END IF
-
+          ext_data%atm%sai_t  (jc,jb,jt) = ext_data%atm%sai_t  (jc,jb,jt) &
+                                         + ext_data%atm%tai_t  (jc,jb,jt) &
+                                   + c_stm*ext_data%atm%plcov_t(jc,jb,jt)
 
           ! modification of root depth
           ext_data%atm%rootdp_t(jc,jb,jt) = ext_data%atm%rootdmax_lcc(ilu) ! reset to table-based value
@@ -2880,7 +2546,6 @@ CONTAINS
 
 
   END SUBROUTINE vege_clim
-
 
   !-------------------------------------------------------------------------
   !! adjust atmo LSM to ocean LSM for coupled simulation and initialize new land points

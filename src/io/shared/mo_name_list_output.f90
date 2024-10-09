@@ -1,6 +1,3 @@
-! Module handling synchronous and asynchronous output; supporting
-! multiple I/O PEs and horizontal interpolation.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,7 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
-! 
+
+! Module handling synchronous and asynchronous output; supporting
+! multiple I/O PEs and horizontal interpolation.
 !
 ! @todo In asynchronous I/O mode, windows are created but not freed
 !
@@ -1407,6 +1406,7 @@ CONTAINS
           i_ptr => i_ptr_5d(:,:,:,nindex,1)
         END SELECT
       END IF
+
     CASE DEFAULT
       WRITE (message_text, '(2a,i0)') TRIM(info%name), &
            ": internal error! unhandled info%ndims=", info%ndims
@@ -2484,7 +2484,7 @@ CONTAINS
 
     USE mo_exception,           ONLY: message_text
     USE mo_var_metadata,        ONLY: get_var_name
-    USE mo_yac_finterface,      ONLY: yac_fput, yac_fget_action, &
+    USE yac,                    ONLY: yac_fput, yac_fget_action, &
       &                               yac_fupdate, YAC_ACTION_NONE, &
       &                               YAC_ACTION_OUT_OF_BOUND, yac_dble_ptr
 

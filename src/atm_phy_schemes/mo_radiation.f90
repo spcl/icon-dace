@@ -1,4 +1,14 @@
+! ICON
 !
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Module to provide interface to radiation routines.
 !
 ! Remarks
@@ -24,17 +34,6 @@
 !   code previously contained in the ECHAM5 routines rad_int.f90,
 !   radiation.f90 and prerad.f90.  Modifications were also made to provide
 !   a cleaner interface to the aerosol and cloud properties. 
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 MODULE mo_radiation
 
@@ -46,7 +45,7 @@ MODULE mo_radiation
   USE mo_model_domain,         ONLY: t_patch
   USE mo_nonhydro_state,       ONLY: p_nh_state
 
-  USE mo_math_constants,       ONLY: pi, rpi, rad2deg
+  USE mo_math_constants,       ONLY: pi, rpi, rad2deg, dbl_eps
   USE mo_math_types,           ONLY: t_geographical_coordinates
   USE mo_physical_constants,   ONLY: grav,  rd,    avo,   amd,  amw,  &
     &                                amco2, amch4, amn2o, amo3, amo2, &
@@ -67,7 +66,7 @@ MODULE mo_radiation
     &                                iRadAeroKinne, iRadAeroVolc,     &
     &                                iRadAeroKinneVolc
   USE mo_lnd_nwp_config,       ONLY: isub_seaice, isub_lake, isub_water
-  USE mo_extpar_config,        ONLY: nhori
+  USE mo_extpar_config,        ONLY: ext_atm_attr
   USE mo_atm_phy_nwp_config,   ONLY: atm_phy_nwp_config
   USE mo_newcld_optics,        ONLY: newcld_optics
   USE mo_bc_aeropt_kinne,      ONLY: set_bc_aeropt_kinne
@@ -476,7 +475,7 @@ CONTAINS
     REAL(wp), INTENT(OUT)             :: zsmu0(kbdim,pt_patch%nblks_c)   ! Cosine of zenith angle
     ! Optional fields for slope-dependent surface radiation: slope angle, slope azimuth, and slope-dependent cosine of zenith angle
     REAL(wp), INTENT(IN), DIMENSION(kbdim,pt_patch%nblks_c) :: slope_ang,slope_azi
-    REAL(wp), INTENT(IN), DIMENSION(kbdim,pt_patch%nblks_c,nhori) :: horizon
+    REAL(wp), INTENT(IN), DIMENSION(kbdim,pt_patch%nblks_c,ext_atm_attr(pt_patch%id)%nhori) :: horizon
     REAL(wp), INTENT(OUT),DIMENSION(kbdim,pt_patch%nblks_c) :: cosmu0_slp, shading_mask
     LOGICAL, OPTIONAL,           INTENT(in)   :: lacc            !< GPU flag
 
@@ -516,11 +515,15 @@ CONTAINS
     TYPE(t_geographical_coordinates), TARGET, ALLOCATABLE :: scm_center(:,:)
     TYPE(t_geographical_coordinates), POINTER             :: ptr_center(:,:)
 
+    INTEGER :: nhori
+
     jg = pt_patch%id
 
 #ifdef __INTEL_COMPILER
 !DIR$ ATTRIBUTES ALIGN : 64 :: zsinphi,zcosphi,zeitrad,czra,szra,csang,ssang,csazi,ssazi,zha_sun,zphi_sun,ztheta_sun,ztheta
 #endif
+
+    nhori = ext_atm_attr(jg)%nhori   ! number of sectors for horizon
 
     ! In case of CMIP irradiation (isolrad==2) is used, tsi_rad changes during the day
     ! (ssi_time_interpolation), in which case it makes sense to redo the scaling
@@ -1611,7 +1614,7 @@ CONTAINS
             aer_tau_sw_vr(jl,jk,jspec-jpband) = z_sum_aea + z_sum_aes
 
             ! sw aerosol single scattering albedo
-            aer_piz_sw_vr(jl,jk,jspec-jpband) = z_sum_aes / ( z_sum_aea + z_sum_aes )
+            aer_piz_sw_vr(jl,jk,jspec-jpband) = z_sum_aes / MAX(dbl_eps, z_sum_aea + z_sum_aes)
 
             ! sw aerosol asymmetry factor
             aer_cg_sw_vr(jl,jk,jspec-jpband) =                                  &
@@ -1619,7 +1622,7 @@ CONTAINS
               &   + zaeq2(jl,jkb) * zaes_rrtm(jspec,2) * zaeg_rrtm(jspec,2)   &
               &   + zaeq3(jl,jkb) * zaes_rrtm(jspec,3) * zaeg_rrtm(jspec,3)   &
               &   + zaeq4(jl,jkb) * zaes_rrtm(jspec,4) * zaeg_rrtm(jspec,4)   &
-              &   + zaeq5(jl,jkb) * zaes_rrtm(jspec,5) * zaeg_rrtm(jspec,5) ) / z_sum_aes
+              &   + zaeq5(jl,jkb) * zaes_rrtm(jspec,5) * zaeg_rrtm(jspec,5) ) / MAX(dbl_eps, z_sum_aes)
           ENDDO
         ENDDO
       ENDDO

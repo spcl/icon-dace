@@ -1,12 +1,12 @@
-#! /usr/bin/env sh
+#! /bin/sh
 ## DO NOT EDIT - This file generated from ./build-aux/ltmain.in
-##               by inline-source v2019-02-19.15
+##               by inline-source v2014-01-03.01
 
-# libtool (GNU libtool) 2.4.7
+# libtool (GNU libtool) 2.4.6
 # Provide generalized library-building support services.
 # Written by Gordon Matzigkeit <gord@gnu.ai.mit.edu>, 1996
 
-# Copyright (C) 1996-2019, 2021-2022 Free Software Foundation, Inc.
+# Copyright (C) 1996-2015 Free Software Foundation, Inc.
 # This is free software; see the source for copying conditions.  There is NO
 # warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
@@ -31,8 +31,8 @@
 
 PROGRAM=libtool
 PACKAGE=libtool
-VERSION=2.4.7
-package_revision=2.4.7
+VERSION=2.4.6
+package_revision=2.4.6
 
 
 ## ------ ##
@@ -64,25 +64,34 @@ package_revision=2.4.7
 # libraries, which are installed to $pkgauxdir.
 
 # Set a version string for this script.
-scriptversion=2019-02-19.15; # UTC
+scriptversion=2015-01-20.17; # UTC
 
 # General shell script boiler plate, and helper functions.
 # Written by Gary V. Vaughan, 2004
 
-# This is free software.  There is NO warranty; not even for
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# Copyright (C) 2004-2019, 2021 Bootstrap Authors
-#
-# This file is dual licensed under the terms of the MIT license
-# <https://opensource.org/license/MIT>, and GPL version 2 or later
-# <http://www.gnu.org/licenses/gpl-2.0.html>.  You must apply one of
-# these licenses when using or redistributing this software or any of
-# the files within it.  See the URLs above, or the file `LICENSE`
-# included in the Bootstrap distribution for the full license texts.
+# Copyright (C) 2004-2015 Free Software Foundation, Inc.
+# This is free software; see the source for copying conditions.  There is NO
+# warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-# Please report bugs or propose patches to:
-# <https://github.com/gnulib-modules/bootstrap/issues>
+# This program is free software; you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation; either version 3 of the License, or
+# (at your option) any later version.
+
+# As a special exception to the GNU General Public License, if you distribute
+# this file as part of a program or library that is built using GNU Libtool,
+# you may include this file under the same distribution terms that you use
+# for the rest of that program.
+
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNES FOR A PARTICULAR PURPOSE. See the GNU
+# General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program. If not, see <http://www.gnu.org/licenses/>.
+
+# Please report bugs or propose patches to gary@gnu.org.
 
 
 ## ------ ##
@@ -130,12 +139,9 @@ do
 	  _G_safe_locale=\"$_G_var=C; \$_G_safe_locale\"
 	fi"
 done
-# These NLS vars are set unconditionally (bootstrap issue #24).  Unset those
-# in case the environment reset is needed later and the $save_* variant is not
-# defined (see the code above).
-LC_ALL=C
-LANGUAGE=C
-export LANGUAGE LC_ALL
+
+# CDPATH.
+(unset CDPATH) >/dev/null 2>&1 && unset CDPATH
 
 # Make sure IFS has a sensible default
 sp=' '
@@ -152,26 +158,6 @@ if test "${PATH_SEPARATOR+set}" != set; then
   }
 fi
 
-
-# func_unset VAR
-# --------------
-# Portably unset VAR.
-# In some shells, an 'unset VAR' statement leaves a non-zero return
-# status if VAR is already unset, which might be problematic if the
-# statement is used at the end of a function (thus poisoning its return
-# value) or when 'set -e' is active (causing even a spurious abort of
-# the script in this case).
-func_unset ()
-{
-    { eval $1=; (eval unset $1) >/dev/null 2>&1 && eval unset $1 || : ; }
-}
-
-
-# Make sure CDPATH doesn't cause `cd` commands to output the target dir.
-func_unset CDPATH
-
-# Make sure ${,E,F}GREP behave sanely.
-func_unset GREP_OPTIONS
 
 
 ## ------------------------- ##
@@ -273,7 +259,7 @@ test -z "$SED" && {
     rm -f conftest.in conftest.tmp conftest.nl conftest.out
   }
 
-  func_path_progs "sed gsed" func_check_prog_sed "$PATH:/usr/xpg4/bin"
+  func_path_progs "sed gsed" func_check_prog_sed $PATH:/usr/xpg4/bin
   rm -f conftest.sed
   SED=$func_path_progs_result
 }
@@ -309,7 +295,7 @@ test -z "$GREP" && {
     rm -f conftest.in conftest.tmp conftest.nl conftest.out
   }
 
-  func_path_progs "grep ggrep" func_check_prog_grep "$PATH:/usr/xpg4/bin"
+  func_path_progs "grep ggrep" func_check_prog_grep $PATH:/usr/xpg4/bin
   GREP=$func_path_progs_result
 }
 
@@ -324,6 +310,18 @@ test -z "$GREP" && {
 # in the command search PATH.
 
 : ${CP="cp -f"}
+# work around bug in libtool which raises an error when running in a
+# parallel make that should have been handled in printf internally
+printf()
+{
+  while ! builtin printf "$@" ; do
+    errcode=$?
+    # errcode might be EAGAIN=11 which means to simply try again
+    if [ $errcode != 11 ]; then
+      return $errcode
+    fi
+  done
+}
 : ${ECHO="printf %s\n"}
 : ${EGREP="$GREP -E"}
 : ${FGREP="$GREP -F"}
@@ -373,35 +371,6 @@ sed_double_backslash="\
   s/^$_G_bs2$_G_dollar/$_G_bs&/
   s/\\([^$_G_bs]\\)$_G_bs2$_G_dollar/\\1$_G_bs2$_G_bs$_G_dollar/g
   s/\n//g"
-
-# require_check_ifs_backslash
-# ---------------------------
-# Check if we can use backslash as IFS='\' separator, and set
-# $check_ifs_backshlash_broken to ':' or 'false'.
-require_check_ifs_backslash=func_require_check_ifs_backslash
-func_require_check_ifs_backslash ()
-{
-  _G_save_IFS=$IFS
-  IFS='\'
-  _G_check_ifs_backshlash='a\\b'
-  for _G_i in $_G_check_ifs_backshlash
-  do
-  case $_G_i in
-  a)
-    check_ifs_backshlash_broken=false
-    ;;
-  '')
-    break
-    ;;
-  *)
-    check_ifs_backshlash_broken=:
-    break
-    ;;
-  esac
-  done
-  IFS=$_G_save_IFS
-  require_check_ifs_backslash=:
-}
 
 
 ## ----------------- ##
@@ -623,16 +592,16 @@ if test yes = "$_G_HAVE_PLUSEQ_OP"; then
   {
     $debug_cmd
 
-    func_quote_arg pretty "$2"
-    eval "$1+=\\ \$func_quote_arg_result"
+    func_quote_for_eval "$2"
+    eval "$1+=\\ \$func_quote_for_eval_result"
   }'
 else
   func_append_quoted ()
   {
     $debug_cmd
 
-    func_quote_arg pretty "$2"
-    eval "$1=\$$1\\ \$func_quote_arg_result"
+    func_quote_for_eval "$2"
+    eval "$1=\$$1\\ \$func_quote_for_eval_result"
   }
 fi
 
@@ -1134,203 +1103,85 @@ func_relative_path ()
 }
 
 
-# func_quote_portable EVAL ARG
-# ----------------------------
-# Internal function to portably implement func_quote_arg.  Note that we still
-# keep attention to performance here so we as much as possible try to avoid
-# calling sed binary (so far O(N) complexity as long as func_append is O(1)).
-func_quote_portable ()
+# func_quote_for_eval ARG...
+# --------------------------
+# Aesthetically quote ARGs to be evaled later.
+# This function returns two values:
+#   i) func_quote_for_eval_result
+#      double-quoted, suitable for a subsequent eval
+#  ii) func_quote_for_eval_unquoted_result
+#      has all characters that are still active within double
+#      quotes backslashified.
+func_quote_for_eval ()
 {
     $debug_cmd
 
-    $require_check_ifs_backslash
-
-    func_quote_portable_result=$2
-
-    # one-time-loop (easy break)
-    while true
-    do
-      if $1; then
-        func_quote_portable_result=`$ECHO "$2" | $SED \
-          -e "$sed_double_quote_subst" -e "$sed_double_backslash"`
-        break
+    func_quote_for_eval_unquoted_result=
+    func_quote_for_eval_result=
+    while test 0 -lt $#; do
+      case $1 in
+        *[\\\`\"\$]*)
+	  _G_unquoted_arg=`printf '%s\n' "$1" |$SED "$sed_quote_subst"` ;;
+        *)
+          _G_unquoted_arg=$1 ;;
+      esac
+      if test -n "$func_quote_for_eval_unquoted_result"; then
+	func_append func_quote_for_eval_unquoted_result " $_G_unquoted_arg"
+      else
+        func_append func_quote_for_eval_unquoted_result "$_G_unquoted_arg"
       fi
 
-      # Quote for eval.
-      case $func_quote_portable_result in
-        *[\\\`\"\$]*)
-          # Fallback to sed for $func_check_bs_ifs_broken=:, or when the string
-          # contains the shell wildcard characters.
-          case $check_ifs_backshlash_broken$func_quote_portable_result in
-            :*|*[\[\*\?]*)
-              func_quote_portable_result=`$ECHO "$func_quote_portable_result" \
-                  | $SED "$sed_quote_subst"`
-              break
-              ;;
-          esac
-
-          func_quote_portable_old_IFS=$IFS
-          for _G_char in '\' '`' '"' '$'
-          do
-            # STATE($1) PREV($2) SEPARATOR($3)
-            set start "" ""
-            func_quote_portable_result=dummy"$_G_char$func_quote_portable_result$_G_char"dummy
-            IFS=$_G_char
-            for _G_part in $func_quote_portable_result
-            do
-              case $1 in
-              quote)
-                func_append func_quote_portable_result "$3$2"
-                set quote "$_G_part" "\\$_G_char"
-                ;;
-              start)
-                set first "" ""
-                func_quote_portable_result=
-                ;;
-              first)
-                set quote "$_G_part" ""
-                ;;
-              esac
-            done
-          done
-          IFS=$func_quote_portable_old_IFS
-          ;;
-        *) ;;
-      esac
-      break
-    done
-
-    func_quote_portable_unquoted_result=$func_quote_portable_result
-    case $func_quote_portable_result in
-      # double-quote args containing shell metacharacters to delay
-      # word splitting, command substitution and variable expansion
-      # for a subsequent eval.
-      # many bourne shells cannot handle close brackets correctly
-      # in scan sets, so we specify it separately.
-      *[\[\~\#\^\&\*\(\)\{\}\|\;\<\>\?\'\ \	]*|*]*|"")
-        func_quote_portable_result=\"$func_quote_portable_result\"
-        ;;
-    esac
-}
-
-
-# func_quotefast_eval ARG
-# -----------------------
-# Quote one ARG (internal).  This is equivalent to 'func_quote_arg eval ARG',
-# but optimized for speed.  Result is stored in $func_quotefast_eval.
-if test xyes = `(x=; printf -v x %q yes; echo x"$x") 2>/dev/null`; then
-  printf -v _GL_test_printf_tilde %q '~'
-  if test '\~' = "$_GL_test_printf_tilde"; then
-    func_quotefast_eval ()
-    {
-      printf -v func_quotefast_eval_result %q "$1"
-    }
-  else
-    # Broken older Bash implementations.  Make those faster too if possible.
-    func_quotefast_eval ()
-    {
-      case $1 in
-        '~'*)
-          func_quote_portable false "$1"
-          func_quotefast_eval_result=$func_quote_portable_result
+      case $_G_unquoted_arg in
+        # Double-quote args containing shell metacharacters to delay
+        # word splitting, command substitution and variable expansion
+        # for a subsequent eval.
+        # Many Bourne shells cannot handle close brackets correctly
+        # in scan sets, so we specify it separately.
+        *[\[\~\#\^\&\*\(\)\{\}\|\;\<\>\?\'\ \	]*|*]*|"")
+          _G_quoted_arg=\"$_G_unquoted_arg\"
           ;;
         *)
-          printf -v func_quotefast_eval_result %q "$1"
-          ;;
+          _G_quoted_arg=$_G_unquoted_arg
+	  ;;
       esac
-    }
-  fi
-else
-  func_quotefast_eval ()
-  {
-    func_quote_portable false "$1"
-    func_quotefast_eval_result=$func_quote_portable_result
-  }
-fi
 
-
-# func_quote_arg MODEs ARG
-# ------------------------
-# Quote one ARG to be evaled later.  MODEs argument may contain zero or more
-# specifiers listed below separated by ',' character.  This function returns two
-# values:
-#   i) func_quote_arg_result
-#      double-quoted (when needed), suitable for a subsequent eval
-#  ii) func_quote_arg_unquoted_result
-#      has all characters that are still active within double
-#      quotes backslashified.  Available only if 'unquoted' is specified.
-#
-# Available modes:
-# ----------------
-# 'eval' (default)
-#       - escape shell special characters
-# 'expand'
-#       - the same as 'eval';  but do not quote variable references
-# 'pretty'
-#       - request aesthetic output, i.e. '"a b"' instead of 'a\ b'.  This might
-#         be used later in func_quote to get output like: 'echo "a b"' instead
-#         of 'echo a\ b'.  This is slower than default on some shells.
-# 'unquoted'
-#       - produce also $func_quote_arg_unquoted_result which does not contain
-#         wrapping double-quotes.
-#
-# Examples for 'func_quote_arg pretty,unquoted string':
-#
-#   string      | *_result              | *_unquoted_result
-#   ------------+-----------------------+-------------------
-#   "           | \"                    | \"
-#   a b         | "a b"                 | a b
-#   "a b"       | "\"a b\""             | \"a b\"
-#   *           | "*"                   | *
-#   z="${x-$y}" | "z=\"\${x-\$y}\""     | z=\"\${x-\$y}\"
-#
-# Examples for 'func_quote_arg pretty,unquoted,expand string':
-#
-#   string        |   *_result          |  *_unquoted_result
-#   --------------+---------------------+--------------------
-#   z="${x-$y}"   | "z=\"${x-$y}\""     | z=\"${x-$y}\"
-func_quote_arg ()
-{
-    _G_quote_expand=false
-    case ,$1, in
-      *,expand,*)
-        _G_quote_expand=:
-        ;;
-    esac
-
-    case ,$1, in
-      *,pretty,*|*,expand,*|*,unquoted,*)
-        func_quote_portable $_G_quote_expand "$2"
-        func_quote_arg_result=$func_quote_portable_result
-        func_quote_arg_unquoted_result=$func_quote_portable_unquoted_result
-        ;;
-      *)
-        # Faster quote-for-eval for some shells.
-        func_quotefast_eval "$2"
-        func_quote_arg_result=$func_quotefast_eval_result
-        ;;
-    esac
-}
-
-
-# func_quote MODEs ARGs...
-# ------------------------
-# Quote all ARGs to be evaled later and join them into single command.  See
-# func_quote_arg's description for more info.
-func_quote ()
-{
-    $debug_cmd
-    _G_func_quote_mode=$1 ; shift
-    func_quote_result=
-    while test 0 -lt $#; do
-      func_quote_arg "$_G_func_quote_mode" "$1"
-      if test -n "$func_quote_result"; then
-        func_append func_quote_result " $func_quote_arg_result"
+      if test -n "$func_quote_for_eval_result"; then
+	func_append func_quote_for_eval_result " $_G_quoted_arg"
       else
-        func_append func_quote_result "$func_quote_arg_result"
+        func_append func_quote_for_eval_result "$_G_quoted_arg"
       fi
       shift
     done
+}
+
+
+# func_quote_for_expand ARG
+# -------------------------
+# Aesthetically quote ARG to be evaled later; same as above,
+# but do not quote variable references.
+func_quote_for_expand ()
+{
+    $debug_cmd
+
+    case $1 in
+      *[\\\`\"]*)
+	_G_arg=`$ECHO "$1" | $SED \
+	    -e "$sed_double_quote_subst" -e "$sed_double_backslash"` ;;
+      *)
+        _G_arg=$1 ;;
+    esac
+
+    case $_G_arg in
+      # Double-quote args containing shell metacharacters to delay
+      # word splitting and command substitution for a subsequent eval.
+      # Many Bourne shells cannot handle close brackets correctly
+      # in scan sets, so we specify it separately.
+      *[\[\~\#\^\&\*\(\)\{\}\|\;\<\>\?\'\ \	]*|*]*|"")
+        _G_arg=\"$_G_arg\"
+        ;;
+    esac
+
+    func_quote_for_expand_result=$_G_arg
 }
 
 
@@ -1376,8 +1227,8 @@ func_show_eval ()
     _G_cmd=$1
     _G_fail_exp=${2-':'}
 
-    func_quote_arg pretty,expand "$_G_cmd"
-    eval "func_notquiet $func_quote_arg_result"
+    func_quote_for_expand "$_G_cmd"
+    eval "func_notquiet $func_quote_for_expand_result"
 
     $opt_dry_run || {
       eval "$_G_cmd"
@@ -1402,8 +1253,8 @@ func_show_eval_locale ()
     _G_fail_exp=${2-':'}
 
     $opt_quiet || {
-      func_quote_arg expand,pretty "$_G_cmd"
-      eval "func_echo $func_quote_arg_result"
+      func_quote_for_expand "$_G_cmd"
+      eval "func_echo $func_quote_for_expand_result"
     }
 
     $opt_dry_run || {
@@ -1530,26 +1381,30 @@ func_lt_ver ()
 # End:
 #! /bin/sh
 
+# Set a version string for this script.
+scriptversion=2014-01-07.03; # UTC
+
 # A portable, pluggable option parser for Bourne shell.
 # Written by Gary V. Vaughan, 2010
 
-# This is free software.  There is NO warranty; not even for
-# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
-#
-# Copyright (C) 2010-2019, 2021 Bootstrap Authors
-#
-# This file is dual licensed under the terms of the MIT license
-# <https://opensource.org/license/MIT>, and GPL version 2 or later
-# <http://www.gnu.org/licenses/gpl-2.0.html>.  You must apply one of
-# these licenses when using or redistributing this software or any of
-# the files within it.  See the URLs above, or the file `LICENSE`
-# included in the Bootstrap distribution for the full license texts.
+# Copyright (C) 2010-2015 Free Software Foundation, Inc.
+# This is free software; see the source for copying conditions.  There is NO
+# warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.
 
-# Please report bugs or propose patches to:
-# <https://github.com/gnulib-modules/bootstrap/issues>
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
 
-# Set a version string for this script.
-scriptversion=2019-02-19.15; # UTC
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+# Please report bugs or propose patches to gary@gnu.org.
 
 
 ## ------ ##
@@ -1572,7 +1427,7 @@ scriptversion=2019-02-19.15; # UTC
 #
 # In order for the '--version' option to work, you will need to have a
 # suitably formatted comment like the one at the top of this file
-# starting with '# Written by ' and ending with '# Copyright'.
+# starting with '# Written by ' and ending with '# warranty; '.
 #
 # For '-h' and '--help' to work, you will also need a one line
 # description of your script's purpose in a comment directly above the
@@ -1584,7 +1439,7 @@ scriptversion=2019-02-19.15; # UTC
 # to display verbose messages only when your user has specified
 # '--verbose'.
 #
-# After sourcing this file, you can plug in processing for additional
+# After sourcing this file, you can plug processing for additional
 # options by amending the variables from the 'Configuration' section
 # below, and following the instructions in the 'Option parsing'
 # section further down.
@@ -1633,8 +1488,8 @@ fatal_help="Try '\$progname --help' for more information."
 ## ------------------------- ##
 
 # This section contains functions for adding, removing, and running hooks
-# in the main code.  A hook is just a list of function names that can be
-# run in order later on.
+# to the main code.  A hook is just a named list of of function, that can
+# be run in order later on.
 
 # func_hookable FUNC_NAME
 # -----------------------
@@ -1667,8 +1522,7 @@ func_add_hook ()
 
 # func_remove_hook FUNC_NAME HOOK_FUNC
 # ------------------------------------
-# Remove HOOK_FUNC from the list of hook functions to be called by
-# FUNC_NAME.
+# Remove HOOK_FUNC from the list of functions called by FUNC_NAME.
 func_remove_hook ()
 {
     $debug_cmd
@@ -1677,28 +1531,10 @@ func_remove_hook ()
 }
 
 
-# func_propagate_result FUNC_NAME_A FUNC_NAME_B
-# ---------------------------------------------
-# If the *_result variable of FUNC_NAME_A _is set_, assign its value to
-# *_result variable of FUNC_NAME_B.
-func_propagate_result ()
-{
-    $debug_cmd
-
-    func_propagate_result_result=:
-    if eval "test \"\${${1}_result+set}\" = set"
-    then
-      eval "${2}_result=\$${1}_result"
-    else
-      func_propagate_result_result=false
-    fi
-}
-
-
 # func_run_hooks FUNC_NAME [ARG]...
 # ---------------------------------
 # Run all hook functions registered to FUNC_NAME.
-# It's assumed that the list of hook functions contains nothing more
+# It is assumed that the list of hook functions contains nothing more
 # than a whitespace-delimited list of legal shell function names, and
 # no effort is wasted trying to catch shell meta-characters or preserve
 # whitespace.
@@ -1708,19 +1544,22 @@ func_run_hooks ()
 
     case " $hookable_fns " in
       *" $1 "*) ;;
-      *) func_fatal_error "'$1' does not support hook functions." ;;
+      *) func_fatal_error "'$1' does not support hook funcions.n" ;;
     esac
 
     eval _G_hook_fns=\$$1_hooks; shift
 
     for _G_hook in $_G_hook_fns; do
-      func_unset "${_G_hook}_result"
-      eval $_G_hook '${1+"$@"}'
-      func_propagate_result $_G_hook func_run_hooks
-      if $func_propagate_result_result; then
-        eval set dummy "$func_run_hooks_result"; shift
-      fi
+      eval $_G_hook '"$@"'
+
+      # store returned options list back into positional
+      # parameters for next 'cmd' execution.
+      eval _G_hook_result=\$${_G_hook}_result
+      eval set dummy "$_G_hook_result"; shift
     done
+
+    func_quote_for_eval ${1+"$@"}
+    func_run_hooks_result=$func_quote_for_eval_result
 }
 
 
@@ -1730,18 +1569,10 @@ func_run_hooks ()
 ## --------------- ##
 
 # In order to add your own option parsing hooks, you must accept the
-# full positional parameter list from your hook function.  You may remove
-# or edit any options that you action, and then pass back the remaining
-# unprocessed options in '<hooked_function_name>_result', escaped
-# suitably for 'eval'.
-#
-# The '<hooked_function_name>_result' variable is automatically unset
-# before your hook gets called; for best performance, only set the
-# *_result variable when necessary (i.e. don't call the 'func_quote'
-# function unnecessarily because it can be an expensive operation on some
-# machines).
-#
-# Like this:
+# full positional parameter list in your hook function, remove any
+# options that you action, and then pass back the remaining unprocessed
+# options in '<hooked_function_name>_result', escaped suitably for
+# 'eval'.  Like this:
 #
 #    my_options_prep ()
 #    {
@@ -1751,8 +1582,9 @@ func_run_hooks ()
 #        usage_message=$usage_message'
 #      -s, --silent       don'\''t print informational messages
 #    '
-#        # No change in '$@' (ignored completely by this hook).  Leave
-#        # my_options_prep_result variable intact.
+#
+#        func_quote_for_eval ${1+"$@"}
+#        my_options_prep_result=$func_quote_for_eval_result
 #    }
 #    func_add_hook func_options_prep my_options_prep
 #
@@ -1761,36 +1593,25 @@ func_run_hooks ()
 #    {
 #        $debug_cmd
 #
-#        args_changed=false
-#
-#        # Note that, for efficiency, we parse as many options as we can
+#        # Note that for efficiency, we parse as many options as we can
 #        # recognise in a loop before passing the remainder back to the
 #        # caller on the first unrecognised argument we encounter.
 #        while test $# -gt 0; do
 #          opt=$1; shift
 #          case $opt in
-#            --silent|-s) opt_silent=:
-#                         args_changed=:
-#                         ;;
+#            --silent|-s) opt_silent=: ;;
 #            # Separate non-argument short options:
 #            -s*)         func_split_short_opt "$_G_opt"
 #                         set dummy "$func_split_short_opt_name" \
 #                             "-$func_split_short_opt_arg" ${1+"$@"}
 #                         shift
-#                         args_changed=:
 #                         ;;
-#            *)           # Make sure the first unrecognised option "$_G_opt"
-#                         # is added back to "$@" in case we need it later,
-#                         # if $args_changed was set to 'true'.
-#                         set dummy "$_G_opt" ${1+"$@"}; shift; break ;;
+#            *)            set dummy "$_G_opt" "$*"; shift; break ;;
 #          esac
 #        done
 #
-#        # Only call 'func_quote' here if we processed at least one argument.
-#        if $args_changed; then
-#          func_quote eval ${1+"$@"}
-#          my_silent_option_result=$func_quote_result
-#        fi
+#        func_quote_for_eval ${1+"$@"}
+#        my_silent_option_result=$func_quote_for_eval_result
 #    }
 #    func_add_hook func_parse_options my_silent_option
 #
@@ -1801,24 +1622,15 @@ func_run_hooks ()
 #
 #        $opt_silent && $opt_verbose && func_fatal_help "\
 #    '--silent' and '--verbose' options are mutually exclusive."
+#
+#        func_quote_for_eval ${1+"$@"}
+#        my_option_validation_result=$func_quote_for_eval_result
 #    }
 #    func_add_hook func_validate_options my_option_validation
 #
-# You'll also need to manually amend $usage_message to reflect the extra
+# You'll alse need to manually amend $usage_message to reflect the extra
 # options you parse.  It's preferable to append if you can, so that
 # multiple option parsing hooks can be added safely.
-
-
-# func_options_finish [ARG]...
-# ----------------------------
-# Finishing the option parse loop (call 'func_options' hooks ATM).
-func_options_finish ()
-{
-    $debug_cmd
-
-    func_run_hooks func_options ${1+"$@"}
-    func_propagate_result func_run_hooks func_options_finish
-}
 
 
 # func_options [ARG]...
@@ -1830,27 +1642,17 @@ func_options ()
 {
     $debug_cmd
 
-    _G_options_quoted=false
+    func_options_prep ${1+"$@"}
+    eval func_parse_options \
+        ${func_options_prep_result+"$func_options_prep_result"}
+    eval func_validate_options \
+        ${func_parse_options_result+"$func_parse_options_result"}
 
-    for my_func in options_prep parse_options validate_options options_finish
-    do
-      func_unset func_${my_func}_result
-      func_unset func_run_hooks_result
-      eval func_$my_func '${1+"$@"}'
-      func_propagate_result func_$my_func func_options
-      if $func_propagate_result_result; then
-        eval set dummy "$func_options_result"; shift
-        _G_options_quoted=:
-      fi
-    done
+    eval func_run_hooks func_options \
+        ${func_validate_options_result+"$func_validate_options_result"}
 
-    $_G_options_quoted || {
-      # As we (func_options) are top-level options-parser function and
-      # nobody quoted "$@" for us yet, we need to do it explicitly for
-      # caller.
-      func_quote eval ${1+"$@"}
-      func_options_result=$func_quote_result
-    }
+    # save modified positional parameters for caller
+    func_options_result=$func_run_hooks_result
 }
 
 
@@ -1859,8 +1661,9 @@ func_options ()
 # All initialisations required before starting the option parse loop.
 # Note that when calling hook functions, we pass through the list of
 # positional parameters.  If a hook function modifies that list, and
-# needs to propagate that back to rest of this script, then the complete
-# modified list must be put in 'func_run_hooks_result' before returning.
+# needs to propogate that back to rest of this script, then the complete
+# modified list must be put in 'func_run_hooks_result' before
+# returning.
 func_hookable func_options_prep
 func_options_prep ()
 {
@@ -1871,7 +1674,9 @@ func_options_prep ()
     opt_warning_types=
 
     func_run_hooks func_options_prep ${1+"$@"}
-    func_propagate_result func_run_hooks func_options_prep
+
+    # save modified positional parameters for caller
+    func_options_prep_result=$func_run_hooks_result
 }
 
 
@@ -1883,32 +1688,25 @@ func_parse_options ()
 {
     $debug_cmd
 
-    _G_parse_options_requote=false
+    func_parse_options_result=
+
     # this just eases exit handling
     while test $# -gt 0; do
       # Defer to hook functions for initial option parsing, so they
       # get priority in the event of reusing an option name.
       func_run_hooks func_parse_options ${1+"$@"}
-      func_propagate_result func_run_hooks func_parse_options
-      if $func_propagate_result_result; then
-        eval set dummy "$func_parse_options_result"; shift
-        # Even though we may have changed "$@", we passed the "$@" array
-        # down into the hook and it quoted it for us (because we are in
-        # this if-branch).  No need to quote it again.
-        _G_parse_options_requote=false
-      fi
+
+      # Adjust func_parse_options positional parameters to match
+      eval set dummy "$func_run_hooks_result"; shift
 
       # Break out of the loop if we already parsed every option.
       test $# -gt 0 || break
 
-      # We expect that one of the options parsed in this function matches
-      # and thus we remove _G_opt from "$@" and need to re-quote.
-      _G_match_parse_options=:
       _G_opt=$1
       shift
       case $_G_opt in
         --debug|-x)   debug_cmd='set -x'
-                      func_echo "enabling shell trace mode" >&2
+                      func_echo "enabling shell trace mode"
                       $debug_cmd
                       ;;
 
@@ -1918,10 +1716,7 @@ func_parse_options ()
 		      ;;
 
         --warnings|--warning|-W)
-                      if test $# = 0 && func_missing_arg $_G_opt; then
-                        _G_parse_options_requote=:
-                        break
-                      fi
+                      test $# = 0 && func_missing_arg $_G_opt && break
                       case " $warning_categories $1" in
                         *" $1 "*)
                           # trailing space prevents matching last $1 above
@@ -1974,24 +1769,15 @@ func_parse_options ()
                       shift
                       ;;
 
-        --)           _G_parse_options_requote=: ; break ;;
+        --)           break ;;
         -*)           func_fatal_help "unrecognised option: '$_G_opt'" ;;
-        *)            set dummy "$_G_opt" ${1+"$@"}; shift
-                      _G_match_parse_options=false
-                      break
-                      ;;
+        *)            set dummy "$_G_opt" ${1+"$@"}; shift; break ;;
       esac
-
-      if $_G_match_parse_options; then
-        _G_parse_options_requote=:
-      fi
     done
 
-    if $_G_parse_options_requote; then
-      # save modified positional parameters for caller
-      func_quote eval ${1+"$@"}
-      func_parse_options_result=$func_quote_result
-    fi
+    # save modified positional parameters for caller
+    func_quote_for_eval ${1+"$@"}
+    func_parse_options_result=$func_quote_for_eval_result
 }
 
 
@@ -2008,10 +1794,12 @@ func_validate_options ()
     test -n "$opt_warning_types" || opt_warning_types=" $warning_categories"
 
     func_run_hooks func_validate_options ${1+"$@"}
-    func_propagate_result func_run_hooks func_validate_options
 
     # Bail if the options were screwed!
     $exit_cmd $EXIT_FAILURE
+
+    # save modified positional parameters for caller
+    func_validate_options_result=$func_run_hooks_result
 }
 
 
@@ -2067,8 +1855,8 @@ func_missing_arg ()
 
 # func_split_equals STRING
 # ------------------------
-# Set func_split_equals_lhs and func_split_equals_rhs shell variables
-# after splitting STRING at the '=' sign.
+# Set func_split_equals_lhs and func_split_equals_rhs shell variables after
+# splitting STRING at the '=' sign.
 test -z "$_G_HAVE_XSI_OPS" \
     && (eval 'x=a/b/c;
       test 5aa/bb/cc = "${#x}${x%%/*}${x%/*}${x#*/}${x##*/}"') 2>/dev/null \
@@ -2083,9 +1871,8 @@ then
 
       func_split_equals_lhs=${1%%=*}
       func_split_equals_rhs=${1#*=}
-      if test "x$func_split_equals_lhs" = "x$1"; then
-        func_split_equals_rhs=
-      fi
+      test "x$func_split_equals_lhs" = "x$1" \
+        && func_split_equals_rhs=
   }'
 else
   # ...otherwise fall back to using expr, which is often a shell builtin.
@@ -2095,7 +1882,7 @@ else
 
       func_split_equals_lhs=`expr "x$1" : 'x\([^=]*\)'`
       func_split_equals_rhs=
-      test "x$func_split_equals_lhs=" = "x$1" \
+      test "x$func_split_equals_lhs" = "x$1" \
         || func_split_equals_rhs=`expr "x$1" : 'x[^=]*=\(.*\)$'`
   }
 fi #func_split_equals
@@ -2121,7 +1908,7 @@ else
   {
       $debug_cmd
 
-      func_split_short_opt_name=`expr "x$1" : 'x\(-.\)'`
+      func_split_short_opt_name=`expr "x$1" : 'x-\(.\)'`
       func_split_short_opt_arg=`expr "x$1" : 'x-.\(.*\)$'`
   }
 fi #func_split_short_opt
@@ -2163,44 +1950,31 @@ func_usage_message ()
 # func_version
 # ------------
 # Echo version message to standard output and exit.
-# The version message is extracted from the calling file's header
-# comments, with leading '# ' stripped:
-#   1. First display the progname and version
-#   2. Followed by the header comment line matching  /^# Written by /
-#   3. Then a blank line followed by the first following line matching
-#      /^# Copyright /
-#   4. Immediately followed by any lines between the previous matches,
-#      except lines preceding the intervening completely blank line.
-# For example, see the header comments of this file.
 func_version ()
 {
     $debug_cmd
 
     printf '%s\n' "$progname $scriptversion"
     $SED -n '
-        /^# Written by /!b
-        s|^# ||; p; n
-
-        :fwd2blnk
-        /./ {
-          n
-          b fwd2blnk
+        /(C)/!b go
+        :more
+        /\./!{
+          N
+          s|\n# | |
+          b more
         }
-        p; n
-
-        :holdwrnt
-        s|^# ||
-        s|^# *$||
-        /^Copyright /!{
-          /./H
-          n
-          b holdwrnt
+        :go
+        /^# Written by /,/# warranty; / {
+          s|^# ||
+          s|^# *$||
+          s|\((C)\)[ 0-9,-]*[ ,-]\([1-9][0-9]* \)|\1 \2|
+          p
         }
-
-        s|\((C)\)[ 0-9,-]*[ ,-]\([1-9][0-9]* \)|\1 \2|
-        G
-        s|\(\n\)\n*|\1|g
-        p; q' < "$progpath"
+        /^# Written by / {
+          s|^# ||
+          p
+        }
+        /^warranty; /q' < "$progpath"
 
     exit $?
 }
@@ -2210,12 +1984,12 @@ func_version ()
 # mode: shell-script
 # sh-indentation: 2
 # eval: (add-hook 'before-save-hook 'time-stamp)
-# time-stamp-pattern: "30/scriptversion=%:y-%02m-%02d.%02H; # UTC"
+# time-stamp-pattern: "10/scriptversion=%:y-%02m-%02d.%02H; # UTC"
 # time-stamp-time-zone: "UTC"
 # End:
 
 # Set a version string.
-scriptversion='(GNU libtool) 2.4.7'
+scriptversion='(GNU libtool) 2.4.6'
 
 
 # func_echo ARG...
@@ -2306,7 +2080,7 @@ include the following information:
        compiler:       $LTCC
        compiler flags: $LTCFLAGS
        linker:         $LD (gnu? $with_gnu_ld)
-       version:        $progname (GNU libtool) 2.4.7
+       version:        $progname (GNU libtool) 2.4.6
        automake:       `($AUTOMAKE --version) 2>/dev/null |$SED 1q`
        autoconf:       `($AUTOCONF --version) 2>/dev/null |$SED 1q`
 
@@ -2362,7 +2136,7 @@ fi
 # a configuration failure hint, and exit.
 func_fatal_configuration ()
 {
-    func_fatal_error ${1+"$@"} \
+    func__fatal_error ${1+"$@"} \
       "See the $PACKAGE documentation for more information." \
       "Fatal configuration error."
 }
@@ -2508,8 +2282,6 @@ libtool_options_prep ()
     nonopt=
     preserve_args=
 
-    _G_rc_lt_options_prep=:
-
     # Shorthand for --mode=foo, only valid as the first argument
     case $1 in
     clean|clea|cle|cl)
@@ -2533,16 +2305,11 @@ libtool_options_prep ()
     uninstall|uninstal|uninsta|uninst|unins|unin|uni|un|u)
       shift; set dummy --mode uninstall ${1+"$@"}; shift
       ;;
-    *)
-      _G_rc_lt_options_prep=false
-      ;;
     esac
 
-    if $_G_rc_lt_options_prep; then
-      # Pass back the list of options.
-      func_quote eval ${1+"$@"}
-      libtool_options_prep_result=$func_quote_result
-    fi
+    # Pass back the list of options.
+    func_quote_for_eval ${1+"$@"}
+    libtool_options_prep_result=$func_quote_for_eval_result
 }
 func_add_hook func_options_prep libtool_options_prep
 
@@ -2554,12 +2321,9 @@ libtool_parse_options ()
 {
     $debug_cmd
 
-    _G_rc_lt_parse_options=false
-
     # Perform our own loop to consume as many options as possible in
     # each iteration.
     while test $# -gt 0; do
-      _G_match_lt_parse_options=:
       _G_opt=$1
       shift
       case $_G_opt in
@@ -2634,20 +2398,15 @@ libtool_parse_options ()
                         func_append preserve_args " $_G_opt"
                         ;;
 
-        # An option not handled by this hook function:
-        *)              set dummy "$_G_opt" ${1+"$@"} ; shift
-                        _G_match_lt_parse_options=false
-                        break
-                        ;;
+	# An option not handled by this hook function:
+        *)		set dummy "$_G_opt" ${1+"$@"};	shift; break  ;;
       esac
-      $_G_match_lt_parse_options && _G_rc_lt_parse_options=:
     done
 
-    if $_G_rc_lt_parse_options; then
-      # save modified positional parameters for caller
-      func_quote eval ${1+"$@"}
-      libtool_parse_options_result=$func_quote_result
-    fi
+
+    # save modified positional parameters for caller
+    func_quote_for_eval ${1+"$@"}
+    libtool_parse_options_result=$func_quote_for_eval_result
 }
 func_add_hook func_parse_options libtool_parse_options
 
@@ -2704,8 +2463,8 @@ libtool_validate_options ()
     }
 
     # Pass back the unparsed argument list
-    func_quote eval ${1+"$@"}
-    libtool_validate_options_result=$func_quote_result
+    func_quote_for_eval ${1+"$@"}
+    libtool_validate_options_result=$func_quote_for_eval_result
 }
 func_add_hook func_validate_options libtool_validate_options
 
@@ -3470,6 +3229,25 @@ func_convert_path_msys_to_cygwin ()
 }
 # end func_convert_path_msys_to_cygwin
 
+func_add2xrpath ()
+{
+  dir="$1"
+  # We need an absolute path.
+  case $dir in
+    [\\/]* | [A-Za-z]:[\\/]*) ;;
+    =*)
+    func_stripname '=' '' "$dir"
+    dir=$lt_sysroot$func_stripname_result
+      ;;
+    *)
+      func_fatal_error "only absolute run-paths are allowed"
+      ;;
+  esac
+  case "$xrpath " in
+    *" $dir "*) ;;
+    *) func_append xrpath " $dir" ;;
+  esac
+}
 
 # func_convert_path_nix_to_cygwin ARG
 # Convert path ARG from *nix to Cygwin format.  Requires Cygwin installed in a
@@ -3534,7 +3312,8 @@ func_mode_compile ()
       case $arg_mode in
       arg  )
 	# do not "continue".  Instead, add this to base_compile
-	lastarg=$arg
+	lastarg=$srcfile
+	srcfile=$arg
 	arg_mode=normal
 	;;
 
@@ -3543,6 +3322,12 @@ func_mode_compile ()
 	arg_mode=normal
 	continue
 	;;
+
+      skip )
+        lastarg=
+        arg_mode=normal
+        continue
+        ;;
 
       normal )
 	# Accept any command-line options.
@@ -3566,6 +3351,11 @@ func_mode_compile ()
 
 	-no-suppress)
 	  suppress_opt=no
+	  continue
+	  ;;
+
+	-Xlinker | -XCClinker)
+	  arg_mode=skip #  the next one is ignored for compile mode
 	  continue
 	  ;;
 
@@ -3671,8 +3461,8 @@ func_mode_compile ()
       esac
     done
 
-    func_quote_arg pretty "$libobj"
-    test "X$libobj" != "X$func_quote_arg_result" \
+    func_quote_for_eval "$libobj"
+    test "X$libobj" != "X$func_quote_for_eval_result" \
       && $ECHO "X$libobj" | $GREP '[]~#^*{};<>?"'"'"'	 &()|`$[]' \
       && func_warning "libobj name '$libobj' may not contain shell special characters."
     func_dirname_and_basename "$obj" "/" ""
@@ -3745,8 +3535,8 @@ compiler."
 
     func_to_tool_file "$srcfile" func_convert_file_msys_to_w32
     srcfile=$func_to_tool_file_result
-    func_quote_arg pretty "$srcfile"
-    qsrcfile=$func_quote_arg_result
+    func_quote_for_eval "$srcfile"
+    qsrcfile=$func_quote_for_eval_result
 
     # Only build a PIC object if we are building libtool libraries.
     if test yes = "$build_libtool_libs"; then
@@ -3901,8 +3691,7 @@ This mode accepts the following additional options:
   -prefer-non-pic   try to build non-PIC objects only
   -shared           do not build a '.o' file suitable for static linking
   -static           only build a '.o' file suitable for static linking
-  -Wc,FLAG
-  -Xcompiler FLAG   pass FLAG directly to the compiler
+  -Wc,FLAG          pass FLAG directly to the compiler
 
 COMPILE-COMMAND is a command to be used in creating a 'standard' object file
 from the given SOURCEFILE.
@@ -4008,8 +3797,6 @@ The following components of LINK-COMMAND are treated specially:
   -weak LIBNAME     declare that the target provides the LIBNAME interface
   -Wc,FLAG
   -Xcompiler FLAG   pass linker-specific FLAG directly to the compiler
-  -Wa,FLAG
-  -Xassembler FLAG  pass linker-specific FLAG directly to the assembler
   -Wl,FLAG
   -Xlinker FLAG     pass linker-specific FLAG directly to the linker
   -XCClinker FLAG   pass link-specific FLAG to the compiler driver (CC)
@@ -4352,8 +4139,8 @@ func_mode_install ()
        case $nonopt in *shtool*) :;; *) false;; esac
     then
       # Aesthetically quote it.
-      func_quote_arg pretty "$nonopt"
-      install_prog="$func_quote_arg_result "
+      func_quote_for_eval "$nonopt"
+      install_prog="$func_quote_for_eval_result "
       arg=$1
       shift
     else
@@ -4363,8 +4150,8 @@ func_mode_install ()
 
     # The real first argument should be the name of the installation program.
     # Aesthetically quote it.
-    func_quote_arg pretty "$arg"
-    func_append install_prog "$func_quote_arg_result"
+    func_quote_for_eval "$arg"
+    func_append install_prog "$func_quote_for_eval_result"
     install_shared_prog=$install_prog
     case " $install_prog " in
       *[\\\ /]cp\ *) install_cp=: ;;
@@ -4421,12 +4208,12 @@ func_mode_install ()
       esac
 
       # Aesthetically quote the argument.
-      func_quote_arg pretty "$arg"
-      func_append install_prog " $func_quote_arg_result"
+      func_quote_for_eval "$arg"
+      func_append install_prog " $func_quote_for_eval_result"
       if test -n "$arg2"; then
-	func_quote_arg pretty "$arg2"
+	func_quote_for_eval "$arg2"
       fi
-      func_append install_shared_prog " $func_quote_arg_result"
+      func_append install_shared_prog " $func_quote_for_eval_result"
     done
 
     test -z "$install_prog" && \
@@ -4437,8 +4224,8 @@ func_mode_install ()
 
     if test -n "$install_override_mode" && $no_mode; then
       if $install_cp; then :; else
-	func_quote_arg pretty "$install_override_mode"
-	func_append install_shared_prog " -m $func_quote_arg_result"
+	func_quote_for_eval "$install_override_mode"
+	func_append install_shared_prog " -m $func_quote_for_eval_result"
       fi
     fi
 
@@ -4734,8 +4521,8 @@ func_mode_install ()
 	        relink_command=`$ECHO "$relink_command" | $SED 's%@OUTPUT@%'"$outputname"'%g'`
 
 	        $opt_quiet || {
-	          func_quote_arg expand,pretty "$relink_command"
-		  eval "func_echo $func_quote_arg_result"
+	          func_quote_for_expand "$relink_command"
+		  eval "func_echo $func_quote_for_expand_result"
 	        }
 	        if eval "$relink_command"; then :
 	          else
@@ -5514,8 +5301,7 @@ else
   if test \"\$libtool_execute_magic\" != \"$magic\"; then
     file=\"\$0\""
 
-    func_quote_arg pretty "$ECHO"
-    qECHO=$func_quote_arg_result
+    qECHO=`$ECHO "$ECHO" | $SED "$sed_quote_subst"`
     $ECHO "\
 
 # A function that is used when there is no print builtin or printf.
@@ -5525,7 +5311,7 @@ func_fallback_echo ()
 \$1
 _LTECHO_EOF'
 }
-    ECHO=$qECHO
+    ECHO=\"$qECHO\"
   fi
 
 # Very basic option parsing. These options are (a) specific to
@@ -6868,9 +6654,9 @@ func_mode_link ()
     while test "$#" -gt 0; do
       arg=$1
       shift
-      func_quote_arg pretty,unquoted "$arg"
-      qarg=$func_quote_arg_unquoted_result
-      func_append libtool_args " $func_quote_arg_result"
+      func_quote_for_eval "$arg"
+      qarg=$func_quote_for_eval_unquoted_result
+      func_append libtool_args " $func_quote_for_eval_result"
 
       # If the previous option needs an argument, assign it.
       if test -n "$prev"; then
@@ -7106,13 +6892,6 @@ func_mode_link ()
 	  prev=
 	  continue
 	  ;;
-	xassembler)
-	  func_append compiler_flags " -Xassembler $qarg"
-	  prev=
-	  func_append compile_command " -Xassembler $qarg"
-	  func_append finalize_command " -Xassembler $qarg"
-	  continue
-	  ;;
 	xcclinker)
 	  func_append linker_flags " $qarg"
 	  func_append compiler_flags " $qarg"
@@ -7283,7 +7062,7 @@ func_mode_link ()
 	    # These systems don't actually have a C library (as such)
 	    test X-lc = "X$arg" && continue
 	    ;;
-	  *-*-openbsd* | *-*-freebsd* | *-*-dragonfly* | *-*-bitrig* | *-*-midnightbsd*)
+	  *-*-openbsd* | *-*-freebsd* | *-*-dragonfly* | *-*-bitrig*)
 	    # Do not include libc due to us having libc/libc_r.
 	    test X-lc = "X$arg" && continue
 	    ;;
@@ -7303,7 +7082,7 @@ func_mode_link ()
 	  esac
 	elif test X-lc_r = "X$arg"; then
 	 case $host in
-	 *-*-openbsd* | *-*-freebsd* | *-*-dragonfly* | *-*-bitrig* | *-*-midnightbsd*)
+	 *-*-openbsd* | *-*-freebsd* | *-*-dragonfly* | *-*-bitrig*)
 	   # Do not include libc_r directly, use -pthread flag.
 	   continue
 	   ;;
@@ -7333,20 +7112,8 @@ func_mode_link ()
 	prev=xcompiler
 	continue
 	;;
-     # Solaris ld rejects as of 11.4. Refer to Oracle bug 22985199.
-     -pthread)
-	case $host in
-	  *solaris2*) ;;
-	  *)
-	    case "$new_inherited_linker_flags " in
-	        *" $arg "*) ;;
-	        * ) func_append new_inherited_linker_flags " $arg" ;;
-	    esac
-	  ;;
-	esac
-	continue
-	;;
-      -mt|-mthreads|-kthread|-Kthread|-pthreads|--thread-safe \
+
+      -mt|-mthreads|-kthread|-Kthread|-pthread|-pthreads|--thread-safe \
       |-threads|-fopenmp|-openmp|-mp|-xopenmp|-omp|-qsmp=*)
 	func_append compiler_flags " $arg"
 	func_append compile_command " $arg"
@@ -7423,20 +7190,7 @@ func_mode_link ()
 	func_stripname '-R' '' "$arg"
 	dir=$func_stripname_result
 	# We need an absolute path.
-	case $dir in
-	[\\/]* | [A-Za-z]:[\\/]*) ;;
-	=*)
-	  func_stripname '=' '' "$dir"
-	  dir=$lt_sysroot$func_stripname_result
-	  ;;
-	*)
-	  func_fatal_error "only absolute run-paths are allowed"
-	  ;;
-	esac
-	case "$xrpath " in
-	*" $dir "*) ;;
-	*) func_append xrpath " $dir" ;;
-	esac
+	func_add2xrpath "$dir"
 	continue
 	;;
 
@@ -7487,36 +7241,81 @@ func_mode_link ()
 	save_ifs=$IFS; IFS=,
 	for flag in $args; do
 	  IFS=$save_ifs
-          func_quote_arg pretty "$flag"
-	  func_append arg " $func_quote_arg_result"
-	  func_append compiler_flags " $func_quote_arg_result"
+          func_quote_for_eval "$flag"
+	  func_append arg " $func_quote_for_eval_result"
+	  func_append compiler_flags " $func_quote_for_eval_result"
 	done
 	IFS=$save_ifs
 	func_stripname ' ' '' "$arg"
 	arg=$func_stripname_result
 	;;
 
+      -Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\)| \
+      -Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
+      -Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
+	func_append deplibs " $arg"
+	continue
+	;;
+
       -Wl,*)
+	wlprefix=`expr x"$wl" : '.*' - 1`
+	wlprefix=`expr x"$arg" : 'x\(.\{'"$wlprefix"'\}\)'`
+	if test x"$wlprefix" = x"$wl" -a x"$wl" != x"-Wl,"; then
+	  func_append compiler_flags " $arg"
+	  func_append compile_command " $arg"
+	  func_append finalize_command " $arg"
+	  if expr "x$arg" : '^x'"$wl"'-rpath,,' >/dev/null ; then
+	    func_stripname "$wl"'-rpath,,' '' "$arg"
+	    dir=$func_stripname_result
+	    func_add2xrpath "$dir"
+	  elif expr "x$arg" : '^x'"$wl"'-rpath$' >/dev/null ; then
+	    func_stripname "$wl" '' "$1"
+	    dir=$func_stripname_result
+	    if ! expr "x$1" : '^x'"$wl" >/dev/null \
+	    || ! test -d "$dir" ; then
+	    func_fatal_error "$wl"'-rpath must be followed by '"$wl"'-escaped directory'
+	    fi
+	    shift
+	    func_add2xrpath "$dir"
+	    continue
+	  else
+	    func_stripname "$wl" '' "$arg"
+	    func_append new_inherited_linker_flags " -Wl,$func_stripname_result"
+	  fi
+	  continue
+	elif expr "x$arg" : '^x-Wl,-rpath,' >/dev/null ; then
+	  func_stripname '-Wl,-rpath,' '' "$arg"
+	  dir=$func_stripname_result
+	  func_add2xrpath "$dir"
+	  continue
+	elif expr "x$arg" : '^x-Wl,-rpath$' >/dev/null ; then
+	  func_stripname '-Wl,' '' "$1"
+	  dir=$func_stripname_result
+	  if ! expr "x$1" : '^x-Wl,' >/dev/null \
+	    || ! test -d "$dir" ; then
+	    func_fatal_error '-Wl,-rpath must be followed by -Wl-escaped directory'
+	  fi
+	  func_quote_for_eval "$1"
+	  func_append libtool_args " $func_quote_for_eval_result"
+	  shift
+	  func_add2xrpath "$dir"
+	  continue
+	fi
 	func_stripname '-Wl,' '' "$arg"
 	args=$func_stripname_result
 	arg=
 	save_ifs=$IFS; IFS=,
 	for flag in $args; do
 	  IFS=$save_ifs
-          func_quote_arg pretty "$flag"
-	  func_append arg " $wl$func_quote_arg_result"
-	  func_append compiler_flags " $wl$func_quote_arg_result"
-	  func_append linker_flags " $func_quote_arg_result"
+          func_quote_for_eval "$flag"
+	  func_append arg " $wl$func_quote_for_eval_result"
+	  func_append compiler_flags " $wl$func_quote_for_eval_result"
+	  func_append linker_flags " $func_quote_for_eval_result"
 	done
 	IFS=$save_ifs
 	func_stripname ' ' '' "$arg"
 	arg=$func_stripname_result
 	;;
-
-      -Xassembler)
-        prev=xassembler
-        continue
-        ;;
 
       -Xcompiler)
 	prev=xcompiler
@@ -7535,8 +7334,8 @@ func_mode_link ()
 
       # -msg_* for osf cc
       -msg_*)
-	func_quote_arg pretty "$arg"
-	arg=$func_quote_arg_result
+	func_quote_for_eval "$arg"
+	arg=$func_quote_for_eval_result
 	;;
 
       # Flags to be passed through unchanged, with rationale:
@@ -7553,17 +7352,12 @@ func_mode_link ()
       # -tp=*                Portland pgcc target processor selection
       # --sysroot=*          for sysroot support
       # -O*, -g*, -flto*, -fwhopr*, -fuse-linker-plugin GCC link-time optimization
-      # -specs=*             GCC specs files
       # -stdlib=*            select c++ std lib with clang
-      # -fsanitize=*         Clang/GCC memory and address sanitizer
-      # -fuse-ld=*           Linker select flags for GCC
-      # -Wa,*                Pass flags directly to the assembler
       -64|-mips[0-9]|-r[0-9][0-9]*|-xarch=*|-xtarget=*|+DA*|+DD*|-q*|-m*| \
       -t[45]*|-txscale*|-p|-pg|--coverage|-fprofile-*|-F*|@*|-tp=*|--sysroot=*| \
-      -O*|-g*|-flto*|-fwhopr*|-fuse-linker-plugin|-fstack-protector*|-stdlib=*| \
-      -specs=*|-fsanitize=*|-fuse-ld=*|-Wa,*)
-        func_quote_arg pretty "$arg"
-	arg=$func_quote_arg_result
+      -O*|-g*|-flto*|-fwhopr*|-fuse-linker-plugin|-fstack-protector*|-stdlib=*)
+        func_quote_for_eval "$arg"
+	arg=$func_quote_for_eval_result
         func_append compile_command " $arg"
         func_append finalize_command " $arg"
         func_append compiler_flags " $arg"
@@ -7584,15 +7378,15 @@ func_mode_link ()
 	  continue
         else
 	  # Otherwise treat like 'Some other compiler flag' below
-	  func_quote_arg pretty "$arg"
-	  arg=$func_quote_arg_result
+	  func_quote_for_eval "$arg"
+	  arg=$func_quote_for_eval_result
         fi
 	;;
 
       # Some other compiler flag.
       -* | +*)
-        func_quote_arg pretty "$arg"
-	arg=$func_quote_arg_result
+        func_quote_for_eval "$arg"
+	arg=$func_quote_for_eval_result
 	;;
 
       *.$objext)
@@ -7712,8 +7506,8 @@ func_mode_link ()
       *)
 	# Unknown arguments in both finalize_command and compile_command need
 	# to be aesthetically quoted because they are evaled later.
-	func_quote_arg pretty "$arg"
-	arg=$func_quote_arg_result
+	func_quote_for_eval "$arg"
+	arg=$func_quote_for_eval_result
 	;;
       esac # arg
 
@@ -7854,7 +7648,10 @@ func_mode_link ()
 	case $pass in
 	dlopen) libs=$dlfiles ;;
 	dlpreopen) libs=$dlprefiles ;;
-	link) libs="$deplibs %DEPLIBS% $dependency_libs" ;;
+	link)
+	  libs="$deplibs %DEPLIBS%"
+	  test "X$link_all_deplibs" != Xno && libs="$libs $dependency_libs"
+	  ;;
 	esac
       fi
       if test lib,dlpreopen = "$linkmode,$pass"; then
@@ -8116,6 +7913,17 @@ func_mode_link ()
 	  alldeplibs=:
 	  continue
 	  ;;
+	-Wl,--start-group|-Wl,--end-group|-Wl,-\(|-Wl,-\)| \
+	-Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
+	-Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
+	  if test "$linkmode,$pass" = "prog,link"; then
+	    compile_deplibs="$deplib $compile_deplibs"
+	    finalize_deplibs="$deplib $finalize_deplibs"
+	  else
+	    deplibs="$deplib $deplibs"
+	  fi
+	  continue
+	  ;;
 	esac # case $deplib
 
 	$found || test -f "$lib" \
@@ -8148,6 +7956,12 @@ func_mode_link ()
 	# Convert "-framework foo" to "foo.ltframework"
 	if test -n "$inherited_linker_flags"; then
 	  tmp_inherited_linker_flags=`$ECHO "$inherited_linker_flags" | $SED 's/-framework \([^ $]*\)/\1.ltframework/g'`
+
+	  # Additionally convert " -pthread" to " -Wl,-pthread" for nagfor
+	  if test yes = $with_nagfor ; then
+	    tmp_inherited_linker_flags=`$ECHO " $tmp_inherited_linker_flags " | $SED 's/ -pthread[[:blank:]]/ -Wl,-pthread /g'`
+	  fi
+
 	  for tmp_inherited_linker_flag in $tmp_inherited_linker_flags; do
 	    case " $new_inherited_linker_flags " in
 	      *" $tmp_inherited_linker_flag "*) ;;
@@ -8173,19 +7987,19 @@ func_mode_link ()
 	    # It is a libtool convenience library, so add in its objects.
 	    func_append convenience " $ladir/$objdir/$old_library"
 	    func_append old_convenience " $ladir/$objdir/$old_library"
+	    tmp_libs=
+	    for deplib in $dependency_libs; do
+	      deplibs="$deplib $deplibs"
+	      if $opt_preserve_dup_deps; then
+		case "$tmp_libs " in
+		*" $deplib "*) func_append specialdeplibs " $deplib" ;;
+		esac
+	      fi
+	      func_append tmp_libs " $deplib"
+	    done
 	  elif test prog != "$linkmode" && test lib != "$linkmode"; then
 	    func_fatal_error "'$lib' is not a convenience library"
 	  fi
-	  tmp_libs=
-	  for deplib in $dependency_libs; do
-	    deplibs="$deplib $deplibs"
-	    if $opt_preserve_dup_deps; then
-	      case "$tmp_libs " in
-	      *" $deplib "*) func_append specialdeplibs " $deplib" ;;
-	      esac
-	    fi
-	    func_append tmp_libs " $deplib"
-	  done
 	  continue
 	fi # $pass = conv
 
@@ -8870,7 +8684,14 @@ func_mode_link ()
 	    # practice:
 	    case $deplib in
 	    -L*) new_libs="$deplib $new_libs" ;;
-	    -R*) ;;
+	    -R*)
+                func_stripname '-R' '' "$deplib"
+                func_add2xrpath "$func_stripname_result"
+                ;;
+	    -Wl,--as-needed|-Wl,-as-needed|-Wl,--no-as-needed|-Wl,-no-as-needed| \
+	    -Wl,--whole-archive|-Wl,-whole-archive|-Wl,--no-whole-archive|-Wl,-no-whole-archive)
+                new_libs="$deplib $new_libs"
+                ;;
 	    *)
 	      # And here is the reason: when a library appears more
 	      # than once as an explicit dependence of a library, or
@@ -8918,7 +8739,7 @@ func_mode_link ()
       test CXX = "$tagname" && {
         case $host_os in
         linux*)
-          case `$CC -V 2>&1 | $SED 5q` in
+          case `$CC -V 2>&1 | sed 5q` in
           *Sun\ C*) # Sun C++ 5.9
             func_suncc_cstd_abi
 
@@ -9091,7 +8912,7 @@ func_mode_link ()
 	  #
 	  case $version_type in
 	  # correct linux to gnu/linux during the next big refactor
-	  darwin|freebsd-elf|linux|midnightbsd-elf|osf|windows|none)
+	  darwin|freebsd-elf|linux|osf|windows|none)
 	    func_arith $number_major + $number_minor
 	    current=$func_arith_result
 	    age=$number_minor
@@ -9167,8 +8988,8 @@ func_mode_link ()
 	  xlcverstring="$wl-compatibility_version $wl$minor_current $wl-current_version $wl$minor_current.$revision"
 	  verstring="-compatibility_version $minor_current -current_version $minor_current.$revision"
           # On Darwin other compilers
-          case $CC in
-              nagfor*)
+          case $with_nagfor in
+              yes)
                   verstring="$wl-compatibility_version $wl$minor_current $wl-current_version $wl$minor_current.$revision"
                   ;;
               *)
@@ -9182,7 +9003,7 @@ func_mode_link ()
 	  versuffix=.$current.$revision
 	  ;;
 
-	freebsd-elf | midnightbsd-elf)
+	freebsd-elf)
 	  func_arith $current - $age
 	  major=.$func_arith_result
 	  versuffix=$major.$age.$revision
@@ -9408,7 +9229,7 @@ func_mode_link ()
 	  *-*-netbsd*)
 	    # Don't link with libc until the a.out ld.so is fixed.
 	    ;;
-	  *-*-openbsd* | *-*-freebsd* | *-*-dragonfly* | *-*-midnightbsd*)
+	  *-*-openbsd* | *-*-freebsd* | *-*-dragonfly*)
 	    # Do not include libc due to us having libc/libc_r.
 	    ;;
 	  *-*-sco3.2v5* | *-*-sco5v6*)
@@ -9779,6 +9600,20 @@ EOF
 	  ;;
       esac
 
+      # Time to revert the changes made for nagfor. This might be required if
+      # we need to make the output '*.la' file to be correctly interpreted for
+      # gcc (e.g. the output library that we are linking now with nagfor needs
+      # to be linked by gcc later). In this case, the libtool script of a
+      # package that will try to link our library will have to make similar
+      # non-standard nagfor-specific modifications of the '-pthread' flag.
+      # Thus, if we are creating a Fortran library for nagfor only, it is
+      # better not to revert the changes, otherwise, uncomment the following
+      # lines.
+
+      if test yes = $with_nagfor ; then
+        new_inherited_linker_flags=`$ECHO " $new_inherited_linker_flags " | $SED 's/ -Wl,-pthread / -pthread /g;s/^ *//;s/ *$//'`
+      fi
+
       # move library search paths that coincide with paths to not yet
       # installed libraries to the beginning of the library search list
       new_libs=
@@ -9800,6 +9635,10 @@ EOF
 	  *" $deplib "*) ;;
 	  *) func_append new_libs " $deplib" ;;
 	  esac
+	  ;;
+	-Wl,*)
+	  func_stripname -Wl, '' "$deplib"
+	  func_append new_libs " $wl$func_stripname_result"
 	  ;;
 	*) func_append new_libs " $deplib" ;;
 	esac
@@ -10219,8 +10058,8 @@ EOF
 	    for cmd in $concat_cmds; do
 	      IFS=$save_ifs
 	      $opt_quiet || {
-		  func_quote_arg expand,pretty "$cmd"
-		  eval "func_echo $func_quote_arg_result"
+		  func_quote_for_expand "$cmd"
+		  eval "func_echo $func_quote_for_expand_result"
 	      }
 	      $opt_dry_run || eval "$cmd" || {
 		lt_exit=$?
@@ -10313,8 +10152,8 @@ EOF
 	  eval cmd=\"$cmd\"
 	  IFS=$save_ifs
 	  $opt_quiet || {
-	    func_quote_arg expand,pretty "$cmd"
-	    eval "func_echo $func_quote_arg_result"
+	    func_quote_for_expand "$cmd"
+	    eval "func_echo $func_quote_for_expand_result"
 	  }
 	  $opt_dry_run || eval "$cmd" || {
 	    lt_exit=$?
@@ -10532,6 +10371,12 @@ EOF
 	  *" $deplib "*) ;;
 	  *) func_append new_libs " $deplib" ;;
 	  esac
+	  ;;
+	-Wl,-pthread)
+	  func_append new_libs " $deplib" ;;
+	-Wl,*)
+	  func_stripname -Wl, '' "$deplib"
+	  func_append new_libs " $wl$func_stripname_result"
 	  ;;
 	*) func_append new_libs " $deplib" ;;
 	esac
@@ -10788,13 +10633,12 @@ EOF
 	  elif eval var_value=\$$var; test -z "$var_value"; then
 	    relink_command="$var=; export $var; $relink_command"
 	  else
-	    func_quote_arg pretty "$var_value"
-	    relink_command="$var=$func_quote_arg_result; export $var; $relink_command"
+	    func_quote_for_eval "$var_value"
+	    relink_command="$var=$func_quote_for_eval_result; export $var; $relink_command"
 	  fi
 	done
-	func_quote eval cd "`pwd`"
-	func_quote_arg pretty,unquoted "($func_quote_result; $relink_command)"
-	relink_command=$func_quote_arg_unquoted_result
+	relink_command="(cd `pwd`; $relink_command)"
+	relink_command=`$ECHO "$relink_command" | $SED "$sed_quote_subst"`
       fi
 
       # Only actually do things if not in dry run mode.
@@ -11034,15 +10878,13 @@ EOF
 	elif eval var_value=\$$var; test -z "$var_value"; then
 	  relink_command="$var=; export $var; $relink_command"
 	else
-	  func_quote_arg pretty,unquoted "$var_value"
-	  relink_command="$var=$func_quote_arg_unquoted_result; export $var; $relink_command"
+	  func_quote_for_eval "$var_value"
+	  relink_command="$var=$func_quote_for_eval_result; export $var; $relink_command"
 	fi
       done
       # Quote the link command for shipping.
-      func_quote eval cd "`pwd`"
-      relink_command="($func_quote_result; $SHELL \"$progpath\" $preserve_args --mode=relink $libtool_args @inst_prefix_dir@)"
-      func_quote_arg pretty,unquoted "$relink_command"
-      relink_command=$func_quote_arg_unquoted_result
+      relink_command="(cd `pwd`; $SHELL \"$progpath\" $preserve_args --mode=relink $libtool_args @inst_prefix_dir@)"
+      relink_command=`$ECHO "$relink_command" | $SED "$sed_quote_subst"`
       if test yes = "$hardcode_automatic"; then
 	relink_command=
       fi

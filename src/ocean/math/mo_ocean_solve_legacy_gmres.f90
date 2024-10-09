@@ -1,6 +1,3 @@
-! Contains extension to solver backend type: GMRES (legacy implementation)
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Contains extension to solver backend type: GMRES (legacy implementation)
 
 !#include "omp_definitions.inc"
 

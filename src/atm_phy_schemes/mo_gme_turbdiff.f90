@@ -16,6 +16,7 @@ MODULE mo_gme_turbdiff
                                    tmelt, alvdcp, alv, als, rd, rdv, O_m_rdv
   USE mo_satad,              ONLY: sat_pres_water, sat_pres_ice, spec_humi, dqsatdT
   USE data_turbulence,       ONLY: Rkarman => akt, tkhmin, tkmmin
+
   USE mo_lnd_nwp_config,     ONLY: lseaice
 
   USE mo_exception,          ONLY: message
@@ -552,7 +553,10 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
 !     necessary (e.g. model cold start)
 !     note, that sea roughness lengths for timestep 0 are generally
 !     defined via the first guess forecast in the data assimilation 
-        IF ( fr_land(j1) < 0.5_wp .AND. gz0(j1) <= 0.0_wp ) THEN
+
+        IF ( fr_land(j1) <= 0.5_wp .AND. gz0(j1) <= 0.0_wp ) THEN
+            !Note: This definition of a non-land surface is now in line with the ICON-definition 
+            !       using "frlnd_thrhld=z1d2"
 
 !         use constant value of 0.001 m for roughness length over sea ice
           IF ( lo_ice(j1) ) THEN
@@ -578,7 +582,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
  
         zgz0m(j1)=MIN( gz0(j1),0.5*zdfip(j1)) ! limit z0 for momentum
 
-        IF ( ( fr_land(j1) < 0.5_wp) .AND.  &      ! derive z0 for heat
+        IF ( ( fr_land(j1) <= 0.5_wp) .AND.  &      ! derive z0 for heat
          &  .NOT. lo_ice(j1) ) THEN                ! over open sea
           zustar      = SQRT(zgz0m(j1)/zalpha0)    ! friction velocity derived
                                                    ! from z0 for momentum (Charnock) 
@@ -588,7 +592,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
         ENDIF
         zgz0h(j1)=MIN( zgz0h(j1),zgz0hh)        ! limit z0 for heat
 
-!       IF ( lz0_snow .AND.( fr_land(j1) >= 0.5_wp) ) THEN
+!       IF ( lz0_snow .AND.( fr_land(j1) > 0.5_wp) ) THEN
 !          IF( gz0s(j1) > 0._wp)   zgz0h(j1) = MIN( gz0s(j1), zgz0hh)
 !       END IF
 
@@ -607,7 +611,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
                      SQRT( 1.0_wp + 5.0_wp*zris(j1) ) ) ) 
  
 !         new z0 (for momentum) over sea
-          IF ( fr_land(j1) < 0.5_wp ) THEN
+          IF ( fr_land(j1) <= 0.5_wp ) THEN
             IF ( lo_ice(j1) ) THEN
 !             z0=0.001 m above sea ice              
               gz0(j1) = 0.001_wp*grav
@@ -621,7 +625,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
 !         unstable case
  
 !         Land points (only transfer coefficients)
-          IF ( fr_land(j1) >= 0.5_wp ) THEN
+          IF ( fr_land(j1) > 0.5_wp ) THEN
             ztcm(j1) = zy*zvpb(j1)*(1._wp - 10.0_wp*zris(j1)/                      &
              & (1._wp + 75.0_wp*zy*(zxi**z1d3-1.0_wp)**1.5_wp*SQRT( -zris(j1) ) ))
             ztch(j1) = Rkarman**2/(LOG(zxi)*LOG(zxih))*zvpb(j1)*                   &
@@ -1410,7 +1414,7 @@ SUBROUTINE parturs( zsurf, z1  , u1   , v1     , t1   , qv1  ,    &
 !
 !  Over water, an old procedure to diagnose T2m is used.
 !Water_or_Land: IF( .NOT. lolp(j1) ) THEN 
-Water_or_Land: IF( fr_land(j1) < 0.5_wp ) THEN 
+Water_or_Land: IF( fr_land(j1) <= 0.5_wp ) THEN 
 !_dm<
 
 !     Stable stratification

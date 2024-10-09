@@ -1,7 +1,3 @@
-!
-! Subroutine aes_phy_diag contains small diagnostic routines,
-!  which are executed on a single block of cells.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Subroutine aes_phy_diag contains small diagnostic routines,
+!  which are executed on a single block of cells.
 
 MODULE mo_aes_phy_diag
 

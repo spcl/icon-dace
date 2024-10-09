@@ -1,4 +1,3 @@
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -130,6 +129,12 @@ CONTAINS
 
     IF (proc0_shift > 0 .AND. select_solver /= select_cg) THEN
       CALL finish(method_name, "proc0_shift only works with the CG solver (select_cg=4)")
+    END IF
+
+    IF (use_age_tracer) THEN
+      IF (no_tracer < (n_age_tracer + 2)) THEN
+        CALL finish(method_name, "When using the age tracer, no_tracer must be equal to the number of age tracers + number of buoyancy tracers.")
+      END IF
     END IF
 
   END SUBROUTINE ocean_crosscheck

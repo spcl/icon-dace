@@ -1,7 +1,3 @@
-! Implementation of tides by computation of the Sun's and Moon's full tidal potential
-! This will be used in the pressure gradient calculation
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -12,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Implementation of tides by computation of the Sun's and Moon's full tidal potential
+! This will be used in the pressure gradient calculation
 
 !----------------------------
 #include "icon_definitions.inc"

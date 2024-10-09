@@ -88,35 +88,46 @@ POST_UNINSTALL = :
 build_triplet = @build@
 host_triplet = @host@
 check_PROGRAMS = test_runner$(EXEEXT)
-TESTS = test_runner$(EXEEXT)
+TESTS = test_runner$(EXEEXT) test_python.sh
 subdir = test
 ACLOCAL_M4 = $(top_srcdir)/aclocal.m4
-am__aclocal_m4_deps = $(top_srcdir)/m4/acx_fc_module.m4 \
+am__aclocal_m4_deps = $(top_srcdir)/m4/acx_fc_line_length.m4 \
+	$(top_srcdir)/m4/acx_fc_module.m4 \
 	$(top_srcdir)/m4/acx_fc_pp.m4 $(top_srcdir)/m4/acx_lang_lib.m4 \
-	$(top_srcdir)/m4/acx_lang_openmp.m4 \
 	$(top_srcdir)/m4/acx_lang_package.m4 \
+	$(top_srcdir)/m4/acx_lt_problems.m4 \
+	$(top_srcdir)/m4/acx_use_libtool_configuration.m4 \
 	$(top_srcdir)/m4/asx_common.m4 \
 	$(top_srcdir)/m4/ax_prog_doxygen.m4 \
-	$(top_srcdir)/m4/libtool.m4 $(top_srcdir)/m4/ltoptions.m4 \
-	$(top_srcdir)/m4/ltsugar.m4 $(top_srcdir)/m4/ltversion.m4 \
-	$(top_srcdir)/m4/lt~obsolete.m4 $(top_srcdir)/configure.ac
+	$(top_srcdir)/m4/kpse_libtool.m4 $(top_srcdir)/m4/libtool.m4 \
+	$(top_srcdir)/m4/ltoptions.m4 $(top_srcdir)/m4/ltsugar.m4 \
+	$(top_srcdir)/m4/ltversion.m4 $(top_srcdir)/m4/lt~obsolete.m4 \
+	$(top_srcdir)/configure.ac
 am__configure_deps = $(am__aclocal_m4_deps) $(CONFIGURE_DEPENDENCIES) \
 	$(ACLOCAL_M4)
 DIST_COMMON = $(srcdir)/Makefile.am $(am__DIST_COMMON)
 mkinstalldirs = $(install_sh) -d
 CONFIG_HEADER = $(top_builddir)/config/config.h
-CONFIG_CLEAN_FILES =
+CONFIG_CLEAN_FILES = test_python.sh
 CONFIG_CLEAN_VPATH_FILES =
 libmtime_check_la_LIBADD =
-am_libmtime_check_la_OBJECTS = mtime_calendar_test.lo \
-	mtime_date_test.lo mtime_datetime_test.lo \
-	mtime_julianDay_test.lo mtime_time_test.lo \
-	mtime_timedelta_test.lo
+am__libmtime_check_la_SOURCES_DIST = mtime_calendar_test.c \
+	mtime_calendar_test.h mtime_date_test.c mtime_date_test.h \
+	mtime_datetime_test.c mtime_datetime_test.h \
+	mtime_julianDay_test.c mtime_julianDay_test.h \
+	mtime_time_test.c mtime_time_test.h mtime_timedelta_test.c \
+	mtime_timedelta_test.h
+@ENABLE_CHECK_TRUE@am_libmtime_check_la_OBJECTS =  \
+@ENABLE_CHECK_TRUE@	mtime_calendar_test.lo mtime_date_test.lo \
+@ENABLE_CHECK_TRUE@	mtime_datetime_test.lo \
+@ENABLE_CHECK_TRUE@	mtime_julianDay_test.lo mtime_time_test.lo \
+@ENABLE_CHECK_TRUE@	mtime_timedelta_test.lo
 libmtime_check_la_OBJECTS = $(am_libmtime_check_la_OBJECTS)
 AM_V_lt = $(am__v_lt_@AM_V@)
 am__v_lt_ = $(am__v_lt_@AM_DEFAULT_V@)
 am__v_lt_0 = --silent
-am__v_lt_1 = 
+am__v_lt_1 =
+@ENABLE_CHECK_TRUE@am_libmtime_check_la_rpath =
 test_runner_SOURCES = test_runner.c
 test_runner_OBJECTS = test_runner.$(OBJEXT)
 am__DEPENDENCIES_1 =
@@ -130,11 +141,11 @@ am__v_P_1 = :
 AM_V_GEN = $(am__v_GEN_@AM_V@)
 am__v_GEN_ = $(am__v_GEN_@AM_DEFAULT_V@)
 am__v_GEN_0 = @echo "  GEN     " $@;
-am__v_GEN_1 = 
+am__v_GEN_1 =
 AM_V_at = $(am__v_at_@AM_V@)
 am__v_at_ = $(am__v_at_@AM_DEFAULT_V@)
 am__v_at_0 = @
-am__v_at_1 = 
+am__v_at_1 =
 DEFAULT_INCLUDES = -I.@am__isrc@ -I$(top_builddir)/config
 depcomp = $(SHELL) $(top_srcdir)/config/depcomp
 am__maybe_remake_depfiles = depfiles
@@ -146,8 +157,6 @@ am__depfiles_remade = ./$(DEPDIR)/mtime_calendar_test.Plo \
 	./$(DEPDIR)/mtime_timedelta_test.Plo \
 	./$(DEPDIR)/test_runner.Po
 am__mv = mv -f
-COMPILE = $(CC) $(DEFS) $(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) \
-	$(CPPFLAGS) $(AM_CFLAGS) $(CFLAGS)
 LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=compile $(CC) $(DEFS) \
 	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
@@ -155,7 +164,7 @@ LTCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CC = $(am__v_CC_@AM_V@)
 am__v_CC_ = $(am__v_CC_@AM_DEFAULT_V@)
 am__v_CC_0 = @echo "  CC      " $@;
-am__v_CC_1 = 
+am__v_CC_1 =
 CCLD = $(CC)
 LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 	$(LIBTOOLFLAGS) --mode=link $(CCLD) $(AM_CFLAGS) $(CFLAGS) \
@@ -163,9 +172,9 @@ LINK = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
 AM_V_CCLD = $(am__v_CCLD_@AM_V@)
 am__v_CCLD_ = $(am__v_CCLD_@AM_DEFAULT_V@)
 am__v_CCLD_0 = @echo "  CCLD    " $@;
-am__v_CCLD_1 = 
+am__v_CCLD_1 =
 SOURCES = $(libmtime_check_la_SOURCES) test_runner.c
-DIST_SOURCES = $(libmtime_check_la_SOURCES) test_runner.c
+DIST_SOURCES = $(am__libmtime_check_la_SOURCES_DIST) test_runner.c
 am__can_run_installinfo = \
   case $$AM_UPDATE_INFO_DIR in \
     n|no|NO) false;; \
@@ -376,7 +385,6 @@ AM_TESTSUITE_SUMMARY_HEADER = ' for $(PACKAGE_STRING)'
 RECHECK_LOGS = $(TEST_LOGS)
 AM_RECURSIVE_TARGETS = check recheck
 TEST_SUITE_LOG = test-suite.log
-TEST_EXTENSIONS = @EXEEXT@ .test
 LOG_DRIVER = $(SHELL) $(top_srcdir)/config/test-driver
 LOG_COMPILE = $(LOG_COMPILER) $(AM_LOG_FLAGS) $(LOG_FLAGS)
 am__set_b = \
@@ -391,12 +399,11 @@ am__set_b = \
   esac
 am__test_logs1 = $(TESTS:=.log)
 am__test_logs2 = $(am__test_logs1:@EXEEXT@.log=.log)
-TEST_LOGS = $(am__test_logs2:.test.log=.log)
-TEST_LOG_DRIVER = $(SHELL) $(top_srcdir)/config/test-driver
-TEST_LOG_COMPILE = $(TEST_LOG_COMPILER) $(AM_TEST_LOG_FLAGS) \
-	$(TEST_LOG_FLAGS)
-am__DIST_COMMON = $(srcdir)/Makefile.in $(top_srcdir)/config/depcomp \
-	$(top_srcdir)/config/test-driver
+TEST_LOGS = $(am__test_logs2:.sh.log=.log)
+SH_LOG_DRIVER = $(SHELL) $(top_srcdir)/config/test-driver
+SH_LOG_COMPILE = $(SH_LOG_COMPILER) $(AM_SH_LOG_FLAGS) $(SH_LOG_FLAGS)
+am__DIST_COMMON = $(srcdir)/Makefile.in $(srcdir)/test_python.sh.in \
+	$(top_srcdir)/config/depcomp $(top_srcdir)/config/test-driver
 DISTFILES = $(DIST_COMMON) $(DIST_SOURCES) $(TEXINFOS) $(EXTRA_DIST)
 ACLOCAL = @ACLOCAL@
 AMTAR = @AMTAR@
@@ -411,6 +418,7 @@ CCDEPMODE = @CCDEPMODE@
 CFLAGS = @CFLAGS@
 CHECK_CFLAGS = @CHECK_CFLAGS@
 CHECK_CLIBS = @CHECK_CLIBS@
+CPP = @CPP@
 CPPFLAGS = @CPPFLAGS@
 CSCOPE = @CSCOPE@
 CTAGS = @CTAGS@
@@ -456,7 +464,6 @@ FCFLAGS_f90 = @FCFLAGS_f90@
 FCMODEXT = @FCMODEXT@
 FCMODINC = @FCMODINC@
 FGREP = @FGREP@
-FILECMD = @FILECMD@
 GREP = @GREP@
 INSTALL = @INSTALL@
 INSTALL_DATA = @INSTALL_DATA@
@@ -476,11 +483,13 @@ MAINT = @MAINT@
 MAKEINFO = @MAKEINFO@
 MANIFEST_TOOL = @MANIFEST_TOOL@
 MKDIR_P = @MKDIR_P@
+MTIME_VERSION_MAJOR = @MTIME_VERSION_MAJOR@
+MTIME_VERSION_MINOR = @MTIME_VERSION_MINOR@
+MTIME_VERSION_PATCH = @MTIME_VERSION_PATCH@
 NM = @NM@
 NMEDIT = @NMEDIT@
 OBJDUMP = @OBJDUMP@
 OBJEXT = @OBJEXT@
-OPENMP_FCFLAG = @OPENMP_FCFLAG@
 OTOOL = @OTOOL@
 OTOOL64 = @OTOOL64@
 PACKAGE = @PACKAGE@
@@ -511,6 +520,7 @@ ac_ct_AR = @ac_ct_AR@
 ac_ct_CC = @ac_ct_CC@
 ac_ct_DUMPBIN = @ac_ct_DUMPBIN@
 ac_ct_FC = @ac_ct_FC@
+acx_modext = @acx_modext@
 am__include = @am__include@
 am__leading_dot = @am__leading_dot@
 am__quote = @am__quote@
@@ -552,7 +562,6 @@ program_transform_name = @program_transform_name@
 psdir = @psdir@
 pyexecdir = @pyexecdir@
 pythondir = @pythondir@
-runstatedir = @runstatedir@
 sbindir = @sbindir@
 sharedstatedir = @sharedstatedir@
 srcdir = @srcdir@
@@ -561,34 +570,39 @@ target_alias = @target_alias@
 top_build_prefix = @top_build_prefix@
 top_builddir = @top_builddir@
 top_srcdir = @top_srcdir@
-
-# Copyright (c) 2013-2024 MPI-M, Luis Kornblueh, Rahul Sinha and DWD, Florian Prill. All rights reserved.
-#
-# SPDX-License-Identifier: BSD-3-Clause
-#
-EXTRA_LTLIBRARIES = libmtime_check.la
-AM_CPPFLAGS = -I$(top_srcdir)/include
+TEST_EXTENSIONS = .sh
+@ENABLE_CHECK_TRUE@check_LTLIBRARIES = libmtime_check.la
+@ENABLE_CHECK_TRUE@AM_CPPFLAGS = -I$(top_srcdir)/include
 @ENABLE_CHECK_TRUE@AM_CFLAGS = $(CHECK_CFLAGS)
 @ENABLE_CHECK_TRUE@test_runner_LDADD = libmtime_check.la $(top_builddir)/src/libmtime.la $(CHECK_CLIBS)
-libmtime_check_la_SOURCES = \
-    mtime_calendar_test.c   \
-    mtime_calendar_test.h   \
-    mtime_date_test.c       \
-    mtime_date_test.h       \
-    mtime_datetime_test.c   \
-    mtime_datetime_test.h   \
-    mtime_julianDay_test.c  \
-    mtime_julianDay_test.h  \
-    mtime_time_test.c       \
-    mtime_time_test.h       \
-    mtime_timedelta_test.c  \
-    mtime_timedelta_test.h
+@ENABLE_CHECK_TRUE@libmtime_check_la_SOURCES = \
+@ENABLE_CHECK_TRUE@    mtime_calendar_test.c   \
+@ENABLE_CHECK_TRUE@    mtime_calendar_test.h   \
+@ENABLE_CHECK_TRUE@    mtime_date_test.c       \
+@ENABLE_CHECK_TRUE@    mtime_date_test.h       \
+@ENABLE_CHECK_TRUE@    mtime_datetime_test.c   \
+@ENABLE_CHECK_TRUE@    mtime_datetime_test.h   \
+@ENABLE_CHECK_TRUE@    mtime_julianDay_test.c  \
+@ENABLE_CHECK_TRUE@    mtime_julianDay_test.h  \
+@ENABLE_CHECK_TRUE@    mtime_time_test.c       \
+@ENABLE_CHECK_TRUE@    mtime_time_test.h       \
+@ENABLE_CHECK_TRUE@    mtime_timedelta_test.c  \
+@ENABLE_CHECK_TRUE@    mtime_timedelta_test.h
 
-MOSTLYCLEANFILES = $(EXTRA_LTLIBRARIES)
+
+# overrides to make regular compilations also use libtool
+COMPILE = $(LIBTOOL) $(AM_V_lt) --tag=CC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(CC) -static $(DEFS) \
+	$(DEFAULT_INCLUDES) $(INCLUDES) $(AM_CPPFLAGS) $(CPPFLAGS) \
+	$(AM_CFLAGS) $(CFLAGS)
+
+FCCOMPILE = $(LIBTOOL) $(AM_V_lt) --tag=FC $(AM_LIBTOOLFLAGS) \
+	$(LIBTOOLFLAGS) --mode=compile $(FC) -static $(AM_FCFLAGS) $(FCFLAGS)
+
 all: all-am
 
 .SUFFIXES:
-.SUFFIXES: .c .lo .log .o .obj .test .test$(EXEEXT) .trs
+.SUFFIXES: .c .lo .log .o .obj .sh .sh$(EXEEXT) .trs
 $(srcdir)/Makefile.in: @MAINTAINER_MODE_TRUE@ $(srcdir)/Makefile.am  $(am__configure_deps)
 	@for dep in $?; do \
 	  case '$(am__configure_deps)' in \
@@ -618,6 +632,8 @@ $(top_srcdir)/configure: @MAINTAINER_MODE_TRUE@ $(am__configure_deps)
 $(ACLOCAL_M4): @MAINTAINER_MODE_TRUE@ $(am__aclocal_m4_deps)
 	cd $(top_builddir) && $(MAKE) $(AM_MAKEFLAGS) am--refresh
 $(am__aclocal_m4_deps):
+test_python.sh: $(top_builddir)/config.status $(srcdir)/test_python.sh.in
+	cd $(top_builddir) && $(SHELL) ./config.status $(subdir)/$@
 
 clean-checkPROGRAMS:
 	@list='$(check_PROGRAMS)'; test -n "$$list" || exit 0; \
@@ -628,10 +644,21 @@ clean-checkPROGRAMS:
 	echo " rm -f" $$list; \
 	rm -f $$list
 
-libmtime_check.la: $(libmtime_check_la_OBJECTS) $(libmtime_check_la_DEPENDENCIES) $(EXTRA_libmtime_check_la_DEPENDENCIES) 
-	$(AM_V_CCLD)$(LINK)  $(libmtime_check_la_OBJECTS) $(libmtime_check_la_LIBADD) $(LIBS)
+clean-checkLTLIBRARIES:
+	-test -z "$(check_LTLIBRARIES)" || rm -f $(check_LTLIBRARIES)
+	@list='$(check_LTLIBRARIES)'; \
+	locs=`for p in $$list; do echo $$p; done | \
+	      sed 's|^[^/]*$$|.|; s|/[^/]*$$||; s|$$|/so_locations|' | \
+	      sort -u`; \
+	test -z "$$locs" || { \
+	  echo rm -f $${locs}; \
+	  rm -f $${locs}; \
+	}
 
-test_runner$(EXEEXT): $(test_runner_OBJECTS) $(test_runner_DEPENDENCIES) $(EXTRA_test_runner_DEPENDENCIES) 
+libmtime_check.la: $(libmtime_check_la_OBJECTS) $(libmtime_check_la_DEPENDENCIES) $(EXTRA_libmtime_check_la_DEPENDENCIES)
+	$(AM_V_CCLD)$(LINK) $(am_libmtime_check_la_rpath) $(libmtime_check_la_OBJECTS) $(libmtime_check_la_LIBADD) $(LIBS)
+
+test_runner$(EXEEXT): $(test_runner_OBJECTS) $(test_runner_DEPENDENCIES) $(EXTRA_test_runner_DEPENDENCIES)
 	@rm -f test_runner$(EXEEXT)
 	$(AM_V_CCLD)$(LINK) $(test_runner_OBJECTS) $(test_runner_LDADD) $(LIBS)
 
@@ -681,10 +708,10 @@ mostlyclean-libtool:
 
 clean-libtool:
 	-rm -rf .libs _libs
-doc-local: 
-install-doc-local: 
-man-local: 
-install-man-local: 
+doc-local:
+install-doc-local:
+man-local:
+install-man-local:
 
 ID: $(am__tagged_files)
 	$(am__define_uniq_tagged_files); mkid -fID $$unique
@@ -858,7 +885,7 @@ $(TEST_SUITE_LOG): $(TEST_LOGS)
 	fi;								\
 	$$success || exit 1
 
-check-TESTS: $(check_PROGRAMS)
+check-TESTS: $(check_PROGRAMS) $(check_LTLIBRARIES)
 	@list='$(RECHECK_LOGS)';           test -z "$$list" || rm -f $$list
 	@list='$(RECHECK_LOGS:.log=.trs)'; test -z "$$list" || rm -f $$list
 	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
@@ -868,7 +895,7 @@ check-TESTS: $(check_PROGRAMS)
 	log_list=`echo $$log_list`; trs_list=`echo $$trs_list`; \
 	$(MAKE) $(AM_MAKEFLAGS) $(TEST_SUITE_LOG) TEST_LOGS="$$log_list"; \
 	exit $$?;
-recheck: all $(check_PROGRAMS)
+recheck: all $(check_PROGRAMS) $(check_LTLIBRARIES)
 	@test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
 	@set +e; $(am__set_TESTS_bases); \
 	bases=`for i in $$bases; do echo $$i; done \
@@ -886,19 +913,19 @@ test_runner.log: test_runner$(EXEEXT)
 	--log-file $$b.log --trs-file $$b.trs \
 	$(am__common_driver_flags) $(AM_LOG_DRIVER_FLAGS) $(LOG_DRIVER_FLAGS) -- $(LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-.test.log:
+.sh.log:
 	@p='$<'; \
 	$(am__set_b); \
-	$(am__check_pre) $(TEST_LOG_DRIVER) --test-name "$$f" \
+	$(am__check_pre) $(SH_LOG_DRIVER) --test-name "$$f" \
 	--log-file $$b.log --trs-file $$b.trs \
-	$(am__common_driver_flags) $(AM_TEST_LOG_DRIVER_FLAGS) $(TEST_LOG_DRIVER_FLAGS) -- $(TEST_LOG_COMPILE) \
+	$(am__common_driver_flags) $(AM_SH_LOG_DRIVER_FLAGS) $(SH_LOG_DRIVER_FLAGS) -- $(SH_LOG_COMPILE) \
 	"$$tst" $(AM_TESTS_FD_REDIRECT)
-@am__EXEEXT_TRUE@.test$(EXEEXT).log:
+@am__EXEEXT_TRUE@.sh$(EXEEXT).log:
 @am__EXEEXT_TRUE@	@p='$<'; \
 @am__EXEEXT_TRUE@	$(am__set_b); \
-@am__EXEEXT_TRUE@	$(am__check_pre) $(TEST_LOG_DRIVER) --test-name "$$f" \
+@am__EXEEXT_TRUE@	$(am__check_pre) $(SH_LOG_DRIVER) --test-name "$$f" \
 @am__EXEEXT_TRUE@	--log-file $$b.log --trs-file $$b.trs \
-@am__EXEEXT_TRUE@	$(am__common_driver_flags) $(AM_TEST_LOG_DRIVER_FLAGS) $(TEST_LOG_DRIVER_FLAGS) -- $(TEST_LOG_COMPILE) \
+@am__EXEEXT_TRUE@	$(am__common_driver_flags) $(AM_SH_LOG_DRIVER_FLAGS) $(SH_LOG_DRIVER_FLAGS) -- $(SH_LOG_COMPILE) \
 @am__EXEEXT_TRUE@	"$$tst" $(AM_TESTS_FD_REDIRECT)
 distdir: $(BUILT_SOURCES)
 	$(MAKE) $(AM_MAKEFLAGS) distdir-am
@@ -934,7 +961,7 @@ distdir-am: $(DISTFILES)
 	  fi; \
 	done
 check-am: all-am
-	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS)
+	$(MAKE) $(AM_MAKEFLAGS) $(check_PROGRAMS) $(check_LTLIBRARIES)
 	$(MAKE) $(AM_MAKEFLAGS) check-TESTS
 check: check-am
 all-am: Makefile
@@ -959,7 +986,6 @@ install-strip:
 	    "INSTALL_PROGRAM_ENV=STRIPPROG='$(STRIP)'" install; \
 	fi
 mostlyclean-generic:
-	-test -z "$(MOSTLYCLEANFILES)" || rm -f $(MOSTLYCLEANFILES)
 	-test -z "$(TEST_LOGS)" || rm -f $(TEST_LOGS)
 	-test -z "$(TEST_LOGS:.log=.trs)" || rm -f $(TEST_LOGS:.log=.trs)
 	-test -z "$(TEST_SUITE_LOG)" || rm -f $(TEST_SUITE_LOG)
@@ -975,8 +1001,8 @@ maintainer-clean-generic:
 	@echo "it deletes files that may require special tools to rebuild."
 clean: clean-am
 
-clean-am: clean-checkPROGRAMS clean-generic clean-libtool clean-local \
-	mostlyclean-am
+clean-am: clean-checkLTLIBRARIES clean-checkPROGRAMS clean-generic \
+	clean-libtool mostlyclean-am
 
 distclean: distclean-am
 		-rm -f ./$(DEPDIR)/mtime_calendar_test.Plo
@@ -1073,17 +1099,17 @@ uninstall-am:
 .MAKE: check-am install-am install-strip
 
 .PHONY: CTAGS GTAGS TAGS all all-am am--depfiles check check-TESTS \
-	check-am clean clean-checkPROGRAMS clean-generic clean-libtool \
-	clean-local cscopelist-am ctags ctags-am distclean \
-	distclean-compile distclean-generic distclean-libtool \
-	distclean-tags distdir doc-am doc-local dvi dvi-am html \
-	html-am info info-am install install-am install-data \
-	install-data-am install-doc-am install-doc-local install-dvi \
-	install-dvi-am install-exec install-exec-am install-html \
-	install-html-am install-info install-info-am install-man \
-	install-man-am install-man-local install-pdf install-pdf-am \
-	install-ps install-ps-am install-strip installcheck \
-	installcheck-am installdirs maintainer-clean \
+	check-am clean clean-checkLTLIBRARIES clean-checkPROGRAMS \
+	clean-generic clean-libtool cscopelist-am ctags ctags-am \
+	distclean distclean-compile distclean-generic \
+	distclean-libtool distclean-tags distdir doc-am doc-local dvi \
+	dvi-am html html-am info info-am install install-am \
+	install-data install-data-am install-doc-am install-doc-local \
+	install-dvi install-dvi-am install-exec install-exec-am \
+	install-html install-html-am install-info install-info-am \
+	install-man install-man-am install-man-local install-pdf \
+	install-pdf-am install-ps install-ps-am install-strip \
+	installcheck installcheck-am installdirs maintainer-clean \
 	maintainer-clean-generic man-am man-local mostlyclean \
 	mostlyclean-compile mostlyclean-generic mostlyclean-libtool \
 	pdf pdf-am ps ps-am recheck tags tags-am uninstall \
@@ -1091,9 +1117,6 @@ uninstall-am:
 
 .PRECIOUS: Makefile
 
-
-clean-local:
-	rm -rf *.dSYM
 
 # Tell versions [3.59,3.63) of GNU make to not export all variables.
 # Otherwise a system limit (for SysV at least) may be exceeded.

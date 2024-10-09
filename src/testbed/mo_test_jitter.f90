@@ -1,6 +1,3 @@
-!
-! Main program for the ICON atmospheric model
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -11,6 +8,8 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Main program for the ICON atmospheric model
 
 !-----------------------------
 #include "omp_definitions.inc"

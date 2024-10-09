@@ -18,20 +18,17 @@ MODULE comin_setup_utils
   PUBLIC :: t_comin_setup_version_info, comin_setup_get_version
   PUBLIC :: comin_setup_version_compatible
 
-
 #include "comin_global.inc"
 #include "comin_version.inc"
-
 
   !> The elements of this derived data type describe the current
   !> community interface.
   !! @ingroup constants
   TYPE, BIND(C) :: t_comin_setup_version_info
     !> ComIn versioning (major and minor version info)
-     INTEGER(kind=c_int) :: version_no_major, version_no_minor, &
-          & version_no_patch
+    INTEGER(kind=c_int) :: version_no_major, version_no_minor, &
+         & version_no_patch
   END TYPE t_comin_setup_version_info
-
 
 CONTAINS
 
@@ -47,15 +44,11 @@ CONTAINS
 
   !> Returns version info.
   !! @ingroup constants
-  !!
-  !! `BIND(C)` is needed to have it as symbol
-  !! `comin_setup_get_version` in the shared library
-  FUNCTION comin_setup_get_version() BIND(C)
+  FUNCTION comin_setup_get_version()
     TYPE(t_comin_setup_version_info) :: comin_setup_get_version
     comin_setup_get_version%version_no_major = COMIN_VERSION_MAJOR
     comin_setup_get_version%version_no_minor = COMIN_VERSION_MINOR
     comin_setup_get_version%version_no_patch = COMIN_VERSION_PATCH
   END FUNCTION comin_setup_get_version
-
 
 END MODULE comin_setup_utils

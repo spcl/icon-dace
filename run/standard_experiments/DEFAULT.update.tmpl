@@ -1,0 +1,37 @@
+#! /bin/sh -eu
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+#
+# Check ready files from monitoring for update scripts
+#
+# %{mkexp_input}
+# $Id: run/standard_experiments/DEFAULT.update.tmpl 1 2024-02-28 00:22:49Z m221078 $
+# %{VERSIONS_|join('\n# ')}
+#
+
+START_DATE=$1
+WORK_DIR=$2
+
+POLL_INTERVAL=%{JOB.poll_interval|d(300)} # seconds
+READY_PATTERN="%{JOB.ready_pattern|d(namelists.mon_ready_file)}"
+PATTERN_KEYWORD=%{JOB.pattern_keyword|d('datetime2')}
+EXP_ID=%{EXP_ID}
+
+READY_PREFIX="${READY_PATTERN%<$PATTERN_KEYWORD>*}"
+READY_SUFFIX="${READY_PATTERN##*<$PATTERN_KEYWORD>}"
+
+cd $WORK_DIR
+while sleep $POLL_INTERVAL
+do
+    CURRENT_DATE=`{ ls -t "$READY_PREFIX"*"$READY_SUFFIX" 2> /dev/null || :; } |
+        sed -E "s|$READY_PREFIX(.+)(..)(..)T(..)(..)(..)Z$READY_SUFFIX|\
+            \1-\2-\3T\4:\5:\6|;q"`
+    %{JOB.progress_command} ${CURRENT_DATE:-$START_DATE}
+done

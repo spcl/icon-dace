@@ -1,3 +1,14 @@
+! ICON
+!
+! ---------------------------------------------------------------
+! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+! Contact information: icon-model.org
+!
+! See AUTHORS.TXT for a list of authors
+! See LICENSES/ for license information
+! SPDX-License-Identifier: BSD-3-Clause
+! ---------------------------------------------------------------
+
 ! Computation of horizontal tracer flux
 !
 ! This routine computes the upwind fluxes for all edges of a uniform
@@ -20,18 +31,6 @@
 ! An improved, fully 2D version without splitting error is
 ! implemeted, too.
 ! See Miura, H. (2007), Mon. Wea. Rev., 135, 4038-4044
-!
-!
-! ICON
-!
-! ---------------------------------------------------------------
-! Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
-! Contact information: icon-model.org
-!
-! See AUTHORS.TXT for a list of authors
-! See LICENSES/ for license information
-! SPDX-License-Identifier: BSD-3-Clause
-! ---------------------------------------------------------------
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -69,7 +68,9 @@ MODULE mo_advection_hflux
     &                               prep_gauss_quadrature_q,                    &
     &                               prep_gauss_quadrature_q_list,               &
     &                               prep_gauss_quadrature_c,                    &
-    &                               prep_gauss_quadrature_c_list
+    &                               prep_gauss_quadrature_c_list,               &
+    &                               prep_gauss_quadrature_q_miura3,             &
+    &                               prep_gauss_quadrature_c_miura3
   USE mo_advection_traj,      ONLY: btraj_dreg, t_back_traj, btraj_compute_o1
   USE mo_advection_geometry,  ONLY: divide_flux_area, divide_flux_area_list
   USE mo_advection_hlimit,    ONLY: hflx_limiter_mo, hflx_limiter_pd
@@ -1584,9 +1585,6 @@ CONTAINS
     REAL(vp), ALLOCATABLE, SAVE ::  & !< gauss quadrature vector
       &  z_quad_vector_sum(:,:,:,:)   !< dim: (nproma,lsq_dim_unk+1,nlev,nblks_e)
 
-    REAL(vp), ALLOCATABLE, SAVE ::  & !< area of departure region [m**2]
-      &  z_dreg_area(:,:,:)           !< dim: (nproma,nlev,nblks_e)
-
     INTEGER, ALLOCATABLE, SAVE, TARGET ::  & !< line indices of upwind cell
       &  z_cell_idx(:,:,:)             !< dim: (nproma,nlev,p_patch%nblks_e)
     INTEGER, ALLOCATABLE, SAVE, TARGET ::  & !< block indices of upwind cell
@@ -1699,17 +1697,16 @@ CONTAINS
     IF ( ld_compute ) THEN
       ! allocate temporary arrays for quadrature and upwind cells
       ALLOCATE( z_quad_vector_sum(nproma,dim_unk,nlev,p_patch%nblks_e), &
-        &       z_dreg_area(nproma,nlev,p_patch%nblks_e),               &
         &       z_cell_idx(nproma,nlev,p_patch%nblks_e),                &
         &       z_cell_blk(nproma,nlev,p_patch%nblks_e),                &
         &       STAT=ist )
       IF (ist /= SUCCESS) THEN
-        CALL finish(routine,                                 &
-          &  'allocation for z_quad_vector_sum, z_dreg_area, ' //    &
-          &  'z_cell_idx, z_cell_blk' )
+        CALL finish(routine,                                       &
+          &  'allocation for z_quad_vector_sum, z_cell_idx,' //    &
+          &  ' z_cell_blk' )
       ENDIF
 
-      !$ACC ENTER DATA CREATE(z_quad_vector_sum, z_dreg_area, z_cell_idx, z_cell_blk)
+      !$ACC ENTER DATA CREATE(z_quad_vector_sum, z_cell_idx, z_cell_blk)
 
       ! compute vertex coordinates for the departure region using a first
       ! order accurate (O(\Delta t)) backward trajectory-method
@@ -1727,16 +1724,16 @@ CONTAINS
       IF (lsq_high_ord == 2) THEN
         ! Gauss-Legendre quadrature with 4 quadrature points for integrating
         ! a quadratic 2D polynomial
-        CALL prep_gauss_quadrature_q( p_patch, z_coords_dreg_v,           &! in
-          &                      z_quad_vector_sum, z_dreg_area,          &! out
+        CALL prep_gauss_quadrature_q_miura3( p_patch, z_coords_dreg_v,    &! in
+          &                      z_quad_vector_sum,                       &! out
           &                      opt_rlstart=i_rlstart, opt_rlend=i_rlend,&! in
           &                      opt_slev=slev_ti, opt_elev=elev_ti       )! in
 
       ELSE IF (lsq_high_ord == 3) THEN
         ! Gauss-Legendre quadrature with 4 quadrature points for integrating
         ! a cubic 2D polynomial
-        CALL prep_gauss_quadrature_c( p_patch, z_coords_dreg_v,           &! in
-          &                      z_quad_vector_sum, z_dreg_area,          &! out
+        CALL prep_gauss_quadrature_c_miura3( p_patch, z_coords_dreg_v,    &! in
+          &                      z_quad_vector_sum,                       &! out
           &                      opt_rlstart=i_rlstart, opt_rlend=i_rlend,&! in
           &                      opt_slev=slev_ti, opt_elev=elev_ti       )! in
       ENDIF
@@ -1844,7 +1841,7 @@ CONTAINS
 !$NEC unroll(6)
             p_out_e(je,jk,jb) =                                                       &
               &  DOT_PRODUCT(z_lsq_coeff(1:6,ptr_ilc(je,jk,jb),jk,ptr_ibc(je,jk,jb)), &
-              &  z_quad_vector_sum(je,1:6,jk,jb) ) / z_dreg_area(je,jk,jb)
+              &  z_quad_vector_sum(je,1:6,jk,jb) )
 
           ENDDO
         ENDDO
@@ -1860,7 +1857,7 @@ CONTAINS
 !$NEC unroll(10)
             p_out_e(je,jk,jb) =                                                        &
               &  DOT_PRODUCT(z_lsq_coeff(1:10,ptr_ilc(je,jk,jb),jk,ptr_ibc(je,jk,jb)), &
-              &  z_quad_vector_sum(je,1:10,jk,jb) ) / z_dreg_area(je,jk,jb)
+              &  z_quad_vector_sum(je,1:10,jk,jb) )
 
           ENDDO
         ENDDO
@@ -1888,7 +1885,7 @@ CONTAINS
 !$NEC unroll(6)
             p_out_e(je,jk,jb) =                                                       &
               &  DOT_PRODUCT(z_lsq_coeff(1:6,ptr_ilc(je,jk,jb),jk,ptr_ibc(je,jk,jb)), &
-              &  z_quad_vector_sum(je,1:6,jk,jb) ) / z_dreg_area(je,jk,jb)            &
+              &  z_quad_vector_sum(je,1:6,jk,jb) )                                    &
               &  * p_mass_flx_e(je,jk,jb)
 
           ENDDO
@@ -1905,7 +1902,7 @@ CONTAINS
 !$NEC unroll(10)
             p_out_e(je,jk,jb) =                                                        &
               &  DOT_PRODUCT(z_lsq_coeff(1:10,ptr_ilc(je,jk,jb),jk,ptr_ibc(je,jk,jb)), &
-              &  z_quad_vector_sum(je,1:10,jk,jb) ) / z_dreg_area(je,jk,jb)            &
+              &  z_quad_vector_sum(je,1:10,jk,jb) )                                    &
               &  * p_mass_flx_e(je,jk,jb)
 
           ENDDO
@@ -1950,14 +1947,14 @@ CONTAINS
       ! upwind cell indices
 
       !$ACC WAIT(1)
-      !$ACC EXIT DATA DELETE(z_quad_vector_sum, z_dreg_area, z_cell_idx, z_cell_blk)
+      !$ACC EXIT DATA DELETE(z_quad_vector_sum, z_cell_idx, z_cell_blk)
 
-      DEALLOCATE( z_quad_vector_sum, z_dreg_area, z_cell_idx, z_cell_blk, &
+      DEALLOCATE( z_quad_vector_sum, z_cell_idx, z_cell_blk, &
         &         STAT=ist )
       IF (ist /= SUCCESS) THEN
-        CALL finish(routine,                                 &
-          &  'deallocation for z_quad_vector_sum, z_dreg_area, ' //  &
-          &  ' z_cell_idx, z_cell_blk failed' )
+        CALL finish(routine,                                        &
+          &  'deallocation for z_quad_vector_sum, z_cell_idx,' //   &
+          &  ' z_cell_blk failed' )
       ENDIF
     END IF
 

@@ -1,5 +1,0 @@
-#!@SHELL@
-
-@TEST_MPI_FALSE@exit 77
-
-@MPI_LAUNCH@ -n 5 ./test_proc_sphere_part_parallel.x

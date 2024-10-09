@@ -1,9 +1,3 @@
-! Initialization routines for the terminator 'toy' chemistry as used in DCMIP2016.
-!
-! Literature
-! Dynamical Core Model Intercomparison Project (DCMIP2016) Test Case Document
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Initialization routines for the terminator 'toy' chemistry as used in DCMIP2016.
+!
+! Literature
+! Dynamical Core Model Intercomparison Project (DCMIP2016) Test Case Document
 
 MODULE mo_nh_dcmip_terminator
 

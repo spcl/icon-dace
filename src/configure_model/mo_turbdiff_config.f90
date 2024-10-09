@@ -1,8 +1,3 @@
-! @brief configuration setup for turbulent diffusion (turbdiff)
-!
-! configuration setup for turbulent diffusion
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +9,10 @@
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
 
+! @brief configuration setup for turbulent diffusion (turbdiff)
+!
+! configuration setup for turbulent diffusion
+
 MODULE mo_turbdiff_config
 
   USE mo_kind,               ONLY: wp
@@ -23,16 +22,15 @@ MODULE mo_turbdiff_config
   PUBLIC
 
 
-
   !!--------------------------------------------------------------------------
   !! Basic configuration setup for turbulent diffusion (turbdiff)
   !!--------------------------------------------------------------------------
   TYPE :: t_turbdiff_config
-
-    ! namelist variables
-
+  
     REAL(wp), DIMENSION(:), POINTER :: &
       &  impl_weight    ! implicit weights for tridiagonal solver
+
+    ! namelist parameters from MODULE 'turb_data':
 
     INTEGER :: &   ! mode of surface-atmosphere transfer
       &  imode_tran 
@@ -42,12 +40,14 @@ MODULE mo_turbdiff_config
       &  imode_turb
     INTEGER :: &   ! mode of cloud representation in turbulence parametr.
       &  icldm_turb
+    INTEGER :: &   ! type of water cloud diagnosis
+      &  itype_wcld
     INTEGER :: &   ! type of shear production for TKE
       &  itype_sher
-    INTEGER :: &   ! mode of vertical smoothing of TKE source terms
-      &  imode_frcsmot
     INTEGER :: &   ! mode of the separated horizontal shear mode 
       &  imode_shshear
+    INTEGER :: &   ! mode of vertical smoothing of TKE source terms
+      &  imode_frcsmot
     INTEGER :: &   ! mode of the SSO-turbulence coupling
       &  imode_tkesso
 
@@ -59,11 +59,10 @@ MODULE mo_turbdiff_config
       &  ltkeshs
     LOGICAL :: &   ! explicit corrections of the implicit calculated turbul. diff.
       &  lexpcor
-    LOGICAL :: &   ! consideration of thermal TKE-sources in the enthalpy budget
+    LOGICAL :: &   ! consideration of minor turbulent sources in the enthalpy budget
       &  ltmpcor
     LOGICAL :: &   ! using the profile values of the lowest main level instead of
       &  lprfcor   ! the mean value of the lowest layer for surface flux calulations
-
     LOGICAL :: &   ! nonlocal calculation of vertical gradients used for turbul. diff.
       &  lnonloc 
     LOGICAL :: &   ! free-slip lower boundary condition (use for idealized runs only!)
@@ -73,25 +72,21 @@ MODULE mo_turbdiff_config
     LOGICAL :: &   ! lower flux condition for vertical diffusion calculation
       &  lsflcnd
 
-    LOGICAL :: &   ! TRUE: horizontally homogeneous roughness length 
-      &  lconst_z0 ! (for idealized testcases)
-
     REAL(wp):: &   ! turbulent master length scale 
       &  tur_len   ! (devided by roughness length)
     REAL(wp):: &   ! effectiv length scale of surface patterns
       &  pat_len   !
     REAL(wp):: &   ! scaling factor for stability correction of 'tur_len'
       &  a_stab    !
-    REAL(wp):: &   ! mode of estimating the Charnock-Parameter
-      & imode_charpar
-    REAL(wp):: &   ! lower limit of velocity-dependent Charnock-parameter
-      &  alpha0    !
-    REAL(wp):: &   ! upper limit of velocity-dependent Charnock-parameter
-      &  alpha0_max !
-    REAL(wp):: &   ! additive ensemble perturbation of Charnock-parameter
-      &  alpha0_pert !
-    REAL(wp):: &   ! scaling factor for molecular roughness length of ocean waves
-      &  alpha1    !
+    REAL(wp):: &   ! length scale factor for the separated horizontal shear mode
+      &  a_hshr    ! 
+
+    REAL(wp):: &   ! implicit weight near the surface (maximal value)
+      &  impl_s    ! 
+    REAL(wp):: &   ! implicit weight near top of the atmosphere (maximal value)
+      &  impl_t    ! 
+    REAL(wp):: &   ! constant diffusion coefficient for TKE
+      &  c_diff    !
     REAL(wp):: &   ! minimal diffusion coefficient for scalars (heat)
       &  tkhmin    !
     REAL(wp):: &   ! minimal diffusion coefficient for momentum
@@ -100,8 +95,20 @@ MODULE mo_turbdiff_config
       &  tkhmin_strat    !
     REAL(wp):: &   ! enhanced minimal diffusion coefficient for momentum in the stratosphere
       &  tkmmin_strat    !
-    REAL(wp):: &   ! constant diffusion coefficient for TKE
-      &  c_diff    !
+
+    INTEGER:: &    ! mode to treating the aerodynamic surface-smoothing by snow 
+      & imode_charpar
+    REAL(wp):: &   ! mode to treating the aerodynamic surface-smoothing by snow
+      & imode_snowsmot
+    REAL(wp):: &   ! lower limit of velocity-dependent Charnock-parameter
+      &  alpha0    !
+    REAL(wp):: &   ! upper limit of velocity-dependent Charnock-parameter
+      &  alpha0_max !
+    REAL(wp):: &   ! additive ensemble perturbation of Charnock-parameter
+      &  alpha0_pert !
+    REAL(wp):: &   ! scaling factor for molecular roughness length of ocean waves
+      &  alpha1    !
+
     REAL(wp):: &   ! scaling factor of laminar layer for scalars (heat)
       &  rlam_heat !
     REAL(wp):: &   ! scaling factor of laminar layer for momentum
@@ -112,19 +119,18 @@ MODULE mo_turbdiff_config
       &  rat_lam   !
     REAL(wp):: &   ! scaling correction factor for laminar layers of glacier surfaces
       &  rat_glac  ! 
+
     REAL(wp):: &   ! time smoothing factor for TKE
       &  tkesmot   ! 
     REAL(wp):: &   ! vertical smoothing factor of TKE forcing terms
       &  frcsmot   ! 
-    REAL(wp):: &   ! implicit weight near the surface (maximal value)
-      &  impl_s    ! 
-    REAL(wp):: &   ! implicit weight near top of the atmosphere (maximal value)
-      &  impl_t    ! 
-    REAL(wp):: &   ! Length scale factor for the separated horizontal shear mode
-      &  a_hshr    ! 
     REAL(wp):: &   ! Parameter for pdf width in turbulent cloud cover scheme
       &  q_crit    ! 
 
+    ! extra namelist parameters from MODULE 'mo_turbdiff_nml':
+
+    LOGICAL :: &   ! TRUE: horizontally homogeneous roughness length 
+      &  lconst_z0 ! (for idealized testcases)
     REAL(wp):: &   ! horizontally homogeneous roughness length 
       &  const_z0  ! (for idealized testcases)
 
@@ -133,16 +139,6 @@ MODULE mo_turbdiff_config
 
     LOGICAL :: &   ! turbulent diffusion of snow QS
       &  ldiff_qs  ! .FALSE.: OFF
-
-    !
-    ! Switches controlling other physical parameterizations:
-    !
-    INTEGER :: &  ! type of water cloud diagnosis
-      &  itype_wcld
-
-    !
-    ! derived variables
-    !
 
                    
   END TYPE t_turbdiff_config

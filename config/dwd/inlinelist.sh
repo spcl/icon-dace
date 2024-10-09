@@ -1,12 +1,13 @@
 # ICON
 #
-# ------------------------------------------
+# ---------------------------------------------------------------
 # Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
 # Contact information: icon-model.org
+#
 # See AUTHORS.TXT for a list of authors
 # See LICENSES/ for license information
 # SPDX-License-Identifier: BSD-3-Clause
-# ------------------------------------------
+# ---------------------------------------------------------------
 
 # Join all arguments using the separator given by the first argument, prefixing each with the second.
 # Usage: join_arr <sep> <prefix> <item0> <item1>...
@@ -40,8 +41,11 @@ INLINE_LIST_ICON=(
   src/configure_model/mo_parallel_config.f90
   src/lnd_phy_nwp/mo_nwp_sfc_interp.f90
   src/parallel_infrastructure/mo_extents.f90
-  src/shared/mo_math_utilities.f90
   src/shared/mo_statistics.f90
+)
+
+INLINE_LIST_ICON+=(
+  externals/math-support/src/mo_math_utilities.F90
 )
 
 

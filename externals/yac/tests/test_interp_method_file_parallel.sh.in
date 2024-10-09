@@ -1,6 +1,0 @@
-#!@SHELL@
-
-@TEST_NETCDF_FALSE@exit 77
-@TEST_MPI_FALSE@exit 77
-
-@MPI_LAUNCH@ -n 3 ./test_interp_method_file_parallel.x

@@ -1,5 +1,9 @@
 #!/usr/bin/env python3
 
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: BSD-3-Clause
+
 from yac import YAC, Curve2dGrid, Location, Field, TimeUnit
 from itertools import product
 import math

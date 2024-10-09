@@ -43,4 +43,3 @@ if(YAXT_FOUND)
     target_link_libraries(YAXT::YAXT_Fortran INTERFACE YAXT::YAXT_C)
   endif()
 endif()
-

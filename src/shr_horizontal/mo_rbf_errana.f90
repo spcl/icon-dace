@@ -1,9 +1,3 @@
-! Estimate floating point error in RBF interpolation. This module
-! helps to decide whether Cholesky applied to the RBF matrices will
-! succeed in floating point arithmetic and gives a qualtiy measure
-! for the chosen shape parameter.
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Estimate floating point error in RBF interpolation. This module
+! helps to decide whether Cholesky applied to the RBF matrices will
+! succeed in floating point arithmetic and gives a qualtiy measure
+! for the chosen shape parameter.
 
 MODULE mo_rbf_errana
 

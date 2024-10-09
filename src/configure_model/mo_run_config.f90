@@ -1,8 +1,3 @@
-! Data type containing basic control variables for a model integration.
-!
-! Note that in a coupled simulation, each model component (e.g.,
-! atmosphere, ocean) will have its own run-configuration.
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -13,6 +8,11 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! Data type containing basic control variables for a model integration.
+!
+! Note that in a coupled simulation, each model component (e.g.,
+! atmosphere, ocean) will have its own run-configuration.
 
 MODULE mo_run_config
 

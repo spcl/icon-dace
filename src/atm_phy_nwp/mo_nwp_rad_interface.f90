@@ -1,9 +1,3 @@
-!
-! This module is the interface between nwp_nh_interface to the radiation schemes
-! (ecRad and RRTM).
-!
-!
-!
 ! ICON
 !
 ! ---------------------------------------------------------------
@@ -14,6 +8,9 @@
 ! See LICENSES/ for license information
 ! SPDX-License-Identifier: BSD-3-Clause
 ! ---------------------------------------------------------------
+
+! This module is the interface between nwp_nh_interface to the radiation schemes
+! (ecRad and RRTM).
 
 !----------------------------
 #include "omp_definitions.inc"
@@ -112,18 +109,16 @@ MODULE mo_nwp_rad_interface
     TYPE(datetime), POINTER :: prev_radtime
     TYPE(timedelta), POINTER :: td_dt_rad
 
-    REAL(wp) :: &
-      & zaeq1(nproma,pt_patch%nlev,pt_patch%nblks_c), &
-      & zaeq2(nproma,pt_patch%nlev,pt_patch%nblks_c), &
-      & zaeq3(nproma,pt_patch%nlev,pt_patch%nblks_c), &
-      & zaeq4(nproma,pt_patch%nlev,pt_patch%nblks_c), &
-      & zaeq5(nproma,pt_patch%nlev,pt_patch%nblks_c)
-
-    REAL(wp), ALLOCATABLE :: & ! These fields are currently only used for Kinne-Aerosol
-      & od_lw(:,:,:,:)  , & !< LW optical thickness of aerosols
-      & od_sw(:,:,:,:)  , & !< SW aerosol optical thickness
-      & g_sw (:,:,:,:)  , & !< SW aerosol asymmetry factor
-      & ssa_sw(:,:,:,:)     !< SW aerosol single scattering albedo
+    REAL(wp), TARGET, ALLOCATABLE :: &
+      &  zaeq1(:,:,:),   & !< Tegen optical thicknesses       1: continental
+      &  zaeq2(:,:,:),   & !< relative to 550 nm, including   2: maritime
+      &  zaeq3(:,:,:),   & !< a vertical profile              3: desert
+      &  zaeq4(:,:,:),   & !< for 5 different                 4: urban
+      &  zaeq5(:,:,:),   & !< aerosol species.                5: stratospheric background
+      &  od_lw(:,:,:,:), & !< LW optical thickness of aerosols
+      &  od_sw(:,:,:,:), & !< SW aerosol optical thickness
+      &  g_sw (:,:,:,:), & !< SW aerosol asymmetry factor
+      &  ssa_sw(:,:,:,:)     !< SW aerosol single scattering albedo
 
     CHARACTER(len=max_timedelta_str_len) :: dstring
     INTEGER :: jg
@@ -183,7 +178,6 @@ MODULE mo_nwp_rad_interface
 #endif
 
     ! Aerosol
-    !$ACC DATA CREATE(zaeq1, zaeq2, zaeq3, zaeq4, zaeq5) IF(lzacc)
     CALL nwp_aerosol_interface(mtime_datetime, pt_patch, ext_data, pt_diag, prm_diag,     &
       &                        zf(:,:,:), zh(:,:,:), dz(:,:,:),                           &
       &                        atm_phy_nwp_config(jg)%dt_rad,                             &
@@ -332,10 +326,7 @@ MODULE mo_nwp_rad_interface
       CALL finish(routine,message_text)
     END SELECT ! inwp_radiation
 
-    !$ACC END DATA
-
-
-    CALL nwp_aerosol_cleanup(od_lw, od_sw, ssa_sw, g_sw)
+    CALL nwp_aerosol_cleanup(zaeq1, zaeq2, zaeq3, zaeq4, zaeq5, od_lw, od_sw, ssa_sw, g_sw)
 
   END SUBROUTINE nwp_radiation
 
