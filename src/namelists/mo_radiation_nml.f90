@@ -75,9 +75,9 @@ MODULE mo_radiation_nml
   USE mo_io_units,           ONLY: filename_max
 #ifdef _OPENACC
   USE openacc
-#define __acc_attach(ptr) CALL acc_attach(ptr)  
+!#define __acc_attach(ptr) CALL acc_attach(ptr)  
 #else
-#define __acc_attach(ptr)
+!#define __acc_attach(ptr)
 #endif
 
   IMPLICIT NONE
@@ -387,7 +387,7 @@ CONTAINS
     ELSE
       csalb => csalb1
     ENDIF
-    __acc_attach(csalb)
+    !__acc_attach(csalb)
 
     !$ACC UPDATE DEVICE(config_decorr_pole, config_decorr_equator, config_islope_rad) ASYNC(1)
 
