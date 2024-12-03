@@ -1,60 +1,72 @@
-SUBROUTINE RRTM_KGB8
+! # 1 "ifsrrtm/rrtm_kgb8.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/rrtm_kgb8.f90"
+subroutine rrtm_kgb8
 
-!     Originally by Eli J. Mlawer, Atmospheric & Environmental Research.
-!     BAND 8:  1080-1180 cm-1 (low (i.e.>~300mb) - H2O; high - O3)
-!     Reformatted for F90 by JJMorcrette, ECMWF
-!     R. Elkhatib 12-10-2005 Split for faster and more robust compilation.
-!     G.Mozdzynski March 2011 read constants from files
-!     ABozzo updated to rrtmg v4.85
-!     T. Wilhelmsson and K. Yessad (Oct 2013) Geometry and setup refactoring.
-!      F. Vana  05-Mar-2015  Support for single precision
+!     originally by eli j. mlawer, atmospheric & environmental research.
+!     band 8:  1080-1180 cm-1 (low (i.e.>~300mb) - h2o; high - o3)
+!     reformatted for f90 by jjmorcrette, ecmwf
+!     r. elkhatib 12-10-2005 split for faster and more robust compilation.
+!     g.mozdzynski march 2011 read constants from files
+!     abozzo updated to rrtmg v4.85
+!     t. wilhelmsson and k. yessad (oct 2013) geometry and setup refactoring.
+!      f. vana  05-mar-2015  support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRB
-USE ecradhook   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
-USE YOMLUN    ,ONLY : NULRAD
-USE MPL_MODULE,ONLY : MPL_BROADCAST
-USE YOMTAG    ,ONLY : MTAGRAD
-USE YOMMP0    , ONLY : NPROC, MYPROC
+use parkind1  ,only : jprb
+use ecradhook   ,only : lhook,   dr_hook, jphook
+use yomlun    ,only : nulrad
+use mpl_module,only : mpl_broadcast
+use yomtag    ,only : mtagrad
+use yommp0    , only : nproc, myproc
 
-USE YOERRTO8 , ONLY : KAO     ,KBO       ,SELFREFO ,FORREFO,FRACREFAO ,&
- & FRACREFBO, CFC12O  ,CFC22ADJO ,KAO_MCO2,KBO_MCO2,&
- & KAO_MN2O,KBO_MN2O,KAO_MO3  , KAO_D, KBO_D
+use yoerrto8 , only : kao     ,kbo       ,selfrefo ,forrefo,fracrefao ,&
+ & fracrefbo, cfc12o  ,cfc22adjo ,kao_mco2,kbo_mco2,&
+ & kao_mn2o,kbo_mn2o,kao_mo3  , kao_d, kbo_d
 
 
 !     ------------------------------------------------------------------
 
-IMPLICIT NONE
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-
-#include "abor1.intfb.h"
-
-IF (LHOOK) CALL DR_HOOK('RRTM_KGB8',0,ZHOOK_HANDLE)
-
-IF( MYPROC==1 )THEN
-  READ(NULRAD) KAO_D,KBO_D
-  KAO = REAL(KAO_D,JPRB)
-  KBO = REAL(KBO_D,JPRB)
-ENDIF
-IF( NPROC>1 )THEN
-  CALL MPL_BROADCAST (KAO,MTAGRAD,1,CDSTRING='RRTM_KGB8:')
-  CALL MPL_BROADCAST (KBO,MTAGRAD,1,CDSTRING='RRTM_KGB8:')
-ENDIF
+implicit none
+real(kind=jphook) :: zhook_handle
 
 
-! Planck fraction mapping level : P=473.4280 mb, T = 259.83 K
-      FRACREFAO(:) = (/ &
-      &  1.6004E-01_JPRB,1.5437E-01_JPRB,1.4502E-01_JPRB,1.3084E-01_JPRB,1.1523E-01_JPRB,9.7743E-02_JPRB, &
-      &  8.0376E-02_JPRB,6.0261E-02_JPRB,4.1111E-02_JPRB,4.4772E-03_JPRB,3.6511E-03_JPRB,2.9154E-03_JPRB, &
-      &  2.1184E-03_JPRB,1.3048E-03_JPRB,4.6637E-04_JPRB,6.5624E-05_JPRB/)
+! # 1 "./include/abor1.intfb.h" 1
+interface
+subroutine abor1(cdtext)
+character(len=*), intent(in) :: cdtext
+end subroutine abor1
+end interface
+! # 31 "ifsrrtm/rrtm_kgb8.f90" 2
 
-! Planck fraction mapping level : P=95.5835 mb, T= 215.7 K
-      FRACREFBO(:) = (/ &
-      &  1.4987E-01_JPRB,1.4665E-01_JPRB,1.4154E-01_JPRB,1.3200E-01_JPRB,1.1902E-01_JPRB,1.0352E-01_JPRB, &
-      &  8.4939E-02_JPRB,6.4105E-02_JPRB,4.3190E-02_JPRB,4.5129E-03_JPRB,3.7656E-03_JPRB,2.8733E-03_JPRB, &
-      &  2.0947E-03_JPRB,1.3201E-03_JPRB,5.1832E-04_JPRB,7.7473E-05_JPRB/)
+if (lhook) call dr_hook('rrtm_kgb8',0,zhook_handle)
 
-! Minor gas mapping level:
+if( myproc==1 )then
+  read(nulrad) kao_d,kbo_d
+  kao = real(kao_d,jprb)
+  kbo = real(kbo_d,jprb)
+endif
+if( nproc>1 )then
+  call mpl_broadcast (kao,mtagrad,1,cdstring='rrtm_kgb8:')
+  call mpl_broadcast (kbo,mtagrad,1,cdstring='rrtm_kgb8:')
+endif
+
+
+! planck fraction mapping level : p=473.4280 mb, t = 259.83 k
+      fracrefao(:) = (/ &
+      &  1.6004e-01_jprb,1.5437e-01_jprb,1.4502e-01_jprb,1.3084e-01_jprb,1.1523e-01_jprb,9.7743e-02_jprb, &
+      &  8.0376e-02_jprb,6.0261e-02_jprb,4.1111e-02_jprb,4.4772e-03_jprb,3.6511e-03_jprb,2.9154e-03_jprb, &
+      &  2.1184e-03_jprb,1.3048e-03_jprb,4.6637e-04_jprb,6.5624e-05_jprb/)
+
+! planck fraction mapping level : p=95.5835 mb, t= 215.7 k
+      fracrefbo(:) = (/ &
+      &  1.4987e-01_jprb,1.4665e-01_jprb,1.4154e-01_jprb,1.3200e-01_jprb,1.1902e-01_jprb,1.0352e-01_jprb, &
+      &  8.4939e-02_jprb,6.4105e-02_jprb,4.3190e-02_jprb,4.5129e-03_jprb,3.7656e-03_jprb,2.8733e-03_jprb, &
+      &  2.0947e-03_jprb,1.3201e-03_jprb,5.1832e-04_jprb,7.7473e-05_jprb/)
+
+! minor gas mapping level:
 !     lower - co2, p = 1053.63 mb, t = 294.2 k
 !     lower - o3,  p = 317.348 mb, t = 240.77 k
 !     lower - n2o, p = 706.2720 mb, t= 278.94 k
@@ -62,563 +74,607 @@ ENDIF
 !     upper - co2, p = 35.1632 mb, t = 223.28 k
 !     upper - n2o, p = 8.716e-2 mb, t = 226.03 k
 
-CFC12O( :) = (/&
- & 85.4027_JPRB, 89.4696_JPRB, 74.0959_JPRB, 67.7480_JPRB,&
- & 61.2444_JPRB, 59.9073_JPRB, 60.8296_JPRB, 63.0998_JPRB,&
- & 59.6110_JPRB, 64.0735_JPRB, 57.2622_JPRB, 58.9721_JPRB,&
- & 43.5505_JPRB, 26.1192_JPRB, 32.7023_JPRB, 32.8667_JPRB/)  
+cfc12o( :) = (/&
+ & 85.4027_jprb, 89.4696_jprb, 74.0959_jprb, 67.7480_jprb,&
+ & 61.2444_jprb, 59.9073_jprb, 60.8296_jprb, 63.0998_jprb,&
+ & 59.6110_jprb, 64.0735_jprb, 57.2622_jprb, 58.9721_jprb,&
+ & 43.5505_jprb, 26.1192_jprb, 32.7023_jprb, 32.8667_jprb/)  
 
-!     Original CFC22 is multiplied by 1.485 to account for the 780-850 cm-1 
+!     original cfc22 is multiplied by 1.485 to account for the 780-850 cm-1 
 !     and 1290-1335 cm-1 bands.
-CFC22ADJO( :) = (/&
- & 135.335_JPRB, 89.6642_JPRB, 76.2375_JPRB, 65.9748_JPRB,&
- & 63.1164_JPRB, 60.2935_JPRB, 64.0299_JPRB, 75.4264_JPRB,&
- & 51.3018_JPRB, 7.07911_JPRB, 5.86928_JPRB, 0.398693_JPRB,&
- & 2.82885_JPRB, 9.12751_JPRB, 6.28271_JPRB, 0.0_JPRB/)  
+cfc22adjo( :) = (/&
+ & 135.335_jprb, 89.6642_jprb, 76.2375_jprb, 65.9748_jprb,&
+ & 63.1164_jprb, 60.2935_jprb, 64.0299_jprb, 75.4264_jprb,&
+ & 51.3018_jprb, 7.07911_jprb, 5.86928_jprb, 0.398693_jprb,&
+ & 2.82885_jprb, 9.12751_jprb, 6.28271_jprb, 0.0_jprb/)  
 
 !     ------------------------------------------------------------------
 
-!     The array KAO contains absorption coefs at the 16 chosen g-values 
-!     for a range of pressure levels > ~100mb and temperatures.  The first
-!     index in the array, JT, which runs from 1 to 5, corresponds to 
-!     different temperatures.  More specifically, JT = 3 means that the 
-!     data are for the corresponding TREF for this  pressure level, 
-!     JT = 2 refers to the temperatureTREF-15, JT = 1 is for TREF-30, 
-!     JT = 4 is for TREF+15, and JT = 5 is for TREF+30.  The second 
-!     index, JP, runs from 1 to 13 and refers to the corresponding 
-!     pressure level in PREF (e.g. JP = 1 is for a pressure of 1053.63 mb).  
-!     The third index, IG, goes from 1 to 16, and tells us which 
+!     the array kao contains absorption coefs at the 16 chosen g-values 
+!     for a range of pressure levels > ~100mb and temperatures.  the first
+!     index in the array, jt, which runs from 1 to 5, corresponds to 
+!     different temperatures.  more specifically, jt = 3 means that the 
+!     data are for the corresponding tref for this  pressure level, 
+!     jt = 2 refers to the temperaturetref-15, jt = 1 is for tref-30, 
+!     jt = 4 is for tref+15, and jt = 5 is for tref+30.  the second 
+!     index, jp, runs from 1 to 13 and refers to the corresponding 
+!     pressure level in pref (e.g. jp = 1 is for a pressure of 1053.63 mb).  
+!     the third index, ig, goes from 1 to 16, and tells us which 
 !     g-interval the absorption coefficients are for.
-!     The array KA contains absorption coef5s at the 16 chosen g-values 
-!     for a range of pressure levels > ~100mb and temperatures.  The first
-!     index in the array, JT, which runs from 1 to 5, corresponds to 
-!     different temperatures.  More specifically, JT = 3 means that the 
-!     data are for the cooresponding TREF for this  pressure level, 
-!     JT = 2 refers to the temperature
-!     TREF-15, JT = 1 is for TREF-30, JT = 4 is for TREF+15, and JT = 5
-!     is for TREF+30.  The second index, JP, runs from 1 to 13 and refers
-!     to the corresponding pressure level in PREF (e.g. JP = 1 is for a
-!     pressure of 1053.63 mb).  The third index, IG, goes from 1 to 16,
+!     the array ka contains absorption coef5s at the 16 chosen g-values 
+!     for a range of pressure levels > ~100mb and temperatures.  the first
+!     index in the array, jt, which runs from 1 to 5, corresponds to 
+!     different temperatures.  more specifically, jt = 3 means that the 
+!     data are for the cooresponding tref for this  pressure level, 
+!     jt = 2 refers to the temperature
+!     tref-15, jt = 1 is for tref-30, jt = 4 is for tref+15, and jt = 5
+!     is for tref+30.  the second index, jp, runs from 1 to 13 and refers
+!     to the corresponding pressure level in pref (e.g. jp = 1 is for a
+!     pressure of 1053.63 mb).  the third index, ig, goes from 1 to 16,
 !     and tells us which "g-channel" the absorption coefficients are for.
 
 
 
-!     The array KBO contains absorption coefs at the 16 chosen g-values 
-!     for a range of pressure levels < ~100mb and temperatures. The first 
-!     index in the array, JT, which runs from 1 to 5, corresponds to 
-!     different temperatures.  More specifically, JT = 3 means that the 
-!     data are for the reference temperature TREF for this pressure 
-!     level, JT = 2 refers to the temperature TREF-15, JT = 1 is for
-!     TREF-30, JT = 4 is for TREF+15, and JT = 5 is for TREF+30.  
-!     The second index, JP, runs from 13 to 59 and refers to the JPth
+!     the array kbo contains absorption coefs at the 16 chosen g-values 
+!     for a range of pressure levels < ~100mb and temperatures. the first 
+!     index in the array, jt, which runs from 1 to 5, corresponds to 
+!     different temperatures.  more specifically, jt = 3 means that the 
+!     data are for the reference temperature tref for this pressure 
+!     level, jt = 2 refers to the temperature tref-15, jt = 1 is for
+!     tref-30, jt = 4 is for tref+15, and jt = 5 is for tref+30.  
+!     the second index, jp, runs from 13 to 59 and refers to the jpth
 !     reference pressure level (see taumol.f for the value of these
-!     pressure levels in mb).  The third index, IG, goes from 1 to 16,
+!     pressure levels in mb).  the third index, ig, goes from 1 to 16,
 !     and tells us which g-interval the absorption coefficients are for.
 
 
 
-!     The array KAO_Mxx contains the absorption coefficient for 
+!     the array kao_mxx contains the absorption coefficient for 
 !     a minor species at the 16 chosen g-values for a reference pressure
-!     level below 100~ mb.   The first index refers to temperature 
-!     in 7.2 degree increments.  For instance, JT = 1 refers to a 
-!     temperature of 188.0, JT = 2 refers to 195.2, etc. The second index 
+!     level below 100~ mb.   the first index refers to temperature 
+!     in 7.2 degree increments.  for instance, jt = 1 refers to a 
+!     temperature of 188.0, jt = 2 refers to 195.2, etc. the second index 
 !     runs over the g-channel (1 to 16).
 
-      KAO_MCO2(:, 1) = (/ &
-     & 8.88964E-07_JPRB, 1.13087E-06_JPRB, 1.43861E-06_JPRB, 1.83010E-06_JPRB, 2.32811E-06_JPRB, &
-     & 2.96165E-06_JPRB, 3.76760E-06_JPRB, 4.79286E-06_JPRB, 6.09712E-06_JPRB, 7.75630E-06_JPRB, &
-     & 9.86699E-06_JPRB, 1.25521E-05_JPRB, 1.59678E-05_JPRB, 2.03130E-05_JPRB, 2.58407E-05_JPRB, &
-     & 3.28727E-05_JPRB, 4.18182E-05_JPRB, 5.31980E-05_JPRB, 6.76745E-05_JPRB/)
-      KAO_MCO2(:, 2) = (/ &
-     & 1.10492E-05_JPRB, 1.35003E-05_JPRB, 1.64952E-05_JPRB, 2.01545E-05_JPRB, 2.46256E-05_JPRB, &
-     & 3.00885E-05_JPRB, 3.67632E-05_JPRB, 4.49188E-05_JPRB, 5.48835E-05_JPRB, 6.70588E-05_JPRB, &
-     & 8.19351E-05_JPRB, 1.00111E-04_JPRB, 1.22320E-04_JPRB, 1.49455E-04_JPRB, 1.82610E-04_JPRB, &
-     & 2.23121E-04_JPRB, 2.72618E-04_JPRB, 3.33095E-04_JPRB, 4.06988E-04_JPRB/)
-      KAO_MCO2(:, 3) = (/ &
-     & 1.51034E-05_JPRB, 1.81249E-05_JPRB, 2.17508E-05_JPRB, 2.61020E-05_JPRB, 3.13238E-05_JPRB, &
-     & 3.75901E-05_JPRB, 4.51101E-05_JPRB, 5.41344E-05_JPRB, 6.49640E-05_JPRB, 7.79601E-05_JPRB, &
-     & 9.35562E-05_JPRB, 1.12272E-04_JPRB, 1.34732E-04_JPRB, 1.61686E-04_JPRB, 1.94031E-04_JPRB, &
-     & 2.32847E-04_JPRB, 2.79429E-04_JPRB, 3.35329E-04_JPRB, 4.02411E-04_JPRB/)
-      KAO_MCO2(:, 4) = (/ &
-     & 1.57088E-05_JPRB, 1.89537E-05_JPRB, 2.28688E-05_JPRB, 2.75928E-05_JPRB, 3.32924E-05_JPRB, &
-     & 4.01695E-05_JPRB, 4.84671E-05_JPRB, 5.84787E-05_JPRB, 7.05584E-05_JPRB, 8.51332E-05_JPRB, &
-     & 1.02719E-04_JPRB, 1.23937E-04_JPRB, 1.49538E-04_JPRB, 1.80427E-04_JPRB, 2.17697E-04_JPRB, &
-     & 2.62666E-04_JPRB, 3.16923E-04_JPRB, 3.82388E-04_JPRB, 4.61376E-04_JPRB/)
-      KAO_MCO2(:, 5) = (/ &
-     & 3.09299E-05_JPRB, 3.73196E-05_JPRB, 4.50294E-05_JPRB, 5.43320E-05_JPRB, 6.55563E-05_JPRB, &
-     & 7.90995E-05_JPRB, 9.54405E-05_JPRB, 1.15157E-04_JPRB, 1.38948E-04_JPRB, 1.67652E-04_JPRB, &
-     & 2.02288E-04_JPRB, 2.44078E-04_JPRB, 2.94501E-04_JPRB, 3.55342E-04_JPRB, 4.28751E-04_JPRB, &
-     & 5.17327E-04_JPRB, 6.24200E-04_JPRB, 7.53153E-04_JPRB, 9.08745E-04_JPRB/)
-      KAO_MCO2(:, 6) = (/ &
-     & 1.98653E-05_JPRB, 2.38878E-05_JPRB, 2.87248E-05_JPRB, 3.45413E-05_JPRB, 4.15355E-05_JPRB, &
-     & 4.99459E-05_JPRB, 6.00593E-05_JPRB, 7.22206E-05_JPRB, 8.68445E-05_JPRB, 1.04429E-04_JPRB, &
-     & 1.25575E-04_JPRB, 1.51003E-04_JPRB, 1.81579E-04_JPRB, 2.18346E-04_JPRB, 2.62559E-04_JPRB, &
-     & 3.15724E-04_JPRB, 3.79654E-04_JPRB, 4.56529E-04_JPRB, 5.48971E-04_JPRB/)
-      KAO_MCO2(:, 7) = (/ &
-     & 1.54276E-06_JPRB, 1.90144E-06_JPRB, 2.34351E-06_JPRB, 2.88836E-06_JPRB, 3.55989E-06_JPRB, &
-     & 4.38754E-06_JPRB, 5.40761E-06_JPRB, 6.66485E-06_JPRB, 8.21439E-06_JPRB, 1.01242E-05_JPRB, &
-     & 1.24780E-05_JPRB, 1.53790E-05_JPRB, 1.89546E-05_JPRB, 2.33614E-05_JPRB, 2.87928E-05_JPRB, &
-     & 3.54869E-05_JPRB, 4.37374E-05_JPRB, 5.39060E-05_JPRB, 6.64388E-05_JPRB/)
-      KAO_MCO2(:, 8) = (/ &
-     & 1.66907E-06_JPRB, 2.11106E-06_JPRB, 2.67008E-06_JPRB, 3.37714E-06_JPRB, 4.27143E-06_JPRB, &
-     & 5.40254E-06_JPRB, 6.83318E-06_JPRB, 8.64266E-06_JPRB, 1.09313E-05_JPRB, 1.38260E-05_JPRB, &
-     & 1.74872E-05_JPRB, 2.21180E-05_JPRB, 2.79750E-05_JPRB, 3.53830E-05_JPRB, 4.47527E-05_JPRB, &
-     & 5.66036E-05_JPRB, 7.15927E-05_JPRB, 9.05509E-05_JPRB, 1.14529E-04_JPRB/)
-      KAO_MCO2(:, 9) = (/ &
-     & 1.22817E-06_JPRB, 1.56416E-06_JPRB, 1.99206E-06_JPRB, 2.53703E-06_JPRB, 3.23108E-06_JPRB, &
-     & 4.11501E-06_JPRB, 5.24074E-06_JPRB, 6.67445E-06_JPRB, 8.50037E-06_JPRB, 1.08258E-05_JPRB, &
-     & 1.37874E-05_JPRB, 1.75592E-05_JPRB, 2.23629E-05_JPRB, 2.84807E-05_JPRB, 3.62721E-05_JPRB, &
-     & 4.61950E-05_JPRB, 5.88325E-05_JPRB, 7.49272E-05_JPRB, 9.54249E-05_JPRB/)
-      KAO_MCO2(:,10) = (/ &
-     & 3.45943E-08_JPRB, 3.84726E-08_JPRB, 4.27856E-08_JPRB, 4.75821E-08_JPRB, 5.29164E-08_JPRB, &
-     & 5.88487E-08_JPRB, 6.54460E-08_JPRB, 7.27829E-08_JPRB, 8.09423E-08_JPRB, 9.00164E-08_JPRB, &
-     & 1.00108E-07_JPRB, 1.11331E-07_JPRB, 1.23811E-07_JPRB, 1.37691E-07_JPRB, 1.53128E-07_JPRB, &
-     & 1.70294E-07_JPRB, 1.89385E-07_JPRB, 2.10616E-07_JPRB, 2.34228E-07_JPRB/)
-      KAO_MCO2(:,11) = (/ &
-     & 2.89971E-08_JPRB, 3.35110E-08_JPRB, 3.87275E-08_JPRB, 4.47561E-08_JPRB, 5.17230E-08_JPRB, &
-     & 5.97745E-08_JPRB, 6.90794E-08_JPRB, 7.98327E-08_JPRB, 9.22599E-08_JPRB, 1.06622E-07_JPRB, &
-     & 1.23219E-07_JPRB, 1.42400E-07_JPRB, 1.64567E-07_JPRB, 1.90184E-07_JPRB, 2.19789E-07_JPRB, &
-     & 2.54003E-07_JPRB, 2.93542E-07_JPRB, 3.39237E-07_JPRB, 3.92044E-07_JPRB/)
-      KAO_MCO2(:,12) = (/ &
-     & 2.51330E-08_JPRB, 2.96783E-08_JPRB, 3.50457E-08_JPRB, 4.13837E-08_JPRB, 4.88679E-08_JPRB, &
-     & 5.77056E-08_JPRB, 6.81416E-08_JPRB, 8.04650E-08_JPRB, 9.50171E-08_JPRB, 1.12201E-07_JPRB, &
-     & 1.32492E-07_JPRB, 1.56454E-07_JPRB, 1.84748E-07_JPRB, 2.18160E-07_JPRB, 2.57614E-07_JPRB, &
-     & 3.04203E-07_JPRB, 3.59218E-07_JPRB, 4.24182E-07_JPRB, 5.00895E-07_JPRB/)
-      KAO_MCO2(:,13) = (/ &
-     & 1.16966E-07_JPRB, 1.13960E-07_JPRB, 1.11032E-07_JPRB, 1.08179E-07_JPRB, 1.05400E-07_JPRB, &
-     & 1.02691E-07_JPRB, 1.00053E-07_JPRB, 9.74820E-08_JPRB, 9.49772E-08_JPRB, 9.25368E-08_JPRB, &
-     & 9.01591E-08_JPRB, 8.78425E-08_JPRB, 8.55854E-08_JPRB, 8.33863E-08_JPRB, 8.12437E-08_JPRB, &
-     & 7.91562E-08_JPRB, 7.71223E-08_JPRB, 7.51407E-08_JPRB, 7.32100E-08_JPRB/)
-      KAO_MCO2(:,14) = (/ &
-     & 9.17853E-08_JPRB, 8.94322E-08_JPRB, 8.71395E-08_JPRB, 8.49055E-08_JPRB, 8.27289E-08_JPRB, &
-     & 8.06080E-08_JPRB, 7.85415E-08_JPRB, 7.65279E-08_JPRB, 7.45660E-08_JPRB, 7.26544E-08_JPRB, &
-     & 7.07918E-08_JPRB, 6.89770E-08_JPRB, 6.72086E-08_JPRB, 6.54856E-08_JPRB, 6.38068E-08_JPRB, &
-     & 6.21710E-08_JPRB, 6.05772E-08_JPRB, 5.90242E-08_JPRB, 5.75110E-08_JPRB/)
-      KAO_MCO2(:,15) = (/ &
-     & 8.34607E-08_JPRB, 8.13236E-08_JPRB, 7.92413E-08_JPRB, 7.72122E-08_JPRB, 7.52351E-08_JPRB, &
-     & 7.33087E-08_JPRB, 7.14315E-08_JPRB, 6.96025E-08_JPRB, 6.78202E-08_JPRB, 6.60837E-08_JPRB, &
-     & 6.43915E-08_JPRB, 6.27427E-08_JPRB, 6.11361E-08_JPRB, 5.95707E-08_JPRB, 5.80453E-08_JPRB, &
-     & 5.65590E-08_JPRB, 5.51108E-08_JPRB, 5.36996E-08_JPRB, 5.23246E-08_JPRB/)
-      KAO_MCO2(:,16) = (/ &
-     & 8.34607E-08_JPRB, 8.13236E-08_JPRB, 7.92413E-08_JPRB, 7.72122E-08_JPRB, 7.52351E-08_JPRB, &
-     & 7.33087E-08_JPRB, 7.14315E-08_JPRB, 6.96025E-08_JPRB, 6.78202E-08_JPRB, 6.60837E-08_JPRB, &
-     & 6.43915E-08_JPRB, 6.27427E-08_JPRB, 6.11361E-08_JPRB, 5.95707E-08_JPRB, 5.80453E-08_JPRB, &
-     & 5.65590E-08_JPRB, 5.51108E-08_JPRB, 5.36996E-08_JPRB, 5.23246E-08_JPRB/)
+      kao_mco2(:, 1) = (/ &
+     & 8.88964e-07_jprb, 1.13087e-06_jprb, 1.43861e-06_jprb, 1.83010e-06_jprb, 2.32811e-06_jprb, &
+     & 2.96165e-06_jprb, 3.76760e-06_jprb, 4.79286e-06_jprb, 6.09712e-06_jprb, 7.75630e-06_jprb, &
+     & 9.86699e-06_jprb, 1.25521e-05_jprb, 1.59678e-05_jprb, 2.03130e-05_jprb, 2.58407e-05_jprb, &
+     & 3.28727e-05_jprb, 4.18182e-05_jprb, 5.31980e-05_jprb, 6.76745e-05_jprb/)
+      kao_mco2(:, 2) = (/ &
+     & 1.10492e-05_jprb, 1.35003e-05_jprb, 1.64952e-05_jprb, 2.01545e-05_jprb, 2.46256e-05_jprb, &
+     & 3.00885e-05_jprb, 3.67632e-05_jprb, 4.49188e-05_jprb, 5.48835e-05_jprb, 6.70588e-05_jprb, &
+     & 8.19351e-05_jprb, 1.00111e-04_jprb, 1.22320e-04_jprb, 1.49455e-04_jprb, 1.82610e-04_jprb, &
+     & 2.23121e-04_jprb, 2.72618e-04_jprb, 3.33095e-04_jprb, 4.06988e-04_jprb/)
+      kao_mco2(:, 3) = (/ &
+     & 1.51034e-05_jprb, 1.81249e-05_jprb, 2.17508e-05_jprb, 2.61020e-05_jprb, 3.13238e-05_jprb, &
+     & 3.75901e-05_jprb, 4.51101e-05_jprb, 5.41344e-05_jprb, 6.49640e-05_jprb, 7.79601e-05_jprb, &
+     & 9.35562e-05_jprb, 1.12272e-04_jprb, 1.34732e-04_jprb, 1.61686e-04_jprb, 1.94031e-04_jprb, &
+     & 2.32847e-04_jprb, 2.79429e-04_jprb, 3.35329e-04_jprb, 4.02411e-04_jprb/)
+      kao_mco2(:, 4) = (/ &
+     & 1.57088e-05_jprb, 1.89537e-05_jprb, 2.28688e-05_jprb, 2.75928e-05_jprb, 3.32924e-05_jprb, &
+     & 4.01695e-05_jprb, 4.84671e-05_jprb, 5.84787e-05_jprb, 7.05584e-05_jprb, 8.51332e-05_jprb, &
+     & 1.02719e-04_jprb, 1.23937e-04_jprb, 1.49538e-04_jprb, 1.80427e-04_jprb, 2.17697e-04_jprb, &
+     & 2.62666e-04_jprb, 3.16923e-04_jprb, 3.82388e-04_jprb, 4.61376e-04_jprb/)
+      kao_mco2(:, 5) = (/ &
+     & 3.09299e-05_jprb, 3.73196e-05_jprb, 4.50294e-05_jprb, 5.43320e-05_jprb, 6.55563e-05_jprb, &
+     & 7.90995e-05_jprb, 9.54405e-05_jprb, 1.15157e-04_jprb, 1.38948e-04_jprb, 1.67652e-04_jprb, &
+     & 2.02288e-04_jprb, 2.44078e-04_jprb, 2.94501e-04_jprb, 3.55342e-04_jprb, 4.28751e-04_jprb, &
+     & 5.17327e-04_jprb, 6.24200e-04_jprb, 7.53153e-04_jprb, 9.08745e-04_jprb/)
+      kao_mco2(:, 6) = (/ &
+     & 1.98653e-05_jprb, 2.38878e-05_jprb, 2.87248e-05_jprb, 3.45413e-05_jprb, 4.15355e-05_jprb, &
+     & 4.99459e-05_jprb, 6.00593e-05_jprb, 7.22206e-05_jprb, 8.68445e-05_jprb, 1.04429e-04_jprb, &
+     & 1.25575e-04_jprb, 1.51003e-04_jprb, 1.81579e-04_jprb, 2.18346e-04_jprb, 2.62559e-04_jprb, &
+     & 3.15724e-04_jprb, 3.79654e-04_jprb, 4.56529e-04_jprb, 5.48971e-04_jprb/)
+      kao_mco2(:, 7) = (/ &
+     & 1.54276e-06_jprb, 1.90144e-06_jprb, 2.34351e-06_jprb, 2.88836e-06_jprb, 3.55989e-06_jprb, &
+     & 4.38754e-06_jprb, 5.40761e-06_jprb, 6.66485e-06_jprb, 8.21439e-06_jprb, 1.01242e-05_jprb, &
+     & 1.24780e-05_jprb, 1.53790e-05_jprb, 1.89546e-05_jprb, 2.33614e-05_jprb, 2.87928e-05_jprb, &
+     & 3.54869e-05_jprb, 4.37374e-05_jprb, 5.39060e-05_jprb, 6.64388e-05_jprb/)
+      kao_mco2(:, 8) = (/ &
+     & 1.66907e-06_jprb, 2.11106e-06_jprb, 2.67008e-06_jprb, 3.37714e-06_jprb, 4.27143e-06_jprb, &
+     & 5.40254e-06_jprb, 6.83318e-06_jprb, 8.64266e-06_jprb, 1.09313e-05_jprb, 1.38260e-05_jprb, &
+     & 1.74872e-05_jprb, 2.21180e-05_jprb, 2.79750e-05_jprb, 3.53830e-05_jprb, 4.47527e-05_jprb, &
+     & 5.66036e-05_jprb, 7.15927e-05_jprb, 9.05509e-05_jprb, 1.14529e-04_jprb/)
+      kao_mco2(:, 9) = (/ &
+     & 1.22817e-06_jprb, 1.56416e-06_jprb, 1.99206e-06_jprb, 2.53703e-06_jprb, 3.23108e-06_jprb, &
+     & 4.11501e-06_jprb, 5.24074e-06_jprb, 6.67445e-06_jprb, 8.50037e-06_jprb, 1.08258e-05_jprb, &
+     & 1.37874e-05_jprb, 1.75592e-05_jprb, 2.23629e-05_jprb, 2.84807e-05_jprb, 3.62721e-05_jprb, &
+     & 4.61950e-05_jprb, 5.88325e-05_jprb, 7.49272e-05_jprb, 9.54249e-05_jprb/)
+      kao_mco2(:,10) = (/ &
+     & 3.45943e-08_jprb, 3.84726e-08_jprb, 4.27856e-08_jprb, 4.75821e-08_jprb, 5.29164e-08_jprb, &
+     & 5.88487e-08_jprb, 6.54460e-08_jprb, 7.27829e-08_jprb, 8.09423e-08_jprb, 9.00164e-08_jprb, &
+     & 1.00108e-07_jprb, 1.11331e-07_jprb, 1.23811e-07_jprb, 1.37691e-07_jprb, 1.53128e-07_jprb, &
+     & 1.70294e-07_jprb, 1.89385e-07_jprb, 2.10616e-07_jprb, 2.34228e-07_jprb/)
+      kao_mco2(:,11) = (/ &
+     & 2.89971e-08_jprb, 3.35110e-08_jprb, 3.87275e-08_jprb, 4.47561e-08_jprb, 5.17230e-08_jprb, &
+     & 5.97745e-08_jprb, 6.90794e-08_jprb, 7.98327e-08_jprb, 9.22599e-08_jprb, 1.06622e-07_jprb, &
+     & 1.23219e-07_jprb, 1.42400e-07_jprb, 1.64567e-07_jprb, 1.90184e-07_jprb, 2.19789e-07_jprb, &
+     & 2.54003e-07_jprb, 2.93542e-07_jprb, 3.39237e-07_jprb, 3.92044e-07_jprb/)
+      kao_mco2(:,12) = (/ &
+     & 2.51330e-08_jprb, 2.96783e-08_jprb, 3.50457e-08_jprb, 4.13837e-08_jprb, 4.88679e-08_jprb, &
+     & 5.77056e-08_jprb, 6.81416e-08_jprb, 8.04650e-08_jprb, 9.50171e-08_jprb, 1.12201e-07_jprb, &
+     & 1.32492e-07_jprb, 1.56454e-07_jprb, 1.84748e-07_jprb, 2.18160e-07_jprb, 2.57614e-07_jprb, &
+     & 3.04203e-07_jprb, 3.59218e-07_jprb, 4.24182e-07_jprb, 5.00895e-07_jprb/)
+      kao_mco2(:,13) = (/ &
+     & 1.16966e-07_jprb, 1.13960e-07_jprb, 1.11032e-07_jprb, 1.08179e-07_jprb, 1.05400e-07_jprb, &
+     & 1.02691e-07_jprb, 1.00053e-07_jprb, 9.74820e-08_jprb, 9.49772e-08_jprb, 9.25368e-08_jprb, &
+     & 9.01591e-08_jprb, 8.78425e-08_jprb, 8.55854e-08_jprb, 8.33863e-08_jprb, 8.12437e-08_jprb, &
+     & 7.91562e-08_jprb, 7.71223e-08_jprb, 7.51407e-08_jprb, 7.32100e-08_jprb/)
+      kao_mco2(:,14) = (/ &
+     & 9.17853e-08_jprb, 8.94322e-08_jprb, 8.71395e-08_jprb, 8.49055e-08_jprb, 8.27289e-08_jprb, &
+     & 8.06080e-08_jprb, 7.85415e-08_jprb, 7.65279e-08_jprb, 7.45660e-08_jprb, 7.26544e-08_jprb, &
+     & 7.07918e-08_jprb, 6.89770e-08_jprb, 6.72086e-08_jprb, 6.54856e-08_jprb, 6.38068e-08_jprb, &
+     & 6.21710e-08_jprb, 6.05772e-08_jprb, 5.90242e-08_jprb, 5.75110e-08_jprb/)
+      kao_mco2(:,15) = (/ &
+     & 8.34607e-08_jprb, 8.13236e-08_jprb, 7.92413e-08_jprb, 7.72122e-08_jprb, 7.52351e-08_jprb, &
+     & 7.33087e-08_jprb, 7.14315e-08_jprb, 6.96025e-08_jprb, 6.78202e-08_jprb, 6.60837e-08_jprb, &
+     & 6.43915e-08_jprb, 6.27427e-08_jprb, 6.11361e-08_jprb, 5.95707e-08_jprb, 5.80453e-08_jprb, &
+     & 5.65590e-08_jprb, 5.51108e-08_jprb, 5.36996e-08_jprb, 5.23246e-08_jprb/)
+      kao_mco2(:,16) = (/ &
+     & 8.34607e-08_jprb, 8.13236e-08_jprb, 7.92413e-08_jprb, 7.72122e-08_jprb, 7.52351e-08_jprb, &
+     & 7.33087e-08_jprb, 7.14315e-08_jprb, 6.96025e-08_jprb, 6.78202e-08_jprb, 6.60837e-08_jprb, &
+     & 6.43915e-08_jprb, 6.27427e-08_jprb, 6.11361e-08_jprb, 5.95707e-08_jprb, 5.80453e-08_jprb, &
+     & 5.65590e-08_jprb, 5.51108e-08_jprb, 5.36996e-08_jprb, 5.23246e-08_jprb/)
 
-      KAO_MO3(:, 1) = (/ &
-     & 1.18276E-01_JPRB, 1.18009E-01_JPRB, 1.17742E-01_JPRB, 1.17476E-01_JPRB, 1.17210E-01_JPRB, &
-     & 1.16945E-01_JPRB, 1.16681E-01_JPRB, 1.16417E-01_JPRB, 1.16153E-01_JPRB, 1.15891E-01_JPRB, &
-     & 1.15629E-01_JPRB, 1.15367E-01_JPRB, 1.15106E-01_JPRB, 1.14846E-01_JPRB, 1.14586E-01_JPRB, &
-     & 1.14327E-01_JPRB, 1.14069E-01_JPRB, 1.13811E-01_JPRB, 1.13553E-01_JPRB/)
-      KAO_MO3(:, 2) = (/ &
-     & 1.83777E-01_JPRB, 1.84268E-01_JPRB, 1.84761E-01_JPRB, 1.85255E-01_JPRB, 1.85751E-01_JPRB, &
-     & 1.86248E-01_JPRB, 1.86746E-01_JPRB, 1.87245E-01_JPRB, 1.87746E-01_JPRB, 1.88248E-01_JPRB, &
-     & 1.88752E-01_JPRB, 1.89257E-01_JPRB, 1.89763E-01_JPRB, 1.90270E-01_JPRB, 1.90779E-01_JPRB, &
-     & 1.91290E-01_JPRB, 1.91801E-01_JPRB, 1.92314E-01_JPRB, 1.92829E-01_JPRB/)
-      KAO_MO3(:, 3) = (/ &
-     & 2.33414E-01_JPRB, 2.34511E-01_JPRB, 2.35614E-01_JPRB, 2.36722E-01_JPRB, 2.37836E-01_JPRB, &
-     & 2.38954E-01_JPRB, 2.40078E-01_JPRB, 2.41207E-01_JPRB, 2.42342E-01_JPRB, 2.43481E-01_JPRB, &
-     & 2.44626E-01_JPRB, 2.45777E-01_JPRB, 2.46933E-01_JPRB, 2.48094E-01_JPRB, 2.49261E-01_JPRB, &
-     & 2.50433E-01_JPRB, 2.51611E-01_JPRB, 2.52794E-01_JPRB, 2.53983E-01_JPRB/)
-      KAO_MO3(:, 4) = (/ &
-     & 2.84906E-01_JPRB, 2.87358E-01_JPRB, 2.89832E-01_JPRB, 2.92328E-01_JPRB, 2.94844E-01_JPRB, &
-     & 2.97383E-01_JPRB, 2.99943E-01_JPRB, 3.02525E-01_JPRB, 3.05130E-01_JPRB, 3.07757E-01_JPRB, &
-     & 3.10406E-01_JPRB, 3.13078E-01_JPRB, 3.15774E-01_JPRB, 3.18492E-01_JPRB, 3.21234E-01_JPRB, &
-     & 3.24000E-01_JPRB, 3.26789E-01_JPRB, 3.29603E-01_JPRB, 3.32440E-01_JPRB/)
-      KAO_MO3(:, 5) = (/ &
-     & 3.40508E-01_JPRB, 3.44095E-01_JPRB, 3.47720E-01_JPRB, 3.51383E-01_JPRB, 3.55084E-01_JPRB, &
-     & 3.58824E-01_JPRB, 3.62604E-01_JPRB, 3.66424E-01_JPRB, 3.70284E-01_JPRB, 3.74184E-01_JPRB, &
-     & 3.78126E-01_JPRB, 3.82109E-01_JPRB, 3.86134E-01_JPRB, 3.90202E-01_JPRB, 3.94312E-01_JPRB, &
-     & 3.98466E-01_JPRB, 4.02663E-01_JPRB, 4.06905E-01_JPRB, 4.11191E-01_JPRB/)
-      KAO_MO3(:, 6) = (/ &
-     & 3.78368E-01_JPRB, 3.83690E-01_JPRB, 3.89086E-01_JPRB, 3.94558E-01_JPRB, 4.00107E-01_JPRB, &
-     & 4.05735E-01_JPRB, 4.11441E-01_JPRB, 4.17227E-01_JPRB, 4.23095E-01_JPRB, 4.29046E-01_JPRB, &
-     & 4.35080E-01_JPRB, 4.41199E-01_JPRB, 4.47404E-01_JPRB, 4.53697E-01_JPRB, 4.60078E-01_JPRB, &
-     & 4.66548E-01_JPRB, 4.73110E-01_JPRB, 4.79764E-01_JPRB, 4.86511E-01_JPRB/)
-      KAO_MO3(:, 7) = (/ &
-     & 4.51965E-01_JPRB, 4.58461E-01_JPRB, 4.65051E-01_JPRB, 4.71735E-01_JPRB, 4.78516E-01_JPRB, &
-     & 4.85394E-01_JPRB, 4.92371E-01_JPRB, 4.99448E-01_JPRB, 5.06627E-01_JPRB, 5.13909E-01_JPRB, &
-     & 5.21296E-01_JPRB, 5.28789E-01_JPRB, 5.36390E-01_JPRB, 5.44100E-01_JPRB, 5.51920E-01_JPRB, &
-     & 5.59854E-01_JPRB, 5.67901E-01_JPRB, 5.76064E-01_JPRB, 5.84344E-01_JPRB/)
-      KAO_MO3(:, 8) = (/ &
-     & 3.00557E-01_JPRB, 3.03974E-01_JPRB, 3.07430E-01_JPRB, 3.10925E-01_JPRB, 3.14460E-01_JPRB, &
-     & 3.18035E-01_JPRB, 3.21651E-01_JPRB, 3.25307E-01_JPRB, 3.29006E-01_JPRB, 3.32746E-01_JPRB, &
-     & 3.36529E-01_JPRB, 3.40355E-01_JPRB, 3.44224E-01_JPRB, 3.48137E-01_JPRB, 3.52095E-01_JPRB, &
-     & 3.56098E-01_JPRB, 3.60146E-01_JPRB, 3.64241E-01_JPRB, 3.68381E-01_JPRB/)
-      KAO_MO3(:, 9) = (/ &
-     & 2.10042E-01_JPRB, 2.12905E-01_JPRB, 2.15806E-01_JPRB, 2.18748E-01_JPRB, 2.21729E-01_JPRB, &
-     & 2.24751E-01_JPRB, 2.27814E-01_JPRB, 2.30919E-01_JPRB, 2.34066E-01_JPRB, 2.37256E-01_JPRB, &
-     & 2.40489E-01_JPRB, 2.43767E-01_JPRB, 2.47089E-01_JPRB, 2.50457E-01_JPRB, 2.53870E-01_JPRB, &
-     & 2.57330E-01_JPRB, 2.60837E-01_JPRB, 2.64392E-01_JPRB, 2.67996E-01_JPRB/)
-      KAO_MO3(:,10) = (/ &
-     & 2.09288E-01_JPRB, 2.11759E-01_JPRB, 2.14259E-01_JPRB, 2.16789E-01_JPRB, 2.19349E-01_JPRB, &
-     & 2.21939E-01_JPRB, 2.24559E-01_JPRB, 2.27210E-01_JPRB, 2.29893E-01_JPRB, 2.32607E-01_JPRB, &
-     & 2.35354E-01_JPRB, 2.38133E-01_JPRB, 2.40944E-01_JPRB, 2.43789E-01_JPRB, 2.46667E-01_JPRB, &
-     & 2.49580E-01_JPRB, 2.52527E-01_JPRB, 2.55508E-01_JPRB, 2.58525E-01_JPRB/)
-      KAO_MO3(:,11) = (/ &
-     & 2.28947E-01_JPRB, 2.30609E-01_JPRB, 2.32283E-01_JPRB, 2.33969E-01_JPRB, 2.35667E-01_JPRB, &
-     & 2.37378E-01_JPRB, 2.39101E-01_JPRB, 2.40836E-01_JPRB, 2.42584E-01_JPRB, 2.44345E-01_JPRB, &
-     & 2.46118E-01_JPRB, 2.47905E-01_JPRB, 2.49704E-01_JPRB, 2.51516E-01_JPRB, 2.53342E-01_JPRB, &
-     & 2.55181E-01_JPRB, 2.57033E-01_JPRB, 2.58899E-01_JPRB, 2.60778E-01_JPRB/)
-      KAO_MO3(:,12) = (/ &
-     & 2.57263E-01_JPRB, 2.58272E-01_JPRB, 2.59285E-01_JPRB, 2.60302E-01_JPRB, 2.61323E-01_JPRB, &
-     & 2.62347E-01_JPRB, 2.63376E-01_JPRB, 2.64409E-01_JPRB, 2.65446E-01_JPRB, 2.66487E-01_JPRB, &
-     & 2.67532E-01_JPRB, 2.68581E-01_JPRB, 2.69635E-01_JPRB, 2.70692E-01_JPRB, 2.71753E-01_JPRB, &
-     & 2.72819E-01_JPRB, 2.73889E-01_JPRB, 2.74963E-01_JPRB, 2.76042E-01_JPRB/)
-      KAO_MO3(:,13) = (/ &
-     & 2.43322E-01_JPRB, 2.45918E-01_JPRB, 2.48541E-01_JPRB, 2.51192E-01_JPRB, 2.53872E-01_JPRB, &
-     & 2.56580E-01_JPRB, 2.59317E-01_JPRB, 2.62083E-01_JPRB, 2.64879E-01_JPRB, 2.67704E-01_JPRB, &
-     & 2.70560E-01_JPRB, 2.73446E-01_JPRB, 2.76363E-01_JPRB, 2.79311E-01_JPRB, 2.82290E-01_JPRB, &
-     & 2.85302E-01_JPRB, 2.88345E-01_JPRB, 2.91421E-01_JPRB, 2.94529E-01_JPRB/)
-      KAO_MO3(:,14) = (/ &
-     & 2.10568E-01_JPRB, 2.16529E-01_JPRB, 2.22660E-01_JPRB, 2.28964E-01_JPRB, 2.35446E-01_JPRB, &
-     & 2.42113E-01_JPRB, 2.48967E-01_JPRB, 2.56016E-01_JPRB, 2.63265E-01_JPRB, 2.70719E-01_JPRB, &
-     & 2.78383E-01_JPRB, 2.86265E-01_JPRB, 2.94370E-01_JPRB, 3.02704E-01_JPRB, 3.11275E-01_JPRB, &
-     & 3.20088E-01_JPRB, 3.29150E-01_JPRB, 3.38470E-01_JPRB, 3.48052E-01_JPRB/)
-      KAO_MO3(:,15) = (/ &
-     & 2.60406E-02_JPRB, 2.78779E-02_JPRB, 2.98448E-02_JPRB, 3.19505E-02_JPRB, 3.42048E-02_JPRB, &
-     & 3.66181E-02_JPRB, 3.92017E-02_JPRB, 4.19675E-02_JPRB, 4.49285E-02_JPRB, 4.80985E-02_JPRB, &
-     & 5.14920E-02_JPRB, 5.51250E-02_JPRB, 5.90143E-02_JPRB, 6.31781E-02_JPRB, 6.76356E-02_JPRB, &
-     & 7.24076E-02_JPRB, 7.75163E-02_JPRB, 8.29854E-02_JPRB, 8.88404E-02_JPRB/)
-      KAO_MO3(:,16) = (/ &
-     & 2.31483E-02_JPRB, 2.46840E-02_JPRB, 2.63217E-02_JPRB, 2.80681E-02_JPRB, 2.99302E-02_JPRB, &
-     & 3.19160E-02_JPRB, 3.40335E-02_JPRB, 3.62914E-02_JPRB, 3.86992E-02_JPRB, 4.12668E-02_JPRB, &
-     & 4.40046E-02_JPRB, 4.69242E-02_JPRB, 5.00374E-02_JPRB, 5.33571E-02_JPRB, 5.68971E-02_JPRB, &
-     & 6.06720E-02_JPRB, 6.46974E-02_JPRB, 6.89897E-02_JPRB, 7.35669E-02_JPRB/)
+      kao_mo3(:, 1) = (/ &
+     & 1.18276e-01_jprb, 1.18009e-01_jprb, 1.17742e-01_jprb, 1.17476e-01_jprb, 1.17210e-01_jprb, &
+     & 1.16945e-01_jprb, 1.16681e-01_jprb, 1.16417e-01_jprb, 1.16153e-01_jprb, 1.15891e-01_jprb, &
+     & 1.15629e-01_jprb, 1.15367e-01_jprb, 1.15106e-01_jprb, 1.14846e-01_jprb, 1.14586e-01_jprb, &
+     & 1.14327e-01_jprb, 1.14069e-01_jprb, 1.13811e-01_jprb, 1.13553e-01_jprb/)
+      kao_mo3(:, 2) = (/ &
+     & 1.83777e-01_jprb, 1.84268e-01_jprb, 1.84761e-01_jprb, 1.85255e-01_jprb, 1.85751e-01_jprb, &
+     & 1.86248e-01_jprb, 1.86746e-01_jprb, 1.87245e-01_jprb, 1.87746e-01_jprb, 1.88248e-01_jprb, &
+     & 1.88752e-01_jprb, 1.89257e-01_jprb, 1.89763e-01_jprb, 1.90270e-01_jprb, 1.90779e-01_jprb, &
+     & 1.91290e-01_jprb, 1.91801e-01_jprb, 1.92314e-01_jprb, 1.92829e-01_jprb/)
+      kao_mo3(:, 3) = (/ &
+     & 2.33414e-01_jprb, 2.34511e-01_jprb, 2.35614e-01_jprb, 2.36722e-01_jprb, 2.37836e-01_jprb, &
+     & 2.38954e-01_jprb, 2.40078e-01_jprb, 2.41207e-01_jprb, 2.42342e-01_jprb, 2.43481e-01_jprb, &
+     & 2.44626e-01_jprb, 2.45777e-01_jprb, 2.46933e-01_jprb, 2.48094e-01_jprb, 2.49261e-01_jprb, &
+     & 2.50433e-01_jprb, 2.51611e-01_jprb, 2.52794e-01_jprb, 2.53983e-01_jprb/)
+      kao_mo3(:, 4) = (/ &
+     & 2.84906e-01_jprb, 2.87358e-01_jprb, 2.89832e-01_jprb, 2.92328e-01_jprb, 2.94844e-01_jprb, &
+     & 2.97383e-01_jprb, 2.99943e-01_jprb, 3.02525e-01_jprb, 3.05130e-01_jprb, 3.07757e-01_jprb, &
+     & 3.10406e-01_jprb, 3.13078e-01_jprb, 3.15774e-01_jprb, 3.18492e-01_jprb, 3.21234e-01_jprb, &
+     & 3.24000e-01_jprb, 3.26789e-01_jprb, 3.29603e-01_jprb, 3.32440e-01_jprb/)
+      kao_mo3(:, 5) = (/ &
+     & 3.40508e-01_jprb, 3.44095e-01_jprb, 3.47720e-01_jprb, 3.51383e-01_jprb, 3.55084e-01_jprb, &
+     & 3.58824e-01_jprb, 3.62604e-01_jprb, 3.66424e-01_jprb, 3.70284e-01_jprb, 3.74184e-01_jprb, &
+     & 3.78126e-01_jprb, 3.82109e-01_jprb, 3.86134e-01_jprb, 3.90202e-01_jprb, 3.94312e-01_jprb, &
+     & 3.98466e-01_jprb, 4.02663e-01_jprb, 4.06905e-01_jprb, 4.11191e-01_jprb/)
+      kao_mo3(:, 6) = (/ &
+     & 3.78368e-01_jprb, 3.83690e-01_jprb, 3.89086e-01_jprb, 3.94558e-01_jprb, 4.00107e-01_jprb, &
+     & 4.05735e-01_jprb, 4.11441e-01_jprb, 4.17227e-01_jprb, 4.23095e-01_jprb, 4.29046e-01_jprb, &
+     & 4.35080e-01_jprb, 4.41199e-01_jprb, 4.47404e-01_jprb, 4.53697e-01_jprb, 4.60078e-01_jprb, &
+     & 4.66548e-01_jprb, 4.73110e-01_jprb, 4.79764e-01_jprb, 4.86511e-01_jprb/)
+      kao_mo3(:, 7) = (/ &
+     & 4.51965e-01_jprb, 4.58461e-01_jprb, 4.65051e-01_jprb, 4.71735e-01_jprb, 4.78516e-01_jprb, &
+     & 4.85394e-01_jprb, 4.92371e-01_jprb, 4.99448e-01_jprb, 5.06627e-01_jprb, 5.13909e-01_jprb, &
+     & 5.21296e-01_jprb, 5.28789e-01_jprb, 5.36390e-01_jprb, 5.44100e-01_jprb, 5.51920e-01_jprb, &
+     & 5.59854e-01_jprb, 5.67901e-01_jprb, 5.76064e-01_jprb, 5.84344e-01_jprb/)
+      kao_mo3(:, 8) = (/ &
+     & 3.00557e-01_jprb, 3.03974e-01_jprb, 3.07430e-01_jprb, 3.10925e-01_jprb, 3.14460e-01_jprb, &
+     & 3.18035e-01_jprb, 3.21651e-01_jprb, 3.25307e-01_jprb, 3.29006e-01_jprb, 3.32746e-01_jprb, &
+     & 3.36529e-01_jprb, 3.40355e-01_jprb, 3.44224e-01_jprb, 3.48137e-01_jprb, 3.52095e-01_jprb, &
+     & 3.56098e-01_jprb, 3.60146e-01_jprb, 3.64241e-01_jprb, 3.68381e-01_jprb/)
+      kao_mo3(:, 9) = (/ &
+     & 2.10042e-01_jprb, 2.12905e-01_jprb, 2.15806e-01_jprb, 2.18748e-01_jprb, 2.21729e-01_jprb, &
+     & 2.24751e-01_jprb, 2.27814e-01_jprb, 2.30919e-01_jprb, 2.34066e-01_jprb, 2.37256e-01_jprb, &
+     & 2.40489e-01_jprb, 2.43767e-01_jprb, 2.47089e-01_jprb, 2.50457e-01_jprb, 2.53870e-01_jprb, &
+     & 2.57330e-01_jprb, 2.60837e-01_jprb, 2.64392e-01_jprb, 2.67996e-01_jprb/)
+      kao_mo3(:,10) = (/ &
+     & 2.09288e-01_jprb, 2.11759e-01_jprb, 2.14259e-01_jprb, 2.16789e-01_jprb, 2.19349e-01_jprb, &
+     & 2.21939e-01_jprb, 2.24559e-01_jprb, 2.27210e-01_jprb, 2.29893e-01_jprb, 2.32607e-01_jprb, &
+     & 2.35354e-01_jprb, 2.38133e-01_jprb, 2.40944e-01_jprb, 2.43789e-01_jprb, 2.46667e-01_jprb, &
+     & 2.49580e-01_jprb, 2.52527e-01_jprb, 2.55508e-01_jprb, 2.58525e-01_jprb/)
+      kao_mo3(:,11) = (/ &
+     & 2.28947e-01_jprb, 2.30609e-01_jprb, 2.32283e-01_jprb, 2.33969e-01_jprb, 2.35667e-01_jprb, &
+     & 2.37378e-01_jprb, 2.39101e-01_jprb, 2.40836e-01_jprb, 2.42584e-01_jprb, 2.44345e-01_jprb, &
+     & 2.46118e-01_jprb, 2.47905e-01_jprb, 2.49704e-01_jprb, 2.51516e-01_jprb, 2.53342e-01_jprb, &
+     & 2.55181e-01_jprb, 2.57033e-01_jprb, 2.58899e-01_jprb, 2.60778e-01_jprb/)
+      kao_mo3(:,12) = (/ &
+     & 2.57263e-01_jprb, 2.58272e-01_jprb, 2.59285e-01_jprb, 2.60302e-01_jprb, 2.61323e-01_jprb, &
+     & 2.62347e-01_jprb, 2.63376e-01_jprb, 2.64409e-01_jprb, 2.65446e-01_jprb, 2.66487e-01_jprb, &
+     & 2.67532e-01_jprb, 2.68581e-01_jprb, 2.69635e-01_jprb, 2.70692e-01_jprb, 2.71753e-01_jprb, &
+     & 2.72819e-01_jprb, 2.73889e-01_jprb, 2.74963e-01_jprb, 2.76042e-01_jprb/)
+      kao_mo3(:,13) = (/ &
+     & 2.43322e-01_jprb, 2.45918e-01_jprb, 2.48541e-01_jprb, 2.51192e-01_jprb, 2.53872e-01_jprb, &
+     & 2.56580e-01_jprb, 2.59317e-01_jprb, 2.62083e-01_jprb, 2.64879e-01_jprb, 2.67704e-01_jprb, &
+     & 2.70560e-01_jprb, 2.73446e-01_jprb, 2.76363e-01_jprb, 2.79311e-01_jprb, 2.82290e-01_jprb, &
+     & 2.85302e-01_jprb, 2.88345e-01_jprb, 2.91421e-01_jprb, 2.94529e-01_jprb/)
+      kao_mo3(:,14) = (/ &
+     & 2.10568e-01_jprb, 2.16529e-01_jprb, 2.22660e-01_jprb, 2.28964e-01_jprb, 2.35446e-01_jprb, &
+     & 2.42113e-01_jprb, 2.48967e-01_jprb, 2.56016e-01_jprb, 2.63265e-01_jprb, 2.70719e-01_jprb, &
+     & 2.78383e-01_jprb, 2.86265e-01_jprb, 2.94370e-01_jprb, 3.02704e-01_jprb, 3.11275e-01_jprb, &
+     & 3.20088e-01_jprb, 3.29150e-01_jprb, 3.38470e-01_jprb, 3.48052e-01_jprb/)
+      kao_mo3(:,15) = (/ &
+     & 2.60406e-02_jprb, 2.78779e-02_jprb, 2.98448e-02_jprb, 3.19505e-02_jprb, 3.42048e-02_jprb, &
+     & 3.66181e-02_jprb, 3.92017e-02_jprb, 4.19675e-02_jprb, 4.49285e-02_jprb, 4.80985e-02_jprb, &
+     & 5.14920e-02_jprb, 5.51250e-02_jprb, 5.90143e-02_jprb, 6.31781e-02_jprb, 6.76356e-02_jprb, &
+     & 7.24076e-02_jprb, 7.75163e-02_jprb, 8.29854e-02_jprb, 8.88404e-02_jprb/)
+      kao_mo3(:,16) = (/ &
+     & 2.31483e-02_jprb, 2.46840e-02_jprb, 2.63217e-02_jprb, 2.80681e-02_jprb, 2.99302e-02_jprb, &
+     & 3.19160e-02_jprb, 3.40335e-02_jprb, 3.62914e-02_jprb, 3.86992e-02_jprb, 4.12668e-02_jprb, &
+     & 4.40046e-02_jprb, 4.69242e-02_jprb, 5.00374e-02_jprb, 5.33571e-02_jprb, 5.68971e-02_jprb, &
+     & 6.06720e-02_jprb, 6.46974e-02_jprb, 6.89897e-02_jprb, 7.35669e-02_jprb/)
 
-      KAO_MN2O(:, 1) = (/ &
-     & 3.02276E-02_JPRB, 3.10321E-02_JPRB, 3.18580E-02_JPRB, 3.27059E-02_JPRB, 3.35764E-02_JPRB, &
-     & 3.44700E-02_JPRB, 3.53875E-02_JPRB, 3.63293E-02_JPRB, 3.72962E-02_JPRB, 3.82889E-02_JPRB, &
-     & 3.93079E-02_JPRB, 4.03541E-02_JPRB, 4.14281E-02_JPRB, 4.25307E-02_JPRB, 4.36627E-02_JPRB, &
-     & 4.48248E-02_JPRB, 4.60178E-02_JPRB, 4.72425E-02_JPRB, 4.84999E-02_JPRB/)
-      KAO_MN2O(:, 2) = (/ &
-     & 6.10132E-02_JPRB, 6.17435E-02_JPRB, 6.24825E-02_JPRB, 6.32304E-02_JPRB, 6.39872E-02_JPRB, &
-     & 6.47531E-02_JPRB, 6.55281E-02_JPRB, 6.63124E-02_JPRB, 6.71061E-02_JPRB, 6.79093E-02_JPRB, &
-     & 6.87221E-02_JPRB, 6.95446E-02_JPRB, 7.03770E-02_JPRB, 7.12194E-02_JPRB, 7.20718E-02_JPRB, &
-     & 7.29344E-02_JPRB, 7.38074E-02_JPRB, 7.46908E-02_JPRB, 7.55848E-02_JPRB/)
-      KAO_MN2O(:, 3) = (/ &
-     & 1.04479E-01_JPRB, 1.05566E-01_JPRB, 1.06664E-01_JPRB, 1.07774E-01_JPRB, 1.08895E-01_JPRB, &
-     & 1.10028E-01_JPRB, 1.11173E-01_JPRB, 1.12329E-01_JPRB, 1.13498E-01_JPRB, 1.14679E-01_JPRB, &
-     & 1.15872E-01_JPRB, 1.17077E-01_JPRB, 1.18295E-01_JPRB, 1.19526E-01_JPRB, 1.20770E-01_JPRB, &
-     & 1.22026E-01_JPRB, 1.23296E-01_JPRB, 1.24578E-01_JPRB, 1.25875E-01_JPRB/)
-      KAO_MN2O(:, 4) = (/ &
-     & 2.07260E-01_JPRB, 2.08126E-01_JPRB, 2.08996E-01_JPRB, 2.09869E-01_JPRB, 2.10746E-01_JPRB, &
-     & 2.11627E-01_JPRB, 2.12511E-01_JPRB, 2.13399E-01_JPRB, 2.14291E-01_JPRB, 2.15187E-01_JPRB, &
-     & 2.16086E-01_JPRB, 2.16989E-01_JPRB, 2.17896E-01_JPRB, 2.18807E-01_JPRB, 2.19721E-01_JPRB, &
-     & 2.20640E-01_JPRB, 2.21562E-01_JPRB, 2.22488E-01_JPRB, 2.23418E-01_JPRB/)
-      KAO_MN2O(:, 5) = (/ &
-     & 3.71566E-01_JPRB, 3.71353E-01_JPRB, 3.71141E-01_JPRB, 3.70928E-01_JPRB, 3.70716E-01_JPRB, &
-     & 3.70504E-01_JPRB, 3.70292E-01_JPRB, 3.70080E-01_JPRB, 3.69869E-01_JPRB, 3.69657E-01_JPRB, &
-     & 3.69446E-01_JPRB, 3.69234E-01_JPRB, 3.69023E-01_JPRB, 3.68812E-01_JPRB, 3.68601E-01_JPRB, &
-     & 3.68390E-01_JPRB, 3.68179E-01_JPRB, 3.67969E-01_JPRB, 3.67758E-01_JPRB/)
-      KAO_MN2O(:, 6) = (/ &
-     & 5.28092E-01_JPRB, 5.27262E-01_JPRB, 5.26433E-01_JPRB, 5.25605E-01_JPRB, 5.24779E-01_JPRB, &
-     & 5.23954E-01_JPRB, 5.23130E-01_JPRB, 5.22307E-01_JPRB, 5.21486E-01_JPRB, 5.20666E-01_JPRB, &
-     & 5.19847E-01_JPRB, 5.19030E-01_JPRB, 5.18214E-01_JPRB, 5.17399E-01_JPRB, 5.16586E-01_JPRB, &
-     & 5.15773E-01_JPRB, 5.14962E-01_JPRB, 5.14153E-01_JPRB, 5.13344E-01_JPRB/)
-      KAO_MN2O(:, 7) = (/ &
-     & 3.88140E-01_JPRB, 3.87956E-01_JPRB, 3.87773E-01_JPRB, 3.87590E-01_JPRB, 3.87407E-01_JPRB, &
-     & 3.87224E-01_JPRB, 3.87041E-01_JPRB, 3.86858E-01_JPRB, 3.86675E-01_JPRB, 3.86492E-01_JPRB, &
-     & 3.86310E-01_JPRB, 3.86127E-01_JPRB, 3.85945E-01_JPRB, 3.85763E-01_JPRB, 3.85580E-01_JPRB, &
-     & 3.85398E-01_JPRB, 3.85216E-01_JPRB, 3.85034E-01_JPRB, 3.84852E-01_JPRB/)
-      KAO_MN2O(:, 8) = (/ &
-     & 3.12991E-01_JPRB, 3.12246E-01_JPRB, 3.11504E-01_JPRB, 3.10763E-01_JPRB, 3.10024E-01_JPRB, &
-     & 3.09287E-01_JPRB, 3.08552E-01_JPRB, 3.07818E-01_JPRB, 3.07086E-01_JPRB, 3.06356E-01_JPRB, &
-     & 3.05628E-01_JPRB, 3.04901E-01_JPRB, 3.04176E-01_JPRB, 3.03453E-01_JPRB, 3.02732E-01_JPRB, &
-     & 3.02012E-01_JPRB, 3.01294E-01_JPRB, 3.00577E-01_JPRB, 2.99863E-01_JPRB/)
-      KAO_MN2O(:, 9) = (/ &
-     & 4.11761E-01_JPRB, 4.11309E-01_JPRB, 4.10858E-01_JPRB, 4.10407E-01_JPRB, 4.09957E-01_JPRB, &
-     & 4.09507E-01_JPRB, 4.09057E-01_JPRB, 4.08608E-01_JPRB, 4.08160E-01_JPRB, 4.07712E-01_JPRB, &
-     & 4.07265E-01_JPRB, 4.06818E-01_JPRB, 4.06371E-01_JPRB, 4.05925E-01_JPRB, 4.05480E-01_JPRB, &
-     & 4.05035E-01_JPRB, 4.04590E-01_JPRB, 4.04146E-01_JPRB, 4.03703E-01_JPRB/)
-      KAO_MN2O(:,10) = (/ &
-     & 2.84648E-01_JPRB, 2.87025E-01_JPRB, 2.89421E-01_JPRB, 2.91838E-01_JPRB, 2.94275E-01_JPRB, &
-     & 2.96732E-01_JPRB, 2.99210E-01_JPRB, 3.01708E-01_JPRB, 3.04227E-01_JPRB, 3.06768E-01_JPRB, &
-     & 3.09329E-01_JPRB, 3.11912E-01_JPRB, 3.14517E-01_JPRB, 3.17143E-01_JPRB, 3.19791E-01_JPRB, &
-     & 3.22461E-01_JPRB, 3.25154E-01_JPRB, 3.27869E-01_JPRB, 3.30606E-01_JPRB/)
-      KAO_MN2O(:,11) = (/ &
-     & 2.75090E-01_JPRB, 2.79370E-01_JPRB, 2.83716E-01_JPRB, 2.88129E-01_JPRB, 2.92611E-01_JPRB, &
-     & 2.97163E-01_JPRB, 3.01786E-01_JPRB, 3.06480E-01_JPRB, 3.11248E-01_JPRB, 3.16090E-01_JPRB, &
-     & 3.21007E-01_JPRB, 3.26001E-01_JPRB, 3.31072E-01_JPRB, 3.36222E-01_JPRB, 3.41452E-01_JPRB, &
-     & 3.46764E-01_JPRB, 3.52158E-01_JPRB, 3.57636E-01_JPRB, 3.63200E-01_JPRB/)
-      KAO_MN2O(:,12) = (/ &
-     & 1.67753E-01_JPRB, 1.71386E-01_JPRB, 1.75098E-01_JPRB, 1.78890E-01_JPRB, 1.82765E-01_JPRB, &
-     & 1.86723E-01_JPRB, 1.90767E-01_JPRB, 1.94899E-01_JPRB, 1.99120E-01_JPRB, 2.03433E-01_JPRB, &
-     & 2.07839E-01_JPRB, 2.12340E-01_JPRB, 2.16939E-01_JPRB, 2.21638E-01_JPRB, 2.26438E-01_JPRB, &
-     & 2.31342E-01_JPRB, 2.36353E-01_JPRB, 2.41472E-01_JPRB, 2.46701E-01_JPRB/)
-      KAO_MN2O(:,13) = (/ &
-     & 1.40543E-01_JPRB, 1.42049E-01_JPRB, 1.43571E-01_JPRB, 1.45109E-01_JPRB, 1.46663E-01_JPRB, &
-     & 1.48234E-01_JPRB, 1.49822E-01_JPRB, 1.51427E-01_JPRB, 1.53049E-01_JPRB, 1.54689E-01_JPRB, &
-     & 1.56346E-01_JPRB, 1.58021E-01_JPRB, 1.59713E-01_JPRB, 1.61424E-01_JPRB, 1.63153E-01_JPRB, &
-     & 1.64901E-01_JPRB, 1.66668E-01_JPRB, 1.68453E-01_JPRB, 1.70258E-01_JPRB/)
-      KAO_MN2O(:,14) = (/ &
-     & 1.51530E-01_JPRB, 1.50944E-01_JPRB, 1.50360E-01_JPRB, 1.49779E-01_JPRB, 1.49199E-01_JPRB, &
-     & 1.48622E-01_JPRB, 1.48047E-01_JPRB, 1.47474E-01_JPRB, 1.46903E-01_JPRB, 1.46335E-01_JPRB, &
-     & 1.45769E-01_JPRB, 1.45205E-01_JPRB, 1.44643E-01_JPRB, 1.44083E-01_JPRB, 1.43526E-01_JPRB, &
-     & 1.42971E-01_JPRB, 1.42418E-01_JPRB, 1.41867E-01_JPRB, 1.41318E-01_JPRB/)
-      KAO_MN2O(:,15) = (/ &
-     & 2.20492E-01_JPRB, 2.16479E-01_JPRB, 2.12539E-01_JPRB, 2.08671E-01_JPRB, 2.04873E-01_JPRB, &
-     & 2.01145E-01_JPRB, 1.97484E-01_JPRB, 1.93890E-01_JPRB, 1.90361E-01_JPRB, 1.86897E-01_JPRB, &
-     & 1.83495E-01_JPRB, 1.80156E-01_JPRB, 1.76877E-01_JPRB, 1.73658E-01_JPRB, 1.70497E-01_JPRB, &
-     & 1.67394E-01_JPRB, 1.64348E-01_JPRB, 1.61356E-01_JPRB, 1.58420E-01_JPRB/)
-      KAO_MN2O(:,16) = (/ &
-     & 2.19848E-01_JPRB, 2.15847E-01_JPRB, 2.11919E-01_JPRB, 2.08062E-01_JPRB, 2.04275E-01_JPRB, &
-     & 2.00558E-01_JPRB, 1.96908E-01_JPRB, 1.93324E-01_JPRB, 1.89806E-01_JPRB, 1.86351E-01_JPRB, &
-     & 1.82960E-01_JPRB, 1.79630E-01_JPRB, 1.76361E-01_JPRB, 1.73151E-01_JPRB, 1.70000E-01_JPRB, &
-     & 1.66906E-01_JPRB, 1.63868E-01_JPRB, 1.60886E-01_JPRB, 1.57958E-01_JPRB/)
+      kao_mn2o(:, 1) = (/ &
+     & 3.02276e-02_jprb, 3.10321e-02_jprb, 3.18580e-02_jprb, 3.27059e-02_jprb, 3.35764e-02_jprb, &
+     & 3.44700e-02_jprb, 3.53875e-02_jprb, 3.63293e-02_jprb, 3.72962e-02_jprb, 3.82889e-02_jprb, &
+     & 3.93079e-02_jprb, 4.03541e-02_jprb, 4.14281e-02_jprb, 4.25307e-02_jprb, 4.36627e-02_jprb, &
+     & 4.48248e-02_jprb, 4.60178e-02_jprb, 4.72425e-02_jprb, 4.84999e-02_jprb/)
+      kao_mn2o(:, 2) = (/ &
+     & 6.10132e-02_jprb, 6.17435e-02_jprb, 6.24825e-02_jprb, 6.32304e-02_jprb, 6.39872e-02_jprb, &
+     & 6.47531e-02_jprb, 6.55281e-02_jprb, 6.63124e-02_jprb, 6.71061e-02_jprb, 6.79093e-02_jprb, &
+     & 6.87221e-02_jprb, 6.95446e-02_jprb, 7.03770e-02_jprb, 7.12194e-02_jprb, 7.20718e-02_jprb, &
+     & 7.29344e-02_jprb, 7.38074e-02_jprb, 7.46908e-02_jprb, 7.55848e-02_jprb/)
+      kao_mn2o(:, 3) = (/ &
+     & 1.04479e-01_jprb, 1.05566e-01_jprb, 1.06664e-01_jprb, 1.07774e-01_jprb, 1.08895e-01_jprb, &
+     & 1.10028e-01_jprb, 1.11173e-01_jprb, 1.12329e-01_jprb, 1.13498e-01_jprb, 1.14679e-01_jprb, &
+     & 1.15872e-01_jprb, 1.17077e-01_jprb, 1.18295e-01_jprb, 1.19526e-01_jprb, 1.20770e-01_jprb, &
+     & 1.22026e-01_jprb, 1.23296e-01_jprb, 1.24578e-01_jprb, 1.25875e-01_jprb/)
+      kao_mn2o(:, 4) = (/ &
+     & 2.07260e-01_jprb, 2.08126e-01_jprb, 2.08996e-01_jprb, 2.09869e-01_jprb, 2.10746e-01_jprb, &
+     & 2.11627e-01_jprb, 2.12511e-01_jprb, 2.13399e-01_jprb, 2.14291e-01_jprb, 2.15187e-01_jprb, &
+     & 2.16086e-01_jprb, 2.16989e-01_jprb, 2.17896e-01_jprb, 2.18807e-01_jprb, 2.19721e-01_jprb, &
+     & 2.20640e-01_jprb, 2.21562e-01_jprb, 2.22488e-01_jprb, 2.23418e-01_jprb/)
+      kao_mn2o(:, 5) = (/ &
+     & 3.71566e-01_jprb, 3.71353e-01_jprb, 3.71141e-01_jprb, 3.70928e-01_jprb, 3.70716e-01_jprb, &
+     & 3.70504e-01_jprb, 3.70292e-01_jprb, 3.70080e-01_jprb, 3.69869e-01_jprb, 3.69657e-01_jprb, &
+     & 3.69446e-01_jprb, 3.69234e-01_jprb, 3.69023e-01_jprb, 3.68812e-01_jprb, 3.68601e-01_jprb, &
+     & 3.68390e-01_jprb, 3.68179e-01_jprb, 3.67969e-01_jprb, 3.67758e-01_jprb/)
+      kao_mn2o(:, 6) = (/ &
+     & 5.28092e-01_jprb, 5.27262e-01_jprb, 5.26433e-01_jprb, 5.25605e-01_jprb, 5.24779e-01_jprb, &
+     & 5.23954e-01_jprb, 5.23130e-01_jprb, 5.22307e-01_jprb, 5.21486e-01_jprb, 5.20666e-01_jprb, &
+     & 5.19847e-01_jprb, 5.19030e-01_jprb, 5.18214e-01_jprb, 5.17399e-01_jprb, 5.16586e-01_jprb, &
+     & 5.15773e-01_jprb, 5.14962e-01_jprb, 5.14153e-01_jprb, 5.13344e-01_jprb/)
+      kao_mn2o(:, 7) = (/ &
+     & 3.88140e-01_jprb, 3.87956e-01_jprb, 3.87773e-01_jprb, 3.87590e-01_jprb, 3.87407e-01_jprb, &
+     & 3.87224e-01_jprb, 3.87041e-01_jprb, 3.86858e-01_jprb, 3.86675e-01_jprb, 3.86492e-01_jprb, &
+     & 3.86310e-01_jprb, 3.86127e-01_jprb, 3.85945e-01_jprb, 3.85763e-01_jprb, 3.85580e-01_jprb, &
+     & 3.85398e-01_jprb, 3.85216e-01_jprb, 3.85034e-01_jprb, 3.84852e-01_jprb/)
+      kao_mn2o(:, 8) = (/ &
+     & 3.12991e-01_jprb, 3.12246e-01_jprb, 3.11504e-01_jprb, 3.10763e-01_jprb, 3.10024e-01_jprb, &
+     & 3.09287e-01_jprb, 3.08552e-01_jprb, 3.07818e-01_jprb, 3.07086e-01_jprb, 3.06356e-01_jprb, &
+     & 3.05628e-01_jprb, 3.04901e-01_jprb, 3.04176e-01_jprb, 3.03453e-01_jprb, 3.02732e-01_jprb, &
+     & 3.02012e-01_jprb, 3.01294e-01_jprb, 3.00577e-01_jprb, 2.99863e-01_jprb/)
+      kao_mn2o(:, 9) = (/ &
+     & 4.11761e-01_jprb, 4.11309e-01_jprb, 4.10858e-01_jprb, 4.10407e-01_jprb, 4.09957e-01_jprb, &
+     & 4.09507e-01_jprb, 4.09057e-01_jprb, 4.08608e-01_jprb, 4.08160e-01_jprb, 4.07712e-01_jprb, &
+     & 4.07265e-01_jprb, 4.06818e-01_jprb, 4.06371e-01_jprb, 4.05925e-01_jprb, 4.05480e-01_jprb, &
+     & 4.05035e-01_jprb, 4.04590e-01_jprb, 4.04146e-01_jprb, 4.03703e-01_jprb/)
+      kao_mn2o(:,10) = (/ &
+     & 2.84648e-01_jprb, 2.87025e-01_jprb, 2.89421e-01_jprb, 2.91838e-01_jprb, 2.94275e-01_jprb, &
+     & 2.96732e-01_jprb, 2.99210e-01_jprb, 3.01708e-01_jprb, 3.04227e-01_jprb, 3.06768e-01_jprb, &
+     & 3.09329e-01_jprb, 3.11912e-01_jprb, 3.14517e-01_jprb, 3.17143e-01_jprb, 3.19791e-01_jprb, &
+     & 3.22461e-01_jprb, 3.25154e-01_jprb, 3.27869e-01_jprb, 3.30606e-01_jprb/)
+      kao_mn2o(:,11) = (/ &
+     & 2.75090e-01_jprb, 2.79370e-01_jprb, 2.83716e-01_jprb, 2.88129e-01_jprb, 2.92611e-01_jprb, &
+     & 2.97163e-01_jprb, 3.01786e-01_jprb, 3.06480e-01_jprb, 3.11248e-01_jprb, 3.16090e-01_jprb, &
+     & 3.21007e-01_jprb, 3.26001e-01_jprb, 3.31072e-01_jprb, 3.36222e-01_jprb, 3.41452e-01_jprb, &
+     & 3.46764e-01_jprb, 3.52158e-01_jprb, 3.57636e-01_jprb, 3.63200e-01_jprb/)
+      kao_mn2o(:,12) = (/ &
+     & 1.67753e-01_jprb, 1.71386e-01_jprb, 1.75098e-01_jprb, 1.78890e-01_jprb, 1.82765e-01_jprb, &
+     & 1.86723e-01_jprb, 1.90767e-01_jprb, 1.94899e-01_jprb, 1.99120e-01_jprb, 2.03433e-01_jprb, &
+     & 2.07839e-01_jprb, 2.12340e-01_jprb, 2.16939e-01_jprb, 2.21638e-01_jprb, 2.26438e-01_jprb, &
+     & 2.31342e-01_jprb, 2.36353e-01_jprb, 2.41472e-01_jprb, 2.46701e-01_jprb/)
+      kao_mn2o(:,13) = (/ &
+     & 1.40543e-01_jprb, 1.42049e-01_jprb, 1.43571e-01_jprb, 1.45109e-01_jprb, 1.46663e-01_jprb, &
+     & 1.48234e-01_jprb, 1.49822e-01_jprb, 1.51427e-01_jprb, 1.53049e-01_jprb, 1.54689e-01_jprb, &
+     & 1.56346e-01_jprb, 1.58021e-01_jprb, 1.59713e-01_jprb, 1.61424e-01_jprb, 1.63153e-01_jprb, &
+     & 1.64901e-01_jprb, 1.66668e-01_jprb, 1.68453e-01_jprb, 1.70258e-01_jprb/)
+      kao_mn2o(:,14) = (/ &
+     & 1.51530e-01_jprb, 1.50944e-01_jprb, 1.50360e-01_jprb, 1.49779e-01_jprb, 1.49199e-01_jprb, &
+     & 1.48622e-01_jprb, 1.48047e-01_jprb, 1.47474e-01_jprb, 1.46903e-01_jprb, 1.46335e-01_jprb, &
+     & 1.45769e-01_jprb, 1.45205e-01_jprb, 1.44643e-01_jprb, 1.44083e-01_jprb, 1.43526e-01_jprb, &
+     & 1.42971e-01_jprb, 1.42418e-01_jprb, 1.41867e-01_jprb, 1.41318e-01_jprb/)
+      kao_mn2o(:,15) = (/ &
+     & 2.20492e-01_jprb, 2.16479e-01_jprb, 2.12539e-01_jprb, 2.08671e-01_jprb, 2.04873e-01_jprb, &
+     & 2.01145e-01_jprb, 1.97484e-01_jprb, 1.93890e-01_jprb, 1.90361e-01_jprb, 1.86897e-01_jprb, &
+     & 1.83495e-01_jprb, 1.80156e-01_jprb, 1.76877e-01_jprb, 1.73658e-01_jprb, 1.70497e-01_jprb, &
+     & 1.67394e-01_jprb, 1.64348e-01_jprb, 1.61356e-01_jprb, 1.58420e-01_jprb/)
+      kao_mn2o(:,16) = (/ &
+     & 2.19848e-01_jprb, 2.15847e-01_jprb, 2.11919e-01_jprb, 2.08062e-01_jprb, 2.04275e-01_jprb, &
+     & 2.00558e-01_jprb, 1.96908e-01_jprb, 1.93324e-01_jprb, 1.89806e-01_jprb, 1.86351e-01_jprb, &
+     & 1.82960e-01_jprb, 1.79630e-01_jprb, 1.76361e-01_jprb, 1.73151e-01_jprb, 1.70000e-01_jprb, &
+     & 1.66906e-01_jprb, 1.63868e-01_jprb, 1.60886e-01_jprb, 1.57958e-01_jprb/)
 
-!     The array KBO_Mxx contains the absorption coefficient for 
+!     the array kbo_mxx contains the absorption coefficient for 
 !     a minor species at the 16 chosen g-values for a reference pressure
-!     level above 100~ mb.   The first index refers to temperature 
-!     in 7.2 degree increments.  For instance, JT = 1 refers to a 
-!     temperature of 188.0, JT = 2 refers to 195.2, etc. The second index 
+!     level above 100~ mb.   the first index refers to temperature 
+!     in 7.2 degree increments.  for instance, jt = 1 refers to a 
+!     temperature of 188.0, jt = 2 refers to 195.2, etc. the second index 
 !     runs over the g-channel (1 to 16).
 
-      KBO_MCO2(:, 1) = (/ &
-     & 4.74280E-08_JPRB, 6.62724E-08_JPRB, 9.26042E-08_JPRB, 1.29398E-07_JPRB, 1.80812E-07_JPRB, &
-     & 2.52653E-07_JPRB, 3.53039E-07_JPRB, 4.93310E-07_JPRB, 6.89316E-07_JPRB, 9.63198E-07_JPRB, &
-     & 1.34590E-06_JPRB, 1.88067E-06_JPRB, 2.62790E-06_JPRB, 3.67204E-06_JPRB, 5.13104E-06_JPRB, &
-     & 7.16974E-06_JPRB, 1.00185E-05_JPRB, 1.39991E-05_JPRB, 1.95613E-05_JPRB/)
-      KBO_MCO2(:, 2) = (/ &
-     & 1.14872E-07_JPRB, 1.63356E-07_JPRB, 2.32304E-07_JPRB, 3.30352E-07_JPRB, 4.69783E-07_JPRB, &
-     & 6.68064E-07_JPRB, 9.50033E-07_JPRB, 1.35101E-06_JPRB, 1.92123E-06_JPRB, 2.73213E-06_JPRB, &
-     & 3.88527E-06_JPRB, 5.52513E-06_JPRB, 7.85711E-06_JPRB, 1.11734E-05_JPRB, 1.58893E-05_JPRB, &
-     & 2.25957E-05_JPRB, 3.21326E-05_JPRB, 4.56948E-05_JPRB, 6.49811E-05_JPRB/)
-      KBO_MCO2(:, 3) = (/ &
-     & 3.30676E-07_JPRB, 4.76313E-07_JPRB, 6.86094E-07_JPRB, 9.88267E-07_JPRB, 1.42353E-06_JPRB, &
-     & 2.05048E-06_JPRB, 2.95356E-06_JPRB, 4.25439E-06_JPRB, 6.12813E-06_JPRB, 8.82711E-06_JPRB, &
-     & 1.27148E-05_JPRB, 1.83147E-05_JPRB, 2.63810E-05_JPRB, 3.79998E-05_JPRB, 5.47359E-05_JPRB, &
-     & 7.88430E-05_JPRB, 1.13568E-04_JPRB, 1.63585E-04_JPRB, 2.35632E-04_JPRB/)
-      KBO_MCO2(:, 4) = (/ &
-     & 6.58642E-07_JPRB, 9.52761E-07_JPRB, 1.37822E-06_JPRB, 1.99368E-06_JPRB, 2.88396E-06_JPRB, &
-     & 4.17181E-06_JPRB, 6.03475E-06_JPRB, 8.72960E-06_JPRB, 1.26279E-05_JPRB, 1.82669E-05_JPRB, &
-     & 2.64241E-05_JPRB, 3.82239E-05_JPRB, 5.52929E-05_JPRB, 7.99844E-05_JPRB, 1.15702E-04_JPRB, &
-     & 1.67369E-04_JPRB, 2.42109E-04_JPRB, 3.50223E-04_JPRB, 5.06617E-04_JPRB/)
-      KBO_MCO2(:, 5) = (/ &
-     & 1.26418E-06_JPRB, 1.82095E-06_JPRB, 2.62292E-06_JPRB, 3.77810E-06_JPRB, 5.44204E-06_JPRB, &
-     & 7.83881E-06_JPRB, 1.12911E-05_JPRB, 1.62640E-05_JPRB, 2.34269E-05_JPRB, 3.37445E-05_JPRB, &
-     & 4.86061E-05_JPRB, 7.00131E-05_JPRB, 1.00848E-04_JPRB, 1.45263E-04_JPRB, 2.09239E-04_JPRB, &
-     & 3.01392E-04_JPRB, 4.34131E-04_JPRB, 6.25329E-04_JPRB, 9.00733E-04_JPRB/)
-      KBO_MCO2(:, 6) = (/ &
-     & 2.38529E-06_JPRB, 3.43110E-06_JPRB, 4.93545E-06_JPRB, 7.09937E-06_JPRB, 1.02120E-05_JPRB, &
-     & 1.46895E-05_JPRB, 2.11300E-05_JPRB, 3.03943E-05_JPRB, 4.37205E-05_JPRB, 6.28894E-05_JPRB, &
-     & 9.04630E-05_JPRB, 1.30126E-04_JPRB, 1.87179E-04_JPRB, 2.69247E-04_JPRB, 3.87296E-04_JPRB, &
-     & 5.57104E-04_JPRB, 8.01364E-04_JPRB, 1.15272E-03_JPRB, 1.65812E-03_JPRB/)
-      KBO_MCO2(:, 7) = (/ &
-     & 5.41398E-06_JPRB, 7.54295E-06_JPRB, 1.05091E-05_JPRB, 1.46417E-05_JPRB, 2.03993E-05_JPRB, &
-     & 2.84211E-05_JPRB, 3.95973E-05_JPRB, 5.51683E-05_JPRB, 7.68626E-05_JPRB, 1.07088E-04_JPRB, &
-     & 1.49199E-04_JPRB, 2.07869E-04_JPRB, 2.89610E-04_JPRB, 4.03496E-04_JPRB, 5.62165E-04_JPRB, &
-     & 7.83229E-04_JPRB, 1.09122E-03_JPRB, 1.52033E-03_JPRB, 2.11818E-03_JPRB/)
-      KBO_MCO2(:, 8) = (/ &
-     & 1.09995E-05_JPRB, 1.54018E-05_JPRB, 2.15660E-05_JPRB, 3.01973E-05_JPRB, 4.22831E-05_JPRB, &
-     & 5.92059E-05_JPRB, 8.29017E-05_JPRB, 1.16081E-04_JPRB, 1.62540E-04_JPRB, 2.27592E-04_JPRB, &
-     & 3.18681E-04_JPRB, 4.46226E-04_JPRB, 6.24817E-04_JPRB, 8.74886E-04_JPRB, 1.22504E-03_JPRB, &
-     & 1.71533E-03_JPRB, 2.40185E-03_JPRB, 3.36313E-03_JPRB, 4.70915E-03_JPRB/)
-      KBO_MCO2(:, 9) = (/ &
-     & 3.29051E-05_JPRB, 4.59996E-05_JPRB, 6.43050E-05_JPRB, 8.98950E-05_JPRB, 1.25668E-04_JPRB, &
-     & 1.75678E-04_JPRB, 2.45588E-04_JPRB, 3.43319E-04_JPRB, 4.79942E-04_JPRB, 6.70933E-04_JPRB, &
-     & 9.37930E-04_JPRB, 1.31118E-03_JPRB, 1.83295E-03_JPRB, 2.56237E-03_JPRB, 3.58206E-03_JPRB, &
-     & 5.00753E-03_JPRB, 7.00027E-03_JPRB, 9.78599E-03_JPRB, 1.36803E-02_JPRB/)
-      KBO_MCO2(:,10) = (/ &
-     & 1.95126E-05_JPRB, 2.65944E-05_JPRB, 3.62463E-05_JPRB, 4.94013E-05_JPRB, 6.73305E-05_JPRB, &
-     & 9.17669E-05_JPRB, 1.25072E-04_JPRB, 1.70465E-04_JPRB, 2.32332E-04_JPRB, 3.16652E-04_JPRB, &
-     & 4.31575E-04_JPRB, 5.88208E-04_JPRB, 8.01687E-04_JPRB, 1.09264E-03_JPRB, 1.48920E-03_JPRB, &
-     & 2.02968E-03_JPRB, 2.76631E-03_JPRB, 3.77029E-03_JPRB, 5.13865E-03_JPRB/)
-      KBO_MCO2(:,11) = (/ &
-     & 8.67271E-05_JPRB, 1.19228E-04_JPRB, 1.63908E-04_JPRB, 2.25332E-04_JPRB, 3.09774E-04_JPRB, &
-     & 4.25860E-04_JPRB, 5.85450E-04_JPRB, 8.04845E-04_JPRB, 1.10646E-03_JPRB, 1.52110E-03_JPRB, &
-     & 2.09112E-03_JPRB, 2.87476E-03_JPRB, 3.95207E-03_JPRB, 5.43309E-03_JPRB, 7.46911E-03_JPRB, &
-     & 1.02681E-02_JPRB, 1.41161E-02_JPRB, 1.94060E-02_JPRB, 2.66783E-02_JPRB/)
-      KBO_MCO2(:,12) = (/ &
-     & 3.79194E-07_JPRB, 5.51419E-07_JPRB, 8.01866E-07_JPRB, 1.16606E-06_JPRB, 1.69567E-06_JPRB, &
-     & 2.46582E-06_JPRB, 3.58577E-06_JPRB, 5.21438E-06_JPRB, 7.58268E-06_JPRB, 1.10266E-05_JPRB, &
-     & 1.60348E-05_JPRB, 2.33176E-05_JPRB, 3.39081E-05_JPRB, 4.93087E-05_JPRB, 7.17040E-05_JPRB, &
-     & 1.04271E-04_JPRB, 1.51630E-04_JPRB, 2.20498E-04_JPRB, 3.20644E-04_JPRB/)
-      KBO_MCO2(:,13) = (/ &
-     & 1.72555E-07_JPRB, 2.29952E-07_JPRB, 3.06441E-07_JPRB, 4.08373E-07_JPRB, 5.44209E-07_JPRB, &
-     & 7.25229E-07_JPRB, 9.66461E-07_JPRB, 1.28793E-06_JPRB, 1.71634E-06_JPRB, 2.28724E-06_JPRB, &
-     & 3.04805E-06_JPRB, 4.06192E-06_JPRB, 5.41303E-06_JPRB, 7.21356E-06_JPRB, 9.61299E-06_JPRB, &
-     & 1.28106E-05_JPRB, 1.70717E-05_JPRB, 2.27503E-05_JPRB, 3.03177E-05_JPRB/)
-      KBO_MCO2(:,14) = (/ &
-     & 7.42245E-09_JPRB, 7.17780E-09_JPRB, 6.94122E-09_JPRB, 6.71243E-09_JPRB, 6.49118E-09_JPRB, &
-     & 6.27723E-09_JPRB, 6.07032E-09_JPRB, 5.87024E-09_JPRB, 5.67675E-09_JPRB, 5.48964E-09_JPRB, &
-     & 5.30870E-09_JPRB, 5.13372E-09_JPRB, 4.96451E-09_JPRB, 4.80087E-09_JPRB, 4.64263E-09_JPRB, &
-     & 4.48961E-09_JPRB, 4.34163E-09_JPRB, 4.19852E-09_JPRB, 4.06014E-09_JPRB/)
-      KBO_MCO2(:,15) = (/ &
-     & 7.41847E-09_JPRB, 7.17332E-09_JPRB, 6.93627E-09_JPRB, 6.70705E-09_JPRB, 6.48541E-09_JPRB, &
-     & 6.27109E-09_JPRB, 6.06386E-09_JPRB, 5.86347E-09_JPRB, 5.66970E-09_JPRB, 5.48234E-09_JPRB, &
-     & 5.30117E-09_JPRB, 5.12599E-09_JPRB, 4.95659E-09_JPRB, 4.79280E-09_JPRB, 4.63441E-09_JPRB, &
-     & 4.48126E-09_JPRB, 4.33317E-09_JPRB, 4.18998E-09_JPRB, 4.05152E-09_JPRB/)
-      KBO_MCO2(:,16) = (/ &
-     & 7.42855E-09_JPRB, 7.18278E-09_JPRB, 6.94513E-09_JPRB, 6.71535E-09_JPRB, 6.49317E-09_JPRB, &
-     & 6.27834E-09_JPRB, 6.07062E-09_JPRB, 5.86977E-09_JPRB, 5.67557E-09_JPRB, 5.48779E-09_JPRB, &
-     & 5.30622E-09_JPRB, 5.13066E-09_JPRB, 4.96091E-09_JPRB, 4.79678E-09_JPRB, 4.63808E-09_JPRB, &
-     & 4.48462E-09_JPRB, 4.33625E-09_JPRB, 4.19278E-09_JPRB, 4.05406E-09_JPRB/)
+      kbo_mco2(:, 1) = (/ &
+     & 4.74280e-08_jprb, 6.62724e-08_jprb, 9.26042e-08_jprb, 1.29398e-07_jprb, 1.80812e-07_jprb, &
+     & 2.52653e-07_jprb, 3.53039e-07_jprb, 4.93310e-07_jprb, 6.89316e-07_jprb, 9.63198e-07_jprb, &
+     & 1.34590e-06_jprb, 1.88067e-06_jprb, 2.62790e-06_jprb, 3.67204e-06_jprb, 5.13104e-06_jprb, &
+     & 7.16974e-06_jprb, 1.00185e-05_jprb, 1.39991e-05_jprb, 1.95613e-05_jprb/)
+      kbo_mco2(:, 2) = (/ &
+     & 1.14872e-07_jprb, 1.63356e-07_jprb, 2.32304e-07_jprb, 3.30352e-07_jprb, 4.69783e-07_jprb, &
+     & 6.68064e-07_jprb, 9.50033e-07_jprb, 1.35101e-06_jprb, 1.92123e-06_jprb, 2.73213e-06_jprb, &
+     & 3.88527e-06_jprb, 5.52513e-06_jprb, 7.85711e-06_jprb, 1.11734e-05_jprb, 1.58893e-05_jprb, &
+     & 2.25957e-05_jprb, 3.21326e-05_jprb, 4.56948e-05_jprb, 6.49811e-05_jprb/)
+      kbo_mco2(:, 3) = (/ &
+     & 3.30676e-07_jprb, 4.76313e-07_jprb, 6.86094e-07_jprb, 9.88267e-07_jprb, 1.42353e-06_jprb, &
+     & 2.05048e-06_jprb, 2.95356e-06_jprb, 4.25439e-06_jprb, 6.12813e-06_jprb, 8.82711e-06_jprb, &
+     & 1.27148e-05_jprb, 1.83147e-05_jprb, 2.63810e-05_jprb, 3.79998e-05_jprb, 5.47359e-05_jprb, &
+     & 7.88430e-05_jprb, 1.13568e-04_jprb, 1.63585e-04_jprb, 2.35632e-04_jprb/)
+      kbo_mco2(:, 4) = (/ &
+     & 6.58642e-07_jprb, 9.52761e-07_jprb, 1.37822e-06_jprb, 1.99368e-06_jprb, 2.88396e-06_jprb, &
+     & 4.17181e-06_jprb, 6.03475e-06_jprb, 8.72960e-06_jprb, 1.26279e-05_jprb, 1.82669e-05_jprb, &
+     & 2.64241e-05_jprb, 3.82239e-05_jprb, 5.52929e-05_jprb, 7.99844e-05_jprb, 1.15702e-04_jprb, &
+     & 1.67369e-04_jprb, 2.42109e-04_jprb, 3.50223e-04_jprb, 5.06617e-04_jprb/)
+      kbo_mco2(:, 5) = (/ &
+     & 1.26418e-06_jprb, 1.82095e-06_jprb, 2.62292e-06_jprb, 3.77810e-06_jprb, 5.44204e-06_jprb, &
+     & 7.83881e-06_jprb, 1.12911e-05_jprb, 1.62640e-05_jprb, 2.34269e-05_jprb, 3.37445e-05_jprb, &
+     & 4.86061e-05_jprb, 7.00131e-05_jprb, 1.00848e-04_jprb, 1.45263e-04_jprb, 2.09239e-04_jprb, &
+     & 3.01392e-04_jprb, 4.34131e-04_jprb, 6.25329e-04_jprb, 9.00733e-04_jprb/)
+      kbo_mco2(:, 6) = (/ &
+     & 2.38529e-06_jprb, 3.43110e-06_jprb, 4.93545e-06_jprb, 7.09937e-06_jprb, 1.02120e-05_jprb, &
+     & 1.46895e-05_jprb, 2.11300e-05_jprb, 3.03943e-05_jprb, 4.37205e-05_jprb, 6.28894e-05_jprb, &
+     & 9.04630e-05_jprb, 1.30126e-04_jprb, 1.87179e-04_jprb, 2.69247e-04_jprb, 3.87296e-04_jprb, &
+     & 5.57104e-04_jprb, 8.01364e-04_jprb, 1.15272e-03_jprb, 1.65812e-03_jprb/)
+      kbo_mco2(:, 7) = (/ &
+     & 5.41398e-06_jprb, 7.54295e-06_jprb, 1.05091e-05_jprb, 1.46417e-05_jprb, 2.03993e-05_jprb, &
+     & 2.84211e-05_jprb, 3.95973e-05_jprb, 5.51683e-05_jprb, 7.68626e-05_jprb, 1.07088e-04_jprb, &
+     & 1.49199e-04_jprb, 2.07869e-04_jprb, 2.89610e-04_jprb, 4.03496e-04_jprb, 5.62165e-04_jprb, &
+     & 7.83229e-04_jprb, 1.09122e-03_jprb, 1.52033e-03_jprb, 2.11818e-03_jprb/)
+      kbo_mco2(:, 8) = (/ &
+     & 1.09995e-05_jprb, 1.54018e-05_jprb, 2.15660e-05_jprb, 3.01973e-05_jprb, 4.22831e-05_jprb, &
+     & 5.92059e-05_jprb, 8.29017e-05_jprb, 1.16081e-04_jprb, 1.62540e-04_jprb, 2.27592e-04_jprb, &
+     & 3.18681e-04_jprb, 4.46226e-04_jprb, 6.24817e-04_jprb, 8.74886e-04_jprb, 1.22504e-03_jprb, &
+     & 1.71533e-03_jprb, 2.40185e-03_jprb, 3.36313e-03_jprb, 4.70915e-03_jprb/)
+      kbo_mco2(:, 9) = (/ &
+     & 3.29051e-05_jprb, 4.59996e-05_jprb, 6.43050e-05_jprb, 8.98950e-05_jprb, 1.25668e-04_jprb, &
+     & 1.75678e-04_jprb, 2.45588e-04_jprb, 3.43319e-04_jprb, 4.79942e-04_jprb, 6.70933e-04_jprb, &
+     & 9.37930e-04_jprb, 1.31118e-03_jprb, 1.83295e-03_jprb, 2.56237e-03_jprb, 3.58206e-03_jprb, &
+     & 5.00753e-03_jprb, 7.00027e-03_jprb, 9.78599e-03_jprb, 1.36803e-02_jprb/)
+      kbo_mco2(:,10) = (/ &
+     & 1.95126e-05_jprb, 2.65944e-05_jprb, 3.62463e-05_jprb, 4.94013e-05_jprb, 6.73305e-05_jprb, &
+     & 9.17669e-05_jprb, 1.25072e-04_jprb, 1.70465e-04_jprb, 2.32332e-04_jprb, 3.16652e-04_jprb, &
+     & 4.31575e-04_jprb, 5.88208e-04_jprb, 8.01687e-04_jprb, 1.09264e-03_jprb, 1.48920e-03_jprb, &
+     & 2.02968e-03_jprb, 2.76631e-03_jprb, 3.77029e-03_jprb, 5.13865e-03_jprb/)
+      kbo_mco2(:,11) = (/ &
+     & 8.67271e-05_jprb, 1.19228e-04_jprb, 1.63908e-04_jprb, 2.25332e-04_jprb, 3.09774e-04_jprb, &
+     & 4.25860e-04_jprb, 5.85450e-04_jprb, 8.04845e-04_jprb, 1.10646e-03_jprb, 1.52110e-03_jprb, &
+     & 2.09112e-03_jprb, 2.87476e-03_jprb, 3.95207e-03_jprb, 5.43309e-03_jprb, 7.46911e-03_jprb, &
+     & 1.02681e-02_jprb, 1.41161e-02_jprb, 1.94060e-02_jprb, 2.66783e-02_jprb/)
+      kbo_mco2(:,12) = (/ &
+     & 3.79194e-07_jprb, 5.51419e-07_jprb, 8.01866e-07_jprb, 1.16606e-06_jprb, 1.69567e-06_jprb, &
+     & 2.46582e-06_jprb, 3.58577e-06_jprb, 5.21438e-06_jprb, 7.58268e-06_jprb, 1.10266e-05_jprb, &
+     & 1.60348e-05_jprb, 2.33176e-05_jprb, 3.39081e-05_jprb, 4.93087e-05_jprb, 7.17040e-05_jprb, &
+     & 1.04271e-04_jprb, 1.51630e-04_jprb, 2.20498e-04_jprb, 3.20644e-04_jprb/)
+      kbo_mco2(:,13) = (/ &
+     & 1.72555e-07_jprb, 2.29952e-07_jprb, 3.06441e-07_jprb, 4.08373e-07_jprb, 5.44209e-07_jprb, &
+     & 7.25229e-07_jprb, 9.66461e-07_jprb, 1.28793e-06_jprb, 1.71634e-06_jprb, 2.28724e-06_jprb, &
+     & 3.04805e-06_jprb, 4.06192e-06_jprb, 5.41303e-06_jprb, 7.21356e-06_jprb, 9.61299e-06_jprb, &
+     & 1.28106e-05_jprb, 1.70717e-05_jprb, 2.27503e-05_jprb, 3.03177e-05_jprb/)
+      kbo_mco2(:,14) = (/ &
+     & 7.42245e-09_jprb, 7.17780e-09_jprb, 6.94122e-09_jprb, 6.71243e-09_jprb, 6.49118e-09_jprb, &
+     & 6.27723e-09_jprb, 6.07032e-09_jprb, 5.87024e-09_jprb, 5.67675e-09_jprb, 5.48964e-09_jprb, &
+     & 5.30870e-09_jprb, 5.13372e-09_jprb, 4.96451e-09_jprb, 4.80087e-09_jprb, 4.64263e-09_jprb, &
+     & 4.48961e-09_jprb, 4.34163e-09_jprb, 4.19852e-09_jprb, 4.06014e-09_jprb/)
+      kbo_mco2(:,15) = (/ &
+     & 7.41847e-09_jprb, 7.17332e-09_jprb, 6.93627e-09_jprb, 6.70705e-09_jprb, 6.48541e-09_jprb, &
+     & 6.27109e-09_jprb, 6.06386e-09_jprb, 5.86347e-09_jprb, 5.66970e-09_jprb, 5.48234e-09_jprb, &
+     & 5.30117e-09_jprb, 5.12599e-09_jprb, 4.95659e-09_jprb, 4.79280e-09_jprb, 4.63441e-09_jprb, &
+     & 4.48126e-09_jprb, 4.33317e-09_jprb, 4.18998e-09_jprb, 4.05152e-09_jprb/)
+      kbo_mco2(:,16) = (/ &
+     & 7.42855e-09_jprb, 7.18278e-09_jprb, 6.94513e-09_jprb, 6.71535e-09_jprb, 6.49317e-09_jprb, &
+     & 6.27834e-09_jprb, 6.07062e-09_jprb, 5.86977e-09_jprb, 5.67557e-09_jprb, 5.48779e-09_jprb, &
+     & 5.30622e-09_jprb, 5.13066e-09_jprb, 4.96091e-09_jprb, 4.79678e-09_jprb, 4.63808e-09_jprb, &
+     & 4.48462e-09_jprb, 4.33625e-09_jprb, 4.19278e-09_jprb, 4.05406e-09_jprb/)
 
-      KBO_MN2O(:, 1) = (/ &
-     & 2.49055E-04_JPRB, 2.53574E-04_JPRB, 2.58175E-04_JPRB, 2.62860E-04_JPRB, 2.67629E-04_JPRB, &
-     & 2.72485E-04_JPRB, 2.77429E-04_JPRB, 2.82463E-04_JPRB, 2.87588E-04_JPRB, 2.92806E-04_JPRB, &
-     & 2.98119E-04_JPRB, 3.03528E-04_JPRB, 3.09036E-04_JPRB, 3.14643E-04_JPRB, 3.20352E-04_JPRB, &
-     & 3.26165E-04_JPRB, 3.32083E-04_JPRB, 3.38109E-04_JPRB, 3.44243E-04_JPRB/)
-      KBO_MN2O(:, 2) = (/ &
-     & 3.79251E-04_JPRB, 4.04353E-04_JPRB, 4.31117E-04_JPRB, 4.59652E-04_JPRB, 4.90075E-04_JPRB, &
-     & 5.22513E-04_JPRB, 5.57097E-04_JPRB, 5.93970E-04_JPRB, 6.33284E-04_JPRB, 6.75200E-04_JPRB, &
-     & 7.19890E-04_JPRB, 7.67539E-04_JPRB, 8.18340E-04_JPRB, 8.72505E-04_JPRB, 9.30255E-04_JPRB, &
-     & 9.91827E-04_JPRB, 1.05747E-03_JPRB, 1.12747E-03_JPRB, 1.20209E-03_JPRB/)
-      KBO_MN2O(:, 3) = (/ &
-     & 7.61140E-04_JPRB, 8.36483E-04_JPRB, 9.19284E-04_JPRB, 1.01028E-03_JPRB, 1.11029E-03_JPRB, &
-     & 1.22019E-03_JPRB, 1.34098E-03_JPRB, 1.47372E-03_JPRB, 1.61959E-03_JPRB, 1.77991E-03_JPRB, &
-     & 1.95610E-03_JPRB, 2.14973E-03_JPRB, 2.36253E-03_JPRB, 2.59639E-03_JPRB, 2.85340E-03_JPRB, &
-     & 3.13585E-03_JPRB, 3.44626E-03_JPRB, 3.78740E-03_JPRB, 4.16230E-03_JPRB/)
-      KBO_MN2O(:, 4) = (/ &
-     & 2.01074E-03_JPRB, 2.26915E-03_JPRB, 2.56077E-03_JPRB, 2.88987E-03_JPRB, 3.26126E-03_JPRB, &
-     & 3.68038E-03_JPRB, 4.15337E-03_JPRB, 4.68714E-03_JPRB, 5.28951E-03_JPRB, 5.96929E-03_JPRB, &
-     & 6.73643E-03_JPRB, 7.60217E-03_JPRB, 8.57916E-03_JPRB, 9.68172E-03_JPRB, 1.09260E-02_JPRB, &
-     & 1.23301E-02_JPRB, 1.39147E-02_JPRB, 1.57030E-02_JPRB, 1.77211E-02_JPRB/)
-      KBO_MN2O(:, 5) = (/ &
-     & 7.43302E-03_JPRB, 8.32582E-03_JPRB, 9.32585E-03_JPRB, 1.04460E-02_JPRB, 1.17007E-02_JPRB, &
-     & 1.31061E-02_JPRB, 1.46803E-02_JPRB, 1.64436E-02_JPRB, 1.84186E-02_JPRB, 2.06309E-02_JPRB, &
-     & 2.31090E-02_JPRB, 2.58846E-02_JPRB, 2.89937E-02_JPRB, 3.24762E-02_JPRB, 3.63769E-02_JPRB, &
-     & 4.07463E-02_JPRB, 4.56404E-02_JPRB, 5.11223E-02_JPRB, 5.72627E-02_JPRB/)
-      KBO_MN2O(:, 6) = (/ &
-     & 2.71911E-02_JPRB, 2.94258E-02_JPRB, 3.18441E-02_JPRB, 3.44612E-02_JPRB, 3.72933E-02_JPRB, &
-     & 4.03582E-02_JPRB, 4.36750E-02_JPRB, 4.72644E-02_JPRB, 5.11487E-02_JPRB, 5.53523E-02_JPRB, &
-     & 5.99014E-02_JPRB, 6.48243E-02_JPRB, 7.01518E-02_JPRB, 7.59172E-02_JPRB, 8.21563E-02_JPRB, &
-     & 8.89082E-02_JPRB, 9.62150E-02_JPRB, 1.04122E-01_JPRB, 1.12679E-01_JPRB/)
-      KBO_MN2O(:, 7) = (/ &
-     & 1.63331E-01_JPRB, 1.80469E-01_JPRB, 1.99406E-01_JPRB, 2.20330E-01_JPRB, 2.43449E-01_JPRB, &
-     & 2.68995E-01_JPRB, 2.97221E-01_JPRB, 3.28408E-01_JPRB, 3.62869E-01_JPRB, 4.00945E-01_JPRB, &
-     & 4.43017E-01_JPRB, 4.89503E-01_JPRB, 5.40867E-01_JPRB, 5.97621E-01_JPRB, 6.60330E-01_JPRB, &
-     & 7.29619E-01_JPRB, 8.06179E-01_JPRB, 8.90772E-01_JPRB, 9.84242E-01_JPRB/)
-      KBO_MN2O(:, 8) = (/ &
-     & 1.32648E+00_JPRB, 1.33515E+00_JPRB, 1.34387E+00_JPRB, 1.35265E+00_JPRB, 1.36149E+00_JPRB, &
-     & 1.37038E+00_JPRB, 1.37933E+00_JPRB, 1.38835E+00_JPRB, 1.39742E+00_JPRB, 1.40655E+00_JPRB, &
-     & 1.41574E+00_JPRB, 1.42499E+00_JPRB, 1.43429E+00_JPRB, 1.44367E+00_JPRB, 1.45310E+00_JPRB, &
-     & 1.46259E+00_JPRB, 1.47215E+00_JPRB, 1.48176E+00_JPRB, 1.49144E+00_JPRB/)
-      KBO_MN2O(:, 9) = (/ &
-     & 3.12620E+00_JPRB, 3.03118E+00_JPRB, 2.93905E+00_JPRB, 2.84972E+00_JPRB, 2.76310E+00_JPRB, &
-     & 2.67911E+00_JPRB, 2.59768E+00_JPRB, 2.51873E+00_JPRB, 2.44217E+00_JPRB, 2.36794E+00_JPRB, &
-     & 2.29596E+00_JPRB, 2.22618E+00_JPRB, 2.15851E+00_JPRB, 2.09290E+00_JPRB, 2.02929E+00_JPRB, &
-     & 1.96761E+00_JPRB, 1.90780E+00_JPRB, 1.84982E+00_JPRB, 1.79359E+00_JPRB/)
-      KBO_MN2O(:,10) = (/ &
-     & 1.60677E-02_JPRB, 1.82485E-02_JPRB, 2.07254E-02_JPRB, 2.35384E-02_JPRB, 2.67332E-02_JPRB, &
-     & 3.03617E-02_JPRB, 3.44827E-02_JPRB, 3.91629E-02_JPRB, 4.44785E-02_JPRB, 5.05154E-02_JPRB, &
-     & 5.73718E-02_JPRB, 6.51589E-02_JPRB, 7.40027E-02_JPRB, 8.40470E-02_JPRB, 9.54546E-02_JPRB, &
-     & 1.08411E-01_JPRB, 1.23125E-01_JPRB, 1.39836E-01_JPRB, 1.58816E-01_JPRB/)
-      KBO_MN2O(:,11) = (/ &
-     & 1.55287E-02_JPRB, 1.78265E-02_JPRB, 2.04642E-02_JPRB, 2.34922E-02_JPRB, 2.69683E-02_JPRB, &
-     & 3.09588E-02_JPRB, 3.55397E-02_JPRB, 4.07984E-02_JPRB, 4.68352E-02_JPRB, 5.37653E-02_JPRB, &
-     & 6.17208E-02_JPRB, 7.08535E-02_JPRB, 8.13375E-02_JPRB, 9.33728E-02_JPRB, 1.07189E-01_JPRB, &
-     & 1.23049E-01_JPRB, 1.41257E-01_JPRB, 1.62158E-01_JPRB, 1.86152E-01_JPRB/)
-      KBO_MN2O(:,12) = (/ &
-     & 7.13719E-03_JPRB, 8.18879E-03_JPRB, 9.39535E-03_JPRB, 1.07797E-02_JPRB, 1.23680E-02_JPRB, &
-     & 1.41903E-02_JPRB, 1.62811E-02_JPRB, 1.86800E-02_JPRB, 2.14324E-02_JPRB, 2.45902E-02_JPRB, &
-     & 2.82134E-02_JPRB, 3.23704E-02_JPRB, 3.71400E-02_JPRB, 4.26122E-02_JPRB, 4.88908E-02_JPRB, &
-     & 5.60945E-02_JPRB, 6.43596E-02_JPRB, 7.38424E-02_JPRB, 8.47224E-02_JPRB/)
-      KBO_MN2O(:,13) = (/ &
-     & 9.28813E-03_JPRB, 1.06108E-02_JPRB, 1.21218E-02_JPRB, 1.38480E-02_JPRB, 1.58199E-02_JPRB, &
-     & 1.80727E-02_JPRB, 2.06463E-02_JPRB, 2.35864E-02_JPRB, 2.69452E-02_JPRB, 3.07822E-02_JPRB, &
-     & 3.51657E-02_JPRB, 4.01734E-02_JPRB, 4.58941E-02_JPRB, 5.24296E-02_JPRB, 5.98956E-02_JPRB, &
-     & 6.84249E-02_JPRB, 7.81688E-02_JPRB, 8.93002E-02_JPRB, 1.02017E-01_JPRB/)
-      KBO_MN2O(:,14) = (/ &
-     & 2.17205E-02_JPRB, 2.51661E-02_JPRB, 2.91581E-02_JPRB, 3.37835E-02_JPRB, 3.91425E-02_JPRB, &
-     & 4.53517E-02_JPRB, 5.25458E-02_JPRB, 6.08811E-02_JPRB, 7.05387E-02_JPRB, 8.17282E-02_JPRB, &
-     & 9.46927E-02_JPRB, 1.09714E-01_JPRB, 1.27118E-01_JPRB, 1.47282E-01_JPRB, 1.70645E-01_JPRB, &
-     & 1.97715E-01_JPRB, 2.29078E-01_JPRB, 2.65417E-01_JPRB, 3.07520E-01_JPRB/)
-      KBO_MN2O(:,15) = (/ &
-     & 4.89156E-02_JPRB, 5.70504E-02_JPRB, 6.65379E-02_JPRB, 7.76033E-02_JPRB, 9.05089E-02_JPRB, &
-     & 1.05561E-01_JPRB, 1.23116E-01_JPRB, 1.43590E-01_JPRB, 1.67469E-01_JPRB, 1.95320E-01_JPRB, &
-     & 2.27802E-01_JPRB, 2.65686E-01_JPRB, 3.09869E-01_JPRB, 3.61401E-01_JPRB, 4.21503E-01_JPRB, &
-     & 4.91600E-01_JPRB, 5.73354E-01_JPRB, 6.68703E-01_JPRB, 7.79910E-01_JPRB/)
-      KBO_MN2O(:,16) = (/ &
-     & 1.13156E-02_JPRB, 1.46199E-02_JPRB, 1.88891E-02_JPRB, 2.44050E-02_JPRB, 3.15316E-02_JPRB, &
-     & 4.07393E-02_JPRB, 5.26358E-02_JPRB, 6.80061E-02_JPRB, 8.78649E-02_JPRB, 1.13523E-01_JPRB, &
-     & 1.46673E-01_JPRB, 1.89504E-01_JPRB, 2.44841E-01_JPRB, 3.16338E-01_JPRB, 4.08713E-01_JPRB, &
-     & 5.28064E-01_JPRB, 6.82266E-01_JPRB, 8.81496E-01_JPRB, 1.13891E+00_JPRB/)
+      kbo_mn2o(:, 1) = (/ &
+     & 2.49055e-04_jprb, 2.53574e-04_jprb, 2.58175e-04_jprb, 2.62860e-04_jprb, 2.67629e-04_jprb, &
+     & 2.72485e-04_jprb, 2.77429e-04_jprb, 2.82463e-04_jprb, 2.87588e-04_jprb, 2.92806e-04_jprb, &
+     & 2.98119e-04_jprb, 3.03528e-04_jprb, 3.09036e-04_jprb, 3.14643e-04_jprb, 3.20352e-04_jprb, &
+     & 3.26165e-04_jprb, 3.32083e-04_jprb, 3.38109e-04_jprb, 3.44243e-04_jprb/)
+      kbo_mn2o(:, 2) = (/ &
+     & 3.79251e-04_jprb, 4.04353e-04_jprb, 4.31117e-04_jprb, 4.59652e-04_jprb, 4.90075e-04_jprb, &
+     & 5.22513e-04_jprb, 5.57097e-04_jprb, 5.93970e-04_jprb, 6.33284e-04_jprb, 6.75200e-04_jprb, &
+     & 7.19890e-04_jprb, 7.67539e-04_jprb, 8.18340e-04_jprb, 8.72505e-04_jprb, 9.30255e-04_jprb, &
+     & 9.91827e-04_jprb, 1.05747e-03_jprb, 1.12747e-03_jprb, 1.20209e-03_jprb/)
+      kbo_mn2o(:, 3) = (/ &
+     & 7.61140e-04_jprb, 8.36483e-04_jprb, 9.19284e-04_jprb, 1.01028e-03_jprb, 1.11029e-03_jprb, &
+     & 1.22019e-03_jprb, 1.34098e-03_jprb, 1.47372e-03_jprb, 1.61959e-03_jprb, 1.77991e-03_jprb, &
+     & 1.95610e-03_jprb, 2.14973e-03_jprb, 2.36253e-03_jprb, 2.59639e-03_jprb, 2.85340e-03_jprb, &
+     & 3.13585e-03_jprb, 3.44626e-03_jprb, 3.78740e-03_jprb, 4.16230e-03_jprb/)
+      kbo_mn2o(:, 4) = (/ &
+     & 2.01074e-03_jprb, 2.26915e-03_jprb, 2.56077e-03_jprb, 2.88987e-03_jprb, 3.26126e-03_jprb, &
+     & 3.68038e-03_jprb, 4.15337e-03_jprb, 4.68714e-03_jprb, 5.28951e-03_jprb, 5.96929e-03_jprb, &
+     & 6.73643e-03_jprb, 7.60217e-03_jprb, 8.57916e-03_jprb, 9.68172e-03_jprb, 1.09260e-02_jprb, &
+     & 1.23301e-02_jprb, 1.39147e-02_jprb, 1.57030e-02_jprb, 1.77211e-02_jprb/)
+      kbo_mn2o(:, 5) = (/ &
+     & 7.43302e-03_jprb, 8.32582e-03_jprb, 9.32585e-03_jprb, 1.04460e-02_jprb, 1.17007e-02_jprb, &
+     & 1.31061e-02_jprb, 1.46803e-02_jprb, 1.64436e-02_jprb, 1.84186e-02_jprb, 2.06309e-02_jprb, &
+     & 2.31090e-02_jprb, 2.58846e-02_jprb, 2.89937e-02_jprb, 3.24762e-02_jprb, 3.63769e-02_jprb, &
+     & 4.07463e-02_jprb, 4.56404e-02_jprb, 5.11223e-02_jprb, 5.72627e-02_jprb/)
+      kbo_mn2o(:, 6) = (/ &
+     & 2.71911e-02_jprb, 2.94258e-02_jprb, 3.18441e-02_jprb, 3.44612e-02_jprb, 3.72933e-02_jprb, &
+     & 4.03582e-02_jprb, 4.36750e-02_jprb, 4.72644e-02_jprb, 5.11487e-02_jprb, 5.53523e-02_jprb, &
+     & 5.99014e-02_jprb, 6.48243e-02_jprb, 7.01518e-02_jprb, 7.59172e-02_jprb, 8.21563e-02_jprb, &
+     & 8.89082e-02_jprb, 9.62150e-02_jprb, 1.04122e-01_jprb, 1.12679e-01_jprb/)
+      kbo_mn2o(:, 7) = (/ &
+     & 1.63331e-01_jprb, 1.80469e-01_jprb, 1.99406e-01_jprb, 2.20330e-01_jprb, 2.43449e-01_jprb, &
+     & 2.68995e-01_jprb, 2.97221e-01_jprb, 3.28408e-01_jprb, 3.62869e-01_jprb, 4.00945e-01_jprb, &
+     & 4.43017e-01_jprb, 4.89503e-01_jprb, 5.40867e-01_jprb, 5.97621e-01_jprb, 6.60330e-01_jprb, &
+     & 7.29619e-01_jprb, 8.06179e-01_jprb, 8.90772e-01_jprb, 9.84242e-01_jprb/)
+      kbo_mn2o(:, 8) = (/ &
+     & 1.32648e+00_jprb, 1.33515e+00_jprb, 1.34387e+00_jprb, 1.35265e+00_jprb, 1.36149e+00_jprb, &
+     & 1.37038e+00_jprb, 1.37933e+00_jprb, 1.38835e+00_jprb, 1.39742e+00_jprb, 1.40655e+00_jprb, &
+     & 1.41574e+00_jprb, 1.42499e+00_jprb, 1.43429e+00_jprb, 1.44367e+00_jprb, 1.45310e+00_jprb, &
+     & 1.46259e+00_jprb, 1.47215e+00_jprb, 1.48176e+00_jprb, 1.49144e+00_jprb/)
+      kbo_mn2o(:, 9) = (/ &
+     & 3.12620e+00_jprb, 3.03118e+00_jprb, 2.93905e+00_jprb, 2.84972e+00_jprb, 2.76310e+00_jprb, &
+     & 2.67911e+00_jprb, 2.59768e+00_jprb, 2.51873e+00_jprb, 2.44217e+00_jprb, 2.36794e+00_jprb, &
+     & 2.29596e+00_jprb, 2.22618e+00_jprb, 2.15851e+00_jprb, 2.09290e+00_jprb, 2.02929e+00_jprb, &
+     & 1.96761e+00_jprb, 1.90780e+00_jprb, 1.84982e+00_jprb, 1.79359e+00_jprb/)
+      kbo_mn2o(:,10) = (/ &
+     & 1.60677e-02_jprb, 1.82485e-02_jprb, 2.07254e-02_jprb, 2.35384e-02_jprb, 2.67332e-02_jprb, &
+     & 3.03617e-02_jprb, 3.44827e-02_jprb, 3.91629e-02_jprb, 4.44785e-02_jprb, 5.05154e-02_jprb, &
+     & 5.73718e-02_jprb, 6.51589e-02_jprb, 7.40027e-02_jprb, 8.40470e-02_jprb, 9.54546e-02_jprb, &
+     & 1.08411e-01_jprb, 1.23125e-01_jprb, 1.39836e-01_jprb, 1.58816e-01_jprb/)
+      kbo_mn2o(:,11) = (/ &
+     & 1.55287e-02_jprb, 1.78265e-02_jprb, 2.04642e-02_jprb, 2.34922e-02_jprb, 2.69683e-02_jprb, &
+     & 3.09588e-02_jprb, 3.55397e-02_jprb, 4.07984e-02_jprb, 4.68352e-02_jprb, 5.37653e-02_jprb, &
+     & 6.17208e-02_jprb, 7.08535e-02_jprb, 8.13375e-02_jprb, 9.33728e-02_jprb, 1.07189e-01_jprb, &
+     & 1.23049e-01_jprb, 1.41257e-01_jprb, 1.62158e-01_jprb, 1.86152e-01_jprb/)
+      kbo_mn2o(:,12) = (/ &
+     & 7.13719e-03_jprb, 8.18879e-03_jprb, 9.39535e-03_jprb, 1.07797e-02_jprb, 1.23680e-02_jprb, &
+     & 1.41903e-02_jprb, 1.62811e-02_jprb, 1.86800e-02_jprb, 2.14324e-02_jprb, 2.45902e-02_jprb, &
+     & 2.82134e-02_jprb, 3.23704e-02_jprb, 3.71400e-02_jprb, 4.26122e-02_jprb, 4.88908e-02_jprb, &
+     & 5.60945e-02_jprb, 6.43596e-02_jprb, 7.38424e-02_jprb, 8.47224e-02_jprb/)
+      kbo_mn2o(:,13) = (/ &
+     & 9.28813e-03_jprb, 1.06108e-02_jprb, 1.21218e-02_jprb, 1.38480e-02_jprb, 1.58199e-02_jprb, &
+     & 1.80727e-02_jprb, 2.06463e-02_jprb, 2.35864e-02_jprb, 2.69452e-02_jprb, 3.07822e-02_jprb, &
+     & 3.51657e-02_jprb, 4.01734e-02_jprb, 4.58941e-02_jprb, 5.24296e-02_jprb, 5.98956e-02_jprb, &
+     & 6.84249e-02_jprb, 7.81688e-02_jprb, 8.93002e-02_jprb, 1.02017e-01_jprb/)
+      kbo_mn2o(:,14) = (/ &
+     & 2.17205e-02_jprb, 2.51661e-02_jprb, 2.91581e-02_jprb, 3.37835e-02_jprb, 3.91425e-02_jprb, &
+     & 4.53517e-02_jprb, 5.25458e-02_jprb, 6.08811e-02_jprb, 7.05387e-02_jprb, 8.17282e-02_jprb, &
+     & 9.46927e-02_jprb, 1.09714e-01_jprb, 1.27118e-01_jprb, 1.47282e-01_jprb, 1.70645e-01_jprb, &
+     & 1.97715e-01_jprb, 2.29078e-01_jprb, 2.65417e-01_jprb, 3.07520e-01_jprb/)
+      kbo_mn2o(:,15) = (/ &
+     & 4.89156e-02_jprb, 5.70504e-02_jprb, 6.65379e-02_jprb, 7.76033e-02_jprb, 9.05089e-02_jprb, &
+     & 1.05561e-01_jprb, 1.23116e-01_jprb, 1.43590e-01_jprb, 1.67469e-01_jprb, 1.95320e-01_jprb, &
+     & 2.27802e-01_jprb, 2.65686e-01_jprb, 3.09869e-01_jprb, 3.61401e-01_jprb, 4.21503e-01_jprb, &
+     & 4.91600e-01_jprb, 5.73354e-01_jprb, 6.68703e-01_jprb, 7.79910e-01_jprb/)
+      kbo_mn2o(:,16) = (/ &
+     & 1.13156e-02_jprb, 1.46199e-02_jprb, 1.88891e-02_jprb, 2.44050e-02_jprb, 3.15316e-02_jprb, &
+     & 4.07393e-02_jprb, 5.26358e-02_jprb, 6.80061e-02_jprb, 8.78649e-02_jprb, 1.13523e-01_jprb, &
+     & 1.46673e-01_jprb, 1.89504e-01_jprb, 2.44841e-01_jprb, 3.16338e-01_jprb, 4.08713e-01_jprb, &
+     & 5.28064e-01_jprb, 6.82266e-01_jprb, 8.81496e-01_jprb, 1.13891e+00_jprb/)
 
-!     The array FORREFO contains the coefficient of the water vapor
-!     foreign-continuum (including the energy term).  The first 
+!     the array forrefo contains the coefficient of the water vapor
+!     foreign-continuum (including the energy term).  the first 
 !     index refers to reference temperature (296,260,224,260) and 
-!     pressure (970,475,219,3 mbar) levels.  The second index 
+!     pressure (970,475,219,3 mbar) levels.  the second index 
 !     runs over the g-channel (1 to 16).
 
-      FORREFO(1,:) = (/ &
-     &4.8166E-07_JPRB,3.7500E-07_JPRB,4.8978E-07_JPRB,5.9624E-07_JPRB,6.3742E-07_JPRB,7.5551E-07_JPRB, &
-     &7.7706E-07_JPRB,6.8681E-07_JPRB,7.5212E-07_JPRB,8.0956E-07_JPRB,7.8117E-07_JPRB,7.4835E-07_JPRB, &
-     &9.4118E-07_JPRB,1.2585E-06_JPRB,1.4976E-06_JPRB,1.4976E-06_JPRB/)
-      FORREFO(2,:) = (/ &
-     &3.1320E-07_JPRB,4.0764E-07_JPRB,4.7468E-07_JPRB,5.9976E-07_JPRB,7.3324E-07_JPRB,8.1488E-07_JPRB, &
-     &7.6442E-07_JPRB,8.2007E-07_JPRB,7.7721E-07_JPRB,7.6377E-07_JPRB,8.0327E-07_JPRB,7.1881E-07_JPRB, &
-     &8.2148E-07_JPRB,1.0203E-06_JPRB,1.5033E-06_JPRB,1.5032E-06_JPRB/)
-      FORREFO(3,:) = (/ &
-     &4.1831E-07_JPRB,5.5043E-07_JPRB,5.7783E-07_JPRB,6.1294E-07_JPRB,6.3396E-07_JPRB,6.2292E-07_JPRB, &
-     &6.1719E-07_JPRB,6.4183E-07_JPRB,7.6180E-07_JPRB,9.5477E-07_JPRB,9.5901E-07_JPRB,1.0207E-06_JPRB, &
-     &1.0387E-06_JPRB,1.1305E-06_JPRB,1.3602E-06_JPRB,1.5063E-06_JPRB/)
-      FORREFO(4,:) = (/ &
-     &8.5878E-07_JPRB,6.0921E-07_JPRB,5.5773E-07_JPRB,5.3374E-07_JPRB,5.0495E-07_JPRB,4.9844E-07_JPRB, &
-     &5.1536E-07_JPRB,5.2908E-07_JPRB,4.7977E-07_JPRB,5.3177E-07_JPRB,4.9266E-07_JPRB,4.5403E-07_JPRB, &
-     &3.9695E-07_JPRB,3.4792E-07_JPRB,3.4912E-07_JPRB,3.4102E-07_JPRB/)
+      forrefo(1,:) = (/ &
+     &4.8166e-07_jprb,3.7500e-07_jprb,4.8978e-07_jprb,5.9624e-07_jprb,6.3742e-07_jprb,7.5551e-07_jprb, &
+     &7.7706e-07_jprb,6.8681e-07_jprb,7.5212e-07_jprb,8.0956e-07_jprb,7.8117e-07_jprb,7.4835e-07_jprb, &
+     &9.4118e-07_jprb,1.2585e-06_jprb,1.4976e-06_jprb,1.4976e-06_jprb/)
+      forrefo(2,:) = (/ &
+     &3.1320e-07_jprb,4.0764e-07_jprb,4.7468e-07_jprb,5.9976e-07_jprb,7.3324e-07_jprb,8.1488e-07_jprb, &
+     &7.6442e-07_jprb,8.2007e-07_jprb,7.7721e-07_jprb,7.6377e-07_jprb,8.0327e-07_jprb,7.1881e-07_jprb, &
+     &8.2148e-07_jprb,1.0203e-06_jprb,1.5033e-06_jprb,1.5032e-06_jprb/)
+      forrefo(3,:) = (/ &
+     &4.1831e-07_jprb,5.5043e-07_jprb,5.7783e-07_jprb,6.1294e-07_jprb,6.3396e-07_jprb,6.2292e-07_jprb, &
+     &6.1719e-07_jprb,6.4183e-07_jprb,7.6180e-07_jprb,9.5477e-07_jprb,9.5901e-07_jprb,1.0207e-06_jprb, &
+     &1.0387e-06_jprb,1.1305e-06_jprb,1.3602e-06_jprb,1.5063e-06_jprb/)
+      forrefo(4,:) = (/ &
+     &8.5878e-07_jprb,6.0921e-07_jprb,5.5773e-07_jprb,5.3374e-07_jprb,5.0495e-07_jprb,4.9844e-07_jprb, &
+     &5.1536e-07_jprb,5.2908e-07_jprb,4.7977e-07_jprb,5.3177e-07_jprb,4.9266e-07_jprb,4.5403e-07_jprb, &
+     &3.9695e-07_jprb,3.4792e-07_jprb,3.4912e-07_jprb,3.4102e-07_jprb/)
 
-!     The array SELFREFO contains the coefficient of the water vapor
-!     self-continuum (including the energy term).  The first index
-!     refers to temperature in 7.2 degree increments.  For instance,
-!     JT = 1 refers to a temperature of 245.6, JT = 2 refers to 252.8,
-!     etc.  The second index runs over the g-channel (1 to 16).
+!     the array selfrefo contains the coefficient of the water vapor
+!     self-continuum (including the energy term).  the first index
+!     refers to temperature in 7.2 degree increments.  for instance,
+!     jt = 1 refers to a temperature of 245.6, jt = 2 refers to 252.8,
+!     etc.  the second index runs over the g-channel (1 to 16).
 
-      SELFREFO(:, 1) = (/ &
-     & 3.16029E-02_JPRB, 2.74633E-02_JPRB, 2.38660E-02_JPRB, 2.07399E-02_JPRB, 1.80232E-02_JPRB, &
-     & 1.56624E-02_JPRB, 1.36108E-02_JPRB, 1.18280E-02_JPRB, 1.02787E-02_JPRB, 8.93231E-03_JPRB/)
-      SELFREFO(:, 2) = (/ &
-     & 3.10422E-02_JPRB, 2.71312E-02_JPRB, 2.37130E-02_JPRB, 2.07254E-02_JPRB, 1.81142E-02_JPRB, &
-     & 1.58320E-02_JPRB, 1.38374E-02_JPRB, 1.20940E-02_JPRB, 1.05703E-02_JPRB, 9.23854E-03_JPRB/)
-      SELFREFO(:, 3) = (/ &
-     & 3.08657E-02_JPRB, 2.69431E-02_JPRB, 2.35190E-02_JPRB, 2.05301E-02_JPRB, 1.79210E-02_JPRB, &
-     & 1.56435E-02_JPRB, 1.36554E-02_JPRB, 1.19200E-02_JPRB, 1.04051E-02_JPRB, 9.08279E-03_JPRB/)
-      SELFREFO(:, 4) = (/ &
-     & 3.02668E-02_JPRB, 2.64686E-02_JPRB, 2.31470E-02_JPRB, 2.02422E-02_JPRB, 1.77020E-02_JPRB, &
-     & 1.54806E-02_JPRB, 1.35379E-02_JPRB, 1.18390E-02_JPRB, 1.03533E-02_JPRB, 9.05406E-03_JPRB/)
-      SELFREFO(:, 5) = (/ &
-     & 2.98317E-02_JPRB, 2.61491E-02_JPRB, 2.29210E-02_JPRB, 2.00914E-02_JPRB, 1.76112E-02_JPRB, &
-     & 1.54371E-02_JPRB, 1.35314E-02_JPRB, 1.18610E-02_JPRB, 1.03968E-02_JPRB, 9.11332E-03_JPRB/)
-      SELFREFO(:, 6) = (/ &
-     & 2.95545E-02_JPRB, 2.59083E-02_JPRB, 2.27120E-02_JPRB, 1.99100E-02_JPRB, 1.74537E-02_JPRB, &
-     & 1.53004E-02_JPRB, 1.34128E-02_JPRB, 1.17580E-02_JPRB, 1.03074E-02_JPRB, 9.03576E-03_JPRB/)
-      SELFREFO(:, 7) = (/ &
-     & 2.97352E-02_JPRB, 2.60320E-02_JPRB, 2.27900E-02_JPRB, 1.99517E-02_JPRB, 1.74670E-02_JPRB, &
-     & 1.52916E-02_JPRB, 1.33872E-02_JPRB, 1.17200E-02_JPRB, 1.02604E-02_JPRB, 8.98258E-03_JPRB/)
-      SELFREFO(:, 8) = (/ &
-     & 2.96543E-02_JPRB, 2.59760E-02_JPRB, 2.27540E-02_JPRB, 1.99316E-02_JPRB, 1.74593E-02_JPRB, &
-     & 1.52937E-02_JPRB, 1.33967E-02_JPRB, 1.17350E-02_JPRB, 1.02794E-02_JPRB, 9.00437E-03_JPRB/)
-      SELFREFO(:, 9) = (/ &
-     & 2.97998E-02_JPRB, 2.60786E-02_JPRB, 2.28220E-02_JPRB, 1.99721E-02_JPRB, 1.74781E-02_JPRB, &
-     & 1.52955E-02_JPRB, 1.33855E-02_JPRB, 1.17140E-02_JPRB, 1.02512E-02_JPRB, 8.97110E-03_JPRB/)
-      SELFREFO(:,10) = (/ &
-     & 2.98826E-02_JPRB, 2.61096E-02_JPRB, 2.28130E-02_JPRB, 1.99326E-02_JPRB, 1.74159E-02_JPRB, &
-     & 1.52170E-02_JPRB, 1.32957E-02_JPRB, 1.16170E-02_JPRB, 1.01502E-02_JPRB, 8.86867E-03_JPRB/)
-      SELFREFO(:,11) = (/ &
-     & 2.94710E-02_JPRB, 2.58147E-02_JPRB, 2.26120E-02_JPRB, 1.98066E-02_JPRB, 1.73493E-02_JPRB, &
-     & 1.51969E-02_JPRB, 1.33115E-02_JPRB, 1.16600E-02_JPRB, 1.02134E-02_JPRB, 8.94628E-03_JPRB/)
-      SELFREFO(:,12) = (/ &
-     & 2.96297E-02_JPRB, 2.59544E-02_JPRB, 2.27350E-02_JPRB, 1.99149E-02_JPRB, 1.74446E-02_JPRB, &
-     & 1.52808E-02_JPRB, 1.33853E-02_JPRB, 1.17250E-02_JPRB, 1.02706E-02_JPRB, 8.99663E-03_JPRB/)
-      SELFREFO(:,13) = (/ &
-     & 2.96272E-02_JPRB, 2.59013E-02_JPRB, 2.26440E-02_JPRB, 1.97963E-02_JPRB, 1.73067E-02_JPRB, &
-     & 1.51302E-02_JPRB, 1.32275E-02_JPRB, 1.15640E-02_JPRB, 1.01097E-02_JPRB, 8.83833E-03_JPRB/)
-      SELFREFO(:,14) = (/ &
-     & 2.89906E-02_JPRB, 2.53971E-02_JPRB, 2.22490E-02_JPRB, 1.94911E-02_JPRB, 1.70751E-02_JPRB, &
-     & 1.49585E-02_JPRB, 1.31044E-02_JPRB, 1.14800E-02_JPRB, 1.00570E-02_JPRB, 8.81038E-03_JPRB/)
-      SELFREFO(:,15) = (/ &
-     & 2.80884E-02_JPRB, 2.46987E-02_JPRB, 2.17180E-02_JPRB, 1.90970E-02_JPRB, 1.67924E-02_JPRB, &
-     & 1.47659E-02_JPRB, 1.29839E-02_JPRB, 1.14170E-02_JPRB, 1.00392E-02_JPRB, 8.82765E-03_JPRB/)
-      SELFREFO(:,16) = (/ &
-     & 2.80884E-02_JPRB, 2.46987E-02_JPRB, 2.17180E-02_JPRB, 1.90970E-02_JPRB, 1.67924E-02_JPRB, &
-     & 1.47659E-02_JPRB, 1.29839E-02_JPRB, 1.14170E-02_JPRB, 1.00392E-02_JPRB, 8.82765E-03_JPRB/)
+      selfrefo(:, 1) = (/ &
+     & 3.16029e-02_jprb, 2.74633e-02_jprb, 2.38660e-02_jprb, 2.07399e-02_jprb, 1.80232e-02_jprb, &
+     & 1.56624e-02_jprb, 1.36108e-02_jprb, 1.18280e-02_jprb, 1.02787e-02_jprb, 8.93231e-03_jprb/)
+      selfrefo(:, 2) = (/ &
+     & 3.10422e-02_jprb, 2.71312e-02_jprb, 2.37130e-02_jprb, 2.07254e-02_jprb, 1.81142e-02_jprb, &
+     & 1.58320e-02_jprb, 1.38374e-02_jprb, 1.20940e-02_jprb, 1.05703e-02_jprb, 9.23854e-03_jprb/)
+      selfrefo(:, 3) = (/ &
+     & 3.08657e-02_jprb, 2.69431e-02_jprb, 2.35190e-02_jprb, 2.05301e-02_jprb, 1.79210e-02_jprb, &
+     & 1.56435e-02_jprb, 1.36554e-02_jprb, 1.19200e-02_jprb, 1.04051e-02_jprb, 9.08279e-03_jprb/)
+      selfrefo(:, 4) = (/ &
+     & 3.02668e-02_jprb, 2.64686e-02_jprb, 2.31470e-02_jprb, 2.02422e-02_jprb, 1.77020e-02_jprb, &
+     & 1.54806e-02_jprb, 1.35379e-02_jprb, 1.18390e-02_jprb, 1.03533e-02_jprb, 9.05406e-03_jprb/)
+      selfrefo(:, 5) = (/ &
+     & 2.98317e-02_jprb, 2.61491e-02_jprb, 2.29210e-02_jprb, 2.00914e-02_jprb, 1.76112e-02_jprb, &
+     & 1.54371e-02_jprb, 1.35314e-02_jprb, 1.18610e-02_jprb, 1.03968e-02_jprb, 9.11332e-03_jprb/)
+      selfrefo(:, 6) = (/ &
+     & 2.95545e-02_jprb, 2.59083e-02_jprb, 2.27120e-02_jprb, 1.99100e-02_jprb, 1.74537e-02_jprb, &
+     & 1.53004e-02_jprb, 1.34128e-02_jprb, 1.17580e-02_jprb, 1.03074e-02_jprb, 9.03576e-03_jprb/)
+      selfrefo(:, 7) = (/ &
+     & 2.97352e-02_jprb, 2.60320e-02_jprb, 2.27900e-02_jprb, 1.99517e-02_jprb, 1.74670e-02_jprb, &
+     & 1.52916e-02_jprb, 1.33872e-02_jprb, 1.17200e-02_jprb, 1.02604e-02_jprb, 8.98258e-03_jprb/)
+      selfrefo(:, 8) = (/ &
+     & 2.96543e-02_jprb, 2.59760e-02_jprb, 2.27540e-02_jprb, 1.99316e-02_jprb, 1.74593e-02_jprb, &
+     & 1.52937e-02_jprb, 1.33967e-02_jprb, 1.17350e-02_jprb, 1.02794e-02_jprb, 9.00437e-03_jprb/)
+      selfrefo(:, 9) = (/ &
+     & 2.97998e-02_jprb, 2.60786e-02_jprb, 2.28220e-02_jprb, 1.99721e-02_jprb, 1.74781e-02_jprb, &
+     & 1.52955e-02_jprb, 1.33855e-02_jprb, 1.17140e-02_jprb, 1.02512e-02_jprb, 8.97110e-03_jprb/)
+      selfrefo(:,10) = (/ &
+     & 2.98826e-02_jprb, 2.61096e-02_jprb, 2.28130e-02_jprb, 1.99326e-02_jprb, 1.74159e-02_jprb, &
+     & 1.52170e-02_jprb, 1.32957e-02_jprb, 1.16170e-02_jprb, 1.01502e-02_jprb, 8.86867e-03_jprb/)
+      selfrefo(:,11) = (/ &
+     & 2.94710e-02_jprb, 2.58147e-02_jprb, 2.26120e-02_jprb, 1.98066e-02_jprb, 1.73493e-02_jprb, &
+     & 1.51969e-02_jprb, 1.33115e-02_jprb, 1.16600e-02_jprb, 1.02134e-02_jprb, 8.94628e-03_jprb/)
+      selfrefo(:,12) = (/ &
+     & 2.96297e-02_jprb, 2.59544e-02_jprb, 2.27350e-02_jprb, 1.99149e-02_jprb, 1.74446e-02_jprb, &
+     & 1.52808e-02_jprb, 1.33853e-02_jprb, 1.17250e-02_jprb, 1.02706e-02_jprb, 8.99663e-03_jprb/)
+      selfrefo(:,13) = (/ &
+     & 2.96272e-02_jprb, 2.59013e-02_jprb, 2.26440e-02_jprb, 1.97963e-02_jprb, 1.73067e-02_jprb, &
+     & 1.51302e-02_jprb, 1.32275e-02_jprb, 1.15640e-02_jprb, 1.01097e-02_jprb, 8.83833e-03_jprb/)
+      selfrefo(:,14) = (/ &
+     & 2.89906e-02_jprb, 2.53971e-02_jprb, 2.22490e-02_jprb, 1.94911e-02_jprb, 1.70751e-02_jprb, &
+     & 1.49585e-02_jprb, 1.31044e-02_jprb, 1.14800e-02_jprb, 1.00570e-02_jprb, 8.81038e-03_jprb/)
+      selfrefo(:,15) = (/ &
+     & 2.80884e-02_jprb, 2.46987e-02_jprb, 2.17180e-02_jprb, 1.90970e-02_jprb, 1.67924e-02_jprb, &
+     & 1.47659e-02_jprb, 1.29839e-02_jprb, 1.14170e-02_jprb, 1.00392e-02_jprb, 8.82765e-03_jprb/)
+      selfrefo(:,16) = (/ &
+     & 2.80884e-02_jprb, 2.46987e-02_jprb, 2.17180e-02_jprb, 1.90970e-02_jprb, 1.67924e-02_jprb, &
+     & 1.47659e-02_jprb, 1.29839e-02_jprb, 1.14170e-02_jprb, 1.00392e-02_jprb, 8.82765e-03_jprb/)
 
 
-IF (LHOOK) CALL DR_HOOK('RRTM_KGB8',1,ZHOOK_HANDLE)
-RETURN
+if (lhook) call dr_hook('rrtm_kgb8',1,zhook_handle)
+return
 
-1001 CONTINUE
-CALL ABOR1("RRTM_KGB8:ERROR READING FILE RADRRTM")
+1001 continue
+call abor1("rrtm_kgb8:error reading file radrrtm")
 
-END SUBROUTINE RRTM_KGB8
+end subroutine rrtm_kgb8
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

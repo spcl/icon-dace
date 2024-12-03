@@ -1,22 +1,27 @@
-! radiation_homogeneous_lw.F90 - Longwave homogeneous-column (no cloud fraction) solver
+! # 1 "radiation/radiation_homogeneous_lw.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_homogeneous_lw.f90"
+! radiation_homogeneous_lw.f90 - longwave homogeneous-column (no cloud fraction) solver
 !
-! (C) Copyright 2016- ECMWF.
+! (c) copyright 2016- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2017-04-11  R. Hogan  Receive emission/albedo rather than planck/emissivity
-!   2017-04-22  R. Hogan  Store surface fluxes at all g-points
-!   2017-10-23  R. Hogan  Renamed single-character variables
-!   2019-01-14  R. Hogan  Save spectral flux profile if required
+! modifications
+!   2017-04-11  r. hogan  receive emission/albedo rather than planck/emissivity
+!   2017-04-22  r. hogan  store surface fluxes at all g-points
+!   2017-10-23  r. hogan  renamed single-character variables
+!   2019-01-14  r. hogan  save spectral flux profile if required
 
 module radiation_homogeneous_lw
 
@@ -25,7 +30,7 @@ module radiation_homogeneous_lw
 contains
 
   !---------------------------------------------------------------------
-  ! Longwave homogeneous solver, in which clouds are assumed to fill
+  ! longwave homogeneous solver, in which clouds are assumed to fill
   ! the gridbox horizontally
   subroutine solver_homogeneous_lw(nlev,istartcol,iendcol, &
        &  config, cloud, & 
@@ -47,68 +52,68 @@ contains
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in) :: nlev               ! number of model levels
     integer, intent(in) :: istartcol, iendcol ! range of columns to process
     type(config_type),        intent(in) :: config
     type(cloud_type),         intent(in) :: cloud
 
-    ! Gas and aerosol optical depth, single-scattering albedo and
+    ! gas and aerosol optical depth, single-scattering albedo and
     ! asymmetry factor at each longwave g-point
     real(jprb), intent(in), dimension(config%n_g_lw, nlev, istartcol:iendcol) :: &
          &  od
     real(jprb), intent(in), dimension(config%n_g_lw_if_scattering, nlev, istartcol:iendcol) :: &
          &  ssa, g
 
-    ! Cloud and precipitation optical depth, single-scattering albedo and
+    ! cloud and precipitation optical depth, single-scattering albedo and
     ! asymmetry factor in each longwave band
     real(jprb), intent(in), dimension(config%n_bands_lw,nlev,istartcol:iendcol)   :: &
          &  od_cloud
     real(jprb), intent(in), dimension(config%n_bands_lw_if_scattering, &
          &  nlev,istartcol:iendcol) :: ssa_cloud, g_cloud
 
-    ! Planck function at each half-level and the surface
+    ! planck function at each half-level and the surface
     real(jprb), intent(in), dimension(config%n_g_lw,nlev+1,istartcol:iendcol) :: &
          &  planck_hl
   
-    ! Emission (Planck*emissivity) and albedo (1-emissivity) at the
+    ! emission (planck*emissivity) and albedo (1-emissivity) at the
     ! surface at each longwave g-point
     real(jprb), intent(in), dimension(config%n_g_lw, istartcol:iendcol) &
          &  :: emission, albedo
 
-    ! Output
+    ! output
     type(flux_type), intent(inout):: flux
 
-    ! Local variables
+    ! local variables
 
-    ! Diffuse reflectance and transmittance for each layer in clear
+    ! diffuse reflectance and transmittance for each layer in clear
     ! and all skies
     real(jprb), dimension(config%n_g_lw, nlev) :: reflectance, transmittance
 
-    ! Emission by a layer into the upwelling or downwelling diffuse
+    ! emission by a layer into the upwelling or downwelling diffuse
     ! streams, in clear and all skies
     real(jprb), dimension(config%n_g_lw, nlev) :: source_up, source_dn
 
-    ! Fluxes per g point
+    ! fluxes per g point
     real(jprb), dimension(config%n_g_lw, nlev+1) :: flux_up, flux_dn
 
-    ! Combined gas+aerosol+cloud optical depth, single scattering
+    ! combined gas+aerosol+cloud optical depth, single scattering
     ! albedo and asymmetry factor
     real(jprb), dimension(config%n_g_lw) :: od_total, ssa_total, g_total
 
-    ! Two-stream coefficients
+    ! two-stream coefficients
     real(jprb), dimension(config%n_g_lw) :: gamma1, gamma2
 
-    ! Optical depth of cloud in g-point space
+    ! optical depth of cloud in g-point space
     real(jprb), dimension(config%n_g_lw) :: od_cloud_g
 
-    ! Is there any cloud in the profile?
+    ! is there any cloud in the profile?
     logical :: is_cloudy_profile
 
-    ! Number of g points
+    ! number of g points
     integer :: ng
 
-    ! Loop indices for level and column
+    ! loop indices for level and column
     integer :: jlev, jcol
 
     real(jphook) :: hook_handle
@@ -117,10 +122,10 @@ contains
 
     ng = config%n_g_lw
 
-    ! Loop through columns
+    ! loop through columns
     do jcol = istartcol,iendcol
 
-      ! Is there any cloud in the profile?
+      ! is there any cloud in the profile?
       is_cloudy_profile = .false.
       do jlev = 1,nlev
         if (cloud%fraction(jcol,jlev) >= config%cloud_fraction_threshold) then
@@ -129,16 +134,16 @@ contains
         end if
       end do
 
-      ! If clear-sky fluxes need to be computed then we first compute
+      ! if clear-sky fluxes need to be computed then we first compute
       ! the reflectance and transmittance of all layers, neglecting
-      ! clouds. If clear-sky fluxes are not required then we only do
+      ! clouds. if clear-sky fluxes are not required then we only do
       ! the clear-sky layers since these will be needed when we come
       ! to do the total-sky fluxes.
       do jlev = 1,nlev
         if (config%do_clear .or. cloud%fraction(jcol,jlev) &
              &                 < config%cloud_fraction_threshold) then
           if (config%do_lw_aerosol_scattering) then
-            ! Scattering case: first compute clear-sky reflectance,
+            ! scattering case: first compute clear-sky reflectance,
             ! transmittance etc at each model level
             ssa_total = ssa(:,jlev,jcol)
             g_total   = g(:,jlev,jcol)
@@ -150,12 +155,12 @@ contains
                  &  reflectance(:,jlev), transmittance(:,jlev), &
                  &  source_up(:,jlev), source_dn(:,jlev))
           else
-            ! Non-scattering case: use simpler functions for
+            ! non-scattering case: use simpler functions for
             ! transmission and emission
             call calc_no_scattering_transmittance_lw(ng, od(:,jlev,jcol), &
                  &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
                  &  transmittance(:,jlev), source_up(:,jlev), source_dn(:,jlev))          
-            ! Ensure that clear-sky reflectance is zero since it may be
+            ! ensure that clear-sky reflectance is zero since it may be
             ! used in cloudy-sky case
             reflectance(:,jlev) = 0.0_jprb
           end if
@@ -165,13 +170,13 @@ contains
 
       if (config%do_clear) then
         if (config%do_lw_aerosol_scattering) then
-          ! Then use adding method to compute fluxes
+          ! then use adding method to compute fluxes
           call adding_ica_lw(ng, nlev, &
                &  reflectance, transmittance, source_up, source_dn, &
                &  emission(:,jcol), albedo(:,jcol), &
                &  flux_up, flux_dn)
         else
-          ! Simpler down-then-up method to compute fluxes
+          ! simpler down-then-up method to compute fluxes
           call calc_fluxes_no_scattering_lw(ng, nlev, &
                &  transmittance, source_up, source_dn, &
                &  emission(:,jcol), albedo(:,jcol), &
@@ -179,13 +184,13 @@ contains
           
         end if
 
-        ! Sum over g-points to compute broadband fluxes
+        ! sum over g-points to compute broadband fluxes
         flux%lw_up_clear(jcol,:) = sum(flux_up,1)
         flux%lw_dn_clear(jcol,:) = sum(flux_dn,1)
-        ! Store surface spectral downwelling fluxes
+        ! store surface spectral downwelling fluxes
         flux%lw_dn_surf_clear_g(:,jcol) = flux_dn(:,nlev+1)
 
-        ! Save the spectral fluxes if required
+        ! save the spectral fluxes if required
         if (config%do_save_spectral_flux) then
           call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_lw, &
                &                   flux%lw_up_clear_band(:,jcol,:))
@@ -193,15 +198,15 @@ contains
                &                   flux%lw_dn_clear_band(:,jcol,:))
         end if
 
-      end if ! Do clear-sky calculations
+      end if ! do clear-sky calculations
 
-      ! Now the total-sky calculation.  If this is a clear profile and
+      ! now the total-sky calculation.  if this is a clear profile and
       ! clear-sky fluxes have been calculated then we can simply copy
       ! over the clear-sky fluxes, otherwise we need to compute fluxes
       ! now.
       if (is_cloudy_profile .or. .not. config%do_clear) then
         do jlev = 1,nlev
-          ! Compute combined gas+aerosol+cloud optical properties;
+          ! compute combined gas+aerosol+cloud optical properties;
           ! note that for clear layers, the reflectance and
           ! transmittance have already been calculated
           if (cloud%fraction(jcol,jlev) >= config%cloud_fraction_threshold) then
@@ -211,7 +216,7 @@ contains
             g_total   = 0.0_jprb
 
             if (config%do_lw_cloud_scattering) then
-              ! Scattering case: calculate reflectance and
+              ! scattering case: calculate reflectance and
               ! transmittance at each model level
               if (config%do_lw_aerosol_scattering) then
                 where (od_total > 0.0_jprb)
@@ -239,7 +244,7 @@ contains
                 end where
               end if
             
-              ! Compute cloudy-sky reflectance, transmittance etc at
+              ! compute cloudy-sky reflectance, transmittance etc at
               ! each model level
               call calc_two_stream_gammas_lw(ng, ssa_total, g_total, &
                    &  gamma1, gamma2)
@@ -249,7 +254,7 @@ contains
                    &  reflectance(:,jlev), transmittance(:,jlev), &
                    &  source_up(:,jlev), source_dn(:,jlev))
             else
-              ! No-scattering case: use simpler functions for
+              ! no-scattering case: use simpler functions for
               ! transmission and emission
               call calc_no_scattering_transmittance_lw(ng, od_total, &
                    &  planck_hl(:,jlev,jcol), planck_hl(:,jlev+1, jcol), &
@@ -259,24 +264,24 @@ contains
         end do
         
         if (config%do_lw_cloud_scattering) then
-          ! Use adding method to compute fluxes for an overcast sky
+          ! use adding method to compute fluxes for an overcast sky
           call adding_ica_lw(ng, nlev, reflectance, transmittance, source_up, source_dn, &
                &  emission(:,jcol), albedo(:,jcol), &
                &  flux_up, flux_dn)
         else
-          ! Simpler down-then-up method to compute fluxes
+          ! simpler down-then-up method to compute fluxes
           call calc_fluxes_no_scattering_lw(ng, nlev, &
                &  transmittance, source_up, source_dn, emission(:,jcol), albedo(:,jcol), &
                &  flux_up, flux_dn)
         end if
         
-        ! Store overcast broadband fluxes
+        ! store overcast broadband fluxes
         flux%lw_up(jcol,:) = sum(flux_up,1)
         flux%lw_dn(jcol,:) = sum(flux_dn,1)
-        ! Store surface spectral downwelling fluxes
+        ! store surface spectral downwelling fluxes
         flux%lw_dn_surf_g(:,jcol) = flux_dn(:,nlev+1)
 
-        ! Save the spectral fluxes if required
+        ! save the spectral fluxes if required
         if (config%do_save_spectral_flux) then
           call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_lw, &
                &                   flux%lw_up_band(:,jcol,:))
@@ -285,7 +290,7 @@ contains
         end if
 
       else
-        ! No cloud in profile and clear-sky fluxes already
+        ! no cloud in profile and clear-sky fluxes already
         ! calculated: copy them over
         flux%lw_up(jcol,:) = flux%lw_up_clear(jcol,:)
         flux%lw_dn(jcol,:) = flux%lw_dn_clear(jcol,:)
@@ -298,7 +303,7 @@ contains
 
      end if
 
-      ! Compute the longwave derivatives needed by Hogan and Bozzo
+      ! compute the longwave derivatives needed by hogan and bozzo
       ! (2015) approximate radiation update scheme, using clear-sky
       ! transmittance if no clouds were present in the profile,
       ! all-sky transmittance otherwise
@@ -315,3 +320,47 @@ contains
   end subroutine solver_homogeneous_lw
 
 end module radiation_homogeneous_lw
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

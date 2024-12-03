@@ -1,21 +1,26 @@
-! radiation_overlap.F90 - Module to compute cloud overlap quantities
+! # 1 "radiation/radiation_overlap.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_overlap.f90"
+! radiation_overlap.f90 - module to compute cloud overlap quantities
 !
-! (C) Copyright 2014- ECMWF.
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2017-10-23  R. Hogan  Renamed single-character variables
-!   2018-10-05  R. Hogan  Generalized alpha overlap for non-equal regions
-!   2018-10-08  R. Hogan  Removed calc_region_fractions
+! modifications
+!   2017-10-23  r. hogan  renamed single-character variables
+!   2018-10-05  r. hogan  generalized alpha overlap for non-equal regions
+!   2018-10-08  r. hogan  removed calc_region_fractions
 
 module radiation_overlap
 
@@ -26,10 +31,10 @@ module radiation_overlap
 contains
 
 
-  ! This function now superceded by calc_region_properties in module
+  ! this function now superceded by calc_region_properties in module
   ! radiation_regions
   ! !---------------------------------------------------------------------
-  ! ! Return an array of length nreg containing the fraction of the
+  ! ! return an array of length nreg containing the fraction of the
   ! ! gridbox occupied by each region for the specified cloud fraction.
   ! pure function calc_region_fractions(nreg, cloud_fraction)
 
@@ -42,15 +47,15 @@ contains
   !   integer :: jreg
 
   !   if (nreg == 1) then
-  !     ! Only one region: must occupy all of gridbox
+  !     ! only one region: must occupy all of gridbox
   !     calc_region_fractions(1) = 1.0_jprb
   !   else
-  !     ! Two or more regions: the first is the cloud-free region
+  !     ! two or more regions: the first is the cloud-free region
   !     calc_region_fractions(1) = 1.0_jprb - cloud_fraction
 
   !     do jreg = 2,nreg
-  !       ! The cloudy regions are assumed to each have the same
-  !       ! fraction - see Shonk and Hogan (2008) for justification
+  !       ! the cloudy regions are assumed to each have the same
+  !       ! fraction - see shonk and hogan (2008) for justification
   !       calc_region_fractions(jreg) = cloud_fraction / (nreg - 1.0_jprb)
   !     end do
   !   end if
@@ -58,38 +63,38 @@ contains
   ! end function calc_region_fractions
 
   !---------------------------------------------------------------------
-  ! Calculate a matrix expressing the overlap of regions in adjacent
-  ! layers, using the method of Shonk et al. (2010) in terms of their
+  ! calculate a matrix expressing the overlap of regions in adjacent
+  ! layers, using the method of shonk et al. (2010) in terms of their
   ! "beta" overlap parameter
   pure function calc_beta_overlap_matrix(nreg, op, frac_upper, frac_lower, &
        &  frac_threshold) result(overlap_matrix)
 
     use parkind1, only : jprb
     
-    integer, intent(in) :: nreg ! Number of regions
+    integer, intent(in) :: nreg ! number of regions
 
-    ! Overlap parameter for each region, and fraction of the gridbox
+    ! overlap parameter for each region, and fraction of the gridbox
     ! occupied by each region in the upper and lower layers
     real(jprb), intent(in), dimension(nreg) :: op, frac_upper, frac_lower
 
-    ! Cloud-fraction threshold below which cloud is deemed not to be
+    ! cloud-fraction threshold below which cloud is deemed not to be
     ! present
     real(jprb), intent(in) :: frac_threshold
 
-    ! Output overlap matrix
+    ! output overlap matrix
     real(jprb) :: overlap_matrix(nreg,nreg)
 
-    ! Denominator and its reciprocal in computing the random part of
+    ! denominator and its reciprocal in computing the random part of
     ! the overlap matrix
     real(jprb) :: denominator, factor
 
-    ! Beta overlap parameter multiplied by the minimum region fraction
+    ! beta overlap parameter multiplied by the minimum region fraction
     ! of the upper and lower layers
     real(jprb) :: op_x_frac_min(nreg)
 
     integer :: jupper, jlower, jreg
 
-    ! In computing the random part of the overlap matrix we need
+    ! in computing the random part of the overlap matrix we need
     ! to divide all elements by "denominator", or for efficiency
     ! multiply by "factor"
     denominator = 1.0_jprb
@@ -98,10 +103,10 @@ contains
            &  * min(frac_upper(jreg), frac_lower(jreg))
       denominator = denominator - op_x_frac_min(jreg)
     end do
-    ! In principle the denominator can be zero
+    ! in principle the denominator can be zero
     if (denominator >= frac_threshold) then
       factor = 1.0_jprb / denominator
-      ! Create the random part of the overlap matrix
+      ! create the random part of the overlap matrix
       do jupper = 1,nreg
         do jlower = 1,nreg
           overlap_matrix(jupper,jlower) = factor &
@@ -113,7 +118,7 @@ contains
       overlap_matrix = 0.0_jprb
     end if
     
-    ! Add on the maximum part of the overlap matrix
+    ! add on the maximum part of the overlap matrix
     do jreg = 1,nreg
       overlap_matrix(jreg,jreg) = overlap_matrix(jreg,jreg) &
            &  + op_x_frac_min(jreg)
@@ -123,38 +128,38 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Calculate a matrix expressing the overlap of regions in adjacent
-  ! layers, using the Hogan and Illingworth (2000) "alpha" overlap
+  ! calculate a matrix expressing the overlap of regions in adjacent
+  ! layers, using the hogan and illingworth (2000) "alpha" overlap
   ! parameter, but allowing for the two cloudy regions in the
-  ! Tripleclouds assumption to have different areas
+  ! tripleclouds assumption to have different areas
   pure function calc_alpha_overlap_matrix(nreg, op, op_inhom, &
        &  frac_upper, frac_lower) result(overlap_matrix)
 
     use parkind1, only : jprb
     
-    integer, intent(in) :: nreg ! Number of regions
+    integer, intent(in) :: nreg ! number of regions
 
-    ! Overlap parameter for cloud boundaries and for internal
+    ! overlap parameter for cloud boundaries and for internal
     ! inhomogeneities
     real(jprb), intent(in) :: op, op_inhom
 
-    ! Fraction of the gridbox occupied by each region in the upper and
+    ! fraction of the gridbox occupied by each region in the upper and
     ! lower layers
     real(jprb), intent(in), dimension(nreg) :: frac_upper, frac_lower
 
-    ! Output overlap matrix
+    ! output overlap matrix
     real(jprb) :: overlap_matrix(nreg,nreg)
 
-    ! Combined cloud cover of pair of layers
+    ! combined cloud cover of pair of layers
     real(jprb) :: pair_cloud_cover
 
-    ! Cloud fraction of upper and lower layers
+    ! cloud fraction of upper and lower layers
     real(jprb) :: cf_upper, cf_lower
 
-    ! One divided by cloud fraction
+    ! one divided by cloud fraction
     real(jprb) :: one_over_cf
 
-    ! Fraction of domain with cloud in both layers
+    ! fraction of domain with cloud in both layers
     real(jprb) :: frac_both
 
     cf_upper = sum(frac_upper(2:nreg))
@@ -164,32 +169,32 @@ contains
            &  + (1.0_jprb - op) &
            &  * (cf_upper+cf_lower-cf_upper*cf_lower)
 
-    ! Clear in both layers
+    ! clear in both layers
     overlap_matrix(1,1) = 1.0_jprb - pair_cloud_cover
     if (nreg == 2) then
-      ! Clear in upper layer, cloudy in lower layer
+      ! clear in upper layer, cloudy in lower layer
       overlap_matrix(1,2) = pair_cloud_cover - cf_upper
-      ! Clear in lower layer, cloudy in upper layer
+      ! clear in lower layer, cloudy in upper layer
       overlap_matrix(2,1) = pair_cloud_cover - cf_lower
-      ! Cloudy in both layers
+      ! cloudy in both layers
       overlap_matrix(2,2) = cf_upper + cf_lower - pair_cloud_cover
     else
-       ! Clear in upper layer, cloudy in lower layer
+       ! clear in upper layer, cloudy in lower layer
       one_over_cf = 1.0_jprb / max(cf_lower, 1.0e-6_jprb)
       overlap_matrix(1,2) = (pair_cloud_cover - cf_upper) &
            &              * frac_lower(2) * one_over_cf
       overlap_matrix(1,3) = (pair_cloud_cover - cf_upper) &
            &              * frac_lower(3) * one_over_cf
-      ! Clear in lower layer, cloudy in upper layer
+      ! clear in lower layer, cloudy in upper layer
       one_over_cf = 1.0_jprb / max(cf_upper, 1.0e-6_jprb)
       overlap_matrix(2,1) = (pair_cloud_cover - cf_lower) &
            &              * frac_upper(2) * one_over_cf
       overlap_matrix(3,1) = (pair_cloud_cover - cf_lower) &
            &              * frac_upper(3) * one_over_cf
-      ! Cloudy in both layers: frac_both is the fraction of the
+      ! cloudy in both layers: frac_both is the fraction of the
       ! gridbox with cloud in both layers
       frac_both = cf_upper + cf_lower - pair_cloud_cover
-      ! Treat low and high optical-depth regions within frac_both as
+      ! treat low and high optical-depth regions within frac_both as
       ! one treats clear and cloudy skies in the whole domain;
       ! redefine the following variables treating the high
       ! optical-depth region as the cloud
@@ -198,7 +203,7 @@ contains
       pair_cloud_cover = op_inhom*max(cf_upper,cf_lower) &
            &  + (1.0_jprb - op_inhom) &
            &  * (cf_upper+cf_lower-cf_upper*cf_lower)
-      ! Assign overlaps for this 2x2 section of the 3x3 matrix as for
+      ! assign overlaps for this 2x2 section of the 3x3 matrix as for
       ! the 2-region case above, but multiplied by frac_both
       overlap_matrix(2,2) = frac_both * (1.0_jprb - pair_cloud_cover)
       overlap_matrix(2,3) = frac_both * (pair_cloud_cover - cf_upper)
@@ -210,28 +215,28 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Calculate a matrix expressing the overlap of regions in adjacent
-  ! layers, using the Hogan and Illingworth (2000) "alpha" overlap
-  ! parameter, and assuming the two cloudy regions in the Tripleclouds
+  ! calculate a matrix expressing the overlap of regions in adjacent
+  ! layers, using the hogan and illingworth (2000) "alpha" overlap
+  ! parameter, and assuming the two cloudy regions in the tripleclouds
   ! assumption have the same area
   pure function calc_alpha_overlap_matrix_simple(nreg, op, op_inhom, &
        &  cf_upper, cf_lower) result(overlap_matrix)
 
     use parkind1, only : jprb
     
-    integer, intent(in) :: nreg ! Number of regions
+    integer, intent(in) :: nreg ! number of regions
 
-    ! Overlap parameter for cloud boundaries and for internal
+    ! overlap parameter for cloud boundaries and for internal
     ! inhomogeneities
     real(jprb), intent(in) :: op, op_inhom
 
-    ! Cloud fraction in the upper and lower layers
+    ! cloud fraction in the upper and lower layers
     real(jprb), intent(in) :: cf_upper, cf_lower
 
-    ! Output overlap matrix
+    ! output overlap matrix
     real(jprb) :: overlap_matrix(nreg,nreg)
 
-    ! Combined cloud cover of pair of layers
+    ! combined cloud cover of pair of layers
     real(jprb) :: pair_cloud_cover
 
     real(jprb) :: cloud_unit
@@ -240,24 +245,24 @@ contains
            &  + (1.0_jprb - op) &
            &  * (cf_upper+cf_lower-cf_upper*cf_lower)
 
-    ! Clear in both layers
+    ! clear in both layers
     overlap_matrix(1,1) = 1.0_jprb - pair_cloud_cover
     if (nreg == 2) then
-      ! Clear in upper layer, cloudy in lower layer
+      ! clear in upper layer, cloudy in lower layer
       overlap_matrix(1,2) = pair_cloud_cover - cf_upper
-      ! Clear in lower layer, cloudy in upper layer
+      ! clear in lower layer, cloudy in upper layer
       overlap_matrix(2,1) = pair_cloud_cover - cf_lower
-      ! Cloudy in both layers
+      ! cloudy in both layers
       overlap_matrix(2,2) = cf_upper + cf_lower - pair_cloud_cover
     else
-      ! The following assumes that the two cloudy regions are of equal area.
-      ! Clear in upper layer, cloudy in lower layer
+      ! the following assumes that the two cloudy regions are of equal area.
+      ! clear in upper layer, cloudy in lower layer
       overlap_matrix(1,2) = 0.5_jprb * (pair_cloud_cover - cf_upper)
       overlap_matrix(1,3) = overlap_matrix(1,2)
-      ! Clear in lower layer, cloudy in upper layer
+      ! clear in lower layer, cloudy in upper layer
       overlap_matrix(2,1) = 0.5_jprb * (pair_cloud_cover - cf_lower)
       overlap_matrix(3,1) = overlap_matrix(2,1)
-      ! Cloudy in both layers
+      ! cloudy in both layers
       cloud_unit = 0.25_jprb * (cf_upper + cf_lower - pair_cloud_cover)
       overlap_matrix(2,2) = cloud_unit * (1.0_jprb + op_inhom)
       overlap_matrix(2,3) = cloud_unit * (1.0_jprb - op_inhom)
@@ -269,11 +274,11 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute the upward and downward overlap matrices u_matrix and
+  ! compute the upward and downward overlap matrices u_matrix and
   ! v_matrix, respectively, where u_matrix is defined such that
   ! y=u_matrix*x, where x is a vector of upwelling fluxes in each
   ! region just below an interface, and y is a vector of upwelling
-  ! fluxes in each region just above that interface. For nlev model
+  ! fluxes in each region just above that interface. for nlev model
   ! levels there are nlev+1 interfaces including the ground and
   ! top-of-atmosphere, and so that is one of the dimensions of
   ! u_matrix and v_matrix.
@@ -284,61 +289,61 @@ contains
     use parkind1,     only : jprb
     use ecradhook,      only : lhook, dr_hook, jphook
 
-    ! Number of levels and regions
+    ! number of levels and regions
     integer,  intent(in) :: nlev, nreg
 
-    ! Range of columns to process (also outer dimensions of u_matrix
+    ! range of columns to process (also outer dimensions of u_matrix
     ! and v_matrix)
     integer, intent(in) :: istartcol, iendcol
 
-    ! Area fraction of each region: region 1 is clear sky, and 2+ are
+    ! area fraction of each region: region 1 is clear sky, and 2+ are
     ! the cloudy regions (only one or two cloudy regions are
     ! supported)
     real(jprb), intent(in), dimension(1:nreg,nlev,istartcol:iendcol)  :: region_fracs
 
-    ! The overlap parameter: either the "alpha" of Hogan & Illingworth
-    ! (2000) or the "beta" of Shonk et al. (2010)
+    ! the overlap parameter: either the "alpha" of hogan & illingworth
+    ! (2000) or the "beta" of shonk et al. (2010)
     real(jprb), intent(in), dimension(:,:)  :: overlap_param  ! (ncol,nlev-1)
 
-    ! Output overlap matrices
+    ! output overlap matrices
     real(jprb), intent(out), dimension(nreg,nreg,nlev+1,istartcol:iendcol) &
          &  :: u_matrix, v_matrix
 
-    ! For regions 2 and above, the overlap decorrelation length for
+    ! for regions 2 and above, the overlap decorrelation length for
     ! cloud boundaries is scaled by this amount to obtain the overlap
-    ! decorrelation length for cloud inhomogeneities. Typically this
+    ! decorrelation length for cloud inhomogeneities. typically this
     ! number is 0.5, but if omitted it will be assumed to be one (same
     ! decorrelation for cloud boundaries and in-cloud inhomogeneities)
     real(jprb), intent(in), optional :: decorrelation_scaling
 
-    ! Regions smaller than this are ignored
+    ! regions smaller than this are ignored
     real(jprb), intent(in), optional :: cloud_fraction_threshold
 
-    ! The diagnosed cloud cover is an optional output
+    ! the diagnosed cloud cover is an optional output
     real(jprb), intent(out), optional :: cloud_cover(:)
 
-    ! Do we use Shonk et al.'s (2010) "beta" overlap parameter?
+    ! do we use shonk et al.'s (2010) "beta" overlap parameter?
     logical, intent(in), optional :: use_beta_overlap
 
-    ! Loop indices for column, level, region and the regions in the
+    ! loop indices for column, level, region and the regions in the
     ! upper and lower layers for an interface
     integer  :: jcol, jlev, jupper, jlower
 
-    ! Overlap matrix (non-directional)
+    ! overlap matrix (non-directional)
     real(jprb) :: overlap_matrix(nreg,nreg)
 
-    ! Fraction of the gridbox occupied by each region in the upper and
+    ! fraction of the gridbox occupied by each region in the upper and
     ! lower layers for an interface
     real(jprb) :: frac_upper(nreg), frac_lower(nreg)
 
-    ! Beta overlap parameter for each region
+    ! beta overlap parameter for each region
     real(jprb) :: op(nreg)
 
-    ! In case the user doesn't supply cloud_fraction_threshold we use
+    ! in case the user doesn't supply cloud_fraction_threshold we use
     ! a default value
     real(jprb) :: frac_threshold
 
-    ! The decorrelation scaling to use, in case decorrelation_scaling
+    ! the decorrelation scaling to use, in case decorrelation_scaling
     ! was not provided
     real(jprb) :: used_decorrelation_scaling
 
@@ -366,24 +371,24 @@ contains
       use_beta_overlap_param = .false.
     end if
 
-    ! Loop through each atmospheric column
+    ! loop through each atmospheric column
     do jcol = istartcol, iendcol
-      ! For this column, outer space is treated as one clear-sky
+      ! for this column, outer space is treated as one clear-sky
       ! region, so the fractions are assigned as such
       frac_upper(1) = 1.0_jprb
       frac_upper(2:nreg) = 0.0_jprb
 
-      ! Overlap parameter is irrelevant when there is only one region
+      ! overlap parameter is irrelevant when there is only one region
       ! in the upper layer
       op = 1.0_jprb
 
-      ! Loop down through the atmosphere, where jlev indexes each
+      ! loop down through the atmosphere, where jlev indexes each
       ! half-level starting at 1 for the top-of-atmosphere, as well
       ! as indexing each level starting at 1 for the top-most level.
       do jlev = 1,nlev+1
-        ! Fraction of each region just below the interface
+        ! fraction of each region just below the interface
         if (jlev > nlev) then
-          ! We are at the surface: treat as a single clear-sky
+          ! we are at the surface: treat as a single clear-sky
           ! region
           frac_lower(1) = 1.0_jprb
           frac_lower(2:nreg) = 0.0_jprb
@@ -391,16 +396,16 @@ contains
           frac_lower = region_fracs(1:nreg,jlev,jcol)
         end if
    
-        ! Compute the overlap parameter of the interface just below
+        ! compute the overlap parameter of the interface just below
         ! the current full level
         if (jlev == 1 .or. jlev > nlev) then
-          ! We are at the surface or top-of-atmosphere: overlap
+          ! we are at the surface or top-of-atmosphere: overlap
           ! parameter is irrelevant
           op = 1.0_jprb
         else
-          ! We are not at the surface
+          ! we are not at the surface
           op(1) = overlap_param(jcol,jlev-1)
-          ! For cloudy regions, scale the cloud-boundary overlap
+          ! for cloudy regions, scale the cloud-boundary overlap
           ! parameter to obtain the cloud-inhomogeneity overlap
           ! parameter as follows
           if (op(1) >= 0.0_jprb) then
@@ -414,17 +419,17 @@ contains
           overlap_matrix = calc_beta_overlap_matrix(nreg, op, &
                &  frac_upper, frac_lower, frac_threshold)
         else
-          ! Simpler scheme assuming the two cloudy regions have the
+          ! simpler scheme assuming the two cloudy regions have the
           ! same fraction
           !overlap_matrix = calc_alpha_overlap_matrix_simple(nreg, &
           !     &  op(1), op(2), &
           !     &  1.0_jprb - frac_upper(1), 1.0_jprb - frac_lower(1))
-          ! More general scheme
+          ! more general scheme
           overlap_matrix = calc_alpha_overlap_matrix(nreg, &
                &  op(1), op(2), frac_upper, frac_lower)
         end if
 
-        ! Convert to directional overlap matrices
+        ! convert to directional overlap matrices
         do jupper = 1,nreg
           do jlower = 1,nreg
             if (frac_lower(jlower) >= frac_threshold) then
@@ -445,7 +450,7 @@ contains
         
       end do ! levels
 
-      ! Compute cloud cover from one of the directional overlap matrices
+      ! compute cloud cover from one of the directional overlap matrices
       if (present(cloud_cover)) then
         cloud_cover(jcol) = 1.0_jprb - product(v_matrix(1,1,:,jcol))
       end if
@@ -457,3 +462,47 @@ contains
   end subroutine calc_overlap_matrices
   
 end module radiation_overlap
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

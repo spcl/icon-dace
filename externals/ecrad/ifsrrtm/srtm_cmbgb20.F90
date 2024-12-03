@@ -1,95 +1,144 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/srtm_cmbgb20.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_cmbgb20.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SRTM_CMBGB20
+subroutine srtm_cmbgb20
 
-!     BAND 20:  5150-6150 cm-1 (low - H2O; high - H2O)
+!     band 20:  5150-6150 cm-1 (low - h2o; high - h2o)
 !-----------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM , JPRB
-USE ecradhook   ,ONLY : LHOOK, DR_HOOK, JPHOOK
+use parkind1  ,only : jpim , jprb
+use ecradhook   ,only : lhook, dr_hook, jphook
 
-USE YOESRTM  , ONLY : NGN
-USE YOESRTWN , ONLY : NGC, NGS, RWGT
-!USE YOESRTWN , ONLY : NGC, NGS, NGN, RWGT
-USE YOESRTA20, ONLY : KA, KB, SELFREF, FORREF, ABSCH4, SFLUXREF, &
-                    & KAC, KBC, SELFREFC, FORREFC, ABSCH4C, SFLUXREFC
+use yoesrtm  , only : ngn
+use yoesrtwn , only : ngc, ngs, rwgt
+!use yoesrtwn , only : ngc, ngs, ngn, rwgt
+use yoesrta20, only : ka, kb, selfref, forref, absch4, sfluxref, &
+                    & kac, kbc, selfrefc, forrefc, absch4c, sfluxrefc
 
-IMPLICIT NONE
+implicit none
 
-! Local variables
-INTEGER(KIND=JPIM) :: JT, JP, IGC, IPR, IPRSM
-REAL(KIND=JPRB)    :: ZSUMK, ZSUMF1, ZSUMF2
+! local variables
+integer(kind=jpim) :: jt, jp, igc, ipr, iprsm
+real(kind=jprb)    :: zsumk, zsumf1, zsumf2
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jphook) :: zhook_handle
 !     ------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB20',0,ZHOOK_HANDLE)
+if (lhook) call dr_hook('srtm_cmbgb20',0,zhook_handle)
 
-DO JT = 1,5
-  DO JP = 1,13
-    IPRSM = 0
-    DO IGC = 1,NGC(5)
-      ZSUMK = 0.
-      DO IPR = 1, NGN(NGS(4)+IGC)
-        IPRSM = IPRSM + 1
-        ZSUMK = ZSUMK + KA(JT,JP,IPRSM)*RWGT(IPRSM+64)
-      ENDDO
-      KAC(JT,JP,IGC) = ZSUMK
-    ENDDO
-  ENDDO
+do jt = 1,5
+  do jp = 1,13
+    iprsm = 0
+    do igc = 1,ngc(5)
+      zsumk = 0.
+      do ipr = 1, ngn(ngs(4)+igc)
+        iprsm = iprsm + 1
+        zsumk = zsumk + ka(jt,jp,iprsm)*rwgt(iprsm+64)
+      enddo
+      kac(jt,jp,igc) = zsumk
+    enddo
+  enddo
 
-  DO JP = 13,59
-    IPRSM = 0
-    DO IGC = 1,NGC(5)
-      ZSUMK = 0.
-      DO IPR = 1, NGN(NGS(4)+IGC)
-        IPRSM = IPRSM + 1
-        ZSUMK = ZSUMK + KB(JT,JP,IPRSM)*RWGT(IPRSM+64)
-      ENDDO
-      KBC(JT,JP,IGC) = ZSUMK
-    ENDDO
-  ENDDO
-ENDDO
+  do jp = 13,59
+    iprsm = 0
+    do igc = 1,ngc(5)
+      zsumk = 0.
+      do ipr = 1, ngn(ngs(4)+igc)
+        iprsm = iprsm + 1
+        zsumk = zsumk + kb(jt,jp,iprsm)*rwgt(iprsm+64)
+      enddo
+      kbc(jt,jp,igc) = zsumk
+    enddo
+  enddo
+enddo
 
-DO JT = 1,10
-  IPRSM = 0
-  DO IGC = 1,NGC(5)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(NGS(4)+IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + SELFREF(JT,IPRSM)*RWGT(IPRSM+64)
-    ENDDO
-    SELFREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,10
+  iprsm = 0
+  do igc = 1,ngc(5)
+    zsumk = 0.
+    do ipr = 1, ngn(ngs(4)+igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + selfref(jt,iprsm)*rwgt(iprsm+64)
+    enddo
+    selfrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-DO JT = 1,4
-  IPRSM = 0
-  DO IGC = 1,NGC(5)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(NGS(4)+IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + FORREF(JT,IPRSM)*RWGT(IPRSM+64)
-    ENDDO
-    FORREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,4
+  iprsm = 0
+  do igc = 1,ngc(5)
+    zsumk = 0.
+    do ipr = 1, ngn(ngs(4)+igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + forref(jt,iprsm)*rwgt(iprsm+64)
+    enddo
+    forrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-IPRSM = 0
-DO IGC = 1,NGC(5)
-  ZSUMF1 = 0.
-  ZSUMF2 = 0.
-  DO IPR = 1, NGN(NGS(4)+IGC)
-    IPRSM = IPRSM + 1
-    ZSUMF1 = ZSUMF1 + SFLUXREF(IPRSM)
-    ZSUMF2 = ZSUMF2 + ABSCH4(IPRSM)*RWGT(IPRSM+64)
-  ENDDO
-  SFLUXREFC(IGC) = ZSUMF1
-  ABSCH4C(IGC) = ZSUMF2
-ENDDO
+iprsm = 0
+do igc = 1,ngc(5)
+  zsumf1 = 0.
+  zsumf2 = 0.
+  do ipr = 1, ngn(ngs(4)+igc)
+    iprsm = iprsm + 1
+    zsumf1 = zsumf1 + sfluxref(iprsm)
+    zsumf2 = zsumf2 + absch4(iprsm)*rwgt(iprsm+64)
+  enddo
+  sfluxrefc(igc) = zsumf1
+  absch4c(igc) = zsumf2
+enddo
 
-!$ACC UPDATE DEVICE(KAC, KBC, SELFREFC, FORREFC, SFLUXREFC, ABSCH4C)
+!$acc update device(kac, kbc, selfrefc, forrefc, sfluxrefc, absch4c)
 
 !     -----------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB20',1,ZHOOK_HANDLE)
-END SUBROUTINE SRTM_CMBGB20
+if (lhook) call dr_hook('srtm_cmbgb20',1,zhook_handle)
+end subroutine srtm_cmbgb20
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

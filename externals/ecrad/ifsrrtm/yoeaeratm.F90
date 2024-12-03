@@ -1,91 +1,140 @@
-MODULE YOEAERATM
+! # 1 "ifsrrtm/yoeaeratm.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoeaeratm.f90"
+module yoeaeratm
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-SAVE
-
-!     ------------------------------------------------------------------
-!*    ** *YOEAERATM* - CONTROL PARAMETERS FOR AEROSOLS IN THE ATMOSPHERE
-!     ------------------------------------------------------------------
-
-INTEGER(KIND=JPIM) :: NAERCONF
-INTEGER(KIND=JPIM) :: NINIDAY   
-INTEGER(KIND=JPIM) :: NXT3DAER
-INTEGER(KIND=JPIM) :: NDD1, NSS1
-INTEGER(KIND=JPIM) :: NBCOPTP, NDDOPTP, NOMOPTP, NSSOPTP, NSUOPTP
-INTEGER(KIND=JPIM) :: NVISWL
-INTEGER(KIND=JPIM) :: NDRYDEP
-INTEGER(KIND=JPIM) :: NWHTDDEP, NTDDEP, NINDDDEP(15)
-INTEGER(KIND=JPIM) :: NWHTSCAV, NTSCAV, NINDSCAV(15)
-INTEGER(KIND=JPIM) :: NWHTSEDM, NTSEDM, NINDSEDM(15)
-INTEGER(KIND=JPIM) :: NWHTWDEP, NTWDEP, NINDWDEP(15)
-
-REAL(KIND=JPRB) :: RGRATE
-REAL(KIND=JPRB) :: RMASSE(15)
-
-REAL(KIND=JPRB) :: REPSCAER
-
-LOGICAL :: LAERCLIMG, LAERCLIMZ, LAERCLIST, LAERDRYDP, LAERHYGRO, LAERLISI 
-LOGICAL :: LAERNGAT , LAERSCAV , LAERSEDIM, LAERSURF , LAERELVS , LAER6SDIA
-LOGICAL :: LAERGTOP , LAERRAD  , LAERCCN  , LAEROPT(8),LAERINIT , LAERVOL
-LOGICAL :: LAERCSTR , LAERDIAG1, LAERDIAG2, LAERRRTM , LAERUVP  , LUVINDX   
-LOGICAL :: LAEREXTR , LAERGBUD , LAERPRNT , LAERCALIP
+save
 
 !     ------------------------------------------------------------------
-! NDD1       : location of first bin for desert dust
-! NSS1       : location of first bin for sea-salt
-! NBCOPTP    : index for choosing the black carbon LW and SW optic.prop. (1: Boucher, 2: Bond, Bergstrom, 3: Stier et al.)
-! NDDOPTP    : index for choosing the dust LW and SW optic.prop. (1: Boucher, 2: Highwood, 3: Woodward)
-! NOMOPTP    : index for choosing the organic carbon optic.prop.
-! NSSOPTP    : index for choosing the sea salt optic.prop.
-! NSUOPTP    : index for choosing the sulphate optic.prop.
-! NVISWL     : index of wavelength for visibility computations
-! RMFMIN     : minimum mass flux for convective aerosol transport
-! RGRATE     : transformation rate from hygrophopic to hygrophilic for BC and OM aerosols
-! RMASSE     : Molar mass: N.B.: either g/mol or Avogadro number
+!*    ** *yoeaeratm* - control parameters for aerosols in the atmosphere
+!     ------------------------------------------------------------------
 
-! REPSCAER   : security on aerosol concentration: always >= 1.E-15
+integer(kind=jpim) :: naerconf
+integer(kind=jpim) :: niniday   
+integer(kind=jpim) :: nxt3daer
+integer(kind=jpim) :: ndd1, nss1
+integer(kind=jpim) :: nbcoptp, nddoptp, nomoptp, nssoptp, nsuoptp
+integer(kind=jpim) :: nviswl
+integer(kind=jpim) :: ndrydep
+integer(kind=jpim) :: nwhtddep, ntddep, nindddep(15)
+integer(kind=jpim) :: nwhtscav, ntscav, nindscav(15)
+integer(kind=jpim) :: nwhtsedm, ntsedm, nindsedm(15)
+integer(kind=jpim) :: nwhtwdep, ntwdep, nindwdep(15)
 
-! LAERCLIMG  : .T. to start prognostic aerosols with geographical monthly 
+real(kind=jprb) :: rgrate
+real(kind=jprb) :: rmasse(15)
+
+real(kind=jprb) :: repscaer
+
+logical :: laerclimg, laerclimz, laerclist, laerdrydp, laerhygro, laerlisi 
+logical :: laerngat , laerscav , laersedim, laersurf , laerelvs , laer6sdia
+logical :: laergtop , laerrad  , laerccn  , laeropt(8),laerinit , laervol
+logical :: laercstr , laerdiag1, laerdiag2, laerrrtm , laeruvp  , luvindx   
+logical :: laerextr , laergbud , laerprnt , laercalip
+
+!     ------------------------------------------------------------------
+! ndd1       : location of first bin for desert dust
+! nss1       : location of first bin for sea-salt
+! nbcoptp    : index for choosing the black carbon lw and sw optic.prop. (1: boucher, 2: bond, bergstrom, 3: stier et al.)
+! nddoptp    : index for choosing the dust lw and sw optic.prop. (1: boucher, 2: highwood, 3: woodward)
+! nomoptp    : index for choosing the organic carbon optic.prop.
+! nssoptp    : index for choosing the sea salt optic.prop.
+! nsuoptp    : index for choosing the sulphate optic.prop.
+! nviswl     : index of wavelength for visibility computations
+! rmfmin     : minimum mass flux for convective aerosol transport
+! rgrate     : transformation rate from hygrophopic to hygrophilic for bc and om aerosols
+! rmasse     : molar mass: n.b.: either g/mol or avogadro number
+
+! repscaer   : security on aerosol concentration: always >= 1.e-15
+
+! laerclimg  : .t. to start prognostic aerosols with geographical monthly 
 !                  mean climatology
-! LAERCLIMZ  : .T. to start prognostic aerosols with zonal annual mean 
+! laerclimz  : .t. to start prognostic aerosols with zonal annual mean 
 !                  climatology
-! LAERCLIST  : .T. to start prognostic aerosols with geographical monthly 
+! laerclist  : .t. to start prognostic aerosols with geographical monthly 
 !                  mean climatology for background stratospheric only
-! LAERDRYDP  : .T. dry deposition is active
-! LAERHYDRO  : .T. hygroscopic effects on BC and OM aerosols
-! LAERNGAT   : .T. prevents negative aerosol concentrations
-! LAERSCAV   : .T. in-cloud and below cloud scavenging is active
-! LAERSEDIM  : .T. sedimentation is active
-! LAERSURF   : .T. if surface emissions
-! LAERELVS   : .T. if "elevated" source
-! LAER6SDIA  : .T. if radiance diagnostics with 6S
-! LAERGTOP   : .T. if gas-to-particle conversion for SO2/SO4
-! LAERRAD    : .T. if there is any prognostic aerosols used for RT
-! LAEROPT(.) : .T. if a given aerosol type is radiatively interactive
-! LAERCCN    : .T. if prognostic aerosols are used to define the Re of liq.wat.clds
-! LAERUVP    : .T. if prognostic aerosols are used in UV-processor
-! LAERCSTR   : .T. if climatological stratospheric aerosols are used in radiation 
+! laerdrydp  : .t. dry deposition is active
+! laerhydro  : .t. hygroscopic effects on bc and om aerosols
+! laerngat   : .t. prevents negative aerosol concentrations
+! laerscav   : .t. in-cloud and below cloud scavenging is active
+! laersedim  : .t. sedimentation is active
+! laersurf   : .t. if surface emissions
+! laerelvs   : .t. if "elevated" source
+! laer6sdia  : .t. if radiance diagnostics with 6s
+! laergtop   : .t. if gas-to-particle conversion for so2/so4
+! laerrad    : .t. if there is any prognostic aerosols used for rt
+! laeropt(.) : .t. if a given aerosol type is radiatively interactive
+! laerccn    : .t. if prognostic aerosols are used to define the re of liq.wat.clds
+! laeruvp    : .t. if prognostic aerosols are used in uv-processor
+! laercstr   : .t. if climatological stratospheric aerosols are used in radiation 
 !                  schemes with the prognostic tropospheric aerosols.
-! LAERRRTM   : .T. if RRTM schemes get the information from the prognostic aerosols
-! LAERINIT   : .T. if analysed prognostic aerosols are ONLY used as "climatological" aerosols
-! LAERVOL    : .T. if volcanic aerosol is considered
-! NDRYDEP    : dry deposition 1: a la GEMS; 2: "exp" (a la D_GRG_4.6)
-! NWHTDDEP   : =0 only SS+DU;  =1 SS+DU+VOL;  =2 SS+DU+OM+BC+SU+VOL
-! NTDDEP     : total number of aerosol species to be in- and below-cloud scavenged
-! NINDDDEP   : actual set of aerosol indices to be dry deposited
-! NWHTSEDM   : =0 only SS+DU;  =1 SS+DU+VOL;  =2 SS+DU+OM+BC+SU+VOL
-! NTSEDM     : total number of aerosol species to be in- and below-cloud scavenged
-! NINDSEDM   : actual set of aerosol indices to be sedimented
-! NWHTWDEP   : =0 only SS+DU;  =1 SS+DU+VOL;  =2 SS+DU+OM+BC+SU+VOL
-! NTWDEP     : total number of aerosol species to be in- and below-cloud scavenged
-! NINDWDEP   : actual set of aerosol indices to be scavenged
-! NWHTSCAV   : =0 only SS+DU;  =1 SS+DU+VOL;  =2 SS+DU+OM+BC+SU+VOL
-! NTSCAV     : total number of aerosol species to be in- and below-cloud scavenged
-! NINDSCAV   : actual set of aerosol indices to be scavenged
-! LAERCALIP  : .T. works with LAERLISI=t, store only the CALIOP-type profile at 532 nm
+! laerrrtm   : .t. if rrtm schemes get the information from the prognostic aerosols
+! laerinit   : .t. if analysed prognostic aerosols are only used as "climatological" aerosols
+! laervol    : .t. if volcanic aerosol is considered
+! ndrydep    : dry deposition 1: a la gems; 2: "exp" (a la d_grg_4.6)
+! nwhtddep   : =0 only ss+du;  =1 ss+du+vol;  =2 ss+du+om+bc+su+vol
+! ntddep     : total number of aerosol species to be in- and below-cloud scavenged
+! nindddep   : actual set of aerosol indices to be dry deposited
+! nwhtsedm   : =0 only ss+du;  =1 ss+du+vol;  =2 ss+du+om+bc+su+vol
+! ntsedm     : total number of aerosol species to be in- and below-cloud scavenged
+! nindsedm   : actual set of aerosol indices to be sedimented
+! nwhtwdep   : =0 only ss+du;  =1 ss+du+vol;  =2 ss+du+om+bc+su+vol
+! ntwdep     : total number of aerosol species to be in- and below-cloud scavenged
+! nindwdep   : actual set of aerosol indices to be scavenged
+! nwhtscav   : =0 only ss+du;  =1 ss+du+vol;  =2 ss+du+om+bc+su+vol
+! ntscav     : total number of aerosol species to be in- and below-cloud scavenged
+! nindscav   : actual set of aerosol indices to be scavenged
+! laercalip  : .t. works with laerlisi=t, store only the caliop-type profile at 532 nm
 !     ------------------------------------------------------------------
-END MODULE YOEAERATM
+end module yoeaeratm
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

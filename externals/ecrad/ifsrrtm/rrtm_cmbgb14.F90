@@ -1,105 +1,154 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/rrtm_cmbgb14.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/rrtm_cmbgb14.f90"
+! this file has been modified for the use in icon
 
 !***************************************************************************
-SUBROUTINE RRTM_CMBGB14
+subroutine rrtm_cmbgb14
 !***************************************************************************
 
-!     BAND 14:  2250-2380 cm-1 (low - CO2; high - CO2)
-!     ABozzo 201306 updated to rrtmg v4.85
+!     band 14:  2250-2380 cm-1 (low - co2; high - co2)
+!     abozzo 201306 updated to rrtmg v4.85
 !***************************************************************************
 
-! Parameters
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE ecradhook   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+! parameters
+use parkind1  ,only : jpim     ,jprb
+use ecradhook   ,only : lhook,   dr_hook, jphook
 
-USE YOERRTO14, ONLY : KAO     ,KBO     ,SELFREFO, FORREFO   ,FRACREFAO  ,FRACREFBO
-USE YOERRTA14, ONLY : KA      ,KB      ,SELFREF,  FORREF    ,FRACREFA   ,FRACREFB
-USE YOERRTRWT, ONLY : RWGT 
-USE YOERRTFTR, ONLY : NGC      ,NGS      ,NGN      
+use yoerrto14, only : kao     ,kbo     ,selfrefo, forrefo   ,fracrefao  ,fracrefbo
+use yoerrta14, only : ka      ,kb      ,selfref,  forref    ,fracrefa   ,fracrefb
+use yoerrtrwt, only : rwgt 
+use yoerrtftr, only : ngc      ,ngs      ,ngn      
 
-IMPLICIT NONE
+implicit none
 
-INTEGER(KIND=JPIM) :: IGC, IPR, IPRSM, JP, JT
+integer(kind=jpim) :: igc, ipr, iprsm, jp, jt
 
-REAL(KIND=JPRB) :: Z_SUMF1, Z_SUMF2, Z_SUMK
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jprb) :: z_sumf1, z_sumf2, z_sumk
+real(kind=jphook) :: zhook_handle
 
-IF (LHOOK) CALL DR_HOOK('RRTM_CMBGB14',0,ZHOOK_HANDLE)
-DO JT = 1,5
-  DO JP = 1,13
-    IPRSM = 0
-    DO IGC = 1,NGC(14)
-      Z_SUMK = 0.0_JPRB
-      DO IPR = 1, NGN(NGS(13)+IGC)
-        IPRSM = IPRSM + 1
+if (lhook) call dr_hook('rrtm_cmbgb14',0,zhook_handle)
+do jt = 1,5
+  do jp = 1,13
+    iprsm = 0
+    do igc = 1,ngc(14)
+      z_sumk = 0.0_jprb
+      do ipr = 1, ngn(ngs(13)+igc)
+        iprsm = iprsm + 1
 
-        Z_SUMK = Z_SUMK + KAO(JT,JP,IPRSM)*RWGT(IPRSM+208)
-      ENDDO
+        z_sumk = z_sumk + kao(jt,jp,iprsm)*rwgt(iprsm+208)
+      enddo
 
-      KA(JT,JP,IGC) = Z_SUMK
-    ENDDO
-  ENDDO
-ENDDO
+      ka(jt,jp,igc) = z_sumk
+    enddo
+  enddo
+enddo
 
-DO JT = 1,5
-  DO JP = 13,59
-    IPRSM = 0
-    DO IGC = 1,NGC(14)
-      Z_SUMK = 0.0_JPRB
-      DO IPR = 1, NGN(NGS(13)+IGC)
-        IPRSM = IPRSM + 1
+do jt = 1,5
+  do jp = 13,59
+    iprsm = 0
+    do igc = 1,ngc(14)
+      z_sumk = 0.0_jprb
+      do ipr = 1, ngn(ngs(13)+igc)
+        iprsm = iprsm + 1
 
-        Z_SUMK = Z_SUMK + KBO(JT,JP,IPRSM)*RWGT(IPRSM+208)
-      ENDDO
+        z_sumk = z_sumk + kbo(jt,jp,iprsm)*rwgt(iprsm+208)
+      enddo
 
-      KB(JT,JP,IGC) = Z_SUMK
-    ENDDO
-  ENDDO
-ENDDO
+      kb(jt,jp,igc) = z_sumk
+    enddo
+  enddo
+enddo
 
-DO JT = 1,10
-  IPRSM = 0
-  DO IGC = 1,NGC(14)
-    Z_SUMK = 0.0_JPRB
-    DO IPR = 1, NGN(NGS(13)+IGC)
-      IPRSM = IPRSM + 1
+do jt = 1,10
+  iprsm = 0
+  do igc = 1,ngc(14)
+    z_sumk = 0.0_jprb
+    do ipr = 1, ngn(ngs(13)+igc)
+      iprsm = iprsm + 1
 
-      Z_SUMK = Z_SUMK + SELFREFO(JT,IPRSM)*RWGT(IPRSM+208)
-    ENDDO
+      z_sumk = z_sumk + selfrefo(jt,iprsm)*rwgt(iprsm+208)
+    enddo
 
-    SELFREF(JT,IGC) = Z_SUMK
-  ENDDO
-ENDDO
+    selfref(jt,igc) = z_sumk
+  enddo
+enddo
 
-DO JT = 1,4
-   IPRSM = 0
-   DO IGC = 1,NGC(14)
-      Z_SUMK = 0.0_JPRB
-      DO IPR = 1, NGN(NGS(13)+IGC)
-         IPRSM = IPRSM + 1
-         Z_SUMK = Z_SUMK + FORREFO(JT,IPRSM)*RWGT(IPRSM+208)
-      ENDDO
-      FORREF(JT,IGC) = Z_SUMK
-   ENDDO
-ENDDO
+do jt = 1,4
+   iprsm = 0
+   do igc = 1,ngc(14)
+      z_sumk = 0.0_jprb
+      do ipr = 1, ngn(ngs(13)+igc)
+         iprsm = iprsm + 1
+         z_sumk = z_sumk + forrefo(jt,iprsm)*rwgt(iprsm+208)
+      enddo
+      forref(jt,igc) = z_sumk
+   enddo
+enddo
 
-IPRSM = 0
-DO IGC = 1,NGC(14)
-  Z_SUMF1= 0.0_JPRB
-  Z_SUMF2= 0.0_JPRB
-  DO IPR = 1, NGN(NGS(13)+IGC)
-    IPRSM = IPRSM + 1
+iprsm = 0
+do igc = 1,ngc(14)
+  z_sumf1= 0.0_jprb
+  z_sumf2= 0.0_jprb
+  do ipr = 1, ngn(ngs(13)+igc)
+    iprsm = iprsm + 1
 
-    Z_SUMF1= Z_SUMF1+ FRACREFAO(IPRSM)
-    Z_SUMF2= Z_SUMF2+ FRACREFBO(IPRSM)
-  ENDDO
+    z_sumf1= z_sumf1+ fracrefao(iprsm)
+    z_sumf2= z_sumf2+ fracrefbo(iprsm)
+  enddo
 
-  FRACREFA(IGC) = Z_SUMF1
-  FRACREFB(IGC) = Z_SUMF2
-ENDDO
+  fracrefa(igc) = z_sumf1
+  fracrefb(igc) = z_sumf2
+enddo
 
 
-!$ACC UPDATE DEVICE(FRACREFA, FRACREFB, KA, KB, SELFREF, FORREF)
+!$acc update device(fracrefa, fracrefb, ka, kb, selfref, forref)
 
-IF (LHOOK) CALL DR_HOOK('RRTM_CMBGB14',1,ZHOOK_HANDLE)
-END SUBROUTINE RRTM_CMBGB14
+if (lhook) call dr_hook('rrtm_cmbgb14',1,zhook_handle)
+end subroutine rrtm_cmbgb14
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

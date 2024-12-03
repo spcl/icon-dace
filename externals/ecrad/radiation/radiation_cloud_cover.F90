@@ -1,26 +1,72 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_cloud_cover.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_cloud_cover.f90"
+! this file has been modified for the use in icon
 
-! radiation_cloud_cover.F90 - Compute cumulative cloud cover for McICA
+! radiation_cloud_cover.f90 - compute cumulative cloud cover for mcica
 !
-! (C) Copyright 2016- ECMWF.
+! (c) copyright 2016- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Generate profiles of the cumulative cloud cover as seen from TOA,
-! used in the McICA cloud generator.
+! generate profiles of the cumulative cloud cover as seen from toa,
+! used in the mcica cloud generator.
 !
-! Modifications
-!   2020-10-07  R. Hogan  Ensure iobj1 initialized in case of alpha_obj==0
+! modifications
+!   2020-10-07  r. hogan  ensure iobj1 initialized in case of alpha_obj==0
 
-#include "ecrad_config.h"
+
+! # 1 "radiation/ecrad_config.h" 1
+! ecrad_config.h - preprocessor definitions to configure compilation ecrad -*- f90 -*-
+!
+! (c) copyright 2023- ecmwf.
+!
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
+!
+! in applying this licence, ecmwf does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+!
+! this file should be included in fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  feel free to maintain a site-specific version of it.
+
+! the following settings turn on optimizations specific to the
+! long-vector nec sx (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+! in the ifs, an mpi version of easy_netcdf capability is used so that
+! only one mpi task reads the data files and shares with the other
+! tasks. the mpi version is not used for writing files.
+
+!#define easy_netcdf_read_mpi 1
+! # 24 "radiation/radiation_cloud_cover.f90" 2
 
 module radiation_cloud_cover
 
@@ -28,42 +74,42 @@ module radiation_cloud_cover
 
   public
 
-  ! Three overlap schemes.  Note that "Exponential" means that
+  ! three overlap schemes.  note that "exponential" means that
   ! clear-sky regions have no special significance for computing the
   ! cumulative cloud cover: non-contiguous clouds are exponentially
-  ! rather than randomly overlapped. This is the situaition in the
-  ! McRad radiation scheme at ECMWF.
+  ! rather than randomly overlapped. this is the situaition in the
+  ! mcrad radiation scheme at ecmwf.
   enum, bind(c)
-    enumerator IOverlapMaximumRandom, IOverlapExponentialRandom, &
-         &     IOverlapExponential
+    enumerator ioverlapmaximumrandom, ioverlapexponentialrandom, &
+         &     ioverlapexponential
   end enum
-  character(len=*), parameter :: OverlapName(0:2) = (/ 'Max-Ran', &
-       &                                               'Exp-Ran', &
-       &                                               'Exp-Exp' /)
+  character(len=*), parameter :: overlapname(0:2) = (/ 'max-ran', &
+       &                                               'exp-ran', &
+       &                                               'exp-exp' /)
 
-  ! Maximum cloud fraction distinguishable from 1
-  real(jprb), parameter :: MaxCloudFrac = 1.0_jprb-epsilon(1.0_jprb)*10.0_jprb
+  ! maximum cloud fraction distinguishable from 1
+  real(jprb), parameter :: maxcloudfrac = 1.0_jprb-epsilon(1.0_jprb)*10.0_jprb
 
 
 contains
 
   !---------------------------------------------------------------------
-  ! Convert "beta" overlap parameter of Shonk et al. (2010) to "alpha"
-  ! overlap parameter of Hogan and Illingworth (2000)
+  ! convert "beta" overlap parameter of shonk et al. (2010) to "alpha"
+  ! overlap parameter of hogan and illingworth (2000)
   elemental function beta2alpha(beta, frac1, frac2)
 
     implicit none
 
-    ! Beta overlap parameter and the cloud fractions in the upper and
+    ! beta overlap parameter and the cloud fractions in the upper and
     ! lower layers
     real(jprb), intent(in) :: beta, frac1, frac2
 
     real(jprb)             :: beta2alpha
 
-    ! Absolute difference in cloud fraction
+    ! absolute difference in cloud fraction
     real(jprb)             :: frac_diff
 
-    !$ACC ROUTINE SEQ
+    !$acc routine seq
 
     if (beta < 1.0_jprb) then
       frac_diff = abs(frac1-frac2)
@@ -78,38 +124,38 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute total cloud cover according to the specified overlap
-  ! rule. This can be used to compute the high, mid and low cloud
+  ! compute total cloud cover according to the specified overlap
+  ! rule. this can be used to compute the high, mid and low cloud
   ! cover by passing in subsets of the cloud fraction array
   function cloud_cover(nlev, i_overlap_scheme, frac, overlap_param, &
        &               is_beta_overlap)
 
     implicit none
     
-    ! Number of levels and the overlap scheme to be applied
+    ! number of levels and the overlap scheme to be applied
     integer, intent(in)    :: nlev, i_overlap_scheme
 
-    ! Cloud fraction and the overlap parameter between adjacent pairs
+    ! cloud fraction and the overlap parameter between adjacent pairs
     ! of levels
     real(jprb), intent(in) :: frac(nlev), overlap_param(nlev-1)
 
-    ! Do we use the "beta" overlap scheme of Shonk et al. (2010)?
-    ! Default is false.
+    ! do we use the "beta" overlap scheme of shonk et al. (2010)?
+    ! default is false.
     logical, intent(in), optional :: is_beta_overlap
 
-    ! Return cloud cover
+    ! return cloud cover
     real(jprb)             :: cloud_cover
 
-    ! Cumulative cloud cover from TOA to the base of each layer
+    ! cumulative cloud cover from toa to the base of each layer
     real(jprb) :: cum_cloud_cover(nlev)
 
-    ! Cloud cover of a pair of layers
+    ! cloud cover of a pair of layers
     real(jprb) :: pair_cloud_cover(nlev-1)
 
-    if (i_overlap_scheme == IOverlapExponentialRandom) then
+    if (i_overlap_scheme == ioverlapexponentialrandom) then
       call cum_cloud_cover_exp_ran(nlev, frac, overlap_param, &
            &   cum_cloud_cover, pair_cloud_cover, is_beta_overlap)
-    else if (i_overlap_scheme == IOverlapExponential) then
+    else if (i_overlap_scheme == ioverlapexponential) then
       call cum_cloud_cover_exp_exp(nlev, frac, overlap_param, &
            &   cum_cloud_cover, pair_cloud_cover, is_beta_overlap)
     else
@@ -123,7 +169,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Maximum-random overlap: Geleyn & Hollingsworth formula
+  ! maximum-random overlap: geleyn & hollingsworth formula
   subroutine cum_cloud_cover_max_ran(nlev, frac, &
        & cum_cloud_cover, pair_cloud_cover)
 
@@ -131,43 +177,43 @@ contains
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in)     :: nlev  ! number of model levels
 
-    ! Cloud fraction on full levels
+    ! cloud fraction on full levels
     real(jprb), intent(in)  :: frac(nlev)
 
-    ! Outputs
+    ! outputs
 
-    ! Cumulative cloud cover from TOA to the base of each layer
+    ! cumulative cloud cover from toa to the base of each layer
     real(jprb), intent(out) :: cum_cloud_cover(nlev)
 
-    ! Cloud cover of a pair of layers
+    ! cloud cover of a pair of layers
     real(jprb), intent(out) :: pair_cloud_cover(nlev-1)
 
-    ! Local variables
+    ! local variables
 
-    ! Cumulative product needed in computation of total_cloud_cover
+    ! cumulative product needed in computation of total_cloud_cover
     real(jprb) :: cum_product
 
-    ! Loop index for model level
+    ! loop index for model level
     integer :: jlev
 
     real(jphook) :: hook_handle
 
     if (lhook) call dr_hook('radiation_cloud_cover:cum_cloud_cover_max_ran',0,hook_handle)
 
-    ! Loop to compute total cloud cover and the cumulative cloud cover
+    ! loop to compute total cloud cover and the cumulative cloud cover
 
     ! down to the base of each layer
     cum_product = 1.0_jprb - frac(1)
     cum_cloud_cover(1) = frac(1)
     do jlev = 1,nlev-1
-      ! Compute the combined cloud cover of layers jlev and jlev+1
+      ! compute the combined cloud cover of layers jlev and jlev+1
       pair_cloud_cover(jlev) = max(frac(jlev),frac(jlev+1))
 
-      if (frac(jlev) >= MaxCloudFrac) then
-        ! Cloud cover has reached one
+      if (frac(jlev) >= maxcloudfrac) then
+        ! cloud cover has reached one
         cum_product = 0.0_jprb
       else
         cum_product = cum_product * (1.0_jprb - pair_cloud_cover(jlev)) &
@@ -182,7 +228,7 @@ contains
   
 
   !---------------------------------------------------------------------
-  ! Exponential-random overlap: exponential overlap for contiguous
+  ! exponential-random overlap: exponential overlap for contiguous
   ! clouds, random overlap for non-contiguous clouds
   subroutine cum_cloud_cover_exp_ran(nlev, frac, overlap_param, &
        & cum_cloud_cover, pair_cloud_cover, is_beta_overlap)
@@ -191,42 +237,42 @@ contains
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in)     :: nlev  ! number of model levels
 
-    ! Cloud fraction on full levels
+    ! cloud fraction on full levels
     real(jprb), intent(in)  :: frac(nlev)
 
-    ! Cloud overlap parameter for interfaces between model layers,
+    ! cloud overlap parameter for interfaces between model layers,
     ! where 0 indicates random overlap and 1 indicates maximum-random
     ! overlap
     real(jprb), intent(in)  :: overlap_param(nlev-1)
 
-    ! This routine has been coded using the "alpha" overlap parameter
-    ! of Hogan and Illingworth (2000). If the following logical is
+    ! this routine has been coded using the "alpha" overlap parameter
+    ! of hogan and illingworth (2000). if the following logical is
     ! present and true then the input is interpretted to be the "beta"
-    ! overlap parameter of Shonk et al. (2010), and needs to be
+    ! overlap parameter of shonk et al. (2010), and needs to be
     ! converted to alpha.
     logical, intent(in), optional :: is_beta_overlap
 
-    ! Outputs
+    ! outputs
 
-    ! Cumulative cloud cover from TOA to the base of each layer
+    ! cumulative cloud cover from toa to the base of each layer
     real(jprb), intent(out) :: cum_cloud_cover(nlev)
 
-    ! Cloud cover of a pair of layers
+    ! cloud cover of a pair of layers
     real(jprb), intent(out) :: pair_cloud_cover(nlev-1)
 
-    ! Local variables
+    ! local variables
 
-    ! Cumulative product needed in computation of total_cloud_cover
+    ! cumulative product needed in computation of total_cloud_cover
     real(jprb) :: cum_product
 
-    ! "Alpha" overlap parameter
+    ! "alpha" overlap parameter
     real(jprb) :: overlap_alpha
     logical    :: do_overlap_conversion
 
-    ! Loop index for model level
+    ! loop index for model level
     integer :: jlev
 
     real(jphook) :: hook_handle
@@ -240,13 +286,13 @@ contains
       do_overlap_conversion = .false.
     end if
 
-    ! Loop to compute total cloud cover and the cumulative cloud cover
+    ! loop to compute total cloud cover and the cumulative cloud cover
 
     ! down to the base of each layer
     cum_product = 1.0_jprb - frac(1)
     cum_cloud_cover(1) = frac(1)
     do jlev = 1,nlev-1
-      ! Convert to "alpha" overlap parameter if necessary
+      ! convert to "alpha" overlap parameter if necessary
       if (do_overlap_conversion) then
         overlap_alpha = beta2alpha(overlap_param(jlev), &
              &                     frac(jlev), frac(jlev+1))
@@ -254,17 +300,17 @@ contains
         overlap_alpha = overlap_param(jlev)
       end if
 
-      ! Compute the combined cloud cover of layers jlev and jlev+1
+      ! compute the combined cloud cover of layers jlev and jlev+1
       pair_cloud_cover(jlev) = overlap_alpha*max(frac(jlev),frac(jlev+1)) &
            &  + (1.0_jprb - overlap_alpha) &
            &  * (frac(jlev)+frac(jlev+1)-frac(jlev)*frac(jlev+1))
-! Added for DWD (2020)
-#ifdef DWD_VECTOR_OPTIMIZATIONS
-    end do
-    do jlev = 1,nlev-1
-#endif
-      if (frac(jlev) >= MaxCloudFrac) then
-        ! Cloud cover has reached one
+! added for dwd (2020)
+
+
+
+
+      if (frac(jlev) >= maxcloudfrac) then
+        ! cloud cover has reached one
         cum_product = 0.0_jprb
       else
         cum_product = cum_product * (1.0_jprb - pair_cloud_cover(jlev)) &
@@ -281,13 +327,13 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Exponential-exponential overlap: exponential overlap for both
-  ! contiguous and non-contiguous clouds. This is the result of the
-  ! simple Raisanen cloud generator, but unfortunately it has no
+  ! exponential-exponential overlap: exponential overlap for both
+  ! contiguous and non-contiguous clouds. this is the result of the
+  ! simple raisanen cloud generator, but unfortunately it has no
   ! (known) analytic formula for the total cloud cover, or the
-  ! cumulative cloud cover.  In partially cloudy columns, The McICA
+  ! cumulative cloud cover.  in partially cloudy columns, the mcica
   ! scheme needs this info in order to devote all the cloudy g-points
-  ! to columns containing cloud, which reduces McICA noise. The
+  ! to columns containing cloud, which reduces mcica noise. the
   ! following routine provides an approximate estimate of cumulative
   ! cloud cover consistent with the exponential-exponential scheme.
   subroutine cum_cloud_cover_exp_exp(nlev, frac, overlap_param, &
@@ -297,79 +343,79 @@ contains
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in)     :: nlev  ! number of model levels
 
-    ! Cloud fraction on full levels
+    ! cloud fraction on full levels
     real(jprb), intent(in)  :: frac(nlev)
 
-    ! Cloud overlap parameter for interfaces between model layers,
+    ! cloud overlap parameter for interfaces between model layers,
     ! where 0 indicates random overlap and 1 indicates maximum-random
     ! overlap
     real(jprb), intent(in)  :: overlap_param(nlev-1)
 
-    ! This routine has been coded using the "alpha" overlap parameter
-    ! of Hogan and Illingworth (2000). If the following logical is
+    ! this routine has been coded using the "alpha" overlap parameter
+    ! of hogan and illingworth (2000). if the following logical is
     ! present and true then the input is interpretted to be the "beta"
-    ! overlap parameter of Shonk et al. (2010), and needs to be
+    ! overlap parameter of shonk et al. (2010), and needs to be
     ! converted to alpha.
     logical, intent(in), optional :: is_beta_overlap
 
-    ! Outputs
+    ! outputs
 
-    ! Cumulative cloud cover from TOA to the base of each layer
+    ! cumulative cloud cover from toa to the base of each layer
     real(jprb), intent(out) :: cum_cloud_cover(nlev)
 
-    ! Cloud cover of a pair of layers
+    ! cloud cover of a pair of layers
     real(jprb), intent(out) :: pair_cloud_cover(nlev-1)
 
-    ! Local variables
+    ! local variables
 
-    ! If this routine is called from the radiation_interface tree then
+    ! if this routine is called from the radiation_interface tree then
     ! very low cloud fractions have already been set to zero, but if
     ! it is called as a cloud cover diagnostic then this can't be
     ! guaranteed so a small non-zero numbers is required
     real(jprb), parameter :: min_frac = 1.0e-6_jprb
 
-    ! "Alpha" overlap parameter
+    ! "alpha" overlap parameter
     real(jprb) :: overlap_alpha(nlev-1)
     logical    :: do_overlap_conversion
 
-    ! Variables describing "concave cloud objects", i.e. contiguous
+    ! variables describing "concave cloud objects", i.e. contiguous
     ! layers where the cloud fraction monotonically increases then
     ! monotonically decreases
 
-    ! Number of objects
+    ! number of objects
     integer    :: nobj
 
-    ! Indices to the location of the top, maximum cloud fraction, and
+    ! indices to the location of the top, maximum cloud fraction, and
     ! base, of each concave cloud object
     integer    :: i_top_obj(nlev)
     integer    :: i_max_obj(nlev)
     integer    :: i_base_obj(nlev)
-    ! Poor-man's linked list to allow for deletion of objects: this
+    ! poor-man's linked list to allow for deletion of objects: this
     ! variable points to the index of the next active object
     integer    :: i_next_obj(nlev)
 
-    ! Cloud cover of object
+    ! cloud cover of object
     real(jprb) :: cc_obj(nlev)
 
-    ! Overlap parameter between objects
+    ! overlap parameter between objects
     real(jprb) :: alpha_obj(nlev)
 
-    ! Do (while) loop index for model level
+    ! do (while) loop index for model level
     integer :: jlev
 
-    ! Do loop index for object
+    ! do loop index for object
     integer :: jobj
 
-    ! Maximum correlation between adjacent objects
+    ! maximum correlation between adjacent objects
     real(jprb) :: alpha_max
 
-    ! Indices to pair of objects
+    ! indices to pair of objects
     integer    :: iobj1, iobj2
 
-    ! Combined cloud cover of pair of objects, and scaling to modify
+    ! combined cloud cover of pair of objects, and scaling to modify
     ! cumulative cloud cover of lower layer
     real(jprb) :: cc_pair, scaling
 
@@ -384,16 +430,16 @@ contains
       do_overlap_conversion = .false.
     end if
 
-    ! Loop down through atmosphere to locate objects and compute their
+    ! loop down through atmosphere to locate objects and compute their
     ! basic properties
     jlev = 1
     nobj = 0
     do while (jlev <= nlev)
       if (frac(jlev) > min_frac) then
-        ! Starting a new object: store its top
+        ! starting a new object: store its top
         nobj = nobj + 1
         i_top_obj(nobj) = jlev;
-        ! Find its maximum cloud fraction
+        ! find its maximum cloud fraction
         jlev = jlev + 1
         do while (jlev <= nlev) 
           if (frac(jlev) < frac(jlev-1)) then
@@ -402,14 +448,14 @@ contains
           jlev = jlev + 1
         end do
         i_max_obj(nobj) = jlev - 1
-        ! Find its base
+        ! find its base
         do while (jlev <= nlev)
           if (frac(jlev) > frac(jlev-1) .or. frac(jlev) <= min_frac) then
             exit
           end if
           jlev = jlev + 1
         end do
-        ! In the case of cloud fraction profile starting from the top
+        ! in the case of cloud fraction profile starting from the top
         ! like this: 0.1 0.2 0.1 0.2 0.1, we may want the object grouping
         ! to be (0.1 0.2) (0.1 0.2 0.1), not (0.1 0.2 0.1) (0.2 0.1),
         ! in which case the following should be uncommented
@@ -419,32 +465,32 @@ contains
         !          end if
         !        end if
         i_base_obj(nobj) = jlev - 1
-        ! Index to the next object
+        ! index to the next object
         i_next_obj(nobj) = nobj+1
       else
         jlev = jlev + 1
       end if
     end do
 
-    ! Array assignments
+    ! array assignments
     cum_cloud_cover = 0.0_jprb
     pair_cloud_cover = 0.0_jprb
 
     if (nobj > 0) then
-      ! Only do any more work if there is cloud present
+      ! only do any more work if there is cloud present
       
-      ! To minimize the potential calls to beta2alpha, we do all the
+      ! to minimize the potential calls to beta2alpha, we do all the
       ! computations related to overlap parameter here
       if (.not. do_overlap_conversion) then
 
-        ! Compute the combined cloud cover of pairs of layers
+        ! compute the combined cloud cover of pairs of layers
         do jlev = 1,nlev-1
           pair_cloud_cover(jlev) &
                &  = overlap_param(jlev)*max(frac(jlev),frac(jlev+1)) &
                &  + (1.0_jprb - overlap_param(jlev)) &
                &  * (frac(jlev)+frac(jlev+1)-frac(jlev)*frac(jlev+1))
         end do
-        ! Estimate the effective overlap parameter "alpha_obj" between
+        ! estimate the effective overlap parameter "alpha_obj" between
         ! adjacent objects as the product of the layerwise overlap
         ! parameters between their layers of maximum cloud fraction
         do jobj = 1,nobj-1
@@ -454,18 +500,18 @@ contains
 
       else
 
-        ! Convert Shonk et al overlap parameter to Hogan and
-        ! Illingworth definition
+        ! convert shonk et al overlap parameter to hogan and
+        ! illingworth definition
         overlap_alpha = beta2alpha(overlap_param, &
              &                     frac(1:nlev-1), frac(2:nlev))
-        ! Compute the combined cloud cover of pairs of layers
+        ! compute the combined cloud cover of pairs of layers
         do jlev = 1,nlev-1
           pair_cloud_cover(jlev) &
                &  = overlap_alpha(jlev)*max(frac(jlev),frac(jlev+1)) &
                &  + (1.0_jprb - overlap_alpha(jlev)) &
                &  * (frac(jlev)+frac(jlev+1)-frac(jlev)*frac(jlev+1))          
         end do
-        ! Estimate the effective overlap parameter "alpha_obj" between
+        ! estimate the effective overlap parameter "alpha_obj" between
         ! adjacent objects as the product of the layerwise overlap
         ! parameters between their layers of maximum cloud fraction
         do jobj = 1,nobj-1
@@ -476,14 +522,14 @@ contains
       end if
 
 
-      ! Compute the cumulative cloud cover working down from the top
+      ! compute the cumulative cloud cover working down from the top
       ! of each object: this will later be converted to the cumulative
-      ! cloud cover working down from TOA
+      ! cloud cover working down from toa
       do jobj = 1,nobj
         cum_cloud_cover(i_top_obj(jobj)) = frac(i_top_obj(jobj))
         do jlev = i_top_obj(jobj), i_base_obj(jobj)-1
-          if (frac(jlev) >= MaxCloudFrac) then
-            ! Cloud cover has reached one
+          if (frac(jlev) >= maxcloudfrac) then
+            ! cloud cover has reached one
             cum_cloud_cover(jlev+1) = 1.0_jprb
           else
             cum_cloud_cover(jlev+1) = 1.0_jprb &
@@ -497,13 +543,13 @@ contains
 
       iobj1 = 1
 
-      ! Sequentially combine objects until there is only one left
+      ! sequentially combine objects until there is only one left
       ! covering the full vertical extent of clouds in the profile
       do while (nobj > 1)
-        ! Find the most correlated adjacent pair of objects
+        ! find the most correlated adjacent pair of objects
         alpha_max = 0.0_jprb
 
-        ! Need to re-initialize iobj1 here in case alpha_obj(:)==0.0,
+        ! need to re-initialize iobj1 here in case alpha_obj(:)==0.0,
         ! which would mean that the "if" statement in the following
         ! loop would never get triggered
         iobj1 = 1
@@ -521,12 +567,12 @@ contains
         ! iobj2 to the second
         iobj2 = i_next_obj(iobj1)
 
-        ! Set the cumulative cloud cover in the clear-sky gap between
+        ! set the cumulative cloud cover in the clear-sky gap between
         ! the objects to the value at the base of the upper object
         cum_cloud_cover(i_base_obj(iobj1)+1:i_top_obj(iobj2)-1) &
              &  = cum_cloud_cover(i_base_obj(iobj1))
 
-        ! Calculate the combined cloud cover of the pair of objects
+        ! calculate the combined cloud cover of the pair of objects
         cc_pair = alpha_obj(iobj1)*max(cc_obj(iobj1), cc_obj(iobj2)) &
              &  + (1.0_jprb - alpha_obj(iobj1)) &
              &  * (cc_obj(iobj1) + cc_obj(iobj2) - cc_obj(iobj1)*cc_obj(iobj2))
@@ -534,15 +580,15 @@ contains
              &            0.0_jprb), &
              &        1.0_jprb)
         
-        ! Scale the combined cloud cover of the lower object to
+        ! scale the combined cloud cover of the lower object to
         ! account for its overlap with the upper object
         do jlev = i_top_obj(iobj2),i_base_obj(iobj2)
           cum_cloud_cover(jlev) = cum_cloud_cover(i_base_obj(iobj1)) &
                +  cum_cloud_cover(jlev) * scaling
         end do
         
-        ! Merge the objects by setting the properties of the upper
-        ! object to the combined properties of both.  Note that
+        ! merge the objects by setting the properties of the upper
+        ! object to the combined properties of both.  note that
         ! i_max_obj is not modified because it is no longer needed.
         cc_obj(iobj1) = cc_pair
         i_base_obj(iobj1) = i_base_obj(iobj2)
@@ -551,18 +597,18 @@ contains
         nobj = nobj - 1
       end do
 
-      ! Finish off the total cloud cover below cloud
+      ! finish off the total cloud cover below cloud
       cum_cloud_cover(i_base_obj(iobj1)+1:nlev) &
            &  = cum_cloud_cover(i_base_obj(iobj1)) 
 
-      ! Ensure that the combined cloud cover of pairs of layers is
+      ! ensure that the combined cloud cover of pairs of layers is
       ! consistent with the overhang
       do jlev = 1,nlev-1
         pair_cloud_cover(jlev) = max(pair_cloud_cover(jlev), &
              &     frac(jlev)+cum_cloud_cover(jlev+1)-cum_cloud_cover(jlev))
       end do
 
-      ! Sometimes round-off error can lead to cloud cover just above
+      ! sometimes round-off error can lead to cloud cover just above
       ! one, which in turn can lead to direct shortwave fluxes just
       ! below zero
       cum_cloud_cover = min(cum_cloud_cover, 1.0_jprb)
@@ -574,3 +620,47 @@ contains
   end subroutine cum_cloud_cover_exp_exp
 
 end module radiation_cloud_cover
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

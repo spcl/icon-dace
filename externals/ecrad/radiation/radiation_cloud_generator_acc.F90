@@ -1,27 +1,32 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_cloud_generator_acc.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_cloud_generator_acc.f90"
+! this file has been modified for the use in icon
 
-! radiation_cloud_generator_acc.F90 - Generate water-content or optical-depth scalings for McICA
+! radiation_cloud_generator_acc.f90 - generate water-content or optical-depth scalings for mcica
 !
-! (C) Copyright 2015- ECMWF.
+! (c) copyright 2015- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Generate clouds for McICA using a method modified from Raisanen et
+! generate clouds for mcica using a method modified from raisanen et
 ! al. (2002)
-! This is a copy of the original cloud_generator, that is better suited for OpenACC
+! this is a copy of the original cloud_generator, that is better suited for openacc
 !
-! Modifications
-!   2018-02-22  R. Hogan  Call masked version of PDF sampler for speed
-!   2020-03-31  R. Hogan  More vectorizable version of Exp-Ran
-!   2022-11-07  D. Hupp adaptation for ACC
+! modifications
+!   2018-02-22  r. hogan  call masked version of pdf sampler for speed
+!   2020-03-31  r. hogan  more vectorizable version of exp-ran
+!   2022-11-07  d. hupp adaptation for acc
 
 module radiation_cloud_generator_acc
 
@@ -30,14 +35,14 @@ module radiation_cloud_generator_acc
 contains
 
   !---------------------------------------------------------------------
-  ! Generate scaling factors for the cloud optical depth to represent
+  ! generate scaling factors for the cloud optical depth to represent
   ! cloud overlap, the overlap of internal cloud inhomogeneities and
   ! the fractional standard deviation of these inhomogeneities, for
-  ! use in a Monte Carlo Independent Column Approximation radiation
-  ! scheme. All returned profiles contain cloud, and the total cloud
+  ! use in a monte carlo independent column approximation radiation
+  ! scheme. all returned profiles contain cloud, and the total cloud
   ! cover is also returned, so the calling function can then do a
   ! weighted average of clear and cloudy skies; this is a way to
-  ! reduce the Monte Carlo noise in profiles with low cloud cover.
+  ! reduce the monte carlo noise in profiles with low cloud cover.
   subroutine cloud_generator_acc(ng, nlev, &
     &  iseed, frac_threshold, &
     &  frac, overlap_param, decorrelation_scaling, &
@@ -50,119 +55,119 @@ contains
     &  pair_cloud_cover)
 
     use parkind1,                 only : jprb
-    use radiation_random_numbers, only : initialize_acc, uniform_distribution_acc, IMinstdA0, IMinstdA, IMinstdM
+    use radiation_random_numbers, only : initialize_acc, uniform_distribution_acc, iminstda0, iminstda, iminstdm
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in)     :: ng    ! number of g points
     integer, intent(in)     :: nlev  ! number of model levels
     integer, intent(in)     :: iseed ! seed for random number generator
 
-    ! Only cloud fractions above this threshold are considered to be
+    ! only cloud fractions above this threshold are considered to be
     ! clouds
     real(jprb), intent(in)  :: frac_threshold
 
-    ! Cloud fraction on full levels
+    ! cloud fraction on full levels
     real(jprb), intent(in)  :: frac(nlev)
 
-    ! Cloud overlap parameter for interfaces between model layers,
+    ! cloud overlap parameter for interfaces between model layers,
     ! where 0 indicates random overlap and 1 indicates maximum-random
     ! overlap
     real(jprb), intent(in)  :: overlap_param(nlev-1)
 
-    ! Overlap parameter for internal inhomogeneities
+    ! overlap parameter for internal inhomogeneities
     real(jprb), intent(in)  :: decorrelation_scaling
 
-    ! Fractional standard deviation at each layer
+    ! fractional standard deviation at each layer
     real(jprb), intent(in)  :: fractional_std(nlev)
 
-    ! Object for sampling from a lognormal or gamma distribution
+    ! object for sampling from a lognormal or gamma distribution
     integer, intent(in)  :: sample_ncdf, sample_nfsd
     real(jprb), intent(in)  :: sample_fsd1, sample_inv_fsd_interval
     real(jprb), intent(in), dimension(:,:)  :: sample_val
 
-    ! Outputs
+    ! outputs
 
-    ! Cloud optical depth scaling factor, with 0 indicating clear sky
+    ! cloud optical depth scaling factor, with 0 indicating clear sky
     real(jprb), intent(out) :: od_scaling(ng,nlev)
 
-    ! Total cloud cover using cloud fraction and overlap parameter
+    ! total cloud cover using cloud fraction and overlap parameter
     real(jprb), intent(in) :: total_cloud_cover
 
-    ! Local variables
+    ! local variables
 
-    ! Cumulative cloud cover from TOA to the base of each layer
+    ! cumulative cloud cover from toa to the base of each layer
     real(jprb), intent(in) :: cum_cloud_cover(nlev)
 
-    ! First and last cloudy layers
+    ! first and last cloudy layers
     integer, intent(in) :: ibegin, iend
 
-    ! Scaled random number for finding cloud
+    ! scaled random number for finding cloud
     real(jprb) :: trigger
 
-    ! Uniform deviates between 0 and 1
+    ! uniform deviates between 0 and 1
     real(jprb) :: rand_top
 
-    ! Overlap parameter of inhomogeneities
+    ! overlap parameter of inhomogeneities
     real(jprb) :: overlap_param_inhom
 
     real(jprb) :: rand_cloud, rand_inhom1, rand_inhom2
 
     integer :: itrigger
 
-    ! Loop index for model level and g-point
+    ! loop index for model level and g-point
     integer :: jlev, jg
 
-    ! Cloud cover of a pair of layers, and amount by which cloud at
+    ! cloud cover of a pair of layers, and amount by which cloud at
     ! next level increases total cloud cover as seen from above
     real(jprb), intent(inout), dimension(nlev-1) :: pair_cloud_cover
     real(jprb) :: overhang
 
     integer          :: jcloud
-    ! Number of contiguous cloudy layers for which to compute optical
+    ! number of contiguous cloudy layers for which to compute optical
     ! depth scaling
     integer :: n_layers_to_scale
 
-    ! Is it time to fill the od_scaling variable?
+    ! is it time to fill the od_scaling variable?
     logical :: do_fill_od_scaling
 
     ! variables from manual inlining of sample_vec_from_pdf
-    ! Index to look-up table
+    ! index to look-up table
     integer    :: ifsd, icdf
-    ! Weights in bilinear interpolation
+    ! weights in bilinear interpolation
     real(jprb) :: wfsd, wcdf
 
     ! local variable for the acc rng
     real(kind=jprb) :: istate
 
-    !$ACC ROUTINE WORKER
+    !$acc routine worker
 
     if (total_cloud_cover >= frac_threshold) then
-      ! Loop over ng columns (this loop should be paralized as soon as acc RNG is available)
-      !$ACC LOOP WORKER VECTOR PRIVATE(istate, rand_top, trigger, itrigger, n_layers_to_scale)
+      ! loop over ng columns (this loop should be paralized as soon as acc rng is available)
+      !$acc loop worker vector private(istate, rand_top, trigger, itrigger, n_layers_to_scale)
       do jg = 1,ng
 
-        !$ACC LOOP SEQ 
+        !$acc loop seq 
         do jlev = 1,nlev
           od_scaling(jg,jlev) = 0.0_jprb
         end do
 
         ! begin manuel inline of istate = initialize_acc(iseed, jg)
-        istate = REAL(ABS(iseed),jprb)
-        ! Use a modified (and vectorized) C++ minstd_rand0 algorithm to populate the state
-        istate = nint(mod( istate*jg*(1._jprb-0.05_jprb*jg+0.005_jprb*jg**2)*IMinstdA0, IMinstdM))
+        istate = real(abs(iseed),jprb)
+        ! use a modified (and vectorized) c++ minstd_rand0 algorithm to populate the state
+        istate = nint(mod( istate*jg*(1._jprb-0.05_jprb*jg+0.005_jprb*jg**2)*iminstda0, iminstdm))
 
-        ! One warmup of the C++ minstd_rand algorithm
-        istate = mod(IMinstdA * istate, IMinstdM)
+        ! one warmup of the c++ minstd_rand algorithm
+        istate = mod(iminstda * istate, iminstdm)
         ! end manuel inline of istate = initialize_acc(iseed, jg)
         rand_top = uniform_distribution_acc(istate)
 
-        ! Find the cloud top height corresponding to the current
+        ! find the cloud top height corresponding to the current
         ! random number, and store in itrigger
         trigger = rand_top * total_cloud_cover
         itrigger = iend
-        !$ACC LOOP SEQ
+        !$acc loop seq
         do jlev = ibegin,iend
           if (trigger <= cum_cloud_cover(jlev)) then
             itrigger = min(jlev, itrigger)
@@ -170,42 +175,42 @@ contains
         end do
 
         ! manual inline: call generate_column_exp_ran >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        ! So far our vertically contiguous cloud contains only one layer
+        ! so far our vertically contiguous cloud contains only one layer
         n_layers_to_scale = 1
 
-        ! Locate the clouds below this layer: first generate some more
+        ! locate the clouds below this layer: first generate some more
         ! random numbers
-        ! Loop from the layer below the local cloud top down to the
+        ! loop from the layer below the local cloud top down to the
         ! bottom-most cloudy layer
-        !$ACC LOOP SEQ PRIVATE(do_fill_od_scaling, rand_cloud, rand_inhom1, overhang)
+        !$acc loop seq private(do_fill_od_scaling, rand_cloud, rand_inhom1, overhang)
         do jlev = itrigger+1,iend+1
           do_fill_od_scaling = .false.
           if (jlev <= iend) then
             rand_cloud = uniform_distribution_acc(istate)
             if (n_layers_to_scale > 0) then
-              ! There is a cloud above, in which case the probability
+              ! there is a cloud above, in which case the probability
               ! of cloud in the layer below is as follows
               if (rand_cloud*frac(jlev-1) &
                   &  < frac(jlev) + frac(jlev-1) - pair_cloud_cover(jlev-1)) then
-                ! Add another cloudy layer
+                ! add another cloudy layer
                 n_layers_to_scale = n_layers_to_scale + 1
               else
-                ! Reached the end of a contiguous set of cloudy layers and
+                ! reached the end of a contiguous set of cloudy layers and
                 ! will compute the optical depth scaling immediately.
                 do_fill_od_scaling = .true.
               end if
             else
               overhang = cum_cloud_cover(jlev)-cum_cloud_cover(jlev-1)
-              ! There is clear-sky above, in which case the
+              ! there is clear-sky above, in which case the
               ! probability of cloud in the layer below is as follows
               if (rand_cloud*(cum_cloud_cover(jlev-1) - frac(jlev-1)) &
                   &  < pair_cloud_cover(jlev-1) - overhang - frac(jlev-1)) then
-                ! A new cloud top
+                ! a new cloud top
                 n_layers_to_scale = 1
               end if
             end if
           else
-            ! We are at the bottom of the cloudy layers in the model,
+            ! we are at the bottom of the cloudy layers in the model,
             ! so in a moment need to populate the od_scaling array
             do_fill_od_scaling = .true.
           end if ! (jlev <= iend)
@@ -213,14 +218,14 @@ contains
           if (do_fill_od_scaling) then
 
             rand_inhom1 = uniform_distribution_acc(istate)
-            ! Loop through the sequence of cloudy layers
-            !$ACC LOOP SEQ PRIVATE(rand_inhom2, overlap_param_inhom, wcdf, icdf, &
-            !$ACC   wfsd, ifsd)
+            ! loop through the sequence of cloudy layers
+            !$acc loop seq private(rand_inhom2, overlap_param_inhom, wcdf, icdf, &
+            !$acc   wfsd, ifsd)
             do jcloud = max(2,jlev-n_layers_to_scale),jlev-1
 
               rand_inhom2 = uniform_distribution_acc(istate)
 
-              ! Set overlap parameter of inhomogeneities
+              ! set overlap parameter of inhomogeneities
               overlap_param_inhom = overlap_param(jcloud-1)
               if ( ibegin<=jcloud-1 .and. jcloud-1< iend .and. &
                 & overlap_param(jcloud-1) > 0.0_jprb) then
@@ -228,7 +233,7 @@ contains
                   & overlap_param(jcloud-1)**(1.0_jprb/decorrelation_scaling)
               end if
 
-              ! Use second random number, and inhomogeneity overlap
+              ! use second random number, and inhomogeneity overlap
               ! parameter, to decide whether the first random number
               ! should be repeated (corresponding to maximum overlap)
               ! or not (corresponding to random overlap)
@@ -237,7 +242,7 @@ contains
                 rand_inhom1 = uniform_distribution_acc(istate)
               end if
               ! manual inline >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-              ! Bilinear interpolation with bounds
+              ! bilinear interpolation with bounds
               wcdf = rand_inhom1 * (sample_ncdf-1) + 1.0_jprb
               icdf = max(1, min(int(wcdf), sample_ncdf-1))
               wcdf = max(0.0_jprb, min(wcdf - icdf, 1.0_jprb))
@@ -263,3 +268,47 @@ contains
   end subroutine cloud_generator_acc
 
 end module radiation_cloud_generator_acc
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

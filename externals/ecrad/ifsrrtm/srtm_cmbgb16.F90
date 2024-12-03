@@ -1,109 +1,158 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/srtm_cmbgb16.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_cmbgb16.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SRTM_CMBGB16
+subroutine srtm_cmbgb16
 
 
-!  Original version:       Michael J. Iacono; July, 1998
-!  Revision for RRTM_SW:   Michael J. Iacono; November, 2002
-!  Revision for RRTMG_SW:  Michael J. Iacono; December, 2003
+!  original version:       michael j. iacono; july, 1998
+!  revision for rrtm_sw:   michael j. iacono; november, 2002
+!  revision for rrtmg_sw:  michael j. iacono; december, 2003
 
-!  The subroutines CMBGB16->CMBGB29 input the absorption coefficient
+!  the subroutines cmbgb16->cmbgb29 input the absorption coefficient
 !  data for each band, which are defined for 16 g-points and 14 spectral
-!  bands. The data are combined with appropriate weighting following the
-!  g-point mapping arrays specified in RRTMG_SW_INIT.  Solar source 
-!  function data in array SFLUXREF are combined without weighting.  All
-!  g-point reduced data are put into new arrays for use in RRTMG_SW.
+!  bands. the data are combined with appropriate weighting following the
+!  g-point mapping arrays specified in rrtmg_sw_init.  solar source 
+!  function data in array sfluxref are combined without weighting.  all
+!  g-point reduced data are put into new arrays for use in rrtmg_sw.
 
-!  BAND 16:  2600-3250 cm-1 (low key- H2O,CH4; high key - CH4)
+!  band 16:  2600-3250 cm-1 (low key- h2o,ch4; high key - ch4)
 
 !-----------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM , JPRB
-USE ecradhook   ,ONLY : LHOOK, DR_HOOK, JPHOOK
+use parkind1  ,only : jpim , jprb
+use ecradhook   ,only : lhook, dr_hook, jphook
 
-USE YOESRTM  , ONLY : NGN
-USE YOESRTWN , ONLY : NGC, RWGT
-!USE YOESRTWN , ONLY : NGC, NGN, RWGT
-USE YOESRTA16, ONLY : KA, KB, SELFREF, FORREF, SFLUXREF, &
-                    & KAC, KBC, SELFREFC, FORREFC, SFLUXREFC
+use yoesrtm  , only : ngn
+use yoesrtwn , only : ngc, rwgt
+!use yoesrtwn , only : ngc, ngn, rwgt
+use yoesrta16, only : ka, kb, selfref, forref, sfluxref, &
+                    & kac, kbc, selfrefc, forrefc, sfluxrefc
 
-IMPLICIT NONE
+implicit none
 
-! Local variables
-INTEGER(KIND=JPIM) :: JN, JT, JP, IGC, IPR, IPRSM
-REAL(KIND=JPRB)    :: ZSUMK, ZSUMF
+! local variables
+integer(kind=jpim) :: jn, jt, jp, igc, ipr, iprsm
+real(kind=jprb)    :: zsumk, zsumf
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jphook) :: zhook_handle
 !     ------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB16',0,ZHOOK_HANDLE)
+if (lhook) call dr_hook('srtm_cmbgb16',0,zhook_handle)
 
-DO JN = 1,9
-  DO JT = 1,5
-    DO JP = 1,13
-      IPRSM = 0
-      DO IGC = 1,NGC(1)
-        ZSUMK = 0.
-        DO IPR = 1, NGN(IGC)
-          IPRSM = IPRSM + 1
-          ZSUMK = ZSUMK + KA(JN,JT,JP,IPRSM)*RWGT(IPRSM)
-        ENDDO
-        KAC(JN,JT,JP,IGC) = ZSUMK
-      ENDDO
-    ENDDO
-  ENDDO
-ENDDO
+do jn = 1,9
+  do jt = 1,5
+    do jp = 1,13
+      iprsm = 0
+      do igc = 1,ngc(1)
+        zsumk = 0.
+        do ipr = 1, ngn(igc)
+          iprsm = iprsm + 1
+          zsumk = zsumk + ka(jn,jt,jp,iprsm)*rwgt(iprsm)
+        enddo
+        kac(jn,jt,jp,igc) = zsumk
+      enddo
+    enddo
+  enddo
+enddo
 
-DO JT = 1,5
-  DO JP = 13,59
-    IPRSM = 0
-    DO IGC = 1,NGC(1)
-      ZSUMK = 0.
-      DO IPR = 1, NGN(IGC)
-        IPRSM = IPRSM + 1
-        ZSUMK = ZSUMK + KB(JT,JP,IPRSM)*RWGT(IPRSM)
-      ENDDO
-      KBC(JT,JP,IGC) = ZSUMK
-    ENDDO
-  ENDDO
-ENDDO
+do jt = 1,5
+  do jp = 13,59
+    iprsm = 0
+    do igc = 1,ngc(1)
+      zsumk = 0.
+      do ipr = 1, ngn(igc)
+        iprsm = iprsm + 1
+        zsumk = zsumk + kb(jt,jp,iprsm)*rwgt(iprsm)
+      enddo
+      kbc(jt,jp,igc) = zsumk
+    enddo
+  enddo
+enddo
 
-DO JT = 1,10
-  IPRSM = 0
-  DO IGC = 1,NGC(1)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + SELFREF(JT,IPRSM)*RWGT(IPRSM)
-    ENDDO
-    SELFREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,10
+  iprsm = 0
+  do igc = 1,ngc(1)
+    zsumk = 0.
+    do ipr = 1, ngn(igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + selfref(jt,iprsm)*rwgt(iprsm)
+    enddo
+    selfrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-DO JT = 1,3
-  IPRSM = 0
-  DO IGC = 1,NGC(1)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + FORREF(JT,IPRSM)*RWGT(IPRSM)
-    ENDDO
-    FORREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,3
+  iprsm = 0
+  do igc = 1,ngc(1)
+    zsumk = 0.
+    do ipr = 1, ngn(igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + forref(jt,iprsm)*rwgt(iprsm)
+    enddo
+    forrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-IPRSM = 0
-DO IGC = 1,NGC(1)
-  ZSUMF = 0.
-  DO IPR = 1, NGN(IGC)
-    IPRSM = IPRSM + 1
-    ZSUMF = ZSUMF + SFLUXREF(IPRSM)
-  ENDDO
-  SFLUXREFC(IGC) = ZSUMF
-ENDDO
+iprsm = 0
+do igc = 1,ngc(1)
+  zsumf = 0.
+  do ipr = 1, ngn(igc)
+    iprsm = iprsm + 1
+    zsumf = zsumf + sfluxref(iprsm)
+  enddo
+  sfluxrefc(igc) = zsumf
+enddo
 
-!$ACC UPDATE DEVICE(KAC, KBC, SELFREFC, FORREFC, SFLUXREFC)
+!$acc update device(kac, kbc, selfrefc, forrefc, sfluxrefc)
 
 !     -----------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB16',1,ZHOOK_HANDLE)
-END SUBROUTINE SRTM_CMBGB16
+if (lhook) call dr_hook('srtm_cmbgb16',1,zhook_handle)
+end subroutine srtm_cmbgb16
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

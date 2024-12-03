@@ -1,23 +1,28 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_cloud.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_cloud.f90"
+! this file has been modified for the use in icon
 
-! radiation_cloud.F90 - Derived type to store cloud/precip properties
+! radiation_cloud.f90 - derived type to store cloud/precip properties
 !
-! (C) Copyright 2014- ECMWF.
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2019-01-14  R. Hogan  Added inv_inhom_effective_size variable
-!   2019-01-14  R. Hogan  Added out_of_physical_bounds routine
-!   2019-06-14  R. Hogan  Added capability to store any number of cloud/precip types
+! modifications
+!   2019-01-14  r. hogan  added inv_inhom_effective_size variable
+!   2019-01-14  r. hogan  added out_of_physical_bounds routine
+!   2019-06-14  r. hogan  added capability to store any number of cloud/precip types
 
 module radiation_cloud
 
@@ -27,57 +32,57 @@ module radiation_cloud
   public
 
   !---------------------------------------------------------------------
-  ! The intention is that all variables describing clouds and
+  ! the intention is that all variables describing clouds and
   ! radiatively-active precipitation are contained in this derived
   ! type, and if cloud variables are to be added in future, they can
   ! be added to this type without requiring extra variables to be
   ! passed between subroutines elsewhere in the program.
   type cloud_type
-    ! For maximum flexibility, an arbitrary number "ntype" of
+    ! for maximum flexibility, an arbitrary number "ntype" of
     ! hydrometeor types can be stored, dimensioned (ncol,nlev,ntype)
     integer                                   :: ntype = 0
     real(jprb), allocatable, dimension(:,:,:) :: &
          &  mixing_ratio, &  ! mass mixing ratio (kg/kg)
          &  effective_radius ! (m)
 
-    ! For backwards compatibility, we also allow for the two
+    ! for backwards compatibility, we also allow for the two
     ! traditional cloud types, liquid cloud droplets and ice cloud
     ! particles, dimensioned (ncol,nlev)
     real(jprb), pointer, dimension(:,:) :: &
          &  q_liq,  q_ice,  & ! mass mixing ratio (kg/kg)
          &  re_liq, re_ice    ! effective radius (m)
 
-    ! For the moment, the different types of hydrometeor are assumed
+    ! for the moment, the different types of hydrometeor are assumed
     ! to be mixed with each other, so there is just one cloud fraction
     ! variable varying from 0 to 1
     real(jprb), allocatable, dimension(:,:) :: fraction
 
-    ! The fractional standard deviation of cloud optical depth in the
-    ! cloudy part of the gridbox.  In the Tripleclouds representation
+    ! the fractional standard deviation of cloud optical depth in the
+    ! cloudy part of the gridbox.  in the tripleclouds representation
     ! of cloud inhomogeneity, this is implemented by splitting the
     ! cloudy part of the gridbox into two equal-area regions, one
     ! with the cloud optical depth scaled by 1+fractional_std and the
-    ! other scaled by 1-fractional_std. This variable is dimensioned
+    ! other scaled by 1-fractional_std. this variable is dimensioned
     ! (ncol,nlev)
     real(jprb), allocatable, dimension(:,:) :: fractional_std
 
-    ! The inverse of the effective horizontal size of the clouds in
+    ! the inverse of the effective horizontal size of the clouds in
     ! the gridbox, used to compute the cloud edge length per unit
-    ! gridbox area for use in representing 3D effects. This variable
+    ! gridbox area for use in representing 3d effects. this variable
     ! is dimensioned (ncol,nlev).
     real(jprb), allocatable, dimension(:,:) :: inv_cloud_effective_size ! m-1
 
-    ! Similarly for the in-cloud heterogeneities, used to compute the
+    ! similarly for the in-cloud heterogeneities, used to compute the
     ! edge length between the optically thin and thick cloudy regions
     ! of the gridbox.
     real(jprb), allocatable, dimension(:,:) :: inv_inhom_effective_size ! m-1
 
-    ! The following variable describes the overlap of cloud boundaries
+    ! the following variable describes the overlap of cloud boundaries
     ! in adjacent layers, with dimensions (ncol,nlev-1): 1 corresponds
-    ! to maximum overlap and 0 to random overlap. Depending on the
-    ! ecRad configuration, it may be the "alpha" overlap parameter of
-    ! Hogan and Illingworth (2000) or the "beta" overlap parameter of
-    ! Shonk et al. (2010).
+    ! to maximum overlap and 0 to random overlap. depending on the
+    ! ecrad configuration, it may be the "alpha" overlap parameter of
+    ! hogan and illingworth (2000) or the "beta" overlap parameter of
+    ! shonk et al. (2010).
     real(jprb), allocatable, dimension(:,:) :: overlap_param
 
   contains
@@ -93,31 +98,31 @@ module radiation_cloud
     procedure :: param_cloud_effective_separation_eta
     procedure :: crop_cloud_fraction
     procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type cloud_type
 
 contains
 
   !---------------------------------------------------------------------
-  ! Allocate arrays for describing clouds and precipitation, although
+  ! allocate arrays for describing clouds and precipitation, although
   ! in the offline code these are allocated when they are read from
-  ! the NetCDF file
+  ! the netcdf file
   subroutine allocate_cloud_arrays(this, ncol, nlev, ntype, use_inhom_effective_size)
 
     use ecradhook,     only : lhook, dr_hook, jphook
 
-#ifdef _OPENACC
-    use openacc,       only : acc_attach
-#endif
+
+
+
 
     class(cloud_type), intent(inout), target :: this
-    integer, intent(in)              :: ncol   ! Number of columns
-    integer, intent(in)              :: nlev   ! Number of levels
-    ! Number of cloud/precip particle types.  If not present then the
+    integer, intent(in)              :: ncol   ! number of columns
+    integer, intent(in)              :: nlev   ! number of levels
+    ! number of cloud/precip particle types.  if not present then the
     ! older cloud behaviour is assumed: two types are present, (1)
     ! liquid and (2) ice, and they can be accessed via q_liq, q_ice,
     ! re_liq and re_ice.
@@ -133,42 +138,42 @@ contains
     else
       this%ntype = 2
     end if
-    !$ACC UPDATE DEVICE(this%ntype)
+    !$acc update device(this%ntype)
     allocate(this%mixing_ratio(ncol,nlev,this%ntype))
     allocate(this%effective_radius(ncol,nlev,this%ntype))
-    !$ACC ENTER DATA CREATE(this%mixing_ratio) ASYNC(1)
-    !$ACC ENTER DATA CREATE(this%effective_radius) ASYNC(1)
+    !$acc enter data create(this%mixing_ratio) async(1)
+    !$acc enter data create(this%effective_radius) async(1)
     nullify(this%q_liq)
     nullify(this%q_ice)
     nullify(this%re_liq)
     nullify(this%re_ice)
     if (.not. present(ntype)) then
-      ! Older interface in which only liquid and ice are supported
+      ! older interface in which only liquid and ice are supported
       this%q_liq  => this%mixing_ratio(:,:,1)
       this%q_ice  => this%mixing_ratio(:,:,2)
       this%re_liq => this%effective_radius(:,:,1)
       this%re_ice => this%effective_radius(:,:,2)
-#ifdef _OPENACC
-      CALL acc_attach(this%q_liq)
-      CALL acc_attach(this%q_ice)
-      CALL acc_attach(this%re_liq)
-      CALL acc_attach(this%re_ice)
-#endif
+
+
+
+
+
+
     end if
 
     allocate(this%fraction(ncol,nlev))
     allocate(this%overlap_param(ncol,nlev-1))
     allocate(this%fractional_std(ncol,nlev))
     allocate(this%inv_cloud_effective_size(ncol,nlev))
-    !$ACC ENTER DATA CREATE(this%fraction) ASYNC(1)
-    !$ACC ENTER DATA CREATE(this%overlap_param) ASYNC(1)
-    !$ACC ENTER DATA CREATE(this%fractional_std) ASYNC(1)
-    !$ACC ENTER DATA CREATE(this%inv_cloud_effective_size) ASYNC(1)
+    !$acc enter data create(this%fraction) async(1)
+    !$acc enter data create(this%overlap_param) async(1)
+    !$acc enter data create(this%fractional_std) async(1)
+    !$acc enter data create(this%inv_cloud_effective_size) async(1)
 
     if (present(use_inhom_effective_size)) then
       if (use_inhom_effective_size) then
         allocate(this%inv_inhom_effective_size(ncol,nlev))
-        !$ACC ENTER DATA CREATE(this%inv_inhom_effective_size) ASYNC(1)
+        !$acc enter data create(this%inv_inhom_effective_size) async(1)
       end if
     end if
 
@@ -178,7 +183,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Deallocate arrays
+  ! deallocate arrays
   subroutine deallocate_cloud_arrays(this)
 
     use ecradhook,     only : lhook, dr_hook, jphook
@@ -194,14 +199,14 @@ contains
     nullify(this%re_liq)
     nullify(this%re_ice)
 
-    !$ACC EXIT DATA DELETE(this%mixing_ratio) ASYNC(1) IF(allocated(this%mixing_ratio))
-    !$ACC EXIT DATA DELETE(this%effective_radius) ASYNC(1) IF(allocated(this%effective_radius))
-    !$ACC EXIT DATA DELETE(this%fraction) ASYNC(1) IF(allocated(this%fraction))
-    !$ACC EXIT DATA DELETE(this%overlap_param) ASYNC(1) IF(allocated(this%overlap_param))
-    !$ACC EXIT DATA DELETE(this%fractional_std) ASYNC(1) IF(allocated(this%fractional_std))
-    !$ACC EXIT DATA DELETE(this%inv_cloud_effective_size) ASYNC(1) IF(allocated(this%inv_cloud_effective_size))
-    !$ACC EXIT DATA DELETE(this%inv_inhom_effective_size) ASYNC(1) IF(allocated(this%inv_inhom_effective_size))
-    !$ACC WAIT
+    !$acc exit data delete(this%mixing_ratio) async(1) if(allocated(this%mixing_ratio))
+    !$acc exit data delete(this%effective_radius) async(1) if(allocated(this%effective_radius))
+    !$acc exit data delete(this%fraction) async(1) if(allocated(this%fraction))
+    !$acc exit data delete(this%overlap_param) async(1) if(allocated(this%overlap_param))
+    !$acc exit data delete(this%fractional_std) async(1) if(allocated(this%fractional_std))
+    !$acc exit data delete(this%inv_cloud_effective_size) async(1) if(allocated(this%inv_cloud_effective_size))
+    !$acc exit data delete(this%inv_inhom_effective_size) async(1) if(allocated(this%inv_inhom_effective_size))
+    !$acc wait
     if (allocated(this%mixing_ratio))     deallocate(this%mixing_ratio)
     if (allocated(this%effective_radius)) deallocate(this%effective_radius)
     if (allocated(this%fraction))         deallocate(this%fraction)
@@ -218,29 +223,29 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute and store the overlap parameter from the provided overlap
-  ! decorrelation length (in metres).  If istartcol and/or iendcol are
-  ! provided then only columns in this range are computed.  If the
+  ! compute and store the overlap parameter from the provided overlap
+  ! decorrelation length (in metres).  if istartcol and/or iendcol are
+  ! provided then only columns in this range are computed.  if the
   ! overlap_param array has not been allocated then it will be
   ! allocated to be of the correct size relative to the pressure
-  ! field. This version assumes a fixed decorrelation_length for all
+  ! field. this version assumes a fixed decorrelation_length for all
   ! columns.
   subroutine set_overlap_param_fix(this, thermodynamics, decorrelation_length, &
        &  istartcol, iendcol)
 
     use ecradhook,                  only : lhook, dr_hook, jphook
     use radiation_thermodynamics, only : thermodynamics_type
-    use radiation_constants,      only : GasConstantDryAir, AccelDueToGravity
+    use radiation_constants,      only : gasconstantdryair, accelduetogravity
 
     class(cloud_type),         intent(inout) :: this
     type(thermodynamics_type), intent(in)    :: thermodynamics
     real(jprb),                intent(in)    :: decorrelation_length ! m
     integer,         optional, intent(in)    :: istartcol, iendcol
 
-    ! Ratio of gas constant for dry air to acceleration due to gravity
-    real(jprb), parameter :: R_over_g = GasConstantDryAir / AccelDueToGravity
+    ! ratio of gas constant for dry air to acceleration due to gravity
+    real(jprb), parameter :: r_over_g = gasconstantdryair / accelduetogravity
 
-    ! Process only columns i1 to i2, which will be istartcol to
+    ! process only columns i1 to i2, which will be istartcol to
     ! iendcol if they were provided
     integer :: i1, i2
 
@@ -252,7 +257,7 @@ contains
 
     if (lhook) call dr_hook('radiation_cloud:set_overlap_param_fix',0,hook_handle)
 
-    ! Pressure at half-levels, pressure_hl, is defined at nlev+1
+    ! pressure at half-levels, pressure_hl, is defined at nlev+1
     ! points
     ncol = size(thermodynamics%pressure_hl,dim=1)
     nlev = size(thermodynamics%pressure_hl,dim=2)-1
@@ -270,69 +275,69 @@ contains
     end if
 
     if (.not. allocated(this%overlap_param)) then
-      ! If pressure is of size (ncol,nlev+1) then overlap_param is of
+      ! if pressure is of size (ncol,nlev+1) then overlap_param is of
       ! size (ncol,nlev-1), since overlap parameter is only defined here
       ! for interfaces between model layers, not for the interface to
       ! space or the surface
       allocate(this%overlap_param(ncol, nlev-1))
-      !$ACC ENTER DATA CREATE(this%overlap_param) ASYNC(1)
+      !$acc enter data create(this%overlap_param) async(1)
     end if
 
-    !$ACC DATA PRESENT(this, thermodynamics)
+    !$acc data present(this, thermodynamics)
 
-    !$ACC UPDATE HOST(thermodynamics%pressure_hl(i1,1:2)) WAIT(1)
+    !$acc update host(thermodynamics%pressure_hl(i1,1:2)) wait(1)
     if (thermodynamics%pressure_hl(i1,2) > thermodynamics%pressure_hl(i1,1)) then
-      ! Pressure is increasing with index (order of layers is
-      ! top-of-atmosphere to surface). In case pressure_hl(:,1)=0, we
+      ! pressure is increasing with index (order of layers is
+      ! top-of-atmosphere to surface). in case pressure_hl(:,1)=0, we
       ! don't take the logarithm of the first pressure in each column.
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc parallel default(none) async(1)
+      !$acc loop gang(static:1) vector
       do jcol = i1,i2
-        this%overlap_param(jcol,1) = exp(-(R_over_g/decorrelation_length) &
+        this%overlap_param(jcol,1) = exp(-(r_over_g/decorrelation_length) &
              &                            * thermodynamics%temperature_hl(jcol,2) &
              &                            *log(thermodynamics%pressure_hl(jcol,3) &
              &                                /thermodynamics%pressure_hl(jcol,2)))
       end do
 
-      !$ACC LOOP SEQ
+      !$acc loop seq
       do jlev = 2,nlev-1
-        !$ACC LOOP GANG(STATIC:1) VECTOR
+        !$acc loop gang(static:1) vector
         do jcol = i1,i2
-          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*R_over_g/decorrelation_length) &
+          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*r_over_g/decorrelation_length) &
               &                            * thermodynamics%temperature_hl(jcol,jlev+1) &
               &                            *log(thermodynamics%pressure_hl(jcol,jlev+2) &
               &                                /thermodynamics%pressure_hl(jcol,jlev)))
         end do
       end do
-      !$ACC END PARALLEL
+      !$acc end parallel
 
     else
-       ! Pressure is decreasing with index (order of layers is surface
-       ! to top-of-atmosphere).  In case pressure_hl(:,nlev+1)=0, we
+       ! pressure is decreasing with index (order of layers is surface
+       ! to top-of-atmosphere).  in case pressure_hl(:,nlev+1)=0, we
        ! don't take the logarithm of the last pressure in each column.
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP SEQ
+      !$acc parallel default(none) async(1)
+      !$acc loop seq
       do jlev = 1,nlev-2
-        !$ACC LOOP GANG(STATIC:1) VECTOR
+        !$acc loop gang(static:1) vector
         do jcol = i1,i2
-          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*R_over_g/decorrelation_length) &
+          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*r_over_g/decorrelation_length) &
               &                            * thermodynamics%temperature_hl(jcol,jlev+1) &
               &                            *log(thermodynamics%pressure_hl(jcol,jlev) &
               &                                /thermodynamics%pressure_hl(jcol,jlev+2)))
         end do
       end do
 
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc loop gang(static:1) vector
       do jcol = i1,i2
-        this%overlap_param(jcol,nlev-1) = exp(-(R_over_g/decorrelation_length) &
+        this%overlap_param(jcol,nlev-1) = exp(-(r_over_g/decorrelation_length) &
             &                            * thermodynamics%temperature_hl(jcol,nlev) &
             &                            *log(thermodynamics%pressure_hl(jcol,nlev-1) &
             &                                /thermodynamics%pressure_hl(jcol,nlev)))
       end do
-      !$ACC END PARALLEL
+      !$acc end parallel
     end if
 
-    !$ACC END DATA
+    !$acc end data
 
     if (lhook) call dr_hook('radiation_cloud:set_overlap_param_fix',1,hook_handle)
 
@@ -340,9 +345,9 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute and store the overlap parameter from the provided overlap
-  ! decorrelation length (in metres), which may vary with column. Only
-  ! columns from istartcol to iendcol are computed.  If the
+  ! compute and store the overlap parameter from the provided overlap
+  ! decorrelation length (in metres), which may vary with column. only
+  ! columns from istartcol to iendcol are computed.  if the
   ! overlap_param array has not been allocated then it will be
   ! allocated to be of the correct size relative to the pressure
   ! field.
@@ -351,18 +356,18 @@ contains
 
     use ecradhook,                  only : lhook, dr_hook, jphook
     use radiation_thermodynamics, only : thermodynamics_type
-    use radiation_constants,      only : GasConstantDryAir, AccelDueToGravity
-#ifdef _OPENACC
-    use radiation_io,             only : nulerr, radiation_abort
-#endif
+    use radiation_constants,      only : gasconstantdryair, accelduetogravity
+
+
+
 
     class(cloud_type),         intent(inout) :: this
     type(thermodynamics_type), intent(in)    :: thermodynamics
     integer,                   intent(in)    :: istartcol, iendcol
     real(jprb),                intent(in)    :: decorrelation_length(istartcol:iendcol) ! m
 
-    ! Ratio of gas constant for dry air to acceleration due to gravity
-    real(jprb), parameter :: R_over_g = GasConstantDryAir / AccelDueToGravity
+    ! ratio of gas constant for dry air to acceleration due to gravity
+    real(jprb), parameter :: r_over_g = gasconstantdryair / accelduetogravity
 
     integer :: ncol, nlev
 
@@ -372,74 +377,74 @@ contains
 
     if (lhook) call dr_hook('radiation_cloud:set_overlap_param_var',0,hook_handle)
 
-    ! Pressure at half-levels, pressure_hl, is defined at nlev+1
+    ! pressure at half-levels, pressure_hl, is defined at nlev+1
     ! points
     ncol = size(thermodynamics%pressure_hl,dim=1)
     nlev = size(thermodynamics%pressure_hl,dim=2)-1
 
     if (.not. allocated(this%overlap_param)) then
-      ! If pressure is of size (ncol,nlev+1) then overlap_param is of
+      ! if pressure is of size (ncol,nlev+1) then overlap_param is of
       ! size (ncol,nlev-1), since overlap parameter is only defined here
       ! for interfaces between model layers, not for the interface to
       ! space or the surface
       allocate(this%overlap_param(ncol, nlev-1))
-      !$ACC ENTER DATA CREATE(this%overlap_param) ASYNC(1)
+      !$acc enter data create(this%overlap_param) async(1)
     end if
 
-    !$ACC DATA PRESENT(this, thermodynamics, decorrelation_length)
-    !$ACC UPDATE HOST(thermodynamics%pressure_hl(istartcol,1:2)) WAIT(1)
+    !$acc data present(this, thermodynamics, decorrelation_length)
+    !$acc update host(thermodynamics%pressure_hl(istartcol,1:2)) wait(1)
     if (thermodynamics%pressure_hl(istartcol,2) > thermodynamics%pressure_hl(istartcol,1)) then
-      ! Pressure is increasing with index (order of layers is
-      ! top-of-atmosphere to surface). In case pressure_hl(:,1)=0, we
+      ! pressure is increasing with index (order of layers is
+      ! top-of-atmosphere to surface). in case pressure_hl(:,1)=0, we
       ! don't take the logarithm of the first pressure in each column.
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc parallel default(none) async(1)
+      !$acc loop gang(static:1) vector
       do jcol = istartcol,iendcol
-        this%overlap_param(jcol,1) = exp(-(R_over_g/decorrelation_length(jcol)) &
+        this%overlap_param(jcol,1) = exp(-(r_over_g/decorrelation_length(jcol)) &
              &                            * thermodynamics%temperature_hl(jcol,2) &
              &                            *log(thermodynamics%pressure_hl(jcol,3) &
              &                                /thermodynamics%pressure_hl(jcol,2)))
       end do
 
-      !$ACC LOOP SEQ
+      !$acc loop seq
       do jlev = 2,nlev-1
-        !$ACC LOOP GANG(STATIC:1) VECTOR
+        !$acc loop gang(static:1) vector
         do jcol = istartcol,iendcol
-          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*R_over_g/decorrelation_length(jcol)) &
+          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*r_over_g/decorrelation_length(jcol)) &
               &                            * thermodynamics%temperature_hl(jcol,jlev+1) &
               &                            *log(thermodynamics%pressure_hl(jcol,jlev+2) &
               &                                /thermodynamics%pressure_hl(jcol,jlev)))
         end do
       end do
-      !$ACC END PARALLEL
+      !$acc end parallel
 
     else
-       ! Pressure is decreasing with index (order of layers is surface
-       ! to top-of-atmosphere).  In case pressure_hl(:,nlev+1)=0, we
+       ! pressure is decreasing with index (order of layers is surface
+       ! to top-of-atmosphere).  in case pressure_hl(:,nlev+1)=0, we
        ! don't take the logarithm of the last pressure in each column.
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP SEQ
+      !$acc parallel default(none) async(1)
+      !$acc loop seq
       do jlev = 1,nlev-2
-        !$ACC LOOP GANG(STATIC:1) VECTOR
+        !$acc loop gang(static:1) vector
         do jcol = istartcol,iendcol
-          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*R_over_g/decorrelation_length(jcol)) &
+          this%overlap_param(jcol,jlev) = exp(-(0.5_jprb*r_over_g/decorrelation_length(jcol)) &
               &                            * thermodynamics%temperature_hl(jcol,jlev+1) &
               &                            *log(thermodynamics%pressure_hl(jcol,jlev) &
               &                                /thermodynamics%pressure_hl(jcol,jlev+2)))
         end do
       end do
 
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc loop gang(static:1) vector
       do jcol = istartcol,iendcol
-        this%overlap_param(jcol,nlev-1) = exp(-(R_over_g/decorrelation_length(jcol)) &
+        this%overlap_param(jcol,nlev-1) = exp(-(r_over_g/decorrelation_length(jcol)) &
             &                            * thermodynamics%temperature_hl(jcol,nlev) &
             &                            *log(thermodynamics%pressure_hl(jcol,nlev-1) &
             &                                /thermodynamics%pressure_hl(jcol,nlev)))
       end do
-      !$ACC END PARALLEL
+      !$acc end parallel
     end if
 
-    !$ACC END DATA
+    !$acc end data
 
     if (lhook) call dr_hook('radiation_cloud:set_overlap_param_var',1,hook_handle)
 
@@ -447,12 +452,12 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute and store the overlap parameter from the provided overlap
-  ! decorrelation length (in metres).  If istartcol and/or iendcol are
-  ! provided then only columns in this range are computed.  If the
+  ! compute and store the overlap parameter from the provided overlap
+  ! decorrelation length (in metres).  if istartcol and/or iendcol are
+  ! provided then only columns in this range are computed.  if the
   ! overlap_param array has not been allocated then it will be
   ! allocated to be of the correct size relative to the pressure
-  ! field. This is the APPROXIMATE method as it assumes a fixed
+  ! field. this is the approximate method as it assumes a fixed
   ! atmospheric scale height, which leads to differences particularly
   ! in low cloud.
   subroutine set_overlap_param_approx(this, thermodynamics, decorrelation_length, &
@@ -466,14 +471,14 @@ contains
     real(jprb),                intent(in)    :: decorrelation_length ! m
     integer,         optional, intent(in)    :: istartcol, iendcol
 
-    ! To convert decorrelation length (m) to overlap parameter between
-    ! layers, we need an estimate for the thickness of the layer. This
+    ! to convert decorrelation length (m) to overlap parameter between
+    ! layers, we need an estimate for the thickness of the layer. this
     ! is found using the pressure difference between the edges of the
     ! layer, along with the approximate scale height of the atmosphere
     ! (m) given here:
     real(jprb), parameter :: scale_height = 8000.0_jprb
 
-    ! Process only columns i1 to i2, which will be istartcol to
+    ! process only columns i1 to i2, which will be istartcol to
     ! iendcol if they were provided
     integer :: i1, i2
 
@@ -483,7 +488,7 @@ contains
 
     if (lhook) call dr_hook('radiation_cloud:set_overlap_param_approx',0,hook_handle)
 
-    ! Pressure at half-levels, pressure_hl, is defined at nlev+1
+    ! pressure at half-levels, pressure_hl, is defined at nlev+1
     ! points
     ncol = size(thermodynamics%pressure_hl,dim=1)
     nlev = size(thermodynamics%pressure_hl,dim=2)-1
@@ -501,7 +506,7 @@ contains
     end if
 
     if (.not. allocated(this%overlap_param)) then
-      ! If pressure is of size (ncol,nlev+1) then overlap_param is of
+      ! if pressure is of size (ncol,nlev+1) then overlap_param is of
       ! size (ncol,nlev-1), since overlap parameter is only defined here
       ! for interfaces between model layers, not for the interface to
       ! space or the surface
@@ -509,16 +514,16 @@ contains
     end if
 
     if (thermodynamics%pressure_hl(i1,2) > thermodynamics%pressure_hl(i1,1)) then
-       ! Pressure is increasing with index (order of layers is
-       ! top-of-atmosphere to surface). In case pressure_hl(:,1)=0, we
+       ! pressure is increasing with index (order of layers is
+       ! top-of-atmosphere to surface). in case pressure_hl(:,1)=0, we
        ! don't take the logarithm of the first pressure in each
        ! column.
        this%overlap_param(i1:i2,:) = exp(-(scale_height/decorrelation_length) &
             &  * ( log(thermodynamics%pressure_hl(i1:i2,3:nlev+1) &
             &         /thermodynamics%pressure_hl(i1:i2,2:nlev  )) ) )
     else
-       ! Pressure is decreasing with index (order of layers is surface
-       ! to top-of-atmosphere).  In case pressure_hl(:,nlev+1)=0, we
+       ! pressure is decreasing with index (order of layers is surface
+       ! to top-of-atmosphere).  in case pressure_hl(:,nlev+1)=0, we
        ! don't take the logarithm of the last pressure in each column.
        this%overlap_param(i1:i2,:) = exp(-(scale_height/decorrelation_length) &
             &  * ( log(thermodynamics%pressure_hl(i1:i2,1:nlev-1) &
@@ -531,7 +536,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Create a matrix of constant fractional standard deviations
+  ! create a matrix of constant fractional standard deviations
   ! (dimensionless)
   subroutine create_fractional_std(this, ncol, nlev, frac_std)
 
@@ -548,22 +553,22 @@ contains
     if (lhook) call dr_hook('radiation_cloud:create_fractional_std',0,hook_handle)
 
     if (allocated(this%fractional_std)) then
-      !$ACC EXIT DATA DELETE(this%fractional_std) WAIT(1)
-      !$ACC WAIT ! ACCWA (nvhpc 22.7, nvhpc 22.5) crashes otherwise
+      !$acc exit data delete(this%fractional_std) wait(1)
+      !$acc wait ! accwa (nvhpc 22.7, nvhpc 22.5) crashes otherwise
        deallocate(this%fractional_std)
     end if
     
     allocate(this%fractional_std(ncol, nlev))
-    !$ACC ENTER DATA CREATE(this%fractional_std) ASYNC(1)
+    !$acc enter data create(this%fractional_std) async(1)
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
+    !$acc parallel default(none) present(this) async(1)
+    !$acc loop gang vector collapse(2)
     do jlev = 1, nlev
       do jcol = 1, ncol
       this%fractional_std(jcol, jlev) = frac_std
       end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
 
     if (lhook) call dr_hook('radiation_cloud:create_fractional_std',1,hook_handle)
 
@@ -571,7 +576,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Create a matrix of constant inverse cloud effective size (m-1)
+  ! create a matrix of constant inverse cloud effective size (m-1)
   subroutine create_inv_cloud_effective_size(this, ncol, nlev, inv_eff_size)
 
     use ecradhook,                  only : lhook, dr_hook, jphook
@@ -598,7 +603,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Create a matrix of inverse cloud effective size (m-1) according to
+  ! create a matrix of inverse cloud effective size (m-1) according to
   ! the value of eta (=pressure divided by surface pressure)
   subroutine create_inv_cloud_effective_size_eta(this, ncol, nlev, &
        &  pressure_hl, inv_eff_size_low, inv_eff_size_mid, inv_eff_size_high, &
@@ -608,23 +613,23 @@ contains
 
     class(cloud_type), intent(inout) :: this
     integer,           intent(in)    :: ncol, nlev
-    ! Pressure on half levels (Pa)
+    ! pressure on half levels (pa)
     real(jprb),        intent(in)    :: pressure_hl(:,:)
-    ! Inverse effective size for low, mid and high cloud (m-1)
+    ! inverse effective size for low, mid and high cloud (m-1)
     real(jprb),        intent(in)    :: inv_eff_size_low
     real(jprb),        intent(in)    :: inv_eff_size_mid
     real(jprb),        intent(in)    :: inv_eff_size_high
-    ! Eta values at low-mid and mid-high interfaces
+    ! eta values at low-mid and mid-high interfaces
     real(jprb),        intent(in)    :: eta_low_mid, eta_mid_high
     integer, optional, intent(in)    :: istartcol, iendcol
 
-    ! Ratio of layer midpoint pressure to surface pressure
+    ! ratio of layer midpoint pressure to surface pressure
     real(jprb) :: eta(nlev)
 
-    ! Indices of column, level and surface half-level
+    ! indices of column, level and surface half-level
     integer :: jcol, isurf
 
-    ! Local values of istartcol, iendcol
+    ! local values of istartcol, iendcol
     integer :: i1, i2
 
     real(jphook) :: hook_handle
@@ -649,7 +654,7 @@ contains
       i2 = ncol
     end if
 
-    ! Locate the surface half-level
+    ! locate the surface half-level
     if (pressure_hl(1,1) > pressure_hl(1,2)) then
       isurf = 1
     else
@@ -674,7 +679,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Create a matrix of inverse cloud and inhomogeneity effective size
+  ! create a matrix of inverse cloud and inhomogeneity effective size
   ! (m-1) parameterized according to the value of eta (=pressure
   ! divided by surface pressure): effective_separation =
   ! coeff_a + coeff_b*exp(-(eta**power)).  
@@ -686,9 +691,9 @@ contains
 
     class(cloud_type), intent(inout) :: this
     integer,           intent(in)    :: ncol, nlev
-    ! Pressure on half levels (Pa)
+    ! pressure on half levels (pa)
     real(jprb),        intent(in)    :: pressure_hl(:,:)
-    ! Separation distances at surface and top-of-atmosphere, and power
+    ! separation distances at surface and top-of-atmosphere, and power
     ! on eta
     real(jprb),           intent(in) :: separation_surf ! m
     real(jprb),           intent(in) :: separation_toa ! m
@@ -696,19 +701,19 @@ contains
     real(jprb), optional, intent(in) :: inhom_separation_factor
     integer,    optional, intent(in) :: istartcol, iendcol
 
-    ! Ratio of layer midpoint pressure to surface pressure
+    ! ratio of layer midpoint pressure to surface pressure
     real(jprb) :: eta(nlev)
 
-    ! Effective cloud separation (m)
+    ! effective cloud separation (m)
     real(jprb) :: eff_separation(nlev)
 
-    ! Coefficients used to compute effective separation distance
+    ! coefficients used to compute effective separation distance
     real(jprb) :: coeff_e, coeff_a, coeff_b, inhom_sep_factor
 
-    ! Indices of column, level and surface half-level
+    ! indices of column, level and surface half-level
     integer :: jcol, isurf
 
-    ! Local values of istartcol, iendcol
+    ! local values of istartcol, iendcol
     integer :: i1, i2
 
     real(jphook) :: hook_handle
@@ -747,7 +752,7 @@ contains
       i2 = ncol
     end if
 
-    ! Locate the surface half-level
+    ! locate the surface half-level
     if (pressure_hl(1,1) > pressure_hl(1,2)) then
       isurf = 1
     else
@@ -770,10 +775,10 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Remove "ghost" clouds: those with a cloud fraction that is too
+  ! remove "ghost" clouds: those with a cloud fraction that is too
   ! small to treat sensibly (e.g. because it implies that the
   ! "in-cloud" water content is too high), or with a cloud water
-  ! content that is too small.  We do this in one place to ensure that
+  ! content that is too small.  we do this in one place to ensure that
   ! all subsequent subroutines can assume that if cloud_fraction > 0.0
   ! then cloud is really present and should be treated.
   subroutine crop_cloud_fraction(this, istartcol, iendcol, &
@@ -796,21 +801,21 @@ contains
 
     nlev = size(this%fraction,2)
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this) CREATE(sum_mixing_ratio) ASYNC(1)
-    !$ACC LOOP SEQ
+    !$acc parallel default(none) present(this) create(sum_mixing_ratio) async(1)
+    !$acc loop seq
     do jlev = 1,nlev
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc loop gang(static:1) vector
       do jcol = istartcol,iendcol
         sum_mixing_ratio(jcol) = 0.0_jprb
       end do
-      !$ACC LOOP SEQ
+      !$acc loop seq
       do jh = 1, this%ntype
-        !$ACC LOOP GANG(STATIC:1) VECTOR
+        !$acc loop gang(static:1) vector
         do jcol = istartcol,iendcol
           sum_mixing_ratio(jcol) = sum_mixing_ratio(jcol) + this%mixing_ratio(jcol,jlev,jh)
         end do
       end do
-      !$ACC LOOP GANG(STATIC:1) VECTOR
+      !$acc loop gang(static:1) vector
       do jcol = istartcol,iendcol
         if (this%fraction(jcol,jlev)        < cloud_fraction_threshold &
              &  .or. sum_mixing_ratio(jcol) < cloud_mixing_ratio_threshold) then
@@ -818,7 +823,7 @@ contains
         end if
       end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
 
     if (lhook) call dr_hook('radiation_cloud:crop_cloud_fraction',1,hook_handle)
 
@@ -826,7 +831,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Return .true. if variables are out of a physically sensible range,
+  ! return .true. if variables are out of a physically sensible range,
   ! optionally only considering columns between istartcol and iendcol
   function out_of_physical_bounds(this, istartcol, iendcol, do_fix) result(is_bad)
 
@@ -869,42 +874,50 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(cloud_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%q_liq) IF(allocated(this%q_liq))
-    !$ACC UPDATE HOST(this%re_liq) IF(allocated(this%re_liq))
-    !$ACC UPDATE HOST(this%q_ice) IF(allocated(this%q_ice))
-    !$ACC UPDATE HOST(this%re_ice) IF(allocated(this%re_ice))
-    !$ACC UPDATE HOST(this%fraction) IF(allocated(this%fraction))
-    !$ACC UPDATE HOST(this%overlap_param) IF(allocated(this%overlap_param))
-    !$ACC UPDATE HOST(this%fractional_std) IF(allocated(this%fractional_std))
-    !$ACC UPDATE HOST(this%inv_cloud_effective_size) IF(allocated(this%inv_cloud_effective_size))
-    !$ACC UPDATE HOST(this%inv_inhom_effective_size) IF(allocated(this%inv_inhom_effective_size))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(cloud_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%q_liq) IF(allocated(this%q_liq))
-    !$ACC UPDATE DEVICE(this%re_liq) IF(allocated(this%re_liq))
-    !$ACC UPDATE DEVICE(this%q_ice) IF(allocated(this%q_ice))
-    !$ACC UPDATE DEVICE(this%re_ice) IF(allocated(this%re_ice))
-    !$ACC UPDATE DEVICE(this%fraction) IF(allocated(this%fraction))
-    !$ACC UPDATE DEVICE(this%overlap_param) IF(allocated(this%overlap_param))
-    !$ACC UPDATE DEVICE(this%fractional_std) IF(allocated(this%fractional_std))
-    !$ACC UPDATE DEVICE(this%inv_cloud_effective_size) IF(allocated(this%inv_cloud_effective_size))
-    !$ACC UPDATE DEVICE(this%inv_inhom_effective_size) IF(allocated(this%inv_inhom_effective_size))
-
-  end subroutine update_device
-#endif 
+! # 909 "radiation/radiation_cloud.f90"
 
 end module radiation_cloud
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

@@ -1,17 +1,22 @@
-! radiation_ecckd_interface.F90 - Interface to ecCKD gas optics model
+! # 1 "radiation/radiation_ecckd_interface.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_ecckd_interface.f90"
+! radiation_ecckd_interface.f90 - interface to ecckd gas optics model
 !
-! (C) Copyright 2020- ECMWF.
+! (c) copyright 2020- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
-! License: see the COPYING file for details
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+! license: see the copying file for details
 !
 
 module radiation_ecckd_interface
@@ -23,7 +28,7 @@ module radiation_ecckd_interface
 contains
 
   !---------------------------------------------------------------------
-  ! Setup the ecCKD generalized gas optics model
+  ! setup the ecckd generalized gas optics model
   subroutine setup_gas_optics(config)
 
     use parkind1, only : jprb
@@ -38,20 +43,20 @@ contains
 
     if (lhook) call dr_hook('radiation_ecckd_interface:setup_gas_optics',0,hook_handle)
 
-    if (config%do_sw .and. config%i_gas_model_sw == IGasModelECCKD) then
+    if (config%do_sw .and. config%i_gas_model_sw == igasmodelecckd) then
 
-      ! Read shortwave ecCKD gas optics NetCDF file
+      ! read shortwave ecckd gas optics netcdf file
       call config%gas_optics_sw%read(trim(config%gas_optics_sw_file_name), &
            &                         config%iverbosesetup)
 
-      ! Copy over relevant properties
+      ! copy over relevant properties
       config%n_g_sw     = config%gas_optics_sw%ng
 
       if (config%do_cloud_aerosol_per_sw_g_point) then
-        ! Bands and g points are the same
+        ! bands and g points are the same
         config%n_bands_sw = config%n_g_sw
       else
-        ! Bands are groups of g points and span a continuous region of
+        ! bands are groups of g points and span a continuous region of
         ! wavenumber space
         config%n_bands_sw = config%gas_optics_sw%spectral_def%nband
       end if
@@ -75,7 +80,7 @@ contains
         call config%gas_optics_sw%print()
       end if
 
-      ! Override solar spectral irradiance, if filename provided
+      ! override solar spectral irradiance, if filename provided
       if (config%use_spectral_solar_cycle) then
         call config%gas_optics_sw%read_spectral_solar_cycle(config%ssi_file_name, &
              &           config%iverbosesetup, config%use_updated_solar_spectrum)
@@ -83,20 +88,20 @@ contains
 
     end if
 
-    if (config%do_lw .and. config%i_gas_model_lw == IGasModelECCKD) then
+    if (config%do_lw .and. config%i_gas_model_lw == igasmodelecckd) then
 
-      ! Read longwave ecCKD gas optics NetCDF file
+      ! read longwave ecckd gas optics netcdf file
       call config%gas_optics_lw%read(trim(config%gas_optics_lw_file_name), &
            &                         config%iverbosesetup)
 
-      ! Copy over relevant properties
+      ! copy over relevant properties
       config%n_g_lw     = config%gas_optics_lw%ng
 
       if (config%do_cloud_aerosol_per_lw_g_point) then
-        ! Bands and g points are the same
+        ! bands and g points are the same
         config%n_bands_lw = config%n_g_lw
       else
-        ! Bands are groups of g points and span a continuous region of
+        ! bands are groups of g points and span a continuous region of
         ! wavenumber space
         config%n_bands_lw = config%gas_optics_lw%spectral_def%nband
       end if
@@ -122,7 +127,7 @@ contains
 
     end if
 
-    ! The i_spec_* variables are used solely for storing spectral
+    ! the i_spec_* variables are used solely for storing spectral
     ! data, and this can either be by band or by g-point
     if (config%do_save_spectral_flux) then
       if (config%do_save_gpoint_flux) then
@@ -149,10 +154,10 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Scale gas mixing ratios according to required units
+  ! scale gas mixing ratios according to required units
   subroutine set_gas_units(gas)
 
-    use radiation_gas, only : gas_type, IVolumeMixingRatio
+    use radiation_gas, only : gas_type, ivolumemixingratio
     use ecradhook,       only : lhook, dr_hook, jphook
     
     type(gas_type),    intent(inout) :: gas
@@ -161,7 +166,7 @@ contains
 
     if (lhook) call dr_hook('radiation_ecckd_interface:set_gas_units',0,hook_handle)
 
-    call gas%set_units(IVolumeMixingRatio)
+    call gas%set_units(ivolumemixingratio)
 
     if (lhook) call dr_hook('radiation_ecckd_interface:set_gas_units',1,hook_handle)
 
@@ -169,7 +174,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute gas optical depths, shortwave scattering, Planck function
+  ! compute gas optical depths, shortwave scattering, planck function
   ! and incoming shortwave radiation at top-of-atmosphere
   subroutine gas_optics(ncol,nlev,istartcol,iendcol, &
        &  config, single_level, thermodynamics, gas, & 
@@ -179,10 +184,10 @@ contains
     use parkind1, only : jprb
     use ecradhook,  only : lhook, dr_hook, jphook
 
-    use radiation_config,         only : config_type, IGasModelECCKD
+    use radiation_config,         only : config_type, igasmodelecckd
     use radiation_thermodynamics, only : thermodynamics_type
     use radiation_single_level,   only : single_level_type
-    use radiation_gas_constants,  only : NMaxGases
+    use radiation_gas_constants,  only : nmaxgases
     use radiation_gas
 
     integer,                  intent(in) :: ncol               ! number of columns
@@ -193,36 +198,36 @@ contains
     type(thermodynamics_type),intent(in) :: thermodynamics
     type(gas_type),           intent(in) :: gas
 
-    ! Longwave albedo of the surface
+    ! longwave albedo of the surface
     real(jprb), dimension(config%n_g_lw,istartcol:iendcol), &
          &  intent(in), optional :: lw_albedo
 
-    ! Gaseous layer optical depth in longwave and shortwave, and
+    ! gaseous layer optical depth in longwave and shortwave, and
     ! shortwave single scattering albedo (i.e. fraction of extinction
-    ! due to Rayleigh scattering) at each g-point
+    ! due to rayleigh scattering) at each g-point
     real(jprb), dimension(config%n_g_lw,nlev,istartcol:iendcol), intent(out) :: &
          &   od_lw
     real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol), intent(out) :: &
          &   od_sw, ssa_sw
 
-    ! The Planck function (emitted flux from a black body) at half
+    ! the planck function (emitted flux from a black body) at half
     ! levels at each longwave g-point
     real(jprb), dimension(config%n_g_lw,nlev+1,istartcol:iendcol), &
          &   intent(out), optional :: planck_hl
-    ! Planck function for the surface (W m-2)
+    ! planck function for the surface (w m-2)
     real(jprb), dimension(config%n_g_lw,istartcol:iendcol), &
          &   intent(out), optional :: lw_emission
 
-    ! The incoming shortwave flux into a plane perpendicular to the
+    ! the incoming shortwave flux into a plane perpendicular to the
     ! incoming radiation at top-of-atmosphere in each of the shortwave
     ! g-points
     real(jprb), dimension(config%n_g_sw,istartcol:iendcol), &
          &   intent(out), optional :: incoming_sw
 
-    ! Temperature at full levels (K)
+    ! temperature at full levels (k)
     real(jprb) :: temperature_fl(istartcol:iendcol,nlev)
 
-    real(jprb) :: concentration_scaling(NMaxGases)
+    real(jprb) :: concentration_scaling(nmaxgases)
     
     logical :: is_volume_mixing_ratio
     
@@ -244,31 +249,31 @@ contains
          &  / (thermodynamics%pressure_hl(istartcol:iendcol,1:nlev) &
          &    +thermodynamics%pressure_hl(istartcol:iendcol,2:nlev+1))
 
-    ! Check that the gas concentrations are stored in volume mixing
+    ! check that the gas concentrations are stored in volume mixing
     ! ratio with no scaling; if not, return a vector of scalings
-    call gas%assert_units(IVolumeMixingRatio, scale_factor=1.0_jprb, &
+    call gas%assert_units(ivolumemixingratio, scale_factor=1.0_jprb, &
          &                istatus=is_volume_mixing_ratio)
     if (.not. is_volume_mixing_ratio) then
-      call gas%get_scaling(IVolumeMixingRatio, concentration_scaling)
+      call gas%get_scaling(ivolumemixingratio, concentration_scaling)
     else
       concentration_scaling = 1.0_jprb
     end if
     
-    if (config%do_sw .and. config%i_gas_model_sw == IGasModelECCKD) then
+    if (config%do_sw .and. config%i_gas_model_sw == igasmodelecckd) then
 
       if (is_volume_mixing_ratio) then
         call config%gas_optics_sw%calc_optical_depth(ncol,nlev,istartcol,iendcol, &
-             &  NMaxGases, thermodynamics%pressure_hl, &
+             &  nmaxgases, thermodynamics%pressure_hl, &
              &  temperature_fl, gas%mixing_ratio, &
              &  od_sw, rayleigh_od_fl=ssa_sw)
       else
         call config%gas_optics_sw%calc_optical_depth(ncol,nlev,istartcol,iendcol, &
-             &  NMaxGases, thermodynamics%pressure_hl, &
+             &  nmaxgases, thermodynamics%pressure_hl, &
              &  temperature_fl, gas%mixing_ratio, &
              &  od_sw, rayleigh_od_fl=ssa_sw, opt_concentration_scaling=concentration_scaling)
       end if
       
-      ! At this point od_sw = absorption optical depth and ssa_sw =
+      ! at this point od_sw = absorption optical depth and ssa_sw =
       ! rayleigh optical depth: convert to total optical depth and
       ! single-scattering albedo
       do jcol = istartcol,iendcol
@@ -292,21 +297,21 @@ contains
 
     end if
 
-    if (config%do_lw .and. config%i_gas_model_lw == IGasModelECCKD) then
+    if (config%do_lw .and. config%i_gas_model_lw == igasmodelecckd) then
 
       if (is_volume_mixing_ratio) then
         call config%gas_optics_lw%calc_optical_depth(ncol,nlev,istartcol,iendcol, &
-             &  NMaxGases, thermodynamics%pressure_hl, &
+             &  nmaxgases, thermodynamics%pressure_hl, &
              &  temperature_fl, gas%mixing_ratio, &
              &  od_lw)
       else
         call config%gas_optics_lw%calc_optical_depth(ncol,nlev,istartcol,iendcol, &
-             &  NMaxGases, thermodynamics%pressure_hl, &
+             &  nmaxgases, thermodynamics%pressure_hl, &
              &  temperature_fl, gas%mixing_ratio, &
              &  od_lw, opt_concentration_scaling=concentration_scaling)
       end if
 
-      ! Calculate the Planck function for each g point
+      ! calculate the planck function for each g point
       do jcol = istartcol,iendcol
         call config%gas_optics_lw%calc_planck_function(nlev+1, &
              &  thermodynamics%temperature_hl(jcol,:), planck_hl(:,:,jcol))
@@ -314,7 +319,7 @@ contains
       call config%gas_optics_lw%calc_planck_function(iendcol+1-istartcol, &
            &  single_level%skin_temperature(istartcol:iendcol), &
            &  lw_emission(:,:))
-!NEC$ forced_collapse
+!nec$ forced_collapse
       lw_emission = lw_emission * (1.0_jprb - lw_albedo)
 
     end if
@@ -324,7 +329,7 @@ contains
   end subroutine gas_optics
 
   ! !---------------------------------------------------------------------
-  ! ! Externally facing function for computing the Planck function
+  ! ! externally facing function for computing the planck function
   ! ! without reference to any gas profile; typically this would be used
   ! ! for computing the emission by a surface.
   ! subroutine planck_function(config, temperature, planck_surf)
@@ -335,9 +340,53 @@ contains
   !   type(config_type), intent(in) :: config
   !   real(jprb),        intent(in) :: temperature
 
-  !   ! Planck function of the surface (W m-2)
+  !   ! planck function of the surface (w m-2)
   !   real(jprb), dimension(config%n_g_lw), intent(out) :: planck_surf
 
   ! end subroutine planck_function
 
 end module radiation_ecckd_interface
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

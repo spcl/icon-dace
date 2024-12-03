@@ -1,49 +1,98 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoerrta10.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerrta10.f90"
+! this file has been modified for the use in icon
 
-MODULE YOERRTA10
+module yoerrta10
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOERRTA14* - RRTM COEFFICIENTS FOR INTERVAL 10
-!     BAND 10:  1390-1480 cm-1 (low - H2O; high - H2O)
-!     ABozzo 201306 updated to rrtmg v4.85
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: NG10 = 6
-
-REAL(KIND=JPRB) , DIMENSION(NG10) :: FRACREFA
-REAL(KIND=JPRB) , DIMENSION(NG10) :: FRACREFB
-
-REAL(KIND=JPRB) :: KA(5,13,NG10)   , ABSA(65,NG10)
-REAL(KIND=JPRB) :: KB(5,13:59,NG10), ABSB(235,NG10)
-REAL(KIND=JPRB) :: SELFREF(10,NG10)
-REAL(KIND=JPRB) :: FORREF(4,NG10)
-
-EQUIVALENCE (KA(1,1,1),ABSA(1,1)),(KB(1,13,1),ABSB(1,1))
-
-!$ACC DECLARE CREATE(FRACREFA, FRACREFB, KA, ABSA, KB, ABSB, SELFREF, FORREF)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!*    ** *yoerrta14* - rrtm coefficients for interval 10
+!     band 10:  1390-1480 cm-1 (low - h2o; high - h2o)
+!     abozzo 201306 updated to rrtmg v4.85
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      98/07/14
+integer(kind=jpim), parameter :: ng10 = 6
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) , dimension(ng10) :: fracrefa
+real(kind=jprb) , dimension(ng10) :: fracrefb
+
+real(kind=jprb) :: ka(5,13,ng10)   , absa(65,ng10)
+real(kind=jprb) :: kb(5,13:59,ng10), absb(235,ng10)
+real(kind=jprb) :: selfref(10,ng10)
+real(kind=jprb) :: forref(4,ng10)
+
+equivalence (ka(1,1,1),absa(1,1)),(kb(1,13,1),absb(1,1))
+
+!$acc declare create(fracrefa, fracrefb, ka, absa, kb, absb, selfref, forref)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package *
+
+!     j.-j. morcrette       e.c.m.w.f.      98/07/14
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! ABSA    : REAL     absorption coefficient of major absorber for M reference tropospheric 
-!                    pressures and N reference tropospheric temperatures 
-! ABSB    : REAL     absorption coefficient of secondary absorber for M reference stratospheric
-!                    pressures and N reference stratospheric temperatures 
-! FRACREFA: REAL     distance from r and T reference tabulated points (troposphere)
-! FRACREFB: REAL     distance from r and T reference tabulated points (stratosphere)
-! KA      : REAL     absorption coefficient of major absorber (equiv. to ABSA)   
-! KB      : REAL     absorption coefficient of secondary absorber (equiv. to ABSB)   
+! absa    : real     absorption coefficient of major absorber for m reference tropospheric 
+!                    pressures and n reference tropospheric temperatures 
+! absb    : real     absorption coefficient of secondary absorber for m reference stratospheric
+!                    pressures and n reference stratospheric temperatures 
+! fracrefa: real     distance from r and t reference tabulated points (troposphere)
+! fracrefb: real     distance from r and t reference tabulated points (stratosphere)
+! ka      : real     absorption coefficient of major absorber (equiv. to absa)   
+! kb      : real     absorption coefficient of secondary absorber (equiv. to absb)   
 !     -----------------------------------------------------------------
-END MODULE YOERRTA10
+end module yoerrta10
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

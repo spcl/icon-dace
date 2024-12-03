@@ -1,133 +1,182 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/surdi.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/surdi.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SURDI
+subroutine surdi
 
-!**** *SURDI*   - INITIALIZE COMMON YOERDI CONTROLLING RADINT
+!**** *surdi*   - initialize common yoerdi controlling radint
 
-!     PURPOSE.
+!     purpose.
 !     --------
-!           INITIALIZE YOERDI, THE COMMON THAT CONTROLS THE
-!           RADIATION INTERFACE
+!           initialize yoerdi, the common that controls the
+!           radiation interface
 
-!**   INTERFACE.
+!**   interface.
 !     ----------
-!        CALL *SURDI* FROM *SURAD*
+!        call *surdi* from *surad*
 !              -----        -----
 
-!        EXPLICIT ARGUMENTS :
+!        explicit arguments :
 !        --------------------
-!        NONE
+!        none
 
-!        IMPLICIT ARGUMENTS :
+!        implicit arguments :
 !        --------------------
-!        COMMON YOERDI
+!        common yoerdi
 
-!     METHOD.
+!     method.
 !     -------
-!        SEE DOCUMENTATION
+!        see documentation
 
-!     EXTERNALS.
+!     externals.
 !     ----------
-!        NONE
+!        none
 
-!     REFERENCE.
+!     reference.
 !     ----------
-!        ECMWF RESEARCH DEPARTMENT DOCUMENTATION OF THE IFS MODEL
+!        ecmwf research department documentation of the ifs model
 
-!     AUTHOR.
+!     author.
 !     -------
-!      Original  JEAN-JACQUES MORCRETTE  *ECMWF*
-!      ORIGINAL : 88-12-15
+!      original  jean-jacques morcrette  *ecmwf*
+!      original : 88-12-15
 
-!     MODIFICATIONS.
+!     modifications.
 !     --------------
-!      M.Hamrud      01-Oct-2003 CY28 Cleaning
-!      Modified   P. Viterbo   24-05-2004  surf library
-!      JJMorcrette   2004-10-07 Gas concentrations
+!      m.hamrud      01-oct-2003 cy28 cleaning
+!      modified   p. viterbo   24-05-2004  surf library
+!      jjmorcrette   2004-10-07 gas concentrations
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRB
-USE ecradhook   ,ONLY : LHOOK, DR_HOOK, JPHOOK
+use parkind1  ,only : jprb
+use ecradhook   ,only : lhook, dr_hook, jphook
 
-USE YOERDI   , ONLY : RRAE     ,&
- & RCARDI   ,RCH4     ,RN2O     ,RNO2     ,RO3      ,&
- & RCFC11   ,RCFC12   ,RCFC22   ,RCCL4    ,&
- & REPCLC   ,REPH2O   ,RSUNDUR  ,&
- & RCCO2    ,RCCH4    ,RCN2O    ,RCNO2    ,RCCFC11  ,&
- & RCCFC12  ,RCCFC22  ,RCCCL4
-USE YOMDYNCORE, ONLY : LAQUA
+use yoerdi   , only : rrae     ,&
+ & rcardi   ,rch4     ,rn2o     ,rno2     ,ro3      ,&
+ & rcfc11   ,rcfc12   ,rcfc22   ,rccl4    ,&
+ & repclc   ,reph2o   ,rsundur  ,&
+ & rcco2    ,rcch4    ,rcn2o    ,rcno2    ,rccfc11  ,&
+ & rccfc12  ,rccfc22  ,rcccl4
+use yomdyncore, only : laqua
 
-IMPLICIT NONE
+implicit none
 
-REAL(KIND=JPRB) :: ZAIRMWG, ZC11MWG, ZC12MWG, ZCH4MWG, ZCO2MWG,&
- & ZN2OMWG, ZNO2MWG, ZO3MWG, ZC22MWG, ZCL4MWG
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jprb) :: zairmwg, zc11mwg, zc12mwg, zch4mwg, zco2mwg,&
+ & zn2omwg, zno2mwg, zo3mwg, zc22mwg, zcl4mwg
+real(kind=jphook) :: zhook_handle
 
 !      ----------------------------------------------------------------
 
-!*       1.    SET DEFAULT VALUES.
+!*       1.    set default values.
 !              -------------------
 
-IF (LHOOK) CALL DR_HOOK('SURDI',0,ZHOOK_HANDLE)
-RRAE = 0.1277E-02_JPRB
+if (lhook) call dr_hook('surdi',0,zhook_handle)
+rrae = 0.1277e-02_jprb
 
-!* Threshold for computing sunshine duration (W/m2)
-RSUNDUR=120._JPRB
+!* threshold for computing sunshine duration (w/m2)
+rsundur=120._jprb
 
-!*  For sea ice, monthly values are based on Ebert and Curry, 1993, Table 2.
-!   We take dry snow albedo as the representative value for non-summer
+!*  for sea ice, monthly values are based on ebert and curry, 1993, table 2.
+!   we take dry snow albedo as the representative value for non-summer
 !   months, and bare sea-ice as the representative value for summer
-!   months. The values for Antarctic are shifted six-months.
-! All computations brought back to *SUSWN*
+!   months. the values for antarctic are shifted six-months.
+! all computations brought back to *suswn*
 
-!*  Concentration of the various trace gases (IPCC/SACC values for 1990)
-!        CO2         CH4        N2O        CFC11       CFC12
+!*  concentration of the various trace gases (ipcc/sacc values for 1990)
+!        co2         ch4        n2o        cfc11       cfc12
 !      353ppmv     1.72ppmv   310ppbv     280pptv     484pptv
 
-ZAIRMWG = 28.970_JPRB
-ZCO2MWG = 44.011_JPRB
-ZCH4MWG = 16.043_JPRB
-ZN2OMWG = 44.013_JPRB
-ZNO2MWG = 46.006_JPRB
-ZO3MWG  = 47.9982_JPRB
-ZC11MWG = 137.3686_JPRB
-ZC12MWG = 120.9140_JPRB
-ZC22MWG =  86.4690_JPRB
-ZCL4MWG = 153.8230_JPRB
+zairmwg = 28.970_jprb
+zco2mwg = 44.011_jprb
+zch4mwg = 16.043_jprb
+zn2omwg = 44.013_jprb
+zno2mwg = 46.006_jprb
+zo3mwg  = 47.9982_jprb
+zc11mwg = 137.3686_jprb
+zc12mwg = 120.9140_jprb
+zc22mwg =  86.4690_jprb
+zcl4mwg = 153.8230_jprb
 
-!RCARDI  = 353.E-06_JPRB*ZCO2MWG/ZAIRMWG
-!RCH4    = 1.72E-06_JPRB*ZCH4MWG/ZAIRMWG
-!RN2O    = 310.E-09_JPRB*ZN2OMWG/ZAIRMWG
-!RNO2    = 500.E-13_JPRB*ZNO2MWG/ZAIRMWG
-!RO3     =   1.E-06_JPRB*ZO3MWG /ZAIRMWG
-!RCFC11  = 280.E-12_JPRB*ZC11MWG/ZAIRMWG
-!RCFC12  = 484.E-12_JPRB*ZC12MWG/ZAIRMWG
-!RCFC22  =   1.E-12_JPRB*ZC22MWG/ZAIRMWG
-!RCCL4   =   1.E-12_JPRB*ZCL4MWG/ZAIRMWG
+!rcardi  = 353.e-06_jprb*zco2mwg/zairmwg
+!rch4    = 1.72e-06_jprb*zch4mwg/zairmwg
+!rn2o    = 310.e-09_jprb*zn2omwg/zairmwg
+!rno2    = 500.e-13_jprb*zno2mwg/zairmwg
+!ro3     =   1.e-06_jprb*zo3mwg /zairmwg
+!rcfc11  = 280.e-12_jprb*zc11mwg/zairmwg
+!rcfc12  = 484.e-12_jprb*zc12mwg/zairmwg
+!rcfc22  =   1.e-12_jprb*zc22mwg/zairmwg
+!rccl4   =   1.e-12_jprb*zcl4mwg/zairmwg
 
-!> Remove this block as the variables not used and accesses undefined values
-!IF( LAQUA ) THEN
-!  RCARDI  = 348.E-06_JPRB*ZCO2MWG/ZAIRMWG
-!  RCH4    = 1.65E-06_JPRB*ZCH4MWG/ZAIRMWG
-!  RN2O    = 306.E-09_JPRB*ZN2OMWG/ZAIRMWG
-!ELSE
-!  RCARDI  = RCCO2   * ZCO2MWG/ZAIRMWG
-!  RCH4    = RCCH4   * ZCH4MWG/ZAIRMWG
-!  RN2O    = RCN2O   * ZN2OMWG/ZAIRMWG
-!ENDIF
+!> remove this block as the variables not used and accesses undefined values
+!if( laqua ) then
+!  rcardi  = 348.e-06_jprb*zco2mwg/zairmwg
+!  rch4    = 1.65e-06_jprb*zch4mwg/zairmwg
+!  rn2o    = 306.e-09_jprb*zn2omwg/zairmwg
+!else
+!  rcardi  = rcco2   * zco2mwg/zairmwg
+!  rch4    = rcch4   * zch4mwg/zairmwg
+!  rn2o    = rcn2o   * zn2omwg/zairmwg
+!endif
 !
-!RNO2    = RCNO2   * ZNO2MWG/ZAIRMWG 
-!RO3     = 1.E-06_JPRB*ZO3MWG /ZAIRMWG
-!RCFC11  = RCCFC11 * ZC11MWG/ZAIRMWG
-!RCFC12  = RCCFC12 * ZC12MWG/ZAIRMWG
-!RCFC22  = RCCFC22 * ZC22MWG/ZAIRMWG
-!RCCL4   = RCCCL4  * ZCL4MWG/ZAIRMWG
+!rno2    = rcno2   * zno2mwg/zairmwg 
+!ro3     = 1.e-06_jprb*zo3mwg /zairmwg
+!rcfc11  = rccfc11 * zc11mwg/zairmwg
+!rcfc12  = rccfc12 * zc12mwg/zairmwg
+!rcfc22  = rccfc22 * zc22mwg/zairmwg
+!rccl4   = rcccl4  * zcl4mwg/zairmwg
 !<end
 
-REPCLC=1.E-12_JPRB
-REPH2O=1.E-12_JPRB
+repclc=1.e-12_jprb
+reph2o=1.e-12_jprb
 
 !     -----------------------------------------------------------------
 
-IF (LHOOK) CALL DR_HOOK('SURDI',1,ZHOOK_HANDLE)
-END SUBROUTINE SURDI
+if (lhook) call dr_hook('surdi',1,zhook_handle)
+end subroutine surdi
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

@@ -1,20 +1,66 @@
-! radiation_spectral_definition.F90 - Derived type to describe a spectral definition
+! # 1 "radiation/radiation_spectral_definition.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_spectral_definition.f90"
+! radiation_spectral_definition.f90 - derived type to describe a spectral definition
 !
-! (C) Copyright 2020- ECMWF.
+! (c) copyright 2020- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
-! License: see the COPYING file for details
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+! license: see the copying file for details
 !
 
-#include "ecrad_config.h"
+
+! # 1 "radiation/ecrad_config.h" 1
+! ecrad_config.h - preprocessor definitions to configure compilation ecrad -*- f90 -*-
+!
+! (c) copyright 2023- ecmwf.
+!
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
+!
+! in applying this licence, ecmwf does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+!
+! this file should be included in fortran source files that require
+! different optimizations or settings for different architectures and
+! platforms.  feel free to maintain a site-specific version of it.
+
+! the following settings turn on optimizations specific to the
+! long-vector nec sx (the short-vector x86-64 architecture is assumed
+! otherwise). 
+
+
+
+
+  
+
+
+
+  
+
+
+
+
+! in the ifs, an mpi version of easy_netcdf capability is used so that
+! only one mpi task reads the data files and shares with the other
+! tasks. the mpi version is not used for writing files.
+
+!#define easy_netcdf_read_mpi 1
+! # 18 "radiation/radiation_spectral_definition.f90" 2
 
 module radiation_spectral_definition
 
@@ -24,46 +70,46 @@ module radiation_spectral_definition
 
   public
 
-  real(jprb), parameter :: SolarReferenceTemperature       = 5777.0_jprb ! K
-  real(jprb), parameter :: TerrestrialReferenceTemperature = 273.15_jprb ! K
+  real(jprb), parameter :: solarreferencetemperature       = 5777.0_jprb ! k
+  real(jprb), parameter :: terrestrialreferencetemperature = 273.15_jprb ! k
 
   !---------------------------------------------------------------------
-  ! A derived type describing the contribution of the g points of a
+  ! a derived type describing the contribution of the g points of a
   ! correlated k-distribution gas-optics model from each part of the
-  ! spectrum. This is used primarily to map the cloud and aerosol
+  ! spectrum. this is used primarily to map the cloud and aerosol
   ! optical properties on to the gas g points.
   type spectral_definition_type
     
-    ! Spectral mapping of g points
+    ! spectral mapping of g points
 
-    ! Number of wavenumber intervals
+    ! number of wavenumber intervals
     integer :: nwav = 0
-    ! Number of k terms / g points
+    ! number of k terms / g points
     integer :: ng   = 0
-    ! Start and end wavenumber (cm-1), dimensioned (nwav)
+    ! start and end wavenumber (cm-1), dimensioned (nwav)
     real(jprb), allocatable :: wavenumber1(:)
     real(jprb), allocatable :: wavenumber2(:)
-    ! Fraction of each g point in each wavenumber interval,
+    ! fraction of each g point in each wavenumber interval,
     ! dimensioned (nwav, ng)
     real(jprb), allocatable :: gpoint_fraction(:,:)
 
-    ! Spectral weighting information for generating mappings to/from
+    ! spectral weighting information for generating mappings to/from
     ! different spectral grids: this can be in terms of a reference
-    ! temperature (K) to generate a Planck function, or the
-    ! solar_spectral_irradiance (W m-2) if available in the gas-optics
+    ! temperature (k) to generate a planck function, or the
+    ! solar_spectral_irradiance (w m-2) if available in the gas-optics
     ! file.
     real(jprb) :: reference_temperature = -1.0_jprb
     real(jprb), allocatable :: solar_spectral_irradiance(:)
     
-    ! Band information
+    ! band information
 
-    ! Number of bands
+    ! number of bands
     integer :: nband = 0
-    ! Lower and upper bounds of wavenumber bands (cm-1), dimensioned
+    ! lower and upper bounds of wavenumber bands (cm-1), dimensioned
     ! (nband)
     real(jprb), allocatable :: wavenumber1_band(:)
     real(jprb), allocatable :: wavenumber2_band(:)
-    ! Band (one based) to which each g point belongs
+    ! band (one based) to which each g point belongs
     integer,    allocatable :: i_band_number(:)
 
   contains
@@ -75,22 +121,23 @@ module radiation_spectral_definition
     procedure :: calc_mapping_from_bands
     procedure :: calc_mapping_from_wavenumber_bands
     procedure :: print_mapping_from_bands
-    procedure :: min_wavenumber, max_wavenumber
+    procedure :: min_wavenumber
+    procedure :: max_wavenumber
 
   end type spectral_definition_type
 
 contains
 
   !---------------------------------------------------------------------
-  ! Read the description of a spectral definition from a NetCDF
-  ! file of the type used to describe an ecCKD model
+  ! read the description of a spectral definition from a netcdf
+  ! file of the type used to describe an ecckd model
   subroutine read_spectral_definition(this, file)
 
-#ifdef EASY_NETCDF_READ_MPI
-    use easy_netcdf_read_mpi, only : netcdf_file
-#else
+
+
+
     use easy_netcdf,          only : netcdf_file
-#endif
+
     use ecradhook,     only : lhook, dr_hook, jphook
 
     class(spectral_definition_type), intent(inout) :: this
@@ -100,31 +147,31 @@ contains
 
     if (lhook) call dr_hook('radiation_spectral_definition:read',0,hook_handle)
 
-    ! Read spectral mapping of g points
+    ! read spectral mapping of g points
     call file%get('wavenumber1', this%wavenumber1)
     call file%get('wavenumber2', this%wavenumber2)
     call file%get('gpoint_fraction', this%gpoint_fraction)
 
-    ! Read band information
+    ! read band information
     call file%get('wavenumber1_band', this%wavenumber1_band)
     call file%get('wavenumber2_band', this%wavenumber2_band)
     call file%get('band_number', this%i_band_number)
 
-    ! Read spectral weighting information
+    ! read spectral weighting information
     if (file%exists('solar_spectral_irradiance')) then
-      ! This is on the same grid as wavenumber1,2
+      ! this is on the same grid as wavenumber1,2
       call file%get('solar_spectral_irradiance', &
            &        this%solar_spectral_irradiance)
     end if
     if (file%exists('solar_irradiance')) then
-      ! Shortwave default temperature
-      this%reference_temperature = SolarReferenceTemperature
+      ! shortwave default temperature
+      this%reference_temperature = solarreferencetemperature
     else
-      ! Longwave reference temperature
-      this%reference_temperature = TerrestrialReferenceTemperature
+      ! longwave reference temperature
+      this%reference_temperature = terrestrialreferencetemperature
     end if
     
-    ! Band number is 0-based: add 1
+    ! band number is 0-based: add 1
     this%i_band_number = this%i_band_number + 1
 
     this%nwav  = size(this%wavenumber1)
@@ -137,14 +184,14 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Store a simple band description by copying over the reference
+  ! store a simple band description by copying over the reference
   ! temperature and the lower and upper wavenumbers of each band
   subroutine allocate_bands_only(this, reference_temperature, wavenumber1, wavenumber2)
 
     use ecradhook,     only : lhook, dr_hook, jphook
 
     class(spectral_definition_type), intent(inout) :: this
-    real(jprb),                      intent(in)    :: reference_temperature    ! K
+    real(jprb),                      intent(in)    :: reference_temperature    ! k
     real(jprb),        dimension(:), intent(in)    :: wavenumber1, wavenumber2 ! cm-1
 
     real(jphook) :: hook_handle
@@ -166,7 +213,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Deallocate memory inside a spectral definition object
+  ! deallocate memory inside a spectral definition object
   subroutine deallocate(this)
 
     class(spectral_definition_type), intent(inout) :: this
@@ -187,7 +234,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Find the index to the highest wavenumber in the spectral
+  ! find the index to the highest wavenumber in the spectral
   ! definition that is lower than or equal to "wavenumber", used for
   ! implementing look-up tables
   pure function find_wavenumber(this, wavenumber)
@@ -196,7 +243,7 @@ contains
     integer                                     :: find_wavenumber
 
     if (wavenumber < this%wavenumber1(1) .or. wavenumber > this%wavenumber2(this%nwav)) then
-      ! Wavenumber not present
+      ! wavenumber not present
       find_wavenumber = 0
     else
       find_wavenumber = 1
@@ -209,7 +256,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute a mapping matrix "mapping" that can be used in an
+  ! compute a mapping matrix "mapping" that can be used in an
   ! expression y=matmul(mapping,x) where x is a variable containing
   ! optical properties at each input "wavenumber", and y is this
   ! variable mapped on to the spectral intervals in the spectral
@@ -222,25 +269,25 @@ contains
     class(spectral_definition_type), intent(in)    :: this
     real(jprb),                      intent(in)    :: wavenumber(:) ! cm-1
     real(jprb), allocatable,         intent(inout) :: mapping(:,:)
-    real(jprb), optional,            intent(in)    :: weighting_temperature ! K
+    real(jprb), optional,            intent(in)    :: weighting_temperature ! k
     logical,    optional,            intent(in)    :: use_bands
 
-    ! Spectral weights to apply, same length as wavenumber above
+    ! spectral weights to apply, same length as wavenumber above
     real(jprb), dimension(:), allocatable :: weight, planck_weight
 
-    ! Wavenumbers (cm-1) marking triangle of influence of a cloud
+    ! wavenumbers (cm-1) marking triangle of influence of a cloud
     ! spectral point
     real(jprb) :: wavenum0, wavenum1, wavenum2
 
-    integer    :: nwav ! Number of wavenumbers describing cloud
+    integer    :: nwav ! number of wavenumbers describing cloud
 
-    ! Indices to wavenumber intervals in spectral definition structure
+    ! indices to wavenumber intervals in spectral definition structure
     integer    :: isd, isd0, isd1, isd2
 
-    ! Wavenumber index
+    ! wavenumber index
     integer    :: iwav
     
-    ! Loop indices
+    ! loop indices
     integer    :: jg, jwav, jband
 
     logical    :: use_bands_local
@@ -261,21 +308,21 @@ contains
       deallocate(mapping)
     end if
     
-    ! Define the mapping matrix
+    ! define the mapping matrix
     if (use_bands_local) then
-      ! Cloud properties per band
+      ! cloud properties per band
 
       allocate(mapping(this%nband, nwav))
       allocate(weight(nwav))
 
-      ! Planck weight uses the wavenumbers of the cloud points
+      ! planck weight uses the wavenumbers of the cloud points
       allocate(planck_weight(nwav))
       if (present(weighting_temperature)) then
         if (weighting_temperature > 0.0_jprb) then
           planck_weight = calc_planck_function_wavenumber(wavenumber, &
                &                          weighting_temperature)
         else
-          ! Legacy mode: unweighted average
+          ! legacy mode: unweighted average
           planck_weight = 1.0_jprb
         end if
       else
@@ -286,7 +333,7 @@ contains
       do jband = 1,this%nband
         weight = 0.0_jprb
         do jwav = 1,nwav
-          ! Work out wavenumber range for which this cloud wavenumber
+          ! work out wavenumber range for which this cloud wavenumber
           ! will be applicable
           if (wavenumber(jwav) >= this%wavenumber1_band(jband) &
                & .and. wavenumber(jwav) <= this%wavenumber2_band(jband)) then
@@ -302,23 +349,23 @@ contains
             else
               wavenum2 = this%wavenumber2_band(jband)
             end if
-            ! This cloud wavenumber is weighted by the wavenumber
-            ! range of its applicability multiplied by the Planck
+            ! this cloud wavenumber is weighted by the wavenumber
+            ! range of its applicability multiplied by the planck
             ! function at an appropriate temperature
             weight(jwav) = (wavenum2-wavenum1) * planck_weight(jwav)
           end if
         end do
         if (sum(weight) <= 0.0_jprb) then
-          ! No cloud wavenumbers lie in the band; interpolate to
+          ! no cloud wavenumbers lie in the band; interpolate to
           ! central wavenumber of band instead
           if (wavenumber(1) >= this%wavenumber2_band(jband)) then
-            ! Band is entirely below first cloudy wavenumber
+            ! band is entirely below first cloudy wavenumber
             weight(1) = 1.0_jprb
           else if (wavenumber(nwav) <= this%wavenumber1_band(jband)) then
-            ! Band is entirely above last cloudy wavenumber
+            ! band is entirely above last cloudy wavenumber
             weight(nwav) = 1.0_jprb
           else
-            ! Find interpolating points
+            ! find interpolating points
             iwav = 2
             do while (wavenumber(iwav) < this%wavenumber2_band(jband))
               iwav = iwav+1
@@ -336,11 +383,11 @@ contains
       deallocate(planck_weight)
 
     else
-      ! Cloud properties per g-point
+      ! cloud properties per g-point
 
       if (this%ng == 0) then
-        write(nulerr,'(a)') '*** Error: requested cloud/aerosol mapping per g-point but only available per band'
-        call radiation_abort('Radiation configuration error')
+        write(nulerr,'(a)') '*** error: requested cloud/aerosol mapping per g-point but only available per band'
+        call radiation_abort('radiation configuration error')
       end if
 
       allocate(mapping(this%ng, nwav))
@@ -356,14 +403,14 @@ contains
       end if
 
       mapping = 0.0_jprb
-      ! Loop over wavenumbers representing cloud
+      ! loop over wavenumbers representing cloud
       do jwav = 1,nwav
-        ! Clear the weights. The weight says for one wavenumber in the
+        ! clear the weights. the weight says for one wavenumber in the
         ! cloud file, what is its fractional contribution to each of
         ! the spectral-definition intervals
         weight = 0.0_jprb
 
-        ! Cloud properties are linearly interpolated between each of
+        ! cloud properties are linearly interpolated between each of
         ! the nwav cloud points; therefore, the influence of a
         ! particular cloud point extends as a triangle between
         ! wavenum0 and wavenum2, peaking at wavenum1
@@ -375,22 +422,22 @@ contains
         if (jwav > 1) then
           wavenum0 = wavenumber(jwav-1)
 
-          ! Map triangle under (wavenum0,0) to (wavenum1,1) to the
+          ! map triangle under (wavenum0,0) to (wavenum1,1) to the
           ! wavenumbers in this%gpoint_fraction
           isd0 = this%find(wavenum0)
           if (isd0 == isd1) then
-            ! Triangle completely within the range
+            ! triangle completely within the range
             ! this%wavenumber1(isd0)-this%wavenumber2(isd0)
             weight(isd0) = 0.5_jprb*(wavenum1-wavenum0) &
                  &       / (this%wavenumber2(isd0)-this%wavenumber1(isd0))
           else
             if (isd0 >= 1) then
-              ! Left part of triangle
+              ! left part of triangle
               weight(isd0) = 0.5_jprb * (this%wavenumber2(isd0)-wavenum0)**2 &
                    &       / ((this%wavenumber2(isd0)-this%wavenumber1(isd0)) &
                    &         *(wavenum1-wavenum0))
             end if
-            ! Right part of triangle (trapezium)
+            ! right part of triangle (trapezium)
 !            weight(isd1) = 0.5_jprb * (wavenum1-this%wavenumber1(isd1)) &
 !                 &       * (wavenum1 + this%wavenumber1(isd1) - 2.0_jprb*wavenum0) &
 !                 &       / (wavenum1-wavenum0)
@@ -400,7 +447,7 @@ contains
                  &  / (this%wavenumber2(isd1)-this%wavenumber1(isd1))
             if (isd1-isd0 > 1) then
               do isd = isd0+1,isd1-1
-                ! Intermediate trapezia
+                ! intermediate trapezia
                 weight(isd) = 0.5_jprb * (this%wavenumber1(isd)+this%wavenumber2(isd) &
                      &                    - 2.0_jprb*wavenum0) &
                      &      / (wavenum1-wavenum0)
@@ -409,7 +456,7 @@ contains
           end if
 
         else
-          ! First cloud wavenumber: all wavenumbers in the spectral
+          ! first cloud wavenumber: all wavenumbers in the spectral
           ! definition below this will use the first one
           if (isd1 >= 1) then
             weight(1:isd1-1) = 1.0_jprb
@@ -421,23 +468,23 @@ contains
         if (jwav < nwav) then
           wavenum2 = wavenumber(jwav+1)
 
-          ! Map triangle under (wavenum1,1) to (wavenum2,0) to the
+          ! map triangle under (wavenum1,1) to (wavenum2,0) to the
           ! wavenumbers in this%gpoint_fraction
           isd2 = this%find(wavenum2)
 
           if (isd1 == isd2) then
-            ! Triangle completely within the range
+            ! triangle completely within the range
             ! this%wavenumber1(isd1)-this%wavenumber2(isd1)
             weight(isd1) = weight(isd1) + 0.5_jprb*(wavenum2-wavenum1) &
                  &       / (this%wavenumber2(isd1)-this%wavenumber1(isd1))
           else
             if (isd2 >= 1 .and. isd2 <= this%nwav) then
-              ! Right part of triangle
+              ! right part of triangle
               weight(isd2) = weight(isd2) + 0.5_jprb * (wavenum2-this%wavenumber1(isd2))**2 &
                    &       / ((this%wavenumber2(isd2)-this%wavenumber1(isd2)) &
                    &         *(wavenum2-wavenum1))
             end if
-            ! Left part of triangle (trapezium)
+            ! left part of triangle (trapezium)
 !            weight(isd1) = weight(isd1) + 0.5_jprb * (this%wavenumber2(isd1)-wavenum1) &
 !                 &       * (wavenum1 + this%wavenumber2(isd1) - 2.0_jprb*wavenum2) &
 !                 &       / (wavenum2-wavenum1)
@@ -447,7 +494,7 @@ contains
                  &  / (this%wavenumber2(isd1)-this%wavenumber1(isd1))
             if (isd2-isd1 > 1) then
               do isd = isd1+1,isd2-1
-                ! Intermediate trapezia
+                ! intermediate trapezia
                 weight(isd) = weight(isd) + 0.5_jprb * (2.0_jprb*wavenum2 &
                      & - this%wavenumber1(isd) - this%wavenumber2(isd)) &
                      &      / (wavenum2-wavenum1)
@@ -456,7 +503,7 @@ contains
           end if
 
         else
-          ! Last cloud wavenumber: all wavenumbers in the spectral
+          ! last cloud wavenumber: all wavenumbers in the spectral
           ! definition above this will use the last one
           if (isd1 <= this%nwav) then
             weight(isd1+1:this%nwav) = 1.0_jprb
@@ -476,7 +523,7 @@ contains
       deallocate(weight)
       deallocate(planck_weight)
 
-      ! Normalize mapping matrix
+      ! normalize mapping matrix
       do jg = 1,this%ng
         mapping(jg,:) = mapping(jg,:) * (1.0_jprb/sum(mapping(jg,:)))
       end do
@@ -489,17 +536,17 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Under normal operation (if use_fluxes is .false. or not present),
+  ! under normal operation (if use_fluxes is .false. or not present),
   ! compute a mapping matrix "mapping" that can be used in an
-  ! expression y=matmul(mapping^T,x) where x is a variable containing
+  ! expression y=matmul(mapping^t,x) where x is a variable containing
   ! optical properties in input bands (e.g. albedo in shortwave albedo
   ! bands), and y is this variable mapped on to the spectral intervals
-  ! in the spectral definition "this". Note that "mapping" is here
-  ! transposed from the convention in the calc_mapping routine.  Under
+  ! in the spectral definition "this". note that "mapping" is here
+  ! transposed from the convention in the calc_mapping routine.  under
   ! the alternative operation (if use_fluxes is present and .true.),
   ! the mapping works in the reverse sense: if y contains fluxes in
-  ! each ecRad band or g-point, then x=matmul(mapping,y) would return
-  ! fluxes in x averaged to user-supplied "input" bands. In this
+  ! each ecrad band or g-point, then x=matmul(mapping,y) would return
+  ! fluxes in x averaged to user-supplied "input" bands. in this
   ! version, the bands are described by their wavelength bounds
   ! (wavelength_bound, which must be increasing and exclude the end
   ! points) and the index of the mapping matrix that each band
@@ -514,44 +561,44 @@ contains
     use radiation_io, only : nulerr, radiation_abort
 
     class(spectral_definition_type), intent(in)    :: this
-    ! Monotonically increasing wavelength bounds (m) between
+    ! monotonically increasing wavelength bounds (m) between
     ! intervals, not including the outer bounds (which are assumed to
     ! be zero and infinity)
     real(jprb),                      intent(in)    :: wavelength_bound(:)
-    ! The albedo band indices corresponding to each interval
+    ! the albedo band indices corresponding to each interval
     integer,                         intent(in)    :: i_intervals(:)
     real(jprb), allocatable,         intent(inout) :: mapping(:,:)
     logical,    optional,            intent(in)    :: use_bands
     logical,    optional,            intent(in)    :: use_fluxes
 
-    ! Planck function and central wavenumber of each wavenumber
+    ! planck function and central wavenumber of each wavenumber
     ! interval of the spectral definition
-    real(jprb) :: planck(this%nwav)         ! W m-2 (cm-1)-1
+    real(jprb) :: planck(this%nwav)         ! w m-2 (cm-1)-1
     real(jprb) :: wavenumber_mid(this%nwav) ! cm-1
 
     real(jprb), allocatable :: mapping_denom(:,:)
 
     real(jprb) :: wavenumber1_bound, wavenumber2_bound
 
-    ! To work out weights we sample the Planck function at five points
+    ! to work out weights we sample the planck function at five points
     ! in the interception between an input interval and a band, and
-    ! use the Trapezium Rule
+    ! use the trapezium rule
     integer, parameter :: nsample = 5
     integer :: isamp
     real(jprb), dimension(nsample) :: wavenumber_sample, planck_sample
     real(jprb), parameter :: weight_sample(nsample) &
          &        = [0.5_jprb, 1.0_jprb, 1.0_jprb, 1.0_jprb, 0.5_jprb]
 
-    ! Index of input value corresponding to each wavenumber interval
+    ! index of input value corresponding to each wavenumber interval
     integer :: i_input(this%nwav)
 
-    ! Number of albedo/emissivity values that will be provided, some
+    ! number of albedo/emissivity values that will be provided, some
     ! of which may span discontinuous intervals in wavelength space
     integer :: ninput
 
-    ! Number of albedo/emissivity intervals represented, where some
+    ! number of albedo/emissivity intervals represented, where some
     ! may be grouped to have the same value of albedo/emissivity (an
-    ! example is in the thermal infrared where classically the IFS has
+    ! example is in the thermal infrared where classically the ifs has
     ! ninput=2 and ninterval=3, since only two emissivities are
     ! provided representing (1) the infrared window, and (2) the
     ! intervals to each side of the infrared window.
@@ -559,7 +606,7 @@ contains
 
     logical    :: use_bands_local, use_fluxes_local
 
-    ! Loop indices
+    ! loop indices
     integer    :: jg, jband, jin, jint, jwav
 
     real(jphook) :: hook_handle
@@ -578,7 +625,7 @@ contains
       use_fluxes_local = .false.
     end if
 
-    ! Count the number of input intervals 
+    ! count the number of input intervals 
     ninterval = size(i_intervals)
     ninput    = maxval(i_intervals)
     
@@ -586,19 +633,19 @@ contains
       deallocate(mapping)
     end if
     
-    ! Check wavelength is monotonically increasing
+    ! check wavelength is monotonically increasing
     if (ninterval > 2) then
       do jint = 2,ninterval-1
         if (wavelength_bound(jint) <= wavelength_bound(jint-1)) then
-          write(nulerr, '(a)') '*** Error: wavelength bounds must be monotonically increasing'
+          write(nulerr, '(a)') '*** error: wavelength bounds must be monotonically increasing'
           call radiation_abort()
         end if
       end do
     end if
 
-    ! Define the mapping matrix
+    ! define the mapping matrix
     if (use_bands_local) then
-      ! Require properties per band
+      ! require properties per band
 
       allocate(mapping(ninput, this%nband))
       mapping = 0.0_jprb
@@ -611,7 +658,7 @@ contains
       do jband = 1,this%nband
         do jint = 1,ninterval
           if (jint == 1) then
-            ! First input interval in wavelength space: lower
+            ! first input interval in wavelength space: lower
             ! wavelength bound is 0 m, so infinity cm-1
             wavenumber2_bound = this%wavenumber2_band(jband)
           else
@@ -620,7 +667,7 @@ contains
           end if
 
           if (jint == ninterval) then
-            ! Final input interval in wavelength space: upper
+            ! final input interval in wavelength space: upper
             ! wavelength bound is infinity m, so 0 cm-1
             wavenumber1_bound = this%wavenumber1_band(jband)
           else
@@ -630,9 +677,9 @@ contains
           end if
 
           if (wavenumber2_bound > wavenumber1_bound) then
-            ! Current input interval contributes to current band;
+            ! current input interval contributes to current band;
             ! compute the weight of the contribution in proportion to
-            ! an approximate calculation of the integral of the Planck
+            ! an approximate calculation of the integral of the planck
             ! function over the relevant part of the spectrum
             wavenumber_sample = wavenumber1_bound + [(isamp,isamp=0,nsample-1)] &
                  &  * (wavenumber2_bound-wavenumber1_bound) / real(nsample-1,jprb)
@@ -641,7 +688,7 @@ contains
             mapping(i_intervals(jint),jband) = mapping(i_intervals(jint),jband) &
                  &  + sum(planck_sample*weight_sample) * (wavenumber2_bound-wavenumber1_bound)
             if (use_fluxes_local) then
-              ! Compute an equivalent sample containing the entire ecRad band
+              ! compute an equivalent sample containing the entire ecrad band
               wavenumber_sample = this%wavenumber1_band(jband) + [(isamp,isamp=0,nsample-1)] &
                    &  * (this%wavenumber2_band(jband)-this%wavenumber1_band(jband)) &
                    &  / real(nsample-1,jprb)
@@ -661,11 +708,11 @@ contains
       end if
 
     else
-      ! Require properties per g-point
+      ! require properties per g-point
 
       if (this%ng == 0) then
-        write(nulerr,'(a)') '*** Error: requested surface mapping per g-point but only available per band'
-        call radiation_abort('Radiation configuration error')
+        write(nulerr,'(a)') '*** error: requested surface mapping per g-point but only available per band'
+        call radiation_abort('radiation configuration error')
       end if
 
       allocate(mapping(ninput,this%ng))
@@ -679,54 +726,14 @@ contains
              &                       this%reference_temperature)
       end if
 
-#ifdef USE_COARSE_MAPPING
-      ! In the processing that follows, we assume that the wavenumber
-      ! grid on which the g-points are defined in the spectral
-      ! definition is much finer than the albedo/emissivity intervals
-      ! that the user will provide.  This means that each wavenumber
-      ! is assigned to only one of the albedo/emissivity intervals.
+! # 723 "radiation/radiation_spectral_definition.f90"
 
-      ! By default set all wavenumbers to use first input
-      ! albedo/emissivity
-      i_input = 1
-      
-      ! All bounded intervals
-      do jint = 2,ninterval-1
-        wavenumber1_bound = 0.01_jprb / wavelength_bound(jint)
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(jint-1)
-        where (wavenumber_mid > wavenumber1_bound &
-             & .and. wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(jint)
-        end where
-      end do
-
-      ! Final interval in wavelength space goes up to wavelength of
-      ! infinity (wavenumber of zero)
-      if (ninterval > 1) then
-        wavenumber2_bound = 0.01_jprb / wavelength_bound(ninterval-1)
-        where (wavenumber_mid <= wavenumber2_bound)
-          i_input = i_intervals(ninterval)
-        end where
-      end if
-
-      do jg = 1,this%ng
-        do jin = 1,ninput
-          mapping(jin,jg) = sum(this%gpoint_fraction(:,jg) * planck, &
-               &                 mask=(i_input==jin))
-          if (use_fluxes_local) then
-            mapping(jin,jg) = mapping(jin,jg) / sum(this%gpoint_fraction(:,jg) * planck)
-          end if
-        end do
-      end do
-
-#else
-
-      ! Loop through all intervals
+      ! loop through all intervals
       do jint = 1,ninterval
-        ! Loop through the wavenumbers for gpoint_fraction
+        ! loop through the wavenumbers for gpoint_fraction
         do jwav = 1,this%nwav
           if (jint == 1) then
-            ! First input interval in wavelength space: lower
+            ! first input interval in wavelength space: lower
             ! wavelength bound is 0 m, so infinity cm-1
             wavenumber2_bound = this%wavenumber2(jwav)
           else
@@ -735,7 +742,7 @@ contains
           end if
 
           if (jint == ninterval) then
-            ! Final input interval in wavelength space: upper
+            ! final input interval in wavelength space: upper
             ! wavelength bound is infinity m, so 0 cm-1
             wavenumber1_bound = this%wavenumber1(jwav)
           else
@@ -745,10 +752,10 @@ contains
           end if
 
           if (wavenumber2_bound > wavenumber1_bound) then
-            ! Overlap between input interval and gpoint_fraction
+            ! overlap between input interval and gpoint_fraction
             ! interval: compute the weight of the contribution in
             ! proportion to an approximate calculation of the integral
-            ! of the Planck function over the relevant part of the
+            ! of the planck function over the relevant part of the
             ! spectrum
             mapping(i_intervals(jint),:) = mapping(i_intervals(jint),:) + this%gpoint_fraction(jwav,:) &
                  &  * (planck(jwav) * (wavenumber2_bound - wavenumber1_bound) &
@@ -762,12 +769,12 @@ contains
         end do
       end if
 
-#endif
+
       
     end if
 
     if (.not. use_fluxes_local) then
-      ! Normalize mapping matrix
+      ! normalize mapping matrix
       do jg = 1,size(mapping,dim=2)
         mapping(:,jg) = mapping(:,jg) * (1.0_jprb/sum(mapping(:,jg)))
       end do
@@ -779,7 +786,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! As calc_mapping_from_bands but in terms of wavenumber bounds from
+  ! as calc_mapping_from_bands but in terms of wavenumber bounds from
   ! wavenumber1 to wavenumber2
   subroutine calc_mapping_from_wavenumber_bands(this, &
        &  wavenumber1, wavenumber2, mapping, use_bands, use_fluxes)
@@ -792,30 +799,30 @@ contains
     logical,    optional,            intent(in)    :: use_bands
     logical,    optional,            intent(in)    :: use_fluxes
 
-    ! Monotonically increasing wavelength bounds (m) between
+    ! monotonically increasing wavelength bounds (m) between
     ! intervals, not including the outer bounds (which are assumed to
     ! be zero and infinity)
     real(jprb) :: wavelength_bound(size(wavenumber1)-1)
-    ! The albedo band indices corresponding to each interval
+    ! the albedo band indices corresponding to each interval
     integer    :: i_intervals(size(wavenumber1))
 
-    ! Lower wavelength bound (m) of each band
+    ! lower wavelength bound (m) of each band
     real(jprb) :: wavelength1(size(wavenumber1))
 
     logical    :: is_band_unassigned(size(wavenumber1))
 
-    ! Number of albedo/emissivity intervals represented, where some
+    ! number of albedo/emissivity intervals represented, where some
     ! may be grouped to have the same value of albedo/emissivity (an
-    ! example is in the thermal infrared where classically the IFS has
+    ! example is in the thermal infrared where classically the ifs has
     ! ninput=2 and ninterval=3, since only two emissivities are
     ! provided representing (1) the infrared window, and (2) the
     ! intervals to each side of the infrared window.
     integer :: ninterval
 
-    ! Index to next band in order of increasing wavelength
+    ! index to next band in order of increasing wavelength
     integer :: inext
 
-    ! Loop indices
+    ! loop indices
     integer :: jint
 
     real(jphook) :: hook_handle
@@ -844,7 +851,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Print out the mapping computed by calc_mapping_from_bands
+  ! print out the mapping computed by calc_mapping_from_bands
   subroutine print_mapping_from_bands(this, mapping, use_bands)
 
     use radiation_io, only : nulout
@@ -868,9 +875,9 @@ contains
     nout = size(mapping,2)
 
     if (nin <= 1) then
-      write(nulout, '(a)') '  All spectral intervals will use the same albedo/emissivity'
+      write(nulout, '(a)') '  all spectral intervals will use the same albedo/emissivity'
     else if (use_bands_local) then
-      write(nulout, '(a,i0,a,i0,a)') '  Mapping from ', nin, ' values to ', nout, ' bands (wavenumber ranges in cm-1)'
+      write(nulout, '(a,i0,a,i0,a)') '  mapping from ', nin, ' values to ', nout, ' bands (wavenumber ranges in cm-1)'
       if (nout <= 40) then
         do jout = 1,nout
           write(nulout,'(i6,a,i6,a)',advance='no') nint(this%wavenumber1_band(jout)), ' to', &
@@ -898,7 +905,7 @@ contains
         write(nulout, '()')
       end if
     else
-      write(nulout, '(a,i0,a,i0,a)') '  Mapping from ', nin, ' values to ', nout, ' g-points'
+      write(nulout, '(a,i0,a,i0,a)') '  mapping from ', nin, ' values to ', nout, ' g-points'
       if (nout <= 40) then
         do jout = 1,nout
           write(nulout,'(i3,a)',advance='no') jout, ':'
@@ -928,7 +935,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Return the minimum wavenumber of this object in cm-1
+  ! return the minimum wavenumber of this object in cm-1
   pure function min_wavenumber(this)
 
     class(spectral_definition_type), intent(in)    :: this
@@ -944,7 +951,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Return the maximum wavenumber of this object in cm-1
+  ! return the maximum wavenumber of this object in cm-1
   pure function max_wavenumber(this)
 
     class(spectral_definition_type), intent(in)    :: this
@@ -960,30 +967,30 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Return the Planck function (in W m-2 (cm-1)-1) for a given
-  ! wavenumber (cm-1) and temperature (K), ensuring double precision
-  ! for internal calculation.  If temperature is 0 or less then unity
+  ! return the planck function (in w m-2 (cm-1)-1) for a given
+  ! wavenumber (cm-1) and temperature (k), ensuring double precision
+  ! for internal calculation.  if temperature is 0 or less then unity
   ! is returned; since this function is primarily used to weight an
-  ! integral by the Planck function, a temperature of 0 or less means
+  ! integral by the planck function, a temperature of 0 or less means
   ! no weighting is to be applied.
   elemental function calc_planck_function_wavenumber(wavenumber, temperature)
 
     use parkind1,            only : jprb, jprd
-    use radiation_constants, only : SpeedOfLight, BoltzmannConstant, PlanckConstant
+    use radiation_constants, only : speedoflight, boltzmannconstant, planckconstant
 
     real(jprb), intent(in) :: wavenumber  ! cm-1
-    real(jprb), intent(in) :: temperature ! K
+    real(jprb), intent(in) :: temperature ! k
     real(jprb) :: calc_planck_function_wavenumber
 
-    real(jprd) :: freq ! Hz
-    real(jprd) :: planck_fn_freq ! W m-2 Hz-1
+    real(jprd) :: freq ! hz
+    real(jprd) :: planck_fn_freq ! w m-2 hz-1
 
     if (temperature > 0.0_jprd) then
-      freq = 100.0_jprd * real(SpeedOfLight,jprd) * real(wavenumber,jprd)
-      planck_fn_freq = 2.0_jprd * real(PlanckConstant,jprd) * freq**3 &
-           &  / (real(SpeedOfLight,jprd)**2 * (exp(real(PlanckConstant,jprd)*freq &
-           &     /(real(BoltzmannConstant,jprd)*real(temperature,jprd))) - 1.0_jprd))
-      calc_planck_function_wavenumber = real(planck_fn_freq * 100.0_jprd * real(SpeedOfLight,jprd), jprb)
+      freq = 100.0_jprd * real(speedoflight,jprd) * real(wavenumber,jprd)
+      planck_fn_freq = 2.0_jprd * real(planckconstant,jprd) * freq**3 &
+           &  / (real(speedoflight,jprd)**2 * (exp(real(planckconstant,jprd)*freq &
+           &     /(real(boltzmannconstant,jprd)*real(temperature,jprd))) - 1.0_jprd))
+      calc_planck_function_wavenumber = real(planck_fn_freq * 100.0_jprd * real(speedoflight,jprd), jprb)
     else
       calc_planck_function_wavenumber = 1.0_jprb
     end if
@@ -991,3 +998,47 @@ contains
   end function calc_planck_function_wavenumber
 
 end module radiation_spectral_definition
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

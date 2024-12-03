@@ -1,154 +1,203 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/rrtm_cmbgb3.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/rrtm_cmbgb3.f90"
+! this file has been modified for the use in icon
 
 !***************************************************************************
-SUBROUTINE RRTM_CMBGB3
+subroutine rrtm_cmbgb3
 !***************************************************************************
 
-!     BAND 3:  500-630 cm-1 (low - H2O,CO2; high - H2O,CO2)
-!      ABozzo 200130517 updated to rrtmg_lw_v4.85:
+!     band 3:  500-630 cm-1 (low - h2o,co2; high - h2o,co2)
+!      abozzo 200130517 updated to rrtmg_lw_v4.85:
 !     band 3:  500-630 cm-1 (low key - h2o,co2; low minor - n2o)
 !                           (high key - h2o,co2; high minor - n2o)
 !***************************************************************************
 
-! Parameters
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE ecradhook   ,ONLY : LHOOK,   DR_HOOK, JPHOOK
+! parameters
+use parkind1  ,only : jpim     ,jprb
+use ecradhook   ,only : lhook,   dr_hook, jphook
 
-USE YOERRTO3 , ONLY : KAO     ,KBO     ,SELFREFO   ,FRACREFAO  ,&
- & FRACREFBO  ,FORREFO    ,KAO_MN2O   ,KBO_MN2O  
-USE YOERRTA3 , ONLY : KA      ,KB      ,SELFREF    ,FRACREFA   ,&
- & FRACREFB   ,FORREF    ,KA_MN2O   ,KB_MN2O  
-USE YOERRTRWT, ONLY : RWGT
-USE YOERRTFTR, ONLY : NGC      ,NGS      ,NGN      
+use yoerrto3 , only : kao     ,kbo     ,selfrefo   ,fracrefao  ,&
+ & fracrefbo  ,forrefo    ,kao_mn2o   ,kbo_mn2o  
+use yoerrta3 , only : ka      ,kb      ,selfref    ,fracrefa   ,&
+ & fracrefb   ,forref    ,ka_mn2o   ,kb_mn2o  
+use yoerrtrwt, only : rwgt
+use yoerrtftr, only : ngc      ,ngs      ,ngn      
 
-IMPLICIT NONE
+implicit none
 
-INTEGER(KIND=JPIM) :: IGC, IPR, IPRSM, JN, JP, JT
+integer(kind=jpim) :: igc, ipr, iprsm, jn, jp, jt
 
-REAL(KIND=JPRB) :: Z_SUMF, Z_SUMK
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jprb) :: z_sumf, z_sumk
+real(kind=jphook) :: zhook_handle
 
-IF (LHOOK) CALL DR_HOOK('RRTM_CMBGB3',0,ZHOOK_HANDLE)
-DO JN = 1,9
-  DO JT = 1,5
-    DO JP = 1,13
-      IPRSM = 0
-      DO IGC = 1,NGC(3)
-        Z_SUMK = 0.0_JPRB
-        DO IPR = 1, NGN(NGS(2)+IGC)
-          IPRSM = IPRSM + 1
+if (lhook) call dr_hook('rrtm_cmbgb3',0,zhook_handle)
+do jn = 1,9
+  do jt = 1,5
+    do jp = 1,13
+      iprsm = 0
+      do igc = 1,ngc(3)
+        z_sumk = 0.0_jprb
+        do ipr = 1, ngn(ngs(2)+igc)
+          iprsm = iprsm + 1
 
-          Z_SUMK = Z_SUMK + KAO(JN,JT,JP,IPRSM)*RWGT(IPRSM+32)
-        ENDDO
+          z_sumk = z_sumk + kao(jn,jt,jp,iprsm)*rwgt(iprsm+32)
+        enddo
 
-        KA(JN,JT,JP,IGC) = Z_SUMK
-      ENDDO
-    ENDDO
-  ENDDO
-ENDDO
-DO JN = 1,5
-  DO JT = 1,5
-    DO JP = 13,59
-      IPRSM = 0
-      DO IGC = 1,NGC(3)
-        Z_SUMK = 0.0_JPRB
-        DO IPR = 1, NGN(NGS(2)+IGC)
-          IPRSM = IPRSM + 1
+        ka(jn,jt,jp,igc) = z_sumk
+      enddo
+    enddo
+  enddo
+enddo
+do jn = 1,5
+  do jt = 1,5
+    do jp = 13,59
+      iprsm = 0
+      do igc = 1,ngc(3)
+        z_sumk = 0.0_jprb
+        do ipr = 1, ngn(ngs(2)+igc)
+          iprsm = iprsm + 1
 
-          Z_SUMK = Z_SUMK + KBO(JN,JT,JP,IPRSM)*RWGT(IPRSM+32)
-        ENDDO
+          z_sumk = z_sumk + kbo(jn,jt,jp,iprsm)*rwgt(iprsm+32)
+        enddo
 
-        KB(JN,JT,JP,IGC) = Z_SUMK
-      ENDDO
-    ENDDO
-  ENDDO
-ENDDO
+        kb(jn,jt,jp,igc) = z_sumk
+      enddo
+    enddo
+  enddo
+enddo
 
-    DO JN = 1,9
-         DO JT = 1,19
-            IPRSM = 0
-            DO IGC = 1,NGC(3)
-              Z_SUMK = 0.
-               DO IPR = 1, NGN(NGS(2)+IGC)
-                  IPRSM = IPRSM + 1
-                  Z_SUMK = Z_SUMK + KAO_MN2O(JN,JT,IPRSM)*RWGT(IPRSM+32)
-               ENDDO
-               KA_MN2O(JN,JT,IGC) = Z_SUMK
-            ENDDO
-         ENDDO
-      ENDDO
+    do jn = 1,9
+         do jt = 1,19
+            iprsm = 0
+            do igc = 1,ngc(3)
+              z_sumk = 0.
+               do ipr = 1, ngn(ngs(2)+igc)
+                  iprsm = iprsm + 1
+                  z_sumk = z_sumk + kao_mn2o(jn,jt,iprsm)*rwgt(iprsm+32)
+               enddo
+               ka_mn2o(jn,jt,igc) = z_sumk
+            enddo
+         enddo
+      enddo
 
-      DO JN = 1,5
-         DO JT = 1,19
-            IPRSM = 0
-            DO IGC = 1,NGC(3)
-              Z_SUMK = 0.
-               DO IPR = 1, NGN(NGS(2)+IGC)
-                  IPRSM = IPRSM + 1
-                  Z_SUMK = Z_SUMK + KBO_MN2O(JN,JT,IPRSM)*RWGT(IPRSM+32)
-               ENDDO
-               KB_MN2O(JN,JT,IGC) = Z_SUMK
-            ENDDO
-         ENDDO
-      ENDDO
-
-
-
-DO JT = 1,10
-  IPRSM = 0
-  DO IGC = 1,NGC(3)
-    Z_SUMK = 0.0_JPRB
-    DO IPR = 1, NGN(NGS(2)+IGC)
-      IPRSM = IPRSM + 1
-      Z_SUMK = Z_SUMK + SELFREFO(JT,IPRSM)*RWGT(IPRSM+32)
-    ENDDO
-    SELFREF(JT,IGC) = Z_SUMK
-  ENDDO
-ENDDO
-
-      DO JT = 1,4
-         IPRSM = 0
-         DO IGC = 1,NGC(3)
-            Z_SUMK = 0.
-            DO IPR = 1, NGN(NGS(2)+IGC)
-               IPRSM = IPRSM + 1
-               Z_SUMK = Z_SUMK + FORREFO(JT,IPRSM)*RWGT(IPRSM+32)
-            ENDDO
-            FORREF(JT,IGC) = Z_SUMK
-         ENDDO
-      ENDDO
-
-      DO JP = 1,9
-         IPRSM = 0
-         DO IGC = 1,NGC(3)
-            Z_SUMF = 0.
-            DO IPR = 1, NGN(NGS(2)+IGC)
-               IPRSM = IPRSM + 1
-               Z_SUMF = Z_SUMF + FRACREFAO(IPRSM,JP)
-            ENDDO
-            FRACREFA(IGC,JP) = Z_SUMF
-         ENDDO
-      ENDDO
+      do jn = 1,5
+         do jt = 1,19
+            iprsm = 0
+            do igc = 1,ngc(3)
+              z_sumk = 0.
+               do ipr = 1, ngn(ngs(2)+igc)
+                  iprsm = iprsm + 1
+                  z_sumk = z_sumk + kbo_mn2o(jn,jt,iprsm)*rwgt(iprsm+32)
+               enddo
+               kb_mn2o(jn,jt,igc) = z_sumk
+            enddo
+         enddo
+      enddo
 
 
 
-DO JP = 1,5
-  IPRSM = 0
-  DO IGC = 1,NGC(3)
-    Z_SUMF = 0.0_JPRB
-    DO IPR = 1, NGN(NGS(2)+IGC)
-      IPRSM = IPRSM + 1
+do jt = 1,10
+  iprsm = 0
+  do igc = 1,ngc(3)
+    z_sumk = 0.0_jprb
+    do ipr = 1, ngn(ngs(2)+igc)
+      iprsm = iprsm + 1
+      z_sumk = z_sumk + selfrefo(jt,iprsm)*rwgt(iprsm+32)
+    enddo
+    selfref(jt,igc) = z_sumk
+  enddo
+enddo
 
-      Z_SUMF = Z_SUMF + FRACREFBO(IPRSM,JP)
-    ENDDO
+      do jt = 1,4
+         iprsm = 0
+         do igc = 1,ngc(3)
+            z_sumk = 0.
+            do ipr = 1, ngn(ngs(2)+igc)
+               iprsm = iprsm + 1
+               z_sumk = z_sumk + forrefo(jt,iprsm)*rwgt(iprsm+32)
+            enddo
+            forref(jt,igc) = z_sumk
+         enddo
+      enddo
 
-    FRACREFB(IGC,JP) = Z_SUMF
-  ENDDO
-ENDDO
+      do jp = 1,9
+         iprsm = 0
+         do igc = 1,ngc(3)
+            z_sumf = 0.
+            do ipr = 1, ngn(ngs(2)+igc)
+               iprsm = iprsm + 1
+               z_sumf = z_sumf + fracrefao(iprsm,jp)
+            enddo
+            fracrefa(igc,jp) = z_sumf
+         enddo
+      enddo
 
 
-!$ACC UPDATE DEVICE(FRACREFA, FRACREFB, KA_MN2O, KB_MN2O, KA, KB, SELFREF, &
-!$ACC               FORREF)
 
-IF (LHOOK) CALL DR_HOOK('RRTM_CMBGB3',1,ZHOOK_HANDLE)
-END SUBROUTINE RRTM_CMBGB3
+do jp = 1,5
+  iprsm = 0
+  do igc = 1,ngc(3)
+    z_sumf = 0.0_jprb
+    do ipr = 1, ngn(ngs(2)+igc)
+      iprsm = iprsm + 1
+
+      z_sumf = z_sumf + fracrefbo(iprsm,jp)
+    enddo
+
+    fracrefb(igc,jp) = z_sumf
+  enddo
+enddo
+
+
+!$acc update device(fracrefa, fracrefb, ka_mn2o, kb_mn2o, ka, kb, selfref, &
+!$acc               forref)
+
+if (lhook) call dr_hook('rrtm_cmbgb3',1,zhook_handle)
+end subroutine rrtm_cmbgb3
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

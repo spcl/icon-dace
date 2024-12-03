@@ -1,261 +1,310 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/rrtm_prepare_gases.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/rrtm_prepare_gases.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE RRTM_PREPARE_GASES &
- &( KIDIA, KFDIA, KLON, KLEV, &
- &  PAPH , PAP , &
- &  PTH  , PT  , &
- &  PQ   , PCO2 , PCH4, PN2O  , PNO2, PC11, PC12, PC22, PCL4, POZN, &
- &  PCOLDRY, PWBRODL, PWKL, PWX , &
- &  PAVEL  , PTAVEL , PZ  , PTZ , KREFLECT)  
+subroutine rrtm_prepare_gases &
+ &( kidia, kfdia, klon, klev, &
+ &  paph , pap , &
+ &  pth  , pt  , &
+ &  pq   , pco2 , pch4, pn2o  , pno2, pc11, pc12, pc22, pcl4, pozn, &
+ &  pcoldry, pwbrodl, pwkl, pwx , &
+ &  pavel  , ptavel , pz  , ptz , kreflect)  
 
-!----compiled for Cray with -h nopattern----
+!----compiled for cray with -h nopattern----
 
-!     Prepare the units of the gas concentrations for the longwave
-!     RRTM gas absorption model.  This file is adapted from
-!     rrtm_ecrt_140gp_mcica.F90, written mainly by Jean-Jacques
-!     Morcrette.
+!     prepare the units of the gas concentrations for the longwave
+!     rrtm gas absorption model.  this file is adapted from
+!     rrtm_ecrt_140gp_mcica.f90, written mainly by jean-jacques
+!     morcrette.
 
-!- Original
-!     2015-07-15  Robin Hogan
+!- original
+!     2015-07-15  robin hogan
 
-!- Modifications
+!- modifications
 
-USE PARKIND1 , ONLY : JPIM, JPRB
-USE ecradhook  , ONLY : LHOOK, DR_HOOK, JPHOOK
-USE YOMCST   , ONLY : RG
-USE PARRRTM  , ONLY : JPXSEC, JPINPX  
-USE YOMDYNCORE,ONLY : RPLRG
+use parkind1 , only : jpim, jprb
+use ecradhook  , only : lhook, dr_hook, jphook
+use yomcst   , only : rg
+use parrrtm  , only : jpxsec, jpinpx  
+use yomdyncore,only : rplrg
 
-!------------------------------Arguments--------------------------------
+!------------------------------arguments--------------------------------
 
-IMPLICIT NONE
+implicit none
 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KLON! Number of atmospheres (longitudes) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KLEV! Number of atmospheric layers 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KIDIA, KFDIA 
+integer(kind=jpim),intent(in)    :: klon! number of atmospheres (longitudes) 
+integer(kind=jpim),intent(in)    :: klev! number of atmospheric layers 
+integer(kind=jpim),intent(in)    :: kidia, kfdia 
 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PAPH(KLON,KLEV+1) ! Interface pressures (Pa)
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PAP(KLON,KLEV) ! Layer pressures (Pa)
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PTH(KLON,KLEV+1) ! Interface temperatures (K)
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PT(KLON,KLEV) ! Layer temperature (K)
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PQ(KLON,KLEV) ! H2O specific humidity (mmr)
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PCO2(KLON,KLEV) ! CO2 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PCH4(KLON,KLEV) ! CH4 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PN2O(KLON,KLEV) ! N2O mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PNO2(KLON,KLEV) ! NO2 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PC11(KLON,KLEV) ! CFC11 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PC12(KLON,KLEV) ! CFC12 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PC22(KLON,KLEV) ! CFC22 mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PCL4(KLON,KLEV) ! CCL4  mass mixing ratio
-REAL(KIND=JPRB)   ,INTENT(IN)    :: POZN(KLON,KLEV) ! O3 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: paph(klon,klev+1) ! interface pressures (pa)
+real(kind=jprb)   ,intent(in)    :: pap(klon,klev) ! layer pressures (pa)
+real(kind=jprb)   ,intent(in)    :: pth(klon,klev+1) ! interface temperatures (k)
+real(kind=jprb)   ,intent(in)    :: pt(klon,klev) ! layer temperature (k)
+real(kind=jprb)   ,intent(in)    :: pq(klon,klev) ! h2o specific humidity (mmr)
+real(kind=jprb)   ,intent(in)    :: pco2(klon,klev) ! co2 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pch4(klon,klev) ! ch4 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pn2o(klon,klev) ! n2o mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pno2(klon,klev) ! no2 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pc11(klon,klev) ! cfc11 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pc12(klon,klev) ! cfc12 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pc22(klon,klev) ! cfc22 mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pcl4(klon,klev) ! ccl4  mass mixing ratio
+real(kind=jprb)   ,intent(in)    :: pozn(klon,klev) ! o3 mass mixing ratio
 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PCOLDRY(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PWBRODL(KIDIA:KFDIA,KLEV) ! broadening gas column density (mol/cm2)
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PWKL(KIDIA:KFDIA,JPINPX,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PWX(KIDIA:KFDIA,JPXSEC,KLEV) ! Amount of trace gases
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PAVEL(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PTAVEL(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PZ(KIDIA:KFDIA,0:KLEV) 
-REAL(KIND=JPRB)   ,INTENT(OUT)   :: PTZ(KIDIA:KFDIA,0:KLEV) 
-INTEGER(KIND=JPIM),INTENT(OUT)   :: KREFLECT(KIDIA:KFDIA) 
+real(kind=jprb)   ,intent(out)   :: pcoldry(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(out)   :: pwbrodl(kidia:kfdia,klev) ! broadening gas column density (mol/cm2)
+real(kind=jprb)   ,intent(out)   :: pwkl(kidia:kfdia,jpinpx,klev) 
+real(kind=jprb)   ,intent(out)   :: pwx(kidia:kfdia,jpxsec,klev) ! amount of trace gases
+real(kind=jprb)   ,intent(out)   :: pavel(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(out)   :: ptavel(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(out)   :: pz(kidia:kfdia,0:klev) 
+real(kind=jprb)   ,intent(out)   :: ptz(kidia:kfdia,0:klev) 
+integer(kind=jpim),intent(out)   :: kreflect(kidia:kfdia) 
 
-!      real rch4                       ! CH4 mass mixing ratio
-!      real rn2o                       ! N2O mass mixing ratio
-!      real rcfc11                     ! CFC11 mass mixing ratio
-!      real rcfc12                     ! CFC12 mass mixing ratio
-!      real rcfc22                     ! CFC22 mass mixing ratio
-!      real rccl4                      ! CCl4  mass mixing ratio
-!- from PROFILE             
-!- from SURFACE             
-REAL(KIND=JPRB) :: ZAMD                  ! Effective molecular weight of dry air (g/mol)
-REAL(KIND=JPRB) :: ZAMW                  ! Molecular weight of water vapor (g/mol)
-REAL(KIND=JPRB) :: ZAMCO2                ! Molecular weight of carbon dioxide (g/mol)
-REAL(KIND=JPRB) :: ZAMO                  ! Molecular weight of ozone (g/mol)
-REAL(KIND=JPRB) :: ZAMCH4                ! Molecular weight of methane (g/mol)
-REAL(KIND=JPRB) :: ZAMN2O                ! Molecular weight of nitrous oxide (g/mol)
-REAL(KIND=JPRB) :: ZAMC11                ! Molecular weight of CFC11 (g/mol) - CFCL3
-REAL(KIND=JPRB) :: ZAMC12                ! Molecular weight of CFC12 (g/mol) - CF2CL2
-REAL(KIND=JPRB) :: ZAMC22                ! Molecular weight of CFC22 (g/mol) - CHF2CL
-REAL(KIND=JPRB) :: ZAMCL4                ! Molecular weight of CCl4  (g/mol) - CCL4
-REAL(KIND=JPRB) :: ZAVGDRO               ! Avogadro's number (molecules/mole)
-REAL(KIND=JPRB) :: ZGRAVIT               ! Gravitational acceleration (cm/s**2)
+!      real rch4                       ! ch4 mass mixing ratio
+!      real rn2o                       ! n2o mass mixing ratio
+!      real rcfc11                     ! cfc11 mass mixing ratio
+!      real rcfc12                     ! cfc12 mass mixing ratio
+!      real rcfc22                     ! cfc22 mass mixing ratio
+!      real rccl4                      ! ccl4  mass mixing ratio
+!- from profile             
+!- from surface             
+real(kind=jprb) :: zamd                  ! effective molecular weight of dry air (g/mol)
+real(kind=jprb) :: zamw                  ! molecular weight of water vapor (g/mol)
+real(kind=jprb) :: zamco2                ! molecular weight of carbon dioxide (g/mol)
+real(kind=jprb) :: zamo                  ! molecular weight of ozone (g/mol)
+real(kind=jprb) :: zamch4                ! molecular weight of methane (g/mol)
+real(kind=jprb) :: zamn2o                ! molecular weight of nitrous oxide (g/mol)
+real(kind=jprb) :: zamc11                ! molecular weight of cfc11 (g/mol) - cfcl3
+real(kind=jprb) :: zamc12                ! molecular weight of cfc12 (g/mol) - cf2cl2
+real(kind=jprb) :: zamc22                ! molecular weight of cfc22 (g/mol) - chf2cl
+real(kind=jprb) :: zamcl4                ! molecular weight of ccl4  (g/mol) - ccl4
+real(kind=jprb) :: zavgdro               ! avogadro's number (molecules/mole)
+real(kind=jprb) :: zgravit               ! gravitational acceleration (cm/s**2)
 
-REAL(KIND=JPRB) :: ZSUMMOL
+real(kind=jprb) :: zsummol
 
-! Atomic weights for conversion from mass to volume mixing ratios; these
-!  are the same values used in ECRT to assure accurate conversion to vmr
-data ZAMD   /  28.970_JPRB    /
-data ZAMW   /  18.0154_JPRB   /
-data ZAMCO2 /  44.011_JPRB    /
-data ZAMO   /  47.9982_JPRB   /
-data ZAMCH4 /  16.043_JPRB    /
-data ZAMN2O /  44.013_JPRB    /
-data ZAMC11 / 137.3686_JPRB   /
-data ZAMC12 / 120.9140_JPRB   /
-data ZAMC22 /  86.4690_JPRB   /
-data ZAMCL4 / 153.8230_JPRB   /
-data ZAVGDRO/ 6.02214E23_JPRB /
+! atomic weights for conversion from mass to volume mixing ratios; these
+!  are the same values used in ecrt to assure accurate conversion to vmr
+data zamd   /  28.970_jprb    /
+data zamw   /  18.0154_jprb   /
+data zamco2 /  44.011_jprb    /
+data zamo   /  47.9982_jprb   /
+data zamch4 /  16.043_jprb    /
+data zamn2o /  44.013_jprb    /
+data zamc11 / 137.3686_jprb   /
+data zamc12 / 120.9140_jprb   /
+data zamc22 /  86.4690_jprb   /
+data zamcl4 / 153.8230_jprb   /
+data zavgdro/ 6.02214e23_jprb /
 
-INTEGER(KIND=JPIM) :: IATM, JMOL, IXMAX, J1, J2, JK, JL
-INTEGER(KIND=JPIM), PARAMETER :: ITMOL = 7
+integer(kind=jpim) :: iatm, jmol, ixmax, j1, j2, jk, jl
+integer(kind=jpim), parameter :: itmol = 7
 
-REAL(KIND=JPRB) :: ZAMM
+real(kind=jprb) :: zamm
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jphook) :: zhook_handle
 
 ! ***
 
 ! *** mji
-! Initialize all molecular amounts to zero here, 
-! then pass ECRT amounts into RRTM arrays below.
+! initialize all molecular amounts to zero here, 
+! then pass ecrt amounts into rrtm arrays below.
 
-!      DATA ZWKL /MAXPRDW*0.0/
-!      DATA ZWX  /MAXPROD*0.0/
-!      DATA KREFLECT /0/
+!      data zwkl /maxprdw*0.0/
+!      data zwx  /maxprod*0.0/
+!      data kreflect /0/
 
-! Activate cross section molecules:
-!     NXMOL     - number of cross-sections input by user
-!     IXINDX(I) - index of cross-section molecule corresponding to Ith
+! activate cross section molecules:
+!     nxmol     - number of cross-sections input by user
+!     ixindx(i) - index of cross-section molecule corresponding to ith
 !                 cross-section specified by user
-!                 = 0 -- not allowed in RRTM
-!                 = 1 -- CCL4
-!                 = 2 -- CFC11
-!                 = 3 -- CFC12
-!                 = 4 -- CFC22
-!      DATA KXMOL  /2/
-!      DATA KXINDX /0,2,3,0,31*0/
+!                 = 0 -- not allowed in rrtm
+!                 = 1 -- ccl4
+!                 = 2 -- cfc11
+!                 = 3 -- cfc12
+!                 = 4 -- cfc22
+!      data kxmol  /2/
+!      data kxindx /0,2,3,0,31*0/
 
-!      IREFLECT=KREFLECT
-!      NXMOL=KXMOL
+!      ireflect=kreflect
+!      nxmol=kxmol
 
-IF (LHOOK) CALL DR_HOOK('RRTM_PREPARE_GASES',0,ZHOOK_HANDLE)
+if (lhook) call dr_hook('rrtm_prepare_gases',0,zhook_handle)
 
-!$ACC DATA PRESENT(PAPH, PAP, &
-!$ACC              PTH, PT, &
-!$ACC              PQ, PCO2, PCH4, PN2O, PNO2, PC11, PC12, PC22, PCL4, POZN, &
-!$ACC              PCOLDRY, PWBRODL, PWKL, PWX , &
-!$ACC              PAVEL, PTAVEL, PZ, PTZ , KREFLECT)
+!$acc data present(paph, pap, &
+!$acc              pth, pt, &
+!$acc              pq, pco2, pch4, pn2o, pno2, pc11, pc12, pc22, pcl4, pozn, &
+!$acc              pcoldry, pwbrodl, pwkl, pwx , &
+!$acc              pavel, ptavel, pz, ptz , kreflect)
 
-ZGRAVIT=(RG/RPLRG)*1.E2_JPRB
+zgravit=(rg/rplrg)*1.e2_jprb
 
-!$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-!$ACC LOOP GANG VECTOR
-DO JL = KIDIA, KFDIA
-  KREFLECT(JL)=0
-ENDDO
-!$ACC END PARALLEL
+!$acc parallel default(none) async(1)
+!$acc loop gang vector
+do jl = kidia, kfdia
+  kreflect(jl)=0
+enddo
+!$acc end parallel
 
-!$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-!DO J1=1,35
-! IXINDX(J1)=0
-!$ACC LOOP GANG VECTOR COLLAPSE(3)
-DO J2=1,KLEV
-  DO J1=1,35
-    DO JL = KIDIA, KFDIA
-      PWKL(JL,J1,J2)=0.0_JPRB 
-    ENDDO
-  ENDDO
-ENDDO
-!IXINDX(2)=2
-!IXINDX(3)=3
-!$ACC END PARALLEL
+!$acc parallel default(none) async(1)
+!do j1=1,35
+! ixindx(j1)=0
+!$acc loop gang vector collapse(3)
+do j2=1,klev
+  do j1=1,35
+    do jl = kidia, kfdia
+      pwkl(jl,j1,j2)=0.0_jprb 
+    enddo
+  enddo
+enddo
+!ixindx(2)=2
+!ixindx(3)=3
+!$acc end parallel
 
-!     Set parameters needed for RRTM execution:
-IATM    = 0
-!      IXSECT  = 1
-!      NUMANGS = 0
-!      IOUT    = -1
-IXMAX   = 4
+!     set parameters needed for rrtm execution:
+iatm    = 0
+!      ixsect  = 1
+!      numangs = 0
+!      iout    = -1
+ixmax   = 4
 
-!$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-!$ACC LOOP GANG(STATIC:1) VECTOR
-DO JL = KIDIA, KFDIA
-!     Install ECRT arrays into RRTM arrays for pressure, temperature,
-!     and molecular amounts.  Pressures are converted from Pascals
-!     (ECRT) to mb (RRTM).  H2O, CO2, O3 and trace gas amounts are 
-!     converted from mass mixing ratio to volume mixing ratio.  CO2
-!     converted with same dry air and CO2 molecular weights used in 
-!     ECRT to assure correct conversion back to the proper CO2 vmr.
-!     The dry air column COLDRY (in molec/cm2) is calculated from 
-!     the level pressures PZ (in mb) based on the hydrostatic equation
-!     and includes a correction to account for H2O in the layer.  The
+!$acc parallel default(none) async(1)
+!$acc loop gang(static:1) vector
+do jl = kidia, kfdia
+!     install ecrt arrays into rrtm arrays for pressure, temperature,
+!     and molecular amounts.  pressures are converted from pascals
+!     (ecrt) to mb (rrtm).  h2o, co2, o3 and trace gas amounts are 
+!     converted from mass mixing ratio to volume mixing ratio.  co2
+!     converted with same dry air and co2 molecular weights used in 
+!     ecrt to assure correct conversion back to the proper co2 vmr.
+!     the dry air column coldry (in molec/cm2) is calculated from 
+!     the level pressures pz (in mb) based on the hydrostatic equation
+!     and includes a correction to account for h2o in the layer.  the
 !     molecular weight of moist air (amm) is calculated for each layer.
-!     Note: RRTM levels count from bottom to top, while the ECRT input
+!     note: rrtm levels count from bottom to top, while the ecrt input
 !     variables count from the top down and must be reversed 
-  PZ(JL,0) = PAPH(JL,KLEV+1)/100._JPRB
-  PTZ(JL,0) = PTH(JL,KLEV+1)
-ENDDO
+  pz(jl,0) = paph(jl,klev+1)/100._jprb
+  ptz(jl,0) = pth(jl,klev+1)
+enddo
 
-  !$ACC LOOP SEQ
-  DO JK = 1, KLEV
-    !$ACC LOOP GANG(STATIC:1) VECTOR PRIVATE(ZAMM)
-    DO JL = KIDIA, KFDIA
-    PAVEL(JL,JK) = PAP(JL,KLEV-JK+1)/100._JPRB
-    PTAVEL(JL,JK) = PT(JL,KLEV-JK+1)
-    PZ(JL,JK) = PAPH(JL,KLEV-JK+1)/100._JPRB
-    PTZ(JL,JK) = PTH(JL,KLEV-JK+1)
-    ! RRTMG cannot cope with zero or negative water vapour
-    PWKL(JL,1,JK) = MAX(PQ(JL,KLEV-JK+1),1.0E-15)*ZAMD/ZAMW
-    PWKL(JL,2,JK) = PCO2(JL,KLEV-JK+1)*ZAMD/ZAMCO2
-    PWKL(JL,3,JK) = POZN(JL,KLEV-JK+1)*ZAMD/ZAMO
-    PWKL(JL,4,JK) = PN2O(JL,KLEV-JK+1)*ZAMD/ZAMN2O
-    PWKL(JL,6,JK) = PCH4(JL,KLEV-JK+1)*ZAMD/ZAMCH4
-    PWKL(JL,7,JK) = 0.209488_JPRB
-    ZAMM = (1.0_JPRB-PWKL(JL,1,JK))*ZAMD + PWKL(JL,1,JK)*ZAMW
-    PCOLDRY(JL,JK) = (PZ(JL,JK-1)-PZ(JL,JK))*1.E3_JPRB*ZAVGDRO/(ZGRAVIT*ZAMM*(1.0_JPRB+PWKL(JL,1,JK)))
-  ENDDO
-  ENDDO
-  !$ACC END PARALLEL
+  !$acc loop seq
+  do jk = 1, klev
+    !$acc loop gang(static:1) vector private(zamm)
+    do jl = kidia, kfdia
+    pavel(jl,jk) = pap(jl,klev-jk+1)/100._jprb
+    ptavel(jl,jk) = pt(jl,klev-jk+1)
+    pz(jl,jk) = paph(jl,klev-jk+1)/100._jprb
+    ptz(jl,jk) = pth(jl,klev-jk+1)
+    ! rrtmg cannot cope with zero or negative water vapour
+    pwkl(jl,1,jk) = max(pq(jl,klev-jk+1),1.0e-15)*zamd/zamw
+    pwkl(jl,2,jk) = pco2(jl,klev-jk+1)*zamd/zamco2
+    pwkl(jl,3,jk) = pozn(jl,klev-jk+1)*zamd/zamo
+    pwkl(jl,4,jk) = pn2o(jl,klev-jk+1)*zamd/zamn2o
+    pwkl(jl,6,jk) = pch4(jl,klev-jk+1)*zamd/zamch4
+    pwkl(jl,7,jk) = 0.209488_jprb
+    zamm = (1.0_jprb-pwkl(jl,1,jk))*zamd + pwkl(jl,1,jk)*zamw
+    pcoldry(jl,jk) = (pz(jl,jk-1)-pz(jl,jk))*1.e3_jprb*zavgdro/(zgravit*zamm*(1.0_jprb+pwkl(jl,1,jk)))
+  enddo
+  enddo
+  !$acc end parallel
 
-  !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-  !$ACC LOOP GANG VECTOR COLLAPSE(3)
-  DO J2=1,KLEV
-    DO J1=1,JPXSEC
-      DO JL = KIDIA, KFDIA
-        PWX(JL,J1,J2)=0.0_JPRB
-      ENDDO
-    ENDDO
-  ENDDO
-  !$ACC END PARALLEL
+  !$acc parallel default(none) async(1)
+  !$acc loop gang vector collapse(3)
+  do j2=1,klev
+    do j1=1,jpxsec
+      do jl = kidia, kfdia
+        pwx(jl,j1,j2)=0.0_jprb
+      enddo
+    enddo
+  enddo
+  !$acc end parallel
 
 
-  !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-  !$ACC LOOP SEQ
-  DO JK = 1, KLEV
-!$ACC LOOP GANG VECTOR PRIVATE (ZSUMMOL) 
-DO JL = KIDIA, KFDIA
-!- Set cross section molecule amounts from ECRT; convert to vmr
-    PWX(JL,1,JK) = PCL4(JL,KLEV-JK+1) * ZAMD/ZAMCL4
-    PWX(JL,2,JK) = PC11(JL,KLEV-JK+1) * ZAMD/ZAMC11
-    PWX(JL,3,JK) = PC12(JL,KLEV-JK+1) * ZAMD/ZAMC12
-    PWX(JL,4,JK) = PC22(JL,KLEV-JK+1) * ZAMD/ZAMC22
-    PWX(JL,1,JK) = PCOLDRY(JL,JK) * PWX(JL,1,JK) * 1.E-20_JPRB
-    PWX(JL,2,JK) = PCOLDRY(JL,JK) * PWX(JL,2,JK) * 1.E-20_JPRB
-    PWX(JL,3,JK) = PCOLDRY(JL,JK) * PWX(JL,3,JK) * 1.E-20_JPRB
-    PWX(JL,4,JK) = PCOLDRY(JL,JK) * PWX(JL,4,JK) * 1.E-20_JPRB
+  !$acc parallel default(none) async(1)
+  !$acc loop seq
+  do jk = 1, klev
+!$acc loop gang vector private (zsummol) 
+do jl = kidia, kfdia
+!- set cross section molecule amounts from ecrt; convert to vmr
+    pwx(jl,1,jk) = pcl4(jl,klev-jk+1) * zamd/zamcl4
+    pwx(jl,2,jk) = pc11(jl,klev-jk+1) * zamd/zamc11
+    pwx(jl,3,jk) = pc12(jl,klev-jk+1) * zamd/zamc12
+    pwx(jl,4,jk) = pc22(jl,klev-jk+1) * zamd/zamc22
+    pwx(jl,1,jk) = pcoldry(jl,jk) * pwx(jl,1,jk) * 1.e-20_jprb
+    pwx(jl,2,jk) = pcoldry(jl,jk) * pwx(jl,2,jk) * 1.e-20_jprb
+    pwx(jl,3,jk) = pcoldry(jl,jk) * pwx(jl,3,jk) * 1.e-20_jprb
+    pwx(jl,4,jk) = pcoldry(jl,jk) * pwx(jl,4,jk) * 1.e-20_jprb
 
-!- Here, all molecules in WKL and WX are in volume mixing ratio; convert to
-!  molec/cm2 based on COLDRY for use in RRTM
+!- here, all molecules in wkl and wx are in volume mixing ratio; convert to
+!  molec/cm2 based on coldry for use in rrtm
 
-!CDIR UNROLL=6
-ZSUMMOL = 0.0_JPRB
-!AB broadening gases
-    !$ACC LOOP SEQ
-    DO JMOL = 2, ITMOL
-      ZSUMMOL = ZSUMMOL + PWKL(JL,JMOL,JK)
-    ENDDO
-    PWBRODL(JL,JK) = PCOLDRY(JL,JK) * (1._JPRB - ZSUMMOL)
-    !$ACC LOOP SEQ
-    DO JMOL = 1, ITMOL
-      PWKL(JL,JMOL,JK) = PCOLDRY(JL,JK) * PWKL(JL,JMOL,JK)
-    ENDDO    
-  ENDDO
-ENDDO
-!$ACC END PARALLEL
-!$ACC WAIT
-!$ACC END DATA
+!cdir unroll=6
+zsummol = 0.0_jprb
+!ab broadening gases
+    !$acc loop seq
+    do jmol = 2, itmol
+      zsummol = zsummol + pwkl(jl,jmol,jk)
+    enddo
+    pwbrodl(jl,jk) = pcoldry(jl,jk) * (1._jprb - zsummol)
+    !$acc loop seq
+    do jmol = 1, itmol
+      pwkl(jl,jmol,jk) = pcoldry(jl,jk) * pwkl(jl,jmol,jk)
+    enddo    
+  enddo
+enddo
+!$acc end parallel
+!$acc wait
+!$acc end data
 
 !     ------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('RRTM_PREPARE_GASES',1,ZHOOK_HANDLE)
+if (lhook) call dr_hook('rrtm_prepare_gases',1,zhook_handle)
 
-END SUBROUTINE RRTM_PREPARE_GASES
+end subroutine rrtm_prepare_gases
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

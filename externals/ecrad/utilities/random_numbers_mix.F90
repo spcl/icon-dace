@@ -1,54 +1,59 @@
-!**** *RANDOM_NUMBERS_MIX*  - Portable Random Number Generator
+! # 1 "utilities/random_numbers_mix.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "utilities/random_numbers_mix.f90"
+!**** *random_numbers_mix*  - portable random number generator
 
-! (C) Copyright 2002- ECMWF.
+! (c) copyright 2002- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-!     Purpose.
+!     purpose.
 !     --------
-!           Generate machine-independent pseudo-random numbers
+!           generate machine-independent pseudo-random numbers
 
-!**   Interface.
+!**   interface.
 !     ----------
-!        CALL initialize_random_numbers (kseed, yd_stream)
-!        CALL uniform_distribution      (px   , yd_stream)
-!        CALL gaussian_distribution     (px   , yd_stream)
-!        CALL random_number_restartfile (fname, action)
-!        CALL wr_rangen_state           (nunit)
+!        call initialize_random_numbers (kseed, yd_stream)
+!        call uniform_distribution      (px   , yd_stream)
+!        call gaussian_distribution     (px   , yd_stream)
+!        call random_number_restartfile (fname, action)
+!        call wr_rangen_state           (nunit)
 
-!        Explicit arguments :
+!        explicit arguments :
 !        --------------------
-!        kseed  (input)    : integer seed in the range [0,HUGE(kseed)]
+!        kseed  (input)    : integer seed in the range [0,huge(kseed)]
 !        yd_stream (optional) : the state of the random number generator
 !        px     (output)   : array to receive random numbers in the range
 
-!        In the case of uniform_distribution, px has values in the range [0.0,1.0)
+!        in the case of uniform_distribution, px has values in the range [0.0,1.0)
 
-!        Implicit arguments :
+!        implicit arguments :
 !        --------------------
-!        None
+!        none
 
-!     Method.
+!     method.
 !     -------
-!        Based loosly on ZUFALL (Petersen, 1994).
+!        based loosly on zufall (petersen, 1994).
 
-!        The main difference between this generator and ZUFALL is that integer arithmetic
-!        is used. This ensures portability to vector machines that implement different
-!        real arithmetic. In particular, vector machines often implement non-IEEE
-!        arithmetic for their vector pipes. This routine will give identical results for
+!        the main difference between this generator and zufall is that integer arithmetic
+!        is used. this ensures portability to vector machines that implement different
+!        real arithmetic. in particular, vector machines often implement non-ieee
+!        arithmetic for their vector pipes. this routine will give identical results for
 !        any integer type with at least 32 bits.
 
-!        The generator is a lagged-Fibonacci generator: x(i) = x(i-p) + x(i-q) mod 2**m.
-!        Lagged-Fibonacci generators have very long repeat periods: (2**q -1) * 2**(m-1)
-!        (i.e about 2.85E191 for q=607, m=30). They pass most tests for randomness.
+!        the generator is a lagged-fibonacci generator: x(i) = x(i-p) + x(i-q) mod 2**m.
+!        lagged-fibonacci generators have very long repeat periods: (2**q -1) * 2**(m-1)
+!        (i.e about 2.85e191 for q=607, m=30). they pass most tests for randomness.
 
-!        p and q must be chosen carefully. Values from the following table are OK.
-!        Larger values give better random numbers, but smaller values are more
+!        p and q must be chosen carefully. values from the following table are ok.
+!        larger values give better random numbers, but smaller values are more
 !        cache-friendly.
 
 !          q         p
@@ -66,375 +71,419 @@
 !          31        13
 !          24        10
 
-!        The initial q values of x are set using the binary shirt register method of
-!        Burns and Pryor 1999.
+!        the initial q values of x are set using the binary shirt register method of
+!        burns and pryor 1999.
 
-!        Mascagni et al (1995) show how to choose different sets of initial values that
-!        are guaranteed to be drawn from different maximal-length cycles. This requires
-!        the initial values of x(1)...x(q) to be in "canonical form". Specifically,
+!        mascagni et al (1995) show how to choose different sets of initial values that
+!        are guaranteed to be drawn from different maximal-length cycles. this requires
+!        the initial values of x(1)...x(q) to be in "canonical form". specifically,
 !        x(1) must be zero and all but a particular one or two values of x must be
-!        even. For q=607 and p=273, only one element (jpq-jps) must be odd.
+!        even. for q=607 and p=273, only one element (jpq-jps) must be odd.
 
-!     Externals.
+!     externals.
 !     ----------
-!        None
+!        none
 
-!     Reference.
+!     reference.
 !     ----------
-!        Burns P.J. and Pryor D.V. 1999,
-!                             Surface Radiative Transport at Large Scale via Monte Carlo.
-!                             Annual Review of Heat Transfer, Vol 9.
+!        burns p.j. and pryor d.v. 1999,
+!                             surface radiative transport at large scale via monte carlo.
+!                             annual review of heat transfer, vol 9.
 !
-!        Petersen W.P., 1994, Lagged Fibonacci Series Random Number Generator
-!                             for the NEC SX-3. International Journal of High Speed Computing
-!                             Vol. 6, No. 3, pp387-398.
+!        petersen w.p., 1994, lagged fibonacci series random number generator
+!                             for the nec sx-3. international journal of high speed computing
+!                             vol. 6, no. 3, pp387-398.
 !
-!        Mascagni M., Cuccaro S.A., Pryor D.V., Robinson M.L., 1995,
-!                             A Fast, High Quality and Reproducible Parallel Lagged-Fibonacci
-!                             Pseudorandom Number Generator. Journal of Computational Physics
-!                             Vol 119. pp211-219.
+!        mascagni m., cuccaro s.a., pryor d.v., robinson m.l., 1995,
+!                             a fast, high quality and reproducible parallel lagged-fibonacci
+!                             pseudorandom number generator. journal of computational physics
+!                             vol 119. pp211-219.
 
-!     Author.
+!     author.
 !     -------
-!        Mike Fisher *ECMWF*
+!        mike fisher *ecmwf*
 
-!     Modifications.
+!     modifications.
 !     --------------
-!        Original : 2002-09-25
-!        Made parallel friendly: 2003-08-11 Robert Pincus
-!        M Leutbecher: 2004-05-10 restart capability
-!        M Fisher:     2005-03-30 replaced LCG initialization with shift register
+!        original : 2002-09-25
+!        made parallel friendly: 2003-08-11 robert pincus
+!        m leutbecher: 2004-05-10 restart capability
+!        m fisher:     2005-03-30 replaced lcg initialization with shift register
 !     ------------------------------------------------------------------
 
-#ifdef RS6K
-@PROCESS HOT(NOVECTOR) NOSTRICT
-#endif
-MODULE RANDOM_NUMBERS_MIX
-USE ecradhook,  ONLY : LHOOK, DR_HOOK, JPHOOK
-USE PARKIND1, ONLY : JPIM, JPRB
 
-IMPLICIT NONE
 
-SAVE
 
-PRIVATE
-PUBLIC RANDOMNUMBERSTREAM,WR_RANGEN_STATE, &
-     & INITIALIZE_RANDOM_NUMBERS, UNIFORM_DISTRIBUTION, GAUSSIAN_DISTRIBUTION ! ,&
-!     & RANDOM_NUMBER_RESTARTFILE, 
+module random_numbers_mix
+use ecradhook,  only : lhook, dr_hook, jphook
+use parkind1, only : jpim, jprb
 
-INTEGER(KIND=JPIM), PARAMETER      :: JPP=273, JPQ=607, JPS=105
-INTEGER(KIND=JPIM), PARAMETER      :: JPMM=30
-INTEGER(KIND=JPIM), PARAMETER      :: JPM=2**JPMM
-INTEGER(KIND=JPIM), PARAMETER      :: JPNUMSPLIT=(JPQ-2)/(JPP-1)
-INTEGER(KIND=JPIM), PARAMETER      :: JPLENSPLIT=(JPQ-JPP+JPNUMSPLIT-1)/JPNUMSPLIT
-INTEGER(KIND=JPIM), PARAMETER      :: INITVALUE = 12345678
+implicit none
 
-TYPE RANDOMNUMBERSTREAM
-  PRIVATE
-  INTEGER(KIND=JPIM)                 :: IUSED
-  INTEGER(KIND=JPIM)                 :: INITTEST ! Should initialize to zero, but can't in F90
-  INTEGER(KIND=JPIM), DIMENSION(JPQ) :: IX 
-  REAL(KIND=JPRB)                    :: ZRM
-END TYPE RANDOMNUMBERSTREAM
+save
 
-CONTAINS
+private
+public randomnumberstream,wr_rangen_state, &
+     & initialize_random_numbers, uniform_distribution, gaussian_distribution ! ,&
+!     & random_number_restartfile, 
+
+integer(kind=jpim), parameter      :: jpp=273, jpq=607, jps=105
+integer(kind=jpim), parameter      :: jpmm=30
+integer(kind=jpim), parameter      :: jpm=2**jpmm
+integer(kind=jpim), parameter      :: jpnumsplit=(jpq-2)/(jpp-1)
+integer(kind=jpim), parameter      :: jplensplit=(jpq-jpp+jpnumsplit-1)/jpnumsplit
+integer(kind=jpim), parameter      :: initvalue = 12345678
+
+type randomnumberstream
+  private
+  integer(kind=jpim)                 :: iused
+  integer(kind=jpim)                 :: inittest ! should initialize to zero, but can't in f90
+  integer(kind=jpim), dimension(jpq) :: ix 
+  real(kind=jprb)                    :: zrm
+end type randomnumberstream
+
+contains
 !-------------------------------------------------------------------------------
-SUBROUTINE INITIALIZE_RANDOM_NUMBERS (KSEED, YD_STREAM) 
+subroutine initialize_random_numbers (kseed, yd_stream) 
   !-------------------------------------------------------------------------------
-  ! Initialize fibgen
+  ! initialize fibgen
   !-------------------------------------------------------------------------------
-  INTEGER(KIND=JPIM),                INTENT(IN   ) :: KSEED
-  TYPE(RANDOMNUMBERSTREAM), INTENT(INOUT) :: YD_STREAM
+  integer(kind=jpim),                intent(in   ) :: kseed
+  type(randomnumberstream), intent(inout) :: yd_stream
   
-  INTEGER, PARAMETER :: JPMASK=123459876
-  INTEGER(KIND=JPIM), PARAMETER     :: JPWARMUP_SHFT=64, JPWARMUP_LFG=999
-  INTEGER(KIND=JPIM)                :: IDUM,JK,JJ,JBIT
-  REAL(KIND=JPRB), DIMENSION(JPWARMUP_LFG)   :: ZWARMUP
+  integer, parameter :: jpmask=123459876
+  integer(kind=jpim), parameter     :: jpwarmup_shft=64, jpwarmup_lfg=999
+  integer(kind=jpim)                :: idum,jk,jj,jbit
+  real(kind=jprb), dimension(jpwarmup_lfg)   :: zwarmup
 
   !-------------------------------------------------------------------------------
-  ! Initialize the buffer using a binary shift register (Burns and Pryor, 1999).
-  ! The Galois representation is used for the shift register as it is more
-  ! efficient than the Fibonacci representation. The magic numbers 31 and 87
+  ! initialize the buffer using a binary shift register (burns and pryor, 1999).
+  ! the galois representation is used for the shift register as it is more
+  ! efficient than the fibonacci representation. the magic numbers 31 and 87
   ! define the shift register primitive polynomial=(32,7,5,3,2,1,0).
   !
-  ! To ensure that different seeds produce distinct initial buffer states in
-  ! canonical form, bits 0...jpmm-2 of the initial seed (after XORing with jpmask
+  ! to ensure that different seeds produce distinct initial buffer states in
+  ! canonical form, bits 0...jpmm-2 of the initial seed (after xoring with jpmask
   ! and spinning up using the linear congruential generator) are used to construct
   ! x(2), and the remaining bits are used to construct x(jpq).
   !-------------------------------------------------------------------------------
   
-  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-  IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:INITIALIZE_RANDOM_NUMBERS',0,ZHOOK_HANDLE)
-  IDUM = ABS(IEOR(KSEED,JPMASK))
-  IF (IDUM==0) IDUM=JPMASK
+  real(kind=jphook) :: zhook_handle
+  if (lhook) call dr_hook('random_numbers_mix:initialize_random_numbers',0,zhook_handle)
+  idum = abs(ieor(kseed,jpmask))
+  if (idum==0) idum=jpmask
 
-  DO JJ=1,JPWARMUP_SHFT
-    IF (BTEST(IDUM,31)) THEN
-      IDUM=IBSET(ISHFT(IEOR(IDUM,87),1),0)
-    ELSE
-      IDUM=IBCLR(ISHFT(IDUM,1),0)
-    ENDIF
-  ENDDO
+  do jj=1,jpwarmup_shft
+    if (btest(idum,31)) then
+      idum=ibset(ishft(ieor(idum,87),1),0)
+    else
+      idum=ibclr(ishft(idum,1),0)
+    endif
+  enddo
 
-  YD_STREAM%IX(1:JPQ-1)= 0
-  YD_STREAM%IX(2)      = ISHFT(IBITS(IDUM,0,JPMM-1),1)
-  YD_STREAM%IX(JPQ)    = IBITS(IDUM,JPMM-1,BIT_SIZE(IDUM)+1-JPMM)
+  yd_stream%ix(1:jpq-1)= 0
+  yd_stream%ix(2)      = ishft(ibits(idum,0,jpmm-1),1)
+  yd_stream%ix(jpq)    = ibits(idum,jpmm-1,bit_size(idum)+1-jpmm)
 
-  DO JBIT=1,JPMM-1
-    DO JJ=3,JPQ-1
-      IF (BTEST(IDUM,31)) THEN
-        IDUM=IBSET(ISHFT(IEOR(IDUM,87),1),0)
-        YD_STREAM%IX(JJ)=IBSET(YD_STREAM%IX(JJ),JBIT)
-      ELSE
-        IDUM=IBCLR(ISHFT(IDUM,1),0)
-      ENDIF
-    ENDDO
-  ENDDO
+  do jbit=1,jpmm-1
+    do jj=3,jpq-1
+      if (btest(idum,31)) then
+        idum=ibset(ishft(ieor(idum,87),1),0)
+        yd_stream%ix(jj)=ibset(yd_stream%ix(jj),jbit)
+      else
+        idum=ibclr(ishft(idum,1),0)
+      endif
+    enddo
+  enddo
 
-  YD_STREAM%IX(JPQ-JPS) = IBSET(YD_STREAM%IX(JPQ-JPS),0)
+  yd_stream%ix(jpq-jps) = ibset(yd_stream%ix(jpq-jps),0)
   
   !-------------------------------------------------------------------------------
-  ! Initialize some constants
+  ! initialize some constants
   !-------------------------------------------------------------------------------
   
-  YD_STREAM%IUSED=JPQ
-  YD_STREAM%ZRM=1.0_JPRB/REAL(JPM,JPRB)
+  yd_stream%iused=jpq
+  yd_stream%zrm=1.0_jprb/real(jpm,jprb)
   
   !-------------------------------------------------------------------------------
-  ! Check the calculation of jpnumsplit and jplensplit.
+  ! check the calculation of jpnumsplit and jplensplit.
   !-------------------------------------------------------------------------------
   
-  IF (JPP+JPNUMSPLIT*JPLENSPLIT < JPQ) THEN
-    CALL ABOR1 ('initialize_random_numbers: upper limit of last loop < jpq')
-  ENDIF
+  if (jpp+jpnumsplit*jplensplit < jpq) then
+    call abor1 ('initialize_random_numbers: upper limit of last loop < jpq')
+  endif
   
-  IF (JPLENSPLIT >=JPP) THEN
-    CALL ABOR1 ('initialize_random_numbers: loop length > jpp')
-  ENDIF
+  if (jplensplit >=jpp) then
+    call abor1 ('initialize_random_numbers: loop length > jpp')
+  endif
   
-  IF (JPNUMSPLIT>1) THEN
-    IF ((JPQ-JPP+JPNUMSPLIT-2)/(JPNUMSPLIT-1) < JPP) THEN
-      CALL ABOR1 ('initialize_random_numbers: jpnumsplit is bigger than necessary')
-    ENDIF
-  ENDIF
+  if (jpnumsplit>1) then
+    if ((jpq-jpp+jpnumsplit-2)/(jpnumsplit-1) < jpp) then
+      call abor1 ('initialize_random_numbers: jpnumsplit is bigger than necessary')
+    endif
+  endif
 
   !-------------------------------------------------------------------------------
-  ! Set initTest to show that the stream is initialized.
+  ! set inittest to show that the stream is initialized.
   !-------------------------------------------------------------------------------
 
-  YD_STREAM%INITTEST = INITVALUE
+  yd_stream%inittest = initvalue
   
   !-------------------------------------------------------------------------------
-  ! Warm up the generator.
+  ! warm up the generator.
   !-------------------------------------------------------------------------------
 
-  CALL UNIFORM_DISTRIBUTION (ZWARMUP, YD_STREAM)
+  call uniform_distribution (zwarmup, yd_stream)
 
-IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:INITIALIZE_RANDOM_NUMBERS',1,ZHOOK_HANDLE)
-END SUBROUTINE INITIALIZE_RANDOM_NUMBERS
+if (lhook) call dr_hook('random_numbers_mix:initialize_random_numbers',1,zhook_handle)
+end subroutine initialize_random_numbers
 
-!@PROCESS HOT NOSTRICT
-SUBROUTINE UNIFORM_DISTRIBUTION (PX,YD_STREAM)
+!@process hot nostrict
+subroutine uniform_distribution (px,yd_stream)
   !--------------------------------------------------------------------------------
-  ! Generate uniformly distributed random numbers in the range 0.0<= px < 1.0
+  ! generate uniformly distributed random numbers in the range 0.0<= px < 1.0
   !--------------------------------------------------------------------------------
-  INTEGER(KIND=JPIM), PARAMETER :: IVAR = INT(Z"3FFFFFFF",JPIM)
-  TYPE(RANDOMNUMBERSTREAM), INTENT(INOUT) :: YD_STREAM
-  REAL(KIND=JPRB), DIMENSION(:),     INTENT(  OUT) :: PX
+  integer(kind=jpim), parameter :: ivar = int(z"3fffffff",jpim)
+  type(randomnumberstream), intent(inout) :: yd_stream
+  real(kind=jprb), dimension(:),     intent(  out) :: px
 
-  INTEGER(KIND=JPIM)                :: JJ, JK, IN, IFILLED
+  integer(kind=jpim)                :: jj, jk, in, ifilled
   
-  ! This test is a little dirty but Fortran 90 doesn't allow for the initialization
+  ! this test is a little dirty but fortran 90 doesn't allow for the initialization
   !   of components of derived types. 
-  REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-! DR_HOOK removed to reduce overhead
-! IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:UNIFORM_DISTRIBUTION',0,ZHOOK_HANDLE)
-  IF(YD_STREAM%INITTEST /= INITVALUE) &
-    & CALL ABOR1 ('uniform_distribution called before initialize_random_numbers')
+  real(kind=jphook) :: zhook_handle
+! dr_hook removed to reduce overhead
+! if (lhook) call dr_hook('random_numbers_mix:uniform_distribution',0,zhook_handle)
+  if(yd_stream%inittest /= initvalue) &
+    & call abor1 ('uniform_distribution called before initialize_random_numbers')
 
   !--------------------------------------------------------------------------------
-  ! Copy numbers that were generated during the last call, but not used.
+  ! copy numbers that were generated during the last call, but not used.
   !--------------------------------------------------------------------------------
   
-  IN=SIZE(PX)
-  IFILLED=0
+  in=size(px)
+  ifilled=0
   
-  DO JJ=YD_STREAM%IUSED+1,MIN(JPQ,IN+YD_STREAM%IUSED)
-    PX(JJ-YD_STREAM%IUSED) = YD_STREAM%IX(JJ)*YD_STREAM%ZRM
-    IFILLED=IFILLED+1
-  ENDDO
+  do jj=yd_stream%iused+1,min(jpq,in+yd_stream%iused)
+    px(jj-yd_stream%iused) = yd_stream%ix(jj)*yd_stream%zrm
+    ifilled=ifilled+1
+  enddo
   
-  YD_STREAM%IUSED=YD_STREAM%IUSED+IFILLED
+  yd_stream%iused=yd_stream%iused+ifilled
   
-  IF (IFILLED==IN)  THEN 
-!   IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:UNIFORM_DISTRIBUTION',1,ZHOOK_HANDLE)
-! DR_HOOK removed to reduce overhead
-    RETURN
-  ENDIF
-  
-  !--------------------------------------------------------------------------------
-  ! Generate batches of jpq numbers until px has been filled
-  !--------------------------------------------------------------------------------
-  
-  DO WHILE (IFILLED<IN)
+  if (ifilled==in)  then 
+!   if (lhook) call dr_hook('random_numbers_mix:uniform_distribution',1,zhook_handle)
+! dr_hook removed to reduce overhead
+    return
+  endif
   
   !--------------------------------------------------------------------------------
-  ! Generate jpq numbers in vectorizable loops. The first loop is length jpp. The
+  ! generate batches of jpq numbers until px has been filled
+  !--------------------------------------------------------------------------------
+  
+  do while (ifilled<in)
+  
+  !--------------------------------------------------------------------------------
+  ! generate jpq numbers in vectorizable loops. the first loop is length jpp. the
   ! remaining jpq-jpp elements are calculated in loops of length shorter than jpp.
   !--------------------------------------------------------------------------------
   
-  !OCL NOVREC
-    DO JJ=1,JPP
+  !ocl novrec
+    do jj=1,jpp
 !     yd_stream%ix(jj) = yd_stream%ix(jj) + yd_stream%ix(jj-jpp+jpq)
 !     if (yd_stream%ix(jj)>=jpm) yd_stream%ix(jj) = yd_stream%ix(jj)-jpm
-      YD_STREAM%IX(JJ) = IAND(IVAR,YD_STREAM%IX(JJ) + YD_STREAM%IX(JJ-JPP+JPQ))
-    ENDDO
+      yd_stream%ix(jj) = iand(ivar,yd_stream%ix(jj) + yd_stream%ix(jj-jpp+jpq))
+    enddo
   
-    DO JK=1,JPNUMSPLIT
-  !OCL NOVREC
-      DO JJ=1+JPP+(JK-1)*JPLENSPLIT,MIN(JPQ,JPP+JK*JPLENSPLIT)
+    do jk=1,jpnumsplit
+  !ocl novrec
+      do jj=1+jpp+(jk-1)*jplensplit,min(jpq,jpp+jk*jplensplit)
 !       yd_stream%ix(jj) = yd_stream%ix(jj) + yd_stream%ix(jj-jpp)
 !       if (yd_stream%ix(jj)>=jpm) yd_stream%ix(jj) = yd_stream%ix(jj)-jpm
-        YD_STREAM%IX(JJ) = IAND(IVAR,YD_STREAM%IX(JJ) + YD_STREAM%IX(JJ-JPP))
-      ENDDO
-    ENDDO
+        yd_stream%ix(jj) = iand(ivar,yd_stream%ix(jj) + yd_stream%ix(jj-jpp))
+      enddo
+    enddo
   
-    YD_STREAM%IUSED = MIN(JPQ,IN-IFILLED)
-    PX(IFILLED+1:IFILLED+YD_STREAM%IUSED) = YD_STREAM%IX(1:YD_STREAM%IUSED)*YD_STREAM%ZRM
-    IFILLED = IFILLED+YD_STREAM%IUSED
-  ENDDO
+    yd_stream%iused = min(jpq,in-ifilled)
+    px(ifilled+1:ifilled+yd_stream%iused) = yd_stream%ix(1:yd_stream%iused)*yd_stream%zrm
+    ifilled = ifilled+yd_stream%iused
+  enddo
   
-!IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:UNIFORM_DISTRIBUTION',1,ZHOOK_HANDLE)
-! DR_HOOK removed to reduce overhead
-END SUBROUTINE UNIFORM_DISTRIBUTION
+!if (lhook) call dr_hook('random_numbers_mix:uniform_distribution',1,zhook_handle)
+! dr_hook removed to reduce overhead
+end subroutine uniform_distribution
 !-------------------------------------------------------------------------------
-SUBROUTINE GAUSSIAN_DISTRIBUTION (PX, YD_STREAM)
-  TYPE(RANDOMNUMBERSTREAM), INTENT(INOUT) :: YD_STREAM
-  REAL(KIND=JPRB),                   INTENT(  OUT) :: PX(:)
+subroutine gaussian_distribution (px, yd_stream)
+  type(randomnumberstream), intent(inout) :: yd_stream
+  real(kind=jprb),                   intent(  out) :: px(:)
   !--------------------------------------------------------------------------------
-  ! Generate normally-distributed random numbers using the Box-Muller method.
+  ! generate normally-distributed random numbers using the box-muller method.
   !
-  ! NB: this routine does not use buffering. This means that the following calls:
+  ! nb: this routine does not use buffering. this means that the following calls:
   !     call gaussian_distribution (zx(1:k))
   !     call gaussian_distribution (zx(k+1:n))
   ! will produce different numbers for elements k+1 onwards than the single call:
   !     call gaussian_distribution (zx(1:n))
   !--------------------------------------------------------------------------------
   
-  INTEGER(KIND=JPIM) :: ILEN, J
-  REAL(KIND=JPRB) :: ZFAC, ZTWOPI
-  REAL(KIND=JPRB) :: ZX(SIZE(PX)+1)
+  integer(kind=jpim) :: ilen, j
+  real(kind=jprb) :: zfac, ztwopi
+  real(kind=jprb) :: zx(size(px)+1)
   
   !--------------------------------------------------------------------------------
-  ! Generate uniform random points in the range [0,1)
+  ! generate uniform random points in the range [0,1)
   !--------------------------------------------------------------------------------
 
-    REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-    IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:GAUSSIAN_DISTRIBUTION',0,ZHOOK_HANDLE)
-    CALL UNIFORM_DISTRIBUTION (ZX, YD_STREAM)
+    real(kind=jphook) :: zhook_handle
+    if (lhook) call dr_hook('random_numbers_mix:gaussian_distribution',0,zhook_handle)
+    call uniform_distribution (zx, yd_stream)
 
   !--------------------------------------------------------------------------------
-  ! Generate gaussian deviates using Box-Muller method
+  ! generate gaussian deviates using box-muller method
   !--------------------------------------------------------------------------------
   
-  ZTWOPI = 8.0_JPRB*ATAN(1.0_JPRB)
-  ILEN=SIZE(PX)
+  ztwopi = 8.0_jprb*atan(1.0_jprb)
+  ilen=size(px)
   
-  DO J=1,ILEN-1,2
-    ZFAC = SQRT(-2.0_JPRB*LOG(1.0_JPRB-ZX(J)))
-    PX(J  ) = ZFAC*COS(ZTWOPI*ZX(J+1))
-    PX(J+1) = ZFAC*SIN(ZTWOPI*ZX(J+1))
-  ENDDO
+  do j=1,ilen-1,2
+    zfac = sqrt(-2.0_jprb*log(1.0_jprb-zx(j)))
+    px(j  ) = zfac*cos(ztwopi*zx(j+1))
+    px(j+1) = zfac*sin(ztwopi*zx(j+1))
+  enddo
   
   !--------------------------------------------------------------------------------
-  ! Generate the last point if ilen is odd
+  ! generate the last point if ilen is odd
   !--------------------------------------------------------------------------------
   
-  IF (MOD(ILEN,2) /= 0) THEN
-    ZFAC = SQRT(-2.0_JPRB*LOG(1.0_JPRB-ZX(ILEN)))
-    PX(ILEN) = ZFAC*COS(ZTWOPI*ZX(ILEN+1))
-  ENDIF
+  if (mod(ilen,2) /= 0) then
+    zfac = sqrt(-2.0_jprb*log(1.0_jprb-zx(ilen)))
+    px(ilen) = zfac*cos(ztwopi*zx(ilen+1))
+  endif
   
-IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:GAUSSIAN_DISTRIBUTION',1,ZHOOK_HANDLE)
-END SUBROUTINE GAUSSIAN_DISTRIBUTION
+if (lhook) call dr_hook('random_numbers_mix:gaussian_distribution',1,zhook_handle)
+end subroutine gaussian_distribution
 !-------------------------------------------------------------------------------
-!!$SUBROUTINE RANDOM_NUMBER_RESTARTFILE( CDFNAME, CDACTION,YD_STREAM )
+!!$subroutine random_number_restartfile( cdfname, cdaction,yd_stream )
 !!$!--------------------------------------------------------------------------------
 !!$!
 !!$! read (cdaction='r') or write (cdaction='w') restart file
 !!$! for random number generator
 !!$!
 !!$!--------------------------------------------------------------------------------
-!!$CHARACTER (LEN=*),   INTENT(IN) :: CDFNAME
-!!$CHARACTER (LEN=1  ), INTENT(IN) :: CDACTION
-!!$TYPE(RANDOMNUMBERSTREAM), INTENT(INOUT) :: YD_STREAM
+!!$character (len=*),   intent(in) :: cdfname
+!!$character (len=1  ), intent(in) :: cdaction
+!!$type(randomnumberstream), intent(inout) :: yd_stream
 !!$  
-!!$INTEGER(KIND=JPIM) :: IUNIT, IRET, IBYTES_IN_JPIM
+!!$integer(kind=jpim) :: iunit, iret, ibytes_in_jpim
 !!$
-!!$REAL(KIND=JPRB) :: ZHOOK_HANDLE
-!!$IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:RANDOM_NUMBER_RESTARTFILE',0,ZHOOK_HANDLE)
-!!$IBYTES_IN_JPIM= CEILING(REAL(BIT_SIZE(YD_STREAM%IUSED))/8.0_JPRB - TINY(1.0_JPRB))
+!!$real(kind=jprb) :: zhook_handle
+!!$if (lhook) call dr_hook('random_numbers_mix:random_number_restartfile',0,zhook_handle)
+!!$ibytes_in_jpim= ceiling(real(bit_size(yd_stream%iused))/8.0_jprb - tiny(1.0_jprb))
 !!$
-!!$IF (IBYTES_IN_JPIM /= 4) THEN
-!!$  CALL ABOR1('random_number_restartfile: number of bytes for JPIM is not 4 ')        
-!!$ENDIF
+!!$if (ibytes_in_jpim /= 4) then
+!!$  call abor1('random_number_restartfile: number of bytes for jpim is not 4 ')        
+!!$endif
 !!$
-!!$CALL PBOPEN(IUNIT, CDFNAME, CDACTION, IRET)
-!!$IF (IRET /= 0) THEN
-!!$  CALL ABOR1('random_number_restartfile: PBOPEN FAILED opening '//CDFNAME)    
-!!$ENDIF
+!!$call pbopen(iunit, cdfname, cdaction, iret)
+!!$if (iret /= 0) then
+!!$  call abor1('random_number_restartfile: pbopen failed opening '//cdfname)    
+!!$endif
 !!$
 !!$
-!!$IF (CDACTION=='r' .OR. CDACTION=='R') THEN
-!!$  CALL PBREAD(IUNIT, YD_STREAM%IX,    IBYTES_IN_JPIM*JPQ, IRET)
-!!$  IF (IRET < 0) THEN
-!!$    CALL ABOR1('random_number_restartfile: PBREAD could not read ix from '//CDFNAME)    
-!!$  ENDIF
-!!$  CALL PBREAD(IUNIT, YD_STREAM%IUSED, IBYTES_IN_JPIM    , IRET)
-!!$  IF (IRET < 0) THEN
-!!$    CALL ABOR1('random_number_restartfile: PBREAD could not read iused from '//CDFNAME)    
-!!$  ENDIF
+!!$if (cdaction=='r' .or. cdaction=='r') then
+!!$  call pbread(iunit, yd_stream%ix,    ibytes_in_jpim*jpq, iret)
+!!$  if (iret < 0) then
+!!$    call abor1('random_number_restartfile: pbread could not read ix from '//cdfname)    
+!!$  endif
+!!$  call pbread(iunit, yd_stream%iused, ibytes_in_jpim    , iret)
+!!$  if (iret < 0) then
+!!$    call abor1('random_number_restartfile: pbread could not read iused from '//cdfname)    
+!!$  endif
 !!$
-!!$!  l_initialized = .TRUE.
-!!$  YD_STREAM%INITTEST = INITVALUE
-!!$  YD_STREAM%ZRM=1.0_JPRB/REAL(JPM,JPRB)
-!!$ELSEIF(CDACTION=='w' .OR. CDACTION=='W') THEN
-!!$  CALL PBWRITE(IUNIT, YD_STREAM%IX, IBYTES_IN_JPIM*JPQ, IRET)
-!!$  IF (IRET < 0) THEN
-!!$    CALL ABOR1('random_number_restartfile: PBWRITE could not write ix on '//CDFNAME)    
-!!$  ENDIF
-!!$  CALL PBWRITE(IUNIT, YD_STREAM%IUSED, IBYTES_IN_JPIM , IRET)
-!!$  IF (IRET < 0) THEN
-!!$    CALL ABOR1('random_number_restartfile: PBWRITE could not write iused on '//CDFNAME)    
-!!$  ENDIF
+!!$!  l_initialized = .true.
+!!$  yd_stream%inittest = initvalue
+!!$  yd_stream%zrm=1.0_jprb/real(jpm,jprb)
+!!$elseif(cdaction=='w' .or. cdaction=='w') then
+!!$  call pbwrite(iunit, yd_stream%ix, ibytes_in_jpim*jpq, iret)
+!!$  if (iret < 0) then
+!!$    call abor1('random_number_restartfile: pbwrite could not write ix on '//cdfname)    
+!!$  endif
+!!$  call pbwrite(iunit, yd_stream%iused, ibytes_in_jpim , iret)
+!!$  if (iret < 0) then
+!!$    call abor1('random_number_restartfile: pbwrite could not write iused on '//cdfname)    
+!!$  endif
 !!$
-!!$ELSE
-!!$  CALL ABOR1 ('random_number_restartfile: cdaction = '//CDACTION//' is undefined.')
-!!$ENDIF
+!!$else
+!!$  call abor1 ('random_number_restartfile: cdaction = '//cdaction//' is undefined.')
+!!$endif
 !!$
-!!$CALL PBCLOSE(IUNIT, IRET)
-!!$IF (IRET /= 0) THEN
-!!$  CALL ABOR1('random_number_restartfile: PBCLOSE FAILED closing '//CDFNAME)    
-!!$ENDIF
+!!$call pbclose(iunit, iret)
+!!$if (iret /= 0) then
+!!$  call abor1('random_number_restartfile: pbclose failed closing '//cdfname)    
+!!$endif
 !!$
-!!$IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:RANDOM_NUMBER_RESTARTFILE',1,ZHOOK_HANDLE)
-!!$END SUBROUTINE RANDOM_NUMBER_RESTARTFILE
+!!$if (lhook) call dr_hook('random_numbers_mix:random_number_restartfile',1,zhook_handle)
+!!$end subroutine random_number_restartfile
 
 
-SUBROUTINE WR_RANGEN_STATE( KUNIT, YD_STREAM )
+subroutine wr_rangen_state( kunit, yd_stream )
 !--------------------------------------------------------------------------------
 ! write state of random number generator to unit kunit
 !--------------------------------------------------------------------------------
-INTEGER(KIND=JPIM), INTENT(IN) :: KUNIT
-TYPE(RANDOMNUMBERSTREAM), INTENT(IN) :: YD_STREAM
+integer(kind=jpim), intent(in) :: kunit
+type(randomnumberstream), intent(in) :: yd_stream
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:WR_RANGEN_STATE',0,ZHOOK_HANDLE)
-WRITE( KUNIT, * ) 'module random_numbers_mix, generator state is'
-WRITE( KUNIT, '(8I10)') YD_STREAM%IX
-WRITE( KUNIT, '(I10)')  YD_STREAM%IUSED
+real(kind=jphook) :: zhook_handle
+if (lhook) call dr_hook('random_numbers_mix:wr_rangen_state',0,zhook_handle)
+write( kunit, * ) 'module random_numbers_mix, generator state is'
+write( kunit, '(8i10)') yd_stream%ix
+write( kunit, '(i10)')  yd_stream%iused
 
-IF (LHOOK) CALL DR_HOOK('RANDOM_NUMBERS_MIX:WR_RANGEN_STATE',1,ZHOOK_HANDLE)
-END SUBROUTINE WR_RANGEN_STATE
+if (lhook) call dr_hook('random_numbers_mix:wr_rangen_state',1,zhook_handle)
+end subroutine wr_rangen_state
 
-END MODULE RANDOM_NUMBERS_MIX
+end module random_numbers_mix
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

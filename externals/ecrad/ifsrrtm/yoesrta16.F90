@@ -1,63 +1,112 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoesrta16.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesrta16.f90"
+! this file has been modified for the use in icon
 
-MODULE YOESRTA16
+module yoesrta16
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,JPRD
+use parkind1  ,only : jpim     ,jprb,jprd
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOESRTA16* - SRTM COEFFICIENTS FOR INTERVAL 16
-!     BAND 16:  2600-3250 cm-1 (low - H2O,CH4; high - CH4)
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: JPG=16, NG16 = 16, NGS15 = 0
-
-REAL(KIND=JPRB) :: KA(9,5,13,JPG) 
-REAL(KIND=JPRB) :: KB(5,13:59,JPG)
-REAL(KIND=JPRD) :: KA_D(9,5,13,JPG) 
-REAL(KIND=JPRD) :: KB_D(5,13:59,JPG)
-REAL(KIND=JPRB) :: SELFREF(10,JPG),FORREF(3,JPG)
-REAL(KIND=JPRB) :: SFLUXREF(JPG)
-REAL(KIND=JPRB) :: RAYL            ,STRRAT1
-INTEGER(KIND=JPIM) :: LAYREFFR
-
-REAL(KIND=JPRB) :: KAC(9,5,13,NG16),ABSA(585,NG16)
-REAL(KIND=JPRB) :: KBC(5,13:59,NG16),ABSB(235,NG16)
-REAL(KIND=JPRB) :: SELFREFC(10,NG16),FORREFC(3,NG16)
-REAL(KIND=JPRB) :: SFLUXREFC(NG16)
-
-!EQUIVALENCE (KA(1,1,1,1),ABSA(1,1)), (KB(1,13,1),ABSB(1,1))
-EQUIVALENCE (KAC(1,1,1,1),ABSA(1,1)), (KBC(1,13,1),ABSB(1,1))
-
-!$ACC DECLARE CREATE(KAC, ABSA, KBC, ABSB, SELFREFC, FORREFC, SFLUXREFC)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM SW RADIATION **
+!*    ** *yoesrta16* - srtm coefficients for interval 16
+!     band 16:  2600-3250 cm-1 (low - h2o,ch4; high - ch4)
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      02/10/29
-!     M. J. IACONO          AER             12/09/03
+integer(kind=jpim), parameter :: jpg=16, ng16 = 16, ngs15 = 0
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: ka(9,5,13,jpg) 
+real(kind=jprb) :: kb(5,13:59,jpg)
+real(kind=jprd) :: ka_d(9,5,13,jpg) 
+real(kind=jprd) :: kb_d(5,13:59,jpg)
+real(kind=jprb) :: selfref(10,jpg),forref(3,jpg)
+real(kind=jprb) :: sfluxref(jpg)
+real(kind=jprb) :: rayl            ,strrat1
+integer(kind=jpim) :: layreffr
+
+real(kind=jprb) :: kac(9,5,13,ng16),absa(585,ng16)
+real(kind=jprb) :: kbc(5,13:59,ng16),absb(235,ng16)
+real(kind=jprb) :: selfrefc(10,ng16),forrefc(3,ng16)
+real(kind=jprb) :: sfluxrefc(ng16)
+
+!equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
+equivalence (kac(1,1,1,1),absa(1,1)), (kbc(1,13,1),absb(1,1))
+
+!$acc declare create(kac, absa, kbc, absb, selfrefc, forrefc, sfluxrefc)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm sw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      02/10/29
+!     m. j. iacono          aer             12/09/03
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! KA      : REAL     absorption coefficient of major absorber
-! KB      : REAL     absorption coefficient of secondary absorber
-! SELFREF : REAL     self brodening coefficient for water vapour
-! FORREF  : REAL     foreign broadening coefficient for water vapour
-! SFLUXREF: REAL     Incident solar radiation in the spectral interval
-! RAYL    : REAL     Rayleigh scattering parameter
-! STRRAT1 : REAL     weighting factor for the transition between tropospheric 
+! ka      : real     absorption coefficient of major absorber
+! kb      : real     absorption coefficient of secondary absorber
+! selfref : real     self brodening coefficient for water vapour
+! forref  : real     foreign broadening coefficient for water vapour
+! sfluxref: real     incident solar radiation in the spectral interval
+! rayl    : real     rayleigh scattering parameter
+! strrat1 : real     weighting factor for the transition between tropospheric 
 !                    and stratospheric computations
-! LAYREFFR: INTEGER  reference level for the transition
-! KAC     : REAL     Reduced g-point array for KA
-! KBC     : REAL     Reduced g-point array for KB
-! SELFREFC: REAL     Reduced g-point array for SELFREF
-! FORREFC : REAL     Reduced g-point array for FORREF
-!SFLUXREFC: REAL     Reduced g-point array for SFLUXREF
+! layreffr: integer  reference level for the transition
+! kac     : real     reduced g-point array for ka
+! kbc     : real     reduced g-point array for kb
+! selfrefc: real     reduced g-point array for selfref
+! forrefc : real     reduced g-point array for forref
+!sfluxrefc: real     reduced g-point array for sfluxref
 !     -----------------------------------------------------------------
-END MODULE YOESRTA16
+end module yoesrta16
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

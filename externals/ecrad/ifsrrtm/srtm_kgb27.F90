@@ -1,105 +1,161 @@
-SUBROUTINE SRTM_KGB27
+! # 1 "ifsrrtm/srtm_kgb27.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_kgb27.f90"
+subroutine srtm_kgb27
 
-!     Originally by J.Delamere, Atmospheric & Environmental Research.
-!     Revision: 2.4
-!     BAND 16: 29000-38000 cm-1 (low - O3; high - O3)
-!     Reformatted for F90 by JJMorcrette, ECMWF
-!     G.Mozdzynski March 2011 read constants from files
-!     T. Wilhelmsson and K. Yessad (Oct 2013) Geometry and setup refactoring.
-!      F. Vana  05-Mar-2015  Support for single precision
+!     originally by j.delamere, atmospheric & environmental research.
+!     revision: 2.4
+!     band 16: 29000-38000 cm-1 (low - o3; high - o3)
+!     reformatted for f90 by jjmorcrette, ecmwf
+!     g.mozdzynski march 2011 read constants from files
+!     t. wilhelmsson and k. yessad (oct 2013) geometry and setup refactoring.
+!      f. vana  05-mar-2015  support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  , ONLY : JPRB
-USE ecradhook   , ONLY : LHOOK, DR_HOOK, JPHOOK
-USE YOMLUN    , ONLY : NULRAD
-USE YOMMP0    , ONLY : NPROC, MYPROC
-USE MPL_MODULE, ONLY : MPL_BROADCAST
-USE YOMTAG    , ONLY : MTAGRAD
-USE YOESRTA27 , ONLY : KA, KB, SFLUXREF, RAYL, SCALEKUR, LAYREFFR, &
-  &  KA_D, KB_D
+use parkind1  , only : jprb
+use ecradhook   , only : lhook, dr_hook, jphook
+use yomlun    , only : nulrad
+use yommp0    , only : nproc, myproc
+use mpl_module, only : mpl_broadcast
+use yomtag    , only : mtagrad
+use yoesrta27 , only : ka, kb, sfluxref, rayl, scalekur, layreffr, &
+  &  ka_d, kb_d
 
 !     ------------------------------------------------------------------
 
-IMPLICIT NONE
+implicit none
 
-! KURUCZ
-!     The following values were obtained using the "low resolution"
-!     version of the Kurucz solar source function.  For unknown reasons,
+! kurucz
+!     the following values were obtained using the "low resolution"
+!     version of the kurucz solar source function.  for unknown reasons,
 !     the total irradiance in this band differs from the corresponding
-!     total in the "high-resolution" version of the Kurucz function.
-!     Therefore, below these values are scaled by the factor SCALEKUR.
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+!     total in the "high-resolution" version of the kurucz function.
+!     therefore, below these values are scaled by the factor scalekur.
+real(kind=jphook) :: zhook_handle
 
-#include "abor1.intfb.h"
 
-IF (LHOOK) CALL DR_HOOK('SRTM_KGB27',0,ZHOOK_HANDLE)
+! # 1 "./include/abor1.intfb.h" 1
+interface
+subroutine abor1(cdtext)
+character(len=*), intent(in) :: cdtext
+end subroutine abor1
+end interface
+! # 34 "ifsrrtm/srtm_kgb27.f90" 2
 
-IF( MYPROC==1 )THEN
-  READ(NULRAD,ERR=1001) KA_D,KB_D
-  KA = REAL(KA_D,JPRB)
-  KB = REAL(KB_D,JPRB)
-ENDIF
-IF( NPROC>1 )THEN
-  CALL MPL_BROADCAST (KA,MTAGRAD,1,CDSTRING='SRTM_KGB27:')
-  CALL MPL_BROADCAST (KB,MTAGRAD,1,CDSTRING='SRTM_KGB27:')
-ENDIF
+if (lhook) call dr_hook('srtm_kgb27',0,zhook_handle)
 
-SFLUXREF = (/ &
- & 14.0526_JPRB    , 11.4794_JPRB    , 8.72590_JPRB    , 5.56966_JPRB    , &
- & 3.80927_JPRB    , 1.57690_JPRB    , 1.15099_JPRB    , 1.10012_JPRB    , &
- & 0.658212_JPRB   , 5.86859E-02_JPRB, 5.56186E-02_JPRB, 4.68040E-02_JPRB, &
- & 3.64897E-02_JPRB, 3.58053E-02_JPRB, 1.38130E-02_JPRB, 1.90193E-03_JPRB /)  
+if( myproc==1 )then
+  read(nulrad,err=1001) ka_d,kb_d
+  ka = real(ka_d,jprb)
+  kb = real(kb_d,jprb)
+endif
+if( nproc>1 )then
+  call mpl_broadcast (ka,mtagrad,1,cdstring='srtm_kgb27:')
+  call mpl_broadcast (kb,mtagrad,1,cdstring='srtm_kgb27:')
+endif
 
-!     Rayleigh extinction coefficient at v = 2925 cm-1.
-RAYL = (/ &
- & 3.44534E-06_JPRB,4.14480E-06_JPRB,4.95069E-06_JPRB,5.81204E-06_JPRB, &
- & 6.69748E-06_JPRB,7.56488E-06_JPRB,8.36344E-06_JPRB,9.04135E-06_JPRB, &
- & 9.58324E-06_JPRB,9.81542E-06_JPRB,9.75119E-06_JPRB,9.74533E-06_JPRB, &
- & 9.74139E-06_JPRB,9.73525E-06_JPRB,9.73577E-06_JPRB,9.73618E-06_JPRB /)  
+sfluxref = (/ &
+ & 14.0526_jprb    , 11.4794_jprb    , 8.72590_jprb    , 5.56966_jprb    , &
+ & 3.80927_jprb    , 1.57690_jprb    , 1.15099_jprb    , 1.10012_jprb    , &
+ & 0.658212_jprb   , 5.86859e-02_jprb, 5.56186e-02_jprb, 4.68040e-02_jprb, &
+ & 3.64897e-02_jprb, 3.58053e-02_jprb, 1.38130e-02_jprb, 1.90193e-03_jprb /)  
 
-SCALEKUR = 50.15_JPRB/48.37_JPRB
+!     rayleigh extinction coefficient at v = 2925 cm-1.
+rayl = (/ &
+ & 3.44534e-06_jprb,4.14480e-06_jprb,4.95069e-06_jprb,5.81204e-06_jprb, &
+ & 6.69748e-06_jprb,7.56488e-06_jprb,8.36344e-06_jprb,9.04135e-06_jprb, &
+ & 9.58324e-06_jprb,9.81542e-06_jprb,9.75119e-06_jprb,9.74533e-06_jprb, &
+ & 9.74139e-06_jprb,9.73525e-06_jprb,9.73577e-06_jprb,9.73618e-06_jprb /)  
 
-LAYREFFR = 32
+scalekur = 50.15_jprb/48.37_jprb
+
+layreffr = 32
 
 !     ------------------------------------------------------------------
 
-!     The array KA contains absorption coefs at the 16 chosen g-values 
+!     the array ka contains absorption coefs at the 16 chosen g-values 
 !     for a range of pressure levels> ~100mb, temperatures, and binary
-!     species parameters (see taumol.f for definition).  The first 
-!     index in the array, JS, runs from 1 to 9, and corresponds to 
-!     different values of the binary species parameter.  For instance, 
-!     JS=1 refers to dry air, JS = 2 corresponds to the paramter value 1/8, 
-!     JS = 3 corresponds to the parameter value 2/8, etc.  The second index
-!     in the array, JT, which runs from 1 to 5, corresponds to different
-!     temperatures.  More specifically, JT = 3 means that the data are for
-!     the reference temperature TREF for this  pressure level, JT = 2 refers
-!     to TREF-15, JT = 1 is for TREF-30, JT = 4 is for TREF+15, and JT = 5
-!     is for TREF+30.  The third index, JP, runs from 1 to 13 and refers
-!     to the JPth reference pressure level (see taumol.f for these levels
-!     in mb).  The fourth index, IG, goes from 1 to 16, and indicates
+!     species parameters (see taumol.f for definition).  the first 
+!     index in the array, js, runs from 1 to 9, and corresponds to 
+!     different values of the binary species parameter.  for instance, 
+!     js=1 refers to dry air, js = 2 corresponds to the paramter value 1/8, 
+!     js = 3 corresponds to the parameter value 2/8, etc.  the second index
+!     in the array, jt, which runs from 1 to 5, corresponds to different
+!     temperatures.  more specifically, jt = 3 means that the data are for
+!     the reference temperature tref for this  pressure level, jt = 2 refers
+!     to tref-15, jt = 1 is for tref-30, jt = 4 is for tref+15, and jt = 5
+!     is for tref+30.  the third index, jp, runs from 1 to 13 and refers
+!     to the jpth reference pressure level (see taumol.f for these levels
+!     in mb).  the fourth index, ig, goes from 1 to 16, and indicates
 !     which g-interval the absorption coefficients are for.
 !     -----------------------------------------------------------------
 
 !     -----------------------------------------------------------------
-!     The array KB contains absorption coefs at the 16 chosen g-values 
-!     for a range of pressure levels < ~100mb and temperatures. The first 
-!     index in the array, JT, which runs from 1 to 5, corresponds to 
-!     different temperatures.  More specifically, JT = 3 means that the 
-!     data are for the reference temperature TREF for this pressure 
-!     level, JT = 2 refers to the temperature TREF-15, JT = 1 is for
-!     TREF-30, JT = 4 is for TREF+15, and JT = 5 is for TREF+30.  
-!     The second index, JP, runs from 13 to 59 and refers to the JPth
+!     the array kb contains absorption coefs at the 16 chosen g-values 
+!     for a range of pressure levels < ~100mb and temperatures. the first 
+!     index in the array, jt, which runs from 1 to 5, corresponds to 
+!     different temperatures.  more specifically, jt = 3 means that the 
+!     data are for the reference temperature tref for this pressure 
+!     level, jt = 2 refers to the temperature tref-15, jt = 1 is for
+!     tref-30, jt = 4 is for tref+15, and jt = 5 is for tref+30.  
+!     the second index, jp, runs from 13 to 59 and refers to the jpth
 !     reference pressure level (see taumol.f for the value of these
-!     pressure levels in mb).  The third index, IG, goes from 1 to 16,
+!     pressure levels in mb).  the third index, ig, goes from 1 to 16,
 !     and tells us which g-interval the absorption coefficients are for.
 !     -----------------------------------------------------------------
   
      
 !     -----------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_KGB27',1,ZHOOK_HANDLE)
-RETURN
+if (lhook) call dr_hook('srtm_kgb27',1,zhook_handle)
+return
 
-1001 CONTINUE
-CALL ABOR1("SRTM_KGB27:ERROR READING FILE RADSRTM")
+1001 continue
+call abor1("srtm_kgb27:error reading file radsrtm")
 
-END SUBROUTINE SRTM_KGB27
+end subroutine srtm_kgb27
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

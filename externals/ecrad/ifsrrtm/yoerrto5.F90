@@ -1,45 +1,94 @@
-MODULE YOERRTO5
+! # 1 "ifsrrtm/yoerrto5.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerrto5.f90"
+module yoerrto5
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,JPRD
+use parkind1  ,only : jpim     ,jprb,jprd
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOERRTO5* - RRTM ORIGINAL COEFFICIENTS FOR INTERVAL 5
-!     BAND 5:  700-820 cm-1 (low - H2O,CO2; high - O3,CO2)
-!     ABozzo 201306 updated to rrtmg v4.85
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: NO5  = 16
-
-REAL(KIND=JPRB) :: FRACREFAO(NO5,9) ,FRACREFBO(NO5,5)
-
-REAL(KIND=JPRB) , DIMENSION(NO5) :: CCL4O
-
-REAL(KIND=JPRB) :: KAO_MO3(9,19,NO5)
-REAL(KIND=JPRB) :: KAO(9,5,13,NO5)
-REAL(KIND=JPRB) :: KBO(5,5,13:59,NO5)
-REAL(KIND=JPRD) :: KAO_D(9,5,13,NO5)
-REAL(KIND=JPRD) :: KBO_D(5,5,13:59,NO5)
-REAL(KIND=JPRB) :: SELFREFO(10,NO5)
-REAL(KIND=JPRB) :: FORREFO(4,NO5)
-
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM LW RADIATION **
+!*    ** *yoerrto5* - rrtm original coefficients for interval 5
+!     band 5:  700-820 cm-1 (low - h2o,co2; high - o3,co2)
+!     abozzo 201306 updated to rrtmg v4.85
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      98/07/14
+integer(kind=jpim), parameter :: no5  = 16
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: fracrefao(no5,9) ,fracrefbo(no5,5)
+
+real(kind=jprb) , dimension(no5) :: ccl4o
+
+real(kind=jprb) :: kao_mo3(9,19,no5)
+real(kind=jprb) :: kao(9,5,13,no5)
+real(kind=jprb) :: kbo(5,5,13:59,no5)
+real(kind=jprd) :: kao_d(9,5,13,no5)
+real(kind=jprd) :: kbo_d(5,5,13:59,no5)
+real(kind=jprb) :: selfrefo(10,no5)
+real(kind=jprb) :: forrefo(4,no5)
+
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm lw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      98/07/14
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! FRACREFA: REAL    
-! FRACREFB: REAL
-! KA      : REAL     
-! KB      : REAL     
-! SELFREF : REAL     
+! fracrefa: real    
+! fracrefb: real
+! ka      : real     
+! kb      : real     
+! selfref : real     
 !     -----------------------------------------------------------------
-END MODULE YOERRTO5
+end module yoerrto5
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

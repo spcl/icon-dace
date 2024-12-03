@@ -1,125 +1,120 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/srtm_taumol16.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_taumol16.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SRTM_TAUMOL16 &
- & ( KIDIA   , KFDIA     , KLEV,&
- & P_FAC00   , P_FAC01   , P_FAC10   , P_FAC11,&
- & K_JP      , K_JT      , K_JT1     , P_ONEMINUS,&
- & P_COLH2O  , P_COLCH4  , P_COLMOL,&
- & K_LAYTROP , P_SELFFAC , P_SELFFRAC, K_INDSELF , P_FORFAC  , P_FORFRAC, K_INDFOR,&
- & P_SFLUXZEN, P_TAUG    , P_TAUR    , PRMU0     &
+subroutine srtm_taumol16 &
+ & ( kidia   , kfdia     , klev,&
+ & p_fac00   , p_fac01   , p_fac10   , p_fac11,&
+ & k_jp      , k_jt      , k_jt1     , p_oneminus,&
+ & p_colh2o  , p_colch4  , p_colmol,&
+ & k_laytrop , p_selffac , p_selffrac, k_indself , p_forfac  , p_forfrac, k_indfor,&
+ & p_sfluxzen, p_taug    , p_taur    , prmu0     &
  & )  
 
-!     Written by Eli J. Mlawer, Atmospheric & Environmental Research.
+!     written by eli j. mlawer, atmospheric & environmental research.
 
-!     BAND 16:  2600-3250 cm-1 (low - H2O,CH4; high - CH4)
+!     band 16:  2600-3250 cm-1 (low - h2o,ch4; high - ch4)
 
-! Modifications
-!        M.Hamrud      01-Oct-2003 CY28 Cleaning
+! modifications
+!        m.hamrud      01-oct-2003 cy28 cleaning
 
-!     JJMorcrette 2003-02-24 adapted to ECMWF environment
-!        D.Salmond  31-Oct-2007 Vector version in the style of RRTM from Meteo France & NEC
-!     JJMorcrette 20010610 Flexible configuration for number of g-points
+!     jjmorcrette 2003-02-24 adapted to ecmwf environment
+!        d.salmond  31-oct-2007 vector version in the style of rrtm from meteo france & nec
+!     jjmorcrette 20010610 flexible configuration for number of g-points
 
-USE PARKIND1 , ONLY : JPIM, JPRB
-USE ecradhook  , ONLY : LHOOK, DR_HOOK
-USE PARSRTM  , ONLY : JPG
-USE YOESRTM  , ONLY : NG16
-USE YOESRTA16, ONLY : ABSA, ABSB, FORREFC, SELFREFC, SFLUXREFC, RAYL, LAYREFFR, STRRAT1  
-USE YOESRTWN , ONLY : NSPA, NSPB
+use parkind1 , only : jpim, jprb
+use ecradhook  , only : lhook, dr_hook
+use parsrtm  , only : jpg
+use yoesrtm  , only : ng16
+use yoesrta16, only : absa, absb, forrefc, selfrefc, sfluxrefc, rayl, layreffr, strrat1  
+use yoesrtwn , only : nspa, nspb
 
-IMPLICIT NONE
+implicit none
 
-!-- Output
-INTEGER(KIND=JPIM),INTENT(IN)    :: KIDIA, KFDIA 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KLEV 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FAC00(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FAC01(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FAC10(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FAC11(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_JP(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_JT(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_JT1(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_ONEMINUS(KIDIA:KFDIA) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_COLH2O(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_COLCH4(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_COLMOL(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_LAYTROP(KIDIA:KFDIA) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_SELFFAC(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_SELFFRAC(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_INDSELF(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FORFAC(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_FORFRAC(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: K_INDFOR(KIDIA:KFDIA,KLEV) 
+!-- output
+integer(kind=jpim),intent(in)    :: kidia, kfdia 
+integer(kind=jpim),intent(in)    :: klev 
+real(kind=jprb)   ,intent(in)    :: p_fac00(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_fac01(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_fac10(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_fac11(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_jp(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_jt(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_jt1(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_oneminus(kidia:kfdia) 
+real(kind=jprb)   ,intent(in)    :: p_colh2o(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_colch4(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_colmol(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_laytrop(kidia:kfdia) 
+real(kind=jprb)   ,intent(in)    :: p_selffac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_selffrac(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_indself(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_forfac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: p_forfrac(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: k_indfor(kidia:kfdia,klev) 
 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: P_SFLUXZEN(KIDIA:KFDIA,JPG) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: P_TAUG(KIDIA:KFDIA,KLEV,JPG) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: P_TAUR(KIDIA:KFDIA,KLEV,JPG) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PRMU0(KIDIA:KFDIA)
-!- from INTFAC      
-!- from INTIND
-!- from PRECISE             
-!- from PROFDATA             
-!- from SELF             
-INTEGER(KIND=JPIM) :: IG, IND0, IND1, INDS, INDF, JS, I_LAY, I_LAYSOLFR(KIDIA:KFDIA), I_NLAYERS, IPLON
-INTEGER(KIND=JPIM) :: laytrop_min, laytrop_max
+real(kind=jprb)   ,intent(inout) :: p_sfluxzen(kidia:kfdia,jpg) 
+real(kind=jprb)   ,intent(inout) :: p_taug(kidia:kfdia,klev,jpg) 
+real(kind=jprb)   ,intent(inout) :: p_taur(kidia:kfdia,klev,jpg) 
+real(kind=jprb)   ,intent(in)    :: prmu0(kidia:kfdia)
+!- from intfac      
+!- from intind
+!- from precise             
+!- from profdata             
+!- from self             
+integer(kind=jpim) :: ig, ind0, ind1, inds, indf, js, i_lay, i_laysolfr(kidia:kfdia), i_nlayers, iplon
+integer(kind=jpim) :: laytrop_min, laytrop_max
 
-REAL(KIND=JPRB) :: Z_FAC000, Z_FAC001, Z_FAC010, Z_FAC011, Z_FAC100, Z_FAC101,&
- & Z_FAC110, Z_FAC111, Z_FS, Z_SPECCOMB, Z_SPECMULT, Z_SPECPARM, &
- & Z_TAURAY  
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+real(kind=jprb) :: z_fac000, z_fac001, z_fac010, z_fac011, z_fac100, z_fac101,&
+ & z_fac110, z_fac111, z_fs, z_speccomb, z_specmult, z_specparm, &
+ & z_tauray  
+real(kind=jprb) :: zhook_handle
 
-    !$ACC DATA CREATE(I_LAYSOLFR) &
-    !$ACC     PRESENT(P_FAC00, P_FAC01, P_FAC10, P_FAC11, K_JP, K_JT, K_JT1, &
-    !$ACC             P_ONEMINUS, P_COLH2O, P_COLCH4, P_COLMOL, K_LAYTROP, &
-    !$ACC             P_SELFFAC, P_SELFFRAC, K_INDSELF, P_FORFAC, P_FORFRAC, &
-    !$ACC             K_INDFOR, P_SFLUXZEN, P_TAUG, P_TAUR, PRMU0)
-#ifndef _OPENACC
-    laytrop_min = MINVAL(k_laytrop(KIDIA:KFDIA))
-    laytrop_max = MAXVAL(k_laytrop(KIDIA:KFDIA))
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do iplon = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, k_laytrop(iplon))
-      laytrop_max = MAX(laytrop_max, k_laytrop(iplon))
-    end do
-    !$ACC END PARALLEL
-#endif
+    !$acc data create(i_laysolfr) &
+    !$acc     present(p_fac00, p_fac01, p_fac10, p_fac11, k_jp, k_jt, k_jt1, &
+    !$acc             p_oneminus, p_colh2o, p_colch4, p_colmol, k_laytrop, &
+    !$acc             p_selffac, p_selffrac, k_indself, p_forfac, p_forfrac, &
+    !$acc             k_indfor, p_sfluxzen, p_taug, p_taur, prmu0)
+
+    laytrop_min = minval(k_laytrop(kidia:kfdia))
+    laytrop_max = maxval(k_laytrop(kidia:kfdia))
+! # 90 "ifsrrtm/srtm_taumol16.f90"
 
     i_nlayers = klev
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR
-    DO iplon = KIDIA,KFDIA
+    !$acc parallel default(none) async(1)
+    !$acc loop gang vector
+    do iplon = kidia,kfdia
       i_laysolfr(iplon) = i_nlayers
-    ENDDO
-    !$ACC END PARALLEL
+    enddo
+    !$acc end parallel
 
-    !$ACC WAIT
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(ind0, ind1, inds, indf, js, z_fs, z_speccomb, z_specmult, z_specparm, &
-    !$ACC   z_tauray)
-    DO i_lay = 1, laytrop_min
-       DO iplon = KIDIA,KFDIA
+    !$acc wait
+    !$acc parallel default(none) async(1)
+    !$acc loop gang vector collapse(2) private(ind0, ind1, inds, indf, js, z_fs, z_speccomb, z_specmult, z_specparm, &
+    !$acc   z_tauray)
+    do i_lay = 1, laytrop_min
+       do iplon = kidia,kfdia
          z_speccomb = p_colh2o(iplon,i_lay) + strrat1*p_colch4(iplon,i_lay)
          z_specparm = p_colh2o(iplon,i_lay)/z_speccomb
-         z_specparm = MIN(p_oneminus(iplon),z_specparm)
-         z_specmult = 8._JPRB*(z_specparm)
-         js = 1 + INT(z_specmult)
-         z_fs = z_specmult - AINT(z_specmult)
+         z_specparm = min(p_oneminus(iplon),z_specparm)
+         z_specmult = 8._jprb*(z_specparm)
+         js = 1 + int(z_specmult)
+         z_fs = z_specmult - aint(z_specmult)
          ind0 = ((k_jp(iplon,i_lay)-1)*5+(k_jt(iplon,i_lay)-1))*nspa(16) + js
          ind1 = (k_jp(iplon,i_lay)*5+(k_jt1(iplon,i_lay)-1))*nspa(16) + js
          inds = k_indself(iplon,i_lay)
          indf = k_indfor(iplon,i_lay)
          z_tauray = p_colmol(iplon,i_lay) * rayl
 
-         !$ACC LOOP SEQ
-!$NEC unroll(NG16)
-         DO ig = 1, ng16
+         !$acc loop seq
+!$nec unroll(ng16)
+         do ig = 1, ng16
            p_taug(iplon,i_lay,ig) = z_speccomb *                            &
                 & (                                                         &
-                & (1._JPRB- z_fs) * ( absa(ind0,ig) * p_fac00(iplon,i_lay) +    &
+                & (1._jprb- z_fs) * ( absa(ind0,ig) * p_fac00(iplon,i_lay) +    &
                 &                 absa(ind0+9,ig) * p_fac10(iplon,i_lay) +  &
                 &                 absa(ind1,ig) * p_fac01(iplon,i_lay) +    &
                 &                 absa(ind1+9,ig) * p_fac11(iplon,i_lay) )+ &
@@ -136,37 +131,37 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
                 & p_forfrac(iplon,i_lay) *                                  &
                 & (forrefc(indf+1,ig) - forrefc(indf,ig))))
            p_taur(iplon,i_lay,ig) = z_tauray
-         ENDDO
-       ENDDO
-    ENDDO
-    !$ACC END PARALLEL
+         enddo
+       enddo
+    enddo
+    !$acc end parallel
 
 
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP SEQ
-    DO i_lay = laytrop_min+1, laytrop_max
-      !$ACC LOOP GANG(STATIC:1) VECTOR PRIVATE(inds, indf, ind0, ind1, js, z_fs, z_speccomb, z_specmult, z_specparm, &
-      !$ACC   z_tauray)
-       DO iplon = KIDIA,KFDIA
-          IF (i_lay <= k_laytrop(iplon)) THEN
+    !$acc parallel default(none) async(1)
+    !$acc loop seq
+    do i_lay = laytrop_min+1, laytrop_max
+      !$acc loop gang(static:1) vector private(inds, indf, ind0, ind1, js, z_fs, z_speccomb, z_specmult, z_specparm, &
+      !$acc   z_tauray)
+       do iplon = kidia,kfdia
+          if (i_lay <= k_laytrop(iplon)) then
             z_speccomb = p_colh2o(iplon,i_lay) + strrat1*p_colch4(iplon,i_lay)
             z_specparm = p_colh2o(iplon,i_lay)/z_speccomb
-            z_specparm = MIN(p_oneminus(iplon),z_specparm)
-            z_specmult = 8._JPRB*(z_specparm)
-            js = 1 + INT(z_specmult)
-            z_fs = z_specmult - AINT(z_specmult)
+            z_specparm = min(p_oneminus(iplon),z_specparm)
+            z_specmult = 8._jprb*(z_specparm)
+            js = 1 + int(z_specmult)
+            z_fs = z_specmult - aint(z_specmult)
             ind0 = ((k_jp(iplon,i_lay)-1)*5+(k_jt(iplon,i_lay)-1))*nspa(16) + js
             ind1 = (k_jp(iplon,i_lay)*5+(k_jt1(iplon,i_lay)-1))*nspa(16) + js
             inds = k_indself(iplon,i_lay)
             indf = k_indfor(iplon,i_lay)
             z_tauray = p_colmol(iplon,i_lay) * rayl
 
-!$NEC unroll(NG16)
-            !$ACC LOOP SEQ
-            DO ig = 1, ng16
+!$nec unroll(ng16)
+            !$acc loop seq
+            do ig = 1, ng16
               p_taug(iplon,i_lay,ig) = z_speccomb *                            &
                    & (                                                         &
-                   & (1._JPRB- z_fs) * ( absa(ind0,ig) * p_fac00(iplon,i_lay) +    &
+                   & (1._jprb- z_fs) * ( absa(ind0,ig) * p_fac00(iplon,i_lay) +    &
                    &                 absa(ind0+9,ig) * p_fac10(iplon,i_lay) +  &
                    &                 absa(ind1,ig) * p_fac01(iplon,i_lay) +    &
                    &                 absa(ind1+9,ig) * p_fac11(iplon,i_lay) )+ &
@@ -183,53 +178,97 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
                    & p_forfrac(iplon,i_lay) *                                  &
                    & (forrefc(indf+1,ig) - forrefc(indf,ig))))
               p_taur(iplon,i_lay,ig) = z_tauray
-            ENDDO
-          ELSE
-            IF (k_jp(iplon,i_lay-1) < layreffr &
-                 &  .AND. k_jp(iplon,i_lay) >= layreffr)  i_laysolfr(iplon) = i_lay
+            enddo
+          else
+            if (k_jp(iplon,i_lay-1) < layreffr &
+                 &  .and. k_jp(iplon,i_lay) >= layreffr)  i_laysolfr(iplon) = i_lay
             ind0 = ((k_jp(iplon,i_lay)-13)*5+(k_jt(iplon,i_lay)-1))*nspb(16) + 1
             ind1 = ((k_jp(iplon,i_lay)-12)*5+(k_jt1(iplon,i_lay)-1))*nspb(16)+ 1
             z_tauray = p_colmol(iplon,i_lay) * rayl
-!$NEC unroll(NG16)
-            !$ACC LOOP SEQ
-            DO ig = 1, ng16
+!$nec unroll(ng16)
+            !$acc loop seq
+            do ig = 1, ng16
               p_taug(iplon,i_lay,ig) = p_colch4(iplon,i_lay) * &
                    & (p_fac00(iplon,i_lay) * absb(ind0  ,ig) + &
                    & p_fac10(iplon,i_lay) * absb(ind0+1,ig)  + &
                    & p_fac01(iplon,i_lay) * absb(ind1  ,ig)  + &
                    & p_fac11(iplon,i_lay) * absb(ind1+1,ig))
-              IF (i_lay == i_laysolfr(iplon)) p_sfluxzen(iplon,ig) = sfluxrefc(ig)
+              if (i_lay == i_laysolfr(iplon)) p_sfluxzen(iplon,ig) = sfluxrefc(ig)
               p_taur(iplon,i_lay,ig) = z_tauray
-            ENDDO
-          ENDIF
-       ENDDO
-    ENDDO
+            enddo
+          endif
+       enddo
+    enddo
 
-    !$ACC LOOP SEQ
-    DO i_lay = laytrop_max+1, i_nlayers
-      !$ACC LOOP GANG(STATIC:1) VECTOR PRIVATE(ind0, ind1, z_tauray)
-       DO iplon = KIDIA, KFDIA
-         IF (k_jp(iplon,i_lay-1) < layreffr &
-              &  .AND. k_jp(iplon,i_lay) >= layreffr)  i_laysolfr(iplon) = i_lay
+    !$acc loop seq
+    do i_lay = laytrop_max+1, i_nlayers
+      !$acc loop gang(static:1) vector private(ind0, ind1, z_tauray)
+       do iplon = kidia, kfdia
+         if (k_jp(iplon,i_lay-1) < layreffr &
+              &  .and. k_jp(iplon,i_lay) >= layreffr)  i_laysolfr(iplon) = i_lay
          ind0 = ((k_jp(iplon,i_lay)-13)*5+(k_jt(iplon,i_lay)-1))*nspb(16) + 1
          ind1 = ((k_jp(iplon,i_lay)-12)*5+(k_jt1(iplon,i_lay)-1))*nspb(16)+ 1
          z_tauray = p_colmol(iplon,i_lay) * rayl
-         !$ACC LOOP SEQ
-!$NEC unroll(NG16)
-         DO ig = 1, ng16
+         !$acc loop seq
+!$nec unroll(ng16)
+         do ig = 1, ng16
            p_taug(iplon,i_lay,ig) = p_colch4(iplon,i_lay) * &
                 & (p_fac00(iplon,i_lay) * absb(ind0  ,ig) + &
                 & p_fac10(iplon,i_lay) * absb(ind0+1,ig)  + &
                 & p_fac01(iplon,i_lay) * absb(ind1  ,ig)  + &
                 & p_fac11(iplon,i_lay) * absb(ind1+1,ig))
-           IF (i_lay == i_laysolfr(iplon)) p_sfluxzen(iplon,ig) = sfluxrefc(ig)
+           if (i_lay == i_laysolfr(iplon)) p_sfluxzen(iplon,ig) = sfluxrefc(ig)
            p_taur(iplon,i_lay,ig) = z_tauray
-         ENDDO
-       ENDDO
-    ENDDO
-    !$ACC END PARALLEL
+         enddo
+       enddo
+    enddo
+    !$acc end parallel
 
-    !$ACC WAIT
-    !$ACC END DATA
+    !$acc wait
+    !$acc end data
 
-END SUBROUTINE SRTM_TAUMOL16
+end subroutine srtm_taumol16
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

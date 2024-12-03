@@ -1,76 +1,125 @@
-! (C) Copyright 2014- ECMWF.
+! # 1 "ifsaux/yomcst.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsaux/yomcst.f90"
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-MODULE YOMCST
+module yomcst
 
-USE PARKIND1  ,ONLY : JPRB
+use parkind1  ,only : jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
+save
 
-! * RPI          : number Pi
-REAL(KIND=JPRB), PARAMETER :: RPI = 3.14159265358979323846_JPRB
-! * RCLUM        : light velocity
-REAL(KIND=JPRB), PARAMETER :: RCLUM = 299792458._JPRB
-! * RHPLA        : Planck constant
-REAL(KIND=JPRB), PARAMETER :: RHPLA = 6.6260755E-34_JPRB
-! * RKBOL        : Bolzmann constant
-REAL(KIND=JPRB), PARAMETER :: RKBOL = 1.380658E-23_JPRB
-! * RNAVO        : Avogadro number
-REAL(KIND=JPRB), PARAMETER :: RNAVO = 6.0221367E+23_JPRB
-! * RSIGMA       : Stefan-Bolzman constant
-REAL(KIND=JPRB), PARAMETER :: RSIGMA = 5.67037321e-8_JPRB ! W m-2 K-4
-! * RG           : gravity constant
-REAL(KIND=JPRB), PARAMETER :: RG = 9.80665_JPRB ! m s-2
-! * RMD          : dry air molar mass
-REAL(KIND=JPRB), PARAMETER :: RMD = 28.9644_JPRB
-! * RMV          : vapour water molar mass
-REAL(KIND=JPRB), PARAMETER :: RMV = 18.0153_JPRB
-! * R            : perfect gas constant
-REAL(KIND=JPRB), PARAMETER :: R = RNAVO*RKBOL
-! * RD           : R_dry (dry air constant)
-REAL(KIND=JPRB), PARAMETER :: RD = 287.058_JPRB! J kg-1 K-1
-! * RV           : R_vap (vapour water constant)
-REAL(KIND=JPRB), PARAMETER :: RV = 1000._JPRB*R/RMV
-! * RMO3         : ozone molar mass
-REAL(KIND=JPRB), PARAMETER :: RMO3 = 47.9942_JPRB
-! * RTT          : Tt = temperature of water fusion at "pre_n" 
-REAL(KIND=JPRB), PARAMETER :: RTT = 273.16_JPRB
-! * RLVTT        : RLvTt = vaporisation latent heat at T=Tt
-REAL(KIND=JPRB), PARAMETER :: RLVTT = 2.5008E+6_JPRB
-! * RLSTT        : RLsTt = sublimation latent heat at T=Tt
-REAL(KIND=JPRB), PARAMETER :: RLSTT = 2.8345E+6_JPRB
-! * RI0          : solar constant
-REAL(KIND=JPRB), PARAMETER :: RI0 = 1366.0_JPRB
-! * RETV         : R_vap/R_dry - 1
-REAL(KIND=JPRB), PARAMETER :: RETV = RV/RD-1.0_JPRB
-! * RMCO2        : CO2 (carbon dioxide) molar mass
-REAL(KIND=JPRB), PARAMETER :: RMCO2 = 44.0095_JPRB
-! * RMCH4        : CH4 (methane) molar mass
-REAL(KIND=JPRB), PARAMETER :: RMCH4 = 16.04_JPRB
-! * RMN2O        : N2O molar mass
-REAL(KIND=JPRB), PARAMETER :: RMN2O = 44.013_JPRB
-! * RMNO2        : NO2 (nitrogen dioxide) molar mass
-REAL(KIND=JPRB), PARAMETER :: RMNO2 = 46.01_JPRB
-! * RMCFC11      : CFC11 molar mass
-REAL(KIND=JPRB), PARAMETER :: RMCFC11 = 137.3686_JPRB
-! * RMCFC12      : CFC12 molar mass
-REAL(KIND=JPRB), PARAMETER :: RMCFC12 = 120.914_JPRB
-! * RMHCFC12     : HCFC22 molar mass
-REAL(KIND=JPRB), PARAMETER :: RMHCFC22 = 86.469_JPRB
-! * RMCCL4       : CCl4 molar mass
-REAL(KIND=JPRB), PARAMETER :: RMCCL4 = 153.823_JPRB
+! * rpi          : number pi
+real(kind=jprb), parameter :: rpi = 3.14159265358979323846_jprb
+! * rclum        : light velocity
+real(kind=jprb), parameter :: rclum = 299792458._jprb
+! * rhpla        : planck constant
+real(kind=jprb), parameter :: rhpla = 6.6260755e-34_jprb
+! * rkbol        : bolzmann constant
+real(kind=jprb), parameter :: rkbol = 1.380658e-23_jprb
+! * rnavo        : avogadro number
+real(kind=jprb), parameter :: rnavo = 6.0221367e+23_jprb
+! * rsigma       : stefan-bolzman constant
+real(kind=jprb), parameter :: rsigma = 5.67037321e-8_jprb ! w m-2 k-4
+! * rg           : gravity constant
+real(kind=jprb), parameter :: rg = 9.80665_jprb ! m s-2
+! * rmd          : dry air molar mass
+real(kind=jprb), parameter :: rmd = 28.9644_jprb
+! * rmv          : vapour water molar mass
+real(kind=jprb), parameter :: rmv = 18.0153_jprb
+! * r            : perfect gas constant
+real(kind=jprb), parameter :: r = rnavo*rkbol
+! * rd           : r_dry (dry air constant)
+real(kind=jprb), parameter :: rd = 287.058_jprb! j kg-1 k-1
+! * rv           : r_vap (vapour water constant)
+real(kind=jprb), parameter :: rv = 1000._jprb*r/rmv
+! * rmo3         : ozone molar mass
+real(kind=jprb), parameter :: rmo3 = 47.9942_jprb
+! * rtt          : tt = temperature of water fusion at "pre_n" 
+real(kind=jprb), parameter :: rtt = 273.16_jprb
+! * rlvtt        : rlvtt = vaporisation latent heat at t=tt
+real(kind=jprb), parameter :: rlvtt = 2.5008e+6_jprb
+! * rlstt        : rlstt = sublimation latent heat at t=tt
+real(kind=jprb), parameter :: rlstt = 2.8345e+6_jprb
+! * ri0          : solar constant
+real(kind=jprb), parameter :: ri0 = 1366.0_jprb
+! * retv         : r_vap/r_dry - 1
+real(kind=jprb), parameter :: retv = rv/rd-1.0_jprb
+! * rmco2        : co2 (carbon dioxide) molar mass
+real(kind=jprb), parameter :: rmco2 = 44.0095_jprb
+! * rmch4        : ch4 (methane) molar mass
+real(kind=jprb), parameter :: rmch4 = 16.04_jprb
+! * rmn2o        : n2o molar mass
+real(kind=jprb), parameter :: rmn2o = 44.013_jprb
+! * rmno2        : no2 (nitrogen dioxide) molar mass
+real(kind=jprb), parameter :: rmno2 = 46.01_jprb
+! * rmcfc11      : cfc11 molar mass
+real(kind=jprb), parameter :: rmcfc11 = 137.3686_jprb
+! * rmcfc12      : cfc12 molar mass
+real(kind=jprb), parameter :: rmcfc12 = 120.914_jprb
+! * rmhcfc12     : hcfc22 molar mass
+real(kind=jprb), parameter :: rmhcfc22 = 86.469_jprb
+! * rmccl4       : ccl4 molar mass
+real(kind=jprb), parameter :: rmccl4 = 153.823_jprb
 
-REAL(KIND=JPRB), PARAMETER :: RCPD  = 3.5_JPRB*RD
-REAL(KIND=JPRB), PARAMETER :: RLMLT = RLSTT-RLVTT
+real(kind=jprb), parameter :: rcpd  = 3.5_jprb*rd
+real(kind=jprb), parameter :: rlmlt = rlstt-rlvtt
 
-END MODULE YOMCST
+end module yomcst
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

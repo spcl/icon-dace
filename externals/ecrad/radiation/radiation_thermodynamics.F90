@@ -1,23 +1,28 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_thermodynamics.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_thermodynamics.f90"
+! this file has been modified for the use in icon
 
-! radiation_thermodynamics.F90 - Derived type for pressure & temperature
+! radiation_thermodynamics.f90 - derived type for pressure & temperature
 !
-! (C) Copyright 2014- ECMWF.
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2017-05-11  R. Hogan  Fix startcol/endcol for get_layer_mass
-!   2019-01-14  R. Hogan  Added out_of_physical_bounds routine
-!   2019-01-14  R. Hogan  Capped h2o_sat_liq at 1
+! modifications
+!   2017-05-11  r. hogan  fix startcol/endcol for get_layer_mass
+!   2019-01-14  r. hogan  added out_of_physical_bounds routine
+!   2019-01-14  r. hogan  capped h2o_sat_liq at 1
 
 module radiation_thermodynamics
 
@@ -27,15 +32,15 @@ module radiation_thermodynamics
   public
 
   !---------------------------------------------------------------------
-  ! Derived type for storing pressure and temperature at half and full levels
+  ! derived type for storing pressure and temperature at half and full levels
   type thermodynamics_type
      real(jprb), allocatable, dimension(:,:) :: &
-          &  pressure_hl,    & ! (ncol,nlev+1) pressure (Pa)
-          &  temperature_hl, & ! (ncol,nlev+1) temperature (K)
-          &  pressure_fl,    & ! (ncol,nlev) pressure (Pa)
-          &  temperature_fl    ! (ncol,nlev) temperature (K)
+          &  pressure_hl,    & ! (ncol,nlev+1) pressure (pa)
+          &  temperature_hl, & ! (ncol,nlev+1) temperature (k)
+          &  pressure_fl,    & ! (ncol,nlev) pressure (pa)
+          &  temperature_fl    ! (ncol,nlev) temperature (k)
 
-     ! The following is a function of pressure and temperature: you
+     ! the following is a function of pressure and temperature: you
      ! can calculate it according to your favourite formula, or the
      ! calc_saturation_wrt_liquid subroutine can be used to do this
      ! approximately
@@ -43,12 +48,12 @@ module radiation_thermodynamics
           &  h2o_sat_liq ! (ncol,nlev) specific humidity at liquid
                          ! saturation (kg/kg)
 
-     ! Using the interpolation method for temperature and pressure from half levels
+     ! using the interpolation method for temperature and pressure from half levels
      ! to full levels that is used in the subroutine gas_optics in radiation_ifs_rrtm
      ! can result in values for ind1 that exceed the bounds of absa within 
-     ! srtm_taumol16 for ecRad inside ICON. This can be avoided by directly
-     ! passing pressure_fl and temperature_fl from ICON to ecRad. With 
-     ! rrtm_pass_temppres_fl = .TRUE., the fields pressure_fl and temperature_fl
+     ! srtm_taumol16 for ecrad inside icon. this can be avoided by directly
+     ! passing pressure_fl and temperature_fl from icon to ecrad. with 
+     ! rrtm_pass_temppres_fl = .true., the fields pressure_fl and temperature_fl
      ! are allocated and used within gas_optics in radiation_ifs_rrtm.
      logical :: &
           &  rrtm_pass_temppres_fl 
@@ -59,10 +64,10 @@ module radiation_thermodynamics
      procedure :: get_layer_mass
      procedure :: get_layer_mass_column
      procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type thermodynamics_type
 
@@ -70,17 +75,17 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Allocate variables with specified dimensions
+  ! allocate variables with specified dimensions
   subroutine allocate_thermodynamics_arrays(this, ncol, nlev, &
        &                                    use_h2o_sat, rrtm_pass_temppres_fl)
 
     use ecradhook,  only : lhook, dr_hook, jphook
 
     class(thermodynamics_type), intent(inout) :: this
-    integer, intent(in)           :: ncol  ! Number of columns
-    integer, intent(in)           :: nlev  ! Number of levels
-    logical, intent(in), optional :: use_h2o_sat ! Allocate h2o_sat_liq?
-    logical, intent(in), optional :: rrtm_pass_temppres_fl ! Directly pass temperature
+    integer, intent(in)           :: ncol  ! number of columns
+    integer, intent(in)           :: nlev  ! number of levels
+    logical, intent(in), optional :: use_h2o_sat ! allocate h2o_sat_liq?
+    logical, intent(in), optional :: rrtm_pass_temppres_fl ! directly pass temperature
                                                            ! and pressure on full levels
 
     logical :: use_h2o_sat_local
@@ -91,7 +96,7 @@ contains
 
     allocate(this%pressure_hl(ncol,nlev+1))
     allocate(this%temperature_hl(ncol,nlev+1))
-    !$ACC ENTER DATA CREATE(this%pressure_hl, this%temperature_hl) ASYNC(1)
+    !$acc enter data create(this%pressure_hl, this%temperature_hl) async(1)
 
     use_h2o_sat_local = .false.
     if (present(use_h2o_sat)) then
@@ -106,12 +111,12 @@ contains
     if (this%rrtm_pass_temppres_fl) then
       allocate(this%pressure_fl(ncol,nlev))
       allocate(this%temperature_fl(ncol,nlev))
-      !$ACC ENTER DATA CREATE(this%pressure_fl, this%temperature_fl) ASYNC(1)
+      !$acc enter data create(this%pressure_fl, this%temperature_fl) async(1)
     end if
     
     if (use_h2o_sat_local) then
       allocate(this%h2o_sat_liq(ncol,nlev))
-      !$ACC ENTER DATA CREATE(this%h2o_sat_liq) ASYNC(1)
+      !$acc enter data create(this%h2o_sat_liq) async(1)
     end if    
 
     if (lhook) call dr_hook('radiation_thermodynamics:allocate',1,hook_handle)
@@ -120,7 +125,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Deallocate variables
+  ! deallocate variables
   subroutine deallocate_thermodynamics_arrays(this)
 
     use ecradhook,  only : lhook, dr_hook, jphook
@@ -132,23 +137,23 @@ contains
     if (lhook) call dr_hook('radiation_thermodynamics:deallocate',0,hook_handle)
 
     if (allocated(this%pressure_hl)) then
-      !$ACC EXIT DATA DELETE(this%pressure_hl) WAIT(1)
+      !$acc exit data delete(this%pressure_hl) wait(1)
       deallocate(this%pressure_hl)
     end if
     if (allocated(this%temperature_hl)) then
-      !$ACC EXIT DATA DELETE(this%temperature_hl) WAIT(1)
+      !$acc exit data delete(this%temperature_hl) wait(1)
       deallocate(this%temperature_hl)
     end if
     if (allocated(this%pressure_fl)) then
-      !$ACC EXIT DATA DELETE(this%pressure_fl) WAIT(1)
+      !$acc exit data delete(this%pressure_fl) wait(1)
       deallocate(this%pressure_fl)
     end if
     if (allocated(this%temperature_fl)) then
-      !$ACC EXIT DATA DELETE(this%temperature_fl) WAIT(1)
+      !$acc exit data delete(this%temperature_fl) wait(1)
       deallocate(this%temperature_fl)
     end if
     if (allocated(this%h2o_sat_liq)) then
-      !$ACC EXIT DATA DELETE(this%h2o_sat_liq) WAIT(1)
+      !$acc exit data delete(this%h2o_sat_liq) wait(1)
       deallocate(this%h2o_sat_liq)
     end if
 
@@ -158,7 +163,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Calculate approximate saturation with respect to liquid
+  ! calculate approximate saturation with respect to liquid
   subroutine calc_saturation_wrt_liquid(this,istartcol,iendcol)
 
     use ecradhook,  only : lhook, dr_hook, jphook
@@ -166,14 +171,14 @@ contains
     class(thermodynamics_type), intent(inout) :: this
     integer, intent(in)                       :: istartcol, iendcol
 
-    ! Pressure and temperature at full levels
+    ! pressure and temperature at full levels
     real(jprb) :: pressure, temperature
 
-    ! Vapour pressure (Pa)
+    ! vapour pressure (pa)
     real(jprb) :: e_sat
 
-    integer :: ncol, nlev ! Dimension sizes
-    integer :: jcol, jlev ! Loop indices for column and level
+    integer :: ncol, nlev ! dimension sizes
+    integer :: jcol, jlev ! loop indices for column and level
 
     real(jphook) :: hook_handle
 
@@ -184,22 +189,22 @@ contains
 
     if (.not. allocated(this%h2o_sat_liq)) then
       allocate(this%h2o_sat_liq(ncol,nlev))
-      !$ACC ENTER DATA CREATE(this%h2o_sat_liq) ASYNC(1)
+      !$acc enter data create(this%h2o_sat_liq) async(1)
     end if
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(pressure, temperature, e_sat)
+    !$acc parallel default(none) present(this) async(1)
+    !$acc loop gang vector collapse(2) private(pressure, temperature, e_sat)
     do jlev = 1,nlev
        do jcol = istartcol,iendcol
           pressure = 0.5 * (this%pressure_hl(jcol,jlev)+this%pressure_hl(jcol,jlev+1))
           temperature = 0.5 * (this%temperature_hl(jcol,jlev)+this%temperature_hl(jcol,jlev+1))
           e_sat = 6.11e2_jprb * exp( 17.269_jprb * (temperature-273.16_jprb) / (temperature-35.86_jprb) )
-          ! This formula can go above 1 at low pressure so needs to be
+          ! this formula can go above 1 at low pressure so needs to be
           ! capped
           this%h2o_sat_liq(jcol,jlev) = min(1.0_jprb, 0.622_jprb * e_sat / pressure)
        end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
 
     if (lhook) call dr_hook('radiation_thermodynamics:calc_saturation_wrt_liquid',1,hook_handle)
 
@@ -207,12 +212,12 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Calculate the dry mass of each layer, neglecting humidity effects.
-  ! The first version is for all columns.
+  ! calculate the dry mass of each layer, neglecting humidity effects.
+  ! the first version is for all columns.
   subroutine get_layer_mass(this,istartcol,iendcol,layer_mass)
 
     use ecradhook,              only : lhook, dr_hook, jphook
-    use radiation_constants,  only : AccelDueToGravity
+    use radiation_constants,  only : accelduetogravity
 
     class(thermodynamics_type), intent(in)  :: this
     integer,                    intent(in)  :: istartcol, iendcol
@@ -226,7 +231,7 @@ contains
     if (lhook) call dr_hook('radiation_thermodynamics:get_layer_mass',0,hook_handle)
 
     nlev  = ubound(this%pressure_hl,2) - 1
-    inv_g = 1.0_jprb / AccelDueToGravity
+    inv_g = 1.0_jprb / accelduetogravity
 
     layer_mass(istartcol:iendcol,1:nlev) &
          &  = ( this%pressure_hl(istartcol:iendcol,2:nlev+1) &
@@ -238,12 +243,12 @@ contains
   end subroutine get_layer_mass
 
   !---------------------------------------------------------------------
-  ! Calculate the dry mass of each layer, neglecting humidity effects.
-  ! The second version is for one column, the one numbered "icol".
+  ! calculate the dry mass of each layer, neglecting humidity effects.
+  ! the second version is for one column, the one numbered "icol".
   subroutine get_layer_mass_column(this, icol, layer_mass)
 
     use ecradhook,              only : lhook, dr_hook, jphook
-    use radiation_constants,  only : AccelDueToGravity
+    use radiation_constants,  only : accelduetogravity
 
     class(thermodynamics_type), intent(in)  :: this
     integer,                    intent(in)  :: icol
@@ -257,7 +262,7 @@ contains
     if (lhook) call dr_hook('radiation_thermodynamics:get_layer_mass_column',0,hook_handle)
 
     nlev  = ubound(this%pressure_hl,2) - 1
-    inv_g = 1.0_jprb / AccelDueToGravity
+    inv_g = 1.0_jprb / accelduetogravity
 
     layer_mass = ( this%pressure_hl(icol,2:nlev+1) &
              &    -this%pressure_hl(icol,1:nlev  )  ) &
@@ -269,28 +274,28 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Estimate the separation between the mid-points of model layers
-  ! given the half-level pressure and temperature.  This is not in
+  ! estimate the separation between the mid-points of model layers
+  ! given the half-level pressure and temperature.  this is not in
   ! terms of the "thermodynamics" type as it is useful for computing
   ! overlap decorrelation lengths and hence cloud cover outside the
   ! radiation scheme.
   subroutine get_layer_separation(pressure_hl, temperature_hl, layer_separation)
 
     use ecradhook,              only : lhook, dr_hook, jphook
-    use radiation_constants,  only : GasConstantDryAir, AccelDueToGravity
+    use radiation_constants,  only : gasconstantdryair, accelduetogravity
 
-    ! Pressure (Pa) and temperature (K) at half-levels, dimensioned
+    ! pressure (pa) and temperature (k) at half-levels, dimensioned
     ! (ncol,nlev+1) where ncol is the number of columns and nlev is
     ! the number of model levels
     real(jprb), dimension(:,:), intent(in)  :: pressure_hl, temperature_hl
 
-    ! Layer separation in metres, dimensioned (ncol,nlev-1)
+    ! layer separation in metres, dimensioned (ncol,nlev-1)
     real(jprb), dimension(:,:), intent(out) :: layer_separation
 
-    ! Ratio of gas constant for dry air to acceleration due to gravity
-    real(jprb), parameter :: R_over_g = GasConstantDryAir / AccelDueToGravity
+    ! ratio of gas constant for dry air to acceleration due to gravity
+    real(jprb), parameter :: r_over_g = gasconstantdryair / accelduetogravity
 
-    ! Loop indices and array bounds
+    ! loop indices and array bounds
     integer    :: jlev
     integer    :: i1, i2, nlev
 
@@ -303,32 +308,32 @@ contains
     nlev =   size(pressure_hl,2)-1
 
     if (pressure_hl(i1,2) > pressure_hl(i1,1)) then
-      ! Pressure is increasing with index (order of layers is
-      ! top-of-atmosphere to surface). In case pressure_hl(:,1)=0, we
+      ! pressure is increasing with index (order of layers is
+      ! top-of-atmosphere to surface). in case pressure_hl(:,1)=0, we
       ! don't take the logarithm of the first pressure in each column.
-      layer_separation(i1:i2,1) = R_over_g * temperature_hl(i1:i2,2) &
+      layer_separation(i1:i2,1) = r_over_g * temperature_hl(i1:i2,2) &
            &                    * log(pressure_hl(i1:i2,3)/pressure_hl(i1:i2,2))
       
-      ! For other layers we take the separation between midpoints to
+      ! for other layers we take the separation between midpoints to
       ! be half the separation between the half-levels at the edge of
       ! the two adjacent layers
       do jlev = 2,nlev-1
-        layer_separation(i1:i2,jlev) = (0.5_jprb * R_over_g) * temperature_hl(i1:i2,jlev+1) &
+        layer_separation(i1:i2,jlev) = (0.5_jprb * r_over_g) * temperature_hl(i1:i2,jlev+1) &
              &                    * log(pressure_hl(i1:i2,jlev+2)/pressure_hl(i1:i2,jlev))
 
       end do
 
     else
-      ! Pressure is decreasing with index (order of layers is surface
-      ! to top-of-atmosphere).  In case pressure_hl(:,nlev+1)=0, we
+      ! pressure is decreasing with index (order of layers is surface
+      ! to top-of-atmosphere).  in case pressure_hl(:,nlev+1)=0, we
       ! don't take the logarithm of the last pressure in each column.
 
       do jlev = 1,nlev-2
-        layer_separation(i1:i2,jlev) = (0.5_jprb * R_over_g) * temperature_hl(i1:i2,jlev+1) &
+        layer_separation(i1:i2,jlev) = (0.5_jprb * r_over_g) * temperature_hl(i1:i2,jlev+1) &
              &                    * log(pressure_hl(i1:i2,jlev)/pressure_hl(i1:i2,jlev+2))
 
       end do
-      layer_separation(i1:i2,nlev-1) = R_over_g * temperature_hl(i1:i2,nlev) &
+      layer_separation(i1:i2,nlev-1) = r_over_g * temperature_hl(i1:i2,nlev) &
            &                    * log(pressure_hl(i1:i2,nlev-1)/pressure_hl(i1:i2,nlev))
 
     end if
@@ -339,7 +344,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Return .true. if variables are out of a physically sensible range,
+  ! return .true. if variables are out of a physically sensible range,
   ! optionally only considering columns between istartcol and iendcol
   function out_of_physical_bounds(this, istartcol, iendcol, do_fix) result(is_bad)
 
@@ -363,7 +368,7 @@ contains
       do_fix_local = .false.
     end if
 
-    ! Dangerous to cap pressure_hl as then the pressure difference across a layer could be zero
+    ! dangerous to cap pressure_hl as then the pressure difference across a layer could be zero
     is_bad =    out_of_bounds_2d(this%pressure_hl, 'pressure_hl', 0.0_jprb, 110000.0_jprb, &
          &                       .false., i1=istartcol, i2=iendcol) &
          & .or. out_of_bounds_2d(this%temperature_hl, 'temperature_hl', 100.0_jprb,  400.0_jprb, &
@@ -375,52 +380,50 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(thermodynamics_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%pressure_hl) &
-    !$ACC   IF(allocated(this%pressure_hl))
-
-    !$ACC UPDATE HOST(this%temperature_hl) &
-    !$ACC   IF(allocated(this%temperature_hl))
-
-    !$ACC UPDATE HOST(this%pressure_fl) &
-    !$ACC   IF(allocated(this%pressure_fl))
-
-    !$ACC UPDATE HOST(this%temperature_fl) &
-    !$ACC   IF(allocated(this%temperature_fl))
-
-    !$ACC UPDATE HOST(this%h2o_sat_liq) &
-    !$ACC   IF(allocated(this%h2o_sat_liq))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(thermodynamics_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%pressure_hl) &
-    !$ACC   IF(allocated(this%pressure_hl))
-
-    !$ACC UPDATE DEVICE(this%temperature_hl) &
-    !$ACC   IF(allocated(this%temperature_hl))
-
-    !$ACC UPDATE DEVICE(this%pressure_fl) &
-    !$ACC   IF(allocated(this%pressure_fl))
-
-    !$ACC UPDATE DEVICE(this%temperature_fl) &
-    !$ACC   IF(allocated(this%temperature_fl))
-
-    !$ACC UPDATE DEVICE(this%h2o_sat_liq) &
-    !$ACC   IF(allocated(this%h2o_sat_liq))
-
-  end subroutine update_device
-#endif 
+! # 425 "radiation/radiation_thermodynamics.f90"
   
 end module radiation_thermodynamics
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

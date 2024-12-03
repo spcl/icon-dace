@@ -1,21 +1,26 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_gas.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_gas.f90"
+! this file has been modified for the use in icon
 
-! radiation_gas.F90 - Derived type to store the gas mixing ratios
+! radiation_gas.f90 - derived type to store the gas mixing ratios
 !
-! (C) Copyright 2014- ECMWF.
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2019-01-14  R. Hogan  Added out_of_physical_bounds routine
+! modifications
+!   2019-01-14  r. hogan  added out_of_physical_bounds routine
 
 module radiation_gas
 
@@ -25,44 +30,44 @@ module radiation_gas
   implicit none
   public
 
-  ! Available units
+  ! available units
   enum, bind(c)
-    enumerator IMassMixingRatio, IVolumeMixingRatio
+    enumerator imassmixingratio, ivolumemixingratio
   end enum
 
   !---------------------------------------------------------------------
-  ! This derived type describes the gaseous composition of the
-  ! atmosphere; gases may be stored as part of a 3D array (if their
-  ! variation with height/column is to be represented) or one 1D array
+  ! this derived type describes the gaseous composition of the
+  ! atmosphere; gases may be stored as part of a 3d array (if their
+  ! variation with height/column is to be represented) or one 1d array
   ! (if they are to be assumed globally well-mixed).
   type gas_type
-    ! Units of each stored gas (or 0 if not present)
-    integer :: iunits(NMaxGases) = 0
+    ! units of each stored gas (or 0 if not present)
+    integer :: iunits(nmaxgases) = 0
 
-    ! Scaling factor that should be applied to each stored gas to get
-    ! a dimensionless result, e.g. if iunits=IVolumeMixingRatio then
-    ! 1.0e-6 is used to indicate the units are actually PPMV: need to
+    ! scaling factor that should be applied to each stored gas to get
+    ! a dimensionless result, e.g. if iunits=ivolumemixingratio then
+    ! 1.0e-6 is used to indicate the units are actually ppmv: need to
     ! multiply by 1e-6 to get mol/mol.
-    real(jprb) :: scale_factor(NMaxGases) = 1.0_jprb
+    real(jprb) :: scale_factor(nmaxgases) = 1.0_jprb
 
-    ! Mixing ratios of variable gases, dimensioned (ncol, nlev,
-    ! NMaxGases)
+    ! mixing ratios of variable gases, dimensioned (ncol, nlev,
+    ! nmaxgases)
     real(jprb), allocatable, dimension(:,:,:) :: mixing_ratio
 
-    ! Flag to indicate whether a gas is present
-    logical :: is_present(NMaxGases) = .false.
+    ! flag to indicate whether a gas is present
+    logical :: is_present(nmaxgases) = .false.
 
-    ! Flag to indicate whether a gas is well mixed
-    logical :: is_well_mixed(NMaxGases) = .false.
+    ! flag to indicate whether a gas is well mixed
+    logical :: is_well_mixed(nmaxgases) = .false.
 
-    integer :: ntype          = 0 ! Number of gas types described
+    integer :: ntype          = 0 ! number of gas types described
 
-    integer :: ncol           = 0 ! Number of columns in mixing_ratio
-    integer :: nlev           = 0 ! Number of levels  in mixing_ratio
+    integer :: ncol           = 0 ! number of columns in mixing_ratio
+    integer :: nlev           = 0 ! number of levels  in mixing_ratio
 
-    ! A list of length ntype of gases whose volume mixing ratios have
+    ! a list of length ntype of gases whose volume mixing ratios have
     ! been provided
-    integer :: icode(NMaxGases) = 0
+    integer :: icode(nmaxgases) = 0
 
    contains
      procedure :: allocate   => allocate_gas
@@ -76,10 +81,10 @@ module radiation_gas
      procedure :: get_scaling
      procedure :: reverse    => reverse_gas
      procedure :: out_of_physical_bounds
-#ifdef _OPENACC
-    procedure :: update_host
-    procedure :: update_device
-#endif
+
+
+
+
 
   end type gas_type
 
@@ -87,7 +92,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Allocate a derived type for holding gas mixing ratios given the
+  ! allocate a derived type for holding gas mixing ratios given the
   ! number of columns and levels
   subroutine allocate_gas(this, ncol, nlev)
 
@@ -103,23 +108,23 @@ contains
 
     call this%deallocate()
 
-    allocate(this%mixing_ratio(ncol, nlev, NMaxGases))
-    !$ACC ENTER DATA CREATE(this%mixing_ratio) ASYNC(1)
+    allocate(this%mixing_ratio(ncol, nlev, nmaxgases))
+    !$acc enter data create(this%mixing_ratio) async(1)
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(3)
-    do jgas = 1,NMaxGases
+    !$acc parallel default(none) present(this) async(1)
+    !$acc loop gang vector collapse(3)
+    do jgas = 1,nmaxgases
       do jlev = 1, nlev
         do jcol = 1,ncol
           this%mixing_ratio(jcol,jlev,jgas) = 0.0_jprb
         end do
       end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
 
     this%ncol = ncol
     this%nlev = nlev
-    !$ACC UPDATE DEVICE(this%ncol, this%nlev) ASYNC(1)
+    !$acc update device(this%ncol, this%nlev) async(1)
 
     if (lhook) call dr_hook('radiation_gas:allocate',1,hook_handle)
 
@@ -127,7 +132,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Deallocate memory and reset arrays
+  ! deallocate memory and reset arrays
   subroutine deallocate_gas(this)
 
     use ecradhook, only : lhook, dr_hook, jphook
@@ -139,7 +144,7 @@ contains
     if (lhook) call dr_hook('radiation_gas:deallocate',0,hook_handle)
 
     if (allocated(this%mixing_ratio)) then
-       !$ACC EXIT DATA DELETE(this%mixing_ratio) WAIT(1)
+       !$acc exit data delete(this%mixing_ratio) wait(1)
        deallocate(this%mixing_ratio)
     end if
 
@@ -158,7 +163,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Put gas mixing ratio corresponding to gas ID "igas" with units
+  ! put gas mixing ratio corresponding to gas id "igas" with units
   ! "iunits"
   subroutine put_gas(this, igas, iunits, mixing_ratio, scale_factor, &
        istartcol)
@@ -180,22 +185,22 @@ contains
 
     if (lhook) call dr_hook('radiation_gas:put',0,hook_handle)
 
-    ! Check inputs
-    if (igas <= IGasNotPresent .or. iunits > NMaxGases) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: provided gas ID (', &
-           &   igas, ') must be in the range ', IGasNotPresent+1, ' to ', &
-           &   NMaxGases
+    ! check inputs
+    if (igas <= igasnotpresent .or. iunits > nmaxgases) then
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: provided gas id (', &
+           &   igas, ') must be in the range ', igasnotpresent+1, ' to ', &
+           &   nmaxgases
       call radiation_abort()
     end if
-    if (iunits < IMassMixingRatio .or. iunits > IVolumeMixingRatio) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: provided gas units (', &
-           &   iunits, ') must be in the range ', IMassMixingRatio, ' to ', &
-           &   IVolumeMixingRatio
+    if (iunits < imassmixingratio .or. iunits > ivolumemixingratio) then
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: provided gas units (', &
+           &   iunits, ') must be in the range ', imassmixingratio, ' to ', &
+           &   ivolumemixingratio
       call radiation_abort()
     end if
 
     if (.not. allocated(this%mixing_ratio)) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: attempt to put data to unallocated radiation_gas object'
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: attempt to put data to unallocated radiation_gas object'
       call radiation_abort()
     end if
 
@@ -208,36 +213,36 @@ contains
     i2 = i1 + size(mixing_ratio,1) - 1
 
     if (i1 < 1 .or. i2 < 1 .or. i1 > this%ncol .or. i2 > this%ncol) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: attempt to put columns indexed ', &
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: attempt to put columns indexed ', &
            &   i1, ' to ', i2, ' to array indexed 1 to ', this%ncol
       call radiation_abort()
     end if
 
     if (size(mixing_ratio,2) /= this%nlev) then
       write(nulerr,'(a,i0,a)') &
-           &  '*** Error: gas mixing ratio expected to have ', this%nlev, &
+           &  '*** error: gas mixing ratio expected to have ', this%nlev, &
            &  ' levels'
       call radiation_abort()
     end if
 
     if (.not. this%is_present(igas)) then
-      ! Gas not present until now
+      ! gas not present until now
       this%ntype = this%ntype + 1
       this%icode(this%ntype) = igas
-      !$ACC UPDATE DEVICE(this%icode(this%ntype:this%ntype)) ASYNC(1)
+      !$acc update device(this%icode(this%ntype:this%ntype)) async(1)
     end if
     this%is_present(igas) = .true.
     this%iunits(igas) = iunits
     this%is_well_mixed(igas) = .false.
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this, mixing_ratio) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2)
+    !$acc parallel default(none) present(this, mixing_ratio) async(1)
+    !$acc loop gang vector collapse(2)
     do jk = 1,this%nlev
       do jc = i1,i2
         this%mixing_ratio(jc,jk,igas) = mixing_ratio(jc-i1+1,jk)
       end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
     if (present(scale_factor)) then
       this%scale_factor(igas) = scale_factor
     else
@@ -250,7 +255,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Put well-mixed gas mixing ratio corresponding to gas ID "igas"
+  ! put well-mixed gas mixing ratio corresponding to gas id "igas"
   ! with units "iunits"
   subroutine put_well_mixed_gas(this, igas, iunits, mixing_ratio, &
        scale_factor, istartcol, iendcol)
@@ -271,22 +276,22 @@ contains
 
     if (lhook) call dr_hook('radiation_gas:put_well_mixed',0,hook_handle)
 
-    ! Check inputs
-    if (igas <= IGasNotPresent .or. igas > NMaxGases) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: provided gas ID (', &
-           &   igas, ') must be in the range ', IGasNotPresent+1, ' to ', &
-           &   NMaxGases
+    ! check inputs
+    if (igas <= igasnotpresent .or. igas > nmaxgases) then
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: provided gas id (', &
+           &   igas, ') must be in the range ', igasnotpresent+1, ' to ', &
+           &   nmaxgases
       call radiation_abort()
     end if
-    if (iunits < IMassMixingRatio .or. iunits > IVolumeMixingRatio) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: provided gas units (', &
-           &   iunits, ') must be in the range ', IMassMixingRatio, ' to ', &
-           &   IVolumeMixingRatio
+    if (iunits < imassmixingratio .or. iunits > ivolumemixingratio) then
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: provided gas units (', &
+           &   iunits, ') must be in the range ', imassmixingratio, ' to ', &
+           &   ivolumemixingratio
       call radiation_abort()
     end if
 
     if (.not. allocated(this%mixing_ratio)) then
-      write(nulerr,'(a)') '*** Error: attempt to put well-mixed gas data to unallocated radiation_gas object'
+      write(nulerr,'(a)') '*** error: attempt to put well-mixed gas data to unallocated radiation_gas object'
       call radiation_abort()
     end if
 
@@ -303,31 +308,31 @@ contains
     end if
 
     if (i1 < 1 .or. i2 < 1 .or. i1 > this%ncol .or. i2 > this%ncol) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: attempt to put columns indexed ', &
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: attempt to put columns indexed ', &
            &   i1, ' to ', i2, ' to array indexed 1 to ', this%ncol
       call radiation_abort()
     end if
 
     if (.not. this%is_present(igas)) then
-      ! Gas not present until now
+      ! gas not present until now
       this%ntype = this%ntype + 1
       this%icode(this%ntype) = igas
-      !$ACC UPDATE DEVICE(this%icode(this%ntype:this%ntype)) ASYNC(1)
+      !$acc update device(this%icode(this%ntype:this%ntype)) async(1)
 
     end if
-    ! Map uses a negative value to indicate a well-mixed value
+    ! map uses a negative value to indicate a well-mixed value
     this%is_present(igas)              = .true.
     this%iunits(igas)                  = iunits
     this%is_well_mixed(igas)           = .true.
 
-    !$ACC PARALLEL DEFAULT(NONE) PRESENT(this) ASYNC(1)
-    !$ACC LOOP GANG VECTOR COLLAPSE(2) 
+    !$acc parallel default(none) present(this) async(1)
+    !$acc loop gang vector collapse(2) 
     do jk = 1,this%nlev
       do jc = i1,i2
         this%mixing_ratio(jc,jk,igas) = mixing_ratio
       end do
     end do
-    !$ACC END PARALLEL
+    !$acc end parallel
     if (present(scale_factor)) then
       this%scale_factor(igas) = scale_factor
     else
@@ -340,8 +345,8 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Scale gas concentrations, e.g. igas=ICO2 and set scale_factor=2 to
-  ! double CO2.  Note that this does not perform the scaling
+  ! scale gas concentrations, e.g. igas=ico2 and set scale_factor=2 to
+  ! double co2.  note that this does not perform the scaling
   ! immediately, but changes the scale factor for the specified gas,
   ! ready to be used in set_units_gas.
   subroutine scale_gas(this, igas, scale_factor, lverbose)
@@ -357,7 +362,7 @@ contains
       this%scale_factor(igas) = this%scale_factor(igas) * scale_factor
       if (present(lverbose)) then
         if (lverbose) then
-          write(nulout,'(a,a,a,f0.3)') '  Scaling ', trim(GasName(igas)), &
+          write(nulout,'(a,a,a,f0.3)') '  scaling ', trim(gasname(igas)), &
                &  ' concentration by ', scale_factor
         end if
       end if
@@ -367,16 +372,16 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Scale the gas concentrations so that they have the units "iunits"
+  ! scale the gas concentrations so that they have the units "iunits"
   ! and are therefore ready to be used by the gas optics model within
-  ! ecRad with no further scaling.  The existing scale_factor for each
-  ! gas is applied.  If "igas" is present then apply only to gas with
-  ! ID "igas", otherwise to all gases. Optional argument scale_factor
+  ! ecrad with no further scaling.  the existing scale_factor for each
+  ! gas is applied.  if "igas" is present then apply only to gas with
+  ! id "igas", otherwise to all gases. optional argument scale_factor
   ! specifies scaling that any subsequent access would need to apply
   ! to get a dimensionless result (consistent with definition of
-  ! gas_type). So say that your gas optics model requires gas
-  ! concentrations in PPMV, specify iunits=IVolumeMixingRatio and
-  ! scale_factor=1.0e-6. If the gas concentrations were currently
+  ! gas_type). so say that your gas optics model requires gas
+  ! concentrations in ppmv, specify iunits=ivolumemixingratio and
+  ! scale_factor=1.0e-6. if the gas concentrations were currently
   ! dimensionless volume mixing ratios, then the values would be
   ! internally divided by 1.0e-6.
   recursive subroutine set_units_gas(this, iunits, igas, scale_factor)
@@ -387,10 +392,10 @@ contains
 
     integer :: jg, jcol, jlev
 
-    ! Scaling factor to convert from old to new
+    ! scaling factor to convert from old to new
     real(jprb) :: sf
 
-    ! New scaling factor to store inside the gas object
+    ! new scaling factor to store inside the gas object
     real(jprb) :: new_sf
 
     if (present(scale_factor)) then
@@ -408,26 +413,26 @@ contains
 
     if (present(igas)) then
       if (this%is_present(igas)) then
-        if (iunits == IMassMixingRatio &
-             &   .and. this%iunits(igas) == IVolumeMixingRatio) then
-          sf = sf * GasMolarMass(igas) / AirMolarMass
-        else if (iunits == IVolumeMixingRatio &
-             &   .and. this%iunits(igas) == IMassMixingRatio) then
-          sf = sf * AirMolarMass / GasMolarMass(igas)
+        if (iunits == imassmixingratio &
+             &   .and. this%iunits(igas) == ivolumemixingratio) then
+          sf = sf * gasmolarmass(igas) / airmolarmass
+        else if (iunits == ivolumemixingratio &
+             &   .and. this%iunits(igas) == imassmixingratio) then
+          sf = sf * airmolarmass / gasmolarmass(igas)
         end if
         sf = sf * this%scale_factor(igas)
 
         if (sf /= 1.0_jprb) then
-          !$ACC PARALLEL DEFAULT(NONE) PRESENT(this, this%mixing_ratio, igas) ASYNC(1)
-          !$ACC LOOP GANG VECTOR COLLAPSE(2)
+          !$acc parallel default(none) present(this, this%mixing_ratio, igas) async(1)
+          !$acc loop gang vector collapse(2)
           do jlev = 1,this%nlev
             do jcol = 1,this%ncol
               this%mixing_ratio(jcol,jlev,igas) = this%mixing_ratio(jcol,jlev,igas) * sf
             enddo
           enddo
-          !$ACC END PARALLEL
+          !$acc end parallel
         end if
-        ! Store the new units and scale factor for this gas inside the
+        ! store the new units and scale factor for this gas inside the
         ! gas object
         this%iunits(igas) = iunits
         this%scale_factor(igas) = new_sf
@@ -442,21 +447,21 @@ contains
 
   
   !---------------------------------------------------------------------
-  ! Return a vector indicating the scaling that one would need to
+  ! return a vector indicating the scaling that one would need to
   ! apply to each gas in order to obtain the dimension units in
-  ! "iunits" (which can be IVolumeMixingRatio or IMassMixingRatio)
+  ! "iunits" (which can be ivolumemixingratio or imassmixingratio)
   subroutine get_scaling(this, iunits, scaling)
     class(gas_type), intent(in)  :: this
     integer,         intent(in)  :: iunits
-    real(jprb),      intent(out) :: scaling(NMaxGases)
+    real(jprb),      intent(out) :: scaling(nmaxgases)
     integer :: jg
     
     scaling = this%scale_factor
-    do jg = 1,NMaxGases
-      if (iunits == IMassMixingRatio .and. this%iunits(jg) == IVolumeMixingRatio) then
-        scaling(jg) = scaling(jg) * GasMolarMass(jg) / AirMolarMass
-      else if (iunits == IVolumeMixingRatio .and. this%iunits(jg) == IMassMixingRatio) then
-        scaling(jg) = scaling(jg) * AirMolarMass / GasMolarMass(jg)
+    do jg = 1,nmaxgases
+      if (iunits == imassmixingratio .and. this%iunits(jg) == ivolumemixingratio) then
+        scaling(jg) = scaling(jg) * gasmolarmass(jg) / airmolarmass
+      else if (iunits == ivolumemixingratio .and. this%iunits(jg) == imassmixingratio) then
+        scaling(jg) = scaling(jg) * airmolarmass / gasmolarmass(jg)
       end if
     end do
     
@@ -464,13 +469,13 @@ contains
 
   
   !---------------------------------------------------------------------
-  ! Assert that gas mixing ratio units are "iunits", applying to gas
-  ! with ID "igas" if present, otherwise to all gases. Otherwise the
+  ! assert that gas mixing ratio units are "iunits", applying to gas
+  ! with id "igas" if present, otherwise to all gases. otherwise the
   ! program will exit, except if the optional argument "istatus" is
   ! provided in which case it will return true if the units are
-  ! correct and false if they are not. Optional argument scale factor
-  ! specifies any subsequent multiplication to apply; for PPMV one
-  ! would use iunits=IVolumeMixingRatio and scale_factor=1.0e6.
+  ! correct and false if they are not. optional argument scale factor
+  ! specifies any subsequent multiplication to apply; for ppmv one
+  ! would use iunits=ivolumemixingratio and scale_factor=1.0e6.
   recursive subroutine assert_units_gas(this, iunits, igas, scale_factor, istatus)
 
     use radiation_io,   only : nulerr, radiation_abort
@@ -501,7 +506,7 @@ contains
           if (present(istatus)) then
             istatus = .false.
           else
-            write(nulerr,'(a,a,a)') '*** Error: ', trim(GasName(igas)), &
+            write(nulerr,'(a,a,a)') '*** error: ', trim(gasname(igas)), &
                  &  ' is not in the required units'
             call radiation_abort()
           end if
@@ -509,7 +514,7 @@ contains
           if (present(istatus)) then
             istatus = .false.
           else
-            write(nulerr,'(a,a,a,e12.4,a,e12.4)') '*** Error: ', GasName(igas), &
+            write(nulerr,'(a,a,a,e12.4,a,e12.4)') '*** error: ', gasname(igas), &
                  &  ' scaling of ', this%scale_factor(igas), &
                  &  ' does not match required ', sf
             call radiation_abort()
@@ -526,8 +531,8 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Get gas mixing ratio corresponding to gas ID "igas" with units
-  ! "iunits" and return as a 2D array of dimensions (ncol,nlev).  The
+  ! get gas mixing ratio corresponding to gas id "igas" with units
+  ! "iunits" and return as a 2d array of dimensions (ncol,nlev).  the
   ! array will contain zeros if the gas is not stored.
   subroutine get_gas(this, igas, iunits, mixing_ratio, scale_factor, &
        &   istartcol)
@@ -549,10 +554,10 @@ contains
 
     if (lhook) call dr_hook('radiation_gas:get',0,hook_handle)
 
-#ifdef _OPENACC
-    write(nulerr,'(a)') '*** Error: radiation_gas:get not ported to GPU'
-    call radiation_abort()
-#endif
+
+
+
+
 
     if (present(scale_factor)) then
       sf = scale_factor
@@ -569,14 +574,14 @@ contains
     i2 = i1 + size(mixing_ratio,1) - 1
 
     if (i1 < 1 .or. i2 < 1 .or. i1 > this%ncol .or. i2 > this%ncol) then
-      write(nulerr,'(a,i0,a,i0,a,i0)') '*** Error: attempt to get columns indexed ', &
+      write(nulerr,'(a,i0,a,i0,a,i0)') '*** error: attempt to get columns indexed ', &
            &   i1, ' to ', i2, ' from array indexed 1 to ', this%ncol
       call radiation_abort()
     end if
 
     if (size(mixing_ratio,2) /= this%nlev) then
       write(nulerr,'(a,i0,a)') &
-           &  '*** Error: gas destination array expected to have ', this%nlev, &
+           &  '*** error: gas destination array expected to have ', this%nlev, &
            &  ' levels'
       call radiation_abort()
     end if
@@ -584,12 +589,12 @@ contains
     if (.not. this%is_present(igas)) then
       mixing_ratio = 0.0_jprb
     else
-      if (iunits == IMassMixingRatio &
-           &   .and. this%iunits(igas) == IVolumeMixingRatio) then
-        sf = sf * GasMolarMass(igas) / AirMolarMass
-      else if (iunits == IVolumeMixingRatio &
-           &   .and. this%iunits(igas) == IMassMixingRatio) then
-        sf = sf * AirMolarMass / GasMolarMass(igas)
+      if (iunits == imassmixingratio &
+           &   .and. this%iunits(igas) == ivolumemixingratio) then
+        sf = sf * gasmolarmass(igas) / airmolarmass
+      else if (iunits == ivolumemixingratio &
+           &   .and. this%iunits(igas) == imassmixingratio) then
+        sf = sf * airmolarmass / gasmolarmass(igas)
       end if
       sf = sf * this%scale_factor(igas)
 
@@ -606,7 +611,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Copy data to "gas_rev", reversing the height ordering of the gas
+  ! copy data to "gas_rev", reversing the height ordering of the gas
   ! data
   subroutine reverse_gas(this, istartcol, iendcol, gas_rev)
 
@@ -626,7 +631,7 @@ contains
     if (allocated(gas_rev%mixing_ratio)) deallocate(gas_rev%mixing_ratio)
 
     if (allocated(this%mixing_ratio)) then
-      allocate(gas_rev%mixing_ratio(istartcol:iendcol,this%nlev,NMaxGases))
+      allocate(gas_rev%mixing_ratio(istartcol:iendcol,this%nlev,nmaxgases))
       gas_rev%mixing_ratio(istartcol:iendcol,:,:) &
            &  = this%mixing_ratio(istartcol:iendcol,this%nlev:1:-1,:)
     end if
@@ -634,7 +639,7 @@ contains
   end subroutine reverse_gas
 
   !---------------------------------------------------------------------
-  ! Return .true. if variables are out of a physically sensible range,
+  ! return .true. if variables are out of a physically sensible range,
   ! optionally only considering columns between istartcol and iendcol
   function out_of_physical_bounds(this, istartcol, iendcol, do_fix) result(is_bad)
 
@@ -665,28 +670,50 @@ contains
 
   end function out_of_physical_bounds
 
-#ifdef _OPENACC
-  !---------------------------------------------------------------------
-  ! updates fields on host
-  subroutine update_host(this)
-
-    class(gas_type), intent(inout) :: this
-
-    !$ACC UPDATE HOST(this%mixing_ratio) &
-    !$ACC   IF(allocated(this%mixing_ratio))
-
-  end subroutine update_host
-
-  !---------------------------------------------------------------------
-  ! updates fields on device
-  subroutine update_device(this)
-
-    class(gas_type), intent(inout) :: this
-
-    !$ACC UPDATE DEVICE(this%mixing_ratio) &
-    !$ACC   IF(allocated(this%mixing_ratio))
-
-  end subroutine update_device
-#endif 
+! # 691 "radiation/radiation_gas.f90"
 
 end module radiation_gas
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

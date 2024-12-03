@@ -1,328 +1,377 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/susrtm.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/susrtm.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SUSRTM
+subroutine susrtm
 
-!     Adapted from E.J. Mlawer, J. Delamere, Atmospheric & Environmental Research.
-!     by JJMorcrette, ECMWF
-!     Modified to add arrays relevant to mapping for g-point reduction,
-!     M.J. Iacono, Atmospheric & Environmental Research, Inc. 
-!     JJMorcrette 20010610 Flexible configuration for number of g-points
+!     adapted from e.j. mlawer, j. delamere, atmospheric & environmental research.
+!     by jjmorcrette, ecmwf
+!     modified to add arrays relevant to mapping for g-point reduction,
+!     m.j. iacono, atmospheric & environmental research, inc. 
+!     jjmorcrette 20010610 flexible configuration for number of g-points
 !     ------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPRB ,   JPIM
-USE ecradhook   ,ONLY : LHOOK, DR_HOOK, JPHOOK
+use parkind1  ,only : jprb ,   jpim
+use ecradhook   ,only : lhook, dr_hook, jphook
 
-USE YOESRTM  , ONLY : JPGPT, NGBSW, NGN
-USE YOESRTWN , ONLY : NG      , NSPA, NSPB   , NMPSRTM, &
- & PREF    , PREFLOG , TREF   , &
- & NGM     , WT      , NGC    , NGS
-! & NGM     , WT      , NGC    , NGS , NGN    , NGBSW
-! & WAVENUM1, WAVENUM2, DELWAVE, PREF, PREFLOG, TREF   , &
+use yoesrtm  , only : jpgpt, ngbsw, ngn
+use yoesrtwn , only : ng      , nspa, nspb   , nmpsrtm, &
+ & pref    , preflog , tref   , &
+ & ngm     , wt      , ngc    , ngs
+! & ngm     , wt      , ngc    , ngs , ngn    , ngbsw
+! & wavenum1, wavenum2, delwave, pref, preflog, tref   , &
 
 !     ------------------------------------------------------------------
 
-IMPLICIT NONE
+implicit none
 
-INTEGER(KIND=JPIM) :: IGC56(14), IGC112(14) , IGC224(14)
-INTEGER(KIND=JPIM) :: IGS56(14), IGS112(14) , IGS224(14)
+integer(kind=jpim) :: igc56(14), igc112(14) , igc224(14)
+integer(kind=jpim) :: igs56(14), igs112(14) , igs224(14)
 
-INTEGER(KIND=JPIM) :: IGM56(224),IGM112(224), IGM224(224)
+integer(kind=jpim) :: igm56(224),igm112(224), igm224(224)
 
-INTEGER(KIND=JPIM) :: IGN56(56), IGN112(112), IGN224(224)
-INTEGER(KIND=JPIM) :: IGB56(56), IGB112(112), IGB224(224)
+integer(kind=jpim) :: ign56(56), ign112(112), ign224(224)
+integer(kind=jpim) :: igb56(56), igb112(112), igb224(224)
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jphook) :: zhook_handle
 !-----------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SUSRTM',0,ZHOOK_HANDLE)
+if (lhook) call dr_hook('susrtm',0,zhook_handle)
 
-NG(:)     =(/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16 /)
-NSPA(:)   =(/  9, 9, 9, 9, 1, 9, 9, 1, 9, 1, 0, 1, 9, 1 /)
-NSPB(:)   =(/  1, 5, 1, 1, 1, 5, 1, 0, 1, 0, 0, 1, 5, 1 /)
-NMPSRTM(:)=(/  6, 6, 5, 5, 5, 5, 5, 4, 4, 3, 2, 2, 1, 6 /)
+ng(:)     =(/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16 /)
+nspa(:)   =(/  9, 9, 9, 9, 1, 9, 9, 1, 9, 1, 0, 1, 9, 1 /)
+nspb(:)   =(/  1, 5, 1, 1, 1, 5, 1, 0, 1, 0, 0, 1, 5, 1 /)
+nmpsrtm(:)=(/  6, 6, 5, 5, 5, 5, 5, 4, 4, 3, 2, 2, 1, 6 /)
 
-!WAVENUM1( :) = (/&
-! & 2600._JPRB, 3250._JPRB, 4000._JPRB, 4650._JPRB, 5150._JPRB, 6150._JPRB, 7700._JPRB &
-! & , 8050._JPRB,12850._JPRB,16000._JPRB,22650._JPRB,29000._JPRB,38000._JPRB,  820._JPRB /)  
-!WAVENUM2( :) = (/&
-! & 3250._JPRB, 4000._JPRB, 4650._JPRB, 5150._JPRB, 6150._JPRB, 7700._JPRB, 8050._JPRB &
-! & ,12850._JPRB,16000._JPRB,22650._JPRB,29000._JPRB,38000._JPRB,50000._JPRB, 2600._JPRB /)  
-!DELWAVE( :) = (/&
-! & 650._JPRB,  750._JPRB,  650._JPRB,  500._JPRB, 1000._JPRB, 1550._JPRB,  350._JPRB &
-! & , 4800._JPRB, 3150._JPRB, 6650._JPRB, 6350._JPRB, 9000._JPRB,12000._JPRB, 1780._JPRB /)  
+!wavenum1( :) = (/&
+! & 2600._jprb, 3250._jprb, 4000._jprb, 4650._jprb, 5150._jprb, 6150._jprb, 7700._jprb &
+! & , 8050._jprb,12850._jprb,16000._jprb,22650._jprb,29000._jprb,38000._jprb,  820._jprb /)  
+!wavenum2( :) = (/&
+! & 3250._jprb, 4000._jprb, 4650._jprb, 5150._jprb, 6150._jprb, 7700._jprb, 8050._jprb &
+! & ,12850._jprb,16000._jprb,22650._jprb,29000._jprb,38000._jprb,50000._jprb, 2600._jprb /)  
+!delwave( :) = (/&
+! & 650._jprb,  750._jprb,  650._jprb,  500._jprb, 1000._jprb, 1550._jprb,  350._jprb &
+! & , 4800._jprb, 3150._jprb, 6650._jprb, 6350._jprb, 9000._jprb,12000._jprb, 1780._jprb /)  
 
 !=====================================================================
-! Set arrays needed for the g-point reduction from 224 to 
+! set arrays needed for the g-point reduction from 224 to 
 ! - either 112 for the high-resolution forecast model configuration
-! - or 56 for the EPS-type configuration  
-! in the 14 SW bands:
+! - or 56 for the eps-type configuration  
+! in the 14 sw bands:
 
-! NB: This mapping from 224 to 112 points has been carefully selected to
+! nb: this mapping from 224 to 112 points has been carefully selected to
 ! minimize the effect on the resulting fluxes and cooling rates, and
 ! caution should be used if the mapping is modified.
-!     The further reduction to 56 for EPS configuration is considered 
+!     the further reduction to 56 for eps configuration is considered 
 ! acceptable, only because of the random perturbations introduced on 
 ! the total heating rates produced by the physical parametrization package.
-! While a reduction to 56 obviously speeds up the model, it as obviously 
+! while a reduction to 56 obviously speeds up the model, it as obviously 
 ! reduces the accuracy that could be expected from the radiation scheme.
 
-! JPGPT   The total number of new g-points (NGPT)
-! NGC     The number of new g-points in each band (14)
-! NGS     The cumulative sum of new g-points for each band (14)
-! NGM     The index of each new g-point relative to the original
+! jpgpt   the total number of new g-points (ngpt)
+! ngc     the number of new g-points in each band (14)
+! ngs     the cumulative sum of new g-points for each band (14)
+! ngm     the index of each new g-point relative to the original
 !         16 g-points for each band.
-! NGN     The number of original g-points that are combined to make
+! ngn     the number of original g-points that are combined to make
 !         each new g-point in each band.
-! NGB     The band index for each new g-point.
-! WT      RRTM weights for 16 g-points. (16)
+! ngb     the band index for each new g-point.
+! wt      rrtm weights for 16 g-points. (16)
 
-!-- ECMWF EPS model RRTM_SW configuration with 56 g-points
-IGC56(:) = (/ 3, 6, 4, 4, 5, 5, 1, 5, 4, 3, 3, 4, 3, 6 /)
-IGS56(:) = (/ 3, 9,13,17,22,27,28,33,37,40,43,47, 50, 56 /)
+!-- ecmwf eps model rrtm_sw configuration with 56 g-points
+igc56(:) = (/ 3, 6, 4, 4, 5, 5, 1, 5, 4, 3, 3, 4, 3, 6 /)
+igs56(:) = (/ 3, 9,13,17,22,27,28,33,37,40,43,47, 50, 56 /)
 
-IGM56(:) = (/ 1,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3, &            ! Band 16
-            & 1,1,2,2,3,3,3,4,4,4,5,5,5,6,6,6, &            ! Band 17
-            & 1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4, &            ! Band 18
-            & 1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4, &            ! Band 19
-            & 1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5, &            ! Band 20
-            & 1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5, &            ! Band 21
-            & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &            ! Band 22
-            & 1,1,1,1,2,2,3,3,4,4,5,5,5,5,5,5, &            ! Band 23
-            & 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4, &            ! Band 24
-            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! Band 25
-            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! Band 26
-            & 1,1,2,2,3,3,4,4,4,4,4,4,4,4,4,4, &            ! Band 27
-            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! Band 28
-            & 1,1,2,2,3,3,3,3,4,4,4,4,5,5,6,6 /)            ! Band 29
+igm56(:) = (/ 1,1,1,1,2,2,2,2,3,3,3,3,3,3,3,3, &            ! band 16
+            & 1,1,2,2,3,3,3,4,4,4,5,5,5,6,6,6, &            ! band 17
+            & 1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4, &            ! band 18
+            & 1,1,2,2,3,3,3,3,4,4,4,4,4,4,4,4, &            ! band 19
+            & 1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5, &            ! band 20
+            & 1,1,2,2,3,3,4,4,5,5,5,5,5,5,5,5, &            ! band 21
+            & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &            ! band 22
+            & 1,1,1,1,2,2,3,3,4,4,5,5,5,5,5,5, &            ! band 23
+            & 1,1,1,1,2,2,2,2,3,3,3,3,4,4,4,4, &            ! band 24
+            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! band 25
+            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! band 26
+            & 1,1,2,2,3,3,4,4,4,4,4,4,4,4,4,4, &            ! band 27
+            & 1,1,2,2,2,2,3,3,3,3,3,3,3,3,3,3, &            ! band 28
+            & 1,1,2,2,3,3,3,3,4,4,4,4,5,5,6,6 /)            ! band 29
 
-IGN56(:) = (/ 4,4,8, &                                     ! Band 16
-            & 2,2,3,3,3,3, &                               ! Band 17
-            & 2,2,4,8, &                                   ! Band 18
-            & 2,2,4,8, &                                   ! Band 19
-            & 2,2,2,2,8, &                                 ! Band 20
-            & 2,2,2,2,8, &                                 ! Band 21
-            & 16, &                                        ! Band 22
-            & 4,2,2,2,6, &                                 ! Band 23
-            & 4,4,4,4, &                                   ! Band 24
-            & 2,4,10, &                                    ! Band 25
-            & 2,4,10, &                                    ! Band 26
-            & 2,2,2,10, &                                  ! Band 27
-            & 2,4,10, &                                    ! Band 28
-            & 2,2,4,4,2,2 /)                               ! Band 29
+ign56(:) = (/ 4,4,8, &                                     ! band 16
+            & 2,2,3,3,3,3, &                               ! band 17
+            & 2,2,4,8, &                                   ! band 18
+            & 2,2,4,8, &                                   ! band 19
+            & 2,2,2,2,8, &                                 ! band 20
+            & 2,2,2,2,8, &                                 ! band 21
+            & 16, &                                        ! band 22
+            & 4,2,2,2,6, &                                 ! band 23
+            & 4,4,4,4, &                                   ! band 24
+            & 2,4,10, &                                    ! band 25
+            & 2,4,10, &                                    ! band 26
+            & 2,2,2,10, &                                  ! band 27
+            & 2,4,10, &                                    ! band 28
+            & 2,2,4,4,2,2 /)                               ! band 29
 
-IGB56(:) = (/ 16,16,16, &                                  ! Band 16
-            & 17,17,17,17,17,17, &                         ! Band 17
-            & 18,18,18,18, &                               ! Band 18
-            & 19,19,19,19, &                               ! Band 19
-            & 20,20,20,20,20, &                            ! Band 20
-            & 21,21,21,21,21, &                            ! Band 21
-            & 22, &                                        ! Band 22
-            & 23,23,23,23,23, &                            ! Band 23
-            & 24,24,24,24, &                               ! Band 24
-            & 25,25,25, &                                  ! Band 25
-            & 26,26,26, &                                  ! Band 26
-            & 27,27,27,27, &                               ! Band 27
-            & 28,28,28, &                                  ! Band 28
-            & 29,29,29,29,29,29 /)                         ! Band 29
-
-!-------------------------------------------------------------------------------
-!-- ECMWF high-resolution model RRTM_SW configuration with 112 g-points
-! Use this NGC, NGS, NGM, and NGN for reduced (112) g-point set
-! (A related code change is required in modules parsrtm.F90 and yoesrtwn.F90)
-
-IGC112(:) = (/ 6,12, 8, 8,10,10, 2,10, 8, 6, 6, 8, 6,12 /)
-IGS112(:) = (/ 6,18,26,34,44,54,56,66,74,80,86,94,100,112 /)
-
-!NGM(:)
-IGM112(:) = (/ 1,1,2,2,3,3,4,4,5,5,5,5,6,6,6,6, &           ! Band 16
-             & 1,2,3,4,5,6,6,7,8,8,9,10,10,11,12,12, &      ! Band 17
-             & 1,2,3,4,5,5,6,6,7,7,7,7,8,8,8,8, &           ! Band 18
-             & 1,2,3,4,5,5,6,6,7,7,7,7,8,8,8,8, &           ! Band 19
-             & 1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10, &     ! Band 20
-             & 1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10, &     ! Band 21
-             & 1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2, &           ! Band 22
-             & 1,1,2,2,3,4,5,6,7,8,9,9,10,10,10,10, &       ! Band 23
-             & 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8, &           ! Band 24
-             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! Band 25
-             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! Band 26
-             & 1,2,3,4,5,6,7,7,7,7,8,8,8,8,8,8, &           ! Band 27
-             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! Band 28
-             & 1,2,3,4,5,5,6,6,7,7,8,8,9,10,11,12 /)        ! Band 29
-!NGN(:)
-IGN112(:) = (/ 2,2,2,2,4,4, &                               ! Band 16
-             & 1,1,1,1,1,2,1,2,1,2,1,2, &                   ! Band 17
-             & 1,1,1,1,2,2,4,4, &                           ! Band 18
-             & 1,1,1,1,2,2,4,4, &                           ! Band 19
-             & 1,1,1,1,1,1,1,1,2,6, &                       ! Band 20
-             & 1,1,1,1,1,1,1,1,2,6, &                       ! Band 21
-             & 8,8, &                                       ! Band 22
-             & 2,2,1,1,1,1,1,1,2,4, &                       ! Band 23
-             & 2,2,2,2,2,2,2,2, &                           ! Band 24
-             & 1,1,2,2,4,6, &                               ! Band 25
-             & 1,1,2,2,4,6, &                               ! Band 26
-             & 1,1,1,1,1,1,4,6, &                           ! Band 27
-             & 1,1,2,2,4,6, &                               ! Band 28
-             & 1,1,1,1,2,2,2,2,1,1,1,1 /)                   ! Band 29
-!NGBSW(:)
-IGB112(:) = (/ 16,16,16,16,16,16, &                         ! Band 16
-             & 17,17,17,17,17,17,17,17,17,17,17,17, &       ! Band 17
-             & 18,18,18,18,18,18,18,18, &                   ! Band 18
-             & 19,19,19,19,19,19,19,19, &                   ! Band 19
-             & 20,20,20,20,20,20,20,20,20,20, &             ! Band 20
-             & 21,21,21,21,21,21,21,21,21,21, &             ! Band 21
-             & 22,22, &                                     ! Band 22
-             & 23,23,23,23,23,23,23,23,23,23, &             ! Band 23
-             & 24,24,24,24,24,24,24,24, &                   ! Band 24
-             & 25,25,25,25,25,25, &                         ! Band 25
-             & 26,26,26,26,26,26, &                         ! Band 26
-             & 27,27,27,27,27,27,27,27, &                   ! Band 27
-             & 28,28,28,28,28,28, &                         ! Band 28
-             & 29,29,29,29,29,29,29,29,29,29,29,29 /)       ! Band 29
+igb56(:) = (/ 16,16,16, &                                  ! band 16
+            & 17,17,17,17,17,17, &                         ! band 17
+            & 18,18,18,18, &                               ! band 18
+            & 19,19,19,19, &                               ! band 19
+            & 20,20,20,20,20, &                            ! band 20
+            & 21,21,21,21,21, &                            ! band 21
+            & 22, &                                        ! band 22
+            & 23,23,23,23,23, &                            ! band 23
+            & 24,24,24,24, &                               ! band 24
+            & 25,25,25, &                                  ! band 25
+            & 26,26,26, &                                  ! band 26
+            & 27,27,27,27, &                               ! band 27
+            & 28,28,28, &                                  ! band 28
+            & 29,29,29,29,29,29 /)                         ! band 29
 
 !-------------------------------------------------------------------------------
-!-- original RRTM_SW configuration with 224 (14*16 g-points)
-! Use this NGC, NGS, NGM, and NGN for full (224) g-point set
-! (A related code change is required in modules parsrtm.F90 and yoesrtwn.F90)
-IGC224(:) = (/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16 /)
-IGS224(:) = (/ 16,32,48,64,80,96,112,128,144,160,176,192,208,224 /)
+!-- ecmwf high-resolution model rrtm_sw configuration with 112 g-points
+! use this ngc, ngs, ngm, and ngn for reduced (112) g-point set
+! (a related code change is required in modules parsrtm.f90 and yoesrtwn.f90)
 
-IGM224(:) = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 16
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 17
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 18
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 19
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 20
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 21
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 22
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 23
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 24
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 25
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 26
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 27
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! Band 28
-             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /)    ! Band 29
+igc112(:) = (/ 6,12, 8, 8,10,10, 2,10, 8, 6, 6, 8, 6,12 /)
+igs112(:) = (/ 6,18,26,34,44,54,56,66,74,80,86,94,100,112 /)
 
-IGN224(:) = (/ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 16
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 17
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 18
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 19
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 20
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 21
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 22
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 23
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 24
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 25
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 26
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 27
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! Band 28
-             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 /)           ! Band 29
+!ngm(:)
+igm112(:) = (/ 1,1,2,2,3,3,4,4,5,5,5,5,6,6,6,6, &           ! band 16
+             & 1,2,3,4,5,6,6,7,8,8,9,10,10,11,12,12, &      ! band 17
+             & 1,2,3,4,5,5,6,6,7,7,7,7,8,8,8,8, &           ! band 18
+             & 1,2,3,4,5,5,6,6,7,7,7,7,8,8,8,8, &           ! band 19
+             & 1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10, &     ! band 20
+             & 1,2,3,4,5,6,7,8,9,9,10,10,10,10,10,10, &     ! band 21
+             & 1,1,1,1,1,1,1,1,2,2,2,2,2,2,2,2, &           ! band 22
+             & 1,1,2,2,3,4,5,6,7,8,9,9,10,10,10,10, &       ! band 23
+             & 1,1,2,2,3,3,4,4,5,5,6,6,7,7,8,8, &           ! band 24
+             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! band 25
+             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! band 26
+             & 1,2,3,4,5,6,7,7,7,7,8,8,8,8,8,8, &           ! band 27
+             & 1,2,3,3,4,4,5,5,5,5,6,6,6,6,6,6, &           ! band 28
+             & 1,2,3,4,5,5,6,6,7,7,8,8,9,10,11,12 /)        ! band 29
+!ngn(:)
+ign112(:) = (/ 2,2,2,2,4,4, &                               ! band 16
+             & 1,1,1,1,1,2,1,2,1,2,1,2, &                   ! band 17
+             & 1,1,1,1,2,2,4,4, &                           ! band 18
+             & 1,1,1,1,2,2,4,4, &                           ! band 19
+             & 1,1,1,1,1,1,1,1,2,6, &                       ! band 20
+             & 1,1,1,1,1,1,1,1,2,6, &                       ! band 21
+             & 8,8, &                                       ! band 22
+             & 2,2,1,1,1,1,1,1,2,4, &                       ! band 23
+             & 2,2,2,2,2,2,2,2, &                           ! band 24
+             & 1,1,2,2,4,6, &                               ! band 25
+             & 1,1,2,2,4,6, &                               ! band 26
+             & 1,1,1,1,1,1,4,6, &                           ! band 27
+             & 1,1,2,2,4,6, &                               ! band 28
+             & 1,1,1,1,2,2,2,2,1,1,1,1 /)                   ! band 29
+!ngbsw(:)
+igb112(:) = (/ 16,16,16,16,16,16, &                         ! band 16
+             & 17,17,17,17,17,17,17,17,17,17,17,17, &       ! band 17
+             & 18,18,18,18,18,18,18,18, &                   ! band 18
+             & 19,19,19,19,19,19,19,19, &                   ! band 19
+             & 20,20,20,20,20,20,20,20,20,20, &             ! band 20
+             & 21,21,21,21,21,21,21,21,21,21, &             ! band 21
+             & 22,22, &                                     ! band 22
+             & 23,23,23,23,23,23,23,23,23,23, &             ! band 23
+             & 24,24,24,24,24,24,24,24, &                   ! band 24
+             & 25,25,25,25,25,25, &                         ! band 25
+             & 26,26,26,26,26,26, &                         ! band 26
+             & 27,27,27,27,27,27,27,27, &                   ! band 27
+             & 28,28,28,28,28,28, &                         ! band 28
+             & 29,29,29,29,29,29,29,29,29,29,29,29 /)       ! band 29
 
-IGB224(:) = (/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16, &   ! Band 16
-             & 17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17, &   ! Band 17
-             & 18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18, &   ! Band 18
-             & 19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19, &   ! Band 19
-             & 20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20, &   ! Band 20
-             & 21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21, &   ! Band 21
-             & 22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22, &   ! Band 22
-             & 23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23, &   ! Band 23
-             & 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24, &   ! Band 24
-             & 25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25, &   ! Band 25
-             & 26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26, &   ! Band 26
-             & 27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27, &   ! Band 27
-             & 28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28, &   ! Band 28
-             & 29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,28 /)   ! Band 29
+!-------------------------------------------------------------------------------
+!-- original rrtm_sw configuration with 224 (14*16 g-points)
+! use this ngc, ngs, ngm, and ngn for full (224) g-point set
+! (a related code change is required in modules parsrtm.f90 and yoesrtwn.f90)
+igc224(:) = (/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16 /)
+igs224(:) = (/ 16,32,48,64,80,96,112,128,144,160,176,192,208,224 /)
+
+igm224(:) = (/ 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 16
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 17
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 18
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 19
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 20
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 21
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 22
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 23
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 24
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 25
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 26
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 27
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16, &    ! band 28
+             & 1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16 /)    ! band 29
+
+ign224(:) = (/ 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 16
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 17
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 18
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 19
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 20
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 21
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 22
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 23
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 24
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 25
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 26
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 27
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1, &           ! band 28
+             & 1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1 /)           ! band 29
+
+igb224(:) = (/ 16,16,16,16,16,16,16,16,16,16,16,16,16,16,16,16, &   ! band 16
+             & 17,17,17,17,17,17,17,17,17,17,17,17,17,17,17,17, &   ! band 17
+             & 18,18,18,18,18,18,18,18,18,18,18,18,18,18,18,18, &   ! band 18
+             & 19,19,19,19,19,19,19,19,19,19,19,19,19,19,19,19, &   ! band 19
+             & 20,20,20,20,20,20,20,20,20,20,20,20,20,20,20,20, &   ! band 20
+             & 21,21,21,21,21,21,21,21,21,21,21,21,21,21,21,21, &   ! band 21
+             & 22,22,22,22,22,22,22,22,22,22,22,22,22,22,22,22, &   ! band 22
+             & 23,23,23,23,23,23,23,23,23,23,23,23,23,23,23,23, &   ! band 23
+             & 24,24,24,24,24,24,24,24,24,24,24,24,24,24,24,24, &   ! band 24
+             & 25,25,25,25,25,25,25,25,25,25,25,25,25,25,25,25, &   ! band 25
+             & 26,26,26,26,26,26,26,26,26,26,26,26,26,26,26,26, &   ! band 26
+             & 27,27,27,27,27,27,27,27,27,27,27,27,27,27,27,27, &   ! band 27
+             & 28,28,28,28,28,28,28,28,28,28,28,28,28,28,28,28, &   ! band 28
+             & 29,29,29,29,29,29,29,29,29,29,29,29,29,29,29,28 /)   ! band 29
 
 !=============================================================================
 
-WT(:) =  (/ 0.1527534276_JPRB, 0.1491729617_JPRB, 0.1420961469_JPRB, &
-          & 0.1316886544_JPRB, 0.1181945205_JPRB, 0.1019300893_JPRB, &
-          & 0.0832767040_JPRB, 0.0626720116_JPRB, 0.0424925000_JPRB, &
-          & 0.0046269894_JPRB, 0.0038279891_JPRB, 0.0030260086_JPRB, &
-          & 0.0022199750_JPRB, 0.0014140010_JPRB, 0.0005330000_JPRB, &
-          & 0.0000750000_JPRB /)
+wt(:) =  (/ 0.1527534276_jprb, 0.1491729617_jprb, 0.1420961469_jprb, &
+          & 0.1316886544_jprb, 0.1181945205_jprb, 0.1019300893_jprb, &
+          & 0.0832767040_jprb, 0.0626720116_jprb, 0.0424925000_jprb, &
+          & 0.0046269894_jprb, 0.0038279891_jprb, 0.0030260086_jprb, &
+          & 0.0022199750_jprb, 0.0014140010_jprb, 0.0005330000_jprb, &
+          & 0.0000750000_jprb /)
 
 !=============================================================================
 
-! These pressures are chosen such that the ln of the first pressure
-! has only a few non-zero digits (i.e. ln(PREF(1)) = 6.96000) and
+! these pressures are chosen such that the ln of the first pressure
+! has only a few non-zero digits (i.e. ln(pref(1)) = 6.96000) and
 !  each subsequent ln(pressure) differs from the previous one by 0.2.
-PREF = (/ &
- & 1.05363E+03_JPRB,8.62642E+02_JPRB,7.06272E+02_JPRB,5.78246E+02_JPRB,4.73428E+02_JPRB, &
- & 3.87610E+02_JPRB,3.17348E+02_JPRB,2.59823E+02_JPRB,2.12725E+02_JPRB,1.74164E+02_JPRB, &
- & 1.42594E+02_JPRB,1.16746E+02_JPRB,9.55835E+01_JPRB,7.82571E+01_JPRB,6.40715E+01_JPRB, &
- & 5.24573E+01_JPRB,4.29484E+01_JPRB,3.51632E+01_JPRB,2.87892E+01_JPRB,2.35706E+01_JPRB, &
- & 1.92980E+01_JPRB,1.57998E+01_JPRB,1.29358E+01_JPRB,1.05910E+01_JPRB,8.67114E+00_JPRB, &
- & 7.09933E+00_JPRB,5.81244E+00_JPRB,4.75882E+00_JPRB,3.89619E+00_JPRB,3.18993E+00_JPRB, &
- & 2.61170E+00_JPRB,2.13828E+00_JPRB,1.75067E+00_JPRB,1.43333E+00_JPRB,1.17351E+00_JPRB, &
- & 9.60789E-01_JPRB,7.86628E-01_JPRB,6.44036E-01_JPRB,5.27292E-01_JPRB,4.31710E-01_JPRB, &
- & 3.53455E-01_JPRB,2.89384E-01_JPRB,2.36928E-01_JPRB,1.93980E-01_JPRB,1.58817E-01_JPRB, &
- & 1.30029E-01_JPRB,1.06458E-01_JPRB,8.71608E-02_JPRB,7.13612E-02_JPRB,5.84256E-02_JPRB, &
- & 4.78349E-02_JPRB,3.91639E-02_JPRB,3.20647E-02_JPRB,2.62523E-02_JPRB,2.14936E-02_JPRB, &
- & 1.75975E-02_JPRB,1.44076E-02_JPRB,1.17959E-02_JPRB,9.65769E-03_JPRB /)  
-PREFLOG = (/ &
- & 6.9600E+00_JPRB, 6.7600E+00_JPRB, 6.5600E+00_JPRB, 6.3600E+00_JPRB, 6.1600E+00_JPRB, &
- & 5.9600E+00_JPRB, 5.7600E+00_JPRB, 5.5600E+00_JPRB, 5.3600E+00_JPRB, 5.1600E+00_JPRB, &
- & 4.9600E+00_JPRB, 4.7600E+00_JPRB, 4.5600E+00_JPRB, 4.3600E+00_JPRB, 4.1600E+00_JPRB, &
- & 3.9600E+00_JPRB, 3.7600E+00_JPRB, 3.5600E+00_JPRB, 3.3600E+00_JPRB, 3.1600E+00_JPRB, &
- & 2.9600E+00_JPRB, 2.7600E+00_JPRB, 2.5600E+00_JPRB, 2.3600E+00_JPRB, 2.1600E+00_JPRB, &
- & 1.9600E+00_JPRB, 1.7600E+00_JPRB, 1.5600E+00_JPRB, 1.3600E+00_JPRB, 1.1600E+00_JPRB, &
- & 9.6000E-01_JPRB, 7.6000E-01_JPRB, 5.6000E-01_JPRB, 3.6000E-01_JPRB, 1.6000E-01_JPRB, &
- & -4.0000E-02_JPRB,-2.4000E-01_JPRB,-4.4000E-01_JPRB,-6.4000E-01_JPRB,-8.4000E-01_JPRB, &
- & -1.0400E+00_JPRB,-1.2400E+00_JPRB,-1.4400E+00_JPRB,-1.6400E+00_JPRB,-1.8400E+00_JPRB, &
- & -2.0400E+00_JPRB,-2.2400E+00_JPRB,-2.4400E+00_JPRB,-2.6400E+00_JPRB,-2.8400E+00_JPRB, &
- & -3.0400E+00_JPRB,-3.2400E+00_JPRB,-3.4400E+00_JPRB,-3.6400E+00_JPRB,-3.8400E+00_JPRB, &
- & -4.0400E+00_JPRB,-4.2400E+00_JPRB,-4.4400E+00_JPRB,-4.6400E+00_JPRB /)  
-! These are the temperatures associated with the respective 
-! pressures for the MLS standard atmosphere. 
-TREF = (/ &
- & 2.9420E+02_JPRB, 2.8799E+02_JPRB, 2.7894E+02_JPRB, 2.6925E+02_JPRB, 2.5983E+02_JPRB, &
- & 2.5017E+02_JPRB, 2.4077E+02_JPRB, 2.3179E+02_JPRB, 2.2306E+02_JPRB, 2.1578E+02_JPRB, &
- & 2.1570E+02_JPRB, 2.1570E+02_JPRB, 2.1570E+02_JPRB, 2.1706E+02_JPRB, 2.1858E+02_JPRB, &
- & 2.2018E+02_JPRB, 2.2174E+02_JPRB, 2.2328E+02_JPRB, 2.2479E+02_JPRB, 2.2655E+02_JPRB, &
- & 2.2834E+02_JPRB, 2.3113E+02_JPRB, 2.3401E+02_JPRB, 2.3703E+02_JPRB, 2.4022E+02_JPRB, &
- & 2.4371E+02_JPRB, 2.4726E+02_JPRB, 2.5085E+02_JPRB, 2.5457E+02_JPRB, 2.5832E+02_JPRB, &
- & 2.6216E+02_JPRB, 2.6606E+02_JPRB, 2.6999E+02_JPRB, 2.7340E+02_JPRB, 2.7536E+02_JPRB, &
- & 2.7568E+02_JPRB, 2.7372E+02_JPRB, 2.7163E+02_JPRB, 2.6955E+02_JPRB, 2.6593E+02_JPRB, &
- & 2.6211E+02_JPRB, 2.5828E+02_JPRB, 2.5360E+02_JPRB, 2.4854E+02_JPRB, 2.4348E+02_JPRB, &
- & 2.3809E+02_JPRB, 2.3206E+02_JPRB, 2.2603E+02_JPRB, 2.2000E+02_JPRB, 2.1435E+02_JPRB, &
- & 2.0887E+02_JPRB, 2.0340E+02_JPRB, 1.9792E+02_JPRB, 1.9290E+02_JPRB, 1.8809E+02_JPRB, &
- & 1.8329E+02_JPRB, 1.7849E+02_JPRB, 1.7394E+02_JPRB, 1.7212E+02_JPRB /)  
+pref = (/ &
+ & 1.05363e+03_jprb,8.62642e+02_jprb,7.06272e+02_jprb,5.78246e+02_jprb,4.73428e+02_jprb, &
+ & 3.87610e+02_jprb,3.17348e+02_jprb,2.59823e+02_jprb,2.12725e+02_jprb,1.74164e+02_jprb, &
+ & 1.42594e+02_jprb,1.16746e+02_jprb,9.55835e+01_jprb,7.82571e+01_jprb,6.40715e+01_jprb, &
+ & 5.24573e+01_jprb,4.29484e+01_jprb,3.51632e+01_jprb,2.87892e+01_jprb,2.35706e+01_jprb, &
+ & 1.92980e+01_jprb,1.57998e+01_jprb,1.29358e+01_jprb,1.05910e+01_jprb,8.67114e+00_jprb, &
+ & 7.09933e+00_jprb,5.81244e+00_jprb,4.75882e+00_jprb,3.89619e+00_jprb,3.18993e+00_jprb, &
+ & 2.61170e+00_jprb,2.13828e+00_jprb,1.75067e+00_jprb,1.43333e+00_jprb,1.17351e+00_jprb, &
+ & 9.60789e-01_jprb,7.86628e-01_jprb,6.44036e-01_jprb,5.27292e-01_jprb,4.31710e-01_jprb, &
+ & 3.53455e-01_jprb,2.89384e-01_jprb,2.36928e-01_jprb,1.93980e-01_jprb,1.58817e-01_jprb, &
+ & 1.30029e-01_jprb,1.06458e-01_jprb,8.71608e-02_jprb,7.13612e-02_jprb,5.84256e-02_jprb, &
+ & 4.78349e-02_jprb,3.91639e-02_jprb,3.20647e-02_jprb,2.62523e-02_jprb,2.14936e-02_jprb, &
+ & 1.75975e-02_jprb,1.44076e-02_jprb,1.17959e-02_jprb,9.65769e-03_jprb /)  
+preflog = (/ &
+ & 6.9600e+00_jprb, 6.7600e+00_jprb, 6.5600e+00_jprb, 6.3600e+00_jprb, 6.1600e+00_jprb, &
+ & 5.9600e+00_jprb, 5.7600e+00_jprb, 5.5600e+00_jprb, 5.3600e+00_jprb, 5.1600e+00_jprb, &
+ & 4.9600e+00_jprb, 4.7600e+00_jprb, 4.5600e+00_jprb, 4.3600e+00_jprb, 4.1600e+00_jprb, &
+ & 3.9600e+00_jprb, 3.7600e+00_jprb, 3.5600e+00_jprb, 3.3600e+00_jprb, 3.1600e+00_jprb, &
+ & 2.9600e+00_jprb, 2.7600e+00_jprb, 2.5600e+00_jprb, 2.3600e+00_jprb, 2.1600e+00_jprb, &
+ & 1.9600e+00_jprb, 1.7600e+00_jprb, 1.5600e+00_jprb, 1.3600e+00_jprb, 1.1600e+00_jprb, &
+ & 9.6000e-01_jprb, 7.6000e-01_jprb, 5.6000e-01_jprb, 3.6000e-01_jprb, 1.6000e-01_jprb, &
+ & -4.0000e-02_jprb,-2.4000e-01_jprb,-4.4000e-01_jprb,-6.4000e-01_jprb,-8.4000e-01_jprb, &
+ & -1.0400e+00_jprb,-1.2400e+00_jprb,-1.4400e+00_jprb,-1.6400e+00_jprb,-1.8400e+00_jprb, &
+ & -2.0400e+00_jprb,-2.2400e+00_jprb,-2.4400e+00_jprb,-2.6400e+00_jprb,-2.8400e+00_jprb, &
+ & -3.0400e+00_jprb,-3.2400e+00_jprb,-3.4400e+00_jprb,-3.6400e+00_jprb,-3.8400e+00_jprb, &
+ & -4.0400e+00_jprb,-4.2400e+00_jprb,-4.4400e+00_jprb,-4.6400e+00_jprb /)  
+! these are the temperatures associated with the respective 
+! pressures for the mls standard atmosphere. 
+tref = (/ &
+ & 2.9420e+02_jprb, 2.8799e+02_jprb, 2.7894e+02_jprb, 2.6925e+02_jprb, 2.5983e+02_jprb, &
+ & 2.5017e+02_jprb, 2.4077e+02_jprb, 2.3179e+02_jprb, 2.2306e+02_jprb, 2.1578e+02_jprb, &
+ & 2.1570e+02_jprb, 2.1570e+02_jprb, 2.1570e+02_jprb, 2.1706e+02_jprb, 2.1858e+02_jprb, &
+ & 2.2018e+02_jprb, 2.2174e+02_jprb, 2.2328e+02_jprb, 2.2479e+02_jprb, 2.2655e+02_jprb, &
+ & 2.2834e+02_jprb, 2.3113e+02_jprb, 2.3401e+02_jprb, 2.3703e+02_jprb, 2.4022e+02_jprb, &
+ & 2.4371e+02_jprb, 2.4726e+02_jprb, 2.5085e+02_jprb, 2.5457e+02_jprb, 2.5832e+02_jprb, &
+ & 2.6216e+02_jprb, 2.6606e+02_jprb, 2.6999e+02_jprb, 2.7340e+02_jprb, 2.7536e+02_jprb, &
+ & 2.7568e+02_jprb, 2.7372e+02_jprb, 2.7163e+02_jprb, 2.6955e+02_jprb, 2.6593e+02_jprb, &
+ & 2.6211e+02_jprb, 2.5828e+02_jprb, 2.5360e+02_jprb, 2.4854e+02_jprb, 2.4348e+02_jprb, &
+ & 2.3809e+02_jprb, 2.3206e+02_jprb, 2.2603e+02_jprb, 2.2000e+02_jprb, 2.1435e+02_jprb, &
+ & 2.0887e+02_jprb, 2.0340e+02_jprb, 1.9792e+02_jprb, 1.9290e+02_jprb, 1.8809e+02_jprb, &
+ & 1.8329e+02_jprb, 1.7849e+02_jprb, 1.7394e+02_jprb, 1.7212e+02_jprb /)  
 !     -----------------------------------------------------------------
 
-IF (JPGPT == 56) THEN
+if (jpgpt == 56) then
 
 !- 14
-  NGC(:)=IGC56(:)
-  NGS(:)=IGS56(:)
+  ngc(:)=igc56(:)
+  ngs(:)=igs56(:)
 !- 14*16=224
-  NGM(:)=IGM56(:)
+  ngm(:)=igm56(:)
 
-  NGN(1:56)=IGN56(1:56)
-  NGBSW(1:56)=IGB56(1:56)
+  ngn(1:56)=ign56(1:56)
+  ngbsw(1:56)=igb56(1:56)
 
-ELSEIF (JPGPT == 112) THEN
+elseif (jpgpt == 112) then
 !- 14
-  NGC(:)=IGC112(:)
-  NGS(:)=IGS112(:)
+  ngc(:)=igc112(:)
+  ngs(:)=igs112(:)
 !- 14*16=224
-  NGM(:)=IGM112(:)
+  ngm(:)=igm112(:)
 
-  NGN(1:112)=IGN112(1:112)
-  NGBSW(1:112)=IGB112(1:112)
+  ngn(1:112)=ign112(1:112)
+  ngbsw(1:112)=igb112(1:112)
 
-ELSEIF (JPGPT == 224) THEN
+elseif (jpgpt == 224) then
 !- 14
-  NGC(:)=IGC224(:)
-  NGS(:)=IGS224(:)
+  ngc(:)=igc224(:)
+  ngs(:)=igs224(:)
 !- 14*16=224
-  NGM(:)=IGM224(:)
+  ngm(:)=igm224(:)
 
-  NGN(1:224)=IGN224(1:224)
-  NGBSW(1:224)=IGB224(1:224)
+  ngn(1:224)=ign224(1:224)
+  ngbsw(1:224)=igb224(1:224)
 
-ENDIF
+endif
 
-!$ACC UPDATE DEVICE(NSPA, NSPB, PREFLOG, TREF, NGC)
+!$acc update device(nspa, nspb, preflog, tref, ngc)
 
 !     -----------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SUSRTM',1,ZHOOK_HANDLE)
-END SUBROUTINE SUSRTM
+if (lhook) call dr_hook('susrtm',1,zhook_handle)
+end subroutine susrtm
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

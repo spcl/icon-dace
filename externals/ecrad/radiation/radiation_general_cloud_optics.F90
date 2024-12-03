@@ -1,17 +1,22 @@
-! radiation_general_cloud_optics.F90 - Computing generalized cloud optical properties
+! # 1 "radiation/radiation_general_cloud_optics.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_general_cloud_optics.f90"
+! radiation_general_cloud_optics.f90 - computing generalized cloud optical properties
 !
-! (C) Copyright 2020- ECMWF.
+! (c) copyright 2020- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
-! License: see the COPYING file for details
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+! license: see the copying file for details
 !
 
 module radiation_general_cloud_optics
@@ -22,22 +27,170 @@ module radiation_general_cloud_optics
   
 contains
 
-  ! Provides elemental function "delta_eddington_scat_od"
-#include "radiation_delta_eddington.h"
+  ! provides elemental function "delta_eddington_scat_od"
+
+! # 1 "radiation/radiation_delta_eddington.h" 1
+! radiation_delta_eddington.h - delta-eddington scaling -*- f90 -*-
+!
+! (c) copyright 2015- ecmwf.
+!
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
+!
+! in applying this licence, ecmwf does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+!
+! this file is intended to be included inside a module to ensure that
+! these simple functions may be inlined
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function
+elemental subroutine delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  f   = g*g
+  od  = od * (1.0_jprb - ssa*f)
+  ssa = ssa * (1.0_jprb - f) / (1.0_jprb - ssa*f)
+  g   = g / (1.0_jprb + g)
+  
+end subroutine delta_eddington
+
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function, but
+! using extensive variables (i.e. the scattering optical depth,
+! scat_od, rather than the single-scattering albedo, and the
+! scattering-optical-depth-multiplied-by-asymmetry-factor, scat_od_g,
+! rather than the asymmetry factor.
+elemental subroutine delta_eddington_extensive(od, scat_od, scat_od_g)
+
+  !$acc routine seq
+
+  use parkind1, only : jprb
+
+  ! total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  real(jprb), intent(inout) :: od, scat_od, scat_od_g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+
+  if (scat_od > 0.0_jprb) then
+    g = scat_od_g / scat_od
+  else
+    g = 0.0
+  end if
+
+  f         = g*g
+  od        = od - scat_od * f
+  scat_od   = scat_od * (1.0_jprb - f)
+  scat_od_g = scat_od * g / (1.0_jprb + g)
+  
+end subroutine delta_eddington_extensive
+
+
+!---------------------------------------------------------------------
+! array version of delta_eddington_extensive, more likely to vectorize
+ subroutine delta_eddington_extensive_vec(ng, od, scat_od, scat_od_g)
+
+  use parkind1, only : jprb
+
+  ! total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  integer,                   intent(in)    :: ng
+  real(jprb), dimension(ng), intent(inout) :: od, scat_od, scat_od_g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+  integer :: j
+
+  do j = 1,ng
+    g            = scat_od_g(j) / max(scat_od(j), 1.0e-24)
+    f            = g*g
+    od(j)        = od(j) - scat_od(j) * f
+    scat_od(j)   = scat_od(j) * (1.0_jprb - f)
+    scat_od_g(j) = scat_od(j) * g / (1.0_jprb + g)
+  end do
+  
+end subroutine delta_eddington_extensive_vec
+
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function,
+! using the scattering optical depth rather than the single scattering
+! albedo
+elemental subroutine delta_eddington_scat_od(od, scat_od, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, scattering optical depth and asymmetry factor
+  real(jprb), intent(inout) :: od, scat_od, g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+
+  !$acc routine seq
+
+  f       = g*g
+  od      = od - scat_od * f
+  scat_od = scat_od * (1.0_jprb - f)
+  g       = g / (1.0_jprb + g)
+
+end subroutine delta_eddington_scat_od
+
+
+!---------------------------------------------------------------------
+! revert delta-eddington-scaled quantities in-place, back to their
+! original state
+elemental subroutine revert_delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  g   = g / (1.0_jprb - g)
+  f   = g*g
+  ssa = ssa / (1.0_jprb - f + f*ssa);
+  od  = od / (1.0_jprb - ssa*f)
+  
+end subroutine revert_delta_eddington
+! # 27 "radiation/radiation_general_cloud_optics.f90" 2
 
 
   !---------------------------------------------------------------------
-  ! Load cloud scattering data; this subroutine delegates to one
-  ! in radiation_general_cloud_optics_data.F90
+  ! load cloud scattering data; this subroutine delegates to one
+  ! in radiation_general_cloud_optics_data.f90
   subroutine setup_general_cloud_optics(config)
 
     use parkind1,         only : jprb
     use ecradhook,          only : lhook, dr_hook, jphook
 
     use radiation_io,     only : nulout
-    use radiation_config, only : config_type, NMaxCloudTypes
-    use radiation_spectral_definition, only : SolarReferenceTemperature, &
-         &                                    TerrestrialReferenceTemperature
+    use radiation_config, only : config_type, nmaxcloudtypes
+    use radiation_spectral_definition, only : solarreferencetemperature, &
+         &                                    terrestrialreferencetemperature
 
     type(config_type), intent(inout) :: config
 
@@ -50,9 +203,9 @@ contains
 
     if (lhook) call dr_hook('radiation_general_cloud_optics:setup_general_cloud_optics',0,hook_handle)
 
-    ! Count number of cloud types
+    ! count number of cloud types
     config%n_cloud_types = 0
-    do jtype = 1,NMaxCloudTypes
+    do jtype = 1,nmaxcloudtypes
       if (len_trim(config%cloud_type_name(jtype)) > 0) then
         config%n_cloud_types = jtype
       else
@@ -60,19 +213,19 @@ contains
       end if
     end do
 
-    ! If cloud_type_name has not been provided then assume liquid,ice
+    ! if cloud_type_name has not been provided then assume liquid,ice
     ! noting that the default spectral averaging (defined in
-    ! radiation_config.F90) is "thick"
+    ! radiation_config.f90) is "thick"
     if (config%n_cloud_types == 0) then
       config%cloud_type_name(1) = "mie_droplet"
       config%cloud_type_name(2) = "baum-general-habit-mixture_ice"
-      ! Optionally override spectral averaging method
+      ! optionally override spectral averaging method
       !config%use_thick_cloud_spectral_averaging(1) = .false.
       !config%use_thick_cloud_spectral_averaging(2) = .false.
       config%n_cloud_types = 2
     end if
 
-    ! Allocate structures
+    ! allocate structures
     if (config%do_sw) then
       allocate(config%cloud_optics_sw(config%n_cloud_types))
     end if
@@ -81,7 +234,7 @@ contains
       allocate(config%cloud_optics_lw(config%n_cloud_types))
     end if
 
-    ! Load cloud optics data
+    ! load cloud optics data
     do jtype = 1,config%n_cloud_types
       if (config%cloud_type_name(jtype)(1:1) == '/') then
         file_name = trim(config%cloud_type_name(jtype))
@@ -99,26 +252,26 @@ contains
 
       if (config%do_sw) then
         if (config%iverbosesetup >= 2) then
-          write(nulout,'(a,i0,a)') 'Shortwave cloud type ', jtype, ':'
+          write(nulout,'(a,i0,a)') 'shortwave cloud type ', jtype, ':'
         end if
         call config%cloud_optics_sw(jtype)%setup(file_name, &
              &  config%gas_optics_sw%spectral_def, &
              &  use_bands=(.not. config%do_cloud_aerosol_per_sw_g_point), &
              &  use_thick_averaging=config%use_thick_cloud_spectral_averaging(jtype), &
-             &  weighting_temperature=SolarReferenceTemperature, &
+             &  weighting_temperature=solarreferencetemperature, &
              &  iverbose=config%iverbosesetup)
         config%cloud_optics_sw(jtype)%type_name = trim(config%cloud_type_name(jtype))
       end if
 
       if (config%do_lw) then
         if (config%iverbosesetup >= 2) then
-          write(nulout,'(a,i0,a)') 'Longwave cloud type ', jtype, ':'
+          write(nulout,'(a,i0,a)') 'longwave cloud type ', jtype, ':'
         end if
         call config%cloud_optics_lw(jtype)%setup(file_name, &
              &  config%gas_optics_lw%spectral_def, &
              &  use_bands=(.not. config%do_cloud_aerosol_per_lw_g_point), &
              &  use_thick_averaging=config%use_thick_cloud_spectral_averaging(jtype), &
-             &  weighting_temperature=TerrestrialReferenceTemperature, &
+             &  weighting_temperature=terrestrialreferencetemperature, &
              &  iverbose=config%iverbosesetup)
         config%cloud_optics_lw(jtype)%type_name = trim(config%cloud_type_name(jtype))
       end if
@@ -130,7 +283,7 @@ contains
   end subroutine setup_general_cloud_optics
 
   !---------------------------------------------------------------------
-  ! Compute cloud optical properties
+  ! compute cloud optical properties
   subroutine general_cloud_optics(nlev,istartcol,iendcol, &
        &  config, thermodynamics, cloud, & 
        &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
@@ -143,7 +296,7 @@ contains
     use radiation_config, only : config_type
     use radiation_thermodynamics, only    : thermodynamics_type
     use radiation_cloud, only             : cloud_type
-    use radiation_constants, only         : AccelDueToGravity
+    use radiation_constants, only         : accelduetogravity
     !use radiation_general_cloud_optics_data, only : general_cloud_optics_type
 
     integer, intent(in) :: nlev               ! number of model levels
@@ -152,7 +305,7 @@ contains
     type(thermodynamics_type),intent(in)  :: thermodynamics
     type(cloud_type),   intent(in)        :: cloud
 
-    ! Layer optical depth, single scattering albedo and g factor of
+    ! layer optical depth, single scattering albedo and g factor of
     ! clouds in each longwave band, where the latter two
     ! variables are only defined if cloud longwave scattering is
     ! enabled (otherwise both are treated as zero).
@@ -161,12 +314,12 @@ contains
     real(jprb), dimension(config%n_bands_lw_if_scattering,nlev,istartcol:iendcol), &
          &   intent(out) :: ssa_lw_cloud, g_lw_cloud
 
-    ! Layer optical depth, single scattering albedo and g factor of
+    ! layer optical depth, single scattering albedo and g factor of
     ! clouds in each shortwave band
     real(jprb), dimension(config%n_bands_sw,nlev,istartcol:iendcol), intent(out) :: &
          &   od_sw_cloud, ssa_sw_cloud, g_sw_cloud
 
-    ! In-cloud water path of one cloud type (kg m-2)
+    ! in-cloud water path of one cloud type (kg m-2)
     real(jprb), dimension(istartcol:iendcol,nlev) :: water_path
 
     integer :: jtype, jcol, jlev, jg
@@ -176,10 +329,10 @@ contains
     if (lhook) call dr_hook('radiation_general_cloud_optics:general_cloud_optics',0,hook_handle)
 
     if (config%iverbose >= 2) then
-      write(nulout,'(a)') 'Computing cloud absorption/scattering properties'
+      write(nulout,'(a)') 'computing cloud absorption/scattering properties'
     end if
 
-    ! Array-wise assignment
+    ! array-wise assignment
     od_lw_cloud  = 0.0_jprb
     od_sw_cloud  = 0.0_jprb
     ssa_sw_cloud = 0.0_jprb
@@ -189,27 +342,27 @@ contains
       g_lw_cloud   = 0.0_jprb
     end if
 
-    ! Loop over cloud types
+    ! loop over cloud types
     do jtype = 1,config%n_cloud_types
-      ! Compute in-cloud water path
+      ! compute in-cloud water path
       if (config%is_homogeneous) then
         water_path = cloud%mixing_ratio(istartcol:iendcol,:,jtype) &
              &  *  (thermodynamics%pressure_hl(istartcol:iendcol, 2:nlev+1) &
              &     -thermodynamics%pressure_hl(istartcol:iendcol, 1:nlev)) &
-             &  * (1.0_jprb / AccelDueToGravity)
+             &  * (1.0_jprb / accelduetogravity)
       else
         water_path = cloud%mixing_ratio(istartcol:iendcol,:,jtype) &
              &  *  (thermodynamics%pressure_hl(istartcol:iendcol, 2:nlev+1) &
              &     -thermodynamics%pressure_hl(istartcol:iendcol, 1:nlev)) &
-             &  * (1.0_jprb / (AccelDueToGravity &
+             &  * (1.0_jprb / (accelduetogravity &
              &                 * max(config%cloud_fraction_threshold, &
              &                       cloud%fraction(istartcol:iendcol,:))))
       end if
 
-      ! Add optical properties to the cumulative total for the
+      ! add optical properties to the cumulative total for the
       ! longwave and shortwave
       if (config%do_lw) then
-        ! For the moment, we use ssa_lw_cloud and g_lw_cloud as
+        ! for the moment, we use ssa_lw_cloud and g_lw_cloud as
         ! containers for scattering optical depth and scattering
         ! coefficient x asymmetry factor, then scale after
         if (config%do_lw_cloud_scattering) then
@@ -225,7 +378,7 @@ contains
       end if
       
       if (config%do_sw) then
-        ! For the moment, we use ssa_sw_cloud and g_sw_cloud as
+        ! for the moment, we use ssa_sw_cloud and g_sw_cloud as
         ! containers for scattering optical depth and scattering
         ! coefficient x asymmetry factor, then scale after
         call config%cloud_optics_sw(jtype)%add_optical_properties(config%n_bands_sw, nlev, &
@@ -235,17 +388,17 @@ contains
       end if
     end do
 
-    ! Scale the combined longwave optical properties
+    ! scale the combined longwave optical properties
     if (config%do_lw_cloud_scattering) then
       do jcol = istartcol, iendcol
         do jlev = 1,nlev
           if (cloud%fraction(jcol,jlev) > 0.0_jprb) then
-            ! Note that original cloud optics does not do
-            ! delta-Eddington scaling for liquid clouds in longwave
+            ! note that original cloud optics does not do
+            ! delta-eddington scaling for liquid clouds in longwave
             call delta_eddington_extensive(od_lw_cloud(:,jlev,jcol), &
                  &  ssa_lw_cloud(:,jlev,jcol), g_lw_cloud(:,jlev,jcol))
             
-            ! Scale to get asymmetry factor and single scattering albedo
+            ! scale to get asymmetry factor and single scattering albedo
             g_lw_cloud(:,jlev,jcol) = g_lw_cloud(:,jlev,jcol) &
                  &  / max(ssa_lw_cloud(:,jlev,jcol), 1.0e-15_jprb)
             ssa_lw_cloud(:,jlev,jcol) = ssa_lw_cloud(:,jlev,jcol) &
@@ -255,7 +408,7 @@ contains
       end do
     end if
     
-    ! Scale the combined shortwave optical properties
+    ! scale the combined shortwave optical properties
     if (config%do_sw) then
       if (.not. config%do_sw_delta_scaling_with_gases) then
         do jcol = istartcol, iendcol
@@ -271,7 +424,7 @@ contains
       do jcol = istartcol, iendcol
         do jlev = 1,nlev
           if (cloud%fraction(jcol,jlev) > 0.0_jprb) then
-            ! Scale to get asymmetry factor and single scattering albedo
+            ! scale to get asymmetry factor and single scattering albedo
             do jg = 1, config%n_bands_sw
               g_sw_cloud(jg,jlev,jcol) = g_sw_cloud(jg,jlev,jcol) &
                  &  / max(ssa_sw_cloud(jg,jlev,jcol), 1.0e-15_jprb)
@@ -289,7 +442,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Save all the cloud optics look-up tables for sw/lw and for each
+  ! save all the cloud optics look-up tables for sw/lw and for each
   ! hydrometeor type
   subroutine save_general_cloud_optics(config, file_prefix, iverbose)
 
@@ -328,3 +481,47 @@ contains
   end subroutine save_general_cloud_optics
 
 end module radiation_general_cloud_optics
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

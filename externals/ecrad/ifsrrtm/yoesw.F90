@@ -1,213 +1,262 @@
-MODULE YOESW
+! # 1 "ifsrrtm/yoesw.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesw.f90"
+module yoesw
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-SAVE
+save
 
 !     ------------------------------------------------------------------
-!*    ** *YOESW* - COEFFICIENTS FOR SHORTWAVE RADIATION TRANSFER
+!*    ** *yoesw* - coefficients for shortwave radiation transfer
 !     ------------------------------------------------------------------
 
-REAL(KIND=JPRB) :: APAD(6,3,7)
-REAL(KIND=JPRB) :: BPAD(6,3,7)
-REAL(KIND=JPRB) :: RRAY(6,6)
-REAL(KIND=JPRB), ALLOCATABLE :: RSUN(:)
-REAL(KIND=JPRB) :: RPDH1
-REAL(KIND=JPRB) :: RPDU1
-REAL(KIND=JPRB) :: RPNH
-REAL(KIND=JPRB) :: RPNU
-REAL(KIND=JPRB) :: RSWCE(6)
-REAL(KIND=JPRB) :: RSWCP(6)
-REAL(KIND=JPRB) :: RTDH2O
-REAL(KIND=JPRB) :: RTDUMG
-REAL(KIND=JPRB) :: RTH2O
-REAL(KIND=JPRB) :: RTUMG
-REAL(KIND=JPRB) :: D(6,3)
-REAL(KIND=JPRB) :: REXPO3(6,2,7)
-INTEGER(KIND=JPIM) :: NEXPO3(6)
+real(kind=jprb) :: apad(6,3,7)
+real(kind=jprb) :: bpad(6,3,7)
+real(kind=jprb) :: rray(6,6)
+real(kind=jprb), allocatable :: rsun(:)
+real(kind=jprb) :: rpdh1
+real(kind=jprb) :: rpdu1
+real(kind=jprb) :: rpnh
+real(kind=jprb) :: rpnu
+real(kind=jprb) :: rswce(6)
+real(kind=jprb) :: rswcp(6)
+real(kind=jprb) :: rtdh2o
+real(kind=jprb) :: rtdumg
+real(kind=jprb) :: rth2o
+real(kind=jprb) :: rtumg
+real(kind=jprb) :: d(6,3)
+real(kind=jprb) :: rexpo3(6,2,7)
+integer(kind=jpim) :: nexpo3(6)
 
-REAL(KIND=JPRB) :: RYFWCA(6)
-REAL(KIND=JPRB) :: RYFWCB(6)
-REAL(KIND=JPRB) :: RYFWCC(6)
-REAL(KIND=JPRB) :: RYFWCD(6)
-REAL(KIND=JPRB) :: RYFWCE(6)
-REAL(KIND=JPRB) :: RYFWCF(6)
+real(kind=jprb) :: ryfwca(6)
+real(kind=jprb) :: ryfwcb(6)
+real(kind=jprb) :: ryfwcc(6)
+real(kind=jprb) :: ryfwcd(6)
+real(kind=jprb) :: ryfwce(6)
+real(kind=jprb) :: ryfwcf(6)
 
-REAL(KIND=JPRB) :: REBCUA(6)
-REAL(KIND=JPRB) :: REBCUB(6)
-REAL(KIND=JPRB) :: REBCUC(6)
-REAL(KIND=JPRB) :: REBCUD(6)
-REAL(KIND=JPRB) :: REBCUE(6)
-REAL(KIND=JPRB) :: REBCUF(6)
-REAL(KIND=JPRB) :: REBCUG(16)
-REAL(KIND=JPRB) :: REBCUH(16)
-REAL(KIND=JPRB) :: REBCUI(6)
-REAL(KIND=JPRB) :: REBCUJ(6)
+real(kind=jprb) :: rebcua(6)
+real(kind=jprb) :: rebcub(6)
+real(kind=jprb) :: rebcuc(6)
+real(kind=jprb) :: rebcud(6)
+real(kind=jprb) :: rebcue(6)
+real(kind=jprb) :: rebcuf(6)
+real(kind=jprb) :: rebcug(16)
+real(kind=jprb) :: rebcuh(16)
+real(kind=jprb) :: rebcui(6)
+real(kind=jprb) :: rebcuj(6)
 
-REAL(KIND=JPRB) :: RASWCA(6)
-REAL(KIND=JPRB) :: RASWCB(6)
-REAL(KIND=JPRB) :: RASWCC(6)
-REAL(KIND=JPRB) :: RASWCD(6)
-REAL(KIND=JPRB) :: RASWCE(6)
-REAL(KIND=JPRB) :: RASWCF(6)
+real(kind=jprb) :: raswca(6)
+real(kind=jprb) :: raswcb(6)
+real(kind=jprb) :: raswcc(6)
+real(kind=jprb) :: raswcd(6)
+real(kind=jprb) :: raswce(6)
+real(kind=jprb) :: raswcf(6)
 
-REAL(KIND=JPRB) :: RFUETA(16,3),RFUETB(16,4), RFUETC(16,4)
-REAL(KIND=JPRB) :: RFULIO(16,3)
-REAL(KIND=JPRB) :: RHSAVI(16,3)
-REAL(KIND=JPRB) :: RLILIA(16,5),RLILIB(16,4)
+real(kind=jprb) :: rfueta(16,3),rfuetb(16,4), rfuetc(16,4)
+real(kind=jprb) :: rfulio(16,3)
+real(kind=jprb) :: rhsavi(16,3)
+real(kind=jprb) :: rlilia(16,5),rlilib(16,4)
 
-REAL(KIND=JPRB) :: RFLAA0(6)
-REAL(KIND=JPRB) :: RFLAA1(6)
-REAL(KIND=JPRB) :: RFLBB0(6)
-REAL(KIND=JPRB) :: RFLBB1(6)
-REAL(KIND=JPRB) :: RFLBB2(6)
-REAL(KIND=JPRB) :: RFLBB3(6)
-REAL(KIND=JPRB) :: RFLCC0(6)
-REAL(KIND=JPRB) :: RFLCC1(6)
-REAL(KIND=JPRB) :: RFLCC2(6)
-REAL(KIND=JPRB) :: RFLCC3(6)
+real(kind=jprb) :: rflaa0(6)
+real(kind=jprb) :: rflaa1(6)
+real(kind=jprb) :: rflbb0(6)
+real(kind=jprb) :: rflbb1(6)
+real(kind=jprb) :: rflbb2(6)
+real(kind=jprb) :: rflbb3(6)
+real(kind=jprb) :: rflcc0(6)
+real(kind=jprb) :: rflcc1(6)
+real(kind=jprb) :: rflcc2(6)
+real(kind=jprb) :: rflcc3(6)
 
-REAL(KIND=JPRB) :: RFUAA0(6)
-REAL(KIND=JPRB) :: RFUAA1(6)
-REAL(KIND=JPRB) :: RFUBB0(6)
-REAL(KIND=JPRB) :: RFUBB1(6)
-REAL(KIND=JPRB) :: RFUBB2(6)
-REAL(KIND=JPRB) :: RFUBB3(6)
-REAL(KIND=JPRB) :: RFUCC0(6)
-REAL(KIND=JPRB) :: RFUCC1(6)
-REAL(KIND=JPRB) :: RFUCC2(6)
-REAL(KIND=JPRB) :: RFUCC3(6)
-REAL(KIND=JPRB) :: RFLDD0(6)
-REAL(KIND=JPRB) :: RFLDD1(6)
-REAL(KIND=JPRB) :: RFLDD2(6)
-REAL(KIND=JPRB) :: RFLDD3(6)
+real(kind=jprb) :: rfuaa0(6)
+real(kind=jprb) :: rfuaa1(6)
+real(kind=jprb) :: rfubb0(6)
+real(kind=jprb) :: rfubb1(6)
+real(kind=jprb) :: rfubb2(6)
+real(kind=jprb) :: rfubb3(6)
+real(kind=jprb) :: rfucc0(6)
+real(kind=jprb) :: rfucc1(6)
+real(kind=jprb) :: rfucc2(6)
+real(kind=jprb) :: rfucc3(6)
+real(kind=jprb) :: rfldd0(6)
+real(kind=jprb) :: rfldd1(6)
+real(kind=jprb) :: rfldd2(6)
+real(kind=jprb) :: rfldd3(6)
 
-REAL(KIND=JPRB) :: REFFIA
+real(kind=jprb) :: reffia
 
-REAL(KIND=JPRB) :: RTAUA(6,6)
-REAL(KIND=JPRB) :: RPIZA(6,6)
-REAL(KIND=JPRB) :: RCGA(6,6)
-REAL(KIND=JPRB) :: RAER(6,6)
+real(kind=jprb) :: rtaua(6,6)
+real(kind=jprb) :: rpiza(6,6)
+real(kind=jprb) :: rcga(6,6)
+real(kind=jprb) :: raer(6,6)
 
-INTEGER(KIND=JPIM) :: NMPSRTM(14), NTYPS
+integer(kind=jpim) :: nmpsrtm(14), ntyps
 
-REAL(KIND=JPRB) :: RADJUST
+real(kind=jprb) :: radjust
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      89/07/14
+!     j.-j. morcrette       e.c.m.w.f.      89/07/14
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : ---------------------------------------------------
-!  APAD  :  REAL     PADE APPROXIMANTS NUMERATOR
-!  BPAD  :  REAL     PADE APPROXIMANTS DENOMINATOR
-!  D     :  REAL     TRANSMISSION LIMIT FOR INFINITE ABSORBER AMOUNT
-!  RRAY  :  REAL     RAYLEIGH SCATTERING COEFFICIENTS
-!  RSUN  :  REAL     SOLAR FRACTION IN SPECTRAL INTERVALS
-!  RPDH1 :  1 + EXPONENT PRESSURE DEPENDENCE H2O
-!  RPDU1 :  1 + EXPONENT PRESSURE DEPENDENCE UNIFORMLY MIXED GASES
-!  RPNH  :  REFERENCE PRESSURE FACTOR FOR H2O
-!  RPNU  :  REFERENCE PRESSURE FACTOR FOR UNIFORMLY MIXED GASES
-!  RSWCE :  E-TYPE, H2O CONTINUUM ABSORPTION COEFFICIENT 
-!  RSWCP :  P-TYPE, H2O CONTINUUM ABSORPTION COEFFICIENT 
-!  RTDH2O:  EXPONENT TEMPERATURE DEPENDENCE H2O
-!  RTDUMG:  EXPONENT TEMPERATURE DEPENDENCE UNIFORMLY MIXED GASES
-!  RTH2O :  REFERENCE TEMPERATURE H2O
-!  RTUMG :  REFERENCE TEMPERATURE UNIFORMLY MIXED GASES
+!  apad  :  real     pade approximants numerator
+!  bpad  :  real     pade approximants denominator
+!  d     :  real     transmission limit for infinite absorber amount
+!  rray  :  real     rayleigh scattering coefficients
+!  rsun  :  real     solar fraction in spectral intervals
+!  rpdh1 :  1 + exponent pressure dependence h2o
+!  rpdu1 :  1 + exponent pressure dependence uniformly mixed gases
+!  rpnh  :  reference pressure factor for h2o
+!  rpnu  :  reference pressure factor for uniformly mixed gases
+!  rswce :  e-type, h2o continuum absorption coefficient 
+!  rswcp :  p-type, h2o continuum absorption coefficient 
+!  rtdh2o:  exponent temperature dependence h2o
+!  rtdumg:  exponent temperature dependence uniformly mixed gases
+!  rth2o :  reference temperature h2o
+!  rtumg :  reference temperature uniformly mixed gases
 !     -----------------------------------------------------------------
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      89/07/14
+!     j.-j. morcrette       e.c.m.w.f.      89/07/14
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : ---------------------------------------------------
-!*    FOUQUART (1987) WATER CLOUD OPTICAL PROPERTIES
+!*    fouquart (1987) water cloud optical properties
 
-! RYFWCA :  REAL   : C1 IN OPTICAL THICKNESS FORMULA
-! RYFWCB :  REAL   : C2 IN OPTICAL THICKNESS FORMULA
-! RYFWCC :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RYFWCD :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RYFWCE :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RYFWCF :  REAL   : ASSYMETRY FACTOR
+! ryfwca :  real   : c1 in optical thickness formula
+! ryfwcb :  real   : c2 in optical thickness formula
+! ryfwcc :  real   : single scattering albedo parameter
+! ryfwcd :  real   : single scattering albedo parameter
+! ryfwce :  real   : single scattering albedo parameter
+! ryfwcf :  real   : assymetry factor
 
-!*    SLINGO (1989) WATER CLOUD OPTICAL PROPERTIES
+!*    slingo (1989) water cloud optical properties
 
-! RASWCA :  REAL   : C1 IN OPTICAL THICKNESS FORMULA
-! RASWCB :  REAL   : C2 IN OPTICAL THICKNESS FORMULA
-! RASWCC :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RASWCD :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RASWCE :  REAL   : SINGLE SCATTERING ALBEDO PARAMETER
-! RASWCF :  REAL   : ASSYMETRY FACTOR
+! raswca :  real   : c1 in optical thickness formula
+! raswcb :  real   : c2 in optical thickness formula
+! raswcc :  real   : single scattering albedo parameter
+! raswcd :  real   : single scattering albedo parameter
+! raswce :  real   : single scattering albedo parameter
+! raswcf :  real   : assymetry factor
 
-!*   LINDNER,LI (2000) WATER CLOUD OPTICAL PROPERTIES (RRTM)
+!*   lindner,li (2000) water cloud optical properties (rrtm)
 
-! RLILIA : REAL    : MASS ABSORPTION COEFFICIENTS (POLYNOMIAL DEVELOPM)
-! RLILIB : REAL    : 1-SSA COEFFICIENTS  (POLYNOMIAL DEVELOPM)
+! rlilia : real    : mass absorption coefficients (polynomial developm)
+! rlilib : real    : 1-ssa coefficients  (polynomial developm)
 
-!*    ICE CLOUD OPTICAL PROPERTIES DERIVED FROM EBERT-CURRY (1992)
+!*    ice cloud optical properties derived from ebert-curry (1992)
 
-! REBCUA :  REAL   : C1 IN OPTICAL THICKNESS FORMULA
-! REBCUB :  REAL   : C2 IN OPTICAL THICKNESS FORMULA
-! REBCUC :  REAL   : 1-C3  IN SINGLE SCATTERING ALBEDO FORMULA
-! REBCUD :  REAL   : C4 IN SINGLE SCATTERING ALBEDO FORMULA
-! REBCUE :  REAL   : C5 IN ASSYMETRY FACTOR FORMULA
-! REBCUF :  REAL   : C6 IN ASSYMETRY FACTOR FORMULA
-! REBCUG :  REAL   : C7 IN MASS ABSORPTION COEFFICIENT FORMULA
-! REBCUH :  REAL   : C8 IN MASS ABSORPTION COEFFICIENT FORMULA
-! REBCUI :  REAL   : C7 IN MASS ABSORPTION COEFFICIENT SPECTRAL FORMULA
-! REBCUJ :  REAL   : C8 IN MASS ABSORPTION COEFFICIENT SPECTRAL FORMULA
+! rebcua :  real   : c1 in optical thickness formula
+! rebcub :  real   : c2 in optical thickness formula
+! rebcuc :  real   : 1-c3  in single scattering albedo formula
+! rebcud :  real   : c4 in single scattering albedo formula
+! rebcue :  real   : c5 in assymetry factor formula
+! rebcuf :  real   : c6 in assymetry factor formula
+! rebcug :  real   : c7 in mass absorption coefficient formula
+! rebcuh :  real   : c8 in mass absorption coefficient formula
+! rebcui :  real   : c7 in mass absorption coefficient spectral formula
+! rebcuj :  real   : c8 in mass absorption coefficient spectral formula
 
-!*    ICE CLOUD OPTICAL PROPERTIES DERIVED FROM SUN-SHINE (1995)
+!*    ice cloud optical properties derived from sun-shine (1995)
 
-! RSHSUE :  REAL   : E IN SINGLE SCATTERING ALBEDO FORMULA
-! RSHSUF :  REAL   : F IN SINGLE SCATTERING ALBEDO FORMULA
-! RSHSUH :  REAL   : H IN ASSYMETRY FACTOR FORMULA
-! RSHSUK :  REAL   : K IN ASSYMETRY FACTOR FORMULA
-! RSHSUA :  REAL   : ALPHA IN SSA CORRECTION FACTOR FORMULA
-! RSHSUG :  REAL   : GAMMA IN ASSYMETRY CORRECTION FACTOR FORMULA
-! RSHSUFA:  REAL   : COEFFICIENTS IN TEMPERATURE CORRECTION FACTOR
+! rshsue :  real   : e in single scattering albedo formula
+! rshsuf :  real   : f in single scattering albedo formula
+! rshsuh :  real   : h in assymetry factor formula
+! rshsuk :  real   : k in assymetry factor formula
+! rshsua :  real   : alpha in ssa correction factor formula
+! rshsug :  real   : gamma in assymetry correction factor formula
+! rshsufa:  real   : coefficients in temperature correction factor
 
-! REFFIA :  REAL   : C9  IN EFFECTIVE RADIUS FORMULA
+! reffia :  real   : c9  in effective radius formula
 
-!*    ICE CLOUD OPTICAL PROPERTIES DERIVED FROM FU-LIOU (1993)
+!*    ice cloud optical properties derived from fu-liou (1993)
 
-! RFULIO :  REAL   : COEFFICIENTS IN EXPRESSION FOR LW EXTINCTION COEFF.
-! RFLAA  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW EXTINCTION COEFF.
-! RFLBB  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW SINGLE SCATT.ALB.
-! RFLCC  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW ASSYMETRY FACTOR
-! RFLDD  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW ASSYMETRY FACTOR
+! rfulio :  real   : coefficients in expression for lw extinction coeff.
+! rflaa  :  real   : coefficients in expression for sw extinction coeff.
+! rflbb  :  real   : coefficients in expression for sw single scatt.alb.
+! rflcc  :  real   : coefficients in expression for sw assymetry factor
+! rfldd  :  real   : coefficients in expression for sw assymetry factor
 
-!*    ICE CLOUD OPTICAL PROPERTIES DERIVED FROM FU (1996) & FU ET AL. (1998)
+!*    ice cloud optical properties derived from fu (1996) & fu et al. (1998)
 
-! RFUETA :  REAL   : COEFFICIENTS IN EXPRESSION FOR LW EXTINCTION COEFF.
-! RFUAA  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW EXTINCTION COEFF.
-! RFUBB  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW SINGLE SCATT.ALB.
-! RFUCC  :  REAL   : COEFFICIENTS IN EXPRESSION FOR SW ASSYMETRY FACTOR
+! rfueta :  real   : coefficients in expression for lw extinction coeff.
+! rfuaa  :  real   : coefficients in expression for sw extinction coeff.
+! rfubb  :  real   : coefficients in expression for sw single scatt.alb.
+! rfucc  :  real   : coefficients in expression for sw assymetry factor
 
 !     -----------------------------------------------------------------
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      89/07/14
+!     j.-j. morcrette       e.c.m.w.f.      89/07/14
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : -------
-!  RTAUA :  REAL     S.W. NORMALIZED OPTICAL THICKNESS AT 0.55 MICRON
-!  RPIZA :  REAL     S.W. SINGLE SCATTERING ALBEDO
-!  RCGA  :  REAL     S.W. ASSYMETRY FACTOR
-!  RAER  :  REAL     L.W. ABSORPTION COEFFICIENTS
+!  rtaua :  real     s.w. normalized optical thickness at 0.55 micron
+!  rpiza :  real     s.w. single scattering albedo
+!  rcga  :  real     s.w. assymetry factor
+!  raer  :  real     l.w. absorption coefficients
 !     -----------------------------------------------------------------
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      89/07/14
+!     j.-j. morcrette       e.c.m.w.f.      89/07/14
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : -------
-!RTWEIGHT:  REAL     S.W. INTEGRATED WEIGHT 
-! NMPSRTM: INTEGER  : Indices for mapping SW[1:6] albedo into SRTM[1:14]  
+!rtweight:  real     s.w. integrated weight 
+! nmpsrtm: integer  : indices for mapping sw[1:6] albedo into srtm[1:14]  
 !     -----------------------------------------------------------------
-END MODULE YOESW
+end module yoesw
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

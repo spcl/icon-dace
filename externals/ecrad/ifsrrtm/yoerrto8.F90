@@ -1,57 +1,106 @@
-MODULE YOERRTO8
+! # 1 "ifsrrtm/yoerrto8.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerrto8.f90"
+module yoerrto8
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,JPRD
+use parkind1  ,only : jpim     ,jprb,jprd
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOERRTO8* - RRTM ORIGINAL COEFFICIENTS FOR INTERVAL 8
-!     BAND 8:  1080-1180 cm-1 (low (i.e.>~300mb) - H2O; high - O3)
-!     ABozzo 201306 updated to rrtmg v4.85
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: NO8  = 16
-
-REAL(KIND=JPRB) , DIMENSION(NO8) :: FRACREFAO
-REAL(KIND=JPRB) , DIMENSION(NO8) :: FRACREFBO
-REAL(KIND=JPRB) , DIMENSION(NO8) :: CFC12O
-REAL(KIND=JPRB) , DIMENSION(NO8) :: CFC22ADJO
-
-REAL(KIND=JPRB) :: KAO(5,13,NO8)
-REAL(KIND=JPRB) :: KBO(5,13:59,NO8)
-REAL(KIND=JPRD) :: KAO_D(5,13,NO8)
-REAL(KIND=JPRD) :: KBO_D(5,13:59,NO8)
-REAL(KIND=JPRB) :: SELFREFO(10,NO8)
-REAL(KIND=JPRB) :: KAO_MCO2(19,NO8)
-REAL(KIND=JPRB) :: KAO_MN2O(19,NO8)
-REAL(KIND=JPRB) :: KAO_MO3(19,NO8)
-REAL(KIND=JPRB) :: KBO_MCO2(19,NO8)
-REAL(KIND=JPRB) :: KBO_MN2O(19,NO8)
-REAL(KIND=JPRB) :: FORREFO(4,NO8)
-
-
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!*    ** *yoerrto8* - rrtm original coefficients for interval 8
+!     band 8:  1080-1180 cm-1 (low (i.e.>~300mb) - h2o; high - o3)
+!     abozzo 201306 updated to rrtmg v4.85
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      98/07/14
+integer(kind=jpim), parameter :: no8  = 16
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) , dimension(no8) :: fracrefao
+real(kind=jprb) , dimension(no8) :: fracrefbo
+real(kind=jprb) , dimension(no8) :: cfc12o
+real(kind=jprb) , dimension(no8) :: cfc22adjo
+
+real(kind=jprb) :: kao(5,13,no8)
+real(kind=jprb) :: kbo(5,13:59,no8)
+real(kind=jprd) :: kao_d(5,13,no8)
+real(kind=jprd) :: kbo_d(5,13:59,no8)
+real(kind=jprb) :: selfrefo(10,no8)
+real(kind=jprb) :: kao_mco2(19,no8)
+real(kind=jprb) :: kao_mn2o(19,no8)
+real(kind=jprb) :: kao_mo3(19,no8)
+real(kind=jprb) :: kbo_mco2(19,no8)
+real(kind=jprb) :: kbo_mn2o(19,no8)
+real(kind=jprb) :: forrefo(4,no8)
+
+
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package *
+
+!     j.-j. morcrette       e.c.m.w.f.      98/07/14
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! ABSCO2A : REAL     
-! ABSCO2B : REAL     
-! ABSN2OA : REAL     
-! ABSN2OB : REAL 
-! CFC12   : REAL     
-! CFC22ADJ: REAL     
-! FRACREFA: REAL    
-! FRACREFB: REAL    
-! KA      : REAL     
-! KB      : REAL     
-! SELFREF : REAL     
+! absco2a : real     
+! absco2b : real     
+! absn2oa : real     
+! absn2ob : real 
+! cfc12   : real     
+! cfc22adj: real     
+! fracrefa: real    
+! fracrefb: real    
+! ka      : real     
+! kb      : real     
+! selfref : real     
 !     -----------------------------------------------------------------
-END MODULE YOERRTO8
+end module yoerrto8
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

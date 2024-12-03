@@ -1,73 +1,122 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoesrta24.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesrta24.f90"
+! this file has been modified for the use in icon
 
-MODULE YOESRTA24
+module yoesrta24
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,JPRD
+use parkind1  ,only : jpim     ,jprb,jprd
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOESRTA24* - SRTM COEFFICIENTS FOR INTERVAL 24
-!     BAND 24: 12850-16000 cm-1 (low - H2O,O2; high - O2)
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: JPG = 16, NG24 = 16
-
-REAL(KIND=JPRB) :: KA(9,5,13,JPG) 
-REAL(KIND=JPRB) :: KB(5,13:59,JPG)
-REAL(KIND=JPRD) :: KA_D(9,5,13,JPG) 
-REAL(KIND=JPRD) :: KB_D(5,13:59,JPG)
-REAL(KIND=JPRB) :: SELFREF(10,JPG),FORREF(3,JPG)
-REAL(KIND=JPRB) :: SFLUXREF(JPG,9)
-REAL(KIND=JPRB) :: ABSO3A(JPG), ABSO3B(JPG), RAYLA(JPG,9), RAYLB(JPG)
-REAL(KIND=JPRB) :: STRRAT
-INTEGER(KIND=JPIM) :: LAYREFFR
-
-REAL(KIND=JPRB) :: KAC(9,5,13,NG24) ,ABSA(585,NG24)
-REAL(KIND=JPRB) :: KBC(5,13:59,NG24),ABSB(235,NG24)
-REAL(KIND=JPRB) :: SELFREFC(10,NG24),FORREFC(3,NG24)
-REAL(KIND=JPRB) :: SFLUXREFC(NG24,9)
-REAL(KIND=JPRB) :: ABSO3AC(NG24), ABSO3BC(NG24), RAYLAC(NG24,9), RAYLBC(NG24)
-
-!EQUIVALENCE (KA(1,1,1,1),ABSA(1,1)), (KB(1,13,1),ABSB(1,1))
-EQUIVALENCE (KAC(1,1,1,1),ABSA(1,1)), (KBC(1,13,1),ABSB(1,1))
-
-!$ACC DECLARE CREATE(KAC, ABSA, KBC, ABSB, SELFREFC, FORREFC, SFLUXREFC, &
-!$ACC                ABSO3AC, ABSO3BC, RAYLAC, RAYLBC)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM SW RADIATION **
+!*    ** *yoesrta24* - srtm coefficients for interval 24
+!     band 24: 12850-16000 cm-1 (low - h2o,o2; high - o2)
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      02/10/29
-!     M. J. IACONO          AER             12/09/03
+integer(kind=jpim), parameter :: jpg = 16, ng24 = 16
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: ka(9,5,13,jpg) 
+real(kind=jprb) :: kb(5,13:59,jpg)
+real(kind=jprd) :: ka_d(9,5,13,jpg) 
+real(kind=jprd) :: kb_d(5,13:59,jpg)
+real(kind=jprb) :: selfref(10,jpg),forref(3,jpg)
+real(kind=jprb) :: sfluxref(jpg,9)
+real(kind=jprb) :: abso3a(jpg), abso3b(jpg), rayla(jpg,9), raylb(jpg)
+real(kind=jprb) :: strrat
+integer(kind=jpim) :: layreffr
+
+real(kind=jprb) :: kac(9,5,13,ng24) ,absa(585,ng24)
+real(kind=jprb) :: kbc(5,13:59,ng24),absb(235,ng24)
+real(kind=jprb) :: selfrefc(10,ng24),forrefc(3,ng24)
+real(kind=jprb) :: sfluxrefc(ng24,9)
+real(kind=jprb) :: abso3ac(ng24), abso3bc(ng24), raylac(ng24,9), raylbc(ng24)
+
+!equivalence (ka(1,1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
+equivalence (kac(1,1,1,1),absa(1,1)), (kbc(1,13,1),absb(1,1))
+
+!$acc declare create(kac, absa, kbc, absb, selfrefc, forrefc, sfluxrefc, &
+!$acc                abso3ac, abso3bc, raylac, raylbc)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm sw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      02/10/29
+!     m. j. iacono          aer             12/09/03
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! KA      : REAL     absorption coefficient of major absorber
-! KB      : REAL     absorption coefficient of secondary absorber
-! SELFREF : REAL     self brodening coefficient for water vapour
-! FORREF  : REAL     foreign broadening coefficient for water vapour
-! SFLUXREF: REAL     Incident solar radiation in the spectral interval
-! ABSO3A  : REAL     O3 absorption coefficient in first part of band
-! ABSO3B  : REAL     O3 absorption coefficient in second part of band
-! RAYLA   : REAL     Rayleigh scattering parameter in first part of band
-! RAYLB   : REAL     Rayleigh scattering parameter in second part of band   
-! STRRAT  : REAL     weighting factor for the transition between tropospheric 
+! ka      : real     absorption coefficient of major absorber
+! kb      : real     absorption coefficient of secondary absorber
+! selfref : real     self brodening coefficient for water vapour
+! forref  : real     foreign broadening coefficient for water vapour
+! sfluxref: real     incident solar radiation in the spectral interval
+! abso3a  : real     o3 absorption coefficient in first part of band
+! abso3b  : real     o3 absorption coefficient in second part of band
+! rayla   : real     rayleigh scattering parameter in first part of band
+! raylb   : real     rayleigh scattering parameter in second part of band   
+! strrat  : real     weighting factor for the transition between tropospheric 
 !                    and stratospheric computations
-! LAYREFFR: INTEGER  reference level for the transition
-! KAC     : REAL     Reduced g-point array for KA
-! KBC     : REAL     Reduced g-point array for KB
-! SELFREFC: REAL     Reduced g-point array for SELFREF
-! FORREFC : REAL     Reduced g-point array for FORREF
-!SFLUXREFC: REAL     Reduced g-point array for SFLUXREF
-! ABSO3AC : REAL     Reduced g-point array for ABSO3A
-! ABSO3BC : REAL     Reduced g-point array for ABSO3B
-! RAYLAC  : REAL     Reduced g-point array for RAYLA
-! RAYLBC  : REAL     Reduced g-point array for RAYLB
+! layreffr: integer  reference level for the transition
+! kac     : real     reduced g-point array for ka
+! kbc     : real     reduced g-point array for kb
+! selfrefc: real     reduced g-point array for selfref
+! forrefc : real     reduced g-point array for forref
+!sfluxrefc: real     reduced g-point array for sfluxref
+! abso3ac : real     reduced g-point array for abso3a
+! abso3bc : real     reduced g-point array for abso3b
+! raylac  : real     reduced g-point array for rayla
+! raylbc  : real     reduced g-point array for raylb
 !     -----------------------------------------------------------------
-END MODULE YOESRTA24
+end module yoesrta24
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

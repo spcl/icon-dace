@@ -1,16 +1,21 @@
-! radiation_liquid_optics_slingo.F90 - Slingo SW & Lindner-Li LW parameterization of liquid droplet optics
+! # 1 "radiation/radiation_liquid_optics_slingo.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_liquid_optics_slingo.f90"
+! radiation_liquid_optics_slingo.f90 - slingo sw & lindner-li lw parameterization of liquid droplet optics
 !
-! (C) Copyright 2016- ECMWF.
+! (c) copyright 2016- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
 
 module radiation_liquid_optics_slingo
@@ -18,32 +23,32 @@ module radiation_liquid_optics_slingo
   implicit none
   public
 
-  integer, parameter :: NLiqOpticsCoeffsSlingoSW = 6
-  integer, parameter :: NLiqOpticsCoeffsLindnerLiLW = 13
+  integer, parameter :: nliqopticscoeffsslingosw = 6
+  integer, parameter :: nliqopticscoeffslindnerlilw = 13
 
 contains
 
   !---------------------------------------------------------------------
-  ! Compute liquid-droplet scattering properties in the shortwave from
-  ! Slingo (1989). WARNING: this parameterization is known not to be
-  ! very accurate: see Nielsen et al. (GMD 2014).
+  ! compute liquid-droplet scattering properties in the shortwave from
+  ! slingo (1989). warning: this parameterization is known not to be
+  ! very accurate: see nielsen et al. (gmd 2014).
   subroutine calc_liq_optics_slingo(nb, coeff, lwp, re, od, scat_od, g)
 
     use parkind1, only : jprb
     !use ecradhook,  only : lhook, dr_hook, jphook
 
-    ! Number of bands
+    ! number of bands
     integer, intent(in)  :: nb
-    ! Coefficients read from a data file
+    ! coefficients read from a data file
     real(jprb), intent(in) :: coeff(:,:)
-    ! Liquid water path (kg m-2) and effective radius (m)
+    ! liquid water path (kg m-2) and effective radius (m)
     real(jprb), intent(in) :: lwp, re
-    ! Total optical depth, scattering optical depth and asymmetry factor
+    ! total optical depth, scattering optical depth and asymmetry factor
     real(jprb), intent(out) :: od(nb), scat_od(nb), g(nb)
 
-    ! Liquid water path in g m-2
+    ! liquid water path in g m-2
     real(jprb) :: lwp_gm_2
-    ! Effective radius in microns, and its inverse
+    ! effective radius in microns, and its inverse
     real(jprb) :: re_um, inv_re_um
 
     !real(jphook) :: hook_handle
@@ -51,7 +56,7 @@ contains
     !if (lhook) call dr_hook('radiation_liquid_optics_slingo:calc_liq_optics_slingo',0,hook_handle)
 
     lwp_gm_2 = lwp * 1000.0_jprb
-    ! Range of validity reported by Slingo (1989): 4.2-16.6 microns
+    ! range of validity reported by slingo (1989): 4.2-16.6 microns
     re_um = min(max(4.2_jprb, re * 1.0e6_jprb), 16.6_jprb)
     inv_re_um = 1.0_jprb / re_um
 
@@ -65,25 +70,25 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Compute liquid-droplet scattering properties in the longwave from
-  ! Lindner & Li (2000)
+  ! compute liquid-droplet scattering properties in the longwave from
+  ! lindner & li (2000)
   subroutine calc_liq_optics_lindner_li(nb, coeff, lwp, re, od, scat_od, g)
 
     use parkind1, only : jprb
     use ecradhook,  only : lhook, dr_hook, jphook
 
-    ! Number of bands
+    ! number of bands
     integer, intent(in)  :: nb
-    ! Coefficients read from a data file
+    ! coefficients read from a data file
     real(jprb), intent(in) :: coeff(:,:)
-    ! Liquid water path (kg m-2) and effective radius (m)
+    ! liquid water path (kg m-2) and effective radius (m)
     real(jprb), intent(in) :: lwp, re
-    ! Total optical depth, scattering optical depth and asymmetry factor
+    ! total optical depth, scattering optical depth and asymmetry factor
     real(jprb), intent(out) :: od(nb), scat_od(nb), g(nb)
 
-    ! Liquid water path in g m-2
+    ! liquid water path in g m-2
     real(jprb) :: lwp_gm_2
-    ! Effective radius in microns, and its inverse
+    ! effective radius in microns, and its inverse
     real(jprb) :: re_um, inv_re_um
 
     real(jphook) :: hook_handle
@@ -91,7 +96,7 @@ contains
     if (lhook) call dr_hook('radiation_liquid_optics_slingo:calc_liq_optics_lindner_li',0,hook_handle)
 
     lwp_gm_2 = lwp * 1000.0_jprb
-    ! Range of validity reported by Lindner and Li (2000): 2-40 microns
+    ! range of validity reported by lindner and li (2000): 2-40 microns
     re_um = min(max(2.0_jprb, re * 1.0e6_jprb), 40.0_jprb)
     inv_re_um = 1.0_jprb / re_um
 
@@ -107,3 +112,47 @@ contains
   end subroutine calc_liq_optics_lindner_li
 
 end module radiation_liquid_optics_slingo
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

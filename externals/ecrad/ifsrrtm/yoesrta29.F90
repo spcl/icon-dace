@@ -1,66 +1,115 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoesrta29.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesrta29.f90"
+! this file has been modified for the use in icon
 
-MODULE YOESRTA29
+module yoesrta29
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB,JPRD
+use parkind1  ,only : jpim     ,jprb,jprd
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOESRTA29* - SRTM COEFFICIENTS FOR INTERVAL 29
-!     BAND 29:  820-2600 cm-1 (low - H2O; high - CO2)
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: JPG = 16, NG29 = 16
-
-REAL(KIND=JPRB) :: KA(5,13,JPG)   
-REAL(KIND=JPRB) :: KB(5,13:59,JPG)
-REAL(KIND=JPRD) :: KA_D(5,13,JPG)   
-REAL(KIND=JPRD) :: KB_D(5,13:59,JPG)
-REAL(KIND=JPRB) :: SELFREF(10,JPG),FORREF(4,JPG)
-REAL(KIND=JPRB) :: SFLUXREF(JPG)  ,ABSH2O(JPG)  , ABSCO2(JPG)
-REAL(KIND=JPRB) :: RAYL
-INTEGER(KIND=JPIM) :: LAYREFFR
-
-REAL(KIND=JPRB) :: KAC(5,13,NG29)   ,ABSA(65,NG29)
-REAL(KIND=JPRB) :: KBC(5,13:59,NG29),ABSB(235,NG29)
-REAL(KIND=JPRB) :: SELFREFC(10,NG29),FORREFC(4,NG29)
-REAL(KIND=JPRB) :: SFLUXREFC(NG29)  ,ABSH2OC(NG29)  , ABSCO2C(NG29)
-
-!EQUIVALENCE (KA(1,1,1),ABSA(1,1)), (KB(1,13,1),ABSB(1,1))
-EQUIVALENCE (KAC(1,1,1),ABSA(1,1)), (KBC(1,13,1),ABSB(1,1))
-
-!$ACC DECLARE CREATE(KAC, ABSA, KBC, ABSB, SELFREFC, FORREFC, SFLUXREFC, &
-!$ACC                ABSH2OC, ABSCO2C)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM SW RADIATION **
+!*    ** *yoesrta29* - srtm coefficients for interval 29
+!     band 29:  820-2600 cm-1 (low - h2o; high - co2)
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      02/10/29
-!     M. J. IACONO          AER             12/09/03
+integer(kind=jpim), parameter :: jpg = 16, ng29 = 16
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: ka(5,13,jpg)   
+real(kind=jprb) :: kb(5,13:59,jpg)
+real(kind=jprd) :: ka_d(5,13,jpg)   
+real(kind=jprd) :: kb_d(5,13:59,jpg)
+real(kind=jprb) :: selfref(10,jpg),forref(4,jpg)
+real(kind=jprb) :: sfluxref(jpg)  ,absh2o(jpg)  , absco2(jpg)
+real(kind=jprb) :: rayl
+integer(kind=jpim) :: layreffr
+
+real(kind=jprb) :: kac(5,13,ng29)   ,absa(65,ng29)
+real(kind=jprb) :: kbc(5,13:59,ng29),absb(235,ng29)
+real(kind=jprb) :: selfrefc(10,ng29),forrefc(4,ng29)
+real(kind=jprb) :: sfluxrefc(ng29)  ,absh2oc(ng29)  , absco2c(ng29)
+
+!equivalence (ka(1,1,1),absa(1,1)), (kb(1,13,1),absb(1,1))
+equivalence (kac(1,1,1),absa(1,1)), (kbc(1,13,1),absb(1,1))
+
+!$acc declare create(kac, absa, kbc, absb, selfrefc, forrefc, sfluxrefc, &
+!$acc                absh2oc, absco2c)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm sw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      02/10/29
+!     m. j. iacono          aer             12/09/03
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! KA      : REAL     absorption coefficient of major absorber
-! KB      : REAL     absorption coefficient of secondary absorber
-! SELFREF : REAL     self brodening coefficient for water vapour
-! FORREF  : REAL     foreign broadening coefficient for water vapour
-! SFLUXREF: REAL     Incident solar radiation in the spectral interval
-! ABSH2O  : REAL     line absorption coefficient for H2O
-! ABSCO2  : REAL     line absorption coefficient for CO2
-! RAYL    : REAL     Rayleigh scattering parameter
-! LAYREFFR: INTEGER  reference level for the transition
-! KAC     : REAL     Reduced g-point array for KA
-! KBC     : REAL     Reduced g-point array for KB
-! SELFREFC: REAL     Reduced g-point array for SELFREF
-! FORREFC : REAL     Reduced g-point array for FORREF
-!SFLUXREFC: REAL     Reduced g-point array for SFLUXREF
-! ABSH2OC : REAL     Reduced g-point array for ABSH2O
-! ABSCO2C : REAL     Reduced g-point array for ABSCO2
+! ka      : real     absorption coefficient of major absorber
+! kb      : real     absorption coefficient of secondary absorber
+! selfref : real     self brodening coefficient for water vapour
+! forref  : real     foreign broadening coefficient for water vapour
+! sfluxref: real     incident solar radiation in the spectral interval
+! absh2o  : real     line absorption coefficient for h2o
+! absco2  : real     line absorption coefficient for co2
+! rayl    : real     rayleigh scattering parameter
+! layreffr: integer  reference level for the transition
+! kac     : real     reduced g-point array for ka
+! kbc     : real     reduced g-point array for kb
+! selfrefc: real     reduced g-point array for selfref
+! forrefc : real     reduced g-point array for forref
+!sfluxrefc: real     reduced g-point array for sfluxref
+! absh2oc : real     reduced g-point array for absh2o
+! absco2c : real     reduced g-point array for absco2
 !     -----------------------------------------------------------------
-END MODULE YOESRTA29
+end module yoesrta29
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

@@ -1,24 +1,29 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_interface.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_interface.f90"
+! this file has been modified for the use in icon
 
-! radiation_interface.F90 - Public interface to radiation scheme
+! radiation_interface.f90 - public interface to radiation scheme
 !
-! (C) Copyright 2014- ECMWF.
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2017-04-11  R. Hogan  Changes to enable generalized surface description
-!   2017-09-08  R. Hogan  Reverted some changes
+! modifications
+!   2017-04-11  r. hogan  changes to enable generalized surface description
+!   2017-09-08  r. hogan  reverted some changes
 !
-! To use the radiation scheme, create a configuration_type object,
+! to use the radiation scheme, create a configuration_type object,
 ! call "setup_radiation" on it once to load the look-up-tables and
 ! data describing how gas and hydrometeor absorption/scattering are to
 ! be represented, and call "radiation" multiple times on different
@@ -34,18 +39,18 @@ module radiation_interface
 contains
 
   !---------------------------------------------------------------------
-  ! Load the look-up-tables and data describing how gas and
+  ! load the look-up-tables and data describing how gas and
   ! hydrometeor absorption/scattering are to be represented
   subroutine setup_radiation(config)
 
     use parkind1,         only : jprb
     use ecradhook,          only : lhook, dr_hook, jphook
     use radiation_io,     only : nulerr, radiation_abort
-    use radiation_config, only : config_type, ISolverMcICA, ISolverMcICAACC, &
-         &   IGasModelMonochromatic, IGasModelIFSRRTMG, IGasModelECCKD
+    use radiation_config, only : config_type, isolvermcica, isolvermcicaacc, &
+         &   igasmodelmonochromatic, igasmodelifsrrtmg, igasmodelecckd
     use radiation_spectral_definition, only &
-         &  : SolarReferenceTemperature, TerrestrialReferenceTemperature
-    ! Currently there are two gas absorption models: RRTMG (default)
+         &  : solarreferencetemperature, terrestrialreferencetemperature
+    ! currently there are two gas absorption models: rrtmg (default)
     ! and monochromatic
     use radiation_monochromatic,  only : &
          &   setup_gas_optics_mono     => setup_gas_optics, &
@@ -64,35 +69,35 @@ contains
 
     if (lhook) call dr_hook('radiation_interface:setup_radiation',0,hook_handle)
 
-    ! Consolidate configuration data, including setting data file
+    ! consolidate configuration data, including setting data file
     ! names
     call config%consolidate()
 
-    ! Load the look-up tables from files in the specified directory
-    if (config%i_gas_model_sw == IGasModelMonochromatic) then
+    ! load the look-up tables from files in the specified directory
+    if (config%i_gas_model_sw == igasmodelmonochromatic) then
       call setup_gas_optics_mono(config, trim(config%directory_name))
     else
-      ! Note that we can run RRTMG and ECCKD for different parts of
+      ! note that we can run rrtmg and ecckd for different parts of
       ! the spectrum: the setup routines only configure the relevant
       ! part.
-      if (config%i_gas_model_sw == IGasModelIFSRRTMG .or. config%i_gas_model_lw == IGasModelIFSRRTMG) then
+      if (config%i_gas_model_sw == igasmodelifsrrtmg .or. config%i_gas_model_lw == igasmodelifsrrtmg) then
         call setup_gas_optics_rrtmg(config, trim(config%directory_name))
       end if
-      if (config%i_gas_model_sw == IGasModelECCKD .or. config%i_gas_model_lw == IGasModelECCKD) then
+      if (config%i_gas_model_sw == igasmodelecckd .or. config%i_gas_model_lw == igasmodelecckd) then
         call setup_gas_optics_ecckd(config)
       end if
     end if
 
     if (config%do_lw_aerosol_scattering &
          & .and. .not. config%do_lw_cloud_scattering) then
-      write(nulerr, '(a)') '*** Error: longwave aerosol scattering requires longwave cloud scattering'
-      call radiation_abort('Radiation configuration error')
+      write(nulerr, '(a)') '*** error: longwave aerosol scattering requires longwave cloud scattering'
+      call radiation_abort('radiation configuration error')
     end if
 
     
-    ! Whether or not the "radiation" subroutine needs ssa_lw and g_lw
+    ! whether or not the "radiation" subroutine needs ssa_lw and g_lw
     ! arrays depends on whether longwave scattering by aerosols is to
-    ! be included.  If not, one of the array dimensions will be set to
+    ! be included.  if not, one of the array dimensions will be set to
     ! zero.
     if (config%do_lw_aerosol_scattering) then
       config%n_g_lw_if_scattering = config%n_g_lw
@@ -100,9 +105,9 @@ contains
       config%n_g_lw_if_scattering = 0
     end if
 
-    ! Whether or not the "radiation" subroutine needs ssa_lw_cloud and
+    ! whether or not the "radiation" subroutine needs ssa_lw_cloud and
     ! g_lw_cloud arrays depends on whether longwave scattering by
-    ! hydrometeors is to be included.  If not, one of the array
+    ! hydrometeors is to be included.  if not, one of the array
     ! dimensions will be set to zero.
     if (config%do_lw_cloud_scattering) then
       config%n_bands_lw_if_scattering = config%n_bands_lw
@@ -110,16 +115,16 @@ contains
       config%n_bands_lw_if_scattering = 0
     end if
 
-    ! If we have longwave scattering and McICA then even if there is
+    ! if we have longwave scattering and mcica then even if there is
     ! no aerosol, it is convenient if single scattering albedo and
     ! g factor arrays are allocated before the call to
     ! solver_lw as they will be needed.
     if (config%do_lw_cloud_scattering &
-         &  .and. (config%i_solver_lw == ISolverMcICA .or. config%i_solver_lw == ISolverMcICAACC) ) then
+         &  .and. (config%i_solver_lw == isolvermcica .or. config%i_solver_lw == isolvermcicaacc) ) then
       config%n_g_lw_if_scattering = config%n_g_lw
     end if
 
-    ! Consolidate the albedo/emissivity intervals with the shortwave
+    ! consolidate the albedo/emissivity intervals with the shortwave
     ! and longwave spectral bands
     if (config%do_sw) then
       call config%consolidate_sw_albedo_intervals
@@ -129,7 +134,7 @@ contains
     end if
 
     if (config%do_clouds) then
-      if (config%i_gas_model_sw == IGasModelMonochromatic) then
+      if (config%i_gas_model_sw == igasmodelmonochromatic) then
         !      call setup_cloud_optics_mono(config)
       elseif (config%use_general_cloud_optics) then
         call setup_general_cloud_optics(config)
@@ -139,18 +144,18 @@ contains
     end if
 
     if (config%use_aerosols) then
-      if (config%i_gas_model_sw == IGasModelMonochromatic) then
+      if (config%i_gas_model_sw == igasmodelmonochromatic) then
 !        call setup_aerosol_optics_mono(config)
       else 
         call setup_aerosol_optics(config)
       end if
     end if
 
-    ! Load cloud water PDF look-up table for McICA
-    if (         config%i_solver_sw == ISolverMcICA &
-         &  .or. config%i_solver_lw == ISolverMcICA &
-         &  .or. config%i_solver_sw == ISolverMcICAACC &
-         &  .or. config%i_solver_lw == ISolverMcICAACC ) then
+    ! load cloud water pdf look-up table for mcica
+    if (         config%i_solver_sw == isolvermcica &
+         &  .or. config%i_solver_lw == isolvermcica &
+         &  .or. config%i_solver_sw == isolvermcicaacc &
+         &  .or. config%i_solver_lw == isolvermcicaacc ) then
       call config%pdf_sampler%setup(config%cloud_pdf_file_name, &
            &                        iverbose=config%iverbosesetup)
     end if
@@ -161,9 +166,9 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Scale the gas mixing ratios so that they have the units (and
+  ! scale the gas mixing ratios so that they have the units (and
   ! possibly scale factors) required by the specific gas absorption
-  ! model.  This subroutine simply passes the gas object on to the
+  ! model.  this subroutine simply passes the gas object on to the
   ! module of the currently active gas model.
   subroutine set_gas_units(config, gas)
     
@@ -176,15 +181,15 @@ contains
     type(config_type), intent(in)    :: config
     type(gas_type),    intent(inout) :: gas
 
-    if (config%i_gas_model_sw == IGasModelMonochromatic) then
+    if (config%i_gas_model_sw == igasmodelmonochromatic) then
       call set_gas_units_mono(gas)
-    elseif (config%i_gas_model_sw == IGasModelIFSRRTMG &
-         &  .or. config%i_gas_model_lw == IGasModelIFSRRTMG) then
-      ! Convert to mass-mixing ratio for RRTMG; note that ecCKD can
+    elseif (config%i_gas_model_sw == igasmodelifsrrtmg &
+         &  .or. config%i_gas_model_lw == igasmodelifsrrtmg) then
+      ! convert to mass-mixing ratio for rrtmg; note that ecckd can
       ! work with this but performs an internal scaling
       call set_gas_units_ifs(gas)
     else
-      ! Use volume mixing ratio preferred by ecCKD
+      ! use volume mixing ratio preferred by ecckd
       call set_gas_units_ecckd(gas)
     end if
 
@@ -192,11 +197,11 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Run the radiation scheme according to the configuration in the
-  ! config object. There are ncol profiles of which only istartcol to
-  ! iendcol are to be processed, and there are nlev model levels.  The
+  ! run the radiation scheme according to the configuration in the
+  ! config object. there are ncol profiles of which only istartcol to
+  ! iendcol are to be processed, and there are nlev model levels.  the
   ! output fluxes are written to the flux object, and all other
-  ! objects contain the input variables.  The variables may be defined
+  ! objects contain the input variables.  the variables may be defined
   ! either in order of increasing or decreasing pressure, but if in
   ! order of decreasing pressure then radiation_reverse will be called
   ! to reverse the order for the computation and then reverse the
@@ -209,9 +214,9 @@ contains
 
     use radiation_io,             only : nulout, nulerr, radiation_abort
     use radiation_config,         only : config_type, &
-         &   IGasModelMonochromatic, IGasModelIFSRRTMG, IGasModelECCKD, &
-         &   ISolverMcICA, ISolverSpartacus, ISolverHomogeneous, &
-         &   ISolverTripleclouds, ISolverMcICAACC
+         &   igasmodelmonochromatic, igasmodelifsrrtmg, igasmodelecckd, &
+         &   isolvermcica, isolverspartacus, isolverhomogeneous, &
+         &   isolvertripleclouds, isolvermcicaacc
     use radiation_single_level,   only : single_level_type
     use radiation_thermodynamics, only : thermodynamics_type
     use radiation_gas,            only : gas_type
@@ -232,7 +237,7 @@ contains
     use radiation_homogeneous_lw, only : solver_homogeneous_lw
     use radiation_save,           only : save_radiative_properties
 
-    ! Treatment of gas and hydrometeor optics 
+    ! treatment of gas and hydrometeor optics 
     use radiation_monochromatic,  only : &
          &   gas_optics_mono         => gas_optics, &
          &   cloud_optics_mono       => cloud_optics, &
@@ -243,7 +248,7 @@ contains
     use radiation_general_cloud_optics, only : general_cloud_optics
     use radiation_aerosol_optics, only : add_aerosol_optics
 
-    ! Inputs
+    ! inputs
     integer, intent(in) :: ncol               ! number of columns
     integer, intent(in) :: nlev               ! number of model levels
     integer, intent(in) :: istartcol, iendcol ! range of columns to process
@@ -253,13 +258,13 @@ contains
     type(gas_type),           intent(in)   :: gas
     type(cloud_type),         intent(inout):: cloud
     type(aerosol_type),       intent(in)   :: aerosol
-    ! Output
+    ! output
     type(flux_type),          intent(inout):: flux
 
 
-    ! Local variables
+    ! local variables
 
-    ! Layer optical depth, single scattering albedo and asymmetry factor of
+    ! layer optical depth, single scattering albedo and asymmetry factor of
     ! gases and aerosols at each longwave g-point, where the latter
     ! two variables are only defined if aerosol longwave scattering is
     ! enabled (otherwise both are treated as zero).
@@ -267,7 +272,7 @@ contains
     real(jprb), dimension(config%n_g_lw_if_scattering,nlev,istartcol:iendcol) :: &
          &  ssa_lw, g_lw
 
-    ! Layer in-cloud optical depth, single scattering albedo and
+    ! layer in-cloud optical depth, single scattering albedo and
     ! asymmetry factor of hydrometeors in each longwave band, where
     ! the latter two variables are only defined if hydrometeor
     ! longwave scattering is enabled (otherwise both are treated as
@@ -276,32 +281,32 @@ contains
     real(jprb), dimension(config%n_bands_lw_if_scattering,nlev,istartcol:iendcol) :: &
          &  ssa_lw_cloud, g_lw_cloud
 
-    ! Layer optical depth, single scattering albedo and asymmetry factor of
+    ! layer optical depth, single scattering albedo and asymmetry factor of
     ! gases and aerosols at each shortwave g-point
     real(jprb), dimension(config%n_g_sw,nlev,istartcol:iendcol) :: od_sw, ssa_sw, g_sw
 
-    ! Layer in-cloud optical depth, single scattering albedo and
+    ! layer in-cloud optical depth, single scattering albedo and
     ! asymmetry factor of hydrometeors in each shortwave band
     real(jprb), dimension(config%n_bands_sw,nlev,istartcol:iendcol)   :: &
          &  od_sw_cloud, ssa_sw_cloud, g_sw_cloud
 
-    ! The Planck function (emitted flux from a black body) at half
+    ! the planck function (emitted flux from a black body) at half
     ! levels
     real(jprb), dimension(config%n_g_lw,nlev+1,istartcol:iendcol) :: planck_hl
 
-    ! The longwave emission from and albedo of the surface in each
+    ! the longwave emission from and albedo of the surface in each
     ! longwave g-point; note that these are weighted averages of the
     ! values from individual tiles
     real(jprb), dimension(config%n_g_lw, istartcol:iendcol) :: lw_emission
     real(jprb), dimension(config%n_g_lw, istartcol:iendcol) :: lw_albedo
 
-    ! Direct and diffuse shortwave surface albedo in each shortwave
+    ! direct and diffuse shortwave surface albedo in each shortwave
     ! g-point; note that these are weighted averages of the values
     ! from individual tiles
     real(jprb), dimension(config%n_g_sw, istartcol:iendcol) :: sw_albedo_direct
     real(jprb), dimension(config%n_g_sw, istartcol:iendcol) :: sw_albedo_diffuse
 
-    ! The incoming shortwave flux into a plane perpendicular to the
+    ! the incoming shortwave flux into a plane perpendicular to the
     ! incoming radiation at top-of-atmosphere in each of the shortwave
     ! g-points
     real(jprb), dimension(config%n_g_sw,istartcol:iendcol) :: incoming_sw
@@ -313,14 +318,14 @@ contains
 
     if (lhook) call dr_hook('radiation_interface:radiation',0,hook_handle)
 
-    !$ACC DATA CREATE(od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
-    !$ACC             od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, g_sw_cloud, &
-    !$ACC             planck_hl, lw_emission, lw_albedo, sw_albedo_direct, &
-    !$ACC             sw_albedo_diffuse, incoming_sw)
+    !$acc data create(od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
+    !$acc             od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, g_sw_cloud, &
+    !$acc             planck_hl, lw_emission, lw_albedo, sw_albedo_direct, &
+    !$acc             sw_albedo_diffuse, incoming_sw)
 
     if (thermodynamics%pressure_hl(istartcol,2) &
          &  < thermodynamics%pressure_hl(istartcol,1)) then
-      ! Input arrays are arranged in order of decreasing pressure /
+      ! input arrays are arranged in order of decreasing pressure /
       ! increasing height: the following subroutine reverses them,
       ! call the radiation scheme and then reverses the returned
       ! fluxes
@@ -328,35 +333,35 @@ contains
            &  single_level, thermodynamics, gas, cloud, aerosol, flux)
     else
 
-      ! Input arrays arranged in order of increasing pressure /
+      ! input arrays arranged in order of increasing pressure /
       ! decreasing height: progress normally
 
-      ! Extract surface albedos at each gridpoint
+      ! extract surface albedos at each gridpoint
       call single_level%get_albedos(istartcol, iendcol, config, &
            &                        sw_albedo_direct, sw_albedo_diffuse, &
            &                        lw_albedo)
 
-      ! Compute gas absorption optical depth in shortwave and
+      ! compute gas absorption optical depth in shortwave and
       ! longwave, shortwave single scattering albedo (i.e. fraction of
-      ! extinction due to Rayleigh scattering), Planck functions and
+      ! extinction due to rayleigh scattering), planck functions and
       ! incoming shortwave flux at each g-point, for the specified
       ! range of atmospheric columns
-      if (config%i_gas_model_sw == IGasModelMonochromatic) then
+      if (config%i_gas_model_sw == igasmodelmonochromatic) then
         call gas_optics_mono(ncol,nlev,istartcol,iendcol, config, &
              &  single_level, thermodynamics, gas, lw_albedo, &
              &  od_lw, od_sw, ssa_sw, &
              &  planck_hl, lw_emission, incoming_sw)
       else
-        if (config%i_gas_model_sw == IGasModelIFSRRTMG &
-             &   .or. config%i_gas_model_lw == IGasModelIFSRRTMG) then
+        if (config%i_gas_model_sw == igasmodelifsrrtmg &
+             &   .or. config%i_gas_model_lw == igasmodelifsrrtmg) then
           call gas_optics_rrtmg(ncol,nlev,istartcol,iendcol, config, &
                &  single_level, thermodynamics, gas, &
                &  od_lw, od_sw, ssa_sw, lw_albedo=lw_albedo, &
                &  planck_hl=planck_hl, lw_emission=lw_emission, &
                &  incoming_sw=incoming_sw)
         end if
-        if (config%i_gas_model_sw == IGasModelECCKD &
-             &   .or. config%i_gas_model_lw == IGasModelECCKD) then
+        if (config%i_gas_model_sw == igasmodelecckd &
+             &   .or. config%i_gas_model_lw == igasmodelecckd) then
           call gas_optics_ecckd(ncol,nlev,istartcol,iendcol, config, &
                &  single_level, thermodynamics, gas, &
                &  od_lw, od_sw, ssa_sw, lw_albedo=lw_albedo, &
@@ -366,17 +371,17 @@ contains
       end if
 
       if (config%do_clouds) then
-        ! Crop the cloud fraction to remove clouds that have too small
+        ! crop the cloud fraction to remove clouds that have too small
         ! a fraction or water content; after this, we can safely
         ! assume that a cloud is present if cloud%fraction > 0.0.
-        ! WARNING: not 100% tested on GPU as it has no effect on result
+        ! warning: not 100% tested on gpu as it has no effect on result
         call cloud%crop_cloud_fraction(istartcol, iendcol, &
              &            config%cloud_fraction_threshold, &
              &            config%cloud_mixing_ratio_threshold)
 
-        ! Compute hydrometeor absorption/scattering properties in each
+        ! compute hydrometeor absorption/scattering properties in each
         ! shortwave and longwave band
-        if (config%i_gas_model_sw == IGasModelMonochromatic) then
+        if (config%i_gas_model_sw == igasmodelmonochromatic) then
           call cloud_optics_mono(nlev, istartcol, iendcol, &
                &  config, thermodynamics, cloud, &
                &  od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
@@ -395,7 +400,7 @@ contains
       end if ! do_clouds
 
       if (config%use_aerosols) then
-        if (config%i_gas_model_sw == IGasModelMonochromatic) then
+        if (config%i_gas_model_sw == igasmodelmonochromatic) then
 !          call add_aerosol_optics_mono(nlev,istartcol,iendcol, &
 !               &  config, thermodynamics, gas, aerosol, & 
 !               &  od_lw, ssa_lw, g_lw, od_sw, ssa_sw, g_sw)
@@ -412,8 +417,8 @@ contains
         end if
       end if
 
-      ! For diagnostic purposes, save these intermediate variables to
-      ! a NetCDF file
+      ! for diagnostic purposes, save these intermediate variables to
+      ! a netcdf file
       if (config%do_save_radiative_properties) then
         if (istartcol == 1 .and. iendcol == ncol) then
           rad_prop_file_name = rad_prop_base_file_name // ".nc"
@@ -433,42 +438,42 @@ contains
 
       if (config%do_lw) then
         if (config%iverbose >= 2) then
-          write(nulout,'(a)') 'Computing longwave fluxes'
+          write(nulout,'(a)') 'computing longwave fluxes'
         end if
 
-        !$ACC WAIT
-        if (config%i_solver_lw == ISolverMcICA) then
-          ! Compute fluxes using the McICA longwave solver
+        !$acc wait
+        if (config%i_solver_lw == isolvermcica) then
+          ! compute fluxes using the mcica longwave solver
           call solver_mcica_lw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
                &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
-        else if (config%i_solver_lw == ISolverMcICAACC) then
-          ! Compute fluxes using the McICA ACC longwave solver
+        else if (config%i_solver_lw == isolvermcicaacc) then
+          ! compute fluxes using the mcica acc longwave solver
           call solver_mcica_acc_lw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
                &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
-        else if (config%i_solver_lw == ISolverSPARTACUS) then
-          ! Compute fluxes using the SPARTACUS longwave solver
+        else if (config%i_solver_lw == isolverspartacus) then
+          ! compute fluxes using the spartacus longwave solver
           call solver_spartacus_lw(nlev,istartcol,iendcol, &
                &  config, thermodynamics, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
                &  planck_hl, lw_emission, lw_albedo, flux)
-        else if (config%i_solver_lw == ISolverTripleclouds) then
-          ! Compute fluxes using the Tripleclouds longwave solver
+        else if (config%i_solver_lw == isolvertripleclouds) then
+          ! compute fluxes using the tripleclouds longwave solver
           call solver_tripleclouds_lw(nlev,istartcol,iendcol, &
                &  config, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, g_lw_cloud, &
                &  planck_hl, lw_emission, lw_albedo, flux)
-        elseif (config%i_solver_lw == ISolverHomogeneous) then
-          ! Compute fluxes using the homogeneous solver
+        elseif (config%i_solver_lw == isolverhomogeneous) then
+          ! compute fluxes using the homogeneous solver
           call solver_homogeneous_lw(nlev,istartcol,iendcol, &
                &  config, cloud, & 
                &  od_lw, ssa_lw, g_lw, od_lw_cloud, ssa_lw_cloud, &
                &  g_lw_cloud, planck_hl, lw_emission, lw_albedo, flux)
         else
-          ! Compute fluxes using the cloudless solver
+          ! compute fluxes using the cloudless solver
           call solver_cloudless_lw(nlev,istartcol,iendcol, &
                &  config, od_lw, ssa_lw, g_lw, &
                &  planck_hl, lw_emission, lw_albedo, flux)
@@ -477,47 +482,47 @@ contains
 
       if (config%do_sw) then
         if (config%iverbose >= 2) then
-          write(nulout,'(a)') 'Computing shortwave fluxes'
+          write(nulout,'(a)') 'computing shortwave fluxes'
         end if
 
-        !$ACC WAIT
-        if (config%i_solver_sw == ISolverMcICA) then
-          ! Compute fluxes using the McICA shortwave solver
+        !$acc wait
+        if (config%i_solver_sw == isolvermcica) then
+          ! compute fluxes using the mcica shortwave solver
           call solver_mcica_sw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
-        else if (config%i_solver_sw == ISolverMcICAACC) then
-          ! Compute fluxes using the McICA ACC shortwave solver
+        else if (config%i_solver_sw == isolvermcicaacc) then
+          ! compute fluxes using the mcica acc shortwave solver
           call solver_mcica_acc_sw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
-        else if (config%i_solver_sw == ISolverSPARTACUS) then
-          ! Compute fluxes using the SPARTACUS shortwave solver
+        else if (config%i_solver_sw == isolverspartacus) then
+          ! compute fluxes using the spartacus shortwave solver
           call solver_spartacus_sw(nlev,istartcol,iendcol, &
                &  config, single_level, thermodynamics, cloud, & 
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
-        else if (config%i_solver_sw == ISolverTripleclouds) then
-          ! Compute fluxes using the Tripleclouds shortwave solver
+        else if (config%i_solver_sw == isolvertripleclouds) then
+          ! compute fluxes using the tripleclouds shortwave solver
           call solver_tripleclouds_sw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
-        elseif (config%i_solver_sw == ISolverHomogeneous) then
-          ! Compute fluxes using the homogeneous solver
+        elseif (config%i_solver_sw == isolverhomogeneous) then
+          ! compute fluxes using the homogeneous solver
           call solver_homogeneous_sw(nlev,istartcol,iendcol, &
                &  config, single_level, cloud, & 
                &  od_sw, ssa_sw, g_sw, od_sw_cloud, ssa_sw_cloud, &
                &  g_sw_cloud, sw_albedo_direct, sw_albedo_diffuse, &
                &  incoming_sw, flux)
         else
-          ! Compute fluxes using the cloudless solver
+          ! compute fluxes using the cloudless solver
           call solver_cloudless_sw(nlev,istartcol,iendcol, &
                &  config, single_level, od_sw, ssa_sw, g_sw, &
                &  sw_albedo_direct, sw_albedo_diffuse, &
@@ -525,15 +530,15 @@ contains
         end if
       end if
 
-      ! Store surface downwelling, and TOA, fluxes in bands from
+      ! store surface downwelling, and toa, fluxes in bands from
       ! fluxes in g points
       call flux%calc_surface_spectral(config, istartcol, iendcol)
       call flux%calc_toa_spectral    (config, istartcol, iendcol)
 
     end if
     
-    !$ACC WAIT
-    !$ACC END DATA
+    !$acc wait
+    !$acc end data
 
     if (lhook) call dr_hook('radiation_interface:radiation',1,hook_handle)
 
@@ -541,9 +546,9 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! If the input arrays are arranged in order of decreasing pressure /
+  ! if the input arrays are arranged in order of decreasing pressure /
   ! increasing height then this subroutine reverses them, calls the
-  ! radiation scheme and then reverses the returned fluxes. Since this
+  ! radiation scheme and then reverses the returned fluxes. since this
   ! subroutine calls, and is called by "radiation", it must be in this
   ! module to avoid circular dependencies.
   subroutine radiation_reverse(ncol, nlev, istartcol, iendcol, config, &
@@ -560,7 +565,7 @@ contains
     use radiation_aerosol,        only : aerosol_type
     use radiation_flux,           only : flux_type
 
-    ! Inputs
+    ! inputs
     integer, intent(in) :: ncol               ! number of columns
     integer, intent(in) :: nlev               ! number of model levels
     integer, intent(in) :: istartcol, iendcol ! range of columns to process
@@ -570,29 +575,29 @@ contains
     type(gas_type),           intent(in) :: gas
     type(cloud_type),         intent(in) :: cloud
     type(aerosol_type),       intent(in) :: aerosol
-    ! Output
+    ! output
     type(flux_type),          intent(inout):: flux
 
-    ! Reversed data structures
+    ! reversed data structures
     type(thermodynamics_type) :: thermodynamics_rev
     type(gas_type)            :: gas_rev
     type(cloud_type)          :: cloud_rev
     type(aerosol_type)        :: aerosol_rev
     type(flux_type)           :: flux_rev
 
-    ! Start and end levels for aerosol data
+    ! start and end levels for aerosol data
     integer :: istartlev, iendlev
 
     if (config%iverbose >= 2) then
-      write(nulout,'(a)') 'Reversing arrays to be in order of increasing pressure'
+      write(nulout,'(a)') 'reversing arrays to be in order of increasing pressure'
     end if
 
-#ifdef _OPENACC
-    write(nulerr,'(a)') '*** Error: radiation_interface:radiation_reverse not ported to GPU'
-    call radiation_abort()
-#endif
 
-    ! Allocate reversed arrays
+
+
+
+
+    ! allocate reversed arrays
     call thermodynamics_rev%allocate(ncol, nlev)
     call cloud_rev%allocate(ncol, nlev)
     call flux_rev%allocate(config, istartcol, iendcol, nlev)
@@ -603,17 +608,17 @@ contains
            &                    config%n_aerosol_types)
     end if
 
-    ! Fill reversed thermodynamic arrays
+    ! fill reversed thermodynamic arrays
     thermodynamics_rev%pressure_hl(istartcol:iendcol,:) &
          &  = thermodynamics%pressure_hl(istartcol:iendcol, nlev+1:1:-1)
     thermodynamics_rev%temperature_hl(istartcol:iendcol,:) &
          &  = thermodynamics%temperature_hl(istartcol:iendcol, nlev+1:1:-1)
 
-    ! Fill reversed gas arrays
+    ! fill reversed gas arrays
     call gas%reverse(istartcol, iendcol, gas_rev)
 
     if (config%do_clouds) then
-      ! Fill reversed cloud arrays
+      ! fill reversed cloud arrays
       cloud_rev%q_liq(istartcol:iendcol,:) &
            &  = cloud%q_liq(istartcol:iendcol,nlev:1:-1)
       cloud_rev%re_liq(istartcol:iendcol,:) &
@@ -645,12 +650,12 @@ contains
            &  = aerosol%mixing_ratio(:,aerosol%iendlev:aerosol%istartlev:-1,:)
     end if
 
-    ! Run radiation scheme on reversed profiles
+    ! run radiation scheme on reversed profiles
     call radiation(ncol, nlev,istartcol,iendcol, &
          &  config, single_level, thermodynamics_rev, gas_rev, &
          &  cloud_rev, aerosol_rev, flux_rev)
 
-    ! Reorder fluxes
+    ! reorder fluxes
     if (allocated(flux%lw_up)) then
       flux%lw_up(istartcol:iendcol,:) &
            &  = flux_rev%lw_up(istartcol:iendcol,nlev+1:1:-1)
@@ -684,7 +689,7 @@ contains
       end if
     end if
 
-    ! Deallocate reversed arrays
+    ! deallocate reversed arrays
     call thermodynamics_rev%deallocate
     call gas_rev%deallocate
     call cloud_rev%deallocate
@@ -696,3 +701,47 @@ contains
   end subroutine radiation_reverse
 
 end module radiation_interface
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

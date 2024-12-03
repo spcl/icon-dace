@@ -1,24 +1,29 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_homogeneous_sw.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_homogeneous_sw.f90"
+! this file has been modified for the use in icon
 
-! radiation_homogeneous_sw.F90 - Shortwave homogeneous-column (no cloud fraction) solver
+! radiation_homogeneous_sw.f90 - shortwave homogeneous-column (no cloud fraction) solver
 !
-! (C) Copyright 2016- ECMWF.
+! (c) copyright 2016- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! Modifications
-!   2017-04-11  R. Hogan  Receive albedos at g-points
-!   2017-04-22  R. Hogan  Store surface fluxes at all g points
-!   2017-10-23  R. Hogan  Renamed single-character variables
-!   2019-01-14  R. Hogan  Save spectral flux profile if required
+! modifications
+!   2017-04-11  r. hogan  receive albedos at g-points
+!   2017-04-22  r. hogan  store surface fluxes at all g points
+!   2017-10-23  r. hogan  renamed single-character variables
+!   2019-01-14  r. hogan  save spectral flux profile if required
 
 module radiation_homogeneous_sw
 
@@ -26,11 +31,159 @@ module radiation_homogeneous_sw
 
 contains
 
-  ! Provides elemental function "delta_eddington"
-#include "radiation_delta_eddington.h"
+  ! provides elemental function "delta_eddington"
+
+! # 1 "radiation/radiation_delta_eddington.h" 1
+! radiation_delta_eddington.h - delta-eddington scaling -*- f90 -*-
+!
+! (c) copyright 2015- ecmwf.
+!
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
+!
+! in applying this licence, ecmwf does not waive the privileges and immunities
+! granted to it by virtue of its status as an intergovernmental organisation
+! nor does it submit to any jurisdiction.
+!
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
+!
+! this file is intended to be included inside a module to ensure that
+! these simple functions may be inlined
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function
+elemental subroutine delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  f   = g*g
+  od  = od * (1.0_jprb - ssa*f)
+  ssa = ssa * (1.0_jprb - f) / (1.0_jprb - ssa*f)
+  g   = g / (1.0_jprb + g)
+  
+end subroutine delta_eddington
+
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function, but
+! using extensive variables (i.e. the scattering optical depth,
+! scat_od, rather than the single-scattering albedo, and the
+! scattering-optical-depth-multiplied-by-asymmetry-factor, scat_od_g,
+! rather than the asymmetry factor.
+elemental subroutine delta_eddington_extensive(od, scat_od, scat_od_g)
+
+  !$acc routine seq
+
+  use parkind1, only : jprb
+
+  ! total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  real(jprb), intent(inout) :: od, scat_od, scat_od_g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+
+  if (scat_od > 0.0_jprb) then
+    g = scat_od_g / scat_od
+  else
+    g = 0.0
+  end if
+
+  f         = g*g
+  od        = od - scat_od * f
+  scat_od   = scat_od * (1.0_jprb - f)
+  scat_od_g = scat_od * g / (1.0_jprb + g)
+  
+end subroutine delta_eddington_extensive
+
+
+!---------------------------------------------------------------------
+! array version of delta_eddington_extensive, more likely to vectorize
+ subroutine delta_eddington_extensive_vec(ng, od, scat_od, scat_od_g)
+
+  use parkind1, only : jprb
+
+  ! total optical depth, scattering optical depth and asymmetry factor
+  ! multiplied by the scattering optical depth
+  integer,                   intent(in)    :: ng
+  real(jprb), dimension(ng), intent(inout) :: od, scat_od, scat_od_g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f, g
+  integer :: j
+
+  do j = 1,ng
+    g            = scat_od_g(j) / max(scat_od(j), 1.0e-24)
+    f            = g*g
+    od(j)        = od(j) - scat_od(j) * f
+    scat_od(j)   = scat_od(j) * (1.0_jprb - f)
+    scat_od_g(j) = scat_od(j) * g / (1.0_jprb + g)
+  end do
+  
+end subroutine delta_eddington_extensive_vec
+
+
+!---------------------------------------------------------------------
+! perform in-place delta-eddington scaling of the phase function,
+! using the scattering optical depth rather than the single scattering
+! albedo
+elemental subroutine delta_eddington_scat_od(od, scat_od, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, scattering optical depth and asymmetry factor
+  real(jprb), intent(inout) :: od, scat_od, g
+
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+
+  !$acc routine seq
+
+  f       = g*g
+  od      = od - scat_od * f
+  scat_od = scat_od * (1.0_jprb - f)
+  g       = g / (1.0_jprb + g)
+
+end subroutine delta_eddington_scat_od
+
+
+!---------------------------------------------------------------------
+! revert delta-eddington-scaled quantities in-place, back to their
+! original state
+elemental subroutine revert_delta_eddington(od, ssa, g)
+
+  use parkind1, only : jprb
+  
+  ! total optical depth, single scattering albedo and asymmetry
+  ! factor
+  real(jprb), intent(inout) :: od, ssa, g
+  
+  ! fraction of the phase function deemed to be in the forward lobe
+  ! and therefore treated as if it is not scattered at all
+  real(jprb) :: f
+  
+  g   = g / (1.0_jprb - g)
+  f   = g*g
+  ssa = ssa / (1.0_jprb - f + f*ssa);
+  od  = od / (1.0_jprb - ssa*f)
+  
+end subroutine revert_delta_eddington
+! # 31 "radiation/radiation_homogeneous_sw.f90" 2
 
   !---------------------------------------------------------------------
-  ! Shortwave homogeneous solver, in which clouds are assumed to fill
+  ! shortwave homogeneous solver, in which clouds are assumed to fill
   ! the gridbox horizontally
   subroutine solver_homogeneous_sw(nlev,istartcol,iendcol, &
        &  config, single_level, cloud, & 
@@ -48,77 +201,77 @@ contains
          &                               indexed_sum_profile, add_indexed_sum_profile
     use radiation_two_stream, only     : calc_two_stream_gammas_sw, &
          &                       calc_reflectance_transmittance_sw
-    use radiation_constants, only      : Pi, GasConstantDryAir, &
-         &                               AccelDueToGravity
+    use radiation_constants, only      : pi, gasconstantdryair, &
+         &                               accelduetogravity
     use radiation_adding_ica_sw, only  : adding_ica_sw
 
     implicit none
 
-    ! Inputs
+    ! inputs
     integer, intent(in) :: nlev               ! number of model levels
     integer, intent(in) :: istartcol, iendcol ! range of columns to process
     type(config_type),        intent(in) :: config
     type(single_level_type),  intent(in) :: single_level
     type(cloud_type),         intent(in) :: cloud
 
-    ! Gas and aerosol optical depth, single-scattering albedo and
+    ! gas and aerosol optical depth, single-scattering albedo and
     ! asymmetry factor at each shortwave g-point
     real(jprb), intent(in), dimension(config%n_g_sw, nlev, istartcol:iendcol) :: &
          &  od, ssa, g
 
-    ! Cloud and precipitation optical depth, single-scattering albedo and
+    ! cloud and precipitation optical depth, single-scattering albedo and
     ! asymmetry factor in each shortwave band
     real(jprb), intent(in), dimension(config%n_bands_sw,nlev,istartcol:iendcol)   :: &
          &  od_cloud, ssa_cloud, g_cloud
 
-    ! Direct and diffuse surface albedos, and the incoming shortwave
+    ! direct and diffuse surface albedos, and the incoming shortwave
     ! flux into a plane perpendicular to the incoming radiation at
     ! top-of-atmosphere in each of the shortwave g points
     real(jprb), intent(in), dimension(config%n_g_sw,istartcol:iendcol) :: &
          &  albedo_direct, albedo_diffuse, incoming_sw
 
-    ! Output
+    ! output
     type(flux_type), intent(inout):: flux
 
-    ! Local variables
+    ! local variables
 
-    ! Cosine of solar zenith angle
+    ! cosine of solar zenith angle
     real(jprb)                                 :: cos_sza
 
-    ! Diffuse reflectance and transmittance for each layer
+    ! diffuse reflectance and transmittance for each layer
     real(jprb), dimension(config%n_g_sw, nlev) :: reflectance, transmittance
 
-    ! Fraction of direct beam scattered by a layer into the upwelling
+    ! fraction of direct beam scattered by a layer into the upwelling
     ! or downwelling diffuse streams
     real(jprb), dimension(config%n_g_sw, nlev) :: ref_dir, trans_dir_diff
 
-    ! Transmittance for the direct beam in clear and all skies
+    ! transmittance for the direct beam in clear and all skies
     real(jprb), dimension(config%n_g_sw, nlev) :: trans_dir_dir
 
-    ! Fluxes per g point
+    ! fluxes per g point
     real(jprb), dimension(config%n_g_sw, nlev+1) :: flux_up, flux_dn_diffuse, flux_dn_direct
 
-    ! Combined gas+aerosol+cloud optical depth, single scattering
+    ! combined gas+aerosol+cloud optical depth, single scattering
     ! albedo and asymmetry factor
     real(jprb), dimension(config%n_g_sw) :: od_total, ssa_total, g_total
 
-    ! Two-stream coefficients
+    ! two-stream coefficients
     real(jprb), dimension(config%n_g_sw) :: gamma1, gamma2, gamma3
 
-    ! Optical depth of cloud in g-point space
+    ! optical depth of cloud in g-point space
     real(jprb), dimension(config%n_g_sw) :: od_cloud_g
 
-    ! Temporary working array
+    ! temporary working array
     real(jprb), dimension(config%n_g_sw,nlev+1) :: tmp_work_albedo, tmp_work_source
     real(jprb), dimension(config%n_g_sw,nlev) :: tmp_work_inv_denominator
 
-    ! Is there any cloud in the profile?
+    ! is there any cloud in the profile?
     logical :: is_cloudy_profile
 
-    ! Number of g points
+    ! number of g points
     integer :: ng
 
-    ! Loop indices for level and column
+    ! loop indices for level and column
     integer :: jlev, jcol
 
     real(jphook) :: hook_handle
@@ -127,14 +280,14 @@ contains
 
     ng = config%n_g_sw
 
-    ! Loop through columns
+    ! loop through columns
     do jcol = istartcol,iendcol
-      ! Only perform calculation if sun above the horizon
+      ! only perform calculation if sun above the horizon
       if (single_level%cos_sza(jcol) > 0.0_jprb) then
 
         cos_sza = single_level%cos_sza(jcol)
         
-        ! Is there any cloud in the profile?
+        ! is there any cloud in the profile?
         is_cloudy_profile = .false.
         do jlev = 1,nlev
           if (cloud%fraction(jcol,jlev) >= config%cloud_fraction_threshold) then
@@ -143,13 +296,13 @@ contains
           end if
         end do
 
-        ! If clear-sky fluxes need to be computed then we first
+        ! if clear-sky fluxes need to be computed then we first
         ! compute the reflectance and transmittance of all layers,
-        ! neglecting clouds. If clear-sky fluxes are not required then
+        ! neglecting clouds. if clear-sky fluxes are not required then
         ! we only do the clear-sky layers since these will be needed
         ! when we come to do the total-sky fluxes.
         if (.not. config%do_sw_delta_scaling_with_gases) then
-          ! Delta-Eddington scaling has already been performed to the
+          ! delta-eddington scaling has already been performed to the
           ! aerosol part of od, ssa and g
           do jlev = 1,nlev
             if (config%do_clear .or. cloud%fraction(jcol,jlev) &
@@ -168,7 +321,7 @@ contains
             end if
           end do
         else
-          ! Apply delta-Eddington scaling to the aerosol-gas mixture
+          ! apply delta-eddington scaling to the aerosol-gas mixture
           do jlev = 1,nlev
             if (config%do_clear .or. cloud%fraction(jcol,jlev) &
                  &                 < config%cloud_fraction_threshold) then
@@ -190,7 +343,7 @@ contains
         end if
           
         if (config%do_clear) then
-          ! Use adding method to compute fluxes
+          ! use adding method to compute fluxes
           call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
                &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
                &  cos_sza, reflectance, transmittance, ref_dir, trans_dir_diff, &
@@ -199,7 +352,7 @@ contains
                &  source=tmp_work_source, &
                &  inv_denominator=tmp_work_inv_denominator)
         
-          ! Sum over g-points to compute and save clear-sky broadband
+          ! sum over g-points to compute and save clear-sky broadband
           ! fluxes
           flux%sw_up_clear(jcol,:) = sum(flux_up,1)
           if (allocated(flux%sw_dn_direct_clear)) then
@@ -211,11 +364,11 @@ contains
             flux%sw_dn_clear(jcol,:) = sum(flux_dn_diffuse,1) &
                  &  + sum(flux_dn_direct,1)
           end if
-          ! Store spectral downwelling fluxes at surface
+          ! store spectral downwelling fluxes at surface
           flux%sw_dn_diffuse_surf_clear_g(:,jcol) = flux_dn_diffuse(:,nlev+1)
           flux%sw_dn_direct_surf_clear_g(:,jcol)  = flux_dn_direct(:,nlev+1)
 
-          ! Save the spectral fluxes if required
+          ! save the spectral fluxes if required
           if (config%do_save_spectral_flux) then
             call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_sw, &
                  &                   flux%sw_up_clear_band(:,jcol,:))
@@ -230,15 +383,15 @@ contains
                  &                       flux%sw_dn_clear_band(:,jcol,:))
           end if
 
-        end if ! Do clear-sky calculations
+        end if ! do clear-sky calculations
   
-        ! Now the total-sky calculation.  If this is a clear profile
+        ! now the total-sky calculation.  if this is a clear profile
         ! and clear-sky fluxes have been calculated then we can simply
         ! copy over the clear-sky fluxes, otherwise we need to compute
         ! fluxes now.
         if (is_cloudy_profile .or. .not. config%do_clear) then
           do jlev = 1,nlev
-            ! Compute combined gas+aerosol+cloud optical properties;
+            ! compute combined gas+aerosol+cloud optical properties;
             ! note that for clear layers, the reflectance and
             ! transmittance have already been calculated
             if (cloud%fraction(jcol,jlev) >= config%cloud_fraction_threshold) then
@@ -260,13 +413,13 @@ contains
                      &     / (ssa_total*od_total)
               end where
 
-              ! Apply delta-Eddington scaling to the cloud-aerosol-gas
+              ! apply delta-eddington scaling to the cloud-aerosol-gas
               ! mixture
               if (config%do_sw_delta_scaling_with_gases) then
                 call delta_eddington(od_total, ssa_total, g_total)
               end if
 
-              ! Compute cloudy-sky reflectance, transmittance etc at
+              ! compute cloudy-sky reflectance, transmittance etc at
               ! each model level
               call calc_two_stream_gammas_sw(ng, &
                    &  cos_sza, ssa_total, g_total, &
@@ -281,7 +434,7 @@ contains
             end if
           end do
             
-          ! Use adding method to compute fluxes for an overcast sky
+          ! use adding method to compute fluxes for an overcast sky
           call adding_ica_sw(ng, nlev, incoming_sw(:,jcol), &
                &  albedo_diffuse(:,jcol), albedo_direct(:,jcol), &
                &  cos_sza, reflectance, transmittance, ref_dir, trans_dir_diff, &
@@ -290,7 +443,7 @@ contains
                &  source=tmp_work_source, &
                &  inv_denominator=tmp_work_inv_denominator)
 
-          ! Store overcast broadband fluxes
+          ! store overcast broadband fluxes
           flux%sw_up(jcol,:) = sum(flux_up,1)
           if (allocated(flux%sw_dn_direct)) then
             flux%sw_dn_direct(jcol,:) = sum(flux_dn_direct,1)
@@ -301,11 +454,11 @@ contains
                  &  + sum(flux_dn_direct,1)
           end if
 
-          ! Likewise for surface spectral fluxes
+          ! likewise for surface spectral fluxes
           flux%sw_dn_diffuse_surf_g(:,jcol) = flux_dn_diffuse(:,nlev+1)
           flux%sw_dn_direct_surf_g(:,jcol)  = flux_dn_direct(:,nlev+1)
 
-          ! Save the spectral fluxes if required
+          ! save the spectral fluxes if required
           if (config%do_save_spectral_flux) then
             call indexed_sum_profile(flux_up, config%i_spec_from_reordered_g_sw, &
                  &                   flux%sw_up_band(:,jcol,:))
@@ -321,7 +474,7 @@ contains
           end if
 
         else
-          ! No cloud in profile and clear-sky fluxes already
+          ! no cloud in profile and clear-sky fluxes already
           ! calculated: copy them over
           flux%sw_up(jcol,:) = flux%sw_up_clear(jcol,:)
           flux%sw_dn(jcol,:) = flux%sw_dn_clear(jcol,:)
@@ -339,10 +492,10 @@ contains
             end if
           end if
 
-        end if ! Cloud is present in profile
+        end if ! cloud is present in profile
 
       else
-        ! Set fluxes to zero if sun is below the horizon
+        ! set fluxes to zero if sun is below the horizon
         flux%sw_up(jcol,:) = 0.0_jprb
         flux%sw_dn(jcol,:) = 0.0_jprb
         if (allocated(flux%sw_dn_direct)) then
@@ -384,3 +537,47 @@ contains
   end subroutine solver_homogeneous_sw
 
 end module radiation_homogeneous_sw
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

@@ -1,34 +1,83 @@
-! (C) Copyright 2014- ECMWF.
+! # 1 "ifsaux/abor1.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsaux/abor1.f90"
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-SUBROUTINE ABOR1(CDTEXT)
+subroutine abor1(cdtext)
 
-USE PARKIND1,      ONLY : JPIM, JPRB
-USE YOMLUN_IFSAUX, ONLY : NULOUT, NULERR
+use parkind1,      only : jpim, jprb
+use yomlun_ifsaux, only : nulout, nulerr
 
-IMPLICIT NONE
+implicit none
 
-CHARACTER(LEN=*), INTENT(IN) :: CDTEXT
+character(len=*), intent(in) :: cdtext
 
-IF (NULOUT >= 0) WRITE(NULOUT,'(1X,A)') CDTEXT
-IF (NULERR >= 0) WRITE(NULERR,'(1X,A,A)') 'ABORT! ', CDTEXT
+if (nulout >= 0) write(nulout,'(1x,a)') cdtext
+if (nulerr >= 0) write(nulerr,'(1x,a,a)') 'abort! ', cdtext
 
-IF (NULOUT >= 0) THEN
-  ! FLUSH not understood by NAG compiler
-  !CALL FLUSH(NULOUT)
-  IF (NULOUT /= 0 .and. NULOUT /= 6) CLOSE(NULOUT)
-ENDIF
+if (nulout >= 0) then
+  ! flush not understood by nag compiler
+  !call flush(nulout)
+  if (nulout /= 0 .and. nulout /= 6) close(nulout)
+endif
 
-#ifdef __PGI
-      stop 1
-#else
+
+
+
       error stop 1
-#endif
 
-END SUBROUTINE ABOR1
+
+end subroutine abor1
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

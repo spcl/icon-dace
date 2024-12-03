@@ -1,209 +1,265 @@
-SUBROUTINE SRTM_KGB21
+! # 1 "ifsrrtm/srtm_kgb21.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_kgb21.f90"
+subroutine srtm_kgb21
 
-!     Originally by J.Delamere, Atmospheric & Environmental Research.
-!     Revision: 2.4
-!     BAND 21:  6150-7700 cm-1 (low - H2O,CO2; high - H2O,CO2)
-!     Reformatted for F90 by JJMorcrette, ECMWF
-!     R. Elkhatib 12-10-2005 Split for faster and more robust compilation.
-!     G.Mozdzynski March 2011 read constants from files
-!     T. Wilhelmsson and K. Yessad (Oct 2013) Geometry and setup refactoring.
-!      F. Vana  05-Mar-2015  Support for single precision
+!     originally by j.delamere, atmospheric & environmental research.
+!     revision: 2.4
+!     band 21:  6150-7700 cm-1 (low - h2o,co2; high - h2o,co2)
+!     reformatted for f90 by jjmorcrette, ecmwf
+!     r. elkhatib 12-10-2005 split for faster and more robust compilation.
+!     g.mozdzynski march 2011 read constants from files
+!     t. wilhelmsson and k. yessad (oct 2013) geometry and setup refactoring.
+!      f. vana  05-mar-2015  support for single precision
 !     ------------------------------------------------------------------
 
-USE PARKIND1  , ONLY : JPRB
-USE ecradhook   , ONLY : LHOOK, DR_HOOK, JPHOOK
-USE YOMLUN    , ONLY : NULRAD
-USE YOMMP0    , ONLY : NPROC, MYPROC
-USE MPL_MODULE, ONLY : MPL_BROADCAST
-USE YOMTAG    , ONLY : MTAGRAD
-USE YOESRTA21 , ONLY : KA, KB, SELFREF, FORREF, SFLUXREF, RAYL, STRRAT, LAYREFFR  ,&
-  &  KA_D, KB_D
-
-!     ------------------------------------------------------------------
-
-IMPLICIT NONE
-
-! KURUCZ
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
-
-#include "abor1.intfb.h"
-
-IF (LHOOK) CALL DR_HOOK('SRTM_KGB21',0,ZHOOK_HANDLE)
-
-IF( MYPROC==1 )THEN
-  READ(NULRAD,ERR=1001) KA_D,KB_D
-  KA = REAL(KA_D,JPRB)
-  KB = REAL(KB_D,JPRB)
-ENDIF
-IF( NPROC>1 )THEN
-  CALL MPL_BROADCAST (KA,MTAGRAD,1,CDSTRING='SRTM_KGB21:')
-  CALL MPL_BROADCAST (KB,MTAGRAD,1,CDSTRING='SRTM_KGB21:')
-ENDIF
-
-SFLUXREF(:, 1) = (/ &
- & 16.1643_JPRB , 15.5806_JPRB, 14.7254_JPRB    , 13.5541_JPRB    , &
- & 11.9519_JPRB ,10.44410_JPRB, 8.37884_JPRB    , 6.26384_JPRB    , &
- & 4.28435_JPRB ,0.465228_JPRB, 0.385095_JPRB   ,0.304226_JPRB    , &
- & 0.222479_JPRB,0.143286_JPRB, 5.58046E-02_JPRB, 7.84856E-03_JPRB /)  
-SFLUXREF(:, 2) = (/ &
- & 15.6451_JPRB , 15.3170_JPRB, 14.6987_JPRB    , 13.7350_JPRB    , &
- & 12.2267_JPRB ,10.51646_JPRB, 8.47150_JPRB    , 6.38873_JPRB    , &
- & 4.33536_JPRB ,0.470610_JPRB,0.389426_JPRB    ,0.306461_JPRB    , &
- & 0.223537_JPRB,0.143273_JPRB, 5.58179E-02_JPRB, 7.84856E-03_JPRB /)  
-SFLUXREF(:, 3) = (/ &
- & 15.6092_JPRB , 15.3293_JPRB, 14.6881_JPRB    , 13.6693_JPRB    , &
- & 12.2342_JPRB ,10.52010_JPRB, 8.49442_JPRB    , 6.42138_JPRB    , &
- & 4.35865_JPRB ,0.473349_JPRB,0.391349_JPRB    ,0.308861_JPRB    , &
- & 0.224666_JPRB,0.144799_JPRB, 5.58176E-02_JPRB, 7.84881E-03_JPRB /)  
-SFLUXREF(:, 4) = (/ &
- & 15.5786_JPRB , 15.3422_JPRB, 14.6894_JPRB    , 13.6040_JPRB    , &
- & 12.2567_JPRB ,10.49400_JPRB, 8.53521_JPRB    , 6.44427_JPRB    , &
- & 4.37208_JPRB ,0.475709_JPRB,0.392956_JPRB    ,0.309737_JPRB    , &
- & 0.226274_JPRB,0.146483_JPRB, 5.59325E-02_JPRB, 7.84881E-03_JPRB /)  
-SFLUXREF(:, 5) = (/ &
- & 15.5380_JPRB , 15.3826_JPRB, 14.6575_JPRB    , 13.5722_JPRB    , &
- & 12.2646_JPRB ,10.47672_JPRB, 8.57158_JPRB    , 6.46343_JPRB    , &
- & 4.38259_JPRB ,0.477647_JPRB,0.393982_JPRB    ,0.310686_JPRB    , &
- & 0.227620_JPRB,0.148376_JPRB, 5.60398E-02_JPRB, 7.83925E-03_JPRB /)  
-SFLUXREF(:, 6) = (/ &
- & 15.5124_JPRB , 15.3986_JPRB, 14.6240_JPRB    , 13.5535_JPRB    , &
- & 12.2468_JPRB ,10.48891_JPRB, 8.60434_JPRB    , 6.47985_JPRB    , &
- & 4.39448_JPRB ,0.478267_JPRB,0.395618_JPRB    ,0.311043_JPRB    , &
- & 0.230927_JPRB,0.148774_JPRB, 5.61189E-02_JPRB, 7.83925E-03_JPRB /)  
-SFLUXREF(:, 7) = (/ &
- & 15.4910_JPRB , 15.4028_JPRB, 14.5772_JPRB    , 13.5507_JPRB    , &
- & 12.2122_JPRB ,10.52735_JPRB, 8.62650_JPRB    , 6.49644_JPRB    , &
- & 4.41173_JPRB ,0.478627_JPRB,0.396433_JPRB    ,0.314199_JPRB    ,  &
- & 0.233125_JPRB,0.149052_JPRB, 5.62309E-02_JPRB, 7.83925E-03_JPRB /)  
-SFLUXREF(:, 8) = (/ &
- & 15.4562_JPRB , 15.3928_JPRB, 14.5510_JPRB    , 13.5122_JPRB    , &
- & 12.1890_JPRB , 10.5826_JPRB, 8.65842_JPRB    , 6.51558_JPRB    , &
- & 4.42747_JPRB ,0.480669_JPRB,0.400143_JPRB    ,0.318144_JPRB    , &
- & 0.233937_JPRB,0.149119_JPRB, 5.62309E-02_JPRB, 7.83925E-03_JPRB /)  
-SFLUXREF(:, 9) = (/ &
- & 15.0069_JPRB , 15.1479_JPRB, 14.7802_JPRB    , 13.6085_JPRB    , &
- & 12.2793_JPRB , 10.6929_JPRB, 8.72723_JPRB    , 6.57114_JPRB    , &
- & 4.46330_JPRB ,0.486724_JPRB,0.401446_JPRB    ,0.318879_JPRB    , &
- & 0.233959_JPRB,0.149119_JPRB, 5.62309E-02_JPRB, 7.83925E-03_JPRB /)  
-
-!     Rayleigh extinction coefficient at v = 6925 cm-1.
-RAYL = 9.41E-09_JPRB
-
-STRRAT = 0.0045321_JPRB
-
-LAYREFFR = 8
+use parkind1  , only : jprb
+use ecradhook   , only : lhook, dr_hook, jphook
+use yomlun    , only : nulrad
+use yommp0    , only : nproc, myproc
+use mpl_module, only : mpl_broadcast
+use yomtag    , only : mtagrad
+use yoesrta21 , only : ka, kb, selfref, forref, sfluxref, rayl, strrat, layreffr  ,&
+  &  ka_d, kb_d
 
 !     ------------------------------------------------------------------
 
-!     The array KA contains absorption coefs at the 16 chosen g-values 
+implicit none
+
+! kurucz
+real(kind=jphook) :: zhook_handle
+
+
+! # 1 "./include/abor1.intfb.h" 1
+interface
+subroutine abor1(cdtext)
+character(len=*), intent(in) :: cdtext
+end subroutine abor1
+end interface
+! # 30 "ifsrrtm/srtm_kgb21.f90" 2
+
+if (lhook) call dr_hook('srtm_kgb21',0,zhook_handle)
+
+if( myproc==1 )then
+  read(nulrad,err=1001) ka_d,kb_d
+  ka = real(ka_d,jprb)
+  kb = real(kb_d,jprb)
+endif
+if( nproc>1 )then
+  call mpl_broadcast (ka,mtagrad,1,cdstring='srtm_kgb21:')
+  call mpl_broadcast (kb,mtagrad,1,cdstring='srtm_kgb21:')
+endif
+
+sfluxref(:, 1) = (/ &
+ & 16.1643_jprb , 15.5806_jprb, 14.7254_jprb    , 13.5541_jprb    , &
+ & 11.9519_jprb ,10.44410_jprb, 8.37884_jprb    , 6.26384_jprb    , &
+ & 4.28435_jprb ,0.465228_jprb, 0.385095_jprb   ,0.304226_jprb    , &
+ & 0.222479_jprb,0.143286_jprb, 5.58046e-02_jprb, 7.84856e-03_jprb /)  
+sfluxref(:, 2) = (/ &
+ & 15.6451_jprb , 15.3170_jprb, 14.6987_jprb    , 13.7350_jprb    , &
+ & 12.2267_jprb ,10.51646_jprb, 8.47150_jprb    , 6.38873_jprb    , &
+ & 4.33536_jprb ,0.470610_jprb,0.389426_jprb    ,0.306461_jprb    , &
+ & 0.223537_jprb,0.143273_jprb, 5.58179e-02_jprb, 7.84856e-03_jprb /)  
+sfluxref(:, 3) = (/ &
+ & 15.6092_jprb , 15.3293_jprb, 14.6881_jprb    , 13.6693_jprb    , &
+ & 12.2342_jprb ,10.52010_jprb, 8.49442_jprb    , 6.42138_jprb    , &
+ & 4.35865_jprb ,0.473349_jprb,0.391349_jprb    ,0.308861_jprb    , &
+ & 0.224666_jprb,0.144799_jprb, 5.58176e-02_jprb, 7.84881e-03_jprb /)  
+sfluxref(:, 4) = (/ &
+ & 15.5786_jprb , 15.3422_jprb, 14.6894_jprb    , 13.6040_jprb    , &
+ & 12.2567_jprb ,10.49400_jprb, 8.53521_jprb    , 6.44427_jprb    , &
+ & 4.37208_jprb ,0.475709_jprb,0.392956_jprb    ,0.309737_jprb    , &
+ & 0.226274_jprb,0.146483_jprb, 5.59325e-02_jprb, 7.84881e-03_jprb /)  
+sfluxref(:, 5) = (/ &
+ & 15.5380_jprb , 15.3826_jprb, 14.6575_jprb    , 13.5722_jprb    , &
+ & 12.2646_jprb ,10.47672_jprb, 8.57158_jprb    , 6.46343_jprb    , &
+ & 4.38259_jprb ,0.477647_jprb,0.393982_jprb    ,0.310686_jprb    , &
+ & 0.227620_jprb,0.148376_jprb, 5.60398e-02_jprb, 7.83925e-03_jprb /)  
+sfluxref(:, 6) = (/ &
+ & 15.5124_jprb , 15.3986_jprb, 14.6240_jprb    , 13.5535_jprb    , &
+ & 12.2468_jprb ,10.48891_jprb, 8.60434_jprb    , 6.47985_jprb    , &
+ & 4.39448_jprb ,0.478267_jprb,0.395618_jprb    ,0.311043_jprb    , &
+ & 0.230927_jprb,0.148774_jprb, 5.61189e-02_jprb, 7.83925e-03_jprb /)  
+sfluxref(:, 7) = (/ &
+ & 15.4910_jprb , 15.4028_jprb, 14.5772_jprb    , 13.5507_jprb    , &
+ & 12.2122_jprb ,10.52735_jprb, 8.62650_jprb    , 6.49644_jprb    , &
+ & 4.41173_jprb ,0.478627_jprb,0.396433_jprb    ,0.314199_jprb    ,  &
+ & 0.233125_jprb,0.149052_jprb, 5.62309e-02_jprb, 7.83925e-03_jprb /)  
+sfluxref(:, 8) = (/ &
+ & 15.4562_jprb , 15.3928_jprb, 14.5510_jprb    , 13.5122_jprb    , &
+ & 12.1890_jprb , 10.5826_jprb, 8.65842_jprb    , 6.51558_jprb    , &
+ & 4.42747_jprb ,0.480669_jprb,0.400143_jprb    ,0.318144_jprb    , &
+ & 0.233937_jprb,0.149119_jprb, 5.62309e-02_jprb, 7.83925e-03_jprb /)  
+sfluxref(:, 9) = (/ &
+ & 15.0069_jprb , 15.1479_jprb, 14.7802_jprb    , 13.6085_jprb    , &
+ & 12.2793_jprb , 10.6929_jprb, 8.72723_jprb    , 6.57114_jprb    , &
+ & 4.46330_jprb ,0.486724_jprb,0.401446_jprb    ,0.318879_jprb    , &
+ & 0.233959_jprb,0.149119_jprb, 5.62309e-02_jprb, 7.83925e-03_jprb /)  
+
+!     rayleigh extinction coefficient at v = 6925 cm-1.
+rayl = 9.41e-09_jprb
+
+strrat = 0.0045321_jprb
+
+layreffr = 8
+
+!     ------------------------------------------------------------------
+
+!     the array ka contains absorption coefs at the 16 chosen g-values 
 !     for a range of pressure levels> ~100mb, temperatures, and binary
-!     species parameters (see taumol.f for definition).  The first 
-!     index in the array, JS, runs from 1 to 9, and corresponds to 
-!     different values of the binary species parameter.  For instance, 
-!     JS=1 refers to dry air, JS = 2 corresponds to the paramter value 1/8, 
-!     JS = 3 corresponds to the parameter value 2/8, etc.  The second index
-!     in the array, JT, which runs from 1 to 5, corresponds to different
-!     temperatures.  More specifically, JT = 3 means that the data are for
-!     the reference temperature TREF for this  pressure level, JT = 2 refers
-!     to TREF-15, JT = 1 is for TREF-30, JT = 4 is for TREF+15, and JT = 5
-!     is for TREF+30.  The third index, JP, runs from 1 to 13 and refers
-!     to the JPth reference pressure level (see taumol.f for these levels
-!     in mb).  The fourth index, IG, goes from 1 to 16, and indicates
+!     species parameters (see taumol.f for definition).  the first 
+!     index in the array, js, runs from 1 to 9, and corresponds to 
+!     different values of the binary species parameter.  for instance, 
+!     js=1 refers to dry air, js = 2 corresponds to the paramter value 1/8, 
+!     js = 3 corresponds to the parameter value 2/8, etc.  the second index
+!     in the array, jt, which runs from 1 to 5, corresponds to different
+!     temperatures.  more specifically, jt = 3 means that the data are for
+!     the reference temperature tref for this  pressure level, jt = 2 refers
+!     to tref-15, jt = 1 is for tref-30, jt = 4 is for tref+15, and jt = 5
+!     is for tref+30.  the third index, jp, runs from 1 to 13 and refers
+!     to the jpth reference pressure level (see taumol.f for these levels
+!     in mb).  the fourth index, ig, goes from 1 to 16, and indicates
 !     which g-interval the absorption coefficients are for.
 !     -----------------------------------------------------------------
 
 !     -----------------------------------------------------------------
-!     The array KB contains absorption coefs at the 16 chosen g-values 
-!     for a range of pressure levels < ~100mb and temperatures. The first 
-!     index in the array, JT, which runs from 1 to 5, corresponds to 
-!     different temperatures.  More specifically, JT = 3 means that the 
-!     data are for the reference temperature TREF for this pressure 
-!     level, JT = 2 refers to the temperature TREF-15, JT = 1 is for
-!     TREF-30, JT = 4 is for TREF+15, and JT = 5 is for TREF+30.  
-!     The second index, JP, runs from 13 to 59 and refers to the JPth
+!     the array kb contains absorption coefs at the 16 chosen g-values 
+!     for a range of pressure levels < ~100mb and temperatures. the first 
+!     index in the array, jt, which runs from 1 to 5, corresponds to 
+!     different temperatures.  more specifically, jt = 3 means that the 
+!     data are for the reference temperature tref for this pressure 
+!     level, jt = 2 refers to the temperature tref-15, jt = 1 is for
+!     tref-30, jt = 4 is for tref+15, and jt = 5 is for tref+30.  
+!     the second index, jp, runs from 13 to 59 and refers to the jpth
 !     reference pressure level (see taumol.f for the value of these
-!     pressure levels in mb).  The third index, IG, goes from 1 to 16,
+!     pressure levels in mb).  the third index, ig, goes from 1 to 16,
 !     and tells us which g-interval the absorption coefficients are for.
 !     -----------------------------------------------------------------
 
 
-FORREF(:, 1) = (/ 0.110008E-06_JPRB, 0.630912E-06_JPRB, 0.363159E-05_JPRB, 0.616892E-05_JPRB /)
-FORREF(:, 2) = (/ 0.429709E-05_JPRB, 0.789174E-05_JPRB, 0.217416E-04_JPRB, 0.639393E-04_JPRB /)
-FORREF(:, 3) = (/ 0.436283E-04_JPRB, 0.526247E-04_JPRB, 0.116341E-03_JPRB, 0.205616E-03_JPRB /)
-FORREF(:, 4) = (/ 0.215627E-03_JPRB, 0.234522E-03_JPRB, 0.280497E-03_JPRB, 0.838668E-03_JPRB /)
-FORREF(:, 5) = (/ 0.529283E-03_JPRB, 0.620848E-03_JPRB, 0.935561E-03_JPRB, 0.171252E-02_JPRB /)
-FORREF(:, 6) = (/ 0.212267E-02_JPRB, 0.218564E-02_JPRB, 0.222227E-02_JPRB, 0.199650E-02_JPRB /)
-FORREF(:, 7) = (/ 0.291120E-02_JPRB, 0.281168E-02_JPRB, 0.259543E-02_JPRB, 0.210159E-02_JPRB /)
-FORREF(:, 8) = (/ 0.316249E-02_JPRB, 0.310695E-02_JPRB, 0.279501E-02_JPRB, 0.208076E-02_JPRB /)
-FORREF(:, 9) = (/ 0.354993E-02_JPRB, 0.336989E-02_JPRB, 0.298930E-02_JPRB, 0.180424E-02_JPRB /)
-FORREF(:,10) = (/ 0.397729E-02_JPRB, 0.367409E-02_JPRB, 0.328982E-02_JPRB, 0.177807E-02_JPRB /)
-FORREF(:,11) = (/ 0.408831E-02_JPRB, 0.398792E-02_JPRB, 0.352727E-02_JPRB, 0.192470E-02_JPRB /)
-FORREF(:,12) = (/ 0.433926E-02_JPRB, 0.420667E-02_JPRB, 0.383894E-02_JPRB, 0.220836E-02_JPRB /)
-FORREF(:,13) = (/ 0.436397E-02_JPRB, 0.433769E-02_JPRB, 0.425752E-02_JPRB, 0.237343E-02_JPRB /)
-FORREF(:,14) = (/ 0.440525E-02_JPRB, 0.449018E-02_JPRB, 0.451881E-02_JPRB, 0.269169E-02_JPRB /)
-FORREF(:,15) = (/ 0.491350E-02_JPRB, 0.481760E-02_JPRB, 0.475799E-02_JPRB, 0.362666E-02_JPRB /)
-FORREF(:,16) = (/ 0.561641E-02_JPRB, 0.524553E-02_JPRB, 0.512473E-02_JPRB, 0.493802E-02_JPRB /)
+forref(:, 1) = (/ 0.110008e-06_jprb, 0.630912e-06_jprb, 0.363159e-05_jprb, 0.616892e-05_jprb /)
+forref(:, 2) = (/ 0.429709e-05_jprb, 0.789174e-05_jprb, 0.217416e-04_jprb, 0.639393e-04_jprb /)
+forref(:, 3) = (/ 0.436283e-04_jprb, 0.526247e-04_jprb, 0.116341e-03_jprb, 0.205616e-03_jprb /)
+forref(:, 4) = (/ 0.215627e-03_jprb, 0.234522e-03_jprb, 0.280497e-03_jprb, 0.838668e-03_jprb /)
+forref(:, 5) = (/ 0.529283e-03_jprb, 0.620848e-03_jprb, 0.935561e-03_jprb, 0.171252e-02_jprb /)
+forref(:, 6) = (/ 0.212267e-02_jprb, 0.218564e-02_jprb, 0.222227e-02_jprb, 0.199650e-02_jprb /)
+forref(:, 7) = (/ 0.291120e-02_jprb, 0.281168e-02_jprb, 0.259543e-02_jprb, 0.210159e-02_jprb /)
+forref(:, 8) = (/ 0.316249e-02_jprb, 0.310695e-02_jprb, 0.279501e-02_jprb, 0.208076e-02_jprb /)
+forref(:, 9) = (/ 0.354993e-02_jprb, 0.336989e-02_jprb, 0.298930e-02_jprb, 0.180424e-02_jprb /)
+forref(:,10) = (/ 0.397729e-02_jprb, 0.367409e-02_jprb, 0.328982e-02_jprb, 0.177807e-02_jprb /)
+forref(:,11) = (/ 0.408831e-02_jprb, 0.398792e-02_jprb, 0.352727e-02_jprb, 0.192470e-02_jprb /)
+forref(:,12) = (/ 0.433926e-02_jprb, 0.420667e-02_jprb, 0.383894e-02_jprb, 0.220836e-02_jprb /)
+forref(:,13) = (/ 0.436397e-02_jprb, 0.433769e-02_jprb, 0.425752e-02_jprb, 0.237343e-02_jprb /)
+forref(:,14) = (/ 0.440525e-02_jprb, 0.449018e-02_jprb, 0.451881e-02_jprb, 0.269169e-02_jprb /)
+forref(:,15) = (/ 0.491350e-02_jprb, 0.481760e-02_jprb, 0.475799e-02_jprb, 0.362666e-02_jprb /)
+forref(:,16) = (/ 0.561641e-02_jprb, 0.524553e-02_jprb, 0.512473e-02_jprb, 0.493802e-02_jprb /)
 
 !     -----------------------------------------------------------------
-!     The array SELFREF contains the coefficient of the water vapor
-!     self-continuum (including the energy term).  The first index
-!     refers to temperature in 7.2 degree increments.  For instance,
-!     JT = 1 refers to a temperature of 245.6, JT = 2 refers to 252.8,
-!     etc.  The second index runs over the g-channel (1 to 16).
+!     the array selfref contains the coefficient of the water vapor
+!     self-continuum (including the energy term).  the first index
+!     refers to temperature in 7.2 degree increments.  for instance,
+!     jt = 1 refers to a temperature of 245.6, jt = 2 refers to 252.8,
+!     etc.  the second index runs over the g-channel (1 to 16).
 
-SELFREF(:, 1) = (/ &
- & 0.115887E-03_JPRB, 0.926537E-04_JPRB, 0.740783E-04_JPRB, 0.592270E-04_JPRB, 0.473530E-04_JPRB, &
- & 0.378596E-04_JPRB, 0.302694E-04_JPRB, 0.242010E-04_JPRB, 0.193491E-04_JPRB, 0.154700E-04_JPRB /)  
-SELFREF(:, 2) = (/ &
- & 0.459557E-03_JPRB, 0.381962E-03_JPRB, 0.317469E-03_JPRB, 0.263866E-03_JPRB, 0.219313E-03_JPRB, &
- & 0.182283E-03_JPRB, 0.151505E-03_JPRB, 0.125924E-03_JPRB, 0.104662E-03_JPRB, 0.869904E-04_JPRB /)  
-SELFREF(:, 3) = (/ &
- & 0.166821E-02_JPRB, 0.151103E-02_JPRB, 0.136866E-02_JPRB, 0.123970E-02_JPRB, 0.112290E-02_JPRB, &
- & 0.101710E-02_JPRB, 0.921266E-03_JPRB, 0.834463E-03_JPRB, 0.755839E-03_JPRB, 0.684623E-03_JPRB /)  
-SELFREF(:, 4) = (/ &
- & 0.460175E-02_JPRB, 0.421372E-02_JPRB, 0.385842E-02_JPRB, 0.353307E-02_JPRB, 0.323516E-02_JPRB, &
- & 0.296236E-02_JPRB, 0.271257E-02_JPRB, 0.248385E-02_JPRB, 0.227440E-02_JPRB, 0.208262E-02_JPRB /)  
-SELFREF(:, 5) = (/ &
- & 0.101589E-01_JPRB, 0.924742E-02_JPRB, 0.841772E-02_JPRB, 0.766247E-02_JPRB, 0.697497E-02_JPRB, &
- & 0.634917E-02_JPRB, 0.577951E-02_JPRB, 0.526096E-02_JPRB, 0.478893E-02_JPRB, 0.435926E-02_JPRB /)  
-SELFREF(:, 6) = (/ &
- & 0.328043E-01_JPRB, 0.300853E-01_JPRB, 0.275917E-01_JPRB, 0.253048E-01_JPRB, 0.232075E-01_JPRB, &
- & 0.212839E-01_JPRB, 0.195198E-01_JPRB, 0.179020E-01_JPRB, 0.164182E-01_JPRB, 0.150574E-01_JPRB /)  
-SELFREF(:, 7) = (/ &
- & 0.405936E-01_JPRB, 0.376032E-01_JPRB, 0.348331E-01_JPRB, 0.322671E-01_JPRB, 0.298901E-01_JPRB, &
- & 0.276883E-01_JPRB, 0.256486E-01_JPRB, 0.237591E-01_JPRB, 0.220089E-01_JPRB, 0.203876E-01_JPRB /)  
-SELFREF(:, 8) = (/ &
- & 0.448362E-01_JPRB, 0.413811E-01_JPRB, 0.381923E-01_JPRB, 0.352492E-01_JPRB, 0.325329E-01_JPRB, &
- & 0.300259E-01_JPRB, 0.277121E-01_JPRB, 0.255766E-01_JPRB, 0.236056E-01_JPRB, 0.217866E-01_JPRB /)  
-SELFREF(:, 9) = (/ &
- & 0.479741E-01_JPRB, 0.445389E-01_JPRB, 0.413497E-01_JPRB, 0.383889E-01_JPRB, 0.356400E-01_JPRB, &
- & 0.330880E-01_JPRB, 0.307188E-01_JPRB, 0.285191E-01_JPRB, 0.264770E-01_JPRB, 0.245812E-01_JPRB /)  
-SELFREF(:,10) = (/ &
- & 0.519308E-01_JPRB, 0.484130E-01_JPRB, 0.451335E-01_JPRB, 0.420761E-01_JPRB, 0.392259E-01_JPRB, &
- & 0.365687E-01_JPRB, 0.340916E-01_JPRB, 0.317822E-01_JPRB, 0.296293E-01_JPRB, 0.276222E-01_JPRB /)  
-SELFREF(:,11) = (/ &
- & 0.572039E-01_JPRB, 0.527780E-01_JPRB, 0.486945E-01_JPRB, 0.449270E-01_JPRB, 0.414510E-01_JPRB, &
- & 0.382439E-01_JPRB, 0.352849E-01_JPRB, 0.325549E-01_JPRB, 0.300361E-01_JPRB, 0.277122E-01_JPRB /)  
-SELFREF(:,12) = (/ &
- & 0.601046E-01_JPRB, 0.554411E-01_JPRB, 0.511395E-01_JPRB, 0.471716E-01_JPRB, 0.435116E-01_JPRB, &
- & 0.401356E-01_JPRB, 0.370215E-01_JPRB, 0.341490E-01_JPRB, 0.314994E-01_JPRB, 0.290554E-01_JPRB /)  
-SELFREF(:,13) = (/ &
- & 0.616595E-01_JPRB, 0.567145E-01_JPRB, 0.521662E-01_JPRB, 0.479826E-01_JPRB, 0.441346E-01_JPRB, &
- & 0.405951E-01_JPRB, 0.373395E-01_JPRB, 0.343450E-01_JPRB, 0.315906E-01_JPRB, 0.290571E-01_JPRB /)  
-SELFREF(:,14) = (/ &
- & 0.647916E-01_JPRB, 0.592493E-01_JPRB, 0.541811E-01_JPRB, 0.495465E-01_JPRB, 0.453083E-01_JPRB, &
- & 0.414326E-01_JPRB, 0.378885E-01_JPRB, 0.346475E-01_JPRB, 0.316837E-01_JPRB, 0.289735E-01_JPRB /)  
-SELFREF(:,15) = (/ &
- & 0.694231E-01_JPRB, 0.637703E-01_JPRB, 0.585777E-01_JPRB, 0.538079E-01_JPRB, 0.494265E-01_JPRB, &
- & 0.454019E-01_JPRB, 0.417050E-01_JPRB, 0.383091E-01_JPRB, 0.351897E-01_JPRB, 0.323244E-01_JPRB /)  
-SELFREF(:,16) = (/ &
- & 0.761764E-01_JPRB, 0.701815E-01_JPRB, 0.646584E-01_JPRB, 0.595700E-01_JPRB, 0.548820E-01_JPRB, &
- & 0.505629E-01_JPRB, 0.465838E-01_JPRB, 0.429178E-01_JPRB, 0.395403E-01_JPRB, 0.364286E-01_JPRB /)  
+selfref(:, 1) = (/ &
+ & 0.115887e-03_jprb, 0.926537e-04_jprb, 0.740783e-04_jprb, 0.592270e-04_jprb, 0.473530e-04_jprb, &
+ & 0.378596e-04_jprb, 0.302694e-04_jprb, 0.242010e-04_jprb, 0.193491e-04_jprb, 0.154700e-04_jprb /)  
+selfref(:, 2) = (/ &
+ & 0.459557e-03_jprb, 0.381962e-03_jprb, 0.317469e-03_jprb, 0.263866e-03_jprb, 0.219313e-03_jprb, &
+ & 0.182283e-03_jprb, 0.151505e-03_jprb, 0.125924e-03_jprb, 0.104662e-03_jprb, 0.869904e-04_jprb /)  
+selfref(:, 3) = (/ &
+ & 0.166821e-02_jprb, 0.151103e-02_jprb, 0.136866e-02_jprb, 0.123970e-02_jprb, 0.112290e-02_jprb, &
+ & 0.101710e-02_jprb, 0.921266e-03_jprb, 0.834463e-03_jprb, 0.755839e-03_jprb, 0.684623e-03_jprb /)  
+selfref(:, 4) = (/ &
+ & 0.460175e-02_jprb, 0.421372e-02_jprb, 0.385842e-02_jprb, 0.353307e-02_jprb, 0.323516e-02_jprb, &
+ & 0.296236e-02_jprb, 0.271257e-02_jprb, 0.248385e-02_jprb, 0.227440e-02_jprb, 0.208262e-02_jprb /)  
+selfref(:, 5) = (/ &
+ & 0.101589e-01_jprb, 0.924742e-02_jprb, 0.841772e-02_jprb, 0.766247e-02_jprb, 0.697497e-02_jprb, &
+ & 0.634917e-02_jprb, 0.577951e-02_jprb, 0.526096e-02_jprb, 0.478893e-02_jprb, 0.435926e-02_jprb /)  
+selfref(:, 6) = (/ &
+ & 0.328043e-01_jprb, 0.300853e-01_jprb, 0.275917e-01_jprb, 0.253048e-01_jprb, 0.232075e-01_jprb, &
+ & 0.212839e-01_jprb, 0.195198e-01_jprb, 0.179020e-01_jprb, 0.164182e-01_jprb, 0.150574e-01_jprb /)  
+selfref(:, 7) = (/ &
+ & 0.405936e-01_jprb, 0.376032e-01_jprb, 0.348331e-01_jprb, 0.322671e-01_jprb, 0.298901e-01_jprb, &
+ & 0.276883e-01_jprb, 0.256486e-01_jprb, 0.237591e-01_jprb, 0.220089e-01_jprb, 0.203876e-01_jprb /)  
+selfref(:, 8) = (/ &
+ & 0.448362e-01_jprb, 0.413811e-01_jprb, 0.381923e-01_jprb, 0.352492e-01_jprb, 0.325329e-01_jprb, &
+ & 0.300259e-01_jprb, 0.277121e-01_jprb, 0.255766e-01_jprb, 0.236056e-01_jprb, 0.217866e-01_jprb /)  
+selfref(:, 9) = (/ &
+ & 0.479741e-01_jprb, 0.445389e-01_jprb, 0.413497e-01_jprb, 0.383889e-01_jprb, 0.356400e-01_jprb, &
+ & 0.330880e-01_jprb, 0.307188e-01_jprb, 0.285191e-01_jprb, 0.264770e-01_jprb, 0.245812e-01_jprb /)  
+selfref(:,10) = (/ &
+ & 0.519308e-01_jprb, 0.484130e-01_jprb, 0.451335e-01_jprb, 0.420761e-01_jprb, 0.392259e-01_jprb, &
+ & 0.365687e-01_jprb, 0.340916e-01_jprb, 0.317822e-01_jprb, 0.296293e-01_jprb, 0.276222e-01_jprb /)  
+selfref(:,11) = (/ &
+ & 0.572039e-01_jprb, 0.527780e-01_jprb, 0.486945e-01_jprb, 0.449270e-01_jprb, 0.414510e-01_jprb, &
+ & 0.382439e-01_jprb, 0.352849e-01_jprb, 0.325549e-01_jprb, 0.300361e-01_jprb, 0.277122e-01_jprb /)  
+selfref(:,12) = (/ &
+ & 0.601046e-01_jprb, 0.554411e-01_jprb, 0.511395e-01_jprb, 0.471716e-01_jprb, 0.435116e-01_jprb, &
+ & 0.401356e-01_jprb, 0.370215e-01_jprb, 0.341490e-01_jprb, 0.314994e-01_jprb, 0.290554e-01_jprb /)  
+selfref(:,13) = (/ &
+ & 0.616595e-01_jprb, 0.567145e-01_jprb, 0.521662e-01_jprb, 0.479826e-01_jprb, 0.441346e-01_jprb, &
+ & 0.405951e-01_jprb, 0.373395e-01_jprb, 0.343450e-01_jprb, 0.315906e-01_jprb, 0.290571e-01_jprb /)  
+selfref(:,14) = (/ &
+ & 0.647916e-01_jprb, 0.592493e-01_jprb, 0.541811e-01_jprb, 0.495465e-01_jprb, 0.453083e-01_jprb, &
+ & 0.414326e-01_jprb, 0.378885e-01_jprb, 0.346475e-01_jprb, 0.316837e-01_jprb, 0.289735e-01_jprb /)  
+selfref(:,15) = (/ &
+ & 0.694231e-01_jprb, 0.637703e-01_jprb, 0.585777e-01_jprb, 0.538079e-01_jprb, 0.494265e-01_jprb, &
+ & 0.454019e-01_jprb, 0.417050e-01_jprb, 0.383091e-01_jprb, 0.351897e-01_jprb, 0.323244e-01_jprb /)  
+selfref(:,16) = (/ &
+ & 0.761764e-01_jprb, 0.701815e-01_jprb, 0.646584e-01_jprb, 0.595700e-01_jprb, 0.548820e-01_jprb, &
+ & 0.505629e-01_jprb, 0.465838e-01_jprb, 0.429178e-01_jprb, 0.395403e-01_jprb, 0.364286e-01_jprb /)  
 
-IF (LHOOK) CALL DR_HOOK('SRTM_KGB21',1,ZHOOK_HANDLE)
-RETURN
+if (lhook) call dr_hook('srtm_kgb21',1,zhook_handle)
+return
 
-1001 CONTINUE
-CALL ABOR1("SRTM_KGB21:ERROR READING FILE RADSRTM")
+1001 continue
+call abor1("srtm_kgb21:error reading file radsrtm")
 
-END SUBROUTINE SRTM_KGB21
+end subroutine srtm_kgb21
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

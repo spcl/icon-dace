@@ -1,49 +1,98 @@
-MODULE YOERDI
+! # 1 "ifsrrtm/yoerdi.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerdi.f90"
+module yoerdi
 
-USE PARKIND1  ,ONLY : JPRB
+use parkind1  ,only : jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
+save
 
 !     -----------------------------------------------------------------
-!*    ** *YOERDI* - COEFFICIENTS WITHIN RADIATION INTERFACE
+!*    ** *yoerdi* - coefficients within radiation interface
 !     -----------------------------------------------------------------
 
-REAL(KIND=JPRB) :: RRAE
-REAL(KIND=JPRB) :: RSUNDUR
-REAL(KIND=JPRB) :: RCARDI
-REAL(KIND=JPRB) :: RCH4
-REAL(KIND=JPRB) :: RN2O
-REAL(KIND=JPRB) :: RNO2
-REAL(KIND=JPRB) :: RO3
-REAL(KIND=JPRB) :: RCCL4
-REAL(KIND=JPRB) :: RCFC11
-REAL(KIND=JPRB) :: RCFC12
-REAL(KIND=JPRB) :: RCFC22
-REAL(KIND=JPRB) :: REPCLC
-REAL(KIND=JPRB) :: REPH2O
-REAL(KIND=JPRB) :: RCCO2, RCCH4, RCN2O, RCNO2, RCCFC11, RCCFC12, RCCFC22, RCCCL4
-REAL(KIND=JPRB) :: RSOLINC
+real(kind=jprb) :: rrae
+real(kind=jprb) :: rsundur
+real(kind=jprb) :: rcardi
+real(kind=jprb) :: rch4
+real(kind=jprb) :: rn2o
+real(kind=jprb) :: rno2
+real(kind=jprb) :: ro3
+real(kind=jprb) :: rccl4
+real(kind=jprb) :: rcfc11
+real(kind=jprb) :: rcfc12
+real(kind=jprb) :: rcfc22
+real(kind=jprb) :: repclc
+real(kind=jprb) :: reph2o
+real(kind=jprb) :: rcco2, rcch4, rcn2o, rcno2, rccfc11, rccfc12, rccfc22, rcccl4
+real(kind=jprb) :: rsolinc
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     Original  J.-J. MORCRETTE       E.C.M.W.F.      89/07/14
-!     Modified  P. Viterbo    99/03/26    Surface tiling
-!     Modified  P. Viterbo    24/05/2004  surf library
-!     Modified JJMorcrette    2005/01/19  GHG and Solar constant variability
+!     original  j.-j. morcrette       e.c.m.w.f.      89/07/14
+!     modified  p. viterbo    99/03/26    surface tiling
+!     modified  p. viterbo    24/05/2004  surf library
+!     modified jjmorcrette    2005/01/19  ghg and solar constant variability
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : ---------------------------------------------------
-! RRAE   : EFFECT OF EARTH'S CURVATURE ON COSINE SOLAR ZENITH ANGLE
-! RSUNDUR: MINIMUM DIRECT SOLAR FOR COMPUTING SOLAR DURATION
-! RCARDI : SPECIFIC ATMOSPHERIC CONTENT IN CO2
-! RCH4, RN2O, RNO2, RO3, RCFC11, RCFC12 MASS MIXING RATIO OF VARIOUS TRACE GASES
-! RCCH4, RCN2O, ... MASS MIXING RATIO OF VARIOUS TRACE GASES IN CLIMATE MODE
-! REPCLC : SECURITY TO AVOID ZERO OR ONE CLOUD COVERS
-! REPH2O : SECURITY TO AVOID WATER VAPOUR CONTENT IN A LAYER
-!          TO BE MORE THAN THE RESPECTIVE VALUE AT SATURATION.
+! rrae   : effect of earth's curvature on cosine solar zenith angle
+! rsundur: minimum direct solar for computing solar duration
+! rcardi : specific atmospheric content in co2
+! rch4, rn2o, rno2, ro3, rcfc11, rcfc12 mass mixing ratio of various trace gases
+! rcch4, rcn2o, ... mass mixing ratio of various trace gases in climate mode
+! repclc : security to avoid zero or one cloud covers
+! reph2o : security to avoid water vapour content in a layer
+!          to be more than the respective value at saturation.
 !     -----------------------------------------------------------------
-END MODULE YOERDI
+end module yoerdi
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

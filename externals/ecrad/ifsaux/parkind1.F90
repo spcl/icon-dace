@@ -1,57 +1,106 @@
-! (C) Copyright 2014- ECMWF.
+! # 1 "ifsaux/parkind1.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsaux/parkind1.f90"
+! (c) copyright 2014- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 
-MODULE PARKIND1
+module parkind1
 !
-!     *** Define usual kinds for strong typing ***
+!     *** define usual kinds for strong typing ***
 !
-IMPLICIT NONE
-PUBLIC
-SAVE
+implicit none
+public
+save
 !
-!     Integer Kinds
+!     integer kinds
 !     -------------
 !
-INTEGER, PARAMETER :: JPIT = SELECTED_INT_KIND(2)
-INTEGER, PARAMETER :: JPIS = SELECTED_INT_KIND(4)
-INTEGER, PARAMETER :: JPIM = SELECTED_INT_KIND(9)
-INTEGER, PARAMETER :: JPIB = SELECTED_INT_KIND(12)
+integer, parameter :: jpit = selected_int_kind(2)
+integer, parameter :: jpis = selected_int_kind(4)
+integer, parameter :: jpim = selected_int_kind(9)
+integer, parameter :: jpib = selected_int_kind(12)
 
-!Special integer type to be used for sensative adress calculations
+!special integer type to be used for sensative adress calculations
 !should be *8 for a machine with 8byte adressing for optimum performance
-#ifdef ADDRESS64
-INTEGER, PARAMETER :: JPIA = JPIB
-#else
-INTEGER, PARAMETER :: JPIA = JPIM
-#endif
+
+
+
+integer, parameter :: jpia = jpim
+
 
 !
-!     Real Kinds
+!     real kinds
 !     ----------
 !
-INTEGER, PARAMETER :: JPRT = SELECTED_REAL_KIND(2,1)
-INTEGER, PARAMETER :: JPRS = SELECTED_REAL_KIND(4,2)
-INTEGER, PARAMETER :: JPRM = SELECTED_REAL_KIND(6,37)
-! This parameter should always be double precision as a few parts of
+integer, parameter :: jprt = selected_real_kind(2,1)
+integer, parameter :: jprs = selected_real_kind(4,2)
+integer, parameter :: jprm = selected_real_kind(6,37)
+! this parameter should always be double precision as a few parts of
 ! the radiation code require it
-INTEGER, PARAMETER :: JPRD = SELECTED_REAL_KIND(13,300)
+integer, parameter :: jprd = selected_real_kind(13,300)
 
-! This parameter governs the precision of most of the code
-#ifdef PARKIND1_SINGLE
-INTEGER, PARAMETER :: JPRB = JPRM
-#else
-INTEGER, PARAMETER :: JPRB = JPRD
-#endif
+! this parameter governs the precision of most of the code
+
+
+
+integer, parameter :: jprb = jprd
+
 !
 
-! Logical Kinds for RTTOV....
+! logical kinds for rttov....
 
-INTEGER, PARAMETER :: JPLM = JPIM   !Standard logical type
+integer, parameter :: jplm = jpim   !standard logical type
 
-END MODULE PARKIND1
+end module parkind1
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

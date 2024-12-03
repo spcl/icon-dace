@@ -1,249 +1,298 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/srtm_setcoef.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_setcoef.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SRTM_SETCOEF &
- & ( KIDIA   , KFDIA    , KLEV    ,&
- &   PAVEL   , PTAVEL   ,&
- &   PCOLDRY , PWKL     ,&
- &   KLAYTROP,&
- &   PCOLCH4  , PCOLCO2 , PCOLH2O , PCOLMOL  , PCOLO2 , PCOLO3 ,&
- &   PFORFAC , PFORFRAC , KINDFOR , PSELFFAC, PSELFFRAC, KINDSELF ,&
- &   PFAC00  , PFAC01   , PFAC10  , PFAC11  ,&
- &   KJP     , KJT      , KJT1    , PRMU0    &
+subroutine srtm_setcoef &
+ & ( kidia   , kfdia    , klev    ,&
+ &   pavel   , ptavel   ,&
+ &   pcoldry , pwkl     ,&
+ &   klaytrop,&
+ &   pcolch4  , pcolco2 , pcolh2o , pcolmol  , pcolo2 , pcolo3 ,&
+ &   pforfac , pforfrac , kindfor , pselffac, pselffrac, kindself ,&
+ &   pfac00  , pfac01   , pfac10  , pfac11  ,&
+ &   kjp     , kjt      , kjt1    , prmu0    &
  & )  
 
-!     J. Delamere, AER, Inc. (version 2.5, 02/04/01)
+!     j. delamere, aer, inc. (version 2.5, 02/04/01)
 
-!     Modifications:
-!     JJMorcrette 030224   rewritten / adapted to ECMWF F90 system
-!        M.Hamrud      01-Oct-2003 CY28 Cleaning
-!        D.Salmond  31-Oct-2007 Vector version in the style of RRTM from Meteo France & NEC
+!     modifications:
+!     jjmorcrette 030224   rewritten / adapted to ecmwf f90 system
+!        m.hamrud      01-oct-2003 cy28 cleaning
+!        d.salmond  31-oct-2007 vector version in the style of rrtm from meteo france & nec
 
-!     Purpose:  For a given atmosphere, calculate the indices and
+!     purpose:  for a given atmosphere, calculate the indices and
 !     fractions related to the pressure and temperature interpolations.
 
-USE PARKIND1 , ONLY : JPIM, JPRB
-USE ecradhook  , ONLY : LHOOK, DR_HOOK
-USE YOESRTWN , ONLY : PREFLOG, TREF
-!!  USE YOESWN  , ONLY : NDBUG
+use parkind1 , only : jpim, jprb
+use ecradhook  , only : lhook, dr_hook
+use yoesrtwn , only : preflog, tref
+!!  use yoeswn  , only : ndbug
 
-IMPLICIT NONE
+implicit none
 
-!-- Input arguments
+!-- input arguments
 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KIDIA, KFDIA
-INTEGER(KIND=JPIM),INTENT(IN)    :: KLEV 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PAVEL(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PTAVEL(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PCOLDRY(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PWKL(KIDIA:KFDIA,35,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KLAYTROP(KIDIA:KFDIA) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLCH4(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLCO2(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLH2O(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLMOL(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLO2(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PCOLO3(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFORFAC(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFORFRAC(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KINDFOR(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PSELFFAC(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PSELFFRAC(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KINDSELF(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFAC00(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFAC01(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFAC10(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: PFAC11(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KJP(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KJT(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(INOUT) :: KJT1(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: PRMU0(KIDIA:KFDIA) 
-!-- Output arguments
+integer(kind=jpim),intent(in)    :: kidia, kfdia
+integer(kind=jpim),intent(in)    :: klev 
+real(kind=jprb)   ,intent(in)    :: pavel(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: ptavel(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: pcoldry(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: pwkl(kidia:kfdia,35,klev) 
+integer(kind=jpim),intent(inout) :: klaytrop(kidia:kfdia) 
+real(kind=jprb)   ,intent(inout) :: pcolch4(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pcolco2(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pcolh2o(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pcolmol(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pcolo2(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pcolo3(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pforfac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pforfrac(kidia:kfdia,klev) 
+integer(kind=jpim),intent(inout) :: kindfor(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pselffac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pselffrac(kidia:kfdia,klev) 
+integer(kind=jpim),intent(inout) :: kindself(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pfac00(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pfac01(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pfac10(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: pfac11(kidia:kfdia,klev) 
+integer(kind=jpim),intent(inout) :: kjp(kidia:kfdia,klev) 
+integer(kind=jpim),intent(inout) :: kjt(kidia:kfdia,klev) 
+integer(kind=jpim),intent(inout) :: kjt1(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: prmu0(kidia:kfdia) 
+!-- output arguments
 
 !-- local integers
 
-INTEGER(KIND=JPIM) :: I_NLAYERS, JK, JL, JP1
+integer(kind=jpim) :: i_nlayers, jk, jl, jp1
 
 !-- local reals
 
-REAL(KIND=JPRB) :: Z_STPFAC, Z_PLOG
-REAL(KIND=JPRB) :: Z_FP, Z_FT, Z_FT1, Z_WATER, Z_SCALEFAC
-REAL(KIND=JPRB) :: Z_FACTOR, Z_CO2REG, Z_COMPFP
-!REAL(KIND=JPRB) :: Z_TBNDFRAC, Z_T0FRAC
-REAL(KIND=JPRB) :: ZHOOK_HANDLE
+real(kind=jprb) :: z_stpfac, z_plog
+real(kind=jprb) :: z_fp, z_ft, z_ft1, z_water, z_scalefac
+real(kind=jprb) :: z_factor, z_co2reg, z_compfp
+!real(kind=jprb) :: z_tbndfrac, z_t0frac
+real(kind=jprb) :: zhook_handle
 
 
-ASSOCIATE(NFLEVG=>KLEV)
-IF (LHOOK) CALL DR_HOOK('SRTM_SETCOEF',0,ZHOOK_HANDLE)
+associate(nflevg=>klev)
+if (lhook) call dr_hook('srtm_setcoef',0,zhook_handle)
 
-Z_STPFAC = 296._JPRB/1013._JPRB
-I_NLAYERS = KLEV
+z_stpfac = 296._jprb/1013._jprb
+i_nlayers = klev
 
-!$ACC PARALLEL DEFAULT(NONE) PRESENT(PAVEL, PTAVEL, PCOLDRY, PWKL, KLAYTROP, PCOLCH4, PCOLCO2, PCOLH2O, PCOLMOL, &
-!$ACC   PCOLO2,PCOLO3, PFORFAC, PFORFRAC, KINDFOR, PSELFFAC, PSELFFRAC, KINDSELF, PFAC00, PFAC01, PFAC10, PFAC11, &
-!$ACC   KJP, KJT,KJT1, PRMU0) ASYNC(1)
-!$ACC LOOP SEQ
-DO JK = 1, KLEV
-  !$ACC LOOP GANG(STATIC:1) VECTOR
-  DO JL = KIDIA, KFDIA
-    PCOLMOL(JL,JK) = 0.0_JPRB
-  ENDDO
-ENDDO
-!$ACC LOOP GANG(STATIC:1) VECTOR
-DO JL = KIDIA, KFDIA
-  IF (PRMU0(JL) > 0.0_JPRB) THEN
-    KLAYTROP(JL)  = 0
-  ENDIF
-ENDDO
+!$acc parallel default(none) present(pavel, ptavel, pcoldry, pwkl, klaytrop, pcolch4, pcolco2, pcolh2o, pcolmol, &
+!$acc   pcolo2,pcolo3, pforfac, pforfrac, kindfor, pselffac, pselffrac, kindself, pfac00, pfac01, pfac10, pfac11, &
+!$acc   kjp, kjt,kjt1, prmu0) async(1)
+!$acc loop seq
+do jk = 1, klev
+  !$acc loop gang(static:1) vector
+  do jl = kidia, kfdia
+    pcolmol(jl,jk) = 0.0_jprb
+  enddo
+enddo
+!$acc loop gang(static:1) vector
+do jl = kidia, kfdia
+  if (prmu0(jl) > 0.0_jprb) then
+    klaytrop(jl)  = 0
+  endif
+enddo
 
-!$ACC LOOP SEQ
-DO JK = 1, I_NLAYERS
-  !$ACC LOOP GANG(STATIC:1) VECTOR &
-  !$ACC   PRIVATE(Z_PLOG, Z_FP, Z_FT, Z_FT1, Z_WATER, Z_SCALEFAC, Z_FACTOR, Z_CO2REG, Z_COMPFP, JP1)
-  DO JL = KIDIA, KFDIA
-    IF (PRMU0(JL) > 0.0_JPRB) THEN
-      !        Find the two reference pressures on either side of the
-      !        layer pressure.  Store them in JP and JP1.  Store in FP the
+!$acc loop seq
+do jk = 1, i_nlayers
+  !$acc loop gang(static:1) vector &
+  !$acc   private(z_plog, z_fp, z_ft, z_ft1, z_water, z_scalefac, z_factor, z_co2reg, z_compfp, jp1)
+  do jl = kidia, kfdia
+    if (prmu0(jl) > 0.0_jprb) then
+      !        find the two reference pressures on either side of the
+      !        layer pressure.  store them in jp and jp1.  store in fp the
       !        fraction of the difference (in ln(pressure)) between these
       !        two values that the layer pressure lies.
 
-      Z_PLOG = LOG(PAVEL(JL,JK))
-      KJP(JL,JK) = INT(36._JPRB - 5._JPRB*(Z_PLOG+0.04_JPRB))
-      IF (KJP(JL,JK) < 1) THEN
-        KJP(JL,JK) = 1
-      ELSEIF (KJP(JL,JK) > 58) THEN
-        KJP(JL,JK) = 58
-      ENDIF
-      JP1 = KJP(JL,JK) + 1
-      Z_FP = 5. * (PREFLOG(KJP(JL,JK)) - Z_PLOG)
+      z_plog = log(pavel(jl,jk))
+      kjp(jl,jk) = int(36._jprb - 5._jprb*(z_plog+0.04_jprb))
+      if (kjp(jl,jk) < 1) then
+        kjp(jl,jk) = 1
+      elseif (kjp(jl,jk) > 58) then
+        kjp(jl,jk) = 58
+      endif
+      jp1 = kjp(jl,jk) + 1
+      z_fp = 5. * (preflog(kjp(jl,jk)) - z_plog)
 
-      !        Determine, for each reference pressure (JP and JP1), which
+      !        determine, for each reference pressure (jp and jp1), which
       !        reference temperature (these are different for each  
       !        reference pressure) is nearest the layer temperature but does
-      !        not exceed it.  Store these indices in JT and JT1, resp.
-      !        Store in FT (resp. FT1) the fraction of the way between JT
-      !        (JT1) and the next highest reference temperature that the 
+      !        not exceed it.  store these indices in jt and jt1, resp.
+      !        store in ft (resp. ft1) the fraction of the way between jt
+      !        (jt1) and the next highest reference temperature that the 
       !        layer temperature falls.
 
-      KJT(JL,JK) = INT(3. + (PTAVEL(JL,JK)-TREF(KJP(JL,JK)))/15.)
-      IF (KJT(JL,JK) < 1) THEN
-        KJT(JL,JK) = 1
-      ELSEIF (KJT(JL,JK) > 4) THEN
-        KJT(JL,JK) = 4
-      ENDIF
-      Z_FT = ((PTAVEL(JL,JK)-TREF(KJP(JL,JK)))/15.) - REAL(KJT(JL,JK)-3)
-      KJT1(JL,JK) = INT(3. + (PTAVEL(JL,JK)-TREF(JP1))/15.)
-      IF (KJT1(JL,JK) < 1) THEN
-        KJT1(JL,JK) = 1
-      ELSEIF (KJT1(JL,JK) > 4) THEN
-        KJT1(JL,JK) = 4
-      ENDIF
-      Z_FT1 = ((PTAVEL(JL,JK)-TREF(JP1))/15.) - REAL(KJT1(JL,JK)-3)
+      kjt(jl,jk) = int(3. + (ptavel(jl,jk)-tref(kjp(jl,jk)))/15.)
+      if (kjt(jl,jk) < 1) then
+        kjt(jl,jk) = 1
+      elseif (kjt(jl,jk) > 4) then
+        kjt(jl,jk) = 4
+      endif
+      z_ft = ((ptavel(jl,jk)-tref(kjp(jl,jk)))/15.) - real(kjt(jl,jk)-3)
+      kjt1(jl,jk) = int(3. + (ptavel(jl,jk)-tref(jp1))/15.)
+      if (kjt1(jl,jk) < 1) then
+        kjt1(jl,jk) = 1
+      elseif (kjt1(jl,jk) > 4) then
+        kjt1(jl,jk) = 4
+      endif
+      z_ft1 = ((ptavel(jl,jk)-tref(jp1))/15.) - real(kjt1(jl,jk)-3)
 
-      Z_WATER = PWKL(JL,1,JK)/PCOLDRY(JL,JK)
-      Z_SCALEFAC = PAVEL(JL,JK) * Z_STPFAC / PTAVEL(JL,JK)
+      z_water = pwkl(jl,1,jk)/pcoldry(jl,jk)
+      z_scalefac = pavel(jl,jk) * z_stpfac / ptavel(jl,jk)
 
-      !        If the pressure is less than ~100mb, perform a different
+      !        if the pressure is less than ~100mb, perform a different
       !        set of species interpolations.
 
-      IF (Z_PLOG <= 4.56_JPRB) GO TO 5300
-      KLAYTROP(JL) =  KLAYTROP(JL) + 1
+      if (z_plog <= 4.56_jprb) go to 5300
+      klaytrop(jl) =  klaytrop(jl) + 1
 
-      !        Set up factors needed to separately include the water vapor
+      !        set up factors needed to separately include the water vapor
       !        foreign-continuum in the calculation of absorption coefficient.
 
-      PFORFAC(JL,JK) = Z_SCALEFAC / (1.+Z_WATER)
-      Z_FACTOR = (332.0-PTAVEL(JL,JK))/36.0
-      KINDFOR(JL,JK) = MIN(2, MAX(1, INT(Z_FACTOR)))
-      PFORFRAC(JL,JK) = Z_FACTOR - REAL(KINDFOR(JL,JK))
+      pforfac(jl,jk) = z_scalefac / (1.+z_water)
+      z_factor = (332.0-ptavel(jl,jk))/36.0
+      kindfor(jl,jk) = min(2, max(1, int(z_factor)))
+      pforfrac(jl,jk) = z_factor - real(kindfor(jl,jk))
 
-      !        Set up factors needed to separately include the water vapor
+      !        set up factors needed to separately include the water vapor
       !        self-continuum in the calculation of absorption coefficient.
 
-      PSELFFAC(JL,JK) = Z_WATER * PFORFAC(JL,JK)
-      Z_FACTOR = (PTAVEL(JL,JK)-188.0)/7.2
-      KINDSELF(JL,JK) = MIN(9, MAX(1, INT(Z_FACTOR)-7))
-      PSELFFRAC(JL,JK) = Z_FACTOR - REAL(KINDSELF(JL,JK) + 7)
+      pselffac(jl,jk) = z_water * pforfac(jl,jk)
+      z_factor = (ptavel(jl,jk)-188.0)/7.2
+      kindself(jl,jk) = min(9, max(1, int(z_factor)-7))
+      pselffrac(jl,jk) = z_factor - real(kindself(jl,jk) + 7)
 
-      !        Calculate needed column amounts.
+      !        calculate needed column amounts.
 
-      PCOLH2O(JL,JK) = 1.E-20 * PWKL(JL,1,JK)
-      PCOLCO2(JL,JK) = 1.E-20 * PWKL(JL,2,JK)
-      PCOLO3(JL,JK) = 1.E-20 * PWKL(JL,3,JK)
-      !         COLO3(LAY) = 0.
-      !         COLO3(LAY) = colo3(lay)/1.16
-      PCOLCH4(JL,JK) = 1.E-20 * PWKL(JL,6,JK)
-      PCOLO2(JL,JK) = 1.E-20 * PWKL(JL,7,JK)
-      PCOLMOL(JL,JK) = 1.E-20 * PCOLDRY(JL,JK) + PCOLH2O(JL,JK)
+      pcolh2o(jl,jk) = 1.e-20 * pwkl(jl,1,jk)
+      pcolco2(jl,jk) = 1.e-20 * pwkl(jl,2,jk)
+      pcolo3(jl,jk) = 1.e-20 * pwkl(jl,3,jk)
+      !         colo3(lay) = 0.
+      !         colo3(lay) = colo3(lay)/1.16
+      pcolch4(jl,jk) = 1.e-20 * pwkl(jl,6,jk)
+      pcolo2(jl,jk) = 1.e-20 * pwkl(jl,7,jk)
+      pcolmol(jl,jk) = 1.e-20 * pcoldry(jl,jk) + pcolh2o(jl,jk)
       !         colco2(lay) = 0.
       !         colo3(lay) = 0.
       !         colch4(lay) = 0.
       !         colo2(lay) = 0.
       !         colmol(lay) = 0.
-      IF (PCOLCO2(JL,JK) == 0.) PCOLCO2(JL,JK) = 1.E-32 * PCOLDRY(JL,JK)
-      IF (PCOLCH4(JL,JK) == 0.) PCOLCH4(JL,JK) = 1.E-32 * PCOLDRY(JL,JK)
-      IF (PCOLO2(JL,JK) == 0.) PCOLO2(JL,JK) = 1.E-32 * PCOLDRY(JL,JK)
-      !        Using E = 1334.2 cm-1.
-      Z_CO2REG = 3.55E-24 * PCOLDRY(JL,JK)
-      GO TO 5400
+      if (pcolco2(jl,jk) == 0.) pcolco2(jl,jk) = 1.e-32 * pcoldry(jl,jk)
+      if (pcolch4(jl,jk) == 0.) pcolch4(jl,jk) = 1.e-32 * pcoldry(jl,jk)
+      if (pcolo2(jl,jk) == 0.) pcolo2(jl,jk) = 1.e-32 * pcoldry(jl,jk)
+      !        using e = 1334.2 cm-1.
+      z_co2reg = 3.55e-24 * pcoldry(jl,jk)
+      go to 5400
 
-      !        Above LAYTROP.
-5300  CONTINUE
+      !        above laytrop.
+5300  continue
 
-      !        Set up factors needed to separately include the water vapor
+      !        set up factors needed to separately include the water vapor
       !        foreign-continuum in the calculation of absorption coefficient.
 
-      PFORFAC(JL,JK) = Z_SCALEFAC / (1.+Z_WATER)
-      Z_FACTOR = (PTAVEL(JL,JK)-188.0)/36.0
-      KINDFOR(JL,JK) = 3
-      PFORFRAC(JL,JK) = Z_FACTOR - 1.0
+      pforfac(jl,jk) = z_scalefac / (1.+z_water)
+      z_factor = (ptavel(jl,jk)-188.0)/36.0
+      kindfor(jl,jk) = 3
+      pforfrac(jl,jk) = z_factor - 1.0
 
-      !        Calculate needed column amounts.
+      !        calculate needed column amounts.
 
-      PCOLH2O(JL,JK) = 1.E-20 * PWKL(JL,1,JK)
-      PCOLCO2(JL,JK) = 1.E-20 * PWKL(JL,2,JK)
-      PCOLO3(JL,JK)  = 1.E-20 * PWKL(JL,3,JK)
-      PCOLCH4(JL,JK) = 1.E-20 * PWKL(JL,6,JK)
-      PCOLO2(JL,JK)  = 1.E-20 * PWKL(JL,7,JK)
-      PCOLMOL(JL,JK) = 1.E-20 * PCOLDRY(JL,JK) + PCOLH2O(JL,JK)
-      IF (PCOLCO2(JL,JK) == 0.) PCOLCO2(JL,JK) = 1.E-32 * PCOLDRY(JL,JK)
-      IF (PCOLCH4(JL,JK) == 0.) PCOLCH4(JL,JK) = 1.E-32 * PCOLDRY(JL,JK)
-      IF (PCOLO2(JL,JK) == 0.) PCOLO2(JL,JK)  = 1.E-32 * PCOLDRY(JL,JK)
-      Z_CO2REG = 3.55E-24 * PCOLDRY(JL,JK)
+      pcolh2o(jl,jk) = 1.e-20 * pwkl(jl,1,jk)
+      pcolco2(jl,jk) = 1.e-20 * pwkl(jl,2,jk)
+      pcolo3(jl,jk)  = 1.e-20 * pwkl(jl,3,jk)
+      pcolch4(jl,jk) = 1.e-20 * pwkl(jl,6,jk)
+      pcolo2(jl,jk)  = 1.e-20 * pwkl(jl,7,jk)
+      pcolmol(jl,jk) = 1.e-20 * pcoldry(jl,jk) + pcolh2o(jl,jk)
+      if (pcolco2(jl,jk) == 0.) pcolco2(jl,jk) = 1.e-32 * pcoldry(jl,jk)
+      if (pcolch4(jl,jk) == 0.) pcolch4(jl,jk) = 1.e-32 * pcoldry(jl,jk)
+      if (pcolo2(jl,jk) == 0.) pcolo2(jl,jk)  = 1.e-32 * pcoldry(jl,jk)
+      z_co2reg = 3.55e-24 * pcoldry(jl,jk)
 
-      PSELFFAC(JL,JK) =0.0_JPRB
-      PSELFFRAC(JL,JK)=0.0_JPRB
-      KINDSELF(JL,JK) = 0
+      pselffac(jl,jk) =0.0_jprb
+      pselffrac(jl,jk)=0.0_jprb
+      kindself(jl,jk) = 0
 
-5400  CONTINUE
+5400  continue
 
-      !        We have now isolated the layer ln pressure and temperature,
+      !        we have now isolated the layer ln pressure and temperature,
       !        between two reference pressures and two reference temperatures 
-      !        (for each reference pressure).  We multiply the pressure 
-      !        fraction FP with the appropriate temperature fractions to get 
+      !        (for each reference pressure).  we multiply the pressure 
+      !        fraction fp with the appropriate temperature fractions to get 
       !        the factors that will be needed for the interpolation that yields
-      !        the optical depths (performed in routines TAUGBn for band n).
+      !        the optical depths (performed in routines taugbn for band n).
 
-      Z_COMPFP = 1. - Z_FP
-      PFAC10(JL,JK) = Z_COMPFP * Z_FT
-      PFAC00(JL,JK) = Z_COMPFP * (1. - Z_FT)
-      PFAC11(JL,JK) = Z_FP * Z_FT1
-      PFAC01(JL,JK) = Z_FP * (1. - Z_FT1)
+      z_compfp = 1. - z_fp
+      pfac10(jl,jk) = z_compfp * z_ft
+      pfac00(jl,jk) = z_compfp * (1. - z_ft)
+      pfac11(jl,jk) = z_fp * z_ft1
+      pfac01(jl,jk) = z_fp * (1. - z_ft1)
 
-      !  IF (NDBUG.LE.3) THEN
-      !    print 9000,LAY,LAYTROP,JP(LAY),JT(LAY),JT1(LAY),TAVEL(LAY) &
-      !      &,FAC00(LAY),FAC01(LAY),FAC10(LAY),FAC11(LAY) &
-      !      &,COLMOL(LAY),COLCH4(LAY),COLCO2(LAY),COLH2O(LAY) &
-      !      &,COLO2(LAY),COLO3(LAY),SELFFAC(LAY),SELFFRAC(LAY) &
-      !      &,FORFAC(LAY),FORFRAC(LAY),INDSELF(LAY),INDFOR(LAY)
-9000  format(1x,2I3,3I4,F6.1,4F7.2,12E9.2,2I5)
-      !  ENDIF
+      !  if (ndbug.le.3) then
+      !    print 9000,lay,laytrop,jp(lay),jt(lay),jt1(lay),tavel(lay) &
+      !      &,fac00(lay),fac01(lay),fac10(lay),fac11(lay) &
+      !      &,colmol(lay),colch4(lay),colco2(lay),colh2o(lay) &
+      !      &,colo2(lay),colo3(lay),selffac(lay),selffrac(lay) &
+      !      &,forfac(lay),forfrac(lay),indself(lay),indfor(lay)
+9000  format(1x,2i3,3i4,f6.1,4f7.2,12e9.2,2i5)
+      !  endif
 
-    ENDIF
-  ENDDO
-ENDDO
-!$ACC END PARALLEL
+    endif
+  enddo
+enddo
+!$acc end parallel
 
 !----------------------------------------------------------------------- 
-IF (LHOOK) CALL DR_HOOK('SRTM_SETCOEF',1,ZHOOK_HANDLE)
-END ASSOCIATE
-END SUBROUTINE SRTM_SETCOEF
+if (lhook) call dr_hook('srtm_setcoef',1,zhook_handle)
+end associate
+end subroutine srtm_setcoef
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

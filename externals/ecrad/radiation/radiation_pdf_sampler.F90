@@ -1,16 +1,21 @@
-! radiation_pdf_sampler.F90 - Get samples from a PDF for McICA
+! # 1 "radiation/radiation_pdf_sampler.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_pdf_sampler.f90"
+! radiation_pdf_sampler.f90 - get samples from a pdf for mcica
 !
-! (C) Copyright 2015- ECMWF.
+! (c) copyright 2015- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
 
 module radiation_pdf_sampler
@@ -21,21 +26,21 @@ module radiation_pdf_sampler
   public
 
   !---------------------------------------------------------------------
-  ! Derived type for sampling from a lognormal or gamma distribution,
-  ! or other PDF, used to generate water content or optical depth
-  ! scalings for use in the Monte Carlo Independent Column
-  ! Approximation (McICA)
+  ! derived type for sampling from a lognormal or gamma distribution,
+  ! or other pdf, used to generate water content or optical depth
+  ! scalings for use in the monte carlo independent column
+  ! approximation (mcica)
   type pdf_sampler_type
-    ! Number of points in look-up table for cumulative distribution
-    ! function (CDF) and fractional standard deviation (FSD)
+    ! number of points in look-up table for cumulative distribution
+    ! function (cdf) and fractional standard deviation (fsd)
     ! dimensions
     integer :: ncdf, nfsd
 
-    ! First value of FSD and the reciprocal of the interval between
-    ! FSD values (which are assumed to be uniformly distributed)
+    ! first value of fsd and the reciprocal of the interval between
+    ! fsd values (which are assumed to be uniformly distributed)
     real(jprb) :: fsd1, inv_fsd_interval
 
-    ! Value of the distribution for each CDF and FSD bin
+    ! value of the distribution for each cdf and fsd bin
     real(jprb), allocatable, dimension(:,:) :: val
 
   contains
@@ -52,7 +57,7 @@ module radiation_pdf_sampler
 contains
 
   !---------------------------------------------------------------------
-  ! Load look-up table from a file 
+  ! load look-up table from a file 
   subroutine setup_pdf_sampler(this, file_name, iverbose)
     
     use ecradhook,     only : lhook, dr_hook, jphook
@@ -99,7 +104,7 @@ contains
   end subroutine setup_pdf_sampler
 
   !---------------------------------------------------------------------
-  ! Deallocate data in pdf_sampler_type derived type
+  ! deallocate data in pdf_sampler_type derived type
   subroutine deallocate_pdf_sampler(this)
 
     use ecradhook,     only : lhook, dr_hook, jphook
@@ -119,28 +124,28 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Extract the value from a PDF with fractional standard deviation
+  ! extract the value from a pdf with fractional standard deviation
   ! "fsd" corresponding to the cumulative distribution function value
-  ! "cdf", and return it in val. Since this is an elemental
+  ! "cdf", and return it in val. since this is an elemental
   ! subroutine, fsd, cdf and val may be arrays.
   elemental subroutine sample_from_pdf(this, fsd, cdf, val)
     
     class(pdf_sampler_type), intent(in)  :: this
 
-    ! Fractional standard deviation (0 to 4) and cumulative
+    ! fractional standard deviation (0 to 4) and cumulative
     ! distribution function (0 to 1)
     real(jprb),              intent(in)  :: fsd, cdf
 
-    ! Sample from distribution
+    ! sample from distribution
     real(jprb),              intent(out) :: val
 
-    ! Index to look-up table
+    ! index to look-up table
     integer    :: ifsd, icdf
 
-    ! Weights in bilinear interpolation
+    ! weights in bilinear interpolation
     real(jprb) :: wfsd, wcdf
 
-    ! Bilinear interpolation with bounds
+    ! bilinear interpolation with bounds
     wcdf = cdf * (this%ncdf-1) + 1.0_jprb
     icdf = max(1, min(int(wcdf), this%ncdf-1))
     wcdf = max(0.0_jprb, min(wcdf - icdf, 1.0_jprb))
@@ -158,39 +163,39 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! For true elements of mask, extract the values of a PDF with
+  ! for true elements of mask, extract the values of a pdf with
   ! fractional standard deviation "fsd" corresponding to the
   ! cumulative distribution function values "cdf", and return in
-  ! val. For false elements of mask, return zero in val.
+  ! val. for false elements of mask, return zero in val.
   subroutine sample_from_pdf_masked(this, nsamp, fsd, cdf, val, mask)
     
     class(pdf_sampler_type), intent(in)  :: this
 
-    ! Number of samples
+    ! number of samples
     integer,    intent(in) :: nsamp
 
-    ! Fractional standard deviation (0 to 4) and cumulative
+    ! fractional standard deviation (0 to 4) and cumulative
     ! distribution function (0 to 1)
     real(jprb), intent(in)  :: fsd(nsamp), cdf(nsamp)
 
-    ! Sample from distribution
+    ! sample from distribution
     real(jprb), intent(out) :: val(:)
 
-    ! Mask
+    ! mask
     logical,    intent(in) :: mask(nsamp)
 
-    ! Loop index
+    ! loop index
     integer    :: jsamp
 
-    ! Index to look-up table
+    ! index to look-up table
     integer    :: ifsd, icdf
 
-    ! Weights in bilinear interpolation
+    ! weights in bilinear interpolation
     real(jprb) :: wfsd, wcdf
 
     do jsamp = 1,nsamp
       if (mask(jsamp)) then
-        ! Bilinear interpolation with bounds
+        ! bilinear interpolation with bounds
         wcdf = cdf(jsamp) * (this%ncdf-1) + 1.0_jprb
         icdf = max(1, min(int(wcdf), this%ncdf-1))
         wcdf = max(0.0_jprb, min(wcdf - icdf, 1.0_jprb))
@@ -210,36 +215,36 @@ contains
   end subroutine sample_from_pdf_masked
 
   !---------------------------------------------------------------------
-  ! Extract the values of a PDF with fractional standard deviation
+  ! extract the values of a pdf with fractional standard deviation
   ! "fsd" corresponding to the cumulative distribution function values
-  ! "cdf", and return in val. This version works on 2D blocks of data.
+  ! "cdf", and return in val. this version works on 2d blocks of data.
   subroutine sample_from_pdf_block(this, nz, ng, fsd, cdf, val)
     
     class(pdf_sampler_type), intent(in)  :: this
 
-    ! Number of samples
+    ! number of samples
     integer,    intent(in) :: nz, ng
 
-    ! Fractional standard deviation (0 to 4) and cumulative
+    ! fractional standard deviation (0 to 4) and cumulative
     ! distribution function (0 to 1)
     real(jprb), intent(in)  :: fsd(nz), cdf(ng, nz)
 
-    ! Sample from distribution
+    ! sample from distribution
     real(jprb), intent(out) :: val(:,:)
 
-    ! Loop index
+    ! loop index
     integer    :: jz, jg
 
-    ! Index to look-up table
+    ! index to look-up table
     integer    :: ifsd, icdf
 
-    ! Weights in bilinear interpolation
+    ! weights in bilinear interpolation
     real(jprb) :: wfsd, wcdf
 
     do jz = 1,nz
       do jg = 1,ng
         if (cdf(jg, jz) > 0.0_jprb) then
-          ! Bilinear interpolation with bounds
+          ! bilinear interpolation with bounds
           wcdf = cdf(jg,jz) * (this%ncdf-1) + 1.0_jprb
           icdf = max(1, min(int(wcdf), this%ncdf-1))
           wcdf = max(0.0_jprb, min(wcdf - icdf, 1.0_jprb))
@@ -261,33 +266,33 @@ contains
   end subroutine sample_from_pdf_block
 
   !---------------------------------------------------------------------
-  ! Extract the values of a PDF with fractional standard deviation
+  ! extract the values of a pdf with fractional standard deviation
   ! "fsd" corresponding to the cumulative distribution function values
-  ! "cdf", and return in val. This version works on 2D blocks of data.
+  ! "cdf", and return in val. this version works on 2d blocks of data.
   subroutine sample_from_pdf_masked_block(this, nz, ng, fsd, cdf, val, mask)
     
     class(pdf_sampler_type), intent(in)  :: this
 
-    ! Number of samples
+    ! number of samples
     integer,    intent(in) :: nz, ng
 
-    ! Fractional standard deviation (0 to 4) and cumulative
+    ! fractional standard deviation (0 to 4) and cumulative
     ! distribution function (0 to 1)
     real(jprb), intent(in)  :: fsd(nz), cdf(ng, nz)
 
-    ! Sample from distribution
+    ! sample from distribution
     real(jprb), intent(out) :: val(:,:)
 
-    ! Mask
+    ! mask
     logical,    intent(in), optional :: mask(nz)
 
-    ! Loop index
+    ! loop index
     integer    :: jz, jg
 
-    ! Index to look-up table
+    ! index to look-up table
     integer    :: ifsd, icdf
 
-    ! Weights in bilinear interpolation
+    ! weights in bilinear interpolation
     real(jprb) :: wfsd, wcdf
 
     do jz = 1,nz
@@ -296,7 +301,7 @@ contains
         
         do jg = 1,ng
           if (cdf(jg, jz) > 0.0_jprb) then
-            ! Bilinear interpolation with bounds
+            ! bilinear interpolation with bounds
             wcdf = cdf(jg,jz) * (this%ncdf-1) + 1.0_jprb
             icdf = max(1, min(int(wcdf), this%ncdf-1))
             wcdf = max(0.0_jprb, min(wcdf - icdf, 1.0_jprb))
@@ -321,3 +326,47 @@ contains
   end subroutine sample_from_pdf_masked_block
 
 end module radiation_pdf_sampler
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

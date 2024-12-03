@@ -1,45 +1,50 @@
-! This file has been modified for the use in ICON
+! # 1 "radiation/radiation_random_numbers.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "radiation/radiation_random_numbers.f90"
+! this file has been modified for the use in icon
 
-! radiation_random_numbers.F90 - Generate random numbers for McICA solver
+! radiation_random_numbers.f90 - generate random numbers for mcica solver
 !
-! (C) Copyright 2020- ECMWF.
+! (c) copyright 2020- ecmwf.
 !
-! This software is licensed under the terms of the Apache Licence Version 2.0
-! which can be obtained at http://www.apache.org/licenses/LICENSE-2.0.
+! this software is licensed under the terms of the apache licence version 2.0
+! which can be obtained at http://www.apache.org/licenses/license-2.0.
 !
-! In applying this licence, ECMWF does not waive the privileges and immunities
+! in applying this licence, ecmwf does not waive the privileges and immunities
 ! granted to it by virtue of its status as an intergovernmental organisation
 ! nor does it submit to any jurisdiction.
 !
-! Author:  Robin Hogan
-! Email:   r.j.hogan@ecmwf.int
+! author:  robin hogan
+! email:   r.j.hogan@ecmwf.int
 !
-! The derived type "rng_type" is a random number generator that uses
-! either (1) Fortran's built-in random_number function, or (2) a
-! vectorized version of the MINSTD linear congruential generator.  In
+! the derived type "rng_type" is a random number generator that uses
+! either (1) fortran's built-in random_number function, or (2) a
+! vectorized version of the minstd linear congruential generator.  in
 ! the case of (2), an rng_type object is initialized with a seed that
-! is used to fill up a state of "nmaxstreams" elements using the C++
-! minstd_rand0 version of the MINSTD linear congruential generator
-! (LNG), which has the form istate[i+1] = mod(istate[i]*A0, M) from
-! i=1 to i=nmaxstreams. Subsequent requests for blocks of nmaxstreams
-! of random numbers use the C++ minstd_ran algorithm in a vectorizable
+! is used to fill up a state of "nmaxstreams" elements using the c++
+! minstd_rand0 version of the minstd linear congruential generator
+! (lng), which has the form istate[i+1] = mod(istate[i]*a0, m) from
+! i=1 to i=nmaxstreams. subsequent requests for blocks of nmaxstreams
+! of random numbers use the c++ minstd_ran algorithm in a vectorizable
 ! form, which modifies the state elements via istate[i] <-
-! mod(istate[i]*A, M). Uniform deviates are returned that normalize
+! mod(istate[i]*a, m). uniform deviates are returned that normalize
 ! the state elements to the range 0-1.
 !
-! The MINSTD generator was coded because the random_numbers_mix
-! generator in the IFS was found not to vectorize well on some
-! hardware.  I am no expert on random number generators, so my
+! the minstd generator was coded because the random_numbers_mix
+! generator in the ifs was found not to vectorize well on some
+! hardware.  i am no expert on random number generators, so my
 ! implementation should really be looked at and improved by someone
 ! who knows what they are doing.
 !
-! Reference for MINSTD: Park, Stephen K.; Miller, Keith
-! W. (1988). "Random Number Generators: Good Ones Are Hard To Find"
-! (PDF). Communications of the ACM. 31 (10):
+! reference for minstd: park, stephen k.; miller, keith
+! w. (1988). "random number generators: good ones are hard to find"
+! (pdf). communications of the acm. 31 (10):
 ! 1192-1201. doi:10.1145/63039.63042
 !
-! Modifications
-!   2022-12-01  R. Hogan  Fixed zeroed state in single precision
+! modifications
+!   2022-12-01  r. hogan  fixed zeroed state in single precision
 
 module radiation_random_numbers
 
@@ -47,69 +52,69 @@ module radiation_random_numbers
 
   implicit none
 
-  public :: rng_type, IRngMinstdVector, IRngNative, initialize_acc, &
-    &  uniform_distribution_acc, IMinstdA0, IMinstdA, IMinstdM
+  public :: rng_type, irngminstdvector, irngnative, initialize_acc, &
+    &  uniform_distribution_acc, iminstda0, iminstda, iminstdm
 
   enum, bind(c) 
-    enumerator IRngNative, &    ! Built-in Fortran-90 RNG
-         &     IRngMinstdVector ! Vector MINSTD algorithm
+    enumerator irngnative, &    ! built-in fortran-90 rng
+         &     irngminstdvector ! vector minstd algorithm
   end enum
   
-  ! Maximum number of random numbers that can be computed in one call
+  ! maximum number of random numbers that can be computed in one call
   ! - this can be increased
-  integer(kind=jpim), parameter :: NMaxStreams = 512
+  integer(kind=jpim), parameter :: nmaxstreams = 512
   
-  ! A requirement of the generator is that the operation mod(A*X,M) is
-  ! performed with no loss of precision, so type used for A and X must
-  ! be able to hold the largest possible value of A*X without
-  ! overflowing, going negative or losing precision. The largest
-  ! possible value is 48271*2147483647 = 103661183124337. This number
+  ! a requirement of the generator is that the operation mod(a*x,m) is
+  ! performed with no loss of precision, so type used for a and x must
+  ! be able to hold the largest possible value of a*x without
+  ! overflowing, going negative or losing precision. the largest
+  ! possible value is 48271*2147483647 = 103661183124337. this number
   ! can be held in either a double-precision real number, or an 8-byte
-  ! integer. Either may be used, but on some hardwares it has been
-  ! found that operations on double-precision reals are faster. Select
-  ! which you prefer by defining USE_REAL_RNG_STATE for double
+  ! integer. either may be used, but on some hardwares it has been
+  ! found that operations on double-precision reals are faster. select
+  ! which you prefer by defining use_real_rng_state for double
   ! precision, or undefining it for an 8-byte integer.
-#define USE_REAL_RNG_STATE 1
 
-  ! Define RNG_STATE_TYPE based on USE_REAL_RNG_STATE, where jprd
+
+  ! define rng_state_type based on 1, where jprd
   ! refers to a double-precision number regardless of the working
   ! precision described by jprb, while jpib describes an 8-byte
   ! integer
-#ifdef USE_REAL_RNG_STATE
-#define RNG_STATE_TYPE real(kind=jprd)
-#else
-#define RNG_STATE_TYPE integer(kind=jpib)
-#endif
 
-  ! The constants used in the main random number generator
-  RNG_STATE_TYPE , parameter :: IMinstdA  = 48271
-  RNG_STATE_TYPE , parameter :: IMinstdM  = 2147483647
 
-  ! An alternative value of A that can be used to initialize the
+
+
+
+
+  ! the constants used in the main random number generator
+  real(kind=jprd) , parameter :: iminstda  = 48271
+  real(kind=jprd) , parameter :: iminstdm  = 2147483647
+
+  ! an alternative value of a that can be used to initialize the
   ! members of the state from a single seed
-  RNG_STATE_TYPE , parameter :: IMinstdA0 = 16807
+  real(kind=jprd) , parameter :: iminstda0 = 16807
   
-  ! Scaling to convert the state to a uniform deviate in the range 0
+  ! scaling to convert the state to a uniform deviate in the range 0
   ! to 1 in working precision
-  real(kind=jprb), parameter :: IMinstdScale = 1.0_jprb / real(IMinstdM,jprb)
+  real(kind=jprb), parameter :: iminstdscale = 1.0_jprb / real(iminstdm,jprb)
 
   !---------------------------------------------------------------------
-  ! A random number generator type: after being initialized with a
+  ! a random number generator type: after being initialized with a
   ! seed, type and optionally a number of vector streams, subsequent
-  ! calls to "uniform_distribution" are used to fill 1D or 2D arrays
+  ! calls to "uniform_distribution" are used to fill 1d or 2d arrays
   ! with random numbers in a way that ought to be fast.
   type rng_type
 
-    integer(kind=jpim) :: itype = IRngNative
-    RNG_STATE_TYPE     :: istate(NMaxStreams)
-    integer(kind=jpim) :: nmaxstreams = NMaxStreams
+    integer(kind=jpim) :: itype = irngnative
+    real(kind=jprd)     :: istate(nmaxstreams)
+    integer(kind=jpim) :: nmaxstreams = nmaxstreams
     integer(kind=jpim) :: iseed
 
   contains
     procedure :: initialize
-    procedure :: uniform_distribution_1d, &
-         &       uniform_distribution_2d, &
-         &       uniform_distribution_2d_masked
+    procedure :: uniform_distribution_1d
+    procedure :: uniform_distribution_2d
+    procedure :: uniform_distribution_2d_masked
     generic   :: uniform_distribution => uniform_distribution_1d, &
          &                               uniform_distribution_2d, &
          &                               uniform_distribution_2d_masked
@@ -119,12 +124,12 @@ module radiation_random_numbers
 contains
 
   !---------------------------------------------------------------------
-  ! Initialize a random number generator, where "itype" may be either
-  ! IRngNative, indicating to use Fortran's native random_number
-  ! subroutine, or IRngMinstdVector, indicating to use the MINSTD
-  ! linear congruential generator (LCG).  In the latter case
+  ! initialize a random number generator, where "itype" may be either
+  ! irngnative, indicating to use fortran's native random_number
+  ! subroutine, or irngminstdvector, indicating to use the minstd
+  ! linear congruential generator (lcg).  in the latter case
   ! "nmaxstreams" should be provided indicating that random numbers
-  ! will be requested in blocks of this length. The generator is
+  ! will be requested in blocks of this length. the generator is
   ! seeded with "iseed".
   subroutine initialize(this, itype, iseed, nmaxstreams)
 
@@ -135,12 +140,12 @@ contains
 
     integer, allocatable :: iseednative(:)
     integer :: nseed, jseed, jstr
-    real(jprd) :: rseed ! Note this must be in double precision
+    real(jprd) :: rseed ! note this must be in double precision
 
     if (present(itype)) then
       this%itype = itype
     else
-      this%itype = IRngNative
+      this%itype = irngnative
     end if
     
     if (present(iseed)) then
@@ -152,36 +157,36 @@ contains
     if (present(nmaxstreams)) then
       this%nmaxstreams = nmaxstreams
     else
-      this%nmaxstreams = NMaxStreams
+      this%nmaxstreams = nmaxstreams
     end if
     
-    if (this%itype == IRngMinstdVector) then
-      ! ! OPTION 1: Use the C++ minstd_rand0 algorithm to populate the
+    if (this%itype == irngminstdvector) then
+      ! ! option 1: use the c++ minstd_rand0 algorithm to populate the
       ! ! state: this loop is not vectorizable because the state in
       ! ! one stream depends on the one in the previous stream.
       ! this%istate(1) = this%iseed
       ! do jseed = 2,this%nmaxstreams
-      !   this%istate(jseed) = mod(IMinstdA0 * this%istate(jseed-1), IMinstdM)
+      !   this%istate(jseed) = mod(iminstda0 * this%istate(jseed-1), iminstdm)
       ! end do
 
-      ! OPTION 2: Use a modified (and vectorized) C++ minstd_rand0 algorithm to
+      ! option 2: use a modified (and vectorized) c++ minstd_rand0 algorithm to
       ! populate the state
       rseed = real(abs(this%iseed),jprd)
       do jstr = 1,this%nmaxstreams
-        ! Note that nint returns an integer of type jpib (8-byte)
+        ! note that nint returns an integer of type jpib (8-byte)
         ! which may be converted to double if that is the type of
         ! istate
         this%istate(jstr) = nint(mod(rseed*jstr*(1.0_jprd-0.05_jprd*jstr &
-             &      +0.005_jprd*jstr**2)*IMinstdA0, real(IMinstdM,jprd)),kind=jpib)
+             &      +0.005_jprd*jstr**2)*iminstda0, real(iminstdm,jprd)),kind=jpib)
       end do
 
-      ! One warmup of the C++ minstd_rand algorithm
+      ! one warmup of the c++ minstd_rand algorithm
       do jstr = 1,this%nmaxstreams
-        this%istate(jstr) = mod(IMinstdA * this%istate(jstr), IMinstdM)
+        this%istate(jstr) = mod(iminstda * this%istate(jstr), iminstdm)
       end do
       
     else
-      ! Native generator by default
+      ! native generator by default
       call random_seed(size=nseed)
       allocate(iseednative(nseed))
       do jseed = 1,nseed
@@ -194,7 +199,7 @@ contains
   end subroutine initialize
 
   !---------------------------------------------------------------------
-  ! Populate vector "randnum" with pseudo-random numbers; if rannum is
+  ! populate vector "randnum" with pseudo-random numbers; if rannum is
   ! of length greater than nmaxstreams (specified when the generator
   ! was initialized) then only the first nmaxstreams elements will be
   ! assigned.
@@ -205,18 +210,18 @@ contains
 
     integer :: imax, i
 
-    if (this%itype == IRngMinstdVector) then
+    if (this%itype == irngminstdvector) then
       
       imax = min(this%nmaxstreams, size(randnum))
 
-      ! C++ minstd_rand algorithm
+      ! c++ minstd_rand algorithm
       do i = 1, imax
-        ! The following calculation is computed entirely with 8-byte
+        ! the following calculation is computed entirely with 8-byte
         ! numbers (whether real or integer)
-        this%istate(i) = mod(IMinstdA * this%istate(i), IMinstdM)
-        ! Scale the current state to a number in working precision
+        this%istate(i) = mod(iminstda * this%istate(i), iminstdm)
+        ! scale the current state to a number in working precision
         ! (jprb) between 0 and 1
-        randnum(i) = IMinstdScale * this%istate(i)
+        randnum(i) = iminstdscale * this%istate(i)
       end do
 
     else
@@ -229,7 +234,7 @@ contains
 
 
   !---------------------------------------------------------------------
-  ! Populate matrix "randnum" with pseudo-random numbers; if the inner
+  ! populate matrix "randnum" with pseudo-random numbers; if the inner
   ! dimension of rannum is of length greater than nmaxstreams
   ! (specified when the generator was initialized) then only the first
   ! nmaxstreams elements along this dimension will be assigned.
@@ -240,16 +245,16 @@ contains
 
     integer :: imax, jblock, i
 
-    if (this%itype == IRngMinstdVector) then
+    if (this%itype == irngminstdvector) then
       
       imax = min(this%nmaxstreams, size(randnum,1))
 
-      ! C++ minstd_ran algorithm
+      ! c++ minstd_ran algorithm
       do jblock = 1,size(randnum,2)
-        ! These lines should be vectorizable
+        ! these lines should be vectorizable
         do i = 1, imax
-          this%istate(i) = mod(IMinstdA * this%istate(i), IMinstdM)
-          randnum(i,jblock) = IMinstdScale * this%istate(i)
+          this%istate(i) = mod(iminstda * this%istate(i), iminstdm)
+          randnum(i,jblock) = iminstdscale * this%istate(i)
         end do
       end do
 
@@ -262,10 +267,10 @@ contains
   end subroutine uniform_distribution_2d
 
   !---------------------------------------------------------------------
-  ! Populate matrix "randnum" with pseudo-random numbers; if the inner
+  ! populate matrix "randnum" with pseudo-random numbers; if the inner
   ! dimension of rannum is of length greater than nmaxstreams
   ! (specified when the generator was initialized) then only the first
-  ! nmaxstreams elements along this dimension will be assigned. This
+  ! nmaxstreams elements along this dimension will be assigned. this
   ! version only operates on outer dimensions for which "mask" is true.
   subroutine uniform_distribution_2d_masked(this, randnum, mask)
 
@@ -275,17 +280,17 @@ contains
 
     integer :: imax, jblock, i
 
-    if (this%itype == IRngMinstdVector) then
+    if (this%itype == irngminstdvector) then
       
       imax = min(this%nmaxstreams, size(randnum,1))
 
-      ! C++ minstd_ran algorithm
+      ! c++ minstd_ran algorithm
       do jblock = 1,size(randnum,2)
         if (mask(jblock)) then
-          ! These lines should be vectorizable
+          ! these lines should be vectorizable
           do i = 1, imax
-            this%istate(i) = mod(IMinstdA * this%istate(i), IMinstdM)
-            randnum(i,jblock) = IMinstdScale * this%istate(i)
+            this%istate(i) = mod(iminstda * this%istate(i), iminstdm)
+            randnum(i,jblock) = iminstdscale * this%istate(i)
           end do
         end if
       end do
@@ -303,11 +308,11 @@ contains
   end subroutine uniform_distribution_2d_masked
 
   !---------------------------------------------------------------------
-  ! Initialize a random number generator, using the MINSTD
-  ! linear congruential generator (LCG). The generator is
+  ! initialize a random number generator, using the minstd
+  ! linear congruential generator (lcg). the generator is
   ! seeded with "iseed" and "jseed".
-  ! Note that this function is not used but manually inlined as the compiler didnot succed.
-  ! The seperate function stays in the code, so that hopefully, when the
+  ! note that this function is not used but manually inlined as the compiler didnot succed.
+  ! the seperate function stays in the code, so that hopefully, when the
   ! compiler issue is fixed, it can be used instead of the manual inline.
   pure function initialize_acc(iseed, jseed) result(istate)
 
@@ -316,19 +321,19 @@ contains
 
     real(kind=jprb) :: istate
 
-    !$ACC ROUTINE SEQ
+    !$acc routine seq
     
-    istate = REAL(ABS(iseed),jprb)
-    ! Use a modified (and vectorized) C++ minstd_rand0 algorithm to populate the state
-    istate = nint(mod( istate*jseed*(1._jprb-0.05_jprb*jseed+0.005_jprb*jseed**2)*IMinstdA0, IMinstdM))
+    istate = real(abs(iseed),jprb)
+    ! use a modified (and vectorized) c++ minstd_rand0 algorithm to populate the state
+    istate = nint(mod( istate*jseed*(1._jprb-0.05_jprb*jseed+0.005_jprb*jseed**2)*iminstda0, iminstdm))
     
-    ! One warmup of the C++ minstd_rand algorithm
-    istate = mod(IMinstdA * istate, IMinstdM)
+    ! one warmup of the c++ minstd_rand algorithm
+    istate = mod(iminstda * istate, iminstdm)
 
   end function initialize_acc
 
   !---------------------------------------------------------------------
-  ! Populate vector "randnum" with pseudo-random numbers; if rannum is
+  ! populate vector "randnum" with pseudo-random numbers; if rannum is
   ! of length greater than nmaxstreams (specified when the generator
   ! was initialized) then only the first nmaxstreams elements will be
   ! assigned.
@@ -337,14 +342,60 @@ contains
     real(kind=jprb), intent(inout) :: istate
     real(kind=jprb)   :: randnum
 
-    !$ACC ROUTINE SEQ
+    !$acc routine seq
 
-    ! C++ minstd_rand algorithm
-    istate = mod(IMinstdA * istate, IMinstdM)
-    randnum = IMinstdScale * istate
+    ! c++ minstd_rand algorithm
+    istate = mod(iminstda * istate, iminstdm)
+    randnum = iminstdscale * istate
 
   end function uniform_distribution_acc
 
 
 end module radiation_random_numbers
+
+! #define use_real_rng_state 1
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define rng_state_type real(kind=jprd)
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

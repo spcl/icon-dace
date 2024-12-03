@@ -1,40 +1,89 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoesrta26.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesrta26.f90"
+! this file has been modified for the use in icon
 
-MODULE YOESRTA26
+module yoesrta26
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOESRTA26* - SRTM COEFFICIENTS FOR INTERVAL 26
-!     BAND 26: 22650-29000 cm-1 (low - nothing; high - nothing)
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: JPG = 16, NG26 = 16
-
-REAL(KIND=JPRB) :: SFLUXREF(JPG), RAYL(JPG)
-
-REAL(KIND=JPRB) :: SFLUXREFC(NG26), RAYLC(NG26)
-
-!$ACC DECLARE CREATE(SFLUXREFC, RAYLC)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM SW RADIATION **
+!*    ** *yoesrta26* - srtm coefficients for interval 26
+!     band 26: 22650-29000 cm-1 (low - nothing; high - nothing)
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      02/10/29
-!     M. J. IACONO          AER             12/09/03
+integer(kind=jpim), parameter :: jpg = 16, ng26 = 16
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: sfluxref(jpg), rayl(jpg)
+
+real(kind=jprb) :: sfluxrefc(ng26), raylc(ng26)
+
+!$acc declare create(sfluxrefc, raylc)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm sw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      02/10/29
+!     m. j. iacono          aer             12/09/03
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! SFLUXREF: REAL     Incident solar radiation in the spectral interval
-! RAYL    : REAL     Rayleigh scattering parameter
-!SFLUXREFC: REAL     Reduced g-point array for SFLUXREF
-! RAYLC   : REAL     Reduced g-point array for RAYL
+! sfluxref: real     incident solar radiation in the spectral interval
+! rayl    : real     rayleigh scattering parameter
+!sfluxrefc: real     reduced g-point array for sfluxref
+! raylc   : real     reduced g-point array for rayl
 !     -----------------------------------------------------------------
-END MODULE YOESRTA26
+end module yoesrta26
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

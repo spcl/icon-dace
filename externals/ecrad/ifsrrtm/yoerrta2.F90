@@ -1,53 +1,102 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoerrta2.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerrta2.f90"
+! this file has been modified for the use in icon
 
-MODULE YOERRTA2
+module yoerrta2
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
+save
 
 !     -----------------------------------------------------------------
-!*    ** *YOERRTA2* - RRTM COEFFICIENTS FOR INTERVAL 2
-!     BAND 2:  250-500 cm-1 (low - H2O; high - H2O)
-! ABozzo May 2013 updated to the last rrtmg
+!*    ** *yoerrta2* - rrtm coefficients for interval 2
+!     band 2:  250-500 cm-1 (low - h2o; high - h2o)
+! abozzo may 2013 updated to the last rrtmg
 !     band 2:  350-500 cm-1 (low key - h2o; high key - h2o)
 !     -----------------------------------------------------------------
 
-INTEGER(KIND=JPIM), PARAMETER :: NG2  = 12
+integer(kind=jpim), parameter :: ng2  = 12
 
-!     The ith set of reference fractions are from the ith reference
+!     the ith set of reference fractions are from the ith reference
 !     pressure level.
-REAL(KIND=JPRB) :: FRACREFA(NG2), FRACREFB(NG2)
-REAL(KIND=JPRB) :: KA(5,13,NG2)   , ABSA(65,NG2)
-REAL(KIND=JPRB) :: KB(5,13:59,NG2), ABSB(235,NG2)
-REAL(KIND=JPRB) :: SELFREF(10,NG2), FORREF(4,NG2)
+real(kind=jprb) :: fracrefa(ng2), fracrefb(ng2)
+real(kind=jprb) :: ka(5,13,ng2)   , absa(65,ng2)
+real(kind=jprb) :: kb(5,13:59,ng2), absb(235,ng2)
+real(kind=jprb) :: selfref(10,ng2), forref(4,ng2)
 
-EQUIVALENCE (KA(1,1,1),ABSA(1,1)),(KB(1,13,1),ABSB(1,1))
+equivalence (ka(1,1,1),absa(1,1)),(kb(1,13,1),absb(1,1))
 
-!$ACC DECLARE CREATE(FRACREFA, FRACREFB, KA, ABSA, KB, ABSB, SELFREF, FORREF)
+!$acc declare create(fracrefa, fracrefb, ka, absa, kb, absb, selfref, forref)
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM LW RADIATION **
+!        * e.c.m.w.f. physics package ** rrtm lw radiation **
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      98/07/14
+!     j.-j. morcrette       e.c.m.w.f.      98/07/14
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! ABSA    : REAL     absorption coefficient of major absorber for M reference tropospheric 
-!                    pressures and N reference tropospheric temperatures 
-! ABSB    : REAL     absorption coefficient of secondary absorber for M reference stratospheric
-!                    pressures and N reference stratospheric temperatures 
-! FRACREFA: REAL     distance from r and T reference tabulated points (troposphere)
-! FRACREFB: REAL     distance from r and T reference tabulated points (stratosphere)
-! FORREF  : REAL     foreign broadening coefficient for water vapour
-! KA      : REAL     absorption coefficient of major absorber (equiv. to ABSA)   
-! KB      : REAL     absorption coefficient of secondary absorber (equiv. to ABSB)   
-! REFPARAM: REAL     reference water vapour mixing ratio for use in Planck function interpolation
-! SELFREF : REAL     self broadening coefficient for water vapour
+! absa    : real     absorption coefficient of major absorber for m reference tropospheric 
+!                    pressures and n reference tropospheric temperatures 
+! absb    : real     absorption coefficient of secondary absorber for m reference stratospheric
+!                    pressures and n reference stratospheric temperatures 
+! fracrefa: real     distance from r and t reference tabulated points (troposphere)
+! fracrefb: real     distance from r and t reference tabulated points (stratosphere)
+! forref  : real     foreign broadening coefficient for water vapour
+! ka      : real     absorption coefficient of major absorber (equiv. to absa)   
+! kb      : real     absorption coefficient of secondary absorber (equiv. to absb)   
+! refparam: real     reference water vapour mixing ratio for use in planck function interpolation
+! selfref : real     self broadening coefficient for water vapour
 !     -----------------------------------------------------------------
-END MODULE YOERRTA2
+end module yoerrta2
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

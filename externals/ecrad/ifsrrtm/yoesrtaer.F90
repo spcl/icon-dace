@@ -1,35 +1,84 @@
-MODULE YOESRTAER
+! # 1 "ifsrrtm/yoesrtaer.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoesrtaer.f90"
+module yoesrtaer
 
-USE PARKIND1  ,ONLY : JPRB
+use parkind1  ,only : jprb
 
-IMPLICIT NONE
+implicit none
 
-SAVE
+save
 
 !     ------------------------------------------------------------------
-!*    ** *YOESRTAER* - AEROSOL OPTICAL PROPERTIES FOR SRTM 
+!*    ** *yoesrtaer* - aerosol optical properties for srtm 
 !     ------------------------------------------------------------------
 
-!-- AEROSOL OPTICAL PROPERTIES
+!-- aerosol optical properties
 
-!-- coefficients and parameters related to SRTM_SW 16 sp.int.
+!-- coefficients and parameters related to srtm_sw 16 sp.int.
 
-REAL(KIND=JPRB) :: RSRTAUA(14,6)
-REAL(KIND=JPRB) :: RSRPIZA(14,6)
-REAL(KIND=JPRB) :: RSRASYA(14,6)
+real(kind=jprb) :: rsrtaua(14,6)
+real(kind=jprb) :: rsrpiza(14,6)
+real(kind=jprb) :: rsrasya(14,6)
 
 !     -----------------------------------------------------------------
 
-!        * E.C.M.W.F. PHYSICS PACKAGE *
+!        * e.c.m.w.f. physics package *
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      03/03/07
+!     j.-j. morcrette       e.c.m.w.f.      03/03/07
 
-!  NAME     TYPE     PURPOSE
+!  name     type     purpose
 !  ----  :  ----   : -------
-!RSRTAUA :  REAL     S.W. NORMALIZED OPTICAL THICKNESS AT 0.55 MICRON
-!RSRPIZA :  REAL     S.W. SINGLE SCATTERING ALBEDO
-!RSRASYA :  REAL     S.W. ASSYMETRY FACTOR
+!rsrtaua :  real     s.w. normalized optical thickness at 0.55 micron
+!rsrpiza :  real     s.w. single scattering albedo
+!rsrasya :  real     s.w. assymetry factor
 
 !     -----------------------------------------------------------------
-END MODULE YOESRTAER
+end module yoesrtaer
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

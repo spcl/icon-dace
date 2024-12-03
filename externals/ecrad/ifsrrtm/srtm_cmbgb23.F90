@@ -1,83 +1,132 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/srtm_cmbgb23.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/srtm_cmbgb23.f90"
+! this file has been modified for the use in icon
 
-SUBROUTINE SRTM_CMBGB23
+subroutine srtm_cmbgb23
 
-!     BAND 23:  8050-12850 cm-1 (low - H2O; high - nothing)
+!     band 23:  8050-12850 cm-1 (low - h2o; high - nothing)
 !-----------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM , JPRB
-USE ecradhook   ,ONLY : LHOOK, DR_HOOK, JPHOOK
+use parkind1  ,only : jpim , jprb
+use ecradhook   ,only : lhook, dr_hook, jphook
 
-USE YOESRTM  , ONLY : NGN
-USE YOESRTWN , ONLY : NGC, NGS, RWGT
-!USE YOESRTWN , ONLY : NGC, NGS, NGN, RWGT
-USE YOESRTA23, ONLY : KA, SELFREF, FORREF, SFLUXREF, RAYL, &
-                    & KAC, SELFREFC, FORREFC, SFLUXREFC, RAYLC
+use yoesrtm  , only : ngn
+use yoesrtwn , only : ngc, ngs, rwgt
+!use yoesrtwn , only : ngc, ngs, ngn, rwgt
+use yoesrta23, only : ka, selfref, forref, sfluxref, rayl, &
+                    & kac, selfrefc, forrefc, sfluxrefc, raylc
 
-IMPLICIT NONE
+implicit none
 
-! Local variables
-INTEGER(KIND=JPIM) :: JT, JP, IGC, IPR, IPRSM
-REAL(KIND=JPRB)    :: ZSUMK, ZSUMF1, ZSUMF2
+! local variables
+integer(kind=jpim) :: jt, jp, igc, ipr, iprsm
+real(kind=jprb)    :: zsumk, zsumf1, zsumf2
 
-REAL(KIND=JPHOOK) :: ZHOOK_HANDLE
+real(kind=jphook) :: zhook_handle
 !     ------------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB23',0,ZHOOK_HANDLE)
+if (lhook) call dr_hook('srtm_cmbgb23',0,zhook_handle)
 
-DO JT = 1,5
-  DO JP = 1,13
-    IPRSM = 0
-    DO IGC = 1,NGC(8)
-      ZSUMK = 0.
-      DO IPR = 1, NGN(NGS(7)+IGC)
-        IPRSM = IPRSM + 1
-        ZSUMK = ZSUMK + KA(JT,JP,IPRSM)*RWGT(IPRSM+112)
-      ENDDO
-      KAC(JT,JP,IGC) = ZSUMK
-    ENDDO
-  ENDDO
-ENDDO
+do jt = 1,5
+  do jp = 1,13
+    iprsm = 0
+    do igc = 1,ngc(8)
+      zsumk = 0.
+      do ipr = 1, ngn(ngs(7)+igc)
+        iprsm = iprsm + 1
+        zsumk = zsumk + ka(jt,jp,iprsm)*rwgt(iprsm+112)
+      enddo
+      kac(jt,jp,igc) = zsumk
+    enddo
+  enddo
+enddo
 
-DO JT = 1,10
-  IPRSM = 0
-  DO IGC = 1,NGC(8)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(NGS(7)+IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + SELFREF(JT,IPRSM)*RWGT(IPRSM+112)
-    ENDDO
-    SELFREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,10
+  iprsm = 0
+  do igc = 1,ngc(8)
+    zsumk = 0.
+    do ipr = 1, ngn(ngs(7)+igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + selfref(jt,iprsm)*rwgt(iprsm+112)
+    enddo
+    selfrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-DO JT = 1,3
-  IPRSM = 0
-  DO IGC = 1,NGC(8)
-    ZSUMK = 0.
-    DO IPR = 1, NGN(NGS(7)+IGC)
-      IPRSM = IPRSM + 1
-      ZSUMK = ZSUMK + FORREF(JT,IPRSM)*RWGT(IPRSM+112)
-    ENDDO
-    FORREFC(JT,IGC) = ZSUMK
-  ENDDO
-ENDDO
+do jt = 1,3
+  iprsm = 0
+  do igc = 1,ngc(8)
+    zsumk = 0.
+    do ipr = 1, ngn(ngs(7)+igc)
+      iprsm = iprsm + 1
+      zsumk = zsumk + forref(jt,iprsm)*rwgt(iprsm+112)
+    enddo
+    forrefc(jt,igc) = zsumk
+  enddo
+enddo
 
-IPRSM = 0
-DO IGC = 1,NGC(8)
-  ZSUMF1 = 0.
-  ZSUMF2 = 0.
-  DO IPR = 1, NGN(NGS(7)+IGC)
-    IPRSM = IPRSM + 1
-    ZSUMF1 = ZSUMF1 + SFLUXREF(IPRSM)
-    ZSUMF2 = ZSUMF2 + RAYL(IPRSM)*RWGT(IPRSM+112)
-  ENDDO
-  SFLUXREFC(IGC) = ZSUMF1
-  RAYLC(IGC) = ZSUMF2
-ENDDO
+iprsm = 0
+do igc = 1,ngc(8)
+  zsumf1 = 0.
+  zsumf2 = 0.
+  do ipr = 1, ngn(ngs(7)+igc)
+    iprsm = iprsm + 1
+    zsumf1 = zsumf1 + sfluxref(iprsm)
+    zsumf2 = zsumf2 + rayl(iprsm)*rwgt(iprsm+112)
+  enddo
+  sfluxrefc(igc) = zsumf1
+  raylc(igc) = zsumf2
+enddo
 
-!$ACC UPDATE DEVICE(KAC, SELFREFC, FORREFC, SFLUXREFC, RAYLC)
+!$acc update device(kac, selfrefc, forrefc, sfluxrefc, raylc)
 
 !     -----------------------------------------------------------------
-IF (LHOOK) CALL DR_HOOK('SRTM_CMBGB23',1,ZHOOK_HANDLE)
-END SUBROUTINE SRTM_CMBGB23
+if (lhook) call dr_hook('srtm_cmbgb23',1,zhook_handle)
+end subroutine srtm_cmbgb23
+
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
 

@@ -1,60 +1,109 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/yoerrta9.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/yoerrta9.f90"
+! this file has been modified for the use in icon
 
-MODULE YOERRTA9
+module yoerrta9
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
+use parkind1  ,only : jpim     ,jprb
 
-IMPLICIT NONE
+implicit none
 
-PUBLIC
+public
 
-SAVE
-
-!     -----------------------------------------------------------------
-!*    ** *YOERRTA9* - RRTM COEFFICIENTS FOR INTERVAL 9
-!     BAND 9:  1180-1390 cm-1 (low - H2O,CH4; high - CH4)
-!     -----------------------------------------------------------------
-
-INTEGER(KIND=JPIM), PARAMETER :: NG9  = 12
-
-REAL(KIND=JPRB) :: FRACREFA(NG9,9)
-
-REAL(KIND=JPRB) , DIMENSION(NG9) :: FRACREFB
-
-REAL(KIND=JPRB) :: KA(9,5,13,NG9) ,ABSA(585,NG9)
-REAL(KIND=JPRB) :: KB(5,13:59,NG9) ,ABSB(235,NG9)
-REAL(KIND=JPRB) :: KA_MN2O(9,19,NG9)
-REAL(KIND=JPRB) :: KB_MN2O(19,NG9)
-REAL(KIND=JPRB) :: SELFREF(10,NG9)
-REAL(KIND=JPRB) :: FORREF(4,NG9)
-
-EQUIVALENCE (KA(1,1,1,1),ABSA(1,1)),(KB(1,13,1),ABSB(1,1))
-
-!$ACC DECLARE CREATE(FRACREFA, FRACREFB, KA, ABSA, KB, ABSB, KA_MN2O, KB_MN2O, &
-!$ACC                SELFREF, FORREF)
+save
 
 !     -----------------------------------------------------------------
-!        * E.C.M.W.F. PHYSICS PACKAGE ** RRTM LW RADIATION **
+!*    ** *yoerrta9* - rrtm coefficients for interval 9
+!     band 9:  1180-1390 cm-1 (low - h2o,ch4; high - ch4)
+!     -----------------------------------------------------------------
 
-!     J.-J. MORCRETTE       E.C.M.W.F.      98/07/14
+integer(kind=jpim), parameter :: ng9  = 12
 
-!  NAME     TYPE     PURPOSE
+real(kind=jprb) :: fracrefa(ng9,9)
+
+real(kind=jprb) , dimension(ng9) :: fracrefb
+
+real(kind=jprb) :: ka(9,5,13,ng9) ,absa(585,ng9)
+real(kind=jprb) :: kb(5,13:59,ng9) ,absb(235,ng9)
+real(kind=jprb) :: ka_mn2o(9,19,ng9)
+real(kind=jprb) :: kb_mn2o(19,ng9)
+real(kind=jprb) :: selfref(10,ng9)
+real(kind=jprb) :: forref(4,ng9)
+
+equivalence (ka(1,1,1,1),absa(1,1)),(kb(1,13,1),absb(1,1))
+
+!$acc declare create(fracrefa, fracrefb, ka, absa, kb, absb, ka_mn2o, kb_mn2o, &
+!$acc                selfref, forref)
+
+!     -----------------------------------------------------------------
+!        * e.c.m.w.f. physics package ** rrtm lw radiation **
+
+!     j.-j. morcrette       e.c.m.w.f.      98/07/14
+
+!  name     type     purpose
 !  ----   : ----   : ---------------------------------------------------
-! ABSA    : REAL     absorption coefficient of major absorber for M reference tropospheric 
-!                    pressures and N reference tropospheric temperatures 
-! ABSB    : REAL     absorption coefficient of secondary absorber for M reference stratospheric
-!                    pressures and N reference stratospheric temperatures 
-! ABSN2O  : REAL     absorption coefficient for N2O
-! CH4REF  : REAL     reference profile for CH4
-! ETAREF  : REAL     reference eta profile
-! FRACREFA: REAL     distance from r and T reference tabulated points (troposphere)
-! FRACREFB: REAL     distance from r and T reference tabulated points (stratosphere)
-! H2OREF  : REAL     reference profile for H2O
-! KA      : REAL     absorption coefficient of major absorber (equiv. to ABSA)   
-! KB      : REAL     absorption coefficient of secondary absorber (equiv. to ABSB)   
-! N2OREF  : REAL     reference profile for N2O
-! SELFREF : REAL     self broadening coefficient for water vapour
-! STRRAT  : REAL     weighting factors for the transition between tropospheric 
+! absa    : real     absorption coefficient of major absorber for m reference tropospheric 
+!                    pressures and n reference tropospheric temperatures 
+! absb    : real     absorption coefficient of secondary absorber for m reference stratospheric
+!                    pressures and n reference stratospheric temperatures 
+! absn2o  : real     absorption coefficient for n2o
+! ch4ref  : real     reference profile for ch4
+! etaref  : real     reference eta profile
+! fracrefa: real     distance from r and t reference tabulated points (troposphere)
+! fracrefb: real     distance from r and t reference tabulated points (stratosphere)
+! h2oref  : real     reference profile for h2o
+! ka      : real     absorption coefficient of major absorber (equiv. to absa)   
+! kb      : real     absorption coefficient of secondary absorber (equiv. to absb)   
+! n2oref  : real     reference profile for n2o
+! selfref : real     self broadening coefficient for water vapour
+! strrat  : real     weighting factors for the transition between tropospheric 
 !                    and stratospheric computations
 !     -----------------------------------------------------------------
-END MODULE YOERRTA9
+end module yoerrta9
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+

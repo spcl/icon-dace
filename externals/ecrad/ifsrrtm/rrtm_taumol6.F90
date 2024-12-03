@@ -1,87 +1,92 @@
-! This file has been modified for the use in ICON
+! # 1 "ifsrrtm/rrtm_taumol6.f90"
+! # 1 "<built-in>"
+! # 1 "<command-line>"
+! # 1 "/users/pmz/gitspace/icon-model/externals/ecrad//"
+! # 1 "ifsrrtm/rrtm_taumol6.f90"
+! this file has been modified for the use in icon
 
 !----------------------------------------------------------------------------
-SUBROUTINE RRTM_TAUMOL6 (KIDIA,KFDIA,KLEV,taug,wx,&
- & P_TAUAERL,fac00,fac01,fac10,fac11,forfac,forfrac,indfor,jp,jt,jt1,&
+subroutine rrtm_taumol6 (kidia,kfdia,klev,taug,wx,&
+ & p_tauaerl,fac00,fac01,fac10,fac11,forfac,forfrac,indfor,jp,jt,jt1,&
  & colh2o,colco2,coldry,laytrop,selffac,selffrac,indself,fracs,minorfrac,indminor)  
 
-!     BAND 6:  820-980 cm-1 (low - H2O; high - nothing)
+!     band 6:  820-980 cm-1 (low - h2o; high - nothing)
 
-!     AUTHOR.
+!     author.
 !     -------
-!      JJMorcrette, ECMWF
+!      jjmorcrette, ecmwf
 
-!     MODIFICATIONS.
+!     modifications.
 !     --------------
-!      M.Hamrud      01-Oct-2003 CY28 Cleaning
-!      NEC           25-Oct-2007 Optimisations
-!      JJMorcrette 20110613 flexible number of g-points
-!      ABozzo 201306 updated to rrtmg v4.85
+!      m.hamrud      01-oct-2003 cy28 cleaning
+!      nec           25-oct-2007 optimisations
+!      jjmorcrette 20110613 flexible number of g-points
+!      abozzo 201306 updated to rrtmg v4.85
 !     band 6:  820-980 cm-1 (low key - h2o; low minor - co2)
 !                           (high key - nothing; high minor - cfc11, cfc12)
 ! ---------------------------------------------------------------------------
 
-USE PARKIND1  ,ONLY : JPIM     ,JPRB
-USE ecradhook   ,ONLY : LHOOK,   DR_HOOK
+use parkind1  ,only : jpim     ,jprb
+use ecradhook   ,only : lhook,   dr_hook
 
-USE PARRRTM  , ONLY : JPBAND ,JPXSEC
-USE YOERRTM  , ONLY : JPGPT  ,NG6   ,NGS5
-USE YOERRTWN , ONLY : NSPA   
-USE YOERRTA6 , ONLY : ABSA   ,KA_MCO2 ,CFC11ADJ , CFC12  ,&
- & FRACREFA,SELFREF,FORREF  
-USE YOERRTRF, ONLY : CHI_MLS
+use parrrtm  , only : jpband ,jpxsec
+use yoerrtm  , only : jpgpt  ,ng6   ,ngs5
+use yoerrtwn , only : nspa   
+use yoerrta6 , only : absa   ,ka_mco2 ,cfc11adj , cfc12  ,&
+ & fracrefa,selfref,forref  
+use yoerrtrf, only : chi_mls
 
-IMPLICIT NONE
+implicit none
 
-INTEGER(KIND=JPIM),INTENT(IN)    :: KIDIA
-INTEGER(KIND=JPIM),INTENT(IN)    :: KFDIA
-INTEGER(KIND=JPIM),INTENT(IN)    :: KLEV 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: taug(KIDIA:KFDIA,JPGPT,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: wx(KIDIA:KFDIA,JPXSEC,KLEV) ! Amount of trace gases
-REAL(KIND=JPRB)   ,INTENT(IN)    :: P_TAUAERL(KIDIA:KFDIA,KLEV,JPBAND) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: fac00(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: fac01(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: fac10(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: fac11(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: jp(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: jt(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: jt1(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: colh2o(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: colco2(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: coldry(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: laytrop(KIDIA:KFDIA) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: selffac(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)    :: selffrac(KIDIA:KFDIA,KLEV) 
-INTEGER(KIND=JPIM),INTENT(IN)    :: indself(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(INOUT) :: fracs(KIDIA:KFDIA,JPGPT,KLEV) 
+integer(kind=jpim),intent(in)    :: kidia
+integer(kind=jpim),intent(in)    :: kfdia
+integer(kind=jpim),intent(in)    :: klev 
+real(kind=jprb)   ,intent(inout) :: taug(kidia:kfdia,jpgpt,klev) 
+real(kind=jprb)   ,intent(in)    :: wx(kidia:kfdia,jpxsec,klev) ! amount of trace gases
+real(kind=jprb)   ,intent(in)    :: p_tauaerl(kidia:kfdia,klev,jpband) 
+real(kind=jprb)   ,intent(in)    :: fac00(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: fac01(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: fac10(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: fac11(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: jp(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: jt(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: jt1(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: colh2o(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: colco2(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: coldry(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: laytrop(kidia:kfdia) 
+real(kind=jprb)   ,intent(in)    :: selffac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)    :: selffrac(kidia:kfdia,klev) 
+integer(kind=jpim),intent(in)    :: indself(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(inout) :: fracs(kidia:kfdia,jpgpt,klev) 
 
-INTEGER(KIND=JPIM),INTENT(IN)   :: indfor(KIDIA:KFDIA,KLEV)
-REAL(KIND=JPRB)   ,INTENT(IN)   :: forfac(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)   :: forfrac(KIDIA:KFDIA,KLEV) 
-REAL(KIND=JPRB)   ,INTENT(IN)   :: minorfrac(KIDIA:KFDIA,KLEV)
-INTEGER(KIND=JPIM),INTENT(IN)   :: indminor(KIDIA:KFDIA,KLEV)
+integer(kind=jpim),intent(in)   :: indfor(kidia:kfdia,klev)
+real(kind=jprb)   ,intent(in)   :: forfac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)   :: forfrac(kidia:kfdia,klev) 
+real(kind=jprb)   ,intent(in)   :: minorfrac(kidia:kfdia,klev)
+integer(kind=jpim),intent(in)   :: indminor(kidia:kfdia,klev)
 
 ! ---------------------------------------------------------------------------
 
-INTEGER(KIND=JPIM) :: ind0,ind1,inds,indf,indm
+integer(kind=jpim) :: ind0,ind1,inds,indf,indm
 
-INTEGER(KIND=JPIM) :: IG, lay
+integer(kind=jpim) :: ig, lay
 
-REAL(KIND=JPRB) :: adjfac,adjcolco2,ratco2,chi_co2
-REAL(KIND=JPRB) :: taufor,tauself,absco2
+real(kind=jprb) :: adjfac,adjcolco2,ratco2,chi_co2
+real(kind=jprb) :: taufor,tauself,absco2
     !     local integer arrays
-    INTEGER(KIND=JPIM) :: laytrop_min, laytrop_max
-    integer(KIND=JPIM) :: ixc(KLEV), ixlow(KFDIA,KLEV), ixhigh(KFDIA,KLEV)
-    INTEGER(KIND=JPIM) :: ich, icl, ixc0, ixp, jc, jl
+    integer(kind=jpim) :: laytrop_min, laytrop_max
+    integer(kind=jpim) :: ixc(klev), ixlow(kfdia,klev), ixhigh(kfdia,klev)
+    integer(kind=jpim) :: ich, icl, ixc0, ixp, jc, jl
 
-    !$ACC DATA PRESENT(taug, wx, P_TAUAERL, fac00, fac01, fac10, fac11, jp, jt,  &
-    !$ACC             jt1, colh2o, colco2, coldry, laytrop, selffac, selffrac , &
-    !$ACC             indself, fracs, indfor, forfac, forfrac, minorfrac, &
-    !$ACC             indminor)
+    !$acc data present(taug, wx, p_tauaerl, fac00, fac01, fac10, fac11, jp, jt,  &
+    !$acc             jt1, colh2o, colco2, coldry, laytrop, selffac, selffrac , &
+    !$acc             indself, fracs, indfor, forfac, forfrac, minorfrac, &
+    !$acc             indminor)
 
-#ifndef _OPENACC
-    laytrop_min = MINVAL(laytrop)
-    laytrop_max = MAXVAL(laytrop)
+
+    laytrop_min = minval(laytrop)
+    laytrop_max = maxval(laytrop)
 
     ixlow  = 0
     ixhigh = 0
@@ -91,7 +96,7 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
     do lay = laytrop_min+1, laytrop_max
       icl = 0
       ich = 0
-      do jc = KIDIA, KFDIA
+      do jc = kidia, kfdia
         if ( lay <= laytrop(jc) ) then
           icl = icl + 1
           ixlow(icl,lay) = jc
@@ -102,42 +107,32 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
       enddo
       ixc(lay) = icl
     enddo
-#else
-    laytrop_min = HUGE(laytrop_min) 
-    laytrop_max = -HUGE(laytrop_max)
-    !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-    !$ACC LOOP GANG VECTOR REDUCTION(min:laytrop_min) REDUCTION(max:laytrop_max)
-    do jc = KIDIA,KFDIA
-      laytrop_min = MIN(laytrop_min, laytrop(jc))
-      laytrop_max = MAX(laytrop_max, laytrop(jc))
-    end do
-    !$ACC END PARALLEL
-#endif
+! # 116 "ifsrrtm/rrtm_taumol6.f90"
 
-! Minor gas mapping level:
+! minor gas mapping level:
 !     lower - co2, p = 706.2720 mb, t = 294.2 k
 !     upper - cfc11, cfc12
 
 
-!     Compute the optical depth by interpolating in ln(pressure) and
-!     temperature. The water vapor self- and foreign- continuum is interpolated
+!     compute the optical depth by interpolating in ln(pressure) and
+!     temperature. the water vapor self- and foreign- continuum is interpolated
 !     (in temperature) separately.  
 
-      ! Lower atmosphere loop
-      !$ACC WAIT
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(ind0, ind1, inds, indf, indm, adjfac, adjcolco2, ratco2,chi_co2)
+      ! lower atmosphere loop
+      !$acc wait
+      !$acc parallel default(none) async(1)
+      !$acc loop gang vector collapse(2) private(ind0, ind1, inds, indf, indm, adjfac, adjcolco2, ratco2,chi_co2)
       do lay = 1, laytrop_min
-        do jl = KIDIA, KFDIA
+        do jl = kidia, kfdia
 
-          ! In atmospheres where the amount of CO2 is too great to be considered
-          ! a minor species, adjust the column amount of CO2 by an empirical factor
+          ! in atmospheres where the amount of co2 is too great to be considered
+          ! a minor species, adjust the column amount of co2 by an empirical factor
           ! to obtain the proper contribution.
           chi_co2 = colco2(jl,lay)/(coldry(jl,lay))
-          ratco2 = 1.e20_JPRB*chi_co2/chi_mls(2,jp(jl,lay)+1)
-          if (ratco2 .gt. 3.0_JPRB) then
-            adjfac = 2.0_JPRB+(ratco2-2.0_JPRB)**0.77_JPRB
-            adjcolco2 = adjfac*chi_mls(2,jp(jl,lay)+1)*coldry(jl,lay)*1.e-20_JPRB
+          ratco2 = 1.e20_jprb*chi_co2/chi_mls(2,jp(jl,lay)+1)
+          if (ratco2 .gt. 3.0_jprb) then
+            adjfac = 2.0_jprb+(ratco2-2.0_jprb)**0.77_jprb
+            adjcolco2 = adjfac*chi_mls(2,jp(jl,lay)+1)*coldry(jl,lay)*1.e-20_jprb
           else
             adjcolco2 = colco2(jl,lay)
           endif
@@ -147,8 +142,8 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
           inds = indself(jl,lay)
           indf = indfor(jl,lay)
           indm = indminor(jl,lay)
-          !$ACC LOOP SEQ PRIVATE(taufor, tauself, absco2)
-!$NEC unroll(NG6)
+          !$acc loop seq private(taufor, tauself, absco2)
+!$nec unroll(ng6)
           do ig = 1, ng6
             tauself = selffac(jl,lay) * (selfref(inds,ig) + selffrac(jl,lay) * &
                  (selfref(inds+1,ig) - selfref(inds,ig)))
@@ -169,48 +164,48 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
           enddo
         enddo
       enddo
-      !$ACC END PARALLEL
+      !$acc end parallel
 
-      ! Upper atmosphere loop
-      ! Nothing important goes on above laytrop in this band.
-      !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-      !$ACC LOOP GANG VECTOR COLLAPSE(3)
+      ! upper atmosphere loop
+      ! nothing important goes on above laytrop in this band.
+      !$acc parallel default(none) async(1)
+      !$acc loop gang vector collapse(3)
       do ig = 1, ng6
-        do lay = laytrop_max+1, KLEV
-          do jl = KIDIA, KFDIA
-            taug(jl,ngs5+ig,lay) = 0.0_JPRB &
+        do lay = laytrop_max+1, klev
+          do jl = kidia, kfdia
+            taug(jl,ngs5+ig,lay) = 0.0_jprb &
                  + wx(jl,2,lay) * cfc11adj(ig) &
                  + wx(jl,3,lay) * cfc12(ig)
             fracs(jl,ngs5+ig,lay) = fracrefa(ig)
           enddo
         enddo
       enddo
-      !$ACC END PARALLEL
+      !$acc end parallel
 
-      IF (laytrop_max /= laytrop_min) THEN
-        ! Mixed loop
-        ! Lower atmosphere part
-        !$ACC PARALLEL DEFAULT(NONE) ASYNC(1)
-        !$ACC LOOP GANG VECTOR COLLAPSE(2) PRIVATE(chi_co2, ratco2, adjfac, adjcolco2, ind0, ind1, inds, indf, indm)
+      if (laytrop_max /= laytrop_min) then
+        ! mixed loop
+        ! lower atmosphere part
+        !$acc parallel default(none) async(1)
+        !$acc loop gang vector collapse(2) private(chi_co2, ratco2, adjfac, adjcolco2, ind0, ind1, inds, indf, indm)
         do lay = laytrop_min+1, laytrop_max
-#ifdef _OPENACC
-          do jl = KIDIA, KFDIA
-            if ( lay <= laytrop(jl) ) then
-#else
+
+
+
+
           ixc0 = ixc(lay)
-!$NEC ivdep
+!$nec ivdep
           do ixp = 1, ixc0
             jl = ixlow(ixp,lay)
-#endif
 
-            ! In atmospheres where the amount of CO2 is too great to be considered
-            ! a minor species, adjust the column amount of CO2 by an empirical factor
+
+            ! in atmospheres where the amount of co2 is too great to be considered
+            ! a minor species, adjust the column amount of co2 by an empirical factor
             ! to obtain the proper contribution.
             chi_co2 = colco2(jl,lay)/(coldry(jl,lay))
-            ratco2 = 1.e20_JPRB*chi_co2/chi_mls(2,jp(jl,lay)+1)
-            if (ratco2 .gt. 3.0_JPRB) then
-              adjfac = 2.0_JPRB+(ratco2-2.0_JPRB)**0.77_JPRB
-              adjcolco2 = adjfac*chi_mls(2,jp(jl,lay)+1)*coldry(jl,lay)*1.e-20_JPRB
+            ratco2 = 1.e20_jprb*chi_co2/chi_mls(2,jp(jl,lay)+1)
+            if (ratco2 .gt. 3.0_jprb) then
+              adjfac = 2.0_jprb+(ratco2-2.0_jprb)**0.77_jprb
+              adjcolco2 = adjfac*chi_mls(2,jp(jl,lay)+1)*coldry(jl,lay)*1.e-20_jprb
             else
               adjcolco2 = colco2(jl,lay)
             endif
@@ -220,8 +215,8 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
             inds = indself(jl,lay)
             indf = indfor(jl,lay)
             indm = indminor(jl,lay)
-!$NEC unroll(NG6)
-            !$ACC LOOP SEQ PRIVATE(tauself, taufor, absco2)
+!$nec unroll(ng6)
+            !$acc loop seq private(tauself, taufor, absco2)
             do ig = 1, ng6
               tauself = selffac(jl,lay) * (selfref(inds,ig) + selffrac(jl,lay) * &
                   (selfref(inds+1,ig) - selfref(inds,ig)))
@@ -240,38 +235,82 @@ REAL(KIND=JPRB) :: taufor,tauself,absco2
                   + wx(jl,3,lay) * cfc12(ig)
               fracs(jl,ngs5+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-         else
-#else
+
+
+
           enddo
 
-          ! Upper atmosphere part
-          ! Nothing important goes on above laytrop in this band.
-          ixc0 = KFDIA - KIDIA + 1 - ixc0
-#endif
+          ! upper atmosphere part
+          ! nothing important goes on above laytrop in this band.
+          ixc0 = kfdia - kidia + 1 - ixc0
 
-          !$ACC LOOP SEQ
+
+          !$acc loop seq
           do ig = 1, ng6
-#ifndef _OPENACC
-!$NEC ivdep
+
+!$nec ivdep
             do ixp = 1, ixc0
               jl = ixhigh(ixp,lay)
-#endif
-              taug(jl,ngs5+ig,lay) = 0.0_JPRB &
+
+              taug(jl,ngs5+ig,lay) = 0.0_jprb &
                   + wx(jl,2,lay) * cfc11adj(ig) &
                   + wx(jl,3,lay) * cfc12(ig)
               fracs(jl,ngs5+ig,lay) = fracrefa(ig)
             enddo
-#ifdef _OPENACC
-           endif
-#endif
+
+
+
           enddo
 
         enddo
-        !$ACC END PARALLEL
+        !$acc end parallel
 
-      ENDIF
+      endif
 
-      !$ACC END DATA
+      !$acc end data
 
-END SUBROUTINE RRTM_TAUMOL6
+end subroutine rrtm_taumol6
+! #define __atomic_acquire 2
+! #define __char_bit__ 8
+! #define __float_word_order__ __order_little_endian__
+! #define __order_little_endian__ 1234
+! #define __order_pdp_endian__ 3412
+! #define __gfc_real_10__ 1
+! #define __finite_math_only__ 0
+! #define __gnuc_patchlevel__ 0
+! #define __gfc_int_2__ 1
+! #define __sizeof_int__ 4
+! #define __sizeof_pointer__ 8
+! #define __gfortran__ 1
+! #define __gfc_real_16__ 1
+! #define __stdc_hosted__ 0
+! #define __no_math_errno__ 1
+! #define __sizeof_float__ 4
+! #define __pic__ 2
+! #define _language_fortran 1
+! #define __sizeof_long__ 8
+! #define __gfc_int_8__ 1
+! #define __dynamic__ 1
+! #define __sizeof_short__ 2
+! #define __gnuc__ 13
+! #define __sizeof_long_double__ 16
+! #define __biggest_alignment__ 16
+! #define __atomic_relaxed 0
+! #define _lp64 1
+! #define __ecrad_little_endian 1
+! #define __gfc_int_1__ 1
+! #define __order_big_endian__ 4321
+! #define __byte_order__ __order_little_endian__
+! #define __sizeof_size_t__ 8
+! #define __pic__ 2
+! #define __sizeof_double__ 8
+! #define __atomic_consume 1
+! #define __gnuc_minor__ 3
+! #define __gfc_int_16__ 1
+! #define __lp64__ 1
+! #define __atomic_seq_cst 5
+! #define __sizeof_long_long__ 8
+! #define __atomic_acq_rel 4
+! #define __atomic_release 3
+! #define __version__ "13.3.0"
+
