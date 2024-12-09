@@ -168,7 +168,8 @@ MODULE netcdf
     INTEGER, INTENT(IN) :: a_0
     INTEGER, INTENT(IN) :: a_1
     CHARACTER(LEN = *), INTENT(IN) :: a_2
-    INTEGER(KIND = SELECTED_INT_KIND(1)), INTENT(IN) :: a_3
+    INTEGER, PARAMETER :: k = SELECTED_INT_KIND(1)
+    INTEGER(KIND = k), INTENT(IN) :: a_3
     INTEGER, OPTIONAL :: start(:), count(:)
     INTEGER :: stub_2
     stub_2 = nf90_noerr
@@ -260,7 +261,8 @@ MODULE netcdf
     INTEGER, INTENT(IN) :: a_0
     INTEGER, INTENT(IN) :: a_1
     CHARACTER(LEN = *), INTENT(IN) :: a_2
-    INTEGER(KIND = SELECTED_INT_KIND(4)), INTENT(IN) :: a_3
+    INTEGER, PARAMETER :: k = SELECTED_INT_KIND(4)
+    INTEGER(KIND = k), INTENT(IN) :: a_3
     INTEGER, OPTIONAL :: start(:), count(:)
     INTEGER :: stub_13
     stub_13 = nf90_noerr
