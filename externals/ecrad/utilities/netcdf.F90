@@ -1,16 +1,17 @@
 MODULE netcdf
   IMPLICIT NONE
+  ! REF: https://github.com/Unidata/netcdf-fortran/blob/main/fortran/netcdf_constants.F90
   INTEGER, PARAMETER :: nf90_noerr = 0
   INTEGER, PARAMETER :: nf90_nowrite = 0
   INTEGER, PARAMETER :: nf90_clobber = 0
-  INTEGER, PARAMETER :: nf90_max_var_dims = 0
-  INTEGER, PARAMETER :: nf90_enotvar = 0
+  INTEGER, PARAMETER :: nf90_max_var_dims = 1024
+  INTEGER, PARAMETER :: nf90_enotvar = -49
   INTEGER, PARAMETER :: nf90_global = 0
-  INTEGER, PARAMETER :: nf90_double = 0
-  INTEGER, PARAMETER :: nf90_float = 0
-  INTEGER, PARAMETER :: nf90_byte = 0
-  INTEGER, PARAMETER :: nf90_int = 0
-  INTEGER, PARAMETER :: nf90_short = 0
+  INTEGER, PARAMETER :: nf90_double = 6
+  INTEGER, PARAMETER :: nf90_float = 5
+  INTEGER, PARAMETER :: nf90_byte = 1
+  INTEGER, PARAMETER :: nf90_int = 4
+  INTEGER, PARAMETER :: nf90_short = 3
   INTERFACE nf90_def_var
     MODULE PROCEDURE stub_0
     MODULE PROCEDURE stub_1
