@@ -323,8 +323,9 @@ contains
     !$acc             planck_hl, lw_emission, lw_albedo, sw_albedo_direct, &
     !$acc             sw_albedo_diffuse, incoming_sw)
 
-    if (thermodynamics%pressure_hl(istartcol,2) &
-         &  < thermodynamics%pressure_hl(istartcol,1)) then
+    !if (thermodynamics%pressure_hl(istartcol,2) &
+    !     &  < thermodynamics%pressure_hl(istartcol,1)) then
+    if (.false.) then
       ! input arrays are arranged in order of decreasing pressure /
       ! increasing height: the following subroutine reverses them,
       ! call the radiation scheme and then reverses the returned

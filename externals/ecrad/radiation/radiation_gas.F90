@@ -521,10 +521,10 @@ contains
           end if
         end if
       end if
-    else
-      do jg = 1,this%ntype
-        call this%assert_units(iunits, igas=this%icode(jg), scale_factor=sf, istatus=istatus)
-      end do
+    !else
+    !  do jg = 1,this%ntype
+    !    call this%assert_units(iunits, igas=this%icode(jg), scale_factor=sf, istatus=istatus)
+    !  end do
     end if
 
   end subroutine assert_units_gas
