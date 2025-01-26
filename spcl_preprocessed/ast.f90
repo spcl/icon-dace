@@ -1866,6 +1866,7 @@ END SUBROUTINE abor1
 SUBROUTINE srtm_setcoef(kidia_var_603, kfdia_var_604, klev_var_605, pavel_var_606, ptavel_var_607, pcoldry_var_608, pwkl_var_609, klaytrop_var_610, pcolch4_var_611, pcolco2_var_612, pcolh2o_var_613, pcolmol_var_614, pcolo2_var_615, pcolo3_var_616, pforfac_var_617, pforfrac_var_618, kindfor_var_619, pselffac_var_620, pselffrac_var_621, kindself_var_622, pfac00_var_623, pfac01_var_624, pfac10_var_625, pfac11_var_626, kjp_var_627, kjt_var_628, kjt1_var_629, prmu0_var_630)
   USE yoesrtwn, ONLY: preflog_var_315, tref_var_316
   IMPLICIT NONE
+  LOGICAL :: goto_cond_0
   INTEGER(KIND = 4), INTENT(IN) :: kidia_var_603, kfdia_var_604
   INTEGER(KIND = 4), INTENT(IN) :: klev_var_605
   REAL(KIND = 8), INTENT(IN) :: pavel_var_606(kidia_var_603 : kfdia_var_604, klev_var_605)
@@ -1937,46 +1938,48 @@ SUBROUTINE srtm_setcoef(kidia_var_603, kfdia_var_604, klev_var_605, pavel_var_60
         z_ft1_var_639 = ((ptavel_var_607(jl_var_633, jk_var_632) - tref_var_316(jp1_var_634)) / 15.0) - REAL(kjt1_var_629(jl_var_633, jk_var_632) - 3)
         z_water_var_640 = pwkl_var_609(jl_var_633, 1, jk_var_632) / pcoldry_var_608(jl_var_633, jk_var_632)
         z_scalefac_var_641 = pavel_var_606(jl_var_633, jk_var_632) * z_stpfac_var_635 / ptavel_var_607(jl_var_633, jk_var_632)
-        IF (z_plog_var_636 <= 4.56D0) GO TO 5300
-        klaytrop_var_610(jl_var_633) = klaytrop_var_610(jl_var_633) + 1
-        pforfac_var_617(jl_var_633, jk_var_632) = z_scalefac_var_641 / (1.0 + z_water_var_640)
-        z_factor_var_642 = (332.0 - ptavel_var_607(jl_var_633, jk_var_632)) / 36.0
-        kindfor_var_619(jl_var_633, jk_var_632) = MIN(2, MAX(1, INT(z_factor_var_642)))
-        pforfrac_var_618(jl_var_633, jk_var_632) = z_factor_var_642 - REAL(kindfor_var_619(jl_var_633, jk_var_632))
-        pselffac_var_620(jl_var_633, jk_var_632) = z_water_var_640 * pforfac_var_617(jl_var_633, jk_var_632)
-        z_factor_var_642 = (ptavel_var_607(jl_var_633, jk_var_632) - 188.0) / 7.2
-        kindself_var_622(jl_var_633, jk_var_632) = MIN(9, MAX(1, INT(z_factor_var_642) - 7))
-        pselffrac_var_621(jl_var_633, jk_var_632) = z_factor_var_642 - REAL(kindself_var_622(jl_var_633, jk_var_632) + 7)
-        pcolh2o_var_613(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 1, jk_var_632)
-        pcolco2_var_612(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 2, jk_var_632)
-        pcolo3_var_616(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 3, jk_var_632)
-        pcolch4_var_611(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 6, jk_var_632)
-        pcolo2_var_615(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 7, jk_var_632)
-        pcolmol_var_614(jl_var_633, jk_var_632) = 1E-20 * pcoldry_var_608(jl_var_633, jk_var_632) + pcolh2o_var_613(jl_var_633, jk_var_632)
-        IF (pcolco2_var_612(jl_var_633, jk_var_632) == 0.0) pcolco2_var_612(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        IF (pcolch4_var_611(jl_var_633, jk_var_632) == 0.0) pcolch4_var_611(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        IF (pcolo2_var_615(jl_var_633, jk_var_632) == 0.0) pcolo2_var_615(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        z_co2reg_var_643 = 3.55E-24 * pcoldry_var_608(jl_var_633, jk_var_632)
-        GO TO 5400
-5300    CONTINUE
-        pforfac_var_617(jl_var_633, jk_var_632) = z_scalefac_var_641 / (1.0 + z_water_var_640)
-        z_factor_var_642 = (ptavel_var_607(jl_var_633, jk_var_632) - 188.0) / 36.0
-        kindfor_var_619(jl_var_633, jk_var_632) = 3
-        pforfrac_var_618(jl_var_633, jk_var_632) = z_factor_var_642 - 1.0
-        pcolh2o_var_613(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 1, jk_var_632)
-        pcolco2_var_612(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 2, jk_var_632)
-        pcolo3_var_616(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 3, jk_var_632)
-        pcolch4_var_611(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 6, jk_var_632)
-        pcolo2_var_615(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 7, jk_var_632)
-        pcolmol_var_614(jl_var_633, jk_var_632) = 1E-20 * pcoldry_var_608(jl_var_633, jk_var_632) + pcolh2o_var_613(jl_var_633, jk_var_632)
-        IF (pcolco2_var_612(jl_var_633, jk_var_632) == 0.0) pcolco2_var_612(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        IF (pcolch4_var_611(jl_var_633, jk_var_632) == 0.0) pcolch4_var_611(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        IF (pcolo2_var_615(jl_var_633, jk_var_632) == 0.0) pcolo2_var_615(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
-        z_co2reg_var_643 = 3.55E-24 * pcoldry_var_608(jl_var_633, jk_var_632)
-        pselffac_var_620(jl_var_633, jk_var_632) = 0.0D0
-        pselffrac_var_621(jl_var_633, jk_var_632) = 0.0D0
-        kindself_var_622(jl_var_633, jk_var_632) = 0
-5400    CONTINUE
+        goto_cond_0 = z_plog_var_636 <= 4.56D0
+        IF (goto_cond_0) THEN
+        ELSE
+          klaytrop_var_610(jl_var_633) = klaytrop_var_610(jl_var_633) + 1
+          pforfac_var_617(jl_var_633, jk_var_632) = z_scalefac_var_641 / (1.0 + z_water_var_640)
+          z_factor_var_642 = (332.0 - ptavel_var_607(jl_var_633, jk_var_632)) / 36.0
+          kindfor_var_619(jl_var_633, jk_var_632) = MIN(2, MAX(1, INT(z_factor_var_642)))
+          pforfrac_var_618(jl_var_633, jk_var_632) = z_factor_var_642 - REAL(kindfor_var_619(jl_var_633, jk_var_632))
+          pselffac_var_620(jl_var_633, jk_var_632) = z_water_var_640 * pforfac_var_617(jl_var_633, jk_var_632)
+          z_factor_var_642 = (ptavel_var_607(jl_var_633, jk_var_632) - 188.0) / 7.2
+          kindself_var_622(jl_var_633, jk_var_632) = MIN(9, MAX(1, INT(z_factor_var_642) - 7))
+          pselffrac_var_621(jl_var_633, jk_var_632) = z_factor_var_642 - REAL(kindself_var_622(jl_var_633, jk_var_632) + 7)
+          pcolh2o_var_613(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 1, jk_var_632)
+          pcolco2_var_612(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 2, jk_var_632)
+          pcolo3_var_616(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 3, jk_var_632)
+          pcolch4_var_611(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 6, jk_var_632)
+          pcolo2_var_615(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 7, jk_var_632)
+          pcolmol_var_614(jl_var_633, jk_var_632) = 1E-20 * pcoldry_var_608(jl_var_633, jk_var_632) + pcolh2o_var_613(jl_var_633, jk_var_632)
+          IF (pcolco2_var_612(jl_var_633, jk_var_632) == 0.0) pcolco2_var_612(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          IF (pcolch4_var_611(jl_var_633, jk_var_632) == 0.0) pcolch4_var_611(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          IF (pcolo2_var_615(jl_var_633, jk_var_632) == 0.0) pcolo2_var_615(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          z_co2reg_var_643 = 3.55E-24 * pcoldry_var_608(jl_var_633, jk_var_632)
+        END IF
+        IF (goto_cond_0) THEN
+          pforfac_var_617(jl_var_633, jk_var_632) = z_scalefac_var_641 / (1.0 + z_water_var_640)
+          z_factor_var_642 = (ptavel_var_607(jl_var_633, jk_var_632) - 188.0) / 36.0
+          kindfor_var_619(jl_var_633, jk_var_632) = 3
+          pforfrac_var_618(jl_var_633, jk_var_632) = z_factor_var_642 - 1.0
+          pcolh2o_var_613(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 1, jk_var_632)
+          pcolco2_var_612(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 2, jk_var_632)
+          pcolo3_var_616(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 3, jk_var_632)
+          pcolch4_var_611(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 6, jk_var_632)
+          pcolo2_var_615(jl_var_633, jk_var_632) = 1E-20 * pwkl_var_609(jl_var_633, 7, jk_var_632)
+          pcolmol_var_614(jl_var_633, jk_var_632) = 1E-20 * pcoldry_var_608(jl_var_633, jk_var_632) + pcolh2o_var_613(jl_var_633, jk_var_632)
+          IF (pcolco2_var_612(jl_var_633, jk_var_632) == 0.0) pcolco2_var_612(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          IF (pcolch4_var_611(jl_var_633, jk_var_632) == 0.0) pcolch4_var_611(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          IF (pcolo2_var_615(jl_var_633, jk_var_632) == 0.0) pcolo2_var_615(jl_var_633, jk_var_632) = 1E-32 * pcoldry_var_608(jl_var_633, jk_var_632)
+          z_co2reg_var_643 = 3.55E-24 * pcoldry_var_608(jl_var_633, jk_var_632)
+          pselffac_var_620(jl_var_633, jk_var_632) = 0.0D0
+          pselffrac_var_621(jl_var_633, jk_var_632) = 0.0D0
+          kindself_var_622(jl_var_633, jk_var_632) = 0
+        END IF
         z_compfp_var_644 = 1.0 - z_fp_var_637
         pfac10_var_625(jl_var_633, jk_var_632) = z_compfp_var_644 * z_ft_var_638
         pfac00_var_623(jl_var_633, jk_var_632) = z_compfp_var_644 * (1.0 - z_ft_var_638)
