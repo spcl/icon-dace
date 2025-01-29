@@ -88,9 +88,9 @@ module cloud_random_numbers
 
   contains
     procedure :: initialize
-    procedure :: uniform_distribution_1d, &
-         &       uniform_distribution_2d, &
-         &       uniform_distribution_2d_masked
+    procedure :: uniform_distribution_1d
+    procedure :: uniform_distribution_2d
+    procedure :: uniform_distribution_2d_masked
     generic   :: uniform_distribution => uniform_distribution_1d, &
          &                               uniform_distribution_2d, &
          &                               uniform_distribution_2d_masked
