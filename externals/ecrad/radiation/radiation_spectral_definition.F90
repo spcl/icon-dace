@@ -73,7 +73,8 @@ module radiation_spectral_definition
     procedure :: calc_mapping_from_bands
     procedure :: calc_mapping_from_wavenumber_bands
     procedure :: print_mapping_from_bands
-    procedure :: min_wavenumber, max_wavenumber
+    procedure :: min_wavenumber
+    procedure :: max_wavenumber
 
   end type spectral_definition_type
 
