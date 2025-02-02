@@ -203,8 +203,8 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 #include "srtm_taumol27.intfb.h"
 #include "srtm_taumol28.intfb.h"
 #include "srtm_taumol29.intfb.h"
-#include "srtm_reftra.intfb.h"
-#include "srtm_vrtqdr.intfb.h"
+! DOES NOT EXIST: #include "srtm_reftra.intfb.h"
+! DOES NOT EXIST: #include "srtm_vrtqdr.intfb.h"
 !     ------------------------------------------------------------------
 ASSOCIATE(NFLEVG=>KLEV)
 IF (LHOOK) CALL DR_HOOK('SRTM_SPCVRT_MCICA',0,ZHOOK_HANDLE)
