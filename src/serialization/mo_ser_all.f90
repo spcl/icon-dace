@@ -46,10 +46,10 @@ MODULE mo_ser_all
 
   PUBLIC :: serialize_all ! This is the only component that has to be available without SERIALIZE
 
+  CONTAINS
 
 #ifdef SERIALIZE
   PRIVATE
-  CONTAINS
 
   SUBROUTINE char_to_hash(c, a)
       CHARACTER(len=*), INTENT(in) :: c
@@ -197,6 +197,7 @@ MODULE mo_ser_all
 #endif
 
   SUBROUTINE serialize_all(nproma, jg, savepoint_base, is_input, opt_lupdate_cpu, opt_id, opt_dt)
+    USE mtime, ONLY: datetime
 
     INTEGER, INTENT(IN) :: nproma, jg
     CHARACTER(LEN=*), INTENT(IN) :: savepoint_base
