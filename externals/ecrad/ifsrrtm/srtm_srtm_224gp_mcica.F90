@@ -162,7 +162,7 @@ REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
 
 #include "srtm_setcoef.intfb.h"
-#include "srtm_spcvrt_mcica.intfb.h"
+! DOES NOT EXIST: #include "srtm_spcvrt_mcica.intfb.h"
 
 
 !-----------------------------------------------------------------------

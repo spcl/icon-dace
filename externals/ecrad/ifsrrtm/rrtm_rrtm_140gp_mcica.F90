@@ -187,9 +187,9 @@ LOGICAL            :: LLPRINT
 
 REAL(KIND=JPRB) :: ZHOOK_HANDLE
 
-#include "rrtm_ecrt_140gp_mcica.intfb.h"
+! DOES NOT EXIST: #include "rrtm_ecrt_140gp_mcica.intfb.h"
 #include "rrtm_gasabs1a_140gp.intfb.h"
-#include "rrtm_rtrn1a_140gp_mcica.intfb.h"
+! DOES NOT EXIST: #include "rrtm_rtrn1a_140gp_mcica.intfb.h"
 #include "rrtm_setcoef_140gp.intfb.h"
 
 !     HEATFAC is the factor by which one must multiply delta-flux/ 
