@@ -621,8 +621,8 @@ sanitize-mod-proxies:
   $(srcdir)/sdfgs/integrations.yaml \
   $(srcdir)/sdfgs/utils/dace-substf.py \
 	$$(shell $$(DACE_PRINT_INTEGRATIONS) $$(srcdir)/sdfgs/integrations.yaml "association_files" $$*.f90) \
-  | $(dir_files)
-@DACE_SUBST_ENABLED@	$(silent_DACE_SUBST)$(DACE_SUBST_PP) $(word 2,$^) $(wordlist 4,100000,$^) $< $@
+	| $(dir_files)
+	@DACE_SUBST_ENABLED@	$(silent_DACE_SUBST)$(DACE_SUBST_PP) $(word 2,$^) $(wordlist 4,100000,$^) $< $@
 
 # Don't delete intermediate files
 # (`.NOTINTERMEDIATE` doesn't support pattern rules, so compute intermediate files explicitly)
@@ -645,8 +645,8 @@ sanitize-mod-proxies:
   sdfgs/%_module_definitions.yaml \
   sdfgs/build/lib%.so \
   $(srcdir)/sdfgs/utils/dace-genfi.py \
-  | $(dir_files)
-@DACE_SUBST_ENABLED@	$(DACE_GENFI) $< $(word 2,$^) $(word 3,$^) $@
+	| $(dir_files)
+	@DACE_SUBST_ENABLED@	$(DACE_GENFI) $< $(word 2,$^) $(word 3,$^) $@
 
 # Compiled SDFG
 # We use symlinks instead of copies (e.g., `-o` option of `sdfgcc`) to avoid stale copies
@@ -655,27 +655,27 @@ sanitize-mod-proxies:
   sdfgs/%_optimized.sdfgz \
   .dace.conf \
   | $(dir_files)
-@DACE_SUBST_ENABLED@	sdfgcc $< && \
-@DACE_SUBST_ENABLED@	  touch $@ && \
-@DACE_SUBST_ENABLED@	  ln -sf ../../.dacecache/$*/build/lib$*.so ../../.dacecache/$*/include/$*.h sdfgs/build
+	@DACE_SUBST_ENABLED@	sdfgcc $< && \
+	@DACE_SUBST_ENABLED@	  touch $@ && \
+	@DACE_SUBST_ENABLED@	  ln -sf ../../.dacecache/$*/build/lib$*.so ../../.dacecache/$*/include/$*.h sdfgs/build
 
 # symlink `.dace.conf`
 @DACE_SUBST_ENABLED@.dace.conf: $(srcdir)/.dace.conf
-@DACE_SUBST_ENABLED@	ln -s $< $@
+	@DACE_SUBST_ENABLED@	ln -s $< $@
 
 # Optimized SDFG
 @DACE_SUBST_ENABLED@sdfgs/%_optimized.sdfgz: \
   sdfgs/%_simplified.sdfgz \
   $(srcdir)/sdfgs/optimize_%.py \
-  | $(dir_files)
-@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/optimize_$*.py $< $@
+	| $(dir_files)
+	@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/optimize_$*.py $< $@
 
 # Simplify
 @DACE_SUBST_ENABLED@sdfgs/%_simplified.sdfgz: \
   sdfgs/%_unsimplified.sdfgz \
   $(srcdir)/sdfgs/utils/dace-simplify.py \
   | $(dir_files)
-@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/utils/dace-simplify.py $< $@
+	@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/utils/dace-simplify.py $< $@
 
 # Generate unsimplified
 @DACE_SUBST_ENABLED@sdfgs/%_unsimplified.sdfgz \
@@ -685,7 +685,7 @@ sanitize-mod-proxies:
     $(srcdir)/sdfgs/integrations.yaml \
     $(srcdir)/sdfgs/generate.py \
     | $(dir_files)
-@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/generate.py $* $< sdfgs
+	@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/generate.py $* $< sdfgs
 
 ##################### EXPLICIT FORTRAN PREPROCESSING RULES #####################
 
