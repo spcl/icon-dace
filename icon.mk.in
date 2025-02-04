@@ -70,6 +70,9 @@ DEPGEN= ${PYTHON} $(srcdir)/utils/mkhelper/depgen.py
 MODCMP= ${PYTHON} $(srcdir)/utils/mkhelper/fortmodcmp.py
 DSL4JSB= ${PYTHON} $(srcdir)/externals/jsbach/scripts/dsl4jsb/dsl4jsb.py
 SB2PP= @SB2PP@
+DACE_SUBST_PP= ${PYTHON} $(srcdir)/sdfgs/utils/dace-substf.py
+DACE_GENFI= ${PYTHON} $(srcdir)/sdfgs/utils/dace-genfi.py
+DACE_PRINT_INTEGRATIONS= ${PYTHON} $(srcdir)/sdfgs/utils/dace-print-integrations.py
 FPP= @FPP@
 INSTALL= @INSTALL@
 MKDIR_P= @MKDIR_P@
@@ -93,6 +96,9 @@ HIPFLAGS= @HIPFLAGS@
 LDFLAGS= @LDFLAGS@
 BUNDLED_LIBFILES= @BUNDLED_LIBFILES@
 BUNDLED_EXTRA_LIBS= $(shell $(SHELL) ./collect.extra-libs)
+# We use `-rpath` to make sure the correct dace generated libraries are found
+@DACE_SUBST_ENABLED@BUNDLED_EXTRA_LIBS+= -Wl,-rpath -Wl,$(shell pwd)/sdfgs/build -Lsdfgs/build
+@DACE_SUBST_ENABLED@BUNDLED_EXTRA_LIBS+= $(foreach sdfg,$(shell $(DACE_PRINT_INTEGRATIONS) $(srcdir)/sdfgs/integrations.yaml "sdfg_names"), -l$(sdfg))
 LIBS= @LIBS@
 
 ############################ SOURCE FILE COLLECTION ############################
@@ -167,6 +173,18 @@ pp_files:=
 @JSBACH_ENABLED@DSL4JSB_out_f90_files:= $(DSL4JSB_in_f90_files:.f90=$(DSL4JSB_infix).f90)
 @JSBACH_ENABLED@f90_files:= $(filter-out $(DSL4JSB_in_f90_files),$(f90_files)) $(DSL4JSB_out_f90_files)
 @JSBACH_ENABLED@pp_files+= $(DSL4JSB_out_f90_files)
+
+####### DACE SUBST PREPROCESSING #######
+@DACE_SUBST_ENABLED@DACE_SUBST_in_f90_files:= $(shell $(DACE_PRINT_INTEGRATIONS) $(srcdir)/sdfgs/integrations.yaml "icon_f90_files")
+########################################
+@DACE_SUBST_ENABLED@DACE_SUBST_infix:= $(pp_infix)dsub
+
+@DACE_SUBST_ENABLED@DACE_SUBST_out_f90_files:= $(DACE_SUBST_in_f90_files:.f90=$(DACE_SUBST_infix).f90)
+# Add interface files
+@DACE_SUBST_ENABLED@DACE_SUBST_out_f90_files+= $(shell $(DACE_PRINT_INTEGRATIONS) $(srcdir)/sdfgs/integrations.yaml "f90_interfaces")
+
+@DACE_SUBST_ENABLED@f90_files:= $(filter-out $(DACE_SUBST_in_f90_files),$(f90_files)) $(DACE_SUBST_out_f90_files)
+@DACE_SUBST_ENABLED@pp_files+= $(DACE_SUBST_out_f90_files)
 
 #### EXPLICIT FORTRAN PREPROCESSING ####
 @FPP_ENABLED@FPP_in_f90_files:= $(f90_files)
@@ -334,6 +352,7 @@ silent_HIPCXX=  @echo "  HIPCXX  " $@;
 silent_MKDIR=   @echo "  MKDIR   " $(@D);
 silent_MOD=     @echo "  MOD    <" $<;
 silent_SB2=     @echo "  SB2PP   " $@;
+silent_DACE_SUBST=@echo "  DACE_SUBST_PP " $@;
 silent_none=    @
 endif
 
@@ -360,6 +379,9 @@ vpath %.f90 $(srcdir)
 vpath %.c $(srcdir)
 vpath %.cu $(srcdir)
 vpath %.hip.cc $(srcdir)
+vpath sdfgs/%.sdfgz $(srcdir)
+vpath sdfgs/%_module_definitions.yaml $(srcdir)
+vpath sdfgs/%_associations.yaml $(srcdir)
 
 ################### PATTERN- AND TARGET-SPECIFIC ASSIGNMENTS ###################
 
@@ -591,6 +613,79 @@ sanitize-mod-proxies:
 
 @JSBACH_ENABLED@%$(DSL4JSB_infix).f90: %.f90 | $(dir_files)
 @JSBACH_ENABLED@	$(silent_DSL4JSB)$(DSL4JSB) -i $< -o $@
+
+######################## DACE SUBST PREPROCESSING RULES ########################
+.SECONDEXPANSION:
+@DACE_SUBST_ENABLED@%$(DACE_SUBST_infix).f90: \
+  %.f90 \
+  $(srcdir)/sdfgs/integrations.yaml \
+  $(srcdir)/sdfgs/utils/dace-substf.py \
+	$$(shell $$(DACE_PRINT_INTEGRATIONS) $$(srcdir)/sdfgs/integrations.yaml "association_files" $$*.f90) \
+  | $(dir_files)
+@DACE_SUBST_ENABLED@	$(silent_DACE_SUBST)$(DACE_SUBST_PP) $(word 2,$^) $(wordlist 4,100000,$^) $< $@
+
+# Don't delete intermediate files
+# (`.NOTINTERMEDIATE` doesn't support pattern rules, so compute intermediate files explicitly)
+@DACE_SUBST_ENABLED@.NOTINTERMEDIATE: \
+  $(foreach sdfg,$(shell $(DACE_PRINT_INTEGRATIONS) $(srcdir)/sdfgs/integrations.yaml "sdfg_names"),\
+    sdfgs/build/$(sdfg)_bindings.f90 \
+    sdfgs/build/lib$(sdfg).so \
+    sdfgs/$(sdfg)_optimized.sdfgz \
+    sdfgs/$(sdfg)_simplified.sdfgz \
+    sdfgs/$(sdfg)_associations.yaml \
+    sdfgs/$(sdfg)_module_definitions.yaml \
+    sdfgs/$(sdfg)_unsimplified.sdfgz \
+  )
+
+# F90 binddings for SDFGs
+# TODO: add unsimplified if it exists
+@DACE_SUBST_ENABLED@sdfgs/build/%_bindings.f90: \
+  sdfgs/%_simplified.sdfgz \
+  $(srcdir)/sdfgs/meta_data.yaml \
+  sdfgs/%_module_definitions.yaml \
+  sdfgs/build/lib%.so \
+  $(srcdir)/sdfgs/utils/dace-genfi.py \
+  | $(dir_files)
+@DACE_SUBST_ENABLED@	$(DACE_GENFI) $< $(word 2,$^) $(word 3,$^) $@
+
+# Compiled SDFG
+# We use symlinks instead of copies (e.g., `-o` option of `sdfgcc`) to avoid stale copies
+# Need to touch the `.so` file, because DaCe won't regenerate it if source hasn't changed
+@DACE_SUBST_ENABLED@sdfgs/build/lib%.so: \
+  sdfgs/%_optimized.sdfgz \
+  .dace.conf \
+  | $(dir_files)
+@DACE_SUBST_ENABLED@	sdfgcc $< && \
+@DACE_SUBST_ENABLED@	  touch $@ && \
+@DACE_SUBST_ENABLED@	  ln -sf ../../.dacecache/$*/build/lib$*.so ../../.dacecache/$*/include/$*.h sdfgs/build
+
+# symlink `.dace.conf`
+@DACE_SUBST_ENABLED@.dace.conf: $(srcdir)/.dace.conf
+@DACE_SUBST_ENABLED@	ln -s $< $@
+
+# Optimized SDFG
+@DACE_SUBST_ENABLED@sdfgs/%_optimized.sdfgz: \
+  sdfgs/%_simplified.sdfgz \
+  $(srcdir)/sdfgs/optimize_%.py \
+  | $(dir_files)
+@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/optimize_$*.py $< $@
+
+# Simplify
+@DACE_SUBST_ENABLED@sdfgs/%_simplified.sdfgz: \
+  sdfgs/%_unsimplified.sdfgz \
+  $(srcdir)/sdfgs/utils/dace-simplify.py \
+  | $(dir_files)
+@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/utils/dace-simplify.py $< $@
+
+# Generate unsimplified
+@DACE_SUBST_ENABLED@sdfgs/%_unsimplified.sdfgz \
+  sdfgs/%_module_definitions.yaml \
+  sdfgs/%_associations.yaml \
+  &: \
+    $(srcdir)/sdfgs/integrations.yaml \
+    $(srcdir)/sdfgs/generate.py \
+    | $(dir_files)
+@DACE_SUBST_ENABLED@	$(srcdir)/sdfgs/generate.py $* $< sdfgs
 
 ##################### EXPLICIT FORTRAN PREPROCESSING RULES #####################
 
