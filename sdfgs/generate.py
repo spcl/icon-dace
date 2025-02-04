@@ -182,6 +182,29 @@ def create_edges_to_cells_bilinear_interpolation_sdfg(
             Dumper=YAML_Dumper,
         ))
 
+def create_get_albedos_sdfg(
+    output_folder: Path,
+    associations: Dict[str, List[Tuple[int, int]]],
+):
+    # create SDFG
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+    demo_sdfg = dace.SDFG.from_file(current_folder + "/get_albedos.sdfgz")
+    demo_sdfg.save(str(output_folder / "get_albedos_unsimplified.sdfgz"))
+
+    # create module definitions
+    with open(output_folder / "get_albedos_module_definitions.yaml", "w") as module_definitions_yaml:
+        module_definitions_yaml.write(dump_yaml(
+            GET_ALBEDOS_MODULE_DEFINITIONS,
+            Dumper=YAML_Dumper,
+        ))
+
+    # create associations
+    with open(output_folder / "get_albedos_associations.yaml", "w") as module_definitions_yaml:
+        module_definitions_yaml.write(dump_yaml(
+            GET_ALBEDOS_ASSOCIATIONS,
+            Dumper=YAML_Dumper,
+        ))
+
 
 VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     # The only symbol needed for the actual SDFG
@@ -351,6 +374,8 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     edge2cell_coeff_cc = "mo_intp_data_strc",
 )
 
+GET_ALBEDOS_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS
+
 sub_dict = dict(
     p_prog="p_nh%prog(nnew)",
     p_patch="p_patch" ,
@@ -387,6 +412,26 @@ sub_dict2 = dict(
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 )
 """
+get_albedos(this_var_378, istartcol_var_380, iendcol_var_381, 
+            config_var_379, sw_albedo_direct_var_383, 
+            sw_albedo_diffuse_var_384, lw_albedo_var_382)
+
+    call single_level%get_albedos(istartcol, iendcol, config, &
+    &                        sw_albedo_direct, sw_albedo_diffuse, &
+    &                        lw_albedo)
+    to:
+
+"""
+sub_dict3 = dict(
+    this_var_278="single_level",
+    istartcol_var_380="istartcol",
+    iendcol_var_381="iendcol",
+    config_var_379="config",
+    sw_albedo_direct_var_383="sw_albedo_direct",
+    sw_albedo_diffuse_var_384="sw_albedo_diffuse",
+    lw_albedo_var_382="lw_albedo",
+)
+"""
 p_diag="p_nh%diag",
 p_int="p_int",
 p_metrics="p_nh%metrics",
@@ -418,6 +463,14 @@ VELOCITY_TENDENCIES_ASSOCIATIONS = {
         497: {
             498: sub_dict2
         }
+    }
+}
+
+GET_ALBEDOS_ASSOCIATIONS = {
+    "radiation_interface.F90": {
+        335: {
+            338: sub_dict3
+        },
     }
 }
 
@@ -491,9 +544,12 @@ def main():
                     start_line_nr, end_line_nr = line_nr_integration
                     required_associations[fortran_source_file].append((start_line_nr, end_line_nr))
 
-    if args.sdfg_name == "edges_to_cells_bilinear_interpolation":
+    raise Exception(args.sdfg_name)
+    if args.sdfg_name == "get_albedos":
+        create_get_albedos_sdfg(args.output_folder, required_associations)
+    elif args.sdfg_name == "edges_to_cells_bilinear_interpolation":
         create_edges_to_cells_bilinear_interpolation_sdfg(args.output_folder, required_associations)
-    if args.sdfg_name == "velocity_tendencies":
+    elif args.sdfg_name == "velocity_tendencies":
         create_velocity_tendencies_sdfg(args.output_folder, required_associations)
     else:
         parser.error(f"Unknown SDFG '{args.sdfg_name}'!")
