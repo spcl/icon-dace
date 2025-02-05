@@ -2,9 +2,6 @@
 #  velocity_tendencies:
 #    - [465, 466]
 #    - [497, 498]
-./src/atm_dyn_iconam/mo_velocity_advection.f90:
-  edges_to_cells_bilinear_interpolation:
-    - [432, 448]
-./externals/ecrad/radiation/radiation_interface.F90:
+./externals/ecrad/radiation/radiation_interface.f90:
   get_albedos:
     - [335, 338]

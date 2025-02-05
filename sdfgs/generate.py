@@ -189,6 +189,7 @@ def create_get_albedos_sdfg(
     # create SDFG
     current_folder = os.path.dirname(os.path.abspath(__file__))
     demo_sdfg = dace.SDFG.from_file(current_folder + "/get_albedos.sdfgz")
+    demo_sdfg.name = "get_albedos"
     demo_sdfg.save(str(output_folder / "get_albedos_unsimplified.sdfgz"))
 
     # create module definitions
@@ -467,7 +468,7 @@ VELOCITY_TENDENCIES_ASSOCIATIONS = {
 }
 
 GET_ALBEDOS_ASSOCIATIONS = {
-    "radiation_interface.F90": {
+    "radiation_interface.f90": {
         335: {
             338: sub_dict3
         },
@@ -544,7 +545,6 @@ def main():
                     start_line_nr, end_line_nr = line_nr_integration
                     required_associations[fortran_source_file].append((start_line_nr, end_line_nr))
 
-    raise Exception(args.sdfg_name)
     if args.sdfg_name == "get_albedos":
         create_get_albedos_sdfg(args.output_folder, required_associations)
     elif args.sdfg_name == "edges_to_cells_bilinear_interpolation":
