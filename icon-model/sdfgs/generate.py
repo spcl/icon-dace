@@ -182,27 +182,27 @@ def create_edges_to_cells_bilinear_interpolation_sdfg(
             Dumper=YAML_Dumper,
         ))
 
-def create_get_albedos_sdfg(
+def create_radiation_sdfg(
     output_folder: Path,
     associations: Dict[str, List[Tuple[int, int]]],
 ):
     # create SDFG
     current_folder = os.path.dirname(os.path.abspath(__file__))
-    demo_sdfg = dace.SDFG.from_file(current_folder + "/get_albedos.sdfgz")
-    demo_sdfg.name = "get_albedos"
-    demo_sdfg.save(str(output_folder / "get_albedos_unsimplified.sdfgz"))
+    demo_sdfg = dace.SDFG.from_file(current_folder + "/radiation.sdfgz")
+    demo_sdfg.name = "radiation"
+    demo_sdfg.save(str(output_folder / "radiation_unsimplified.sdfgz"))
 
     # create module definitions
-    with open(output_folder / "get_albedos_module_definitions.yaml", "w") as module_definitions_yaml:
+    with open(output_folder / "radiation_module_definitions.yaml", "w") as module_definitions_yaml:
         module_definitions_yaml.write(dump_yaml(
-            GET_ALBEDOS_MODULE_DEFINITIONS,
+            RADIATION_MODULE_DEFINITIONS,
             Dumper=YAML_Dumper,
         ))
 
     # create associations
-    with open(output_folder / "get_albedos_associations.yaml", "w") as module_definitions_yaml:
+    with open(output_folder / "radiation_associations.yaml", "w") as module_definitions_yaml:
         module_definitions_yaml.write(dump_yaml(
-            GET_ALBEDOS_ASSOCIATIONS,
+            RADIATION_ASSOCIATIONS,
             Dumper=YAML_Dumper,
         ))
 
@@ -279,11 +279,6 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     no_of_dynamics_grids = "mo_grid_config",
     n_dom = "mo_grid_config",
     n_dom_start = "mo_grid_config",
-
-    # they are private
-    #t0sl_bg = "mo_vertical_grid",
-    #h_scal_bg = "mo_vertical_grid",
-    #del_t_bg = "mo_vertical_grid",
 
     sphere_geometry = "mo_grid_geometry_info",
     triangular_cell = "mo_grid_geometry_info",
@@ -375,7 +370,7 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     edge2cell_coeff_cc = "mo_intp_data_strc",
 )
 
-GET_ALBEDOS_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS
+RADIATION_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS
 
 sub_dict = dict(
     p_prog="p_nh%prog(nnew)",
@@ -395,6 +390,7 @@ sub_dict = dict(
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 
 )
+
 sub_dict2 = dict(
     p_prog="p_nh%prog(nnew)",
     p_patch="p_patch" ,
@@ -412,17 +408,7 @@ sub_dict2 = dict(
     lextra_diffu="1",
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 )
-"""
-get_albedos(this_var_378, istartcol_var_380, iendcol_var_381, 
-            config_var_379, sw_albedo_direct_var_383, 
-            sw_albedo_diffuse_var_384, lw_albedo_var_382)
 
-    call single_level%get_albedos(istartcol, iendcol, config, &
-    &                        sw_albedo_direct, sw_albedo_diffuse, &
-    &                        lw_albedo)
-    to:
-
-"""
 sub_dict3 = dict(
     this_var_278="single_level",
     istartcol_var_380="istartcol",
@@ -432,30 +418,7 @@ sub_dict3 = dict(
     sw_albedo_diffuse_var_384="sw_albedo_diffuse",
     lw_albedo_var_382="lw_albedo",
 )
-"""
-p_diag="p_nh%diag",
-p_int="p_int",
-p_metrics="p_nh%metrics",
-p_patch="p_patch",
-p_prog="p_nh%prog(nnow)",
-z_kin_hor_e="z_kin_hor_e",
-z_vt_ie="z_vt_ie",
-z_w_concorr_me="z_w_concorr_me",
-dt_linintp_ubc="dt_linintp_ubc_nnow",
-dtime="dtime",
-istep="istep",
-lvn_only="transfer(lvn_only, mold=int(1, kind=4))",
-ntnd="ntl1",
-lextra_diffu="1", # checked, value is good
-lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
-# nproma="nproma",
-# nproma_0="nproma",
-# nproma_1="nproma",
-# nproma_2="nproma",
-# nproma_3="nproma",
-# nproma_4="nproma",
-#edge2cell_coeff_cc="ptr_int%edge2cell_coeff_cc"
-"""
+
 VELOCITY_TENDENCIES_ASSOCIATIONS = {
     "mo_solve_nonhydro.f90": {
         465: {
@@ -467,7 +430,7 @@ VELOCITY_TENDENCIES_ASSOCIATIONS = {
     }
 }
 
-GET_ALBEDOS_ASSOCIATIONS = {
+RADIATION_ASSOCIATIONS = {
     "radiation_interface.f90": {
         335: {
             338: sub_dict3
@@ -545,8 +508,8 @@ def main():
                     start_line_nr, end_line_nr = line_nr_integration
                     required_associations[fortran_source_file].append((start_line_nr, end_line_nr))
 
-    if args.sdfg_name == "get_albedos":
-        create_get_albedos_sdfg(args.output_folder, required_associations)
+    if args.sdfg_name == "radiation":
+        create_radiation_sdfg(args.output_folder, required_associations)
     elif args.sdfg_name == "edges_to_cells_bilinear_interpolation":
         create_edges_to_cells_bilinear_interpolation_sdfg(args.output_folder, required_associations)
     elif args.sdfg_name == "velocity_tendencies":
