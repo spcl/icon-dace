@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/hd/util/calc_hd_receive_mask.ksh

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/jsbach/scripts/preprocessing/climate_forcing/GSWP3-W5E5/gen_forc_jsb4.bash

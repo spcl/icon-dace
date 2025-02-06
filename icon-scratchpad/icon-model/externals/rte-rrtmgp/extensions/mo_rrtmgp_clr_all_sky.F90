@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/extensions/mo_rrtmgp_clr_all_sky.F90

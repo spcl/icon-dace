@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/fu_ice_scattering_rrtm.nc

@@ -1,1 +1,0 @@
-#define __HASH_radiation "8a8b14f13d3e8d7ea39d55819544766f2e792f98afddd0ce8d93b85179658e14"

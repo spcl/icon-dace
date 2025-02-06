@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/ifsrrtm/yoerrta7.F90

@@ -1,3 +1,0 @@
-#!/bin/bash
-suffix=nc
-. ./test_cksum_base

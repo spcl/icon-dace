@@ -1,3 +1,0 @@
-radiation/radiation_general_cloud_optics.o radiation/radiation_general_cloud_optics.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_general_cloud_optics.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_delta_eddington.h
-mod/radiation_general_cloud_optics.mod.proxy: radiation/radiation_general_cloud_optics.o
-radiation/radiation_general_cloud_optics.o: mod/parkind1.mod.proxy mod/easy_netcdf.mod.proxy mod/radiation_cloud.mod.proxy mod/radiation_io.mod.proxy mod/radiation_config.mod.proxy mod/radiation_spectral_definition.mod.proxy mod/radiation_constants.mod.proxy mod/ecradhook.mod.proxy mod/radiation_thermodynamics.mod.proxy

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/sdfgs/optimize_edges_to_cells_bilinear_interpolation.py

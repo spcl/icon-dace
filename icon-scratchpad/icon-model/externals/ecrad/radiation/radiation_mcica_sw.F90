@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/radiation/radiation_mcica_sw.F90

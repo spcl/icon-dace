@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/ecckd-0.6_lw_climate_fsck-27_spectral-definition.nc

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/ifsrrtm/srtm_kgb18.F90

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/cdi/m4/acx_use_libtool_configuration.m4

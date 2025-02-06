@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/src/namelists/mo_nwp_phy_nml.f90

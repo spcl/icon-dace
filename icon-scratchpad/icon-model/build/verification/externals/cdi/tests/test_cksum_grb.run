@@ -1,9 +1,0 @@
-#!/bin/bash
-suffix=grb
-. ./test_cksum_base
-
-#
-# Local Variables:
-# mode: sh
-# End:
-#

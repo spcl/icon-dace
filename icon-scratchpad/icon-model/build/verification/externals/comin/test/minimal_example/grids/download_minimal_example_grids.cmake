@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/comin/test/minimal_example/grids/download_minimal_example_grids.cmake

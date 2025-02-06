@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/tools/PLOT_examples/icon_vectorplots.ncl

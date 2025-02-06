@@ -1,4 +1,0 @@
-WARNING: Your MPI installation suffers from a known defect where some
-data layouts are incorrectly captured by MPI datatypes. To our knowledge
-all IntelMPI versions from 4.1.3.049 to 2017.1.132  and MVAPICH2 versions
-from 1.9b to 2.1 are affected by this bug.

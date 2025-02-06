@@ -1,5 +1,0 @@
-# The fortran modules provided by this target.
-provides
- mo_lib_interpolation_scalar.mod
- mo_lib_interpolation_vector.mod
- mo_lib_intp_rbf.mod

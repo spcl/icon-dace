@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/yaxt/config/checksrc/mpi_fortran_startup.f90

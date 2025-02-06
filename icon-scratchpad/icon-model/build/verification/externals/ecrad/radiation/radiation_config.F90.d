@@ -1,3 +1,0 @@
-radiation/radiation_config.o radiation/radiation_config.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_config.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/ecrad_config.h
-mod/radiation_config.mod.proxy: radiation/radiation_config.o
-radiation/radiation_config.o: mod/radiation_pdf_sampler.mod.proxy mod/radiation_cloud_cover.mod.proxy mod/radiation_aerosol_optics_data.mod.proxy mod/radiation_spectral_definition.mod.proxy mod/radiation_general_cloud_optics_data.mod.proxy mod/radiation_io.mod.proxy mod/ecradhook.mod.proxy mod/radiation_ecckd.mod.proxy mod/radiation_cloud_optics_data.mod.proxy mod/parkind1.mod.proxy

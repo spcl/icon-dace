@@ -1,2 +1,0 @@
-ppm/dist_array.f90: $(top_srcdir)/m4/forloop2.m4
-ppm/ppm_ptr_bnds_remap.f90: $(top_srcdir)/m4/forloop2.m4

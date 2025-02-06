@@ -1,3 +1,0 @@
-Your installations does not report the errorcode argument of MPI_Abort
-to the calling environment as POSIX exit code. Inspect config.log for
-further details of the failure.

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/probtest/scripts/collect_icon_testdata.sh

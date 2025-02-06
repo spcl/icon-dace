@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/preprocessing/lsm_oce2atm_extpar_coupled.sh

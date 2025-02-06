@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/ifsrrtm/rrtm_ecrt_140gp_mcica.F90

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/testcases/JWw_postpro_scripts/JWw_plot_DIV-VOR_day09.ncl

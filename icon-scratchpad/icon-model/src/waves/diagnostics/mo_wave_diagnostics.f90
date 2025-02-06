@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/src/waves/diagnostics/mo_wave_diagnostics.f90

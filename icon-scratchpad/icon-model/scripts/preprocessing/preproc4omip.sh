@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/preprocessing/preproc4omip.sh

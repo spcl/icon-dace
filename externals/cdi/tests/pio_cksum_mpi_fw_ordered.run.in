@@ -1,7 +1,0 @@
-#!@SHELL@
-
-pio_write_args="-p PIO_MPI_FW_ORDERED -w 2"
-mpi_task_num=5
-
-. ./pio_write.run
-( . ./pio_write_dist_array.run ) || test $? -eq 77

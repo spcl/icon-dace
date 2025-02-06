@@ -1,2 +1,0 @@
-ifsrrtm/srtm_kgb24.o ifsrrtm/srtm_kgb24.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/ifsrrtm/srtm_kgb24.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/include/abor1.intfb.h
-ifsrrtm/srtm_kgb24.o: mod/yomtag.mod.proxy mod/ecradhook.mod.proxy mod/parkind1.mod.proxy mod/mpl_module.mod.proxy mod/yommp0.mod.proxy mod/yoesrta24.mod.proxy mod/yomlun.mod.proxy

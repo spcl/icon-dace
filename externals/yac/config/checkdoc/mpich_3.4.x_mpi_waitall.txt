@@ -1,8 +1,0 @@
-This test checks for a defect found in the 3.4-3.4.3 releases of MPICH.
-
-MPI_Waitall causes a segmentation fault if the associated derived datatype and
-communicator are freed before.
-
-The bug is tracked here:
-
-<https://github.com/pmodels/mpich/issues/6595>

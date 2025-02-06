@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/amip_quickplots/atm_2d_diff_page.ncl

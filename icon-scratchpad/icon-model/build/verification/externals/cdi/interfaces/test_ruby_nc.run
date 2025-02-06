@@ -1,9 +1,0 @@
-#!/bin/bash
-
-set -e
-
-exit 77
-#exit 77
-
-RUBYLIB="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/externals/cdi/interfaces/ruby/.libs:${RUBYLIB}"; export RUBYLIB
-${SHELL} '/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/externals/cdi/config/missing' ruby '/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/interfaces/ruby/test.rb' '/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/interfaces/testdata/mulval.nc'

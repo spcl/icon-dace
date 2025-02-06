@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/amip_quickplots/table_t63_zonmean.f90

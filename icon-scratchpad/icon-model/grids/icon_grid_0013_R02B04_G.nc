@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/grids/icon_grid_0013_R02B04_G.nc

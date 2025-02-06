@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/yaxt/config/checksrc/mpich_zero_size_contiguous.c

@@ -1,7 +1,0 @@
-#!/bin/bash
-exit 77
-test 'x/usr/bin//mpiexec' != xtrue || exit 77
-
-mpi_task_num="${mpi_task_num-1}"
-../libtool --mode=execute /usr/bin//mpiexec -n ${mpi_task_num} \
-  ./test_resource_copy.parallel || exit 1

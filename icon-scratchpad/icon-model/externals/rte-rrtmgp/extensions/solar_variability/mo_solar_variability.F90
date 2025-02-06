@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/extensions/solar_variability/mo_solar_variability.F90

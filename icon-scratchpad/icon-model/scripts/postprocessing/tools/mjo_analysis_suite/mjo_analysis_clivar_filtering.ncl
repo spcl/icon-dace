@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/tools/mjo_analysis_suite/mjo_analysis_clivar_filtering.ncl

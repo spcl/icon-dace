@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/data/dmin_wetgrowth_lookup.nc

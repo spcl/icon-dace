@@ -1,1 +1,0 @@
-dmin_wetgrowth_graupelhail_cosmo5.nc

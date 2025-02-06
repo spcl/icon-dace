@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/rrtmgp-frontend/mo_aerosol_optics_rrtmgp_merra.F90

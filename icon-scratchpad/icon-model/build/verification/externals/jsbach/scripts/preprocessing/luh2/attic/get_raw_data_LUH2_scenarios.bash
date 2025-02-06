@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/jsbach/scripts/preprocessing/luh2/attic/get_raw_data_LUH2_scenarios.bash

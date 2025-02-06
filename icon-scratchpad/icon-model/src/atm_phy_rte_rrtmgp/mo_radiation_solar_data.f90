@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/src/atm_phy_rte_rrtmgp/mo_radiation_solar_data.f90

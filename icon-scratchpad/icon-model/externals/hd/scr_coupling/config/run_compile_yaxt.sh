@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/hd/scr_coupling/config/run_compile_yaxt.sh

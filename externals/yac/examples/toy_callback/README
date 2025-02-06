@@ -1,8 +1,0 @@
-# Copyright (c) 2024 The YAC Authors
-#
-# SPDX-License-Identifier: CC-BY-4.0
-
-An example for the usage of the user_callback interpolation method.
-A shell script to launch the example is provided with toy_callback.sh
-The example can be launched with any number of processes for each
-executable.

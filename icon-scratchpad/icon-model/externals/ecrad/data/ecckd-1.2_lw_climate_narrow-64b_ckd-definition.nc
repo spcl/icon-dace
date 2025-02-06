@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/ecckd-1.2_lw_climate_narrow-64b_ckd-definition.nc

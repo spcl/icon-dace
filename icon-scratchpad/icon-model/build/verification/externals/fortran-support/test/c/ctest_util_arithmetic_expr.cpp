@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/fortran-support/test/c/ctest_util_arithmetic_expr.cpp

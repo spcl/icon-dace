@@ -1,9 +1,0 @@
-<!ELEMENT emiss (routine+)>
-<!ELEMENT routine (nmodes, rho)>
-<!ATTLIST routine
-  id  ID  #REQUIRED
-  of  CDATA #REQUIRED
-  type CDATA  #REQUIRED
->
-<!ELEMENT nmodes (#PCDATA)>
-<!ELEMENT rho (#PCDATA)>

@@ -1,3 +1,0 @@
-#!@SHELL@
-suffix=ext
-. ./test_cksum_base

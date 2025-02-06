@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/jsbach/scripts/preprocessing/initial_files/extpar4jsbach_mpim_icon.sh

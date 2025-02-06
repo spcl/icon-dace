@@ -1,9 +1,0 @@
-#!@SHELL@
-test 'x@ENABLE_GRIB@' = xyes || exit 77
-
-@top_builddir@/libtool --mode=execute ${tool_wrap} ./test_resource_copy || exit 1
-#
-# Local Variables:
-# mode: sh
-# End:
-#

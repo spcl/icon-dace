@@ -1,3 +1,0 @@
-#!@SHELL@
-suffix=ieg
-. ./test_cksum_base

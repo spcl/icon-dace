@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/comin/plugins/python_adapter/examples/point_source.py

@@ -1,8 +1,0 @@
-cdi_across.lo: \
- /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_across.c \
- /usr/include/stdc-predef.h \
- /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_across.h \
- config.h
-/usr/include/stdc-predef.h:
-/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_across.h:
-config.h:

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/scm/run/get_GASS_DCP_GoAmazon.py

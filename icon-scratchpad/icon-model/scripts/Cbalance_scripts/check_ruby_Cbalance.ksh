@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/Cbalance_scripts/check_ruby_Cbalance.ksh

@@ -1,7 +1,0 @@
-#!/bin/bash
-#exit 77
-
-prefix='test_cksum_nc_chunk.run'
-format=nc
-../libtool --mode=execute ${tool_wrap} ./cksum_write_chunk -b ${prefix} -m 17 || exit 1
-../libtool --mode=execute ${tool_wrap} ./cksum_read ${prefix}.${format} ${prefix}.cksum || exit 1

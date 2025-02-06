@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/extensions/mo_heating_rates.F90

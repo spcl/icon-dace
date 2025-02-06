@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/data/rrtmgp-gas-lw-g128.nc

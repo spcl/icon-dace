@@ -1,7 +1,0 @@
-#!@SHELL@
-@ENABLE_MPI_FALSE@exit 77
-test 'x@MPI_LAUNCH@' != xtrue || exit 77
-
-mpi_task_num="${mpi_task_num-1}"
-@top_builddir@/libtool --mode=execute @MPI_LAUNCH@ -n ${mpi_task_num} \
-  ./test_resource_copy.parallel || exit 1

@@ -1,3 +1,0 @@
-plugin(mpi_communicator_test_comm2) size: 4
-this external size: 2
-all external size: 3

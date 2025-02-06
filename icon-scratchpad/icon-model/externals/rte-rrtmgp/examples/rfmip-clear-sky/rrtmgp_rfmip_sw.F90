@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/examples/rfmip-clear-sky/rrtmgp_rfmip_sw.F90

@@ -1,3 +1,0 @@
-radiation/radiation_monochromatic.o radiation/radiation_monochromatic.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_monochromatic.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_delta_eddington.h
-mod/radiation_monochromatic.mod.proxy: radiation/radiation_monochromatic.o
-radiation/radiation_monochromatic.o: mod/radiation_aerosol.mod.proxy mod/parkind1.mod.proxy mod/radiation_single_level.mod.proxy mod/radiation_constants.mod.proxy mod/radiation_thermodynamics.mod.proxy mod/radiation_config.mod.proxy mod/radiation_cloud.mod.proxy mod/radiation_gas.mod.proxy

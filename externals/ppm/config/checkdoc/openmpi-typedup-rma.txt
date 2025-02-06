@@ -1,8 +1,0 @@
-Your system fails a test that tries a composite type for RMA with
-MPI_Win_lock and MPI_Get. This is known to be an issue for early
-(1.6.x) versions of OpenMPI. On systems with homogeneous cluster nodes,
-i.e. all machines have the same type of CPU, this problem can be
-worked around by setting the environment variable
-
-PPM_DIST_MULT_ARRAY_TRANSFER_MODE=bytes
-

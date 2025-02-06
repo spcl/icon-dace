@@ -1,4 +1,0 @@
-Namespace(hello='world', arg='argument with spaces')
-plugin_info(id=1, name='python_adapter', options="../examples/simple_python_plugin.py --hello=world 'argument with spaces'", comm='')
-tracer pos: (0, 1, 2, 3)
-tracer ncontained: 6

@@ -1,3 +1,0 @@
-radiation/radiation_mcica_lw.o radiation/radiation_mcica_lw.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_mcica_lw.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/ecrad_config.h
-mod/radiation_mcica_lw.mod.proxy: radiation/radiation_mcica_lw.o
-radiation/radiation_mcica_lw.o: mod/radiation_single_level.mod.proxy mod/radiation_two_stream.mod.proxy mod/radiation_lw_derivatives.mod.proxy mod/radiation_config.mod.proxy mod/radiation_cloud.mod.proxy mod/radiation_io.mod.proxy mod/radiation_adding_ica_lw.mod.proxy mod/radiation_flux.mod.proxy mod/radiation_cloud_generator.mod.proxy mod/ecradhook.mod.proxy mod/parkind1.mod.proxy

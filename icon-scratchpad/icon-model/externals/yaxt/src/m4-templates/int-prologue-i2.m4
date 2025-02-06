@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/yaxt/src/m4-templates/int-prologue-i2.m4

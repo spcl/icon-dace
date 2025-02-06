@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh

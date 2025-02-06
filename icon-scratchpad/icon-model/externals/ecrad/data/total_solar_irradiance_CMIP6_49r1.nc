@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/total_solar_irradiance_CMIP6_49r1.nc

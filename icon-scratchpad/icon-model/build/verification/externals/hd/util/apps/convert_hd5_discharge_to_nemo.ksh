@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/hd/util/apps/convert_hd5_discharge_to_nemo.ksh

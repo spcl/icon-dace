@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/fortran-support/.gitlab/merge_request_templates/bugfix.md

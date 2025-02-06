@@ -1,8 +1,0 @@
-#!/bin/bash
-
-../libtool --mode=execute ${tool_wrap} ./test_table || exit 1
-#
-# Local Variables:
-# mode: sh
-# End:
-#

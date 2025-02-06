@@ -1,9 +1,0 @@
-#!@SHELL@
-
-# Copyright (c) 2024 The YAC Authors
-#
-# SPDX-License-Identifier: CC0-1.0
-
-@TEST_MPI_FALSE@exit 77
-@TEST_MPI_TRUE@@MPI_LAUNCH@ -n 1 ./test_def_grid.x
-

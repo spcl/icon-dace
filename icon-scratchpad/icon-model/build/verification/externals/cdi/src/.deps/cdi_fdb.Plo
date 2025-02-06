@@ -1,8 +1,0 @@
-cdi_fdb.lo: \
- /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_fdb.c \
- /usr/include/stdc-predef.h \
- /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_fdb.h \
- config.h
-/usr/include/stdc-predef.h:
-/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/src/cdi_fdb.h:
-config.h:

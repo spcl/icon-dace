@@ -1,4 +1,0 @@
-{
-  comin_plugin_init;
-  static_linking_test_comin_main;
-};

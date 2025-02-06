@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/src/upper_atmosphere/mo_upatmo_phy_fric.f90

@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/scm/run/read_icon_ana_oper_mem1_40km.s

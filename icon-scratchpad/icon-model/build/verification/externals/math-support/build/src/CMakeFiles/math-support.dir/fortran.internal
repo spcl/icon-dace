@@ -1,8 +1,0 @@
-# The fortran modules provided by this target.
-provides
- mo_gridman_constants.mod
- mo_lib_grid_geometry_info.mod
- mo_lib_loopindices.mod
- mo_math_constants.mod
- mo_math_types.mod
- mo_math_utilities.mod

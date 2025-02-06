@@ -1,1 +1,0 @@
-/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/mtime/contrib/00nagfor-libtool-patch/README.txt
