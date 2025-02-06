@@ -1,5 +1,7 @@
 # ICON Verification Pipeline
 
+ICON 2024.10 + DaCe GenFi and SubstF to semi-automatically numerically verify SDFGs.
+
 ## Setting Up The Container / Docker
 If you want to use the docker container (I would suggest WSE on Windows, or directly working on Ubuntu, if Mac use Docker otherwise it won't work):
 ```sh
