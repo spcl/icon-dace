@@ -2,7 +2,7 @@
 
 ## Setting Up The Container / Docker
 If you want to use the docker container (I would suggest WSE on Windows, or directly working on Ubuntu, if Mac use Docker otherwise it won't work):
-```bash
+```sh
 # RM if you have it
 sudo docker rm icon_gpu_container
 # Clone this repo
@@ -32,21 +32,27 @@ pip install --upgrade setuptools wheel pip
 pip install -e ./dace[testing]
 ```
 To re-run again:
-```bash
+```sh
 sudo docker start -ai icon_gpu_container
 ```
 
 To attach the 2nd terminal:
-```bash
+```sh
 sudo docker exec -it icon_gpu_container /bin/bash
 ```
 
 To build ICON go to the icon-dace repo now:
 If you are in Docker, do not forget:
-```bash
+```sh
 su icon
 cd /home/icon/icon
 source ~/.venv/bin/activate
+```
+
+To download and load the container:
+```sh
+wget -O icon_demo_docker_image.tar.gz https://polybox.ethz.ch/index.php/s/uwFpDFFTBMmMZrN/download
+docker load --input icon_demo_docker_image.tar.gz
 ```
 
 ## Adding a New SDFG to the Verification Pipeline

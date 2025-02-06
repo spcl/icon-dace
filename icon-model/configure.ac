@@ -388,13 +388,7 @@ AC_ARG_ENABLE([dace-subst],
                             verify      enable verification mode
                             yes         alias for 'subst'
                             no          disable DaCe substitution],
-[AS_CASE([$enableval],
-   [yes], [enable_dace_subst=subst],
-   [subst|verify|no], [],
-   [AC_MSG_ERROR([unexpected value for the argument dnl
---enable-dace-subst='$enableval'; valid values are 'subst', 'verify', dnl
-'yes' (same as 'subst'), 'no'])])],
-[enable_dace_subst=no])
+
 
 AC_ARG_ENABLE([testbed],
   [AS_HELP_STRING([--enable-testbed],
@@ -1100,12 +1094,6 @@ AS_IF([test x"$enable_serialization" != xno],
                    [" ${FC_PP_DEF}SERIALIZE_PERTURB_REFERENCE"])],
      [create], [AS_VAR_APPEND([FCFLAGS],
                   [" ${FC_PP_DEF}SERIALIZE_CREATE_REFERENCE"])])])
-
-AS_IF([test x"$enable_dace_subst" != xno],
-  [AS_VAR_APPEND([FCFLAGS], [" ${FC_PP_DEF}DACE_SUBST_ENABLE"])
-   AS_CASE([$enable_dace_subst],
-     [verify], [AS_VAR_APPEND([FCFLAGS],
-                  [" ${FC_PP_DEF}DACE_SUBST_VERIFY"])])])
 
 AS_VAR_IF([enable_testbed], [no],
   [AS_VAR_APPEND([FCFLAGS], [" ${FC_PP_DEF}__NO_ICON_TESTBED__"])])
@@ -3014,10 +3002,6 @@ done
 AS_VAR_IF([enable_hip_overrides], [yes],
   [AC_SUBST([HIP_OVERRIDES_ENABLED], [''])],
   [AC_SUBST([HIP_OVERRIDES_ENABLED], ['#'])])
-
-AS_IF([test x"$enable_dace_subst" != xno],
-  [AC_SUBST([DACE_SUBST_ENABLED], [''])],
-  [AC_SUBST([DACE_SUBST_ENABLED], ['#'])])
 
 AS_VAR_IF([enable_pgi_inlib], [yes],
   [AC_SUBST([PGI_INLIB_ENABLED], [''])
