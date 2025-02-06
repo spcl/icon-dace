@@ -1,0 +1,10 @@
+#!/bin/bash
+
+pio_write='./pio_write_deco2d'
+
+. ./pio_write.run
+#
+# Local Variables:
+# mode: sh
+# End:
+#

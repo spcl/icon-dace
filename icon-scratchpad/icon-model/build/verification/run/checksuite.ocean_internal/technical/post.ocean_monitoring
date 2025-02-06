@@ -1,0 +1,58 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# technical stuff
+    basePath=${basedir}
+    dataPath="../experiments/${EXPNAME}/"
+postProcPath="${basePath}/scripts/postprocessing/tools"
+   nclConfig="${postProcPath}/.hluresfile"
+      plotTS="${postProcPath}/ocean/plot_timeser"
+ convert2png="${postProcPath}/ocean/create_plot_browser"
+convert2html="${postProcPath}/ocean/mk_index_html"
+# ================================================================================
+# plotting
+## find the last input file
+cd ${dataPath}
+iFile=$(ls ${EXPNAME}*oceanMonitor*.nc* | tail -n 1)
+if [[ ! -f ${iFile} ]]; then
+  echo "Could not find the input file '${iFile}'"
+  echo "Give up!"
+  exit 1
+fi
+
+revision=$(svn info | grep -F 'anged Rev' | rev | cut -d ' ' -f 1 | rev)
+
+[[ -d /sw/share/Modules/init/bash ]] && source /sw/share/Modules/init/bash
+
+
+
+module switch cdo cdo/1.6.4
+module switch ncl ncl/6.2.0-precompiled
+module list
+
+# make matplotlib work without x11/$DISPLAY
+export HOME=/scratch/mpi/CC/mh0287/users/$USER
+# disable ':' to be a special character in ncl - this makes it plotable
+export NCARG_USRRESFILE=${nclConfig}
+[[ ! -d plots ]] && mkdir plots
+for file in $(ls ${EXPNAME}*oceanMonitor*.nc*); do
+  echo "processing file: $file"
+  cd plots;
+  cdo -r delete,timestep=1 ../$file relativeTimeAxis_$file;
+  ${plotTS} -mode=monitoring -manifest=MANIFEST -with1=relativeTimeAxis_${file};
+  ${convert2png} MANIFEST > index.html;
+  cd -;
+done
+
+exit
+
+
+# vim:ft=sh
+

@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/data/ECHAM6_CldOptProps_rrtmgp_sw.nc

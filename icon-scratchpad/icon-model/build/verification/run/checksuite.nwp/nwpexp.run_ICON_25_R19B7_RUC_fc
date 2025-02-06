@@ -1,0 +1,1952 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+#
+# This test case checks functionalities of ICON and EMVORADO for the
+# ICON-RUC which are needed for the first guess runs and for the
+# forecast runs in one go:
+#  - 2-moment microphysics
+#  - emvorado in obs-data mode with range-coarsening of obs radar data
+#    with output of feedback (fof) files for data assimilation
+#  - emvorado in pure namelist mode with output of simulated volume data
+#    radar composites and ready files
+#
+# ----------------------------------------------------------------------
+# ----------------------------------------------------------------------
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# base directory for ICON sources, binary and auxilary data:
+ICONDIR="${basedir}" # basedir can be set with create_target_header
+
+# experiment identifier for output files 
+EXP="ICON-D2-RUC"    # experiment identifier
+
+# root directory for input data
+DATAROOT="${icon_data_poolFolder}/Checksuite_data"
+
+
+# directory for grid and extpar files
+GRIDDIR="${icon_data_poolFolder}/grids/public/edzw"
+# GRIDDIR links to /hpc/rwork0/routfor/routfox/icon/grids/public/edzw on RCL
+EXTPDIR="$GRIDDIR" # external parameter directory
+
+# absolute path to input directory - for the time being
+DATADIR=$DATAROOT/ICON-D2-RUC-ass
+LBCDIR=$DATAROOT/ICON-D2-RUC-ass
+
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+ln -sf $GRIDDIR/icon_grid_0046_R19B06_LR.nc    iconR19B6_DOM00.nc
+ln -sf $GRIDDIR/icon_grid_0047_R19B07_L.nc     iconR19B7_DOM01.nc
+ln -sf $GRIDDIR/icon_grid_0047_R19B07_L_lbc.nc iconR19B7_DOM01_lbc.nc
+
+ln -sf $EXTPDIR/icon_extpar_0047_R19B07_L_20200527_tiles.nc extpar_iconR19B7_DOM01.nc
+
+rm -f lbcdir
+ln -sf $LBCDIR lbcdir
+
+ln -sf $DATADIR/R19B07_DOM01_ilaf20220914120000.grb .
+ln -sf $DATADIR/R19B07_DOM01_ilfff00005500.grb .
+
+# lateral boundary conditions
+ln -sf $DATADIR/ilbff* .
+
+# Data from ecrad and two-moments microphysics
+ln -sf ${ICONDIR}/data/dmin_wetgrowth_lookup.nc .
+ln -sf ${ICONDIR}/externals/ecrad/data ecrad_data
+
+# files needed for synsats
+cp ${icon_data_poolFolder}/externals/rttov/const/rt13coeffs_rttov7pred54L/*.dat .
+
+# radar data
+ln -sf $DATADIR/radar_dx.nc .
+ln -sf $DATADIR/radardata_DOM1.nc .
+ln -sf $DATADIR/blacklist_dx.nc .
+
+# input data for DACE
+ln -sf $DATADIR/blklsttmp .
+ln -sf $DATADIR/cdfin* .
+
+rm cdfin_*volscan ras07*-hd5  # delete links to old test set of cdfin_vr_10* files
+ln -sf $DATADIR/ras07*-hd5 .  # half of stations in new hdf5 format
+ln -sf $DATADIR/cdfin_*_id*volscan . # other half of stations in cdfin-format
+
+# map files
+ln -sf $DATADIR/map_file.* .
+
+# files for synsats
+# cp ${DATAROOT}/ICON-D2-preopera/*seviri.dat .
+
+
+
+ln -sf $ICONDIR/run/dict.latbc .
+
+
+
+# specific for EMVORADO:
+luse_radarfwo=".true." # include 3D radar forward operator
+itype_refl=1
+itype_Dref_fmelt=1
+NPIORADAR=2
+### normally used to precompute and store the Mie tables:
+YDIR_MIELOOKUP=MIETABLES/
+### unused:
+RADARINPUTDIR=''
+### do not change:
+RADAROUTPUTDIR=radar_dom1/
+mkdir -p $RADAROUTPUTDIR $YDIR_MIELOOKUP
+
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+
+# global timing
+start_date="2022-09-14T12:00:00Z"
+ndays_restart=90
+dt_restart=$((${ndays_restart}*86400))
+
+
+# the grid parameters
+atmo_dyn_grids="iconR19B7_DOM01.nc"
+atmo_rad_grids="iconR19B6_DOM00.nc"
+
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string = "$start_date"
+ dt_restart          = $dt_restart
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+# Variables to configure the mpirun command on the RCL
+num_io_procs=2
+num_restart_procs=0
+num_prefetch_proc=1
+num_io_procs_radar=$NPIORADAR
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma                       =  ${nproma}
+ nproma_sub                   =  ${nproma_sub} ! loop chunk length for radiation
+ p_test_run                   = .false.
+ l_test_openmp                = .true.
+ l_log_checks                 = .true.
+ num_io_procs                 = ${num_io_procs}
+ num_restart_procs            = ${num_restart_procs}
+ num_prefetch_proc            = ${num_prefetch_proc}
+ num_io_procs_radar           = ${num_io_procs_radar}
+ iorder_sendrecv              = 3
+ proc0_shift                  = ${proc0_shift}
+ use_omp_input                = .true.
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ radiation_grid_filename = ${radiation_grid_filename}
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .true.
+ lfeedback               = .true.
+ l_limited_area          = .true.
+ ifeedback_type          = 2
+ start_time  = 0., 1800.,3600.,
+/
+&initicon_nml
+ init_mode                    = 5 ! 1: operation mode, 5: IAU, 6: 5+sma_inc
+ dt_iau                       = 600    ! Window for incr.analysis update
+ dt_shift                     = -300  ! Offset for incr.analysis update
+ type_iau_wgt                 = 1           ! IAU weighting function (const.)
+ iterate_iau                  = .true.      ! iterate IAU cycle with one-sided and centered windows
+ niter_diffu                  = 10,
+ niter_divdamp                = 25,
+ zpbl1                        = 500.
+ zpbl2                        = 1000.
+ lread_ana                    = .true.        ! (T) Read dwdana
+ lp2cintp_incr                = .false.    ! parent-to-child-interpolation
+ lp2cintp_sfcana              = .false.  ! of analyses (DET:.false.;EPS:.true.)
+ dwdfg_filename        = './R<nroot0>B<jlev>_DOM<idom>_ilfff00005500.grb'
+ dwdana_filename       = './R<nroot0>B<jlev>_DOM<idom>_ilaf20220914120000.grb'
+ ana_varnames_map_file = 'map_file.ana' 
+ check_ana(1)%list            = 'P','QV','T','U','V'
+ check_ana(2)%list            = 'FRESHSNW','H_SNOW'
+! check_fg(1)%list      = 'p_lml_filtinc','t_lml_filtinc','alb_seaice','evap_pl','skt'
+! check_fg(2)%list      = ''
+ lp2cintp_incr         = .true.
+ lp2cintp_sfcana       = .true.
+ ltile_coldstart              = .false.  ! intermediate mode until tile-based I/O is available
+ ltile_init                   = .false.
+ use_lakeiceana               = .true.
+ qcana_mode                   = 2           ! (0) no QC-increments,
+                                            ! (1) QC+QV-increments added to QV,
+                                            ! (2) QC-increments added to QC if already present at gridpoint
+                                            !     and added to QV if not
+ qiana_mode                   = 1         ! 0/1: ignore/use QI increments
+ qrsgana_mode                 = 1       ! 0/1: ignore/use QR,QS,QG increments
+  qnxana_2mom_mode             = 0           ! 0: diagnose from mass 1: use from an_inc
+ icpl_da_sfcevap              = 4    ! use filtered T2m bias and filtered RH increment ...
+ icpl_da_skinc                = 2
+ icpl_da_snowalb              = 2
+ icpl_da_sfcfric              = 1
+ icpl_da_tkhmin               = 1
+ adjust_tso_tsnow             = .true.
+ dt_ana                       = 3600             ! ... to control evaporation relevant parameters
+/
+&limarea_nml
+! dtime_latbc             = 3600          ! 3600.
+! init_latbc_from_fg      = .true.                 ! always
+! itype_latbc             = 1
+! latbc_varnames_map_file = 'map_file.lbc'
+! latbc_filename          = 'ilbff<ddhhmmss>'
+
+ itype_latbc      = 1
+ nudge_hydro_pres = .true.
+ dtime_latbc      = 3600.
+ latbc_path       = './'
+ latbc_boundary_grid = 'iconR19B7_DOM01_lbc.nc'
+ latbc_varnames_map_file = 'map_file.lbc'
+ latbc_filename  = 'ilbff<ddhhmmss>'
+ init_latbc_from_fg = .true.
+ fac_latbc_presbiascor = 1.
+
+/
+&io_nml
+ dt_checkpoint                 = 863913600
+ echotop_meta(1)%time_interval = 900.0             ! Reset der Druckminimumbestimmung auf domain 1 alle 15'
+ echotop_meta(1)%dbzthresh     = 18.               ! Liste der dbz-thresholds (hier nur einer) fuer domain 1 
+ itype_pres_msl               = 5        ! (1) 3: IFS-type extrapolation
+ itype_rh                     = 1         ! (1) 2: mixed phase (water and ice)
+ output_nml_dict              = 'map_file.fc'
+ lmask_boundary               = .true.
+/
+&synsat_nml
+ lsynsat = .true.,.true.
+/
+&synradar_nml
+synradar_meta%itype_refl          = ${itype_refl}       ! Mie-scattering
+synradar_meta%itype_Dref_fmelt    = ${itype_Dref_fmelt}
+synradar_meta%llookup_mie         = .true.  ! Mie LUTs
+synradar_meta%lambda_radar        = 0.055   ! wavelenght [m]
+ydir_mielookup_read  = '${YDIR_MIELOOKUP}'
+ydir_mielookup_write = '${YDIR_MIELOOKUP}'
+! Bright Band Correction (BB)
+synradar_meta%Tmeltbegin_g = 270.16    ! default 263.160
+/  
+&run_nml
+! check_uuid_gracefully = .true.
+ dtime                 = 20              ! timestep in seconds
+ iforcing              = 3                    ! NWP forcing
+ lart                  = .false.               ! ICON-ART main switch
+ ldass_lhn             = .false.          ! latent heat nudging
+ luse_radarfwo         = ${luse_radarfwo} ! main switch for Emvorado
+ ldynamics             = .true.               ! dynamics
+ ltestcase             = .false.              ! false: run with real data
+ ltimer                = .true.
+ ltransport            = .true.
+ lvert_nest            = .false.
+ msg_level             = 7          ! 7: print maximum wind speeds every 5th time steps
+ nsteps                = 180        ! 2520 for full forecast period
+ ntracer               = 5                    ! default: 0
+ num_lev               = 65           ! 65, nest the same always
+ output                = "nml"
+ timers_level          = 5                   ! can be increased up to 10 for detailed timer output
+/
+&nwp_phy_nml
+ cldopt_filename    = 'rrtm_cldopt.nc'
+ dt_conv   = 120.
+ dt_gwd    = 120.  ! Previous Hindcast 360. Probably it does not matter because inwp_gwd  =0
+ dt_rad    = 720.
+ dt_sso    = 120.,360.,
+ efdt_min_raylfric = 7200.
+ icalc_reff       = 100
+ icapdcycl        = 3
+ icpl_aero_conv   = 1
+ icpl_aero_gscp   = 0
+ icpl_o3_tp       = 1
+ icpl_rad_reff    = 1
+ inwp_cldcover   = 1
+ inwp_convection = 1  
+ inwp_gscp       = 4,4
+ inwp_gwd        = 0,0
+ inwp_radiation  = 4
+ inwp_satad      = 1
+ inwp_sso        = 1,0
+ inwp_surface    = 1
+ inwp_turb       = 1
+ itype_z0        = 2
+ latm_above_top  = .true.
+ ldetrain_conv_prec = .true.
+ mu_rain          = 0.5
+ ithermo_water    = 1
+ rain_n0_factor   = 0.1
+! cp-cv-bugfix:
+ lshallowconv_only = .true.
+ lgrayzone_deepconv= .false.
+! Subgrid clouds condenation
+ lsgs_cond = .true.
+/
+
+&nwp_tuning_nml
+ itune_albedo     = 1 
+ tune_box_liq_asy = 4.0
+ tune_gfrcrit     = 0.333 
+ tune_grcrit       = 0.65
+ tune_minsso_gwd   = 40.
+ tune_gkdrag      = 0.125 
+ tune_gkwake      = 0.25 
+ tune_gust_factor = 7.0
+ tune_gustsso_lim  = 20.
+ tune_minsnowfrac = 0.3 
+ tune_sgsclifac   = 0.0
+! cp-cv-bugfix:
+ tune_rcucov      = 0.075
+ tune_rhebc_land  = 0.825 
+ tune_zvz0i       = 0.85 
+ icpl_turb_clc    = 2 
+ max_calibfac_clcl = 2.0 
+ tune_box_liq     = 0.04
+ itune_gust_diag   = 3
+ tune_sbmccn      = 1.1   ! to avoid possible entering into sbm ccn
+/
+
+&twomom_mcrph_nml                                                                                                                     
+ ccn_type = 7
+ luse_mu_Dm_rain = .true.
+ lturb_enhc = .true. 
+ rain_cmu0  = -1.0 
+ ecoll_gg_wet = 0.40 
+ ecoll_gg     = 0.05
+ Tcoll_gg_wet = 273.16
+ isnow_stick    = 6  
+ Tmax_gr_rime   = 305.16
+ avel_g         = 45.32  
+ bvel_g         = 0.26
+/
+
+&turbdiff_nml
+ a_hshr        = 1.25
+ frcsmot       = 0.2   ! these 2 switches together apply vertical smoothing of the TKE source terms
+ icldm_turb    = 2
+ imode_charpar = 3
+! imode_frcsmot = 2     ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ imode_tkesso  = 2
+! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher    = 2    
+ ltkeshs       = .true.
+ ltkesso       = .true.
+ pat_len       = 750.
+ q_crit        = 2.0
+ rat_sea       = 0.8 ! :cp-cv-bugfix, old value: 7.0
+ tkhmin        = 0.5
+ tkmmin        = 0.75
+ tur_len       = 300.
+! cp-cv-bugfix:
+ rlam_heat     = 10.0
+ alpha1        = 0.125
+/
+
+&lnd_nml
+ c_soil         = 1.25
+ c_soil_urb     = 0.5
+ cwimax_ml      = 5.e-4
+ idiag_snowfrac = 20
+ itype_evsl     = 4
+ itype_heatcond = 3
+ itype_lndtbl   = 4
+ itype_root     = 2
+ itype_snowevap = 3  
+ itype_trvg     = 3
+ llake          = .true.
+ lmulti_snow    = .false.
+ lprog_albsi    = .true.  
+ itype_canopy   = 2
+ lseaice        = .true.
+ lsnowtile      = .true.
+ nlev_snow      = 3
+ ntiles         = 3
+ sstice_mode    = 2
+/
+&radiation_nml
+  albedo_type = 2          ! Modis albedo
+  irad_o3     = 79
+  irad_aero   = 6
+  islope_rad  = 0
+  vmr_co2    = 425.e-06  ! values representative for 2023
+  vmr_ch4    = 1900.e-09
+  vmr_n2o    = 334.0e-09
+  vmr_o2     = 0.20946
+  vmr_cfc11  = 220.e-12
+  vmr_cfc12  = 490.e-12
+! cp-cv-bugfix:
+  direct_albedo_water = 3
+  direct_albedo = 4
+  albedo_whitecap = 1
+  ecrad_llw_cloud_scat         = .false. 
+  ecrad_data_path = "./ecrad_data" 
+/
+
+&nonhydrostatic_nml
+  damp_height     = 12250.
+  divdamp_fac     = 0.004   ! 0.004 for R19B07
+ !divdamp_order   =  ! 2 ass, 24 fc - may become unnecessary with incremental analysis update
+  divdamp_order   = 24
+ !divdamp_type    =   ! optional: 2 assimilation cycle, 3 forecast
+  divdamp_type    = 32
+  exner_expol     = 0.6 
+  hbot_qvsubstep  = 22500 ! r3b7: 19000.  else: 22500.
+  htop_moist_proc = 22500.
+  iadv_rhotheta   = 2
+  igradp_method   = 3
+  itime_scheme    = 4
+  ivctype         = 2
+  l_zdiffu_t      = .true.
+  rayleigh_coeff  = 5.0
+  thhgtd_zdiffu   = 125.
+  thslp_zdiffu    = 0.02
+  vwind_offctr    = 0.2
+/
+&sleve_nml
+ decay_exp       = 1.2
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ flat_height     = 16000.
+ itype_laydistr  = 1
+ min_lay_thckn   = 20.
+ stretch_fac     = 0.65
+ top_height      = 22000.
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ iequations     = 3
+ lcoriolis      = .true.
+ lmoist_thdyn   = .false.
+/
+&transport_nml
+ ctracer_list  = '12345'
+ ivadv_tracer  = 3,3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4,4
+ ihadv_tracer  = 52,2,2,2,2,2
+ llsq_svd      = .true.
+! beta_fct      = 1.005
+/
+&diffusion_nml
+ hdiff_efdt_ratio = 24
+ hdiff_order      = 5
+ hdiff_smag_fac   = 0.025
+ itype_t_diffu    = 2
+ itype_vn_diffu   = 1
+ lhdiff_temp      = .true.
+ lhdiff_vn        = .true.
+/
+&interpol_nml
+ nudge_zone_width     = 10
+ nudge_max_coeff      = 0.075
+ lsq_high_ord         = 3
+ l_intp_c2l           = .true.
+ l_mono_c2l           = .true.
+!support_baryctr_intp = .true.
+/
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                   = 1
+ itype_vegetation_cycle  = 2
+ n_iter_smooth_topo      = 1,1,1,1,1,1
+ heightdiff_threshold    = 2250.,1500.
+ hgtdiff_max_smooth_topo = 750.,750.,750.,750.,750.,750.
+ read_nc_via_cdi         = .true.
+ itype_lwemiss           = 2
+/
+&ensemble_pert_nml
+ use_ensemble_pert = .false.
+ itype_pert_gen    = 2
+ timedep_pert      = 1
+ range_gkwake      = 0.
+ range_gkdrag      = 0.
+ range_a_stab      = 1
+ range_c_diff      = 2.   !multiplikativ
+ range_box_liq     = 0.01
+ range_box_liq_asy = 0.25
+ range_rdepths     = 5000.
+ range_rprcon      = 0.  !noch nicht ueber namelist anpackbar
+ range_capdcfac_et = 0.
+ range_capdcfac_tr = 0.
+ range_negpblcape  = 0.
+ range_lowcapefac  = 0.
+ range_rlam_heat   = 4.  !multiplikativ
+ range_q_crit      = 1.5
+ range_turlen      = 50.
+ range_tkhmin      = 0.1
+ range_tkmmin      = 0.15
+ range_rain_n0fac  = 2.  !multiplikativ
+ range_a_hshr      = 1.
+ range_zvz0i       = 0.25
+ range_texc        = 0.05
+ range_qexc        = 0.005
+ range_tkred_sfc   = 4.0
+ range_gfluxlaun   = 0.
+ range_rhebc       = 0.
+ range_minsnowfrac = 0.
+ range_z0_lcc      = 0.
+ range_rootdp      = 0.
+ range_rsmin       = 0.
+ range_laimax      = 0.
+ range_charnock    = 1.  !multiplikativ
+ range_gfrcrit     = 0.
+ range_c_soil      = 0.
+ range_cwimax_ml   = 1.  !multiplikativ
+/ 
+&gribout_nml
+ backgroundProcess               = 0
+ generatingProcessIdentifier     = 11, 12                            ! 12 .. nest
+ ldate_grib_act                  = .true.
+ lgribout_24bit                  = .false.
+ localNumberOfExperiment         = 0
+ localTypeOfEnsembleForecast     = -1     ! -1, etyp
+ numberOfForecastsInEnsemble     = -1     ! -1, nr_member
+ perturbationNumber              = -1              ! -1, member
+ preset                          = "deterministic"
+ productionStatusOfProcessedData = 2
+ tablesVersion                   = 19
+/
+&assimilation_nml
+ dace_coupling   = .true.
+ dace_debug      = 1
+ dace_time_ctrl  = 0,3600,1800 ! [s] time slices of DACE (start, stop, inc)
+ rttend =            0.0
+ lhn_logscale =     .true.
+ lhn_updt_rule   =  1 
+ lhn_coef  =        2.0
+ fac_lhn_up  =      1.1
+ fac_lhn_down =     0.7
+ abs_lhn_lim  =     0.0035
+ rqrsgmax  =        0.01
+ lhn_artif       = .true.
+ lhn_artif_only  = .false.
+ lhn_black       = .true.
+   blacklist_file  = 'blacklist_dx.nc'
+   height_file     = 'radar_dx.nc'
+   nradar          = 12       ! number of levele with radar heights within height_file
+ lhn_refbias         = .false.  
+ lhn_bright      = .true.
+ lhn_diag        = .true.
+ lhn_hum_adj     = .true.
+ lhn_qrs         = .true.
+ lhn_relax       = .true.
+ lhn_wweight     = .true.
+ nlhn_end        = 20000 ! steps?
+ nlhn_relax      = 2
+ nlhn_start      = 0
+ nlhnverif_end   = 50000
+ nlhnverif_start = 0
+!radardata_file  = 'radardata_DOM1.nc','radardata_DOM2.nc',
+ radardata_file  = 'radardata_DOM1.nc'
+ start_fadeout   = 1.0
+ std_artif_max   = 4.
+ tt_artif_max    = 0.009
+ zlev_artif_max  = 3000.
+/
+&nudging_nml
+ nudge_type = 0 
+/
+
+&output_nml
+ ! ---------------------------------------------------------------- !
+ ! ---  ICON-LAM: constant output fields - native grid at VV=0  --- !
+ ! ---------------------------------------------------------------- !
+ filetype             = 2                ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                                ! write lam domain
+ output_time_unit     = 1                                ! 1: seconds
+ output_bounds        = 0., 0., 3600.                    ! start, end, increment
+ steps_per_file       = 1
+ mode                 = 1                                ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = './ilfff'               ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 0
+ ml_varlist           = 'HHL',
+                        'DEPTH_LK', 'FR_ICE', 'FR_LAKE', 'FR_LAND',
+                        'HSURF', 'LAI', 'PLCOV', 'ROOTDP', 'SOILTYP',
+                        '-grid:VLAT', '-grid:VLON',
+ output_grid          = .true.
+ remap                = 0                                ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ----------------------------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid - every 60 Minutes --- !
+ ! ----------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 3600.      ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 0
+ ml_varlist           = 'T_2M', 'RELHUM_2M', 'TD_2M', 'U_10M', 'V_10M', 'VMAX_10M', 'PMSL', 'PS', 'CLCL', 'CLCM', 'CLCH', 'CLCT', 'ASWDIFD_S', 'ASWDIR_S', 'U', 'V', 'T', 'P', 'QC', 'QV', 'CLC', 'QV_2M', 't_g', 'h_snow', 'tot_prec_d', 'wshear_u', 'wshear_v', 'srh', 'lapse_rate', 'cape_mu', 'cin_mu'
+ stream_partitions_pl = 1
+ pe_placement_pl      = 0
+ pl_varlist           = 'QV', 'U', 'V', 'T', 'FI'
+ p_levels             = 100000,97500,95000,92500,90000,87500,85000,82500,80000,77500,75000,70000,65000,60000,55000,50000,45000,40000,35000,30000,25000,20000,15000
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ---------------------------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid - every 5 Minutes --- !
+ ! ---------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 300.       ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>_5min'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 1
+ ml_varlist           = 'tot_prec', 'tot_prec_rate', 'prec_gsp_rate', 'prec_gsp'
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ----------------------------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid - every 15 Minutes --- !
+ ! ----------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 900.       ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>_15min'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 1
+ ml_varlist           = 'SYNMSG_BT_CL_IR10.8', 'SYNMSG_BT_CL_WV6.2', 'DBZ_850', 'DBZ_CMAX', 'DBZ_CTMAX', 'ECHOTOP', 'ECHOTOPINM','UH_MAX', 'UH_MAX_LOW', 'UH_MAX_MED', 'VORW_CTMAX', 'LPI', 'LPI_MAX', 'SDI_2', 'TQV', 'TQV_DIA', 'TQC', 'TQC_DIA', 'TQR', 'TQI', 'TQI_DIA', 'TQS', 'TQG', 'TQH', 'CAPE_ML', 'CIN_ML', 'TCOND_MAX', 'TCOND10_MX', 'HAIL_GSP', 'HAIL_GSP_RATE', 'RAIN_GSP', 'RAIN_GSP_RATE', 'SNOW_GSP', 'SNOW_GSP_RATE', 'GRAUPEL_GSP', 'GRAUPEL_GSP_RATE', 'W_CTMAX', 'DBZLMX_LOW', 'CEILING', 'HZEROCL', 'SNOWLMT','VIS'
+ stream_partitions_pl = 1
+ pe_placement_pl      = 1
+ pl_varlist           = 'RELHUM', 'W', 'U', 'V', 'T'
+ p_levels             = 50000,70000
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ----------------------------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid - every 15 Minutes --- !
+ ! ----------------------------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 900.       ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>_15min_ml63'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 1
+ ml_varlist           = 'RELHUM'
+ m_levels             = 63
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+
+&meteogram_output_nml
+  lmeteogram_enabled = .true., .true.
+  n0_mtgrm           = 0                          ! meteogram initial time step (0 is first step!)
+  loutput_tiles      = .true.
+  ninc_mtgrm         = 45, 45 ! meteogram output interval (in terms of time steps)
+  ldistributed       = .false., .false.
+  stationlist_tot    =  52.3623,   13.5007, 'Berlin-Brandenburg_EDDB',
+                        51.2809,    6.7573, 'Duesseldorf_EDDL',
+                        50.0333,    8.5704, 'Frankfurt-Main_EDDF',
+                        53.6302,    9.9883, 'Hamburg_EDDH',
+                        52.4602,    9.6835, 'Hannover_EDDV',
+                        50.8659,    7.1427, 'Koeln-Bonn_EDDK',
+                        51.4240,    12.2364,'Leipzig-Halle_EDDP',
+                        48.3538,    11.7861,'Muenchen_EDDM',
+                        49.4987,    11.0780,'Nuernberg_EDDN',
+                        48.6899,    9.2220, 'Stuttgart_EDDS',
+                        53.0474,    8.7868, 'Bremen_EDDW',
+                        51.1343,    13.7680,'Dresden_EDDC',
+                        50.9798,    10.9581,'Erfurt-Weimar_EDDE',
+                        52.1346,    7.6848, 'Muenster-Osnabrueck_EDDG',
+                        49.2146,    7.1095, 'Saarbruecken_EDDR',
+                        52.2096,    14.1199,'Lindenberg_Obs',
+                        52.1665,    14.1222,'Falkenberg',
+                        52.1817,    13.9525,'Waldstation_Kehrigk',
+                        47.800,     10.900, 'Hohenpeissenberg',
+                        50.783,      6.100, 'Aachen',
+                        48.433,     10.933, 'Augsburg',
+                        49.980,     11.682, 'Bayreuth',
+                        52.300,     10.450, 'Braunschweig',
+                        51.967,      4.933, 'Cabauw',
+                        50.283,     10.983, 'Coburg',
+                        47.419,     10.982, 'Schneefernerhaus',
+                        49.920,      7.960, 'Geisenheim',
+                        54.750,     17.533, 'Leba',
+                        51.200,     16.200, 'Legnica',
+                        53.779,      8.669, 'Nordholz',
+                        48.067,     11.267, 'Oberpfaffenhofen',
+                        46.817,      6.935, 'Payerne',
+                        53.133,     16.750, 'Pila',
+                        52.383,     13.067, 'Potsdam',
+                        54.533,      9.550, 'Schleswig',
+                        48.400,     11.700, 'Weihenstephan',
+                        51.217,     18.567, 'Wielund',
+                        53.311,     11.838, 'Ziegendorf',
+                        53.5641,   6.74832, "Borkum_DEABS",
+                        54.1757,   12.0581, "Rostock_DEROS",
+                        52.4601,   9.69453, "Hannover_DEHNR",
+                        51.4056,   6.96711, "Esse_DEESS",
+                        51.3112,     8.802, "Flechtdorf_DEFLD",
+                        52.1601,   11.1761, "Ummendorf_DEUMD",
+                        54.0044,   10.0469, "Boostedt_DEBOO",
+                        49.9847,   8.71293, "Offenthal_DEOFT",
+                        50.5001,    11.135, "Neuhaus_DENEU",
+                        51.1246,   13.7686, "Dresden_DEDRS",
+                        52.6487,   13.8582, "Proetzel_DEPRO",
+                        50.1097,   6.54833, "Neuheilenbach_DENHB",
+                        48.5854,   9.78267, "Tuerkheim_DETUR",
+                        49.5407,   12.4028, "Eisberg_DEEIS",
+                        48.1747,   12.1018, "Isen_DEISN",
+                        47.8736,   8.00361, "Feldberg_DEFBG",
+                        48.042,     10.219, "Memmingen_DEMEM",
+                        50.9085,    6.4135, "FZ_Juelich",
+                        50.7306,    7.0716, "Uni_Bonn",
+/
+EOF
+
+cat > NAMELIST_EMVORADO  << end_input_radarsim
+&RADARSIM_PARAMS
+!
+dom =  1
+!
+!========================================================
+!========================================================
+! .. Namelist for the German Weather Radars
+!========================================================
+!========================================================
+!
+!========================================================
+!
+! Number of radar stations to honor from the below list:
+!   For each station from ista=1, nradsta_namelist, you can override
+!   some meta data in the structures rs_meta(ista) and dbz_meta(ista),
+!   which otherwise are taken from the obs files found
+!   in the ${RADARI_RADVOP} directory resp. the
+!   background list. The number of simulated radar stations
+!   is determined automatically from the number of files
+!   found in the abovementioned ${RADARI_RADVOP} directory.
+! In this case, nradsta_namelist is NOT the number of radar stations
+!   found in the ${RADARI_RADVOP} directory
+!   but rather the number of stations where you want
+!   to change some of the meta data!
+!   If you define more change-blocks (see below) than nradsta_namelist, only the
+!   first nradsta_namelist blocks will be honored.
+! Important: for a correct match of the below change-blocks
+!   with the obs radar stations,
+!   give the correct station_id for each block below.
+!
+  nradsta_namelist = 34,
+!
+!========================================================
+! Country flag for the observational radar data:
+!
+!  1 = DWD German radar network       (default)
+!  2 = MeteoSwiss Swiss radar network
+!
+  icountry = 1,
+!
+!
+!========================================================
+! GLOBAL SETTINGS, I.E., THE SAME FOR ALL RADAR STATIONS:
+!========================================================
+!
+  ldebug_radsim = .false.,
+  lout_geom = .true.,
+  lwrite_ready = .true.,
+  loutradwind = .true.,
+    lweightdbz = .true.,  
+    lfall = .true.,
+    lfill_vr_backgroundwind = .true.,
+  loutdbz = .true.,
+    lextdbz = .true.,
+    ! Global switch to choose itype_refl for all radars. 
+    !  This is then the background value for all radars, which can
+    !  later be overwritten for the single stations via namelist.
+    !  If no value or -99 for itype_refl_glob is given, the default
+    !  value from dbz_namlst_d (3) will win.
+    !  You can override it for each station by individual settings 
+    !  in the "dbz_meta"- structure below.
+    dbz_meta_glob%itype_refl=${itype_refl},
+    dbz_meta_glob%itype_Dref_fmelt=${itype_Dref_fmelt},
+    ! Global switch to enable the use of Mie-lookup tables for all radars. 
+    !  This is then the background value for all radars, which can
+    !  later be overwritten for the single stations via namelist.
+    dbz_meta_glob%llookup_mie=.true.,
+    dbz_meta_glob%Tmeltbegin_g = 270.16    
+      itype_mpipar_lookupgen = 2,
+      pe_start_lookupgen = 1,
+      ydir_mielookup_read = '${YDIR_MIELOOKUP}'
+      ydir_mielookup_write = '${YDIR_MIELOOKUP}'
+  lonline = .false.,
+    lsode =.true.,
+    lcomm_nonblocking_online = .true.,
+  lsmooth = .false.,
+    ! Similar to itype_refl_glob, one can define background
+    !  values for the number of smoothing points. If -99 or
+    !  no values are given, the default
+    !  value 1 will win.
+    ngpsm_h_glob = 1,
+    ngpsm_v_glob = 9,
+  ! Take into account the effects of the minimum detectable signal
+  !   for reflectivity and/or radial velocity:
+  !   (There are 2 components of the rs_meta-structure for each radar station which hold
+  !    the reference MDS, rs_meta%mds_Z0 [dBZ], at a certain reference range, rs_meta%mds_r0 [m].
+  !    These can be set in the rs_meta-section below. The default is -20 dBZ at 10 km range.)
+  lmds_z  = .true.,
+  lmds_vr = .true.,
+!
+  lcomm_nonblocking_output = .TRUE.
+!
+  lvoldata_output = .true.,
+    voldata_ostream(1)%format = 'grib2'  ! 'ascii', 'ascii-gzip', 'f90-binary', 'cdfin', 'cdfin-mulmom', 'grib2', 'grib2-mulmom'
+    voldata_ostream(1)%file_pattern = 'grib2_<stationid>_<varname>_<tvvzstart>-<tvvzend>_<scantype>.grb2',
+    voldata_ostream(1)%content_dt = 0.0,
+    voldata_ostream(1)%content_tref = 0.0,
+    voldata_ostream(1)%output_list = 'zrsim', 'vrsim', 'zrobs', 'vrobs',
+
+    voldata_ostream(2)%format = 'grib2'  ! 'ascii', 'ascii-gzip', 'f90-binary', 'cdfin', 'cdfin-mulmom', 'grib2', 'grib2-mulmom'
+    voldata_ostream(2)%file_pattern = 'grib2_<stationid>_<varname>_<tvvzstart>_<scantype>.grb2',
+    voldata_ostream(2)%content_dt = 0.0,
+    voldata_ostream(2)%content_tref = 0.0,
+    voldata_ostream(2)%output_list = 'losim', 'lasim', 'hrsim'
+
+    voldata_ostream(3)%format = 'cdfin'  ! 'ascii', 'ascii-gzip', 'f90-binary', 'cdfin', 'cdfin-mulmom', 'grib2', 'grib2-mulmom'
+    voldata_ostream(3)%file_pattern = 'cdfin_<stationid>_<varname>_<tvvzstart>-<tvvzend>_<scantype>.nc',
+    voldata_ostream(3)%content_dt = 0.0,
+    voldata_ostream(3)%content_tref = 0.0,
+    voldata_ostream(3)%output_list = 'zrsim', 'vrsim', 'zrobs', 'vrobs',
+
+    voldata_ostream(4)%format = 'cdfin'  ! 'ascii', 'ascii-gzip', 'f90-binary', 'cdfin', 'cdfin-mulmom', 'grib2', 'grib2-mulmom'
+    voldata_ostream(4)%file_pattern = 'cdfin_<stationid>_<varname>_<tvvzstart>_<scantype>.nc',
+    voldata_ostream(4)%content_dt = 0.0,
+    voldata_ostream(4)%content_tref = 0.0,
+    voldata_ostream(4)%output_list = 'losim', 'lasim', 'hrsim'
+
+  ldo_composite=.true.,
+    nel_composite = 1,
+    eleindlist_for_composite_glob = 98, ! depends on nel_composite: the first nel_composite entries are used
+    ! separate EMVORADO output of composites in dbzcmp_sim* and dbzcmp_obs* files:
+    !  (depends on sample files sample_dbzcmp_obs.grb2 and sample_dbzcmp_sim.grb2 in the model start directory)
+    lcomposite_output = .TRUE.,
+    comp_meta%ni       = 651
+    comp_meta%nj       = 716
+    comp_meta%pollon   = -170.0
+    comp_meta%pollat   = 40.0
+    comp_meta%polgam   = 0.0
+    comp_meta%dlon     = 0.02
+    comp_meta%dlat     = 0.02
+    comp_meta%startlon = -7.5
+    comp_meta%startlat = -6.3
+
+  ldo_bubbles = .false.
+    eleind_for_composite_bub_glob = 1,
+
+  lfdbk_output  = .true.,
+
+  ! Times for output of feedback files: Ex: 300 after five minutes/ 3600 after 1 hour
+  obs_times_fdbk_glob = 3600.0
+
+  ! Output directory of all radar files:
+  ydirradarout = '${RADAROUTPUTDIR}'
+
+  ! if lreadmeta_from_netcdf = .true., run in assimilation mode,
+  !   i.e., radar obs files (NetCDF) are provided and
+  !   the radar meta data from the files are overtaken.
+  !   The below listing of meta data does not have any effect!
+  lreadmeta_from_netcdf = .true.,
+    ra_inc_coarse_glob = 1000.0,   ! [m]
+    ! Checking and matching of the obs file records
+    !   to the obs times individually for each data type file (vr, qv, z, qz)
+    !   instead of only taking one of these files for that purpose.
+    !   Does not vecorize and takes a long time! 
+    ! NORMALLY SET TO .FALSE.!!!
+    !   Might however help if some records are missing in a 
+    !   certain file (e.g., for qv) and are present in another file (e.g., vr).
+    lcheck_inputrecords = .true.,
+    lequal_azi_alldatasets = .false.,
+    labort_if_problems_obsfiles = .true.,
+    ! Input directory of radar NetCDF files:
+    ydirradarin = '${RADARINPUTDIR}'
+    ! option for superobing for data assimilation: 0: no superobing; 1: averaging;  2: median
+    !  (the superobbed fields are stored in the NetCDF feedback files)
+    itype_supobing = 1,
+      supob_nrb = 3, ! threshold for number of radar bins used for superobbing
+      ! resolution of the cartesian grid for superobing [m]: (default: 20000.0)
+      supob_cart_resolution = 10000.0,
+      ! width of averaging area for superobing [m]: (default: sqrt(2)*20000.0 = 28284.3)
+      supob_ave_width = 14142.1,
+      ! min. ranges of superobing points for vr and z [m]: (default: 0.75*sqrt(2)*20000.0 = 21213.2)
+      supob_minrange_vr = 10606.6,
+      supob_minrange_z = 10606.6,
+      ! maximal azimut sector (symetrical to its center) for v_r superobing [deg]:
+      supob_azi_maxsector_vr = 10.0,
+      supob_vrw = 10.0, !(m/s) threshold for stddev of radial wind values within a superobed bi
+!      supob_rfl = 1e15, !(mm^6/m^3) threshold for stddev of reflectivity values within a superobed bin
+      ! flag for qc control of obs data
+      lqc_flag = .false.,
+      ! flag for dealiasing of obs radial wind data
+      ldealiase_vr_obs = .true.,
+      ! lower threshold for valid Ze values, to which smaller valid values are
+      !   set before average_superobing. Two thresholds, one for obs and one for sim.
+      !   Both should normally be equal and same as corresponding threshold in LETKF software:
+      supob_lowthresh_z_obs = 0.0,
+      supob_lowthresh_z_sim = 0.0,
+    itype_obserr_vr=2
+      ramp_lowdbz_obserr_vr=-10.0,
+      ramp_highdbz_obserr_vr=10.0,
+      maxval_obserr_vr=10.0,
+      baseval_obserr_vr=1.0,
+!
+!
+!
+!
+!========================================================
+!========================================================
+! WE HAVE lreadmeta_from_netcdf = .TRUE., THEREFORE
+! THE FOLLOWING SETTINGS FOR SINGLE STATIONS ARE ONLY
+! TO CHANGE/OVERRIDE META DATA WHICH OTHERWISE COME FROM
+! THE OBS DATA FILES OR FROM THE BACKGROUND LIST IN THE
+! CODE. IN THE BELOW EXAMPLE, WE WANT TO CHANGE
+! SOME METADATA FROM 3 STATIONS.
+!
+! THIS IS DONE IN BLOCKS: ONE STATION ISTA CORRESPONDS TO
+! ONE INDEX OF RS_META(ISTA) AND DBZ_META(ISTA).
+! IMPORTANT: ALWAYS SPECIFY THE STATION-ID TO MATCH
+! THE CORRECT STATION!
+!========================================================
+!========================================================
+!
+!========================================================
+! OVERRIDE INDIVIDUAL SETTINGS FOR EACH RADAR STATION:
+!========================================================
+!
+!
+!======= List of all radar sites, from which the first nradsta_namelist (s.o.) stations will be changed
+!
+! Radar I: BOO Boosted
+!
+! STATION 1: rs_meta(1) and dbzparams(1): BOO Boosted volume scan
+!
+    rs_meta(1)%station_name  = 'BOO'
+    rs_meta(1)%station_id    = 10132
+    rs_meta(1)%scanname      = 'PPI0080'
+    rs_meta(1)%lambda        = 0.055
+    rs_meta(1)%lat           = 54.00438
+    rs_meta(1)%lon           = 10.04687
+    rs_meta(1)%alt_msl       = 125.0,
+    rs_meta(1)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(1)%nra           = 180
+    rs_meta(1)%ra_inc        = 1000.0
+    rs_meta(1)%nobs_times     = 500,
+    rs_meta(1)%dt_obs         = 300.0,
+    rs_meta(1)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(1)%station_id   = 10132  
+!
+! STATION 18: rs_meta(18) and dbzparams(18): BOO Boosted precip scan
+!
+    rs_meta(18)%station_name = 'BOO'
+    rs_meta(18)%station_id   = 10132
+    rs_meta(18)%scanname     = 'PRECIP'
+    rs_meta(18)%lambda       = 0.055
+    rs_meta(18)%lat          = 54.00438
+    rs_meta(18)%lon          = 10.04687
+    rs_meta(18)%alt_msl      = 125.0,
+    rs_meta(18)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(18)%nel          = 1,
+    rs_meta(18)%el_arr       = 0.8,
+    rs_meta(18)%nra          = 150
+    rs_meta(18)%ra_inc       = 1000.0
+    rs_meta(18)%nobs_times     = 500,
+    rs_meta(18)%dt_obs         = 300.0,
+    rs_meta(18)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(18)%station_id  = 10132  
+!
+!========================================================
+!
+! Radar II: DRS Dresden
+!
+! STATION 2: rs_meta(2) and dbz_meta(2): DRS Dresden volume scan
+!
+    rs_meta(2)%station_name  = 'DRS'
+    rs_meta(2)%station_id    = 10488
+    rs_meta(2)%scanname      = 'PPI0080'
+    rs_meta(2)%lambda        = 0.055
+    rs_meta(2)%lat           = 51.12452
+    rs_meta(2)%lon           = 13.76867
+    rs_meta(2)%alt_msl       = 262.0,
+    rs_meta(2)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(2)%nra           = 180
+    rs_meta(2)%ra_inc        = 1000.0
+    rs_meta(2)%nobs_times     = 500,
+    rs_meta(2)%dt_obs         = 300.0,
+    rs_meta(2)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(2)%station_id   = 10488  
+!
+! STATION 19: rs_meta(19) and dbz_meta(19): DRS Dresden precip scan
+!
+    rs_meta(19)%station_name = 'DRS'
+    rs_meta(19)%station_id   = 10488
+    rs_meta(19)%scanname     = 'PRECIP'
+    rs_meta(19)%lambda       = 0.055
+    rs_meta(19)%lat          = 51.12452
+    rs_meta(19)%lon          = 13.76867
+    rs_meta(19)%alt_msl      = 262.0,
+    rs_meta(19)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(19)%nel          = 1,
+    rs_meta(19)%el_arr       = 0.8,
+    rs_meta(19)%nra          = 150
+    rs_meta(19)%ra_inc       = 1000.0
+    rs_meta(19)%nobs_times     = 500,
+    rs_meta(19)%dt_obs         = 300.0,
+    rs_meta(19)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(19)%station_id  = 10488  
+!
+!========================================================
+!
+! Radar III: EIS Eisberg
+!
+! STATION 3: rs_meta(3) and dbz_meta(3): EIS Eisberg volume scan
+!
+    rs_meta(3)%station_name  = 'EIS'
+    rs_meta(3)%station_id    = 10780
+    rs_meta(3)%scanname      = 'PPI0080'
+    rs_meta(3)%lambda        = 0.055
+    rs_meta(3)%lat           = 49.54066
+    rs_meta(3)%lon           = 12.40278
+    rs_meta(3)%alt_msl       = 799.0,
+    rs_meta(3)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(3)%nra           = 180
+    rs_meta(3)%ra_inc        = 1000.0
+    rs_meta(3)%nobs_times     = 500,
+    rs_meta(3)%dt_obs         = 300.0,
+    rs_meta(3)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(3)%station_id   = 10780
+!
+! STATION 20: rs_meta(20) and dbz_meta(20): EIS Eisberg precip scan
+!
+    rs_meta(20)%station_name = 'EIS'
+    rs_meta(20)%station_id   = 10780
+    rs_meta(20)%scanname     = 'PRECIP'
+    rs_meta(20)%lambda       = 0.055
+    rs_meta(20)%lat          = 49.54066
+    rs_meta(20)%lon          = 12.40278
+    rs_meta(20)%alt_msl      = 799.0,
+    rs_meta(20)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(20)%nel          = 1,
+    rs_meta(20)%el_arr       = 0.8,
+    rs_meta(20)%nra          = 150
+    rs_meta(20)%ra_inc       = 1000.0
+    rs_meta(20)%nobs_times     = 500,
+    rs_meta(20)%dt_obs         = 300.0,
+    rs_meta(20)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(20)%station_id  = 10780
+!
+!========================================================
+!
+! Radar IV: ASB Ausfallsicherungsradar Borkum
+!
+! STATION 4: rs_meta(4) and dbz_meta(4): ASB Ausfallsicherungsradar Borkum volume scan
+!
+    rs_meta(4)%station_name  = 'ASB'
+    rs_meta(4)%station_id    = 10103
+    rs_meta(4)%scanname      = 'PPI0080'
+    rs_meta(4)%lambda        = 0.055
+    rs_meta(4)%lat           = 53.56401
+    rs_meta(4)%lon           = 6.74829
+    rs_meta(4)%alt_msl       = 36.0
+    rs_meta(4)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(4)%nra           = 180
+    rs_meta(4)%ra_inc        = 1000.0
+    rs_meta(4)%nobs_times     = 500,
+    rs_meta(4)%dt_obs         = 300.0,
+    rs_meta(4)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(4)%station_id   = 10103
+!
+! STATION 21: rs_meta(21) and dbz_meta(21): ASB Ausfallsicherungsradar Borkum precip scan
+!
+    rs_meta(21)%station_name = 'ASB'
+    rs_meta(21)%station_id   = 10103
+    rs_meta(21)%scanname     = 'PRECIP'
+    rs_meta(21)%lambda       = 0.055
+    rs_meta(21)%lat          = 53.56401
+    rs_meta(21)%lon          = 6.74829
+    rs_meta(21)%alt_msl      = 36.0
+    rs_meta(21)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(21)%nel          = 1,
+    rs_meta(21)%el_arr       = 0.8,
+    rs_meta(21)%nra          = 150
+    rs_meta(21)%ra_inc       = 1000.0
+    rs_meta(21)%nobs_times     = 500,
+    rs_meta(21)%dt_obs         = 300.0,
+    rs_meta(21)%lobstimes_ovwrt_recalc = .true.,
+    !
+    dbz_meta(21)%station_id  = 10103
+    !
+!========================================================
+!
+! Radar V: ESS Essen (new site, slightly moved tower)
+!
+! STATION 5: rs_meta(5) and dbz_meta(5): ESS Essen (new site, slightly moved tower) volume scan
+!
+    rs_meta(5)%station_name  = 'ESS'
+    rs_meta(5)%station_id    = 10410
+    rs_meta(5)%scanname      = 'PPI0080'
+    rs_meta(5)%lambda        = 0.055
+    rs_meta(5)%lat           = 51.40563
+    rs_meta(5)%lon           = 6.96712
+    rs_meta(5)%alt_msl       = 185.0,
+    rs_meta(5)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(5)%nra           = 180
+    rs_meta(5)%ra_inc        = 1000.0
+    rs_meta(5)%nobs_times     = 500,
+    rs_meta(5)%dt_obs         = 300.0,
+    rs_meta(5)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(5)%station_id   = 10410
+!
+! STATION 22: rs_meta(5) and dbz_meta(5): ESS Essen (new site, slightly moved tower) precip scan
+!
+    rs_meta(22)%station_name = 'ESS'
+    rs_meta(22)%station_id   = 10410
+    rs_meta(22)%scanname     = 'PRECIP'
+    rs_meta(22)%lambda       = 0.055
+    rs_meta(22)%lat          = 51.40563
+    rs_meta(22)%lon          = 6.96712
+    rs_meta(22)%alt_msl      = 185.0,
+    rs_meta(22)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(22)%nel          = 1,
+    rs_meta(22)%el_arr       = 0.8,
+    rs_meta(22)%nra          = 150
+    rs_meta(22)%ra_inc       = 1000.0
+    rs_meta(22)%nobs_times     = 500,
+    rs_meta(22)%dt_obs         = 300.0,
+    rs_meta(22)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(22)%station_id  = 10410
+!
+!========================================================
+!
+! Radar VI: FBG Feldberg
+!
+! STATION 6: rs_meta(6) and dbz_meta(6): FBG Feldberg volume scan
+!
+    rs_meta(6)%station_name  = 'FBG'
+    rs_meta(6)%station_id    = 10908
+    rs_meta(6)%scanname      = 'PPI0080'
+    rs_meta(6)%lambda        = 0.055
+    rs_meta(6)%lat           = 47.87361
+    rs_meta(6)%lon           = 8.00361
+    rs_meta(6)%alt_msl       = 1516.0,
+    rs_meta(6)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(6)%nra           = 180
+    rs_meta(6)%ra_inc        = 1000.0
+    rs_meta(6)%nobs_times     = 500,
+    rs_meta(6)%dt_obs         = 300.0,
+    rs_meta(6)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(6)%station_id   = 10908
+!
+! STATION 23: rs_meta(23) and dbz_meta(23): FBG Feldberg precip scan
+!
+    rs_meta(23)%station_name = 'FBG'
+    rs_meta(23)%station_id   = 10908
+    rs_meta(23)%scanname     = 'PRECIP'
+    rs_meta(23)%lambda       = 0.055
+    rs_meta(23)%lat          = 47.87361
+    rs_meta(23)%lon          = 8.00361
+    rs_meta(23)%alt_msl      = 1516.0,
+    rs_meta(23)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(23)%nel          = 1,
+    rs_meta(23)%el_arr       = 0.8,
+    rs_meta(23)%nra          = 150
+    rs_meta(23)%ra_inc       = 1000.0
+    rs_meta(23)%nobs_times     = 500,
+    rs_meta(23)%dt_obs         = 300.0,
+    rs_meta(23)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(23)%station_id  = 10908
+!
+!========================================================
+!
+! Radar VII: FLD Flechtdorf
+!
+! STATION 7: rs_meta(7) and dbz_meta(7): FLD Flechtdorf volume scan
+!
+    rs_meta(7)%station_name  = 'FLD'
+    rs_meta(7)%station_id    = 10440
+    rs_meta(7)%scanname      = 'PPI0080'
+    rs_meta(7)%lambda        = 0.055
+    rs_meta(7)%lat           = 51.31119
+    rs_meta(7)%lon           = 8.80206
+    rs_meta(7)%alt_msl       = 623.0,
+    rs_meta(7)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(7)%nra           = 180
+    rs_meta(7)%ra_inc        = 1000.0
+    rs_meta(7)%nobs_times     = 500,
+    rs_meta(7)%dt_obs         = 300.0,
+    rs_meta(7)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(7)%station_id   = 10440
+!
+! STATION 24: rs_meta(24) and dbz_meta(24): FLD Flechtdorf precip scan
+!
+    rs_meta(24)%station_name = 'FLD'
+    rs_meta(24)%station_id   = 10440
+    rs_meta(24)%scanname     = 'PRECIP'
+    rs_meta(24)%lambda       = 0.055
+    rs_meta(24)%lat          = 51.31119
+    rs_meta(24)%lon          = 8.80206
+    rs_meta(24)%alt_msl      = 623.0,
+    rs_meta(24)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(24)%nel          = 1,
+    rs_meta(24)%el_arr       = 0.8,
+    rs_meta(24)%nra          = 150
+    rs_meta(24)%ra_inc       = 1000.0
+    rs_meta(24)%nobs_times     = 500,
+    rs_meta(24)%dt_obs         = 300.0,
+    rs_meta(24)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(24)%station_id  = 10440
+!
+!========================================================
+!
+! Radar VIII: HNR Hannover (new)
+!
+! STATION 8: rs_meta(8) and dbz_meta(8): HNR Hannover (new) volume scan
+!
+    rs_meta(8)%station_name  = 'HNR'
+    rs_meta(8)%station_id    = 10339
+    rs_meta(8)%scanname      = 'PPI0080'
+    rs_meta(8)%lambda        = 0.055
+    rs_meta(8)%lat           = 52.46008
+    rs_meta(8)%lon           = 9.69452
+    rs_meta(8)%alt_msl       = 98.0,
+    rs_meta(8)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(8)%nra           = 180
+    rs_meta(8)%ra_inc        = 1000.0
+    rs_meta(8)%nobs_times     = 500,
+    rs_meta(8)%dt_obs         = 300.0,
+    rs_meta(8)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(8)%station_id   = 10339
+!
+! STATION 25: rs_meta(25) and dbz_meta(25): HNR Hannover (new) precip scan
+!
+    rs_meta(25)%station_name = 'HNR'
+    rs_meta(25)%station_id   = 10339
+    rs_meta(25)%scanname     = 'PRECIP'
+    rs_meta(25)%lambda       = 0.055
+    rs_meta(25)%lat          = 52.46008
+    rs_meta(25)%lon          = 9.69452
+    rs_meta(25)%alt_msl      = 98.0,
+    rs_meta(25)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(25)%nel          = 1,
+    rs_meta(25)%el_arr       = 0.8,
+    rs_meta(25)%nra          = 150
+    rs_meta(25)%ra_inc       = 1000.0
+    rs_meta(25)%nobs_times     = 500,
+    rs_meta(25)%dt_obs         = 300.0,
+    rs_meta(25)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(25)%station_id  = 10339
+!
+!========================================================
+!
+! Radar IX: NEU Neuhaus
+!
+! STATION 9: rs_meta(9) and dbz_meta(9): NEU Neuhaus volume scan
+!
+    rs_meta(9)%station_name  = 'NEU'
+    rs_meta(9)%station_id    = 10557
+    rs_meta(9)%scanname      = 'PPI0080'
+    rs_meta(9)%lambda        = 0.055
+    rs_meta(9)%lat           = 50.50012
+    rs_meta(9)%lon           = 11.13504
+    rs_meta(9)%alt_msl       = 878.0,
+    rs_meta(9)%dt_obs        = 0.0, 1e8, 300.0,
+    rs_meta(9)%nra           = 180
+    rs_meta(9)%ra_inc        = 1000.0
+    rs_meta(9)%nobs_times     = 500,
+    rs_meta(9)%dt_obs         = 300.0,
+    rs_meta(9)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(9)%station_id   = 10557
+!
+! STATION 26: rs_meta(26) and dbz_meta(26): NEU Neuhaus precip scan
+!
+    rs_meta(26)%station_name = 'NEU'
+    rs_meta(26)%station_id   = 10557
+    rs_meta(26)%scanname     = 'PRECIP'
+    rs_meta(26)%lambda       = 0.055
+    rs_meta(26)%lat          = 50.50012
+    rs_meta(26)%lon          = 11.13504
+    rs_meta(26)%alt_msl      = 878.0,
+    rs_meta(26)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(26)%nel          = 1,
+    rs_meta(26)%el_arr       = 0.8,
+    rs_meta(26)%nra          = 150
+    rs_meta(26)%ra_inc       = 1000.0
+    rs_meta(26)%nobs_times     = 500,
+    rs_meta(26)%dt_obs         = 300.0,
+    rs_meta(26)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(26)%station_id  = 10557
+!
+!========================================================
+!
+! Radar X: NHB Neuheilenbach
+!
+! STATION 10: rs_meta(10) and dbz_meta(10): NHB Neuheilenbach volume scan
+!
+    rs_meta(10)%station_name = 'NHB'
+    rs_meta(10)%station_id   = 10605
+    rs_meta(10)%scanname     = 'PPI0080'
+    rs_meta(10)%lambda       = 0.055
+    rs_meta(10)%lat          = 50.10973
+    rs_meta(10)%lon          = 6.54853
+    rs_meta(10)%alt_msl      = 585.0,
+    rs_meta(10)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(10)%nra          = 180
+    rs_meta(10)%ra_inc       = 1000.0
+    rs_meta(10)%nobs_times     = 500,
+    rs_meta(10)%dt_obs         = 300.0,
+    rs_meta(10)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(10)%station_id  = 10605
+!
+! STATION 27: rs_meta(27) and dbz_meta(27): NHB Neuheilenbach precip scan
+!
+    rs_meta(27)%station_name = 'NHB'
+    rs_meta(27)%station_id   = 10605
+    rs_meta(27)%scanname     = 'PRECIP'
+    rs_meta(27)%lambda       = 0.055
+    rs_meta(27)%lat          = 50.10973
+    rs_meta(27)%lon          = 6.54853
+    rs_meta(27)%alt_msl      = 585.0,
+    rs_meta(27)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(27)%nel          = 1,
+    rs_meta(27)%el_arr       = 0.8,
+    rs_meta(27)%nra          = 150
+    rs_meta(27)%ra_inc       = 1000.0
+    rs_meta(27)%nobs_times     = 500,
+    rs_meta(27)%dt_obs         = 300.0,
+    rs_meta(27)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(27)%station_id  = 10605
+!
+!========================================================
+!
+! Radar XI: OFT Offenthal
+!
+! STATION 11: rs_meta(11) and dbz_meta(11): OFT Offenthal volume scan
+!
+    rs_meta(11)%station_name = 'OFT'
+    rs_meta(11)%station_id   = 10629
+    rs_meta(11)%scanname     = 'PPI0080'
+    rs_meta(11)%lambda       = 0.055
+    rs_meta(11)%lat          = 49.98478
+    rs_meta(11)%lon          = 8.71293
+    rs_meta(11)%alt_msl      = 246.0,
+    rs_meta(11)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(11)%nra          = 180
+    rs_meta(11)%ra_inc       = 1000.0
+    rs_meta(11)%nobs_times     = 500,
+    rs_meta(11)%dt_obs         = 300.0,
+    rs_meta(11)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(11)%station_id  = 10629
+!
+! STATION 28: rs_meta(28) and dbz_meta(28): OFT Offenthal precip scan
+!
+    rs_meta(28)%station_name = 'OFT'
+    rs_meta(28)%station_id   = 10629
+    rs_meta(28)%scanname     = 'PRECIP'
+    rs_meta(28)%lambda       = 0.055
+    rs_meta(28)%lat          = 49.98478
+    rs_meta(28)%lon          = 8.71293
+    rs_meta(28)%alt_msl      = 246.0,
+    rs_meta(28)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(28)%nel          = 1,
+    rs_meta(28)%el_arr       = 0.8,
+    rs_meta(28)%nra          = 150
+    rs_meta(28)%ra_inc       = 1000.0
+    rs_meta(28)%nobs_times     = 500,
+    rs_meta(28)%dt_obs         = 300.0,
+    rs_meta(28)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(28)%station_id  = 10629
+!
+!========================================================
+!
+! Radar XII: PRO Proetzel
+!
+! STATION 12: rs_meta(12) and dbz_meta(12): PRO Proetzel volume scan
+!
+    rs_meta(12)%station_name = 'PRO'
+    rs_meta(12)%station_id   = 10392
+    rs_meta(12)%scanname     = 'PPI0080'
+    rs_meta(12)%lambda       = 0.055
+    rs_meta(12)%lat          = 52.64867
+    rs_meta(12)%lon          = 13.85821
+    rs_meta(12)%alt_msl      = 194.0,
+    rs_meta(12)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(12)%nra          = 180
+    rs_meta(12)%ra_inc       = 1000.0
+    rs_meta(12)%nobs_times     = 500,
+    rs_meta(12)%dt_obs         = 300.0,
+    rs_meta(12)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(12)%station_id  = 10392
+!
+! STATION 29: rs_meta(29) and dbz_meta(29): PRO Proetzel precip scan
+!
+    rs_meta(29)%station_name = 'PRO'
+    rs_meta(29)%station_id   = 10392
+    rs_meta(29)%scanname     = 'PRECIP'
+    rs_meta(29)%lambda       = 0.055
+    rs_meta(29)%lat          = 52.64867
+    rs_meta(29)%lon          = 13.85821
+    rs_meta(29)%alt_msl      = 194.0,
+    rs_meta(29)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(29)%nel          = 1,
+    rs_meta(29)%el_arr       = 0.8,
+    rs_meta(29)%nra          = 150
+    rs_meta(29)%ra_inc       = 1000.0
+    rs_meta(29)%nobs_times     = 500,
+    rs_meta(29)%dt_obs         = 300.0,
+    rs_meta(29)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(29)%station_id  = 10392
+!
+!========================================================
+!
+! Radar XIII: MEM Memmingen
+!
+! STATION 13: rs_meta(13) and dbz_meta(13): MEM Memmingen volume scan
+!
+    rs_meta(13)%station_name = 'MEM'
+    rs_meta(13)%station_id   = 10950
+    rs_meta(13)%scanname     = 'PPI0080'
+    rs_meta(13)%lambda       = 0.055
+    rs_meta(13)%lat          = 48.04214
+    rs_meta(13)%lon          = 10.21924
+    rs_meta(13)%alt_msl      = 724.0,
+    rs_meta(13)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(13)%nra          = 180
+    rs_meta(13)%ra_inc       = 1000.0
+    rs_meta(13)%nobs_times     = 500,
+    rs_meta(13)%dt_obs         = 300.0,
+    rs_meta(13)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(13)%station_id  = 10950
+!
+! STATION 30: rs_meta(30) and dbz_meta(30): MEM Memmingen precip scan
+!
+    rs_meta(30)%station_name = 'MEM'
+    rs_meta(30)%station_id   = 10950
+    rs_meta(30)%scanname     = 'PRECIP'
+    rs_meta(30)%lambda       = 0.055
+    rs_meta(30)%lat          = 48.04214
+    rs_meta(30)%lon          = 10.21924
+    rs_meta(30)%alt_msl      = 724.0,
+    rs_meta(30)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(30)%nel          = 1,
+    rs_meta(30)%el_arr       = 0.8,
+    rs_meta(30)%nra          = 150
+    rs_meta(30)%ra_inc       = 1000.0
+    rs_meta(30)%nobs_times     = 500,
+    rs_meta(30)%dt_obs         = 300.0,
+    rs_meta(30)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(30)%station_id  = 10950
+!
+!========================================================
+!
+! Radar XIV: ROS Rostock
+!
+! STATION 14: rs_meta(14) and dbz_meta(14): ROS Rostock volume scan
+!
+    rs_meta(14)%station_name = 'ROS'
+    rs_meta(14)%station_id   = 10169
+    rs_meta(14)%scanname     = 'PPI0080'
+    rs_meta(14)%lambda       = 0.055
+    rs_meta(14)%lat          = 54.17566
+    rs_meta(14)%lon          = 12.05808
+    rs_meta(14)%alt_msl      = 37.0,
+    rs_meta(14)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(14)%nra          = 180
+    rs_meta(14)%ra_inc       = 1000.0
+    rs_meta(14)%nobs_times     = 500,
+    rs_meta(14)%dt_obs         = 300.0,
+    rs_meta(14)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(14)%station_id  = 10169
+!
+! STATION 31: rs_meta(31) and dbz_meta(31): ROS Rostock precip scan
+!
+    rs_meta(31)%station_name = 'ROS'
+    rs_meta(31)%station_id   = 10169
+    rs_meta(31)%scanname     = 'PRECIP'
+    rs_meta(31)%lambda       = 0.055
+    rs_meta(31)%lat          = 54.17566
+    rs_meta(31)%lon          = 12.05808
+    rs_meta(31)%alt_msl      = 37.0,
+    rs_meta(31)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(31)%nel          = 1,
+    rs_meta(31)%el_arr       = 0.8,
+    rs_meta(31)%nra          = 150
+    rs_meta(31)%ra_inc       = 1000.0
+    rs_meta(31)%nobs_times     = 500,
+    rs_meta(31)%dt_obs         = 300.0,
+    rs_meta(31)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(31)%station_id  = 10169
+!
+!========================================================
+!
+! Radar XV: ISN Isen (old name: Schnaupping)
+!
+! STATION 15: rs_meta(15) and dbz_meta(15): ISN Isen (old name: Schnaupping) volume scan
+!
+    rs_meta(15)%station_name = 'ISN'
+    rs_meta(15)%station_id   = 10873
+    rs_meta(15)%scanname     = 'PPI0080'
+    rs_meta(15)%lambda       = 0.055
+    rs_meta(15)%lat          = 48.17470
+    rs_meta(15)%lon          = 12.10179
+    rs_meta(15)%alt_msl      = 678.0,
+    rs_meta(15)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(15)%nra          = 180
+    rs_meta(15)%ra_inc       = 1000.0
+    rs_meta(15)%nobs_times     = 500,
+    rs_meta(15)%dt_obs         = 300.0,
+    rs_meta(15)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(15)%station_id  = 10873
+!
+! STATION 32: rs_meta(32) and dbz_meta(32): ISN Isen (old name: Schnaupping) precip scan
+!
+    rs_meta(32)%station_name = 'ISN'
+    rs_meta(32)%station_id   = 10873
+    rs_meta(32)%scanname     = 'PRECIP'
+    rs_meta(32)%lambda       = 0.055
+    rs_meta(32)%lat          = 48.17470
+    rs_meta(32)%lon          = 12.10179
+    rs_meta(32)%alt_msl      = 678.0,
+    rs_meta(32)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(32)%nel          = 1,
+    rs_meta(32)%el_arr       = 0.8,
+    rs_meta(32)%nra          = 150
+    rs_meta(32)%ra_inc       = 1000.0
+    rs_meta(32)%nobs_times     = 500,
+    rs_meta(32)%dt_obs         = 300.0,
+    rs_meta(32)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(32)%station_id  = 10873
+!
+!========================================================
+!
+! Radar XVI: TUR Tuerkheim
+!
+! STATION 16: rs_meta(16) and dbz_meta(16): TUR Tuerkheim volume scan
+!
+    rs_meta(16)%station_name = 'TUR'
+    rs_meta(16)%station_id   = 10832
+    rs_meta(16)%scanname     = 'PPI0080'
+    rs_meta(16)%lambda       = 0.055
+    rs_meta(16)%lat          = 48.58528
+    rs_meta(16)%lon          = 9.78278
+    rs_meta(16)%alt_msl      = 768.0,
+    rs_meta(16)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(16)%nra          = 180
+    rs_meta(16)%ra_inc       = 1000.0
+    rs_meta(16)%nobs_times     = 500,
+    rs_meta(16)%dt_obs         = 300.0,
+    rs_meta(16)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(16)%station_id  = 10832
+!
+! STATION 33: rs_meta(33) and dbz_meta(33): TUR Tuerkheim precip scan
+!
+    rs_meta(33)%station_name = 'TUR'
+    rs_meta(33)%station_id   = 10832
+    rs_meta(33)%scanname     = 'PRECIP'
+    rs_meta(33)%lambda       = 0.055
+    rs_meta(33)%lat          = 48.58528
+    rs_meta(33)%lon          = 9.78278
+    rs_meta(33)%alt_msl      = 768.0,
+    rs_meta(33)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(33)%nel          = 1,
+    rs_meta(33)%el_arr       = 0.8,
+    rs_meta(33)%nra          = 150
+    rs_meta(33)%ra_inc       = 1000.0
+    rs_meta(33)%nobs_times     = 500,
+    rs_meta(33)%dt_obs         = 300.0,
+    rs_meta(33)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(33)%station_id  = 10832
+!
+!========================================================
+!
+! Radar XVII: UMD Ummendorf
+!
+! STATION 17: rs_meta(17) and dbz_meta(17): UMD Ummendorf volume scan
+!
+    rs_meta(17)%station_name = 'UMD'
+    rs_meta(17)%station_id   = 10356
+    rs_meta(17)%scanname     = 'PPI0080'
+    rs_meta(17)%lambda       = 0.055
+    rs_meta(17)%lat          = 52.16009
+    rs_meta(17)%lon          = 11.17609
+    rs_meta(17)%alt_msl      = 183.0,
+    rs_meta(17)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(17)%nra          = 180
+    rs_meta(17)%ra_inc       = 1000.0
+    rs_meta(17)%nobs_times     = 500,
+    rs_meta(17)%dt_obs         = 300.0,
+    rs_meta(17)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(17)%station_id  = 10356
+!
+! STATION 34: rs_meta(34) and dbz_meta(34): UMD Ummendorf precip scan
+!
+    rs_meta(34)%station_name = 'UMD'
+    rs_meta(34)%station_id   = 10356
+    rs_meta(34)%scanname     = 'PRECIP'
+    rs_meta(34)%lambda       = 0.055
+    rs_meta(34)%lat          = 52.16009
+    rs_meta(34)%lon          = 11.17609
+    rs_meta(34)%alt_msl      = 183.0,
+    rs_meta(34)%dt_obs       = 0.0, 1e8, 300.0,
+    rs_meta(34)%nel          = 1,
+    rs_meta(34)%el_arr       = 0.8,
+    rs_meta(34)%nra          = 150
+    rs_meta(34)%ra_inc       = 1000.0
+    rs_meta(34)%nobs_times     = 500,
+    rs_meta(34)%dt_obs         = 300.0,
+    rs_meta(34)%lobstimes_ovwrt_recalc = .true.,
+!
+    dbz_meta(34)%station_id  = 10356
+!
+ /
+end_input_radarsim
+
+
+
+#
+# Model Equivalent Calculator
+#
+cat > namelist  << end_input_MEC
+!===================================================
+! Blacklists settings for dace observation operators
+!===================================================
+  default = F
+!---------------------------------------
+! Blacklist from DWD Experimentiersystem
+!---------------------------------------
+  file    = 'blklsttmp'
+  verbose = 2
+/
+
+!=======================================
+!settings for dace observation operators
+!=======================================
+  &REPORT check='AREA'     use='forget' /
+  &REPORT type='AIREP' excl_bnd=0.2 /
+  &REPORT check='QI'  use='rejected'  / ! no monitoring
+  &REPORT check='THIN'       use='rejected' /
+
+
+
+ !===================
+ ! general parameters
+ !===================
+ &run
+   method         = 'MEC'               ! Model Equivalent Calculator
+   model          = 'ICON'              ! forecast model
+   data           = '${DATADIR}/const'
+   input          = "./"                ! input data path (lff files)
+   obsinput       = './'                ! observation input data (CDFIN-files, blacklist)
+   output         = "./."               ! output directory (ver,mof-files)
+!  aux            = "./output"          ! output directory (ver,mof-files)
+! !!! change to seconds later !!!
+   yyyymmddhh_ana = 2022091413           ! analysis/reference date
+   yyyymmddhh_ref = 2022091412             ! analysis/reference date
+   fc_hours       = 1
+!!!!!! later ???
+!! yyyymmddhhMMSS_ana = %cymdgMSpe%     ! analysis/reference date
+!! yyyymmddhhMMSS_ref = 20200311090000       ! analysis/reference date
+!! fc_seconds     = 3600
+! !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+   fg_file        = ''                  ! reference state (e.g det. first guess)
+!  oldanerr_file  = '/none/'
+ /
+ !===============================
+ ! observation related parameters
+ !===============================
+  &observations
+   !---------------------------------------------------
+   ! read from CDFIN files (if not set use mon/cof/ekf)
+   !---------------------------------------------------
+   read_cdfin   = T                       ! (F) read COSMO  CDFIN files
+  read_netcdf  = T
+  obs_files    = 'cdfin_acars.nc' 'cdfin_amdar.nc' 'cdfin_modes.1.nc'
+  dace_obs_op  = 'AIREP'
+    int_nn       = T
+    vint_lin_t   = T
+    vint_lin_uv  = T
+  nwv_rad      = 4 !Essential for clouds in RTTOV
+  int_rad_hum  = 2 !do not extrap. RH above model top
+  int_nn       = T !nearest neighbor interpolation
+ /
+
+ /
+
+  &report
+  time_e =    0                                       ! (hhmm, exclusive, reference + 1 minute)
+ time_b = -100                                       ! (hhmm, inclusive, reference - etkfint)
+!  time_b = -0100                            ! (hhmm, inclusive, reference - etkfint)
+ /
+
+  &rules
+  comment = 'set wind observations above 100m passive'
+   obstype = 1         ! for synop
+   zlim    = 100 10000 ! above 100m
+   uv%use  = 7         ! set status of wind observations to 'passive'
+!  uv%use  = 8         ! set status of wind observations to 'rejected'
+ /
+
+ &cosmo_obs
+   verification_start =   -59           ! (min, inclusive) forecast time (- 1 Min, COSMO Syntax)
+   altopsu(1)         =   100.          ! max height for single level wind observations
+   thairh             =     0.          ! multilevel observation collection
+   qcc(4)             =     0.          ! Qualitiy control threhsold relative humidity (same as COSMO nudging)
+   qcvf(4)            =     1.          ! Qualitiy control (same as COSMO nudging)
+   lredn_repro        = .true.          ! Disable redundancy check
+ /
+
+ &mec_obs
+!  obstypes      = "TEMP PILOT SYNOP DRIBU AIREP SATOB"
+  obstypes = "TEMP PILOT SYNOP DRIBU AIREP SATOB SCATT RAD"
+  prefix_out    = "fof"
+  interpolation = -1
+  fg_check      = 1
+ /
+
+ &report
+   type='RAD' excl_bnd = 0.67
+   use='active'
+ /
+
+ &report
+    type='RAD'
+    fr_sea   = 0.0  ! Much more precise land/sea mask in sat_pp
+    fr_noice = 1.0  ! No ice mask in sat_pp -> use model ice mask
+ /
+
+ &tovs_obs
+    read1pe         = T
+    feedbk_files    = "${DATADIR}/sat070_instr21_21_t2022091413_pp.nc"
+    use_hum_top     =  1
+    rttov_version   =  13
+    rttov_levels    =  53
+!    data_path       = '/hpc/uwork/fe11bacy/bacy_data/invar_dir/rttov13_all'    ! path to coefficient files
+    data_path       = '${DATADIR}/const/rttov13_all'    ! path to coefficient files
+    rtt10_min_od    =  1.e-8  ! (1.e-5,1.e-7) parameter min_od in RTTOV10
+    rttov_mult_prof =  T      !
+    app_reg_lims    =  F
+    fix_hgpl        =  2
+    surf_class_vers =  3
+    pl_method       =  7
+    pl_vis          =  50000
+    plev_min        =  20100 !TESTSU check 
+    use_reff        =  T
+    scale_qi        =  F
+  /
+
+ &tovs_obs_chan
+    c_satellite = 'MSG-3'
+    grid        = 21
+    flag_instr  = 21
+    n_max_calc_y = 220
+    n_max_prof_y = 20
+    thin_superob_box_lines = 2
+    thin_superob_box_fovs  = 4
+    cloud_mode  = 3
+    rad_out = 2
+    thin_superob_mode = 1 ! Thinning=1, Superobbing=2 !CHECK TESTSU
+    !=========================================
+    !     instr.  chn.no. flag    obserr. band
+    !-----------------------------------------
+ chan =
+  21      1       '  sea clear land                              '       '0.04' 0
+  21      5       'passive sea clear land                              '       '36.0' 0   
+  21      6       'passive sea clear land                              '       '36.0'  0   
+  /
+
+ &tovs_obs_chan
+    c_satellite = 'MSG-4'
+    grid        = 21
+    flag_instr  = 21
+    n_max_calc_y = 220
+    n_max_prof_y = 20
+    thin_superob_box_lines = 2
+    thin_superob_box_fovs  = 4
+    cloud_mode  = 3
+    rad_out = 2
+    thin_superob_mode = 1 ! Thinning=1, Superobbing=2 !CHECK TESTSU
+    !=========================================
+    !     instr.  chn.no. flag    obserr. band
+    !-----------------------------------------
+ chan =
+  21      1       '  sea clear land                              '       '0.04' 0
+  21      5       'passive sea clear land                              '       '36.0' 0   
+  21      6       'passive sea clear land                              '       '36.0'  0   
+  /
+
+!------------------------
+! AIREP specific namelist
+!------------------------
+  &AIREP_OBS
+    chk_phase     = 0       ! (0) flight phase chk (1=reject unsteady)
+    chk_rollangle = 3       ! (0) roll-angle check (1=reject bad,2=require good,3=wind only)
+   /
+!------
+! AIREP
+!------
+  &THINNING
+   comment  = 'Mode-S'
+   obstype  = 'AIREP'
+   codetype = 146               ! MODE-S
+   d_km     = 40                ! ca 40 km  horizontal distance
+   dlev     = 10                ! 100 hPa vertical distance
+   state    = 'dismiss'         ! set to passive
+   pass     = 0                 ! apply before fg check
+   rule1   = 'status'
+   rule2   = 'data'
+   rule3   = 'time'             ! preference for obs time closer to analysis time
+!!preferred rules: 1) status, 2) data, 3) time
+  /
+
+  REPORT type='AIREP'
+    read1pe = 0
+  /
+
+  &OBSERR
+   obstype='AIREP' quantity='u'  table='OI'  scale=0.7
+  /
+  &OBSERR
+   obstype='AIREP' quantity='t'  table='IFS' scale=0.7
+  /
+  &OBSERR
+   obstype='AIREP' quantity='rh' table='OI' scale=0.8
+  /
+end_input_MEC
+
+
+#
+# configure START_MODEL_function
+#
+ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+ls -l $MODEL
+
+$START_MODEL
+EXIT_STATUS=$?
+
+date
+
+echo "EXIT_STATUS: $EXIT_STATUS"
+exit $EXIT_STATUS

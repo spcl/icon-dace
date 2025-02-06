@@ -1,0 +1,3 @@
+radiation/radiation_save.o radiation/radiation_save.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_save.F90
+mod/radiation_save.mod.proxy: radiation/radiation_save.o
+radiation/radiation_save.o: mod/radiation_single_level.mod.proxy mod/radiation_thermodynamics.mod.proxy mod/radiation_cloud.mod.proxy mod/radiation_aerosol.mod.proxy mod/ecradhook.mod.proxy mod/easy_netcdf.mod.proxy mod/radiation_gas.mod.proxy mod/radiation_flux.mod.proxy mod/radiation_io.mod.proxy mod/parkind1.mod.proxy mod/radiation_matrix.mod.proxy mod/radiation_config.mod.proxy

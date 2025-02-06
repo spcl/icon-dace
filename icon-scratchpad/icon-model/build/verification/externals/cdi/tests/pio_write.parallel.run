@@ -1,0 +1,10 @@
+#!/bin/bash
+
+mpi_task_num=4
+
+. ./pio_write.run
+#
+# Local Variables:
+# mode: sh
+# End:
+#

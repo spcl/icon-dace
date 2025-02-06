@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/scripts/postprocessing/Teleconnections/NAM/NAM_panel_ICON.ncl

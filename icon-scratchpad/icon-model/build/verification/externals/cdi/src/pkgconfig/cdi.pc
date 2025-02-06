@@ -1,0 +1,45 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+cflags=-I${prefix}/include
+#fcflags=-I${prefix}/include
+libs=-L${exec_prefix}/lib -lcdi    -lnetcdf   -lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+threads_libs=
+threads_cflags=
+szlib_cflags=
+szlib_libs=
+netcdf_root=
+netcdf_cflags=
+netcdf_libs= -lnetcdf
+aux_libs=-lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+grib_api_cflags=
+grib_api_libs=
+eccodes_cflags=
+eccodes_libs=
+cdi_build_cc=mpicc
+cdi_build_cflags=-g -march=native -O2
+cdi_build_cppflags=-I/usr/include -I/usr/include/libxml2 
+cdi_build_ldflags=-L/usr/lib/x86_64-linux-gnu/ -L/home/primrose/Work/IconGrounds/icon-dace/.dacecache/radiation/build
+cdi_build_libs=-lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+cdi_build_fc=mpif90
+cdi_build_fcflags=-g -O2 -I/usr/include/ -Wall -frecursive -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function -Wno-missing-include-dirs -DDACE_SUBST_VERIFY -DDACE_SUBST_ENABLE -std=legacy
+cdi_build_f77=no
+cdi_build_fflags=
+cdi_build_cxx=no
+cdi_build_cxxflags=-g -march=native
+cdi_build_enable_grib=yes
+cdi_build_enable_cgribex=yes
+cdi_build_enable_service=yes
+cdi_build_enable_extra=yes
+cdi_build_enable_ieg=yes
+
+Name: cdi
+Description: CDI is an Interface to access Climate and NWP model Data.
+URL: 
+Version: 2.4.0
+Requires: 
+Libs: ${libs}
+Cflags: ${cflags}
+@ENABLE_CF_INTERFACE@FCflags: ${fcflags}
+

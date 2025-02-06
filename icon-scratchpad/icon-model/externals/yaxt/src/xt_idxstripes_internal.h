@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/yaxt/src/xt_idxstripes_internal.h

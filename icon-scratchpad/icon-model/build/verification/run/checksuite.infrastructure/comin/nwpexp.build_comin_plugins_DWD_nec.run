@@ -1,0 +1,136 @@
+#! /bin/bash
+#-----------------------------------------------------------------------------
+set +x
+
+#-----------------------------------------------------------------------------
+#
+# ICON run script:
+# !ATTENTION! Do not change the format of the following lines.
+#             They are evaluated by checksuite scripts.
+# created by /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/run/make_target_runscript
+# target machine is default
+# target use_compiler is gcc
+# with_mpi=no
+# with_openmp=no
+# memory_model=large
+# submit with 
+#
+builder=default_gcc
+#-----------------------------------------------------------------------------
+#
+# OpenMP environment variables
+# ----------------------------
+export OMP_NUM_THREADS=1
+export ICON_THREADS=1
+export OMP_SCHEDULE=static
+export OMP_DYNAMIC="false"
+export OMP_STACKSIZE=200M
+#
+# MPI variables
+# -------------
+: ${no_of_nodes:=1} ${mpi_procs_pernode:=1}
+export no_of_nodes
+export mpi_procs_pernode
+num_io_procs=
+((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
+#
+# blocking length
+# ---------------
+nproma=48
+nproma_sub=48
+nblocks_c=0
+proc0_shift=0
+#
+# Ecrad solver (0 for CPU/vector, 2 for GPU)
+# ------------------------------------------
+radiation_ecrad_isolver=0
+#
+#-----------------------------------------------------------------------------
+
+# load local setting, if existing
+# -------------------------------
+if [ -a /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting ]
+then
+  echo "Load Setting"
+  . /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting
+fi
+
+# environment variables for the experiment and the target system
+# --------------------------------------------------------------
+export EXPNAME="build_comin_plugins_DWD_nec"
+
+#-----------------------------------------------------------------------------
+# directories with absolute paths
+# -------------------------------
+thisdir=$(pwd)
+export basedir="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification"
+# experiments_dir can be predefined in a machine specific run_target_* header
+experiments_dir="${experiments_dir:=${basedir}/experiments}"
+export icon_data_rootFolder="/home/primrose/pool/data/ICON"
+
+# how to start the icon model
+# ---------------------------
+export START=""
+export MODEL="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/bin/icon"
+
+set | grep SLURM
+
+# how to submit the next job
+# --------------------------
+submit=""
+job_name="nwpexp.build_comin_plugins_DWD_nec.run"
+
+# cdo for post-processing
+# -----------------------
+cdo="cdo"
+cdo_diff="cdo diffn"
+
+# define script functions used in the experiment run script
+# ---------------------------------------------------------
+. ${basedir}/run/add_run_routines
+
+#-----------------------------------------------------------------------------
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+#
+#
+# Pre-test script for ComIn plugins
+# 
+# This script is run prior to the actual test jobs that utilize ComIn plugins.
+# It builds the example plugins for the DWD NEC platform, as well as the vector hosts and the vector engine.
+
+#=============================================================================
+
+set -x
+ulimit -s unlimited
+#=============================================================================
+thisdir=${PBS_O_WORKDIR}
+ICON_DIR=${thisdir%/*}
+BUILD_DIR_VH="${ICON_DIR}/host"
+BUILD_DIR_VE="${ICON_DIR}/vector"
+MAKE_PROCS=14
+. ${MODULESHOME}/init/sh
+#build plugins for vector host
+MODULES_VH='apps sx/default gcc/11.2.0 mpi/3.5.0 libfyaml/0.8-VH-gnu unsupported cmake/3.26.4'
+cd ${BUILD_DIR_VH}
+module purge
+module load ${MODULES_VH}
+sed -i 's/-static//g' externals/comin/build/CMakeCache.txt
+cmake -DCMAKE_C_COMPILER=mpincc -DCMAKE_Fortran_COMPILER=mpinfort -DCMAKE_CXX_COMPILER=mpinc++ -DCOMIN_ENABLE_EXAMPLES=ON externals/comin/build
+make -j ${MAKE_PROCS} -C externals/comin/build
+
+#build plugins for vector engine
+cd ${BUILD_DIR_VE}
+module purge
+MODULES_VE='sx/default nfort/5.1.0 nc++/5.1.0 mpi/3.5.0 libfyaml/0.8-sx unsupported cmake/3.26.4'
+module load ${MODULES_VE}
+cmake -DCMAKE_C_COMPILER=mpincc -DCMAKE_Fortran_COMPILER=mpinfort -DCMAKE_CXX_COMPILER=mpinc++ -DCOMIN_ENABLE_EXAMPLES=ON externals/comin/build
+make -j ${MAKE_PROCS} -C externals/comin/build

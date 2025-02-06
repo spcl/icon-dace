@@ -1,0 +1,519 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#=============================================================================
+# This test case is running for 9 time steps in CLM configuration.
+# It has two purposes:
+# 1) The averaging of model output via mvstream and
+# 2) the _gmean diagnostic for limited-area mode and NWP physics is checked.
+#    Note that the _gmean output is not working properly in combination with
+#    operation = 'none' (i.e., one of the available time operations has to be
+#    chosen in at least one of the output_nml's).
+#    Moreover, the setting lmask_boundary=.TRUE. (io_nml) must not be changed 
+#    for a correct functioning of the test (this is necessary to mask out the
+#    points in the boundary interpolation zone before calculating the area
+#    average via cdo).
+#=============================================================================
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}"
+icon_data_poolFolder_clm=$icon_data_poolFolder/buildbot_data/clm
+if [[ -d "$icon_data_poolFolder_clm" ]]; then
+  icon_data_poolFolder="$icon_data_poolFolder_clm"
+fi
+
+EXPNAME=ICON_CLM_global_mean_no_boundary
+
+# base directory for data stored with the source code
+ICONDIR=${basedir}
+
+# root directory for input data
+DATAROOT="${icon_data_poolFolder}"
+
+# directory for grid and extpar files
+GRIDDIR=${icon_data_poolFolder}/data/rcm # grid directory
+
+# LBC + initial data (subdirs inidata + latbc)
+INPUTDIR=${DATAROOT}/exp001
+
+# ecRad specific files
+ECRAD_DIR=${ICONDIR}/externals/ecrad/data
+
+OUTDIR=output
+mkdir ${OUTDIR}
+
+# ---------------------------------------------------------------------------
+# copy input data: inidata, lbc data, static data, grids, external parameters
+# ---------------------------------------------------------------------------
+
+ln -sf ${INPUTDIR}/inidata/caf1979010100_ini.nc .
+ln -sf ${INPUTDIR}/latbc .
+       
+ln -sf ${GRIDDIR}/greenhouse_gases/bc_greenhouse_rcp45_1765-2500.nc .
+
+ln -sf ${GRIDDIR}/dict.latbc .
+ln -sf ${GRIDDIR}/europe044_DOM01.nc .
+ln -sf ${GRIDDIR}/europe044_DOM01.parent.nc .
+ln -sf ${GRIDDIR}/external_parameter_icon_europe044_DOM01_tiles.nc .
+
+# initial fields file name
+ini_filename=caf1979010100_ini.nc
+
+# green house gases filename
+#ghg_filename=greenhouse_historical.nc
+ghg_filename=bc_greenhouse_rcp45_1765-2500.nc
+
+# extpar filename
+ext_filename=external_parameter_icon_europe044_DOM01_tiles.nc
+
+# grid filenames
+dynamics_grid_filename=europe044_DOM01.nc
+radiation_grid_filename=europe044_DOM01.parent.nc
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+cat > icon_master.namelist << EOF
+	&master_nml
+	  lrestart               = .FALSE.
+	  lrestart_write_last    = .TRUE.
+	/
+	&time_nml
+	  ini_datetime_string = "1979-01-01T00:00:00Z"
+	  dt_restart = 2678400.0
+          is_relative_time=.true.
+	/
+	&master_model_nml
+	  model_type=1
+	  model_name="ATMO"
+	  model_namelist_filename="NAMELIST_${EXPNAME}"
+	  model_min_rank=1
+	  model_max_rank=65536
+	  model_inc_rank=1
+	/
+        &master_time_control_nml
+          calendar             = "proleptic gregorian"
+          experimentStartDate  = "1979-01-01T00:00:00Z"
+          experimentStopDate   = "1979-01-01T01:00:00Z"
+        /
+EOF
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# proc settings
+num_io_procs=1
+num_restart_procs=1
+num_prefetch_proc=1
+num_io_procs_radar=0
+
+cat > NAMELIST_${EXPNAME} << EOF
+	&parallel_nml
+          nproma            =  ${nproma}
+          p_test_run        = .false.
+          l_test_openmp     = .false.
+          l_log_checks      = .true.
+          num_io_procs      = ${num_io_procs} 
+          num_restart_procs = ${num_restart_procs}
+          num_prefetch_proc = ${num_prefetch_proc}
+          num_io_procs_radar = ${num_io_procs_radar}
+          iorder_sendrecv   = 3
+          proc0_shift       = 0
+          use_omp_input   = .true.
+	/
+	&grid_nml
+ 	  dynamics_grid_filename  = "${dynamics_grid_filename}"
+	  radiation_grid_filename = "${radiation_grid_filename}"
+	  dynamics_parent_grid_id = 0
+	  lredgrid_phys           = .true.
+	  lfeedback               = .true.
+	  l_limited_area          = .true.
+	  ifeedback_type          = 2
+	  start_time  = 0., 1800.,3600.,
+	/
+	&initicon_nml
+	  init_mode                    = 2
+	  lread_ana                    = .false. ! (T) Read dwdana
+	  ifs2icon_filename            = "${ini_filename}"
+	  zpbl1       = 500.
+	  zpbl2       = 1000.
+	  ltile_init=.TRUE.
+          ltile_coldstart=.true.
+	/
+	&limarea_nml
+	  itype_latbc     = 1
+	  dtime_latbc     = 21600.0
+	  latbc_varnames_map_file = 'dict.latbc'
+	  latbc_path      = './latbc'
+	  latbc_filename  = 'caf<y><m><d><h>_lbc.nc'
+          latbc_contains_qcqi = .true.        ! = .true.  if  qc, qi are in latbc
+	/
+	&io_nml
+          itype_pres_msl               = 5
+          itype_rh                     = 1
+          precip_interval              = "PT01H"
+          runoff_interval              = "PT01H"
+          sunshine_interval            = "PT24H"
+          maxt_interval                = "PT24H"
+          gust_interval                =                   3600
+          melt_interval                = "PT01H"
+          lmask_boundary               = .true.
+          restart_write_mode           = "dedicated procs multifile"
+          lnetcdf_flt64_output         = .true.   ! for testing gmean
+	/
+        !--------------------------------------------------------------------------------
+        ! Atmosphere monitoring - instantaneous
+        !--------------------------------------------------------------------------------
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          output_start           = "1979-01-01T00:00:00Z"
+          output_end             = "1979-01-02T00:00:00Z"
+          output_interval        = "PT20M"   ! 3 times dtime
+          steps_per_file         =  1        ! corresponding to the averaging over 3 time steps below
+          include_last           = .FALSE.
+          mode                   =  1      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          operation              = ''
+          output_filename        = '${OUTDIR}/${EXPNAME}_atm_inst'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 'tas_gmean','radtop_gmean'
+          output_grid            =  .FALSE.
+          remap                  =  0
+        /
+        !--------------------------------------------------------------------------------
+        ! Atmosphere monitoring - instantaneous in one file
+        !--------------------------------------------------------------------------------
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          output_start           = "1979-01-01T00:00:00Z"
+          output_end             = "1979-01-02T00:00:00Z"
+          output_interval        = "PT400S"  ! identical to dtime
+          steps_per_file         =  3        ! corresponding to the averaging over 3 time steps below
+          include_last           = .FALSE.
+          mode                   =  1      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          operation              = ''
+          output_filename        = '${OUTDIR}/${EXPNAME}_atm_inst_3tsteps'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 'tas_gmean','radtop_gmean'
+          output_grid            =  .FALSE.
+          remap                  =  0
+        /
+        !--------------------------------------------------------------------------------
+        ! Atmosphere monitoring - averaged
+        !--------------------------------------------------------------------------------
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          output_start           = "1979-01-01T00:00:00Z"
+          output_end             = "1979-01-02T00:00:00Z"
+          output_interval        = "PT20M"  ! 3 times dtime
+          steps_per_file         =  1
+          include_last           = .FALSE.
+          mode                   =  1      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          operation              = 'mean'
+          output_filename        = '${OUTDIR}/${EXPNAME}_atm_ave'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 'tas_gmean','radtop_gmean'
+          output_grid            =  .FALSE.
+          remap                  =  0
+        /
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          dom                    =  1      ! write all domains
+          output_start           = "1979-01-01T00:00:00Z"
+          output_end             = "1979-01-02T00:00:00Z"
+          output_interval        = "PT20M" ! 3 times dtime
+          steps_per_file         =  1
+          include_last           = .FALSE.
+          mode                   =  1      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          output_filename        = '${OUTDIR}/${EXPNAME}_atm_2d_ml_verification'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 't_2m', 'sob_t', 'thb_t'  ! 2d field to verify tas_gmean
+                                                             ! radtop = sob_t + thb_t
+          output_grid            =  .TRUE.
+          remap                  =  0
+        / 
+	&run_nml
+	  num_lev        = 60
+	  lvert_nest     = .false.
+	  dtime          = 400     ! timestep in seconds
+	  ldynamics      = .TRUE.
+	  ltransport     = .true.
+	  ntracer        = 5
+	  iforcing       = 3
+	  ltestcase      = .false.
+	  msg_level      = 7
+	  ltimer         = .true.
+	  timers_level   = 10
+	  check_uuid_gracefully = .FALSE.
+	  output         = "nml" ! "nml"
+	  debug_check_level = 0
+          lart           = .false.
+	/
+	&nwp_phy_nml
+          inwp_gscp       = 1
+          mu_rain         = 0.5
+          rain_n0_factor  = 0.1
+          inwp_convection = 1
+	  inwp_radiation  = 4
+	  inwp_cldcover   = 1
+	  inwp_turb       = 1
+	  inwp_satad      = 1
+          inwp_sso        = 1
+          inwp_gwd        = 1
+          inwp_surface    = 1
+          latm_above_top  = .true.
+          ldetrain_conv_prec = .true.
+	  efdt_min_raylfric = 7200.
+	  itype_z0         = 2
+	  icapdcycl        = 3
+	  icpl_aero_conv   = 1
+	  icpl_aero_gscp   = 1
+	  icpl_o3_tp       = 1
+          iprog_aero       = 0
+          dt_rad    = 2400
+          dt_conv   = 800
+          dt_sso    = 1600
+          dt_gwd    = 1600
+	/
+	&nwp_tuning_nml
+          itune_albedo = 0
+          !tune_gkwake   = 1.8
+          tune_gkwake   = 1.5
+          !tune_gfrcrit  = 0.333
+          tune_gfrcrit  = 0.425
+          !tune_gkdrag   = 0.09
+          tune_gkdrag   = 0.075
+          tune_dust_abs = 1.
+          tune_zvz0i    = 0.85
+          tune_box_liq_asy = 3.25
+          tune_minsnowfrac = 0.2
+          tune_gfluxlaun  = 3.75e-3
+          tune_rcucov = 0.075
+          tune_rhebc_land = 0.825
+          tune_gust_factor=7.0
+	/
+	&turbdiff_nml
+          tkhmin  = 0.6
+          tkhmin_strat = 1.0
+	  tkmmin        = 0.75
+	  pat_len       = 750.
+          c_diff  =  0.2
+          rlam_heat = 10.0
+          rat_sea =  0.8
+          ltkesso = .true.
+	  frcsmot       = 0.2
+	  imode_frcsmot = 2
+          alpha1  = 0.125
+          icldm_turb = 1
+          itype_sher = 1
+	  ltkeshs       = .true.
+	  a_hshr        = 2.0
+	/
+	&lnd_nml
+	  sstice_mode    = 6
+          ci_td_filename = './latbc/LOWBC_1979_01.nc'
+          sst_td_filename= './latbc/LOWBC_1979_01.nc'
+	  ntiles         = 3
+	  nlev_snow      = 1
+          zml_soil       = 0.005,0.02,0.06,0.18,0.54,1.62,4.86,14.58
+	  lmulti_snow    = .false.
+	  itype_heatcond = 3
+	  idiag_snowfrac = 20
+          itype_snowevap = 3
+	  lsnowtile      = .true.
+	  lseaice        = .true.
+	  llake          = .true.
+	  itype_lndtbl   = 4
+	  itype_evsl     = 4
+	  itype_trvg     = 3
+          itype_root     = 2
+          itype_canopy   = 2
+	  cwimax_ml      = 5.e-4
+	  c_soil         = 1.25
+	  c_soil_urb     = 0.5
+          lprog_albsi    = .true.
+	/
+	&radiation_nml
+          ecrad_data_path= '${ECRAD_DIR}'
+          ghg_filename =  '${ghg_filename}'
+          irad_co2    = 4           ! 4: from greenhouse gas scenario
+          irad_ch4    = 4           ! 4: from greenhouse gas scenario
+          irad_n2o    = 4           ! 4: from greenhouse gas scenario
+          irad_cfc11  = 4           ! 4: from greenhouse gas scenario
+          irad_cfc12  = 4           ! 4: from greenhouse gas scenario
+	  irad_o3     = 79
+	  irad_aero   = 6
+	  albedo_type = 2          ! Modis albedo
+          direct_albedo = 4
+          albedo_whitecap = 1
+          direct_albedo_water = 3
+	/
+	&nonhydrostatic_nml
+	  itime_scheme    = 4
+	  vwind_offctr    = 0.2
+          damp_height     = 10500.
+          rayleigh_coeff  = 1.0
+          divdamp_order   = 24
+          divdamp_fac     = 0.004
+          divdamp_type    = 32
+	  igradp_method   = 3
+	  l_zdiffu_t      = .true.
+	  thslp_zdiffu    = 0.02
+	  thhgtd_zdiffu   = 125.
+	  htop_moist_proc = 22500.
+          hbot_qvsubstep  = 16000.
+          ndyn_substeps=5
+	/
+	&sleve_nml
+	  min_lay_thckn   = 20.
+          max_lay_thckn   = 400.
+          htop_thcknlimit = 15000.
+          top_height      = 23500.
+          stretch_fac     = 0.9
+	  decay_scale_1   = 4000.
+	  decay_scale_2   = 2500.
+	  decay_exp       = 1.2
+	  flat_height     = 16000.
+	/
+	&dynamics_nml
+	  divavg_cntrwgt = 0.50
+	  lcoriolis      = .true.
+	/
+	&transport_nml
+          ivadv_tracer   = 3,3,3,3,3
+          itype_hlimit   = 3,4,4,4,4,
+          ihadv_tracer   = 52,2,2,2,2,
+          llsq_svd       = .false.
+	  beta_fct       = 1.005
+	/
+	&diffusion_nml
+	  hdiff_order      = 5
+	  itype_vn_diffu   = 1
+	  itype_t_diffu    = 2
+          hdiff_efdt_ratio = 24.
+	  hdiff_smag_fac   = 0.025
+	  lhdiff_vn        = .true.
+	  lhdiff_temp      = .true.
+	/
+	&interpol_nml
+	  nudge_zone_width = 10
+	  lsq_high_ord     = 3
+	  l_intp_c2l       = .true.
+	  l_mono_c2l       = .true.
+          rbf_scale_mode_ll = 2
+	/
+	&gridref_nml
+	  grf_intmethod_e  = 6
+          grf_scalfbk      = 2
+	  denom_diffu_v    = 150.
+	/
+	&extpar_nml
+	  itopo                = 1
+	  n_iter_smooth_topo   = 1,
+	  hgtdiff_max_smooth_topo = 750.
+	  heightdiff_threshold = 3000.
+          itype_vegetation_cycle = 3
+          itype_lwemiss = 2
+	  extpar_filename = '${ext_filename}'
+	/
+        &nudging_nml
+          nudge_type = 1
+          nudge_start_height=10500
+    /
+EOF
+
+# ----------------------------------------------------------------------------
+# run ICON
+# ----------------------------------------------------------------------------
+
+ICON_COMPONENT1_VH_procs=$(( num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+$START_MODEL
+EXIT_STATUS=$?
+
+#################################################
+#  Post-processing tests
+#################################################
+. /etc/profile
+
+# use cdo-2.0.5 (2.0.6 gives a Segmentation fault at "cdo fldsum")
+module unload ${basedir}/etc/Modules/icon-levante
+module unload cdo/2.0.6-gcc-11.2.0
+module load cdo/2.0.5-gcc-11.2.0
+
+runthis(){
+    ## print the command
+    echo "$@"
+    ## run the command
+    eval "$@" 
+}
+
+cd ${OUTDIR}
+
+echo ""
+echo "********************************************************"
+echo "I) basic test 1: compare mvstream average + cdo timmean"
+echo ""
+filelist=$(ls ${EXPNAME}_atm_inst_3tsteps_19790101T??????Z.nc)
+for ff in ${filelist} ; do
+  timestamp=$(cdo -s showtimestamp -seltimestep,-1 ${ff}) # for filename, select last timestamp
+  timestamp=${timestamp// /}
+  timestamp=${timestamp//-/}
+  timestamp=${timestamp//:/}Z
+  if [ "$timestamp" == "19790101T002000Z" ] ; then continue ; fi
+  #cdo -s timmean ${ff} ${EXPNAME}_atm_inst_3tsteps_${timestamp}_timmean.nc
+  runthis "cdo -s timmean ${ff} ${EXPNAME}_atm_inst_3tsteps_${timestamp}_timmean.nc"
+  echo ">>> testing temporal average for ${EXPNAME}_atm_ave_${timestamp}.nc ..."
+  runthis \
+  "cdo -s diffn,abslim=10e-9 ${EXPNAME}_atm_ave_${timestamp}.nc \
+                             ${EXPNAME}_atm_inst_3tsteps_${timestamp}_timmean.nc"
+  echo ">>> ... ok"
+done
+
+echo ""
+echo "********************************************************"
+echo "II) basic test 2: test if radtop_gmean = cdo averaged value"
+echo ""
+filelist=$(ls ${EXPNAME}_atm_inst_197901*.nc)
+# take cell_area from gridfile and set boundary zone to missval (for a correct weighted mean):
+cdo -s mul -selvar,cell_area ${EXPDIR}/europe044_DOM01.nc \
+           -gtc,0. -selvar,t_2m -seltimestep,1 ${EXPNAME}_atm_2d_ml_verification_19790101T000000Z.nc \
+           cell_area_masked.nc
+for ff in ${filelist} ; do
+  timestamp=${ff: -13:10} # ddTHHMMSSZ
+  verify_file=${EXPNAME}_atm_2d_ml_verification_197901${timestamp}.nc
+  cdo -s -O -add -selvar,sob_t ${verify_file} -selvar,thb_t ${verify_file} rnet_toa.nc
+  # fldmean of verification file, weighted with cell_area (fldsum ignores missvals):
+  echo ">>> calculate weighted average of verification file..."
+  runthis \
+  "cdo -s div -fldsum -mul -seltimestep,-1 rnet_toa.nc cell_area_masked.nc \
+              -fldsum cell_area_masked.nc verifyMean_197901${timestamp}.nc"
+  echo ">>> testing spatial average (gmean) of ${ff}..."
+  runthis "cdo -s diffn,abslim=10e-9 -selname,radtop_gmean -seltimestep,-1 ${ff} verifyMean_197901${timestamp}.nc"
+  echo ">>> ... ok"
+done
+
+echo "EXIT_STATUS: $EXIT_STATUS"
+exit $EXIT_STATUS

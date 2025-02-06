@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/ssi_nrl2.nc

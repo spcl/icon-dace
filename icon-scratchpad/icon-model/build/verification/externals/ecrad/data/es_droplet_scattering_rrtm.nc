@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/es_droplet_scattering_rrtm.nc

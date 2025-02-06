@@ -1,0 +1,60 @@
+#!/bin/bash
+#exit 77
+
+cdi_app_stdout="$0.cdi_app.stdout"
+cdi_app_stderr="$0.cdi_app.stderr"
+
+../libtool --mode=execute ${tool_wrap} ../examples/cdi_write_const || exit 1
+../libtool --mode=execute ${tool_wrap} ../app/cdi -s example_const.nc >${cdi_app_stdout} 2>${cdi_app_stderr} || exit 1
+../libtool --mode=execute ${tool_wrap} ../app/cdi example_const.nc >>${cdi_app_stdout} 2>>${cdi_app_stderr} || exit 1
+
+exec 6<${cdi_app_stdout} 7<"$0"
+
+while read pattern <&7 ; do
+  test "x$pattern" != 'x#PATTERNS' || break
+done
+
+IFS=''
+while read line <&6 ; do
+  read pattern <&7
+  pattern=`echo "$pattern" | sed -e 's/^#//'`
+  echo "$line" | grep "$pattern" || exit 1
+done
+
+if test -s ${cdi_app_stderr}; then
+  echo "unexpected error message from ../app/cdi:"
+  cat ${cdi_app_stderr}
+fi
+
+read pattern <&7
+test "x$pattern" = 'x#END PATTERNS' || exit 1
+
+exec 5<&- 6<&-
+
+#PATTERNS
+#^   File format : NetCDF
+#^   Var : Institut Source   T Steptype Levels Num    Points Num Dtype : Parameter ID
+#^     1 : unknown  unknown  c instant       1   1        72   1  F32  : -1         
+#^     2 : unknown  unknown  c instant       5   2        72   1  F32  : -2         
+#^   Grid coordinates :
+#^     1 : lonlat                   : points=72 (12x6)
+#^                              lon : 0 to 330 by 30 degrees_east  circular
+#^                              lat : -75 to 75 by 30 degrees_north
+#^   Vertical coordinates :
+#^     1 : surface                  : levels=1
+#^     2 : pressure                 : levels=5
+#^                             plev : 101300 to 20000 Pa
+#^   Rec :       Date     Time   Level Gridsize    Miss :     Minimum        Mean     Maximum : Parameter ID
+#^     1 : 0000-00-00 00:00:00       0       72       0 :      1.1000      1.1000      1.1000 : -1         
+#^     2 : 0000-00-00 00:00:00  101300       72       0 :      2.2000      2.2000      2.2000 : -2         
+#^     3 : 0000-00-00 00:00:00   92500       72       0 :      2.2000      2.2000      2.2000 : -2         
+#^     4 : 0000-00-00 00:00:00   85000       72       0 :      2.2000      2.2000      2.2000 : -2         
+#^     5 : 0000-00-00 00:00:00   50000       72       0 :      2.2000      2.2000      2.2000 : -2         
+#^     6 : 0000-00-00 00:00:00   20000       72       0 :      2.2000      2.2000      2.2000 : -2         
+#END PATTERNS
+
+#
+# Local Variables:
+# mode: sh
+# End:
+#

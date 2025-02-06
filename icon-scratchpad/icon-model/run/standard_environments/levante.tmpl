@@ -1,0 +1,46 @@
+#%# -*- mode: sh -*-
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+#
+# Setup for levante (SLURM)
+#
+# $Id: levante.tmpl 1 2023-03-01 12:09:29Z m221078 $
+#
+#%  if EMAIL is defined:
+#SBATCH --mail-type=FAIL,ARRAY_TASKS
+#SBATCH --mail-user=%{JOB.email|d(EMAIL)|join(',')}
+#%  endif
+#%  for var in JOB.batch|d({}):
+#%    set val = JOB.batch[var]|list|join(',')
+#%    if val|lower == 'true':
+#SBATCH --%{var}
+#%    elif ' ' in val:
+#SBATCH --%{var}='%{val}'
+#%    elif val:
+#SBATCH --%{var}=%{val}
+#%    endif
+#%  endfor
+#%#
+#%  if JOB.job_type == 'parallel':
+# Environment variables for the target system
+
+#%    for var in JOB.env:
+#%      set val = JOB.env[var]
+#%      if val:
+#%        for line in JOB.env.comments[var]:
+%{line}
+#%        endfor
+#%        set inline_comment = JOB.env.inline_comments[var]
+export %{var}=%{'"'+val+'"' if ' ' in val else val}%{' '+inline_comment if inline_comment}
+#%      else:
+unset %{var}%{' '+inline_comment if inline_comment}
+#%      endif
+#%    endfor
+#%  endif

@@ -1,0 +1,45 @@
+prefix=/usr/local
+exec_prefix=${prefix}
+libdir=${exec_prefix}/lib
+includedir=${prefix}/include
+cflags=-I${prefix}/include
+fcflags=-I${prefix}/include
+libs=-L${exec_prefix}/lib -lcdi_f2003 -lcdi    -lnetcdf   -lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+threads_libs=
+threads_cflags=
+szlib_cflags=
+szlib_libs=
+netcdf_root=
+netcdf_cflags=
+netcdf_libs= -lnetcdf
+grib_api_cflags=
+grib_api_libs=
+eccodes_cflags=
+eccodes_libs=
+aux_libs=-lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+cdi_f2003_build_cc=mpicc
+cdi_f2003_build_cflags=-g -march=native -O2
+cdi_f2003_build_cppflags=-I/usr/include -I/usr/include/libxml2 
+cdi_f2003_build_ldflags=-L/usr/lib/x86_64-linux-gnu/ -L/home/primrose/Work/IconGrounds/icon-dace/.dacecache/radiation/build
+cdi_f2003_build_libs=-lm  -leccodes -lnetcdff -lnetcdf -lopenblas -lradiation
+cdi_f2003_build_fc=mpif90
+cdi_f2003_build_fcflags=-g -O2 -I/usr/include/ -Wall -frecursive -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function -Wno-missing-include-dirs -DDACE_SUBST_VERIFY -DDACE_SUBST_ENABLE -std=legacy
+cdi_f2003_build_f77=no
+cdi_f2003_build_fflags=
+cdi_f2003_build_cxx=no
+cdi_f2003_build_cxxflags=-g -march=native
+cdi_f2003_build_enable_grib=yes
+cdi_f2003_build_enable_cgribex=yes
+cdi_f2003_build_enable_service=yes
+cdi_f2003_build_enable_extra=yes
+cdi_f2003_build_enable_ieg=yes
+
+Name: cdi_f2003
+Description: Fortran 2003 interface of CDI
+URL: 
+Version: 2.4.0
+Requires: 
+Libs: ${libs}
+Cflags: ${cflags}
+FCflags: ${fcflags}
+

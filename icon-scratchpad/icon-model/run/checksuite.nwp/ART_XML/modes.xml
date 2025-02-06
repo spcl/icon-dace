@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ICON
+
+Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+Contact information: icon-model.org
+See AUTHORS.TXT for a list of authors
+See LICENSES/ for license information
+SPDX-License-Identifier: BSD-3-Clause
+-->
+<!DOCTYPE modes SYSTEM "modes.dtd">
+
+<modes>
+  <pollen id="pollalnu">
+    <kind type="char">poll</kind>
+    <diam type="real">2.38E-5</diam>
+    <rho type="real">860.0</rho>
+    <doy_start_season type="int">1</doy_start_season>
+    <doy_end_season type="int">146</doy_end_season>
+  </pollen>
+  <pollen id="pollbetu">
+    <kind type="char">poll</kind>
+    <diam type="real">2.30E-5</diam>
+    <rho type="real">810.0</rho>
+    <doy_start_season type="int">1</doy_start_season>
+    <doy_end_season type="int">146</doy_end_season>
+  </pollen>
+  <pollen id="pollpoac">
+    <kind type="char">poll</kind>
+    <diam type="real">2.60E-5</diam>
+    <rho type="real">980.0</rho>
+    <doy_start_season type="int">60</doy_start_season>
+    <doy_end_season type="int">305</doy_end_season>
+  </pollen>
+  <radio id="Cs_137">
+    <kind type="char">radio</kind>
+    <imis type="int">373</imis>
+    <halflife type="real">0.0</halflife>
+    <vdep_const type="real">0.0015</vdep_const>
+    <fac_wetdep type="real">3.4E-5</fac_wetdep>
+    <exp_wetdep type="real">0.59</exp_wetdep>
+  </radio>
+</modes>

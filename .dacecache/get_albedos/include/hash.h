@@ -1,0 +1,1 @@
+#define __HASH_get_albedos "3bf1f7c873439794d6d226eeca4c44deb44ec91afa802da8da6ec4902408588f"

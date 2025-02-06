@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/hd/util/generate_hd_coupling_file.ksh

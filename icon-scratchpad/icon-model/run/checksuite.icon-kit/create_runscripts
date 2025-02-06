@@ -1,0 +1,186 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+mkdir -p runscripts
+
+source ./support.sh
+
+ read_configure
+
+if [ $# -eq 0 ]
+  then
+    usage
+	exit
+fi
+while [ "$1" != "" ]; do
+	PARAM=`echo $1 | awk -F= '{print $1}'`
+    VALUE=`echo $1 | awk -F= '{print $2}'`
+case $PARAM in
+	--input_file|-input_file)
+		input_file=$VALUE
+		;;
+	--action|-action)
+		action=$VALUE
+		;;
+  --log_file)
+    log_file=$VALUE
+    ;;
+     -h | --help)
+       usage
+       exit
+       ;;
+esac
+shift
+done
+
+
+echo $input_file
+if [ -z "$input_file" ] ;
+
+then
+    echo " --------------------------------" 
+	echo " --------------------------------" 
+	echo "           missing input file"
+	echo " --------------------------------" 
+	echo " --------------------------------" 
+    usage
+	exit
+fi
+
+ set_cluster
+ read_setup $input_file
+
+ echo "There is/are #"$number_of_experiments " experiment(s) read in from " $input_file
+ i=0
+ while [ $i -lt $number_of_experiments ]
+ do
+    case x"$config[$i]" in
+      xlART*)
+		    experiment[$i]=${experiment[$i]}_lart
+
+        create_header ${experiment[$i]}
+		    create_lart_loop_start ${experiment[$i]}
+        create_body ${script[$i]} 
+        create_footer ${experiment[$i]} ${walltime[$i]} ${nodes[$i]} ${queue[$i]} "${output[@]}"
+		    create_lart_loop_end ${experiment[$i]}
+		    check_action ${action} ${experiment[$i]}
+		 
+		    ;;
+		 *none*)
+		   lart=.True.
+			 
+	     create_header ${experiment[$i]}
+       create_body ${script[$i]}
+       create_footer ${experiment[$i]} ${walltime[$i]} ${nodes[$i]} ${queue[$i]} "${output[@]}"
+		   check_action ${action} ${experiment[$i]}
+		   
+		   ;;
+		esac
+	i=$(($i+1))
+ done
+
+ d=`date -d today +%Y%m%d`
+
+
+
+ ##
+ ICON_FOLDER=$(pwd)/../..
+ ART_FOLDER=$ICON_FOLDER/externals/art
+
+# cd ${testers_home}/CHECKOUT/icon-art-${d}-r${REVISION}
+  cd $ICON_FOLDER
+
+
+ ##
+ # Create checkout.info to store checkout information (e.g. which branches are checked out?)
+ ##
+ Tester=$(git config user.name)
+ icon_branch=$(git rev-parse --abbrev-ref HEAD)
+ cd $ART_FOLDER
+ art_branch=$(git rev-parse --abbrev-ref HEAD)
+ cd $ICON_FOLDER
+ if [[ $log_file != "" && -f $log_file ]] then
+   info_filename=$log_file
+   echo "Information file for ICON-ART Testsuite (Version 0.2)"          >>${info_filename}
+ else
+   info_filename="run/checksuite.icon-kit/Test-${d}.info"
+   echo "Information file for ICON-ART Testsuite (Version 0.2)"          >${info_filename}
+ fi
+ echo "Tested by                        ${Tester}"                     >>${info_filename}
+ echo "Date:                            ${d}"                          >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "--- Library Information  ---"                                   >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "Using compiler version:          ${compiler_version}"           >>${info_filename}
+ ##if [[ ":${CENTER}" == ':IMK' ]] ; then
+ ##   echo "Using OpenMPI version:           ${openmpi_version}"   >>${info_filename}
+ ##   echo "Using NETCDF version:            ${netcdf_version}"    >>${info_filename}
+ ##fi
+ echo "----------------------------"                                   >>${info_filename}
+ echo "--- Checkout Information ---"                                   >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "Config for the icon_branch:      ${icon_branch}"                >>${info_filename}
+ echo "Config for the art branch:       ${art_branch}"                 >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "--- I/O Information      ---"                                   >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "Using input folder:              ${input_folder}"               >>${info_filename}
+ echo "Writing output to:               ${output_folder}"              >>${info_filename}
+ echo "Filetype (2: GRIB2 / 4: NetCDF): ${FILETYPE}"                   >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "--- Testing Information  ---"                                   >>${info_filename}
+ echo "----------------------------"                                   >>${info_filename}
+ echo "** base_script ** | ** experiment_name **"                      >>${info_filename}
+ echo "-----------------------------------------"                      >>${info_filename}
+ i=0
+ while [ $i -lt $number_of_experiments ]
+ do
+   echo "- $(basename ${script[$i]})  |  ${experiment[$i]} -"                      >>${info_filename}
+   i=$(($i+1))
+ done
+ ##
+
+ ##
+ if [[ ":${CENTER}" == ':IMK' ]] ; then
+    # UNSET -IPO AND OTHER MACHINE PRESETTINGS
+    for VAR in `set | grep FLAGS | awk -F "=" '{print $1}'`; do unset $VAR ; done
+ fi
+ ##
+
+ echo "---------------------------------------------------"      >>${info_filename}
+ echo "------END OF INFORMATION / STARTING TESTSUITE------"      >>${info_filename}
+ echo "---------------------------------------------------"      >>${info_filename}
+
+
+ ##
+ # Run the test cases
+ ##
+ i=0
+ case $action in
+         xrun*)
+while [ $i -lt $number_of_experiments ]
+ do
+   echo "Performing experiment #${i}: ${experiment[$i]} ..."        >>${info_filename}
+
+   ./run/checksuite.icon-kit/runscripts/${experiment[$i]}.run
+   i=$(($i+1))
+ done
+           ;; 
+         *none*)
+           ;;
+
+ esac
+
+ 
+ echo "-------------------------------------------------"         >>${info_filename}
+ echo "---  All specified runs performed - exiting   ---"         >>${info_filename}
+ echo "-------------------------------------------------"         >>${info_filename}

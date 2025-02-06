@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/hd/scr_coupling/compile_toy_models.sh

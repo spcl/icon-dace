@@ -1,0 +1,7 @@
+runctrl_examples/run_scripts/exp.testsuite.nwp_lifetime_base NWP_LIFETIME none 00:20:00 cpuonly nodes=4
+runctrl_examples/run_scripts/exp.testsuite.nwp_oh_chemistry_base NWP_OH_CHEMISTRY none 00:20:00 cpuonly nodes=4
+runctrl_examples/run_scripts/exp.testsuite.nwp_gasphase_base NWP_GASPHASE none 00:20:00 cpuonly nodes=4
+runctrl_examples/run_scripts/exp.testsuite.allaero_norad_base ALLERO_NORAD none 00:20:00 cpuonly nodes=10
+runctrl_examples/run_scripts/exp.testsuite.volaero_rad_base VOLAERO_RAD none 00:20:00 cpuonly nodes=32
+runctrl_examples/run_scripts/exp.testsuite.dust_rad_base DUST_RAD none 00:20:00 cpuonly nodes=10
+runctrl_examples/run_scripts/exp.testsuite.lam_oem LAM_OEM none 00:15:00 cpuonly nodes=4

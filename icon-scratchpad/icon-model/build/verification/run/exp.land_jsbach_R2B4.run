@@ -1,0 +1,1218 @@
+#! /bin/bash
+#-----------------------------------------------------------------------------
+set +x
+
+#-----------------------------------------------------------------------------
+#
+# ICON run script:
+# !ATTENTION! Do not change the format of the following lines.
+#             They are evaluated by checksuite scripts.
+# created by /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/run/make_target_runscript
+# target machine is default
+# target use_compiler is gcc
+# with_mpi=no
+# with_openmp=no
+# memory_model=large
+# submit with 
+#
+builder=default_gcc
+#-----------------------------------------------------------------------------
+#
+# OpenMP environment variables
+# ----------------------------
+export OMP_NUM_THREADS=1
+export ICON_THREADS=1
+export OMP_SCHEDULE=static
+export OMP_DYNAMIC="false"
+export OMP_STACKSIZE=200M
+#
+# MPI variables
+# -------------
+: ${no_of_nodes:=1} ${mpi_procs_pernode:=1}
+export no_of_nodes
+export mpi_procs_pernode
+num_io_procs=
+((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
+#
+# blocking length
+# ---------------
+nproma=48
+nproma_sub=48
+nblocks_c=0
+proc0_shift=0
+#
+# Ecrad solver (0 for CPU/vector, 2 for GPU)
+# ------------------------------------------
+radiation_ecrad_isolver=0
+#
+#-----------------------------------------------------------------------------
+
+# load local setting, if existing
+# -------------------------------
+if [ -a /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting ]
+then
+  echo "Load Setting"
+  . /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting
+fi
+
+# environment variables for the experiment and the target system
+# --------------------------------------------------------------
+export EXPNAME="land_jsbach_R2B4"
+
+#-----------------------------------------------------------------------------
+# directories with absolute paths
+# -------------------------------
+thisdir=$(pwd)
+export basedir="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification"
+# experiments_dir can be predefined in a machine specific run_target_* header
+experiments_dir="${experiments_dir:=${basedir}/experiments}"
+export icon_data_rootFolder="/home/primrose/pool/data/ICON"
+
+# how to start the icon model
+# ---------------------------
+export START=""
+export MODEL="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/bin/icon"
+
+set | grep SLURM
+
+# how to submit the next job
+# --------------------------
+submit=""
+job_name="exp.land_jsbach_R2B4.run"
+
+# cdo for post-processing
+# -----------------------
+cdo="cdo"
+cdo_diff="cdo diffn"
+
+# define script functions used in the experiment run script
+# ---------------------------------------------------------
+. ${basedir}/run/add_run_routines
+
+#-----------------------------------------------------------------------------
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------------------------
+#
+# ICON-Land Standalone experiment
+#
+#--------------------------------------------------------------------------------------------------
+#
+# This file describes an ICON-Land offline experiment.
+# - The simulation runs without natural land cover changes, as this would require different
+#   namelist settings within the first simulated years. This is only available with mkexp scripts.
+# - Antropogenic land cover change can only be used, if annual land use maps are provided for the
+#   respective grid resolution and revision.
+#
+#--------------------------------------------------------------------------------------------------
+
+# (0) unset some setting of create_target_header for levante
+
+unset OMPI_MCA_coll_fca_enable
+unset OMPI_MCA_coll_fca_priority
+
+#--------------------------------------------------------------------------------------------------
+
+# (1) Variables provided by the scripting mechanism
+
+# EXPNAME                       = name of exp. in 'exp.<name>'
+# basedir                       = base directory, where src/, run/ etc exist
+# icon_data_poolFolder          = base directory, where grids/, input/ and setup/ exist
+# nproma                        = blocking length for array dimensioning and inner loop lengths
+
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/grids/public/mpim"
+
+#--------------------------------------------------------------------------------------------------
+
+# (2) Set variables needed by the scripting mechanism
+
+# horizontal grid(s)
+#
+# domain globe
+grid_id=0043
+grid_refinement=R02B04
+grid_label=G
+grid_name=icon_grid_${grid_id}_${grid_refinement}_${grid_label}
+atmo_dyn_grids="'${grid_name}.nc',"
+#
+grids_folder=${icon_data_poolFolder}/${grid_id}
+
+lnd_data_InputFolder=${icon_data_poolFolder}/${grid_id}/land/r0004
+refyear=1979
+
+calendar="proleptic gregorian"  # '365 day year' or '360 day year' or 'proleptic gregorian'
+
+# start and end date+time
+start_date=${start_date:="1979-01-01T00:00:00Z"}
+    end_date=${end_date:="1984-01-01T00:00:00Z"}
+modelTimeStep="PT30M"   # this must not be longer than 1 day because mo_jsb4_forcing can not handle this!
+
+# restart intervals
+checkpoint_interval="P1Y"
+restart_interval="P1Y"
+
+# output intervals
+output_interval="P1D" # P1D, PT6H
+file_interval="P10Y"
+
+# namelist files
+jsbach_namelist="NAMELIST_${EXPNAME}_jsb"
+
+# interface variables input infos
+years_for_cyclic_forcing=0       # If > 0, number of years to use for cyclic forcing
+start_year_for_cyclic_forcing=9999 # First year of cyclic forcing; 9999 means use start year of experiment
+forcing_tag="GSWP3"
+ghg_scenario="false"             # greenhouse gases file for scenario runs
+forcing_steps_per_day="1"        # Number of forcing time steps per day, e.g. 1 for daily forcing
+forcing_synchron_factor="48"     # Number of model time steps per forcing time step,
+                                 #  e.g. 48 for daily forcing and half-hourly time step.
+#--------------------------------------------------------------------------------------------------
+
+# (3) Define the model configuration
+
+# JSBACH settings
+jsbach_usecase=jsbach_pfts    # jsbach_lite, jsbach_pfts, jsbach_forest_age_classes or jsbach_jedi
+jsbach_with_lakes=yes
+jsbach_with_hd=yes
+jsbach_with_carbon=yes        # Set 'no' with jsbach_lite usecase; needs to be 'yes' with jsbach_forest_age_classes
+jsbach_with_disturbance=yes   # Set 'no' with uscase jsbach_lite and jsbach_forest_age_classes
+jsbach_with_alcc=no           # ALCC needs annual land uses maps, not available for most input data revisions!
+                              #      set 'no' with jsbach_lite usecase
+jsbach_with_nlcc=no           # NLCC needs manual namelist adaptations within the first simulation years!!
+                              #      not available with jsbach_lite usecase
+jsbach_check_wbal=no          # Additional output to check water balance
+output_lnd_mon=yes            # Generate monitoring output
+output_lnd=basic              # Amount of output: none/basic/medium/full
+output_tiles="'box'"          # Output on what tiles? all/"'box'"/"'box', 'glac', 'veg'"
+                              #  -> Note: full output does not work with all processes switched on
+                              #     (too many variables)
+
+# Some further processing for land configuration
+# ----------------------------------------------
+
+# Usecase specific parameter definitions
+case ${jsbach_usecase} in
+  jsbach_lite)
+    pft_file_tag=""
+    pheno_scheme=climatology
+    use_alb_veg_simple=.TRUE.
+    calc_assimi=.FALSE.
+    forest_ageing=.FALSE.
+    ;;
+  jsbach_pfts)
+    pft_file_tag=11pfts_
+    pheno_scheme=logrop
+    use_alb_veg_simple=.FALSE.
+    calc_assimi=.TRUE.
+    forest_ageing=.FALSE.
+    ;;
+  jsbach_forest_age_classes)
+    pft_file_tag=11pfts_
+    pheno_scheme=logrop
+    use_alb_veg_simple=.FALSE.
+    calc_assimi=.TRUE.
+    forest_ageing=.TRUE.
+    ;;
+  jsbach_jedi)
+    jsbach_use_jedi=yes
+    pft_file_tag=11pfts_
+    use_alb_veg_simple=.FALSE.
+    use_alb_canopy=.FALSE.
+    calc_assimi=.TRUE.
+    pheno_scheme=jedi_phenology
+    forest_ageing=.FALSE.
+    ;;
+  *)
+    echo "ERROR: Unknown usecase: ${jsbach_usecase}"
+    exit 1
+    ;;
+esac
+
+ldisturb=$([ $jsbach_with_nlcc == yes ] || [ $jsbach_with_disturbance == yes ] && echo .TRUE. || echo .FALSE. )
+llake=$([ "${jsbach_with_lakes:=yes}" == yes ] && echo .TRUE. || echo .FALSE. )
+lcarbon=$([ "${jsbach_with_carbon:=yes}" == yes ] && echo .TRUE. || echo .FALSE. )
+[[ $jsbach_with_nlcc == yes || $jsbach_with_alcc == yes || $jsbach_usecase == jsbach_forest_age_classes ]] && jsbach_with_lcc=yes
+
+# Output tiles
+if [[ ${output_tiles} == "all" ]]
+then
+  output_tiles="'box', 'glac', 'veg'"
+  if [[ $jsbach_with_lakes == yes ]]
+  then
+    output_tiles="${output_tiles}, 'lake', 'land'"
+  fi
+  if [[ $pft_file_tag == "11pfts_" ]] && [[ ${output_lnd} == "full" ]] || [[ ${jsbach_use_jedi} == yes ]]
+  then
+  output_tiles="${output_tiles}, 'pft*'"
+  fi
+fi
+
+#####################
+# Prepare NAMELISTS #
+#####################
+
+case ${forcing_tag} in
+  GSWP3 )
+    forcing_set_ocean_to_constants=true  # in this version wind is only defined for land cells
+    forcing_precip_in_mm_per_day=false    # true: mm/day; false: mm/s (= kg/m2s)
+    forcing_qair_type=QAIR               # specific humidity in forcing data
+    forcing_height_humidity=2.           # reference height for specific humidity data
+    forcing_height_wind=10.              # reference height for wind data
+    #  CO2 forcing not included in GSWP3 forcing data
+    forcing_co2_frequ=CONST              # constant CO2 forcing
+    forcing_co2_const_co2=367            # default for 1999
+    forcing_co2_unit="ppmv"              # mol_per_mol (mol/mol) / ppmv / kg_per_kg (kg/kg)
+    ;;
+  * )
+    print "\t|- WARNING: Check if namelist parameters correspond to forcing data!"
+    # example for forcing data generated from ECHAM output (pre industrial control)
+    forcing_set_ocean_to_constants=false # For all variables echam forcing is defined for all cells
+    forcing_precip_in_mm_per_day=false   # true: mm/day; false mm/s (= kg/m2s)
+    forcing_qair_type=QAIR               # only available in recent model versions (after CMIP5)
+    forcing_co2_frequ=CONST              # constant CO2 forcing
+    forcing_co2_const_co2=284.725e-6     # pre-industrial (1850)
+    forcing_co2_unit="mol_per_mol"       # mol_per_mol (mol/mol) / ppmv / kg_per_kg (kg/kg)
+  ;;
+esac
+
+if [[ ${ghg_scenario} = false ]]; then
+  forcing_co2_file="climate_"
+else
+  forcing_co2_file="greenhouse_gases.nc"
+  forcing_co2_unit="ppmv"
+  if [[ ${forcing_co2_frequ} != "" ]]; then
+    print "\t|- WARNING: CO2 concentration is read from greenhouse gas scenario file ${forcing_co2_file}."
+    print "\t|           The value you set for forcing_co2_frequ is ignored."
+  fi
+  forcing_co2_frequ="ghg_scenario"
+fi
+
+# namelists inherited from NAMELIST_atm_amip_les_atm:
+# ---------------------------------------------------
+cat > $jsbach_namelist << EOF
+&parallel_nml
+ nproma           = ${nproma}
+ num_io_procs     = 0     ! Number of procs for output (not more than number of output files!)
+! pio_type         = 1          ! 1 is default and means pio_type_async
+! num_restart_procs = 2         ! 0 for sync restart_write_mode
+/
+&grid_nml
+ dynamics_grid_filename = ${atmo_dyn_grids}
+! l_limited_area = .FALSE. ! just to be sure
+! vertical_grid_filename =
+! ifeedback_type = 2 ! default is 2. Als long as we use only one grid in JS4-driver this does not matter. However, later this has to be 2. 
+!                    ! 1: incremental feedback; 2: relaxation-based feedback. 
+!                    ! Note: vertical nesting requires option 2 to run numerically stable over longer time periods
+/
+&run_nml
+ num_lev          = 1           ! Number of full levels for each domain. For JS4-driver we use 1.
+ modelTimeStep    = "${modelTimeStep}"     ! this is dtime
+ output           = 'nml'
+ msg_level        = 0          ! e.g. 15. level of details report during integration 
+ restart_filename = "${EXPNAME}_restart_jsbalone_<rsttime>.nc"  ! rsttime in JS4-ICON-Driver nicht vorhanden???
+ activate_sync_timers = .FALSE. ! nur zum debuggen wieder auf .FALSE. setzen
+ ltimer           = .TRUE.     ! monitoring the runtime of specific routines
+ timers_level     = 10
+! profiling_output = 1   ! 1 ist default. 
+                        ! TIMER_MODE_AGGREGATED=1,
+                        ! TIMER_MODE_DETAILED=2,
+                        ! TIMER_MODE_WRITE_FILES=3
+/
+&jsb_forcing_nml
+    cyclic_nyears=${years_for_cyclic_forcing}
+    cyclic_start_year=${start_year_for_cyclic_forcing}
+    forcing_synchron_factor=${forcing_synchron_factor}
+    forcing_steps_per_day=${forcing_steps_per_day}
+    forcing_height_wind=${forcing_height_wind}
+    forcing_height_humidity=${forcing_height_humidity}
+    !--- Some external forcing is only defined for land cells. In this case ocean cells need to be replaced
+    !    by constants (reasonable values for the different variables) to ensure numeric stability.
+    !    If set to false forcing is expected for all variables for all cells (e.g. forcing from echam)
+    forcing_set_ocean_to_constants=.${forcing_set_ocean_to_constants:-true}.
+
+    !--- temperature forcing ----
+    forcing_temp_file_prefix="climate_"
+    forcing_temp_frequ="DAILY"       !Forcing frequency (DAILY/TIMESTEP/CONST)
+    forcing_temp_ocean=0.0           !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_temp_unit="${forcing_tmp_unit:-""}"
+
+    !--- precipitation forcing ----
+    forcing_precip_file_prefix="climate_"
+    forcing_precip_frequ="DAILY"     !Forcing frequency (DAILY/TIMESTEP/CONST)
+    forcing_precip_ocean=0.0         !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_precip_in_mm_per_day=.${forcing_precip_in_mm_per_day:-false}.
+    forcing_precip_unit="${forcing_precip_unit:-""}"
+
+    !--- atmospheric humidity forcing
+    forcing_qair_file_prefix="climate_"
+    forcing_qair_type="${forcing_qair_type:-QAIR}" ! (QAIR/RH/NONE)
+    forcing_qair_frequ="DAILY"       !Forcing frequency (DAILY/TIMESTEP/CONST)
+    forcing_qair_ocean=1e-5          !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_qair_unit="${forcing_qair_unit:-""}"
+
+    !--- longwave radiative forcing [W/m^2] ---
+    forcing_lw_file_prefix="climate_"
+    forcing_lw_frequ="DAILY"         !Forcing frequency (MONTHLY/DAILY/CONST)
+    forcing_lw_ocean=100             !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_lw_unit="${forcing_lw_unit:-""}"
+
+    !--- shortwave radiative forcing [W/m^2] ---
+    forcing_sw_file_prefix="climate_"
+    forcing_sw_frequ="DAILY"         !Forcing frequency (DAILY/TIMESTEP/CONST)
+    forcing_sw_ocean=0               !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_sw_unit="${forcing_sw_unit:-""}"
+
+    ! --- CO2 forcing ---
+    forcing_co2_file_prefix="${forcing_co2_file}"
+    forcing_co2_frequ="${forcing_co2_frequ:-CONST}"  !Forcing frequency (DAILY/TIMESTEP/CONST/GHG_SCENARIO)
+    forcing_co2_ocean=367  !3.67e-4                  !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_co2_const_co2=${forcing_co2_const_co2:-367}  ! default for 1999
+    forcing_co2_unit="${forcing_co2_unit:-""}"
+
+    ! --- wind speed forcing ---
+    forcing_wind_file_prefix="climate_"
+    forcing_wind_frequ="DAILY"       !Forcing frequency (DAILY/TIMESTEP/CONST)
+    forcing_wind_ocean=0             !jsb4 calculates for all cells, CRUNCEP has missingValue for ocean cells
+    forcing_wind_unit="${forcing_wind_unit:-""}"
+/
+EOF
+
+
+# namelists inherited from NAMELIST_atm_amip_les_lnd:
+# ---------------------------------------------------
+cat >> $jsbach_namelist << EOF
+&jsb_model_nml  ! Same jsb_model_nml namelist name exists in namelist_standalone_master but has different content
+  usecase         = "${jsbach_usecase}"
+  use_lakes       = ${llake}
+  fract_filename  = "bc_land_frac.nc"
+  output_tiles    = ${output_tiles}     ! List of tiles to output
+  enforce_water_budget = 'error'        ! Error: stop in case of water conservation problem
+/
+&jsb_seb_nml
+  bc_filename     = 'bc_land_phys.nc'
+  ic_filename     = 'ic_land_soil.nc'
+/
+&jsb_rad_nml
+  use_alb_veg_simple = ${use_alb_veg_simple}
+  use_alb_canopy  = .FALSE.
+  bc_filename     = 'bc_land_phys.nc'
+  ic_filename     = 'ic_land_soil.nc'
+/
+&jsb_turb_nml
+  bc_filename     = 'bc_land_phys.nc'
+  ic_filename     = 'ic_land_soil.nc'
+/
+&jsb_sse_nml
+  l_heat_cap_map  = .FALSE.
+  l_heat_cond_map = .FALSE.
+  l_heat_cap_dyn  = .TRUE.
+  l_heat_cond_dyn = .TRUE.
+  l_snow          = .TRUE.
+  l_dynsnow       = .TRUE.
+  l_freeze        = .TRUE.
+  l_supercool     = .TRUE.
+  bc_filename     = 'bc_land_soil.nc'
+  ic_filename     = 'ic_land_soil.nc'
+/
+&jsb_hydro_nml
+  l_organic       = .FALSE.
+  l_socmap        = .TRUE.
+  bc_filename     = 'bc_land_soil.nc'
+  ic_filename     = 'ic_land_soil.nc'
+  bc_sso_filename = 'bc_land_sso.nc'
+/
+&jsb_assimi_nml
+  active          = ${calc_assimi}
+/
+&jsb_pheno_nml
+  scheme          = "${pheno_scheme}"
+  bc_filename     = 'bc_land_phys.nc'
+  ic_filename     = 'ic_land_soil.nc'
+  l_forestRegrowth = ${forest_ageing}
+/
+&jsb_carbon_nml
+  active                 = ${lcarbon}
+  bc_filename            = 'bc_land_carbon.nc'
+  ic_filename            = 'ic_land_carbon.nc'
+  read_cpools            = .FALSE.
+  !fire_frac_wood_2_atmos = 0.2
+/
+&jsb_fuel_nml
+  active                 = ${lcarbon}
+  fuel_algorithm         = 1
+/
+&jsb_disturb_nml
+  active                  = ${ldisturb}
+  ic_filename             = 'ic_land_soil.nc'
+  bc_filename             = 'bc_land_phys.nc'
+  fire_algorithm          = 1
+  windbreak_algorithm     = 1
+  lburn_pasture           = .FALSE.
+  !fire_litter_threshold  = 16.67
+  !fire_rel_hum_threshold = 70.0
+  !fire_minimum_woody     = 0.002
+  !fire_minimum_grass     = 0.006
+  !fire_tau_woody         = 6.0
+  !fire_tau_grass         = 2.0
+  !wnd_threshold          = 2.25
+  !wnd_damage_scale       = 5.e-03
+/
+EOF
+
+if [[ ${jsbach_with_lcc} == "yes" ]]; then
+  cat >> $jsbach_namelist << EOF
+&jsb_pplcc_nml
+  active                 = .TRUE.
+/
+EOF
+fi
+if [[ ${jsbach_usecase} == "jsbach_forest_age_classes" ]]; then
+  cat >> $jsbach_namelist << EOF
+&jsb_fage_nml
+  active                 = .TRUE.
+/
+&jsb_wlcc_nml
+  active                 = .FALSE.
+/
+&jsb_flcc_nml
+  active                 = .FALSE.
+/
+EOF
+fi
+
+if [[ ${jsbach_with_hd} = yes ]]; then
+  cat >> $jsbach_namelist << EOF
+&jsb_hd_nml
+  active               = .TRUE.
+  routing_scheme       = 'full'
+  bc_filename          = 'bc_land_hd.nc'
+  diag_water_budget    = .FALSE.
+  debug_hd             = .FALSE.
+/
+EOF
+fi
+
+if [[ ${jsbach_with_alcc} = yes ]]; then
+  cat >> $jsbach_namelist << EOF
+&jsb_alcc_nml
+  active               = .TRUE.
+/
+EOF
+fi
+
+if [[ ${jsbach_with_nlcc} = yes ]]; then
+  cat >> $jsbach_namelist << EOF
+&jsb_nlcc_nml
+  active               = .TRUE.
+/
+EOF
+fi
+
+
+#--------------------------------------------------------------------------------------------------
+
+# (4) Define the input
+
+# model files
+#
+# jsbach namelist file
+#
+add_required_file ${basedir}/run/$jsbach_namelist            ./
+
+# initial conditions
+#
+# - land: source?, date+time?
+datadir=${lnd_data_InputFolder}
+add_link_file ${datadir}/ic_land_soil_${refyear}.nc                     ./ic_land_soil.nc
+# added in namelist, but not active and not yet available (2017-Dec-07)
+#add_link_file ${datadir}/ic_land_carbon_1976.nc                         ./ic_land_carbon.nc
+
+# boundary conditions
+#
+# - well mixed greenhouse gases
+datadir=${icon_data_poolFolder}/common/greenhouse_gases
+add_link_file $datadir/greenhouse_historical_plus.nc                    ./bc_greenhouse_gases.nc
+#
+# - land parameters
+datadir=${lnd_data_InputFolder}
+add_link_file $datadir/bc_land_frac_${pft_file_tag}${refyear}.nc        ./bc_land_frac.nc
+add_link_file $datadir/bc_land_phys_${refyear}.nc                       ./bc_land_phys.nc
+add_link_file $datadir/bc_land_soil_${refyear}.nc                       ./bc_land_soil.nc
+add_link_file $datadir/bc_land_sso_${refyear}.nc                        ./bc_land_sso.nc
+if [[ ${jsbach_with_alcc} = yes ]]; then
+  year=${start_date%%-*}
+  while [[ $year -le ${end_date%%-*} ]]; do
+    add_link_file $datadir/bc_land_frac_${pft_file_tag}${year}.nc       ./bc_land_frac_11pfts_${year}.nc
+    (( year = year+1 ))
+  done
+fi
+if [[ ${jsbach_with_hd} = yes ]]; then
+  add_link_file $datadir/hdpara_r2b4_0043_no_sinks.nc                   ./bc_land_hd.nc
+fi
+#
+# - lctlib file for JSBACH
+if [[ "${jsbach_use_jedi}" == yes ]]
+then
+  add_link_file /home/mpim/m300557/TOOL/SCRIPTS/tree_c3_c4_311_cover_lctlib_nlct21_spc250.def   ./lctlib_nlct21.def
+else
+  add_link_file ${basedir}/externals/jsbach/data/lctlib_nlct21.def              ./lctlib_nlct21.def
+fi
+
+# range of years for yearly files
+# assume start_date and end_date have the format yyyy-...
+start_year=$(( ${start_date%%-*} - 1 ))
+end_year=$(( ${end_date%%-*} + 1 ))
+if [ ${years_for_cyclic_forcing} -gt 0 ]
+then
+  [[ ${start_year_for_cyclic_forcing} -eq 9999 ]] || (( start_year=start_year_for_cyclic_forcing - 1 ))
+  (( end_year = start_year + years_for_cyclic_forcing + 1 ))
+fi
+#
+# Provide Links to the climate forcing files
+
+SEP=/pool/data/JSBACH/jsbalone_forcing/${grid_refinement}/${grid_id}  # path on DKRZ and MPIM machines
+
+year=$start_year
+while [[ $year -le $end_year ]]
+  do
+
+  case ${forcing_tag} in
+    GSWP3 )
+      forcing_dir=${SEP}/GSWP3-W5E5/data
+      add_link_file   ${forcing_dir}/climate_gswp3-w5e5_daily_${year}.nc            ./climate_${year}.nc
+      ;;
+    * )
+      add_link_file   Climate_${forcing_tag}_${year}.nc                             ./climate_${year}.nc
+      ;;
+  esac
+
+  if [[ ${ghg_scenario} != false ]]; then
+    [[ -d ${inpdir}/echam6 ]] || mkdir ${inpdir}/echam6
+    forcing_dir=""
+    add_link_file    ${forcing_dir}/greenhouse_${ghg_scenario}.nc                ./greenhouse_gases.nc
+  fi
+  (( year = year+1 ))
+done
+
+#--------------------------------------------------------------------------------------------------
+
+# (5) Define the output
+
+# Parameters for all output files
+# -------------------------------
+cat >> $jsbach_namelist << EOF
+! &jsb_io_nml  ! R: von Julia: src_jsbach4/src/base/mo_jsb_io.f90 ruft auf: src_jsbach4/src/adapters/mo_jsb_io_iface.f90: SUBROUTINE read_io_namelist(filename)
+!     ! --- Experiment name ---
+!     out_expname = "${expid}"
+! 
+!     read_interface_vars=.${read_interface_vars:-false}.
+!     write_interface_vars=.${write_interface_vars:-false}.
+! /
+&io_nml
+ restart_file_type= 5
+ restart_write_mode = "sync"  ! Default: " " =Fallback mode. If num_restart_proc == 0 (parallel_nml), then this behaves like ”sync”, otherwise like ”async”. 
+                               ! If async is choosen, the num_restart_procs must be bigger than 0! 
+                               ! "joint procs multifile" not necessary/useful in default r2b4 setup. 
+/
+EOF
+
+# Define output files
+# -------------------
+if [[ "$output_lnd" != "none" ]]; then
+  cat >> $jsbach_namelist << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_lnd_fract"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${start_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}"
+ include_last     = .FALSE.
+ ml_varlist       = 'group:jsb_tile_fractions'
+/
+&output_nml
+ output_filename  = "${EXPNAME}_lnd_basic"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ operation        = 'mean'
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}" ! R: PT1H nur zum debuggen
+ include_last     = .FALSE.
+ ml_varlist       = 'group:jsb_all_basic'
+/
+EOF
+fi
+
+case "${output_lnd}" in
+  medium|full)
+    cat >> $jsbach_namelist << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_lnd_medium"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ operation        = 'mean'
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}"
+ include_last     = .FALSE.
+ ml_varlist       = 'group:jsb_all_medium'
+/
+EOF
+    ;;
+esac
+
+case "${output_lnd}" in
+  full)
+    cat >> $jsbach_namelist << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_lnd_full"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ operation        = 'mean'
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}"
+ include_last     = .FALSE.
+ ml_varlist       = 'group:jsb_all_full'
+/
+EOF
+    ;;
+esac
+
+if [[ "$jsbach_check_wbal" == "yes" ]]; then
+  cat >> $jsbach_namelist << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_lnd_wbal"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ operation        = 'mean'
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval}"
+ file_interval    = "${file_interval}"
+ include_last     = .FALSE.
+ ml_varlist       = 'hydro_weq_fluxes_box', 'hydro_weq_land_box', 'hydro_weq_balance_err_box',
+EOF
+  if [[ "$jsbach_with_hd" == "yes" ]]; then
+    cat >> $jsbach_namelist << EOF
+                    'hydro_runoff_box'   , 'hydro_drainage_box',
+                    'hd_water_budget_box', 'hd_local_wbal_error_box'
+EOF
+  fi
+  cat >> $jsbach_namelist << EOF
+/
+EOF
+fi
+
+if [[ ${output_lnd_mon} == yes ]]; then
+  cat >> ${jsbach_namelist} << EOF
+&output_nml ! 'lnd_mon'
+ output_start            = "${start_date}"
+ output_end              = "${end_date}"
+ output_interval         = "${output_interval}"  ! the output interval and
+ file_interval           = "${file_interval}"    ! the file interval
+ filetype                = 5                         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                     = -1
+ mode                    =  1                        ! 1: forecast mode (relative t-axis); 2: climate mode
+ include_last            = .FALSE.                   ! flag whether to include the last time step
+ output_filename         = "${EXPNAME}_lnd_mon"      ! file name base
+ filename_format         = "<output_filename>_<datetime2>"
+ remap                   = 0                         ! 1: latlon,  0: native grid
+ operation               = "mean"                    ! works on icon grid only (remap=0)
+    ml_varlist = 'hydro_trans_gmean_box', 'hydro_evapotrans_gmean_box',
+                 'hydro_weq_land_gsum_box', 'hydro_discharge_ocean_gsum_box',
+                 'hydro_wtr_rootzone_rel_gmean_box',
+                 'hydro_fract_snow_gsum_box', 'hydro_weq_snow_gsum_box',
+                 'hydro_weq_balance_err_gsum_box',
+                 'seb_t_gmean_box',
+EOF
+  if [[ ${jsbach_usecase} != "jsbach_lite" ]]; then
+    cat >> ${jsbach_namelist} << EOF
+                 'pheno_lai_ta_gmean_box', 'pheno_fract_fpc_gmean_box',
+EOF
+  fi
+  if [[ ${jsbach_with_hd} == yes ]]; then
+    cat >> ${jsbach_namelist} << EOF
+                 'hd_water_error_gsum_box',
+EOF
+  fi
+  if [[ ${jsbach_with_carbon} == yes ]]; then
+    cat >> ${jsbach_namelist} << EOF
+                 'carbon_c_sum_veg_gsum_box', 'carbon_c_sum_litter_ag_gsum_box',
+                 'carbon_c_sum_litter_bg_gsum_box', 'carbon_c_sum_humus_gsum_box',
+                 'carbon_c_sum_natural_gsum_box', 'carbon_NPP_act_yDayMean_gsum_box',
+                 'carbon_GPP_yDayMean_gsum_box', 'carbon_soil_respiration_gsum_box'
+EOF
+  fi
+  if [[ ${jsbach_with_lcc} == yes ]]; then
+    cat >> ${jsbach_namelist} << EOF
+                 'pplcc_tree_area_gsum_box', 'pplcc_shrub_area_gsum_box',
+                 'pplcc_grass_area_gsum_box', 'pplcc_crop_area_gsum_box',
+                 'pplcc_pasture_area_gsum_box', 'pplcc_baresoil_area_gsum_box',
+                 'pplcc_C3pft_area_gsum_box', 'pplcc_C4pft_area_gsum_box',
+EOF
+  fi
+
+  cat >> ${jsbach_namelist} << EOF
+/
+
+EOF
+fi
+
+#-----------------------------------------------------------------------------
+
+
+
+
+
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#=============================================================================
+#
+# This section of the run script prepares and starts the model integration. 
+#
+# MODEL and START must be defined as environment variables or
+# they must be substituted with appropriate values.
+#
+# Marco Giorgetta, MPI-M, 2010-04-21
+#
+#-----------------------------------------------------------------------------
+final_status_file=${basedir}/run/${job_name}.final_status
+rm -f ${final_status_file}
+#-----------------------------------------------------------------------------
+#
+# directories definition
+#
+RUNSCRIPTDIR=${basedir}/run
+if [ x$grids_folder = x ] ; then
+   HGRIDDIR=${basedir}/grids
+else
+   HGRIDDIR=$grids_folder
+fi
+
+make_and_change_to_experiment_dir
+
+for dir in ${ADDITIONAL_SUBDIRS[@]}; do
+  mkdir -p $dir
+done
+
+#-----------------------------------------------------------------------------
+final_status_file=${RUNSCRIPTDIR}/${job_name}.final_status
+rm -f ${final_status_file}
+
+#-----------------------------------------------------------------------------
+# set up the model lists if they do not exist
+# this works for single model runs
+# for coupled runs the lists should be declared explicilty
+if [ x$namelist_list = x ]; then
+#  minrank_list=(        0           )
+#  maxrank_list=(     65535          )
+#  incrank_list=(        1           )
+  minrank_list[0]=0
+  maxrank_list[0]=65535
+  incrank_list[0]=1
+  if [ x$atmo_namelist != x ]; then
+    # this is the atmo model
+    namelist_list[0]="$atmo_namelist"
+    modelname_list[0]="atm"
+    modeltype_list[0]=1
+    run_atmo="true"
+  elif [ x$ocean_namelist != x ]; then
+    # this is the ocean model
+    namelist_list[0]="$ocean_namelist"
+    modelname_list[0]="oce"
+    modeltype_list[0]=2
+  elif [ x$psrad_namelist != x ]; then
+    # this is the psrad model
+    namelist_list[0]="$psrad_namelist"
+    modelname_list[0]="psrad"
+    modeltype_list[0]=3
+  elif [ x$hamocc_namelist != x ]; then
+    # this is the hamocc model
+    namelist_list[0]="$hamocc_namelist"
+    modelname_list[0]="hamocc"
+    modeltype_list[0]=4
+  elif [ x$jsbach_namelist != x ]; then
+    # this is the jsbach standalone model
+    namelist_list[0]="$jsbach_namelist"
+    modelname_list[0]="jsbach"
+    modeltype_list[0]=5
+    run_jsbach_standalone="true"
+  elif [ x$testbed_namelist != x ]; then
+    # this is the testbed model
+    namelist_list[0]="$testbed_namelist"
+    modelname_list[0]="testbed"
+    modeltype_list[0]=99
+  else
+    check_error 1 "No namelist is defined"
+  fi 
+fi
+
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# set some default values and derive some run parameteres
+restart=${restart:=".false."}
+restartSemaphoreFilename='isRestartRun.sem'
+#AUTOMATIC_RESTART_SETUP:
+if [ -f ${restartSemaphoreFilename} ]; then
+  restart=.true.
+  #  do not delete switch-file, to enable restart after unintended abort
+  #[[ -f ${restartSemaphoreFilename} ]] && rm ${restartSemaphoreFilename}
+fi
+#END AUTOMATIC_RESTART_SETUP
+#
+# wait 5min to let GPFS finish the write operations
+if [ "x$restart" != 'x.false.' -a "x$submit" != 'x' ]; then
+  if [ x$(df -T ${EXPDIR} | cut -d ' ' -f 2) = gpfs ]; then
+    sleep 10;
+  fi
+fi
+# fill some checks
+
+run_atmo=${run_atmo="false"}
+if [ x$atmo_namelist != x ]; then
+  run_atmo="true"
+  run_jsbach_standalone="false"
+fi
+run_jsbach=${run_jsbach="false"}
+if [ x$jsbach_namelist != x ]; then
+  run_jsbach="true"
+fi
+run_ocean=${run_ocean="false"}
+if [ x$ocean_namelist != x ]; then
+  run_ocean="true"
+fi
+run_psrad=${run_psrad="false"}
+if [ x$psrad_namelist != x ]; then
+  run_psrad="true"
+fi
+run_hamocc=${run_hamocc="false"}
+if [ x$hamocc_namelist != x ]; then
+  run_hamocc="true"
+fi
+
+#-----------------------------------------------------------------------------
+# add grids to required files
+all_grids="${atmo_dyn_grids} ${atmo_rad_grids} ${ocean_grids}"
+for gridfile in ${all_grids}; do
+  #
+  gridfile=${gridfile//\'/} # strip all ' in case ' is used to delimit the grid names
+  gridfile=${gridfile//\"/} # strip all " in case " is used to delimit the grid names
+  gridfile=${gridfile//\,/} # strip all , in case , is used to separate the grid names
+  #
+  grfinfofile=${gridfile%.nc}-grfinfo.nc
+  #
+  ls -l ${HGRIDDIR}/$gridfile
+  check_error $? "${HGRIDDIR}/$gridfile does not exist."
+  add_link_file ${HGRIDDIR}/${gridfile} ./
+  if [ -f ${HGRIDDIR}/${grfinfofile} ]; then    
+    add_link_file ${HGRIDDIR}/${grfinfofile} ./
+  fi
+done
+#-----------------------------------------------------------------------------
+# print_required_files
+copy_required_files
+link_required_files
+
+
+#-----------------------------------------------------------------------------
+# get restart files
+
+if  [ x$restart_atmo_from != "x" ] ; then
+  rm -f restart_atm_DOM01.nc
+#  ln -s ${basedir}/experiments/${restart_from_folder}/${restart_atmo_from} ${EXPDIR}/restart_atm_DOM01.nc
+  cp ${basedir}/experiments/${restart_from_folder}/${restart_atmo_from} cp_restart_atm.nc
+  ln -s cp_restart_atm.nc restart_atm_DOM01.nc
+  restart=".true."
+fi
+if  [ x$restart_ocean_from != "x" ] ; then
+  rm -f restart_oce.nc
+#  ln -s ${basedir}/experiments/${restart_from_folder}/${restart_ocean_from} ${EXPDIR}/restart_oce.nc
+  cp ${basedir}/experiments/${restart_from_folder}/${restart_ocean_from} cp_restart_oce_DOM01.nc
+  ln -s cp_restart_oce_DOM01.nc restart_oce_DOM01.nc
+  restart=".true."
+fi
+#-----------------------------------------------------------------------------
+
+
+read_restart_namelists=${read_restart_namelists:=".true."}
+
+#-----------------------------------------------------------------------------
+#
+# create ICON master namelist
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+#-----------------------------------------------------------------------------
+# create master_namelist
+if [ -z "$dont_create_icon_master_namelist" ]; then
+  master_namelist=icon_master.namelist
+
+  calendar=${calendar:="proleptic gregorian"}
+  calendar_type=${calendar_type:=1}
+  {
+    echo "&master_nml"
+    echo " lrestart               =  $restart"
+    echo " read_restart_namelists =  $read_restart_namelists"
+    echo "/"
+
+    if [ -z "$nsteps" ]; then
+      echo "&master_time_control_nml"
+      echo " calendar             = '$calendar'"
+      echo " experimentStartDate  = '$start_date'"
+      echo " restartTimeIntval    = '$restart_interval'"
+      echo " checkpointTimeIntval = '$checkpoint_interval'"
+      if [ -n "$end_date" ]; then
+        echo " experimentStopDate = '$end_date'"
+      fi
+      echo "/"
+
+      echo "&time_nml"
+      echo " is_relative_time     = .false."
+      echo "/"
+
+    else # $nsteps is set -> use time_nml:ini_datetime_string
+      echo "&time_nml"
+      echo " calendar             =  $calendar_type"
+      echo " ini_datetime_string  = '$start_date'"
+      echo " dt_restart           =  $dt_restart"
+      echo "/"
+    fi
+  } > $master_namelist
+
+fi
+#-----------------------------------------------------------------------------
+
+
+#-----------------------------------------------------------------------------
+# add model component to master_namelist
+add_component_to_master_namelist()
+{
+  model_namelist_filename=$1
+  if [ x${dont_create_icon_master_namelist+set} != xset ]; then
+    model_name=$2
+    model_type=$3
+    model_min_rank=$4
+    model_max_rank=$5
+    model_inc_rank=$6
+    model_rank_group_size=$7
+    cat >> $master_namelist << EOF
+&master_model_nml
+  model_name="$model_name"
+  model_namelist_filename="$model_namelist_filename"
+  model_type=$model_type
+  model_min_rank=$model_min_rank
+  model_max_rank=$model_max_rank
+  model_inc_rank=$model_inc_rank
+  model_rank_group_size=$model_rank_group_size
+/
+EOF
+  fi
+
+  #-----------
+  #get namelist
+  if [ -f ${RUNSCRIPTDIR}/$model_namelist_filename ] ; then
+    mv -f ${RUNSCRIPTDIR}/$model_namelist_filename ${EXPDIR}
+    check_error $? "mv -f ${RUNSCRIPTDIR}/$model_namelist_filename ${EXPDIR}"
+  else
+    check_error 1 "${RUNSCRIPTDIR}/$model_namelist_filename does not exist"
+  fi
+}
+#-----------------------------------------------------------------------------
+
+
+no_of_models=${#namelist_list[*]}
+echo "no_of_models=$no_of_models"
+
+rank_group_size=1
+j=0
+while [ $j -lt ${no_of_models} ]
+do
+  add_component_to_master_namelist "${namelist_list[$j]}" "${modelname_list[$j]}" ${modeltype_list[$j]} ${minrank_list[$j]} ${maxrank_list[$j]} ${incrank_list[$j]} ${rank_group_size}
+  j=`expr ${j} + 1`
+done
+
+#-----------------------------------------------------------------------------
+# Add JSBACH part to master_namelist
+# For several domains, $jsbach_namelist is only the basename for each domain's jsbach namelist;
+#   the actual namelist files are appended by suffixes '_d1', '_d2', etc.
+
+if [[ $run_jsbach == yes  ]] || [[ $run_jsbach == true ]]; then
+  cat >> $master_namelist << EOF
+&jsb_control_nml
+ is_standalone      = .${run_jsbach_standalone:=false}.
+ restart_jsbach     = ${restart}
+ debug_level        = 0
+ timer_level        = 0
+/
+EOF
+#
+if [[ -n ${atmo_dyn_grids} ]]; then
+  no_of_domains=$(echo ${atmo_dyn_grids} | wc -w)
+else
+  no_of_domains=1
+fi
+echo "no_of_domains=$no_of_domains"
+domain=""
+domain_suffix=""
+j=1
+while [ $j -le ${no_of_domains} ]
+do
+  if [[ $no_of_domains -gt 1 ]]; then
+    # no_of_domains < 10 !
+    domain=" DOM0${j}"
+    domain_suffix="_d${j}"
+  fi
+  cat >> $master_namelist << EOF
+&jsb_model_nml
+ model_id = $j
+ model_name = "JSBACH${domain}"
+ model_shortname = "jsb${domain_suffix}"
+ model_description = 'JSBACH land surface model'
+ model_namelist_filename = "${jsbach_namelist}${domain_suffix}"
+/
+EOF
+  if [[ ${run_jsbach_standalone} != true ]]; then
+    if [[ -f ${RUNSCRIPTDIR}/${jsbach_namelist}${domain_suffix} ]] ; then
+      mv ${RUNSCRIPTDIR}/${jsbach_namelist}${domain_suffix} ${EXPDIR}
+      check_error $? "mv ${RUNSCRIPTDIR}/${jsbach_namelist}${domain_suffix}"
+    else
+      check_error 1 "${RUNSCRIPTDIR}/${jsbach_namelist}${domain_suffix} does not exist"
+    fi
+  fi
+  j=`expr ${j} + 1`
+done
+fi
+
+#
+#  get model
+#
+ls -l ${MODEL}
+check_error $? "${MODEL} does not exist?"
+#
+ldd ${MODEL}
+#
+#-----------------------------------------------------------------------------
+
+#
+# configure START_MODEL_function
+#
+# TODO: be less atmospheric centric, i.e. do not assume that atmosphere is always component 1
+ICON_COMPONENT1_VH_procs=$(( ${num_restart_procs:-0} + ${num_io_procs:-0} + ${num_prefetch_proc:-0} + ${num_io_procs_radar:-0}))
+
+#
+# start experiment
+#
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+
+rm -f finish.status
+#
+date
+set -x
+${START_MODEL} || exit 1
+set +x
+date
+#
+if [ -r finish.status ] ; then
+  check_final_status 0 "${START} ${MODEL}"
+else
+  check_final_status -1 "${START} ${MODEL}"
+fi
+#
+#-----------------------------------------------------------------------------
+#
+finish_status=`cat finish.status`
+echo $finish_status
+echo "============================"
+echo "Script run successfully: $finish_status"
+echo "============================"
+
+#-----------------------------------------------------------------------------
+# rm output_schedule_steps*
+#-----------------------------------------------------------------------------
+if [[ "x$use_hamocc" = "xyes" ]]; then
+# store HAMOCC log file
+strg="$(ls -rt ${EXPNAME}_hamocc_EU*.nc* | tail -1 )"
+prefx="${EXPNAME}_hamocc_EU_tendencies"
+foo=${strg##${prefx}}
+foo=${foo%%.*}
+bgcout_file="bgcout_${foo}"
+mv bgcout $bgcout_file
+fi
+#-----------------------------------------------------------------------------
+namelist_list=""
+#-----------------------------------------------------------------------------
+# check if we have to restart, ie resubmit
+#   Note: this is a different mechanism from checking the restart
+if [ $finish_status = "RESTART" ] ; then
+  echo "restart next experiment..."
+  this_script="${RUNSCRIPTDIR}/${job_name}"
+  echo 'this_script: ' "$this_script"
+  touch ${restartSemaphoreFilename}
+  cd ${RUNSCRIPTDIR}
+  ${submit} $this_script $run_param_0
+else
+  [[ -f ${restartSemaphoreFilename} ]] && rm ${restartSemaphoreFilename}
+fi
+
+#-----------------------------------------------------------------------------
+# automatic call/submission of post processing if available
+if [ "x${autoPostProcessing}" = "xtrue" ]; then
+  # check if there is a postprocessing is available
+  cd ${RUNSCRIPTDIR}
+  targetPostProcessingScript="./post.${EXPNAME}.run"
+  [[ -x $targetPostProcessingScript ]] && ${submit} ${targetPostProcessingScript}
+  cd -
+fi
+
+#-----------------------------------------------------------------------------
+
+cd $RUNSCRIPTDIR
+
+#-----------------------------------------------------------------------------
+
+	
+# exit 0
+#
+# vim:ft=sh
+#-----------------------------------------------------------------------------

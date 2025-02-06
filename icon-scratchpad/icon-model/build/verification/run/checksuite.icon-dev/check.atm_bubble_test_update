@@ -1,0 +1,95 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------
+#
+# _bb_table_Description_  Bubble test of AES physics experiment
+# _bb_table_Model_        non-hydrostatic atmosphere with AES physics with Smagorinsky diffusion
+
+#--------------------------------------------------------------------------------
+#
+# 1. Define the experiment and the files to be checked
+#
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names:
+#
+# For this test a separate experiment name is needed. Therefore a soft-link
+# is created for the new name exp.atm_qubicc_test_update:
+rm -f exp.aes_bubble_test_update
+ln -s exp.aes_bubble_test exp.aes_bubble_test_update 
+export EXPERIMENT='aes_bubble_test_update'
+
+# TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export TYPES='atm_2d_ml atm_3d_ml'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES='20080801T000000Z 20080801T001000Z 20080801T002000Z 20080801T003000Z 20080801T004000Z 20080801T005000Z 20080801T010000Z'
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+#
+export RESTART_DATE='20080801T003000Z'
+
+# REFERENCE model directory and reference experiment for update test
+# (abs. path or relative paths w.r.t. <model dir>/run, e.g. .../icon-dev/run)
+#
+export OVERWRITE=no
+#
+if [ -d /users/icontest ]
+then
+    poolFolder_prefix="/users/icontest"
+else
+    poolFolder_prefix=""
+fi
+
+#--------------------------------------------------------------------------------
+#
+# 2. Define the checksuite mode
+#
+# u = update test
+# r = restart test
+# n = nproma test
+# m = mpi test
+# o = omp test
+# t = tolerance test
+#
+# default: MD='rnmo'
+#
+export MD='u'
+
+#--------------------------------------------------------------------------------
+#
+# 3. Launch the checksuite from run/
+
+reference_dir=2024-08-29.icon-mpim.abb506ab1796
+
+builder="${BB_SYSTEM}_${BB_SLAVE}" # old buildbot
+[[ ! -z $BB_NAME ]] && builder=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]') # new buildbot
+export REFERENCE=$icon_data_rootFolder/buildbot_data/ref/${reference_dir}/${builder}
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+./icon-dev.checksuite
+STATUS=$?
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit

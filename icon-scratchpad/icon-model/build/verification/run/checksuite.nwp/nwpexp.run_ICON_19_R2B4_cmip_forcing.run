@@ -1,0 +1,520 @@
+#! /bin/bash
+#-----------------------------------------------------------------------------
+set +x
+
+#-----------------------------------------------------------------------------
+#
+# ICON run script:
+# !ATTENTION! Do not change the format of the following lines.
+#             They are evaluated by checksuite scripts.
+# created by /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/run/make_target_runscript
+# target machine is default
+# target use_compiler is gcc
+# with_mpi=no
+# with_openmp=no
+# memory_model=large
+# submit with 
+#
+builder=default_gcc
+#-----------------------------------------------------------------------------
+#
+# OpenMP environment variables
+# ----------------------------
+export OMP_NUM_THREADS=1
+export ICON_THREADS=1
+export OMP_SCHEDULE=static
+export OMP_DYNAMIC="false"
+export OMP_STACKSIZE=200M
+#
+# MPI variables
+# -------------
+: ${no_of_nodes:=1} ${mpi_procs_pernode:=1}
+export no_of_nodes
+export mpi_procs_pernode
+num_io_procs=
+((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
+#
+# blocking length
+# ---------------
+nproma=48
+nproma_sub=48
+nblocks_c=0
+proc0_shift=0
+#
+# Ecrad solver (0 for CPU/vector, 2 for GPU)
+# ------------------------------------------
+radiation_ecrad_isolver=0
+#
+#-----------------------------------------------------------------------------
+
+# load local setting, if existing
+# -------------------------------
+if [ -a /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting ]
+then
+  echo "Load Setting"
+  . /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting
+fi
+
+# environment variables for the experiment and the target system
+# --------------------------------------------------------------
+export EXPNAME="run_ICON_19_R2B4_cmip_forcing"
+
+#-----------------------------------------------------------------------------
+# directories with absolute paths
+# -------------------------------
+thisdir=$(pwd)
+export basedir="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification"
+# experiments_dir can be predefined in a machine specific run_target_* header
+experiments_dir="${experiments_dir:=${basedir}/experiments}"
+export icon_data_rootFolder="/home/primrose/pool/data/ICON"
+
+# how to start the icon model
+# ---------------------------
+export START=""
+export MODEL="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/bin/icon"
+
+set | grep SLURM
+
+# how to submit the next job
+# --------------------------
+submit=""
+job_name="nwpexp.run_ICON_19_R2B4_cmip_forcing.run"
+
+# cdo for post-processing
+# -----------------------
+cdo="cdo"
+cdo_diff="cdo diffn"
+
+# define script functions used in the experiment run script
+# ---------------------------------------------------------
+. ${basedir}/run/add_run_routines
+
+#-----------------------------------------------------------------------------
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# Description of test case
+# Test if "climate-forcings" as in CMIP experiments (aerosols, ozone, 
+# radiation, GHGs) work. These correspond to the namelist settings:
+# irad_aero=18, irad_o3=5, isolrad=2, irad_co2=4, irad_n2o=4, 
+# irad_cfc11=4, irad_cfc12=4
+# Additionally, the SST & sea-ice forcing sstice_mode=4 is tested, 
+# which is important for AMIP type of experiments.
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+EXPID="icon_cmip_forcing"  # working directory
+
+# base directory for data stored with the source code
+ICONDIR=${basedir}
+
+# root directory for input data
+DATAROOT="${icon_data_poolFolder}/Checksuite_data"
+
+# directory for grid and extpar files
+GRIDDIR="${icon_data_poolFolder}/grids/public/edzw"
+# GRIDDIR links to /hpc/rwork0/routfor/routfox/icon/grids/public/edzw on RCL
+EXTPDIR="$GRIDDIR" # external parameter directory
+
+# external data: CMIP aerosol, ozone, insolation, GHG + initial data
+INDATADIR=${DATAROOT}/data_bbtest19
+
+# ecRad specific files
+ECRAD_DIR=${ICONDIR}/externals/ecrad/data
+
+# start, stop dates
+STADATE="1979-12-31T00:00:00Z"
+STODATE="1980-01-01T03:00:00Z"
+
+# date related vars
+YYYY=`echo ${STADATE} |cut -c 1-4`
+PREV_YYYY=`expr ${YYYY} - 1`
+NEXT_YYYY=`expr ${YYYY} + 1`
+MM=`echo ${STADATE} |cut -c 6-7`
+if [[ ${MM} == "12" ]]
+then
+  NEXT_MM=1
+else
+  NEXT_MM=`expr ${MM} + 1`
+fi
+[[ ${NEXT_MM} -lt 10 ]] && NEXT_MM=`echo 0${NEXT_MM}`
+
+# output frequency
+OUTINT="P02D"
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+# link initial fields
+ln -sf ${INDATADIR}/eraint_T255_1979010100_0012_R02B04_G.nc ini_filename
+
+# link grid files, extpar file
+ln -sf ${GRIDDIR}/icon_grid_0012_R02B04_G.nc .
+ln -sf ${GRIDDIR}/icon_grid_0011_R02B03_R.nc .
+ln -sf ${INDATADIR}/external_parameter_icon_icon_grid_0012_R02B04_G_tiles.nc .
+
+# files needed for radiation
+cp ${ICONDIR}/data/ECHAM6_CldOptProps.nc .
+cp ${ICONDIR}/data/rrtmg_lw.nc .
+
+# link SST & sea-ice
+ln -sf ${INDATADIR}/SST_${YYYY}_${MM}_iconR2B04_DOM01.nc SST_${YYYY}_${MM}_icon_grid_0012_R02B04_G.nc
+ln -sf ${INDATADIR}/SST_${NEXT_YYYY}_${NEXT_MM}_iconR2B04_DOM01.nc SST_${NEXT_YYYY}_${NEXT_MM}_icon_grid_0012_R02B04_G.nc
+ln -sf ${INDATADIR}/CI_${YYYY}_${MM}_iconR2B04_DOM01.nc CI_${YYYY}_${MM}_icon_grid_0012_R02B04_G.nc
+ln -sf ${INDATADIR}/CI_${NEXT_YYYY}_${NEXT_MM}_iconR2B04_DOM01.nc CI_${NEXT_YYYY}_${NEXT_MM}_icon_grid_0012_R02B04_G.nc
+
+# link aerosols
+ln -sf ${INDATADIR}/R2B4_aeropt_kinne_sw_b14_coa.nc bc_aeropt_kinne_sw_b14_coa.nc
+ln -sf ${INDATADIR}/R2B4_aeropt_kinne_lw_b16_coa.nc bc_aeropt_kinne_lw_b16_coa.nc
+
+# The data from 1850 should be linked here, not 1979. But 1979 is used just for test:
+ln -sf ${INDATADIR}/R2B4_aeropt_kinne_sw_b14_fin_1979.nc bc_aeropt_kinne_sw_b14_fin.nc
+
+ln -sf ${INDATADIR}/bc_aeropt_cmip6_volc_lw_b16_sw_b14_${YYYY}.nc bc_aeropt_cmip6_volc_lw_b16_sw_b14_${YYYY}.nc
+ln -sf ${INDATADIR}/bc_aeropt_cmip6_volc_lw_b16_sw_b14_${NEXT_YYYY}.nc bc_aeropt_cmip6_volc_lw_b16_sw_b14_${NEXT_YYYY}.nc
+ln -sf ${ICONDIR}/data/MACv2.0-SP_v1.nc .
+
+# link ozone
+ln -sf ${INDATADIR}/bc_ozone_historical_${PREV_YYYY}.nc bc_ozone_${PREV_YYYY}.nc
+ln -sf ${INDATADIR}/bc_ozone_historical_${NEXT_YYYY}.nc bc_ozone_${NEXT_YYYY}.nc
+ln -sf ${INDATADIR}/bc_ozone_historical_${YYYY}.nc bc_ozone_${YYYY}.nc
+
+# link solar radiation data
+ln -sf ${INDATADIR}/swflux_14band_cmip6_1850-2299-v3.2.nc bc_solar_irradiance_sw_b14.nc
+
+# link green house gases
+ln -sf ${INDATADIR}/greenhouse_historical.nc .
+
+# initial fields file name
+ini_filename=ini_filename
+
+# extpar filename
+ext_filename=external_parameter_icon_icon_grid_0012_R02B04_G_tiles.nc
+
+# grid filenames
+atmo_dyn_grids="icon_grid_0012_R02B04_G.nc"
+atmo_rad_grids="icon_grid_0011_R02B03_R.nc"
+# reconstruct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+# green house gases filename
+ghg_filename=greenhouse_historical.nc
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+cat > icon_master.namelist << EOF
+	&master_nml
+	  lrestart               = .FALSE.
+	/
+	&time_nml
+	  ini_datetime_string    = "${STADATE}"
+	/
+	&master_model_nml
+	  model_type             = 1
+	  model_name             = "ATMO"
+	  model_namelist_filename= "NAMELIST_${EXPID}"
+	  model_min_rank         = 1
+	  model_max_rank         = 65536
+	  model_inc_rank         = 1
+	/
+
+        &master_time_control_nml
+          experimentStartDate  = "${STADATE}"
+          experimentStopDate   = "${STODATE}"
+        /
+EOF
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# proc settings
+num_io_procs=1
+num_restart_procs=0
+num_prefetch_proc=0
+num_io_procs_radar=0
+
+cat > NAMELIST_${EXPID} << EOF
+        &parallel_nml
+          nproma                       =  ${nproma}
+          nproma_sub                   = ${nproma_sub} ! loop chunk length for radiation
+          p_test_run                   = .FALSE.
+          l_test_openmp                = .FALSE.
+          l_log_checks                 = .FALSE.
+          num_io_procs                 = ${num_io_procs}
+          num_restart_procs            = ${num_restart_procs}
+          num_prefetch_proc            = ${num_prefetch_proc}
+          num_io_procs_radar           = ${num_io_procs_radar}
+          iorder_sendrecv              = 1
+          proc0_shift                  = ${proc0_shift}
+          use_omp_input                = .TRUE.
+        /
+        &grid_nml
+          dynamics_grid_filename  = ${dynamics_grid_filename}
+          radiation_grid_filename = ${radiation_grid_filename}
+          dynamics_parent_grid_id = 0
+          lredgrid_phys           = .TRUE.
+          lfeedback               = .TRUE.
+          ifeedback_type          = 2
+        /
+        &initicon_nml
+          init_mode               = 2
+          zpbl1                   = 500.
+          zpbl2                   = 1000.
+          ifs2icon_filename       = "${ini_filename}"
+        /
+        &run_nml
+          num_lev           = 90
+          dtime             = 360
+          ldynamics         = .TRUE.
+          ltransport        = .TRUE.
+          ntracer           = 5
+          iforcing          = 3             ! NWP forcing
+          ltestcase         = .FALSE.
+          msg_level         = 0
+          ltimer            = .FALSE.
+          timers_level      = 4
+          output            = "nml"
+          check_uuid_gracefully = .TRUE.    ! to avoid error with unmachted UUID
+        /
+        &io_nml
+          itype_pres_msl     = 4
+          itype_rh           = 1
+        /
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          dom                    =  1      ! write all domains
+          output_start           = "${STADATE}"
+          output_end             = "${STODATE}"
+          output_interval        = "${OUTINT}"
+          steps_per_file         =  1
+          mode                   =  2      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          output_filename        = '${EXPID}_2d'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 't_2m', 'umfl_s', 'vmfl_s', 'sod_t'
+          output_grid            =  .TRUE.
+          remap                  =  0
+        /
+        &output_nml
+          filetype               =  4      ! output format: 2=GRIB2, 4=NETCDFv2
+          dom                    =  1      ! write all domains
+          output_start           = "${STADATE}"
+          output_end             = "${STODATE}"
+          output_interval        = "${OUTINT}"
+          steps_per_file         =  1
+          mode                   =  2      ! 1: forecast mode (relative t-axis)
+                                           ! 2: climate mode (absolute t-axis)
+          output_filename        = '${EXPID}_3d'
+          filename_format        = '<output_filename>_<datetime2>'
+          ml_varlist             = 'temp', 'u', 'v', 'w'
+          output_grid            =  .TRUE.
+          remap                  =  0
+        /
+        &nwp_phy_nml
+          icalc_reff        = 100
+          icpl_rad_reff     = 0
+          icpl_aero_gscp    = 3   ! Use cloud droplet number climatology
+          icpl_aero_conv    = 1
+          inwp_gscp         = 1
+          inwp_convection   = 1
+          inwp_radiation    = 4   !ecRad
+          inwp_cldcover     = 1
+          inwp_turb         = 1
+          inwp_satad        = 1
+          inwp_sso          = 1
+          inwp_gwd          = 1
+          inwp_surface      = 1
+          latm_above_top    = .FALSE.
+          itype_z0          = 2
+          dt_rad            = 3600.
+          dt_conv           = 900.
+          dt_sso            = 900.
+          dt_gwd            = 900.
+          efdt_min_raylfric = 7200.
+          icapdcycl         = 3
+          icpl_o3_tp        = 1
+        /
+        &nwp_tuning_nml
+          tune_gust_factor =7 ! iref: 8
+          max_calibfac_clcl = 2.0 ! iref : 4.0
+          itune_albedo     = 0       ! iref: 1
+          tune_zceff_min   = 0.025   ! ** default value to be used for R3B7; use 0.025 for R2B6
+                                     ! in order to get similar temperature biases in upper troposphere **
+          tune_gkdrag      = 0.075   ! R2B6: 0.075
+          tune_gkwake      = 1.5     ! R2B6: 1.5
+          tune_gfrcrit     = 0.425   ! R2B6: 0.425
+          tune_dust_abs    = 1.
+          tune_zvz0i       = 0.85    ! iref: 1.1
+          tune_box_liq_asy = 3.25    ! iref: 3.0     ! oper global: 3.0 , oper D2: 3.25, default: 2.5
+          tune_box_liq     = 0.05
+          lcalib_clcov     = .false. ! turn off TCC, HCC, MCC, LCC tuning
+          tune_rcucov      = 0.075   ! iref: 0.05
+          tune_rhebc_land  = 0.825   ! iref: 0.75
+        /
+        &turbdiff_nml
+          tkhmin           = 0.6     ! iref: 0.75
+          tkmmin_strat     = 1.0     ! iref: 4
+          alpha0           = 0.0123
+          alpha0_max       = 0.0335
+          alpha1           = 0.125   ! iref: 0.5
+          pat_len          = 750.
+          c_diff           = 0.2
+          rat_sea          = 0.8     ! iref: 7.0
+          ltkesso          = .true.  ! SSO dissipation energy used in TKE equation
+          frcsmot          = 0.2     ! these 2 switches together apply vertical smoothing of the TKE source terms
+          imode_frcsmot    = 2       ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+          itype_sher       = 3       ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects
+          ltkeshs          = .true.
+          a_hshr           = 2.0
+          icldm_turb       = 1       ! 2: Gauss clouds for turbulence    1: grid scale clouds
+          icldm_tran       = 2       ! 2: Gauss clouds for surface layer 1: grid scale clouds
+          rlam_heat        = 10.0    ! iref: 10.0
+        /
+        &lnd_nml
+          ntiles         = 3
+          nlev_snow      = 3
+          lmulti_snow    = .FALSE.
+          itype_heatcond = 3       ! 1: fixed heatcond, 2: moisture dependent heatcond
+          idiag_snowfrac = 20
+          lsnowtile      = .TRUE.
+          lseaice        = .TRUE.
+          llake          = .TRUE.
+          itype_lndtbl   = 4       ! 2: tuned stomata resistance rsmin
+          itype_root     = 2       ! 2: exponetial root distribution, 1: roots at level 3
+          itype_evsl     = 4
+          itype_trvg     = 3
+          cwimax_ml      = 5.e-4
+          c_soil         = 1.25
+          c_soil_urb     = 0.5
+          sstice_mode    = 4
+          itype_snowevap = 3
+          zml_soil       = 0.005,0.02,0.06,0.18,0.54,1.62,4.86,14.58
+
+        /
+        &radiation_nml
+          isolrad     = 2
+          ecrad_data_path     =  '${ECRAD_DIR}'
+          ecrad_llw_cloud_scat=.true.
+          direct_albedo_water = 3 ! iref: 2
+          albedo_whitecap     = 1 ! iref: 0
+          ghg_filename =  '${ghg_filename}'
+          irad_o3     = 5
+          irad_co2    = 4           ! 4: from greenhouse gas scenario
+          irad_ch4    = 4           ! 4: from greenhouse gas scenario
+          irad_n2o    = 4           ! 4: from greenhouse gas scenario
+          irad_cfc11  = 4           ! 4: from greenhouse gas scenario
+          irad_cfc12  = 4           ! 4: from greenhouse gas scenario
+          irad_aero   = 18
+          izenith     = 4           ! 4: NWP default, 3: no annual cycle
+          albedo_type = 2           ! Modis albedo
+          ecrad_isolver = ${radiation_ecrad_isolver}
+ ! Solver version. 2: McICA with OpenACC, 0: McICA
+        /
+        &nonhydrostatic_nml	
+          iadv_rhotheta       = 2
+          ivctype             = 2
+          itime_scheme        = 4
+          exner_expol         = 0.333
+          vwind_offctr        = 0.3         ! 0.2 for R2B6 and higher resolution, 0.3 for lower resolution
+          damp_height         = 50000.
+          rayleigh_coeff      = 0.10
+          ndyn_substeps       = 5
+          divdamp_order       = 24          ! 2 ass, 24 fc
+          divdamp_type        = 32          ! optional: 2 assimilation cycle, 32 forecast
+          divdamp_fac         = 0.004       ! 0.004 for R2B6; recommendation for R3B7: 0.003
+          divdamp_trans_start = 12500
+          divdamp_trans_end   = 17500
+          igradp_method       = 3
+          l_zdiffu_t          = .TRUE.
+          thslp_zdiffu        = 0.02
+          thhgtd_zdiffu       = 125.
+          htop_moist_proc     = 22500.
+          hbot_qvsubstep      = 16000.
+        /
+        &sleve_nml	
+          min_lay_thckn       = 20.         ! lowest level thickness (between half-levels)
+          max_lay_thckn       = 400.        ! maximum layer thickness below htop_thcknlimit
+          htop_thcknlimit     = 14000.
+          top_height          = 75000.
+          stretch_fac         = 0.9
+          decay_scale_1       = 4000.
+          decay_scale_2       = 2500.
+          decay_exp           = 1.2
+          flat_height         = 16000.
+        /
+        &dynamics_nml	
+          divavg_cntrwgt = 0.50
+          lcoriolis      = .TRUE.
+        /
+        &transport_nml	
+          ivadv_tracer   = 3,3,3,3,3
+          itype_hlimit   = 3,4,4,4,4,0
+          ihadv_tracer   = 52,2,2,2,2,0
+        /
+        &diffusion_nml	
+          hdiff_order         = 5
+          itype_vn_diffu      = 1
+          itype_t_diffu       = 2
+          hdiff_efdt_ratio    = 24.0   ! for R2B6; recommendation for R3B7: 30.0
+          hdiff_smag_fac      = 0.025  ! for R2B6; recommendation for R3B7: 0.02
+          lhdiff_vn           = .TRUE.
+          lhdiff_temp         = .TRUE.
+        /
+        &interpol_nml	
+          nudge_zone_width       = 8
+          lsq_high_ord           = 3
+          l_intp_c2l             = .TRUE.
+          l_mono_c2l             = .TRUE.
+        /
+        &extpar_nml	
+          itopo                   = 1
+          n_iter_smooth_topo      = 1
+          heightdiff_threshold    = 3000.
+          hgtdiff_max_smooth_topo = 750.,750.,
+          extpar_filename         = '${ext_filename}'
+        /
+EOF
+
+#
+# configure START_MODEL_function
+#
+ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+$START_MODEL
+EXIT_STATUS=$?
+
+echo "EXIT_STATUS: $EXIT_STATUS"
+exit $EXIT_STATUS

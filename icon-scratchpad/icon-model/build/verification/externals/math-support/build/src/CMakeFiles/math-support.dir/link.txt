@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmath-support.a "CMakeFiles/math-support.dir/mo_gridman_constants.f90.o" "CMakeFiles/math-support.dir/mo_lib_grid_geometry_info.f90.o" "CMakeFiles/math-support.dir/mo_lib_loopindices.f90.o" "CMakeFiles/math-support.dir/mo_math_constants.f90.o" "CMakeFiles/math-support.dir/mo_math_types.f90.o" "CMakeFiles/math-support.dir/mo_math_utilities.F90.o"
+/usr/bin/ranlib libmath-support.a

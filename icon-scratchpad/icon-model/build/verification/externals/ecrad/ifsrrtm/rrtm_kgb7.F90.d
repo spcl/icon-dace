@@ -1,0 +1,2 @@
+ifsrrtm/rrtm_kgb7.o ifsrrtm/rrtm_kgb7.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/ifsrrtm/rrtm_kgb7.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/include/abor1.intfb.h
+ifsrrtm/rrtm_kgb7.o: mod/mpl_module.mod.proxy mod/yomlun.mod.proxy mod/yoerrto7.mod.proxy mod/yomtag.mod.proxy mod/parkind1.mod.proxy mod/ecradhook.mod.proxy mod/yommp0.mod.proxy

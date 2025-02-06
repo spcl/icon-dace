@@ -1,0 +1,88 @@
+#! /bin/bash
+
+set -e
+case "$0" in
+  */*)
+    prefix=`expr "$0" : '.*/\([^/]*\)$'`
+    ;;
+  *)
+    prefix=$0
+    ;;
+esac
+case x"${CDI_PIO_TEST_DIR+${CDI_PIO_TEST_DIR}}" in
+  x)
+    :
+    ;;
+  *)
+    prefix="${CDI_PIO_TEST_DIR}/${prefix}"
+    ;;
+esac
+suffix=${suffix-grb}
+
+if ${mpi_task_num+:} false; then
+  exit 77
+  test 'x/usr/bin//mpiexec' != xtrue || exit 77
+  pio_write=${pio_write-'./pio_write.parallel'}
+  variations=${variations-"'' -qno-batch-rma -qcache-redists -qcreate-curvilinear-grid -qpreset-decomposition=true"}
+  launch="/usr/bin//mpiexec -n ${mpi_task_num} ${tool_wrap_mpi}"
+else
+  pio_write=${pio_write-'./pio_write'}
+  variations=${variations-"'' -qcreate-curvilinear-grid"}
+  launch=${tool_wrap}
+fi
+
+case ${suffix} in
+  grb)
+    test 'xyes' = xyes || exit 77
+    ;;
+  grb2)
+    #exit 77
+    test 'xyes' = xyes || exit 77
+    ;;
+  nc)
+    #exit 77
+    ;;
+  nc2)
+    test 'xyes' = xyes || exit 77
+    ;;
+  nc4)
+    test 'xyes' = xyes || exit 77
+    ;;
+  *)
+    echo "Unsupported suffix '${suffix}'" >&2
+    exit 1
+    ;;
+esac
+
+test_variation ()
+{
+  if prefix_dirname=`expr "$prefix" : '\(.*\)/'` ; then
+    mkdir -p "${prefix_dirname}"
+  fi
+  echo "creating data with $1" >&2
+  variation=$1
+  ../libtool --mode=execute \
+    ${launch} \
+    ${pio_write} "-qprefix=${prefix}" -f ${suffix} \
+    ${pio_write_args} -s 7 ${variation} || exit 1
+  tfile=0
+  ntfiles=2
+  while [ "$tfile" -lt "$ntfiles" ]; do
+    p="${prefix}_${tfile}"
+    echo "checking ${p}.${suffix}" >&2
+    ../libtool --mode=execute \
+      ${tool_wrap} ./cksum_read "${p}.${suffix}" "${p}.cksum"
+    rm "${p}.${suffix}" "${p}.cksum"
+    tfile=`expr "$tfile" + 1`
+  done
+}
+
+eval "set dummy $variations"; shift
+for variation in "$@"; do
+  test_variation "$variation"
+done
+#
+# Local Variables:
+# mode: sh
+# End:
+#

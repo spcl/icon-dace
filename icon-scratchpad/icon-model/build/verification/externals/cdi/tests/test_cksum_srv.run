@@ -1,0 +1,3 @@
+#!/bin/bash
+suffix=srv
+. ./test_cksum_base

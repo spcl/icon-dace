@@ -1,0 +1,678 @@
+#! /bin/bash
+#-----------------------------------------------------------------------------
+set +x
+
+#-----------------------------------------------------------------------------
+#
+# ICON run script:
+# !ATTENTION! Do not change the format of the following lines.
+#             They are evaluated by checksuite scripts.
+# created by /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/run/make_target_runscript
+# target machine is default
+# target use_compiler is gcc
+# with_mpi=no
+# with_openmp=no
+# memory_model=large
+# submit with 
+#
+builder=default_gcc
+#-----------------------------------------------------------------------------
+#
+# OpenMP environment variables
+# ----------------------------
+export OMP_NUM_THREADS=1
+export ICON_THREADS=1
+export OMP_SCHEDULE=static
+export OMP_DYNAMIC="false"
+export OMP_STACKSIZE=200M
+#
+# MPI variables
+# -------------
+: ${no_of_nodes:=1} ${mpi_procs_pernode:=1}
+export no_of_nodes
+export mpi_procs_pernode
+num_io_procs=
+((mpi_total_procs=no_of_nodes * mpi_procs_pernode))
+#
+# blocking length
+# ---------------
+nproma=48
+nproma_sub=48
+nblocks_c=0
+proc0_shift=0
+#
+# Ecrad solver (0 for CPU/vector, 2 for GPU)
+# ------------------------------------------
+radiation_ecrad_isolver=0
+#
+#-----------------------------------------------------------------------------
+
+# load local setting, if existing
+# -------------------------------
+if [ -a /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting ]
+then
+  echo "Load Setting"
+  . /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/setting
+fi
+
+# environment variables for the experiment and the target system
+# --------------------------------------------------------------
+export EXPNAME="run_ICON-ART_01_R3B08_lam_initmode7_pollen"
+
+#-----------------------------------------------------------------------------
+# directories with absolute paths
+# -------------------------------
+thisdir=$(pwd)
+export basedir="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification"
+# experiments_dir can be predefined in a machine specific run_target_* header
+experiments_dir="${experiments_dir:=${basedir}/experiments}"
+export icon_data_rootFolder="/home/primrose/pool/data/ICON"
+
+# how to start the icon model
+# ---------------------------
+export START=""
+export MODEL="/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/build/verification/bin/icon"
+
+set | grep SLURM
+
+# how to submit the next job
+# --------------------------
+submit=""
+job_name="nwpexp.run_ICON-ART_01_R3B08_lam_initmode7_pollen.run"
+
+# cdo for post-processing
+# -----------------------
+cdo="cdo"
+cdo_diff="cdo diffn"
+
+# define script functions used in the experiment run script
+# ---------------------------------------------------------
+. ${basedir}/run/add_run_routines
+
+#-----------------------------------------------------------------------------
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+make_and_change_to_experiment_dir # function in ../add_run_routines
+
+# Combine START and MODEL if START_MODEL is not already set.
+# START_MODEL is used to ease the execution of a machine that uses a complex 
+# mpirun command with multiple binaries
+START_MODEL="${START_MODEL:=$START $MODEL}"
+
+# set icon_data_poolFolder
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# base directory for ICON sources, binary and auxilary data:
+ICONDIR="${basedir}" # basedir can be set with create_target_header
+
+ARTXML_DIR=${ICONDIR}/run/checksuite.nwp/ART_XML
+
+EXP="ICON-ART_Pollen" # experiment identifier
+
+# root directory for input data
+DATAROOT=${icon_data_poolFolder}/Checksuite_data/ICON-ART_1_R3B08_LAM_Pollen/ilam.pollen
+
+
+# directory for grid and extpar files
+GRIDDIR="${icon_data_poolFolder}/grids/public/edzw"
+# GRIDDIR links to /hpc/rwork0/routfor/routfox/icon/grids/public/edzw on RCL
+EXTPDIR="$GRIDDIR" # external parameter directory
+
+# absolute path to input directory - for the time being
+DATADIR=${DATAROOT}/ilam.pol/h/2021032200
+LBCDIR=${DATAROOT}/ilam_lbc.pol/h/2021032200
+
+ECCRADDATA="$ICONDIR/externals/ecrad/data"
+
+
+# ----------------------------------------------------------------------
+# copy input data: grids, external parameters
+# ----------------------------------------------------------------------
+
+
+
+ln -sf ${GRIDDIR}/icon_grid_0048_R03B07_LR.nc    iconR3B7_DOM00.nc
+ln -sf ${GRIDDIR}/icon_grid_0049_R03B08_L.nc     iconR3B8_DOM01.nc
+ln -sf ${GRIDDIR}/icon_grid_0049_R03B08_L_lbc.nc iconR3B8_DOM01_lbc.nc
+
+ln -sf ${EXTPDIR}/icon_extpar_0049_R03B08_L_20201112_tiles.nc extpar_iconR3B8_DOM01.nc
+
+# initial conditions
+ln -sf ${DATADIR}/ilaf20210322000000.grb_pollen R03B08_DOM01_ilaf20210322000000.grb
+
+# lateral boundary conditions
+ln -snf ${LBCDIR} lbcdir
+
+# files needed for ecRad
+for file in RADRRTM RADSRTM aerosol_ifs_rrtm.nc \
+            aerosol_ifs_rrtm_42R1.nc aerosol_ifs_rrtm_43R1.nc \
+            aerosol_ifs_rrtm_43R1a.nc aerosol_ifs_rrtm_43R3.nc \
+            aerosol_ifs_rrtm_45R2.nc aerosol_ifs_rrtm_46R1_with_NI_AM.nc \
+            aerosol_ifs_rrtm_AB.nc aerosol_ifs_rrtm_tegen.nc \
+            baran_ice_scattering_rrtm.nc es_droplet_scattering_rrtm.nc \
+            fu_ice_scattering_rrtm.nc mcica_bidisperse.nc \
+            mcica_gamma.nc mcica_lognormal.nc slingo_droplet_scattering_rrtm.nc  \
+            socrates_droplet_scattering_rrtm.nc yi_ice_scattering_rrtm.nc ; do
+   ln -sf ${ECCRADDATA}/${file} .
+done
+
+# map files
+ln -sf $DATAROOT/map_file.* .
+
+# copy ART pollen tracer and diagnostic definitions (includes definitions for Cs-137)
+ln -sf ${ARTXML_DIR}/diagnostics.xml .
+ln -sf ${ARTXML_DIR}/modes.xml .
+ln -sf ${ARTXML_DIR}/tracers.xml .
+
+# copy ART pollen specific data
+ln -sf ${DATAROOT}/pollen/norm.T.stns.alnu.atab .
+ln -sf ${DATAROOT}/pollen/norm.T.stns.betu.atab .
+ln -sf ${DATAROOT}/pollen/ART_POC_iconR3B08-grid_0049.grb .
+ln -sf ${DATAROOT}/pollen/ART_POV_iconR3B08-grid_0049.grb .
+
+# copy ART point source
+ln -sf ${ARTXML_DIR}/pntSrc.xml .
+
+[[ -d out ]]       && rm -Rf out
+mkdir out/         # output directory
+[[ -d out/ready ]] && rm -Rf out/ready
+mkdir out/ready/   # ready files
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+
+# global timing
+start_date="2021-03-22T00:00:00Z"
+ndays_restart=90
+dt_restart=$((${ndays_restart}*86400))
+
+# the grid parameters
+atmo_dyn_grids="iconR3B8_DOM01.nc"
+atmo_rad_grids="iconR3B7_DOM00.nc"
+
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string = "$start_date"
+ dt_restart          = $dt_restart ! dummy value to avoid crashes 
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+# Variables to configure the mpirun command on the RCL
+num_io_procs=2
+num_restart_procs=0
+num_prefetch_proc=1
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma            = $nproma
+ nproma_sub        =  ${nproma_sub} ! loop chunk length for radiation
+ p_test_run        = .false.
+ l_test_openmp     = .true.
+ l_log_checks      = .true.
+ num_io_procs      = $num_io_procs
+ num_restart_procs = $num_restart_procs
+ num_prefetch_proc = $num_prefetch_proc
+ iorder_sendrecv   = 3
+ num_dist_array_replicas = 4
+ proc0_shift             = ${proc0_shift}
+ use_omp_input           = .true.
+/
+&grid_nml
+! dynamics_grid_filename  = 'iconR3B08_DOM01.nc'
+! radiation_grid_filename = 'iconR3B07_DOM00.nc'
+dynamics_grid_filename  = ${dynamics_grid_filename}
+radiation_grid_filename = ${radiation_grid_filename}
+
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .true.      ! ,.true. (second value: nest)
+ lfeedback               = .true.
+ l_limited_area          = .true.
+ ifeedback_type          = 2
+ start_time              = 0.,
+/
+&synsat_nml
+ lsynsat = .false.
+/ 
+&initicon_nml
+!!! urstart: init_mode=7 -> read ana as dwdfg_filename 
+ init_mode             = 7
+ lread_ana             = .false.
+ dt_iau                = 600
+ dt_shift              = -0
+ dt_ana                = 3600
+ iterate_iau           = .false.
+ zpbl1                 = 500. 
+ zpbl2                 = 1000. 
+ dwdfg_filename        = './R<nroot0>B<jlev>_DOM<idom>_ilaf20210322000000.grb'
+ ana_varnames_map_file = 'map_file.ana'
+!lconsistency_checks   = .false.
+ ltile_coldstart       = .true.
+ lp2cintp_incr         = .true.
+ lp2cintp_sfcana       = .true.
+ use_lakeiceana        = .true.
+ icpl_da_sfcevap       = 2 
+/
+&limarea_nml
+ dtime_latbc             = 10800          ! 3600.
+ init_latbc_from_fg      = .true.                 ! always
+ itype_latbc             = 1
+ latbc_boundary_grid     = 'iconR3B8_DOM01_lbc.nc'
+ latbc_varnames_map_file = 'map_file.lbc'
+ latbc_filename          = 'lbcdir/ilbff<ddhhmmss>'
+ nretries                = 300             ! I If LatBC data is unavailable: number of retries
+ retry_wait_sec          = 2       ! I If LatBC data is unavailable: idle wait seconds between retries 
+/
+&io_nml
+ itype_pres_msl  = 5              ! new DWD method: Mixture between IFS and old GME method
+ itype_rh        = 1              ! RH w.r.t. water
+ output_nml_dict = 'map_file.fc'
+ gust_interval   = 3600. 
+ dt_checkpoint   = 2592000
+ lmask_boundary  = .true.
+/
+&run_nml
+ num_lev               = 60           ! 60
+ nsteps                = 360             ! 50 ! 1200 ! 7200 !
+ lvert_nest            = .false.
+ dtime                 = 60              ! timestep in seconds
+ ldynamics             = .true.               ! dynamics
+ ltransport            = .true.
+!ntracer               = 5                    ! default: 0
+ iforcing              = 3                    ! NWP forcing
+ lart                  = .true.               ! ICON-ART main switch
+ ldass_lhn             = .false.          ! latent heat nudging
+ ltestcase             = .false.              ! false: run with real data
+ msg_level             = 7          ! 7: print maximum wind speeds every 5th time steps
+ ltimer                = .true.               ! check runtime
+ timers_level          = 5       ! can be increased up to 10 for detailed timer output
+ output                = "nml"
+!check_uuid_gracefully = .true.
+/
+&nwp_phy_nml
+ inwp_gscp         = 1
+ inwp_convection   = 1
+ inwp_radiation    = 4 ! 1 - rrtm, 4 - ECRad
+ inwp_cldcover     = 1
+ inwp_turb         = 1
+ inwp_satad        = 1
+ inwp_sso          = 1
+ inwp_gwd          = 1
+ inwp_surface      = 1
+ icapdcycl         = 3
+ latm_above_top    = .true.
+ efdt_min_raylfric = 3600.  ! 7200.
+ itype_z0          = 2
+ icpl_aero_conv    = 1
+ icpl_aero_gscp    = 1
+ lrtm_filename     = 'rrtmg_lw.nc'
+ cldopt_filename   = 'rrtm_cldopt.nc'
+ dt_rad  = 720
+ dt_conv = 180
+ dt_sso  = 360
+ dt_gwd  = 360
+ ldetrain_conv_prec = .true.
+ mu_rain        = 0.5
+ rain_n0_factor = 0.1
+/
+&turbdiff_nml
+ a_hshr        = 2.0
+ alpha0        = 0.0123
+ alpha0_max    = 0.0335
+ alpha1        = 0.125
+ c_diff        = 0.2
+ frcsmot       = 0.2   ! these 2 switches together apply vertical smoothing of the TKE source terms
+ icldm_turb    = 1
+ imode_frcsmot = 2     ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher    = 3
+ ltkesso       = .true.
+ ltkeshs       = .true.
+ pat_len       = 750.
+ rat_sea       = 0.8
+ rlam_heat     = 10.0
+ tkhmin        = 0.6
+ tkhmin_strat  = 1.0
+ tkmmin        = 0.75
+ tkmmin_strat  = 4.0
+/
+&lnd_nml
+ ntiles         = 3
+ nlev_snow      = 3
+ lmulti_snow    = .false. ! .true. (tests)
+ itype_heatcond = 3
+ idiag_snowfrac = 20
+ lsnowtile      = .true.
+ lseaice        = .true.
+ llake          = .true.
+ lprog_albsi    = .true.
+ itype_canopy   = 2
+ itype_lndtbl   = 4
+ itype_root     = 2
+ itype_evsl     = 4
+ itype_trvg     = 3
+ cwimax_ml      = 5.e-4
+ c_soil         = 1.25
+ c_soil_urb     = 0.5
+ sstice_mode    = 2
+ itype_snowevap = 3
+/
+&radiation_nml
+ albedo_type         = 2          ! Modis albedo
+ albedo_whitecap     = 1
+ direct_albedo_water = 3
+ irad_aero           = 6
+ irad_o3             = 79
+ vmr_cfc11           = 240.e-12
+ vmr_cfc12           = 532.e-12
+ vmr_ch4             = 1800.e-09
+ vmr_co2             = 390.e-06   ! values representative for 2012
+ vmr_n2o             = 322.0e-09
+ vmr_o2              = 0.20946
+ isolrad             = 1
+ ecrad_isolver       = ${radiation_ecrad_isolver}
+ ! Solver version. 2: McICA with OpenACC, 0: McICA
+/
+&nonhydrostatic_nml
+ iadv_rhotheta   = 2
+ ivctype         = 2
+ itime_scheme    = 4
+ exner_expol     = 0.333
+ vwind_offctr    = 0.2
+ damp_height     = 14000.
+ rayleigh_coeff  = 1.0
+ divdamp_order   = 24
+ divdamp_type    = 32
+ divdamp_fac     = 0.004   ! 0.004 for R2B6; recommendation for R3B7: 0.003
+ divdamp_trans_start= 12500
+ divdamp_trans_end  = 17500
+ igradp_method   = 3
+ l_zdiffu_t      = .true.
+ thslp_zdiffu    = 0.02
+ thhgtd_zdiffu   = 125.
+ htop_moist_proc = 22500.
+ hbot_qvsubstep  = 16000.
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ max_lay_thckn   = 400.   ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit = 14000. ! this implies that the upcoming COSMO-EU nest will have 60 levels
+ top_height      = 23000.
+ stretch_fac     = 0.9
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .true.
+/
+&transport_nml
+ ctracer_list  = '12345'
+ ivadv_tracer  = 3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4
+ ihadv_tracer  = 52,2,2,2,2
+ nadv_substeps = 2
+/
+&diffusion_nml
+ hdiff_order      = 5
+ itype_vn_diffu   = 1
+ itype_t_diffu    = 2
+ hdiff_efdt_ratio = 24.     ! 24.0  for R2B6; recommendation for R3B7: 30.0
+ hdiff_smag_fac   = 0.025   ! 0.025 for R2B6; recommendation for R3B7: 0.02
+ lhdiff_vn        = .true.
+ lhdiff_temp      = .true.
+/
+&interpol_nml
+ nudge_zone_width     = 8
+ lsq_high_ord         = 3
+ l_intp_c2l           = .true.
+ l_mono_c2l           = .true.
+ support_baryctr_intp = .true.
+/
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                   = 1
+ itype_lwemiss           = 2
+ itype_vegetation_cycle  = 3
+ n_iter_smooth_topo      = 1,1
+ heightdiff_threshold    = 3000.
+ hgtdiff_max_smooth_topo = 750.,750.,
+ read_nc_via_cdi         = .true.
+/
+&nwp_tuning_nml
+ itune_albedo     = 0
+ tune_gkdrag      = 0.09
+ tune_gkwake      = 1.8
+ tune_gfrcrit     = 0.333
+ tune_dust_abs    = 1.
+ tune_zvz0i       = 0.85
+ tune_box_liq_asy = 3.25
+ tune_rhebc_land  = 0.825
+!tune_rprcon      = 1.4e-3
+ tune_rcucov      = 0.075
+ tune_gfluxlaun   = 3.75e-3
+ icpl_turb_clc    = 1
+/
+&ensemble_pert_nml
+ use_ensemble_pert = .false.
+/
+&gribout_nml
+ preset                          = "deterministic"
+ ldate_grib_act                  = .true.
+ lgribout_24bit                  = .false.
+ backgroundProcess               = 0
+ localNumberOfExperiment         = 0
+ productionStatusOfProcessedData = 1
+ localTypeOfEnsembleForecast     = -1     ! -1, etyp
+ numberOfForecastsInEnsemble     = -1     ! -1, nr_member
+ perturbationNumber              = -1              ! -1, member
+ generatingProcessIdentifier     = 11                                !  ??
+ tablesVersion                   = 19
+/
+&art_nml
+ lart_aerosol         = .true.
+ iart_volcano         = 0
+ iart_seasalt         = 0
+ iart_radioact        = 1
+ iart_dust            = 0
+ iart_pollen          = 1
+ lart_diag_out        = .true.
+ iart_init_aero       = 0
+ cart_input_folder    = '.'
+ cart_modes_xml       = './modes.xml'
+ cart_aerosol_xml     = './tracers.xml'
+ cart_diagnostics_xml = './diagnostics.xml'
+ lart_chem            = .false.
+ lart_chemtracer      = .false.
+ iart_aci_warm        = 0
+ iart_aci_cold        = 0
+ iart_ari             = 0          ! [0|1] for radiation feedback with ART aerosols (ASH or DUST)
+ iart_aero_washout    = 1
+ lart_pntSrc          = .true.
+ cart_pntSrc_xml      ='./pntSrc.xml'
+/
+&output_nml
+ ! ---------------------------------------------------------------- !
+ ! ---  ICON-LAM: constant output fields - native grid at VV=0  --- !
+ ! ---------------------------------------------------------------- !
+ filetype             = 2                ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                                ! write lam domain
+ output_time_unit     = 1                                ! 1: seconds
+ output_bounds        = 0., 0., 3600.                    ! start, end, increment
+ steps_per_file       = 1
+ mode                 = 1                                ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = './ilfff'               ! file name base
+ filename_format      = 'out/<output_filename><ddhhmmss>c'
+ ready_file           = 'out/ready//ILAM_<ddhhmmss>'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 0
+ ml_varlist           = 'FR_LAND', 'DEPTH_LK', 'FR_LAKE', 'LAI', 'PLCOV', 'ROOTDP', 'SOILTYP'
+ output_grid          = .true.
+ remap                = 0                                ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ---------------------------------------------------------------- !
+ ! ---  ICON-LAM: constant output fields - native grid at VV=0  --- !
+ ! ---            for MCH                                       --- !
+ ! ---------------------------------------------------------------- !
+ filetype             = 2                ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                                ! write lam domain
+ output_time_unit     = 1                                ! 1: seconds
+ output_bounds        = 0., 0., 3600.                    ! start, end, increment
+ steps_per_file       = 1
+ mode                 = 1                                ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .false.
+ output_filename      = './out/ilfff'               ! file name base
+ filename_format      = '<output_filename><ddhhmmss>c_POL'
+ ready_file           = './out/ready//ILAM_<ddhhmmss>'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 0
+ ml_varlist           = 'HHL', 'HSURF'
+ output_grid          = .false.
+ remap                = 0                                ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ----------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid  --- !
+ ! ----------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 3600.      ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './out/ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>'
+ ready_file           = './out/ready//ILAM_<ddhhmmss>'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 1
+ ml_varlist           = 'U', 'V', 'W', 'T', 'P', 'PMSL', 'QV', 'QC', 'QI', 'QR', 'QS', 'SMI',
+                        'CLC', 'CLCL', 'CLCM', 'CLCH',
+                        'TQV', 'TQC', 'TQI', 'FRESHSNW', 'H_SNOW', 'ALB_RAD',
+                        'T_2M', 'TD_2M', 'RELHUM_2M', 'PS', 'U_10M', 'V_10M', 'VMAX_10M',
+                        'TMAX_2M', 'TMIN_2M', 'RUNOFF_S', 'RUNOFF_G',
+                        'ASWDIFD_S', 'ASWDIFU_S', 'ASWDIR_S', 'ALHFL_S', 'ASHFL_S', 'ASOB_S', 'ASOB_T',
+                        'ATHB_S', 'ATHB_T',
+                        'RAIN_CON', 'RAIN_GSP', 'SNOW_CON', 'SNOW_GSP', 'TOT_PREC',
+                        'CAPE_CON', 'CAPE_ML', 'CIN_ML', 'CLCT', 'CLCT_MOD', 'TQC_DIA', 'TQI_DIA', 'TQV_DIA',
+                        'QV_S', 'RHO_SNOW', 'SNOWC', 'T_G', 'T_SNOW',
+                        'T_SO', 'W_I', 'W_SNOW', 'W_SO', 'W_SO_ICE',
+                        'group:ART_ROUTINE_DIAG',
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+&output_nml
+ ! ----------------------------------------------- !
+ ! ---  ICON-LAM: output fields - native grid  --- !
+ ! ---            for MCH                      --- !
+ ! ----------------------------------------------- !
+ filetype             = 2         ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                  = 1                         ! write lam domain
+ output_time_unit     = 1                         ! 1: seconds
+ output_bounds        = 0., 10000000., 3600.      ! start, end, increment [s]
+ steps_per_file       = 1
+ mode                 = 1                         ! 1: forecast mode (relative t-axis), 2: climate mode (absolute t-axis)
+ include_last         = .true.
+ output_filename      = './out/ilfff'                      ! file name base
+ filename_format      = '<output_filename><ddhhmmss><levtype>_POL'
+ ready_file           = './out/ready//ILAM_<ddhhmmss>'
+ stream_partitions_ml = 1
+ pe_placement_ml      = 1
+ ml_varlist           = 'DEN', 'group:ART_AEROSOL',
+ output_grid          = .false.
+ remap                = 0                         ! 0: icon grid, 1: lat-lon
+/
+
+EOF
+
+# ----------------------------------------------------------------------
+# run the model!
+# ----------------------------------------------------------------------
+
+ls -l ${MODEL}
+
+#
+# configure START_MODEL_function
+#
+ICON_COMPONENT1_VH_procs=$((num_restart_procs + num_io_procs + num_prefetch_proc + num_io_procs_radar))
+
+###  BEGIN: special environment  ###
+ set -x
+ export NMPI_FPE_ENABLE="(DIV,FOF,INV)"
+ export NMPI_PROGINF="ALL_DETAIL"
+ export NMPI_TRACEBACK="FULL"
+ export VE_FORT_SETBUF6="0"
+ export VE_INIT_HEAP="ZERO"
+
+ export NMPI_EXPORT=" NMPI_FPE_ENABLE NMPI_MALLOC_HEAP_EXPANSION_SIZE NMPI_MALLOC_MMAP_THRESHOLD NMPI_PROGINF NMPI_TRACEBACK VE_FORT_SETBUF6 VE_FPE_ENABLE VE_INIT_HEAP VE_TRACEBACK GFORTRAN_UNBUFFERED_PRECONNECTED MPI_IB_VBUF_TOTAL_SIZE"
+###  END: special environment  ###
+
+$START_MODEL
+EXIT_STATUS=$?
+
+if [ "$EXIT_STATUS" -ne "0" ]; then
+  echo "EXIT_STATUS: $EXIT_STATUS"
+  exit $EXIT_STATUS
+fi
+
+date
+

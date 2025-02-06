@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/ecrad/data/aerosol_ifs_rrtm_46R1_with_NI_AM.nc

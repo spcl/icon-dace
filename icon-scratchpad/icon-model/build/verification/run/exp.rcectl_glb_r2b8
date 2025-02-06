@@ -1,0 +1,372 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+# 
+# Run script for RCEMIP ICON-Global / AES experiments. See Wing et al. (2018,
+# Geosci Mod Dev) for details.
+# 
+# Based on original ICON-LEM script version of
+#
+# James Ruppert
+# james.ruppert@mpimet.mpg.de
+# 8 July 2018
+#
+# ... slightly modified by 
+# Nicolas Rochetin
+# nicolas.rochetin@mpimet.mpg.de
+# 30 August 2018
+#
+# Modified for Sapphire physics, global, R2B4
+#=============================================================================
+#
+# (1) Define the experimental setup: grid, time frame, output
+
+# base directory for grids, initial data, and boundary data of this experiment
+atm_base_dir=${icon_data_rootFolder}/grids/public/mpim
+#
+# horizontal grid specifiers
+atm_grid_id=0033
+atm_grid_refinement=R02B08
+atm_grid_label=G
+atm_grid_file=icon_grid_${atm_grid_id}_${atm_grid_refinement}_${atm_grid_label}.nc
+#
+# horizontal grid
+grids_folder=${atm_base_dir}/${atm_grid_id}
+atmo_dyn_grids=${atm_grid_file}
+#
+# model time step
+modelTimeStep="PT90S"
+radiationTimeStep="PT30M"
+#
+# start and end date+time
+ start_date=${start_date:="2009-04-14T00:00:00Z"}
+     end_date=${end_date:="2009-08-01T00:00:00Z"}  # 100 days in full run
+
+# restart intervals
+checkpoint_interval=P10D
+   restart_interval=P10D
+# restart_interval="P1M" (original)
+#checkpoint_interval="P20D" # frequency for writing restart file
+#restart_interval="P20D" # stop the simulation at this interval
+
+# output intervals
+#first_output_date=1979-01-01T00:00:40Z
+#last__output_date=1979-01-01T00:04:00Z
+#atm_output_interval=PT40S
+#  atm_file_interval=PT40S
+
+ output_interval_2d="P1D"
+ output_interval_3d="P1D"
+ file_interval_2d="P1D"
+ file_interval_3d="P1D"
+#
+ output_atm_cgrid="no" # 1 file
+ output_atm_2d="yes"   # 1 file 
+ output_atm_3d="yes"   # 1 file
+ output_phy_3d="no"   # 1 file
+#
+# determine the number of io processes
+#
+num_io_procs=0
+
+if [[ "$output_atm_cgrid" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_atm_2d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_atm_3d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+if [[ "$output_phy_3d" == "yes" ]]; then
+  num_io_procs=`expr ${num_io_procs} + 1`
+fi
+
+# namelist files
+atmo_namelist=NAMELIST_${EXPNAME}_atm
+
+#-----------------------------------------------------------------------------
+#
+# write icon namelist parameters
+# ------------------------
+# for a complete list see namelist_overview and namelist_overview.pdf
+#
+cat >> ${atmo_namelist} << EOF
+&parallel_nml
+ nproma            = ${nproma}
+ num_io_procs      = ${num_io_procs}
+ !num_restart_procs = 1
+/
+&grid_nml
+ dynamics_grid_filename = "${atmo_dyn_grids}",
+/
+&run_nml
+ num_lev        = 75,     ! number of full levels of vertical grid
+ modelTimeStep  = "$modelTimeStep"
+ ltestcase      = .TRUE.       ! run testcase
+ ltransport     = .TRUE.
+ ntracer        = 0            ! the model updates this for the microphysics vars
+ iforcing       = 2  ! 2: Sapphire, 3: NWP forcing
+ ltimer         = .true.       ! 
+ output         = 'nml'
+ msg_level      = 12           ! detailed report during integration
+ restart_filename = "${EXPNAME}_restart_atm_<rsttime>.nc"
+ activate_sync_timers = .TRUE.
+ profiling_output = 1           ! aggregated: 1; detailed: 2; in files: 3
+/
+&nh_testcase_nml
+ nh_test_name   = 'RCEMIP_analytical'     ! test case identifier
+ ape_sst_case   = 'sst_qobs'
+ ape_sst_val    = 26.85 ! fixed SST in degree Celsius
+ tpe_temp       = 300.0 ! fixed SST in degree Celsius
+ w_perturb      = 0.1        ! m/s, default=0.05
+ th_perturb     = 0.3        ! K, default=0.2
+/
+&nonhydrostatic_nml
+ ivctype        = 2       ! sleve vertical coordinate
+ damp_height    = 19000.  ! top_height-damp_height should be about 15km
+ rayleigh_type  = 1       ! 1 = Classical (all vars), 2 = w only
+! rayleigh_coeff = 0.25    ! default: 0.05 /s (with rayleigh_type = 2)
+ rayleigh_coeff = 0.003    ! default: 0.05 /s (with rayleigh_type = 2)
+/
+&sleve_nml
+ top_height = 48000.0 ! these settings yield an actual model top of about 34 km
+ min_lay_thckn = 75. ! thickness of lowest model layer
+ max_lay_thckn   = 500.    ! max thickness
+ htop_thcknlimit = 40000.0 ! dont exceed max_lay_thckn below this height
+ stretch_fac     = 1.2     ! values > 1 increase dz near model top
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+ tracer_names     = 'hus','clw','cli','qr','qs','qg',
+ ivadv_tracer     =    3 ,   3 ,   3 ,  3 ,  3 ,  3 ,
+ itype_hlimit     =    3 ,   4 ,   4 ,  4 ,  4 ,  4 ,
+ ihadv_tracer     =   52 ,   2 ,   2 ,  2 ,  2 ,  2 ,
+/
+&aes_phy_nml
+!
+! domain 1
+! --------
+!
+! atmospheric phyiscs (""=never)
+ aes_phy_config(1)%dt_rad = "$radiationTimeStep"
+ aes_phy_config(1)%dt_vdf = "$modelTimeStep"
+ aes_phy_config(1)%dt_mig = "$modelTimeStep"
+ aes_phy_config(1)%dt_two = ""
+!
+! surface (.TRUE. or .FALSE.)
+ aes_phy_config(1)%ljsb   = .FALSE.
+ aes_phy_config(1)%lamip  = .FALSE.
+ aes_phy_config(1)%l2moment  = .FALSE.
+ aes_phy_config(1)%lice   = .FALSE.
+ aes_phy_config(1)%lmlo   = .FALSE.
+ aes_phy_config(1)%llake  = .FALSE.
+!
+! fix negative hu midity
+ aes_phy_config(1)%iqneg_d2p = 2
+ aes_phy_config(1)%iqneg_p2d = 2
+! set htop_moist_proc also as top of graupel calculation
+ aes_phy_config(1)%zmaxcloudy = 22500.
+/
+&aes_rad_nml
+!
+! domain 1
+! --------
+!
+ aes_rad_config(1)%isolrad    =  7
+ aes_rad_config(1)%cecc       = 0.0
+ aes_rad_config(1)%cobld      = 0.0
+ aes_rad_config(1)%ldiur      = .FALSE.
+ aes_rad_config(1)%l_sph_symm_irr = .TRUE.
+ aes_rad_config(1)%irad_h2o   =  1
+ aes_rad_config(1)%irad_co2   =  2
+ aes_rad_config(1)%irad_ch4   =  2
+ aes_rad_config(1)%irad_n2o   =  2
+ aes_rad_config(1)%irad_o3    =  4
+ aes_rad_config(1)%irad_o2    =  0
+ aes_rad_config(1)%irad_cfc11 =  0
+ aes_rad_config(1)%irad_cfc12 =  0
+ aes_rad_config(1)%irad_aero  =  0
+ aes_rad_config(1)%vmr_co2    =  348.e-06 ! RCEMIP values; modern-day values
+ aes_rad_config(1)%vmr_ch4    = 1650.e-09
+ aes_rad_config(1)%vmr_n2o    =  306.e-09
+/
+&aes_vdf_nml
+ aes_vdf_config(1)%pr0        =  0.7
+/
+&aes_cop_nml
+ aes_cop_config(1)%cn1lnd     =  50.0
+ aes_cop_config(1)%cn2lnd     = 220.0
+ aes_cop_config(1)%cn1sea     =  50.0
+ aes_cop_config(1)%cn2sea     = 100.0
+ aes_cop_config(1)%cinhomi    =   1.0
+ aes_cop_config(1)%cinhoms    =   1.0
+ aes_cop_config(1)%cinhoml    =   1.0
+/
+&cloud_mig_nml
+/
+&aes_cov_nml
+ aes_cov_config(1)%cqx        = 1.e-6
+/
+&extpar_nml
+ itopo          = 0 ! 0: analytical topo; 1: topography/ext. data read from file
+/
+EOF
+#
+#----------------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+add_link_file ${basedir}/data/rrtmgp-gas-lw-g128.nc         ./coefficients_lw.nc
+add_link_file ${basedir}/data/rrtmgp-gas-sw-g112.nc         ./coefficients_sw.nc
+add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_lw.nc           ./rrtmgp-cloud-optics-coeffs-lw.nc
+add_link_file ${basedir}/data/ECHAM6_CldOptProps_rrtmgp_sw.nc           ./rrtmgp-cloud-optics-coeffs-sw.nc
+#
+#add_link_file ${basedir}/data/dmin_wetgrowth_lookup.nc    ./    #for inwp_gscp==4
+
+# boundary conditions
+#
+# range of years for yearly files
+# assume start_date and end_date have the format yyyy-...
+start_year=$(( ${start_date%%-*} - 1 ))
+end_year=$(( ${end_date%%-*} + 1 ))
+#
+# - ozone
+#datadir=${basedir}/data/external
+add_link_file /work/mh0287/m214002/RCEMIP_analytical/rcemip_analytical_o3_echam_plev_0033_R02B08_G.nc     ./bc_ozone.nc
+# namelist files
+#
+add_required_file ${basedir}/run/${atmo_namelist}                       ./
+
+# dictionary file for output variable names
+#
+dict_file="dict.${EXPNAME}"
+cat dict.iconam.mpim  > ${dict_file}
+add_required_file ${basedir}/run/${dict_file}                           ./
+
+#----------------------------------------------------------------------------------
+#
+# 
+# End of namelist settings, automatic settings below.
+# Model output directory is set below.
+# 
+#----------------------------------------------------------------------------------
+#--------------------------------------------------------------------------------------------------
+
+# (5) Define the output
+
+# Parameters for all output files
+# -------------------------------
+cat >> ${atmo_namelist} << EOF
+&io_nml
+ lkeep_in_sync  = .true.
+ lflux_avg      = .FALSE. ! default is true. True = time-ave, False = accumulated.
+ output_nml_dict  = "${dict_file}"
+ netcdf_dict      = "${dict_file}"
+ lnetcdf_flt64_output = .TRUE.
+ itype_pres_msl   = 4
+ restart_file_type= 5
+ !restart_write_mode = "joint procs multifile"    !not necessary/useful in default r2b4 setup
+/
+EOF
+
+# Define output files
+# -------------------
+#
+# output_<xyz>=yes : yes --> output files for <xyz>, any other value --> no files for <xyz>
+#
+# 3-dimensional files include 'ps' and 'pfull' to allow the vertical
+# interpolation to pressure levels by cdo ap2pl.
+
+#
+if [[ "$output_atm_cgrid" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_cgrid"
+ filename_format  = "<output_filename>_<levtype_l>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"          ! output_start = output_end
+ output_end       = "${start_date}"          ! --> write once only irrespective of
+ output_interval  = "${output_interval_2d}"  !     the output interval and
+ file_interval    = "${file_interval_2d}"    !     the file interval
+  ml_varlist       = 'clon'   , 'clat' , 'areacella', 'zghalf' , 'zg'   ,
+/
+EOF
+fi
+
+
+#
+if [[ "$output_atm_3d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .FALSE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval_2d}"
+ file_interval    = "${file_interval_2d}"
+ include_last     = .FALSE.
+ hl_varlist       = 'pres', 'temp', 'u', 'v', 'w', 'hus' 
+ h_levels         = 1000.,5000.,10000.,15000.
+/
+EOF
+fi
+
+#
+if [[ "$output_atm_2d" == "yes" ]]; then
+  #
+  cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_atm_2d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .FALSE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval_2d}"
+ file_interval    = "${file_interval_2d}"
+ include_last     = .FALSE.
+ ml_varlist       = 'rlut', 'pr', 'prw'
+/
+EOF
+fi
+
+if [[ "$output_phy_3d" == "yes" ]]; then
+#
+ cat >> ${atmo_namelist} << EOF
+&output_nml
+ output_filename  = "${EXPNAME}_phy_3d"
+ filename_format  = "<output_filename>_<levtype_l>_<datetime2>"
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_start     = "${start_date}"
+ output_end       = "${end_date}"
+ output_interval  = "${output_interval_2d}"
+ file_interval    = "${file_interval_2d}"
+ include_last     = .FALSE.
+ ml_varlist       = 'pres_sfc'      , 'pres'   , 'z_mc'      ,
+                    'tend_ta_vdf'   , 'tend_ua_vdf'   , 'tend_va_vdf'   ,
+                    'tend_hus_vdf'  , 'tend_clw_vdf'  , 'tend_cli_vdf'  ,
+                    'tend_qr_vdf'   , 'tend_qs_vdf'   , 'tend_qg_vdf'   ,
+/
+EOF
+fi
+

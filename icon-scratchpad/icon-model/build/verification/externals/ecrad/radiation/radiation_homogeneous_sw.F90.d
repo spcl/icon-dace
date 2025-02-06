@@ -1,0 +1,3 @@
+radiation/radiation_homogeneous_sw.o radiation/radiation_homogeneous_sw.F90.d: /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_homogeneous_sw.F90 /home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/ecrad/radiation/radiation_delta_eddington.h
+mod/radiation_homogeneous_sw.mod.proxy: radiation/radiation_homogeneous_sw.o
+radiation/radiation_homogeneous_sw.o: mod/ecradhook.mod.proxy mod/radiation_config.mod.proxy mod/radiation_two_stream.mod.proxy mod/parkind1.mod.proxy mod/radiation_flux.mod.proxy mod/radiation_single_level.mod.proxy mod/radiation_constants.mod.proxy mod/radiation_adding_ica_sw.mod.proxy mod/radiation_cloud.mod.proxy

@@ -1,0 +1,77 @@
+#!/bin/ksh
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#--------------------------------------------------------------------------------
+#
+# _bb_table_Description_  ICON-CLM experiment
+# _bb_table_Model_        non-hydrostatic atmosphere with NWP physics
+
+#--------------------------------------------------------------------------------
+#
+# 1. Define the experiment and the files to be checked
+#
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names:
+#
+export EXPERIMENT='ICON_CLM'
+export SCRIPT_DIR="$(pwd)/checksuite.clm"
+export PREFIX=clmexp
+
+# TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export TYPES='out01 out02 out03 out04 out05 out06 out08 out09'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES='19790102T000000Z'
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+#
+export RESTART_DATE='19790101T120000Z'
+
+#--------------------------------------------------------------------------------
+#
+# 2. Define the checksuite mode
+#
+export MD='rnmo'
+
+#--------------------------------------------------------------------------------
+#
+# 3. Launch the checksuite from run/
+
+module load cdo || true
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+case "$builder" in
+  *_intel*)
+    # intel with OpenMP-threading has reproducibility issues in ecRad.
+    export MD='rnm'
+    ;;
+esac
+
+./icon-dev.checksuite
+STATUS=$?
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit
+
+

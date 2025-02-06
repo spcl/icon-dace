@@ -1,0 +1,253 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+ICON
+
+Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+Contact information: icon-model.org
+See AUTHORS.TXT for a list of authors
+See LICENSES/ for license information
+SPDX-License-Identifier: BSD-3-Clause
+
+-->
+<!DOCTYPE diagnostics SYSTEM "diagnostics.dtd">
+
+<diagnostics>
+  <aerosol id="ALNUrprec" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUreso" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUress" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+    <typeOfStatisticalProcessing type="int">11</typeOfStatisticalProcessing>
+  </aerosol>
+  <aerosol id="ALNUsdes" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUctsum" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisn" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisl" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUsaisa" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="ALNUfe" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62100</constituentType>
+  </aerosol>
+  <aerosol id="BETUrprec" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUreso" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUress" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+    <typeOfStatisticalProcessing type="int">11</typeOfStatisticalProcessing>
+  </aerosol>
+  <aerosol id="BETUsdes" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUctsum" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisn" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisl" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUsaisa" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="BETUfe" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62101</constituentType>
+  </aerosol>
+  <aerosol id="POACrprec" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">2</discipline>
+    <parameterCategory type="int">0</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACreso" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">192</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACress" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">193</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+    <typeOfStatisticalProcessing type="int">11</typeOfStatisticalProcessing>
+  </aerosol>
+  <aerosol id="POACsdes" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">194</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACctsum" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">196</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisn" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">199</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisl" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">201</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACsaisa" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">200</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="POACfe" case="true">
+    <productDefinitionTemplate type="int">40</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">20</parameterCategory>
+    <parameterNumber type="int">202</parameterNumber>
+    <constituentType type="int">62300</constituentType>
+  </aerosol>
+  <aerosol id="Cs-137" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="Cs-137w" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">11</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="Cs-137d" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">12</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="Cs-137t" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">13</parameterNumber>
+    <constituentType type="int">30172</constituentType>
+  </aerosol>
+  <aerosol id="ACs-137" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30172</constituentType>
+    <typeOfStatisticalProcessing type="int">0</typeOfStatisticalProcessing>
+  </aerosol>
+  <aerosol id="ACCCs-137" case="true">
+    <productDefinitionTemplate type="int">42</productDefinitionTemplate>
+    <discipline type="int">0</discipline>
+    <parameterCategory type="int">18</parameterCategory>
+    <parameterNumber type="int">10</parameterNumber>
+    <bitsPerValue type="int">32</bitsPerValue>
+    <constituentType type="int">30172</constituentType>
+    <typeOfStatisticalProcessing type="int">1</typeOfStatisticalProcessing>
+  </aerosol>
+</diagnostics>

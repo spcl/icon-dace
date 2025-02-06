@@ -1,0 +1,8 @@
+#!/bin/bash
+
+set -e
+
+exit 77
+#exit 77
+
+../libtool --mode=execute ${tool_wrap} ./CdiInfo '/home/primrose/Work/IconGrounds/icon-dace/icon-scratchpad/icon-model/externals/cdi/interfaces/testdata/mulval.nc'

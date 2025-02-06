@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/src/waves/config/mo_energy_propagation_nml.f90

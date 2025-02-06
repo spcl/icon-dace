@@ -1,0 +1,89 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#=============================================================================
+#
+# This section of the run script contains the specifications of the ocean experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# Default EXPNAME is the suffix of this script after "exp."
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"  #  do not change - restart/output problems!
+  end_date="2001-01-01T12:00:00Z"
+#-----------------------------------------------------------------------------
+# model parameters
+ocean_model_equations=-1 # equation system: -1=hydrost. ocean
+#-----------------------------------------------------------------------------
+ocean_grids="OceanOnly_Icos_0158km_etopo40.nc"
+ocean_vertical_levels=20
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------------
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ p_test_run     =  .false.     
+ nproma         = ${nproma}
+ l_fast_sum     = .true.          ! false: results are reproducable, gmres_oce_old is used; true: production run
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+/
+&dynamics_nml
+/
+&run_nml
+ dtime       = 3600               ! model timestep in seconds
+ output      = 'none'              ! output mechanism via namelist
+ activate_sync_timers = .TRUE.
+ profiling_output = 2
+ msg_timestamp    = .FALSE.
+ test_mode     = 1101
+/
+&dbg_index_nml
+  idbg_mxmn=0                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=5                     ! initialize end level for debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+! 20 unevenly spaced levels used by MPIOM/GR60, limited to 700m at bottom
+  n_zlev             = $ocean_vertical_levels      ! number of vertical levels and (dzlev_m) thicknesses
+  dzlev_m(1:20)      =  20.0,   20.0,   20.0,   30.0,   40.0,   50.0,   70.0,   90.0,  120.0,  150.0,
+                        180.0,  210.0,  250.0,  300.0,  400.0,  500.0,  600.0,  700.0,  700.0,  700.0
+  l_edge_based    = .TRUE.       ! edge- or cell-based mimetic discretization
+  l_partial_cells = .FALSE.      ! partial bottom cells=true: local varying bottom depth
+  solver_tolerance = 1.0E-14              !  absolute (new) or relative (gmres_oce_old) - to be checked
+  solver_max_iter_per_restart = 20        !  outer solver loop with syncing
+  solver_max_restart_iterations = 50      !  inner solver loop without syncing (30*50 iterations maximum)
+/
+&ocean_initialConditions_nml
+  InitialState_InputFileName = 'test_InputInitialState.nc'
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
+/
+EOF
+#-----------------------------------------------------------------------------
+# add required standard input files
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------

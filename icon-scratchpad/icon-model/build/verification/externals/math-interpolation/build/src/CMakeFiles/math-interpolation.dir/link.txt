@@ -1,0 +1,2 @@
+/usr/bin/ar qc libmath-interpolation.a "CMakeFiles/math-interpolation.dir/mo_lib_interpolation_scalar.F90.o" "CMakeFiles/math-interpolation.dir/mo_lib_interpolation_vector.F90.o" "CMakeFiles/math-interpolation.dir/mo_lib_intp_rbf.F90.o"
+/usr/bin/ranlib libmath-interpolation.a

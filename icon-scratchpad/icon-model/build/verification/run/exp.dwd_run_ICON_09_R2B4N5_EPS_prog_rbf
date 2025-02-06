@@ -1,0 +1,547 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# ===========================================================================
+# 
+# Name: exp.dwd_run_ICON_09_R2B4N5_EPS_prog_rbf.run
+#
+# Purpose: Run script for ICON at 160 km grid spacing on a global domain.
+#          This is a low resolution version used for development purpose.
+
+#
+# Author: Annika Lauber (C2SM)
+#
+# =========================================================================== 
+
+#--------------------------------------------------------------------------------------------------
+# The suffix _prog_rbf indicates that only a very limited set of prognostic output variables  is checked.
+# Serialization of the RBF coefficients is activated to
+# allow cross-platform and cross-compiler comparison of the results.
+# For this experiment the following variables are checked:
+#
+#   vn','rho','theta_v','tke','w','exner_pr',
+#   'temp','div','vor','t_2m',
+#   'qv','qi','qc'
+#
+# A spread of 5.0 is required to make the variables above validate.
+# This experiment was tested on Piz Daint (nvhpc 21.3 and gcc 9.3.0).
+#
+# The variables 'pres_sfc' is failing probtest for spreads up to 16. 
+# Therefore this field has been excluded.
+#
+# Note:
+#   nproma = 64 for CPU and GPU, otherwise serialization of RBF coefficients fails.
+#
+# To create a set of references and tolerances for this experiment please follow
+# the instructions on the developpers wiki:
+#   https://gitlab.dkrz.de/icon/wiki/-/wikis/GPU-development/Generating-tolerances-for-non-standard-tests
+
+# For this experiment the following file-ids are compared:
+#   atm_3d_DOM01,atm_3d_DOM02
+# --------------------------------------------------------------------------------------------------
+
+set -x
+make_and_change_to_experiment_dir
+
+#--------------------------------------------------------------------------------------------------
+
+# (1) Variables provided by the scripting mechanism
+
+# EXPNAME                       = name of exp. in 'exp.<name>'
+# basedir                       = base directory, where src/, run/ etc exist
+# icon_data_poolFolder          = base directory, where grids/, input/ and setup/ exist
+# nproma                        = blocking length for array dimensioning and inner loop lengths
+
+icon_data_poolFolder="${icon_data_rootFolder:-/pool/data/ICON}/buildbot_data/nwp"
+
+# =======================================================================
+# Setup - experiment
+# ======================================================================
+
+# ===========================================================================
+# This experiment describes a ICON global experiment using the physics packages that are
+# used at DWD for global ensembles in production. This simulation computes a few time steps on 
+# a low-resolution grid. The setup is for development purposes.
+#
+# Options that are not working on GPU at the moment are replaced or disabled. 
+# The original settings are marked by "TODO". These should be reactivated as soon
+# as the corresponding option is ported.
+
+
+# ----------------------------------------------------------------------
+# path definitions
+# ----------------------------------------------------------------------
+
+GRIDDIR=${icon_data_poolFolder}/grids/public/edzw/ # grid and external parameter directory
+
+# absolute path to input directory - for the time being
+INDIR=${icon_data_poolFolder}/Checksuite_data_small/EPS_R2B4N5
+
+# grids_folder variable is require by make_runscripts
+grids_folder=$INDIR
+
+# ----------------------------------------------------------------------
+# link input data: external parameters
+# ----------------------------------------------------------------------
+
+# grids are automatically linked through make_runscripts
+#add_link_file ${GRIDDIR}/icon_grid_0011_R02B03_R.nc iconR2B03_DOM00.nc
+#add_link_file ${INDIR}/icon_grid_0012b_R02B04_G.nc iconR2B04_DOM01.nc
+#add_link_file ${INDIR}/icon_grid_0099_R02B05_N02.nc iconR2B05_DOM02.nc
+
+add_link_file ${INDIR}/external_parameter_icon_domain1_DOM01_tiles.nc extpar_icon_grid_0012b_R02B04_G.nc
+add_link_file ${INDIR}/external_parameter_icon_domain2_DOM02_tiles.nc extpar_icon_grid_0099_R02B05_N02.nc
+
+# files needed for radiation
+add_link_file ${basedir}/externals/ecrad/data ecrad_data
+
+# ----------------------------------------------------------------------
+# global namelist settings
+# ----------------------------------------------------------------------
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}_atm
+
+# global timing
+start_date="2022-03-01T00:00:00Z"
+ndays_restart=60
+dt_restart=`expr ${ndays_restart} \* 86400`
+
+# possible dtime values (large values might be unstable)
+# 1 | 2 | 3 | 4 | 5 | 6 | 8 | 9 | 10 | 12 | 15 | 18 | 20 | 24 | 25 | 27 | 30 | 36 | 40 | 45 | 50 | 54 | 60 | 72 | 75 
+# 90 | 100 | 108 | 120 | 135 | 150 | 180 | 200 | 216 | 225 | 270 | 300 | 360 | 450 | 540 | 600 | 675 | 900
+# 1080 | 1350 | 1800 | 2700 | 5400
+dtime=540
+nsteps=9
+
+# the grid parameters
+atmo_dyn_grids="icon_grid_0012b_R02B04_G.nc icon_grid_0099_R02B05_N02.nc"
+atmo_rad_grids="icon_grid_0011_R02B03_R.nc"
+
+add_link_file ${INDIR}/an_20220228.grb an_R02B04_DOM01.grb
+add_link_file ${INDIR}/fc_R02B04.20220228223000_joined fg_R02B04_DOM01.grb
+add_link_file ${INDIR}/fc_R02B05_N02.20220228223000_joined fg_R02B05_DOM02.grb
+
+# ----------------------------------------------------------------------
+# create ICON master namelist
+# ----------------------------------------------------------------------
+
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+# prevent exec.iconrun overwriting the master namelist (make_runscripts)
+#dont_create_icon_master_namelist=1
+
+# cat > ${basedir}/run/icon_master.namelist << EOF
+# &master_nml
+#  lrestart               = .false.
+# /
+# &time_nml
+#  ini_datetime_string = "$start_date"
+#  dt_restart          = $dt_restart
+# /
+# &master_model_nml
+#   model_type=1
+#   model_name="ATMO"
+#   model_namelist_filename="$atmo_namelist"
+#   model_min_rank=1
+#   model_max_rank=65536
+#   model_inc_rank=1
+# /
+# EOF
+
+
+# ----------------------------------------------------------------------
+# model namelists
+# ----------------------------------------------------------------------
+
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+
+
+cat > ${basedir}/run/${atmo_namelist} << EOF
+&parallel_nml
+ nproma          =  ${nproma}
+ !nblocks_c       =  ${nblocks_c:-0} ! does not work with nesting. TODO make this work (maybe)
+ nblocks_c       =  0
+ nproma_sub      = 2000 ! radiation nproma
+ p_test_run      = .false.
+ l_test_openmp   = .true.
+ l_log_checks    = .true.
+ num_io_procs    =  0
+ num_restart_procs = 0
+ iorder_sendrecv =  3
+ proc0_shift     = 0
+ use_omp_input   = .false.
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ radiation_grid_filename = ${radiation_grid_filename}
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .true.,.true.
+ lfeedback               = .true.
+ ifeedback_type          = 2
+ start_time              = 0., -5400.,
+ end_time                = 0., 432000.    ! ** bewirkt, dass das Nest nur bis vv=120h laueft **
+/
+&run_nml
+ num_lev        = 90, 60
+ lvert_nest     = .true.
+ nsteps         = ${nsteps}
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .true.
+ ntracer        = 5            ! default: 0
+ iforcing       = 3
+ ltestcase      = .false.
+ msg_level      = 7 ! detailed report during integration
+ ltimer         = .true.
+ timers_level   = 10
+ check_uuid_gracefully = .true.
+ output         = "nml" ! "none" to turn off output
+/
+&initicon_nml
+ init_mode                    = 5
+ dt_iau                       = 10800
+ dt_shift                     = -5400
+ iterate_iau                  = .false.  !.true.
+ zpbl1                        = 500.
+ zpbl2                        = 1000.
+ dwdfg_filename               = "<path>fg_R<nroot0>B<jlev>_DOM<idom>.grb"
+ dwdana_filename              = "<path>an_R<nroot0>B<jlev>_DOM<idom>.grb"
+ ana_varnames_map_file        = "map_file.ana"
+ ltile_coldstart              = .false.
+ lvert_remap_fg               = .false.
+ use_lakeiceana               = .true.
+ lp2cintp_incr                = .TRUE.
+ lp2cintp_sfcana              = .TRUE.
+ pinit_seed                   = 0          ! seed for perturbation of initial model state. no perturbation by default
+ pinit_amplitude              = 1e-14      ! amplitude of perturbation 
+/
+&io_nml
+ itype_pres_msl               = 5         ! (1) 3: IFS-type extrapolation
+ itype_rh                     = 1         ! (1) 2: mixed phase (water and ice)
+ output_nml_dict              = 'map_file.fc'
+ dt_checkpoint                = 2592000.  ! 30 days
+ lnetcdf_flt64_output         = .TRUE.    ! double precision output
+/
+&nwp_phy_nml
+inwp_gscp       = 1               ! 10 in test case 35
+inwp_convection = 1
+inwp_radiation  = 4
+inwp_cldcover   = 1 ! 3 geaendert ab Test2
+inwp_turb       = 1
+inwp_satad      = 1
+inwp_sso        = 1
+inwp_gwd        = 1
+inwp_surface    = 1
+latm_above_top  = .false.,.true. 
+ldetrain_conv_prec = .false.,.false.
+efdt_min_raylfric = 7200.
+itype_z0         = 2
+icapdcycl        = 3
+icpl_aero_conv   = 1
+icpl_aero_gscp   = 1
+icpl_o3_tp       = 1
+dt_rad           = 2160.
+dt_conv          = 720., 360.
+dt_sso           = 1440.,720.
+dt_gwd           = 1440.,
+/
+&nwp_tuning_nml
+itune_albedo  = 1
+tune_gkwake   = 1.5
+tune_gfrcrit  = 0.425
+tune_grcrit   = 0.5
+tune_gkdrag   = 0.16
+tune_zvz0i    = 0.85
+tune_box_liq_asy = 3.25
+tune_minsnowfrac = 0.2
+tune_gfluxlaun  = 3.75e-3
+tune_rcucov = 0.075
+tune_rhebc_land = 0.825
+/
+&turbdiff_nml
+tkhmin       = 0.6
+tkhmin_strat = 1.0
+tkmmin       = 0.75
+tkmmin_strat = 1.5
+pat_len      =  750.
+c_diff       =  0.2
+rat_sea      =  0.8
+rlam_heat    = 10.
+ltkesso      = .true.
+frcsmot      = 0.2
+imode_frcsmot = 2
+icldm_turb   = 1
+itype_sher   = 1
+ltkeshs      = .true.
+a_hshr       = 2.0
+/
+&lnd_nml
+  ntiles         = 3
+  nlev_snow      = 1
+  lmulti_snow    = .false.
+  itype_heatcond = 3
+  idiag_snowfrac = 20
+  itype_snowevap = 2
+  itype_canopy   = 2
+  lsnowtile      = .true.
+  lseaice        = .TRUE.
+  llake          = .true.
+  itype_lndtbl   = 4
+  itype_evsl     = 4
+  itype_root     = 2
+  cwimax_ml      = 5.e-4
+  c_soil         = 1.25
+  c_soil_urb     = 0.5
+  sstice_mode    = 2 ! TODO: test it mode 2 and probably port it
+  lprog_albsi    = .true.
+/
+&radiation_nml
+ ecrad_isolver       = 2
+ irad_o3             = 79
+ irad_aero           = 6
+ albedo_type         = 2 ! Modis albedo
+ direct_albedo       = 4
+ direct_albedo_water = 3
+ albedo_whitecap     = 1
+ vmr_co2             = 390.e-06 ! values representative for 2012
+ vmr_ch4             = 1800.e-09
+ vmr_n2o             = 322.0e-09
+ vmr_o2              = 0.20946
+ vmr_cfc11           = 240.e-12
+ vmr_cfc12           = 532.e-12
+ ecrad_data_path     = './ecrad_data'
+/
+&nonhydrostatic_nml
+ itime_scheme    = 4
+ vwind_offctr    = 0.2
+ damp_height     = 44000.
+ rayleigh_coeff  = 0.5
+ divdamp_order   = 24
+ divdamp_fac     = 0.004
+ divdamp_type    = 32
+ igradp_method   = 3
+ l_zdiffu_t      = .true.
+ thslp_zdiffu    = 0.02
+ thhgtd_zdiffu   = 125.
+ htop_moist_proc = 22500.
+ hbot_qvsubstep  = 16000.
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ max_lay_thckn   = 400.
+ htop_thcknlimit = 14000.
+ top_height      = 75000.
+ stretch_fac     = 0.9
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+  ctracer_list  = '12345'
+ ivadv_tracer   = 3,3,3,3,3
+ itype_hlimit   = 3,4,4,4,4,
+ ihadv_tracer   = 52,2,2,2,2,
+ llsq_svd       = .true. ! TODO: set to .false. and overwrite it with .true. in crosscheck if _OPENACC
+ beta_fct       = 1.005
+ iadv_tke       = 0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ itype_vn_diffu   = 1
+ itype_t_diffu    = 2
+ hdiff_efdt_ratio = 24.
+ hdiff_smag_fac   = 0.025
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+/
+&interpol_nml
+nudge_zone_width  = 8
+lsq_high_ord      = 3
+l_intp_c2l        = .true.
+l_mono_c2l        = .true.
+rbf_scale_mode_ll = 2
+support_baryctr_intp=.FALSE., ! TODO: check why this is not working with nvfortran and set to .true.
+/
+&gridref_nml
+ grf_intmethod_e  = 6
+ grf_scalfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo                = 1
+ n_iter_smooth_topo   = 1,1
+ hgtdiff_max_smooth_topo = 750.,750.,
+ heightdiff_threshold = 3000.
+ itype_vegetation_cycle = 2
+/
+&ensemble_pert_nml
+use_ensemble_pert=.false.,
+/
+&gribout_nml
+ preset                          = "ensemble"
+ perturbationNumber              = 1
+ localTypeOfEnsembleForecast     = 101,
+ numberOfForecastsInEnsemble     = 40,
+ ldate_grib_act                  = .true.
+ lgribout_24bit                  = .false.
+ tablesVersion                   = 14
+ backgroundProcess               = 0
+ localNumberOfExperiment         = 52
+ productionStatusOfProcessedData = 2
+ generatingProcessIdentifier     = 1, 2                              ! 2 .. nest
+/
+&synsat_nml
+lsynsat=.false. ! .false.,.true., ! requires RTTOV library - left out for this test
+/
+
+&output_nml
+ output_filename  = "${EXPNAME}_atm_3d"
+ filename_format  = "<output_filename>_DOM<physdom>_<levtype_l>_<datetime2>"
+ dom              = 1                         ! global domain
+ filetype         = 5
+ remap            = 0
+ output_grid      = .TRUE.
+ output_bounds    = 0,$((3*dtime)),${dtime}   ! start, end, increment, 4 steps
+ steps_per_file   = 4
+ include_last     = .TRUE.
+ ml_varlist       =
+  'vn','rho','theta_v','tke','w','exner_pr',
+  'temp','div','vor','t_2m',
+  'qv','qi','qc'
+ /
+EOF
+
+cat >> ${basedir}/run/${atmo_namelist} << EOF
+
+!output!! ser_nml: serialization configuration ----------------------------------------
+&ser_nml
+ ser_initialization          =                            0,12,12 !
+ ser_output_diag             =                            0,12,12 !
+ ser_output_diag_dyn             =                        0,12,12 !
+ ser_latbc_data              =                            0,12,12 !
+ ser_dynamics                =                            0,12,12 !
+ ser_nesting_compute_tendencies     =                     0,12,12 !
+ ser_nesting_boundary_interpolation =                     0,12,12 !
+ ser_nesting_relax_feedback =                             0,12,12 !
+ ser_diffusion               =                            0,12,12 !
+ ser_step_advection          =                            0,12,12 !
+ ser_physics                 =                            0,12,12 !
+ ser_surface                 =                            0,12,12 !
+ ser_microphysics            =                            0,12,12 !
+ ser_turbtrans               =                            0,12,12 !
+ ser_turbdiff                =                            0,12,12 !
+ ser_lhn                     =                            0,12,12 !
+ ser_cover                   =                            0,12,12 !
+ ser_radiation               =                            0,12,12 !
+ ser_radheat                 =                            0,12,12 !
+ ser_gwdrag                  =                            0,12,12 !
+ ser_convection              =                            0,12,12 !
+ ser_nudging                 =                            0,12,12 !
+ ser_time_loop_end           =                            0,12,12 !
+ ser_nfail                   =                            0
+ ser_nreport                 =                            10
+ ser_all_debug               =                            0,12,12
+ ser_rbf                     =                        .TRUE.      ! serialize the debug statements from mo_ser_debug
+ ser_debug                   =                        .FALSE.     ! serialize the rbf coefficients
+/
+EOF
+
+cat > map_file.ana << EOF2
+# internal name     GRIB2 shortName
+theta_v             THETA_V
+rho                 DEN
+vn                  VN
+u                   U
+v                   V
+w                   W
+tke                 TKE
+temp                T
+pres                P
+qv                  QV
+qc                  QC
+qi                  QI
+qr                  QR
+qs                  QS
+t_g                 T_G
+qv_s                QV_S
+fr_seaice           FR_ICE
+alb_si              ALB_SEAICE
+t_ice               T_ICE
+h_ice               H_ICE
+t_snow              T_SNOW
+freshsnow           FRESHSNW
+snowfrac_lc         SNOWC
+w_snow              W_SNOW
+rho_snow            RHO_SNOW
+h_snow              H_SNOW
+w_i                 W_I
+w_so                W_SO
+w_so_ice            W_SO_ICE
+t_so                T_SO
+smi                 SMI
+gz0                 Z0
+pres_sfc            PS
+z_ifc               HHL
+
+t_mnw_lk            T_MNW_LK
+t_wml_lk            T_WML_LK
+h_ml_lk             H_ML_LK
+t_bot_lk            T_BOT_LK
+c_t_lk              C_T_LK
+t_b1_lk             T_B1_LK
+h_b1_lk             H_B1_LK
+EOF2
+
+cat > map_file.fc << EOF3
+# GRIB2 shortName   internal name
+  alb_rad           ALBDIF
+  alb_seaice        ALB_SI
+  apab_s            ASWFLX_PAR_SFC
+  aswdifd_s         ASODIFD_S
+  aswdifu_s         ASODIFU_S
+  aswdir_s          ASODIRD_S
+  cape_con          CAPE
+  den               RHO
+  dtke_con          DDT_TKE_PCONV
+  dtke_hsh          DDT_TKE_HSH
+  fi                GEOPOT
+  fr_ice            FR_SEAICE
+  freshsnw          FRESHSNOW
+  hhl               Z_IFC
+  hsurf             TOPOGRAPHY_C
+  p                 PRES
+  pmsl              PRES_MSL
+  ps                PRES_SFC
+  relhum            RH
+  relhum_2m         RH_2M
+  snowc             SNOWFRAC_LC
+  sobs_rad          SOB_S
+  t                 TEMP
+  t_sea             T_SEASFC
+  thbs_rad          THB_S
+  vmax_10m          GUST10
+  z0                GZ0
+EOF3

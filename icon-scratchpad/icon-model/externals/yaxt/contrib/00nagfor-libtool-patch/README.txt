@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/yaxt/contrib/00nagfor-libtool-patch/README.txt

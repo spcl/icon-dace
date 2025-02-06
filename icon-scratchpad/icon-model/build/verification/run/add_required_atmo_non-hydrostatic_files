@@ -1,0 +1,19 @@
+#!/bin/ksh
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+add_required_file ${basedir}/data/rrtmg_lw.nc               ./
+add_link_file     ${basedir}/data/rrtmg_sw.nc               ./
+add_required_file ${basedir}/data/ECHAM6_CldOptProps.nc     ./
+add_required_file ${basedir}/data/dmin_wetgrowth_lookup.nc  ./   #for inwp_gscp==4
+add_required_file ${basedir}/data/pmod.txt                  ./
+
+#-----------------------------------------------------------------------------

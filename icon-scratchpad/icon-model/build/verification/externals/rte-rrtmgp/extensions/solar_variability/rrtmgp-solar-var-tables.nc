@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/rte-rrtmgp/extensions/solar_variability/rrtmgp-solar-var-tables.nc

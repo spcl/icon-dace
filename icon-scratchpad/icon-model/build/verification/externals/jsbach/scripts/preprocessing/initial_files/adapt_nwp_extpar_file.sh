@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/jsbach/scripts/preprocessing/initial_files/adapt_nwp_extpar_file.sh

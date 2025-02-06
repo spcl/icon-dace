@@ -1,0 +1,419 @@
+#! /bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------------------------------------------------
+#
+# J. Foerstner, DWD, 2008-11
+# P. Ripodas,   DWD, 2010-09-15
+# M. Koehler,   DWD, 2011-02-01
+# J. Foerstner, DWD, 2011-03-06
+#
+#-----------------------------------------------------------------------------
+#
+# NEC@DWD
+ 
+# submit: 
+#   qsub run_ICONAM_R2B4_APE
+#   qstat | grep mkoehler
+#   nqstat
+#   dayfile #hpcjob-id ("F" updating)
+#   nqcat -n 200 -o #hpcjob-id
+#   l ~/wq/.
+#
+# 4 OpenMP threads (max.=)
+# 16 CPUs on one NODE (OpenMP)
+#--------------------------------------------------
+
+#### BATCH_SYSTEM=PBS ####
+
+#PBS -N icon
+#PBS -S /bin/ksh
+#PBS -q lang
+#PBS -m n
+#PBS -r n
+#PBS -l walltime=48:00:00
+#PBS -o /e/uhome/mkoehler/wq
+#PBS -j oe
+#PBS -W umask=0027
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n ${PBS_O_WORKDIR} ]] ; then
+  cd ${PBS_O_WORKDIR}
+fi
+
+PATH=${PATH}:/SX/usr/bin:.
+PATH=${PATH}:/e/rhome/routfor/routfox/abs  # CDO netcdf operators
+PATH=${PATH}:/e/uhome/for1han/bin          # various scripts
+export PATH
+
+USER="mkoehler"
+DATA_DIR="/e/uwork/"${USER}"/icon"         # /e/uwork, /e/uscratch, /e/gtmp
+#DATA_DIR="/e/uscratch/"${USER}"/icon"     # /e/uwork, /e/uscratch, /e/gtmp
+                                           # or transfer data to oflxs04:/uwork1
+
+# Directories:
+EDIR="exp21"                               # working directory
+EXPNAME="APE"                              # experiment identifier
+IDIR="GRIDR2"                              # input directory
+
+# absolute path to directory with plenty of space:
+EXPDIR=${DATA_DIR}/experiments/${EDIR}
+mkdir -p ${EXPDIR}
+
+
+#-----------------------------------------------------------------------------
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2008-09-01T00:00:00Z"
+ndays_restart=1000            # time after which to stop model for later restart
+ndays_checkpoint=1000         # time interval to write restart files
+dt_restart=`expr ${ndays_restart} \* 86400`
+dt_checkpoint=`expr ${ndays_checkpoint} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# model timing
+dtime=300                     # time step in seconds
+ndays=400                     # number of days to run
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+#nsteps=268
+
+#
+#-----------------------------------------------------------------------------
+# model output
+DT_DATA=`expr 12 \* 3600  `   # output each 12 hours
+DT_DIAG=`expr 24 \* 3600  `   # ascii diagnostic output each 24 hours
+DT_FILE=`expr 10 \* 86400 `   # 10 days per file
+
+#
+#-----------------------------------------------------------------------------
+# model parameters
+model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+nlev=90              # nlev = number of full levels
+#-----------------------------------------------------------------------------
+# the grid parameters
+atmo_dyn_grids="iconR2B04_DOM01.nc" # iconR2B07_DOM02.nc" # iconR2B08_DOM03.nc"
+atmo_rad_grids="iconR2B04_DOM01.nc"
+#-----------------------------------------------------------------------------
+
+
+# create ICON master namelist
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lrestart               = .false.
+/
+&time_nml
+ ini_datetime_string    = "$start_date"
+ dt_restart             = $dt_restart
+/
+&master_model_nml
+ model_type             = 1
+ model_name             = "ATMO"
+ model_namelist_filename= "$atmo_namelist"
+ model_min_rank         = 1
+ model_max_rank         = 65536
+ model_inc_rank         = 1
+/
+EOF
+
+#-----------------------------------------------------------------------------
+#
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#
+# ------------------------
+# reconstrcuct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+radiation_grid_filename=""
+for gridfile in ${atmo_rad_grids}; do
+  radiation_grid_filename="${radiation_grid_filename} '${gridfile}',"
+done
+dynamics_parent_grid_id="${dynamics_parent_grid_id},"
+lredgrid_phys="${lredgrid_phys},"
+lfeedback="${lfeedback},"
+
+# ------------------------
+
+cat > ${atmo_namelist} << EOF_NL
+&parallel_nml
+ nproma         = 1024      ! array blocking length
+ p_test_run     = .false.
+ l_test_openmp  = .true.
+ l_log_checks   = .true.
+/
+&grid_nml
+ ! cell_type is not used = 3              ! triangular cells
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+!radiation_grid_filename = ${radiation_grid_filename}
+ radiation_grid_filename = ' '
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .false.
+/
+&initicon_nml
+  init_mode   = 2           ! operation mode
+  nlev_in     = 91          ! number of levels of input data
+  zpbl1       = 500. 
+  zpbl2       = 1000. 
+/
+&nh_testcase_nml
+ nh_test_name      = 'APE_nh'     ! test case identifier
+ ape_sst_case      = 'sst1'       ! 1: control; 2: peaked; 3: flat; 4: contrl5N; Qobs: qobs
+/
+&io_nml
+ dt_diag           = ${DT_DIAG}
+ dt_checkpoint     = ${dt_checkpoint}
+/
+&run_nml
+ num_lev     = ${nlev},     ! number of full levels of vertical grid
+ nsteps      = ${nsteps}    ! number of time steps
+ dtime       = ${dtime}     ! timestep in seconds
+ ldynamics   = .TRUE.       ! dynamics
+ ltransport  = .TRUE.       ! tracer transport
+ ntracer     = 6            ! 5 plus 1 for ozone
+ iforcing    = 3            ! 3 NWP forcing
+ ltestcase   = .TRUE.       ! true: run testcase, false: run with real data
+ msg_level   = 11           ! detailed report during integration
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1        ! 1: RRTM, 2: Ritter-Geleyn
+ inwp_cldcover   = 1        ! 0: no cld, 1: new diagnostic, 3: COSMO, 5: grid scale,
+ inwp_turb       = 2        ! 1: Raschendorfer
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1        ! 1: non-orographic gravity wave drag as in Bechtold, 2010
+ inwp_surface    = 0
+ dt_conv         = 900
+ dt_sso          = 900
+ dt_gwd          = 900
+ dt_rad          = 1800
+/
+&lnd_nml
+ntiles           = 1
+/
+&radiation_nml
+ irad_o3         = 6        ! 0: no ozone, 6: ozone
+ izenith         = 3        ! 4: NWP default, 3: no annual cycle
+ dt_rad          = 1800
+/
+&nonhydrostatic_nml
+ iadv_rhotheta   = 2
+ ivctype         = 2        ! set vertical grid automatically using sleve_ctl
+ itime_scheme    = 5        ! default 4; 5: modified Matsuno for better numerical stability of sound waves
+ igradp_method   = 3        ! new default
+ exner_expol     = 0.666    ! exner function extrapolation?
+ rayleigh_coeff  = 0.05     ! Rayleigh coefficient for damping in upper levels
+!damp_height     = 35000.   ! damping height vertical wind (set about 10km below top, 10 levels)
+ damp_height     = 35000.   ! damping height vertical wind (set about 10km below top, 10 levels)
+ damp_height_u   = 35000.   ! damping height horizontal wind
+ damp_timescale_u= 172800.  ! Shortest damping time-scale at model top [s]
+ htop_moist_proc = 30000.   ! height above which moist physics and cld/precip advection off
+ vwind_offctr    = 0.15     ! off-centering for time differencing (like alpha in turb)
+/
+&sleve_nml                  ! vertical grid standard output for message level >= 15
+ min_lay_thckn   = 20.      ! lowest level thickness (between half-levels)
+!top_height      = 50000.   ! model top (half level)
+!flat_height     = 20000.
+!stretch_fac     = 0.6      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+ top_height      = 60000.   ! model top (half level)
+ flat_height     = 20000.
+ stretch_fac     = 0.6      ! stretching towards model top (1.0 default; smaller - bigger top level thickness)
+ decay_scale_1   = 4000.    ! decay scales for topography
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+/
+&dynamics_nml
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+ ivadv_tracer  = 3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4,0
+ ihadv_tracer  = 3,3,3,3,2,0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ hdiff_efdt_ratio = 10.0
+ hdiff_smag_fac   = 0.15
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+ hdiff_multfac    = 1.0
+ hdiff_tv_ratio   = 1.0
+/
+&interpol_nml
+nudge_zone_width  = 8
+/
+&gridref_nml
+ grf_intmethod_ct = 2
+ grf_tracfbk      = 2
+ denom_diffu_v    = 150.
+/
+&extpar_nml
+ itopo              = 0  ! 0 for aqua-planet, 1 for realistic topography   
+ n_iter_smooth_topo = 2
+/
+EOF_NL
+
+mv -f ${atmo_namelist}     ${EXPDIR}
+mv -f icon_master.namelist ${EXPDIR}
+
+
+#-----------------------------------------------------------------------------
+# job on NEC
+#-----------
+
+cat > /e/uhome/${USER}/wq/job.nec_tmp.$$ <<EOF_NEC
+#### BATCH_SYSTEM=NQS2 ####
+
+#PBS -N icon
+#PBS -q normal
+#PBS -j o
+#PBS -o /e/uhome/${USER}/wq/o.icon_model.$$
+#PBS -l cpunum_job=16
+#PBS -b 1
+#PBS -l elapstim_req=86400
+#PBS -m n
+
+set -x
+
+#
+# set number of threads for OpenMP parallelization
+#     and other OpenMP environment variables
+#
+export OMP_NUM_THREADS=16
+export ICON_THREADS=${OMP_NUM_THREADS}
+export OMP_STACKSIZE=50M
+export OMP_SCHEDULE="static"
+export OMP_DYNAMIC="false"
+
+
+export NC_BLOCKSIZE=128mb
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+if [[ -n \${PBS_O_WORKDIR} ]] ; then
+  cd \${PBS_O_WORKDIR}
+fi
+export F_PROGINF=DETAIL
+export F_NORCW=65535
+
+# determine architecture
+#arch=sx9-nec-superux-sx9ftr 
+#arch=sx9-nec-superux-sx9debug 
+arch=sx9-nec-superux-sx9omp
+#arch=sx9-nec-superux-sx9mpiomp
+
+# determine base directory (../icon-dev)
+dir=\$(pwd -P)
+WORK_DIR=\${dir%/*}
+
+# absolute path to model binary, including the executable
+MODEL=\${WORK_DIR}/build/\${arch}/bin/control_model
+
+# horizontal grid file
+#ln -sf ${DATA_DIR}/${IDIR}/iconR2B04-grid_spr0.90.nc ${EXPDIR}/iconR2B04_DOM01-grid.nc
+#cp /e/uhome/dreinert/icon-dev/experiments/graphs/GRIDR2B4/iconR2B04-grid.nc ${EXPDIR}
+#cp /e/uhome/gzaengl/icon-dev/experiments/${IDIR}/iconR2B04-grid_spr0.90.nc  ${EXPDIR}/iconR2B04-grid.nc
+ln -sf /e/uwork/mkoehler/icon/GRIDR2/iconR2B04_grid.nc  ${EXPDIR}/iconR2B04_DOM01.nc
+
+# external parameters
+#ln -sf /e/uwork/hasensio/epresult/ICON/v1_0/R2B04/extpar_R2B04-DOM01.nc  ${EXPDIR}/external_parameter_icon.nc
+ln -sf /e/uwork/mkoehler/icon/GRIDR2/extpar_R2B04_DOM01.nc                ${EXPDIR}/extpar_iconR2B04_DOM01.nc
+
+# ifs2icon initial conditions
+ln -sf /e/uwork/mkoehler/icon/ifs2icon.data/ifs2icon_R2B04_2011040100.nc  ${EXPDIR}/ifs2icon_R2B04_DOM01.nc
+
+# radiation input files
+cp /e/uhome/treinhar/ICON/ECHAM6_CldOptProps.nc    ${EXPDIR}
+cp /e/uhome/treinhar/ICON/rrtmg_lw.nc              ${EXPDIR}
+
+# start experiment
+cd ${EXPDIR}
+cp -p \${MODEL} ./icon.exe
+./icon.exe
+
+# check return code
+rc=\${?}
+if [[ ":\${rc}" != ':0' && ":\${rc}" != ':' ]] ; then
+  print "QSUBW_ERROR: JOB_%HOSTNAME%_%PID%: RC = \${rc}"
+fi
+
+EOF_NEC
+
+
+#-----------------------------------------------------------------------------
+# submit and plot
+#----------------
+
+# copy plotting files
+PLOTDIR=/e/uhome/${USER}/ncl
+cp ${PLOTDIR}/iconplot.zonal.parallel.s    \
+   ${PLOTDIR}/iconplot.zonal-vert.ncl      \
+   ${PLOTDIR}/iconplot.zonal-time.ncl      \
+   ${PLOTDIR}/iconplot.maps.ncl    ${EXPDIR}
+
+cat > ${EXPDIR}/iconplot.zonal.list << EOF_LIST
+iconplot.zonal.parallel.s -v T
+iconplot.zonal.parallel.s -v U
+iconplot.zonal.parallel.s -v V
+iconplot.zonal.parallel.s -v W
+iconplot.zonal.parallel.s -v CC
+iconplot.zonal.parallel.s -v QV
+iconplot.zonal.parallel.s -v QC
+iconplot.zonal.parallel.s -v QI
+iconplot.zonal.parallel.s -v Q1
+iconplot.zonal.parallel.s -v Q2
+iconplot.zonal.parallel.s -v Q3
+iconplot.zonal.parallel.s -v Q4
+iconplot.zonal.parallel.s -v Q5
+EOF_LIST
+
+# submit job to NEC and wait
+qsubw /e/uhome/${USER}/wq/job.nec_tmp.$$
+rc=${?}
+if [[ ":${rc}" != ':0' ]] ; then
+   exit 201
+fi
+
+# plotting on HPC
+cd ${EXPDIR}
+/e/uhome/for1han/bin/pshell -p7 -f iconplot.zonal.list
+./iconplot.zonal.parallel.s
+ncl iconplot.maps.ncl
+
+# save data to ecfs
+emkdirf dwd:/${USER}/icon-exp/{EDIR}
+ecpf {EXPNAME}_R{RR}B0{BB}L{NLEV}_*.nc dwd:/${USER}/icon-exp/{EDIR}
+
+
+#-----------------------------------------------------------------------------
+exit 0
+#-----------------------------------------------------------------------------

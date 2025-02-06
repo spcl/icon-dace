@@ -1,0 +1,27 @@
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+#%  if JOB['.trigger'] is defined:
+
+# Trigger follow-up jobs
+
+status = 0
+#%    for trigger in JOB['.trigger']|d([])|list:
+#%      set args = trigger|split|list
+#%      set job = args.pop(0)
+#%      set type = jobs[job]['.type']
+#%      do args.insert(0, './'+EXP_ID+'.'+job)
+#%      if type != 'serial':
+#%        do args.insert(0, JOB.batch_command)
+#%      endif
+status_sub = subprocess.call(%{args} + [str(start_date)])
+if status_sub: status = status_sub
+#%    endfor
+sys.exit(status)
+#%  endif

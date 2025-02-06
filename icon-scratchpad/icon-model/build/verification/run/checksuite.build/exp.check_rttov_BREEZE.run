@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eux
+
+thisdir=$(pwd)
+basedir=${thisdir%/*}
+script_name=$(basename "${0}")
+builddir_name=${script_name#*.}
+builddir_name=${builddir_name%.*}
+builddir="${basedir}/experiments/${builddir_name}"
+
+# We want to check whether we can build ICON with RTTOV and without DACE and
+# EMVORADO:
+exitcode=0
+mkdir -p "${builddir}" && \
+  cd "${builddir}" && \
+  "${basedir}/config/mpim/stretch.nag" --enable-rttov --disable-dace --disable-emvorado && \
+  make -j8 || \
+  exitcode=$?
+
+# Generate the status file for the buildbot and exit:
+echo ${exitcode} > "${script_name}.final_status"
+exit ${exitcode}

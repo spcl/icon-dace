@@ -1,0 +1,4 @@
+#!/bin/bash
+test 'xyes' = xyes || exit 77
+
+./test_grib || exit 1

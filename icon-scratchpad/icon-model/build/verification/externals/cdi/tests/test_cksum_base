@@ -1,0 +1,45 @@
+# This file is meant to be included for the supported file formats.
+
+prefix=`echo "$0" | sed 's@.*/@@'`
+suffix=${suffix-grb}
+
+case ${suffix} in
+  grb)
+    test 'xyes' = xyes || exit 77
+    ;;
+  grb2)
+    #exit 77
+    test 'xyes' = xyes || exit 77
+    ;;
+  nc)
+    #exit 77
+    ;;
+  nc2)
+    test 'xyes' = xyes || exit 77
+    ;;
+  nc4)
+    test 'xyes' = xyes || exit 77
+    ;;
+  srv)
+    test 'xyes' = xyes || exit 77
+    ;;
+  ext)
+    test 'xyes' = xyes || exit 77
+    ;;
+  ieg)
+    test 'xyes' = xyes || exit 77
+    ;;
+  *)
+    echo "Unsupported suffix '${suffix}'" >&2
+    exit 1
+    ;;
+esac
+
+../libtool --mode=execute ${tool_wrap} ./cksum_write -b "${prefix}" -f ${suffix} || exit 1
+../libtool --mode=execute ${tool_wrap} ./cksum_read "${prefix}.${suffix}" "${prefix}.cksum" || exit 1
+
+#
+# Local Variables:
+# mode: sh
+# End:
+#

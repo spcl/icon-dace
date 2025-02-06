@@ -1,0 +1,1 @@
+/home/primrose/Work/IconGrounds/icon-dace/icon-model/externals/jsbach/scripts/preprocessing/climate_forcing/CRUJRA/calculate_jsbach_forcing_CRUJRA.bash
