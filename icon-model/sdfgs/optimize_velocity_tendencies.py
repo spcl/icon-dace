@@ -9,11 +9,12 @@ SDFG_NAME = "velocity_tendencies"
 
 def optimize(sdfg: dace.SDFG) -> dace.SDFG:
     # PLACEHOLDER: here goes your optimization pipeline: ...
-    #sdfg.simplify()
-    #from dace.transformation.auto import auto_optimize as aopt
-    #opt_sdfg = aopt.auto_optimize(sdfg, dace.DeviceType.CPU)
-    #return opt_sdfg
+    # sdfg.simplify()
+    # from dace.transformation.auto import auto_optimize as aopt
+    # opt_sdfg = aopt.auto_optimize(sdfg, dace.DeviceType.CPU)
+    # return opt_sdfg
     return sdfg
+
 
 def main():
     parser = argparse.ArgumentParser(description=(f"Optimize '{SDFG_NAME}'"))
@@ -36,8 +37,8 @@ def main():
     sdfg = optimize(sdfg)
 
     # Makefile does this automatically no?
-    #output_path = args.optimized_sdfg_path.resolve()
-    #if not output_path.parent.exists():
+    # output_path = args.optimized_sdfg_path.resolve()
+    # if not output_path.parent.exists():
     #    output_path.parent.mkdir(parents=True)
 
     sdfg.save(str(args.optimized_sdfg_path))

@@ -11,6 +11,7 @@ import logging
 import numpy as np
 
 from yaml import load as load_yaml
+
 try:
     from yaml import CLoader as YAML_Loader
 except ImportError:
@@ -34,7 +35,9 @@ _PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE = {
 }
 
 
-def join_wrapped(elems: Collection[str], seperator: str, before: str, after: str) -> str:
+def join_wrapped(
+    elems: Collection[str], seperator: str, before: str, after: str
+) -> str:
     source = seperator.join(elems)
     if 0 < len(elems):
         source = before + source + after
@@ -64,17 +67,19 @@ def _(scalar: dace.data.Scalar) -> str:
 def _(_) -> str:
     return "type(c_ptr)"
 
+
 script_dir = os.path.dirname(os.path.abspath(__file__))
-input_file = os.path.join(script_dir, '../unused_names.txt')
+input_file = os.path.join(script_dir, "../unused_names.txt")
 unused_names = set()
 
 # Read the file line by line and add each line to the set
-with open(input_file, 'r') as file:
+with open(input_file, "r") as file:
     for line in file:
         # Strip any leading/trailing whitespace and add the line to the set
         unused_names.add(line.strip())
 
 print(unused_names)
+
 
 class ImportsCollector:
 
@@ -93,71 +98,82 @@ class ImportsCollector:
 
         missing_module_definitions = (
             set(self.required_symbols.keys())
-            -set(module_definitions.keys())
-            -self.initializaion_checks_ignore_list
+            - set(module_definitions.keys())
+            - self.initializaion_checks_ignore_list
         )
         if 0 < len(missing_module_definitions):
             logging.warning(
-                "Failed to find modules for symbols:" +
-                "".join(f"\n- {symbol}" for symbol in sorted(missing_module_definitions))
+                "Failed to find modules for symbols:"
+                + "".join(
+                    f"\n- {symbol}" for symbol in sorted(missing_module_definitions)
+                )
             )
 
         for symbol in self.required_symbols:
             if symbol in missing_module_definitions:
                 continue
-            imports_dict.setdefault(
-                module_definitions[symbol],
-                []
-            ).append(symbol)
+            imports_dict.setdefault(module_definitions[symbol], []).append(symbol)
 
         return "\n".join(
-            f"  use {module_name}, only: &\n" +
-            ", &\n".join(
-                f"    {symbol}"
-                for symbol in symbols
-            )
-            for module_name, symbols
-            in imports_dict.items()
+            f"  use {module_name}, only: &\n"
+            + ", &\n".join(f"    {symbol}" for symbol in symbols)
+            for module_name, symbols in imports_dict.items()
         )
 
 
 @singledispatch
-def dace_type_to_fortran_rich_var_type_decl(dace_type, is_local: bool = False, enable_inout_hack: bool = False) -> str:
-    raise NotImplementedError(f"Unable to convert dace type '{dace_type}' to type declaration for a fortran variable")
+def dace_type_to_fortran_rich_var_type_decl(
+    dace_type, is_local: bool = False, enable_inout_hack: bool = False
+) -> str:
+    raise NotImplementedError(
+        f"Unable to convert dace type '{dace_type}' to type declaration for a fortran variable"
+    )
 
 
 @dace_type_to_fortran_rich_var_type_decl.register
-def _(typeclass: dace.typeclass, is_local: bool = False, enable_inout_hack: bool = False) -> str:
+def _(
+    typeclass: dace.typeclass, is_local: bool = False, enable_inout_hack: bool = False
+) -> str:
     return _PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE[typeclass]
 
 
 @dace_type_to_fortran_rich_var_type_decl.register
-def _(scalar: dace.data.Scalar, is_local: bool = False, enable_inout_hack: bool = False) -> str:
+def _(
+    scalar: dace.data.Scalar, is_local: bool = False, enable_inout_hack: bool = False
+) -> str:
     return _PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE[scalar.dtype]
 
 
 @dace_type_to_fortran_rich_var_type_decl.register
-def _(desc: dace.data.ContainerArray, is_local: bool = False, enable_inout_hack: bool = False) -> str:
+def _(
+    desc: dace.data.ContainerArray,
+    is_local: bool = False,
+    enable_inout_hack: bool = False,
+) -> str:
     pointer_attr = "target" if not is_local else "pointer"
 
-    shape_str = ','.join(':'*len(desc.shape))
+    shape_str = ",".join(":" * len(desc.shape))
     return f"type({desc.stype.name}), dimension({shape_str}), {pointer_attr}"
 
 
 @dace_type_to_fortran_rich_var_type_decl.register
-def _(desc: dace.data.Array, is_local: bool = False, enable_inout_hack: bool = False) -> str:
+def _(
+    desc: dace.data.Array, is_local: bool = False, enable_inout_hack: bool = False
+) -> str:
     pointer_attr = "target" if not is_local else "pointer"
 
     if enable_inout_hack and desc.shape == (1,):
         # FIXME: hack for ```INOUT```/```OUT``` parameters
         return f"{_PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE[desc.dtype]}, {pointer_attr}"
 
-    shape_str = ','.join(':'*len(desc.shape))
+    shape_str = ",".join(":" * len(desc.shape))
     return f"{_PRIMITIVE_DACE_TYPE_TO_FORRTRAN_C_TYPE[desc.dtype]}, dimension({shape_str}), {pointer_attr}"
 
 
 @dace_type_to_fortran_rich_var_type_decl.register
-def _(desc: dace.data.Structure, is_local: bool = False, enable_inout_hack: bool = False) -> str:
+def _(
+    desc: dace.data.Structure, is_local: bool = False, enable_inout_hack: bool = False
+) -> str:
     pointer_attr = "target" if not is_local else "pointer"
     return f"type({desc.name}), {pointer_attr}"
 
@@ -193,7 +209,9 @@ def generate_dace_struct_definition(struct: dace.data.Structure) -> str:
 
     for name, desc in sorted(struct.members.items()):
         name = fix_identifier(name)
-        struct_members_src += f"    {dace_type_to_fortran_c_var_type_decl(desc)} :: {name}\n"
+        struct_members_src += (
+            f"    {dace_type_to_fortran_c_var_type_decl(desc)} :: {name}\n"
+        )
 
     return f"""\
   type, bind(c) :: dace_{struct.name}
@@ -247,33 +265,36 @@ _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR = (
 
 def extract_array_helper_information(name: str, pattern_str: str) -> Tuple[str, int]:
     match = re.fullmatch(pattern_str, name)
-    assert match, f"Failed to extract array name and dim number from helper array ('{name}')"
+    assert (
+        match
+    ), f"Failed to extract array name and dim number from helper array ('{name}')"
 
     return match.group("array_name"), int(match.group("dim_num"))
 
-#Error: 'cells_plwa_verts' at (1) is not a member of the 't_int_state' structure; did you mean 'cells_aw_verts'?
-#Error: 'geofac_qdiv' at (1) is not a member of the 't_int_state' structure; did you mean 'geofac_div'?
-#Error: 'cn_e' at (1) is not a member of the 't_grid_edges' structure; did you mean 'fn_e'?
-#Error: 'cz_c' at (1) is not a member of the 't_grid_cells' structure; did you mean 'f_c'?
-#Error: 'ddt_ua_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn'?
-#Error: 'ddt_ua_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn_is_associated'?
-#Error: 'ddt_va_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn'?
-#Error: 'ddt_va_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn_is_associated'?
-#Error: 'ddt_vn_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn'?
-#Error: 'ddt_vn_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn_is_associated'?
-#Error: 'vor_u' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
-#Error: 'vor_v' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
-#Error: 'deepatmo_t1ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-#Error: 'deepatmo_t1mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-#Error: 'deepatmo_t2mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
-#Error: 'dzgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
-#Error: 'fbk_dom_volume' at (1) is not a member of the 't_nh_metrics' structure
-#Error: 'zgpot_ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'z_ifc'?
-#Error: 'zgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
+
+# Error: 'cells_plwa_verts' at (1) is not a member of the 't_int_state' structure; did you mean 'cells_aw_verts'?
+# Error: 'geofac_qdiv' at (1) is not a member of the 't_int_state' structure; did you mean 'geofac_div'?
+# Error: 'cn_e' at (1) is not a member of the 't_grid_edges' structure; did you mean 'fn_e'?
+# Error: 'cz_c' at (1) is not a member of the 't_grid_cells' structure; did you mean 'f_c'?
+# Error: 'ddt_ua_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn'?
+# Error: 'ddt_ua_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_ua_dyn_is_associated'?
+# Error: 'ddt_va_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn'?
+# Error: 'ddt_va_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_va_dyn_is_associated'?
+# Error: 'ddt_vn_cen' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn'?
+# Error: 'ddt_vn_cen_is_associated' at (1) is not a member of the 't_nh_diag' structure; did you mean 'ddt_vn_dyn_is_associated'?
+# Error: 'vor_u' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
+# Error: 'vor_v' at (1) is not a member of the 't_nh_diag' structure; did you mean 'vor'?
+# Error: 'deepatmo_t1ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
+# Error: 'deepatmo_t1mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
+# Error: 'deepatmo_t2mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'deepatmo_vol_mc'?
+# Error: 'dzgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
+# Error: 'fbk_dom_volume' at (1) is not a member of the 't_nh_metrics' structure
+# Error: 'zgpot_ifc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'z_ifc'?
+# Error: 'zgpot_mc' at (1) is not a member of the 't_nh_metrics' structure; did you mean 'dgeopot_mc'?
 
 
 _STRUCT_MEMBER_TYPES_IGNORE_LIST = {
-    dace.data.Scalar(dace.int8), # this likely was a string, so we ignore it
+    dace.data.Scalar(dace.int8),  # this likely was a string, so we ignore it
 }
 
 
@@ -307,13 +328,19 @@ def generate_copy_in_function_struct(
         dace_rich_obj%{member_name} = c_null_ptr
     """
             elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR)
+                array_name, dim_num = extract_array_helper_information(
+                    member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
+                )
                 copy_fields_src += f"""\
         dace_rich_obj%{member_name} = size(fortran_obj%{array_name}, dim={dim_num + 1})
     """
 
-            elif member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR)
+            elif member_name.startswith(
+                _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+            ):
+                array_name, dim_num = extract_array_helper_information(
+                    member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
+                )
                 copy_fields_src += f"""\
         dace_rich_obj%{member_name} = lbound(fortran_obj%{array_name}, dim={dim_num + 1})
     """
@@ -335,13 +362,19 @@ def generate_copy_in_function_struct(
         dace_rich_obj%{member_name} = c_null_ptr
     """
             elif member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR)
+                array_name, dim_num = extract_array_helper_information(
+                    member_name, _F2DACE_STRUCT_ARRAY_SIZE_HELPER_PATTERN_STR
+                )
                 copy_fields_src += f"""\
         dace_rich_obj%{member_name} = 0
     """
 
-            elif member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
-                array_name, dim_num = extract_array_helper_information(member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR)
+            elif member_name.startswith(
+                _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+            ):
+                array_name, dim_num = extract_array_helper_information(
+                    member_name, _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_PATTERN_STR
+                )
                 copy_fields_src += f"""\
         dace_rich_obj%{member_name} = 0
     """
@@ -388,8 +421,12 @@ class ArrayLoopHelper:
         return ", ".join(f"{prefix}{i}" for i in range(rank))
 
     @staticmethod
-    def indices_copy_stmt(rank: int, lhs_prefix: str, rhs_prefix: str, rhs_suffix: str = "") -> str:
-        return "; ".join(f"{lhs_prefix}{i} = {rhs_prefix}{i}{rhs_suffix}" for i in range(rank))
+    def indices_copy_stmt(
+        rank: int, lhs_prefix: str, rhs_prefix: str, rhs_suffix: str = ""
+    ) -> str:
+        return "; ".join(
+            f"{lhs_prefix}{i} = {rhs_prefix}{i}{rhs_suffix}" for i in range(rank)
+        )
 
     @staticmethod
     def loop_begins(rank: int, array_name: str, prefix: str = "i") -> str:
@@ -413,7 +450,9 @@ class ArrayLoopHelper:
         return loop_ends
 
 
-def generate_copy_in_function_array(array: Union[dace.data.ContainerArray, dace.data.Array]) -> Tuple[str, str]:
+def generate_copy_in_function_array(
+    array: Union[dace.data.ContainerArray, dace.data.Array]
+) -> Tuple[str, str]:
     rank = len(array.shape)
 
     # FIXME(important!): take offsets into consideration!
@@ -505,19 +544,19 @@ def generate_copy_in_fortran_expr(
     minimal_structs_expr: str,
     enable_inout_hack: bool = False,
 ) -> str:
-    raise NotImplementedError(
-        f"Unable to copy in fortran expression to '{dace_type}'"
-    )
+    raise NotImplementedError(f"Unable to copy in fortran expression to '{dace_type}'")
 
 
-_PRIMITIVE_FORTRAN_TO_DACE_COPY_IN_FUNCTIONS: Dict[dace.dtypes.typeclass, Optional[str]] = {
+_PRIMITIVE_FORTRAN_TO_DACE_COPY_IN_FUNCTIONS: Dict[
+    dace.dtypes.typeclass, Optional[str]
+] = {
     dace.float32: None,
     dace.float64: None,
     dace.int32: None,
     dace.int64: None,
-    #dace.int8: None,
-    #dace.bool: None,
-    #dace.bool_: None,
+    # dace.int8: None,
+    # dace.bool: None,
+    # dace.bool_: None,
 }
 
 
@@ -533,6 +572,7 @@ def _(
     if copy_in_func is not None:
         return f"{copy_in_func}({expr})"
     return expr
+
 
 @generate_copy_in_fortran_expr.register
 def _(
@@ -622,22 +662,24 @@ def generate_copy_back_subroutine_struct(
             if (
                 (
                     # only copy back scalar, struct & struct arays
-                    isinstance(member_type, dace.data.Array) and
-                    not isinstance(member_type, dace.data.ContainerArray)
-                ) or
-                member_type in _STRUCT_MEMBER_TYPES_IGNORE_LIST or
-                member_name in members_use_null or
-                member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX) or
-                member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
+                    isinstance(member_type, dace.data.Array)
+                    and not isinstance(member_type, dace.data.ContainerArray)
+                )
+                or member_type in _STRUCT_MEMBER_TYPES_IGNORE_LIST
+                or member_name in members_use_null
+                or member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX)
+                or member_name.startswith(
+                    _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+                )
             ):
                 continue
 
             assert (
-                isinstance(member_type, dace.data.Scalar) or
-                isinstance(member_type, dace.data.Structure) or
-                (
-                    isinstance(member_type, dace.data.ContainerArray) and
-                    isinstance(member_type.stype, dace.data.Structure)
+                isinstance(member_type, dace.data.Scalar)
+                or isinstance(member_type, dace.data.Structure)
+                or (
+                    isinstance(member_type, dace.data.ContainerArray)
+                    and isinstance(member_type.stype, dace.data.Structure)
                 )
             )
 
@@ -645,7 +687,7 @@ def generate_copy_back_subroutine_struct(
                 copy_back_fields_src += generate_copy_back_stmts(
                     member_type,
                     f"fortran_obj%{member_name}",
-                    f"dace_rich_obj%{member_name}"
+                    f"dace_rich_obj%{member_name}",
                 )
 
     return f"""\
@@ -673,7 +715,9 @@ def generate_copy_back_subroutine_struct(
 """
 
 
-def generate_copy_back_subroutine_struct_array(struct_array: dace.data.ContainerArray) -> str:
+def generate_copy_back_subroutine_struct_array(
+    struct_array: dace.data.ContainerArray,
+) -> str:
     rank = len(struct_array.shape)
     stype = struct_array.stype
     assert isinstance(stype, dace.data.Structure)
@@ -717,7 +761,9 @@ def generate_copy_back_stmts(dace_type, fortran_expr: str, dace_expr: str) -> st
 
 
 @generate_copy_back_stmts.register
-def generate_copy_back_stmts_scalar(scalar: dace.data.Scalar, fortran_expr: str, dace_expr: str) -> str:
+def generate_copy_back_stmts_scalar(
+    scalar: dace.data.Scalar, fortran_expr: str, dace_expr: str
+) -> str:
     if scalar.dtype == dace.int32:
         # could have been `logical` in fortran, might need cast
         return f"""\
@@ -729,14 +775,18 @@ def generate_copy_back_stmts_scalar(scalar: dace.data.Scalar, fortran_expr: str,
 
 
 @generate_copy_back_stmts.register
-def generate_copy_back_stmts_struct(struct: dace.data.Structure, fortran_expr: str, dace_expr: str) -> str:
+def generate_copy_back_stmts_struct(
+    struct: dace.data.Structure, fortran_expr: str, dace_expr: str
+) -> str:
     return f"""\
     call copy_back_{struct.name}({fortran_expr}, {dace_expr})
 """
 
 
 @generate_copy_back_stmts.register
-def generate_copy_back_stmts_struct_array(struct_array: dace.data.ContainerArray, fortran_expr: str, dace_expr: str) -> str:
+def generate_copy_back_stmts_struct_array(
+    struct_array: dace.data.ContainerArray, fortran_expr: str, dace_expr: str
+) -> str:
     rank = len(struct_array.shape)
     stype = struct_array.stype
     assert isinstance(stype, dace.data.Structure)
@@ -763,7 +813,8 @@ _COMPARISON_DEFAULT_THRESHOLDS_STR = """
   real(8), parameter :: int64_default_rel_threshold = 1.0e-12
   real(8), parameter :: int64_default_abs_threshold = 0.0
 """
-_COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(f"""
+_COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
+    f"""
 
   subroutine compare_{dtype.to_string()}_scalar( &
     actual, &
@@ -821,8 +872,7 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(f"""
 
   end subroutine compare_{dtype.to_string()}_scalar
 """
-    for dtype, fortran_type_str in
-    (
+    for dtype, fortran_type_str in (
         (dace.float32, "real(kind=c_float)"),
         (dace.float64, "real(kind=c_double)"),
         (dace.int32, "integer(kind=c_int)"),
@@ -971,10 +1021,9 @@ def generate_comparison_routine_dace_struct(
 
         member_name = fix_identifier(member_name)
 
-        if (
-            member_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX) or
-            member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
-        ):
+        if member_name.startswith(
+            _F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX
+        ) or member_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
             # we don't verify the helper fields
             continue
 
@@ -1225,8 +1274,9 @@ def _(
     )
 """
 
+
 _INITIALIZATION_CHECKS_TYPES_IGNORE_LIST = {
-    dace.int8, # this likely was a string, so we ignore it
+    dace.int8,  # this likely was a string, so we ignore it
 }
 
 # This is exclusive, i.e., the marker state is not considered for initializations
@@ -1235,17 +1285,30 @@ _END_INITIALIZATIONS_MARKER_STATE_LABELS = {
 }
 
 # all of these types should be immutable
-_INITIALIZATION_CHECKS_SUPPORTED_TYPES = bool, np.bool_, int, np.int32, np.int64, np.float32, np.float64, float
+_INITIALIZATION_CHECKS_SUPPORTED_TYPES = (
+    bool,
+    np.bool_,
+    int,
+    np.int32,
+    np.int64,
+    np.float32,
+    np.float64,
+    float,
+)
 
 
 def _initializations_check_bool_fix(val, dtype: dace.dtypes.typeclass) -> Any:
-    if isinstance(val, (bool, np.bool_)) and not issubclass(dtype.type, (bool, np.bool_)):
+    if isinstance(val, (bool, np.bool_)) and not issubclass(
+        dtype.type, (bool, np.bool_)
+    ):
         # some Fortran `LOGICAL` are encoded as integers in SDFG
         return val
     return dtype(val)
 
 
-def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: Set[str]) -> Dict[str, Any]:
+def extract_initializations(
+    sdfg: dace.SDFG, initializaion_checks_ignore_list: Set[str]
+) -> Dict[str, Any]:
     initializations: Dict[str, Any] = {}
 
     for state in sdfg.states():
@@ -1254,18 +1317,26 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
     else:
         # if no marker state was found, don't do initialization checks
         # (SDFG might be a cut-out without initializations)
-        logging.warning(f"Could not extract initializations of globals ('{sdfg.name}').")
+        logging.warning(
+            f"Could not extract initializations of globals ('{sdfg.name}')."
+        )
         return initializations
 
     state = sdfg.start_state
-    assert isinstance(state, dace.sdfg.SDFGState), f"Start must be an SDFGState ({state})"
-    initialization_sequence: List[Union[dace.sdfg.SDFGState, dace.sdfg.InterstateEdge]] = []
+    assert isinstance(
+        state, dace.sdfg.SDFGState
+    ), f"Start must be an SDFGState ({state})"
+    initialization_sequence: List[
+        Union[dace.sdfg.SDFGState, dace.sdfg.InterstateEdge]
+    ] = []
 
     # get initialization_sequence
     while state.label not in _END_INITIALIZATIONS_MARKER_STATE_LABELS:
         initialization_sequence.append(state)
         edges = sdfg.out_edges(state)
-        assert len(edges) == 1, f"initialization states must have only one out edge ({len(edges)})"
+        assert (
+            len(edges) == 1
+        ), f"initialization states must have only one out edge ({len(edges)})"
         edge = edges[0]
         initialization_sequence.append(edge.data)
         state = edge.dst
@@ -1279,30 +1350,46 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
                 continue
 
             # check valid tasklet
-            tasklets = [tasklet for tasklet in nodes if isinstance(tasklet, dace.nodes.Tasklet)]
-            assert 1 == len(tasklets), f"Expected only one tasklet (found {len(tasklets)})"
+            tasklets = [
+                tasklet for tasklet in nodes if isinstance(tasklet, dace.nodes.Tasklet)
+            ]
+            assert 1 == len(
+                tasklets
+            ), f"Expected only one tasklet (found {len(tasklets)})"
             tasklet = tasklets[0]
-            assert isinstance(tasklet, dace.nodes.Tasklet), f"Expected tasklet ({tasklet})"
-            assert tasklet.code.language == dace.dtypes.Language.Python, f"Expected Python tasklet ({tasklet})"
-            assert len(tasklet.out_connectors) == 1, f"Expected single out connector ({tasklet.out_connectors})"
+            assert isinstance(
+                tasklet, dace.nodes.Tasklet
+            ), f"Expected tasklet ({tasklet})"
+            assert (
+                tasklet.code.language == dace.dtypes.Language.Python
+            ), f"Expected Python tasklet ({tasklet})"
+            assert (
+                len(tasklet.out_connectors) == 1
+            ), f"Expected single out connector ({tasklet.out_connectors})"
             out_connector = next(iter(tasklet.out_connectors.keys()))
 
             # check valid write from tasklet
             out_memlets = state_or_edge.out_edges(tasklet)
-            assert len(out_memlets) == 1, f"Expected only one out memlet (found {len(out_memlets)})"
+            assert (
+                len(out_memlets) == 1
+            ), f"Expected only one out memlet (found {len(out_memlets)})"
             out_memlet = out_memlets[0]
             access_node = out_memlet.dst
             assert (
                 out_memlet.src == tasklet and out_memlet.dst == access_node
             ), f"Expected memlet to go from Tasklet to AccessNode ({out_memlet.src}, {out_memlet.dst})"
-            assert isinstance(access_node, dace.nodes.AccessNode), f"Expected AccessNode ({access_node})"
+            assert isinstance(
+                access_node, dace.nodes.AccessNode
+            ), f"Expected AccessNode ({access_node})"
 
             # better to use new dict in case the tasklet has other assignments
             # technically, we should only copy the symbols, but not data
             local_tasklet_scope = dict(initializations)
             for in_memlet in state_or_edge.in_edges(tasklet):
                 src_node = in_memlet.src
-                assert isinstance(src_node, dace.nodes.AccessNode), f"Expected AccessCode ({src_node})"
+                assert isinstance(
+                    src_node, dace.nodes.AccessNode
+                ), f"Expected AccessCode ({src_node})"
                 local_tasklet_scope[in_memlet.dst_conn] = initializations[src_node.data]
 
             name = access_node.data
@@ -1314,7 +1401,9 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
                 continue
 
             desc = sdfg.arrays[name]
-            assert isinstance(desc, dace.data.Scalar), f"Expected scalar for initialization ({desc})"
+            assert isinstance(
+                desc, dace.data.Scalar
+            ), f"Expected scalar for initialization ({desc})"
             if desc.dtype in _INITIALIZATION_CHECKS_TYPES_IGNORE_LIST:
                 logging.warning(
                     f"Skipping initialization check for '{name}' because its dtype "
@@ -1324,8 +1413,8 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
 
             exec(tasklet.code.as_string, local_tasklet_scope)
             value = local_tasklet_scope[out_connector]
-            assert (
-                isinstance(value, _INITIALIZATION_CHECKS_SUPPORTED_TYPES)
+            assert isinstance(
+                value, _INITIALIZATION_CHECKS_SUPPORTED_TYPES
             ), f"Unexpected type for initialization value ({value})"
             value = _initializations_check_bool_fix(value, desc.dtype)
             initializations[name] = value
@@ -1349,8 +1438,8 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
                     continue
 
                 value = eval(expr, initializations.copy())
-                assert (
-                    isinstance(value, _INITIALIZATION_CHECKS_SUPPORTED_TYPES)
+                assert isinstance(
+                    value, _INITIALIZATION_CHECKS_SUPPORTED_TYPES
                 ), f"Unexpected type for initialization value ({value})"
                 value = _initializations_check_bool_fix(value, dtype)
                 initializations[name] = dtype(value)
@@ -1361,7 +1450,7 @@ def extract_initializations(sdfg: dace.SDFG, initializaion_checks_ignore_list: S
 
 
 @singledispatch
-def generate_initialization_check_stmts(value, var_name:str, routine_name: str) -> str:
+def generate_initialization_check_stmts(value, var_name: str, routine_name: str) -> str:
     raise NotImplementedError(
         f"Unable to generate check expression for variable '{var_name}' with value {value}"
     )
@@ -1398,7 +1487,9 @@ def _(value: Union[int, np.int32, np.int64], var_name: str, routine_name: str) -
 @generate_initialization_check_stmts.register(float)
 @generate_initialization_check_stmts.register(np.float32)
 @generate_initialization_check_stmts.register(np.float64)
-def _(value: Union[float, np.float32, np.float64], var_name: str, routine_name: str) -> str:
+def _(
+    value: Union[float, np.float32, np.float64], var_name: str, routine_name: str
+) -> str:
     fortran_float_suffix = "_sp" if isinstance(value, np.float32) else "_wp"
     return f"""
     if ({var_name} /= {value:.20e}{fortran_float_suffix}) then
@@ -1427,15 +1518,21 @@ def generate_initializations_check(
         unsimplified = sdfg.from_file(str(build_folder / "unsimplified.sdfgz"))
 
     if unsimplified is None:
-        logging.warning(f"Could not find unsimplified sdfg for initialization ('{sdfg.name}').")
+        logging.warning(
+            f"Could not find unsimplified sdfg for initialization ('{sdfg.name}')."
+        )
     else:
 
-        initializations = extract_initializations(unsimplified, initializaion_checks_ignore_list)
+        initializations = extract_initializations(
+            unsimplified, initializaion_checks_ignore_list
+        )
 
         routine_name = f"dace_fortran_interface_{sdfg.name}"
 
         for name, value in initializations.items():
-            assert name not in initializaion_checks_ignore_list, f"initialization for '{name}' should be ignored"
+            assert (
+                name not in initializaion_checks_ignore_list
+            ), f"initialization for '{name}' should be ignored"
 
             imports_collector.require_symbol(name)
             checks_str += generate_initialization_check_stmts(value, name, routine_name)
@@ -1466,13 +1563,18 @@ def generate_fortran_interface_source(
 
     # they are sorted according to the C interfaces of the relevant functions
     sdfg_parameters = {
-        fix_identifier(name): desc for name, desc in sdfg.arglist().items()
+        fix_identifier(name): desc
+        for name, desc in sdfg.arglist().items()
         if (
-            not fix_identifier(name).startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX) and
-            not fix_identifier(name).startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX) and
-            not fix_identifier(name).startswith("tmp_struct_symbol")
+            not fix_identifier(name).startswith(
+                _F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX
+            )
+            and not fix_identifier(name).startswith(
+                _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+            )
+            and not fix_identifier(name).startswith("tmp_struct_symbol")
         )
-     }
+    }
     optionals = {
         name.removeprefix(_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX)
         for name in sdfg_parameters
@@ -1490,13 +1592,17 @@ def generate_fortran_interface_source(
     # the arrays that need translation functions
     array_translations: Dict[
         Tuple[Union[dace.dtypes.typeclass, dace.data.Structure], int],
-        Union[dace.data.Array, dace.data.ContainerArray]
+        Union[dace.data.Array, dace.data.ContainerArray],
     ] = {}
     for array in arrays.keys():
-        assert array.alignment == 0, f"Unsupported alignment for array ({array.alignment})"
+        assert (
+            array.alignment == 0
+        ), f"Unsupported alignment for array ({array.alignment})"
 
         rank = len(array.shape)
-        dtype = array.stype if isinstance(array, dace.data.ContainerArray) else array.dtype
+        dtype = (
+            array.stype if isinstance(array, dace.data.ContainerArray) else array.dtype
+        )
 
         if (dtype, rank) not in array_translations:
             array_translations[(dtype, rank)] = array
@@ -1524,7 +1630,9 @@ def generate_fortran_interface_source(
         copy_in_functions_str += copy_in_str
         copy_in_functions_interface_str += copy_in_interface_str
         if isinstance(array, dace.data.ContainerArray):
-            copy_back_subroutines_src += generate_copy_back_subroutine_struct_array(array)
+            copy_back_subroutines_src += generate_copy_back_subroutine_struct_array(
+                array
+            )
 
     initializations_check_subroutine_str = generate_initializations_check(
         sdfg,
@@ -1577,7 +1685,9 @@ module {module_name}
     ###################################################
     # DaCe struct definitions
     ###################################################
-    dace_struct_definitions_str = "\n".join(generate_dace_struct_definition(struct) for struct in structs)
+    dace_struct_definitions_str = "\n".join(
+        generate_dace_struct_definition(struct) for struct in structs
+    )
 
     verification_deep_copies_declarations_src = ""
     cached_shallow_copyies_declarations_src = ""
@@ -1586,12 +1696,16 @@ module {module_name}
             # no copies needed for scalars
             continue
 
-        assert isinstance(desc, (dace.data.Array, dace.data.Structure, dace.data.ContainerArray))
+        assert isinstance(
+            desc, (dace.data.Array, dace.data.Structure, dace.data.ContainerArray)
+        )
         assert not param_name.startswith(_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX)
         assert not param_name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX)
         assert not param_name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
         assert not param_name.startswith(_F2DACE_STRUCT_ARRAY_SIZE_HELPER_FIELD_PREFIX)
-        assert not param_name.startswith(_F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
+        assert not param_name.startswith(
+            _F2DACE_STRUCT_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+        )
 
         if isinstance(desc, (dace.data.Structure, dace.data.ContainerArray)):
             cached_shallow_copyies_declarations_src += f"""\
@@ -1632,8 +1746,7 @@ module {module_name}
 
     direct_program_parameter_decls_str = "\n".join(
         f"    {dace_type_to_fortran_c_var_type_decl(desc)}, value :: {name}"
-        for name, desc in
-        sdfg_parameters.items()
+        for name, desc in sdfg_parameters.items()
     )
 
     source += f"""\
@@ -1693,9 +1806,9 @@ contains
         name: desc
         for name, desc in sdfg_parameters.items()
         if (
-            not name.startswith(_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX) and
-            not name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX) and
-            not name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
+            not name.startswith(_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX)
+            and not name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX)
+            and not name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
         )
     }
     convinience_parameters_str = join_wrapped(
@@ -1753,13 +1866,14 @@ contains
         if param_name in optionals:
             var_name = _OPTIONAL_PROXY_PREFIX + param_name
 
-        if (
-            param_name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX) or
-            param_name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
-        ):
+        if param_name.startswith(
+            _F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX
+        ) or param_name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
             continue
 
-        kw_arg_verification = kw_arg = f"""{param_name} = {generate_copy_in_fortran_expr(
+        kw_arg_verification = (
+            kw_arg
+        ) = f"""{param_name} = {generate_copy_in_fortran_expr(
                 desc,
                 expr=var_name,
                 steal_arrays_expr=".true.",
@@ -1799,9 +1913,7 @@ contains
 """
             if isinstance(desc, (dace.data.Structure, dace.data.ContainerArray)):
                 shallow_copies_copy_back_src += generate_copy_back_stmts(
-                    desc,
-                    var_name,
-                    f"verification_deep_copy_{param_name}"
+                    desc, var_name, f"verification_deep_copy_{param_name}"
                 )
         kw_args.append(kw_arg)
         kw_args_verification.append(kw_arg_verification)
@@ -1810,24 +1922,32 @@ contains
         name: desc
         for name, desc in sdfg_parameters.items()
         if (
-            name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX) or
-            name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
+            name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX)
+            or name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX)
         )
     }
     for array_helper_name, desc in array_helper_parameters.items():
         assert isinstance(desc, dace.data.Scalar)
 
         if array_helper_name.startswith(_F2DACE_PARAM_ARRAY_SIZE_HELPER_FIELD_PREFIX):
-            array_name, dim_num = extract_array_helper_information(array_helper_name, _F2DACE_PARAM_ARRAY_SIZE_HELPER_PATTERN_STR)
+            array_name, dim_num = extract_array_helper_information(
+                array_helper_name, _F2DACE_PARAM_ARRAY_SIZE_HELPER_PATTERN_STR
+            )
             helper_init_expr = f"size({array_name}, dim={dim_num + 1})"
-        elif array_helper_name.startswith(_F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX):
-            array_name, dim_num = extract_array_helper_information(array_helper_name, _F2DACE_PARAM_ARRAY_OFFSET_HELPER_PATTERN_STR)
+        elif array_helper_name.startswith(
+            _F2DACE_PARAM_ARRAY_OFFSET_HELPER_FIELD_PREFIX
+        ):
+            array_name, dim_num = extract_array_helper_information(
+                array_helper_name, _F2DACE_PARAM_ARRAY_OFFSET_HELPER_PATTERN_STR
+            )
             helper_init_expr = f"lbound({array_name}, dim={dim_num + 1})"
         else:
             assert False
 
         if array_name not in sdfg_parameters:
-            logging.warning(f"Initializing array helper '{array_helper_name}' with '-1' (it shouldn't be a parameter)")
+            logging.warning(
+                f"Initializing array helper '{array_helper_name}' with '-1' (it shouldn't be a parameter)"
+            )
             kw_arg_verification = kw_arg = f"{array_helper_name} = -1"
         else:
             kw_arg_verification = kw_arg = f"{array_helper_name} = {helper_init_expr}"
@@ -1922,7 +2042,9 @@ end module {module_name}
 
 def main():
 
-    parser = argparse.ArgumentParser(description=("Generate F90 Fortran binginds for SDFG file."))
+    parser = argparse.ArgumentParser(
+        description=("Generate F90 Fortran binginds for SDFG file.")
+    )
 
     parser.add_argument(
         "sdfg_file_path",
@@ -1954,10 +2076,13 @@ def main():
     struct_ignore_list = set(meta_data["struct_ignore_list"])
     struct_members_use_null = {
         struct_name: set(members_use_null)
-        for struct_name, members_use_null
-        in meta_data["struct_members_use_null"].items()
+        for struct_name, members_use_null in meta_data[
+            "struct_members_use_null"
+        ].items()
     }
-    initializaion_checks_ignore_list = set(meta_data["initialization_checks_ignore_list"])
+    initializaion_checks_ignore_list = set(
+        meta_data["initialization_checks_ignore_list"]
+    )
 
     with open(args.module_definitions_file_path) as module_definitions_file:
         module_definitions = load_yaml(module_definitions_file, Loader=YAML_Loader)

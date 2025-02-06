@@ -25,10 +25,6 @@ cp -sR "$ABS_SOURCE_DIR" "$ABS_SCRATCHPAD_DIR"
 rm -R "$ABS_SCRATCHPAD_DIR/icon-model/run"
 cp -R "$ABS_SOURCE_DIR/run" "$ABS_SCRATCHPAD_DIR/icon-model"
 
-
 echo "Contents of 'icon-model' copied to '$SCRATCHPAD_DIR' as symlinks."
 
 python generate_sdfgs.py "$ABS_SCRATCHPAD_DIR/$SOURCE_DIR" "$ABS_SCRATCHPAD_DIR/$SOURCE_DIR/sdfgs" "$ABS_SCRATCHPAD_DIR/$SOURCE_DIR/sdfgs/integrations.yaml"
-
-#python generate.py get_albedos ./integrations.yaml .
-#python optimize_get_albedos.py ./get_albedos_unsimplified.sdfgz ./get_albedos_optimized.sdfgz

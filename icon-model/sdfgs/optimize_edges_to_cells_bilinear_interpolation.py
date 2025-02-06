@@ -12,6 +12,7 @@ def optimize(sdfg: dace.SDFG) -> dace.SDFG:
 
     return sdfg
 
+
 def main():
     parser = argparse.ArgumentParser(description=(f"Optimize '{SDFG_NAME}'"))
 
@@ -33,8 +34,8 @@ def main():
     sdfg = optimize(sdfg)
 
     # Makefile does this automatically no?
-    #output_path = args.optimized_sdfg_path.resolve()
-    #if not output_path.parent.exists():
+    # output_path = args.optimized_sdfg_path.resolve()
+    # if not output_path.parent.exists():
     #    output_path.parent.mkdir(parents=True)
 
     sdfg.save(str(args.optimized_sdfg_path))

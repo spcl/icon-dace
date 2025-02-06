@@ -7,6 +7,7 @@ import argparse
 
 from yaml import dump as dump_yaml, load as load_yaml
 import yaml
+
 try:
     from yaml import CDumper as YAML_Dumper, CLoader as YAML_Loader
 except ImportError:
@@ -14,174 +15,6 @@ except ImportError:
 
 import dace
 
-
-###############################################################################
-# Start demo SDFG (edges_to_cells_bilinear_interpolation)
-###############################################################################
-# Original ICON code given below. There are two major differences in the DaCe Python version:
-# 1. We have to change Fortran 1-based indexing to DaCe 0-based indexing
-# 2. Fortran shapes and indices are reversed in DaCe (column vs row major ordering)
-#
-#   #ifdef __LOOP_EXCHANGE
-#         DO jc = i_startidx, i_endidx
-#           DO jk = 1, nlev
-#           z_ekinh(jk,jc,jb) =  &
-#   #else
-#         DO jk = 1, nlev
-#           DO jc = i_startidx, i_endidx
-#           z_ekinh(jc,jk,jb) =  &
-#   #endif
-#             p_int%e_bln_c_s(jc,1,jb)*z_kin_hor_e(ieidx(jc,jb,1),jk,ieblk(jc,jb,1)) + &
-#             p_int%e_bln_c_s(jc,2,jb)*z_kin_hor_e(ieidx(jc,jb,2),jk,ieblk(jc,jb,2)) + &
-#             p_int%e_bln_c_s(jc,3,jb)*z_kin_hor_e(ieidx(jc,jb,3),jk,ieblk(jc,jb,3))
-#           ENDDO
-#         ENDDO
-
-MIXED_PRECISION = False # `False` for most relevant configurations
-LOOP_EXCHANGE = False # usually `True` for CPU, and `False` for GPU
-
-wp = dace.float64 # working precision = double precision
-vp = dace.float32 if MIXED_PRECISION else dace.float64 # variable precision
-
-block_size = dace.symbol("block_size")
-# usually `num_cell_blocks == 1` for GPU configurations
-num_cell_blocks = dace.symbol("num_cell_blocks")
-# usually `num_edge_blocks == ceil(1.5) = 2` for GPU configurations
-num_edge_blocks = dace.symbol("num_edge_blocks")
-num_levels = dace.symbol("num_levels")
-
-cell_block_idx = dace.symbol("cell_block_idx")
-
-InterpolationData = dace.data.Structure(
-    # Name has to be the same as ICON name, so integration works out
-    name="t_int_state",
-    members=dict(
-        # coefficient for bilinear interpolation from edges to cells for scalar quantities
-        # Name has to be the same as ICON name, so integration works out
-        e_bln_c_s=wp[num_cell_blocks, 3, block_size],
-    ),
-)
-
-LOOP_EXCHANGED_VP_CELL_FIELD_TYPE = (
-    vp[num_cell_blocks, block_size, num_levels]
-    if LOOP_EXCHANGE else
-    vp[num_cell_blocks, num_levels, block_size]
-)
-
-
-@dace.program
-def edges_to_cells_bilinear_interpolation(
-    cell_scalar: LOOP_EXCHANGED_VP_CELL_FIELD_TYPE,
-    edge_scalar: vp[num_edge_blocks, num_levels, block_size],
-    # lookup tables for local neighbors (3 edges for each triangle/cell)
-    # (Note: they are 1-based indices, so we change them to 0-based in the code)
-    cell_to_edges_idx: dace.int32[3, num_cell_blocks, block_size],
-    cell_to_edges_block_idx: dace.int32[3, num_cell_blocks, block_size],
-    # Struct with interpolation coefficients
-    interpolation_data: InterpolationData,
-    # where to compute
-    cell_start_idx: dace.int32,
-    cell_end_idx: dace.int32,
-    # for simplicity, this stencil only works for one single block
-    # (though for GPU configurations, there is only one block encompassing all cells)
-    cell_block_idx: dace.int32,
-):
-    # Change from Fortran 1-based indexing to DaCe 0-based indexing
-    cell_start_idx -= 1
-    cell_end_idx -= 1
-    cell_block_idx -= 1
-
-    # In ICON, order of nesting is determined by `LOOP_EXCHANGE`
-    for cell_idx, level in dace.map[cell_start_idx:cell_end_idx + 1, 0:num_levels]:
-
-        interpolated_cell_value = (
-            # edge 1
-            interpolation_data.e_bln_c_s[cell_block_idx, 0, cell_idx] *
-            edge_scalar[
-                cell_to_edges_block_idx[0, cell_block_idx, cell_idx] - 1,
-                level,
-                cell_to_edges_idx[0, cell_block_idx, cell_idx] - 1,
-            ]
-            +
-            # edge 2
-            interpolation_data.e_bln_c_s[cell_block_idx, 1, cell_idx] *
-            edge_scalar[
-                cell_to_edges_block_idx[1, cell_block_idx, cell_idx] - 1,
-                level,
-                cell_to_edges_idx[1, cell_block_idx, cell_idx] - 1,
-            ]
-            +
-            # edge 3
-            interpolation_data.e_bln_c_s[cell_block_idx, 2, cell_idx] *
-            edge_scalar[
-                cell_to_edges_block_idx[2, cell_block_idx, cell_idx] - 1,
-                level,
-                cell_to_edges_idx[2, cell_block_idx, cell_idx] - 1,
-            ]
-        )
-
-        if LOOP_EXCHANGE:
-            cell_scalar[cell_block_idx, cell_idx, level] = interpolated_cell_value
-        else:
-            cell_scalar[cell_block_idx, level, cell_idx] = interpolated_cell_value
-
-
-EDGES_TO_CELLS_BILINEAR_INTERPOLATION_MODULE_DEFINITIONS = dict(
-    # helpers for fortan interface
-    warning = "mo_exception",
-    MAX_CHAR_LENGTH = "mo_impl_constants",
-    # The only symbol needed for the actual SDFG
-    t_int_state = "mo_intp_data_strc",
-)
-
-
-EDGES_TO_CELLS_BILINEAR_INTERPOLATION_ASSOCIATIONS = {
-    "mo_velocity_advection.f90": {
-        432: {
-            448: dict(
-                block_size = "nproma",
-                num_cell_blocks = "p_patch%nblks_c",
-                num_levels = "nlev",
-                cell_scalar = "z_ekinh",
-                edge_scalar = "z_kin_hor_e",
-                cell_to_edges_idx = "ieidx",
-                cell_to_edges_block_idx = "ieblk",
-                interpolation_data = "p_int",
-                cell_start_idx = "i_startidx",
-                cell_end_idx = "i_endidx",
-                cell_block_idx = "jb",
-            )
-        }
-    }
-}
-
-
-def create_edges_to_cells_bilinear_interpolation_sdfg(
-    output_folder: Path,
-    associations: Dict[str, List[Tuple[int, int]]],
-):
-
-    if associations != {"src/atm_dyn_iconam/mo_velocity_advection.f90": [(432, 448)]}:
-        # hard-coded associations only works for this integration
-        raise NotImplementedError("Demo SDFG doesn't support this integration!")
-
-    # create SDFG
-    demo_sdfg = edges_to_cells_bilinear_interpolation.to_sdfg()
-    demo_sdfg.save(str(output_folder / "edges_to_cells_bilinear_interpolation_unsimplified.sdfgz"))
-
-    # create module definitions
-    with open(output_folder / "edges_to_cells_bilinear_interpolation_module_definitions.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            EDGES_TO_CELLS_BILINEAR_INTERPOLATION_MODULE_DEFINITIONS,
-            Dumper=YAML_Dumper,
-        ))
-
-    # create associations
-    with open(output_folder / "edges_to_cells_bilinear_interpolation_associations.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            EDGES_TO_CELLS_BILINEAR_INTERPOLATION_ASSOCIATIONS,
-            Dumper=YAML_Dumper,
-        ))
 
 def create_radiation_sdfg(
     output_folder: Path,
@@ -191,14 +24,16 @@ def create_radiation_sdfg(
     current_folder = os.path.dirname(os.path.abspath(__file__))
     demo_sdfg = dace.SDFG.from_file(current_folder + "/radiation.sdfgz")
 
-    #sw_albedo_diffuse_var_601="0.0d0",
-    #sw_albedo_direct_var_600="0.0d0",
-    #lw_albedo_var_599="0.0d0",
+    # sw_albedo_diffuse_var_601="0.0d0",
+    # sw_albedo_direct_var_600="0.0d0",
+    # lw_albedo_var_599="0.0d0",
     # Hotfix to compile
     for arr_name, arr in demo_sdfg.arrays.items():
-        if (arr_name == "sw_albedo_diffuse_var_601" or
-            arr_name == "sw_albedo_direct_var_600" or
-            arr_name == "lw_albedo_var_599"):
+        if (
+            arr_name == "sw_albedo_diffuse_var_601"
+            or arr_name == "sw_albedo_direct_var_600"
+            or arr_name == "lw_albedo_var_599"
+        ):
             assert arr.transient is False
             arr.transient = True
 
@@ -210,186 +45,170 @@ def create_radiation_sdfg(
         f.write(yaml_output)
 
     # create module definitions
-    with open(output_folder / "radiation_module_definitions.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            RADIATION_MODULE_DEFINITIONS,
-            Dumper=YAML_Dumper,
-        ))
+    with open(
+        output_folder / "radiation_module_definitions.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                RADIATION_MODULE_DEFINITIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
 
     # create associations
-    with open(output_folder / "radiation_associations.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            RADIATION_ASSOCIATIONS,
-            Dumper=YAML_Dumper,
-        ))
+    with open(
+        output_folder / "radiation_associations.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                RADIATION_ASSOCIATIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
 
 
 VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     # The only symbol needed for the actual SDFG
-    t_patch = "mo_model_domain",
-    t_grid_cells = "mo_model_domain",
-    t_grid_edges = "mo_model_domain",
-    t_grid_vertices = "mo_model_domain",
-    t_subset_range = "mo_model_domain",
-    t_tangent_vectors = "mo_model_domain",
-
-    t_grid_geometry_info = "mo_grid_geometry_info",
-
-    t_geographical_coordinates = "mo_math_types",
-    t_cartesian_coordinates = "mo_math_types",
-
-    t_comm_pattern = "mo_communication",
-    t_comm_gather_pattern = "mo_communication",
-    t_scatterPattern = "mo_communication",
-    t_comm_pattern_collection = "mo_communication",
-    t_p_comm_pattern = "mo_communication",
-
-    t_uuid = "mo_util_uuid_types",
-
-    t_grid_domain_decomp_info = "mo_decomposition_tools",
-    t_glb2loc_index_lookup = "mo_decomposition_tools",
-
-    t_distrib_read_data = "mo_read_netcdf_types",
-
-    t_dist_dir = "mo_dist_dir",
-
-    t_int_state = "mo_intp_data_strc",
-    t_lsq = "mo_intp_data_strc",
-    t_cell_environ = "mo_intp_data_strc",
-    t_gauss_quad = "mo_intp_data_strc",
-
-    t_nh_state = "mo_nonhydro_types",
-    t_nh_diag = "mo_nonhydro_types",
-    t_nh_metrics = "mo_nonhydro_types",
-    t_nh_prog = "mo_nonhydro_types",
-    t_nh_ref = "mo_nonhydro_types",
-
-    t_prepare_adv = "mo_prepadv_types",
-
+    t_patch="mo_model_domain",
+    t_grid_cells="mo_model_domain",
+    t_grid_edges="mo_model_domain",
+    t_grid_vertices="mo_model_domain",
+    t_subset_range="mo_model_domain",
+    t_tangent_vectors="mo_model_domain",
+    t_grid_geometry_info="mo_grid_geometry_info",
+    t_geographical_coordinates="mo_math_types",
+    t_cartesian_coordinates="mo_math_types",
+    t_comm_pattern="mo_communication",
+    t_comm_gather_pattern="mo_communication",
+    t_scatterPattern="mo_communication",
+    t_comm_pattern_collection="mo_communication",
+    t_p_comm_pattern="mo_communication",
+    t_uuid="mo_util_uuid_types",
+    t_grid_domain_decomp_info="mo_decomposition_tools",
+    t_glb2loc_index_lookup="mo_decomposition_tools",
+    t_distrib_read_data="mo_read_netcdf_types",
+    t_dist_dir="mo_dist_dir",
+    t_int_state="mo_intp_data_strc",
+    t_lsq="mo_intp_data_strc",
+    t_cell_environ="mo_intp_data_strc",
+    t_gauss_quad="mo_intp_data_strc",
+    t_nh_state="mo_nonhydro_types",
+    t_nh_diag="mo_nonhydro_types",
+    t_nh_metrics="mo_nonhydro_types",
+    t_nh_prog="mo_nonhydro_types",
+    t_nh_ref="mo_nonhydro_types",
+    t_prepare_adv="mo_prepadv_types",
     # helpers for fortan interface
-    message = "mo_exception",
-    em_error = "mo_exception",
-    MAX_CHAR_LENGTH = "mo_impl_constants",
-
+    message="mo_exception",
+    em_error="mo_exception",
+    MAX_CHAR_LENGTH="mo_impl_constants",
     # globals
-    dp = "mo_kind",
-    wp = "mo_kind",
-    sp = "mo_kind",
-    vp = "mo_kind",
-    i4 = "mo_kind",
-
-    em_none = "mo_exception",
-    em_info = "mo_exception",
-    em_warn = "mo_exception",
-    em_param = "mo_exception",
-    em_debug = "mo_exception",
-    number_of_warnings = "mo_exception",
-    number_of_errors = "mo_exception",
-    warning = "mo_exception",
-
-    grid_length_rescale_factor = "mo_grid_config",
-    grid_rescale_factor = "mo_grid_config",
-    grid_angular_velocity = "mo_grid_config",
-    grid_sphere_radius = "mo_grid_config",
-    lrescale_ang_vel = "mo_grid_config",
-    namelist_grid_angular_velocity = "mo_grid_config",
-    no_of_dynamics_grids = "mo_grid_config",
-    n_dom = "mo_grid_config",
-    n_dom_start = "mo_grid_config",
-
-    sphere_geometry = "mo_grid_geometry_info",
-    triangular_cell = "mo_grid_geometry_info",
-
-    dbl_eps = "mo_math_constants",
-
-    rd = "mo_physical_constants",
-    cpd = "mo_physical_constants",
-    cvd = "mo_physical_constants",
-    cvd_o_rd = "mo_physical_constants",
-    earth_radius = "mo_physical_constants",
-    earth_angular_velocity = "mo_physical_constants",
-    alf = "mo_physical_constants",
-    als = "mo_physical_constants",
-    alsdcp = "mo_physical_constants",
-    alv = "mo_physical_constants",
-    alvdcp = "mo_physical_constants",
-    clw = "mo_physical_constants",
-    con0_h = "mo_physical_constants",
-    con_h = "mo_physical_constants",
-    con_m = "mo_physical_constants",
-    cpv = "mo_physical_constants",
-    cv_i = "mo_physical_constants",
-    cv_v = "mo_physical_constants",
-    cvv = "mo_physical_constants",
-    dv0 = "mo_physical_constants",
-    eta0d = "mo_physical_constants",
-    grav = "mo_physical_constants",
-    o_m_rdv = "mo_physical_constants",
-    p0ref = "mo_physical_constants",
-    rcpd = "mo_physical_constants",
-    rcpl = "mo_physical_constants",
-    rcpv = "mo_physical_constants",
-    rcvd = "mo_physical_constants",
-    rd_o_cpd = "mo_physical_constants",
-    rdv = "mo_physical_constants",
-    rhoh2o = "mo_physical_constants",
-    rhoice = "mo_physical_constants",
-    rv = "mo_physical_constants",
-    t3 = "mo_physical_constants",
-    tmelt = "mo_physical_constants",
-    vtmpc1 = "mo_physical_constants",
-    vtmpc2 = "mo_physical_constants",
-
-    filename_max = "mo_io_units",
-    nerr = "mo_io_units",
-    nlog = "mo_io_units",
-
-    mpi_comm_null = "mo_mpi",
-    p_mpi_comm_null = "mo_mpi",
-    comm_lev = "mo_mpi",
-    p_io = "mo_mpi",
-    p_pe = "mo_mpi",
-    proc_split = "mo_mpi",
-    mpi_request_null = "mo_mpi",
-    process_mpi_stdio_id = "mo_mpi",
-    i_am_accel_node = "mo_mpi",
-
-    max_hw = "mo_impl_constants",
-    min_rlcell_int = "mo_impl_constants",
-    min_rlcell = "mo_impl_constants",
-    min_rlvert_int = "mo_impl_constants",
-    min_rlvert = "mo_impl_constants",
-    min_rledge_int = "mo_impl_constants",
-    min_rledge = "mo_impl_constants",
-    max_dom = "mo_impl_constants",
-    rayleigh_classic = "mo_impl_constants",
-    rayleigh_klemp = "mo_impl_constants",
-
-    grf_bdywidth_c = "mo_impl_constants_grf",
-    grf_bdywidth_e = "mo_impl_constants_grf",
-    grf_bdywidth_v = "mo_impl_constants_grf",
-
-    nproma = "mo_parallel_config",
-    nblocks_c = "mo_parallel_config",
-    ignore_nproma_use_nblocks_c = "mo_parallel_config",
-    p_test_run = "mo_parallel_config",
-    l_test_openmp = "mo_parallel_config",
-    icon_comm_openmp = "mo_parallel_config",
-    num_io_procs = "mo_parallel_config",
-    num_restart_procs = "mo_parallel_config",
-    num_prefetch_proc = "mo_parallel_config",
-    proc0_shift = "mo_parallel_config",
-    use_dycore_barrier = "mo_parallel_config",
-
-    is_iau_active = "mo_initicon_config",
-    iau_wgt_dyn = "mo_initicon_config",
-
-    edge2cell_coeff_cc = "mo_intp_data_strc",
+    dp="mo_kind",
+    wp="mo_kind",
+    sp="mo_kind",
+    vp="mo_kind",
+    i4="mo_kind",
+    em_none="mo_exception",
+    em_info="mo_exception",
+    em_warn="mo_exception",
+    em_param="mo_exception",
+    em_debug="mo_exception",
+    number_of_warnings="mo_exception",
+    number_of_errors="mo_exception",
+    warning="mo_exception",
+    grid_length_rescale_factor="mo_grid_config",
+    grid_rescale_factor="mo_grid_config",
+    grid_angular_velocity="mo_grid_config",
+    grid_sphere_radius="mo_grid_config",
+    lrescale_ang_vel="mo_grid_config",
+    namelist_grid_angular_velocity="mo_grid_config",
+    no_of_dynamics_grids="mo_grid_config",
+    n_dom="mo_grid_config",
+    n_dom_start="mo_grid_config",
+    sphere_geometry="mo_grid_geometry_info",
+    triangular_cell="mo_grid_geometry_info",
+    dbl_eps="mo_math_constants",
+    rd="mo_physical_constants",
+    cpd="mo_physical_constants",
+    cvd="mo_physical_constants",
+    cvd_o_rd="mo_physical_constants",
+    earth_radius="mo_physical_constants",
+    earth_angular_velocity="mo_physical_constants",
+    alf="mo_physical_constants",
+    als="mo_physical_constants",
+    alsdcp="mo_physical_constants",
+    alv="mo_physical_constants",
+    alvdcp="mo_physical_constants",
+    clw="mo_physical_constants",
+    con0_h="mo_physical_constants",
+    con_h="mo_physical_constants",
+    con_m="mo_physical_constants",
+    cpv="mo_physical_constants",
+    cv_i="mo_physical_constants",
+    cv_v="mo_physical_constants",
+    cvv="mo_physical_constants",
+    dv0="mo_physical_constants",
+    eta0d="mo_physical_constants",
+    grav="mo_physical_constants",
+    o_m_rdv="mo_physical_constants",
+    p0ref="mo_physical_constants",
+    rcpd="mo_physical_constants",
+    rcpl="mo_physical_constants",
+    rcpv="mo_physical_constants",
+    rcvd="mo_physical_constants",
+    rd_o_cpd="mo_physical_constants",
+    rdv="mo_physical_constants",
+    rhoh2o="mo_physical_constants",
+    rhoice="mo_physical_constants",
+    rv="mo_physical_constants",
+    t3="mo_physical_constants",
+    tmelt="mo_physical_constants",
+    vtmpc1="mo_physical_constants",
+    vtmpc2="mo_physical_constants",
+    filename_max="mo_io_units",
+    nerr="mo_io_units",
+    nlog="mo_io_units",
+    mpi_comm_null="mo_mpi",
+    p_mpi_comm_null="mo_mpi",
+    comm_lev="mo_mpi",
+    p_io="mo_mpi",
+    p_pe="mo_mpi",
+    proc_split="mo_mpi",
+    mpi_request_null="mo_mpi",
+    process_mpi_stdio_id="mo_mpi",
+    i_am_accel_node="mo_mpi",
+    max_hw="mo_impl_constants",
+    min_rlcell_int="mo_impl_constants",
+    min_rlcell="mo_impl_constants",
+    min_rlvert_int="mo_impl_constants",
+    min_rlvert="mo_impl_constants",
+    min_rledge_int="mo_impl_constants",
+    min_rledge="mo_impl_constants",
+    max_dom="mo_impl_constants",
+    rayleigh_classic="mo_impl_constants",
+    rayleigh_klemp="mo_impl_constants",
+    grf_bdywidth_c="mo_impl_constants_grf",
+    grf_bdywidth_e="mo_impl_constants_grf",
+    grf_bdywidth_v="mo_impl_constants_grf",
+    nproma="mo_parallel_config",
+    nblocks_c="mo_parallel_config",
+    ignore_nproma_use_nblocks_c="mo_parallel_config",
+    p_test_run="mo_parallel_config",
+    l_test_openmp="mo_parallel_config",
+    icon_comm_openmp="mo_parallel_config",
+    num_io_procs="mo_parallel_config",
+    num_restart_procs="mo_parallel_config",
+    num_prefetch_proc="mo_parallel_config",
+    proc0_shift="mo_parallel_config",
+    use_dycore_barrier="mo_parallel_config",
+    is_iau_active="mo_initicon_config",
+    iau_wgt_dyn="mo_initicon_config",
+    edge2cell_coeff_cc="mo_intp_data_strc",
 )
 
 sub_dict = dict(
     p_prog="p_nh%prog(nnew)",
-    p_patch="p_patch" ,
+    p_patch="p_patch",
     p_int="p_int",
     p_metrics="p_nh%metrics",
     p_diag="p_nh%diag",
@@ -403,12 +222,11 @@ sub_dict = dict(
     dt_linintp_ubc="dt_linintp_ubc_nnew",
     lextra_diffu="1",
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
-
 )
 
 sub_dict2 = dict(
     p_prog="p_nh%prog(nnew)",
-    p_patch="p_patch" ,
+    p_patch="p_patch",
     p_int="p_int",
     p_metrics="p_nh%metrics",
     p_diag="p_nh%diag",
@@ -424,7 +242,7 @@ sub_dict2 = dict(
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 )
 
-RADIATION_MODULE_DEFINITIONS =  {
+RADIATION_MODULE_DEFINITIONS = {
     "ecrad": "mo_ecrad",
     "ecrad_ssi_default": "mo_ecrad",
     "ISolverSpartacus": "mo_ecrad",
@@ -453,28 +271,9 @@ RADIATION_MODULE_DEFINITIONS =  {
     "c_null_ptr": "iso_c_binding",
 }
 
-RADIATION_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS | RADIATION_MODULE_DEFINITIONS
-
-"""
-radiation_state_t *__state,
-aerosol_type* aerosol,
-cloud_type* cloud,
-config_type* config,
-flux_type* flux,
-gas_type* gas,
-double * __restrict__ lw_albedo_var_599,
-single_level_type* single_level,
-double * __restrict__ sw_albedo_diffuse_var_601,
-double * __restrict__ sw_albedo_direct_var_600,
-thermodynamics_type* thermodynamics,
-int iendcol,
-int istartcol,
-int ncol,
-int nlev,
-int nulout,
-int sym_iendcol,
-int sym_istartcol
-"""
+RADIATION_MODULE_DEFINITIONS = (
+    VELOCITY_TENDENCIES_MODULE_DEFINITIONS | RADIATION_MODULE_DEFINITIONS
+)
 
 sub_dict3 = dict(
     aerosol="ecrad_aerosol",
@@ -491,71 +290,75 @@ sub_dict3 = dict(
     nulout="0",
     sym_iendcol="i_endidx_rad",
     sym_istartcol="i_startidx_rad",
-    #sw_albedo_diffuse_var_601="0.0d0",
-    #sw_albedo_direct_var_600="0.0d0",
-    #lw_albedo_var_599="0.0d0",
+    # sw_albedo_diffuse_var_601="0.0d0",
+    # sw_albedo_direct_var_600="0.0d0",
+    # lw_albedo_var_599="0.0d0",
 )
 
 VELOCITY_TENDENCIES_ASSOCIATIONS = {
-    "mo_solve_nonhydro.f90": {
-        465: {
-            466: sub_dict
-        },
-        497: {
-            498: sub_dict2
-        }
-    }
+    "mo_solve_nonhydro.f90": {465: {466: sub_dict}, 497: {498: sub_dict2}}
 }
 
 RADIATION_ASSOCIATIONS = {
     "mo_nwp_ecrad_interface.f90": {
-        432: {
-            442: sub_dict3
-        },
+        432: {442: sub_dict3},
     }
 }
+
 
 def create_velocity_tendencies_sdfg(
     output_folder: Path,
     associations: Dict[str, List[Tuple[int, int]]],
 ):
 
-    if associations != {"src/atm_dyn_iconam/mo_solve_nonhydro.f90": [
-        (465, 466),
-        (497, 498)]}:
+    if associations != {
+        "src/atm_dyn_iconam/mo_solve_nonhydro.f90": [(465, 466), (497, 498)]
+    }:
         raise NotImplementedError("Demo SDFG doesn't support this integration!")
 
     # create SDFG
     current_folder = os.path.dirname(os.path.abspath(__file__))
 
-    demo_sdfg = dace.SDFG.from_file(current_folder + "/velocity_tendencies_autoopt_1.sdfgz")
+    demo_sdfg = dace.SDFG.from_file(
+        current_folder + "/velocity_tendencies_autoopt_1.sdfgz"
+    )
     demo_sdfg.save(str(output_folder / "velocity_tendencies_unsimplified.sdfgz"))
 
     # create module definitions
-    with open(output_folder / "velocity_tendencies_module_definitions.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            VELOCITY_TENDENCIES_MODULE_DEFINITIONS,
-            Dumper=YAML_Dumper,
-        ))
+    with open(
+        output_folder / "velocity_tendencies_module_definitions.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                VELOCITY_TENDENCIES_MODULE_DEFINITIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
 
     # create associations
-    with open(output_folder / "velocity_tendencies_associations.yaml", "w") as module_definitions_yaml:
-        module_definitions_yaml.write(dump_yaml(
-            VELOCITY_TENDENCIES_ASSOCIATIONS,
-            Dumper=YAML_Dumper,
-        ))
-
+    with open(
+        output_folder / "velocity_tendencies_associations.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                VELOCITY_TENDENCIES_ASSOCIATIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
 
 
 ###############################################################################
 # End demo SDFG
 ###############################################################################
 
+
 def main():
 
-    parser = argparse.ArgumentParser(description=(
-        "Generate SDFGs and corresponding helper files (e.g., for integration)"
-    ))
+    parser = argparse.ArgumentParser(
+        description=(
+            "Generate SDFGs and corresponding helper files (e.g., for integration)"
+        )
+    )
 
     parser.add_argument(
         "sdfg_name",
@@ -583,12 +386,12 @@ def main():
             if sdfg_name == args.sdfg_name:
                 for line_nr_integration in line_nr_integrations:
                     start_line_nr, end_line_nr = line_nr_integration
-                    required_associations[fortran_source_file].append((start_line_nr, end_line_nr))
+                    required_associations[fortran_source_file].append(
+                        (start_line_nr, end_line_nr)
+                    )
 
     if args.sdfg_name == "radiation":
         create_radiation_sdfg(args.output_folder, required_associations)
-    elif args.sdfg_name == "edges_to_cells_bilinear_interpolation":
-        create_edges_to_cells_bilinear_interpolation_sdfg(args.output_folder, required_associations)
     elif args.sdfg_name == "velocity_tendencies":
         create_velocity_tendencies_sdfg(args.output_folder, required_associations)
     else:

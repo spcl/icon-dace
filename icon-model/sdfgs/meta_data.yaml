@@ -1,55 +1,56 @@
 initialization_checks_ignore_list:
+  # defined in "mo_solve_nonhydro.f90", would lead to import cycle
+  # FIXME: aren't they defined somewhere else? How could there be an import cycle?!
+  - cpd_o_rd
+  - grav_o_cpd
+  - rd_o_cvd
+  - rd_o_p0ref
 
-# defined in "mo_solve_nonhydro.f90", would lead to import cycle
-# FIXME: aren't they defined somewhere else? How could there be an import cycle?!
-- cpd_o_rd
-- grav_o_cpd
-- rd_o_cvd
-- rd_o_p0ref
+  # special
+  #- rd # available in "mo_physical_constants"
+  - rd_local # private in "mo_kind.f90"
 
-# special
-#- rd # available in "mo_physical_constants"
-- rd_local # private in "mo_kind.f90"
+  # private in "mo_kind.f90":
+  - pd
+  - ps
+  - rs
+  - pi4
 
-# private in "mo_kind.f90":
-- pd
-- ps
-- rs
-- pi4
+  # private in "mo_exception.f90"
+  - l_log
+  - l_debug
 
-# private in "mo_exception.f90"
-- l_log
-- l_debug
+  # private in "mo_mpi"
+  - global_mpi_communicator
+  - work_mpi_process
+  - max_lev
 
-# private in "mo_mpi"
-- global_mpi_communicator
-- work_mpi_process
-- max_lev
+  # private in "mo_vertical_grid"
+  - t0sl_bg
+  - h_scal_bg
+  - del_t_bg
 
-# private in "mo_vertical_grid"
-- t0sl_bg
-- h_scal_bg
-- del_t_bg
-
-- undefined
-- modname
+  - undefined
+  - modname
 
 struct_ignore_list:
-- t_comm_gather_pattern
-- t_uuid
-# FIXME: due to differences between the ICON open source version and the version used in the DaFy paper
-#- t_int_state () # need it for `edges_to_cells_bilinear_interpolation` demo
-#- t_grid_edges
-#- t_grid_cells
-#- t_nh_diag
-#- t_nh_metrics
+  # FIXME: due to differences between the ICON open source version and the version used in the DaFy paper
+  # TODO: Fix pipeline to be able to copy members of these
+  -
+  #- t_comm_gather_pattern
+  #- t_uuid
+  #- t_int_state ()
+  #- t_grid_edges
+  #- t_grid_cells
+  #- t_nh_diag
+  #- t_nh_metrics
 
 struct_members_use_null:
   t_nh_diag:
-  # seem to be a dangling pointers, so we use null instead
-  - rh_avginc
-  - vabs_avginc
-  - t2m_bias
-  - t_avginc
-  - t_wgt_avginc
-  - p_avginc
+    # seem to be a dangling pointers, so we use null instead
+    - rh_avginc
+    - vabs_avginc
+    - t2m_bias
+    - t_avginc
+    - t_wgt_avginc
+    - p_avginc

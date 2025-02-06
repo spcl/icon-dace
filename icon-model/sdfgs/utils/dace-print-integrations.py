@@ -3,6 +3,7 @@ from pathlib import Path
 import argparse
 
 from yaml import load as load_yaml
+
 try:
     from yaml import CLoader as YAML_Loader
 except ImportError:
@@ -32,7 +33,7 @@ def main():
         title="format",
         description="The format to print the integrations",
         required=True,
-        dest="format"
+        dest="format",
     )
 
     for name in SIMPLE_FORMATERS.keys():
@@ -78,7 +79,6 @@ def main():
 
     else:
         assert False, f"Requested invalid format '{args.format}'"
-
 
 
 if __name__ == "__main__":

@@ -15,6 +15,7 @@ from pathlib import Path
 from shutil import copy as copy_file
 
 from yaml import load as load_yaml
+
 try:
     from yaml import CLoader as YAML_Loader
 except ImportError:
@@ -22,8 +23,11 @@ except ImportError:
 
 
 assert (
-    (3, 7) <= sys.version_info
-), f"Unsupported Python version ({sys.version_info}), 3.7 or higher is required"
+    3,
+    7,
+) <= sys.version_info, (
+    f"Unsupported Python version ({sys.version_info}), 3.7 or higher is required"
+)
 
 
 COMPILER_DEFINE_ENABLE = "DACE_SUBST_ENABLE"
@@ -41,11 +45,11 @@ _IDENTIFIER_REGEX = "\\w+"
 _WHITE_SPACE_OPTIONAL_REGEX = "\\s*"
 _WHITE_SPACE_MANDATORY_REGEX = "\\s+"
 _MODULE_LOWER_CASE_REGEX = (
-    _WHITE_SPACE_OPTIONAL_REGEX +
-    "module" +
-    _WHITE_SPACE_MANDATORY_REGEX +
-    _IDENTIFIER_REGEX +
     _WHITE_SPACE_OPTIONAL_REGEX
+    + "module"
+    + _WHITE_SPACE_MANDATORY_REGEX
+    + _IDENTIFIER_REGEX
+    + _WHITE_SPACE_OPTIONAL_REGEX
 )
 
 
@@ -66,18 +70,24 @@ def process(
     for sdfg_name, insertions in integrations.items():
 
         if 0 < len(insertions):
-            imports[f"mo_{sdfg_name}_bindings"].update((
-                f"run_{sdfg_name}",
-                f"run_{sdfg_name}_verification",
-                f"verify_{sdfg_name}",
-            ))
+            imports[f"mo_{sdfg_name}_bindings"].update(
+                (
+                    f"run_{sdfg_name}",
+                    f"run_{sdfg_name}_verification",
+                    f"verify_{sdfg_name}",
+                )
+            )
 
         for start, end in insertions:
             start, end = start, end
 
             print(associations[sdfg_name])
-            before_src = generate_start_substitution_src(sdfg_name, associations[sdfg_name][fortran_file_path.name][start][end])
-            after_src = generate_end_substitution_src(sdfg_name, associations[sdfg_name][fortran_file_path.name][start][end])
+            before_src = generate_start_substitution_src(
+                sdfg_name, associations[sdfg_name][fortran_file_path.name][start][end]
+            )
+            after_src = generate_end_substitution_src(
+                sdfg_name, associations[sdfg_name][fortran_file_path.name][start][end]
+            )
 
             # `line_nr` will be `int`, so convert back
             # (we really should use YAML instead, because it supports int pair keys...)
@@ -86,7 +96,7 @@ def process(
 
     processed_lines = []
     for line_nr, line in enumerate(lines):
-        line_nr += 1 # fix 1-based line numbering
+        line_nr += 1  # fix 1-based line numbering
 
         if line_nr in insert_before:
             processed_lines.extend(insert_before[line_nr])
@@ -100,7 +110,7 @@ def process(
             processed_lines.append(generate_imports_src(imports))
 
     processed_output_content = "".join(processed_lines)
-    assert(os.path.islink(processed_output_path))
+    assert os.path.islink(processed_output_path)
     if os.path.islink(processed_output_path):
         os.unlink(processed_output_path)
 
@@ -110,8 +120,7 @@ def process(
 
 def generate_imports_src(imports: Dict[str, Set[str]]) -> str:
     return "\n".join(
-        f"  USE {module}, ONLY: &\n    " +
-        ', &\n    '.join(functions)
+        f"  USE {module}, ONLY: &\n    " + ", &\n    ".join(functions)
         for module, functions in imports.items()
     )
 
@@ -196,9 +205,11 @@ def main():
         associations_yaml_path = Path(associations_yaml_path)
         associations_yaml_file_name = associations_yaml_path.name
         assert associations_yaml_file_name.endswith("_associations.yaml")
-        sdfg_name = associations_yaml_file_name[:-len("_associations.yaml")]
+        sdfg_name = associations_yaml_file_name[: -len("_associations.yaml")]
         with open(associations_yaml_path) as associations_yaml_file:
-            associations[sdfg_name] = load_yaml(associations_yaml_file, Loader=YAML_Loader)
+            associations[sdfg_name] = load_yaml(
+                associations_yaml_file, Loader=YAML_Loader
+            )
     # We check only by name, collisions seem unlikely
     path_normalized_integrations_yaml = {
         Path(path).name: integrations
