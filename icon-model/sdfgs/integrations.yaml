@@ -2,6 +2,9 @@
 #  velocity_tendencies:
 #    - [465, 466]
 #    - [497, 498]
-./externals/ecrad/radiation/radiation_interface.f90:
-  get_albedos:
-    - [335, 338]
+#./externals/ecrad/radiation/radiation_interface.f90:
+#  get_albedos:
+#    - [335, 338]
+./src/atm_phy_nwp/mo_nwp_ecrad_interface.f90:
+  radiation:
+    - [432, 442]

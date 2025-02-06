@@ -1,5 +1,3 @@
-#!/bin/bash
-
 SCRATCHPAD_DIR="icon-scratchpad"
 SOURCE_DIR="icon-model"
 
@@ -22,6 +20,11 @@ ABS_SOURCE_DIR=$(realpath "$SOURCE_DIR")
 ABS_SCRATCHPAD_DIR=$(realpath "$SCRATCHPAD_DIR")
 
 cp -sR "$ABS_SOURCE_DIR" "$ABS_SCRATCHPAD_DIR"
+
+# Run folder should not be symlink
+rm -R "$ABS_SCRATCHPAD_DIR/icon-model/run"
+cp -R "$ABS_SOURCE_DIR/run" "$ABS_SCRATCHPAD_DIR/icon-model"
+
 
 echo "Contents of 'icon-model' copied to '$SCRATCHPAD_DIR' as symlinks."
 

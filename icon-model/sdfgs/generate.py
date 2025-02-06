@@ -6,6 +6,7 @@ from pathlib import Path
 import argparse
 
 from yaml import dump as dump_yaml, load as load_yaml
+import yaml
 try:
     from yaml import CDumper as YAML_Dumper, CLoader as YAML_Loader
 except ImportError:
@@ -189,8 +190,24 @@ def create_radiation_sdfg(
     # create SDFG
     current_folder = os.path.dirname(os.path.abspath(__file__))
     demo_sdfg = dace.SDFG.from_file(current_folder + "/radiation.sdfgz")
-    demo_sdfg.name = "radiation"
+
+    #sw_albedo_diffuse_var_601="0.0d0",
+    #sw_albedo_direct_var_600="0.0d0",
+    #lw_albedo_var_599="0.0d0",
+    # Hotfix to compile
+    for arr_name, arr in demo_sdfg.arrays.items():
+        if (arr_name == "sw_albedo_diffuse_var_601" or
+            arr_name == "sw_albedo_direct_var_600" or
+            arr_name == "lw_albedo_var_599"):
+            assert arr.transient is False
+            arr.transient = True
+
     demo_sdfg.save(str(output_folder / "radiation_unsimplified.sdfgz"))
+
+    yaml_output = yaml.dump(RADIATION_MODULE_DEFINITIONS, default_flow_style=False)
+
+    with open(output_folder / f"radiation_module_definitions.yam'", "w") as f:
+        f.write(yaml_output)
 
     # create module definitions
     with open(output_folder / "radiation_module_definitions.yaml", "w") as module_definitions_yaml:
@@ -370,8 +387,6 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     edge2cell_coeff_cc = "mo_intp_data_strc",
 )
 
-RADIATION_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS
-
 sub_dict = dict(
     p_prog="p_nh%prog(nnew)",
     p_patch="p_patch" ,
@@ -409,14 +424,76 @@ sub_dict2 = dict(
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 )
 
+RADIATION_MODULE_DEFINITIONS =  {
+    "ecrad": "mo_ecrad",
+    "ecrad_ssi_default": "mo_ecrad",
+    "ISolverSpartacus": "mo_ecrad",
+    "t_ecrad_conf": "mo_ecrad",
+    "t_ecrad_aerosol_type": "mo_ecrad",
+    "t_ecrad_single_level_type": "mo_ecrad",
+    "t_ecrad_thermodynamics_type": "mo_ecrad",
+    "t_ecrad_gas_type": "mo_ecrad",
+    "t_ecrad_flux_type": "mo_ecrad",
+    "t_ecrad_cloud_type": "mo_ecrad",
+    "config_type": "radiation_config",
+    "aerosol_type": "radiation_aerosol",
+    "single_level_type": "radiation_single_level",
+    "thermodynamics_type": "radiation_thermodynamics",
+    "gas_type": "radiation_gas",
+    "flux_type": "radiation_flux",
+    "cloud_type": "radiation_cloud",
+    "t_opt_ptrs": "mo_ecrad",
+    "ecrad_hyd_list": "mo_ecrad",
+    "ecrad_iqr": "mo_ecrad",
+    "ecrad_iqs": "mo_ecrad",
+    "ecrad_iqg": "mo_ecrad",
+    "nulout": "radiation_io",
+    "ncol": "mo_parallel_config",
+    "nproma_sub": "mo_parallel_config",
+    "c_null_ptr": "iso_c_binding",
+}
+
+RADIATION_MODULE_DEFINITIONS = VELOCITY_TENDENCIES_MODULE_DEFINITIONS | RADIATION_MODULE_DEFINITIONS
+
+"""
+radiation_state_t *__state,
+aerosol_type* aerosol,
+cloud_type* cloud,
+config_type* config,
+flux_type* flux,
+gas_type* gas,
+double * __restrict__ lw_albedo_var_599,
+single_level_type* single_level,
+double * __restrict__ sw_albedo_diffuse_var_601,
+double * __restrict__ sw_albedo_direct_var_600,
+thermodynamics_type* thermodynamics,
+int iendcol,
+int istartcol,
+int ncol,
+int nlev,
+int nulout,
+int sym_iendcol,
+int sym_istartcol
+"""
+
 sub_dict3 = dict(
-    this_var_278="single_level",
-    istartcol_var_380="istartcol",
-    iendcol_var_381="iendcol",
-    config_var_379="config",
-    sw_albedo_direct_var_383="sw_albedo_direct",
-    sw_albedo_diffuse_var_384="sw_albedo_diffuse",
-    lw_albedo_var_382="lw_albedo",
+    aerosol="ecrad_aerosol",
+    cloud="ecrad_cloud",
+    config="ecrad_conf",
+    flux="ecrad_flux",
+    gas="ecrad_gas",
+    single_level="ecrad_single_level",
+    thermodynamics="ecrad_thermodynamics",
+    iendcol="i_endidx_rad",
+    istartcol="i_startidx_rad",
+    ncol="nproma_sub",
+    nlev="nlev",
+    nulout="0",
+    sym_iendcol="i_endidx_rad",
+    sym_istartcol="i_startidx_rad",
+    #sw_albedo_diffuse_var_601="0.0d0",
+    #sw_albedo_direct_var_600="0.0d0",
+    #lw_albedo_var_599="0.0d0",
 )
 
 VELOCITY_TENDENCIES_ASSOCIATIONS = {
@@ -431,9 +508,9 @@ VELOCITY_TENDENCIES_ASSOCIATIONS = {
 }
 
 RADIATION_ASSOCIATIONS = {
-    "radiation_interface.f90": {
-        335: {
-            338: sub_dict3
+    "mo_nwp_ecrad_interface.f90": {
+        432: {
+            442: sub_dict3
         },
     }
 }
