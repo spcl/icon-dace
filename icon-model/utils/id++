@@ -1,0 +1,45 @@
+#! /usr/bin/perl -i
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#
+# Update $Id... strings
+#
+# Increments the revision number - starting from 1,
+# and updates file name, time stamp, and user name
+#
+# Usage: $ICON_DIR/utils/id++ [-s N] FILE [FILE ...]
+#
+# -s N: set revision number to N instead
+#
+
+use warnings;
+use strict;
+use Getopt::Std;
+use POSIX;
+
+my %opts = ();
+getopts('s:', \%opts);
+
+my $factor = exists $opts{s} ? 0 : 1;
+my $offset = $opts{s} || 1;
+
+my $stamp = POSIX::strftime("%Y-%m-%d %H:%M:%SZ", gmtime());
+my $user = $ENV{LOGNAME} || $ENV{USER} || getpwuid($<);
+
+while(<>) {
+    my $file = $ARGV;
+    s{\$Id: \S+ (\S+) \S+ \S+ \S+ \$}
+     {join(' ', '$Id:', $file, $factor*$1+$offset, $stamp, $user, '$')}ge;
+    s{\$Id[: ]*\$}
+     {\$Id: $file $offset $stamp $user \$}g;
+    print;
+}

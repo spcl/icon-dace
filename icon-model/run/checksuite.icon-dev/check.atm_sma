@@ -1,0 +1,69 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------------------------
+#
+# _bb_table_Description_  Smagorinsky diffusion experiment
+# _bb_table_Model_        non-hydrostatic atmosphere with ECHAM physics and Smagorinsky diffusion
+
+#--------------------------------------------------------------------------------
+#
+# 1. Define the experiment and the files to be checked
+#
+# EXPERIMENT is the name of the experiment, that defines the experiment descriptor
+# file run/exp.<EXPNAME>. EXPNAME is used also for:
+# - the output directory name: experiments/<EXPNAME>
+# - the output  file names: <EXPNAME>_<TYPE>_<DATE>.nc
+# - the restart file names: 
+#
+export EXPERIMENT='atm_sma_test'
+
+# TYPES is a list of names identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export TYPES='atm_2d_ml atm_3d_ml'
+
+# DATES is a list of dates identifying the files <EXPNAME>_<TYPE>_<DATE>.nc
+# to be checked.
+#
+export DATES='20080101T000000Z 20080101T000002Z 20080101T000004Z 20080101T000006Z 20080101T000008Z'
+
+# RESTART_DATE defines the date and time from which restarts should be performed.
+# 
+export RESTART_DATE='20080101T000004Z'
+
+#--------------------------------------------------------------------------------
+# 
+# 2. Define the checksuite mode
+#
+export MD='rnmo'
+
+#--------------------------------------------------------------------------------
+# 
+# 3. Launch the checksuite from run/
+
+rundir=`pwd`
+cd checksuite.icon-dev
+
+case $HOST in
+    *daint*)
+        export MD='rnmot'
+esac
+
+./icon-dev.checksuite
+STATUS=$?
+
+check_final_status $STATUS "$EXPERIMENT"
+
+
+#--------------------------------------------------------------------------------
+exit

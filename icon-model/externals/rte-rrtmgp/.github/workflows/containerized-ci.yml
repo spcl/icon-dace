@@ -1,0 +1,131 @@
+name: Continuous integration in a box
+on:
+  push:
+    branches-ignore:
+    - documentation
+  pull_request:
+    branches-ignore:
+    - documentation
+
+jobs:
+  Containerized-CI:
+    runs-on: ubuntu-22.04
+    continue-on-error: ${{ matrix.experimental }}
+    strategy:
+      fail-fast: false
+      matrix:
+        fortran-compiler: [ifort, ifx, nvfortran]
+        rte-kernels: [default, accel]
+        fpmodel: [DP, SP]
+        include:
+        # The tests are not experimental by default:
+        - experimental: false
+        # Disable GPU support to use the default kernels:
+        - rte-kernels: default
+          enable-gpu: no
+        # Enable GPU support with OpenMP for Intel Fortran Compiler Classic but
+        # ignore the directives:
+        - fortran-compiler: ifort
+          rte-kernels: accel
+          enable-gpu: openmp
+          extra-config-args: acx_cv_fc_openmp_flag=
+        # Enable GPU support with OpenMP for Intel Fortran Compiler:
+        - fortran-compiler: ifx
+          rte-kernels: accel
+          enable-gpu: openmp
+        # Enable GPU support with OpenACC for NVIDIA Fortran Compiler:
+        - fortran-compiler: nvfortran
+          rte-kernels: accel
+          enable-gpu: openacc
+        # Set flags for Intel Fortran Compiler Classic:
+        - fortran-compiler: ifort
+          fcflags: -m64 -g -traceback -heap-arrays -assume realloc_lhs -extend-source 132 -check bounds,uninit,pointers,stack -stand f08
+        # Set flags for Intel Fortran Compiler:
+        - fortran-compiler: ifx
+          rte-kernels: default
+          fcflags: -debug -traceback -O0 -heap-arrays -assume realloc_lhs -extend-source 132 -stand f08
+        - fortran-compiler: ifx
+          rte-kernels: accel
+          fcflags: -debug -traceback -O0 -heap-arrays -assume realloc_lhs -extend-source 132 -stand f08 -fiopenmp -fopenmp-targets=spir64
+          # The compiler produces two module files per Fortran module, which
+          # confuses the configure script:
+          extra-config-args: acx_cv_fc_module_naming_ext=mod
+          experimental: true
+        # Set flags for NVIDIA Fortran Compiler:
+        - fortran-compiler: nvfortran
+          fcflags: -Mallocatable=03 -Mstandard -Mbounds -Mchkptr -Kieee -Mchkstk
+        # Set container images:
+        - fortran-compiler: ifort
+          image: ghcr.io/earth-system-radiation/rte-rrtmgp-ci:ifort
+        - fortran-compiler: ifx
+          image: ghcr.io/earth-system-radiation/rte-rrtmgp-ci:ifort
+        - fortran-compiler: nvfortran
+          image: ghcr.io/earth-system-radiation/rte-rrtmgp-ci:nvfortran
+    container:
+      image: ${{ matrix.image }}
+    env:
+      # Core variables:
+      FC: ${{ matrix.fortran-compiler }}
+      FCFLAGS: ${{ matrix.fcflags }}
+      # Configure script variables:
+      LAUNCH_PREFIX:
+      RFMIP_CACHEDIR: .testcache
+    steps:
+    #
+    # Check out repository
+    #
+    - uses: actions/checkout@v4
+    #
+    # Cache RFMIP files
+    #
+    - name: Cache RFMIP files
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.RFMIP_CACHEDIR }}
+        key: rfmip-files-autoconf
+    #
+    # Configure
+    #
+    - name: Configure
+      run: |
+        test 'x${{ matrix.fpmodel }}' = xSP && enable_sp=yes || enable_sp=no
+        ./configure \
+          --disable-silent-rules \
+          --enable-gpu='${{ matrix.enable-gpu }}' \
+          --enable-single-precision="${enable_sp}" \
+          --enable-tests \
+          ${{ matrix.extra-config-args }} \
+        || { cat ./config.log; exit 1; }
+    #
+    # Build
+    #
+    - name: Build
+      run: make -j
+    #
+    # Check
+    #
+    - name: Check
+      run: |
+        make -j check || {
+          find . -name '*.test' | sort | sed 's|.test$|.log|' | while read file; do
+            echo "$file"
+            cat "$file"
+          done
+          exit 1
+        }
+    #
+    # Generate validation plots
+    #
+    - name: Generate validation plots
+      if: matrix.fortran-compiler == 'ifort' && matrix.rte-kernels == 'default' && matrix.fpmodel == 'DP'
+      working-directory: tests
+      run: python validation-plots.py
+    #
+    # Upload validation plots
+    #
+    - name: Upload validation plots
+      if: matrix.fortran-compiler == 'ifort' && matrix.rte-kernels == 'default' && matrix.fpmodel == 'DP'
+      uses: actions/upload-artifact@v3
+      with:
+        name: valdiation-plot
+        path: tests/validation-figures.pdf

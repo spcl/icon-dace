@@ -1,0 +1,133 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  - saves the plots to ec:/RDX/prepIFS/${EXPVER}/${BASETIME}
+                   (e.g. ec:/RDX/prepIFS/e9wo/19871103 - last date!)
+%end
+
+## include the standard header file
+%include <init_ws_submit.h>
+#=========================================================================
+##.AUTHOR  Martin Koehler 1. September 2003
+## Modified  Adrian Tompkins 23 March 2004: flexible 
+#                 interface + new climate plots
+#            Adrian Tompkins 30r1 - coupled model saves
+#=========================================================================
+#  Define environment variables and export them.
+#==========================================================================
+
+
+#==========================================================================
+YYYYMM=`echo %YMD% | cut -c 1-6`
+EXPDIR=%ECTEMP%/%SUITE%/%EXPNUM%/seasonal
+mkdir -p ${EXPDIR}
+
+export TMPDIR=${EXPDIR}
+export PLOTDATA=${EXPDIR}
+export ECDIR_SEAS="ec:icon/experiments/%SUITE%/%EXPNUM%/seasonal"
+cd ${EXPDIR}
+DATA=${EXPDIR}
+ 
+#INIDATE1=${INITIME}
+INIDATE1=%TIME_LIST%
+BASETIME=%YMD%%INIHOUR%
+
+#exp=${EXPVER}
+#if [[ $FSFAMILY = "/climplot" ]] ; then
+#  exp=${VERFEXP1:-${EXPVER}}
+#fi
+
+EXPVER=%SUITE%_%EXPNUM%
+VERFEXP1=%SUITE%_%EXPNUM%
+VERFEXP2=%SUITE2%_%EXPNUM2%
+
+INIDATE1=`echo ${INIDATE1} | sed 's/\// /g'` # REPLACE / WITH SPACE
+set -A INIDATE1 ${INIDATE1}
+#integer ndate
+ndate=${#INIDATE1[*]}
+
+exp=${EXPVER}
+
+
+##if [[ $FSFAMILY = "/climplot" ]] ; then
+##  exp=${VERFEXP1:-${EXPVER}}
+##  locfcrange=$FCRANGE
+##  locnumber=$NUMBER
+##else
+  locfcrange=-99
+  locnumber=-99
+##fi
+
+saveplots=0
+
+if (( $locnumber == -99 )) ; then
+  nens=$ndate
+  ndate=`expr ${ndate} \- 1` # array index starts from zero!
+  if [[ ${BASETIME} = ${INIDATE1[${ndate}]} ]] ; then
+    saveplots=1
+    echo 'saving at date: ' $BASETIME
+  fi  
+else
+  nens=$locnumber
+  saveplots=1
+  echo 'saving coupled experiment files'
+fi
+
+echo 'number of ensemble members is ' $nens
+
+if (( $saveplots == 1 )) ; then
+    # Save plots
+    cd $DATA
+    if [[ $nens -gt 1 ]] ; then
+       rm -f `ls | grep .*_nens1_.*ps$` # remove the junk test plots
+                                        # workaround for long lists
+    fi
+
+    tag=''
+    exp2=''
+    tar -cvf plots_${exp}${exp2}${tag}.ps.tar `ls | grep .*${exp}.*ps$`
+    gzip -f  plots_${exp}${exp2}${tag}.ps.tar
+   # Ecp -o   plots_${exp}${exp2}${tag}.ps.tar.gz ec:${FSROOT}/${exp}
+    echo "now it should be copy to the ecfs system"
+    ecp -o   plots_${exp}${exp2}${tag}.ps.tar.gz ${ECDIR_SEAS}
+    #ecp -o   plots_${exp}${exp2}${tag}.ps.tar ${ECDIR_SEAS}
+   
+
+#-----------------------------------------------------------------------------
+# ectrans plots to mkoehler@DWD
+
+%nopp
+  for metfile in `ls clim_*.ps` `ls diffmap_*.ps` ; do
+    convert -density 250 -resize 35% ${metfile} ${metfile%.ps}.png || true 
+  done
+  for metfile in `ls zon_*.ps clim_*trmm*.ps` ; do
+    convert -rotate 90 -density 250 -resize 35% ${metfile} ${metfile%.ps}.png || true 
+  done
+ #for obsd in gpcp hoap ssmi xiearkin ciwc quikscat isccp modis ; do
+%end
+
+
+  cd %ECTEMP%/%SUITE%
+  ln -sf %EXPNUM% %SUITE%_%EXPNUM%
+
+  tarfile=%SUITE%_%EXPNUM%_UNTAR.tar
+  chmod a+r %SUITE%_%EXPNUM%/seasonal/*.png
+  tar cvf ${tarfile} %SUITE%_%EXPNUM%/seasonal/*.png
+
+  /home/ms/de/dfr/Perl/ectrans.pl -r ECtoFE04 -O plots ${tarfile}
+  rm -f ${tarfile} %SUITE%_%EXPNUM%
+  
+fi
+
+# include the standard "tail" file
+%include <end_ws.h>

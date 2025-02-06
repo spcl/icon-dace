@@ -1,0 +1,105 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: CC0-1.0
+# ---------------------------------------------------------------
+
+version = 1
+
+[[annotations]]
+# Documentation and its source files:
+path = [
+  "AUTHORS.TXT",
+  "README.md",
+  "RELEASE_NOTES.md",
+  "config/**/*.readme",
+  "config/**/README.md",
+  "data/README",
+  "doc/**/*.bib",
+  "doc/**/*.eps",
+  "doc/**/*.fig",
+  "doc/**/*.jpg",
+  "doc/**/*.md",
+  "doc/**/*.pdf",
+  "doc/**/*.png",
+  "doc/**/*.ps",
+  "doc/**/*.svg",
+  "run/**/README*",
+  "schedulers/ecmwf/doc/doc.html",
+  "scripts/**/README*",
+  "scripts/postprocessing/climplot/climplot.help",
+  "scripts/postprocessing/tools/mjo_analysis_suite/mjo_analysis_procedure.pdf",
+  "src/**/README*",
+  "utils/plotems/doc/CHANGES.txt",
+  "vertical_coord_tables/README",
+]
+SPDX-FileCopyrightText = "2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+# Input files:
+path = [
+  "data/*.nc",
+  "data/microphysics/SBM_input_33/*",
+  "scripts/scm/init_create/LANFEX_create/*.txt",
+]
+SPDX-FileCopyrightText = "2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss"
+SPDX-License-Identifier = "CC-BY-4.0"
+
+[[annotations]]
+# "Unimportant" technical files:
+path = [
+  "config.h.in",
+  "config/**/SPACK_TAG_*",
+  "run/tolerance/hashes/*",
+  "schedulers/ecmwf/gen/mapfile_vlist.txt",
+  "scripts/**/TAG",
+  "scripts/postprocessing/amip_quickplots/VARS.txt",
+  "scripts/postprocessing/tools/iconplot_ncl/*.list",
+  "test/microphysics_1mom_schemes/input-data.nc.md5",
+]
+SPDX-FileCopyrightText = "2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss"
+SPDX-License-Identifier = "CC0-1.0"
+
+[[annotations]]
+# Various exceptions from the categories above:
+path = [
+  "run/checksuite.icon-kit/*.info",
+  "run/checksuite.icon-kit/*.txt",
+  "run/performance_reference/*.json",
+  "src/templates/**/*.f90_template",
+  "test/microphysics_1mom_schemes/reference/*",
+  "test/microphysics_1mom_schemes/tolerance/*",
+  "utils/plotems/doc/*.pdf",
+  "vertical_coord_tables/atm_hyb_sz_*",
+]
+SPDX-FileCopyrightText = "2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss"
+SPDX-License-Identifier = "BSD-3-Clause"
+
+# External files:
+
+[[annotations]]
+path = ["data/rrtmgp-gas-lw-g128.nc", "data/rrtmgp-gas-sw-g112.nc"]
+SPDX-FileCopyrightText = "2015-2018, Atmospheric and Environmental Research and Regents of the University of Colorado. All rights reserved."
+SPDX-License-Identifier = "BSD-3-Clause"
+
+[[annotations]]
+path = "utils/plotems/lightbox/images/*"
+SPDX-FileCopyrightText = "2005, 2014 jQuery Foundation, Inc. and other contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "configure"
+SPDX-License-Identifier = "FSFUL"
+
+[[annotations]]
+path = ["utils/config.guess", "utils/config.sub"]
+SPDX-License-Identifier = "GPL-3.0-or-later WITH Autoconf-exception-generic-3.0"
+
+[[annotations]]
+path = "utils/install-sh"
+SPDX-License-Identifier = "X11-distribute-modifications-variant"

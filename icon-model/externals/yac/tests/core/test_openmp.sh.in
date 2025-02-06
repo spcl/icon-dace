@@ -1,0 +1,12 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+set -e
+
+for N in 1 2 3 4
+do
+  OMP_NUM_THREADS=$N ./test_openmp.x $N
+done

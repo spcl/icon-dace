@@ -1,0 +1,47 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page interp_main Interpolation
+
+YAC supports cell and point based fields. Examples for these are fluxes and
+temperatures respectively. Point based fields can be defined per corner,
+cell, or edge. In case of cells or edges, the user has to explicitly provide
+coordinates through the def_points-interface for the location of these points.
+Fields can be defined on points or on cells.
+
+A target field can only be defined on a single point set. However, if
+supported by the interpolation, the source field can consist of multiple
+point sets (for example data values at the corners and edges of a cell).
+
+If a mask is defined for a point set, it will be taken into account by the
+interpolations.
+
+Interpolations in YAC are all in 2D on the sphere.
+
+An interpolation consists of a \subpage interp_stack which in turn is
+comprised of one or more \subpage interp_methods (see \ref interp_stack
+for a more detailed description).
+
+If a field consists of multiple levels, whose interpolation is identical
+and have the same coupling frequency, they can all be exchanged at the
+same time with the same put/get-call. The same applies for different fields
+with the same coupling configuration. The number of 2D fields exchanged in
+a single put/get-call is configured by the "collection_size" parameter.
+
+Interpolations are configured via the interface and/or read in from
+a \ref yaml_file "configuration file".
+
+In case the user calls put or get for a field for which no interpolation
+is configured in the configuration file, the calls will return immediately
+and will set the info argument accordinly.
+
+In addition to the static field mask defined in \ref phase_def (see
+\ref phase_def_mask), it also possible to provide a fractional mask
+along with the source field values in each exchange operation
+(see \ref phase_exchange). This mask will be used in the interpolation
+and can be different for each exchange. For more details see
+\subpage frac_mask_desc.
+
+ */

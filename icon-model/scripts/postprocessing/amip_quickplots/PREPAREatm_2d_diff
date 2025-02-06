@@ -1,0 +1,153 @@
+#!/bin/sh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -ex
+#
+ANAME=$1
+ADIR=$2
+#
+BNAME=$3
+BDIR=$4
+#
+
+echo QUELLE path $QUELLE
+
+#
+AinDat="${ADIR}/${ANAME}_atm_2d_ml.nc"
+BinDat="${BDIR}/${BNAME}_atm_2d_ml.nc"
+#
+###########################################################################
+# 
+#
+set +e
+
+#----code164---Total cloud cover----- CMOR: clt--------------
+#
+Cvar=clt
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub  -mulc,100. -selvar,${Cvar} $AinDat  \
+          -mulc,100. -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+
+#
+#----code180 Zonal wind stress-- CMOR: tauu---
+#
+Cvar=tauu
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     #---only sea
+     cdo -setrtoc,-3,-0,1 -setvrange,-3,-0  -selvar,cell_sea_land_mask $GrdInfoFile busy2.nc
+     cdo -mulc,1000. -mul -selvar,${Cvar} $AinDat  busy2.nc busyA.nc
+     cdo -mulc,1000. -mul -selvar,${Cvar} $BinDat  busy2.nc busyB.nc
+     cdo -sub busyA.nc busyB.nc Ubusy_d${Cvar}.nc
+fi
+fi
+rm -f  busy*
+cdo infon Ubusy_d${Cvar}.nc
+
+
+#
+#----code4--- Total precipitation-- CMOR: pr--
+#
+Cvar=pr
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub  -mulc,86400 -selvar,${Cvar} $AinDat  \
+          -mulc,86400 -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+
+#
+#
+#----code230 -- Column water vapour -CMOR: prw-
+#
+Cvar=prw
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub -selvar,${Cvar} $AinDat  \
+             -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+#
+#
+#----code151---Sea level pressure---CMOR: psl-
+#
+Cvar=psl
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub  -mulc,0.01 -selvar,${Cvar} $AinDat  \
+              -mulc,0.01 -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+
+#
+#
+#----code231+code150---Liquid water + ice content- clivi+cllvi=clwvi ---
+#
+Cvar=clivi
+Cvar2=cllvi
+CvarNew=clwvi
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  cdo  -selvar,${Cvar} $AinDat busy1.nc
+  if cdo -s showvar -selvar,${Cvar2} $AinDat > /dev/null 
+  then
+    cdo  -selvar,${Cvar2} $AinDat busy2.nc
+    cdo  -chname,${Cvar},${CvarNew} -mulc,1000. -add busy1.nc busy2.nc   busyA_${CvarNew}.nc
+fi
+fi
+if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null 
+then
+  cdo  -selvar,${Cvar} $BinDat busy1.nc
+  if cdo -s showvar -selvar,${Cvar2} $BinDat > /dev/null 
+  then
+    cdo  -selvar,${Cvar2} $BinDat busy2.nc
+    cdo  -chname,${Cvar},${CvarNew} -mulc,1000. -add busy1.nc busy2.nc busyB_${CvarNew}.nc
+    cdo -sub busyA_${CvarNew}.nc busyB_${CvarNew}.nc Ubusy_d${CvarNew}.nc
+fi
+fi
+
+rm -f  busy*
+#
+#----code169---Sea surface temperature---
+#
+Cvar=ts
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub -selvar,${Cvar} $AinDat  \
+             -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+#
+#----code167---2m temperature---
+#
+Cvar=tas
+if cdo -s showvar -selvar,${Cvar} $AinDat > /dev/null 
+then
+  if cdo -s showvar -selvar,${Cvar} $BinDat > /dev/null ;then
+     cdo sub -selvar,${Cvar} $AinDat  \
+             -selvar,${Cvar} $BinDat Ubusy_d${Cvar}.nc
+fi
+fi
+exit
+
+
+
+

@@ -1,0 +1,68 @@
+% ICON
+%
+% ------------------------------------------
+% Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+% Contact information: icon-model.org
+% See AUTHORS.TXT for a list of authors
+% See LICENSES/ for license information
+% SPDX-License-Identifier: CC-BY-4.0
+% ------------------------------------------
+
+\documentclass[11pt,notitlepage]{article}
+\usepackage[dvips,colorlinks,bookmarksopen,bookmarksnumbered,citecolor=red,urlcolor=red]{hyperref}
+\usepackage[a4paper,landscape]{geometry}
+
+\title{Cloud Variables in GRIB2 and ICON}
+\author{Martin K\"ohler}
+\begin{document}  
+\maketitle
+%\addtolength{\voffset}{-3cm}
+%\addtolength{\hoffset}{-1cm}
+%\addtolength{\textwidth}{+2cm}
+%\addtolength{\textheight}{+5cm}
+
+%-------------------------------------------------------------------------
+
+\hspace{-2cm}
+\begin{centering}
+\begin{tabular}{l l p{2.5cm} p{2.5cm} p{2.5cm} l l l}  
+
+\textbf{Description}   & \textbf{Type}          
+                       & \textbf{DWD \linebreak ShortName} 
+                       & \textbf{ICON \linebreak ShortName} 
+                       & \textbf{ECMWF \linebreak ShortName} 
+                       & \textbf{Discipline} & \textbf{Category} & \textbf{Number} \\
+\hline                                                                                    
+Specific humidity      &  (tot/diag)   &  QV\_DIA               &  tot\_qv\_dia           &  xxx                     &  0                  &     1             &        211 \\
+Cloud mixing ratio     &  (tot/diag)   &  QC\_DIA               &  tot\_qc\_dia           &  xxx                     &  0                  &     1             &        212 \\
+Cloud ice mixing ratio &  (tot/diag)   &  QI\_DIA               &  tot\_qi\_dia           &  xxx                     &  0                  &     1             &        213 \\
+Cloud cover            &  (tot/diag)   &  CLC                   &  clc                    &  xxx                     &  0                  &     6             &        22  \\
+Water vapor path       &  (tot/diag)   &  TQV\_DIA              &  tqv\_dia               &  xxx                     &  0                  &     1             &        214 \\
+Cloud water path       &  (tot/diag)   &  TQC\_DIA              &  tqc\_dia               &  xxx                     &  0                  &     1             &        215 \\
+Cloud ice path         &  (tot/diag)   &  TQI\_DIA              &  tqi\_dia               &  xxx                     &  0                  &     1             &        216 \\
+Total cloud cover      &  (tot/diag)   &  CLCT                  &  clct                   &  xxx                     &  0                  &     6             &        1   \\
+\hline                                                                                                                                                         
+Specific humidity      &  (dyn/prog)   &  QV                    &  qv                     &  q                       &  0                  &     1             &        0   \\
+Cloud mixing ratio     &  (dyn/prog)   &  QC                    &  qc                     &  clwmr                   &  0                  &     1             &        22  \\
+Cloud ice mixing ratio &  (dyn/prog)   &  QI                    &  qi                     &  xxx                     &  0                  &     1             &        82  \\
+Rain mixing ratio      &  (dyn/prog)   &  QR                    &  qr                     &  rwmr                    &  0                  &     1             &        24  \\
+Snow mixing ratio      &  (dyn/prog)   &  QS                    &  qs                     &  snwr                    &  0                  &     1             &        25  \\
+Water vapor path       &  (dyn/prog)   &  TQV                   &  tqv                    &  tciwv                   &  0                  &     1             &        64  \\
+Cloud water path       &  (dyn/prog)   &  TQC                   &  tqc                    &  xxx                     &  0                  &     1             &        69  \\
+Cloud ice path         &  (dyn/prog)   &  TQI                   &  tqi                    &  xxx                     &  0                  &     1             &        70  \\
+Rain path              &  (dyn/prog)   &  TQR                   &  tqr                    &  tcolr                   &  0                  &     1             &        45  \\
+Snow path              &  (dyn/prog)   &  TQS                   &  tqs                    &  tcols                   &  0                  &     1             &        46  \\
+\hline
+\end{tabular}
+\end{centering}
+\vspace{1cm}
+
+
+$Path$ refers here to a vertical integral over the full atmosphere. 
+
+The $tot/diag$ variables are the tracers used by advection and microphysics.  
+They are based on the assumption that there is no sub-grid-scale variability.  The $dyn/prog$ variables are calculated by taking into account 
+sub-grid-scale variablity that includes simple treatments of turbulent motion and convective detraiment.  These variable are used by radiation and 
+represent the cloud variables that attempt to represent all model included physical processes.
+
+\end{document}

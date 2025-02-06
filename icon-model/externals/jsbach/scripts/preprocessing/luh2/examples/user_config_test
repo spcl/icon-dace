@@ -1,0 +1,73 @@
+#! /bin/bash
+
+# ICON-Land
+#
+# ---------------------------------------
+# Copyright (C) 2013-2024, MPI-M, MPI-BGC
+#
+# Contact: icon-model.org
+# Authors: AUTHORS.md
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------
+
+#-------------------------------------------------------
+# Configurations for LUH2 preprocessing
+# 2022-06 stefanie.falk@lmu.de
+#-------------------------------------------------------
+#-----------------------------------------
+# User and project
+#-----------------------------------------
+user_email=""
+#-----------------------------------------
+# Directories and options for prepocessor
+#-----------------------------------------
+ires=63
+processTransitions=true
+
+# input
+pathToOrgData='/work/bm1241/LAMACLIMA/luh2/orgdata'
+fstnfFile='/work/mj0060/m300316/LUH2/fstnf_from_LUH2_v2h.nc'
+# vegmax file with extensive land in slm 
+vrmFileName="vegmax_6_T${ires}_0-360"
+vegRatioMaxFile="/pool/data/JSBACH/prepare/T${ires}/${vrmFileName}.nc"
+vrmVarName='veg_ratio_max'
+nrOfVarsvegMaxFile=4 #including vars for dimensions
+nrOfDimsVegMaxFile=3
+
+# output
+mainWorkingPath="/work/mj0060/m300316/LUH2/test/"
+scaledStatesOutputFolder="states_scaled_with_${vrmFileName}"
+scaledTransitionsOutputFolder="transitions_scaled_with_${vrmFileName}"
+
+# time range
+# OBS:
+# transitions are usually only available for one year less than states are available
+selStartYear=2015
+selEndYearStates=2017
+
+# Aggregation options
+orgDataHasAlreadyBeenAggregated=false         # i.e. for the required timespan preprocessing already happened (for the same or another resolution)
+mainWorkingPathForAggregatedData=$mainWorkingPath          # e.g. /work/mj0060/m300316/LUH2/Txyz/ if for another resolution
+resolutionHasAlreadyBeenUsedForMapping=false  # i.e. for the required timespan CMIP5-way preprocessing has already been done for this resolution 
+
+# User defined states/transistions files names (input)
+user_defined_states_trans=true
+statesFile="states_shifted.nc"
+transitionFile="transitions_shifted.nc"
+
+# Define missing value to be set instead of nan
+missval=1.e+20
+
+# Script info
+calledFrom="MAIN_preprocess_LUH2.bash [contact: ${user_email}] -- using ${vegRatioMaxFile}"
+luhRelease='LUH2 v2.1f LAMACLIMA (2022-05-17) - [http://luh.umd.edu/data.shtml]'
+
+#-------------------------------------------------------
+# End user config
+#-------------------------------------------------------
+# Do not change below
+#
+scriptsFolder=`pwd`
+tools_dir='tools'
+bin_dir='bin'

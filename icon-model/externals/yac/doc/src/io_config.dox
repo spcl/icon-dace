@@ -1,0 +1,83 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page io_config_detail Configuration of parallel IO in YAC
+   \tableofcontents
+
+\section io_config_detail_intro Introduction
+
+There are some options for configuring parallel IO done by YAC.
+
+\section io_config_detail_who Who does IO?
+
+\subsection io_config_detail_who_weights Weight files
+
+The main usage of parallel IO in YAC is the reading and writing of
+weight files. This involves the processes of the source and target
+component associated with the weights.
+
+\subsection io_config_detail_who_grid Grid files
+
+For a couple for common grid file formats YAC has some utility functions for
+reading them in (see src/utils directory). Especially very high resolution
+grids often have to be read in parallel due to memory constraints or in order
+to reduce time spend in the reading.
+
+\section io_config_detail_format File format
+
+Weight files written by YAC are written in the NetCDF-3 format with 64-bit
+offsets enabled.
+
+For reading in weight or grid files, all NetCDF format are supported, which
+are compatible with the NetCDF library used for build YAC.
+
+\section io_config_detail_how How to configure IO?
+
+The parallel IO is configured by environment variables, which can be set
+before the start of the program or during runtime by using for example the
+Standard C library routine \c setenv.
+
+All ranks provided in the options refere to ranks in \c MPI_COMM_WORLD.
+
+\section io_config_detail_options Options
+
+- **YAC_IO_RANK_LIST**=\<rank list\>
+
+  The *rank list* contains a comma seperated list of all ranks, which
+  will be considered for access the file system while doing parallel IO.
+
+  By default this list contains all ranks.
+
+- **YAC_IO_RANK_EXCLUDE_LIST**=\<rank list\>
+
+  The *rank list* contains a comma seperated list of all ranks, which
+  will be excluded from accessing the file system when doing parallel IO.
+
+  By default this list is empty.
+
+- **YAC_IO_MAX_NUM_RANKS_PER_NODE**=\<count\>
+
+  Using \c MPI_Comm_split_type, YAC will determine all ranks associated with
+  individual shared memory regions (which commonly coincide with the ranks
+  on individual hardware nodes). With *count* the user can specify the maximum
+  number of ranks per shared memory region that will access the file system
+  in the parallel IO.
+
+  The default value is *1*.
+
+  By providing the value *-1*, the user can indicate that there is no limit
+  on the number of ranks per shared memory domain.
+
+- **YAC_IO_MAX_NUM_RANKS**=\<count\>
+
+  The *count* value limits the total number of ranks, which will access
+  the file system in the parallel IO.
+
+  By default the total number of ranks is not limited.
+
+  By providing the value *-1*, the user can explicitly indicate that there
+  is no limit on the total number of ranks.
+
+*/

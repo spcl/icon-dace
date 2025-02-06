@@ -1,0 +1,88 @@
+\section{\label{build}Building from sources}
+
+This section describes how to build the {\CDI} library from the sources on a UNIX system.
+{\CDI} is using the GNU configure and build system to compile the source code.
+The only requirement is a working ANSI C99 compiler.
+
+First go to the \href{https://code.mpimet.mpg.de/projects/cdi/files}{\texttt{download}} page
+(\texttt{https://code.mpimet.mpg.de/projects/cdi/files}) to get the latest distribution,
+if you do not already have it.
+
+To take full advantage of {\CDI}'s features the following additional libraries should be installed:
+
+\begin{itemize}
+\item Unidata \href{http://www.unidata.ucar.edu/packages/netcdf}{NetCDF} library
+      (\texttt{http://www.unidata.ucar.edu/packages/netcdf})
+      version 3 or higher.
+      This is needed to read/write NetCDF files with {\CDI}. 
+\item ECMWF \href{https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home}{ecCodes} library
+      (\texttt{https://software.ecmwf.int/wiki/display/ECC/ecCodes+Home})
+      version 2.3.0 or higher.
+      This library is needed to encode/decode GRIB2 records with {\CDI}. 
+\end{itemize}
+
+
+\subsection{Compilation}
+
+Compilation is now done by performing the following steps:
+
+\begin{enumerate}
+\item Unpack the archive, if you haven't already done that:
+   
+\begin{verbatim}
+    gunzip cdi-$VERSION.tar.gz    # uncompress the archive
+    tar xf cdi-$VERSION.tar       # unpack it
+    cd cdi-$VERSION
+\end{verbatim}
+
+\item Run the configure script:
+ 
+\begin{verbatim}
+    ./configure
+\end{verbatim}
+
+Or optionally with NetCDF support:
+ 
+\begin{verbatim}
+    ./configure --with-netcdf=<NetCDF root directory>
+\end{verbatim}
+
+For an overview of other configuration options use
+
+\begin{verbatim}
+    ./configure --help
+\end{verbatim}
+
+\item Compile the program by running make:
+
+\begin{verbatim}
+    make
+\end{verbatim}
+
+\end{enumerate}
+
+The software should compile without problems and the {\CDI} library (\texttt{libcdi.a}) 
+should be available in the \texttt{src} directory of the distribution.
+
+
+\subsection{Installation}
+
+After the compilation of the source code do a \texttt{make install},
+possibly as root if the destination permissions require that.
+
+\begin{verbatim}
+    make install
+\end{verbatim} 
+
+The library is installed into the directory \texttt{$<$prefix$>$/lib}.
+The C and Fortran include files are installed into the directory \texttt{$<$prefix$>$/include}.
+\texttt{$<$prefix$>$} defaults to \texttt{/usr/local} but can be changed with 
+the \texttt{--prefix} option of the configure script. 
+
+%Alternatively, you can also copy the library from the {\tt src} directory
+%manually to some {\tt lib} directory in your search path.
+
+%%% Local Variables: 
+%%% mode: latex
+%%% TeX-master: "usage"
+%%% End: 

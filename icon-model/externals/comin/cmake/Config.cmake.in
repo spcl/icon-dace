@@ -1,0 +1,22 @@
+@PACKAGE_INIT@
+
+if( NOT TARGET ComIn::ComIn )
+  include("${CMAKE_CURRENT_LIST_DIR}/@PROJECT_NAME@Targets.cmake")
+endif()
+
+# If comin is a static library it depends on MPI::MPI_Fortran which is
+# only available if Fortran is enabled
+get_target_property(target_type ComIn::ComIn TYPE)
+if (target_type STREQUAL STATIC_LIBRARY)
+  enable_language(Fortran)
+  include(CMakeFindDependencyMacro)
+  find_dependency(MPI COMPONENTS Fortran)
+endif()
+
+include(FindPackageHandleStandardArgs)
+find_package_handle_standard_args(@PROJECT_NAME@ REQUIRED_VARS @PROJECT_NAME@_DIR)
+
+# export cmake functions for downstream projects
+if(BUILD_TESTING)
+  include(${CMAKE_CURRENT_LIST_DIR}/ComInAddTest.cmake)
+endif()

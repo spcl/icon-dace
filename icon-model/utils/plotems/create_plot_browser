@@ -1,0 +1,116 @@
+#! /usr/bin/env perl
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#
+# Create a HTML browsing site for a list of images
+#
+
+use strict;
+use warnings;
+use Getopt::Std;
+
+$Getopt::Std::STANDARD_HELP_VERSION = 1;
+$main::VERSION = '$Id: create_plot_browser 527 2018-04-27 15:27:41Z m221078 $';
+
+my %options;
+getopts('t:', \%options) or die "Oops: invalid option\n";
+
+my $title = "Plot Browser";
+exists($options{t}) and $title = $options{t};
+
+my @list;
+while(<>) {
+    chomp;
+    my ($base, $idx, $ext, $label, $code, $desc) = split(/:/, $_, 6);
+    push(@list, [$base, $idx, $ext, $label, $code, $desc]);
+}
+
+my %converted;
+my @file_list;
+for my $item (@list) {
+    my ($base, $idx, $ext, $label, $code, $desc) = @$item;
+    my $file = "$base.$ext";
+    unless ($converted{$file}) {
+        print STDERR "converting '$file'\n";
+        system("convert -density 100x100 $file $base.png\n") and
+            die("'convert' failed (return code $?)\n");
+        $converted{$file} = 1;
+        push(@file_list, $file);
+    }
+}
+
+print <<___;
+<html>
+    <head>
+        <meta name="generator" content="create_plot_browser">
+        <meta http-equiv="cache-control" content="no-cache">
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>$title</title>
+        <style type="text/css">
+            a { text-decoration:none; color: #b6d8d2; }
+            a:hover { color: #FFFFFF; text-decoration:underline }
+        </style>
+    </head>
+    <body style="margin:0px; padding:0px; background-color:#FFFFFF; font-family:Helvetica,Arial,sans-serif">
+___
+
+print <<___;
+        <div style="float:left; width:25em; height:95.5%; overflow:auto; background-color:#007668; color:#FFFFFF; padding:1%">
+        <address>
+            <a href="index.html">Index</a>
+        </address>
+        <hr/>
+        <h1>$title</h1>
+        <ol>
+___
+for my $item (@list) {
+    my ($base, $idx, $ext, $label, $code, $desc) = @$item;
+    print <<___;
+            <li><a href="#$label">$desc</a></li>
+___
+}
+print <<___;
+        </ol>
+___
+
+my @links = map {"<a href='$_'>$_</a>"} (@file_list);
+my $links = join(', ', @links);
+print <<___;
+        <hr/>
+        <address>
+            PDF Download: 
+            $links
+        </address>
+        </div>
+___
+
+print <<___;
+        <div style="height:95.5%; overflow:auto; padding:1%">
+___
+for my $item (@list) {
+    my ($base, $idx, $ext, $label, $code, $desc) = @$item;
+    my $img_file = "$base-$idx.png";
+    -f $img_file or $img_file = "$base.png";
+    print <<___
+        <a name="$label"><img src="$img_file" alt="$desc"></a>
+___
+}
+print <<___;
+        </div>
+___
+
+print <<___;
+    </body>
+</html>
+___
+

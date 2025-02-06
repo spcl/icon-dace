@@ -1,0 +1,34 @@
+#! /usr/bin/env python3
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -*- coding: utf-8 -*-
+#==============================================================================
+# create an experiment list
+#==============================================================================
+import click
+from util import WhitespaceSeperatedList, WhitespaceSeperatedFiles, WhitespaceSeperatedDict
+from exp_utils import rmexp
+
+@click.command()
+@click.argument("experiment_names", type=WhitespaceSeperatedFiles())
+@click.option("--builders", type=WhitespaceSeperatedList(), help="names of the builders to add")
+@click.option("--with-configureflags", type=WhitespaceSeperatedDict(), help="only use builders with these configure options")
+@click.option("--without-configureflags", type=WhitespaceSeperatedDict(), help="discard bulders with these configure options")
+@click.option("--machines", type=str, help="the machine name to add the builder")
+@click.option("--list", "list_name", type=str, help="the buildbot configuration list", required=True)
+def rmexp_wrap(experiment_names, builders, with_configureflags, without_configureflags, machines, list_name):
+    rmexp(experiment_names, builders, with_configureflags, without_configureflags, machines, list_name)
+
+if __name__ == "__main__":
+    rmexp_wrap()
+
+

@@ -1,0 +1,135 @@
+\documentclass[DIV16,BCOR1cm,11pt,a4paper,fleqn]{scrreprt}         % for pdf output
+%\documentclass[DIV16,BCOR1cm,11pt,a4paper,fleqn]{report}         % for pdf output
+
+%\usepackage{ae}               % fuer die "almost european" computer modern fonts
+%\usepackage{url}              % Standard-Paket fuer WWW-Adressen
+
+%\typearea{10}                 % Einen sinnvollen Satzspiegel aktivieren
+
+%\documentclass[DIV16,BCOR1cm,12pt,a4paper,fleqn]{scrreprt}         % for pdf output
+%\documentclass[DIV16,BCOR1cm,11pt,a4paper,twoside]{scrreprt}  % for ps output
+%\documentclass[a4paper,DIV14,BCOR1cm]{scrartcl}
+
+%Usage:
+%latex2html -local_icons -split 4 -toc_depth 3 -white cdi.tex
+%dvips -o cdi.ps cdi.dvi
+%dvips ps+pdf
+%dvipdf
+%pdflatex
+
+% To allow automatic selection of the right graphics type ...
+
+\newif\ifpdf
+\ifx\pdfoutput\undefined
+   \pdffalse                    % LaTeX
+\else
+   \pdfoutput=1                 % PDFLaTeX
+   \pdftrue
+\fi
+
+\usepackage{thumbpdf}
+
+%\usepackage{html}
+
+\usepackage{makeidx}
+
+%\ifpdf
+%\usepackage[a4paper, colorlinks=true, pdfstartview=FitV, bookmarks=true, linkcolor=blue,
+%            citecolor=blue, urlcolor=blue, latex2html=true]{hyperref}
+%\fi
+
+\usepackage{hyperref}
+\hypersetup{pdftoolbar=true,
+            pdfmenubar=true,
+            pdfwindowui=true,   
+%            pdffitwindow=true,
+            pdfauthor={Uwe Schulzweida},
+            pdftitle={CDI C Reference Manual},
+            pdfcreator={pdflatex + hyperref},
+            pdfstartview=FitV,
+%            pdfpagemode=FullScreen,
+            a4paper,
+            bookmarks=true,
+            linkcolor=blue,
+            citecolor=blue,
+            urlcolor=blue,
+            colorlinks=true}
+
+\makeindex
+%\newcommand{\ii}[1]{\textit{#1}}  \newcommand{\nn}[1]{#1n}
+%\renewcommand{\dotfill}{\leaders\hbox to 5p1{\hss.\hss}\hfill}
+%\newcommand{\idxdotfill}{5p1{\hss.\hss}\hfill}
+\newcommand{\idxdotfill}{\ \dotfill \ }
+%\def\idxdotfill{\leaders\hbox to.6em{\hss .\hss}\hskip 0pt plus 1fill}
+%\MakeShortVerb{\@}
+
+\renewcommand{\indexname}{Function index}
+
+%\newcommand{\defalabel}[1]{\bf #1\ \ \hfill}
+\newenvironment{defalist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{\bf #1 \ \ }
+\itemsep=0mm
+\itemindent=7mm
+ \setlength{\leftmargin}{\labelwidth}
+ \addtolength{\leftmargin}{\labelsep}}}
+{\end{list}}
+%\renewcommand{\makelabel}{\defalabel}
+
+\newcommand{\deflabel}[1]{\bf #1\hfill}
+\newenvironment{deflist}[1]
+{\begin{list}{}
+{\settowidth{\labelwidth}{\bf #1}
+\setlength{\parsep}{0mm}
+\setlength{\itemsep}{1mm}
+\setlength{\leftmargin}{\labelwidth}
+\addtolength{\leftmargin}{\labelsep}
+\renewcommand{\makelabel}{\deflabel}}}
+{\end{list}}
+
+% Aligned labels in a description environment
+\newenvironment{Description}[1]{%
+\begin{list}{nothing}{\setlength{\leftmargin}{#1}
+\setlength{\labelwidth}{\leftmargin}\setlength{\labelsep}{1mm}}}
+{\end{list}}
+
+\begin{document}
+
+\section{Create a new Grid: {\tt gridNew}}
+\index{gridNew}
+\label{gridNew}
+
+The function {\tt gridNew} creates a new Grid.
+
+\subsection*{Usage}
+
+\begin{verbatim}
+    int gridNew(int gridtype, int size);
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\tt gridtype\ }
+\item[{\tt gridtype}]
+One of the set of predefined CDI grid types.
+The valid CDI grid types are GRID\_GENERIC, GRID\_GAUSSIAN,
+GRID\_LONLAT, GRID\_SPECTRAL, GRID\_CURVILINEAR and GRID\_UNSTRUCTURED.
+\item[{\tt size}]
+Number of gridpoints.
+\end{deflist}
+\end{minipage}
+
+\begin{tabular*}{5.65in}{ll}
+\makebox[0.75in][l]{\tt gridtype} &
+One of the set of predefined CDI grid types.
+The valid CDI grid types are GRID\_GENERIC, GRID\_GAUSSIAN,
+GRID\_LONLAT, GRID\_SPECTRAL, GRID\_CURVILINEAR and GRID\_UNSTRUCTURED. \\
+\makebox[0.75in][l]{\tt size} & 
+Number of gridpoints. \\
+\end{tabular*}
+
+\subsection*{Result}
+
+{\tt gridNew} return an identifier to the new Grid.
+
+
+\end{document}

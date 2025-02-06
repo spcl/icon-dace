@@ -1,0 +1,13 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: scales-ppm-core
+Description: Partitioning and parallelization module originated in ScalES project, core routines.
+URL: http://www.dkrz.de/redmine/projects/scales-ppm
+Version: @VERSION@
+Requires:
+Libs: -L@libdir@ -lscalesppmcore
+Libs.private: @CRYPTO_C_LIB@ @MPI_C_LIB@
+Cflags: -I@includedir@ @MPI_C_INCLUDE@

@@ -1,0 +1,372 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  SEASONAL_MEAN.SMS
+  ------------------------------------------------- 
+  This script is part of the ICON SMS CLIM suite
+
+ 
+  Task objectives:
+  - seasonal means 
+%end
+
+# include the header file for ICON jobs
+%include <init_sc.h> 
+
+# -------------------------------------------------
+
+
+echo "SEASONAL_MEAN.SMS" 
+
+module load python
+module load cdo/1.7.0
+module swap grib_api grib_api/1.14.5
+
+set -A means          # nothing, or: all year seas mon
+lsplitdata=1
+lcpdata=0
+ldeldata=0
+lseldate=0
+lsel2D=0
+lecfs=1
+
+lseasmean=1
+lmonthmean=0
+lyearmean=0
+lallmean=1            # full period excluding first month
+
+case %SIMMODE% in
+  1) lcpdata=1        # pre-operations     
+     ldeldata=1  ;;
+  2) lcpdata=0        # monthly mean 10day forecasts
+     ldeldata=0  ;;
+  3) set -A means all seas  # all year seas mon
+     lseasonal=1
+     lseldate=1
+     lcpdata=1  
+     ldeldata=0
+     lsel2D=1    
+     dout=1      ;;   # 2 days output interval
+esac
+
+#lecfs=0
+#lseldate=0
+#lsplitdata=0
+#lseasonal=0
+#lseasmean=0
+#set -A means year
+#lmonthmean=0
+#lyearmean=0
+#lcpdata=0  
+#ldeldata=0
+#lsel2D=0  
+#dout=2
+
+
+#-----------------------------------------------------------------------------
+# directories
+
+outdir=%SCTEMP%/%SUITE%/%EXPNUM%/output/%YMD%%INIHOUR%
+gatedir=%ECTEMP%/%SUITE%/%EXPNUM%/seasonal
+ssh ecgb mkdir -p ${gatedir}
+cd ${outdir}
+ecfsdir="ec:icon/experiments/%SUITE%/%EXPNUM%/%YMD%%INIHOUR%"
+ecfseas="ec:icon/experiments/%SUITE%/%EXPNUM%/seasonal"
+emkdir -p $ecfsdir
+emkdir -p $ecfseas
+# base name for output and namelist files
+basename=%SUITE%_%EXPNUM%_%YMD%%INIHOUR%
+#value of inidate without the hour
+RYMD=%YMD%
+RYMD=`echo ${RYMD} | cut -c 1-8`
+
+
+#-----------------------------------------------------------------------------
+# namelist and icon_rev.txt: copy to ecfs
+
+if [[ -f NAMELIST_${basename} ]] ; then
+ ecp -o  NAMELIST_${basename} $ecfsdir
+else
+ ecp  $ecfsdir/NAMELIST_${basename}  .
+fi 
+bindir=%SCTEMP%/%SUITE%/%EXPNUM%/output/bin
+if [[ -f ${bindir}/icon_rev.txt ]] ; then
+ ecp -o  ${bindir}/icon_rev.txt $ecfsdir
+else
+ ecp    ${ecfsdir}/icon_rev.txt ${bindir}
+fi
+
+mkdir -p grb_data
+if [[ $lsplitdata = 1 ]] ; then  
+  rm -f grb_data/*
+fi
+
+
+#-----------------------------------------------------------------------------
+# loop over file numbers: 0001, 0002, ...
+
+file_nums=`ls ${outdir}/${basename}_DOM01_ML_????.grb | awk 'BEGIN { FS = "_" } ; { print $6 }' | sed 's/.grb//'`
+
+for nfile in ${file_nums} ; do
+
+
+#-----------------------------------------------------------------------------
+# GRIB: file exists: copy to ecfs; file doesn't exist: get from ecfs
+
+  if [[ $lecfs = 1 ]] ; then
+#   for levtype in ML PL HL ; do
+    for levtype in ML PL    ; do
+      if [[ -f ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb ]] ; then
+        ecp -o ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb $ecfsdir
+        ls     ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb
+      else
+        ecp     $ecfsdir/${basename}_DOM01_${levtype}_${nfile}.grb ${outdir}
+      fi
+    done
+  fi
+
+
+#-----------------------------------------------------------------------------
+# In all files, select the dates (takes 1.5h wall clock time)
+
+  if [[ $lseldate = 1 ]] ; then
+    for levtype in ML PL HL ; do
+      cdo seldate,%FDATE_S%,%LDATE_S% ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb out.grb
+      cp out.grb                      ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb
+      rm out.grb
+    done
+  fi
+
+
+#-----------------------------------------------------------------------------
+# Split variables in three groups: pl, zl, sfc
+
+  if [[ $lsplitdata = 1 ]] ; then
+  
+    grib_copy  ${basename}_DOM01_HL_${nfile}.grb  \
+      grb_data/${basename}_DOM01_${nfile}_[shortName]_zl.grb 
+    grib_copy  ${basename}_DOM01_PL_${nfile}.grb  \
+      grb_data/${basename}_DOM01_${nfile}_[shortName]_[typeOfFirstFixedSurface].grb
+  
+    grib_copy  ${basename}_DOM01_ML_${nfile}.grb        ${basename}_DOM01_ML_${nfile}_[typeOfFirstFixedSurface].grb
+    rm         ${basename}_DOM01_ML_${nfile}_150.grb
+    cat        ${basename}_DOM01_ML_${nfile}_*.grb   >  ${basename}_DOM01_ML_${nfile}_temp.grb
+    mv         ${basename}_DOM01_ML_${nfile}_temp.grb   ${basename}_DOM01_ML_${nfile}_sfc.grb
+    grib_copy  ${basename}_DOM01_ML_${nfile}_sfc.grb  \
+      grb_data/${basename}_DOM01_${nfile}_[shortName]_sfc.grb
+    rm         ${basename}_DOM01_ML_${nfile}_*.grb
+  
+  # fixes
+    for levtype2 in sfc ml pl zl ; do
+      for bad in unknown '~' ; do
+        grib_copy grb_data/${basename}_DOM01_${nfile}_${bad}_${levtype2}.grb \
+                  grb_data/${basename}_DOM01_${nfile}_[discipline].[parameterCategory].[parameterNumber]_${levtype2}.grb || true
+        \rm -rf   grb_data/${basename}_DOM01_${nfile}_${bad}_${levtype2}.grb
+      done
+    done
+    ls  grb_data/*.grb
+  fi
+
+
+#-----------------------------------------------------------------------------
+# end loop over file numbers: 0001, 0002, ...
+
+done  # file numbers
+
+
+#-----------------------------------------------------------------------------
+# add all files with numbers 0001, 0002, ... for each variable
+
+cd ${outdir}/grb_data
+
+set -A variables `ls ${basename}_DOM01_0001_*.grb | cut -d_  -f6- | sed 's/.grb//'`
+
+if [[ $lsplitdata = 1 ]] ; then
+  for var in ${variables[*]} ; do
+    cat ${basename}_DOM01_????_${var}.grb > ${basename}_DOM01_all_${var}.grb 
+  done
+fi
+
+
+#-----------------------------------------------------------------------------
+# Split years ("Y"), seasons ("S") and months ("M")
+
+%nopp
+if [[ $lsplitdata = 1 ]] ; then
+
+  for file in `ls ${basename}_DOM01_all_*.grb` ; do                      # file names:
+    if [[ $lallmean = 1 ]] ; then
+      cp ${file} ${file%%.grb}_A_ALL.grb        # all data but 1st month "*_A_ALL.grb" ...
+    fi
+    if [[ $lyearmean = 1 ]] ; then
+      cdo splityear ${file} ${file%%.grb}_Y_    # many years             "*_Y_1980.grb" ...
+    fi
+    if [[ $lseasmean = 1 ]] ; then
+      cdo splitseas ${file} ${file%%.grb}_S_    # all data in 4 seasons  "*_S_JJA.grb"  ...
+    fi
+    if [[ $lmonthmean = 1 ]] ; then
+      cdo splitmon  ${file} ${file%%.grb}_M_    # all data in 12 months  "*_M_12.grb"   ...
+    fi
+  done
+
+  # check if there is more than one time step in files  
+
+  for yfile in `ls ${basename}_DOM01_all_*_Y_????.g2 ${basename}_DOM01_all_*_S_???.g2 ${basename}_DOM01_all_*_M_??.g2` ; do
+   #nsteps=`cdo ntime ${yfile}`                 # very slow, 1min/ML file!!!  grib_ls faster
+   #nintv=`expr ${nsteps}  \- 1 `
+   #if [[ $nintv -eq 0 ]] ; then
+   #  rm ${yfile}
+   #else
+      mv ${yfile} ${yfile%%.g2}.grb
+   #fi
+  done
+
+fi
+%end
+
+
+#-----------------------------------------------------------------------------
+# Calculate seasonal (and monthly and annual) means and standard deviation
+
+if [[ $lseasonal = 1 ]] ; then
+
+  for mean in ${means[*]} ; do
+    case $mean in
+      all)  rm -f *_A_???_mean.grb
+            rm -f *_A_???_std.grb
+            set -A periods ALL ;;
+      year) rm -f *_Y_????_mean.grb
+            rm -f *_Y_????_std.grb
+            periods=`ls ${basename}_DOM01_all_${variables[0]}_Y_????.grb | awk 'BEGIN { FS = "_" } ; { print $NF }' | sed 's/.grb//'` ;;
+      seas) rm -f *_S_???_mean.grb
+            rm -f *_S_???_std.grb
+            set -A periods DJF MAM JJA SON ;;
+      mon)  rm -f *_M_??_mean.grb
+            rm -f *_M_??_std.grb
+            set -A periods 01 02 03 04 05 06 07 08 09 10 11 12 ;; 
+    esac
+  
+    for period in ${periods[*]} ; do
+  
+      for levt in sfc pl zl ; do
+        i=0
+        case $mean in
+          all)  set -A files `ls *${levt}*_A_${period}.grb` ;;
+          year) set -A files `ls *${levt}*_Y_${period}.grb` ;;
+          seas) set -A files `ls *${levt}*_S_${period}.grb` ;;
+          mon)  set -A files `ls *${levt}*_M_${period}.grb` ;; 
+        esac
+  
+        for file in ${files[*]} ; do
+%nopp
+          file_grb=${file%%.grb}
+%end
+          NAME=`cdo showname ${file}`
+          NAME=${NAME#" "}                   #remove the leading blank 
+          nsteps=`cdo ntime ${file}`
+          nintv=`expr ${nsteps}  \- 1 `
+          case $NAME in 
+            tp|param76.1.0|param77.1.0|lssrwe|csrwe|rain_con|rain_gsp|snow_con|snow_gsp|RAIN_CON|RAIN_GSP|SNOW_CON|SNOW_GSP)
+              numdays=$(echo "scale=9; ${nintv} * ${dout} " | bc)
+              cdo sub -seltimestep,$nsteps ${file} -seltimestep,1 ${file} out.grb
+              #cdo setunit,'"Kg m**-2 d**-1"' out.grb out2.grb
+              cdo divc,${numdays} out.grb ${file_grb}_mean.grb
+              rm -f out.grb 
+              ;;
+            ttr|nswrf|ssr|str|sshf|slhf|ACCSOB_T)
+              numdays=$(echo "scale=9; ${nintv} * ${dout} " | bc)
+              numsec=$(echo "scale=9; ${numdays} * 86400 "  | bc)
+              cdo sub -seltimestep,$nsteps ${file} -seltimestep,1 ${file} out.grb
+              #cdo setunit,'"W m**-2"' out.grb out2.grb
+              cdo divc,${numsec} out.grb ${file_grb}_mean.grb
+              rm -f out.grb
+              ;;
+            *)
+              case $mean in
+                all)  cdo timmean  ${file} ${file_grb}_mean.grb   ;;
+                year) cdo timmean  ${file} ${file_grb}_mean.grb   ;;
+                seas) cdo seasmean ${file} ${file_grb}_mean.grb   ;;
+                mon)  cdo monmean  ${file} ${file_grb}_mean.grb   ;; 
+              esac
+              #cdo seasstd ${file} ${file_grb}_std.grb
+              ;;
+          esac
+          i=`expr ${i} \+ 1`
+        done
+  
+        if [[ $i -gt 0 ]] ; then
+          case $mean in
+            all)  catlist=`ls *${levt}*A*${period}*mean.grb` ;;
+            year) catlist=`ls *${levt}*Y*${period}*mean.grb` ;;
+            seas) catlist=`ls *${levt}*S*${period}*mean.grb` ;;
+            mon)  catlist=`ls *${levt}*M*${period}*mean.grb` ;; 
+          esac
+          set -A clist ${catlist}
+%nopp
+          myfile=${clist[0]%%_mean.grb}.grb
+%end
+          cdo -O merge ${catlist} outfile.grb
+          nmon=`cdo nmon $myfile `
+          mons=`cdo showmon  $myfile `
+          set -A lmons $mons
+          years=`cdo showyear  $myfile `
+          set -A lyears $years
+          fmon=${lmons[0]}
+          if [[ $fmon -lt 10 ]] ; then
+           fmon=0${fmon}
+          fi
+          fyear=${lyears[0]}
+          mv outfile.grb mmean_%SUITE%_%EXPNUM%_${levt}_ini${RYMD}_mon${fyear}${fmon}_n${nmon}.grb
+          case $mean in
+            all)  rm *${levt}*A*mean.grb ;;
+            year) rm *${levt}*Y*mean.grb ;;
+            seas) rm *${levt}*S*mean.grb ;;
+            mon)  rm *${levt}*M*mean.grb ;; 
+          esac
+        fi
+      done # levt
+    done # period
+  done # mean
+
+fi
+
+
+#-----------------------------------------------------------------------------
+# move data to ecgate
+
+if [[ $lcpdata = 1 ]] ; then
+ # ssh ecgb mkdir -p ${gatedir}/grb_data
+ # scp * ecgb:${gatedir}/grb_data
+  ssh ecgb mkdir -p ${gatedir}
+  scp mmean*   ecgb:${gatedir}
+  ecp -o mmean* $ecfseas
+fi
+
+
+#-----------------------------------------------------------------------------
+# delete data
+
+if [[ $ldeldata = 1 ]] ; then
+  \rm -rf ${outdir}/grb_data 
+  for nfile in ${file_nums} ; do  
+    for levtype in ML PL HL ; do
+      \rm -rf ${outdir}/${basename}_DOM01_${levtype}_${nfile}.grb
+    done
+  done
+fi
+
+
+# -------------------------------------------------
+# include the "tail" file for remote jobs
+%include <end_sc.h>

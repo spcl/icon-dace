@@ -1,0 +1,53 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+ulimit -s unlimited
+
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+
+# These paths are critical to proper loggin by buildbot
+VE_DIR="${ICON_DIR}/build/ve"
+VH_DIR="${ICON_DIR}/build/vh"
+
+if [ ! -z "${BB_NAME-}" ] ; then
+  MAKE_PROCS=22
+else
+  MAKE_PROCS=8
+fi
+
+make --no-print-directory --output-sync=line --jobs="${MAKE_PROCS}" -f - <<_EOF
+.PHONY: all host vector
+all: host vector
+host:
+	@mkdir -p ${VH_DIR}
+	# configuring host
+	cd ${VH_DIR} && ${ICON_DIR}/config/dkrz/aurora.VH.gcc_mpi-3.4.0 --disable-openmp
+	\$(MAKE) -C ${VH_DIR} |& tee make.log
+vector:
+	@mkdir -p ${VE_DIR}
+	# configuring vector
+	cd ${VE_DIR} && ${ICON_DIR}/config/dkrz/aurora.VE.nfort-5.0.1_mpi-3.4.0 --disable-openmp
+	\$(MAKE) -C ${VE_DIR} |& tee make.log
+_EOF
+
+# copy around the generated system description because the buildbot-scripting
+# needs it
+cat ${VE_DIR}/run/set-up.info
+cp -v ${VE_DIR}/run/set-up.info ${ICON_DIR}/run
+
+cd ${ICON_DIR}
+
+export VECTOR_BINARY="${VE_DIR}/bin/icon"
+export HOST_BINARY="${VH_DIR}/bin/icon"

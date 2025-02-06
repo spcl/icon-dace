@@ -1,0 +1,117 @@
+#! /usr/bin/env perl
+#
+# add-f90-module --- add a Fortran module to Makefile for
+#                    installed .mod files
+#
+# Copyright  (C)  2012  Thomas Jahns <jahns@dkrz.de>
+#
+# Version: 1.0
+# Keywords: Fortran module file library install
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+use strict;
+use warnings;
+
+use File::Spec ();
+use File::Temp ();
+
+my $srcdir;
+{
+  my ($vol, $file);
+  ($vol, $srcdir, $file) = File::Spec->splitpath(File::Spec->rel2abs(__FILE__));
+  my (@srcdirparts) = File::Spec->splitdir($srcdir);
+  $srcdir = File::Spec->catdir(@srcdirparts[0..(@srcdirparts-3)]);
+  print STDERR $srcdir, "\n";
+}
+my $f90instmffn = File::Spec->catfile($srcdir, 'include', 'f90', 'Makefile.am');
+my $f90instmffh;
+open($f90instmffh, '<', $f90instmffn)
+    or die('Cannot open f90 module installer Makefile.am');
+my ($mfoutfn, $mfoutfh);
+$mfoutfn = File::Temp->new('DIR' => $srcdir, 'UNLINK' => 0);
+open($mfoutfh, '>', $mfoutfn)
+    or die('Cannot open f90 module installer Makefile.am');
+
+my @modnames = @ARGV;
+while (my $line = <$f90instmffh>)
+{
+  if ($line =~ m{##UPPERCASE_MODULE_NAME_MARKER})
+  {
+    print $mfoutfh $line,
+        (map { uc($_) , '_MOD_NAME=' , uc($_), "\n" } @modnames);
+  }
+  elsif ($line =~ m{##LOWERCASE_MODULE_NAME_MARKER})
+  {
+    print $mfoutfh $line,
+        (map { uc($_) , '_MOD_NAME=' , lc($_), "\n" } @modnames);
+  }
+  elsif ($line =~ m{^##MODULE_RECIPE_MARKER})
+  {
+    foreach my $modname (@modnames)
+    {
+      print $mfoutfh '$(', uc(${modname}), '_MOD_NAME).$(FCMODEXT): ',
+          '$(src)/$(', uc(${modname}), '_MOD_NAME).$(FCMODEXT)', "\n",
+              "\t", '$(AM_V_GEN)rm -f "$@" ; $(LN_S) $< .', "\n\n";
+    }
+    print $mfoutfh $line;
+  }
+  elsif ($line =~ m{^##INCLUDE_HEADER_MARKER})
+  {
+    my $append = readline($f90instmffh);
+    die ('Cannot read continuing line') if (!defined($append));
+    print $mfoutfh $line, $append,
+        (map { ("\t", '$(', uc($_), '_MOD_NAME).$(FCMODEXT) \\', "\n") }
+         @modnames);
+  }
+  else
+  {
+    print $mfoutfh $line;
+  }
+}
+
+close($mfoutfh)
+    or die('Error on close of Makefile output');
+
+unlink($f90instmffn)
+    or die('Error on removal of Makefile input');
+
+link($mfoutfn, $f90instmffn)
+    or die('Error on linking of new Makefile');
+
+unlink($mfoutfn)
+    or die('Error on removal of temporary link');
+#
+# Local Variables:
+# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

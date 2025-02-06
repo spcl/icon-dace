@@ -1,0 +1,52 @@
+#!/bin/bash
+
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+#=============================================================================
+
+# --------------------------------
+#SBATCH --account=mh0156
+#SBATCH --qos=buildbot
+#SBATCH --job-name=exp.build_comin_plugins_LEVANTE.run
+#SBATCH --partition=compute
+#SBATCH --nodes=1
+# the following is needed to work around a bug that otherwise leads to
+# a too low number of ranks when using compute,compute2 as queue
+#SBATCH --mem=0
+#SBATCH --output=LOG.exp.esm_bb_ruby0_check_output_LEVANTE.run.run.o
+#SBATCH  --error=LOG.exp.esm_bb_ruby0_check_output_LEVANTE.run.run.o
+#SBATCH --exclusive
+#SBATCH --time=00:20:00
+
+#=============================================================================
+set -x
+ulimit -s unlimited
+#=============================================================================
+
+thisdir=$(pwd)
+basedir=${thisdir%/*}
+
+cd ${basedir}/experiments/esm_bb_ruby0
+
+# Check if the tas is in acceptable range
+min_tas=`cdo -s output -timmin -vertmin -fldmin tas.nc 2> /dev/null`
+echo "minimal tas is ${min_tas}"
+if echo "${min_tas} < 50 || ${min_tas} > 300" | bc -l | grep -q 1 ; then
+    exit 1
+fi
+
+
+min_to=`cdo -s output -timmin -vertmin -fldmin -setmissval,nan to.nc 2> /dev/null`
+echo "minimal to is ${min_to}"
+if echo "${min_to} < -50 || ${min_to} > 50" | bc -l | grep -q 1 ; then
+  exit 1
+fi
+

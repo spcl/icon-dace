@@ -1,0 +1,696 @@
+<?xml version="1.0" encoding="utf-8"?>
+<emissions global_resolution="R2B04">
+  <dataset id="1" species="SF6" type="anthropogenic">
+    <inventory>EDGARLevin</inventory>
+    <start_date>1994-07-02T12:00:00Z</start_date>
+    <end_date>2012-06-27T12:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">sf6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="2" species="CO" type="anthropogenic">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="3" species="CO" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="4" species="CO" type="biogenic">
+    <inventory>MEGANv2</inventory>
+    <start_date>2000-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="5" species="CO" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="6" species="CO" type="biomassBurning">
+    <inventory>GUESS-ES</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2009-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="7" species="CO" type="biomassBurning">
+    <inventory>GICC</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2005-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="8" species="CO" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="9" species="CO" type="biomassBurning">
+    <inventory>RETRO</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="10" species="NH3" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">NH3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="11" species="NH3" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">NH3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="12" species="SO2" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">SO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="13" species="SO2" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">SO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="14" species="CH2Br2" type="biogenic">
+    <inventory>ordonez</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="15" species="CH2Br2" type="biogenic">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="16" species="CH2Br2" type="biogenic">
+    <inventory>liang</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch2br2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="17" species="C5H8" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">isoprene</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="18" species="C5H8" type="biomassBurning">
+    <inventory>MACCity</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2008-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">isoprene</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="19" species="CH3COCH3" type="anthropogenic">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="20" species="CH3COCH3" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="21" species="CH3COCH3" type="biogenic">
+    <inventory>MEGANv2</inventory>
+    <start_date>2000-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="22" species="CH3COCH3" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="23" species="CH3COCH3" type="biomassBurning">
+    <inventory>GUESS-ES</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2009-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="24" species="CH3COCH3" type="biomassBurning">
+    <inventory>GICC</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2005-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="25" species="CH3COCH3" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="26" species="CH3COCH3" type="biomassBurning">
+    <inventory>POET</inventory>
+    <start_date>1990-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="27" species="CH3COCH3" type="biomassBurning">
+    <inventory>RETRO</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">acetone</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="28" species="N2O" type="anthropogenic">
+    <inventory>EDGARv4.2</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">N2O</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="29" species="N2O" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">N2O</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="30" species="CO2" type="anthropogenic">
+    <inventory>EDGARv4.2-ShortCycle</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="31" species="CO2" type="anthropogenic">
+    <inventory>EDGARv4.2-noShortCycle</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="32" species="CO2" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CO2</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="33" species="CH4" type="anthropogenic">
+    <inventory>EDGARv4.2</inventory>
+    <start_date>1970-01-01T00:00:00Z</start_date>
+    <end_date>2008-01-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="34" species="CH4" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="35" species="CH4" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">CH4</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="36" species="C2H6" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="37" species="C2H6" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="38" species="C2H6" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">c2h6</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="39" species="CH3CN" type="biomassBurning">
+    <inventory>GFED4.1s_Stockwell_daily</inventory>
+    <start_date>2004-01-01T00:00:00Z</start_date>
+    <end_date>2015-12-31T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="40" species="CH3CN" type="biomassBurning">
+    <inventory>GFED4.1s_Akagi_monthly</inventory>
+    <start_date>2004-01-01T00:00:00Z</start_date>
+    <end_date>2015-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="41" species="CH3CN" type="biomassBurning">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2008-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="42" species="CH3CN" type="biomassBurning">
+    <inventory>GFED4.1s_Stockwell_monthly</inventory>
+    <start_date>2004-01-01T00:00:00Z</start_date>
+    <end_date>2015-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="43" species="CH3CN" type="biomassBurning">
+    <inventory>GFED4.1s_Akagi_daily</inventory>
+    <start_date>2004-01-01T00:00:00Z</start_date>
+    <end_date>2015-12-31T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="44" species="CH3I" type="biogenic">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch3i</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="45" species="CH3I" type="biogenic">
+    <inventory>bell</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">ch3i</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="46" species="C3H8" type="anthropogenic">
+    <inventory>MACCity</inventory>
+    <start_date>1960-01-01T00:00:00Z</start_date>
+    <end_date>2020-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="47" species="C3H8" type="biogenic">
+    <inventory>MEGAN-MACC</inventory>
+    <start_date>1980-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="48" species="C3H8" type="biomassBurning">
+    <inventory>GFED3</inventory>
+    <start_date>1997-01-01T00:00:00Z</start_date>
+    <end_date>2010-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">propane</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="49" species="CHBr3" type="biogenic">
+    <inventory>ordonez</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="50" species="CHBr3" type="biogenic">
+    <inventory>ziska</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="51" species="CHBr3" type="biogenic">
+    <inventory>liang</inventory>
+    <start_date>0003-01-01T00:00:00Z</start_date>
+    <end_date>0003-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">chbr3</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="52" species="ACCMIP/CO" type="anthropogenic">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_slv</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="53" species="ACCMIP/CO" type="anthropogenic">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="54" species="ACCMIP/CO" type="anthropogenic">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_slv</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="55" species="ACCMIP/CO" type="anthropogenic">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="56" species="ACCMIP/CO" type="biomassBurning">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="57" species="ACCMIP/CO" type="biomassBurning">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="58" species="ACCMIP/CH3COCH3" type="biomassBurning">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="59" species="ACCMIP/CH3COCH3" type="biomassBurning">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="60" species="ACCMIP/CH4" type="anthropogenic">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="61" species="ACCMIP/CH4" type="anthropogenic">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="62" species="ACCMIP/CH4" type="anthropogenic">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="63" species="ACCMIP/CH4" type="anthropogenic">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="64" species="ACCMIP/CH4" type="biomassBurning">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="65" species="ACCMIP/CH4" type="biomassBurning">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="66" species="ACCMIP/C2H6" type="anthropogenic">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="67" species="ACCMIP/C2H6" type="anthropogenic">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="68" species="ACCMIP/C2H6" type="anthropogenic">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="69" species="ACCMIP/C2H6" type="anthropogenic">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="70" species="ACCMIP/C2H6" type="biomassBurning">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="71" species="ACCMIP/C2H6" type="biomassBurning">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="72" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>hist</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="73" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>RCP26_aircraft</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="3">emiss_air</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="74" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>hist_ships</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="75" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>hist_aircraft</inventory>
+    <start_date>1850-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="3">emiss_air</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="76" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_agr</var_name>
+      <var_name num_dims="2">emiss_awb</var_name>
+      <var_name num_dims="2">emiss_dom</var_name>
+      <var_name num_dims="2">emiss_ene</var_name>
+      <var_name num_dims="2">emiss_ind</var_name>
+      <var_name num_dims="2">emiss_tra</var_name>
+      <var_name num_dims="2">emiss_wst</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="77" species="ACCMIP/NOx" type="anthropogenic">
+    <inventory>RCP26_ships</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_shp</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="78" species="ACCMIP/NOx" type="biomassBurning">
+    <inventory>hist</inventory>
+    <start_date>1900-01-01T00:00:00Z</start_date>
+    <end_date>2000-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+  <dataset id="79" species="ACCMIP/NOx" type="biomassBurning">
+    <inventory>RCP26</inventory>
+    <start_date>2001-01-01T00:00:00Z</start_date>
+    <end_date>2100-12-01T00:00:00Z</end_date>
+    <var_names>
+      <var_name num_dims="2">emiss_gra</var_name>
+      <var_name num_dims="2">emiss_for</var_name>
+    </var_names>
+  </dataset>
+</emissions>

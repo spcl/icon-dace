@@ -1,0 +1,228 @@
+#! /usr/bin/env bash
+#
+# make-release-commit --- create git commit for release after check if
+#                         library versions need update
+#
+# Copyright  (C)  2021  Thomas Jahns <jahns@dkrz.de>
+#
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://swprojects.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+#
+set -e
+#
+# normalize_yes_no_input VAR-NAME yes-no-value
+# assigns : or false to VAR-NAME according to yes-no-value
+normalize_yes_no_input()
+{
+  case "$2" in
+    y|yes|Y|Yes|YES)
+      export -n "$1=:"
+      ;;
+    n|no|N|No|NO)
+      export -n "$1=false"
+      ;;
+    *)
+      printf 'encountered invalid input: "%s"\n' "$2" >&2
+      export -n "$1=invalid"
+      ;;
+  esac
+}
+
+yesno_ask()
+{
+  local temp
+  while : ; do
+    read -p "$1 (y/n) " -r temp
+    normalize_yes_no_input "$2" "$temp"
+    [[ $2 = invalid ]] || break
+    echo 'invalid answer, please answer yes or no' >&2
+  done
+}
+
+script_dir=scripts/release
+# shellcheck source=get-package-and-version.shinc
+. "${script_dir}/get-package-and-version.shinc"
+# shellcheck source=setup-sed.shinc
+. "${script_dir}/setup-sed.shinc"
+while : ; do
+  yesno_ask "Is version '$version' what you want to publish?" newVersionOkay
+  # the variable newVersionOkay is set indirectly by yesno_ask
+  # shellcheck disable=SC2154
+  if ! $newVersionOkay ; then
+    yesno_ask 'Do you want to specify another version number?' \
+              userProvidesNewVersion
+    if ! $userProvidesNewVersion ; then
+      echo "Aborting release. Change version in configure.ac AC_INIT?" >&2
+      exit 1
+    else
+      read -p 'New version number: ' -r newVersion
+      ${SED} "${sed_inplace_options[@]}" -e '/^AC_INIT/{' \
+        -e 's/^\(AC_INIT(\[[a-z]*\],\[\)\([0-9.]*\)\(\],\)/\1'"$newVersion"'\3/' \
+        -e '}' configure.ac
+      version=$newVersion
+    fi
+  else
+    branchOfNewVersion="release-$version"
+    if git rev-parse --verify --quiet \
+           "$branchOfNewVersion^{commit}" >/dev/null ; then
+      echo "error: corresponding branch $branchOfNewVersion exists!" >&2
+      exit 2
+    else
+      break
+    fi
+  fi
+done
+# the following variables are set by above loop, once we get here
+# $version version string to use for archive etc.
+# branchOfNewVersion git branch to put release-relevant files in
+#
+# FIXME: make sure this is actually the latest release
+lasttag=$(git tag | ${SORT_V-sort -V} | tail -n 1)
+mergebase=$(git merge-base "${lasttag}" HEAD)
+declare -a lalibs lalibdirs
+exec 5< <( \
+  find . -name Makefile.am -exec grep -H _LTLIBRARIES \{\} + \
+    | sed -e '/noinst_LTLIBRARIES/d' -e '/check_LTLIBRARIES/d' \
+          -e 's/^\(.*Makefile.am:\) *[a-z_]*_LTLIBRARIES *+\{0,1\}= */\1/'
+)
+lalibs=()
+while read -r libline ; do
+  echo "inspecting $libline" >&2
+  libpath=${libline%%/Makefile.am:*}
+  las=${libline##"${libpath}"/Makefile.am:}
+  for la in ${las} ; do
+    lalibdirs+=("${libpath}")
+    lalibs+=("${la/.la/_la}")
+  done
+done <&5
+set -e
+declare -i i
+for ((i=0 ; i < ${#lalibs[@]}; ++i)) ; do
+  lalib=${lalibs[$i]}
+  lib=${lalib%_la}
+  libpath=${lalibdirs[$i]}
+  libname="${libpath#./}/${lib}.la"
+  if ! grep '^'"${lalib}"'_LDFLAGS *= *-version-info' \
+       "${libpath}/Makefile.am" > /dev/null ; then
+    echo "cannot find -version-info for ${libname}, skipping." >&2
+    continue
+  fi
+  yesno_ask \
+    "Was there any change/removal/addition to/of an exported $libname interface?" \
+    interfaceChangedRemovedAdded
+  # the variable interfaceChangedRemovedAdded is set indirectly by yesno_ask
+  # shellcheck disable=SC2154
+  if $interfaceChangedRemovedAdded; then
+    yesno_ask "Were any exported interfaces of $libname added?" \
+      interfaceAdded
+    yesno_ask "Were any exported interface of $libname changed/removed?" \
+      interfaceChangedRemoved
+  else
+    interfaceAdded=false
+    interfaceChangedRemoved=false
+  fi
+  # FIXME: make more specific to sources making up the libraries
+  if git diff --exit-code -s "${mergebase}" "${libpath}" ; then
+    codeChange=false
+  else
+    codeChange=:
+  fi
+  libVersionInfo=$(sed -n -e '/^'"${lalib}"'_LDFLAGS *= *-version-info/{' \
+    -e 's/^'"${lalib}"'_LDFLAGS *= *-version-info \([0-9:]*\)/\1/' \
+    -e 'p;q' -e '}' "${libpath}/Makefile.am")
+  libCurrent=${libVersionInfo%%:*}
+  libRevision=${libVersionInfo#*:}
+  libAge=${libRevision#*:}
+  libRevision=${libRevision%:*}
+  echo "library version ${libVersionInfo} parsed as libCurrent=${libCurrent}" \
+       "libRevision=${libRevision} libAge=${libAge}"
+  if $codeChange ; then
+    libRevision=$((libRevision + 1))
+  fi
+  if $interfaceChangedRemovedAdded ; then
+    libCurrent=$((libCurrent + 1))
+    libRevision=0
+  fi
+  if $interfaceAdded ; then
+    libAge=$((libAge + 1))
+  fi
+  if $interfaceChangedRemoved ; then
+    libAge=0
+  fi
+  newLibVersionInfo="${libCurrent}:${libRevision}:${libAge}"
+  if [[ "$newLibVersionInfo" != "$libVersionInfo" ]]; then
+    echo "${lib} library version updated to ${newLibVersionInfo}"
+    sed -i -e '/^'"${lalib}"'_LDFLAGS *= *-version-info/{
+s/^\('"${lalib}"'_LDFLAGS *= *-version-info \)\([0-9:]*\)/\1'"${newLibVersionInfo}"'/
+}' "${libpath}/Makefile.am"
+    git add "${libpath}/Makefile.am"
+  fi
+done
+exec >"${log_dir}/make-release-commit.log" 2>&1
+git add configure.ac
+if ! git diff-index  --quiet --cached HEAD ; then
+  git commit -m 'Pre-release version bump.'
+fi
+git tag "v$version"
+prevBranch=$(git rev-parse --abbrev-ref HEAD)
+git checkout -b "$branchOfNewVersion"
+$reconfCmd >"$log_dir/post-bump-reconf.log" 2>&1
+find . -name Makefile.in -exec git add -f \{\} +
+declare -a config_files
+config_files=()
+for config_file in config/* ; do
+  if [[ $config_file != config/workarounds ]]; then
+    config_files+=("$config_file")
+  fi
+done
+config_files+=(m4/lt* m4/libtool.m4 include/config.h.in configure
+               aclocal.m4)
+if [[ -r "${script_dir}/extra_release_dist_files" ]]; then
+  mapfile -t -O ${#config_files[@]} config_files \
+          <"${script_dir}/extra_release_dist_files"
+fi
+git add -f "${config_files[@]}"
+git commit -n -m 'Add autotools files of release.'
+git checkout "$prevBranch"
+$reconfCmd >"$log_dir/post-release-commit-reconf.log" 2>&1
+git update-index -q --really-refresh
+if ! git diff-index --exit-code HEAD -- >/dev/null ; then
+  git commit -a -m 'Update files affected by release.'
+fi
+#
+# Local Variables:
+# mode: sh
+# coding: utf-8
+# license-project-url: "https://swprojects.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:
+#

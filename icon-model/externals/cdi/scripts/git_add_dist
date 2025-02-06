@@ -1,0 +1,34 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+top_srcdir=$(cd "${script_dir}/.."; pwd)
+
+cd "${top_srcdir}"
+
+git update-index -q --refresh || {
+  echo "ERROR: failed to update git index in '${top_srcdir}'" >&2
+  exit 1
+}
+
+git diff-files --quiet || {
+  echo "ERROR: '${top_srcdir}' has unstaged changes" >&2
+  exit 1
+}
+
+git diff-index --cached --quiet HEAD -- || {
+  echo "ERROR: '${top_srcdir}' has uncommited changes" >&2
+  exit 1
+}
+
+./autogen.sh
+./configure --enable-maintainer-mode
+
+distdir='cdi-dist'
+make distdir distdir="${distdir}"
+for f in $(find "${distdir}" -type f -o -type l); do
+  git add -f "${f#"${distdir}/"}";
+done
+rm -rf "${distdir}"

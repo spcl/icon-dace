@@ -1,0 +1,90 @@
+{
+    "default":
+        {
+            "model_output_dir": "{{codebase_install}}/experiments/{{experiment_name}}",
+            "perturbed_model_output_dir": "{{codebase_install}}/experiments/{{experiment_name}}_member_id_{member_id}",
+            "experiment_name": "{{experiment_name}}",
+            "perturbed_experiment_name": "{{experiment_name}}_member_id_{member_id}",
+            "stats_file_name": "stats_{member_id}.csv",
+            "tolerance_file_name": "{{reference}}/{{experiment_name}}_tolerance.csv",
+            "member_num": "[{member_num}]",
+            "member_type": "{{member_type}}",
+            "factor": 5,
+            "file_specification": [{
+                "latlon": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["lat:lon"] },
+                "meteogram": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["max_nlevs:nstations", "nstations"] },
+                "dace":{ "format": "netcdf", "time_dim": null, "horizontal_dims": ["d_body"]},
+                "emvorado_fof":{ "format": "netcdf", "time_dim": null, "horizontal_dims": ["d_body", "d_radar"], "fill_value_key": "_FillValue"},
+                "emvorado_vrsim_volscan":{ "format": "netcdf", "time_dim": null, "horizontal_dims": ["n_azimuth:n_range", "n_azimuth", "n_range", "records" ], "fill_value_key": "_FillValue"},
+                "NetCDF": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["ncells", "ncells_2", "nedges", "nvertices"] },
+                "NetCDF_no_time_dim": { "format": "netcdf", "time_dim": null, "horizontal_dims": ["ncells"] },
+                "total_integrals": { "format": "csv", "parser_args": {
+                    "delimiter": "\\s+",
+                    "skiprows": 4,
+                    "index_col": 0,
+                    "names": ["timestep", "m", "mdry", "e", "kine", "inne", "pote", "msp"]
+                  }},
+                "tracer_total_integrals": { "format": "csv", "parser_args": {
+                    "delimiter": "\\s+",
+                    "skiprows": 1,
+                    "index_col": [0,2],
+                    "names": ["timestep", "time_hr", "tracer_nr", "total", "relative_error_to_1"]
+                  }}
+            }],
+            "savedir": "{{codebase_install}}/experiments/{{experiment_name}}"
+        },
+    "perturb":
+        {
+            "perturb_amplitude": "{{perturb_amplitude}}",
+            "variable_names": ["T", "QV"],
+            "copy_all_files": false,
+            "files": [],
+            "model_input_dir": "",
+            "perturbed_model_input_dir": "{{codebase_install}}/experiments/{{experiment_name}}_member_id_{member_id}/input"
+        },
+    "stats":
+        {
+            "ensemble": false
+        },
+    "select-members":
+        {
+            "test_tolerance": false,
+            "selected_members_file_name": "{{reference}}/{{experiment_name}}_selected_members.csv"
+        },
+    "check":
+        {
+            "input_file_ref": "{{reference}}/{{experiment_name}}_reference.csv",
+            "input_file_cur": "{{codebase_install}}/experiments/{{experiment_name}}/statistics.csv"
+        },
+    "performance":
+        {
+            "timing_regex": "{{codebase_install}}/run/LOG.exp.{{experiment_name}}.*",
+            "timing_names": ["integrate_nh", "nh_solve", "physics"],
+            "timing_database": "{{codebase_install}}/database",
+            "append_time": "{{append_time}}"
+        },
+    "performance-check":
+        {
+            "timing-current": "{{timing_current}}",
+            "timing-reference": "{{timing_reference}}"
+        },
+    "cdo":
+        {
+            "cdo_table_file": "{{reference}}/cdo_table/{{experiment_name}}.csv",
+            "histogram": true,
+            "times": [],
+            "variables": []
+        },
+    "run":
+        {
+            "run_script_name": "exp.{{experiment_name}}.run",
+            "perturbed_run_script_name": "exp.{{experiment_name}}_member_id_{member_id}.run",
+            "run_dir": "{{codebase_install}}/run",
+            "lhs": ["pinit_seed", "pinit_amplitude"],
+            "rhs_new": ["{seed}", "{{perturb_amplitude}}"],
+            "rhs_old": [null, null],
+            "submit_command": "sbatch --wait",
+            "parallel": true,
+            "dry": false
+        }
+}

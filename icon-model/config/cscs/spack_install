@@ -1,0 +1,47 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+SPACK_VERSION=$1
+VARIANT=$2
+
+# Unset positional parameters
+# so they are not forwarded to spack-c2sm/setup-env.sh
+set -- 
+set +x
+
+git clone --depth 1 --recurse-submodules --shallow-submodules -b $SPACK_VERSION https://github.com/C2SM/spack-c2sm.git
+
+. spack-c2sm/setup-env.sh
+# Overwrite default spack user and config cache to avoid long path error with Buildbot
+export SPACK_USER_CONFIG_PATH=$ICON_DIR/spack-config
+export SPACK_USER_CACHE_PATH=$ICON_DIR/spack-cache
+echo "Setting SPACK_USER_CONFIG_PATH to $SPACK_USER_CONFIG_PATH"
+echo "Setting SPACK_USER_CACHE_PATH to $SPACK_USER_CACHE_PATH"
+
+
+if ! git rev-parse --is-inside-work-tree &> /dev/null; then
+  echo "Error: This script must be executed from within the icon git repository."
+  # Because the icon package in spack-c2sm relies on that.
+  exit 1
+fi
+
+# Temporary workaround until cmake becomes a build dependency of icon spackage:
+export CMAKE=$(spack find --format='{prefix}/bin/cmake' cmake@3.18: | head -1)
+
+# The spack spec, i.e. the icon configuration is defined in the enviroment file in the path below
+# and is set by the spack activate command
+spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
+spack install -v
+
+$SCRIPT_DIR/create_sh_env $SPACK_VERSION $VARIANT

@@ -1,0 +1,86 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+addexp="./addexp"
+#############################################################################
+##
+## create ocean list
+##
+#############################################################################
+listname=ocean
+./rmlist $listname
+./create_all_builders $listname
+
+#-----------------------------------------------------------
+# add some virtual builders for ocean local building
+./addmachine ocean       --list $listname
+./addbuilder ocean_gcc   --configureflags="--with-fortran=gcc"                 --builderflags Active --machine ocean --list $listname
+./addbuilder ocean_intel --configureflags="--with-fortran=intel --with-openmp" --builderflags Active --machine ocean --list $listname
+./addbuilder ocean_nag   --configureflags="--with-fortran=nag"                 --builderflags Active --machine ocean --list $listname
+
+#-----------------------------------------------------------
+# add omip technical tests only for builders with mpi parallelization
+$addexp checksuite.ocean_internal/technical/exp.ocean_omip_ptest checksuite.ocean_internal/technical/exp.test_ocean_omip_technical \
+  --without-configureflags without-mpi --runflags "cpu_time=00:30:00"  --list $listname
+# add omip binary-identical test and Hex test to all builders
+$addexp checksuite.ocean_internal/omip/exp.test_ocean_omip_10days checksuite.ocean_internal/ShallowWater/exp.ocean_WilliamsonTestCase2_Hex \
+--runflags "cpu_time=00:30:00" --list $listname
+# add ocean tests to the restricted builder MISTRAL_ocean
+./set_builder_flags Active            --builders MISTRAL_ocean  --list $listname
+$addexp checksuite.ocean_internal/technical/exp.ocean_omip_ptest checksuite.ocean_internal/technical/exp.test_ocean_omip_technical \
+checksuite.ocean_internal/omip/exp.test_ocean_omip_10days checksuite.ocean_internal/ShallowWater/exp.ocean_WilliamsonTestCase2_Hex \
+--builders MISTRAL_ocean --runflags "cpu_time=00:30:00" --list $listname
+./set_builder_flags Ocean             --builders MISTRAL_ocean  --list $listname
+#-----------------------------------------------------------
+# set all builders to Ocean
+./set_builder_flags Ocean --builders "*" --list $listname
+# deactivate special builders
+# ./set_builder_flags Inactive --builders MISTRAL_nag_mtime MISTRAL_nag_serial --list $listname
+#lets see the list
+./lslist $listname
+#-----------------------------------------------------------
+
+#############################################################################
+## create omip_10days list
+listname=omip_10days
+./rmlist $listname
+./create_all_builders $listname
+
+./set_builder_flags Active            --builders MISTRAL_ocean  --list $listname
+$addexp checksuite.ocean_internal/omip/exp.test_ocean_omip_10days --runflags "cpu_time=00:30:00" --list $listname
+./set_builder_flags Ocean --builders "*" --list $listname
+./set_builder_flags Inactive          --builders MISTRAL_nag_serial  --list $listname
+
+./lslist $listname
+#-----------------------------------------------------------
+
+#############################################################################
+## create amip rererence list
+listname=oes_amip
+./rmlist $listname
+./create_all_builders $listname
+
+$addexp checksuite.ocean_internal/other/exp.test_amip_reference --builders MISTRAL_intel_hybrid --runflags "cpu_time=00:30:00" --list $listname
+# activate only intel_hybrid
+./set_builder_flags Inactive --builders "*"  --list $listname
+./set_builder_flags Active --builders "MISTRAL_intel_hybrid"  --list $listname
+./lslist $listname
+#-----------------------------------------------------------
+
+#############################################################################
+## create oes-dev list
+listname=oes-dev
+cp experiment_lists/icon-dev experiment_lists/${listname}
+
+$addexp checksuite.ocean_internal/other/exp.test_amip_reference --builders MISTRAL_intel_hybrid --runflags "cpu_time=00:30:00" --list $listname
+./lslist $listname
+#-----------------------------------------------------------

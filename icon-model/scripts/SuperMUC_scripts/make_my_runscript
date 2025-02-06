@@ -1,0 +1,99 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#==============================================================================
+# Creates the ICON run scripts
+# Leonidas Linardakis, MPI-M, 2011-25-1
+#==============================================================================
+#==============================================================================
+# The basic command for creating an ICON experiment run script is
+#   
+#  $make_runscript in_script=exp.<name> in_script=exec.iconrun EXPNAME=<name>
+#
+# By default the folder in use is ./run, and the run script is named exp.<name>.run.
+# 
+# Basic optional parameters for the $make_runscript command are:
+#
+#    out_script=<output run script name>. By default is <in_script>.run
+#
+#    in_folder=<input folder>.   By default is run
+#
+#    out_folder=<output folder>. By default is <in_folder>
+#
+#    mpi_procs=<number of mpi processes>. In the case of MPI configuration,
+#       defines how many processes per node will be used.
+# 
+#    no_of_nodes=<Number of nodes>. In the case of MPI configuration,
+#       defines how many nodes will be used.
+# 
+#    openmp_threads=<Number of openmp threads>. In the case of OPENMP
+#       configuration, defines how many OPENMP threads will be used.
+#
+#    cpu_time=<wall time>. Defines the expected run wall time.
+#  
+#    <free_variable>=<value> Free variables can be passed to the run script
+#       using this syntax. For example: EXPNAME=test, will result the
+#       definition of the variable EXPNAME=test in the run script.
+#
+# For more details see the parameters in the ./config/make_target_runscript
+#==============================================================================
+set -x
+base_folder=$(pwd)
+. $base_folder/run/set-up.info
+#==============================================================================
+# Define run parameters
+
+exp_name="nh_hdcp2_lam_r0416"
+
+no_of_nodes=4000
+mpi_procs_pernode=1
+openmp_threads=16
+nproma=16
+
+
+#   The wall clock time in "hh:mm:ss"
+cpu_time="01:00:00"
+#==============================================================================
+
+
+#==============================================================================
+create_runscript()
+{
+base_folder=$(pwd)
+input_folder=run
+#==============================================================================
+use_shell=${use_shell:="/bin/ksh"}
+# The $make_runscript command directs to the ./config/make_target_runscript
+make_runscript="$use_shell ./config/make_target_runscript"
+
+runname=${exp_name}_${no_of_nodes}nodes_${mpi_procs_pernode}mpi_tasks_${openmp_threads}threads.${nproma}nproma
+
+$make_runscript                  \
+  in-folder=$input_folder        \
+  in-script=exp.${exp_name}      \
+  in-script=exec.iconrun         \
+  out-name=exp.${runname}.run \
+  EXPNAME=${runname}            \
+  nproma=$nproma                 \
+  no-of-nodes=$no_of_nodes       \
+  mpi-procs-pernode=$mpi_procs_pernode \
+  openmp-threads=$openmp_threads \
+  cpu-time=$cpu_time              
+}
+#==============================================================================
+
+#==============================================================================
+#   create the runscript
+echo "-----------------------------------------------------------"
+create_runscript
+echo "-----------------------------------------------------------"
+#==============================================================================

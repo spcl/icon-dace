@@ -1,0 +1,4 @@
+#!/bin/sh
+if [ ! -d ../html ];then mkdir ../html ;fi
+htlatex cdi_fman.tex "html" "" -d../html/ 
+htlatex cdi_cman.tex "html" "" -d../html/ 

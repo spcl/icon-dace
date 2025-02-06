@@ -1,0 +1,43 @@
+#-----------------------------------------------------------------------------
+#
+# README file for simple and advanced plotting with NCL on lat/lon as well as on unstructured grid
+# ===============================================================================================
+# Kristina Fröhlich, DWD, 2010-0105
+#
+# Valid for icon-dev
+#
+#-----------------------------------------------------------------------------
+#
+# General
+# -------
+# NCL is probably the plotting software on which we want to rely mostly
+# for standard plotting of model data. The advantages are that (1) NCL
+# has an active development team, (2) a broad user community, (3) can be
+# used without licence fee, and (4) can handle data on unstructured grids,
+# which is iomportant for ICON.
+#
+#-----------------------------------------------------------------------------
+#
+# Plotting scripts
+# -----------------------------------
+#
+# 1. icon_vectorplots.ncl
+#   still needs (converts) lat/lon data but are able to overlay the nested domain on the globe
+#
+# 2. icon_triangles_mesh.ncl
+#    able to plot fields of the unstructured grid
+#
+# 3. icon_triangles_polygons.ncl
+#    plots the triangles for each colour levels which make the procedurea bit lenghty
+#    but can be used for "triangle-wise-debugging"
+#
+# 4. vertical_transection.ncl
+#    draws a crosssection through any arbitrary domain, this plot uses currently only
+#    temperature. It is not possible to plot vector arrows on the figure.
+
+#    getting started
+#
+# 1.  edit your working directory(Diri) and filename (FileName*), and the output file (GraphicFile)
+# 2.  edit variable, level , time step as you want
+# 3.  run ncl
+#-----------------------------------------------------------------------------

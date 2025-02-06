@@ -1,0 +1,286 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  EOM_PREPARE.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - extract output
+  - generate plots 
+%end
+
+# include the header file for remote jobs
+%include <init_sc.h>
+
+# -------------------------------------------------
+
+echo "EOM_PREPARE.SMS" 
+
+module load cdo/1.7.0
+
+#module swap grib_api grib_api/1.14.5
+module unload eccodes
+module load grib_api/1.14.5 
+
+dwd_grib_api=/home/ms/de/dwd/grib_api
+export GRIB_DEFINITION_PATH="/usr/local/apps/grib_api/1.14.5/CRAY/82/share/grib_api/definitions:${dwd_grib_api}/definitions.edzw-1.14.5"
+
+case %SIMMODE% in
+  1) lgetdata=1        # 0: get no data, 1: get from ecfs
+     lsplitdata=1  ;;  # pre-operations
+  2) lgetdata=0        # monthly mean 10day forecasts
+     lsplitdata=0  ;;
+esac
+lcatdata=1
+lcpdata=1
+ldeldata=1
+
+lreprocess=0           # after new model results reprocess - either in eom_prepare.sms or post_prepare.sms (normally)
+
+# delete data only on the very last day of the month
+EOFM=`python %SCBASEDIR%/gen/date_calc.py -a endofmonth -d %YMD%%INIHOUR%`
+if [[ "${EOFM}" -eq "1" ]] ; then
+  ldeldata=1
+else
+  ldeldata=0
+fi
+
+####
+#lgetdata=1
+#lsplitdata=1
+#ldeldata=0
+#lreprocess=1
+####
+
+
+#----------------------------------------------------------------------------#
+# 1. Setup                                                                   #
+#----------------------------------------------------------------------------#
+
+YYYYMM=`echo %YMD% | cut -c 1-6`
+date01=${YYYYMM}'01'%INIHOUR%
+date31=%YMD%%INIHOUR%              # e.g. 2012063000
+
+# base name for output and namelist files
+basename31=%SUITE%_%EXPNUM%_${date31}
+basenameMM=%SUITE%_%EXPNUM%_${YYYYMM}
+base=%SUITE%_%EXPNUM%
+
+outdir=%SCTEMP%/%SUITE%/%EXPNUM%/output/${date31}
+cd ${outdir}
+
+
+#----------------------------------------------------------------------------#
+# 2. Split variable files in STEP 0, 24 and 240                              #
+#----------------------------------------------------------------------------#
+
+
+#-----------------------------------------------------------------------------
+# cat dates together and time-average to make _0, _24 and _240 files
+
+mondir=%SCTEMP%/%SUITE%/%EXPNUM%/output/${YYYYMM}
+mkdir -p $mondir
+
+if [[ $lcatdata = 1 ]] ; then
+ #varlist=`ls grb_data/${basename31}_DOM01_0001_*.grb | \
+ #         awk 'BEGIN { FS="_"} ; {print $7"_"$8}'    | \
+ #         sed 's/.grb//'`
+  varlist=`ls grb_data/${basename31}_DOM01_0001_*.grb | \
+      sed "s/grb_data\/${basename31}_DOM01_0001_//"   | \
+      sed "s/.grb//"`
+
+#delete variables that give problems (e.g. Param=18.3.2 level=2 not defined at timestep 1)
+ #varlist=`echo $varlist | sed "s/2.3.18_sfc//"`
+ #varlist=`echo $varlist | sed "s/t_zl//"`
+  varlist=`echo $varlist | sed "s/h_ml//"`
+  echo $varlist
+  set -A var_arr $varlist
+
+# split work over 5 processes
+
+  ndiff=5                     #number of processes (e.g. 5, synchronize with icon.def "work")
+ #nvar=%prepnum%              #index of process    (e.g. 1,2,3,4 or 5)
+  nvar=1
+  ntotal=${#var_arr[*]}
+
+  DD=`echo %YMD% | cut -c 7-8`   #e.g. 30 (last day)
+
+# loop over list of variables still to be processed --------------------------
+
+  while [ $nvar -le ntotal ] ; do
+
+   var=${var_arr[nvar-1]}
+
+   go=0
+   case $var in
+     0.[0-3]*ml*) if [[ %prepnum% = 1 ]] ; then ; go=1 ; fi ;;   # 0.[0-3]*ml*)
+     [0-9]*)      if [[ %prepnum% = 2 ]] ; then ; go=1 ; fi ;;   # [0-9]*)     
+     [a-t]*ml*)   if [[ %prepnum% = 3 ]] ; then ; go=1 ; fi ;;   # [a-t]*ml*)  
+     [a-t]*)      if [[ %prepnum% = 4 ]] ; then ; go=1 ; fi ;;   # [a-q]*)     
+     *)           if [[ %prepnum% = 5 ]] ; then ; go=1 ; fi ;;   # *)          
+   esac
+   if [[ $go = 1 ]] ; then
+    echo 'selected variable: ' $var '  PREPNUM: ' %prepnum%
+
+
+   #\rm -rf  ${mondir}/tmp_dir
+    mkdir -p ${mondir}/tmp_dir
+    ymdh=${date01}
+
+    rm -f ${mondir}/tmp_dir/${basenameMM}_DOM01_0001_${var}_*.grb
+
+    while (( ${ymdh} <= ${date31} )) ; do
+      echo "processing variable: "$var
+      outdir="%SCTEMP%/%SUITE%/%EXPNUM%/output/${ymdh}/"
+      cd $outdir
+
+# split variable files in STEPs if variable file available -------------------
+
+      if [[     -f           grb_data/${base}_${ymdh}_DOM01_0001_${var}.grb ]] ; then
+        if [[ ! -f  ${mondir}/tmp_dir/${base}_${ymdh}_DOM01_0001_${var}_48.grb  ||  $lreprocess = 1 ]] ; then
+          grib_copy          grb_data/${base}_${ymdh}_DOM01_0001_${var}.grb            \
+                                      ${base}_${ymdh}_DOM01_0001_${var}_[endStep].grb
+          if [[ $ldeldata = 1 ]] ; then
+            \rm -rf          grb_data/${base}_${ymdh}_DOM01_0001_${var}.grb
+          fi
+          for time in 0 24 48 72 96 120 144 168 192 216 240 ; do
+            cp -f ${base}_${ymdh}_DOM01_0001_${var}_${time}.grb ${mondir}/tmp_dir
+          done
+          rm -f ${base}_${ymdh}_DOM01_0001_${var}_*.grb
+        fi
+      fi 
+
+      cd ${mondir}/tmp_dir
+      for time in 0 24 48 72 96 120 144 168 192 216 240 ; do
+        cat ${base}_${ymdh}_DOM01_0001_${var}_${time}.grb >> ${basenameMM}_DOM01_0001_${var}_${time}.grb
+      done
+
+      ymdh=`expr ${ymdh} + 100`  # 100=+1day+00hours
+    done                         # end days
+
+# all times:
+#   cat ${base}*_DOM01_0001_${var}_0.grb \
+#       ${base}*_DOM01_0001_${var}_24.grb \
+#       ${base}*_DOM01_0001_${var}_240.grb \
+#     > ${mondir}/${basenameMM}_DOM01_0001_${var}_0_24_240.grb
+
+
+#----------------------------------------------------------------------------#
+# 3. Mean and variance over DATEs of 0, 24 and 240 STEP files                #
+#----------------------------------------------------------------------------#
+
+
+# time mean 0h, 24h, 216h, 240h ----------------------------------------------------
+# (works only from day 11 onwards because of 10 day forecast verification)
+
+    cd ${mondir}/tmp_dir
+
+    cdo -P 2 timselavg,$((DD-1)),1,100   ${basenameMM}_DOM01_0001_${var}_0.grb   ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb
+    cdo -P 2 timselavg,$((DD-1)),0,100   ${basenameMM}_DOM01_0001_${var}_24.grb  ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb
+    cdo -P 2 timselavg,$((DD-10)),10,100 ${basenameMM}_DOM01_0001_${var}_0.grb   ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb   || true #10day
+    cdo -P 2 timselavg,$((DD-10)),0,100  ${basenameMM}_DOM01_0001_${var}_216.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb || true #10day
+    cdo -P 2 timselavg,$((DD-10)),0,100  ${basenameMM}_DOM01_0001_${var}_240.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb || true #10day
+
+    grib_set -s stepRange=0      ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb    o${nvar}.grb
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb
+    grib_set -s stepRange=0      ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb   o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb                 || true #10day
+    grib_set -s stepRange=24     ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb   o${nvar}.grb
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb
+    grib_set -s stepRange=216    ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb               || true #10day
+    grib_set -s stepRange=240    ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb               || true #10day
+
+    grib_set -s date=${YYYYMM}02 ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb    o${nvar}.grb
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb
+    grib_set -s date=${YYYYMM}11 ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb   o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb                 || true #10day
+    grib_set -s date=${YYYYMM}01 ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb   o${nvar}.grb
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb
+    grib_set -s date=${YYYYMM}01 ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb               || true #10day
+    grib_set -s date=${YYYYMM}01 ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb o${nvar}.grb  || true #10day
+                 mv o${nvar}.grb ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb               || true #10day
+
+    cat ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb    \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb    \
+      > ${mondir}/${basenameMM}_DOM01_0001_${var}_0_24_mn2-${DD}.grb
+    cat ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb   \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb  \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb   \
+      > ${mondir}/${basenameMM}_DOM01_0001_${var}_0_240_mn11-${DD}.grb    || true #10day
+    \rm -rf                                                          \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn2-${DD}.grb     \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_24_mn2-${DD}.grb     \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_0_mn11-${DD}.grb      \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_216_mn11-${DD}.grb     \
+        ${mondir}/${basenameMM}_DOM01_0001_${var}_240_mn11-${DD}.grb
+
+
+# variance of 24h-0h, 240h-0h at verifying time ------------------------------
+# (works only from day 11 onwards because of 10 day forecast verification)
+
+    for DT in 1 2 3 4 5 6 7 8 9 10 ; do
+      if [[ $DT -ge $DD ]] ; then ;  break ; fi
+
+      DH=$((24*DT))  # forecast time [h]
+
+      cdo -P 2 seltimestep,`seq -s ',' $((DT+1)) ${DD}` ${basenameMM}_DOM01_0001_${var}_0.grb              \
+                                                        ${basenameMM}_DOM01_0001_${var}_0_sel-${DD}.grb
+      cdo -P 2 seltimestep,`seq -s ',' 1 $((DD-DT))`    ${basenameMM}_DOM01_0001_${var}_${DH}.grb          \
+                                                        ${basenameMM}_DOM01_0001_${var}_${DH}_sel-${DD}.grb
+      cdo -P 2 sub ${basenameMM}_DOM01_0001_${var}_${DH}_sel-${DD}.grb   \
+                   ${basenameMM}_DOM01_0001_${var}_0_sel-${DD}.grb       \
+                   ${basenameMM}_DOM01_0001_${var}_0_${DH}_dif-${DD}.grb
+      
+      cdo timvar   ${basenameMM}_DOM01_0001_${var}_0_${DH}_dif-${DD}.grb \
+         ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_var-${DD}.grb
+
+     #cdo timstd   ${basenameMM}_DOM01_0001_${var}_0_${DH}_dif-${DD}.grb \
+     #   ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_rms-${DD}.grb
+      
+      rm -rf       ${basenameMM}_DOM01_0001_${var}_0_sel-${DD}.grb       \
+                   ${basenameMM}_DOM01_0001_${var}_${DH}_sel-${DD}.grb   \
+                   ${basenameMM}_DOM01_0001_${var}_0_${DH}_dif-${DD}.grb
+
+      grib_set -s stepRange=${DH} ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_var-${DD}.grb o${nvar}.grb 
+      mv o${nvar}.grb             ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_var-${DD}.grb 
+     #grib_set -s stepRange=${DH} ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_rms-${DD}.grb o${nvar}.grb 
+     #mv o${nvar}.grb             ${mondir}/${basenameMM}_DOM01_0001_${var}_0_${DH}_rms-${DD}.grb 
+    done
+
+
+    cd ..
+   #\rm -rf ${mondir}/tmp_dir
+    smsmeter catvariables ${nvar}
+
+   fi
+  #nvar=`expr ${nvar} + ${ndiff}`  # variable counter for sms meter
+   nvar=`expr ${nvar} + 1`         # variable counter for sms meter
+  done                             # end var
+  smsevent catdata
+fi
+
+
+
+# -------------------------------------------------
+# include the "tail" file for remote jobs
+%include <end_sc.h>

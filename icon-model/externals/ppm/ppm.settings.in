@@ -1,0 +1,98 @@
+{
+    "build" : {
+        "tools" : {
+            "CC"       : "@CC@",
+            "CPP"      : "@CPP@",
+            "CPPFLAGS" : "@CPPFLAGS@",
+            "CFLAGS"   : "@CFLAGS@",
+            "LDFLAGS"  : "@LDFLAGS@",
+            "LIBS"     : "@LIBS@",
+            "FC"       : "@FC@",
+            "FCFLAGS"  : "@FCFLAGS@",
+            "FCDEFS"   : "@FCDEFS@",
+            "LD"       : "@LD@",
+            "NM"       : "@NM@",
+            "AR"       : "@AR@",
+            "ARFLAGS"  : "@ARFLAGS@",
+            "DLLTOOL"  : "@DLLTOOL@",
+            "OBJDUMP"  : "@OBJDUMP@",
+            "STRIP"    : "@STRIP@",
+            "RANLIB"   : "@RANLIB@",
+            "INSTALL"  : "@INSTALL@"
+        },
+        "platforms" : {
+            "host"   : "@host@",
+            "build"  : "@build@",
+            "enable_shared" : "@enable_shared@",
+            "enable_static" : "@enable_static@"
+        },
+        "libs" : {
+            "zlib"     : {
+                "found_c"   : "@HAVE_ZLIB_C_BINDINGS@",
+                "libs"      : "@ZLIB_C_LIB@",
+                "cflags"    : "@ZLIB_C_INCLUDE@"
+            },
+            "szip"    : {
+                "found_c"   : "@HAVE_SZIP_C_BINDINGS@",
+                "libs"      : "@SZIP_C_LIB@",
+                "cflags"    : "@SZIP_C_INCLUDE@"
+            },
+            "hdf5"     : {
+                "found_c"   : "@HAVE_HDF5_C_BINDINGS@",
+                "libs"      : "@HDF5_C_LIB@",
+                "cflags"    : "@HDF5_C_INCLUDE@"
+            },
+            "curl"     : {
+                "found_c"   : "@HAVE_CURL_C_BINDINGS@",
+                "libs"      : "@CURL_C_LIB@",
+                "cflags"    : "@CURL_C_INCLUDE@"
+            },
+            "netcdf"   : {
+                "found_fc"  : "@HAVE_NETCDF_FC_BINDINGS@",
+                "fclibs"    : "@NETCDF_FC_LIB@",
+                "fcflags"   : "@NETCDF_FC_INCLUDE@"
+            },
+            "parmetis" : {
+                "found_c"   : "@HAVE_PARMETIS_C_BINDINGS@",
+                "libs"      : "@PARMETIS_C_LIB@",
+                "cflags"    : "@PARMETIS_C_INCLUDE@",
+                "found_fc"  : "@HAVE_PARMETIS_FC_BINDINGS@",
+                "fclibs"    : "@PARMETIS_FC_LIB@",
+                "fcidxkind" : "@METIS_FC_IDXTYPE_KIND@",
+                "fcrealkind": "@METIS_FC_REAL_T_KIND@"
+            },
+            "metis" : {
+                "found_c"   : "@HAVE_METIS_C_BINDINGS@",
+                "libs"      : "@METIS_C_LIB@",
+                "cflags"    : "@METIS_C_INCLUDE@",
+                "found_fc"  : "@HAVE_METIS_FC_BINDINGS@",
+                "fclibs"    : "@METIS_FC_LIB@",
+                "fcidxkind" : "@METIS_FC_IDXTYPE_KIND@",
+                "fcrealkind": "@METIS_FC_REAL_T_KIND@"
+            },
+            "crypto" : {
+                "found_c"   : "@HAVE_CRYPTO_C_BINDINGS@",
+                "libs"      : "@CRYPTO_C_LIB@",
+                "cflags"    : "@CRYPTO_C_INCLUDE@"
+            },
+            "mpi" : {
+                "found_c"   : "@HAVE_MPI_C_BINDINGS@",
+                "libs"      : "@MPI_C_LIB@",
+                "cflags"    : "@MPI_C_INCLUDE@",
+                "found_fc"  : "@HAVE_MPI_FC_BINDINGS@",
+                "fclibs"    : "@MPI_FC_LIB@",
+                "fcflags"   : "@MPI_FC_INCLUDE@"
+            }
+        }
+    },
+    "features" : {
+        "use_mpi"                    : "@USE_MPI@",
+        "enable_distributed_array_c" : "@ENABLE_DISTRIBUTED_ARRAY_C@",
+        "have_pointer_remap"         : "@HAVE_POINTER_REMAP@",
+        "graph_part"                 : "@HAVE_METIS_FC_BINDINGS@",
+        "graph_part_mpi"             : "@HAVE_PARMETIS_FC_BINDINGS@",
+        "netcdf_dump"                : "@HAVE_NETCDF_FC_BINDINGS@",
+        "have_hash_md5"              : "@HAVE_HASH_MD5@",
+        "have_hash_sha1"             : "@HAVE_HASH_SHA1@"
+    }
+}

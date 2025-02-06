@@ -1,0 +1,12 @@
+prefix=@prefix@
+exec_prefix=@exec_prefix@
+libdir=@libdir@
+includedir=@includedir@
+
+Name: yaxt
+Description: Distributed memory data (re-)distribution library.
+URL: https://dkrz-sw.gitlab-pages.dkrz.de/yaxt/
+Version: @VERSION@
+Requires:
+Libs: -L@libdir@ -lyaxt -lyaxt_c
+Cflags: @FC_MOD_FLAG@@includedir@

@@ -1,0 +1,4408 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#--------------------------------------------------------------
+# metview script to plot various model fields against
+# observations.  Plots are produced for direct month 
+# by month comparisons, or against the obs climatology
+#
+# Offline code history:
+# -------
+# Original Version: Christian Jakob 1999
+#
+# Version 2:        Adrian Tompkins
+#                   collected completely new datasets
+#                   plot program rewritten from scratch to make 
+#                   flexible for period
+#                   dateset contributions from: JJ. Morcrette
+#                                               P.  Lopez
+#						A.  Beljaars
+#
+# Online history running under SMS
+# ------
+# UPDATED  Martin Koehler  CY29R1
+#                   added argument lists and setup branch 
+#                   to run under SMS to automatically get plots
+#
+# UPDATED: Adrian Tompkins CY29R1 - new datasets
+#                                   maps for operations
+#                                   bug corrects
+#                          CY29R2 - improved plots
+#                                   new datasets
+#                                   maps for seas
+#                          CY30R2 - polar projections
+#			   CY31R1 - plots against 'climatology' 
+#                                   improved plot titles            
+#                          CY31R2 - improved zonal mean plots
+#                                   MLS ice dataset added
+# UPDATED: Peter Bechtold  CY35R3 - read obs data from disc or  ecfs:
+#                                   freado (default:'disc', else 'ecfs')
+#                                 - remove some obsolete Grib commands
+#                                   and plot MLS also when LCLIM=0
+#                                   put normally not used plots over poles
+#                                   under switch lplot_poles # default 0=false
+# UPDATED: Peter Bechtold  CY36R2 - cleaning (bitmaps) updating pressure etc functions
+#                                   GRIB_API compatible
+#          Gianpaolo Balsamo & Peter Bechtold - add GPCP2.1
+#                                 - switch lplot_poles # default=0=false
+#
+# UPDATED: Adrian Tompkins CY36R3 - statistical significant added
+#          P Bechtold             - hardwired data dates replaced by 
+#				                  - new CERES dataset
+#				                  - functions to set contours and text
+#				                  - options for black and white plots
+#				                  - options to set titles to a,b,c...
+# UPDATED: P Bechtold&I Russell   - possibility to use integrate function only 
+#                                   when limited number of missing values ex. for "ciwc" function
+#                                   (to avoid warning messages and blockage)
+#				
+# UPDATED: M Koehler       CY38R1 - upgrade to Metview4
+# UPDATED: P Bechtold      CY38R1 - further adaption to Metview4 and sig bug corrections
+#------------------------------------------------------------------------------------------#
+
+# argument list processing:
+interactive=0
+
+if (interactive=0) then
+  args = arguments()
+  expid   = args[1]  # experiment ID (e.g. e9va)
+# now have flexible ensemble	initime = args[2]  # start time of ensemble fc
+  nens    = args[2]  # number of ensemble members if using EPS setup
+  yymm    = args[3]  # yymm of averaging perdiod
+  nmon    = args[4]  # nmonths in av period
+  fcrange = args[5]  # fcrange if ops
+  nlev    = args[6]  # set nlev=1 to use surface field
+  plot    = args[7]  # index of model field to plot 
+  lclim   = args[8]  # 1: plots against climatology
+                     # 0: plots are a month-for-month direct comparison
+  res     = args[9]  # lat/lon resolution for plots
+  eratext = args[10] # ERA40  or ERAI
+  freado  = args[11] # read option for observational data, 'disc' or 'ecfs'
+  ecfsdir = args[12] # directory where Obs data is read from
+  lsigt   = args[13] # 1=no 2=with significance test and shading
+  lcol    = args[14] # 1=colour or 2=black and white plots?
+  larticle= args[15] # 2=changes titles to a b c
+  lplotml = args[16] # 0=no plot of ml related obs/fields
+  nhday   = args[17] # time step or length of day (could be different for different planet)
+  model   = args[18] # model: 'icon' or 'ifs'
+end if
+
+# define areas
+gl_area = [-90,-180,90,180]
+gl_orien= "portrait"
+tr_area = [-40,-180,40,180]
+
+# output format (ps or png or screen)
+# output = "screen"
+output = "ps"
+
+# directory
+dir = getenv("PLOTDATA") 
+if (dir="") then
+  dir = "."
+end if 
+dir     = dir&"/"
+filestr ='clim_' # defn of start of file
+
+rgstr = ""
+if fcrange > -99 then
+  rgstr = 'day'&string(fcrange)&'_'
+end if
+
+#-----------------------------------------------
+
+# select which vars to verify
+
+lprecip	= 0 # precipitation
+lradn	= 0 # radiation fluxes
+ltcwv	= 0 # total column water vapour
+ltclw	= 0 # total column liquid water (LWP)
+ltciw	= 0 # total column ice water (IWP)
+lcc	= 0 # total cloud cover
+lwinds	= 0 # surface winds
+lsflux  = 0 # surface fluxes
+lciwc   = 0 # cloud ice water content
+l2d2tsd = 0 # surface 2D/2T/SD fields
+ldasilv = 1 # DaSilva surf fluxes
+
+case plot of
+1: lprecip	= 1 end
+2: lradn	= 1 end
+3: ltcwv	= 1 end
+4: ltclw	= 1 end
+5: ltciw	= 1 end
+6: lcc		= 1 end
+7: lwinds	= 1 end
+8: lsflux	= 1 end
+9: lciwc	= 1 end
+10:l2d2tsd	= 1 end
+end case
+
+#
+# plot a 4th curve panel
+#
+
+lplot_curve=1
+lplot_poles=0
+
+#
+# seasons are JJA,MAM,JJA,SON
+#
+
+season =[3,6,9,12]      # index of start month for 3 month season
+nseason=count(season)
+
+#
+# calculate the T-Test limit
+#
+
+sig=0.975    # level of 2-tailed test (could set to user parameter)
+dof=nens-1   # degrees of freedom for mean of single ensemble
+if lsigt=2 and nens>2 then
+  tcrit=ttest_thresh(sig,dof)
+else 
+  tcrit=-999 # switch the plot off 
+end if
+
+#
+# significance contours (invariant)
+#
+
+pos_lim = 1.e21
+neg_lim =-1.e21
+
+sig_cont = pcont(
+            legend				:  'off',
+            contour                  		:  'off',
+            contour_level_selection_type	:  'level_list',
+            contour_level_list       		:  [ 0.0,0.5,2.5 ],
+            contour_shade            		:  'on',
+            contour_line_colour      		:  'grey',
+            contour_shade_technique  		:  'polygon_shading',
+            contour_shade_method     		:  'hatch',
+            contour_shade_hatch_thickness 	:  4,
+            contour_shade_hatch_density   	:  30.0,
+            contour_shade_hatch_index     	:  3,
+            contour_shade_min_level       	:  0.5,
+            contour_shade_min_level_colour	:  'grey',
+            contour_shade_max_level_colour	:  'grey',
+            contour_shade_label_blanking	:  'off',
+            contour_label            		:  'off',
+            contour_hilo             		:  'off',
+            grib_scaling_of_retrieved_fields	:  'off'
+            )
+
+#--------------------------------------------------------
+# This is very rough and simple (but better than nothing)
+# Assumed rms errors in fields for stats tests
+#--------------------------------------------------------
+
+gpcp_rms     =0.15 # FOR GPCP v2 adler et al 2003.
+                   # will assume for ALL datasets for now
+ceres_sw_rms =2.5  # 2.5 W/m**2 2.5%% for SW, Wielicki et al 95 
+ceres_lw_rms =1.9  # 1%% for OLR - WILL ASSUME FOR NOAA
+erbe_sw_rms  =5.5  # also Wielicki et al 95 BAMS
+erbe_lw_rms  =3.2  # 
+isccp_rms    = 5   # absolute error rossow et al. 1993
+                   # ASSUME ALSO FOR MODIS
+quikscat_rms =0.7  # Hans Hersbach estimate
+ssmi_wind_rms=0.9 #  Wentz 1997 (instaneous, mm=?) 
+
+#---------------------------------------
+# special control variables
+# lists of plot variable hard-wired here
+#---------------------------------------
+
+isccp_par  = ["tcc","lcc","mcc","hcc"]
+isccp_code = [8,32,35,38]
+isccp_name = ["Total Cloud Cover","Low Cloud Cover",
+             "Middle Cloud Cover","High Cloud Cover"]
+calipso_par= ["TCC","LCC","MCC","HCC"]
+
+ceres_name = ['aqua_fm3_v2','terra','aqua']
+ceres_par  = ["lw",     "lwcf"   ,"sw",     "swcf"       ]
+ceres_file1= ['OLRFlxT','OLRFlxT','TSRFlxT','TSRFlxT'    ]
+ceres_file2= ['',       'OLRFlxC','',       'TSRFlxC'    ]
+ceres_rms  = [ceres_lw_rms, ceres_lw_rms, ceres_sw_rms, ceres_sw_rms]
+
+erbe_par   = ["lw",     "lwcf"   ,"sw",     "swcf"       ]
+erbe_rms   = [erbe_lw_rms,erbe_lw_rms,erbe_sw_rms,erbe_sw_rms]
+
+sfluxlist  = ["SSH","SLH","SSR","STR","SNET"]
+
+era40list  = ["2D","2T","SD"]
+
+#mls_press_list=[316, 261, 215, 178, 147, 121, 100, 83, 68, 56, 46]
+mls_press_list=[316, 261, 215, 178, 147, 121, 100 ]
+
+#
+# average model file:
+#
+
+source_file_sfc=dir&"mmean_"&expid&"_sfc_alldates.grb"
+source_file_ml =dir&"mmean_"&expid&"_ml_alldates.grb"
+
+# list of dates that instruments are available
+# and list of projections required
+#
+# proj 1: standard globe
+# proj 2: standard tropics +/- 40  
+# proj 3: polar stereographic north
+# proj 4: polar stereographic south
+
+gpcp_date1=197901
+gpcp_date2=201012
+
+mls_date1=200408
+mls_date2=200607
+
+xiearkin_date1=197901
+xiearkin_date2=199912
+
+tmi_rss_date1=199712
+tmi_rss_date2=200506
+
+tmi_nasda_date1=199801
+tmi_nasda_date2=200605 
+
+modis_date1=200008
+modis_date2=200108
+
+nceres_plat=count(ceres_name)
+ceres_date1=[200207,200201,200003]
+ceres_date2=[200708,200512,200306]
+
+isccp_date1=198307
+isccp_date2=200806
+
+ssmi_date1=198709
+ssmi_date2=200812
+
+hoaps_date1=198801
+hoaps_date2=201212  # HOAPS3.3: rain & wvpa to 2015, shf & lhf to 2012
+
+quikscat_date1=200003
+quikscat_date2=200611
+
+noaaolr_date1=197406
+noaaolr_date2=200402
+
+meteo_sis_date1=198301
+meteo_sis_date2=200512
+
+erbe_date1=198411
+erbe_date2=199002
+
+era40_date1=195709
+era40_date2=200208
+
+#
+# counters:
+#
+
+nisccp = count(isccp_par)
+nsflux = count(sfluxlist)
+nera40 = count(era40list)
+nceres = [4,2,4]           # SW missing from Terra...
+nerbe  = count(erbe_par)
+
+coastlines = pcoast(
+    map_coastline_colour	: "black",
+    map_coastline_thickness	: 2,
+    map_grid_line_style		: 'dash',
+    map_grid_colour		: "grey",
+    map_label_colour		: "black",
+  # map_label                  	: "off",
+    map_label_height           	: 0.3,
+    map_grid_latitude_increment	: 30,
+    map_grid_longitude_increment: 45
+    )
+
+map_view = mapview(
+    map_projection		: "cylindrical",
+    area			: gl_area,
+    page_frame			: "off",
+    subpage_frame_thickness	: 3,
+  # subpage_y_length    	: 80,
+    subpage_y_position    	: 7,
+    coastlines			: coastlines
+    )
+map_view_40 = mapview(
+    map_projection		: "cylindrical",
+    area			: tr_area,
+    page_frame			: "off",
+    subpage_frame_thickness    	: 3,
+    coastlines			: coastlines
+    )
+
+map_view_np = mapview(
+    map_projection		: "polar_stereographic",
+    page_frame			: "off",
+    subpage_frame_thickness    	: 3,
+    map_hemisphere		: "north",
+    coastlines			: coastlines
+    )
+
+map_view_sp = mapview(
+    map_projection		: "polar_stereographic",
+    page_frame			: "off",
+    subpage_frame_thickness    	: 3,
+    map_hemisphere		: "south",
+    coastlines			: coastlines
+    )
+
+lat_axis = maxis(
+        axis_position     :   "left",
+        axis_title_text   :   "Latitude [deg]",
+        axis_title_height :   0.35,
+        axis_tick_interval:   30
+        )
+lon_axis = maxis(
+        axis_position     :   "left",
+        axis_title_text   :   "Longitude [deg]",
+        axis_title_height :   0.35,
+        axis_tick_interval:   60
+        )
+vertical_axis = maxis(
+        axis_orientation  :    "vertical"
+        )
+cartesian_view_lat = cartesianview(
+        x_min             :    -90,
+        x_max             :     90,
+        subpage_frame_thickness    	: 3,
+        y_automatic       :     'on',
+        horizontal_axis   :     lat_axis,
+        vertical_axis     :     vertical_axis
+        )
+cartesian_view_lon = cartesianview(
+        x_min             :    -180,
+        x_max             :     180,
+        subpage_frame_thickness    	: 3,
+        y_automatic       :     'on',
+        horizontal_axis   :     lon_axis,
+        vertical_axis     :     vertical_axis
+        )
+
+########################################################################
+
+if lplot_curve then
+  right=70
+else 
+  right=100
+end if
+
+bot=97
+
+
+page_1 = plot_page(
+  top    : 0,
+  bottom : bot/3.0,
+  left   : 0, 
+  right  : right, 
+  view	 : map_view
+)
+page_2 = plot_page(
+  top	 : bot/3.0,
+  bottom : 2.0*bot/3.0,
+  left   : 0, 
+  right  : right, 
+  view   : map_view
+)
+page_3 = plot_page(
+  top	 : 2.0*bot/3.0,
+  bottom : bot,                
+  left   : 0, 
+  right  : right, 
+  view   : map_view
+)
+  
+
+page_1_40 = plot_page(
+  top    : 0,
+  bottom : bot/3.0,
+  left   : 0, 
+  right  : right+5, 
+  view   : map_view_40
+)
+page_2_40 = plot_page(
+  top	 : bot/3.0,
+  bottom : 2.0*bot/3.0,
+  left   : 0, 
+  right  : right+5, 
+  view   : map_view_40
+)
+page_3_40 = plot_page(
+  top	 : 2.0*bot/3.0,
+  bottom : bot,                
+  left   : 0, 
+  right  : right+5, 
+  view   : map_view_40
+)
+
+top   = 3
+bot   = 97
+space = 3
+
+page_1_np = plot_page(
+  top    : top,
+  bottom : top + (bot-top-2*space)/3.0,
+  left   : 15, 
+  right  : right, 
+  view   : map_view_np
+)
+page_2_np = plot_page(
+  top	 : top + space +   (bot-top-2*space)/3.0,
+  bottom : top + space + 2*(bot-top-2*space)/3.0,
+  left   : 15, 
+  right  : right, 
+  view   : map_view_np
+)
+page_3_np = plot_page(
+  top	 : top + 2*space + 2*(bot-top-2*space)/3.0,
+  bottom : bot,                
+  left   : 15, 
+  right  : right, 
+  view	 : map_view_np
+)
+  
+
+page_1_sp = plot_page(
+  top    : top,
+  bottom : top + (bot-top-2*space)/3.0,
+  left   : 15, 
+  right  : right, 
+  view	 : map_view_sp
+)
+page_2_sp = plot_page(
+  top	 : top + space +   (bot-top-2*space)/3.0,
+  bottom : top + space + 2*(bot-top-2*space)/3.0,
+  left   : 15, 
+  right  : right, 
+  view	 : map_view_sp
+)
+page_3_sp = plot_page(
+  top	 : top + 2*space + 2*(bot-top-2*space)/3.0,
+  bottom : bot,                
+  left   : 15, 
+  right  : right, 
+  view	 : map_view_sp
+)
+
+
+left=right+8
+right=98
+
+top=6
+bot=97
+
+page_cv1 = plot_page(  
+    	TOP                      :  6,    
+    	BOTTOM                   :  32, 
+    	LEFT                     :  left, 
+    	RIGHT                    :  right, 
+    	VIEW                     :  cartesian_view_lat
+    	)
+page_cv2 = plot_page(  
+    	TOP                      :  38,    
+    	BOTTOM                   :  64, 
+    	LEFT                     :  left, 
+    	RIGHT                    :  right, 
+    	VIEW                     :  cartesian_view_lon
+    	)  
+page_cv3 = plot_page(  
+    	TOP                      :  71,    
+    	BOTTOM                   :  97, 
+    	LEFT                     :  left, 
+    	RIGHT                    :  right, 
+    	VIEW                     :  cartesian_view_lon
+    	)  
+
+if lplot_curve then
+  pages    = [page_1   ,page_2   ,page_3   , page_cv1,page_cv2,page_cv3] 
+  pages_40 = [page_1_40,page_2_40,page_3_40, page_cv1,page_cv2,page_cv3]
+  pages_np = [page_1_np,page_2_np,page_3_np, page_cv1,page_cv2,page_cv3]
+  pages_sp = [page_1_sp,page_2_sp,page_3_sp, page_cv1,page_cv2,page_cv3]
+else
+  pages    = [page_1   ,page_2   ,page_3]
+  pages_40 = [page_1_40,page_2_40,page_3_40]
+  pages_np = [page_1_np,page_2_np,page_3_np]
+  pages_sp = [page_1_sp,page_2_sp,page_3_sp]
+end if
+
+display_port = plot_superpage(
+    	LAYOUT_SIZE            : "CUSTOM",    #fix for portrait
+    	CUSTOM_WIDTH           : 21.1,
+    	CUSTOM_HEIGHT          : 29.6,
+        pages    	       : pages      )
+display_land = plot_superpage(
+    	LAYOUT_ORIENTATION     : "LANDSCAPE",
+        pages    	       : pages_40   )
+display_np   = plot_superpage(
+    	LAYOUT_SIZE            : "CUSTOM",
+    	CUSTOM_WIDTH           : 21.1,
+    	CUSTOM_HEIGHT          : 29.6,
+        pages    	       : pages_np   )
+display_sp   = plot_superpage(
+    	LAYOUT_SIZE            : "CUSTOM",
+    	CUSTOM_WIDTH           : 21.1, 
+    	CUSTOM_HEIGHT          : 29.6, 
+        pages    	       : pages_sp   )
+
+
+
+##########################################################################
+
+# define the year arrays depending on whether list or index
+
+yy_start=int(yymm/100)
+mm_start=yymm-(yy_start*100)
+mm_len=nmon
+
+for imon = 1 to 1 do
+	datenum1=yymm
+	datenum2=100*(yymm+nmon-1)+01
+	datex=date(datenum2)
+	datenum2=100*year(datex)+month(datex)
+
+# for the filenames:
+	datestr=string(datenum1)
+
+#
+# HOAPS3-SSM/I precip, TCWV, sensible and latent heat fluxes (by Axel Andersson)
+#
+   if (lclim=1 or (datenum1 >= hoaps_date1 and datenum2 <= hoaps_date2)) then
+      if lprecip = 1 then
+         outfile(dir, lclim, 
+                'precip_hoap_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+                filestr&expid, output, lcol)
+         precip(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                source_file_sfc, nens, res, display_port, lplot_curve,
+                ecfsdir&"hoaps3/grib/rain/HOAPS-G.R30.M01.RAIN.", ".grb", 4, "HOAPS3",
+                lclim, freado, lcol, tcrit, sig_cont, larticle, 1, gpcp_rms,model)
+      end if
+
+      if ltcwv = 1 then
+         outfile(dir, lclim, 
+                 'tcwv_hoap_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+                 filestr&expid, output, lcol)
+         varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                 source_file_sfc, nens, res, display_port, lplot_curve,
+                 ecfsdir&"hoaps3/grib/wvpa/HOAPS-G.R30.M01.WVPA.", ".grb", 1, "HOAPS3",
+                 lclim, freado, lcol, tcrit, sig_cont, larticle, "tcwv", 1, model)
+       end if
+
+      if lsflux = 1 then
+         outfile(dir, lclim, 
+                 'sflux_hoap_SSH_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+                 filestr&expid, output, lcol)
+         varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                 source_file_sfc, nens, res, display_port, lplot_curve,
+                 ecfsdir&"hoaps3/grib/heat/HOAPS-G.R30.M01.HEAT.", ".grb", 1, "HOAPS3",
+                 lclim, freado, lcol, tcrit, sig_cont, larticle, "sshf", 1, model)
+       end if
+
+       if lsflux = 1 then
+          outfile(dir, lclim, 
+                  'sflux_hoap_SLH_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                  source_file_sfc, nens, res, display_port, lplot_curve,
+                  ecfsdir&"hoaps3/grib/latent/HOAPS-G.R30.M01.LATE.", ".grb", 1, "HOAPS3",
+                  lclim, freado, lcol, tcrit, sig_cont, larticle, "slhf", 1, model)
+       end if
+
+  end if
+
+#
+# MLS Aura
+#
+# fudge plot always i.e. also for lclim=0 as needed for our Webpage
+   lclimh=lclim
+   lclimh=1
+   if lplotml<> 0 then
+    if (lclimh=1 or (datenum1 >= mls_date1 and datenum2 <= mls_date2)) then
+      if lciwc = 1 then
+         for ipress=1 to count(mls_press_list) do
+            press=mls_press_list[ipress]
+            outfile(dir,lclimh,'ciwc_p'&string(press)&'_mls_'&rgstr&
+                    'nens'&string(nens)&'_'&
+                    datestr&'_nmon'&string(mm_len[imon]),
+                    filestr&expid,output,lcol)
+            ciwc(expid,yy_start[imon],mm_start[imon],
+                 mm_len[imon],source_file_sfc,
+                 source_file_ml,nens,display_port,lplot_curve,
+                 ecfsdir&"mls/ice/grib/mls_ice_",".grb",press,
+                 "MLS Aura ",nlev ,lclimh,freado,lcol,tcrit,sig_cont,larticle)
+         end for
+       end if
+     end if
+    end if
+
+#
+# TMI RSS
+#
+    if (lclim=1 or (datenum1 >= tmi_rss_date1 and datenum2 <= tmi_rss_date2)) then
+       if ltclw = 1 then
+          outfile(dir, lclim, 
+                  'tclw_trmm_rss_'&rgstr&'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                  source_file_sfc, nens, res, display_land, lplot_curve,
+                  ecfsdir&"trmm/trmm_tmi_rss/grib/tmi_RSS.rain.", ".grb", 5, "TRMM/TMI (RSS)",
+                  lclim, freado, lcol, tcrit, sig_cont, larticle, "tclw", 2, model)
+       end if
+
+       if lprecip = 1 then
+          outfile(dir,lclim,'precip_trmm_rss_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                 source_file_sfc,nens,res,display_land,lplot_curve,
+                 ecfsdir&"trmm/trmm_tmi_rss/grib/tmi_RSS.rain.",".grb",6,"TRMM/TMI (RSS) ",
+                 lclim,freado,lcol,tcrit,sig_cont,larticle,2,gpcp_rms,model)
+       end if
+
+       if ltcwv = 1 then
+          outfile(dir, lclim, 
+                  'tcwv_trmm_rss_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                  source_file_sfc, nens, res, display_land, lplot_curve,
+                  ecfsdir&"trmm/trmm_tmi_rss/grib/tmi_RSS.rain.", ".grb", 4, "TRMM/TMI (RSS)",
+                  lclim, freado, lcol, tcrit, sig_cont, larticle, "tcwv", 2, model)
+        end if
+    end if
+
+#
+# TMI NASDA
+#	
+    if (lclim=1 or (datenum1 >= tmi_nasda_date1 and datenum2 <= tmi_nasda_date2)) then
+       if lprecip = 1 then
+          outfile(dir,lclim,'precip_trmm_nasda_3b43_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                 source_file_sfc,nens,res,display_land,lplot_curve,
+                 ecfsdir&"trmm/trmm_tmi_nasda/3b43/grib/tmi_3B43.rain.",".*.grb",
+                 1,"TRMM/TMI (3B43 NASDA)",
+                 lclim,freado,lcol,tcrit,sig_cont,larticle,2,gpcp_rms,model)
+       end if
+    end if
+
+
+#
+# GPCP  only use GPCP2.1 from Cy36r2 on
+#
+    if (lclim=1 or (datenum1 >= gpcp_date1 and datenum2 <= gpcp_date2)) then
+       if lprecip = 1 then
+
+# standard 
+          outfile(dir,lclim,'precip_gpcp_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                 source_file_sfc,nens,res,display_port,lplot_curve,
+                 ecfsdir&"gpcp/v2.2/grib/GPCPsgobs","",1,"GPCP2.2",
+                 lclim,freado,lcol,tcrit,sig_cont,larticle,1,gpcp_rms,model)
+                      
+         if lplot_poles=1 then
+# poles 
+            outfile(dir,lclim,'precip_gpcp_sp_'&rgstr&
+                    'nens'&string(nens)&'_'&
+                    datestr&'_nmon'&string(mm_len[imon]),
+                    filestr&expid,output,lcol)
+            precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                   source_file_sfc,nens,res,display_sp,lplot_curve,
+                   ecfsdir&"gpcp/v2.2/grib/GPCPsgobs","",1,"GPCP2.2",
+                   lclim,freado,lcol,tcrit,sig_cont,larticle,3,gpcp_rms,model)
+
+            outfile(dir,lclim,'precip_gpcp_np_'&rgstr&
+                    'nens'&string(nens)&'_'&
+                    datestr&'_nmon'&string(mm_len[imon]),
+                    filestr&expid,output,lcol)
+            precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                   source_file_sfc,nens,res,display_np,lplot_curve,
+                   ecfsdir&"gpcp/v2.2/grib/GPCPsgobs","",1,"GPCP2.2",
+                   lclim,freado,lcol,tcrit,sig_cont,larticle,3,gpcp_rms,model)
+         end if
+
+       end if
+   end if
+
+#
+# XIE ARKIN
+#
+# plot always i.e. also for lclim=0 as needed for our Webpage
+   lclimh=lclim
+   lclimh=1
+   if (lclimh=1 or (datenum1 >= xiearkin_date1 and datenum2 <= xiearkin_date2)) then
+      if lprecip = 1 then
+         outfile(dir,lclimh,'precip_xiearkin_'&rgstr&
+                'nens'&string(nens)&'_'&
+                datestr&'_nmon'&string(mm_len[imon]),
+                filestr&expid,output,lcol)
+         precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                source_file_sfc,nens,res,display_port,lplot_curve,
+                ecfsdir&"xiearkin/grib/MM_xiar_","_228",1,"XIE ARKIN",
+                lclimh,freado,lcol,tcrit,sig_cont,larticle,1,gpcp_rms,model)
+       end if
+   end if
+
+#
+# QUIKSCAT
+#
+    if (lclim=1 or (datenum1 >= quikscat_date1 and datenum2 <= quikscat_date2)) then
+       if lwinds = 1 then
+          outfile(dir,lclim,'10wind_quikscat_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          quikscat(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                   source_file_sfc,nens,res,display_port,lplot_curve,
+                   lclim,ecfsdir,freado,lcol,tcrit,sig_cont,larticle,quikscat_rms,model)
+       end if
+    end if
+
+#
+# ERA40 surface fields
+#	
+    if (lclim=1 or (datenum1 >= era40_date1 and datenum2 <= era40_date2)) then
+       if l2d2tsd = 1 then
+          for iera40=1 to nera40 do 
+              outfile(dir,lclim,'sfc'&era40list[iera40]&'_era40_'&rgstr&
+                      'nens'&string(nens)&'_'&
+                      datestr&'_nmon'&string(mm_len[imon]),
+                      filestr&expid,output,lcol)
+              if iera40 <= 2 then
+                 era40(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                       source_file_sfc,nens,res,era40list[iera40],display_port,lplot_curve,
+                       "ERA40",lclim,era40_date1,era40_date2,dir,eratext,
+                       lcol,tcrit,sig_cont,larticle,model)
+              else
+                 era40sn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                       source_file_sfc,nens,res,era40list[iera40],display_port,lplot_curve,
+                       "ERA40",lclim,era40_date1,era40_date2,dir,eratext,
+                       lcol,tcrit,sig_cont,larticle,model)
+              end if 
+           end for
+        end if
+    end if
+
+#
+# Meteosat surface incoming solar SIS (by CM SAF, Trentmann and Mueller)
+#
+    if ( lclim=1 or (datenum1 >= meteo_sis_date1 and datenum2 <= meteo_sis_date2) ) then
+		if lradn = 1 then
+           outfile(dir, lclim, 'ssrd_meteo_'&rgstr&'nens'&string(nens)&'_'&
+                   datestr&'_nmon'&string(mm_len[imon]),
+                   filestr&expid, output, lcol )
+           radn(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                'ssrd', '.grb', 'Meteosat',
+                ecfsdir&'SISmm/grib/SISmm', ecfsdir&'',
+                source_file_sfc, nens, res, display_port, lplot_curve,
+                lclim, freado, lcol, tcrit, sig_cont, larticle, 1, ceres_sw_rms )
+        end if
+    end if
+
+#
+# NOAA OLR
+#
+   if (lclim=1 or (datenum1 >= noaaolr_date1 and datenum2 <= noaaolr_date2)) then
+      if lradn = 1 then
+         outfile(dir,lclim,'lw_noaa_'&rgstr&
+                 'nens'&string(nens)&'_'&
+                 datestr&'_nmon'&string(mm_len[imon]),
+                 filestr&expid,output,lcol)
+         radn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+              'lw','.grb','NOAA OLR',
+              ecfsdir&'noaa_olr/grib/olr_noaa',ecfsdir&'',
+              source_file_sfc,nens,res,display_port,lplot_curve,
+              lclim,freado,lcol,tcrit,sig_cont,larticle,1,ceres_lw_rms)
+       end if
+   end if
+
+#
+# ISCCP/MODIS/CALIPSO
+#
+   if lcc = 1 then
+      if (lclim=1 or (datenum1 >= isccp_date1 and datenum2 <= isccp_date2)) then
+         for iisccp=1 to nisccp do
+            outfile(dir,lclim,'tcc_isccp_'&rgstr&
+                    isccp_par[iisccp]&'_'&
+                    'nens'&string(nens)&'_'&
+                     datestr&'_nmon'&string(mm_len[imon]),
+                     filestr&expid,output,lcol)
+            tcc(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                source_file_sfc,nens,res,display_port,lplot_curve,isccp_par[iisccp],
+                ecfsdir&"isccp/d2/grib/d2_",
+                "_0003060912151821_"&string(isccp_code[iisccp])&".grb",
+                isccp_name[iisccp],"ISCCP",1.0,
+                lclim,freado,lcol,tcrit,sig_cont,larticle,1,isccp_rms,model)
+          end for
+      end if
+
+      for iisccp=1 to nisccp do
+         outfile(dir,lclim,'tcc_calipso_'&rgstr&
+                 isccp_par[iisccp]&'_'&
+                 'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+         tcc(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+             source_file_sfc,nens,res,display_port,lplot_curve,isccp_par[iisccp],
+             ecfsdir&"calipso/ccover/grib/CALIPSO_"&string(calipso_par[iisccp]),".grb",
+             isccp_name[iisccp],"CALIPSO",100.0,
+             1,freado,lcol,tcrit,sig_cont,larticle,1,isccp_rms,model)
+      end for
+
+      if (lclim=1 or (datenum1 >= modis_date1 and datenum2 <= modis_date2)) then
+          outfile(dir,lclim,'tcc_modis_'&rgstr&
+                  'tcc'&'_'&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          tcc(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+              source_file_sfc,nens,res,display_port,lplot_curve,"tcc",
+              ecfsdir&"modis_l3_c5/MODIS_TCC_",
+              ".grb","Total Cloud Cover","MODIS",1.0,
+              1,freado,lcol,tcrit,sig_cont,larticle,1,isccp_rms,model)
+
+          if lplot_poles=1 then
+              outfile(dir,lclim,'tcc_modis_np_'&rgstr&
+                      'tcc'&'_'&
+                      'nens'&string(nens)&'_'&
+                      datestr&'_nmon'&string(mm_len[imon]),
+                      filestr&expid,output,lcol)
+              tcc(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                  source_file_sfc,nens,res,display_np,lplot_curve,"tcc",
+                  ecfsdir&"modis_l3_c5/MODIS_TCC_",
+                  ".grb","Total Cloud Cover","MODIS",1.0,
+                  1,freado,lcol,tcrit,sig_cont,larticle,3,isccp_rms,model)
+
+              outfile(dir,lclim,'tcc_modis_sp_'&rgstr&
+                      'tcc'&'_'&
+                      'nens'&string(nens)&'_'&
+                       datestr&'_nmon'&string(mm_len[imon]),
+                       filestr&expid,output,lcol)
+              tcc(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                  source_file_sfc,nens,res,display_sp,lplot_curve,"tcc",
+                  ecfsdir&"modis_l3_c5/MODIS_TCC_",
+                  ".grb","Total Cloud Cover","MODIS",1.0,
+                  1,freado,lcol,tcrit,sig_cont,larticle,3,isccp_rms,model)
+           end if
+       end if
+    end if
+
+#
+# CERES
+#
+    for iplat=1 to nceres_plat do
+       if (lclim=1 or (datenum1 >= ceres_date1[iplat] and datenum2 <= ceres_date2[iplat])) then
+          if lradn = 1 then
+             for iceres=1 to nceres[iplat] do
+                 outfile(dir,lclim,ceres_par[iceres]&'_ceres_'&ceres_name[iplat]&'_'&rgstr&
+                         'nens'&string(nens)&'_'&
+                         datestr&'_nmon'&string(mm_len[imon]),
+                         filestr&expid,output,lcol)
+                 radn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                      ceres_par[iceres],"99_144x72.grb",'CERES '&ceres_name[iplat],
+                      ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file1[iceres],
+                      ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file2[iceres],
+                      source_file_sfc,nens,res,display_port,lplot_curve,
+                      lclim,freado,lcol,tcrit,sig_cont,larticle,1,ceres_rms[iceres])
+
+                if lplot_poles=1 then
+                   outfile(dir,lclim,ceres_par[iceres]&'_ceres_np_'&ceres_name[iplat]&'_'&rgstr&
+                           'nens'&string(nens)&'_'&
+                           datestr&'_nmon'&string(mm_len[imon]),
+                           filestr&expid,output,lcol)
+                   radn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                        ceres_par[iceres],"99_144x72.grb",'CERES '&ceres_name[iplat],
+                        ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file1[iceres],
+                        ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file2[iceres],
+                        source_file_sfc,nens,res,display_np,lplot_curve,
+                        lclim,freado,lcol,tcrit,sig_cont,larticle,3,ceres_rms[iceres])
+
+                   outfile(dir,lclim,ceres_par[iceres]&'_ceres_sp_'&ceres_name[iplat]&'_'&rgstr&
+                           'nens'&string(nens)&'_'&
+                           datestr&'_nmon'&string(mm_len[imon]),
+                           filestr&expid,output,lcol)
+                   radn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                        ceres_par[iceres],"99_144x72.grb",'CERES '&ceres_name[iplat],
+                        ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file1[iceres],
+                        ecfsdir&'ceres/'&ceres_name[iplat]&'/grib/'&ceres_file2[iceres],
+                        source_file_sfc,nens,res,display_sp,lplot_curve,
+                        lclim,freado,lcol,tcrit,sig_cont,larticle,3,ceres_rms[iceres])
+                end if
+             end for 
+          end if
+       end if
+    end for
+
+#
+# ERBE
+#
+    if (datenum1 >= erbe_date1 and datenum2 <= erbe_date2) then
+       if lradn = 1 then
+          for ierbe=1 to nerbe do
+             outfile(dir,lclim,erbe_par[ierbe]&'_erbe_'&rgstr&
+                     'nens'&string(nens)&'_'&
+                     datestr&'_nmon'&string(mm_len[imon]),
+                     filestr&expid,output,lcol)
+             radn(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                  erbe_par[iceres],".grb",'ERBE',
+                  ecfsdir&'erbe/grib/erbe_'&erbe_par[ierbe],
+                  ecfsdir&'',
+                  source_file_sfc,nens,res,display_port,lplot_curve,
+                  lclim,freado,lcol,tcrit,sig_cont,larticle,1,erbe_rms[ierbe])
+           end for 
+        end if
+     end if
+
+#
+# SSM/I
+#
+     if (lclim=1 or (datenum1 >= ssmi_date1 and datenum2 <= ssmi_date2)) then
+       if lprecip = 1 then
+          outfile(dir,lclim,'precip_ssmi_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                   datestr&'_nmon'&string(mm_len[imon]),
+                   filestr&expid,output,lcol)
+          precip(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                 source_file_sfc,nens,res,display_port,lplot_curve,
+                 ecfsdir&"ssmi/wentz_v6/grib/ssmi_v6_",".grb",4,"SSMI V6",
+                 lclim,freado,lcol,tcrit,sig_cont,larticle,1,gpcp_rms,model)
+       end if
+
+       if ltcwv= 1 then
+          outfile(dir, lclim, 
+                  'tcwv_ssmi_'&rgstr&'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                  source_file_sfc, nens, res, display_port, lplot_curve,
+                  ecfsdir&"ssmi/wentz_v6/grib/ssmi_v6_", ".grb", 2, "SSMI Wentz V6",
+                  lclim, freado, lcol, tcrit, sig_cont, larticle, "tcwv", 1, model)
+       end if
+
+       if ltclw= 1 then
+          outfile(dir, lclim, 
+                  'tclw_ssmi_'&rgstr&'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+                  source_file_sfc, nens, res, display_port, lplot_curve,
+                  ecfsdir&"ssmi/wentz_v6/grib/ssmi_v6_", ".grb", 3, "SSMI Wentz V6",
+                  lclim, freado, lcol, tcrit, sig_cont, larticle, "tclw", 1, model)
+       end if
+
+       if lwinds = 1 then
+          outfile(dir,lclim,'10wind_ssmi_'&rgstr&
+                  'nens'&string(nens)&'_'&
+                  datestr&'_nmon'&string(mm_len[imon]),
+                  filestr&expid,output,lcol)
+          winds(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                  source_file_sfc,nens,res,display_port,lplot_curve,ecfsdir,
+                  lclim,freado,lcol,tcrit,sig_cont,larticle,ssmi_wind_rms,model)
+       end if
+     end if
+
+#
+# NOAA and CLOUDSAT TCIW
+#
+   if ltciw = 1 then
+       outfile(dir, 1, 
+            'tciw_noaa_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+             filestr&expid, output, lcol)
+       varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+             source_file_sfc, nens, res, display_port, lplot_curve,
+             ecfsdir&"noaa_iwp/grib/NOAA10_", ".grb", 1, "NOAA 7/11-microns",
+            1, freado, lcol, tcrit, sig_cont, larticle, "tciw", 1, model)
+   end if
+
+#  if ltciw = 1 then
+#      outfile(dir, 1, 
+#              'tciw_cloudsat_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+#              filestr&expid, output, lcol)
+#      varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+#              source_file_sfc, nens, res, display_port, lplot_curve,
+#              ecfsdir&"cloudsat/grib/iwp_non-precip_non-conv_cloudsat", ".grb", 1, "CLOUDSAT",
+#              1, freado, lcol, tcrit, sig_cont, larticle, "tciw", 1, model)
+#  end if
+
+#
+# SFLUX - DS
+#
+    if lsflux = 1 and ldasilv=1 then
+     for isflux=1 to nsflux do 
+      if sfluxlist[isflux]<>'SSH' and sfluxlist[isflux]<>'SLH' then
+        outfile(dir,lclim,'sflux_ds_'&sfluxlist[isflux]&"_"&rgstr&
+               'nens'&string(nens)&'_'&
+               datestr&'_nmon'&string(mm_len[imon]),
+               filestr&expid,output,lcol)
+        surf_flux(expid,yy_start[imon],mm_start[imon],mm_len[imon],
+                  source_file_sfc,
+                  nens,res,sfluxlist[isflux],isflux,display_port,lplot_curve,
+                  ecfsdir,freado,lcol,tcrit,sig_cont,larticle)
+      end if
+     end for
+    end if
+
+    if lsflux = 1 and ldasilv=1 then
+	   outfile(dir, 1, 
+         'sflux_ds_SSH_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+          filestr&expid, output, lcol)
+          varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+              source_file_sfc, nens, res, display_port, lplot_curve,
+              ecfsdir&"dasilva/grib/sensib3", ".grb", 1, "DaSilva",
+              1, freado, lcol, tcrit, sig_cont, larticle, "sshf", 1, model)
+    end if
+
+    if lsflux = 1 and ldasilv=1 then
+       outfile(dir, 1, 
+         'sflux_ds_SLH_'&rgstr&'nens'&string(nens)&'_'&datestr&'_nmon'&string(mm_len[imon]),
+	      filestr&expid, output, lcol)
+	  varmaps(expid, yy_start[imon], mm_start[imon], mm_len[imon],
+               source_file_sfc, nens, res, display_port, lplot_curve,
+               ecfsdir&"dasilva/grib/latent3", ".grb", 1, "DaSilva",
+               1, freado, lcol, tcrit, sig_cont, larticle, "slhf", 1, model)
+    end if
+
+end for
+
+
+
+
+#######################################################################
+# Funtions
+#######################################################################
+
+function outfile(dir,lclim,title,expid,output,lcol)
+	if output = "png" or output = "ps" then
+		filen=dir&expid
+        if (lclim=1) then 
+           filen=filen&"_climatol"
+        else 
+      #   filen=filen&"_mnth"
+		end if
+        filen=filen&"_"&title&"."&output
+		print ("writing to file: ", filen)
+		if output = "png" then
+          format = "png"
+		else
+          format = "postscript"
+		end if
+		if lcol=1 then 
+          printer_type='COLOR'
+        else
+          printer_type='GREY'
+        end if 
+		dp = drawing_priority(
+		pcont_contour_shade_method_area_fill :	700
+		)
+        ps_file = output(
+          format          : format,
+          destination     : "file",
+          file_name       : filen,
+          printer         : "ps_floor1"
+        )
+        setoutput(ps_file)
+	end if
+end outfile
+
+
+#######################################################################
+
+function searchstring(os,ss)
+
+# look for ss (search-string) inside os (original string)
+# returns index of first letter of occurrence of substring if found
+# returns -1 if substring is not found
+
+    index=-1
+    ssl = length(ss)
+    for i=1 to length(os)-ssl+1 do
+       str = substring(os,i,i+ssl-1)
+       if str = ss then 
+          index=i
+       end if
+    end for
+     return index
+end searchstring
+
+
+#######################################################################
+
+function datestr(yys,mms,nm,lclim)
+#
+# yys = start year
+# mms = start month
+# nm = number of months
+#
+	if lclim then
+	  formatstr="mmm"
+	else
+	  formatstr="mmm yyyy"
+	end if
+        vdat1=date(yys*10000+mms*100+01)
+        if nm=3 then
+          datestr=''
+          for im=1 to nm do
+	    vdat1mm=date(yys*10000+(mms+im-1)*100+01)
+            datestr=datestr&substring(string(vdat1mm,"mmmm"),1,1)
+          end for
+          if lclim=0 then
+	    datestr=datestr&" "&string(vdat1,"yyyy")
+	  end if
+        else if nm=1 then
+	  datestr=string(vdat1,formatstr)
+        else
+	  datestr=string(vdat1,formatstr)&" nmon="&nm
+        end if
+        return datestr
+end datestr
+
+
+#######################################################################
+
+function shell_output(str:string)
+
+# Create a temporary file containing the result 
+# of the shell command
+
+	tmpdir=getenv("TMPDIR")
+	fout = tmpdir&"/temp.txt"
+	flag = shell(str & " > " & fout)
+	if (flag <> 0) then
+		print ("Error in the shell command ",flag)
+		return []
+	end if
+	
+	out = read(fout)        #open temp file
+	shell ("rm -f " & fout) #delete temp file (optional)
+	return out
+	
+end shell_output
+
+
+#######################################################################
+
+function set_text(title:string,larticle:number,nplot:number)
+
+# sets the plot title
+
+  if larticle=2 then 
+    case nplot of
+      1:title='(a)' end
+      2:title='(b)' end
+      3:title='(c)' end
+    end case
+  end if
+
+  text = mtext(
+    TEXT_LINE_1              :  title,
+    TEXT_COLOUR              :  'BLACK',
+    text_mode                :  "positional",
+    text_box_x_position      :  4,
+    text_box_y_position      :  7.5,
+    text_font_size_height    :  0.4
+    )
+
+  return text
+
+end set_text
+
+
+#######################################################################
+
+function set_text_40(title:string,larticle:number,nplot:number)
+
+# sets the plot title
+
+  if larticle=2 then 
+    case nplot of
+      1:title='(a)' end
+      2:title='(b)' end
+      3:title='(c)' end
+    end case
+  end if
+
+  text = mtext(
+    TEXT_LINE_1              :  title,
+    TEXT_COLOUR              :  'BLACK',
+    text_mode                :  "positional",
+    text_box_x_position      :  5,
+    text_box_y_position      :  5,
+    text_font_size_height    :  0.4
+    )
+
+  return text
+
+end set_text_40
+
+
+#######################################################################
+
+function set_text_pol(title:string,larticle:number,nplot:number)
+
+# sets the plot title
+
+  if larticle=2 then 
+    case nplot of
+      1:title='(a)' end
+      2:title='(b)' end
+      3:title='(c)' end
+    end case
+  end if
+
+  text = mtext(
+    TEXT_LINE_1              :  title,
+    TEXT_COLOUR              :  'BLACK',
+    text_mode                :  "positional",
+    text_box_x_position      :  1,
+    text_box_y_position      :  8,
+    text_font_size_height    :  0.4
+    )
+
+  return text
+
+end set_text_pol
+
+
+#######################################################################
+
+function set_legend(units:string)
+
+# sets the legend
+
+   legend = mlegend(
+        legend_entry_plot_direction    :    "column",
+        legend_text_font_size          :    0.3,
+        legend_box_mode    	       :    "positional",
+        legend_box_x_position          :    14.8,
+        legend_box_y_position          :    0.3,
+        legend_box_x_length   	       :    1.5,
+        legend_box_y_length    	       :    7.1,
+    	legend_title		       :    "on",
+    	legend_title_text	       :    units,
+    	legend_text_colour	       :    "black"
+        )
+   return legend
+
+end set_legend
+
+
+#######################################################################
+
+function set_legend_40(units:string)
+
+# sets the legend
+
+   legend = mlegend(
+        legend_entry_plot_direction    :    "column",
+        legend_text_font_size          :    0.3,
+        legend_box_mode    	       :    "positional",
+        legend_box_x_position          :    21.5,
+        legend_box_y_position          :    0.1,
+        legend_box_x_length   	       :    1.5,
+        legend_box_y_length    	       :    4.7,
+    	legend_title		       :    "on",
+    	legend_title_text	       :    units,
+    	legend_text_colour	       :    "black"
+        )
+   return legend
+
+end set_legend_40
+
+
+#######################################################################
+
+function set_legend_pol(units:string)
+
+# sets the legend
+
+   legend = mlegend(
+        legend_entry_plot_direction    :    "column",
+        legend_text_font_size          :    0.3,
+        legend_box_mode    	       :    "positional",
+        legend_box_x_position          :    21.5,
+        legend_box_y_position          :    0.1,
+        legend_box_x_length   	       :    1.5,
+        legend_box_y_length    	       :    4.7,
+    	legend_title		       :    "on",
+    	legend_title_text	       :    units,
+    	legend_text_colour	       :    "black"
+        )
+   return legend
+
+end set_legend_pol
+
+
+#######################################################################
+
+function set_cont(cmin,cmax,cint,line_style,min_col,max_col,neg_lim,pos_lim)
+
+# sets the contour style for the full fields when INTERVALS are used 
+# (i.e. not used for specified conts such as nonlinear rainfall int.)
+
+	cont = pcont(
+			legend				:	"on",
+			contour_min_level		:	cmin,
+			contour_max_level		:	cmax,
+			contour_level_selection_type	:	"interval",
+			contour_interval		:	cint,
+			contour_reference_level		:	cmin,
+			contour_shade			:	"on",
+			contour_shade_min_level		:	cmin,
+			contour_shade_max_level		:	cmax,
+			contour_shade_min_level_colour	:	min_col,
+			contour_shade_max_level_colour	:	max_col,
+			contour_shade_method		:	"area_fill",
+			contour_shade_colour_direction	:	"clockwise",
+			contour_shade_label_blanking	:	"on",
+			contour_highlight		:	"off",
+			contour_line_colour		:	"black",
+ 			contour_line_style		:	line_style,
+			contour_line_thickness		:	2,
+			contour_label_quality		:	"medium",
+			contour_label			:	"off",
+			contour_label_height		:	0.2,
+			contour_label_frequency 	: 	1,
+			input_field_suppress_above	:	pos_lim,
+			input_field_suppress_below	:	neg_lim,
+			contour_hilo			:	"off"
+			)
+	 return cont
+
+end set_cont
+
+
+#######################################################################
+
+function set_cont_ll(cmin,cmax,clevl,cref,line_style,min_col,max_col,coldir,neg_lim,pos_lim)
+
+# sets the contour style for the full fields when INTERVALS are used 
+# (i.e. not used for specified conts such as nonlinear rainfall int.)
+
+    if coldir=2 then
+     ccoldir='anti_clockwise'
+    else
+     ccoldir='clockwise'
+    end if
+
+    cont = pcont(
+			legend				:	"on",
+			contour_min_level		:	cmin,
+			contour_max_level		:	cmax,
+			contour_level_selection_type	:	"level_list",
+    			contour_level_list		:	clevl,
+			contour_reference_level		:	cref,
+			contour_shade			:	"on",
+			contour_shade_min_level		:	cmin,
+			contour_shade_max_level		:	cmax,
+			contour_shade_min_level_colour	:	min_col,
+			contour_shade_max_level_colour	:	max_col,
+			contour_shade_method		:	"area_fill",
+			contour_shade_colour_direction	:	ccoldir,
+			contour_shade_label_blanking	:	"on",
+			contour_highlight		:	"off",
+			contour_line_colour		:	"black",
+ 			contour_line_style		:	line_style,
+			contour_line_thickness		:	2,
+			contour_label_quality		:	"medium",
+			contour_label			:	"off",
+			contour_label_height		:	0.2,
+			contour_label_frequency 	: 	1,
+			input_field_suppress_above	:	pos_lim,
+			input_field_suppress_below	:	neg_lim,
+			contour_hilo			:	"off"
+			)
+    return cont
+
+end set_cont_ll
+
+
+#######################################################################
+
+function set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,min_col,max_col,pos_min_col,pos_max_col,neg_min_col,neg_max_col,neg_lim,pos_lim)
+
+#creates all the contours
+#uses external function set_cont
+
+        if lcol = 2 then # black and white
+        # define contours
+           pos_max_col="RGB(0.45,0.45,0.45)"
+           pos_min_col="RGB(0.7,0.7,0.7)"
+           neg_max_col="RGB(0.7,0.7,0.7)"
+           neg_min_col="RGB(0.95,0.95,0.95)"
+           min_col=pos_min_col
+           max_col=pos_max_col
+        else 
+	# define contours
+        #  min_col="blue"
+        #  max_col="red"
+        #  pos_min_col="yellow"
+        #  pos_max_col="red"
+        #  neg_min_col="magenta"
+        #  neg_max_col="green"
+        end if
+
+        cont = set_cont(cmin,cmax,cint,"solid",min_col,max_col,neg_lim,pos_lim)
+        diff_cont_pos = set_cont(cdmin,cdmax,cdint,"solid",pos_min_col,pos_max_col,neg_lim,pos_lim)
+        diff_cont_neg = set_cont(-cdmax,-cdmin,cdint,"dash",neg_min_col,neg_max_col,neg_lim,pos_lim)
+
+        outlist=[cont]&[diff_cont_pos]&[diff_cont_neg]
+        return outlist
+
+end set_cont_all
+
+
+#######################################################################
+
+function set_cont_all_ll(lcol,cmin,cmax,cdmin,cdmax,clevl,clevlp,clevln,cref,crefp,crefn,min_col,max_col,pos_min_col,pos_max_col,neg_min_col,neg_max_col,coldir,neg_lim,pos_lim)
+
+#creates all the contours
+#uses external function set_cont
+
+        if lcol = 2 then # black and white
+        # define contours
+          pos_max_col="RGB(0.45,0.45,0.45)"
+          pos_min_col="RGB(0.7,0.7,0.7)"
+          neg_max_col="RGB(0.7,0.7,0.7)"
+          neg_min_col="RGB(0.95,0.95,0.95)"
+          min_col=pos_min_col
+          max_col=pos_max_col
+        else 
+	# define contours
+        #  min_col="blue"
+        #  max_col="red"
+        #  pos_min_col="yellow"
+        #  pos_max_col="red"
+        #  neg_min_col="magenta"
+        #  neg_max_col="green"
+        end if
+
+        cont= set_cont_ll(cmin,cmax,clevl,cref,"solid",min_col,max_col,coldir,neg_lim,pos_lim)
+        diff_cont_pos = set_cont_ll(cdmin,cdmax,clevlp,crefp,"solid",pos_min_col,pos_max_col,1,neg_lim,pos_lim)
+        diff_cont_neg = set_cont_ll(-cdmax,-cdmin,clevln,crefn,"dash",neg_min_col,neg_max_col,1,neg_lim,pos_lim)
+
+        outlist=[cont]&[diff_cont_pos]&[diff_cont_neg]
+        return outlist
+
+end set_cont_all_ll
+
+
+#######################################################################
+
+function ecfs_exist(file)
+
+# function to check existence of file
+
+	result = not(shell("/usr/local/ecfs/prodn/els.p "&file))
+	return result
+
+end set_cont
+
+
+#######################################################################
+
+function curve_plot(mod,obs,axis_title,display,dlat,dlon,setmin,plottype)
+
+# setmin to -99 for automatic minimum seaching
+
+    precision(4)
+
+    color=['black','red','blue','green','cyan']
+
+# --- latitude zonal mean plot ----------------------------------------
+
+    val_mod=nil
+    val_obs=nil 
+    latp=nil
+
+    for lat=-90 to 90-dlat by dlat do
+        area=[lat+dlat,-180,lat,180]
+        mval_mod=integrate(mod,area)
+        mval_obs=integrate(obs,area)
+        if (mval_mod <> nil and mval_obs <> nil) then
+          if (abs(mval_mod) < 1.e20 and abs(mval_obs) < 1.e20) then   # check for missing vals
+            latp=latp&[lat+dlat/2]
+            val_mod=val_mod&[mval_mod]
+            val_obs=val_obs&[mval_obs]
+          end if
+        end if
+    end for
+
+    val=sort(val_mod & val_obs, ">")
+    amax=val[1]
+
+    if setmin=-99 then 
+      val  = sort(val_mod & val_obs, "<")
+      amin = val[1]
+    else
+      amin = setmin
+    end if
+
+    case plottype of
+      1:  text_box_x_position = 1
+          text_box_y_position = 6.7
+          end
+      2:  text_box_x_position = 1.5
+          text_box_y_position = 4.8
+          end
+      3:  text_box_x_position = 1.5
+          text_box_y_position = 4.8
+          end
+    end case
+    
+    title = mtext(
+      TEXT_LINE_1              :  "Zonal Mean",
+      TEXT_LINE_2              :  "",
+      TEXT_LINE_COUNT          :  2,
+      TEXT_COLOUR              :  'BLACK',
+      text_font_size_height    :  0.4
+      )
+    
+    legend = mlegend(
+		legend_display_type : "disjoint",
+		legend_text_composition	:	"user_text_only",
+		legend_user_lines	:	["Model","Obs"],
+		legend_text_font_size	:	0.25
+		)
+     
+    curve_mod = input_visualiser(
+            input_x_values    :   latp ,
+            input_y_values    :   val_mod
+            )
+    curve_obs = input_visualiser(
+            input_x_values    :   latp ,
+            input_y_values    :   val_obs
+            )
+    
+    graph_mod = mgraph(
+    	graph_line_colour    :   "black",
+        legend:'on',
+    	graph_line_thickness :   5)
+    graph_obs = mgraph(
+    	graph_line_colour    :   "red",
+        legend:'on',
+    	graph_line_thickness :   5)
+    
+    plot (display[4], curve_mod, graph_mod, curve_obs, graph_obs, legend, title)
+
+
+# --- longitude extra-tropics plots --------------------------------------------
+
+    val_mod=nil
+    val_obs=nil 
+    lonp=nil
+    for lon=-180.0 to 180.0-dlon by dlon do
+        areash=[-90.0,lon,-20.0,lon+dlon]
+        areanh=[ 20.0,lon, 90.0,lon+dlon]
+        mval_mod_sh=integrate(mod,areash)
+        mval_mod_nh=integrate(mod,areanh)
+        mval_obs_sh=integrate(obs,areash)
+        mval_obs_nh=integrate(obs,areanh)
+        if (mval_mod_sh <> nil and mval_mod_nh <> nil and mval_obs_sh <> nil and mval_obs_nh <> nil) then
+          lonp   =lonp&[lon+dlon/2]
+          val_mod=val_mod&[(mval_mod_sh+mval_mod_nh)/2]
+          val_obs=val_obs&[(mval_obs_sh+mval_obs_nh)/2]
+        end if
+    end for
+    
+    val=sort(val_mod & val_obs, ">")
+    amax=val[1]
+    
+    if setmin=-99 then
+      val=sort(val_mod & val_obs, "<")
+      amin=val[1]
+    else
+      amin=setmin
+    end if
+
+    title = mtext(
+      TEXT_LINE_1              :  "Extra-Tropics",
+      TEXT_LINE_2              :  "",
+      TEXT_LINE_COUNT          :  2,
+      TEXT_COLOUR              :  'BLACK',
+      text_font_size_height    :  0.4    
+      )
+
+    curve_mod = input_visualiser(
+            input_x_values    :   lonp ,
+            input_y_values    :   val_mod
+            )
+    curve_obs = input_visualiser(
+            input_x_values    :   lonp ,
+            input_y_values    :   val_obs
+            )
+    
+    plot (display[5], curve_mod, graph_mod, curve_obs, graph_obs, legend, title)
+
+
+# --- longitude tropics plots --------------------------------------------------
+
+    val_mod=nil
+    val_obs=nil 
+    lonp=nil
+    for lon=-180 to 180-dlon by dlon do
+        areatr=[ -20,lon, 20,lon+dlon]
+        mval_mod=integrate(mod,areatr)
+        mval_obs=integrate(obs,areatr)
+        if (mval_mod <> nil  and mval_obs <> nil) then
+          lonp=lonp&[lon+dlon/2]
+          val_mod=val_mod&[mval_mod]
+          val_obs=val_obs&[mval_obs]
+        end if
+    end for
+
+
+    val=sort(val_mod & val_obs, ">")
+    amax=val[1]
+
+    if setmin=-99 then 
+      val=sort(val_mod & val_obs, "<")
+      amin=val[1]
+    else
+      amin=setmin
+    end if
+
+    title = mtext(
+      TEXT_LINE_1              :  "Tropics",
+      TEXT_LINE_2              :  "",
+      TEXT_LINE_COUNT          :  2,
+      TEXT_COLOUR              :  'BLACK',
+      text_font_size_height    :  0.4
+      )
+
+    curve_mod = input_visualiser(
+            input_x_values    :   lonp ,
+            input_y_values    :   val_mod
+            )
+    curve_obs = input_visualiser(
+            input_x_values    :   lonp ,
+            input_y_values    :   val_obs
+            )
+    
+    plot (display[6], curve_mod, graph_mod, curve_obs, graph_obs, legend, title)
+
+    precision(3)
+
+end curve_plot
+
+
+#############################################################
+#  plot maps and curves on one page for any variable
+#############################################################
+
+function varmaps(expid, yys, mms, nm, source_file_sfc, nens, res, display, lplot_curve, file1, file2,
+                 obsindex, obsname, lclim, freado, lcol, tcrit, sig_cont, larticle, vartype, plottype, model)
+
+    obsscale = 1.0
+    modscale = 1.0
+
+    case vartype of
+
+      'sshf': 
+         param   = 'sshf'
+         datamin = -200              # data limits to define missing values
+         datamax = 100
+         cmin    = -50
+         cmax    = 20
+         cint    = 5       
+         cdmin   = 5
+         cdmax   = 40
+         cdint   = 5
+         conts   = set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,
+                   'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+         parname = "Surface Sensible Heat Flux"
+        #units   = "[W/m2]"
+         units   = "[kg m<sup>-2</sup>]"
+         if obsname = "DaSilva" then
+           obsscale=1.01             # correction factor
+         else
+           obsscale= -1.0
+         end if
+         end
+
+      'slhf': 
+         param   = 'slhf' 
+         datamin = -300              # data limits to define missing values
+         datamax = 100
+         cmin    = -200
+         cmax    = 20
+         cint    = 20       
+         cdmin   = 10
+         cdmax   = 60
+         cdint   = 10  
+         conts   = set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,
+                   'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+         parname = "Surface Latent Heat Flux"
+         units   = "[W/m2]"
+         if obsname = "DaSilva" then
+           obsscale= 1.14            # correction factor
+         else
+           obsscale= -1.0
+         end if
+         end
+
+      'tcwv': 
+         if (model = "icon") then
+           param = '503058'   #tqv_dia  0.1.214
+         else
+           param = 'tcwv' 
+         end if
+         datamin = 0                 # data limits to define missing values
+         datamax = 500
+         cmin    = 10
+         cmax    = 80
+         cint    = 10     
+         cdmin   = 2
+         cdmax   = 20
+         cdint   = 2
+         conts   = set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,
+                   'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+         parname = "Water Vapor Path"
+         units   = "[kg/m2]"
+         end
+
+      'tclw': 
+         if (model = "icon") then
+           param = '503059'   #tqc_dia  0.1.215
+         else
+           param = 'tclw' 
+         end if
+         datamin = 0                 # data limits to define missing values
+         datamax = 500
+         cmin    = 25
+         cmax    = 300
+         cint    = 25      
+         cdmin   = 25
+         cdmax   = 200
+         cdint   = 25 
+         conts   = set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,
+                   'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+         parname = "Liquid Water Path"
+         units   = "[g/m2]"
+         obsscale= 1000.0
+         modscale= 1000.0
+         end
+
+      'tciw': 
+         if (model = "icon") then
+           param = '503060'   #tqi_dia  0.1.216
+         else
+           param = 'tciw' 
+         end if
+         datamin = 0                 # data limits to define missing values
+         datamax = 500
+         cmin    = 10
+         cmax    = 150
+         cint    = 10      
+         cdmin   = 10
+         cdmax   = 100
+         cdint   = 10  
+         conts   = set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,
+                   'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+         parname = "Ice Water Path"
+         units   = "[g/m2]"
+         modscale= 1000.0
+         end
+
+    end case
+
+    cont          = conts[1]
+    diff_cont_pos = conts[2]
+    diff_cont_neg = conts[3]
+
+    my_grid = [res,res]
+    my_area = [90,0,-90,360-res]
+    mn_obs  = 0.
+
+    yy = yys
+    mm = mms
+
+    for im=1 to nm do        
+
+	if lclim then
+	    fname=file1&"*climatology_*_month"&substring(string(100+mm),2,3)
+	else
+	    fname=file1&string(yy*100+mm)&file2
+	end if
+
+        if freado='ecfs' then
+	    obs    = ecfs(file_name:fname)
+        else if freado='disc' then
+            lfiles = GetFilenames(fname)
+            obs    = read(source:lfiles[1])
+        end if
+
+        obs = obs[obsindex]
+        obs = obs*obsscale
+
+        geo_aux = grib_to_geo( data : obs)
+        geo_aux = filter( geo_aux, geo_aux > datamin)
+        geo_aux = filter( geo_aux, geo_aux < datamax )
+        obs = geo_to_grib(
+            geopoints		:	geo_aux,
+            area		:	my_area,
+            grid		:	my_grid,
+            tolerance		:	res,
+            parameter		:	255,
+            grib_table2_version	:	128
+            )
+
+        if im > 1 then
+            obs_tot=obs_tot+obs
+        else
+            obs_tot=obs
+        end if
+
+        mm=mm+1
+        if (mm>12) then
+            yy=yy+1
+            mm=1
+        end if
+    end for
+    mod_all = read(
+       #type	:	"fc",
+       #expver	:	expid,
+       #levtype	:	"sfc",
+        grid	:	my_grid,
+        param	:	param,
+        source  : 	source_file_sfc
+        )
+
+    mod_all= mod_all * modscale
+    obs  = obs_tot/nm
+    mod  = mean(mod_all)
+    mod  = bitmap(mod,obs)
+    diff = mod-obs
+
+# t-test sig plots 
+
+    if tcrit > -999 then 
+        std=100.*stdev(mod_all)
+        std=bitmap(std,obs) 
+        std=bitmap(std,0.0)             # replace zeros with "missing"
+        tstat=sqrt(nens)*abs(diff)/std  # make T-statistics
+        sig=tstat > tcrit               # fieldset of 0 or 1
+    end if                              # !!! > (<) : SHADE (NON)SIG AREAS!!!
+
+# global integrals
+
+    precision(3)
+
+    mn_mod = integrate(mod)
+    mn_obs = integrate(obs)
+    err    = integrate(diff)
+    rms    = sqrt(integrate(diff*diff))
+
+# define text
+
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+# define date string
+
+    datestr=datestr(yys,mms,nm,0)
+
+    text1 = parname&"  "&expid&"  "&datestr&" nens="&nens&"  Global Mean: "&mn_mod
+
+    if lclim then
+      ss="climatology"
+      if freado='ecfs' then
+        command = "/usr/local/ecfs/prodn/els.p "&fname
+        out = shell_output(command)
+        no=2
+      else if freado='disc' then
+        out=lfiles
+        no=1
+      end if
+      idx=searchstring(out[no],ss)
+      idx=idx+length(ss)+1
+      climyy1=substring(out[no],idx,idx+3)
+      climyy2=substring(out[no],idx+5,idx+8)
+      datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+    end if
+
+    text2 = parname&"  "&obsname&"  "&datestr&"  Global Mean:  "&mn_obs
+    text3 = "Difference  "&expid&" - "&obsname&"  Global Mean err " & err & " RMS " &rms
+
+    case plottype of
+      1:  ptext1 = set_text(text1,larticle,1)
+          ptext2 = set_text(text2,larticle,2)
+          ptext3 = set_text(text3,larticle,3)
+          legend = set_legend(units)
+          end
+      2:  ptext1 = set_text_40(text1,larticle,1)
+          ptext2 = set_text_40(text2,larticle,2)
+          ptext3 = set_text_40(text3,larticle,3)
+          legend = set_legend_40(units)
+          end
+    end case
+
+# map plots
+
+    plot(display[1],mod,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+	
+    if tcrit = -999 then 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont,larticle)
+    end if
+
+# curve plots
+
+    if lplot_curve then
+      curve_plot(mod,obs,parname&" "&units,display,res,res,0.0,1)
+    end if
+
+end varmaps
+
+
+#############################################################
+#  Precipitation against GPCP
+#############################################################
+
+function precip(expid,yys,mms,nm,source_file_sfc,nens,res,display,lplot_curve,file1,file2,
+                obsindex,obsname,lclim,freado,lcol,tcrit,sig_cont,larticle,plottype,rms,model)
+
+    cmin=0.1
+    cmax=32.
+
+    cdmin=0.5
+    cdmax=16.
+
+    clevl=[0.101,1,2,3,5,8,16,32]
+    cdlevlp=[0.5,2,8,16,32]
+    cdlevln=[ -32,-16,-8,-2,-0.5]
+
+    conts=set_cont_all_ll(lcol,cmin,cmax,cdmin,cdmax,clevl,cdlevlp,cdlevln,cmin,cdmin,-cdmax,
+              'red','blue','yellow','red','magenta','green',2,-1.e21,1.e21)
+
+    prec_mmday=conts[1]
+    prec_pos  =conts[2]
+    prec_neg  =conts[3]
+
+    prec_mod_tot=0.
+    prec_obs_tot=0.
+
+    my_grid = [res,res]
+    my_area = [90,0,-90,360]
+
+    yy=yys
+    mm=mms
+
+    for im=1 to nm do
+	datever1=yy*10000+(mm)*100+01
+	datever2=yy*10000+(mm+1)*100+01
+	vdat1=date(datever1)
+	vdat2=date(datever2)
+	prec_modm=0.
+
+	if lclim then
+	   fname=file1&"*climatology_*_month"&substring(string(100+mm),2,3)
+	else
+	   fname=file1&string(yy*100+mm)&file2
+	end if
+
+	print("reading: ",fname)
+        if freado='ecfs' then
+          prec_obs = ecfs(file_name:fname)
+        else if freado='disc' then
+          lfiles   = GetFilenames(fname)
+          prec_obs = read(source:lfiles[1])
+        end if
+       #if obsname='HOAPS3' then
+       #   prec_obs=prec_obs/4
+       #end if
+        prec_obs = prec_obs[obsindex]
+        
+        geo_aux = grib_to_geo( data : prec_obs)
+        geo_aux = filter( geo_aux, geo_aux > 0 )
+        geo_aux = filter( geo_aux, geo_aux < 200 )
+        prec_obs = geo_to_grib(
+        		geopoints  :	geo_aux,
+        		area	:	my_area,
+        		grid	:	my_grid,
+        		tolerance	:	res,
+        		parameter	:	255,
+        		grib_table2_version	:	128
+        		)
+
+# missing data definition & area/grid selection    
+#       data     = prec_obs
+#       datamask = (data <= 0) or (data >= 200)   # create fieldset of 1 where missing values
+#       datamask = bitmap(datamask, 1)            # convert 1's into missing values
+#       data1    = bitmap(data, datamask)         # copy the missing values from datamask to data
+#       prec_obs = read (data   :       data1)
+
+
+        if im > 1 then
+        	prec_obs_tot=prec_obs_tot+prec_obs
+        else
+        	prec_obs_tot=prec_obs
+        end if
+        
+        mm=mm+1
+        if (mm>12) then
+          mm=1
+          yy=yy+1
+        end if
+    end for
+
+    #  prec_mod1 = read(
+    #  #type	:	"fc",
+    #  #expver	:	expid,
+    #  levtype	:	"sfc",
+    #  grid	:	my_grid,
+    #  #param	:	["lsp"],
+    #  param	:	["77.1.0"],
+    #  source  : source_file_sfc
+    #  )
+
+    #  prec_mod2 = read(
+    #  #type	:	"fc",
+    #  #expver	:	expid,
+    #  levtype	:	"sfc",
+    #  grid	:	my_grid,
+    #  #param	:	["cp"],
+    #  param	:	["76.1.0"],
+    #  source  : source_file_sfc
+    #  )
+
+    if (model = "icon") then
+      param = "228228"
+    else
+      param = "tp"
+    end if
+    prec_mod_all = read(
+      #type    :	"fc",
+      #expver  :	expid,
+      #levtype :	"sfc",
+      grid     :	my_grid,
+      param    :	param,
+      source   :        source_file_sfc
+    )
+
+    #prec_mod_all=1000*86400.*(prec_mod1+prec_mod2)
+    prec_mod=mean(prec_mod_all)
+
+    # average over month string:
+
+    prec_obs= prec_obs_tot /nm
+    prec_mod=bitmap(prec_mod,prec_obs)
+
+    prec_diff=prec_mod-prec_obs
+
+# t-test sig plots 
+
+    if tcrit > -999 then 
+          # For GPCP error is a percentage...
+          std_obs=rms*prec_obs
+
+          var_mod=var(prec_mod_all)
+          var_mod=bitmap(var_mod,prec_obs) 
+          var_mod=bitmap(var_mod,0.0)             # replace zeros with "missing"
+
+	  # combined std - treat obs as single sample of variance=RMS error
+          std=sqrt(std_obs*std_obs + var_mod/nens)
+
+          tstat=abs(prec_diff)/std  # make T-statistics
+
+# for rain, mask out areas with rainfall<0.2 mm/day
+          sig=(tstat > tcrit) and (prec_obs>0.2)     # fieldset of 0 or 1
+                                                     # !!! > (<) : SHADE (NON)SIG AREAS!!!
+    end if
+
+
+# global integrals
+
+    precision(3)
+
+    mn_mod = integrate(prec_mod)
+    mn_obs = integrate(prec_obs)
+    err = integrate(prec_diff)
+    rms = sqrt(integrate(prec_diff*prec_diff))
+
+# define text
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+    datestr=datestr(yys,mms,nm,0)
+
+    text1 = "Total Precipitation "&expid&"  "&datestr
+          &" nens="&nens&"   Global Mean: "&mn_mod
+
+# add the "climatology label?
+
+    if lclim then
+      ss="climatology"
+      if freado='ecfs' then
+         command = "/usr/local/ecfs/prodn/els.p "&fname
+         out = shell_output(command)
+         no=2
+      else if freado='disc' then
+         out=lfiles
+         no=1
+      end if
+      idx=searchstring(out[no],ss)
+      idx=idx+length(ss)+1
+      climyy1=substring(out[no],idx,idx+3)
+      climyy2=substring(out[no],idx+5,idx+8)
+      datestr=datestr(yys,mms,nm,lclim)&" "&" "&climyy1&"-"&climyy2&" climatology"
+    end if
+
+    text2 = "Total Precipitation  "&obsname&"  "&datestr&"   Global Mean: "&mn_obs
+    text3 = "Difference  "&expid&" - "&obsname&"  error "&err&" RMS "&rms
+
+#   units = "[mm/day]"
+    units = "[mm d<sup>-1</sup>]"
+
+    case plottype of
+       1:  ptext1 = set_text(text1,larticle,1)
+    	      ptext2 = set_text(text2,larticle,2)
+    	      ptext3 = set_text(text3,larticle,3)
+           legend = set_legend(units)
+           end
+       2:  ptext1 = set_text_40(text1,larticle,1)
+    	      ptext2 = set_text_40(text2,larticle,2)
+    	      ptext3 = set_text_40(text3,larticle,3)
+           legend = set_legend_40(units)
+           end
+    end case
+
+    # plot
+
+    plot(display[1],prec_mod,prec_mmday,ptext1,legend)
+    plot(display[2],prec_obs,prec_mmday,ptext2,legend)
+    if tcrit = -999 then 
+      plot(display[3],prec_diff,prec_neg,prec_pos,ptext3,legend)
+    else
+      plot(display[3],prec_diff,prec_neg,prec_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+    # now do the curve plots
+
+    if lplot_curve then
+       curve_plot(prec_mod,prec_obs,"Precipitation [mm/day]",display,res,res,0.0,plottype)
+    end if
+
+end precip
+
+
+################################################################
+# ISCCP/MODIS total cloud cover
+################################################################
+
+function tcc(expid,yys,mms,nm,source_file_sfc,nens,res,display,lplot_curve,par,file1,file2,
+             parname,platform,scalfac,lclim,freado,lcol,tcrit,sig_cont,larticle,plottype,rms,model)
+
+    cmin=5  ; cmax=105 ; cint=15
+    cdmin=10 ; cdmax=60 ; cdint=10
+
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+        
+    my_grid = [res,res]
+    my_area = [90,0,-90,360]
+
+    mm=mms
+    yy=yys
+
+	for im=1 to nm do
+
+           datever1=yy*10000+(mm)*100+01
+           datever2=yy*10000+(mm+1)*100+01
+           vdat1=date(datever1)
+           vdat2=date(datever2)
+
+           modm=0.
+
+           if lclim then
+             if platform = "MODIS" then
+               fname=file1&"*climatology_*months_"&substring(string(100+mm),2,3)  # for modis_l3_c5
+             else
+               fname=file1&"*climatology_*_month"&substring(string(100+mm),2,3)
+             end if
+           else
+              fname=file1&string(yy*100+mm)&file2
+           end if
+
+		print("reading: ",fname)
+
+                if freado='ecfs' then
+		  obs = ecfs(file_name:fname)
+                else if freado='disc' then
+                  lfiles    = GetFilenames(fname)
+		  obs = read(source:lfiles[1])
+                end if
+
+#		obs = nobitmap(obs,-999)
+
+		geo_aux = grib_to_geo( data : obs)
+		geo_aux = filter( geo_aux, geo_aux > 0 )
+		geo_aux = filter( geo_aux, geo_aux < 100 )
+		obs = geo_to_grib(
+			geopoints          :	geo_aux,
+			area	           :	my_area,
+			grid	           :	my_grid,
+			tolerance	   :	res,
+			parameter	   :	164,
+			grib_table2_version:	128
+			)
+#		obs  = read(
+#			read_data_from	:	"metview_icon",
+#			grid	:	my_grid,
+#			data	:	obs
+#			)
+
+		if im > 1 then
+			obs_tot=obs_tot+obs
+		else
+			obs_tot=obs
+		end if
+
+        mm=mm+1
+        if (mm>12) then
+          mm=1
+          yy=yy+1
+        end if
+	end for
+
+    # fix for ICON, tcc is [1.6.0] or 500046 (mars name, grib_ls -p mars.param)
+     if (model = "icon" ) then
+        case par of
+          "tcc":  par_icon =  "500046"
+                  end
+          "lcc":  par_icon =  "502343"
+                  end
+          "mcc":  par_icon =  "502342"
+                  end
+          "hcc":  par_icon =  "502341"
+                  end
+        end case
+
+        mod_all = read(
+               #type	:	"fc",
+               #expver	:	expid,
+               #levtype	:	"sfc",
+                grid	:	my_grid,
+                param	:	par_icon,
+                source  :       source_file_sfc
+        )
+      else
+        mod_all = read(
+               #type	:	"fc",
+               #expver	:	expid,
+                levtype	:	"sfc",
+                grid	:	my_grid,
+                param	:	[par],
+                source  :       source_file_sfc
+        )
+
+      end if
+
+# mean fields
+        #mod_all=100.*mod_all
+
+        mod=mean(mod_all)
+        mod=bitmap(mod,obs)
+
+        obs=obs_tot/nm
+        obs=obs*scalfac
+
+        diff=mod-obs
+ 
+# t-test sig plots 
+        if tcrit > -999 then 
+# trick to set field to constant with same res and missing values
+          std_obs = obs-obs+rms 
+
+          var_mod=var(mod_all)
+          var_mod=bitmap(var_mod,obs) 
+          var_mod=bitmap(var_mod,0.0)             # replace zeros with "missing"
+
+# combined std - treat obs as single sample of variance=RMS error
+          std=sqrt(std_obs*std_obs + var_mod/nens)
+	  
+          tstat=abs(diff)/std  # make T-statistics
+          sig=tstat > tcrit               # fieldset of 0 or 1
+                                          # !!! > (<) : SHADE (NON)SIG AREAS!!!
+        end if
+
+
+# global integrals
+
+    precision(3)
+
+    mn_mod = integrate(mod)
+    mn_obs = integrate(obs)
+    mn_mod_50 = integrate(mod,[50,-180,-50,180])
+    mn_obs_50 = integrate(obs,[50,-180,-50,180])
+    err_50 = integrate(diff,[50,-180,-50,180])
+    rms_50 = sqrt(integrate(diff*diff,[50,-180,-50,180]))
+    
+# define text
+	datever1=yys*10000+mms*100+01
+	vdat1=date(datever1)
+
+#
+# define the date string
+#
+    datestr=datestr(yys,mms,nm,0)
+
+	text1 = parname&"  "&
+	expid&"  "&
+	datestr&" nens="&nens&
+	"  Global Mean: "&mn_mod&"  50N-S Mean: "&mn_mod_50
+
+	if lclim then
+          ss="climatology"
+          if freado='ecfs' then
+            command = "/usr/local/ecfs/prodn/els.p "&fname
+            out = shell_output(command)
+            no=2
+          else if freado='disc' then
+            out=lfiles
+            no=1
+          end if
+          idx=searchstring(out[no],ss)
+          idx=idx+length(ss)+1
+          climyy1=substring(out[no],idx,idx+3)
+          climyy2=substring(out[no],idx+5,idx+8)
+          datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+        end if
+
+    text2 = parname&"  "&
+    platform&" "&
+    datestr&
+    "  50N-S Mean:  "&mn_obs_50
+
+    text3 = "Difference  "&
+    expid&" - "&platform &" "&
+    "50N-S Mean err " & err_50 & " 50N-S rms " & rms_50
+
+	units = "%%"
+        case plottype of
+          1:  ptext1 = set_text(text1,larticle,1)
+	      ptext2 = set_text(text2,larticle,2)
+	      ptext3 = set_text(text3,larticle,3)
+              legend = set_legend(units)
+              end
+          3:  ptext1 = set_text_pol(text1,larticle,1)
+	      ptext2 = set_text_pol(text2,larticle,2)
+	      ptext3 = set_text_pol(text3,larticle,3)
+              legend = set_legend_pol(units)
+              end
+        end case
+
+# plot
+
+    plot(display[1],mod,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+    if tcrit = -999 then 
+ 	  plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+# now do the curve plots
+
+    if lplot_curve then
+         curve_plot(mod,obs,"cloud cover",display,res,res,-99,1)
+    end if
+
+end tcc
+
+
+#############################################################
+#  Cloud Top Pressure
+#############################################################
+function isccp_ctp(expid,yys,mms,nm,nens,dates,res,display,lplot_curve,ecdir,lclim,freado,lcol,tcrit,sig_cont,larticle)
+
+	cmin=5   ; cmax=1005 ; cint=15
+	cdmin=10 ; cdmax=600 ; cdint=10
+
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','blue','yellow_green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+
+        datever1=yy*10000+(mm)*100+01
+        datever2=yy*10000+(mm+1)*100+01
+        vdat1=date(datever1)
+        vdat2=date(datever2)
+
+        modm=0.
+
+        for nd=1 to nens do
+
+# find steps according to initial date and period
+
+           indat=dates[nd]
+
+           ndays1=vdat1-indat
+           ndays2=vdat2-indat
+           step1=ndays1*nhday
+           step2=ndays2*nhday
+
+# define steps
+
+			if step1=0 then
+				step1=step1+nhday
+			end if
+			steplist=[]
+			numsteps=((step2-step1)/nhday)+1
+			for ns=1 to numsteps do
+				steplist=steplist&list(step1+(ns-1)*nhday)
+			end for
+
+### override
+           steplist=720
+# get data
+
+			liq = retrieve(
+					class	:	"rd",
+				#	type	:	"fc",
+				#	expver	:	expid,
+					area	: my_area,
+					grid	: my_grid,
+					levtype	:	"ml",
+					level   : [1,"to",60],
+					repres	:	"gg",
+					param	:	["clwc"],
+					date	:	dates[nd],
+					step	:	steplist
+					)
+
+			ice = retrieve(
+					class	:	"rd",
+				#	type	:	"fc",
+				#	expver	:	expid,
+					area	: my_area,
+					grid	: my_grid,
+					levtype	:	"ml",
+					level   : [1,"to",60],
+					repres	:	"gg",
+					param	:	["ciwc"],
+					date	:	dates[nd],
+					step	:	steplist
+					)
+
+			snow = retrieve(
+					class	:	"rd",
+					type	:	"fc",
+					expver	:	expid,
+					area	: my_area,
+					grid	: my_grid,
+					levtype	:	"ml",
+					level   : [1,"to",60],
+					repres	:	"gg",
+					param	:	["76"],
+					date	:	dates[nd],
+					step	:	steplist
+					)
+
+			lnsp = retrieve(
+					class	:	"rd",
+					type	:	"fc",
+					expver	:	expid,
+					area	: my_area,
+					grid	: my_grid,
+					levtype	:	"ml",
+					level   : [1],
+					repres	:	"gg",
+					param	:	["lnsp"],
+					date	:	dates[nd],
+					step	:	steplist
+					)
+
+                        # Added in prognostic snow
+			ice=ice+snow
+                        ice=max(ice,1.0e-6)-1.0e6
+			liq=max(liq,1.0e-6)-1.0e6
+			mask=ice or liq
+			mask=(1-mask)*1e6
+			press=unipressure(lnsp,ice)+mask
+			mod=press[1]
+			for ilev=1 to 60 do
+				mod=min(mod,press[ilev])
+			end for
+
+			modm=modm+mod
+		end for
+
+		mod=modm/nens
+
+		if lclim then
+		   fname=ecdir&"isccp/d2/grib/d2*climatology_*_month"&substring(string(100+mm),2,3)
+		else
+		   fname=ecdir&"isccp/d2/grib/d2_"&string(yy*100+mm)&"_0003060912151821_20.grb"
+		end if
+
+#		print("reading: ",fname)
+
+                if freado='ecfs' then
+		  obs = ecfs(file_name:fname)
+                else if freado='disc' then
+                  lfiles    = GetFilenames(fname)
+		  obs = read(source:lfiles[1])
+                end if
+
+#		obs=nobitmap(obs,-999)
+		geo_aux = grib_to_geo( data : obs)
+		obs = geo_to_grib(
+				geopoints  :	geo_aux,
+				area	:	my_area,
+				grid	:	my_grid,
+				tolerance	:	res,
+				parameter	:	255,
+				grib_table2_version	:	128
+				)
+		#-
+		# calculone
+
+		# process field
+
+		if im > 1 then
+			mod_tot=mod_tot+mod
+			obs_tot=obs_tot+obs
+		else
+			mod_tot=mod
+			obs_tot=obs
+		end if
+
+                mm=mm+1
+                if (mm>12) then
+                  mm=1
+                  yy=yy+1
+                end if
+	end for
+
+	mod=mod_tot / nm
+	obs=obs_tot / nm
+	diff=mod-obs
+
+	# global integrals
+
+	precision(3)
+
+	mn_mod = integrate(mod)
+	mn_obs = integrate(obs)
+	mn_mod_50 = integrate(mod,[50,-180,-50,180])
+	mn_obs_50 = integrate(obs,[50,-180,-50,180])
+	err_50 = integrate(diff,[50,-180,-50,180])
+	rms_50 = sqrt(integrate(diff*diff,[50,-180,-50,180]))
+
+	# define text
+	datever1=yys*10000+mms*100+01
+	vdat1=date(datever1)
+
+        #
+	# define the date string
+	#
+        datestr=datestr(yys,mms,nm,0)
+
+	text1 = "ctp"&"  "&
+	expid&"  "&
+	datestr&" nens="&nens&
+	"  Global Mean: "&mn_mod&"  50N-S Mean: "&mn_mod_50
+
+	if lclim then
+          ss="climatology"
+          if freado='ecfs' then
+            command = "/usr/local/ecfs/prodn/els.p "&fname
+            out = shell_output(command)
+            no=2
+          else if freado='disc' then
+            out=lfiles
+            no=1
+          end if
+          idx=searchstring(out[no],ss)
+          idx=idx+length(ss)+1
+          climyy1=substring(out[no],idx,idx+3)
+          climyy2=substring(out[no],idx+5,idx+8)
+          datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+        end if
+
+	text2 = "cpt"&"  "&"ISCCP D2  "&datestr&"  50N-S Mean:  "&mn_obs_50
+	text3 = "Difference  "&expid&" - ISCCP  "&"50N-S Mean err " & err_50 & " 50N-S rms " & rms_50
+
+	units = "%%"
+	ptext1 = set_text(text1,larticle,1)
+	ptext2 = set_text(text2,larticle,2)
+	ptext3 = set_text(text3,larticle,3)
+        legend = set_legend(units)
+
+	# plot
+
+	plot(display[1],mod,cont,ptext1,legend)
+	plot(display[2],obs,cont,ptext2,legend)
+	plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+
+	# now do the curve plots
+
+	if lplot_curve then
+          curve_plot(mod,obs,"cloud top pressure",display,res,res,-99,1)
+        end if
+
+end isccp_ctp
+
+
+
+#############################################################
+#  Cloud ice versus MLS data on Aura
+#############################################################
+
+function ciwc(expid,yys,mms,nm,source_file_sfc,source_file_ml,nens,display,lplot_curve,file1,file2,pressobs,obsname,nlev,lclim,freado,lcol,tcrit,sig_cont,larticle)
+
+    pressstrobs=string(pressobs)
+
+    if pressobs>99.9 then 
+        pressstr3=string(pressobs)
+
+        cmin=0.05
+        cmax=10.
+        clevl=[0.05,0.1,0.2,0.5,1.0,2.0,5.0,10.]
+
+        cdmin=0.1
+        cdmax=10.
+        cdlevlp=[0.1,0.2,0.5,1.0,2.0,5.0]
+        cdlevln=[-10.0,-5.,-2.,-1.,-0.5,-0.2,-0.1]
+    else 
+        pressstr3='0'&string(pressobs)
+
+        cmin=0.001
+        cmax=0.1
+        clevl=[0.001,0.002,0.005,0.01,0.02,0.05,0.1]
+
+        cdmin=0.001
+        cdmax=0.05
+        cdlevlp=[0.001,0.002,0.005,0.01,0.02,0.05,0.1]
+        cdlevln=[-0.1,-0.05,-0.02,-0.01,-0.005,-0.002,-0.001]
+    end if
+
+       
+    conts=set_cont_all_ll(lcol,cmin,cmax,cmin,cdmax,clevl,cdlevlp,cdlevln,cmin/2,cdmin,cmin,
+              'blue','red','yellow','red','magenta','green',1,-1.e21,1.e21)  
+      
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+    resx=8
+    resy=4
+    missing = -999
+
+#   my_grid = [resx,resy]
+    my_grid = [2.0,2.0]          # gets around Magics colour bug
+    my_area = [84,-180,-84,180]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+        datever1=yy*10000+(mm)*100+01
+        datever2=yy*10000+(mm+1)*100+01
+        vdat1=date(datever1)
+        vdat2=date(datever2)
+
+        if lclim then
+          fname=file1&pressstr3&"*climatology_*_month"&substring(string(100+mm),2,3)
+        else
+          fname=file1&pressstr3&'_'&string(yy*100+mm)&file2
+        end if
+
+#	print("reading: ",fname)
+
+        if freado='ecfs' then
+          obs = ecfs(file_name:fname)
+        else if freado='disc' then
+          lfiles = GetFilenames(fname)
+          obs = read(source:lfiles[1])
+        end if
+
+        geo_aux = grib_to_geo( data : obs)
+        geo_aux = filter( geo_aux, geo_aux > missing+1 )
+        obs = geo_to_grib(
+          geopoints		:	geo_aux,
+          area	     		:	my_area,
+          grid	     		:	my_grid,
+          tolerance		:	resy,
+          parameter		:	247,
+          grib_table2_version	:	128
+          )
+
+# process field
+
+        if im > 1 then
+          obs_tot=obs_tot+obs
+        else
+          obs_tot=obs
+        end if
+
+        mm=mm+1
+        if (mm>12) then
+          mm=1
+          yy=yy+1
+        end if
+    end for
+
+# dummy model read (one level) to get number of dates
+
+    fld = read(
+       type	:	"fc",
+       expver	:	expid,
+       grid	:	my_grid,
+       levtype	:	"ml",
+       area	: 	my_area,
+       level	:	[1],
+       param	:	["ciwc"],
+       source   : 	source_file_ml
+       )
+    ndates=count(fld)   # number of dates in files
+
+# read model
+
+    ice = read(
+		type	:	"fc",
+		expver	:	expid,
+		grid	:	my_grid,
+		levtype	:	"ml",
+		area	: 	my_area,
+		param	:	["ciwc"],
+		source  : 	source_file_ml
+		)
+    snow = read(
+		type	:	"fc",
+		expver	:	expid,
+		grid	:	my_grid,
+		levtype	:	"ml",
+		area	: 	my_area,
+		param	:	["76"],
+		source  : 	source_file_ml
+		)
+    fld=ice+snow
+    nfld=count(fld)	# total number of fields
+    nlev_ml=nfld/ndates # number of vertical levels
+
+# averaging
+
+    jfld=nil
+    modstd=nil
+    for ilev=1 to nlev_ml do
+       ifld = read( data : fld, level : ilev)
+       jfld = jfld & mean(ifld)
+       modstd = modstd & stdev(ifld)
+    end for
+    fld=jfld
+
+    lnsp = read(
+             type	:	"fc",
+             expver	:	expid,
+             grid	:	my_grid,
+             levtype	:	"ml",
+             level   	:	[1],
+             area	: 	my_area,
+             param	:	["lnsp"],
+             source  	: 	source_file_ml
+            )
+    numsteps=count(lnsp)
+    lnsp=mean(lnsp)
+
+    pressmod=unipressure(lnsp,fld)
+    npress=count(pressmod)
+
+    ilev=-999
+
+    for ipress=1 to npress-1 do
+      if (pressobs*100.>integrate(pressmod[ipress]) and pressobs*100.<integrate(pressmod[ipress+1])) then 
+        ilev=ipress
+      end if
+    end for
+
+# find nearest level - interpolation would need to be done point by point
+
+    offset=round((pressobs*100.-integrate(pressmod[ilev]))/(integrate(pressmod[ilev+1])-integrate(pressmod[ilev])),0)
+
+    ilev=ilev+offset
+    mod=fld[ilev]
+
+    precision(3)
+    pressstrmod=string(integrate(pressmod[ilev])/100.)
+
+# covert to right units ... need density
+
+    temp = read(
+                  type		:	"fc",
+                  expver	:	expid,
+                  grid		:	my_grid,
+                  levtype	:	"ml",
+                  area		: 	my_area,
+                  param		:	["T"],
+                  source  	: 	source_file_ml,
+                  level   	:	[ilev]
+                  )
+    temp = mean(temp)
+    rho  = pressmod[ilev]/(287.*temp)
+    mod  = mod*rho*1.e6
+
+    obs = obs_tot/nm
+    mod = bitmap(mod,obs)
+    diff= mod-obs
+
+    if tcrit > -999 then  
+      std=modstd[ilev]
+      std=bitmap(std,0.0)         
+      tstat=sqrt(nens)*abs(diff)/std  # make T-statistics
+      sig=tstat > tcrit               # fieldset of 0 or 1
+                                      # !!! > (<) : SHADE (NON)SIG AREAS!!!
+    end if                            
+
+# global integrals
+
+    precision(3)
+
+# check if there are enough data values (not all missing) using datainfo
+# and do not integrate in case
+
+    listdefInfo = datainfo(obs)
+    loop defInfo in listdefInfo
+        a = defInfo.proportion_present
+    end loop
+    if a>0.1 then
+    	mn_mod = integrate(mod)
+    	mn_obs = integrate(obs)
+    	err    = integrate(diff)
+    	rms    = sqrt(integrate(diff*diff))
+    else
+        mn_mod = missing
+        mn_obs = missing
+        err    = missing
+        rms    = missing
+    end if
+
+#   mn_mod_50 = integrate(mod,[50,-180,-50,180])
+#   mn_obs_50 = integrate(obs,[50,-180,-50,180])
+#   err_50 = integrate(diff,[50,-180,-50,180])
+#   rms_50 = sqrt(integrate(diff*diff,[50,-180,-50,180]))
+
+# define text
+
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+# define the date string
+
+    datestr=datestr(yys,mms,nm,0)
+
+    text1 = "Ice mixing ratio "&pressstrmod&"hPa "&expid&"  "&datestr&" nens="&nens&"  Global Mean: "&mn_mod
+
+    if lclim then
+      ss="climatology"
+      if freado='ecfs' then
+        command = "/usr/local/ecfs/prodn/els.p "&fname
+        out = shell_output(command)
+        no=2
+      else if freado='disc' then
+        out=lfiles
+        no=1
+      end if
+      idx=searchstring(out[no],ss)
+      idx=idx+length(ss)+1
+      climyy1=substring(out[no],idx,idx+3)
+      climyy2=substring(out[no],idx+5,idx+8)
+      datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology" 
+    end if
+
+    text2  = "Ice mixing ratio "&pressstrobs&"hPa "&obsname&"  "&datestr&"  Global Mean:  "&mn_obs
+    text3  = "Difference  "&expid&" - "&obsname&"  Global Mean err " & err & " RMS " & rms
+
+    units  = "[mg m<sup>-3</sup>]"
+   #units  = "[mg/m3]"
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+
+# map plots
+
+    plot(display[1],mod ,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+    if tcrit = -999 then 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+# curve plots
+
+    if lplot_curve then
+      curve_plot(mod,obs,"CIWC "&units,display,resy,resx,0.0,1)
+    end if
+
+end ciwc
+
+
+#############################################################
+#  QUIKSCAT
+#############################################################
+
+function quikscat(expid,yys,mms,nm,source_file,nens,res,display,lplot_curve,lclim,ecfsdir,freado,lcol,tcrit,sig_cont,larticle,rms,model)
+
+    cmin=0
+    cmax=12
+    cint=1
+
+    cdmin=0.5
+    cdmax=5
+    cdint=0.5
+
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+
+    cont_nodata = pcont(
+			legend	                :	"on",
+			contour_min_level	:	-1000,
+			contour_max_level	:	-900,
+			contour_level_selection_type:	"interval",
+			contour_interval	:	100,
+			contour_reference_level	:	-1000,
+			contour_shade	        :	"on",
+			contour_shade_min_level	:	-cdmax,
+			contour_shade_max_level	:	-cdmin,
+			contour_shade_min_level_colour:	"blue",
+			contour_shade_max_level_colour:	"yellow_green",
+			contour_shade_method	:	"area_fill",
+			contour_shade_colour_direction:	"clockwise",
+			contour_highlight	:	"off",
+			contour_label	        :	"off",
+			contour_line_thickness	:	4,
+			contour_label_quality   :	"medium",
+			contour_label_height    :	0.3,
+			contour_label_frequency :       1,
+			contour_hilo	        :	"off"
+			)
+
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+
+		datever1=yy*10000+(mm)*100+01
+		datever2=yy*10000+(mm+1)*100+01
+		vdat1=date(datever1)
+		vdat2=date(datever2)
+
+		if lclim then
+		   fname=ecfsdir&"quikscat/grib/QuikSCAT*climatology_*_month"&substring(string(100+mm),2,3)
+		else
+		   fname=ecfsdir&"quikscat/grib/QuikSCAT_"&string(yy*100+mm)&"_T159.grib"
+		end if
+
+                if freado='ecfs' then
+                  obs = ecfs(file_name:fname)
+                else if freado='disc' then
+                  lfiles    = GetFilenames(fname)
+                   obs = read(source:lfiles[1])
+                end if
+                obslsm=obs[1]
+		obsu = obs[2]
+                obsv = obs[3]
+		geo_lsm = grib_to_geo( data : obslsm)
+
+		geo_aux = grib_to_geo( data : obsu)
+		geo_aux = filter( geo_aux, geo_lsm > 1.0 )
+		obsu = geo_to_grib(
+				geopoints           :      geo_aux,
+				area                :      my_area,
+				grid                :      my_grid,
+				tolerance           :      res,
+				parameter           :      255,
+				grib_table2_version :      128
+				)
+
+		geo_aux = grib_to_geo( data : obsv)
+		geo_aux = filter( geo_aux, geo_lsm > 1.0 )
+		obsv = geo_to_grib( 
+				geopoints           :      geo_aux,
+				area                :      my_area,
+				grid                :      my_grid,
+				tolerance           :      res,
+				parameter           :      255,
+				grib_table2_version :      128
+				)
+
+# calculate
+		obsw=sqrt(obsu*obsu+obsv*obsv)
+
+# process field
+
+		if im > 1 then
+			obsu_tot=obsu_tot+obsu
+			obsv_tot=obsv_tot+obsv
+                        obsw_tot=obsw_tot+obsw
+		else
+			obsu_tot=obsu
+			obsv_tot=obsv
+			obsw_tot=obsw
+		end if
+
+                mm=mm+1
+                if (mm>12) then
+                  mm=1
+                  yy=yy+1
+                end if
+    end for
+
+   #if (model = "icon" ) then
+   #  param_u  = "500027"
+   #  param_v  = "500029"
+   #else
+      param_u  = "165.128"    # "10U", "500027"
+      param_v  = "166.128"    # "10V", "500029"
+   #end if
+
+    modu = read(
+          #type	   :	"fc",
+          #expver  :	expid,
+          #levtype :	"sfc",
+           area	   :	my_area,
+           grid	   :	my_grid,
+           param   :	param_u,
+           source  :    source_file
+    				)
+
+    modv = read(
+          #type    :	"fc",
+          #expver  :	expid,
+          #levtype :	"sfc",
+           area	   :	my_area,
+           grid	   :	my_grid,
+           param   :	param_v,
+           source  :    source_file
+			       	)
+
+    modw_all=sqrt(modu*modu+modv*modv)
+
+    modu=mean(modu)
+    modv=mean(modv)
+    modw=mean(modw_all)
+
+    modu=bitmap(modu,obsu)
+    modv=bitmap(modv,obsv)
+    modw=bitmap(modw,obsu)
+    modw=bitmap(modw,obsv)
+
+    obsu=obsu_tot/nm
+    obsv=obsv_tot/nm
+    obsw=obsw_tot/nm
+
+    obsu=grib_set_long(obsu,['paramId',165])
+    obsv=grib_set_long(obsv,['paramId',166]) 
+
+    diffu=modu-obsu
+    diffv=modv-obsv
+    diffw=modw-obsw
+
+    obs=obsu&obsv
+    mod=modu&modv
+    diff=diffu&diffv
+
+    if tcrit > -999 then 
+          # trick to set field to constant with same res and missing values
+        std_obs = obsu-obsu+rms 
+
+        var_mod=var(modw_all)
+        var_mod=bitmap(var_mod,obsu) 
+        var_mod=bitmap(var_mod,obsv) 
+        var_mod=bitmap(var_mod,0.0)             # replace zeros with "missing"
+
+	  # combined std - treat obs as single sample of variance=RMS error
+        std=sqrt(std_obs*std_obs + var_mod/nens)
+
+        tstat=abs(diffw)/std  # make T-statistics
+        sig=tstat > tcrit     # fieldset of 0 or 1
+                              # !!! > (<) : SHADE (NON)SIG AREAS!!!
+    end if
+
+# global integrals
+
+    precision(3)
+    
+    mn_mod = integrate(modw)
+    mn_obs = integrate(obsw)
+    mn_mod_50 = integrate(modw,[50,-180,-50,180])
+    mn_obs_50 = integrate(obsw,[50,-180,-50,180])
+    err_50 = integrate(diffw,[50,-180,-50,180])
+    rms_50 = sqrt(integrate(diffw*diffw,[50,-180,-50,180]))
+    
+    # define text
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+#
+# define the date string
+#
+    datestr=datestr(yys,mms,nm,0)
+
+    parname="Surface Winds"
+    text1 = parname&"  "&
+    expid&"  "&
+    datestr&" nens="&nens&
+      "  Global Mean: "&mn_mod&"  50N-S Mean: "&mn_mod_50
+
+    if lclim then
+          ss="climatology"
+          if freado='ecfs' then
+            command = "/usr/local/ecfs/prodn/els.p "&fname
+            out = shell_output(command)
+            no=2
+          else if freado='disc' then
+            out=lfiles
+            no=1
+          end if
+          idx=searchstring(out[no],ss)
+          idx=idx+length(ss)+1
+          climyy1=substring(out[no],idx,idx+3)
+          climyy2=substring(out[no],idx+5,idx+8)
+          datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+    end if
+
+    text2 = parname&"  "&"Quikscat  "&datestr &"  50N-S Mean:  "&mn_obs_50
+    text3 = "Difference  "&expid&" - Quikscat  " &"50N-S Mean err " & err_50 & " 50N-S rms " & rms_50
+    units = "[m s<sup>-1</sup>]"
+   #units = "[m/s]"
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+
+    arrows = pwind(
+      wind_arrow_unit_velocity	 :	20,
+      wind_thinning_factor       :      4.0,
+      wind_arrow_legend          :      "off",
+      wind_arrow_origin_position :      "centre",
+      wind_flag_colour           :	"black",
+      wind_streamline_colour	 :	"black",
+      wind_arrow_colour	         :	"black"
+      )
+
+    arrows_diff = pwind(
+      wind_arrow_unit_velocity	 :	8,
+      wind_thinning_factor       :      4.0,
+      wind_arrow_legend          :      "off",
+      wind_arrow_origin_position :      "centre",
+      wind_flag_colour	         :	"black",
+      wind_streamline_colour	 :	"black",
+      wind_arrow_colour   	 :	"black"
+      )
+
+# plot
+
+    plot(display[1],modw,cont,ptext1,legend)
+    plot(display[2],obsw,cont,ptext2,legend)
+    if tcrit = -999 then         
+      plot(display[3],diffw,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else
+      plot(display[3],diffw,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+     # trick to make ICON model winds technically appear like ECMWF winds for arrows
+     plot(display[1],obs+mod-obs ,arrows     ,ptext1,legend)  # metview doesn't recognize ICON uv
+     plot(display[2],obs         ,arrows     ,ptext2,legend)
+     plot(display[3],obs+diff-obs,arrows_diff,ptext3,legend)
+
+# now do the curve plots
+
+    if lplot_curve then
+      curve_plot(modw,obsw,"10m winds [m/s]",display,res,res,-99,1)
+    end if
+
+end quikscat
+
+
+#############################################################
+#  WINDS
+#############################################################
+
+function winds(expid,yys,mms,nm,source_file,nens,res,display,lplot_curve,ecfsdir,lclim,freado,lcol,tcrit,sig_cont,larticle,rms,model)
+
+    cmin=0
+    cmax=15
+    cint=1
+
+    cdmin=0.5
+    cdmax=5.0
+    cdint=0.5
+       
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','magenta','yellow_green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+    if 1=1 then 
+      cont_nodata = pcont(
+      legend	:	"on",
+      contour_min_level	:	-1000,
+      contour_max_level	:	-900,
+      contour_level_selection_type	:	"interval",
+      contour_interval	:	100,
+      contour_reference_level	:	-1000,
+      contour_shade	:	"on",
+      contour_shade_min_level	:	-cdmax,
+      contour_shade_max_level	:	-cdmin,
+      contour_shade_min_level_colour	:	"blue",
+      contour_shade_max_level_colour	:	"yellow_green",
+      contour_shade_method	:	"area_fill",
+      contour_shade_colour_direction	:	"clockwise",
+      contour_highlight	:	"off",
+      contour_label	:	"on",
+      contour_line_thickness	:	4,
+      contour_label_quality:	"medium",
+      contour_label_height:	0.3,
+      contour_label_frequency : 1,
+      contour_hilo	:	"off"
+      )
+    end if
+
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+
+       datever1=yy*10000+(mm)*100+01
+       datever2=yy*10000+(mm+1)*100+01
+       vdat1=date(datever1)
+       vdat2=date(datever2)
+       
+       if lclim then
+         fname=ecfsdir&"ssmi/wentz_v6/grib/ssmi_v6*climatology_*_month"&substring(string(100+mm),2,3)
+       else
+         fname=ecfsdir&"ssmi/wentz_v6/grib/ssmi_v6_"&string(yy*100+mm)&".grb"
+       end if
+
+#      print("reading: ",fname)
+
+       if freado='ecfs' then
+         obs = ecfs(file_name:fname)
+       else if freado='disc' then                  
+         lfiles    = GetFilenames(fname)
+       obs = read(source:lfiles[1])
+       end if
+       obs = obs[1]
+
+       geo_aux = grib_to_geo( data : obs)
+       geo_aux = filter( geo_aux, geo_aux > -1 )
+       geo_aux = filter( geo_aux, geo_aux < 500 )
+       obs = geo_to_grib(
+       geopoints  :	geo_aux,
+       area	:	my_area,
+       grid	:	my_grid,
+       tolerance	:	res,
+       parameter	:	255,
+       grib_table2_version	:	128
+       )
+
+# process field
+
+       if im > 1 then
+         obs_tot=obs_tot+obs
+       else
+         obs_tot=obs
+       end if
+       
+       mm=mm+1
+       if (mm>12) then
+         mm=1
+         yy=yy+1
+       end if
+    end for
+
+   #if (model = "icon" ) then
+   #  param_u  = "500027"
+   #  param_v  = "500029"
+   #else
+      param_u  = "165.128"    # "10U"
+      param_v  = "166.128"    # "10V"
+   #end if
+
+    modu = read(
+#	type	:	"fc",
+#	expver	:	expid,
+#       levtype	:	"sfc",
+	area	:	my_area,
+	grid	:	my_grid,
+	param	:	param_u,
+        source  :       source_file   )
+    modv = read(
+#	type	:	"fc",
+#	expver	:	expid,
+#	levtype	:	"sfc",
+	area	:	my_area,
+	grid	:	my_grid,
+	param	:	param_v,
+        source  :       source_file   )
+    mod_all=sqrt(modu*modu+modv*modv)
+    mod=mean(mod_all)
+    mod=bitmap(mod,obs)
+    obs=obs_tot/nm
+    diff=mod-obs
+
+# t-test sig plots 
+    if tcrit > -999 then 
+       std_obs = obs-obs+rms 
+       var_mod=var(mod_all)
+       var_mod=bitmap(var_mod,obs) 
+       var_mod=bitmap(var_mod,0.0)             # replace zeros with "missing"
+
+# combined std - treat obs as single sample of variance=RMS error
+       std=sqrt(std_obs*std_obs + var_mod/nens)
+
+       tstat=abs(diff)/std  # make T-statistics
+       sig=tstat > tcrit    # fieldset of 0 or 1
+                            # !!! > (<) : SHADE (NON)SIG AREAS!!!
+    end if
+
+# global integrals
+
+    precision(3)
+
+    mn_mod = integrate(mod)
+    mn_obs = integrate(obs)
+    mn_mod_50 = integrate(mod,[50,-180,-50,180])
+    mn_obs_50 = integrate(obs,[50,-180,-50,180])
+    err_50 = integrate(diff,[50,-180,-50,180])
+    rms_50 = sqrt(integrate(diff*diff,[50,-180,-50,180]))
+    
+# define text
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+# define the date string
+
+    datestr=datestr(yys,mms,nm,0)
+
+    parname="Surface Winds"
+
+    text1 = parname&"  "&expid&"  "&datestr&" nens="&nens&"  Global Mean: "&mn_mod&"  50N-S Mean: "&mn_mod_50
+
+    if lclim then
+          ss="climatology"
+          if freado='ecfs' then
+            command = "/usr/local/ecfs/prodn/els.p "&fname
+            out = shell_output(command)
+            no=2
+          else if freado='disc' then
+            out=lfiles
+            no=1
+          end if
+          idx=searchstring(out[no],ss)
+          idx=idx+length(ss)+1
+          climyy1=substring(out[no],idx,idx+3)
+          climyy2=substring(out[no],idx+5,idx+8)
+          datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+    end if
+
+    text2=parname&"  "&"SSMI Wentz V6  "&datestr&"  50N-S Mean:  "&mn_obs_50
+    text3 = "Difference  "&expid&" - SSMI  "&"50N-S Mean err " & err_50 & " 50N-S rms " & rms_50
+    units="[m s<sup>-1</sup>]"
+   #units="[m/s]"
+
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+
+# plot
+
+    plot(display[1],mod,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+    if tcrit = -999 then 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+# now do the curve plots
+
+    if lplot_curve then
+      curve_plot(mod,obs,"10m winds [m/s]",display,res,res,-99,1)
+    end if
+
+end winds
+
+
+
+#############################################################
+#  Radiation against different sats
+#############################################################
+
+function radn(expid,yys,mms,nm,par,filestub,obsplat,file1,file2,source_file_sfc,nens,res,
+              display,lplot_curve,lclim,freado,lcol,tcrit,sig_cont,larticle,plottype,rms)
+
+     case par of 
+       'swcf':
+          lcf=1
+          ceres_fac=1
+          par1="tsr"
+          par2="tsrc"
+#         file1='TSRFlxT'
+#         file2='TSRFlxC'
+
+	  cmin=-160
+	  cmax=-15
+	  cint=15
+
+	  cdmin=15
+	  cdmax=130
+	  cdint=15
+
+          mincol="yellow"
+          maxcol="blue"
+	  end
+       'sw':
+          lcf=0
+          ceres_fac=1
+          par1="tsr"
+
+	  cmin=50
+	  cmax=450
+	  cint=50
+
+	  cdmin=15
+	  cdmax=130
+	  cdint=15
+
+          mincol="yellow"
+          maxcol="blue"
+          end
+       'lwcf': 
+          lcf=1
+          ceres_fac=-1
+          par1='ttr'
+          par2='ttrc'
+	  cmin=15
+	  cmax=100
+	  cint=15
+
+	  cdmin=10
+	  cdmax=80
+	  cdint=10
+
+          mincol="yellow"
+          maxcol="blue"
+          end
+       'lw': 
+          lcf=0
+          ceres_fac=-1
+          par1='ttr'
+#          file1='OLRFlxT'
+
+	  cmin=-300
+	  cmax=-120
+	  cint=30
+
+	  cdmin=10
+	  cdmax=80
+	  cdint=10
+
+          mincol="blue"
+          maxcol="yellow"
+          end 
+       'ssrd': 
+          lcf=0
+          ceres_fac=1
+          par1='ssrd'
+
+	  cmin=80
+	  cmax=300
+	  cint=20
+
+	  cdmin=5
+	  cdmax=65
+	  cdint=10
+
+          mincol="blue"
+          maxcol="yellow"
+          end
+       otherwise:
+          print('bad option chosen')
+          end
+     end case
+
+     conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,mincol,maxcol,'yellow','red','magenta','green',-1.e21,1.e21)
+     cont=conts[1]
+     diff_cont_pos=conts[2]
+     diff_cont_neg=conts[3]
+
+     my_grid = [res,res]
+     my_area = [90,0,-90,360-res]
+
+     mm=mms
+     yy=yys
+
+     for im=1 to nm do
+
+		datever1=yy*10000+(mm)*100+01
+		datever2=yy*10000+(mm+1)*100+01
+		vdat1=date(datever1)
+		vdat2=date(datever2)-1
+
+# get data
+
+       missing=-9999
+
+       if lclim then
+         fname1=file1&"*climatology_*_month"&substring(string(100+mm),2,3)
+       else
+         fname1=file1&"_"&string(yy*100+mm)&filestub
+       end if
+
+       if freado='ecfs' then
+          obs = ecfs(file_name:fname1)
+       else if freado='disc' then
+          lfiles = GetFilenames(fname1)
+          obs = read(source:lfiles[1])
+       end if
+
+       if lcf and file2<>"" then
+          if lclim then
+             fname2=file2&"*climatology_*_month"&substring(string(100+mm),2,3)
+          else
+             fname2=file2&"_"&string(yy*100+mm)&filestub
+          end if
+
+          if freado='ecfs' then
+            obsc = ecfs(file_name:fname2)
+          else if freado='disc' then
+             lfiles = GetFilenames(fname2)
+             obsc = read(source:lfiles[1])
+          end if
+          obs=obs-obsc # derive the cloud forcing
+       end if
+
+       obs=ceres_fac*obs
+#		obs=nobitmap(obs,missing)
+		geo_aux = grib_to_geo( data : obs)
+		geo_aux = filter( geo_aux, geo_aux > missing+1 )
+		obs  = geo_to_grib(
+           geopoints  :	geo_aux,
+           area	:	my_area,
+           grid	:	my_grid,
+           tolerance	:	res,
+           parameter	:	255,
+           grib_table2_version	:	128
+        )
+
+         if im > 1 then
+           obs_tot=obs_tot+obs
+         else
+           obs_tot=obs
+         end if
+
+         mm=mm+1
+         if (mm>12) then
+           mm=1
+           yy=yy+1
+         end if
+     end for
+
+     mod_all = read(
+      #type	:	"fc",
+      #expver	:	expid,
+       levtype	:	"sfc",
+       grid	:	my_grid,
+       param	:	[par1],
+       source   :       source_file_sfc
+       )
+
+     if lcf then 
+       mod2_all = read(
+      #type	:	"fc",
+      #expver	:	expid,
+       levtype	:	"sfc",
+       grid	:	my_grid,
+       param	:	[par2],
+       source   :       source_file_sfc
+       )
+       mod_all=mod_all-mod2_all
+#      mod_all=mod2_all
+     end if
+
+#
+# means
+#
+     mod=mean(mod_all)
+     obs=obs_tot/nm
+     mod=bitmap(mod,obs)
+
+     diff=mod-obs
+
+# t-test sig plots 
+     if tcrit > -999 then 
+          # trick to set field to constant with same res and missing values
+          std_obs = obs-obs+rms 
+
+          var_mod=var(mod_all)
+          var_mod=bitmap(var_mod,obs) 
+          var_mod=bitmap(var_mod,0.0)             # replace zeros with "missing"
+
+# combined std - treat obs as single sample of variance=RMS error
+          std=sqrt(std_obs*std_obs + var_mod/nens)
+
+          tstat=abs(diff)/std  # make T-statistics
+          sig=tstat > tcrit    # fieldset of 0 or 1
+                               # !!! > (<) : SHADE (NON)SIG AREAS!!!
+     end if
+
+
+     # global integrals
+     precision(3)
+     mn_mod = integrate(mod)
+     mn_obs = integrate(obs)
+     mn_mod_50 = integrate(mod,[50,-180,-50,180])
+     mn_obs_50 = integrate(obs,[50,-180,-50,180])
+     
+     # RMS errors
+     rms_50=sqrt(integrate(diff*diff,[50,-180,-50,180]))
+     err_50=mn_mod_50-mn_obs_50
+     
+     # define text
+     
+     datever1=yys*10000+mms*100+01
+     vdat1=date(datever1)
+     
+     #
+     # define the date string
+     #
+     datestr=datestr(yys,mms,nm,0)
+
+     if par='ssrd' then
+       titb=""
+     else
+       titb="TOA "
+     end if
+     text1 = titb&par&"  "& expid&"  "& datestr&" nens="&nens& "  Global Mean: "&mn_mod&"  50S-50N Mean: "&mn_mod_50
+     
+     if lclim then
+       ss="climatology"
+       if freado='ecfs' then
+         command = "/usr/local/ecfs/prodn/els.p "&fname
+         out = shell_output(command)
+         no=2
+       else if freado='disc' then
+         out=lfiles
+         no=1
+       end if
+       idx=searchstring(out[no],ss)
+       idx=idx+length(ss)+1
+       climyy1=substring(out[no],idx,idx+3)
+       climyy2=substring(out[no],idx+5,idx+8)
+       datestr=datestr(yys,mms,nm,lclim)&" "&climyy1&"-"&climyy2&" climatology"
+     end if
+     
+     text2 = titb&par&"  "&obsplat&"  "&datestr&"  "&"Global Mean: "&mn_obs&"  50S-50N Mean: "&mn_obs_50
+     text3 = "Difference "&expid&" - "&obsplat&"  "&"50N-S Mean err " & err_50 & " 50N-S rms " & rms_50
+     
+     units = "[W m<sup>-2</sup>]"
+    #units = "[W/m2]"
+
+     case plottype of
+       1:  ptext1 = set_text(text1,larticle,1)
+           ptext2 = set_text(text2,larticle,2)
+           ptext3 = set_text(text3,larticle,3)
+           legend = set_legend(units)
+       end
+       3:  ptext1 = set_text_pol(text1,larticle,1)
+           ptext2 = set_text_pol(text2,larticle,2)
+           ptext3 = set_text_pol(text3,larticle,3)
+           legend = set_legend_pol(units)
+       end
+     end case
+
+# plot
+#    plot(display[1],mod,ptext1,legend)
+     plot(display[1],mod,cont,ptext1,legend)
+     plot(display[2],obs,cont,ptext2,legend)
+     #	plot(display[1],mod,diff_cont_pos,diff_cont_neg,ptext1,legend)
+     #	plot(display[2],obs,diff_cont_pos,diff_cont_neg,ptext2,legend)
+     if tcrit = -999 then
+       plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+     else
+       plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+     end if
+
+	# now do the curve plots
+
+     if lplot_curve then
+       curve_plot(mod,obs,par[1],display,res,res,-99,1)
+     end if
+
+end radn
+
+
+#############################################################
+#  Surface flux again DS climatology
+#############################################################
+
+function surf_flux(expid,yys,mms,nm,source_file_sfc,nens,res,param,ipar,display,lplot_curve,ecfsdir,freado,lcol,tcrit,sig_cont,larticle)
+
+    fldnam=["sshf","slhf","ssr","str"]
+    nfldnam=count(fldnam)
+
+    correct="Yes"                 # Apply corrections (Yes/No)
+    text="dt=-10_pr"              # User text
+
+
+    diff=nil
+    fields1=nil
+#
+#  Contour intervals
+#
+    cnt=40
+    if param="SSH" then
+      cnt=20
+    end if
+    if param="SNET" then
+      cnt=20
+    end if
+    if param="STR" then
+      cnt=20
+    end if
+#
+#
+#       Sort out dates
+#       ==============
+#
+
+   monthf=mms
+   monthl=mod(mms+nm-1,12)
+   cntmax=cnt*10
+   cnt2=cnt/2
+   cntmax2=cnt2*10
+          
+   conts=set_cont_all(lcol,cnt,cntmax,cnt,cnt,cntmax,cnt,'blue','red','yellow','orange','purplish_blue','turquoise',-1000,1000)
+   pos_wm=conts[2]
+   neg_wm=conts[3]
+       
+   conts=set_cont_all(lcol,cnt2,cntmax2,cnt2,cnt2,cntmax2,cnt2,'blue','red','yellow','orange','purplish_blue','turquoise',-1000,1000)
+   pos_wm2=conts[2]
+   neg_wm2=conts[3]
+
+      my_grid = [res,res]
+      datever1=yys*10000+(mms)*100+01
+      datever2=(yys+int((mms+nm-1)/12))*10000+(mod(mms+nm-1,12)+1)*100+01
+
+      vdat1=date(datever1)
+      vdat2=date(datever2)-1
+
+      if ipar<5 then
+           fld = read(
+            #  type   :	"fc",
+            #  expver :	expid,
+              levtype:	"sfc",
+              grid   :	my_grid,
+              param  :	fldnam[ipar],
+              source : source_file_sfc
+               )
+          fieldm=mean(fld)
+          if tcrit>-999 then
+            stdm=stdev(fld)
+          end if
+      else
+
+        for i=1 to 4 do
+           fld = read(
+            #  type   :	"fc",
+            #  expver :	expid,
+              levtype:	"sfc",
+              grid   :	my_grid,
+              param  :	fldnam[i],
+              source : source_file_sfc
+               )
+           if i=1 then
+             fieldm=mean(fld)
+             if tcrit>-999 then
+             stdm=stdev(fld)
+             end if
+           else
+             fieldm=fieldm+mean(fld)
+             if tcrit>-999 then
+             stdm=stdm+stdev(fld)
+             end if
+           end if
+         end for
+      end if
+
+# get Dasilva fields and correct
+
+      if correct="Yes" then
+        ptr=0.93
+        pc=1.04
+        pe=1.02
+        pchi=0.99
+        ple=1.14
+        ps=1.01
+      end if
+
+    if param="SSH" then
+       if freado='ecfs' then
+         dasilvaec=ecfs(file_name:ecfsdir&"dasilva/grib/sensib3_00")
+       else if freado='disc' then
+         dasilvaec=read(source:ecfsdir&"dasilva/grib/sensib3_00")
+       end if
+       if correct="Yes" then
+         dasilvaec=ps*dasilvaec
+       end if
+    end if
+    if param="SLH" then
+        if freado='ecfs' then
+          dasilvaec=ecfs(file_name:ecfsdir&"dasilva/grib/latent3_00")
+        else if freado='disc' then
+          dasilvaec=read(source:ecfsdir&"dasilva/grib/latent3_00")
+        end if
+        if correct="Yes" then
+          dasilvaec=ple*dasilvaec
+        end if
+    end if
+    if param="SSR" then
+        if freado='ecfs' then
+          dasilvaec=ecfs(file_name:ecfsdir&"dasilva/grib/shortrad_00")
+        else if freado='disc' then
+          dasilvaec=read(source:ecfsdir&"dasilva/grib/shortrad_00")
+        end if
+        if correct="Yes" then
+          if freado='ecfs' then       
+            da_AC=ecfs(file_name:ecfsdir&"dasilva/grib/ac_00")
+          else if freado='disc' then 
+            da_AC=read(source:ecfsdir&"dasilva/grib/ac_00")
+          end if
+          dasilvaec=ptr*dasilvaec+(pc-1)*da_AC
+        end if
+    end if
+    if param="STR" then
+        if freado='ecfs' then
+          dasilvaec=ecfs(file_name:ecfsdir&"dasilva/grib/longrad_00")
+        else if freado='disc' then
+          dasilvaec=read(source:ecfsdir&"dasilva/grib/longrad_00")
+        end if
+        if correct="Yes" then
+          if freado='ecfs' then                    
+            da_ACHI=ecfs(file_name:ecfsdir&"dasilva/grib/achi_00")
+            da_AE  =ecfs(file_name:ecfsdir&"dasilva/grib/ae_00")
+          else if freado='disc' then 
+            da_ACHI=read(source:ecfsdir&"dasilva/grib/achi_00")
+            da_AE  =read(source:ecfsdir&"dasilva/grib/ae_00")
+          end if
+          dasilvaec=dasilvaec-(pe-1)*da_AE-(pchi-1)*da_ACHI
+        end if
+    end if
+    if param="SNET" then
+      if freado='ecfs' then
+        dasilvaec=ecfs(file_name:ecfsdir&"dasilva/grib/netheat_00")
+      else if freado='disc' then
+        dasilvaec=read(source:ecfsdir&"dasilva/grib/netheat_00")
+      end if
+    end if
+
+    dasilva  = read(
+        read_data_from	:	"metview_icon",
+        grid	:	[2.,2.],
+        data	:	dasilvaec
+          )
+
+    if monthf < monthl then
+      dasaver=0.
+      for i=monthf to monthl do
+         dasaver=dasaver+dasilva[i]
+      end for
+      dasaver=dasaver/(monthl-monthf+1)
+    else
+      dasaver=0.
+      for i=monthf to 12 do
+        dasaver=dasaver+dasilva[i]
+      end for
+      for i=1 to monthl do
+        dasaver=dasaver+dasilva[i]
+      end for
+      dasaver=dasaver/(monthl+12-monthf+1)
+    end if
+
+    lsm=abs(dasaver) <999 
+    geo_aux = grib_to_geo( data : dasaver)
+    geo_aux = filter( geo_aux, geo_aux >= -998 )
+    geo_aux = filter( geo_aux, geo_aux < 1000 )
+    resy=4
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+    obs = geo_to_grib(
+        geopoints		:	geo_aux,
+        area			:	my_area,
+        grid			:	my_grid,
+        tolerance		:	resy,
+        parameter		:	147,
+        grib_table2_version	:	128
+       )
+
+    fieldc=obs
+    fieldm=bitmap(fieldm,obs)
+
+    diff=fieldm-fieldc
+
+# t-test sig plots 
+    if tcrit > -999 then 
+#     stdm=bitmap(stdm,obs) 
+      stdm=bitmap(stdm,0.0)           # replace zeros with "missing"
+      tstat=sqrt(nens)*abs(diff)/stdm # make T-statistics
+      sig=tstat > tcrit               # fieldset of 0 or 1
+                                      # !!! > (<) : SHADE (NON)SIG AREAS!!!
+     end if
+
+   precision(3)
+   gmeanm=integrate(fieldm,lsm)
+   gmeanc=integrate(fieldc,lsm)
+   gmeandiff=integrate(diff,lsm)
+   
+   datever1=yys*10000+mms*100+01
+   vdat1=date(datever1)
+   datestr=string(vdat1,"mmmm yyyy")&" nmon="&nm
+   
+   text1 = "Surface "&param&"  "&
+   expid&"  "&
+   datestr&" nens="&nens&
+   "   Global Mean: "&gmeanm&" W/m2"
+   
+   #	txtmo=expid&",N="&","&text
+   #	text11= param&" "&txtmo&", "&date1&": "&stepf&"-"&stepl&"; Ocm:"&gmeanm&" W/m2"
+   
+   txtda="Dasilva climatology "
+   if correct="Yes" then
+   	; txtda=txtda&"+corr."
+   ; end if
+   
+    text2= param&" ("&txtda&"), "&monthf&"-"&monthl&", Ocm:"&gmeanc&" W/m2"
+    text3=param&" (model)-("&txtda&"), "&monthf&"-"&monthl&", Ocm: "&gmeandiff&" W/m2"
+
+    units="[W m<sup>-2</sup>]"
+   #units="[W/m2]"
+
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+    
+    fieldm=fieldm*lsm
+    fieldc=fieldc*lsm
+    diff=diff*lsm
+    plot(display[1],fieldm,neg_wm,pos_wm,ptext1,legend)
+    plot(display[2],fieldc,neg_wm,pos_wm,ptext2,legend)
+    
+    if tcrit = -999 then
+      plot(display[3],diff,neg_wm2,pos_wm2,ptext3,legend)
+    else
+      plot(display[3],diff,neg_wm2,pos_wm2,ptext3,legend,sig,sig_cont)
+    end if
+    
+# now do the curve plots
+    
+    if lplot_curve then
+      curve_plot(fieldm,fieldc,param,display,res,res,-99,1)
+    end if
+
+end surf_flux
+
+
+#############################################################
+#  surface fields against ERA40 means
+#############################################################
+
+function era40(expid,yys,mms,nm,source_file_sfc,nens,res,param,display,lplot_curve,obsname,lclim,era1,era2,dir,eratext,lcol,tcrit,sig_cont,larticle,model)
+
+    cmin=240
+    cmax=310
+    cint=10
+
+    cdmin=1
+    cdmax=15
+    cdint=1
+       
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+        datever1=yy*10000+(mm)*100+00
+        vdat1=date(datever1)
+
+        if lclim then
+           fname=dir&"mmean_ERA40_sfc_climate_alldates.grb"
+           date_era=string(vdat1+1,"mmmm")
+        else
+           fname=dir&"mmean_ERA40_sfc_alldates.grb"
+           date_era=datever1
+        end if
+
+        print("reading: ",datever1," ",fname," ",param)
+
+        obs = read(
+           param    : param,
+           date     : date_era,
+           source   : fname,
+           grid     : [2.,2.]
+           )
+        nobs=count(obs)
+        if nobs=0 then
+          date_era1=date_era+1
+          obs = read(
+            param   : param,
+            date    : date_era1,
+            source  : fname,
+            grid    : [2.,2.]
+            )
+        end if
+        print ("read obs: number of fields ",count(obs))
+        obs=mean(obs) # average over times...
+
+# process field
+
+        if im > 1 then
+          obs_tot=obs_tot+obs
+        else
+          obs_tot=obs
+        end if
+
+        mm=mm+1
+        if (mm>12) then
+           mm=1
+           yy=yy+1
+        end if
+    end for
+
+    if (model = "icon") then
+      param_mod = param
+      case param of
+        "2T": param_mod =    167.128  ;  end
+     #  "2D": param_mod = 500017  ;  end
+        "SD": param_mod =   3066  ;  end  # single layer: 500045,  multi layer: 502329
+      end case
+    else
+      param_mod = param
+    end if
+    mod_all = read(
+       #type	:	"fc",
+       #expver	:	expid,
+       #levtype	:	"sfc",
+        grid	:	my_grid,
+        param	:	param_mod,
+        source  :       source_file_sfc
+       #grid    :       [2.,2.]
+        )
+     print("Read model from file: ", source_file_sfc) 
+     print("Read variable: ", param_mod," resol:  ", my_grid, "deg # flds: ", mod_all)
+
+    mod=mean(mod_all)
+    obs=obs_tot/nm
+    diff=mod-obs
+
+# t-test sig plots 
+    if tcrit > -999 then 
+       std=stdev(mod_all)
+       std=bitmap(std,obs) 
+       std=bitmap(std,0.0)             # replace zeros with "missing"
+       tstat=sqrt(nens)*abs(diff)/std  # make T-statistics
+       sig=tstat > tcrit               # fieldset of 0 or 1
+                                       # !!! > (<) : SHADE (NON)SIG AREAS!!! 
+    end if
+
+# global integrals
+
+    precision(4)
+
+    mn_mod = integrate(mod)
+    mn_obs = integrate(obs)
+    err = mn_mod-mn_obs
+    rms = sqrt(integrate(diff*diff))
+
+# define text
+
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+# define the date string
+
+    datestr=datestr(yys,mms,nm,0)
+
+	text1 = param&"  "&expid&"  "&datestr&" nens="&nens&"  Global Mean: "&mn_mod&"  global Mean: "&mn_mod
+
+    if lclim then
+      datestr=substring(string(era1),1,4)&"-"&
+              substring(string(era2),1,4)&" climatology"
+    end if
+
+    text2 = param&"  "&datestr&" "&eratext&" "&"  global Mean:  "&mn_obs
+    text3 = "Difference  "&expid&" - "&eratext&" "&"global Mean err " & err & " rms " & rms
+    units = "[K]"
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+	
+# plot
+
+    plot(display[1],mod,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+    if tcrit=-999 then 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont,larticle)
+    end if
+
+# now do the curve plots
+
+    if lplot_curve then
+      curve_plot(mod,obs,param,display,res,res,-99,1)
+    end if
+
+end era40
+
+
+#############################################################
+#  surface fields against ERA40 means SNOW CASE
+#############################################################
+
+function era40sn(expid,yys,mms,nm,source_file_sfc,nens,res,param,display,lplot_curve,obsname,lclim,era1,era2,dir,eratext,lcol,tcrit,sig_cont,larticle,model)
+
+    cmin=0
+    cmax=50
+    cint=5
+
+    cdmin=1
+    cdmax=20
+    cdint=5
+       
+    conts=set_cont_all(lcol,cmin,cmax,cint,cdmin,cdmax,cdint,'blue','red','yellow','red','magenta','green',-1.e21,1.e21)
+    cont=conts[1]
+    diff_cont_pos=conts[2]
+    diff_cont_neg=conts[3]
+
+    my_grid = [res,res]
+    my_area = [90,-180,-90,180-res]
+
+    mm=mms
+    yy=yys
+
+    for im=1 to nm do
+	datever1=yy*10000+(mm)*100+00
+	vdat1=date(datever1)
+
+	if lclim then
+	   fname=dir&"mmean_ERA40_sfc_climate_alldates.grb"
+           date_era=string(vdat1+1,"mmmm")
+	else
+	   fname=dir&"mmean_ERA40_sfc_alldates.grb"
+           date_era=datever1
+	end if
+
+	print("reading: ",datever1," ",fname," ",param)
+
+	obs = read(
+           param     :	param,
+           date      :  date_era,
+           source    :  fname,
+           grid	     :	my_grid )
+        if count(obs)=0 then
+          date_era1=date_era+1
+          obs = read(
+            param    :  param,
+            date     :  date_era1,
+            source   :  fname,
+            grid     :  my_grid )
+        end if
+
+        print (" number of fields ",count(obs))
+        obs=mean(obs) # average over times...
+
+# process field
+
+	if im > 1 then
+		obs_tot=obs_tot+obs
+	else
+		obs_tot=obs
+	end if
+
+        mm=mm+1
+        if (mm>12) then
+          mm=1
+          yy=yy+1
+        end if
+    end for
+
+    if (model = "icon") then
+      param_mod = 3066   # snow depth "SD", single layer: 500045,  multi layer: 502329
+    else
+      param_mod = param
+    end if
+
+    mod_all = read(
+     #type	:	"fc",
+     #expver	:	expid,
+     #levtype	:	"sfc",
+      grid	:	my_grid,
+      param	:	param_mod,
+      source    :       source_file_sfc
+      )
+
+    if (model = "icon") then
+      mod_all_lev1 = read(
+        param     :     "2D",                           #T2m: just to test how many dates (500011)
+        source    :     source_file_sfc )
+      nsnowlev = count(mod_all) / count(mod_all_lev1)   #multi-layer snow in ICON
+      print("snow levels: ", nsnowlev)
+      mod      = 100 * mean(mod_all) * nsnowlev
+    else
+      mod      = 100 * mean(mod_all)
+    end if
+    obs  = 100*obs_tot/nm
+    diff = mod-obs
+
+# t-test sig plots 
+
+    if tcrit > -999 then 
+      std=100.*stdev(mod_all)
+      std=bitmap(std,0.0)             # replace zeros with "missing"
+      tstat=sqrt(nens)*abs(diff)/std  # make T-statistics
+      sig=tstat > tcrit               # fieldset of 0 or 1
+                                      # !!! > (<) : SHADE (NON)SIG AREAS!!!
+    end if
+
+# global integrals
+
+    precision(4)
+
+    mn_mod = integrate(mod)
+    mn_obs = integrate(obs)
+    err = mn_mod-mn_obs
+    rms = sqrt(integrate(diff*diff))
+
+# define text
+
+    datever1=yys*10000+mms*100+01
+    vdat1=date(datever1)
+
+# define the date string
+
+    datestr=datestr(yys,mms,nm,0)
+
+    text1 = param&"  "&expid&"  "&datestr&" nens="&nens&"  Global Mean: "&mn_mod&"  global Mean: "&mn_mod
+
+    if lclim then
+      datestr=substring(string(era1),1,4)&"-"&
+          substring(string(era2),1,4)&" climatology"
+    end if
+
+    text2 = param&"  "&datestr&" "&eratext&" "&"  global Mean:  "&mn_obs 
+    text3 = "Difference  "&expid&" - "&eratext&" "&"global Mean err " & err & " rms " & rms
+
+    units="[cm]"
+    ptext1 = set_text(text1,larticle,1)
+    ptext2 = set_text(text2,larticle,2)
+    ptext3 = set_text(text3,larticle,3)
+    legend = set_legend(units)
+
+# plot
+
+    plot(display[1],mod,cont,ptext1,legend)
+    plot(display[2],obs,cont,ptext2,legend)
+    if tcrit=-999 then 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend)
+    else 
+      plot(display[3],diff,diff_cont_neg,diff_cont_pos,ptext3,legend,sig,sig_cont)
+    end if
+
+# now do the curve plots
+
+    if lplot_curve then
+      curve_plot(mod,obs,param,display,res,res,-99,1)
+    end if
+
+end era40sn
+
+
+###########################################################################
+#  special function to use read command instead of ecfs for filanmes with *
+###########################################################################
+
+#Metview Macro
+#plotter("magics6")
+
+# Given a filename containing a character *, this function returns
+# a list of all filenames that match the input string
+# Input : string (filename with a *)
+# Output: list of filenames
+# Fernando Ii, Aug-2009
+
+function GetFilenames (fin:string)
+
+    # Get a temporary filename
+    tempFile = tmpfile()
+
+    # Create a file containing the list of filenames
+    str = "ls " & fin & " > " & tempFile
+    shell (str)
+
+    # Store filenames in a list
+    lfiles = read(tempFile)
+
+    # Delete temporary filename
+    shell ("rm -f " & tempFile)
+
+    return lfiles
+
+end GetFilenames
+
+
+#
+# simple fortran to calculate T-Test limit
+#
+
+include "ttest_thresh.f90"

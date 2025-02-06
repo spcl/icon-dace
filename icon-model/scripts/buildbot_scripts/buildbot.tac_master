@@ -1,0 +1,31 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+from twisted.application import service
+from buildbot.master import BuildMaster
+
+basedir = r'/srv/buildbot/icon'
+configfile = r'master.cfg'
+rotateLength = 1000000
+umask = 002
+maxRotatedFiles = 50
+
+application = service.Application('buildmaster')
+try:
+  from twisted.python.logfile import LogFile
+  from twisted.python.log import ILogObserver, FileLogObserver
+  logfile = LogFile.fromFullPath("log/twistd.log", rotateLength=rotateLength,
+                                 maxRotatedFiles=maxRotatedFiles)
+  application.setComponent(ILogObserver, FileLogObserver(logfile).emit)
+except ImportError:
+  # probably not yet twisted 8.2.0 and beyond, can't set log yet
+  pass
+BuildMaster(basedir, configfile).setServiceParent(application)
+

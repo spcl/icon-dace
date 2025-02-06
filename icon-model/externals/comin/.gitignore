@@ -1,0 +1,8 @@
+build/
+
+*.[fF]90.d
+*.o
+*~
+*.dirstamp
+include/comin_version.inc
+__pycache__

@@ -1,0 +1,155 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# Anton Beljaars & Peter Bechtold  2010
+# Diurnal Cycle Program Part I
+# Save diurnal cycle fields for climate run, to be executed after last ensemble
+
+# metview -b save_mean_diurnal_flux.met $EXPVER $CLASS ${PLOTDATA} 
+
+# Only preliminary yet in perfore, has to be put under sms
+
+args=arguments()
+exp=args[1]
+class=args[2]
+start_dates = args[3]
+start_times = args[4]
+datefiln=args[5]
+nmon=args[6]
+
+datadir = getenv("PLOTDATA") 
+if (datadir="") then
+  datadir="."
+end if 
+datadir=datadir&"/"
+
+datelist=(parse(string(start_dates),"/")) 
+timelist=(parse(string(start_times),"/")) 
+print(datelist)
+print(timelist)
+NENS=count(datelist)
+
+datec=string(datefiln)
+mm=substring(datec,5,6)
+#------------------------------------------------------
+#datelist=[2000-08-01,2000-08-02,2000-08-03,2000-08-04]
+#NENS=4
+#timelist=[0,6,12,18]
+
+type="fc"
+grid="av"
+database=""
+
+if nmon=12 then
+  seasons="YEAR"
+else if nmon=3 and  mm="06" then
+  seasons="JJA"
+else if nmon=3 and  mm="12" then
+  seasons="DJF"
+else if nmon=3 and  mm="09" then
+  seasons="SON"
+else if nmon=3 and  mm="03" then
+  seasons="MAM"
+end if
+
+#seasons=["JJA","DJF","SON","MAM","YEAR"]      #   "SON", "DJF",  "MAM",  "JJA", "YEAR",
+params=[101,102,103]
+vars=['tp','sshf','slhf','ttr','ttrcf','tcliw','skt','2t','2d']
+nvar=count(vars)
+
+for ns=1 to count(seasons) do #  Loop over seasons
+  season=seasons[ns]
+  if season="YEAR" or season="DJF" or season="JJA" then
+
+   if season="SON"  then ; day_beglist=[ 31, 30, 29, 28] ; day_endlist=[122,121,120,119] ; end if
+   if season="DJF"  then ; day_beglist=[122,121,120,119] ; day_endlist=[212,211,210,209] ; end if
+   if season="MAM"  then ; day_beglist=[212,211,210,209] ; day_endlist=[304,303,302,301] ; end if
+   if season="JJA"  then ; day_beglist=[304,303,302,301] ; day_endlist=[396,395,394,393] ; end if
+   if season="YEAR" then ; day_beglist=[ 31, 30, 29, 28] ; day_endlist=[396,395,394,393] ; end if
+
+   for np=1 to count(params) do #  Loop over params
+
+#print('retrieve ',params[np])
+
+      for I=1 to NENS by 1 do  #  Loop over ensemble members
+         e_b = retrieve(
+		       expver	:	exp,
+		       levtype	:	"ml",
+		       class	:	class,
+		       type	:	type,
+		       repres	:	"gg", 
+		       levelist:	[1,"to",74],
+		       param	:	params[np],
+		       date	:	datelist[I],
+		       time	:	timelist[I],
+		       step	:	day_beglist[I]*24,
+                       database :       database,
+		       grid	:	grid
+		       )
+
+         e_e = retrieve(
+		       expver	:	exp,
+		       levtype	:	"ml",
+		       class	:	class,
+		       type	:	type,
+		       repres	:	"gg", 
+		       levelist:	[1,"to",74],
+		       param	:	params[np],
+		       date	:	datelist[I],
+		       time	:	timelist[I],
+		       step	:	day_endlist[I]*24,
+                       database :       database,
+		       grid	:	grid
+		       )
+
+         if timelist[I] = 0 then
+           exflds_beg=e_b[1,73]
+           exflds_end=e_e[1,73]
+         else if timelist[I] = 6 then 
+           exflds_beg=e_b[19,24]&e_b[ 1,18]   &e_b[43,48]&e_b[25,42]&e_b[49]   &e_b[68,73]&e_b[50,67]
+           exflds_end=e_e[19,24]&e_e[ 1,18]   &e_e[43,48]&e_e[25,42]&e_b[49]   &e_e[68,73]&e_e[50,67]
+         else if timelist[I] = 12 then 
+           exflds_beg=e_b[13,24]&e_b[ 1,12]   &e_b[37,48]&e_b[25,36]&e_b[49]   &e_b[62,73]&e_b[50,61]
+           exflds_end=e_e[13,24]&e_e[ 1,12]   &e_e[37,48]&e_e[25,36]&e_b[49]   &e_e[62,73]&e_e[50,61]
+         else if timelist[I] = 18 then 
+           exflds_beg=e_b[ 7,24]&e_b[ 1, 6]   &e_b[31,48]&e_b[25,30]&e_b[49]   &e_b[56,73]&e_b[50,55]
+           exflds_end=e_e[ 7,24]&e_e[ 1, 6]   &e_e[31,48]&e_e[25,30]&e_b[49]   &e_e[56,73]&e_e[50,55]
+         end if
+
+         extflx=(exflds_end-exflds_beg)/(3600*   (day_endlist[I]-day_beglist[I]))
+
+         if I=1 then 
+           aver_extflx=extflx
+         else
+           aver_extflx=aver_extflx+extflx
+         end if
+
+      end for
+
+
+      aver_extflx=aver_extflx/NENS
+      #
+      #   Extract diurnal cycle
+      #
+      v1   = aver_extflx[ 1,24]
+      v2 = aver_extflx[25,48]
+      v3 = aver_extflx[50,73]
+      #
+      iv=(np-1)*3
+      datafile=file(datadir&"diurnal_"&vars[iv+1]&"_"&exp&"_"&season&"_Nens"&NENS&".fld")
+      write(datafile,v1)
+      datafile=file(datadir&"diurnal_"&vars[iv+2]&"_"&exp&"_"&season&"_Nens"&NENS&".fld")
+      write(datafile,v2)
+      datafile=file(datadir&"diurnal_"&vars[iv+3]&"_"&exp&"_"&season&"_Nens"&NENS&".fld")
+      write(datafile,v3)
+
+   end for #  params
+  end if
+end for # seasons

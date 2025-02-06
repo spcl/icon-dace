@@ -1,0 +1,100 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")">/dev/null; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd)
+
+# module command and path setup from  /etc/profile.local:
+MODULE_SETTINGS=". $MODULESHOME/init/bash"
+
+
+MODULES='PrgEnv-cray cray-mpich/7.5.3 cce/8.5.8 craype-haswell cray-netcdf/4.3.2 cray-hdf5/1.8.13 eccodes/2.16.0 aec'
+
+
+### Libraries ###
+
+# RTTOV
+RTTOV_ROOT_LIB='/home/ms/de/dfj/lib/unsupported'
+RTTOV_ROOT_INC='/home/ms/de/dfj/include/unsupported/rttov12'
+RTTOV_ROOT_OBJ='/home/ms/de/dfj/SRC/rttov12/cca_cray/obj'
+RTTOV_LIBS='-lrttov12'
+
+# HDF5
+HDF5_LIBS='-lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5'
+
+# ECCODES
+ECCODES_LIBS='-leccodes -laec'
+
+# XML
+XML2_ROOT='/opt/cray/xc-sysroot/default/usr'
+XML2_LIBS='-lxml2 -lz'
+
+
+################################################################################
+
+BUILD_ENV="${MODULE_SETTINGS} && . \"${SCRIPT_DIR}/module_switcher\"; switch_for_module ${MODULES};"
+
+# We need some of the environment variables set by the modules now:
+eval "$BUILD_ENV"
+
+CC='cc'
+CFLAGS='-O3'
+CPPFLAGS="-I${HDF5_ROOT}/include ${ECCODES_INCLUDE} -I${XML2_ROOT}/include/libxml2"
+
+FC='ftn'
+FCFLAGS="-I${HDF5_ROOT}/include -I${RTTOV_ROOT_INC} -I${RTTOV_ROOT_OBJ} -em -hflex_mp=conservative -hfp1 -hadd_paren -hnoacc -O cache0 -r am -Ktrap=divz,ovf,inv"
+
+LDFLAGS="-L${HDF5_ROOT}/lib -L${RTTOV_ROOT_LIB} -L${AEC_DIR}/lib -L${ECCODES_LIB_DIR}"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${ECCODES_LIBS} ${RTTOV_LIBS} ${HDF5_LIBS}"
+
+EXTRA_CONFIG_ARGS='--disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-grib2 --enable-loop-exchange --enable-mixed-precision --enable-openmp --enable-rttov'
+
+
+
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="$BUILD_ENV" \
+CC="$CC" \
+CFLAGS="$CFLAGS" \
+CPPFLAGS="$CPPFLAGS" \
+FC="$FC" \
+FCFLAGS="$FCFLAGS" \
+LDFLAGS="$LDFLAGS" \
+LIBS="$LIBS" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Generate input file for runscript generation:
+./config.status --file=run/set-up.info
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

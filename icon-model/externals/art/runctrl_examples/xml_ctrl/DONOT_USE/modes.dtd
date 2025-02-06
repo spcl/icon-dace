@@ -1,0 +1,25 @@
+<!ELEMENT modes (aerosol+,radio+,volcanic+)>
+<!ELEMENT aerosol (d_gn, d_gm, sigma_g, rho)>
+<!ATTLIST aerosol
+  id  ID  #REQUIRED
+  of  CDATA #REQUIRED
+  type CDATA  #REQUIRED
+>
+<!ELEMENT d_gn (#PCDATA)>
+<!ELEMENT d_gm (#PCDATA)>
+<!ELEMENT sigma_g (#PCDATA)>
+<!ELEMENT rho (#PCDATA)>
+<!ELEMENT radio (imis, halflife)>
+<!ATTLIST radio
+  id  ID  #REQUIRED
+  type  CDATA #REQUIRED
+>
+<!ELEMENT imis (#PCDATA)>
+<!ELEMENT halflife (#PCDATA)>
+<!ELEMENT volcanic (diam, rho)>
+<!ATTLIST volcanic
+  id  ID  #REQUIRED
+  type  CDATA #REQUIRED
+>
+<!ELEMENT diam (#PCDATA)>
+<!ELEMENT rho (#PCDATA)>

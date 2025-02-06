@@ -1,0 +1,193 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# Bash settings:
+# * Exit immediately if a command exits with a  non-zero  status
+# * Treat unset variables as an error
+set -e -u
+# * Unset search path for the cd command
+unset CDPATH
+
+# Configure ICON directories
+SCRIPT_DIR=$( cd "$(dirname "$0")";     pwd )
+ICON_DIR=$(   cd "${SCRIPT_DIR}/../.."; pwd )
+
+# Configure build requirements
+COMPILER_NAME="intel"
+COMPILER_VERSION="2022.0.2"
+MPI_NAME="openmpi"
+MPI_VERSION="4.0"
+NETCDF_VERSION="4.9"
+NETCDFF_VERSION="4.6"
+HDF5_VERSION="1.12"
+MKL_VERSION="2022.0.2"
+
+MODULES=(
+    compiler/${COMPILER_NAME}/${COMPILER_VERSION}
+    mpi/${MPI_NAME}/${MPI_VERSION}
+    lib/netcdf/${NETCDF_VERSION}_serial
+    lib/hdf5/${HDF5_VERSION}_serial
+    lib/netcdf-fortran/${NETCDFF_VERSION}_serial
+    numlib/mkl/${MKL_VERSION}
+    eccodes-2.31.0_i22_ompi40
+    libfyaml
+)
+module purge
+module add "${MODULES[@]}"
+
+# HDF5 config
+HDF5_LIB="${HDF5_LIBRARY_DIRS}"
+HDF5_INCL="${HDF5_INCLUDE_DIRS}"
+HDF5_LIBS='-lhdf5'
+if [[ ! -d "${HDF5_LIB}"  ||
+      ! -d "${HDF5_INCL}" ]]; then
+    echo "Required HDF5 directories '${HDF5_LIB}', '${HDF5_INCL}' not found"
+    exit 1
+fi
+
+# NetCDF config
+NETCDF_LIB="${NETCDF_LIBRARY_DIR}"
+NETCDF_INCL="${NETCDF_INCLUDE_DIR}"
+NETCDF_LIBS='-lnetcdf'
+if [[ ! -d "${NETCDF_LIB}"  ||
+      ! -d "${NETCDF_INCL}" ]]; then
+    echo "Required NetCDF directories '${NETCDF_LIB}', '${NETCDF_INCL}' not found"
+    exit 1
+fi
+
+# NetCDF Fortran config
+NETCDFF_LIB="${NETCDF_FORTRAN_LIBRARY_DIR}"
+NETCDFF_INCL="${NETCDF_FORTRAN_INCLUDE_DIR}"
+NETCDFF_LIBS='-lnetcdff'
+if [[ ! -d "${NETCDFF_LIB}"  ||
+      ! -d "${NETCDFF_INCL}" ]]; then
+    echo "Required NetCDF Fortran directories '${NETCDFF_LIB}', '${NETCDFF_INCL}' not found"
+    exit 1
+fi
+
+# ecCodes config
+GRIBAPI_LIB="${ECCODES_LIBRARY_DIR}"
+GRIBAPI_INCL="${ECCODES_INCLUDE_DIR}"
+GRIBAPI_LIBS='-leccodes'
+if [[ ! -d "${GRIBAPI_LIB}"  ||
+      ! -d "${GRIBAPI_INCL}" ]]; then
+    echo "Required ecCodes directories '${GRIBAPI_LIB}', '${GRIBAPI_INCL}' not found"
+    exit 1
+fi
+
+# MKL config
+MKL_FCFLAGS='-qmkl=sequential'
+MKL_LDFLAGS="-L${MKL_LIB_DIR} -Wl,-rpath -Wl,${MKL_LIB_DIR}"
+##BLAS_LAPACK_LDFLAGS='-mkl=sequential'
+
+# libxml config
+XML2_ROOT='/usr'
+XML2_INCL="${XML2_ROOT}/include/libxml2"
+XML2_LIBS='-lxml2'
+
+# libfyaml config
+FYAML_ROOT='/software/community/ICON/libfyaml'
+FYAML_LIBS='-lfyaml'
+
+# Debug config
+C_DEBUG_FLAGS="-g"
+CXX_DEBUG_FLAGS="-g"
+FC_DEBUG_FLAGS="-g"
+USE_DEBUG=${USE_DEBUG:-false}
+
+################################################################################
+
+# Configure expects CFLAGS, CXXFLAGS and FCFLAGS to be unmodified by BUILD_ENV
+# script, so save them before loading modules
+BUILD_ENV=
+BUILD_ENV+='SAFE_CFLAGS="${CFLAGS}";'
+BUILD_ENV+='SAFE_CXXFLAGS="${CXXFLAGS}";'
+BUILD_ENV+='SAFE_FCFLAGS="${FCFLAGS}";'
+BUILD_ENV+='module purge;'
+BUILD_ENV+='module load '"${MODULES[@]}"';'
+BUILD_ENV+='CFLAGS="${SAFE_CFLAGS}";'
+BUILD_ENV+='CXXFLAGS="${SAFE_CXXFLAGS}";'
+BUILD_ENV+='FCFLAGS="${SAFE_FCFLAGS}";'
+BUILD_ENV+='unset SAFE_CFLAGS SAFE_CXXFLAGS SAFE_FCFLAGS;'
+BUILD_ENV+='unset OMPI_CFLAGS OMPI_CXXFLAGS OMPI_FCFLAGS;'
+BUILD_ENV+='export CC=$(type -p mpicc);'
+BUILD_ENV+='export FC=$(type -p mpifort);'
+BUILD_ENV+='export MPI_LAUNCH=$(type -p mpiexec);'
+BUILD_ENV+="export MODULELIST='${MODULES[*]}';"
+BUILD_ENV+='export LC_ALL=en_US;'
+
+CFLAGS="-no-prec-sqrt -no-prec-div -fast-transcendentals -m64 -march=core-avx2 -mtune=core-avx2 -no-fma -ip -pc64 -O3 -qno-opt-dynamic-align ${MKL_FCFLAGS}"
+if [[ "${USE_DEBUG}" == true ]]; then
+    CFLAGS+=" ${C_DEBUG_FLAGS}"
+fi
+CXXFLAGS='-O2 -xCORE-AVX2 -pc64'
+if [[ "${USE_DEBUG}" == true ]]; then
+    CXXFLAGS+=" ${CXX_DEBUG_FLAGS}"
+fi
+CPPFLAGS="-I${HDF5_INCL} -I${NETCDF_INCL} -I${GRIBAPI_INCL} -I${XML2_INCL} -I${FYAML_ROOT}/include"
+
+FC_SEARCH_FLAGS="-I${NETCDFF_INCL}"
+FCFLAGS="${FC_SEARCH_FLAGS} -pc64 -fp-model source ${MKL_FCFLAGS}"
+ICON_FCFLAGS='-fp-model source -qoverride-limits -assume realloc_lhs -align array64byte -no-prec-sqrt -no-prec-div -fast-transcendentals -m64 -march=core-avx2 -mtune=core-avx2 -no-fma -ip -pc64 -D__LOOP_EXCHANGE -D__SWAPDIM -DIFORT_CONSISTENCY_ENFORCE -DLRTM_FULL_VECTORIZATION -DOCE_SOLVE_OMP -DDO_NOT_COMBINE_PUT_AND_NOCHECK'
+ICON_BUNDLED_CFLAGS='-O2 -ftz'
+ICON_OCEAN_FCFLAGS='-O3 -assume norealloc_lhs -reentrancy threaded -qopt-report-file=stdout -qopt-report=0 -qopt-report-phase=vec'
+if [[ "${USE_DEBUG}" == true ]]; then
+    FCFLAGS+=" ${FC_DEBUG_FLAGS}"
+fi
+
+LDFLAGS="-L${HDF5_LIB} -L${NETCDF_LIB} -L${NETCDFF_LIB} -L${GRIBAPI_LIB} ${MKL_LDFLAGS} -L${FYAML_ROOT}/lib"
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${FYAML_LIBS} ${GRIBAPI_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} "
+
+EXTRA_CONFIG_ARGS='--disable-rpaths --enable-grib2'
+# as long as all openmpi released have an error we need to disable mpi checking
+EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-mpi-checks"
+##EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --enable-parallel-netcdf --enable-grib2 --enable-yaxt'
+eval "${BUILD_ENV}"
+
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+    BUILD_ENV="${BUILD_ENV}" \
+    AR="$(type -p xiar)" \
+    CC="${CC}" \
+    CFLAGS="${CFLAGS}" \
+    CPPFLAGS="${CPPFLAGS}" \
+    FC="${FC}" \
+    FCFLAGS="${FCFLAGS}" \
+    ICON_FCFLAGS="${ICON_FCFLAGS}" \
+    ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+    ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+    LDFLAGS="${LDFLAGS}" \
+    LIBS="${LIBS}" \
+    MPI_LAUNCH="${MPI_LAUNCH}" \
+    ${EXTRA_CONFIG_ARGS} \
+    "$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

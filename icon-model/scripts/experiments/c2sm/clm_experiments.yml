@@ -1,0 +1,22 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+experiments:
+  - name: c2sm_clm_r13b03_seaice
+    check: checksuite.icon-dev/check.c2sm_clm_r13b03_seaice
+    types: ['atm_3d_ml']
+    dates: [19790201T180000Z]
+    restart_date: [19790201T180000Z]
+    tolerance:
+      perturb_amplitude:
+        - mixed: 1e-7
+        - double: 1e-14
+      file_id:
+        - NetCDF: ['*atm_3d*.nc']

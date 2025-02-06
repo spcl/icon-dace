@@ -1,0 +1,40 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -euo pipefail
+
+# data should be stored here: /scratch/mch/jenkins/icon/pool/data/ICON/buildbot_data/performance
+# which is ${icon_data_rootFolder}/buildbot_data/performance
+
+performance_root="${icon_data_rootFolder}/buildbot_data/performance"
+
+# If you want to test locally, use this instead (need to have local tolerance_reference):
+# performance_root="${basedir}/performance_test"
+
+builder=$(echo ${BB_NAME} | tr '[:upper:]' '[:lower:]')
+date=$(date '+%Y-%m-%d_%H-%M-%S')
+git_commit=$( (git rev-parse HEAD) | cut -c 1-12 )
+
+folder_name="${date}.${git_commit}"
+
+# EXPNAME=store_performance_exp
+exp=$( echo ${EXPNAME} | cut -c 19- )
+
+mkdir -p "${performance_root}/${folder_name}" || exit 1
+echo "Storing LOG file and performance data in ${performance_root}/${folder_name}"
+cp -f "${basedir}/run/LOG.check.${exp}.run."* "${performance_root}/${folder_name}" || exit 1
+chmod u=rwx,g=rx,o=rx "${performance_root}/${folder_name}/LOG.check.${exp}.run."*
+mv -f "${basedir}/${exp}_${builder}_"* "${performance_root}/${folder_name}" || exit 1
+chmod u=rwx,g=rx,o=rx "${performance_root}/${folder_name}/${exp}_${builder}_"*
+
+# exit 0 on success (and don't execute any appended scripts)
+exit 0

@@ -1,0 +1,206 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+# The Basedirectory of uschaett's PGI installation
+UWORK="/uwork2/uschaett"
+# This has to be /uwork1/uschaett as the compiler expects to find settings in /uwork1
+
+PGI_VERSION=22.7
+
+# Base dir for (most of) the external libraries on a typical Linux workstation:
+GLOBAL_LIB_ROOT="${UWORK}"
+#LIB_DIRS="${GLOBAL_LIB_ROOT}/lib_pgi-${PGI_VERSION}"
+LIB_DIRS="${GLOBAL_LIB_ROOT}/lib_pgi-22.11"
+
+# Make compiler binaries accessible in build environment
+PGI_ROOT="${UWORK}/opt/pgi-${PGI_VERSION}/Linux_x86_64/${PGI_VERSION}"
+
+MPI_LAUNCH="${PGI_ROOT}/comm_libs/mpi/bin/mpiexec"
+
+# Should now work with NVIDIA
+RTTOV_LIB_ROOT="/uwork1/uschaett/opt/PGI/rttov13_icon/linuxWS.nvidia"
+RTTOV_INCLUDE="${RTTOV_LIB_ROOT}/include"
+RTTOV_LIB="-L${RTTOV_LIB_ROOT} -lrttov13"
+
+# HDF5 resides under the LIB_DIRS hdf5-xxx:
+HDF5_INCLUDE="${LIB_DIRS}/hdf5-1.10.5/include"
+HDF5_LIBDIR="${LIB_DIRS}/hdf5-1.10.5/lib64"
+HDF5_LIBS="-lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran"
+
+# Netcdf resides under the LIB_DIRS netcdf-xxx:
+NETCDF_INCLUDE="${LIB_DIRS}/netcdf-4.6.0/include"
+NETCDF_LIBDIR="${LIB_DIRS}/netcdf-4.6.0/lib64"
+NETCDF_LIBS="-lnetcdff -lnetcdf"
+
+# eccodes resides under the LIB_DIRS eccodes-xxx:
+ECCODES_INCLUDE="${LIB_DIRS}/eccodes-2.23.0/include"
+ECCODES_LIBDIR="${LIB_DIRS}/eccodes-2.23.0/lib64"
+ECCODES_LIBS="-leccodes_f90 -leccodes"
+AEC_LIBDIR="${LIB_DIRS}/aec-1.0.4/lib64"
+AEC_LIBS="-laec"
+OPENJPB_LIBDIR="${LIB_DIRS}/openjpeg-2.4.0/lib"
+OPENJPB_LIBS="-lopenjp2"
+
+PGI_LIBDIR="${PGI_ROOT}/compilers/lib"
+
+PATH="${PGI_ROOT}/compilers/bin:${PATH}"
+
+# Serialbox
+SERIALBOX2_INCLUDE="${LIB_DIRS}/serialbox-2.6.0/include"
+SERIALBOX2_LIBDIR="${LIB_DIRS}/serialbox-2.6.0/lib"
+SB2PP="python2 ${LIB_DIRS}/serialbox-2.6.0/python/pp_ser/pp_ser.py"
+
+SERIALBOX2_STATIC_LINKING="yes" # if "no", try automatic/dynamical lining
+if [[ $SERIALBOX2_STATIC_LINKING == no ]]; then
+  SERIALBOX2_LIBS='-lSerialboxFortran -lSerialboxC -lSerialboxCore' # dynamical linking, if .so are present.
+else
+  # Link serialbox statically
+  SERIALBOX2_LIBS="${SERIALBOX2_LIBDIR}/libSerialboxFortran.a ${SERIALBOX2_LIBDIR}/libSerialboxC.a ${SERIALBOX2_LIBDIR}/libSerialboxCore.a"
+  SERIALBOX2_LIBDIR=''
+fi
+
+# Assume that lapack and blas reside under the GLOBAL_LIB_ROOT:
+# not for PGI: set LIBS to pgi-lib-directory below
+BLAS_LAPACK_LIBS="-llapack -lblas"
+
+# Assume that xml2 resides under the GLOBAL_LIB_ROOT:
+# not for PGI: set LIBS to xml2-lib-below
+XML2_INCLUDE="${LIB_DIRS}/libxml2-2.9.10/include"
+XML2_LIBDIR="${LIB_DIRS}/libxml2-2.9.10/lib64"
+XML2_LIBS="-lxml2"
+
+# Assume that zlib (needed for EMVORADO) resides under the GLOBAL_LIB_ROOT:
+#ZLIB_LIBS="-lz"
+
+CUDA_LIBDIR="${PGI_ROOT}/cuda/lib64"
+CUDA_LIBS='-lcudart'
+# The rest of libraries required by CUDA will be provided by PGI compiler:
+STDCPP_LIBS='-lstdc++fs -lstdc++'
+# not sure if `-lstdc++fs ` is necessary
+
+# Make shared libraries available in build environment
+LD_LIBRARY_PATH="${HDF5_LIBDIR}:${NETCDF_LIBDIR}:${PGI_LIBDIR}:${CUDA_LIBDIR}"
+if [[ $SERIALBOX2_STATIC_LINKING == no ]]; then
+  # not sure if necessary
+  LD_LIBRARY_PATH+=":${SERIALBOX2_LIBDIR}"
+fi
+
+################################################################################
+
+if [ ! -d "/uwork1/uschaett" ]; then
+    echo "No such directory ${UWORK}. Make sure uwork1 is mounted as /uwork1/uschaett."
+    exit 1
+fi
+
+if [ ! -d "/uwork2/uschaett" ]; then
+    echo "No such directory ${UWORK}. Make sure uwork2 is mounted as /uwork2/uschaett."
+    exit 1
+fi
+
+################################################################################
+
+BUILD_ENV="export PATH=\"${PATH}\"; export LD_LIBRARY_PATH=\"${LD_LIBRARY_PATH}\"; "
+
+CC="${PGI_ROOT}/comm_libs/mpi/bin/mpicc"
+CXX="${PGI_ROOT}/comm_libs/mpi/bin/mpic++"
+CFLAGS="-g -O2"
+CPPFLAGS="-I${ECCODES_INCLUDE} -I${HDF5_INCLUDE} -I${NETCDF_INCLUDE} -I${XML2_INCLUDE} -I${RTTOV_INCLUDE}"
+
+ICON_CFLAGS='-O2'
+ICON_BUNDLED_CFLAGS='-g -O2'
+
+# Fortran compiler wrapper on Linux workstation using OpenMPI
+FC="${PGI_ROOT}/comm_libs/mpi/bin/mpif90"
+FCFLAGS="-I${HDF5_INCLUDE} -I${ECCODES_INCLUDE} -I${NETCDF_INCLUDE} -I${SERIALBOX2_INCLUDE} -I${RTTOV_INCLUDE}\
+  -Mpreprocess \
+  -Mrecursive \
+  -Mallocatable=03 \
+  -g \
+  -O2 \
+  -traceback \
+  -Minfo=accel,inline \
+  -D__SWAPDIM \
+"
+
+ICON_FCFLAGS='-g -O2'
+#ICON_OCEAN_FCFLAGS="${ICON_FCFLAGS}"
+ICON_ECRAD_FCFLAGS="-D__ECRAD_LITTLE_ENDIAN"
+
+# NVIDIA CUDA Compiler command
+NVCC="${PGI_ROOT}/compilers/bin/nvcc"
+# NVIDIA CUDA Compiler flags
+#NVCFLAGS='--std=c++11 -arch=sm_60 -g -O3'
+NVCFLAGS='--std=c++11 -g -O3'
+
+LDFLAGS="-L${HDF5_LIBDIR} -L${NETCDF_LIBDIR} -L${ECCODES_LIBDIR} -L${OPENJPB_LIBDIR} -L${AEC_LIBDIR} -L${XML2_LIBDIR} -L${PGI_LIBDIR} -L${RTTOV_LIB_ROOT}"
+if [[ $SERIALBOX2_STATIC_LINKING == no ]]; then
+  LDFLAGS+=" -L${SERIALBOX2_LIBDIR}"
+fi
+
+LIBS="${XML2_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${OPENJPB_LIBS} ${AEC_LIBS} ${SERIALBOX2_LIBS} ${STDCPP_LIBS} ${RTTOV_LIB}"
+#LIBS+=" ${ZLIB_LIBS} ${RTTOV_LIB}"
+
+EXTRA_CONFIG_ARGS=' --without-external-yac --disable-ocean --disable-jsbach --enable-rttov '
+EXTRA_CONFIG_ARGS+=' --disable-loop-exchange --disable-coupling --disable-yaxt --disable-aes'
+EXTRA_CONFIG_ARGS+=' --enable-ecrad --enable-grib2 --enable-serialization=create'
+# --disable-openmp
+# --enable-rte-rrtmgp
+
+# Speed up the configuration by disabling MPI checks:
+EXTRA_CONFIG_ARGS+=' --disable-mpi-checks'
+
+################################################################################
+#ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CXX="${CXX}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+NVCC="${NVCC}" \
+NVCFLAGS="${NVCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+SB2PP="${SB2PP}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

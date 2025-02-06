@@ -1,0 +1,128 @@
+#! /usr/bin/env python
+'''\
+Create top level variables based on a higher level config
+
+$Id$
+'''
+from __future__ import print_function
+
+import sys
+import io
+import argparse
+import package_info
+import re
+from feedback import die, warn
+
+from configobj import Section
+from expconfig import ConfigObj
+
+
+#
+# Helper routines
+#
+
+# Get base config keys that contain globals
+
+global_matcher = re.compile(r'\$(\w+)')
+
+def get_globals(config, result):
+    for key in config.sections:
+        get_globals_section(config[key], key,
+            {s: '' for s in config.scalars}, result)
+
+def get_globals_section(section, path, global_keys, result):
+    all_keys = global_keys.copy()
+    all_keys.update({s: path for s in section.scalars})
+    for key in section.scalars:
+        value = section[key]
+        if not isinstance(value, (list, tuple)):
+            match = global_matcher.match(value)
+            if match:
+                global_key = match.group(1)
+                if True: ### global_key in global_keys:
+                    result[path+'/'+key] = (global_key,
+                        all_keys.get(global_key, ''))
+    for key in section.sections:
+        get_globals_section(section[key], path+'/'+key, all_keys, result)
+
+def eval_globals(config, global_dict):
+    for key in config.sections:
+        eval_globals_section(config[key], key, global_dict)
+
+def eval_globals_section(section, path, global_dict):
+    for key in section.scalars:
+        value = section[key]
+        if not isinstance(value, (list, tuple)):
+            global_key = path+'/'+key
+            if global_key in global_dict:
+                global_var, global_path = global_dict[global_key]
+                global_section = section.main
+                if global_path:
+                    for name in global_path.split('/'):
+                        global_section = global_section[name]
+                if global_var in global_section:
+                    if global_section[global_var] != value:
+                        warn("global '%s' at '%s' already set to '%s', "
+                            "keeping '%s' at '%s'", global_var, global_path,
+                            global_section[global_var], global_key, value)
+                    else:
+                        section[key] = '$' + global_var
+                else:
+                    global_section[global_var] = value
+                    section[key] = '$' + global_var
+    for key in section.sections:
+        eval_globals_section(section[key], path+'/'+key, global_dict)
+
+#
+# Main routine
+#
+
+# Check command line
+
+command_line = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
+# TODO: print differences option,  ...
+command_line.add_argument('--indent-string', default='  ', help='set indent string [%(default)s]')
+command_line.add_argument('--inline-comments' , '-c', action='store_true',
+                          help='compact white space before inline comments'
+                               ' (BETA)')
+command_line.add_argument('--trailing-space' , '-t', action='store_true',
+                          help='remove white space at end of lines')
+command_line.add_argument('base_config', help='name of high level config')
+command_line.add_argument('config', help='name of low level/expanded config')
+command_line.add_argument('-V', '--version', action='version',
+                          version=package_info.version)
+args = command_line.parse_args()
+
+
+# File handling
+
+try:
+    base_config = ConfigObj(args.base_config, file_error=True)
+    config = ConfigObj(args.config, file_error=True)
+except IOError as error:
+    die(error.args[0])
+
+global_dict = {}
+get_globals(base_config, global_dict)
+
+### for k, v in global_dict.items():
+###     print(k+':', v)
+
+### exit()
+
+eval_globals(config, global_dict)
+
+### exit()
+
+# Ready to roll out
+
+lines = io.BytesIO()
+config.write(lines)
+
+lines.seek(0)
+for line in io.TextIOWrapper(lines):
+    if args.inline_comments: line = re.sub(r' = (.*?)  #', r' = \1 #', line)
+    if args.trailing_space:
+        print(line.rstrip())
+    else:
+        print(line, end='')

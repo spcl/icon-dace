@@ -1,0 +1,916 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE visparams SYSTEM "Meng_ICON_CMD_USE.dtd">
+<visparams dia_max_factor="1.25" dia_min_factor="0.25">
+   <mode name="dusta" num_params="4">
+      <waveband lambda_max="100000" lambda_min="28571.4286" number="1">
+         <ext default_max="0.00068414" default_min="0.00019595" p1="3.9184e-12" p2="-7.7241e-09" p3="5.0965e-06" p4="-0.00044108"/>
+         <ssa default_max="0.0017294" default_min="7.0098e-05" p1="6.6609e-12" p2="-6.3917e-10" p3="3.1619e-07" p4="7.8823e-06"/>
+         <asy default_max="0.004133" default_min="0.00040361" p1="-9.341e-13" p2="1.1106e-08" p3="-7.2295e-07" p4="0.00023566"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="2">
+         <ext default_max="0.0019261" default_min="0.0016645" p1="3.6686e-12" p2="-5.9921e-09" p3="3.3686e-06" p4="0.0012619"/>
+         <ssa default_max="0.030044" default_min="0.00055538" p1="7.0276e-11" p2="4.584e-08" p3="-1.4238e-05" p4="0.0013655"/>
+         <asy default_max="0.026408" default_min="0.0018742" p1="-2.1133e-11" p2="8.0331e-08" p3="-2.4407e-06" p4="0.00027038"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="3">
+         <ext default_max="0.0027553" default_min="0.0024276" p1="2.305e-12" p2="-2.7056e-09" p3="1.6011e-06" p4="0.0022302"/>
+         <ssa default_max="0.069861" default_min="0.00132" p1="5.704e-11" p2="2.1959e-07" p3="-6.6205e-05" p4="0.0060479"/>
+         <asy default_max="0.045292" default_min="0.0033403" p1="-4.91e-11" p2="1.4348e-07" p3="-2.0364e-06" p4="0.00014878"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="4">
+         <ext default_max="0.003459" default_min="0.0029524" p1="1.8935e-12" p2="-8.676e-10" p3="7.1484e-07" p4="0.0028518"/>
+         <ssa default_max="0.10994" default_min="0.0021972" p1="-5.2262e-11" p2="4.9217e-07" p3="-0.00014512" p4="0.01302"/>
+         <asy default_max="0.060797" default_min="0.0046713" p1="-7.5247e-11" p2="1.94e-07" p3="8.4452e-07" p4="-0.00018646"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="5">
+         <ext default_max="0.0041684" default_min="0.0033931" p1="1.9635e-12" p2="3.968e-10" p3="2.139e-07" p4="0.0033401"/>
+         <ssa default_max="0.15121" default_min="0.0032181" p1="-2.4064e-10" p2="8.4434e-07" p3="-0.00024287" p4="0.021437"/>
+         <asy default_max="0.07519" default_min="0.0060084" p1="-1.0078e-10" p2="2.387e-07" p3="5.7622e-06" p4="-0.00069546"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="6">
+         <ext default_max="0.005441" default_min="0.0040415" p1="2.3208e-12" p2="2.6172e-09" p3="-4.7835e-07" p4="0.0040409"/>
+         <ssa default_max="0.22017" default_min="0.005208" p1="-6.7035e-10" p2="1.5221e-06" p3="-0.00041609" p4="0.035538"/>
+         <asy default_max="0.09771" default_min="0.0083021" p1="-1.4108e-10" p2="3.0252e-07" p3="1.8163e-05" p4="-0.0018881"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="7">
+         <ext default_max="0.0069905" default_min="0.0046794" p1="2.4494e-12" p2="6.0761e-09" p3="-1.4491e-06" p4="0.0047449"/>
+         <ssa default_max="0.29121" default_min="0.0077118" p1="-1.1862e-09" p2="2.2357e-06" p3="-0.00056791" p4="0.046138"/>
+         <asy default_max="0.12042" default_min="0.01087" p1="-1.8016e-10" p2="3.5716e-07" p3="3.7125e-05" p4="-0.0036303"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="8">
+         <ext default_max="0.0083741" default_min="0.0051569" p1="2.1898e-12" p2="9.7984e-09" p3="-2.432e-06" p4="0.0052852"/>
+         <ssa default_max="0.34353" default_min="0.0099708" p1="-1.5661e-09" p2="2.7068e-06" p3="-0.00063683" p4="0.048858"/>
+         <asy default_max="0.13749" default_min="0.012977" p1="-2.0588e-10" p2="3.8855e-07" p3="5.6809e-05" p4="-0.0054026"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="9">
+         <ext default_max="0.01084" default_min="0.0058755" p1="8.6884e-13" p2="1.7672e-08" p3="-4.4392e-06" p4="0.0061284"/>
+         <ssa default_max="0.41694" default_min="0.014024" p1="-2.024e-09" p2="3.1852e-06" p3="-0.00062911" p4="0.041162"/>
+         <asy default_max="0.16281" default_min="0.016398" p1="-2.4237e-10" p2="4.2657e-07" p3="9.1369e-05" p4="-0.0083844"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="10">
+         <ext default_max="0.01405" default_min="0.0066529" p1="-2.314e-12" p2="2.9762e-08" p3="-7.4117e-06" p4="0.0070841"/>
+         <ssa default_max="0.48657" default_min="0.019396" p1="-2.293e-09" p2="3.3201e-06" p3="-0.00045819" p4="0.016618"/>
+         <asy default_max="0.18924" default_min="0.020377" p1="-2.7414e-10" p2="4.4999e-07" p3="0.00013628" p4="-0.012116"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="11">
+         <ext default_max="0.018867" default_min="0.0076279" p1="-9.3668e-12" p2="5.0409e-08" p3="-1.2254e-05" p4="0.0083328"/>
+         <ssa default_max="0.55842" default_min="0.027673" p1="-2.2786e-09" p2="2.953e-06" p3="-3.878e-05" p4="-0.033211"/>
+         <asy default_max="0.22046" default_min="0.025654" p1="-3.0008e-10" p2="4.5194e-07" p3="0.00020252" p4="-0.017455"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="12">
+         <ext default_max="0.028872" default_min="0.0092811" p1="-2.9844e-11" p2="9.8646e-08" p3="-2.2673e-05" p4="0.010498"/>
+         <ssa default_max="0.64611" default_min="0.045464" p1="-1.6008e-09" p2="1.4251e-06" p3="0.00096725" p4="-0.14069"/>
+         <asy default_max="0.26788" default_min="0.035014" p1="-3.1465e-10" p2="4.0136e-07" p3="0.00032996" p4="-0.027255"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="13">
+         <ext default_max="0.038451" default_min="0.01063" p1="-5.3802e-11" p2="1.4773e-07" p3="-3.2127e-05" p4="0.012197"/>
+         <ssa default_max="0.69429" default_min="0.062806" p1="-7.5421e-10" p2="-1.6213e-07" p3="0.0018482" p4="-0.22762"/>
+         <asy default_max="0.30148" default_min="0.042758" p1="-3.1009e-10" p2="3.3248e-07" p3="0.00043645" p4="-0.0349"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="14">
+         <ext default_max="0.045664" default_min="0.011566" p1="-7.3737e-11" p2="1.8553e-07" p3="-3.8725e-05" p4="0.013298"/>
+         <ssa default_max="0.71923" default_min="0.075876" p1="-1.3563e-10" p2="-1.2604e-06" p3="0.0024203" p4="-0.28081"/>
+         <asy default_max="0.32222" default_min="0.048075" p1="-2.9584e-10" p2="2.6898e-07" p3="0.00051174" p4="-0.040124"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="15">
+         <ext default_max="0.054754" default_min="0.012687" p1="-1.0014e-10" p2="2.3305e-07" p3="-4.6131e-05" p4="0.014489"/>
+         <ssa default_max="0.74258" default_min="0.09223" p1="5.7443e-10" p2="-2.4843e-06" p3="0.0030337" p4="-0.33448"/>
+         <asy default_max="0.34464" default_min="0.054321" p1="-2.7071e-10" p2="1.8218e-07" p3="0.00060143" p4="-0.046183"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="16">
+         <ext default_max="0.079803" default_min="0.015609" p1="-1.775e-10" p2="3.6089e-07" p3="-6.117e-05" p4="0.016839"/>
+         <ssa default_max="0.78249" default_min="0.13612" p1="2.0903e-09" p2="-5.0046e-06" p3="0.0042294" p4="-0.42416"/>
+         <asy default_max="0.3926" default_min="0.069743" p1="-1.8055e-10" p2="-6.7536e-08" p3="0.00082076" p4="-0.059993"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="17">
+         <ext default_max="0.079803" default_min="0.015609" p1="-1.775e-10" p2="3.6089e-07" p3="-6.117e-05" p4="0.016839"/>
+         <ssa default_max="0.78249" default_min="0.13612" p1="2.0903e-09" p2="-5.0046e-06" p3="0.0042294" p4="-0.42416"/>
+         <asy default_max="0.3926" default_min="0.069743" p1="-1.8055e-10" p2="-6.7536e-08" p3="0.00082076" p4="-0.059993"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="18">
+         <ext default_max="0.13429" default_min="0.021872" p1="-3.4805e-10" p2="6.0451e-07" p3="-6.4695e-05" p4="0.018058"/>
+         <ssa default_max="0.82297" default_min="0.22391" p1="3.7997e-09" p2="-7.6898e-06" p3="0.0053629" p4="-0.45644"/>
+         <asy default_max="0.46159" default_min="0.098084" p1="4.1279e-11" p2="-5.8602e-07" p3="0.0012016" p4="-0.080488"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="19">
+         <ext default_max="0.20222" default_min="0.03037" p1="-5.3829e-10" p2="8.2225e-07" p3="-1.3422e-05" p4="0.013438"/>
+         <ssa default_max="0.84675" default_min="0.31829" p1="4.4502e-09" p2="-8.566e-06" p3="0.0055681" p4="-0.37509"/>
+         <asy default_max="0.51714" default_min="0.12826" p1="3.2729e-10" p2="-1.1758e-06" p3="0.0015733" p4="-0.096087"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="20">
+         <ext default_max="0.26474" default_min="0.039305" p1="-6.7581e-10" p2="9.2735e-07" p3="8.7716e-05" p4="0.0039238"/>
+         <ssa default_max="0.85979" default_min="0.39191" p1="4.4664e-09" p2="-8.4367e-06" p3="0.0053298" p4="-0.26651"/>
+         <asy default_max="0.55379" default_min="0.15326" p1="5.7094e-10" p2="-1.6477e-06" p3="0.0018447" p4="-0.10358"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="21">
+         <ext default_max="0.34662" default_min="0.05307" p1="-7.8679e-10" p2="9.1597e-07" p3="0.00029831" p4="-0.015483"/>
+         <ssa default_max="0.87118" default_min="0.4724" p1="4.1752e-09" p2="-7.7897e-06" p3="0.0048243" p4="-0.12014"/>
+         <asy default_max="0.59015" default_min="0.18362" p1="8.5911e-10" p2="-2.1804e-06" p3="0.0021293" p4="-0.10645"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="22">
+         <ext default_max="0.49268" default_min="0.084992" p1="-7.498e-10" p2="4.3873e-07" p3="0.00089875" p4="-0.068073"/>
+         <ssa default_max="0.88358" default_min="0.58216" p1="3.4402e-09" p2="-6.3584e-06" p3="0.0038704" p4="0.10922"/>
+         <asy default_max="0.63665" default_min="0.23383" p1="1.2841e-09" p2="-2.9275e-06" p3="0.0024917" p4="-0.097021"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="23">
+         <ext default_max="0.6135" default_min="0.1207" p1="-4.4729e-10" p2="-4.4809e-07" p3="0.0016244" p4="-0.12752"/>
+         <ssa default_max="0.88964" default_min="0.64977" p1="2.8582e-09" p2="-5.2682e-06" p3="0.0031822" p4="0.26185"/>
+         <asy default_max="0.66486" default_min="0.27339" p1="1.5592e-09" p2="-3.3853e-06" p3="0.0026871" p4="-0.078204"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="24">
+         <ext default_max="0.83004" default_min="0.21605" p1="8.7887e-10" p2="-3.3683e-06" p3="0.0035047" p4="-0.26487"/>
+         <ssa default_max="0.89493" default_min="0.73769" p1="2.0076e-09" p2="-3.7022e-06" p3="0.0022134" p4="0.46877"/>
+         <asy default_max="0.70273" default_min="0.3433" p1="1.8932e-09" p2="-3.8988e-06" p3="0.0028524" p4="-0.02299"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="25">
+         <ext default_max="1.1611" default_min="0.52904" p1="5.9007e-09" p2="-1.255e-05" p3="0.0082009" p4="-0.49121"/>
+         <ssa default_max="0.89187" default_min="0.82656" p1="1.0897e-09" p2="-2.0335e-06" p3="0.0011793" p4="0.68478"/>
+         <asy default_max="0.74455" default_min="0.45975" p1="2.0491e-09" p2="-4.0158e-06" p3="0.0027073" p4="0.11922"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="26">
+         <ext default_max="1.3313" default_min="0.97243" p1="1.1428e-08" p2="-2.1421e-05" p3="0.011769" p4="-0.41559"/>
+         <ssa default_max="0.87967" default_min="0.86408" p1="7.0544e-10" p2="-1.3385e-06" p3="0.00072596" p4="0.77891"/>
+         <asy default_max="0.76419" default_min="0.54273" p1="1.8888e-09" p2="-3.6145e-06" p3="0.0023403" p4="0.25158"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="27">
+         <ext default_max="1.3969" default_min="1.7424" p1="1.6004e-08" p2="-2.7166e-05" p3="0.012446" p4="0.37541"/>
+         <ssa default_max="0.85455" default_min="0.8874" p1="4.9233e-10" p2="-9.3831e-07" p3="0.00041955" p4="0.8421"/>
+         <asy default_max="0.77796" default_min="0.62194" p1="1.5696e-09" p2="-2.9249e-06" p3="0.0018234" p4="0.39752"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="28">
+         <ext default_max="1.3666" default_min="2.6125" p1="1.4807e-08" p2="-2.2537e-05" p3="0.0075062" p4="1.9262"/>
+         <ssa default_max="0.82297" default_min="0.89695" p1="4.4194e-10" p2="-7.9772e-07" p3="0.00024867" p4="0.87574"/>
+         <asy default_max="0.78683" default_min="0.67525" p1="1.2637e-09" p2="-2.2797e-06" p3="0.0013785" p4="0.50703"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="29">
+         <ext default_max="1.2989" default_min="3.6546" p1="5.9572e-09" p2="-4.7295e-06" p3="-0.004311" p4="4.447"/>
+         <ssa default_max="0.78051" default_min="0.89939" p1="4.6072e-10" p2="-7.2015e-07" p3="8.3068e-05" p4="0.90277"/>
+         <asy default_max="0.79853" default_min="0.71783" p1="9.0697e-10" p2="-1.5573e-06" p3="0.00092708" p4="0.60509"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="30">
+         <ext default_max="0.010306" default_min="0.0057307" p1="1.2517e-12" p2="1.5835e-08" p3="-3.9728e-06" p4="0.0059545"/>
+         <ssa default_max="0.40283" default_min="0.013143" p1="-1.9466e-09" p2="3.1153e-06" p3="-0.00064233" p4="0.043905"/>
+         <asy default_max="0.15778" default_min="0.015691" p1="-2.3605e-10" p2="4.2115e-07" p3="8.3363e-05" p4="-0.0076868"/>
+      </waveband>
+   </mode>
+   <mode name="dustb" num_params="4">
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="1">
+         <ext default_max="0.0008015" default_min="0.00069899" p1="2.1105e-15" p2="-1.0594e-12" p3="1.1115e-08" p4="0.00068882"/>
+         <ssa default_max="0.099083" default_min="0.0019037" p1="3.3458e-14" p2="1.3589e-08" p3="-2.1668e-05" p4="0.01046"/>
+         <asy default_max="0.044826" default_min="0.0031965" p1="-2.6898e-13" p2="4.8083e-09" p3="-4.7354e-07" p4="0.00019429"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="2">
+         <ext default_max="0.005255" default_min="0.0019434" p1="-1.711e-14" p2="5.2249e-10" p3="-7.0913e-07" p4="0.0021771"/>
+         <ssa default_max="0.59153" default_min="0.030425" p1="-1.5338e-11" p2="1.0261e-07" p3="1.3796e-05" p4="-0.048099"/>
+         <asy default_max="0.20845" default_min="0.02095" p1="-2.1655e-12" p2="2.003e-08" p3="1.9821e-05" p4="-0.0097004"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="3">
+         <ext default_max="0.011496" default_min="0.002782" p1="-1.1999e-13" p2="1.6888e-09" p3="-2.048e-06" p4="0.0033686"/>
+         <ssa default_max="0.72851" default_min="0.072724" p1="-1.9205e-12" p2="-3.6504e-08" p3="0.00044084" p4="-0.27943"/>
+         <asy default_max="0.30184" default_min="0.036658" p1="-2.9355e-12" p2="2.1537e-08" p3="5.5361e-05" p4="-0.025304"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="4">
+         <ext default_max="0.018011" default_min="0.0035006" p1="-2.5627e-13" p2="2.9627e-09" p3="-3.176e-06" p4="0.0041992"/>
+         <ssa default_max="0.78026" default_min="0.11644" p1="1.0212e-11" p2="-1.466e-07" p3="0.00072928" p4="-0.4105"/>
+         <asy default_max="0.36215" default_min="0.049968" p1="-3.0158e-12" p2="1.7627e-08" p3="9.1642e-05" p4="-0.040351"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="5">
+         <ext default_max="0.025001" default_min="0.0042316" p1="-4.1287e-13" p2="4.271e-09" p3="-3.9557e-06" p4="0.004729"/>
+         <ssa default_max="0.80866" default_min="0.16142" p1="1.8799e-11" p2="-2.21e-07" p3="0.00090965" p4="-0.47131"/>
+         <asy default_max="0.40889" default_min="0.062638" p1="-2.7186e-12" p2="1.0953e-08" p3="0.00012895" p4="-0.055113"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="6">
+         <ext default_max="0.037464" default_min="0.0055576" p1="-6.9152e-13" p2="6.3246e-09" p3="-4.1591e-06" p4="0.004879"/>
+         <ssa default_max="0.83582" default_min="0.23579" p1="2.6878e-11" p2="-2.8739e-07" p3="0.0010515" p4="-0.47514"/>
+         <asy default_max="0.46885" default_min="0.083034" p1="-1.7023e-12" p2="-3.5736e-09" p3="0.00019103" p4="-0.078138"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="7">
+         <ext default_max="0.051588" default_min="0.0071932" p1="-9.8086e-13" p2="8.1084e-09" p3="-2.5092e-06" p4="0.0039467"/>
+         <ssa default_max="0.85299" default_min="0.31103" p1="3.0145e-11" p2="-3.1049e-07" p3="0.0010777" p4="-0.40739"/>
+         <asy default_max="0.51726" default_min="0.10427" p1="-2.0652e-13" p2="-2.1303e-08" p3="0.00025464" p4="-0.099565"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="8">
+         <ext default_max="0.063037" default_min="0.0086699" p1="-1.1817e-12" p2="9.0726e-09" p3="3.235e-07" p4="0.0023883"/>
+         <ssa default_max="0.86236" default_min="0.36543" p1="3.0551e-11" p2="-3.0992e-07" p3="0.0010515" p4="-0.33105"/>
+         <asy default_max="0.54761" default_min="0.12066" p1="1.1127e-12" p2="-3.5656e-08" p3="0.00030134" p4="-0.11365"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="9">
+         <ext default_max="0.081029" default_min="0.011333" p1="-1.4182e-12" p2="9.627e-09" p3="7.5492e-06" p4="-0.0014485"/>
+         <ssa default_max="0.87286" default_min="0.44032" p1="2.9307e-11" p2="-2.9334e-07" p3="0.00097457" p4="-0.2013"/>
+         <asy default_max="0.58526" default_min="0.14553" p1="3.2194e-12" p2="-5.7293e-08" p3="0.0003667" p4="-0.13044"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="10">
+         <ext default_max="0.10078" default_min="0.014841" p1="-1.542e-12" p2="8.747e-09" p3="1.9559e-05" p4="-0.0075733"/>
+         <ssa default_max="0.88094" default_min="0.50979" p1="2.6832e-11" p2="-2.6647e-07" p3="0.00087358" p4="-0.063073"/>
+         <asy default_max="0.61729" default_min="0.17218" p1="5.4572e-12" p2="-7.9158e-08" p3="0.00042814" p4="-0.14198"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="11">
+         <ext default_max="0.12494" default_min="0.020167" p1="-1.4602e-12" p2="5.3001e-09" p3="4.0429e-05" p4="-0.017749"/>
+         <ssa default_max="0.88786" default_min="0.58013" p1="2.3414e-11" p2="-2.3136e-07" p3="0.00075104" p4="0.089091"/>
+         <asy default_max="0.64795" default_min="0.20448" p1="7.9801e-12" p2="-1.0279e-07" p3="0.00049003" p4="-0.14711"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="12">
+         <ext default_max="0.16215" default_min="0.031375" p1="-7.0898e-13" p2="-5.984e-09" p3="8.7421e-05" p4="-0.039185"/>
+         <ssa default_max="0.89448" default_min="0.66495" p1="1.8434e-11" p2="-1.8167e-07" p3="0.00058429" p4="0.28405"/>
+         <asy default_max="0.68369" default_min="0.25494" p1="1.1268e-11" p2="-1.3213e-07" p3="0.00055954" p4="-0.13691"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="13">
+         <ext default_max="0.18805" default_min="0.042209" p1="3.7866e-13" p2="-1.8989e-08" p3="0.00013235" p4="-0.058151"/>
+         <ssa default_max="0.897" default_min="0.71171" p1="1.5403e-11" p2="-1.5186e-07" p3="0.00048598" p4="0.39541"/>
+         <asy default_max="0.70329" default_min="0.29144" p1="1.3083e-11" p2="-1.4746e-07" p3="0.00059078" p4="-0.11712"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="14">
+         <ext default_max="0.2036" default_min="0.0504" p1="1.3112e-12" p2="-2.9265e-08" p3="0.00016495" p4="-0.071047"/>
+         <ssa default_max="0.89781" default_min="0.73619" p1="1.3758e-11" p2="-1.3578e-07" p3="0.00043319" p4="0.45454"/>
+         <asy default_max="0.71361" default_min="0.31427" p1="1.3972e-11" p2="-1.5461e-07" p3="0.00060289" p4="-0.09999"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="15">
+         <ext default_max="0.21981" default_min="0.060753" p1="2.5547e-12" p2="-4.232e-08" p3="0.00020411" p4="-0.085567"/>
+         <ssa default_max="0.8981" default_min="0.75941" p1="1.2168e-11" p2="-1.203e-07" p3="0.00038241" p4="0.51109"/>
+         <asy default_max="0.72349" default_min="0.33911" p1="1.4732e-11" p2="-1.6038e-07" p3="0.00061012" p4="-0.077583"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="16">
+         <ext default_max="0.25177" default_min="0.089341" p1="6.0654e-12" p2="-7.696e-08" p3="0.00029999" p4="-0.1162"/>
+         <ssa default_max="0.89675" default_min="0.79994" p1="9.3487e-12" p2="-9.2983e-08" p3="0.00029243" p4="0.61076"/>
+         <asy default_max="0.74103" default_min="0.39273" p1="1.5676e-11" p2="-1.6621e-07" p3="0.00060658" p4="-0.017165"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="17">
+         <ext default_max="0.25177" default_min="0.089341" p1="6.0654e-12" p2="-7.696e-08" p3="0.00029999" p4="-0.1162"/>
+         <ssa default_max="0.89675" default_min="0.79994" p1="9.3487e-12" p2="-9.2983e-08" p3="0.00029243" p4="0.61076"/>
+         <asy default_max="0.74103" default_min="0.39273" p1="1.5676e-11" p2="-1.6621e-07" p3="0.00060658" p4="-0.017165"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="18">
+         <ext default_max="0.28834" default_min="0.15139" p1="1.2998e-11" p2="-1.4e-07" p3="0.00045378" p4="-0.1444"/>
+         <ssa default_max="0.88991" default_min="0.84197" p1="6.4192e-12" p2="-6.4789e-08" p3="0.00019771" p4="0.71543"/>
+         <asy default_max="0.75964" default_min="0.47017" p1="1.5576e-11" p2="-1.6093e-07" p3="0.00056267" p4="0.094315"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="19">
+         <ext default_max="0.30669" default_min="0.228" p1="1.9577e-11" p2="-1.947e-07" p3="0.00056443" p4="-0.12678"/>
+         <ssa default_max="0.8792" default_min="0.86603" p1="4.8031e-12" p2="-4.9277e-08" p3="0.00014262" p4="0.77653"/>
+         <asy default_max="0.77035" default_min="0.53214" p1="1.4485e-11" p2="-1.4726e-07" p3="0.00050095" p4="0.20008"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="20">
+         <ext default_max="0.31199" default_min="0.29751" p1="2.3692e-11" p2="-2.2532e-07" p3="0.00060739" p4="-0.074185"/>
+         <ssa default_max="0.86861" default_min="0.87833" p1="4.0474e-12" p2="-4.1909e-08" p3="0.00011381" p4="0.80871"/>
+         <asy default_max="0.77577" default_min="0.57245" p1="1.3401e-11" p2="-1.3475e-07" p3="0.00045043" p4="0.27538"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="21">
+         <ext default_max="0.31116" default_min="0.387" p1="2.6664e-11" p2="-2.4233e-07" p3="0.00059944" p4="0.03294"/>
+         <ssa default_max="0.85421" default_min="0.88817" p1="3.549e-12" p2="-3.6721e-08" p3="8.9854e-05" p4="0.83569"/>
+         <asy default_max="0.78021" default_min="0.61179" p1="1.2117e-11" p2="-1.2017e-07" p3="0.00039409" p4="0.35332"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="22">
+         <ext default_max="0.30104" default_min="0.54198" p1="2.6398e-11" p2="-2.22e-07" p3="0.00045209" p4="0.30015"/>
+         <ssa default_max="0.82761" default_min="0.89747" p1="3.3504e-12" p2="-3.3259e-08" p3="6.4156e-05" p4="0.86472"/>
+         <asy default_max="0.78551" default_min="0.66075" p1="1.0223e-11" p2="-9.8569e-08" p3="0.00031365" p4="0.45685"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="23">
+         <ext default_max="0.29066" default_min="0.66538" p1="2.1848e-11" p2="-1.6728e-07" p3="0.00023545" p4="0.57273"/>
+         <ssa default_max="0.80502" default_min="0.90109" p1="3.5116e-12" p2="-3.2719e-08" p3="4.9181e-05" p4="0.88076"/>
+         <asy default_max="0.78981" default_min="0.68952" p1="8.8577e-12" p2="-8.3077e-08" p3="0.0002587" p4="0.52239"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="24">
+         <ext default_max="0.2747" default_min="0.87449" p1="6.179e-12" p2="-6.0712e-09" p3="-0.00030209" p4="1.1358"/>
+         <ssa default_max="0.76377" default_min="0.90241" p1="3.8906e-12" p2="-3.1277e-08" p3="2.0594e-05" p4="0.90544"/>
+         <asy default_max="0.80087" default_min="0.7265" p1="6.2852e-12" p2="-5.5628e-08" p3="0.00017046" p4="0.61675"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="25">
+         <ext default_max="0.26283" default_min="1.1545" p1="-3.1055e-11" p2="3.4616e-07" p3="-0.0013525" p4="2.0841"/>
+         <ssa default_max="0.69912" default_min="0.89271" p1="2.3536e-12" p2="-8.9703e-09" p3="-7.2862e-05" p4="0.96079"/>
+         <asy default_max="0.8341" default_min="0.76362" p1="7.1627e-13" p2="-5.0044e-09" p3="3.7606e-05" p4="0.73442"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="26">
+         <ext default_max="0.26121" default_min="1.2605" p1="-5.4078e-11" p2="5.5406e-07" p3="-0.0019311" p4="2.5496"/>
+         <ssa default_max="0.66032" default_min="0.87388" p1="-1.5616e-12" p2="2.9012e-08" p3="-0.00018325" p4="1.0115"/>
+         <asy default_max="0.86686" default_min="0.77795" p1="-2.7334e-12" p2="2.132e-08" p3="-1.4921e-05" p4="0.7767"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="27">
+         <ext default_max="0.25665" default_min="1.2557" p1="-6.3251e-11" p2="6.3187e-07" p3="-0.0021233" p4="2.6587"/>
+         <ssa default_max="0.62757" default_min="0.83864" p1="-6.0893e-12" p2="6.892e-08" p3="-0.00028369" p4="1.0361"/>
+         <asy default_max="0.89889" default_min="0.78634" p1="-2.5095e-12" p2="1.4225e-08" p3="2.1323e-05" p4="0.75895"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="28">
+         <ext default_max="0.24871" default_min="1.1868" p1="-5.984e-11" p2="5.9656e-07" p3="-0.0020007" p4="2.508"/>
+         <ssa default_max="0.60531" default_min="0.79757" p1="-7.7155e-12" p2="8.1819e-08" p3="-0.00030665" p4="1.0063"/>
+         <asy default_max="0.91781" default_min="0.79384" p1="6.1597e-13" p2="-1.5416e-08" p3="0.00010477" p4="0.71448"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="29">
+         <ext default_max="0.23937" default_min="1.1013" p1="-5.2825e-11" p2="5.2926e-07" p3="-0.0017906" p4="2.2867"/>
+         <ssa default_max="0.58598" default_min="0.74815" p1="-7.2582e-12" p2="7.5915e-08" p3="-0.00027671" p4="0.93514"/>
+         <asy default_max="0.93102" default_min="0.80939" p1="3.9926e-12" p2="-4.5077e-08" p3="0.00017905" p4="0.68583"/>
+      </waveband>
+      <waveband lambda_max="100000" lambda_min="28571.4286" number="30">
+         <ext default_max="0.077369" default_min="0.010754" p1="-1.3786e-12" p2="9.6129e-09" p3="5.8021e-06" p4="-0.00053425"/>
+         <ssa default_max="0.87102" default_min="0.42606" p1="2.9674e-11" p2="-2.9763e-07" p3="0.00099214" p4="-0.22777"/>
+         <asy default_max="0.57838" default_min="0.14052" p1="2.7923e-12" p2="-5.3004e-08" p3="0.00035415" p4="-0.12753"/>
+      </waveband>
+   </mode>
+   <mode name="dustc" num_params="4">
+      <waveband lambda_max="100000" lambda_min="28571.4286" number="1">
+         <ext default_max="0.0013318" default_min="0.0007157" p1="2.6027e-16" p2="9.4777e-12" p3="-3.369e-08" p4="0.00074154"/>
+         <ssa default_max="0.41523" default_min="0.012888" p1="-8.5729e-13" p2="1.8667e-08" p3="-5.5863e-05" p4="0.054998"/>
+         <asy default_max="0.11435" default_min="0.0089483" p1="-5.5915e-14" p2="1.9495e-09" p3="5.934e-07" p4="-0.00093025"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="2">
+         <ext default_max="0.016224" default_min="0.0023988" p1="-1.9104e-14" p2="4.7319e-10" p3="-1.1178e-06" p4="0.0027928"/>
+         <ssa default_max="0.82998" default_min="0.18774" p1="1.4828e-12" p2="-4.1565e-08" p3="0.00040294" p4="-0.50555"/>
+         <asy default_max="0.4275" default_min="0.055843" p1="-3.0313e-13" p2="4.6229e-09" p3="3.6954e-05" p4="-0.042905"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="3">
+         <ext default_max="0.032782" default_min="0.0041781" p1="-4.2974e-14" p2="8.4797e-10" p3="-5.5195e-07" p4="0.0018274"/>
+         <ssa default_max="0.86653" default_min="0.34899" p1="2.0152e-12" p2="-5.1361e-08" p3="0.00043741" p4="-0.37841"/>
+         <asy default_max="0.54689" default_min="0.094644" p1="-1.4969e-13" p2="-9.5138e-10" p3="9.4623e-05" p4="-0.10449"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="4">
+         <ext default_max="0.046658" default_min="0.006119" p1="-5.6455e-14" p2="9.3817e-10" p3="1.6358e-06" p4="-0.0012609"/>
+         <ssa default_max="0.8804" default_min="0.45668" p1="1.8961e-12" p2="-4.7419e-08" p3="0.00039201" p4="-0.1896"/>
+         <asy default_max="0.60582" default_min="0.12639" p1="7.6817e-14" p2="-6.974e-09" p3="0.00014173" p4="-0.14886"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="5">
+         <ext default_max="0.05913" default_min="0.0083764" p1="-6.0342e-14" p2="7.9513e-10" p3="5.1405e-06" p4="-0.0058895"/>
+         <ssa default_max="0.88838" default_min="0.536" p1="1.6869e-12" p2="-4.1867e-08" p3="0.00034151" p4="-0.024776"/>
+         <asy default_max="0.64351" default_min="0.15573" p1="3.0165e-13" p2="-1.2448e-08" p3="0.00018016" p4="-0.1794"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="6">
+         <ext default_max="0.077261" default_min="0.012887" p1="-4.7139e-14" p2="1.1998e-10" p3="1.325e-05" p4="-0.01592"/>
+         <ssa default_max="0.89576" default_min="0.62846" p1="1.36e-12" p2="-3.3608e-08" p3="0.00027117" p4="0.1847"/>
+         <asy default_max="0.68342" default_min="0.20106" p1="6.1601e-13" p2="-1.9678e-08" p3="0.00022667" p4="-0.20413"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="7">
+         <ext default_max="0.093436" default_min="0.018759" p1="-9.2755e-15" p2="-1.0897e-09" p3="2.4209e-05" p4="-0.028507"/>
+         <ssa default_max="0.89942" default_min="0.69404" p1="1.0915e-12" p2="-2.697e-08" p3="0.0002162" p4="0.34098"/>
+         <asy default_max="0.70995" default_min="0.24572" p1="8.6143e-13" p2="-2.503e-08" p3="0.00025768" p4="-0.20403"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="8">
+         <ext default_max="0.10411" default_min="0.024112" p1="3.3992e-14" p2="-2.2974e-09" p3="3.3847e-05" p4="-0.038814"/>
+         <ssa default_max="0.90054" default_min="0.73089" p1="9.3108e-13" p2="-2.3046e-08" p3="0.00018399" p4="0.43084"/>
+         <asy default_max="0.72441" default_min="0.27835" p1="9.955e-13" p2="-2.7819e-08" p3="0.00027187" p4="-0.19044"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="9">
+         <ext default_max="0.11755" default_min="0.033608" p1="1.184e-13" p2="-4.4677e-09" p3="4.965e-05" p4="-0.054235"/>
+         <ssa default_max="0.90034" default_min="0.77214" p1="7.4628e-13" p2="-1.8555e-08" p3="0.00014718" p4="0.53267"/>
+         <asy default_max="0.7404" default_min="0.32491" p1="1.1248e-12" p2="-3.0328e-08" p3="0.00028161" p4="-0.1545"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="10">
+         <ext default_max="0.12869" default_min="0.045622" p1="2.2596e-13" p2="-7.0611e-09" p3="6.7009e-05" p4="-0.068762"/>
+         <ssa default_max="0.89832" default_min="0.80353" p1="6.0309e-13" p2="-1.5099e-08" p3="0.00011872" p4="0.61098"/>
+         <asy default_max="0.75244" default_min="0.371" p1="1.1894e-12" p2="-3.134e-08" p3="0.00028096" p4="-0.10292"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="11">
+         <ext default_max="0.13832" default_min="0.062739" p1="3.6904e-13" p2="-1.0328e-08" p3="8.7152e-05" p4="-0.081416"/>
+         <ssa default_max="0.89402" default_min="0.83056" p1="4.7961e-13" p2="-1.2141e-08" p3="9.4019e-05" p4="0.67891"/>
+         <asy default_max="0.76267" default_min="0.42183" p1="1.1997e-12" p2="-3.1065e-08" p3="0.00027072" p4="-0.031287"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="12">
+         <ext default_max="0.14649" default_min="0.095101" p1="5.9382e-13" p2="-1.513e-08" p3="0.0001133" p4="-0.085457"/>
+         <ssa default_max="0.88405" default_min="0.85854" p1="3.5528e-13" p2="-9.1824e-09" p3="6.839e-05" p4="0.74981"/>
+         <asy default_max="0.7728" default_min="0.4912" p1="1.1334e-12" p2="-2.8858e-08" p3="0.00024424" p4="0.085796"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="13">
+         <ext default_max="0.14833" default_min="0.12281" p1="7.3805e-13" p2="-1.7969e-08" p3="0.00012585" p4="-0.073091"/>
+         <ssa default_max="0.87464" default_min="0.87223" p1="2.9895e-13" p2="-7.8403e-09" p3="5.585e-05" p4="0.78496"/>
+         <asy default_max="0.77732" default_min="0.53461" p1="1.057e-12" p2="-2.6661e-08" p3="0.000222" p4="0.16788"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="14">
+         <ext default_max="0.14813" default_min="0.142" p1="8.1362e-13" p2="-1.9332e-08" p3="0.00013019" p4="-0.057674"/>
+         <ssa default_max="0.86783" default_min="0.87896" p1="2.7423e-13" p2="-7.2398e-09" p3="4.9698e-05" p4="0.80245"/>
+         <asy default_max="0.77932" default_min="0.55918" p1="1.0056e-12" p2="-2.5215e-08" p3="0.00020792" p4="0.21671"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="15">
+         <ext default_max="0.14698" default_min="0.16446" p1="8.7909e-13" p2="-2.0377e-08" p3="0.00013143" p4="-0.033652"/>
+         <ssa default_max="0.85961" default_min="0.88504" p1="2.5507e-13" p2="-6.7561e-09" p3="4.4148e-05" p4="0.81848"/>
+         <asy default_max="0.78102" default_min="0.58387" p1="9.4852e-13" p2="-2.3619e-08" p3="0.00019271" p4="0.26743"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="16">
+         <ext default_max="0.14199" default_min="0.21873" p1="9.4437e-13" p2="-2.0742e-08" p3="0.00011983" p4="0.046821"/>
+         <ssa default_max="0.83884" default_min="0.89484" p1="2.4008e-13" p2="-6.2358e-09" p3="3.5286e-05" p4="0.84521"/>
+         <asy default_max="0.78358" default_min="0.63063" p1="8.3405e-13" p2="-2.0343e-08" p3="0.00016171" p4="0.36718"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="17">
+         <ext default_max="0.14199" default_min="0.21873" p1="9.4437e-13" p2="-2.0742e-08" p3="0.00011983" p4="0.046821"/>
+         <ssa default_max="0.83884" default_min="0.89484" p1="2.4008e-13" p2="-6.2358e-09" p3="3.5286e-05" p4="0.84521"/>
+         <asy default_max="0.78358" default_min="0.63063" p1="8.3405e-13" p2="-2.0343e-08" p3="0.00016171" p4="0.36718"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="18">
+         <ext default_max="0.13193" default_min="0.31046" p1="7.9102e-13" p2="-1.5467e-08" p3="6.2128e-05" p4="0.2404"/>
+         <ssa default_max="0.80137" default_min="0.90313" p1="2.7118e-13" p2="-6.3753e-09" p3="2.6693e-05" p4="0.87246"/>
+         <asy default_max="0.78774" default_min="0.68521" p1="6.7959e-13" p2="-1.5796e-08" p3="0.00011991" p4="0.49257"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="19">
+         <ext default_max="0.12449" default_min="0.39368" p1="3.9587e-13" p2="-5.1691e-09" p3="-2.4432e-05" p4="0.46691"/>
+         <ssa default_max="0.7654" default_min="0.90571" p1="3.1639e-13" p2="-6.5927e-09" p3="1.866e-05" p4="0.89301"/>
+         <asy default_max="0.79546" default_min="0.72005" p1="5.2929e-13" p2="-1.1623e-08" p3="8.5349e-05" p4="0.58426"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="20">
+         <ext default_max="0.12114" default_min="0.45071" p1="-9.1867e-15" p2="4.7014e-09" p3="-0.00010073" p4="0.64707"/>
+         <ssa default_max="0.73985" default_min="0.90529" p1="3.2556e-13" p2="-6.1433e-09" p3="9.0203e-06" p4="0.91129"/>
+         <asy default_max="0.80485" default_min="0.73917" p1="3.8933e-13" p2="-8.1414e-09" p3="5.9922e-05" p4="0.64357"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="21">
+         <ext default_max="0.11953" default_min="0.50601" p1="-5.1255e-13" p2="1.6557e-08" p3="-0.0001883" p4="0.84164"/>
+         <ssa default_max="0.7141" default_min="0.9027" p1="2.8529e-13" p2="-4.5879e-09" p3="-7.4255e-06" p4="0.93745"/>
+         <asy default_max="0.81884" default_min="0.75529" p1="2.0394e-13" p2="-3.9226e-09" p3="3.2163e-05" p4="0.70192"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="22">
+         <ext default_max="0.11976" default_min="0.56736" p1="-1.2305e-12" p2="3.2991e-08" p3="-0.00030499" p4="1.086"/>
+         <ssa default_max="0.68203" default_min="0.89443" p1="1.1479e-13" p2="-1.4047e-10" p3="-4.2465e-05" p4="0.98598"/>
+         <asy default_max="0.84429" default_min="0.77151" p1="-8.0798e-14" p2="2.0078e-09" p3="-2.5992e-06" p4="0.76853"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="23">
+         <ext default_max="0.12046" default_min="0.593" p1="-1.6309e-12" p2="4.1945e-08" p3="-0.00036635" p4="1.2067"/>
+         <ssa default_max="0.66339" default_min="0.88477" p1="-6.6534e-14" p2="4.075e-09" p3="-7.1643e-05" p4="1.0216"/>
+         <asy default_max="0.8634" default_min="0.77867" p1="-2.3557e-13" p2="4.926e-09" p3="-1.7116e-05" p4="0.79502"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="24">
+         <ext default_max="0.12018" default_min="0.60061" p1="-1.963e-12" p2="4.9117e-08" p3="-0.00041253" p4="1.2841"/>
+         <ssa default_max="0.63836" default_min="0.86111" p1="-3.6177e-13" p2="1.0571e-08" p3="-0.00011313" p4="1.0604"/>
+         <asy default_max="0.8911" default_min="0.78474" p1="-2.9917e-13" p2="5.5014e-09" p3="-1.3751e-05" p4="0.79175"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="25">
+         <ext default_max="0.11472" default_min="0.55058" p1="-1.7908e-12" p2="4.4697e-08" p3="-0.00037477" p4="1.1712"/>
+         <ssa default_max="0.60554" default_min="0.80252" p1="-5.3987e-13" p2="1.4152e-08" p3="-0.0001304" p4="1.0242"/>
+         <asy default_max="0.91966" default_min="0.79043" p1="3.7567e-14" p2="-2.5498e-09" p3="4.3802e-05" p4="0.70708"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="26">
+         <ext default_max="0.10975" default_min="0.50385" p1="-1.5141e-12" p2="3.8133e-08" p3="-0.0003245" p4="1.0435"/>
+         <ssa default_max="0.58529" default_min="0.74862" p1="-4.6176e-13" p2="1.2122e-08" p3="-0.00011093" p4="0.93685"/>
+         <asy default_max="0.93192" default_min="0.80458" p1="3.0677e-13" p2="-8.4325e-09" p3="8.0705e-05" p4="0.66613"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="27">
+         <ext default_max="0.10583" default_min="0.46966" p1="-1.3441e-12" p2="3.4027e-08" p3="-0.00029212" p4="0.95671"/>
+         <ssa default_max="0.56897" default_min="0.69483" p1="-3.6346e-13" p2="9.6009e-09" p3="-8.7549e-05" p4="0.8432"/>
+         <asy default_max="0.94126" default_min="0.83693" p1="3.8242e-13" p2="-9.766e-09" p3="8.4156e-05" p4="0.69649"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="28">
+         <ext default_max="0.10352" default_min="0.45151" p1="-1.2788e-12" p2="3.2384e-08" p3="-0.00027832" p4="0.91571"/>
+         <ssa default_max="0.56012" default_min="0.65921" p1="-3.1935e-13" p2="8.3414e-09" p3="-7.4134e-05" p4="0.78397"/>
+         <asy default_max="0.94692" default_min="0.86889" p1="3.217e-13" p2="-8.0857e-09" p3="6.7892e-05" p4="0.75643"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="29">
+         <ext default_max="0.10146" default_min="0.43529" p1="-1.2197e-12" p2="3.0899e-08" p3="-0.00026588" p4="0.8789"/>
+         <ssa default_max="0.55455" default_min="0.62855" p1="-2.8087e-13" p2="7.1904e-09" p3="-6.1599e-05" p4="0.73115"/>
+         <asy default_max="0.95103" default_min="0.89749" p1="2.3411e-13" p2="-5.8438e-09" p3="4.847e-05" p4="0.8175"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="30">
+         <ext default_max="0.1151" default_min="0.031568" p1="9.9796e-14" p2="-4.0034e-09" p3="4.6389e-05" p4="-0.0512"/>
+         <ssa default_max="0.90053" default_min="0.76496" p1="7.7861e-13" p2="-1.9338e-08" p3="0.00015362" p4="0.51489"/>
+         <asy default_max="0.73762" default_min="0.31585" p1="1.1052e-12" p2="-2.9968e-08" p3="0.00028061" p4="-0.16288"/>
+      </waveband>
+   </mode>
+   <mode name="asha" num_params="4">
+      <waveband lambda_max="1000000" lambda_min="28571.4286" number="1">
+         <ext default_max="0.01081" default_min="0.010177" p1="1.4615e-13" p2="2.7856e-10" p3="2.3523e-08" p4="0.010141"/>
+         <ssa default_max="0.015867" default_min="0.00025913" p1="7.4184e-12" p2="4.0223e-09" p3="-2.2832e-06" p4="0.00038706"/>
+         <asy default_max="0.011881" default_min="0.00073439" p1="2.6195e-13" p2="7.961e-09" p3="1.5989e-07" p4="-2.4673e-05"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="2">
+         <ext default_max="0.068429" default_min="0.063552" p1="3.5484e-13" p2="3.3674e-09" p3="-2.0396e-07" p4="0.063305"/>
+         <ssa default_max="0.019051" default_min="0.00032293" p1="6.7881e-12" p2="9.0958e-09" p3="-5.1624e-06" p4="0.00087497"/>
+         <asy default_max="0.030211" default_min="0.0018961" p1="-9.0078e-13" p2="2.3179e-08" p3="-1.0794e-06" p4="0.00018941"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="3">
+         <ext default_max="0.10773" default_min="0.098496" p1="-6.6143e-13" p2="8.6594e-09" p3="-1.306e-06" p4="0.098135"/>
+         <ssa default_max="0.028177" default_min="0.00050843" p1="4.8851e-12" p2="2.3604e-08" p3="-1.319e-05" p4="0.0022146"/>
+         <asy default_max="0.045513" default_min="0.0029101" p1="-3.6807e-12" p2="3.8969e-08" p3="-3.3917e-06" p4="0.00056702"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="4">
+         <ext default_max="0.056695" default_min="0.051718" p1="-4.3796e-14" p2="4.3609e-09" p3="-8.2868e-07" p4="0.05158"/>
+         <ssa default_max="0.041979" default_min="0.00080261" p1="1.5216e-12" p2="4.5977e-08" p3="-2.5083e-05" p4="0.0041555"/>
+         <asy default_max="0.060297" default_min="0.0038913" p1="-4.3528e-12" p2="4.9993e-08" p3="-3.0743e-06" p4="0.00049581"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="5">
+         <ext default_max="0.034865" default_min="0.024944" p1="2.4448e-12" p2="5.6202e-09" p3="-1.7885e-06" p4="0.024914"/>
+         <ssa default_max="0.18492" default_min="0.0042536" p1="-8.6526e-11" p2="3.7382e-07" p3="-0.00019281" p4="0.030807"/>
+         <asy default_max="0.090109" default_min="0.0057259" p1="-8.1489e-12" p2="7.9704e-08" p3="-8.8671e-06" p4="0.0015242"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="6">
+         <ext default_max="0.13351" default_min="0.079465" p1="-1.0229e-11" p2="7.345e-08" p3="-2.9687e-05" p4="0.082066"/>
+         <ssa default_max="0.24103" default_min="0.0063451" p1="-1.8164e-10" p2="5.9522e-07" p3="-0.00028484" p4="0.043188"/>
+         <asy default_max="0.14029" default_min="0.0093504" p1="-4.5643e-11" p2="1.8326e-07" p3="-4.1058e-05" p4="0.0065474"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="7">
+         <ext default_max="0.32035" default_min="0.25497" p1="-3.3069e-11" p2="9.7414e-08" p3="-1.0185e-05" p4="0.25025"/>
+         <ssa default_max="0.30063" default_min="0.014336" p1="-1.8915e-10" p2="4.6114e-07" p3="-1.3598e-05" p4="-0.017452"/>
+         <asy default_max="0.13908" default_min="0.0093881" p1="-5.3594e-11" p2="1.9867e-07" p3="-5.0603e-05" p4="0.00827"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="8">
+         <ext default_max="0.34071" default_min="0.38038" p1="1.6411e-11" p2="-7.1972e-08" p3="3.2104e-05" p4="0.37677"/>
+         <ssa default_max="0.069395" default_min="0.0018903" p1="-2.6705e-11" p2="1.1886e-07" p3="-5.1528e-05" p4="0.0074035"/>
+         <asy default_max="0.1173" default_min="0.0082011" p1="-1.9125e-11" p2="1.1106e-07" p3="-7.4096e-06" p4="0.0010798"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="9">
+         <ext default_max="0.08029" default_min="0.080135" p1="-1.9055e-13" p2="8.1716e-11" p3="4.0615e-07" p4="0.080012"/>
+         <ssa default_max="0.047982" default_min="0.001232" p1="-1.8477e-11" p2="8.4365e-08" p3="-3.877e-05" p4="0.0057857"/>
+         <asy default_max="0.16477" default_min="0.01184" p1="-3.2974e-11" p2="1.6435e-07" p3="-1.1833e-05" p4="0.0016832"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="10">
+         <ext default_max="0.034668" default_min="0.021627" p1="-3.6681e-12" p2="1.9567e-08" p3="-7.6775e-06" p4="0.022276"/>
+         <ssa default_max="0.30799" default_min="0.010632" p1="-2.1923e-10" p2="6.5203e-07" p3="-0.00022926" p4="0.0269"/>
+         <asy default_max="0.22273" default_min="0.016428" p1="-5.6803e-11" p2="2.4192e-07" p3="-2.3129e-05" p4="0.0033928"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="11">
+         <ext default_max="0.043582" default_min="0.010269" p1="-1.0919e-11" p2="5.5486e-08" p3="-2.4915e-05" p4="0.013058"/>
+         <ssa default_max="0.71973" default_min="0.077619" p1="-1.7625e-11" p2="-3.7377e-07" p3="0.0013082" p4="-0.27802"/>
+         <asy default_max="0.29357" default_min="0.022826" p1="-1.0855e-10" p2="3.721e-07" p3="-4.8383e-05" p4="0.0071447"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="12">
+         <ext default_max="0.073553" default_min="0.0070258" p1="-2.6943e-11" p2="1.185e-07" p3="-5.1647e-05" p4="0.012612"/>
+         <ssa default_max="0.89349" default_min="0.23735" p1="7.3863e-10" p2="-2.7222e-06" p3="0.0034116" p4="-0.55611"/>
+         <asy default_max="0.37137" default_min="0.031129" p1="-1.7821e-10" p2="5.1897e-07" p3="-5.9528e-05" p4="0.0075981"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="13">
+         <ext default_max="0.11626" default_min="0.0070885" p1="-5.2774e-11" p2="2.0408e-07" p3="-8.317e-05" p4="0.015159"/>
+         <ssa default_max="0.93781" default_min="0.4314" p1="9.2501e-10" p2="-3.1544e-06" p3="0.0035403" p4="-0.36702"/>
+         <asy default_max="0.43906" default_min="0.040271" p1="-2.3123e-10" p2="5.9701e-07" p3="-1.1459e-05" p4="-0.0030716"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="14">
+         <ext default_max="0.15161" default_min="0.0081432" p1="-7.6843e-11" p2="2.7557e-07" p3="-0.00010635" p4="0.017415"/>
+         <ssa default_max="0.95037" default_min="0.53456" p1="8.4914e-10" p2="-2.8538e-06" p3="0.0031326" p4="-0.16717"/>
+         <asy default_max="0.47781" default_min="0.046883" p1="-2.4724e-10" p2="5.8971e-07" p3="6.5175e-05" p4="-0.018189"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="15">
+         <ext default_max="0.19627" default_min="0.010026" p1="-1.1004e-10" p2="3.659e-07" p3="-0.00013107" p4="0.019533"/>
+         <ssa default_max="0.95841" default_min="0.61834" p1="7.3638e-10" p2="-2.4569e-06" p3="0.002667" p4="0.022959"/>
+         <asy default_max="0.51494" default_min="0.054837" p1="-2.4281e-10" p2="5.1986e-07" p3="0.00019353" p4="-0.042356"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="16">
+         <ext default_max="0.29728" default_min="0.016606" p1="-1.8761e-10" p2="5.4431e-07" p3="-0.00014648" p4="0.01695"/>
+         <ssa default_max="0.96332" default_min="0.70132" p1="5.8564e-10" p2="-1.9464e-06" p3="0.0021003" p4="0.23333"/>
+         <asy default_max="0.57585" default_min="0.074133" p1="-1.658e-10" p2="2.0136e-07" p3="0.00057079" p4="-0.10913"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="17">
+         <ext default_max="0.29728" default_min="0.016606" p1="-1.8761e-10" p2="5.4431e-07" p3="-0.00014648" p4="0.01695"/>
+         <ssa default_max="0.96332" default_min="0.70132" p1="5.8564e-10" p2="-1.9464e-06" p3="0.0021003" p4="0.23333"/>
+         <asy default_max="0.57585" default_min="0.074133" p1="-1.658e-10" p2="2.0136e-07" p3="0.00057079" p4="-0.10913"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="18">
+         <ext default_max="0.47973" default_min="0.031352" p1="-3.1609e-10" p2="7.6877e-07" p3="-5.3677e-05" p4="-0.012397"/>
+         <ssa default_max="0.97339" default_min="0.81965" p1="3.5476e-10" p2="-1.1754e-06" p3="0.0012613" p4="0.53912"/>
+         <asy default_max="0.63455" default_min="0.10851" p1="3.7343e-11" p2="-4.7995e-07" p3="0.0012339" p4="-0.21708"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="19">
+         <ext default_max="0.67698" default_min="0.055005" p1="-3.9584e-10" p2="7.5865e-07" p3="0.00030412" p4="-0.092193"/>
+         <ssa default_max="0.98196" default_min="0.90169" p1="1.8814e-10" p2="-6.2377e-07" p3="0.0006681" p4="0.75319"/>
+         <asy default_max="0.66575" default_min="0.1486" p1="2.5484e-10" p2="-1.1504e-06" p3="0.001817" p4="-0.29684"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="20">
+         <ext default_max="0.86587" default_min="0.093001" p1="-3.4576e-10" p2="3.0374e-07" p3="0.0010568" p4="-0.23917"/>
+         <ssa default_max="0.98489" default_min="0.93624" p1="1.1386e-10" p2="-3.7982e-07" p3="0.00040787" p4="0.84551"/>
+         <asy default_max="0.68473" default_min="0.19509" p1="4.2596e-10" p2="-1.6562e-06" p3="0.0022205" p4="-0.33014"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="21">
+         <ext default_max="1.0089" default_min="0.14659" p1="-1.101e-10" p2="-6.7764e-07" p3="0.0021788" p4="-0.43873"/>
+         <ssa default_max="0.98658" default_min="0.95511" p1="7.417e-11" p2="-2.4987e-07" p3="0.00026909" p4="0.89521"/>
+         <asy default_max="0.69726" default_min="0.24426" p1="5.1657e-10" p2="-1.9125e-06" p3="0.0023923" p4="-0.31179"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="22">
+         <ext default_max="1.18" default_min="0.30598" p1="7.9612e-10" p2="-3.7574e-06" p3="0.0050888" p4="-0.89634"/>
+         <ssa default_max="0.98804" default_min="0.97418" p1="3.6202e-11" p2="-1.2614e-07" p3="0.00013586" p4="0.94398"/>
+         <asy default_max="0.7064" default_min="0.34003" p1="5.5492e-10" p2="-1.9902e-06" p3="0.0023396" p4="-0.19446"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="23">
+         <ext default_max="1.2347" default_min="0.45452" p1="1.6447e-09" p2="-6.4002e-06" p3="0.0073377" p4="-1.2053"/>
+         <ssa default_max="0.9884" default_min="0.98176" p1="2.1453e-11" p2="-7.9195e-08" p3="8.5369e-05" p4="0.9628"/>
+         <asy default_max="0.70577" default_min="0.40359" p1="5.311e-10" p2="-1.8925e-06" p3="0.0021666" p4="-0.087454"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="24">
+         <ext default_max="1.1631" default_min="0.88377" p1="3.229e-09" p2="-1.0683e-05" p3="0.010202" p4="-1.2908"/>
+         <ssa default_max="0.98717" default_min="0.98733" p1="1.4565e-11" p2="-5.6004e-08" p3="5.6055e-05" p4="0.97522"/>
+         <asy default_max="0.68905" default_min="0.49295" p1="4.9903e-10" p2="-1.7105e-06" p3="0.0018365" p4="0.084836"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="25">
+         <ext default_max="0.88373" default_min="2.2108" p1="4.5255e-09" p2="-1.2638e-05" p3="0.0089006" p4="0.56226"/>
+         <ssa default_max="0.98386" default_min="0.99427" p1="1.3596e-11" p2="-4.5728e-08" p3="3.1095e-05" p4="0.9887"/>
+         <asy default_max="0.64973" default_min="0.63548" p1="4.7311e-10" p2="-1.3623e-06" p3="0.0011631" p4="0.39759"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="26">
+         <ext default_max="0.82438" default_min="3.2882" p1="1.5075e-09" p2="-2.478e-06" p3="-0.0018766" p4="4.0261"/>
+         <ssa default_max="0.98069" default_min="0.99542" p1="1.405e-11" p2="-4.1624e-08" p3="1.9299e-05" p4="0.99299"/>
+         <asy default_max="0.65947" default_min="0.67615" p1="2.334e-10" p2="-5.5546e-07" p3="0.00037375" p4="0.60798"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="27">
+         <ext default_max="0.8868" default_min="4.4887" p1="-4.1048e-09" p2="1.5001e-05" p3="-0.018721" p4="8.8385"/>
+         <ssa default_max="0.97508" default_min="0.99553" p1="7.7524e-12" p2="-1.8917e-08" p3="-9.1741e-06" p4="0.99973"/>
+         <asy default_max="0.70839" default_min="0.70349" p1="-2.3821e-10" p2="7.8481e-07" p3="-0.00071916" p4="0.85425"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="28">
+         <ext default_max="0.94283" default_min="4.9013" p1="-7.0726e-09" p2="2.3906e-05" p3="-0.02685" p4="10.9595"/>
+         <ssa default_max="0.96435" default_min="0.9934" p1="6.2591e-12" p2="-8.7982e-09" p3="-3.1104e-05" p4="1.0033"/>
+         <asy default_max="0.75036" default_min="0.69857" p1="-3.7384e-10" p2="1.0826e-06" p3="-0.00085754" p4="0.86771"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="29">
+         <ext default_max="0.91956" default_min="4.5563" p1="-6.6792e-09" p2="2.2443e-05" p3="-0.025045" p4="10.1968"/>
+         <ssa default_max="0.95108" default_min="0.98929" p1="-1.5566e-11" p2="5.3862e-08" p3="-9.3997e-05" p4="1.0129"/>
+         <asy default_max="0.77182" default_min="0.67393" p1="-1.1598e-10" p2="2.8081e-07" p3="-9.2461e-05" p4="0.67963"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="30">
+         <ext default_max="0.14848" default_min="0.088291" p1="-2.8606e-11" p2="1.0707e-07" p3="-3.8664e-05" p4="0.09107"/>
+         <ssa default_max="0.51904" default_min="0.17576" p1="2.2527e-10" p2="-8.4998e-07" p3="0.0012303" p4="-0.12094"/>
+         <asy default_max="0.27684" default_min="0.023864" p1="-1.149e-10" p2="3.3614e-07" p3="-3.0108e-06" p4="-0.0019655"/>
+      </waveband>
+   </mode>
+   <mode name="ashb" num_params="4">
+      <waveband lambda_max="1000000" lambda_min="28571.4286" number="1">
+         <ext default_max="0.019686" default_min="0.010496" p1="-2.3675e-13" p2="3.3992e-09" p3="-2.9033e-06" p4="0.011082"/>
+         <ssa default_max="0.27273" default_min="0.0075252" p1="-2.6806e-11" p2="1.677e-07" p3="-0.00014454" p4="0.040174"/>
+         <asy default_max="0.15039" default_min="0.012011" p1="-7.5155e-12" p2="4.5055e-08" p3="1.9593e-06" p4="-0.0028153"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="2">
+         <ext default_max="0.1022" default_min="0.065974" p1="-2.9482e-12" p2="1.6442e-08" p3="-6.0366e-06" p4="0.064519"/>
+         <ssa default_max="0.21463" default_min="0.0088253" p1="-1.8967e-11" p2="1.01e-07" p3="-4.0637e-05" p4="0.0021184"/>
+         <asy default_max="0.2406" default_min="0.029747" p1="-5.446e-12" p2="2.117e-08" p3="9.8259e-05" p4="-0.033302"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="3">
+         <ext default_max="0.14424" default_min="0.1031" p1="-3.0259e-12" p2="1.1209e-08" p3="1.2516e-05" p4="0.092655"/>
+         <ssa default_max="0.22706" default_min="0.013237" p1="-1.4479e-11" p2="6.7474e-08" p3="2.9501e-05" p4="-0.023747"/>
+         <asy default_max="0.30147" default_min="0.043378" p1="-4.5384e-12" p2="1.2589e-08" p3="0.00014388" p4="-0.043424"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="4">
+         <ext default_max="0.083797" default_min="0.054167" p1="-1.9799e-12" p2="1.0003e-08" p3="2.0077e-06" p4="0.050024"/>
+         <ssa default_max="0.28945" default_min="0.020106" p1="-1.4834e-11" p2="6.0736e-08" p3="8.3457e-05" p4="-0.045836"/>
+         <asy default_max="0.40292" default_min="0.056982" p1="-9.3055e-12" p2="2.9327e-08" p3="0.00017951" p4="-0.055182"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="5">
+         <ext default_max="0.11478" default_min="0.029545" p1="-7.8806e-12" p2="4.1362e-08" p3="-1.529e-05" p4="0.026036"/>
+         <ssa default_max="0.61615" default_min="0.10061" p1="2.8855e-11" p2="-2.6664e-07" p3="0.00086569" p4="-0.31742"/>
+         <asy default_max="0.4678" default_min="0.085725" p1="1.3825e-12" p2="-5.7705e-08" p3="0.00037716" p4="-0.11389"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="6">
+         <ext default_max="0.26959" default_min="0.10511" p1="-3.9473e-12" p2="-2.0636e-08" p3="0.00018226" p4="0.0071177"/>
+         <ssa default_max="0.53508" default_min="0.14107" p1="5.2883e-11" p2="-3.8895e-07" p3="0.00098082" p4="-0.30728"/>
+         <asy default_max="0.45005" default_min="0.12619" p1="1.7755e-11" p2="-1.4587e-07" p3="0.00048373" p4="-0.10876"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="7">
+         <ext default_max="0.33681" default_min="0.2905" p1="1.1048e-11" p2="-1.0056e-07" p3="0.00024018" p4="0.18286"/>
+         <ssa default_max="0.4893" default_min="0.21248" p1="3.4832e-11" p2="-2.5043e-07" p3="0.00063926" p4="-0.080841"/>
+         <asy default_max="0.42649" default_min="0.11939" p1="1.1335e-11" p2="-9.8668e-08" p3="0.00038256" p4="-0.071513"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="8">
+         <ext default_max="0.22275" default_min="0.36129" p1="1.7302e-12" p2="3.5657e-09" p3="-0.00010218" p4="0.41902"/>
+         <ssa default_max="0.26077" default_min="0.033393" p1="-3.7882e-12" p2="3.5084e-10" p3="0.00015642" p4="-0.05671"/>
+         <asy default_max="0.49337" default_min="0.093365" p1="-5.1579e-12" p2="-9.7392e-09" p3="0.00029457" p4="-0.073203"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="9">
+         <ext default_max="0.07815" default_min="0.080267" p1="1.033e-13" p2="-1.009e-09" p3="9.7992e-07" p4="0.080017"/>
+         <ssa default_max="0.20447" default_min="0.024199" p1="-2.7352e-12" p2="1.1722e-09" p3="0.00011953" p4="-0.044988"/>
+         <asy default_max="0.63953" default_min="0.13816" p1="2.1541e-12" p2="-7.8878e-08" p3="0.00050167" p4="-0.12669"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="10">
+         <ext default_max="0.084884" default_min="0.027963" p1="-2.3675e-12" p2="9.3449e-09" p3="2.2338e-05" p4="0.012325"/>
+         <ssa default_max="0.67072" default_min="0.18444" p1="4.6355e-11" p2="-3.5677e-07" p3="0.00098662" p4="-0.27683"/>
+         <asy default_max="0.70366" default_min="0.18793" p1="2.1015e-11" p2="-2.0661e-07" p3="0.00074711" p4="-0.17999"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="11">
+         <ext default_max="0.15677" default_min="0.026132" p1="-5.8411e-12" p2="1.5447e-08" p3="7.1551e-05" p4="-0.019424"/>
+         <ssa default_max="0.88839" default_min="0.58226" p1="6.858e-11" p2="-4.6024e-07" p3="0.0010262" p4="0.12853"/>
+         <asy default_max="0.71516" default_min="0.24287" p1="3.9514e-11" p2="-3.1498e-07" p3="0.00090574" p4="-0.1842"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="12">
+         <ext default_max="0.239" default_min="0.039042" p1="-4.9189e-12" p2="-1.3448e-08" p3="0.00018866" p4="-0.064899"/>
+         <ssa default_max="0.95365" default_min="0.83309" p1="3.3772e-11" p2="-2.219e-07" p3="0.00047423" p4="0.62609"/>
+         <asy default_max="0.7185" default_min="0.30105" p1="5.0949e-11" p2="-3.7672e-07" p3="0.00097246" p4="-0.14619"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="13">
+         <ext default_max="0.30485" default_min="0.060675" p1="3.2601e-12" p2="-8.4603e-08" p3="0.00036265" p4="-0.12184"/>
+         <ssa default_max="0.97124" default_min="0.91689" p1="1.6212e-11" p2="-1.0687e-07" p3="0.00022665" p4="0.81822"/>
+         <asy default_max="0.71965" default_min="0.35198" p1="5.5052e-11" p2="-3.9441e-07" p3="0.00096618" p4="-0.086464"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="14">
+         <ext default_max="0.34124" default_min="0.07969" p1="1.2676e-11" p2="-1.5271e-07" p3="0.00050363" p4="-0.16351"/>
+         <ssa default_max="0.97516" default_min="0.93878" p1="1.131e-11" p2="-7.5171e-08" p3="0.000159" p4="0.86964"/>
+         <asy default_max="0.71899" default_min="0.38225" p1="5.5224e-11" p2="-3.9169e-07" p3="0.00093929" p4="-0.041552"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="15">
+         <ext default_max="0.37258" default_min="0.10469" p1="2.5497e-11" p2="-2.4045e-07" p3="0.00067114" p4="-0.20865"/>
+         <ssa default_max="0.97663" default_min="0.95122" p1="8.5394e-12" p2="-5.719e-08" p3="0.00012013" p4="0.89912"/>
+         <asy default_max="0.71683" default_min="0.41264" p1="5.4969e-11" p2="-3.8618e-07" p3="0.00090641" p4="0.0061065"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="16">
+         <ext default_max="0.40939" default_min="0.16611" p1="5.6749e-11" p2="-4.3284e-07" p3="0.00099417" p4="-0.27597"/>
+         <ssa default_max="0.9735" default_min="0.95809" p1="6.4856e-12" p2="-4.4439e-08" p3="9.1911e-05" p4="0.91847"/>
+         <asy default_max="0.71991" default_min="0.46777" p1="5.2345e-11" p2="-3.6233e-07" p3="0.00082587" p4="0.10044"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="17">
+         <ext default_max="0.40939" default_min="0.16611" p1="5.6749e-11" p2="-4.3284e-07" p3="0.00099417" p4="-0.27597"/>
+         <ssa default_max="0.9735" default_min="0.95809" p1="6.4856e-12" p2="-4.4439e-08" p3="9.1911e-05" p4="0.91847"/>
+         <asy default_max="0.71991" default_min="0.46777" p1="5.2345e-11" p2="-3.6233e-07" p3="0.00082587" p4="0.10044"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="18">
+         <ext default_max="0.43424" default_min="0.28749" p1="1.0843e-10" p2="-7.2691e-07" p3="0.0014264" p4="-0.31645"/>
+         <ssa default_max="0.97249" default_min="0.97039" p1="3.9299e-12" p2="-2.8142e-08" p3="5.5054e-05" p4="0.94716"/>
+         <asy default_max="0.71133" default_min="0.53162" p1="4.7474e-11" p2="-3.2088e-07" p3="0.00069845" p4="0.2252"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="19">
+         <ext default_max="0.43219" default_min="0.43802" p1="1.4959e-10" p2="-9.3304e-07" p3="0.0016457" p4="-0.23181"/>
+         <ssa default_max="0.9733" default_min="0.9803" p1="2.3813e-12" p2="-1.8164e-08" p3="3.1828e-05" p4="0.96749"/>
+         <asy default_max="0.69514" default_min="0.57605" p1="4.2642e-11" p2="-2.8116e-07" p3="0.00058258" p4="0.32442"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="20">
+         <ext default_max="0.41327" default_min="0.60974" p1="1.6853e-10" p2="-9.9502e-07" p3="0.0015821" p4="-0.0060221"/>
+         <ssa default_max="0.97032" default_min="0.98381" p1="2.1866e-12" p2="-1.6381e-08" p3="2.4304e-05" p4="0.9748"/>
+         <asy default_max="0.68259" default_min="0.60975" p1="4.0556e-11" p2="-2.5386e-07" p3="0.00049155" p4="0.40214"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="21">
+         <ext default_max="0.39293" default_min="0.7759" p1="1.6e-10" p2="-8.9412e-07" p3="0.0012426" p4="0.32478"/>
+         <ssa default_max="0.96814" default_min="0.98613" p1="2.3543e-12" p2="-1.6192e-08" p3="1.9982e-05" p4="0.97953"/>
+         <asy default_max="0.67892" default_min="0.63599" p1="3.568e-11" p2="-2.1272e-07" p3="0.00038951" p4="0.47467"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="22">
+         <ext default_max="0.36442" default_min="1.0837" p1="9.2521e-11" p2="-4.1036e-07" p3="0.00012305" p4="1.1324"/>
+         <ssa default_max="0.96478" default_min="0.9888" p1="2.1759e-12" p2="-1.4296e-08" p3="1.2284e-05" p4="0.98606"/>
+         <asy default_max="0.68064" default_min="0.66788" p1="2.3596e-11" p2="-1.2819e-07" p3="0.0002124" p4="0.58321"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="23">
+         <ext default_max="0.35371" default_min="1.2806" p1="2.5837e-11" p2="2.9899e-08" p3="-0.00080195" p4="1.7307"/>
+         <ssa default_max="0.96303" default_min="0.98991" p1="2.8009e-12" p2="-1.6116e-08" p3="1.1504e-05" p4="0.98811"/>
+         <asy default_max="0.68358" default_min="0.68145" p1="1.5145e-11" p2="-7.1743e-08" p3="0.00010229" p4="0.64331"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="24">
+         <ext default_max="0.35256" default_min="1.5215" p1="-1.0007e-10" p2="8.1216e-07" p3="-0.0023202" p4="2.6136"/>
+         <ssa default_max="0.96026" default_min="0.99071" p1="1.6904e-12" p2="-8.7988e-09" p3="-3.926e-06" p4="0.99562"/>
+         <asy default_max="0.70436" default_min="0.69163" p1="-4.2301e-12" p2="3.9895e-08" p3="-7.8493e-05" p4="0.72456"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="25">
+         <ext default_max="0.3598" default_min="1.7826" p1="-2.9704e-10" p2="1.997e-06" p3="-0.0045106" p4="3.7849"/>
+         <ssa default_max="0.96027" default_min="0.99148" p1="3.0403e-13" p2="5.0346e-10" p3="-2.1548e-05" p4="1.0038"/>
+         <asy default_max="0.75011" default_min="0.69434" p1="-2.539e-11" p2="1.4513e-07" p3="-0.00020946" p4="0.77195"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="26">
+         <ext default_max="0.35725" default_min="1.7251" p1="-3.0573e-10" p2="2.0312e-06" p3="-0.0045169" p4="3.7213"/>
+         <ssa default_max="0.95716" default_min="0.9901" p1="1.4432e-13" p2="1.788e-09" p3="-2.5134e-05" p4="1.004"/>
+         <asy default_max="0.76398" default_min="0.6788" p1="-1.2597e-11" p2="6.199e-08" p3="-4.1833e-05" p4="0.68467"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="27">
+         <ext default_max="0.34421" default_min="1.582" p1="-2.59e-10" p2="1.7353e-06" p3="-0.003914" p4="3.3189"/>
+         <ssa default_max="0.94878" default_min="0.98602" p1="-2.3513e-12" p2="1.4873e-08" p3="-4.7924e-05" p4="1.0093"/>
+         <asy default_max="0.78281" default_min="0.66733" p1="3.5457e-12" p2="-4.0843e-08" p3="0.00015976" p4="0.58772"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="28">
+         <ext default_max="0.33463" default_min="1.4475" p1="-2.2002e-10" p2="1.4827e-06" p3="-0.0033851" p4="2.955"/>
+         <ssa default_max="0.92716" default_min="0.9785" p1="4.1567e-13" p2="6.1597e-10" p3="-3.4231e-05" p4="0.99807"/>
+         <asy default_max="0.79623" default_min="0.68375" p1="1.5182e-11" p2="-1.0599e-07" p3="0.00026477" p4="0.56288"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="29">
+         <ext default_max="0.3267" default_min="1.3691" p1="-1.954e-10" p2="1.327e-06" p3="-0.003067" p4="2.7397"/>
+         <ssa default_max="0.89851" default_min="0.96807" p1="-1.1813e-12" p2="9.9556e-09" p3="-6.0504e-05" p4="1"/>
+         <asy default_max="0.81451" default_min="0.71674" p1="1.2601e-11" p2="-8.8042e-08" p3="0.00022249" p4="0.61485"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="30">
+         <ext default_max="0.23827" default_min="0.11838" p1="3.1698e-12" p2="-5.4103e-08" p3="0.00020341" p4="0.017989"/>
+         <ssa default_max="0.67787" default_min="0.45519" p1="2.7982e-11" p2="-2.0206e-07" p3="0.00051628" p4="0.21826"/>
+         <asy default_max="0.62126" default_min="0.22705" p1="2.9032e-11" p2="-2.3218e-07" p3="0.00069479" p4="-0.10349"/>
+      </waveband>
+   </mode>
+   <mode name="ashc" num_params="4">
+      <waveband lambda_max="1000000" lambda_min="28571.4286" number="1">
+         <ext default_max="0.047824" default_min="0.013364" p1="-4.529e-13" p2="3.1703e-09" p3="5.3205e-06" p4="0.0055317"/>
+         <ssa default_max="0.62172" default_min="0.11357" p1="6.6575e-12" p2="-1.0019e-07" p3="0.00052948" p4="-0.31537"/>
+         <asy default_max="0.36815" default_min="0.10704" p1="2.6684e-12" p2="-3.9284e-08" p3="0.00022748" p4="-0.080676"/>
+      </waveband>
+      <waveband lambda_max="28571.4286" lambda_min="20000" number="2">
+         <ext default_max="0.11904" default_min="0.080376" p1="7.9937e-13" p2="-1.2948e-08" p3="6.0474e-05" p4="0.032794"/>
+         <ssa default_max="0.38219" default_min="0.099456" p1="4.7454e-12" p2="-6.3504e-08" p3="0.00031163" p4="-0.14942"/>
+         <asy default_max="0.47033" default_min="0.16873" p1="2.771e-12" p2="-3.9068e-08" p3="0.00023813" p4="-0.029732"/>
+      </waveband>
+      <waveband lambda_max="20000" lambda_min="15873.0159" number="3">
+         <ext default_max="0.13116" default_min="0.12293" p1="1.734e-12" p2="-2.108e-08" p3="7.112e-05" p4="0.071842"/>
+         <ssa default_max="0.37175" default_min="0.11396" p1="4.495e-12" p2="-5.8977e-08" p3="0.00028601" p4="-0.11392"/>
+         <asy default_max="0.55553" default_min="0.20675" p1="3.1295e-12" p2="-4.5912e-08" p3="0.00028048" p4="-0.026974"/>
+      </waveband>
+      <waveband lambda_max="15873.0159" lambda_min="14285.7143" number="4">
+         <ext default_max="0.097817" default_min="0.066868" p1="5.9834e-13" p2="-9.4974e-09" p3="4.4997e-05" p4="0.031329"/>
+         <ssa default_max="0.45258" default_min="0.15541" p1="6.0116e-12" p2="-7.748e-08" p3="0.00035949" p4="-0.12814"/>
+         <asy default_max="0.6766" default_min="0.27823" p1="5.9513e-12" p2="-8.01e-08" p3="0.00040796" p4="-0.050247"/>
+      </waveband>
+      <waveband lambda_max="14285.7143" lambda_min="12195.122" number="5">
+         <ext default_max="0.1455" default_min="0.064198" p1="2.3737e-12" p2="-3.327e-08" p3="0.00014281" p4="-0.046034"/>
+         <ssa default_max="0.67533" default_min="0.46022" p1="1.1237e-11" p2="-1.2896e-07" p3="0.00047843" p4="0.10463"/>
+         <asy default_max="0.639" default_min="0.34862" p1="7.0807e-12" p2="-8.6335e-08" p3="0.000379" p4="0.053448"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="10204.0816" number="6">
+         <ext default_max="0.18311" default_min="0.20191" p1="7.4753e-12" p2="-7.9408e-08" p3="0.00023194" p4="0.043836"/>
+         <ssa default_max="0.54872" default_min="0.43941" p1="7.1245e-12" p2="-7.9935e-08" p3="0.00028517" p4="0.23001"/>
+         <asy default_max="0.60597" default_min="0.34822" p1="4.1042e-12" p2="-5.1392e-08" p3="0.00025672" p4="0.14214"/>
+      </waveband>
+      <waveband lambda_max="10204.0816" lambda_min="9259.2593" number="7">
+         <ext default_max="0.18326" default_min="0.34257" p1="4.3565e-12" p2="-3.7863e-08" p3="4.3481e-05" p4="0.33222"/>
+         <ssa default_max="0.53725" default_min="0.40268" p1="4.4564e-12" p2="-5.3361e-08" p3="0.00021736" p4="0.23672"/>
+         <asy default_max="0.60025" default_min="0.31013" p1="3.8025e-12" p2="-5.1135e-08" p3="0.00027255" p4="0.088555"/>
+      </waveband>
+      <waveband lambda_max="9259.2593" lambda_min="8474.5763" number="8">
+         <ext default_max="0.12925" default_min="0.29132" p1="-2.3015e-12" p2="3.0921e-08" p3="-0.00016023" p4="0.42081"/>
+         <ssa default_max="0.40283" default_min="0.14045" p1="3.4934e-12" p2="-4.7764e-08" p3="0.00025283" p4="-0.064743"/>
+         <asy default_max="0.72102" default_min="0.32338" p1="6.7101e-12" p2="-8.9179e-08" p3="0.0004369" p4="-0.025454"/>
+      </waveband>
+      <waveband lambda_max="8474.5763" lambda_min="7194.2446" number="9">
+         <ext default_max="0.069145" default_min="0.079613" p1="8.1283e-14" p2="-1.0001e-09" p3="-2.9938e-07" p4="0.08079"/>
+         <ssa default_max="0.3442" default_min="0.11522" p1="2.6335e-12" p2="-3.682e-08" p3="0.00020519" p4="-0.052976"/>
+         <asy default_max="0.85227" default_min="0.46266" p1="1.0041e-11" p2="-1.2333e-07" p3="0.00053433" p4="0.048019"/>
+      </waveband>
+      <waveband lambda_max="7194.2446" lambda_min="6756.7568" number="10">
+         <ext default_max="0.11046" default_min="0.054522" p1="1.151e-12" p2="-1.7145e-08" p3="7.9825e-05" p4="-0.0083228"/>
+         <ssa default_max="0.75717" default_min="0.5288" p1="9.4579e-12" p2="-1.106e-07" p3="0.00042885" p4="0.20585"/>
+         <asy default_max="0.84624" default_min="0.54877" p1="9.9227e-12" p2="-1.1712e-07" p3="0.00047493" p4="0.18647"/>
+      </waveband>
+      <waveband lambda_max="6756.7568" lambda_min="5555.5556" number="11">
+         <ext default_max="0.15867" default_min="0.091487" p1="4.4034e-12" p2="-5.3692e-08" p3="0.00019713" p4="-0.054281"/>
+         <ssa default_max="0.89749" default_min="0.84233" p1="3.9363e-12" p2="-4.5413e-08" p3="0.0001619" p4="0.72358"/>
+         <asy default_max="0.79898" default_min="0.58905" p1="8.3745e-12" p2="-9.7351e-08" p3="0.00037952" p4="0.30273"/>
+      </waveband>
+      <waveband lambda_max="5555.5556" lambda_min="4807.6923" number="12">
+         <ext default_max="0.18232" default_min="0.15058" p1="8.1177e-12" p2="-8.9985e-08" p3="0.000288" p4="-0.052885"/>
+         <ssa default_max="0.94197" default_min="0.94195" p1="1.3332e-12" p2="-1.583e-08" p3="5.069e-05" p4="0.90622"/>
+         <asy default_max="0.76052" default_min="0.6176" p1="7.0883e-12" p2="-8.0821e-08" p3="0.00030167" p4="0.39291"/>
+      </waveband>
+      <waveband lambda_max="4807.6923" lambda_min="4444.4444" number="13">
+         <ext default_max="0.1879" default_min="0.21343" p1="1.0395e-11" p2="-1.0869e-07" p3="0.00031427" p4="5.1664e-05"/>
+         <ssa default_max="0.95497" default_min="0.96708" p1="7.0333e-13" p2="-8.6257e-09" p3="2.3964e-05" p4="0.95121"/>
+         <asy default_max="0.73655" default_min="0.63691" p1="6.231e-12" p2="-6.9658e-08" p3="0.00024954" p4="0.4534"/>
+      </waveband>
+      <waveband lambda_max="4444.4444" lambda_min="4201.6807" number="14">
+         <ext default_max="0.18659" default_min="0.25615" p1="1.1104e-11" p2="-1.1255e-07" p3="0.00030389" p4="0.055984"/>
+         <ssa default_max="0.95691" default_min="0.97321" p1="5.5647e-13" p2="-6.9285e-09" p3="1.7182e-05" p4="0.9625"/>
+         <asy default_max="0.72493" default_min="0.64622" p1="5.9771e-12" p2="-6.5138e-08" p3="0.0002254" p4="0.48226"/>
+      </waveband>
+      <waveband lambda_max="4201.6807" lambda_min="3846.1538" number="15">
+         <ext default_max="0.18483" default_min="0.30318" p1="1.1127e-11" p2="-1.0857e-07" p3="0.00026734" p4="0.13499"/>
+         <ssa default_max="0.95618" default_min="0.97638" p1="5.3643e-13" p2="-6.3252e-09" p3="1.3303e-05" p4="0.96892"/>
+         <asy default_max="0.71826" default_min="0.65605" p1="5.419e-12" p2="-5.69e-08" p3="0.00019068" p4="0.51874"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="16">
+         <ext default_max="0.17946" default_min="0.38808" p1="9.1333e-12" p2="-8.0959e-08" p3="0.00014154" p4="0.31853"/>
+         <ssa default_max="0.94472" default_min="0.9757" p1="5.5365e-13" p2="-6.5202e-09" p3="1.0247e-05" p4="0.9714"/>
+         <asy default_max="0.71516" default_min="0.67393" p1="4.5048e-12" p2="-4.5735e-08" p3="0.00014727" p4="0.5693"/>
+      </waveband>
+      <waveband lambda_max="3846.1538" lambda_min="3076.9231" number="17">
+         <ext default_max="0.17946" default_min="0.38808" p1="9.1333e-12" p2="-8.0959e-08" p3="0.00014154" p4="0.31853"/>
+         <ssa default_max="0.94472" default_min="0.9757" p1="5.5365e-13" p2="-6.5202e-09" p3="1.0247e-05" p4="0.9714"/>
+         <asy default_max="0.71516" default_min="0.67393" p1="4.5048e-12" p2="-4.5735e-08" p3="0.00014727" p4="0.5693"/>
+      </waveband>
+      <waveband lambda_max="3076.9231" lambda_min="2500" number="18">
+         <ext default_max="0.1719" default_min="0.50913" p1="3.5867e-12" p2="-1.5252e-08" p3="-0.00011231" p4="0.63047"/>
+         <ssa default_max="0.93765" default_min="0.97832" p1="5.9204e-13" p2="-6.2743e-09" p3="4.9718e-06" p4="0.97891"/>
+         <asy default_max="0.71095" default_min="0.6873" p1="2.8751e-12" p2="-2.6424e-08" p3="7.9533e-05" p4="0.63203"/>
+      </waveband>
+      <waveband lambda_max="2500" lambda_min="2150.5376" number="19">
+         <ext default_max="0.16729" default_min="0.60841" p1="-3.6805e-12" p2="6.4497e-08" p3="-0.00039185" p4="0.93394"/>
+         <ssa default_max="0.93873" default_min="0.98215" p1="5.3413e-13" p2="-5.2421e-09" p3="1.4659e-07" p4="0.98654"/>
+         <asy default_max="0.71099" default_min="0.69062" p1="1.4253e-12" p2="-9.8443e-09" p3="2.6419e-05" p4="0.67284"/>
+      </waveband>
+      <waveband lambda_max="2150.5376" lambda_min="1941.7476" number="20">
+         <ext default_max="0.16531" default_min="0.68415" p1="-1.0465e-11" p2="1.3735e-07" p3="-0.00063843" p4="1.1877"/>
+         <ssa default_max="0.93407" default_min="0.9825" p1="5.3623e-13" p2="-4.4889e-09" p3="-5.295e-06" p4="0.9915"/>
+         <asy default_max="0.72243" default_min="0.6928" p1="-6.0732e-13" p2="9.9908e-09" p3="-2.663e-05" p4="0.70988"/>
+      </waveband>
+      <waveband lambda_max="1941.7476" lambda_min="1626.0163" number="21">
+         <ext default_max="0.16567" default_min="0.73108" p1="-1.5563e-11" p2="1.9085e-07" p3="-0.00081361" p4="1.3598"/>
+         <ssa default_max="0.93082" default_min="0.98235" p1="2.9448e-13" p2="-2.0795e-09" p3="-1.3277e-05" p4="0.99708"/>
+         <asy default_max="0.72838" default_min="0.69144" p1="-2.2015e-12" p2="2.3408e-08" p3="-5.7735e-05" p4="0.72762"/>
+      </waveband>
+      <waveband lambda_max="1626.0163" lambda_min="1298.7013" number="22">
+         <ext default_max="0.1641" default_min="0.7713" p1="-2.2251e-11" p2="2.5918e-07" p3="-0.0010277" p4="1.5505"/>
+         <ssa default_max="0.92909" default_min="0.98252" p1="1.7584e-13" p2="-5.7164e-10" p3="-1.8919e-05" p4="1.0014"/>
+         <asy default_max="0.75128" default_min="0.69311" p1="-3.1202e-12" p2="3.022e-08" p3="-6.5361e-05" p4="0.73108"/>
+      </waveband>
+      <waveband lambda_max="1298.7013" lambda_min="1242.236" number="23">
+         <ext default_max="0.16478" default_min="0.77471" p1="-2.4738e-11" p2="2.8296e-07" p3="-0.001095" p4="1.5994"/>
+         <ssa default_max="0.92825" default_min="0.98251" p1="-4.93e-14" p2="1.868e-09" p3="-2.6614e-05" p4="1.0068"/>
+         <asy default_max="0.76083" default_min="0.69336" p1="-3.1254e-12" p2="2.9506e-08" p3="-5.8597e-05" p4="0.72539"/>
+      </waveband>
+      <waveband lambda_max="1242.236" lambda_min="778.2101" number="24">
+         <ext default_max="0.16178" default_min="0.75659" p1="-2.5291e-11" p2="2.8738e-07" p3="-0.0011004" p4="1.5828"/>
+         <ssa default_max="0.92637" default_min="0.98075" p1="-2.1504e-13" p2="2.8981e-09" p3="-2.8358e-05" p4="1.006"/>
+         <asy default_max="0.77622" default_min="0.68947" p1="-1.6291e-12" p2="1.2236e-08" p3="2.4046e-06" p4="0.6769"/>
+      </waveband>
+      <waveband lambda_max="778.2101" lambda_min="625" number="25">
+         <ext default_max="0.15615" default_min="0.69914" p1="-2.2833e-11" p2="2.5946e-07" p3="-0.00099553" p4="1.4471"/>
+         <ssa default_max="0.9269" default_min="0.9788" p1="-3.6169e-13" p2="4.2337e-09" p3="-3.1104e-05" p4="1.0056"/>
+         <asy default_max="0.79587" default_min="0.68653" p1="1.4855e-12" p2="-2.0687e-08" p3="0.0001086" p4="0.59857"/>
+      </waveband>
+      <waveband lambda_max="625" lambda_min="441.5011" number="26">
+         <ext default_max="0.15327" default_min="0.66504" p1="-2.0803e-11" p2="2.3739e-07" p3="-0.00091772" p4="1.356"/>
+         <ssa default_max="0.92091" default_min="0.97596" p1="-1.4758e-13" p2="2.2312e-09" p3="-2.668e-05" p4="1.0001"/>
+         <asy default_max="0.80369" default_min="0.69613" p1="2.3327e-12" p2="-2.936e-08" p3="0.0001334" p4="0.5914"/>
+      </waveband>
+      <waveband lambda_max="441.5011" lambda_min="344.8276" number="27">
+         <ext default_max="0.14978" default_min="0.62924" p1="-1.8821e-11" p2="2.1571e-07" p3="-0.00084046" p4="1.2634"/>
+         <ssa default_max="0.90537" default_min="0.96966" p1="-1.2885e-13" p2="2.0877e-09" p3="-2.9499e-05" p4="0.99669"/>
+         <asy default_max="0.81597" default_min="0.7276" p1="2.4563e-12" p2="-2.8928e-08" p3="0.00012227" p4="0.63325"/>
+      </waveband>
+      <waveband lambda_max="344.8276" lambda_min="263.1579" number="28">
+         <ext default_max="0.14813" default_min="0.61293" p1="-1.8018e-11" p2="2.0689e-07" p3="-0.00080847" p4="1.2235"/>
+         <ssa default_max="0.87029" default_min="0.95652" p1="-1.1144e-13" p2="2.6435e-09" p3="-4.0033e-05" p4="0.99331"/>
+         <asy default_max="0.83241" default_min="0.74782" p1="2.284e-12" p2="-2.6591e-08" p3="0.000113" p4="0.66047"/>
+      </waveband>
+      <waveband lambda_max="263.1579" lambda_min="200" number="29">
+         <ext default_max="0.14638" default_min="0.59526" p1="-1.7176e-11" p2="1.9739e-07" p3="-0.00077348" p4="1.1799"/>
+         <ssa default_max="0.82427" default_min="0.93886" p1="-2.1496e-13" p2="4.785e-09" p3="-5.8088e-05" p4="0.9914"/>
+         <asy default_max="0.8498" default_min="0.77338" p1="1.6457e-12" p2="-1.9783e-08" p3="8.9742e-05" p4="0.70288"/>
+      </waveband>
+      <waveband lambda_max="12195.122" lambda_min="3846.1538" number="30">
+         <ext default_max="0.15744" default_min="0.19667" p1="5.4699e-12" p2="-5.6694e-08" p3="0.00015414" p4="0.094915"/>
+         <ssa default_max="0.71616" default_min="0.61496" p1="3.6421e-12" p2="-4.3593e-08" p3="0.00017458" p4="0.48231"/>
+         <asy default_max="0.73253" default_min="0.50397" p1="6.7047e-12" p2="-7.9744e-08" p3="0.00033327" p4="0.24764"/>
+      </waveband>
+   </mode>
+</visparams>

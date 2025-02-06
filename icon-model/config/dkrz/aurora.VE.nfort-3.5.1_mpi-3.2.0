@@ -1,0 +1,131 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+cmp_ver='3.5.1'
+mpi_ver='3.2.0'
+
+modules="ve/ncc/${cmp_ver} ve/nfort/${cmp_ver} ve/mpi/${mpi_ver}"
+
+SZIP_ROOT='/opt/dkrz/ve/szlib/2.1.1_ncc-3.5.1'
+SZIP_LIBS='-lsz'
+
+AEC_ROOT="/opt/dkrz/ve/libaec/1.0.6_ncc-${cmp_ver}"
+AEC_LIBS='-laec'
+
+ZLIB_ROOT="/opt/dkrz/ve/zlib/1.2.13_ncc-${cmp_ver}"
+ZLIB_LIBS='-lz'
+
+HDF5_ROOT="/opt/dkrz/ve/hdf5/1.10.5_ncc-${cmp_ver}_mpi-${mpi_ver}_localdisk"
+HDF5_LIBS='-lhdf5hl_fortran -lhdf5_hl -lhdf5_fortran -lhdf5'
+
+NETCDF_ROOT="/opt/dkrz/ve/netcdf-c/4.7.4_ncc-${cmp_ver}_mpi-${mpi_ver}_localdisk"
+NETCDF_LIBS='-lnetcdf'
+
+NETCDFF_ROOT="/opt/dkrz/ve/netcdf-fortran/4.5.4_ncc-${cmp_ver}_mpi-${mpi_ver}_localdisk"
+NETCDFF_LIBS='-lnetcdff'
+
+BLAS_LAPACK_ROOT='/opt/nec/ve/nlc/2.3.0'
+BLAS_LAPACK_LIBS='-llapack -lblas_sequential'
+
+ECCODES_ROOT="/opt/dkrz/ve/eccodes/2.18.0_ncc-${cmp_ver}_serial_localdisk"
+ECCODES_LIBS='-leccodes_f90 -leccodes'
+
+# There is no installation for ${cmp_ver}:
+FYAML_ROOT='/opt/dkrz/ve/libfyaml/0.8-patch-23265a8_ncc-4.0.0'
+FYAML_LIBS='-lfyaml'
+
+XML2_ROOT="/opt/dkrz/ve/libxml2/2.9.14_ncc-${cmp_ver}"
+XML2_LIBS='-lxml2'
+
+################################################################################
+
+BUILD_ENV=". ${MODULESHOME}/init/sh; module purge; module load ${modules}; ulimit -s unlimited; export VE_LD_LIBRARY_PATH=\"${BLAS_LAPACK_ROOT}/lib:\${VE_LD_LIBRARY_PATH-}\";"
+
+CC='mpincc'
+CFLAGS='-finline-functions -mno-vector-fma -fno-associative-math -msched-block -fcse-after-vectorization -traceback=verbose'
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+
+CPPFLAGS="-USX -D__SX__=__NEC__ -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${FYAML_ROOT}/include -I${XML2_ROOT}/include/libxml2"
+
+FC='mpinfort'
+FCFLAGS="-USX -D__SX__=__NEC__ -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -fdiag-vector=0 -report-all -no-report-cg -traceback=verbose -O3 -mstack-arrays -msched-block -mvector-floating-divide-instruction -mvector-sqrt-instruction -floop-unroll-completely=8 -floop-unroll-completely-nest=8 -fcse-after-vectorization -mno-vector-fma -fno-associative-math"
+
+# Load list of inline files from DWD:
+source "${icon_dir}/config/dwd/inlinelist.sh"
+
+ICON_FCFLAGS="-D__COMM_OPT__ -D__BLOCK_GET__ -D_RTTOV_ARCH_VECTOR -finline-functions -finline-file=$(join_arr : "${icon_dir}/" "${INLINE_LIST_EMVORADO[@]}" "${INLINE_LIST_ICON[@]}" "${INLINE_LIST_ART[@]}" "${INLINE_LIST_DACE[@]}")"
+ICON_ECRAD_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${icon_dir}/" "${INLINE_LIST_ECRAD[@]}")"
+ICON_FORTRAN_SUPPORT_FCFLAGS='-fpp'
+
+# We have two instances of SZIP in the software tree: the original one, which is
+# used by HDF5, and a wrapper around AEC, which is not needed because ECCODES
+# links to AEC directly. Therefore, we have to make sure that the linker finds
+# the original SZIP first:
+LDFLAGS="-L${SZIP_ROOT}/lib -L${AEC_ROOT}/lib -L${ZLIB_ROOT}/lib -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${BLAS_LAPACK_ROOT}/lib -L${ECCODES_ROOT}/lib -L${FYAML_ROOT}/lib -L${XML2_ROOT}/lib"
+ICON_LDFLAGS='-static'
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ZLIB_LIBS} ${AEC_LIBS} ${SZIP_LIBS}"
+
+AR='nar'
+MPI_LAUNCH='mpirun'
+
+EXTRA_CONFIG_ARGS='--disable-rpaths --enable-active-target-sync --enable-mixed-precision --disable-loop-exchange --enable-grib2 --enable-mpi --disable-openmp --enable-ecrad --disable-art'
+
+################################################################################
+
+"${icon_dir}/configure" \
+AR="${AR}" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_FORTRAN_SUPPORT_FCFLAGS="${ICON_FORTRAN_SUPPORT_FCFLAGS}" \
+ICON_LDFLAGS="${ICON_LDFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  ln -sf set-up.info run/SETUP.config
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  rsync -uavz ${icon_dir}/scripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi

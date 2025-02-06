@@ -1,0 +1,120 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+INTEL_ROOT='/software/all/toolkit/Intel_OneAPI/compiler/2023.1.0/linux'
+CC="${INTEL_ROOT}/bin/intel64/icc"
+FC="${INTEL_ROOT}/bin/intel64/ifort"
+AR="${INTEL_ROOT}/bin/intel64/xiar"
+
+MPI_ROOT='/software/all/mpi/openmpi/5.0_intel_2023.1.0'
+MPI_LIBS='-lmpi_usempif08 -lmpi_usempi_ignore_tkr -lmpi_mpifh -lmpi'
+MPI_FORTRAN_MOD_DIR="${MPI_ROOT}/lib64"
+
+CUDA_ROOT='/software/all/devel/cuda/12.2'
+
+HDF5_ROOT='/software/all/lib/hdf5/1.12_intel_2023.1.0_serial'
+HDF5_LIBS='-lhdf5_hl_fortran -lhdf5_fortran -lhdf5'
+
+NETCDF_ROOT='/software/all/lib/netcdf/4.9_serial_intel_2023.1.0'
+NETCDF_LIBS='-lnetcdf'
+
+NETCDFF_ROOT='/software/all/lib/netcdf-fortran/4.6_serial_intel_2023.1.0'
+NETCDFF_LIBS='-lnetcdff'
+
+MKL_ROOT='/software/all/toolkit/Intel_OneAPI/mkl/2023.1.0'
+MKL_LIBS='-lmkl_gf_lp64 -lmkl_sequential -lmkl_core'
+
+ECCODES_ROOT='/software/all/lib/eccodes/2.32.0_intel_2023.1.0'
+ECCODES_LIBS='-leccodes_f90 -leccodes'
+
+FYAML_ROOT='/software/all/lib/libfyaml/0.9'
+FYAML_LIBS='-lfyaml'
+
+# Libraries in /usr/lib{,64}
+XML2_INCLUDE_DIR='/usr/include/libxml2'
+XML2_LIBS='-lxml2'
+ZLIB_LIBS='-lz'
+
+################################################################################
+
+BUILD_ENV="export LD_LIBRARY_PATH=\"${INTEL_ROOT}/lib:${INTEL_ROOT}/compiler/lib/intel64:${INTEL_ROOT}/compiler/lib/intel64_lin:${MPI_ROOT}/lib64:${CUDA_ROOT}/lib64:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:${FYAML_ROOT}/lib:${MKL_ROOT}/lib/intel64:/usr/lib64:/usr/lib\"; export PATH=\"${HDF5_ROOT}/bin:${NETCDF_ROOT}/bin/:/usr/bin\"; unset CPATH C_INCLUDE_PATH CPLUS_INCLUDE_PATH INCLUDE LIBRARY_PATH;"
+
+LDFLAGS="-L${INTEL_ROOT}/lib -L${INTEL_ROOT}/compiler/lib/intel64 -L${INTEL_ROOT}/compiler/lib/intel64_lin -L${MPI_ROOT}/lib64 -L${CUDA_ROOT}/lib64 -L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib -L${MKL_ROOT}/lib/intel64 -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib"
+LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${MPI_LIBS} ${XML2_LIBS} ${ZLIB_LIBS} ${ECCODES_LIBS} ${FYAML_LIBS} ${MKL_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS}"
+
+ARCH="-m64 -march=core-avx2 -mtune=core-avx2"
+FCFLAGS="-I${INTEL_ROOT}/include -I${MPI_ROOT}/include -I${MPI_FORTRAN_MOD_DIR} -I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include ${ARCH} -g -gdwarf-4 -pc64 -fp-model source"
+CFLAGS="-I${INTEL_ROOT}/include -g -gdwarf-4 -qno-opt-dynamic-align ${ARCH} -fma -ip -pc64 -std=gnu99 -I${FYAML_ROOT}/include"
+CPPFLAGS="-I${INTEL_ROOT}/include -I${MPI_ROOT}/include -I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_INCLUDE_DIR}"
+
+ICON_FCFLAGS='-DDO_NOT_COMBINE_PUT_AND_NOCHECK -O2 -ftz -qoverride-limits -assume realloc_lhs -align array64byte -fma -ip -DOCE_SOLVE_OMP'
+ICON_CFLAGS='-O3 -ftz'
+ICON_OCEAN_FCFLAGS='-O3 -assume norealloc_lhs -reentrancy threaded -qopt-report-file=stdout -qopt-report=0 -qopt-report-phase=vec'
+ICON_BUNDLED_FCFLAGS="-O3 -ftz -std08"
+ICON_BUNDLED_CFLAGS='-O2 -ftz'
+ICON_YAC_CFLAGS=${ICON_BUNDLED_CFLAGS}
+ICON_CDI_CFLAGS=${ICON_BUNDLED_CFLAGS}
+ICON_ECRAD_FCFLAGS='-qno-opt-dynamic-align -no-fma -fpe0'
+
+# MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec -launcher fork"
+MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
+
+EXTRA_CONFIG_ARGS='--enable-intel-consistency --enable-vectorized-lrtm --enable-ecrad --enable-art --enable-grib2 --enable-emvorado --enable-dace --enable-coupling --enable-dim-swap'
+EXTRA_CONFIG_ARGS="${EXTRA_CONFIG_ARGS} --disable-mpi-checks"
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+AR="${AR}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_BUNDLED_FCFLAGS="${ICON_BUNDLED_FCFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${ICON_DIR}/run/standard_*
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi

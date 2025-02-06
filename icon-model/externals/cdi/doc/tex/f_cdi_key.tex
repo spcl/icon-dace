@@ -1,0 +1,309 @@
+
+
+\subsection{Define a string from a key: \texttt{cdiDefKeyString}}
+\index{cdiDefKeyString}
+\label{cdiDefKeyString}
+
+The function {\texttt{cdiDefKeyString}} defines a text string from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiDefKeyString(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                     CHARACTER*(*) string)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{string}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{string}]
+The address of a string where the data will be read.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiDefKeyString}} returns CDI\_NOERR if OK.
+
+
+\subsubsection*{Example}
+
+Here is an example using {\texttt{cdiDefKeyString}} to define the name of a variable:
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+
+    INCLUDE 'cdi.inc'
+       ...
+    INTEGER vlistID, varID, status
+       ...
+    vlistID = vlistCreate()
+    varID = vlistDefVar(vlistID, gridID, zaxisID, TIME_VARYING)
+       ...
+    status = cdiDefKeyString(vlistID, varID, CDI_KEY_NAME, "temperature")
+       ...
+\end{lstlisting}
+
+
+\subsection{Get a string from a key: \texttt{cdiInqKeyString}}
+\index{cdiInqKeyString}
+\label{cdiInqKeyString}
+
+The function {\texttt{cdiInqKeyString}} gets a text string from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiInqKeyString(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                     CHARACTER*(*) string, INTEGER length)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{string}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{string}]
+The address of a string where the data will be retrieved.
+                    The caller must allocate space for the returned string.
+\item[\texttt{length}]
+The allocated length of the string on input.
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiInqKeyString}} returns CDI\_NOERR if key is available.
+
+
+\subsubsection*{Example}
+
+Here is an example using {\texttt{cdiInqKeyString}} to get the name of the first variable:
+
+\begin{lstlisting}[language=Fortran, backgroundcolor=\color{pyellow}, basicstyle=\small, columns=flexible]
+
+    INCLUDE 'cdi.inc'
+       ...
+    #define STRLEN 256
+       ...
+    INTEGER streamID, vlistID, varID, status
+    INTEGER length = STRLEN
+    CHARACTER name[STRLEN]
+       ...
+    streamID = streamOpenRead(...)
+    vlistID = streamInqVlist(streamID)
+       ...
+    varID = 0
+    status = cdiInqKeyString(vlistID, varID, CDI_KEY_NAME, name, length)
+       ...
+\end{lstlisting}
+
+
+\subsection{Define an integer value from a key: \texttt{cdiDefKeyInt}}
+\index{cdiDefKeyInt}
+\label{cdiDefKeyInt}
+
+The function {\texttt{cdiDefKeyInt}} defines an integer value from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiDefKeyInt(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                  INTEGER value)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{cdiID}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{value}]
+An integer where the data will be read.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiDefKeyInt}} returns CDI\_NOERR if OK.
+
+
+
+\subsection{Get an integer value from a key: \texttt{cdiInqKeyInt}}
+\index{cdiInqKeyInt}
+\label{cdiInqKeyInt}
+
+The function {\texttt{cdiInqKeyInt}} gets an integer value from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiInqKeyInt(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                  INTEGER value)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{cdiID}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched..
+\item[\texttt{value}]
+The address of an integer where the data will be retrieved.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiInqKeyInt}} returns CDI\_NOERR if key is available.
+
+
+
+\subsection{Define a floating point value from a key: \texttt{cdiDefKeyFloat}}
+\index{cdiDefKeyFloat}
+\label{cdiDefKeyFloat}
+
+The function {\texttt{cdiDefKeyFloat}} defines a {\CDI} floating point value from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiDefKeyFloat(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                    REAL*8 value)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{cdiID}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched
+\item[\texttt{value}]
+A double where the data will be read
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiDefKeyFloat}} returns CDI\_NOERR if OK.
+
+
+
+\subsection{Get a floating point value from a key: \texttt{cdiInqKeyFloat}}
+\index{cdiInqKeyFloat}
+\label{cdiInqKeyFloat}
+
+The function {\texttt{cdiInqKeyFloat}} gets a floating point value from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiInqKeyFloat(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                    REAL*8 value)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{cdiID}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{value}]
+The address of a double where the data will be retrieved.
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiInqKeyFloat}} returns CDI\_NOERR if key is available.
+
+
+
+\subsection{Define a byte array from a key: \texttt{cdiDefKeyBytes}}
+\index{cdiDefKeyBytes}
+\label{cdiDefKeyBytes}
+
+The function {\texttt{cdiDefKeyBytes}} defines a byte array from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiDefKeyBytes(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                    unsigned CHARACTER*(*) bytes, INTEGER length)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{length}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{bytes}]
+The address of a byte array where the data will be read.
+\item[\texttt{length}]
+Length of the byte array
+
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiDefKeyBytes}} returns CDI\_NOERR if OK.
+
+
+
+\subsection{Get a byte array from a key: \texttt{cdiInqKeyBytes}}
+\index{cdiInqKeyBytes}
+\label{cdiInqKeyBytes}
+
+The function {\texttt{cdiInqKeyBytes}} gets a byte array from a key.
+
+\subsubsection*{Usage}
+
+\begin{verbatim}
+    INTEGER FUNCTION cdiInqKeyBytes(INTEGER cdiID, INTEGER varID, INTEGER key, 
+                                    unsigned CHARACTER*(*) bytes, INTEGER length)
+\end{verbatim}
+
+\hspace*{4mm}\begin{minipage}[]{15cm}
+\begin{deflist}{\texttt{length}\ }
+\item[\texttt{cdiID}]
+CDI object ID (vlistID, gridID, zaxisID).
+\item[\texttt{varID}]
+Variable identifier or CDI\_GLOBAL.
+\item[\texttt{key}]
+The key to be searched.
+\item[\texttt{bytes}]
+The address of a byte array where the data will be retrieved.
+                    The caller must allocate space for the returned byte array.
+\item[\texttt{length}]
+The allocated length of the byte array on input.
+\end{deflist}
+\end{minipage}
+
+\subsubsection*{Result}
+
+{\texttt{cdiInqKeyBytes}} returns CDI\_NOERR if key is available.
+

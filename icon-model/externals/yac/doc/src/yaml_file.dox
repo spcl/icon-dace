@@ -1,0 +1,378 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+/**
+ * \page yaml_file YAML configuration file
+   \tableofcontents
+
+\section yaml_file_intro Introduction
+
+YAC supports the use of a YAML file to configure the coupling
+between model components.
+This configuration file contains information such as:
+- (optional) start- and end date of the run
+- (optional) calendar to be used
+- which fields are supposed to be coupled
+- what interpolation is supposed to be used
+- at which frequency the coupling is supposed to be executed
+
+This configuration file can be read in at any time before the end of the
+definition phase. Couples defined in the configuration file whose source
+and/or target fields are not defined through the interface by the
+respective components are being ignored.
+
+\section yaml_file_desc Description
+
+- **start_date**
+
+  Start date of coupling time range (e.g. *2008-03-09T16:05:07*)
+
+- **end_date**
+
+  End date of coupling time range (e.g. *2008-03-10T16:05:07*)
+
+- **calendar**
+
+  Calendar being used in the coupled run\n
+  (available options: *proleptic-gregorian*, *360d*, and *365d*)
+
+- **timestep_unit**
+
+  The time period between couplings is defined by multiples of this
+  time step unit\n
+  (available options: *millisecond*, *second*, *minute*, *hour*, *day*, *month*, *year*, and *ISO_format*)
+
+- **debug**
+
+  Debugging options
+
+  - **global_config** \anchor yaml_file_desc_global_config
+
+    Write out configuration to a file after synchronisation between processes
+
+    - <b><i>sync_location</i></b>
+
+      `sync_location` has to be replaced with a valid synchronisation location in the
+      YAC initialisation (valid values are \ref phase_def_comp "def_comp",
+      \ref phase_sync_def "sync_def", and \ref phase_enddef "enddef")
+
+      \code{.yaml}
+        enddef: coupling_config_after_enddef.yaml
+      \endcode
+
+      By default, the configuration will be in the YAML format. But it is also
+      possible to explicitly set the filetype
+      (valid filetypes are: *yaml* and *json*):
+
+      \code{.yaml}
+        enddef:
+          filename: coupling_config_after_enddef.json
+          filetype: json
+      \endcode
+
+      The configuration file can also include the user definitions
+      (information about defined components, grids, and fields): \anchor yaml_include_definitions
+
+      \code{.yaml}
+        enddef:
+          filename: coupling_config_after_enddef.json
+          include_definitions: true
+      \endcode
+
+  - **output_grids** \anchor yaml_file_desc_output_grids
+
+    Write out grids defined by the user to file in parallel (see \ref io_config_detail).
+    The user can provide a list of grids to be written to file
+
+    - **grid_name**
+
+      Name of the grid (as provided in the \ref phase_def_grid)
+
+    - **file_name**
+
+      Name of the grid file\n
+      Multiple grids can be written to the same file
+
+  - **missing_definition_is_fatal**  (optional; default value: *true*) \anchor yaml_missing_definition_is_fatal
+
+    Determines whether YAC aborts if for a defined couple at least one
+    associated field was not defined by the user
+
+- **coupling**
+
+  List of fields to be coupled and their configuration.\n
+  Each coupling is defined by the following parameters,
+  which can be given in any order.
+
+  - **src_component**
+
+    Name of the source component
+
+  - **tgt_component**
+
+    Name of the target component
+
+  - **src_grid**
+
+    Name of the source grid
+
+    \code{.yaml}
+      src_grid: atmosphere_grid
+    \endcode
+
+    If multiple source grids have the same coupling configuration, a\n
+    list of grid names can be provided.
+
+    \code{.yaml}
+      src_grid: [atmosphere_grid_dom1, atmosphere_grid_dom2]
+    \endcode
+
+  - **tgt_grid**
+
+    Name of the target grid
+
+    \code{.yaml}
+      tgt_grid: ocean_grid
+    \endcode
+
+    If multiple target grids have the same coupling configuration, a\n
+    list of grid names can be provided.
+
+    \code{.yaml}
+      tgt_grid: [ocean_grid_dom1, ocean_grid_dom2]
+    \endcode
+
+  - **src_lag** (optional; default value: *0*)
+
+    Used to adjust the internal event trigger clock for the source
+
+    Timelag of 2 will put forward the internal clock for the put
+    event by 2 times the sourcetime step.
+
+  - **tgt_lag** (optional; default value: *0*)
+
+    Used to adjust the internal event trigger clock for the target
+
+  - **coupling_period**
+
+    Defines at which interval the target processes should receive data
+    through its get call.\n
+    It is given in multiples of the time step unit.
+
+    Coupling period must be an integer multiple of the source/target
+    time step.
+
+  - **time_reduction** (optional; default value: *none*)
+
+    Gives the user the option to define how YAC is supposed to handle
+    the source data provided by put that do not match the coupling_period
+    due to a higher frequency.\n
+    (available options: *accumulate*, *average*, *minimum*, *maximum*, and *none*)
+
+  - **weight_file_name** (optional)
+
+    Specifies the name of a weight file that will be written by YAC, if
+    the field is coupled. It contains the result of the whole interpolation
+    stack.\n
+    If no weight file name is given, no weight file will be generated.
+
+    The weight file can be read in by the
+    \ref interp_method_file "user-file interpolation method"
+
+    YAC will do the reading and writing of wight files in parallel.
+    This parallel IO can be configured as described here:
+    \ref io_config_detail
+
+  - **mapping_side** (optional; default value *source*)
+
+    Specifies at which component the weights will be stored and applied to the data
+    in order to interpolate the respective field.\n
+    (available options: *source* and *target*)
+
+  - **scale_factor** (optional; default value *1.0*)
+
+    All interpolated target points that do not receive the value of
+    \ref interp_method_fixed "the fixed interpolation" or the fallback value of
+    \ref frac_mask_desc "the dynamic fractional masking" will be multiplied by
+    this value.
+
+  - **scale_summand** (optional; default value *0.0*)
+
+    This value will be added to all interpolated target points that do not
+    receive the value of
+    \ref interp_method_fixed "the fixed interpolation" or the fallback value of
+    \ref frac_mask_desc "the dynamic fractional masking".
+
+  - **field**
+
+    Name of the field to be coupled.
+
+    \code{.yaml}
+      field: TAUX
+    \endcode
+
+    If multiple fields have the same coupling configuration, a\n
+    list of field names can be provided.
+
+    \code{.yaml}
+      field: [TAUX, TAUY]
+    \endcode
+
+    If the source and target component use a different field name,
+    the names are specified as follows:
+
+    \code{.yaml}
+      field:
+        src: TAUX_out
+        tgt: TAUX_in
+    \endcode
+
+  - **interpolation**
+
+    Contains a list of \ref interp_methods, which yield the
+    \ref interp_stack
+
+  - **src_mask_name**
+
+    Name of source mask (see \ref phase_def_mask_named_desc "Named masks")
+
+    If the source data consists of multiple source fields, use the key
+    \b src_mask_names and provide an array of mask names.
+
+  - **tgt_mask_name**
+
+    Name of target mask (see \ref phase_def_mask_named_desc "Named masks")
+
+- \b *
+
+  Any unknown root key will be ignored by YAC.
+
+\section yaml_file_example Example
+
+\image html yaml_example_setup.png ""
+
+\code{.yaml}
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+calendar: proleptic-gregorian
+coupling:
+# comp_1 -> comp_2
+  - src_component: comp_1
+    src_grid: grid_1
+    tgt_component: comp_2
+    tgt_grid: grid_2
+    coupling_period: 60
+    time_reduction: accumulate
+    field: transient_1
+    interpolation:
+      - bernstein_bezier
+# comp_2 -> comp_3
+  - src_component: comp_2
+    src_grid: grid_2
+    tgt_component: comp_3
+    tgt_grid: grid_3
+    coupling_period: 60
+    time_reduction: accumulate
+    field: transient_2
+    interpolation:
+      - average
+# comp_3 -> comp_1
+  - src_component: comp_3
+    src_grid: grid_3
+    tgt_component: comp_1
+    tgt_grid: grid_1
+    coupling_period: 60
+    time_reduction: accumulate
+    field: transient_3
+    interpolation:
+      - rbf
+
+\endcode
+
+\section yaml_file_yaml_features YAML Features
+
+YAC uses <a href="https://pantoniou.github.io/libfyaml/">libfyaml</a> to
+read its YAML configuration files. This library fully supports YAML
+Version 1.2.
+
+Therefore, features like anchhors, aliases, and merge keys
+can be used in the configuration file.
+
+\subsection yaml_file_yaml_features_example Example
+
+The following is a valid configuration file:
+
+\code{.yaml}
+
+definitions:
+  - &time_config
+    src_lag: 1
+    tgt_lag: 1
+    coupling_period: 3600
+  - &config_model
+    <<: *time_config
+    time_reduction: none
+    interpolation:
+      - nnn
+      - fixed:
+          user_value: -999.0
+  - &config_io
+    <<: *time_config
+    time_reduction: accumulate
+    interpolation:
+      - conservative:
+          enforced_conservation: false
+          normalisation: fracarea
+          partial_coverage: false
+      - fixed:
+          user_value: -999.0
+
+start_date: 2008-03-09T16:05:07
+end_date: 2008-03-10T16:05:07
+timestep_unit: second
+calendar: proleptic-gregorian
+debug:
+  global_config:
+    enddef: coupling_config_after_enddef.yaml
+  missing_definition_is_fatal: false
+coupling:
+  - src_component: dummy_atmosphere
+    src_grid: dummy_atmosphere_grid
+    tgt_component: dummy_ocean
+    tgt_grid: dummy_ocean_grid
+    <<: *config_model
+    field: [surface_downward_eastward_stress,
+            surface_downward_northward_stress,
+            surface_fresh_water_flux,
+            surface_temperature,
+            total_heat_flux,
+            atmosphere_sea_ice_bundle]
+  - src_component: dummy_ocean
+    src_grid: dummy_ocean_grid
+    tgt_component: dummy_atmosphere
+    tgt_grid: dummy_atmosphere_grid
+    <<: *config_model
+    field: [sea_surface_temperature,
+            eastward_sea_water_velocity,
+            northward_sea_water_velocity,
+            ocean_sea_ice_bundle]
+  - src_component: dummy_atmosphere
+    src_grid: dummy_atmosphere_grid
+    tgt_component: dummy_io
+    tgt_grid: atmos_grid
+    <<: *config_io
+    field: [atmos_out1, atmos_out2, atmos_out3, atmos_out4]
+  - src_component: dummy_ocean
+    src_grid: dummy_ocean_grid
+    tgt_component: dummy_io
+    tgt_grid: ocean_grid
+    <<: *config_io
+    field: [ocean_out1, ocean_out2, ocean_out3, ocean_out4]
+
+\endcode
+
+ */
+

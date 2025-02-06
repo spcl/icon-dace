@@ -1,0 +1,140 @@
+name: Continuous Integration
+on:
+  push:
+    branches-ignore:
+    - documentation
+  pull_request:
+    branches-ignore:
+    - documentation
+
+defaults:
+  run:
+    # Enable Conda environment by using the login shell:
+    shell: bash -leo pipefail {0}
+
+jobs:
+  CI:
+    runs-on: ubuntu-22.04
+    strategy:
+      fail-fast: false
+      matrix:
+        fortran-compiler: [gfortran-10, gfortran-11, gfortran-12]
+        fpmodel: [DP, SP]
+        include:
+        - fpmodel: DP
+          build-dir: .
+        - fpmodel: SP
+          build-dir: test_build
+    env:
+      # Core variables:
+      FC: ${{ matrix.fortran-compiler }}
+      FCFLAGS: "-I/usr/include -m64 -std=f2008 -march=native -fbounds-check -fmodule-private -fimplicit-none -finit-real=nan -g"
+      # Configure script variables:
+      LAUNCH_PREFIX:
+      # Auxiliary variables:
+      RFMIP_CACHEDIR: .testcache
+    steps:
+    #
+    # Check out repository
+    #
+    - uses: actions/checkout@v4
+    #
+    # Synchronize the package index
+    #
+    - name: Synchronize the package index
+      run: sudo apt-get update
+    #
+    # Install NetCDF-Fortran (compatible with all compilers)
+    #
+    - name: Install NetCDF-Fortran
+      run: sudo apt-get install libnetcdff-dev
+    #
+    # Cache Conda packages
+    #
+    - name: Cache Conda packages
+      uses: actions/cache@v3
+      with:
+        path: ~/conda_pkgs_dir
+        key: conda-pkgs
+    #
+    # Set up Conda
+    #
+    - name: Set up Conda
+      uses: conda-incubator/setup-miniconda@v3
+      with:
+        miniforge-version: latest
+        activate-environment: rte_rrtmgp_test
+        environment-file: environment-noplots.yml
+        python-version: 3.9
+        auto-activate-base: false
+        # Use the cache properly:
+        use-only-tar-bz2: true
+    #
+    # Cache RFMIP files
+    #
+    - name: Cache RFMIP files
+      uses: actions/cache@v3
+      with:
+        path: ${{ env.RFMIP_CACHEDIR }}
+        key: rfmip-files-autoconf
+    #
+    # Finalize build environment
+    #
+    - name: Finalize build environment
+      if: matrix.build-dir != '.'
+      run: |
+        # Create build directory:
+        mkdir '${{ matrix.build-dir }}'
+        # Use the cached RFMIP files:
+        ln -s "${GITHUB_WORKSPACE}/${RFMIP_CACHEDIR}" '${{ matrix.build-dir }}'
+        # Create the cache directory in case the cache is missing and the
+        # directory does not exist yet:
+        mkdir -p "${RFMIP_CACHEDIR}"
+    #
+    # Configure
+    #
+    - name: Configure
+      working-directory: ${{ matrix.build-dir }}
+      run: |
+        test 'x${{ matrix.fpmodel }}' = xSP && enable_sp=yes || enable_sp=no
+        "${GITHUB_WORKSPACE}/configure" \
+          --disable-silent-rules \
+          --enable-single-precision="${enable_sp}" \
+          --enable-tests \
+        || { cat ./config.log; exit 1; }
+    #
+    # Build
+    #
+    - name: Build
+      working-directory: ${{ matrix.build-dir }}
+      run: make -j
+    #
+    # Check
+    #
+    - name: Check
+      working-directory: ${{ matrix.build-dir }}
+      run: |
+        make -j check || {
+          find . -name '*.test' | sort | sed 's|.test$|.log|' | while read file; do
+            echo "$file"
+            cat "$file"
+          done
+          exit 1
+        }
+    #
+    # Install
+    #
+    - name: Install
+      working-directory: ${{ matrix.build-dir }}
+      run: sudo make install
+    #
+    # Distclean
+    #   We want to keep the cached RFMIP files, therefore we run this only for
+    #   the out-of-source build.
+    #
+    - name: Distclean
+      if: matrix.build-dir != '.'
+      working-directory: ${{ matrix.build-dir }}
+      run: |
+        make -j distclean
+        test "x$(find . -type f)" = x || { find . -type f; exit 1; }

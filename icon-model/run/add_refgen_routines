@@ -1,0 +1,56 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# sourced from pp.refgen_* scripts
+
+builder=$(echo "${BB_NAME}" | tr '[:upper:]' '[:lower:]')
+model_output_dir="${basedir:?undefined}/experiments/${base_exp:?undefined}"
+
+# make sure the resulting data and directories are global readable
+umask 0022
+
+store_model_output()
+{
+    # update test needs have the regular ICON output structure
+
+    # get current commit
+    git_commit=$(git rev-parse HEAD)
+
+    # get date string
+    date_str=$(date '+%Y-%m-%d')
+
+    # get repository
+    origin="$(git config --get remote.origin.url)"
+    origin=${origin##*/} # cut off all except icon-xyz.git
+    origin=${origin%%.*} # cut off .git
+
+    reference_dir="${icon_data_rootFolder:?undefined}/buildbot_data/ref/${date_str}.${origin}.${git_commit:0:12}/${builder}"
+    # experiments carry over the "_base" extension if available
+    fake_output_dir="${reference_dir}/experiments/${base_exp}"
+    mkdir -p "${fake_output_dir}"
+
+    status=0
+    # copy data for update test (replace "," with " " in file_ids)
+    if [ -z "${update_file_ids}" ]; then
+        # without given files tags copy everything
+        rsync --safe-links "${model_output_dir}"/*nc "${fake_output_dir}"/ || status=1
+    else
+        for fid in ${update_file_ids//,/ }; do
+            cp "${model_output_dir}"/*"$fid"*.nc "$fake_output_dir" || status=1
+        done
+    fi
+
+    # on some machines, the model output has only user rwx access
+    chmod 755 "$fake_output_dir"/* || status=1
+
+    echo "Stored model output at $fake_output_dir"
+
+    return $status
+}

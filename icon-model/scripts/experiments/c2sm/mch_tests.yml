@@ -1,0 +1,230 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+tests:
+  - name: mch_ch_lowres
+    tags: ['atm', 'merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia', 'balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [25,12,13,20,19]
+      - balfrin_cpu_nvidia_mixed: [1,30,35,44,13,14]
+  - name: mch_ch_r04b09_dace
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_cpu_nvidia', 'balfrin_gpu_nvidia']
+      - name: daint
+        exclude: ['DAINT_CPU_cce']
+    refgen: ['balfrin_cpu_nvidia', 'DAINT_CPU_nvidia']
+    checksuite_modes:
+      - balfrin: 't'
+      - daint: 't'
+    ensemble_num: # Use 1 ensemble member as the tolerances are 0
+      - balfrin_cpu_nvidia: [1]
+      - DAINT_CPU_nvidia: [1]
+  - name: mch_ch_r04b09_dace_synsat
+    tags: ['atm','merge2rc','probtest']
+    checksuite_modes:
+        - horeka: 't'
+    machines:
+      - name: horeka
+        include_only: ['horeka_cpu_nvhpc','horeka_gpu_nvhpc']
+    refgen: ['horeka_cpu_nvhpc']
+    ensemble_num:
+      - horeka_cpu_nvhpc: [25,12,13,20,19]
+  - name: mch_kenda-ch1_small
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 'tc'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [38,8,7,19,18,5,36]
+      - balfrin_cpu_nvidia_mixed: [1,11,14,8,23,15,16,26,18,20,49]
+  - name: mch_pollen_test
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [25,12,13,20,19]
+      - balfrin_cpu_nvidia_mixed: [18,7,49,45,28]
+  - name: mch_icon-ch1
+    tags: ['mch-opr']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_gpu_nvidia_mixed', 'alps_mch_test_gpu']
+        runflags: ['cpu_time=02:00:00']
+    checksuite_modes:
+      - balfrin: 'pg'
+  - name: mch_icon-ch1_small
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [50,21,39,38,15]
+      - balfrin_cpu_nvidia_mixed: [50,21,40,39,16]
+  - name: mch_icon-ch2
+    tags: ['mch-opr']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_gpu_nvidia_mixed', 'alps_mch_test_gpu']
+        runflags: ['cpu_time=01:20:00']
+    checksuite_modes:
+      - balfrin: 'p'
+  - name: mch_icon-ch2_small
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 'tg'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [25,46,27,32,4]
+      - balfrin_cpu_nvidia_mixed: [36,34,1,26,11,22,16,13]
+  - name: mch_kenda-ch1
+    tags: ['mch-opr']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_gpu_nvidia_mixed', 'alps_mch_test_gpu']
+        runflags: ['cpu_time=00:20:00']
+    checksuite_modes:
+      - balfrin: 'p'
+  - name: mch_opr_r04b07
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [18,48,43,37,32,25]
+      - balfrin_cpu_nvidia_mixed: [32,11,18,20,24,46,47]
+  - name: mch_opr_r04b07_lhn_00
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [19,43,31,1,25,33,20,4,7,2,50,5,46,30,3]
+      - balfrin_cpu_nvidia_mixed: [21,27,13,37,24,50,49,12,11]
+    tolerance_factor:
+      - balfrin: 10
+  - name: mch_opr_r04b07_lhn_12_emvorado
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    checksuite_modes:
+      - balfrin: 't'
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    ensemble_num:
+      - balfrin_cpu_nvidia: [36,2,28,40,25,27,18,34,33,47,9]
+      - balfrin_cpu_nvidia_mixed: [13,42,47,24,11,28,45,1,8,17,3,49,39,20,46]
+    tolerance_factor:
+      - balfrin: 10
+  - name: mch_opr_r04b07_nest
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 'rt'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [26,33,31,38,42,43]
+      - balfrin_cpu_nvidia_mixed: [38,22,48,19,37]
+  - name: mch_opr_r04b07_performance
+    tags: ['atm','merge2rc']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_gpu_nvidia_mixed']
+    checksuite_modes:
+      - balfrin: 'p'
+  - name: mch_opr_r04b07_sstice_inst
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia', 'balfrin_cpu_nvidia_mixed', 'alps_mch_test_cpu', 'DAINT_CPU_nvidia']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [18,8,49,45,27]
+      - balfrin_cpu_nvidia_mixed: [50,20,40,39,15]
+      - DAINT_CPU_nvidia: [50,20,40,16,18]
+  - name: mch_opr_r19b07_lpi
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+    refgen: ['balfrin_cpu_nvidia','balfrin_cpu_nvidia_mixed','alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 't'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [25,42,14,45,47,46,23,39,17]
+      - balfrin_cpu_nvidia_mixed: [14,48,33,45,35,31,39,6,8,13,38,7,21,32]
+  - name: mch_opr_r19b07_midnight
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_cpu_nvidia', 'balfrin_cpu_nvidia_mixed', 'alps_mch_test_cpu']
+      - name: daint
+        include_only: ['DAINT_CPU_nvidia']
+    refgen: ['balfrin_cpu_nvidia', 'balfrin_cpu_nvidia_mixed', 'alps_mch_test_cpu', 'DAINT_CPU_nvidia']
+    checksuite_modes:
+      - balfrin: 't'
+      - daint: 'tm'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [29,46,32,35,4]
+      - balfrin_cpu_nvidia_mixed: [26,39,25,5,35,6,3,47]
+      - DAINT_CPU_nvidia: [16,44,35,21,27]
+  - name: mch_opr_r19b07_turb
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+      - name: daint
+        exclude: ['DAINT_CPU_cce']
+    checksuite_modes:
+      - balfrin: 't'
+      - daint: 'tm'
+    refgen: ['balfrin_cpu_nvidia', 'balfrin_cpu_nvidia_mixed', 'alps_mch_test_cpu', 'DAINT_CPU_nvidia']
+    ensemble_num:
+      - balfrin_cpu_nvidia: [20,9,49,46,28]
+      - balfrin_cpu_nvidia_mixed: [17,38,7,24,23,21,50]
+      - DAINT_CPU_nvidia: [38,24,46,37,9]
+  - name: mch_kenda-ch1_dev_small
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_cpu_nvidia', 'balfrin_gpu', 'alps_mch_test_cpu', 'alps_mch_test_gpu']
+    refgen: ['balfrin_cpu_nvidia', 'alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 'tc'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [18,46,37,23,28]
+  - name: mch_kenda-ch1_dev2_small
+    tags: ['atm','merge2rc','probtest']
+    machines:
+      - name: balfrin
+        include_only: ['balfrin_cpu_nvidia', 'balfrin_gpu', 'alps_mch_test_cpu', 'alps_mch_test_gpu']
+    refgen: ['balfrin_cpu_nvidia', 'alps_mch_test_cpu']
+    checksuite_modes:
+      - balfrin: 'tc'
+    ensemble_num:
+      - balfrin_cpu_nvidia: [26,28,48,29,46]

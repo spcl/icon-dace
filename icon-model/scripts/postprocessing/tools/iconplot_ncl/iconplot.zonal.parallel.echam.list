@@ -1,0 +1,11 @@
+iconplot.zonal.parallel.echam.s -v T
+iconplot.zonal.parallel.echam.s -v U
+iconplot.zonal.parallel.echam.s -v V
+iconplot.zonal.parallel.echam.s -v OMEGA
+iconplot.zonal.parallel.echam.s -v ACLC
+iconplot.zonal.parallel.echam.s -v ACLCAC
+iconplot.zonal.parallel.echam.s -v Qv
+iconplot.zonal.parallel.echam.s -v Qw
+iconplot.zonal.parallel.echam.s -v Qi
+iconplot.zonal.parallel.echam.s -v Q4
+iconplot.zonal.parallel.echam.s -v Q5

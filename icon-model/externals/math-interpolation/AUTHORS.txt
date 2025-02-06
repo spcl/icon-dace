@@ -1,0 +1,37 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: CC-BY-4.0
+# ---------------------------------------------------------------
+
+# A more complete author list is provided in the ICON repository.
+Almut Gassmann          
+Daniel Hupp
+Daniel Reinert
+Florian Prill
+Gabriel Vollenweider
+Günther Zängl
+Harald Braun
+Hui Wan
+Jochen Förstner         
+Leonidas Linardakis
+Luca Bonaventura
+Marek Jacob
+Maria Pilar Ripodas     
+Monika Esch
+Peter Korn              
+Pradipta Samanta
+Ralf Müller
+Sergey Kosukhin
+Stephan Lorenz
+Terry Cojean
+Thomas Heinze
+Thomas Jahns
+Tobias Ruppert
+William Sawyer
+Yen-Chen Chen

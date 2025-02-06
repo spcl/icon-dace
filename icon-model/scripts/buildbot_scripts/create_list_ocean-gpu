@@ -1,0 +1,122 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+# get the ICON root directory
+basedir=$(cd ../.. && pwd)
+
+addexp="./addexp"
+#############################################################################
+##
+## create ocean-gpu list
+##
+#############################################################################
+listname="ocean-gpu"
+./rmlist $listname
+
+
+# Create and deactivate all builders except levante_gpu_validation
+./create_all_builders $listname
+./set_builder_flags Inactive --builders "$(./lslist $listname --builders-only)" --list $listname
+./set_builder_flags Active --builders levante_gpu_validation --list $listname
+
+
+
+# Add all variants of ocean_omip_R2B4_V0_GM0 experiments and set dependencies for comparison script
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_cpurun.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_gpurun.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_cpurun_lvec.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_gpurun_lvec.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_comparison.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+
+./adddep --from-experiment "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_comparison.run" --to-experiment \
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_cpurun.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_cpurun_lvec.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_gpurun.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM0_gpurun_lvec.run" \
+         --machines levante --list $listname
+
+
+
+# # Add all variants of ocean_omip_R2B4_V0_GM1 experiments and set dependencies for comparison script
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_cpurun.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_gpurun.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_cpurun_lvec.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_gpurun_lvec.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_comparison.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# 
+# ./adddep --from-experiment "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_comparison.run" --to-experiment \
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_cpurun.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_cpurun_lvec.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_gpurun.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V0_GM1_gpurun_lvec.run" \
+#          --machines levante --list $listname
+
+
+
+# Add all variants of ocean_omip_R2B4_V1_GM0 experiments and set dependencies for comparison script
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_cpurun.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_gpurun.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_cpurun_lvec.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_gpurun_lvec.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+$addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_comparison.run" \
+   --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+
+./adddep --from-experiment "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_comparison.run" --to-experiment \
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_cpurun.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_cpurun_lvec.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_gpurun.run "\
+"checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM0_gpurun_lvec.run" \
+         --machines levante --list $listname
+
+
+
+# # Add all variants of ocean_omip_R2B4_V1_GM1 experiments and set dependencies for comparison script
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_cpurun.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_gpurun.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_cpurun_lvec.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_gpurun_lvec.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# $addexp "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_comparison.run" \
+#    --builders "levante_gpu_validation" --runflags "cpu_time=00:10:00" --list $listname
+# 
+# ./adddep --from-experiment "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_comparison.run" --to-experiment \
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_cpurun.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_cpurun_lvec.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_gpurun.run "\
+# "checksuite.ocean_internal/gpu/exp.ocean_omip_R2B4_V1_GM1_gpurun_lvec.run" \
+#          --machines levante --list $listname
+
+
+# Show the list
+./lslist $listname

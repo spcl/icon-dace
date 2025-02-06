@@ -1,0 +1,21 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#
+# configure wrapper which is used for buildbot builder dwd_nec_hybrid (VH)
+#
+"$(dirname -- "${BASH_SOURCE[0]}")"/rcl.VH.gcc-11.2.0_mpi-3.5_oper \
+  --disable-les \
+  --enable-waves \
+  --enable-jsbach \
+  --disable-jsbach-hd \
+  "$@"

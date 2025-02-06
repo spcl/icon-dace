@@ -1,0 +1,36 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: YAC
+Upstream-Contact: Moritz Hanke <hanke@dkrz.de>
+Source: https://dkrz-sw.gitlab-pages.dkrz.de/yac/
+
+Files: config/checkdoc/*.txt
+Copyright: 2024 The YAC Authors
+License: BSD-3-Clause
+
+Files: doc/Figures/*.png
+Copyright: 2024 The YAC Authors
+License: CC-BY-4.0
+
+Files: doc/Figures/*.jpg
+Copyright: 2024 The YAC Authors
+License: CC-BY-4.0
+
+Files: input/*.txt
+Copyright: 2024 The YAC Authors
+License: CC-BY-4.0
+
+Files: input/*.json
+Copyright: 2024 The YAC Authors
+License: CC-BY-4.0
+
+Files: input/*.csv
+Copyright: 2024 The YAC Authors
+License: CC-BY-4.0
+
+Files: src/pkgconfig/yac*.pc.in
+Copyright: 2024 The YAC Authors
+License: CC0-1.0
+
+Files: grids/*.nc
+Copyright: Helmuth Haak <helmuth.haak@mpimet.mpg.de>
+License: BSD-3-Clause

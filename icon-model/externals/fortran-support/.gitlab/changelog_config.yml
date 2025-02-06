@@ -1,0 +1,33 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+#
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: CC0-1.0
+# ---------------------------------------------------------------
+
+categories:
+  feature: New features
+  bugfix: Bug fixes
+  other: Other changes
+  default: Non-categorized
+
+template: |
+  {% if categories %}
+  {% each categories %}
+  ### {{ title }} ({% if single_change %}1 change{% else %}{{ count }} changes{% end %})
+
+  {% each entries %}
+  - [{{ title }}]({{ commit.reference }})\
+  by {{ author.reference }}
+
+  {% end %}
+
+  {% end %}
+  {% else %}
+  No change log.
+  {% end %}
+

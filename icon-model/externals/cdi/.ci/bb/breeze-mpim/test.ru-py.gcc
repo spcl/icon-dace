@@ -1,0 +1,62 @@
+#!/bin/bash
+
+set -eu
+set -o pipefail
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+top_srcdir=$(cd "${script_dir}/../../.."; pwd)
+install_dir="$(pwd)/install"
+
+. "${script_dir}/init.sh"
+init_gcc
+
+enable_maintainer_mode='no'
+if test ! -f "${top_srcdir}/configure"; then
+  "${top_srcdir}/autogen.sh"
+  # If there is no configure script, there are, most probably, no Ruby and
+  # Python interface files, which are generated in the maintainer mode only:
+  enable_maintainer_mode='yes'
+fi
+
+"${top_srcdir}/configure" \
+--enable-maintainer-mode="${enable_maintainer_mode}" \
+--enable-option-checking=fatal \
+--enable-python-interface \
+--enable-ruby-interface \
+--prefix="${install_dir}" \
+--with-eccodes="${ECCODES_ROOT}" \
+--with-netcdf="${NETCDF_ROOT}" \
+CC="${CC}" \
+CXX="${CXX}"
+
+make -j8
+
+make -j8 check || { cat interfaces/test-suite.log tests/test-suite.log; exit 1; }
+
+check_all_tests_passed interfaces/test-suite.log
+
+check_no_git_untracked
+
+# Check the installation:
+make -j8 install
+export RUBYLIB="$(find "${install_dir}" -name 'Cdi.so' -printf '%h'):${RUBYLIB-}"
+ruby ./interfaces/ruby/test.rb ./interfaces/testdata/mulval.grb
+ruby ./interfaces/ruby/test.rb ./interfaces/testdata/mulval.nc
+export PYTHONPATH="$(find "${install_dir}" -name 'Cdi.py' -printf '%h'):${PYTHONPATH-}"
+python ./interfaces/python/test.py ./interfaces/testdata/mulval.grb
+python ./interfaces/python/test.py ./interfaces/testdata/mulval.nc
+
+# Check the uninstallation:
+make -j8 uninstall
+remaining_files=$(find "${install_dir}" -type f) || {
+  echo "ERROR: failed to get the list of files in the installation prefix '${install_dir}'" >&2
+  exit 1
+}
+
+test -z "${remaining_files}" || {
+    cat >&2 <<_EOF
+ERROR: 'make uninstall' did not remove the following files:
+${remaining_files}
+_EOF
+  exit 1
+}

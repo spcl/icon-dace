@@ -1,0 +1,11 @@
+--- a/m4/libtool.m4	2013-08-01 11:23:32.749610298 +0200
++++ b/m4/libtool.m4	2014-04-04 15:30:02.855209645 +0200
+@@ -4817,6 +4817,8 @@
+ 	lf95*)				# Lahey Fortran 8.1
+ 	  _LT_TAGVAR(whole_archive_flag_spec, $1)=
+ 	  tmp_sharedflag='--shared' ;;
++        nagfor*)                        # NAGFOR 5.3
++          tmp_sharedflag='-Wl,-shared' ;;
+ 	xl[[cC]]* | bgxl[[cC]]* | mpixl[[cC]]*) # IBM XL C 8.0 on PPC (deal with xlf below)
+ 	  tmp_sharedflag='-qmkshrobj'
+ 	  tmp_addflag= ;;

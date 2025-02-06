@@ -1,0 +1,55 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+Pairwise coupling of ocean and atmosphere toy models
+----------------------------------------------------
+
+a) toy_icon_atm.c
+
+   atmosphere component reading in an ICON grid
+
+b) toy_icon_ocn.c
+
+   ocean component reading in an ICON grid
+
+c) toy_mpiom_ocn.c
+
+   ocean component reading in an MPIOM grid
+
+d) toy_reg2d_atm.c
+
+   atmosphere component on a regular longitude-latitude grid
+
+e)toy_reg2d_ocn.c
+
+   atmosphere component on a regular longitude-latitude grid
+
+f) toy_woa_ocn.c
+
+   This ocean component reads in World Ocean Atlas Data (WOA) from
+   * salinity_monthly_1deg.nc containing s_an and
+   * temperature_monthly_1deg.nc containing t_an
+
+Any atm component can be coupled to any ocn component.
+All components can be run parallel. An example runscript is given
+in toy_atm_ocn.sh
+
+mpirun -np 2 toy_icon_atm.x : -np 2 toy_icon_ocn.x
+
+The launching of two different executables may be system
+dependent, and the mpirun command may thus have to be adjusted.
+
+The coupling configuration for this set of examples is set
+toy_atm_ocn.yaml.
+
+The visualise the behaviour of the interpolation stack, for the
+coupling with toy_woa_ocn.c we provide set of three coupling
+configuration files
+
+* toy_atm_ocn_woa_step1.yaml
+* toy_atm_ocn_woa_step2.yaml
+* toy_atm_ocn_woa_step3.yaml
+
+We do not provide an automatism or script for that, but the default
+toy_atm_ocn.yaml has to be overwritten with the requested toy_atm_ocn_woa_step?.yaml .

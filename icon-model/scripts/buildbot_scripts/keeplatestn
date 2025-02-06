@@ -1,0 +1,67 @@
+#! /usr/bin/env python3
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+"""
+Remove all but the latest N files or directories
+
+See `keeplatestn --help` for usage
+"""
+
+# requires python >= 3.6
+
+import argparse
+import os
+import shutil
+import sys
+
+def remove(f):
+    """
+    remove file or directory
+    """
+    if os.path.isdir(f):
+        shutil.rmtree(f)
+    else:
+        os.remove(f)
+
+
+def keeplatestn(N, files, dry_run=False, verbose=False):
+    # Sort list of files based on last modification time in descending order
+    files = sorted(files, key=os.path.getmtime, reverse=True)
+
+    for item in files[N:]:
+        try:
+            if not dry_run:
+                remove(item)
+        except FileNotFoundError:
+            # file might be removed in the meantime since the list files was generated
+            if verbose:
+                print(f"Cannot delete file. File not found: {item}", file=sys.stderr)
+        else: # if the exception is not raised:
+            # print only after removing the file successfully
+            if verbose:
+                print(item)
+
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Remove all but the latest N files or directories.")
+    parser.add_argument("N", type=int, help="Number of files or directories to keep")
+    parser.add_argument("file_or_directory", nargs="+", help="List of files or directories to process")
+    parser.add_argument("--dry", action="store_true", help="Dry run (no changes will be made)")
+    parser.add_argument("--verbose", action="store_true", help="Write names of removed files.")
+
+    args = parser.parse_args()
+    keeplatestn(args.N, args.file_or_directory, args.dry, args.verbose)
+
+
+if __name__ == '__main__':
+    main()

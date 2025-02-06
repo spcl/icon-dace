@@ -1,0 +1,169 @@
+#!/bin/sh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -ex
+#
+TYP=$1
+echo $TYP
+#
+NAME=$2
+#
+RES=$3
+#
+echo $RES
+#
+eraRES=$4
+#
+#
+echo $eraRES
+#
+TO=$5
+#
+LEV=$6
+#
+echo $LEV
+#
+DATDIR=$7
+#
+
+echo QUELLE path $QUELLE 
+
+#
+
+
+#
+inDat="${DATDIR}/${NAME}_atm_3d_ml.nc"
+
+ATMera="ERAin_T63L47_atm_3d_zon_${ERAystrt}_${ERAylast}_${TYP}.nc"
+#
+###########################################################################
+# var.txt input for ncl scripts
+# number of latitudes
+
+ERATIME="(1979-${TO})"
+echo $ERATIME >>var.txt
+
+nlat=`cdo griddes $ATMera| grep ysize | cut -d"=" -f2`
+echo $nlat >>var.txt
+
+
+
+LEVELS="100900,99500,97100,93900,90200,86100,81700,77200,72500,67900,63300,58800,54300,49900,45700,41600,37700,33900,30402,27015,23833,20867,18116,15578,13239,11066,9102,7406,5964,4752,3743,2914,2235,1685,1245,901,637,440,296,193,122,74,43,23,11,4,1"
+eraLEV="100900,99500,97100,93900,90200,86100,81700,77200,72500,67900,63300,58800,54300,49900,45700,41600,37700,33900,30402,27015,23833,20867,18116,15578,13239,11066,9102,7406,5964,4752,3743,2914,2235,1685,1245,901,637,440,296,193,122,74,43,23,11"
+
+#
+cp var.txt var1.txt
+
+
+###########################################################################
+# 
+set  -ex
+#
+
+
+#--interpolate to pressure level and t63
+cdo -setpartabn,partab -ap2pl,${LEVELS} $inDat Uatm_dyn_pl_log
+REMAP_AREA_MIN=0.5 
+cdo -r remapycon,t63grid  Uatm_dyn_pl_log Uatm_dyn_t63_L47
+rm -f  busy*
+set +e
+#
+
+#
+#
+#----code130--- Temperature---ZONAL-
+#
+Cvar=ta
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+cdo -zonmean -selvar,${Cvar} Uatm_dyn_t63_L47  Ubusy_${Cvar}.nc
+#
+fi
+
+#
+#
+#-----code131---U-----zonal-
+#
+Cvar=ua
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+cdo -zonmean -selvar,${Cvar}  Uatm_dyn_t63_L47 Ubusy_${Cvar}.nc
+fi
+#
+#
+#
+#-----code132---V-----zonal-
+#
+Cvar=va
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+cdo -zonmean -selvar,${Cvar}  Uatm_dyn_t63_L47 Ubusy_${Cvar}.nc
+fi
+#
+#
+#----code130--- Temperature- (Model-ERAin)-zonal--
+#
+Cvar=ta
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+  cdo -zonmean -sellevel,${eraLEV} -selvar,${Cvar} Uatm_dyn_t63_L47 busy1.nc
+  if cdo -s showvar -selvar,${Cvar} $ATMera > /dev/null
+  then
+    cdo -sellevel,${eraLEV} -selvar,${Cvar} $ATMera busy2.nc
+    cdo sub busy1.nc busy2.nc Ubusy_d${Cvar}.nc
+  fi
+fi
+#
+rm -f  busy* 
+#
+#
+#-----code131---U--(Model-ERAin)--zonal-
+#
+#
+Cvar=ua
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+  cdo -zonmean -sellevel,${eraLEV} -selvar,${Cvar} Uatm_dyn_t63_L47 busy1.nc
+  if cdo -s showvar -selvar,${Cvar} $ATMera > /dev/null
+  then
+    cdo -sellevel,${eraLEV} -selvar,${Cvar} $ATMera busy2.nc
+    cdo sub busy1.nc busy2.nc Ubusy_d${Cvar}.nc
+  fi
+fi
+#
+#
+rm -f  busy* 
+#
+#-----code132---V--(Model-ERAin)--zonal-
+#
+#
+Cvar=va
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63_L47 > /dev/null
+then
+  cdo -zonmean -sellevel,${eraLEV} -selvar,${Cvar} Uatm_dyn_t63_L47 busy1.nc
+  if cdo -s showvar -selvar,${Cvar} $ATMera > /dev/null
+  then
+    cdo -sellevel,${eraLEV} -selvar,${Cvar} $ATMera busy2.nc
+    cdo sub busy1.nc busy2.nc Ubusy_d${Cvar}.nc
+  fi
+fi
+#
+rm -f  busy*  Uatm_dyn_t63_L47
+
+exit
+
+
+
+
+
+
+

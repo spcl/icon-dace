@@ -1,0 +1,518 @@
+#! /usr/bin/env python #%# -*- mode: python -*- vi: set ft=python :
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+#SBATCH --account=%{ACCOUNT}
+#%  if JOB.qos is defined:
+#SBATCH --qos=%{JOB.qos}
+#%  endif
+#SBATCH --job-name=%{EXP_ID}.mon
+#SBATCH --partition=%{JOB.partition}
+#%  if JOB.tasks is defined:
+#SBATCH --ntasks=%{JOB.tasks}
+#%  endif
+#%  if JOB.hardware_threads|default('') is not set:
+#SBATCH --ntasks-per-core=1
+#%  endif
+#SBATCH --output=%{LOG_DIR}/%x.%8j.log
+#SBATCH --time=%{JOB.time_limit}
+#%include 'standard_environments/'+ENVIRONMENT+'.tmpl' ignore missing
+
+'''\
+Create monitoring from ICON experiment data for a given period
+'''
+
+import argparse
+import errno
+import os
+import re
+import shutil
+import subprocess
+import sys
+
+#% include 'standard_experiments/mtime.tmpl'
+#% include 'standard_experiments/logging.tmpl'
+
+# Convenience link to log file
+try:
+    job_name = 'mon'
+    job_id = os.environ['%{JOB.id_environ}']
+    log_name = f'%{LOG_DIR}/%{EXP_ID}.{job_name}.{job_id:>08}.log'
+    log_link = f'%{SCRIPT_DIR}/%{EXP_ID}.{job_name}.log'
+    try: os.remove(log_link)
+    except FileNotFoundError: pass
+    os.symlink(log_name, log_link)
+except KeyError:
+    pass
+
+# Process command line options
+
+def check_date(arg):
+    try:
+        value = mtime.DateTime(arg)
+    except ValueError as ve:
+        raise argparse.ArgumentTypeError(str(ve))
+    return value
+
+command_line = argparse.ArgumentParser(description=__doc__.split('\n', 1)[0])
+command_line.add_argument('start_date', type=check_date, help=
+    'first date of period (YYYY-MM-DD... or YYYYMMDD...)')
+command_line.add_argument('-V', '--version', action='version', version="""
+$Id: run/standard_experiments/DEFAULT.mon.tmpl 3 2024-02-08 14:02:37Z m221078 $
+%{VERSIONS_|join('\n')}
+""")
+command_line.add_argument('-c', '--clean', action='store_true', help=
+    'remove output files. '
+    'Use ONLY after you made absolutely sure that the raw data still exists!')
+command_line.add_argument('-f', '--force', action='store_true', help=
+    'continue to run even if working directory exists. '
+    'Use ONLY after you made absolutely sure that no other job is running!')
+command_line.add_argument('-w', '--work-stamp', action='store_true', help=
+    'expect time stamps in model format instead of post-processed')
+command_line.add_argument('-W', '--work-dir', action='store_true', help=
+    'take files from work directory instead of data directory')
+command_line.add_argument('-N', '--include-next-date', action='store_true', help=
+    'also include files with time stamps for next start date')
+command_line.add_argument('-s', '--set-start-date', type=check_date, help=
+    'set lower bound of interval to be processed explicitly'
+    ' (implies --no-trigger)')
+command_line.add_argument('-n', '--set-next-date', type=check_date, help=
+    'set upper bound of interval to be processed explicitly'
+    ' (implies --no-trigger)')
+command_line.add_argument('--no-trigger', action='store_true', help=
+    'do not execute triggered jobs')
+command_line.add_argument('--merge-only', action='store_true', help=
+    'do not visualize or publish files')
+command_line.add_argument('--no-upload', action='store_true', help=
+    'do not publish files')
+args = command_line.parse_args()
+
+if args.set_start_date or args.set_next_date:
+    args.no_trigger = True
+
+# Do time computations using mtime
+
+initial_date = mtime.DateTime('%{INITIAL_DATE}')
+start_date = args.start_date
+
+if start_date < initial_date:
+    logging.error("start_date is before initial_date")
+    sys.exit(1)
+    
+interval = mtime.TimeDelta('%{JOB.interval|d(INTERVAL)}')
+final_date = mtime.DateTime('%{FINAL_DATE}')
+next_date = start_date + interval
+
+if next_date > final_date:
+    logging.warning('next date after final date; setting next date to final date')
+    next_date = final_date
+
+offset = mtime.TimeDelta('-%{namelists.NAMELIST_atm.run_nml.modeltimestep}')
+end_date = next_date + offset
+
+# Override processing interval on demand.
+# Can only be done here, because end_date needs to be consistent with run dir
+if args.set_start_date:
+    start_date = args.set_start_date
+if args.set_next_date:
+    next_date = args.set_next_date
+
+# Determine date/time stamp formatting
+
+weed = re.compile(r'[-:]|\.\d+$') # for re-formatting of date/time stamps
+def data_stamp(date):
+    return re.sub(weed, '', str(date.date))
+def run_stamp(date):
+    return re.sub(weed, '', str(date))
+def work_stamp(date):
+    return re.sub(weed, '', str(date)) + 'Z'
+
+stamp = work_stamp if args.work_stamp else data_stamp
+
+# Determine directory to read files from
+
+input_dir = '%{DATA_DIR}'
+if args.work_dir:
+    input_dir = os.path.join('%{WORK_DIR}', '%{jobs.run.subdir}').format(
+        start_stamp=run_stamp(start_date), end_stamp=run_stamp(end_date))
+
+# Set-up template variables
+
+mon_dir = '%{MON_DIR}'
+exp_id = '%{EXP_ID}'
+
+template_dict = {}
+template_dict['start_date'] = str(start_date)
+template_dict['min_date'] = str(start_date)
+if args.include_next_date:
+    template_dict['min_date'] = str(start_date+mtime.TimeDelta('PT1S'))
+template_dict['end_date'] = str(end_date)
+template_dict['start_stamp'] = stamp(start_date)
+template_dict['end_stamp'] = stamp(end_date)
+template_dict['mean_op'] = '%{JOB.mean_op|d('yearavg')}'
+template_dict['mean_op_name'] = re.sub(r'\W+', '_',
+                                       template_dict['mean_op']).strip('_')
+if args.include_next_date:
+    template_dict['mean_op'] += ' -seltimestep,1/-2'
+template_dict['input_dir'] = input_dir
+template_dict['mon_dir'] = mon_dir
+template_dict['exp_id'] = exp_id
+template_dict['target_extension'] = ('nc' if args.merge_only else 'html')
+
+# Prolog
+
+logging.info('monitoring started '
+             'for {start_date}-{end_date}'.format(**template_dict))
+
+# Define required output
+
+#%- set set_tags = []
+#%  if JOB.tags is defined:
+#%      set tags = JOB.tags
+#%      for tag in tags.scalars|sort if tags[tag] is set:
+#%          do set_tags.append(tag)
+#%      endfor
+#%  endif
+#%- set extension_map = {1: 'grb', 2: 'grb', 3: 'nc', 4: 'nc', 5: 'nc', 6: 'nc'}
+#%- set file_infos = []
+#%  for namelist in namelists:
+#%    set namelist_data = namelists[namelist]
+#%    set remove_list = namelist_data['.remove']|d([])|list
+#%    for group in namelist_data.sections if group|match('^output_nml'):
+#%      set group_data = namelist_data[group]
+#%      set hidden = (group_data['.hide'] is set) or (group in remove_list)
+#%      if not hidden:
+#%        set output_filename = group_data.output_filename
+#%        if output_filename is not defined :
+logging.warning("'output_filename' not defined in '%{namelist}.%{group}'")
+#%        endif
+#%        set output_tag = output_filename|d('')|match('^'+EXP_ID+'_(.*)$')
+#%        if output_tag and output_tag in set_tags:
+#%          set filename_format = group_data.filename_format
+#%          set extension = extension_map[group_data.filetype|d(4)|int]
+#%          set output_start = group_data.output_start
+#%          set output_start = output_start|replace('{initial_date}', INITIAL_DATE)
+#%          set output_start = output_start|replace('{final_date}', FINAL_DATE)
+#%          set output_end = group_data.output_end
+#%          set output_end = output_end|replace('{initial_date}', INITIAL_DATE)
+#%          set output_end = output_end|replace('{final_date}', FINAL_DATE)
+#%#         # Revert file life-time hack
+#%-         set file_interval = group_data.file_interval
+#%          if file_interval.endswith('T1S'):
+#%            set file_interval = file_interval[0:-3]
+#%          endif
+#%          set info = {}
+#%          do info.update(frequency = group_data.output_interval)
+#%          do info.update(time_reduction = group_data.operation or 'inst')
+#%          do info.update(output_start = output_start)
+#%          do info.update(output_end = output_end)
+#%          do info.update(file_interval = file_interval)
+#%          do info.update(filename_tmpl = filename_format|replace('<output_filename>', output_filename)|replace('<levtype_l>', levtype_l)+'.'+extension)
+#%          do file_infos.append(info)
+#%        endif
+#%      endif
+#%    endfor
+#%  endfor
+#%#
+
+file_infos = [
+#%  for info in file_infos:
+    %{info},
+#%  endfor
+]
+
+files = []
+
+for info in file_infos:
+
+    output_start = mtime.DateTime(info['output_start'])
+    output_end = mtime.DateTime(info['output_end'])
+    file_interval = mtime.TimeDelta(info['file_interval'])
+
+    # Check if current interval is overlapping with file life-time
+    if output_start < next_date and output_end >= start_date:
+
+        # Set lower and upper limits for file life-time wrtt current interval
+        file_start_date = max(start_date, output_start)
+        file_next_date = min(next_date, output_end)
+
+        # Generate output per file date
+        date = output_start
+
+        while ((args.include_next_date and date <= file_next_date)
+               or date < file_next_date):
+            if file_start_date <= date:
+                # Set current file name
+                filename = info['filename_tmpl'].replace('<datetime2>', stamp(date))
+                logging.info("current file '%s'", filename)
+
+                # Get variables from file
+                if os.path.isfile(os.path.join(input_dir, filename)):
+                    files.append(filename)
+                else:
+                    logging.warning("file '%s' does not exist", filename)
+
+            date += file_interval
+
+logging.debug('files: %s', ', '.join(files))
+
+# Add file list to template variables
+
+template_dict['files'] = ' '.join(files)
+
+# Determine additional files to be plotted
+
+add_dirs = [(d if os.path.isabs(d) else
+            os.path.normpath(os.path.join(os.path.dirname(mon_dir), d)))
+            for d in %{MON_ADD_DIRS|d|list}]
+
+logging.debug('add_dirs: %s', ', '.join(add_dirs))
+
+add_prefixes = []
+add_prefix_options = []
+idx = 2
+
+for add_dir in add_dirs:
+    add_exp_id = os.path.basename(add_dir)
+    add_prefix = os.path.join(add_dir, add_exp_id)
+
+    add_prefixes.append(add_prefix)
+
+    add_prefix_options.append(
+        '--with{0}={1}_$${{tag}}.nc:{2}'.format(
+            idx, add_prefix, add_exp_id))
+    add_prefix_options.append(
+        '--with{0}a={1}_$${{tag}}_$(MEAN_OP_NAME).nc:{1}_$(MEAN_OP_NAME)'.format(idx, add_exp_id))
+
+    idx += 1
+
+template_dict['add_prefixes'] = ' '.join(add_prefixes)
+template_dict['add_prefix_options'] = ' '.join(add_prefix_options)
+
+# Set-up directory structure
+
+targets_dir = os.path.join(mon_dir, 'targets')
+try: os.makedirs(targets_dir)
+except OSError as xcptn:
+    if xcptn.errno != errno.EEXIST: raise
+template_dict['targets_dir'] = targets_dir
+
+work_dir = os.path.join('%{JOB.work_dir}',
+                        '%{JOB.id}_{start_stamp}-{end_stamp}'.
+                        format(**template_dict))
+
+logging.info('working directory is {0}'.format(work_dir))
+
+# TODO HACK! Avoid skipping of overlapping files if time was not corrected
+# by always re-doing start and end files ie removing the target stamps
+if args.include_next_date:
+    conflict_names = []
+    for info in file_infos:
+        dates = []
+        if start_date != initial_date:
+            dates.append(start_date)
+        dates.append(next_date)
+        for date in dates:
+            name = info['filename_tmpl'].replace('<datetime2>', stamp(date))
+            (base, ignore) = os.path.splitext(name)
+            conflict_names.extend((name, base+'.pdf', base+'.html'))
+    for name in conflict_names:
+        try:
+            os.remove(os.path.join(targets_dir, name))
+            logging.info("removed time stamp for '{0}'".format(name))
+        except OSError as xcptn:
+            if xcptn.errno != errno.ENOENT: raise
+
+try:
+    os.makedirs(work_dir)
+except OSError as xcptn:
+    if xcptn.errno != errno.EEXIST:
+        raise
+    if args.force:
+        logging.info('forcing clean-up of existing working directory')
+        shutil.rmtree(work_dir)
+        os.mkdir(work_dir)
+    else:
+        logging.error('working directory exists. '
+                      'Check for running jobs, then consider using --force')
+        sys.exit(1)
+
+os.chdir(work_dir)
+
+# Generate Makefile
+
+makefile_template = '''\
+CDO = cdo
+CDOFLAGS = -s -O --reduce_dim
+PLOT_TIMESER = plot_timeser
+
+EXP_ID = {exp_id}
+DATA_DIR = {input_dir}
+MON_DIR = {mon_dir}
+SCRIPT_DIR = %{SCRIPT_DIR}
+
+MON_INDEX_SCRIPT = $(SCRIPT_DIR)/$(EXP_ID).mon_index
+
+MIN_DATE = {min_date}
+START_STAMP = {start_stamp}
+FILES = {files}
+TARGETS_DIR = {targets_dir}
+MEAN_OP = {mean_op}
+MEAN_OP_NAME = {mean_op_name}
+
+FILES1 = $(FILES:.nc=)
+FILES2 = $(FILES1:.grb=)
+TARGETS = $(FILES2:%=$(TARGETS_DIR)/%.{target_extension}) $(MON_DIR)/index.html
+
+all: $(TARGETS)
+
+clean:
+	$(RM) $(TARGETS) $(TARGETS:.html=.pdf) $(TARGETS:.html=)
+
+.PRECIOUS: $(TARGETS_DIR)/%.pdf $(TARGETS_DIR)/%.nc
+
+$(MON_DIR)/index.html: $(MON_INDEX_SCRIPT)
+	SHELL= filelock $@ -c '$(MON_INDEX_SCRIPT) $@'
+
+$(TARGETS_DIR)/%.nc: $(DATA_DIR)/%.nc
+	$(CDO) $(CDOFLAGS) select,startdate=$(MIN_DATE) $< $(<F)
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.nc -c \
+	   "set -ex ;\
+	    if [ -f $(MON_DIR)/$$base.nc ] ;\
+	    then \
+	        $(CDO) $(CDOFLAGS) mergetime $(<F) $(MON_DIR)/$$base.nc \
+	            $$base.nc ;\
+	        mv $$base.nc $(MON_DIR)/$$base.nc ;\
+	    else \
+	        cp $(<F) $(MON_DIR)/$$base.nc ;\
+	    fi"
+	touch $@
+
+$(TARGETS_DIR)/%.pdf: $(TARGETS_DIR)/%.nc
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.pdf \
+	    filelock -s $(TARGETS_DIR)/$$base.nc -c \
+	   'set -ex ;\
+	    base='$$base'; \
+	    tag=$${{base#$(EXP_ID)_}} ; \
+	    for prefix in $(MON_DIR)/$(EXP_ID) {add_prefixes}; do \
+	        f=$${{prefix}}_$${{tag}}.nc; \
+	        fm=$$(basename $$prefix)_$${{tag}}_$(MEAN_OP_NAME).nc; \
+	        $(CDO) -f nc $(CDOFLAGS) $(MEAN_OP) $$f $$fm ;\
+	        mv $$fm $(MON_DIR)/$$fm ;\
+	    done; \
+	    cd $(MON_DIR) ;\
+	    $(PLOT_TIMESER) --manifest=$$base.lst --mode=monitoring \
+	        --with1=$$base.nc:$(EXP_ID) \
+	        --with1a=$${{base}}_$(MEAN_OP_NAME).nc:$(EXP_ID)_$(MEAN_OP_NAME) \
+	        {add_prefix_options} --output=$$base'
+	touch $@
+
+$(TARGETS_DIR)/%.html: $(TARGETS_DIR)/%.pdf
+	@ base=$*; base=$${{base%_*}}; SHELL= filelock $(TARGETS_DIR)/$$base.html \
+	    filelock -s $(TARGETS_DIR)/$$base.pdf -c \
+	   "set -ex ;\
+	    mkdir -p $$base ;\
+	    TEMP=$$PWD/$$base ;\
+	    export TEMP ;\
+	    cd $(MON_DIR) ;\
+	    create_plot_browser -t $$base $$base.lst \
+	        > $$base.html"
+	touch $@ 
+'''
+
+makefile_name = 'Makefile'
+makefile = open(makefile_name, mode='w')
+makefile.write(makefile_template.format(**template_dict))
+makefile.close()
+
+# Create common NCL setup
+
+resfile_text = '''\
+*wkForegroundColor  : (/0.,0.,0./)
+*wkBackgroundColor  : (/1.,1.,1./)
+*Font               : helvetica 
+*TextFuncCode       : ~     
+*wkWidth            : 800
+*wkHeight           : 800
+*wsMaximumSize      : 32556688
+'''
+
+resfile_name = 'hluresfile'
+resfile = open(resfile_name, mode='w')
+resfile.write(resfile_text)
+resfile.close()
+
+os.putenv('PATH', os.pathsep.join((os.path.join('%{MODEL_DIR}', 'utils'),
+                                   os.getenv('PATH'))))
+os.putenv('NCARG_USRRESFILE', resfile_name)
+
+# Make sure that mergetime does not create duplicate data when run again
+
+os.putenv('SKIP_SAME_TIME', '1')
+os.putenv('SKIPSAMETIME', '1') # workaround for bug in cdo-1.9.6
+
+# Run the actual make process
+
+make_args = ['make', '-k', '-j', '%{JOB.tasks|d(1)}']
+if args.clean: make_args.append('clean')
+make = subprocess.Popen(make_args, universal_newlines=True,
+                        stdout=subprocess.PIPE, stderr=subprocess.STDOUT)
+
+while True:
+    line = make.stdout.readline()
+    if not line: break
+    logging.info(line.rstrip('\n'))
+
+make_result = make.wait()
+if make_result:
+    logging.error("'{0}' returned {1}".format(' '.join(make_args), make_result))
+    sys.exit(1)
+
+#%  if JOB.upload_url|d:
+if not args.no_upload and not args.merge_only:
+
+    logging.info('transfer data to upload URL')
+
+    import itertools, fnmatch, urllib.request, mimetypes
+
+    upload_url = '%{JOB.upload_url}'
+    names = os.listdir(mon_dir)
+
+    for name in itertools.chain.from_iterable(
+        fnmatch.filter(names, pattern) for pattern in ('*.pdf', '*.png', '*.html')
+    ):
+        with open(os.path.join(mon_dir, name), "rb") as input:
+            data = input.read()
+        url = upload_url.replace('/?', '/%{EXP_ID}/' + name + '?')
+        request = urllib.request.Request(url=url, data=data, method='PUT')
+        (mime_type, encoding) = mimetypes.guess_type(name)
+        request.add_header('Content-Type', mime_type)
+        with urllib.request.urlopen(request) as response:
+            pass
+        logging.info('%s (%s): %s (%d)',
+            name, mime_type, response.reason, response.status)
+
+#%  endif
+os.chdir('%{SCRIPT_DIR}')
+
+#%  if JOB.debug_level|d(0)|int < 1:
+shutil.rmtree(work_dir)
+
+#%  endif
+
+# Epilog
+
+logging.info('monitoring finished '
+             'for {start_date}-{end_date}'.format(**template_dict))
+
+if args.no_trigger:
+    logging.info('not executing triggered jobs')
+    sys.exit()
+
+#% include 'standard_experiments/trigger.tmpl'

@@ -1,0 +1,11 @@
+#!@SHELL@
+
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+@TEST_MPI_FALSE@exit 77
+@HAVE_NETCDF_FALSE@exit 77
+
+@MPI_LAUNCH@ -n 8 ./test_interpolation_parallel3.x tgt && \
+@MPI_LAUNCH@ -n 8 ./test_interpolation_parallel3.x src

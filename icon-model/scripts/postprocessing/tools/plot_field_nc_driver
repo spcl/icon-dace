@@ -1,0 +1,138 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#
+#==========================================================================
+#      Driver script for  plot_field_nc.ncl that plots 
+#      a field from a file in (lon lat field_variable) 
+#      ascii format.
+#==========================================================================
+#
+# name of the script
+name=${0##*/}
+#-----------------------------------------------------------------------------
+
+#default values
+
+FileD="/e/uscratch/mripodas/icon-1.0.6_RESTRUCT/experiments/ico_hdt31_JWw_sprR3_div1_ass0p1_offc0p55_T_hd4_efdt1_R3B04/"
+FileN="T850_ico_hdt31_JWw_sprR3_div1_ass0p1_offc0p55_T_hd4_efdt1_R3B04_day9.gmt"
+FileD="./"
+FileN="file_to_plot.nc"
+PlotFileName="No_Def"
+Pvlev=-1
+TimS=1
+BDefBar="no"
+BMinV=0.
+BmaxV=10.
+BintV=1.
+mytitle="nondef"
+lmount="no"
+MountD="/pool/data/ICON/releases/2.6.4/scripts/postprocessing/tools/MRW_mountain/"
+ScriptD="/e/uhome/mripodas/icon-dev/scripts/postprocessing/tools/"
+
+while getopts hd:f:v:l:t:o:b:m:M:I:T:R:D: option ; do
+ case $option in
+   h) echo "${name} [-h help] [-d directory where the ascii file ist] "
+      echo "        [-f netcdf file with the field to plot]  "
+      echo "        [-v Var Name to plot]"
+      echo "        [-l Hybrid Vert lev to plot (-1 for surface)]"
+      echo "        [-t Time Step within the file to plot]"
+      echo "        [-o output .ps file]"
+      echo "        [-b yes or no, to defin labelbar, -m -M -I min max and interval]"
+      echo "        [-T title of the plot]"
+      echo "        [-R yes if MRW test case and mountain is overploted]"
+      echo "        [-D directory with the file for the MRW mountain]"
+      echo "        [-S directory with ncl script]"
+      exit;
+      ;;
+   d) FileD=${OPTARG}/
+      ;;
+   f) FileN=${OPTARG}
+       #echo " FileN"
+      ;;
+   v) VarN=${OPTARG}
+       #echo " VarN"
+      ;;
+   l) Plotvertlev=${OPTARG}
+       #echo "Plotvertlev "
+      ;;
+   t) TimS=${OPTARG}
+       #echo " TimS"
+      ;;
+   o) PlotFileName=${OPTARG}
+       #echo " PlotFileName"
+      ;;
+   b) BDefBar=${OPTARG}
+      ;;
+   m) BMinV=${OPTARG}
+      ;;
+   M) BMaxV=${OPTARG}
+      ;;
+   I) BIntV=${OPTARG}
+      ;;
+   T) mytitle=${OPTARG}
+      ;;
+   R) lmount=${OPTARG}
+      ;;
+   D) MountD=${OPTARG}
+      ;;
+  esac
+done
+
+if [[ ${FileN} = "file_to_plot.nc" ]];then
+   echo "give me the name of a file with the field to plot \n"
+   exit
+fi
+
+if [[ ${PlotFileName} = "No_Def" ]];then
+   PlotFileName=${FileN%%.*}
+fi
+
+
+if [[ ${Plotvertlev} = "-1" ]];then
+   PlotFileName=${PlotFileName}_${VarN}_step${TimS}_sfc
+else
+   PlotFileName=${PlotFileName}_${VarN}_step${TimS}_vlev${Plotvertlev}
+fi
+
+#echo $FileD
+#echo $FileN
+#echo $PlotFileName
+#echo $BMinV
+#echo $BMaxV
+#echo $BIntV
+
+
+export FileD 
+export FileN 
+export PlotFileName
+export VarN
+export Plotvertlev
+export TimS
+export BDefBar
+export BMaxV
+export BMinV
+export BIntV
+export mytitle
+export lmount
+export MountD
+#Now the vorticity field is at the vertices
+# if this is not the case, set this variable to a value different from 1
+export vorticity_at_corners=1
+
+echo "ncl ${ScriptD}/plot_field_nc.ncl"
+
+ncl plot_field_nc.ncl
+
+
+
+exit

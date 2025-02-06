@@ -1,0 +1,234 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------
+#!/bin/ksh
+#=============================================================================
+#
+# This section of the run script containes the specifications of the ocean experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# Default EXPNAME is the suffix of this script after "exp."
+#
+#-----------------------------------------------------------------------------
+# Basic specifications for the hydrostatic ocean model
+# --------------------------------------
+# Stephan Lorenz, MPI-M, 2011-01 / 2012-03
+#
+#-----------------------------------------------------------------------------
+#
+# The following information is included to present some information on the buildbot-html main page
+#
+# _bb_table_Description_  unforced flat bottom aqua planet
+# _bb_table_Model_        ocean
+# _bb_table_Grid_         triangle
+#-----------------------------------------------------------------------------
+#
+# These variables are set in the header section of the completed run script:
+#
+# EXPNAME = experiment name
+# NPROMA  = array blocking length / inner loop length
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+ocean_namelist=NAMELIST_${EXPNAME}
+#-----------------------------------------------------------------------------
+# prognostic ocean initialization file must match the vertical levels
+# provide name suffix for vertical resolution
+# number of levels and thickness of surface and bottom layer
+#init_oce_suff='L10_50-1000m.nc'  # 10 levels, 10-1000m varying thickness
+#init_oce_suff='L10x500m.nc'      # 10 levels, 500m each
+#   ts_phc_annual-iconR${R}B0{B}-${init_oce_suff}
+#
+#-----------------------------------------------------------------------------
+# surface relaxation initialization (init_relax=1) needs an additional file for temperature/salinity
+init_relax=0   # 1: use relaxation initialization file
+# provide name suffix for thickness of surface layer
+#   number of levels and thickness of surface and bottom layer
+#init_rel_suff='50m.nc'  # 50m thickness
+#init_rel_suff='20m.nc'  # 20m thickness
+#   ts_surf_annual-iconR${R}B0{B}-${init_rel_suff}
+#
+#-----------------------------------------------------------------------------
+# ocean forcing (iforc=12) needs an additional flux file 
+# NO_FORCING                 = 10
+# ANALYT_FORC                = 11  - dependent on testcase
+# FORCING_FROM_FILE_FLUX     = 12  - OMIP or NCEP type forcing
+# FORCING_FROM_FILE_FIELD    = 13  - not yet
+# FORCING_FROM_COUPLED_FLUX  = 14  - coupled experiments
+# FORCING_FROM_COUPLED_FIELD = 15  - not yet
+iforc=10
+#
+# type of OMIP or NCEP forcing to read (iforc=12 only)
+#  1 = u/v-stress [and temperature relaxation, depending on "type_surfRelax_Temp" below]
+#  2 = use all 12 datasets of full OMIP forcing
+#  3 = u/v-stress [and temperature relaxation], heat and mass flux
+#  4 = u/v-stress [and temperature relaxation], 4 parts of heat flux, precip/evap flux
+#  5 = use full NCEP datasets; read monthly mean data of consecutive years, set forcing_timescale=12 !
+iforc_type=1
+forcing_timescale=1    # length of OMIP/NCEP dataset: 1 = annual; 12 = monthly data; else = daily data
+# surface flux file must match the length given by forcing_timescale
+#   omip4icon-R${R}B0{B}-monmean.nc  # 12 monthly mean datasets
+#   omip4icon-R${R}B0{B}-annual.nc   #  1 annual mean dataset
+#   ncep4icon-R${R}B0{B}.nc          # consecutive 12 monthly mean datasets (forcing_timescale=12)
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2001-01-01T00:00:00Z"
+  end_date="2001-01-05T00:00:00Z"
+#
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# calculate model timesteps using $ndays#-----------------------------------------------------------------------------
+# model parameters
+ocean_model_equations=-1     # equation system: -1=hydrost. ocean
+#
+#-----------------------------------------------------------------------------
+#
+LOC='none'
+grids_folder=/pool/data/ICON/oes/grids/AquaPlanets/
+ocean_grids="AquaPlanet_Icos_0316km_mirror.nc"
+
+p_test_run=${p_test:=".false."}
+if [ $p_test_run = ".true." ] ; then
+  l_test_openmp=".true."
+#  l_log_checks=".true."
+else
+  l_test_openmp=".false."
+  l_fast_sum=".true."
+fi
+l_log_checks=".false."
+#-----------------------------------------------------------------------------
+#
+# write namelist parameters
+# -------------------------
+# For a complete list see Namelist_overview.pdf
+#
+cat > ${ocean_namelist} << EOF
+!
+&parallel_nml
+ nproma       = ${nproma}
+ l_fast_sum   = .true.
+ p_test_run   = .false.
+/
+&grid_nml
+ dynamics_grid_filename = "${ocean_grids}",
+ use_dummy_cell_closure = .true.
+ use_duplicated_connectivity = .false.
+/
+&dynamics_nml
+/
+&run_nml
+ dtime       = 1800         ! model timestep in seconds
+ output      = 'none' ! 'nml'        ! namelist controlled output scheme
+ activate_sync_timers = .FALSE.
+ profiling_output = 2
+ test_mode     = 2
+ ! msg_timestamp        = .TRUE.
+/
+&dbg_index_nml
+  idbg_mxmn=4                     ! initialize MIN/MAX  debug output
+  idbg_val =0                     ! initialize one cell debug output
+  idbg_slev=1                     ! initialize start level for debug output
+  idbg_elev=20                     ! initialize end level for debug output
+  dbg_lat_in=   30.0              ! latitude location of one cell debug output
+  dbg_lon_in=  -30.0              ! longitude location of one cell debug output
+  str_mod_tst='all'               ! define modules to print out in debug mode
+/
+&ocean_dynamics_nml
+ n_zlev             =   128
+
+dzlev_m(1:128) = 11.0,   9.0,     8.0,   8.0,     8.0,    8.0,    8.0,    8.0,    8.0,    8.0,
+              8.0,    8.0,    8.0,    8.25,   8.5,    8.75,   9.0,   9.25,    9.5,   9.75,
+             10.0,   10.0,   10.0,   10.0,   10.0,   10.0,   10.0,   10.0,   10.0,   10.0,
+             10.5,   11.0,   11.5,   12.0,   12.5,   13.0,   13.5,   14.0,   14.5,   15.0,
+             15.5,   16.0,   16.5,   17.0,   17.5,   18.0,   18.5,   19.0,   19.5,   20.0, 
+             20.5,   21.0,   21.5,   22.0,   22.5,   23.0,   23.5,   24.0,   24.5,   25.0,
+             25.5,   26.0,   26.5,   27.0,   28.5,   29.0,   29.5,   30.0,   30.5,   31.0,
+             31.0,   32.0,   33.0,   34.0,   35.0,   36.0,   37.0,   38.0,   39.0,   40.0,
+             42.0,   44.0,   46.0,   48.0,   50.0,   52.0,   54.0,   56.0,   58.0,   60.0,
+             62.0,   64.0,   66.0,   68.0,   70.0,   72.0,   74.0,   76.0,   78.0,   80.0,
+             82.0,   84.0,   86.0,   88.0,   90.0,   92.0,   94.0,   96.0,   98.0,  100.0,
+            102.0,  104.0,  106.0,  108.0,  110.0,  112.0,  114.0,  116.0,  118.0,  200.0,
+            200.0,  200.0,  200.0,  200.0,  200.0,  200.0,  200.0,  200.0
+
+  l_edge_based    = .FALSE.       ! edge- or cell-based mimetic discretization
+  l_partial_cells = .FALSE.      ! partial bottom cells=true: local varying bottom depth
+  solver_tolerance = 1.0E-14              !  absolute (new) or relative (gmres_oce_old) - to be checked
+  solver_max_iter_per_restart = 26        !  outer solver loop with syncing
+  solver_max_restart_iterations = 50      !  inner solver loop without syncing (30*50 iterations maximum)
+  use_continuity_correction = .true.
+  fast_performance_level = 12
+/
+&ocean_tracer_transport_nml
+  FLUX_CALCULATION_HORZ =  5 ! 5      ! 1=upwind, 2=central, 3=Lax-Friedrichs, 4=Miura, 5=FCT with Zalesak limiter (default)
+  FLUX_CALCULATION_VERT =  7 ! 7      ! 6=adpo; 7=upwind biased ppm (default); 8=FCT with zalesak limiter
+  ! define low and high order methods to be used in horizontal flux corrected transport methods (flux_calculation_horz=4,5)
+  fct_low_order_flux    = 1      ! horizontal low  order method: 1=upwind (def), no other implemented
+  fct_high_order_flux   = 5      ! horizontal high order method: 1=upwind, 2=central, 3=lax_friedrichs, 4=miura_order1
+  fct_limiter_horz      = 100    ! zalesak
+  threshold_min_T       = -2.0   ! to avoid abort
+/
+&ocean_vertical_diffusion_nml
+  vert_mix_type                            = 1 ! 1=PP, 2=TKE
+  PPscheme_type                            = 4
+  velocity_VerticalDiffusion_background    =   5.0E-5  ! [m2/s]  vertical background viscosity coefficient for velocity
+  Temperature_VerticalDiffusion_background =   1.0E-2  ! [m2/s]  vertical background diffusion coefficient for temperature
+  Salinity_VerticalDiffusion_background    =   1.0E-2  ! [m2/s]  vertical background diffusion coefficient for salinity
+  tracer_convection_MixingCoefficient =   0.1 ! max vertical tracer diffusion for convection used in case of instability
+  convection_InstabilityThreshold =  -1.0E-6  ! used in update_ho_params - default=-5e-8
+  RichardsonDiffusion_threshold   =   0.0     ! used in update_ho_params - default=+5e-8
+  tracer_RichardsonCoeff          =   2.0E-3  ! factor for vertical diffusion coefficient in PP scheme
+  velocity_RichardsonCoeff        =   2.0E-3  ! factor for vertical viscosity coefficient in PP scheme
+  bottom_drag_coeff               =   3.0E-3  ! default=2.5E-3; active for i_bc_veloc_bot=1
+  use_wind_mixing                 = .true.    ! true: use wind mixing scheme in MPIOM-type pp-scheme
+  lambda_wind                     = 0.03
+  tracer_TopWindMixing            = 0.5E-3 ! [m2/s] windmixing diffusivity in MPIOM-type pp-scheme
+  velocity_TopWindMixing          = 0.5E-3 ! [m2/s] windmixing viscosity in MPIOM-type pp-scheme
+/
+&sea_ice_nml
+  stress_ice_zero = .TRUE.
+/
+&ocean_forcing_nml
+  iforc_oce = 11
+  ! type_surfRelax_Temp= 0      !  0: no relaxation used
+                                 !  1: relaxation switched on for reading (init_oce_relax=1) or some testcases only
+                                 !  2: use SST read from bulk forcing (iforc=12);
+                                 !     use atmospheric temperature in case of coupling (iforc=14)
+                                 !  3: use initial prognostic T as 2-dim relax, copy SST on tracer_relax(1)
+                                 ! -1: use net surface heat flux from atmosphere as boundary condition
+  ! para_surfRelax_Temp   =    1.0    ! strength of 2-dim relaxation for temperature (months)
+                                 ! this value is divided by number of seconds per month (=30*24*3600)
+  forcing_windstress_u_type = 0
+  forcing_windstress_v_type = 0
+  forcing_windStress_u_amplitude = 0.3
+  forcing_windstress_zonal_waveno      = 3.0
+  forcing_windstress_merid_waveno = 3.0
+/
+&ocean_initialConditions_nml
+  ! itestcase_oce = 1050
+  initial_salinity_type      = 200    
+  initial_salinity_top       = 35.0
+  initial_salinity_bottom    = 35.0
+  initial_temperature_type   = 208 ! 301
+  initial_temperature_top    = 35.0 
+  initial_temperature_bottom = 5.0
+/
+EOF
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_ocean_files
+#-----------------------------------------------------------------------------
+

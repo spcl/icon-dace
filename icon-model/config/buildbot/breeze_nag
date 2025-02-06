@@ -1,0 +1,49 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+LINUX_CODENAME=$(lsb_release -sc)
+
+if test ! -z "${BB_NAME-}"; then
+  set -x
+fi
+
+MAKE_PROCS=8
+
+# Check whether we can build with RTTOV and without DACE and EMVORADO:
+#  TODO: this is a temporary quick and dirty solution. We should run
+#  './run/checksuite.build/exp.check_rttov_BREEZE.run' as an experiment
+#  instead.
+if [ ! -z "${BB_NAME-}" ]; then
+  (
+    mkdir -p build && cd build
+    ${ICON_DIR}/config/mpim/${LINUX_CODENAME}.nag --enable-rttov --disable-dace --disable-emvorado
+    make -j ${MAKE_PROCS}
+  )
+fi
+
+${ICON_DIR}/config/mpim/${LINUX_CODENAME}.nag --enable-yaxt --disable-openmp --enable-rte-rrtmgp --enable-serialization --enable-rttov --enable-dace --enable-emvorado
+
+make -j ${MAKE_PROCS}
+
+if test ! -z "${BB_NAME-}"; then
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_depgen_warnings.sh"
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_remake.sh"
+  # Build the tests in parallel:
+  make -j ${MAKE_PROCS} check TESTS= XFAIL_TESTS=
+  # Run the tests serially:
+  make check
+  "${ICON_DIR}/scripts/buildbot_scripts/build_checks/check_git_untracked.sh"
+fi

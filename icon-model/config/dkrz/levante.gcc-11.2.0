@@ -1,0 +1,152 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+unset CDPATH
+ulimit -c 0
+
+script_dir=$(cd "$(dirname "$0")"; pwd)
+icon_dir=$(cd "${script_dir}/../.."; pwd)
+
+# We do not use Spack to speed up the configuration. Uncomment the following
+# lines if you need to re-explore the environment using the commented spack
+# commands that you can find below.
+#
+# compiler='gcc@11.2.0'
+# mpi='openmpi@4.1.2'
+
+# MPI_ROOT=$(spack find --format='{prefix}' "${mpi}%${compiler}")
+MPI_ROOT='/sw/spack-levante/openmpi-4.1.2-mnmady'
+
+# ZLIB_ROOT=$(spack find --format='{prefix}' "zlib%${compiler}")
+ZLIB_ROOT='/usr'
+ZLIB_LIBS='-lz'
+
+# HDF5_ROOT=$(spack find --format='{prefix}' "hdf5%${compiler} +fortran+hl ^${mpi}%${compiler}")
+HDF5_ROOT='/sw/spack-levante/hdf5-1.12.1-kxfaux'
+HDF5_LIBS='-lhdf5_hl_fortran -lhdf5_fortran -lhdf5'
+
+# NETCDF_ROOT=$(spack find --format='{prefix}' "netcdf-c%${compiler} ^${mpi}%${compiler}")
+NETCDF_ROOT='/sw/spack-levante/netcdf-c-4.8.1-6qheqr'
+NETCDF_LIBS='-lnetcdf'
+
+# NETCDFF_ROOT=$(spack find --format='{prefix}' "netcdf-fortran%${compiler} ^${mpi}%${compiler}")
+NETCDFF_ROOT='/sw/spack-levante/netcdf-fortran-4.5.3-jlxcfz'
+NETCDFF_LIBS='-lnetcdff'
+
+lapack_provider=netlib
+case $lapack_provider in
+  netlib)
+    # NETLIB_LAPACK_ROOT=$(spack find --format='{prefix}' "netlib-lapack%${compiler}")
+    NETLIB_LAPACK_ROOT='/sw/spack-levante/netlib-lapack-3.9.1-y24c4j'
+    BLAS_LAPACK_BUILD_ENV="export LD_LIBRARY_PATH=\"${NETLIB_LAPACK_ROOT}/lib64:\${LD_LIBRARY_PATH}\";"
+    BLAS_LAPACK_LDFLAGS="-L${NETLIB_LAPACK_ROOT}/lib64"
+    BLAS_LAPACK_LIBS='-llapack -lblas'
+    ;;
+  mkl)
+    # MKL_ROOT=$(spack find --format='{prefix}/mkl/{version}' "intel-oneapi-mkl@2022.0.1")
+    MKL_ROOT='/sw/spack-levante/intel-oneapi-mkl-2022.0.1-ttdktf/mkl/2022.0.1'
+    BLAS_LAPACK_BUILD_ENV="export LD_LIBRARY_PATH=\"${MKL_ROOT}/lib/intel64:\${LD_LIBRARY_PATH}\";"
+    BLAS_LAPACK_LDFLAGS="-L${MKL_ROOT}/lib/intel64"
+    BLAS_LAPACK_LIBS='-lmkl_gf_lp64 -lmkl_sequential -lmkl_core'
+    ;;
+  *)
+    echo "ERROR: unknown LAPACK provider '$lapack_provider'" >&2
+    exit 1
+    ;;
+esac
+
+# ECCODES_ROOT=$(spack find --format='{prefix}' "eccodes%${compiler} +fortran")
+ECCODES_ROOT='/sw/spack-levante/eccodes-2.27.0-ye4cjx'
+ECCODES_LIBS='-leccodes_f90 -leccodes'
+
+# XML2_ROOT=$(spack find --format='{prefix}' "libxml2%${compiler}")
+XML2_ROOT='/usr'
+XML2_LIBS='-lxml2'
+
+# FYAML_ROOT=$(spack find --format='{prefix}' "libfyaml%${compiler}")
+FYAML_ROOT='/sw/spack-levante/libfyaml-0.7.12-fvbhgo'
+FYAML_LIBS='-lfyaml'
+
+################################################################################
+
+BUILD_ENV="export LD_LIBRARY_PATH=\"${FYAML_ROOT}/lib:${HDF5_ROOT}/lib:${NETCDF_ROOT}/lib:${NETCDFF_ROOT}/lib:${ECCODES_ROOT}/lib64:\${LD_LIBRARY_PATH}\"; export PATH=\"${HDF5_ROOT}/bin:\${PATH}\"; ${BLAS_LAPACK_BUILD_ENV}"
+
+CC="${MPI_ROOT}/bin/mpicc"
+CFLAGS='-g -gdwarf-4 -march=native -mpc64'
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+CPPFLAGS="-I${HDF5_ROOT}/include -I${NETCDF_ROOT}/include -I${ECCODES_ROOT}/include -I${XML2_ROOT}/include/libxml2 -I${FYAML_ROOT}/include"
+
+FC="${MPI_ROOT}/bin/mpif90"
+FCFLAGS="-I${HDF5_ROOT}/include -I${NETCDFF_ROOT}/include -I${ECCODES_ROOT}/include -fmodule-private -fimplicit-none -fmax-identifier-length=63 -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -g -march=native -mpc64"
+
+common_extra_FCFLAGS='-fbacktrace -fbounds-check -fstack-protector-all -finit-real=nan -finit-integer=-2147483648 -finit-character=127 -O2'
+
+ICON_FCFLAGS="${common_extra_FCFLAGS} -std=f2008 -DDO_NOT_COMBINE_PUT_AND_NOCHECK"
+ICON_OCEAN_FCFLAGS='-O3 -fno-tree-loop-vectorize -std=f2008'
+ICON_BUNDLED_FCFLAGS="${common_extra_FCFLAGS} -std=f2008"
+ICON_ECRAD_FCFLAGS="${common_extra_FCFLAGS} -fallow-invalid-boz"
+
+ICON_DACE_FCFLAGS="${common_extra_FCFLAGS} -fallow-argument-mismatch"
+ICON_DACE_PATH='externals/dace_icon'
+
+LDFLAGS="-L${HDF5_ROOT}/lib -L${NETCDF_ROOT}/lib -L${NETCDFF_ROOT}/lib ${BLAS_LAPACK_LDFLAGS} -L${ECCODES_ROOT}/lib64 -L${FYAML_ROOT}/lib -lstdc++"
+LIBS="-Wl,--disable-new-dtags -Wl,--as-needed ${XML2_LIBS} ${FYAML_LIBS} ${ECCODES_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ZLIB_LIBS}"
+
+MPI_LAUNCH="${MPI_ROOT}/bin/mpiexec"
+
+EXTRA_CONFIG_ARGS='--enable-parallel-netcdf --enable-yaxt --enable-coupling --enable-ecrad --enable-grib2 --enable-fcgroup-OCEAN=src/hamocc:src/ocean:src/sea_ice --enable-art --enable-fcgroup-DACE --enable-comin --enable-bundled-python=mtime'
+
+################################################################################
+
+"${icon_dir}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_BUNDLED_FCFLAGS="${ICON_BUNDLED_FCFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+ICON_DACE_FCFLAGS="${ICON_DACE_FCFLAGS}" \
+ICON_DACE_PATH="${ICON_DACE_PATH}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${icon_dir}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${icon_dir}/run . --exclude='*.in' --exclude='.*' --exclude='standard_*'
+  ln -sf -t run/ ${icon_dir}/run/standard_*
+  rsync -uavz ${icon_dir}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${icon_dir}/make_runscripts .
+  rsync -uavz ${icon_dir}/scripts .
+  ln -sf ${icon_dir}/data
+  ln -sf ${icon_dir}/vertical_coord_tables
+fi
+

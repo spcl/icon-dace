@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# ICON-Land
+#
+# ---------------------------------------
+# Copyright (C) 2013-2024, MPI-M, MPI-BGC
+#
+# Contact: icon-model.org
+# Authors: AUTHORS.md
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------
+
+set -e
+
+latlon_initial_file="/Users/thomasriddick/Documents/data/HDdata/hdrestartfiles/hd_restart_from_hd_file_ten_minute_data_from_virna_0k_ALG4_sinkless_no_true_sinks_oceans_lsmask_plus_upscale_rdirs_20170113_135934_after_one_year_running.nc"
+#grid_file="/Users/thomasriddick/Documents/data/ICONHDdata/gridfiles/icon_grid_0030_R02B03_G.nc"
+#grid_file="/Users/thomasriddick/Documents/data/ICONHDdata/gridfiles/icon_grid_0015_R02B09_G.nc"
+grid_file="/Users/thomasriddick/Documents/data/ICONHDdata/gridfiles/icon_grid_0015_R02B09_G.nc"
+#grid_file="/Users/thomasriddick/Documents/data/ICONHDdata/gridfiles/icon_grid_0013_R02B04_G.nc"
+#landsea_file="/Users/thomasriddick/Documents/data/ICONHDdata/lsmasks/lsmHD.maxlnd.r2b3_0030_G.nc"
+#landsea_file="/Users/thomasriddick/Documents/data/ICONHDdata/lsmasks/lsm_015_R02B09.nc"
+landsea_file="/Users/thomasriddick/Documents/data/ICONHDdata/lsmasks/lsm_015_R02B09.nc"
+#landsea_file="/Users/thomasriddick/Documents/data/ICONHDdata/lsmasks/maxlnd_lsm_013_0031.nc"
+landsea_field="cell_sea_land_mask"
+#label="R02B04_013_G_231019_1242"
+label="R02B09_015_G_241019_1337"
+cdo -f nc4 gridarea ${latlon_initial_file} latlon_grid_area_temp.nc
+cdo -f nc4 div ${latlon_initial_file} latlon_grid_area_temp.nc latlon_initial_file_divided_by_grid_area_temp.nc
+cdo -f nc4 remapbil,${grid_file} latlon_initial_file_divided_by_grid_area_temp.nc hdrestart_divided_by_grid_area_temp.nc
+cdo -f nc4 gridarea hdrestart_divided_by_grid_area_temp.nc grid_area_temp.nc
+cdo -f nc4 mul hdrestart_divided_by_grid_area_temp.nc grid_area_temp.nc hdrestart_${label}_temp.nc
+rm  latlon_grid_area_temp.nc latlon_initial_file_divided_by_grid_area_temp.nc hdrestart_divided_by_grid_area_temp.nc grid_area_temp.nc
+ncap2 -s 'defdim("rresnum",5);FRFMEM=array(0.0,0.0,/$rresnum,$cell/);FRFMEM(0,:)=FRFMEM1+(FINFL/5.0);FRFMEM(1,:)=FRFMEM2+(FINFL/5.0);FRFMEM(2,:)=FRFMEM3+(FINFL/5.0);FRFMEM(3,:)=FRFMEM4+(FINFL/5.0);FRFMEM(4,:)=FRFMEM5+(FINFL/5.0)' hdrestart_${label}_temp.nc hdrestart_${label}_temp1.nc
+ncatted -a long_name,FRFMEM,o,c,'Linear riverflow reservoir' hdrestart_${label}_temp1.nc
+ncatted -a code,FRFMEM,o,i,711 hdrestart_${label}_temp1.nc
+ncatted -a CDI_grid_type,FRFMEM,o,c,'unstructured' hdrestart_${label}_temp1.nc
+ncatted -a coordinates,FRFMEM,o,c,"clat clon" hdrestart_${label}_temp1.nc
+ncap2 -s 'defdim("oresnum",1);FLFMEMNEW=array(0.0,0.0,/$oresnum,$cell/);FLFMEMNEW(0,:)=FLFMEM' hdrestart_${label}_temp1.nc hdrestart_${label}_temp2.nc
+ncatted -a long_name,FLFMEMNEW,o,c,'Linear overlandflow reservoir' hdrestart_${label}_temp2.nc
+ncatted -a code,FLFMEMNEW,o,i,710 hdrestart_${label}_temp2.nc
+ncatted -a CDI_grid_type,FLFMEMNEW,o,c,'unstructured' hdrestart_${label}_temp2.nc
+ncatted -a coordinates,FLFMEMNEW,o,c,"clat clon" hdrestart_${label}_temp2.nc
+ncap2 -s 'defdim("bresnum",1);FGMEMNEW=array(0.0,0.0,/$bresnum,$cell/);FGMEMNEW(0,:)=FGMEM' hdrestart_${label}_temp2.nc hdrestart_${label}_temp3.nc
+ncatted -a long_name,FGMEMNEW,o,c,'Linear baseflow reservoir' hdrestart_${label}_temp3.nc
+ncatted -a code,FGMEMNEW,o,i,716 hdrestart_${label}_temp3.nc
+ncatted -a CDI_grid_type,FGMEMNEW,o,c,'unstructured' hdrestart_${label}_temp3.nc
+ncatted -a coordinates,FGMEMNEW,o,c,"clat clon" hdrestart_${label}_temp3.nc
+cdo -f nc4 delete,name=FINFL,FRFMEM1,FRFMEM2,FRFMEM3,FRFMEM4,FRFMEM5,FLFMEM,FGMEM hdrestart_${label}_temp3.nc hdrestart_${label}_temp4.nc
+cdo -f nc4 chname,FLFMEMNEW,FLFMEM hdrestart_${label}_temp4.nc  hdrestart_${label}_temp5.nc 
+cdo -f nc4 chname,FGMEMNEW,FGMEM hdrestart_${label}_temp5.nc hdrestart_${label}_temp6.nc
+cdo -f nc4 chname,${landsea_field},LSMASK ${landsea_file} landsea_temp.nc
+cdo -f nc4 merge landsea_temp.nc hdrestart_${label}_temp6.nc  hdrestart_${label}_temp7.nc
+ncap2 -s 'FGMEM(0,:)=FGMEM(0,:)*LSMASK;FLFMEM(0,:)=FLFMEM(0,:)*LSMASK;for(*idx=0;idx<5;idx++) FRFMEM(idx,:)=FRFMEM(idx,:)*LSMASK' hdrestart_${label}_temp7.nc hdrestart_${label}_temp8.nc
+cdo -f nc4 delete,name=LSMASK hdrestart_${label}_temp8.nc hdrestart_${label}.nc
+rm hdrestart_${label}_temp.nc hdrestart_${label}_temp1.nc  hdrestart_${label}_temp2.nc  
+rm hdrestart_${label}_temp3.nc hdrestart_${label}_temp4.nc hdrestart_${label}_temp5.nc 
+rm hdrestart_${label}_temp6.nc hdrestart_${label}_temp7.nc hdrestart_${label}_temp8.nc landsea_temp.nc

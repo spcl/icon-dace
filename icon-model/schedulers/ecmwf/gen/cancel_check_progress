@@ -1,0 +1,35 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#  -------------------------------------------------
+#  CANCEL_CHECK_PROGRESS
+#  -------------------------------------------------
+#
+#  This script is part of the ICON SMS suite
+#  Initial implementation: F. Prill, DWD (2012-05-16)
+#
+#  Corresponding author:
+#    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+touch $HOME/sms/model_complete.flag
+
+# wait some time...
+sleep 60
+
+# then shutdown task "icon/forecast/check_progress"
+cdp << EOF
+myalias
+force complete icon/forecast/check_progress
+EOF
+
+# clean up
+rm $HOME/sms/model_complete.flag

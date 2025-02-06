@@ -1,0 +1,68 @@
+#!/bin/ksh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+%manual
+  -------------------------------------------------
+  EOM_DATA2DWD.SMS
+  -------------------------------------------------
+
+  This script is part of the ICON SMS suite
+  Initial implementation: F. Prill, DWD (2012-05-07)
+
+  Corresponding author:
+    Florian Prill, DWD, mailto:florian.prill@dwd.de
+
+  Task objectives:
+  - get limited ICON data do DWD for scores (Uli Damrath)
+%end
+
+# include the standard header file
+%include <init_ws_submit.h>
+
+# -------------------------------------------------
+
+echo "EOM_DATA2DWD.SMS"
+
+lprocess=0
+ltransfer=0
+
+
+#-----------------------------------------------------------------------------
+# Retrieve IFS analysis data for comparison to ICON
+
+# --- setup
+
+YYYYMM=`echo %YMD% | cut -c 1-6`
+cd %ECTEMP%
+cd ../ifs_data
+
+
+if [[ $lprocess = 1 ]] ; then
+
+# --- processing ICON data (Helmut Frank, requires a few environment variables in .user_kshrc)
+  ~dw7/ICON/iconECFS2DWD -e icon_003_ICON_r2B06_10d -d 2012060100 -d 2012060200
+  ~/temp/iconECFS2DWD    -e icon_003_ICON_r2B06_10d -d 2012060100 -d 2012060200
+
+  ~dfr/Perl/ectrans.pl -D -r hpctoDWD icon.def
+  ectrans -remote hpctoDWD@genericSftp -verbose -gateway oflxd11.dwd.de -put -source icon.def
+
+
+# --- surface level data
+
+fi
+
+
+# -------------------------------------------------
+
+# include the standard "tail" file
+%include <end_ws.h>
+

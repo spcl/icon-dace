@@ -1,0 +1,43 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+SPACK_VERSION=$1
+VARIANT=$2
+
+# Unset positional parameters
+# so they are not forwarded to spack-c2sm/setup-env.sh
+set -- 
+set +x
+
+spack env deactivate
+spack env activate --sh $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT >> $ICON_DIR/setting
+
+spack env activate -p $ICON_DIR/config/cscs/spack/$SPACK_VERSION/$VARIANT
+
+
+if [[ "$(hostname)" == *"balfrin"* || "$(hostname)" == *"tasna"* ]]; then
+
+  echo "export NVCOMPILER_TERM=trace" >> $ICON_DIR/setting
+  echo "export FI_CXI_SAFE_DEVMEM_COPY_THRESHOLD=0" >> $ICON_DIR/setting
+
+  if [[ "$VARIANT" == *"gpu"* ]]; then
+ 
+    # add additonal exports
+    echo "export CRAY_CUDA_MPS=1" >> $ICON_DIR/setting
+    echo "export MPICH_GPU_SUPPORT_ENABLED=1" >> $ICON_DIR/setting
+    echo "export MPICH_RDMA_ENABLED_CUDA=1" >> $ICON_DIR/setting
+    echo "export NVCOMPILER_ACC_DEFER_UPLOADS=1" >> $ICON_DIR/setting
+    echo "export NVCOMPILER_ACC_USE_GRAPH=1  # Harmless if cuda-graphs is disabled" >> $ICON_DIR/setting
+  fi
+fi

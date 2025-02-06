@@ -1,0 +1,8 @@
+WARNING: your MPI installation suffers from a known defect where some
+data layouts are incorrectly captured by MPI datatypes because an
+optimization step handles offsets incorrectly (the resulting address
+is off by extent of element datatype).
+
+This issue has been fixed in revision 28319 of OpenMPI.
+
+[1] https://svn.open-mpi.org/trac/ompi/changeset/28319

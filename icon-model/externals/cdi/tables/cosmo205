@@ -1,0 +1,27 @@
+# Parameter table
+#
+# TABLE_ID=205
+# TABLE_MODEL=COSMO
+# TABLE_INSTITUT=MCH
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+   1 | SYNME5      | synthetic satellite images Meteosat5     | -        |
+   2 | SYNME6      | synthetic satellite images Meteosat6     | -        |
+   3 | SYNME7      | synthetic satellite images Meteosat7     | -        |
+   4 | SYNMSG      | synthetic satellite images MSG           | -        |

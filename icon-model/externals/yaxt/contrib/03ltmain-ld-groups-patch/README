@@ -1,0 +1,4 @@
+This patch changes ltmain.sh to keep the GNU ld library grouping options
+-- -(, --start-group, -), and --end-group -- in the list of dependency
+libraries so that the desired behaviour is retained (i.e. libraries with
+cyclic dependencies can be linked).

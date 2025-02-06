@@ -1,0 +1,65 @@
+#! %{JOB.ksh} #%# -*- mode: sh -*- vi: set ft=sh :
+#%#- ICON
+#%#-
+#%#- ------------------------------------------
+#%#- Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+#%#- Contact information: icon-model.org
+#%#- See AUTHORS.TXT for a list of authors
+#%#- See LICENSES/ for license information
+#%#- SPDX-License-Identifier: BSD-3-Clause
+#%#- ------------------------------------------
+#
+# %{EXP_ID}.%{JOB.id}
+#
+# %{mkexp_input}
+#
+# $Id: run/standard_experiments/DEFAULT.weed_zarr.tmpl 1 2024-01-29 11:58:38Z k203123 $
+#
+# %{VERSIONS_|join('\n# ')}
+#
+#SBATCH --account=%{ACCOUNT}
+#%  if JOB.qos is defined:
+#SBATCH --qos=%{JOB.qos}
+#%  endif
+#SBATCH --job-name=%{EXP_ID}.weed_zarr
+#SBATCH --partition=%{JOB.partition}
+#SBATCH --ntasks=%{JOB.tasks}
+#SBATCH --output=%{LOG_DIR}/%x.%8j.log
+#SBATCH --time=%{JOB.time_limit}
+#%include 'standard_environments/'+ENVIRONMENT+'.tmpl' ignore missing
+
+set -e
+#%  if JOB.debug_level|d(0)|int > 1:
+set -x
+#%  endif
+
+# Convenience link to log file
+ln -snf \
+    %{LOG_DIR}/%{EXP_ID}.weed_zarr.$(printf %08d ${%{JOB.id_environ}}).log \
+    %{SCRIPT_DIR}/%{EXP_ID}.weed_zarr.log
+
+# Support log style output
+pipe=%{EXP_ID}_%{JOB.id}_$$.pipe
+mkfifo $pipe
+trap "cd $PWD && rm -f $pipe" EXIT
+awk '{print strftime("%FT%T:"), $0; fflush()}' $pipe &
+exec > $pipe 2>&1
+
+echo '%{JOB.id} job started'
+
+module add parallel
+
+cd %{DATA_DIR}
+
+#%  if JOB.pattern is defined:
+#%    if JOB.pattern | match('^[\\w*.]+$'):
+grep -F -l '"component": "atmo"' %{JOB.pattern}/*/.zattrs |
+    sed 's,/.zattrs,,' |
+    parallel --jobs %{JOB.tasks} --no-run-if-empty --line-buffer --verbose \
+        rm -rf '{}'/*
+#%    else:
+echo 'Oops: invalid pattern configuration' >&2
+#%    endif
+#%  endif
+#%# 
+echo '%{JOB.id} job finished'

@@ -1,0 +1,18 @@
+pipeline {
+    agent {
+        node {
+            label 'balfrin'
+        }
+    }
+
+    stages {
+        stage('Pytest') {
+            steps {
+                sh'''
+                source $SCRATCH/project/icon/probtest/conda/miniconda/bin/activate probtest
+                pytest -v tests/*
+                '''
+            }
+        }
+    }
+}

@@ -1,0 +1,184 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+##################################################################
+###        Configure wrapper for NEC SX AURORA                 ###
+###                   VECTOR ENGINE                            ###
+##################################################################
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")">/dev/null; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd)
+
+# Load lists of inlining files.
+source "${SCRIPT_DIR}/inlinelist.sh"
+
+# make module command available
+MODULE_SETTINGS=". ${MODULESHOME}/init/sh; module purge"
+
+
+MODULES='sx/default nfort/5.1.0 nc++/5.1.0 mpi/3.5.0 netcdf4/4.7.3-sx hdf5/1.10.5-sx eccodes/2.31.0-sx aec/1.0.6-sx nlc/3.0.0 libxml2/2.9.10-sx szip/2.1.1-sx zlib/1.2.11-sx libfyaml/0.8-sx unsupported cmake/3.26.4'
+
+
+### Libraries ###
+
+# NETCDF
+NETCDFF_LIBS='-lnetcdff'
+NETCDF_LIBS='-lnetcdf'
+
+# HDF5
+HDF5_LIBS='-lhdf5hl_fortran -lhdf5_fortran -lhdf5_hl -lhdf5'
+
+# BLAS, LAPACK
+LAPACK_LIBS='-llapack -lblas_sequential'
+
+# ECCODES - note that we use a double underscore because ECCODES_LIBS may be overwritten by system settings
+ECCODES__LIBS='-leccodes_f90 -leccodes'
+
+# XML
+XML2_LIBS='-lxml2'
+
+# AEC
+AEC_LIB='-laec'
+
+# SZIP
+SZIP_LIB='-lsz'
+
+# ZLIB
+ZLIB_LIB='-lz'
+
+# RTTOV
+RTTOV_ROOT='/hpc/rhome/for0adm/nwp/ve1/external'
+RTTOV_LIBS='-lrttov13'
+
+# FYAML
+FYAML_LIB='-lfyaml'
+
+# C++ library (for eccodes > 2.31.0)
+CXX_LIB='-lnc++'
+
+################################################################################
+
+
+# note: in the following we add additional runtime modules through
+# `load_runtime_modules`. Strictly speaking these are defined by the
+# VH *and* VE configuration:
+BUILD_ENV="export ICON_DIR=$(cd "${SCRIPT_DIR}/../..">/dev/null; pwd); ${MODULE_SETTINGS} && . \"${SCRIPT_DIR}/module_switcher\"; switch_for_module ${MODULES}; export load_runtime_modules=\"gcc/11.2.0 nfort/5.1.0\";"
+echo ${BUILD_ENV}
+
+# We need some of the environment variables set by the modules now:
+eval "$BUILD_ENV"
+
+echo ${MODULEPATH}
+
+
+# cross compiling!
+HOST='none'
+AR='nar'
+AS='nas'
+LD='nld'
+
+# C compiler wrapper on NEC machine
+CC='mpincc'
+CXX='mpinc++'
+CFLAGS='-std=gnu11 -O3 -ftrace -finline-functions -mno-vector-fma -fno-associative-math -msched-block -fcse-after-vectorization -DUSE_XML2 -USX -D__SX__=__NEC__'
+CXXFLAGS="-stdlib=libc++ -std=c++17"
+ICON_CFLAGS='-O3'
+ICON_BUNDLED_CFLAGS='-O2'
+ICON_YAXT_CFLAGS='-O2 -finline-functions -DXT_NEED_MPI_ABORT_WORK_AROUND=2'
+CPPFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include ${ECCODES_INCLUDE} -I${XML2ROOT}/include/libxml2"
+
+# Fortran compiler wrapper on NEC machine
+FC='mpinfort'
+FCFLAGS="${ECCODES_INCLUDE} -I${HDF5_DIR}/include -I${NETCDF_DIR}/include -I${RTTOV_ROOT}/include/rttov13 -ftrace -fdiag-vector=0 -report-all -no-report-cg -traceback=verbose -O3 -mstack-arrays -msched-block -floop-unroll-completely=8 -floop-unroll-completely-nest=8 -fcse-after-vectorization -mno-vector-fma -fno-associative-math -DUSE_XML2 -USX -D__SX__=__NEC__ -D__COMM_OPT__ -D__BLOCK_GET__ -D_RTTOV_ARCH_VECTOR"
+
+ICON_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_EMVORADO[@]}" "${INLINE_LIST_ICON[@]}" "${INLINE_LIST_ART[@]}" "${INLINE_LIST_DACE[@]}")"
+#
+ICON_DYCORE_FCFLAGS="${ICON_FCFLAGS} -mvector-floating-divide-instruction -mvector-sqrt-instruction"
+ICON_DYCORE_PATH='src/atm_dyn_iconam/mo_solve_nonhydro.f90:src/atm_dyn_iconam/mo_velocity_advection.f90'
+
+ICON_YAXT_FCFLAGS='-DXT_NEED_MPI_ABORT_WORK_AROUND=2'
+ICON_OCEAN_FCFLAGS='-O2 -D__LVECTOR__ -mvector-floating-divide-instruction -mvector-sqrt-instruction'
+ICON_OCEAN_PATH='src/hamocc:src/ocean:src/sea_ice'
+ICON_ECRAD_FCFLAGS="-finline-functions -finline-file=$(join_arr : "${ICON_DIR}/" "${INLINE_LIST_ECRAD[@]}") -ftrace"
+ICON_FORTRAN_SUPPORT_FCFLAGS='-fpp'
+
+# Workaround for compiler bug in nfort 5.1.0
+ICON_NFORTWA_FCFLAGS='-fno-inline-functions'
+ICON_NFORTWA_PATH='src/atm_phy_nwp/mo_nwp_vdiff_interface.f90:externals/jsbach/src/assimilation/mo_assimi_interface.f90'
+
+LDFLAGS="-L${ZLIBROOT}/lib -L${AEC_DIR}/lib -L${SZIPROOT}/lib -L${HDF5_DIR}/lib -L${NETCDF_DIR}/lib -L${RTTOV_ROOT}/lib -L${ECCODES_LIB_DIR} -L${LAPACKROOT}/lib -L${XML2ROOT}/lib -ftrace -traceback=verbose -static -static-nec -shared-mpi -cxxlib -stdlib=libc++"
+
+LIBS="-Wl,--as-needed ${XML2_LIBS} ${RTTOV_LIBS} ${LAPACK_LIBS} ${ECCODES__LIBS} ${NETCDFF_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${SZIP_LIB} ${AEC_LIB} ${ZLIB_LIB} ${FYAML_LIB} ${CXX_LIB}"
+
+MPI_LAUNCH='/opt/nec/ve/mpi/3.5.0/bin/runtime/mpirun'  # needed e.g. for YAXT and YAC configuration as well as make_runscripts
+
+# full operational NWP configuration including ecRad and DACE+EMVORADO coupling
+EXTRA_CONFIG_ARGS='--host='${HOST}' --disable-mpi-checks --disable-rpaths --enable-active-target-sync --enable-mixed-precision --disable-loop-exchange --enable-grib2 --enable-mpi --disable-openmp --enable-rttov --enable-ecrad --enable-dace --enable-emvorado --enable-art --disable-aes --disable-jsbach --disable-ocean --disable-coupling --enable-fcgroup-NFORTWA --enable-fcgroup-DYCORE'
+
+################################################################################
+
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CXX="${CXX}" \
+CFLAGS="${CFLAGS}" \
+CXXFLAGS="${CXXFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_YAXT_CFLAGS="${ICON_YAXT_CFLAGS}" \
+ICON_YAXT_FCFLAGS="${ICON_YAXT_FCFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+ICON_OCEAN_PATH="${ICON_OCEAN_PATH}" \
+ICON_ECRAD_FCFLAGS="${ICON_ECRAD_FCFLAGS}" \
+ICON_FORTRAN_SUPPORT_FCFLAGS="${ICON_FORTRAN_SUPPORT_FCFLAGS}" \
+ICON_NFORTWA_FCFLAGS="${ICON_NFORTWA_FCFLAGS}" \
+ICON_NFORTWA_PATH="${ICON_NFORTWA_PATH}" \
+ICON_DYCORE_FCFLAGS="${ICON_DYCORE_FCFLAGS}" \
+ICON_DYCORE_PATH="${ICON_DYCORE_PATH}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+AR="${AR}" \
+LD="${LD}" \
+AS="${AS}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+#Hack to switch back to RTTOV12 (in addition to replacing 'rttov13' with 'rttov12' in this script)':
+#sed -i 's;_RTTOV_VERSION=13;_RTTOV_VERSION=12;' icon.mk
+
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*.in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

@@ -1,0 +1,45 @@
+# Autoreconf stage files:
+/autom4te.cache
+
+# Configure stage files:
+*.pyc
+*.pyo
+*.test
+Makefile
+Makefile.exe.deps
+Makefile.exe.deps~
+Makefile.lib.deps
+Makefile.lib.deps~
+__pycache__
+config.cache
+config.log
+config.status
+
+# Build stage files:
+*.L
+*.a
+*.acc.s
+*.dirstamp
+*.mod
+*.o
+
+# Test stage files:
+*.log
+*.nc
+!extensions/solar_variability/rrtmgp-solar-var-tables.nc
+*.pdf
+*.trs
+/**/.testcache/*
+/**/examples/all-sky/rrtmgp_allsky
+/**/examples/rfmip-clear-sky/rrtmgp_rfmip_lw
+/**/examples/rfmip-clear-sky/rrtmgp_rfmip_sw
+/**/tests/check_equivalence
+/**/tests/check_variants
+/**/tests/test_zenith_angle_spherical_correction
+
+# Dist stage files:
+/**/rte-rrtmgp-*.tar*
+
+# MacOS files:
+*.dSYM
+.DS_Store

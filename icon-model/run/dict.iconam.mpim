@@ -1,0 +1,52 @@
+# ICON
+#
+# ---------------------------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ---------------------------------------------------------------
+
+# The following table defines the dictionary for the mapping  between
+# user defined short names and short names defined in the "add_var"
+# calls in ICON. The "add_var" names are used by default, if either no
+# translation is used or the name does not occur in the dictionary.
+#
+# This file contains a dictionary for the mapping between "add_var"
+# names and names used at MPI-M for postprocessing.
+#
+# ======================================================================
+#
+# Available translations for output of constant fields
+# ----------------------------------------------------
+#
+# use name          "add_var" name
+# --------------------------------
+#
+  zg                 z_mc
+  zghalf             z_ifc
+  dzghalf            ddqz_z_full
+  gpfull             geopot
+#
+# Available translations for instantaneous output of variable fields
+# ------------------------------------------------------------------
+#
+# use name          "add_var" name
+# --------------------------------
+#
+  ua                 u
+  va                 v
+  wa                 w
+# rho                rho          <-- no translation needed
+  wap                omega
+  ta                 temp
+  ps                 pres_sfc
+  psl                pres_msl
+  pfull              pres
+  phalf              pres_ifc
+  hus2m              qv2m
+  hus2m_wtr          qv2m_wtr
+  hus2m_ice          qv2m_ice
+  hus2m_lnd          qv2m_lnd
+#

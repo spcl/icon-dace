@@ -1,0 +1,21 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+spack:
+  specs:
+  - icon@develop%gcc +ecrad +rte-rrtmgp +grib2 ~coupling
+  - cosmo-eccodes-definitions@2.25.0.2
+  view: false
+  concretizer:
+    unify: true
+  develop:
+    icon:
+      spec: icon@develop%gcc +ecrad +rte-rrtmgp +grib2 ~coupling
+      path: ../../../../../

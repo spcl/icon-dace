@@ -1,0 +1,137 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC-BY-4.0
+
+definitions:
+  base_config: &base_config
+    coupling_period: 2
+    time_reduction: none
+    interpolation:
+      - fixed:
+          user_value: -10.0
+
+start_date: +1800-01-01T00:00:00.000
+end_date: +2100-01-01T00:00:00.000
+calendar: proleptic-gregorian
+timestep_unit: second
+coupling:
+  - <<: *base_config
+    src_component: comp1-grid1
+    src_grid: grid1
+    tgt_component: comp2-grid2
+    tgt_grid: grid2
+    field: A_1
+  - <<: *base_config
+    src_component: comp2-grid2
+    src_grid: grid2
+    tgt_component: comp1-grid1
+    tgt_grid: grid1
+    field: A_2
+  - <<: *base_config
+    src_component: comp1-grid1
+    src_grid: grid1
+    tgt_component: comp3-grid3
+    tgt_grid: grid3
+    field: D_1
+  - <<: *base_config
+    src_component: comp3-grid3
+    src_grid: grid3
+    tgt_component: comp1-grid1
+    tgt_grid: grid1
+    field: D_2
+  - <<: *base_config
+    src_component: comp1-grid1
+    src_grid: grid1
+    tgt_component: comp3-grid4
+    tgt_grid: grid4
+    field: E_1
+  - <<: *base_config
+    src_component: comp3-grid4
+    src_grid: grid4
+    tgt_component: comp1-grid1
+    tgt_grid: grid1
+    field: E_2
+  - <<: *base_config
+    src_component: comp1-grid1
+    src_grid: grid1
+    tgt_component: comp3-grid5
+    tgt_grid: grid5
+    field: J_1
+  - <<: *base_config
+    src_component: comp3-grid5
+    src_grid: grid5
+    tgt_component: comp1-grid1
+    tgt_grid: grid1
+    field: J_2
+  - <<: *base_config
+    src_component: comp2-grid2
+    src_grid: grid2
+    tgt_component: comp3-grid3
+    tgt_grid: grid3
+    field: B_1
+  - <<: *base_config
+    src_component: comp3-grid3
+    src_grid: grid3
+    tgt_component: comp2-grid2
+    tgt_grid: grid2
+    field: B_2
+  - <<: *base_config
+    src_component: comp2-grid2
+    src_grid: grid2
+    tgt_component: comp3-grid4
+    tgt_grid: grid4
+    field: F_1
+  - <<: *base_config
+    src_component: comp3-grid4
+    src_grid: grid4
+    tgt_component: comp2-grid2
+    tgt_grid: grid2
+    field: F_2
+  - <<: *base_config
+    src_component: comp2-grid2
+    src_grid: grid2
+    tgt_component: comp3-grid5
+    tgt_grid: grid5
+    field: I_1
+  - <<: *base_config
+    src_component: comp3-grid5
+    src_grid: grid5
+    tgt_component: comp2-grid2
+    tgt_grid: grid2
+    field: I_2
+  - <<: *base_config
+    src_component: comp3-grid3
+    src_grid: grid3
+    tgt_component: comp3-grid4
+    tgt_grid: grid4
+    field: C_1
+  - <<: *base_config
+    src_component: comp3-grid4
+    src_grid: grid4
+    tgt_component: comp3-grid3
+    tgt_grid: grid3
+    field: C_2
+  - <<: *base_config
+    src_component: comp3-grid3
+    src_grid: grid3
+    tgt_component: comp3-grid5
+    tgt_grid: grid5
+    field: G_1
+  - <<: *base_config
+    src_component: comp3-grid5
+    src_grid: grid5
+    tgt_component: comp3-grid3
+    tgt_grid: grid3
+    field: G_2
+  - <<: *base_config
+    src_component: comp3-grid4
+    src_grid: grid4
+    tgt_component: comp3-grid5
+    tgt_grid: grid5
+    field: H_1
+  - <<: *base_config
+    src_component: comp3-grid5
+    src_grid: grid5
+    tgt_component: comp3-grid4
+    tgt_grid: grid4
+    field: H_2

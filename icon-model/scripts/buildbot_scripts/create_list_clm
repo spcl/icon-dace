@@ -1,0 +1,29 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+addexp="./addexp"
+#############################################################################
+listname=clm
+./rmlist $listname
+
+./create_all_builders $listname
+
+./set_builder_flags Inactive --builders "$(./lslist $listname --builders-only)" --list $listname
+
+./set_builder_flags Active --builders "levante_intel_hybrid levante_intel levante_gcc_hybrid DWD_nec_hybrid" --list $listname
+
+$addexp "checksuite.clm/check.ICON_CLM" --builders "levante_intel levante_gcc_hybrid" --list ${listname} --runflags="ntasks=32 queue=shared"
+$addexp "checksuite.clm/check.ICON_CLM" --builders "DWD_nec_hybrid" --list $listname
+
+$addexp "checksuite.clm/clmexp.ICON_CLM_global_mean_no_boundary" --builders "levante_intel_hybrid levante_gcc_hybrid" --list $listname
+
+./lslist $listname

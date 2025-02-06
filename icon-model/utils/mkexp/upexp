@@ -1,0 +1,23 @@
+#! /bin/sh
+#
+# Update experiment setups using config information.
+#
+# $Id$
+#
+
+PROGRAM=`basename $0`
+BINDIR=`dirname $0`
+PATH="$BINDIR:$PATH"
+
+die () {
+    echo "$@" >&2
+    exit 1
+}
+
+[ "x$1" = x ] && die "Oops: invalid number of parameters
+Usage: $PROGRAM config_file [key=value...]"
+
+SCRIPT_DIR=`getexp -k SCRIPT_DIR "$@"` || exit $?
+
+cd "$SCRIPT_DIR"
+exec ./update

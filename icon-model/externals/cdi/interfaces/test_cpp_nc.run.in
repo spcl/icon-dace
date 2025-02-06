@@ -1,0 +1,8 @@
+#!@SHELL@
+
+set -e
+
+@ENABLE_RUBY_INTERFACE_FALSE@@ENABLE_PYTHON_INTERFACE_FALSE@exit 77
+@ENABLE_NETCDF_FALSE@exit 77
+
+@top_builddir@/libtool --mode=execute ${tool_wrap} ./CdiInfo '@srcdir@/testdata/mulval.nc'

@@ -1,0 +1,59 @@
+{ "hosts": {
+    "melian": {
+      "hostname": "localhost",
+      "dir": "/home/ram/builds/cdi/auto",
+      "CC": ["gcc"]
+    },
+    "breeze": {
+      "hostname": "breeze.mpimet.mpg.de",
+      "dir": "/home/mpim/$USER/builds/remote/cdi",
+      "envConfigFiles": ["/etc/profile","~/.profile"],
+      "CC": ["nagClang","gnu","nag","clang","intel"]
+    },
+    "mistral": {
+      "hostname": "mistral.dkrz.de",
+      "dir": "/work/mh0287/users/ralf/builds/remote/cdi",
+      "envConfigFiles": ["/etc/profile",".profile"],
+      "CC": ["intel","pgi","gnu_pic","gnu"]
+    }
+  },
+  "remoteUser": "m300064",
+
+  "builders": {
+    "melianNagNoThreads" : {
+      "hostname":"melian",
+      "preCommands":"export NAG_KUSARI_FILE=/home/ram/.nag/license.txt; PATH=/home/ram/local/nag-6.0:$PATH",
+      "configureCall":"/home/ram/src/cimd/cdo/libcdi/configure --without-threads FCFLAGS='-Qpath /home/ram/local/nag-6.0/lib' FC=nagfor CC=gcc F77=nagfor",
+      "makeCall":"make -j 8",
+      "sync": false
+    },
+    "melianNagWithThreads" : {
+      "hostname":"melian",
+      "preCommands":"export NAG_KUSARI_FILE=/home/ram/.nag/license.txt; PATH=/home/ram/local/nag-6.0:$PATH",
+      "configureCall":"/home/ram/src/cimd/cdo/libcdi/configure --with-threads FCFLAGS='-Qpath /home/ram/local/nag-6.0/lib' FC=nagfor CC=gcc F77=nagfor --with-threads",
+      "makeCall":"make -j 8",
+      "sync": false
+    },
+    "melianNag_f2003_NoThreads" : {
+      "hostname":"melian",
+      "preCommands":"export NAG_KUSARI_FILE=/home/ram/.nag/license.txt; PATH=/home/ram/local/nag-6.0:$PATH",
+      "configureCall":"/home/ram/src/cimd/cdo/libcdi/configure --enable-iso-c-interface --without-threads FCFLAGS='-Qpath /home/ram/local/nag-6.0/lib' FCFLAGS=-kind=byte FC=nagfor CC=gcc F77=nagfor --with-threads",
+      "makeCall":"make -j 8",
+      "sync": false
+    },
+    "melianNag_f2003_WithThreads" : {
+      "hostname":"melian",
+      "preCommands":"export NAG_KUSARI_FILE=/home/ram/.nag/license.txt; PATH=/home/ram/local/nag-6.0:$PATH",
+      "configureCall":"/home/ram/src/cimd/cdo/libcdi/configure --enable-iso-c-interface --with-threads FCFLAGS='-Qpath /home/ram/local/nag-6.0/lib' FC=nagfor CC=gcc F77=nagfor --with-threads",
+      "makeCall":"make -j 8",
+      "sync": false
+    },
+    "mistralNag_f2003_WithThreads" : {
+      "hostname":"mistral",
+      "preCommands":"module load nag/6.0.1064",
+      "configureCall":"./config/default CONFIG_OPTS='--enable-iso-c-interface --with-threads'",
+      "makeCall":"make -j 8",
+      "sync": true
+    }
+  }
+}

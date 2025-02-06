@@ -1,0 +1,300 @@
+#=============================================================================
+#
+# exp.test_nwp_R02B04_R02B05_nest
+#
+# Basic real-data test case for the ICON NWP mode. This rather
+# unphysical test case computes a few steps of a global weather
+# forecast (160 km resolution, 2014-06-01) with a local region (80km
+# resolution, Europe). The purpose is the testing of the technical
+# setup of NWP mode including asynchronous output.
+#
+#
+# This section of the run script contains the specifications of the experiment.
+# The specifications are passed by namelist to the program.
+# For a complete list see Namelist_overview.pdf
+#
+# EXPNAME and NPROMA must be defined as environment variables or they must
+# be substituted with appropriate values.
+#
+#-----------------------------------------------------------------------------
+#
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+#
+#
+# Basic specifications of the simulation
+# --------------------------------------
+#
+# These variables are set in the header section of the completed run script:
+#
+# EXPNAME = experiment name
+# NPROMA  = array blocking length / inner loop length
+#-----------------------------------------------------------------------------
+#
+#-----------------------------------------------------------------------------
+# The following information is included to present some information on the buildbot-html main page
+#
+# _bb_table_Description_  Basic real-data test case for the ICON NWP mode
+# _bb_table_Model_        non-hydrost. atmosph.
+# _bb_table_Grid_         triangle
+#-----------------------------------------------------------------------------
+# The following values must be set here as shell variables so that they can be used
+# also in the executing section of the completed run script
+#
+#-----------------------------------------------------------------------------
+# the namelist filename
+atmo_namelist=NAMELIST_${EXPNAME}
+#
+#-----------------------------------------------------------------------------
+# global timing
+start_date="2014-06-01T00:00:00Z"
+end_date="2014-06-01T00:25:00Z"
+ndays_restart=1
+dt_restart=`expr ${ndays_restart} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# model timing
+dtime=300
+dt_checkpoint=`expr 1 \* 600 `  # write restart file every 1 hour
+#
+#-----------------------------------------------------------------------------
+# model parameters
+atmo_model_equations=3 # equation system
+#                     1=hydrost. atm. (T dynamics)
+#                     2=hydrost. atm. (theta dynamics)
+#                     3=non-hydrost. atm.,
+#                    -1=shallow water model
+#                    -2=hydrost. ocean
+nlev=25           # nlev = number of full levels
+iforcing=3        # 3 for inwp forcing; 0 for no forcing
+#
+#-----------------------------------------------------------------------------
+# the grid files
+grids_folder="${icon_data_rootFolder}/buildbot_data/nwp/grids/R02B04_R02B05_nest"
+atmo_dyn_grids="iconR2B04_DOM01.nc iconR2B05_DOM02.nc"
+#
+#-----------------------------------------------------------------------------
+
+INDIR="${icon_data_rootFolder}/buildbot_data/nwp/R02B04_R02B05_nest"
+
+add_link_file $INDIR/extpar_iconR2B04_DOM01.nc extpar_iconR2B04_DOM01.nc
+add_link_file $INDIR/extpar_iconR2B05_DOM02.nc extpar_iconR2B05_DOM02.nc
+
+add_link_file $INDIR/ifs2icon_R2B04_DOM01.nc ifs2icon_R2B04_DOM01.nc
+add_link_file $INDIR/ifs2icon_R2B05_DOM02.nc ifs2icon_R2B05_DOM02.nc
+
+add_link_file $basedir/data/rrtmg_lw.nc rrtmg_lw.nc
+add_link_file $basedir/data/ECHAM6_CldOptProps.nc ECHAM6_CldOptProps.nc
+
+
+# If the model runs with mpi_procs=1, then this script exits without error:
+if [[ ${mpi_total_procs} = 1 ]]; then
+  echo "This test must not be started if mpi_procs=1 --> exit test without error"
+  check_error 0 "exp.nat_jww_nwp_mpiomp"
+  exit 0
+fi
+
+# If running in parallel, mpi_procs*no_of_nodes must be bigger than 2:
+n_procs=`expr ${mpi_procs_pernode} \* ${no_of_nodes}`
+if [[ ${n_procs} = 2 ]]; then
+  echo "This test needs at least 3 MPI processes --> increase mpi_procs from 2 to 3"
+  mpi_procs=3
+  START=${START%2}3
+fi
+
+# reconstruct the grid parameters in namelist form
+dynamics_grid_filename=""
+for gridfile in ${atmo_dyn_grids}; do
+  dynamics_grid_filename="${dynamics_grid_filename} '${gridfile}',"
+done
+dynamics_parent_grid_id="${dynamics_parent_grid_id},"
+#
+
+# Add the path to the COMIN and plugins shared libraries to LD_LIBRARY_PATH
+
+replay_tool_plugin_dir=/externals/comin/build/replay_tool
+add_comin_setup "$replay_tool_plugin_dir"
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+#
+cat > ${basedir}/run/${atmo_namelist} << EOF
+!
+&coupling_mode_nml
+  coupled_to_output = .TRUE.
+/
+&comin_nml
+  plugin_list(1)%name           = "replay_run_recorder"
+  plugin_list(1)%plugin_library = "libcomin_run_recorder_plugin.so"
+!
+  plugin_list(2)%name           = "replay_var_recorder"
+  plugin_list(2)%plugin_library = "libcomin_var_recorder_plugin.so"
+  plugin_list(2)%options        = "pres,temp,u,v,rho,pres_sfc,qr,qi,qv,qs,qc"
+/
+&parallel_nml
+ nproma                  = ${nproma}
+ p_test_run              = .false.
+ l_test_openmp           = .false.
+ l_log_checks            = .false.
+ num_io_procs            = 1
+ num_restart_procs       = 0
+ num_dist_array_replicas = ${replicate_grid-1} ! can be 1 iff passive or active (see HAVE_SLOW_PASSIVE_TARGET_ONESIDED) target RMA works well
+ proc0_shift             = ${proc0_shift}
+/
+&grid_nml
+ dynamics_grid_filename  = ${dynamics_grid_filename}
+ radiation_grid_filename = " "
+ dynamics_parent_grid_id = 0,1
+ lredgrid_phys           = .false.,.false.
+ lfeedback               = .false.
+/
+&run_nml
+ num_lev                 = ${nlev},${nlev}      ! number of full levels of vertical grid
+ dtime                   = ${dtime}             ! [s] timestep in seconds
+ ldynamics               = .TRUE.               ! dynamics
+ ltransport              = .TRUE.               ! transport
+ iforcing                = ${iforcing}          !
+ ntracer                 =  5                   ! number of tracers - default 0
+ ltimer                  = .true.               !
+ ltestcase               = .false.              ! initialize with real data
+ timers_level            = 0
+ msg_level               = 12                   ! detailed report during integration
+ output                  = 'nml'
+ check_uuid_gracefully   = .true.
+ nsteps                  = 5
+/
+&dynamics_nml
+ iequations              = ${atmo_model_equations}
+ lcoriolis               = .TRUE.
+ divavg_cntrwgt          = 0.50
+/
+&diffusion_nml
+ hdiff_order             = 5
+ hdiff_efdt_ratio        = 24.0
+ hdiff_smag_fac          = 0.025
+ lhdiff_vn               = .TRUE.
+ lhdiff_temp             = .TRUE.
+ hdiff_multfac           = 1.0
+ hdiff_tv_ratio          = 1.0
+/
+&nwp_phy_nml
+ inwp_gscp               = 1
+ inwp_convection         = 1
+ inwp_radiation          = 1
+ inwp_cldcover           = 1
+ inwp_turb               = 1
+ inwp_satad              = 1
+ inwp_surface            = 1
+/
+&transport_nml
+ ivadv_tracer            = 3,3,3,3,3
+ itype_hlimit            = 3,4,4,4,4
+ ihadv_tracer            = 32,2,2,2,2
+/
+&interpol_nml
+ nudge_zone_width        = 8
+ l_intp_c2l              = .true.
+ rbf_scale_mode_ll       = 2
+/
+&nonhydrostatic_nml
+ iadv_rhotheta           = 2
+ ivctype                 = 2
+ itime_scheme            = 4
+ exner_expol             = 0.5
+ vwind_offctr            = 0.5
+ damp_height             = 55000.
+ rayleigh_coeff          = 0.02
+ igradp_method           = 3
+ divdamp_fac             = 0.004
+ l_zdiffu_t              = .true.
+ thslp_zdiffu            = 0.02
+ thhgtd_zdiffu           = 125.
+ htop_moist_proc         = 22500.
+ hbot_qvsubstep          = 24000.
+/
+&sleve_nml
+ min_lay_thckn           = 20.
+ top_height              = 75000.
+ stretch_fac             = 0.85
+ decay_scale_1           = 4000.
+ decay_scale_2           = 2500.
+ decay_exp               = 1.2
+ flat_height             = 16000.
+/
+&io_nml
+ dt_checkpoint           = ${dt_checkpoint} ! [s] trigger new restart file
+/
+&output_nml
+ filetype                = 4                   ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                     = -1
+ output_bounds           = 0., 10000000., 1800. ! output: start, end, increment
+ steps_per_file          = 1                   ! number of output steps in one output file
+ mode                    = 1                   ! 1: forecast mode (relative t-axis)
+ include_last            = .TRUE.              ! flag whether to include the last time step
+ output_filename         = 'nwp_test'          ! file name base
+ output_grid             = .TRUE.              ! flag whether grid information is added to output.
+ remap                   =  1                  ! reg. lat-lon
+ reg_lon_def             = 0.,1.,360.
+ reg_lat_def             = -90.,1.,90.
+ ml_varlist              = 'pres_sfc', 't_so', 'tmin_2m', 'tot_prec'
+ hl_varlist              = 'temp'
+ h_levels                = 200, 500, 2000
+ m_levels                = "5...(nlev+1)"
+/
+&extpar_nml
+ itopo                   = 1
+ n_iter_smooth_topo      = 1
+ heightdiff_threshold    = 3000.
+/
+&lnd_nml
+ llake                   = .false.
+ ntiles                  = 3
+ nlev_snow               = 2
+ lmulti_snow             = .true.
+ idiag_snowfrac          = 2
+ lsnowtile               = .false.
+/
+&meteogram_output_nml
+  lmeteogram_enabled = .true., .true.
+  n0_mtgrm           = 0                          ! meteogram initial time step (0 is first step!)
+  ninc_mtgrm         = 2, 4 ! meteogram output interval (in terms of time steps)
+  ldistributed       = .false., .false.
+  stationlist_tot    =  50.0,       8.6,    'Frankfurt-Flughafen',
+                        52.260,    14.313,  'Lindenberg_Obs',
+                        52.1873,   13.9894, 'Waldstation_Kehrigk',
+                        52.1215,   14.1077, 'Falkenberg',
+/
+!&meteogram_output_nml
+! lmeteogram_enabled      = .false.
+! ldistributed            = .false.
+! n0_mtgrm                = 1
+! ninc_mtgrm              = 1
+!/
+EOF
+
+#if [[ "$START" == *"srun"* ]]; then
+#   echo "Injecting external process"
+#   # we cannot uses EXPDIR here -.-
+#   mkdir ${experiments_dir}/${EXPNAME}
+#   cat > ${experiments_dir}/${EXPNAME}/mpmd.conf << EOF
+#0 ${basedir}/externals/comin/build/test/mpi_communicator_test_external mpi_communicator_test_comm
+#* ${MODEL}
+#EOF
+#   START_MODEL="${START} --multi-prog mpmd.conf"
+#fi
+
+#-----------------------------------------------------------------------------
+#-----------------------------------------------------------------------------
+# add standard atmo_non-hydrostatic_files
+. ${thisdir}/add_required_atmo_non-hydrostatic_files
+#-----------------------------------------------------------------------------

@@ -1,0 +1,26 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+addexp="./addexp"
+#############################################################################
+listname=debug2
+./rmlist $listname
+
+./create_all_builders $listname
+
+# deactivate all builders
+./set_builder_flags Inactive --builders "$(./lslist $listname --builders-only)" --list $listname
+
+#lets see the list
+./lslist $listname
+#-----------------------------------------------------------
+

@@ -1,0 +1,34 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+alias lll set SMS_PROG 901730 \; login ecgb UID 1
+
+define total_restart {
+   lll
+   icon_restart
+   force complete /icon/ifs_fct/fct_ifs
+   force queued   /icon/forecast/check_progress
+   status -a
+}
+
+define ifs_trigger_restart {
+   lll
+   cancel -y ifs_trigger
+   play ifs_trigger.def
+   begin ifs_trigger
+}
+
+define icon_restart_001 {
+   lll
+   cancel -y /UID/001
+   play -r /UID/001 icon.def
+   mkdirs -v
+   begin UID
+}

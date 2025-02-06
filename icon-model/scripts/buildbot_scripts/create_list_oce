@@ -1,0 +1,113 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+addexp="./addexp"
+#############################################################################
+##
+## create icon-dev list
+##
+#############################################################################
+
+listname=${1:-oce}
+./rmlist $listname
+# ./mklist $listname
+./create_all_builders $listname
+./set_builder_flags Inactive --builders 'levante_aurora levante_gpu_nvhpc levante_cpu_nvhpc levante_gpu_validation' --list $listname
+
+# OES
+# add omip technical tests only with mpi parallelization
+$addexp "checksuite.ocean_internal/technical/exp.ocean_omip_ptest" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" \
+	--runflags "cpu_time=00:20:00 mpi_procs_pernode=5  openmp_threads=4 queue=shared ntasks=24 memory=32G"  --list $listname
+
+$addexp "checksuite.ocean_internal/technical/exp.test_ocean_omip_technical" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" \
+	--runflags "cpu_time=00:30:00 queue=shared ntasks=32"  --list $listname
+$addexp "checksuite.ocean_internal/technical/exp.test_ocean_omip_zstar_technical" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" \
+	--runflags "cpu_time=00:30:00 queue=shared ntasks=32"  --list $listname
+
+$addexp "checksuite.ocean_internal/ShallowWater/exp.ocean_WilliamsonTestCase2_Hex" \
+	--machines levante --without-configureflags "--enable-mixed" --runflags "cpu_time=00:30:00 queue=shared ntasks=16" --list $listname
+
+# add omip binary-identical test
+$addexp "checksuite.ocean_internal/omip/exp.test_ocean_omip_10days" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+$addexp "checksuite.ocean_internal/omip/exp.test_ocean_zstar_omip_10days" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+$addexp "checksuite.ocean_internal/omip/exp.test_ocean_newice_omip_10days" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+
+# add omip binary-identical test on levante
+$addexp "checksuite.ocean_internal/hamocc/exp.test_hamocc_omip_10days"       \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+
+$addexp "checksuite.ocean_internal/hamocc/exp.test_concurrent_hamocc_omip_10days" \
+	--machines levante --without-configureflags "--without-mpi --enable-mixed" --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+
+$addexp "checksuite.ocean_internal/technical/exp.test_multioutput_model_40km" \
+	--machines levante --without-configureflags "--without-mpi --with-openmp --enable-mixed" --runflags "cpu_time=00:30:00 no_of_nodes=2 queue=compute" --list $listname
+
+
+#-----------------------------------------------------------
+# CSCS
+# Additional tests for GPU
+
+# NVIDIA for GPU: failing currently because:
+#              mo_ice_interface:ice_fast_interface: This part has not been ported to GPU.
+./rmexp checksuite.ocean_internal/technical/exp.ocean_omip_ptest                  --builders "DAINT_GPU_nvidia" --list $listname
+./rmexp checksuite.ocean_internal/technical/exp.test_ocean_omip_technical         --builders "DAINT_GPU_nvidia" --list $listname
+
+for builder in DWD_nec DWD_nec_yac2 DWD_nec_hybrid; do
+  # remove non-dwd tests
+  ./rmexp checksuite.ocean_internal/technical/exp.ocean_omip_ptest                   --builders ${builder} --list $listname
+  ./rmexp checksuite.ocean_internal/technical/exp.test_ocean_omip_technical          --builders ${builder} --list $listname
+#off#  ./rmexp checksuite.icon-dev/check.atm_2mom_bubble_rceTorus                     --builders ${builder} --list $listname
+done
+
+#-----------------------------------------------------------
+# test memory loggin in amip setup
+$addexp checksuite.infrastructure/memLog/exp.oce_memLog         --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
+#-----------------------------------------------------------
+#remove red setups
+#-----------------------------------------------------------
+
+# activate runs for the CDI-PIO builder on mistral
+./set_builder_flags Active --builders 'levante_intel_pio' --list $listname
+for builder in levante_intel_pio; do
+  $addexp checksuite.infrastructure/output/exp.hamocc_omip_10days  --builders ${builder} --runflags "no_of_nodes=4" --list $listname
+done
+
+# activate experiments for the Mac builder and breeze
+for builder in MPIMAC_gcc breeze_gcc breeze_nag breeze_intel; do
+  [[ 'MPIMAC_gcc' = "${builder}" ]] && ./set_builder_flags Active --builders ${builder}  --list $listname
+  $addexp checksuite.ocean_internal/omip/exp.ocean_omip_short_r2b4 --builders ${builder} --list $listname --runflags "mpi_procs_pernode=4"
+done
+
+# remove tests for NAG which are buggy or take too long
+for experiment in exp.esm_bb_ruby0
+do
+  ./rmexp $experiment --builders levante_nag --list $listname
+done
+for experiment in checksuite.ocean_internal/omip/exp.test_ocean_omip_10days checksuite.ocean_internal/omip/exp.test_ocean_zstar_omip_10days checksuite.ocean_internal/omip/exp.test_ocean_newice_omip_10days
+do
+  ./rmexp $experiment --builders levante_nag_serial --list $listname
+done
+
+#lets see the list
+./lslist $listname
+#-----------------------------------------------------------

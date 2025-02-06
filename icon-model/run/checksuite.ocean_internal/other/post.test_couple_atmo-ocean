@@ -1,0 +1,41 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#-----------------------------------------------------------------------------
+# Disabled for the moment the restart check_error
+# until the restart for the coupler is ready
+check_error 0
+exit 0
+
+#-----------------------------------------------------------------------------
+if [ $mpi_total_procs -lt 2 ] ; then
+   echo "The coupled runs require at least 2 mpi procs. Exiting."
+   check_error 0
+   exit
+fi
+if [ $OMP_NUM_THREADS -gt 1 ] ; then
+   echo "The coupled runs will not run in OpenMP mode . Exiting."
+   check_error 0
+   exit
+fi
+#-----------------------------------------------------------------------------
+
+atmo_restart_1="../experiments/test_couple_atmo-ocean/restart.iconR2B04-ocean_aqua_planet_20000102T000000Z_atm.nc"
+atmo_restart_2="../experiments/test_couple_atmo-ocean_restart/restart.iconR2B04-ocean_aqua_planet_20000102T000000Z_atm.nc"
+ocean_restart_1="../experiments/test_couple_atmo-ocean/restart.iconR2B04-ocean_aqua_planet_20000102T000000Z_oce.nc"
+ocean_restart_2="../experiments/test_couple_atmo-ocean_restart/restart.iconR2B04-ocean_aqua_planet_20000102T000000Z_oce.nc"
+
+
+cdo diff $atmo_restart_1 $atmo_restart_2
+check_error $? "atmo restart differs"
+
+cdo diff $ocean_restart_1 $ocean_restart_2
+check_error $? "ocean restart differs"
+

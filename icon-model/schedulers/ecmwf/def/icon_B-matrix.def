@@ -1,0 +1,394 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# -------------------------------------------------
+# ICON.DEF
+# -------------------------------------------------
+#
+# SMS suite definition file.
+#
+# This script is part of the ICON SMS suite
+# Initial implementation: F. Prill, DWD (2012-05-07)
+#
+# Corresponding author:
+#   Florian Prill, DWD, mailto:florian.prill@dwd.de
+#
+# Some parts of this definition file are based
+# on the "bceps" SMS suite (H. Frank, DWD), cf.
+# "ecgate:/home/ms/de/zde/BCeps"
+#
+# 2012-07-02 : Introduced new SVN user "dwd-ecmwf"
+# 2012-summer: Upgrade to multi-experiment, multi-user,
+#              catch-up-mode, plotting (Martin Koehler)
+# 2012-end:    Switch to C2A (Martin Koehler and Stefan Koerner)
+# 2014-06:     Switch to CCA (Cray, Martin Koehler
+#
+
+# ---USER SETUP------------------------------------
+
+# global definitions:
+set EXPNUM        "086"                #---experiment number---
+set EXPNUM2       "086"                #---experiment number used for score comparison---
+set SUITE2        "dei2"               #---suite             used for score comparison---
+set FIRST_DATE    20120629
+set LAST_DATE     20130331
+set MONTHS        000000               #---months to be run (not for B-matrix)
+set INIHOUR       00
+set ICON_HOME     /home/ms/de/deia 
+set ICON_ID       deia 
+set RES           "R02B06"             #---ICON resolution dynamics
+set RESRAD        "R02B05"             #---ICON resolution radiation (requires namelist)
+set USER_ICON_DIR icon-nwp             #---location of script, plot and sms files
+set DEIA_ICON_DIR icon-nwp             #---location of build and binary in deia account (svn, build, cp)
+
+# no. of time steps (10x86400s/72s)
+#set NSTEPS        9600   # 10d forecast:  R2B5-turbdiff-9600, R2B6-12000
+set NSTEPS       2400   # grey zone 48h: R2B7-3600, R2B8-7200
+
+# simulation modes: 1:oper, 2:monthly 10day forecasts, 3:climate (1year), 4: B-matrix
+set SIMMODE      4
+
+# no. of ensemble members (dummies here)
+#set NENS         10
+set NENS         0   # default for no ensemble run
+set NMEM         0   # default for no ensemble run
+
+# Processors
+set ICONNODES        32   # R2B5: 16,  R2B6: 32,  R2B7: 32,  R2B8: 64
+set ICONTASKSPERNODE 32   #       32         32         32          8
+set ICONTHREADS       2   #        2          2          2          8
+
+# -------------------------------------------------
+
+# import environment variables:
+setenv -i HOME
+setenv -i USER
+setenv -i HOST
+setenv -i TMPDIR
+
+# HPC environment:
+set SCHOST      cca
+set WSHOST      ecgb
+set SCTEMP      /scratch/ms/de/$ICON_ID/icon
+set ECTEMP      /scratch/ms/de/$ICON_ID/icon
+set SCPERM      /perm/ms/de/$USER
+set ECPERM      /$SCHOST$SCPERM            # mounted cca perm on ecgate
+set SCPERMIII   /perm/ms/de/$ICON_ID
+set ECPERMIII   /$SCHOST$SCPERMIII         # mounted cca perm on ecgate
+set SCBASEDIR   $SCPERM/$USER_ICON_DIR/schedulers/ecmwf
+set ECBASEDIR   $ECPERM/$USER_ICON_DIR/schedulers/ecmwf
+set SCSOFT      /perm/ms/de/deia
+
+# LOGDIR, LOGPORT
+#username=`id -u`          #use user deia
+#port=$((35000+username))  #then port=36730
+set SCLOGDIR    /scratch/ms/de/$ICON_ID/sms
+set SCLOGPORT   36730
+
+# place where suite and tasks are defined
+set SMSFILES    "$ECPERM/$USER_ICON_DIR/schedulers/ecmwf/sms"
+
+# place where include files are stored
+set SMSINCLUDE  "$ECPERM/$USER_ICON_DIR/schedulers/ecmwf/include"
+
+# place where generated job scripts are stored
+set SMSHOME     "$ICON_HOME/sms"
+
+# place for SMS output
+set SMSOUT      "$ICON_HOME/sms"
+
+# wait interval between file checks:
+set WAITINTVL    10
+
+# set no. of restarts for aborted tasks in SMS:
+set SMSTRIES      1
+
+# -------------------------------------------------
+
+
+define on_ecgate {
+  label host "$WSHOST"
+}
+
+define on_ecgate_submit {
+  label host "$WSHOST submit"
+  edit SMSCMD       "sms_submit $ICON_ID $WSHOST %SMSJOB% %SMSJOBOUT%"
+  edit SMSKILL      "sms_kill   $ICON_ID $WSHOST %SMSRID% %SMSJOB% %SMSJOBOUT%"
+  edit SMSSTATUSCMD "sms_status $ICON_ID $WSHOST %SMSRID% %SMSJOB%"
+}
+
+define on_hpc_parallel {
+  label host "$SCHOST parallel"
+  edit SMSCMD       "sms_submit $ICON_ID %SCHOST% %SMSJOB% %SMSJOBOUT%"
+  edit SMSKILL      "sms_kill   $ICON_ID %SCHOST% %SMSRID% %SMSJOB% %SMSJOBOUT%"
+  edit SMSSTATUSCMD "sms_status $ICON_ID %SCHOST% %SMSRID% %SMSJOB%"
+  edit SMSOUT     ${SCLOGDIR}
+  edit SMSLOGHOST ${SCHOST}
+  edit SMSLOGPORT ${SCLOGPORT}
+  edit SCCPUS     1
+  edit SCMEM      1550MB
+}
+
+define on_hpc_serial {
+  edit SCJOBTYPE serial
+  edit SMSCMD       "sms_submit $ICON_ID %SCHOST% %SMSJOB% %SMSJOBOUT%"
+  edit SMSKILL      "sms_kill   $ICON_ID %SCHOST% %SMSRID% %SMSJOB% %SMSJOBOUT%"
+  edit SMSSTATUSCMD "sms_status $ICON_ID %SCHOST% %SMSRID% %SMSJOB%"
+  edit SMSOUT     ${SCLOGDIR}
+  edit SMSLOGHOST ${SCHOST}
+  edit SMSLOGPORT ${SCLOGPORT}
+  edit SCJOBCLASS ns
+  edit SCTOTALTASKS 1
+  on_hpc_parallel
+  label host "$SCHOST serial"
+}
+#  edit SMSCMD       "/home/ma/emos/bin/smssubmit $ICON_ID %SCHOST% %SMSJOB% %SMSJOBOUT%"
+#  edit SMSKILL      "/home/ma/emos/bin/smskill   $ICON_ID %SCHOST% %SMSRID% %SMSJOB% %SMSJOBOUT%"
+#  edit SMSSTATUSCMD "/home/ma/emos/bin/smsstatus $ICON_ID %SCHOST% %SMSRID% %SMSJOB%"
+
+
+
+# -------------------------------------------------
+
+suite $USER
+
+  clock real 0      # set todays date
+
+  # EXP ---------------------------------------------
+
+  family ${EXPNUM}
+
+
+    # initial hour: could be cycled later
+    edit INIHOUR $INIHOUR
+
+    # init local variables:
+    set ENABLE_INIT               1
+    set     ENABLE_GET_DATA       1
+    set     ENABLE_INIT_DATA      1
+    set     ENABLE_BUILD          0
+    set         ENABLE_INIT_SVN   0
+    set ENABLE_FORECAST           1
+    set     ENABLE_DUMPSTATE      0
+    set     ENABLE_MODEL          1
+    set ENABLE_POST               1
+    set     ENABLE_METEOGRAM      0
+    set     ENABLE_POST_METVIEW   0
+    set     ENABLE_POST_ARCHIVE   0
+
+    # enable this flag, if we do not perform a complete "svn export"
+    # but simply an "svn update" and "gmake distclean":
+    set  SVN_UPDATE           1
+    edit SVN_UPDATE $SVN_UPDATE
+
+    edit SMSTRIES   $SMSTRIES
+    edit SMSHOME    $SMSHOME
+    edit SMSFILES   $SMSFILES
+    edit SMSINCLUDE $SMSINCLUDE
+    edit SMSOUT     $SMSOUT
+
+    edit EXPNUM     $EXPNUM
+    edit EXPNUM2    $EXPNUM2
+    edit SUITE2     $SUITE2
+    edit NSTEPS     $NSTEPS
+    edit RES        $RES
+    edit RESRAD     $RESRAD
+    edit SIMMODE    $SIMMODE
+    edit NENS       $NENS
+    edit NMEM       $NMEM
+    edit WAITINTVL  $WAITINTVL
+    edit USER       $USER
+    edit USER_ICON_DIR $USER_ICON_DIR
+    edit DEIA_ICON_DIR $DEIA_ICON_DIR
+    edit SCPERM     $SCPERM
+    edit ECPERM     $ECPERM
+    edit SCPERMIII  $SCPERMIII
+    edit ECPERMIII  $ECPERMIII
+    edit TMPDIR     $TMPDIR
+    edit SCHOST     $SCHOST
+    edit WSHOST     $WSHOST
+    edit SCBASEDIR  $SCBASEDIR
+    edit ECBASEDIR  $ECBASEDIR
+    edit SCTEMP     $SCTEMP
+    edit ECTEMP     $ECTEMP
+    edit SCSOFT     $SCSOFT
+    edit MONTHS     $MONTHS
+
+    edit ICONNODES        $ICONNODES        
+    edit ICONTASKSPERNODE $ICONTASKSPERNODE 
+    edit ICONTHREADS      $ICONTHREADS      
+    edit ENABLE_DUMPSTATE $ENABLE_DUMPSTATE
+
+
+    # ONCE --------------------------------------------
+
+    task once
+        on_hpc_serial
+        edit SCWALLCLOCKLIMIT 00:02:00
+
+
+    # INITIALIZATION ----------------------------------
+
+    family init
+        repeat date YMD ${FIRST_DATE} ${LAST_DATE}      # cycle over dates
+        trigger (init:YMD le ( forecast:YMD + 2 )) and (once == complete)
+        complete ($ENABLE_INIT == 0)
+
+        extern /ifs_trigger/fct_ifs
+
+        task setup
+           #time 06:00                                  # use this for tasks running daily (not catch-up mode)
+           #trigger  (/ifs_trigger/fct_ifs == complete)
+            on_ecgate_submit
+            event enable_build
+            event enable_dumpstate
+
+        family build
+            trigger (setup == complete) and (../once == complete)
+
+            task init_svn
+                complete ($ENABLE_INIT_SVN == 0) or ($ENABLE_INIT == 0) or \
+                  ($ENABLE_BUILD == 0) or not (../setup:enable_build)
+                on_ecgate
+                event svn_update
+                event make_distclean
+                event svn_export
+                event tarfile
+                event clear_directory
+                meter revision 0 20000 20000
+
+            task init_build
+                trigger (init_svn == complete)
+                complete ($ENABLE_INIT == 0) or ($ENABLE_BUILD == 0) or not (../setup:enable_build)
+                on_hpc_parallel
+                edit SCJOBTYPE    parallel
+                edit SCJOBCLASS   np
+                edit SCTOTALTASKS 8
+                edit SCCPUS       8
+                edit SCMEM        6200MB
+                edit SCWALLCLOCKLIMIT 05:00:00
+                event configure
+                event make
+
+            task init_cp_binary
+                trigger (init_build == complete) 
+                complete (../../init:YMD gt ${FIRST_DATE}) and ($ENABLE_BUILD == 0)
+                on_hpc_serial
+                edit SCWALLCLOCKLIMIT 00:02:00
+
+        endfamily
+
+        task get_data
+            trigger (setup == complete) and (../once == complete)
+            complete ($ENABLE_GET_DATA == 0)
+            on_hpc_parallel
+            edit SCJOBTYPE    parallel
+            edit SCJOBCLASS   np
+            edit SCTOTALTASKS 4
+            edit SCCPUS       4
+            edit SCMEM        3000MB
+            edit SCWALLCLOCKLIMIT 02:00:00
+
+        task init_data
+            trigger (get_data == complete) and (build == complete)
+            complete ($ENABLE_INIT_DATA == 0)
+            on_hpc_parallel
+            edit SCJOBTYPE    parallel
+            edit SCJOBCLASS   np
+            edit SCTOTALTASKS 32
+            edit SCCPUS       8
+            edit SCWALLCLOCKLIMIT 00:60:00
+
+    endfamily
+
+
+    # FORECAST ----------------------------------------
+
+    family forecast
+        repeat date YMD ${FIRST_DATE} ${LAST_DATE}      # cycle over dates
+        trigger (init:YMD gt forecast:YMD) and (forecast:YMD le ( post:YMD + 2 ))
+        complete ($ENABLE_FORECAST == 0)
+
+        family prepare
+            task pre_clean
+                on_hpc_serial
+                edit SCWALLCLOCKLIMIT 00:20:00
+
+            task dumpstate
+                trigger (pre_clean == complete)
+                complete ($ENABLE_DUMPSTATE == 0) or not (/${USER}/${EXPNUM}/init/setup:enable_dumpstate)
+                on_hpc_parallel
+                edit SCWALLCLOCKLIMIT 00:20:00
+                event prepare
+                event create_dumpstate
+
+        endfamily
+
+        task model
+            trigger (prepare == complete)
+            complete ($ENABLE_MODEL == 0)
+            on_hpc_parallel
+            edit SCWALLCLOCKLIMIT 02:00:00
+            event model_complete
+            # auto-shutdown of "check_progress" subtask:
+            #action abort    $SMSFILES/cancel_check_progress
+            #action complete $SMSFILES/cancel_check_progress
+
+        task check_progress
+            trigger  (model == active)
+            complete (model == complete)
+            on_hpc_serial
+            edit SCWALLCLOCKLIMIT 02:00:00
+            meter timesteps 0 $NSTEPS $NSTEPS
+
+    endfamily
+
+
+    # POST-PROCESS---------------------------------
+
+    family post
+        repeat date YMD ${FIRST_DATE} ${LAST_DATE}      # cycle over dates
+        trigger (forecast:YMD gt post:YMD)
+        #trigger (($ENABLE_FORECAST==0) or (../forecast/model:run_model  and ((../forecast/check_progress:progress ge post:VALUE) or (../forecast/model:model_complete))))
+        #trigger (../forecast/model:model_complete)
+        complete ($ENABLE_POST == 0)
+
+        task post_prepare   
+            on_hpc_serial
+            edit SCWALLCLOCKLIMIT 00:40:00
+            event meteogram_data
+   
+        task meteogram
+            trigger (post_prepare:meteogram_data)
+            complete ($ENABLE_METEOGRAM == 0)
+            on_ecgate_submit
+   
+        family metview_all 
+          trigger (post_prepare == complete)
+          complete ($ENABLE_POST_METVIEW == 0)
+          for set 1 4 ; do
+            set tsk `printf %3.3i $set`
+            family $tsk
+              task metview
+                on_ecgate_submit
+                edit metproc $set
+            endfamily
+          endfor  
+        endfamily
+
+        task post_archive
+            trigger meteogram==complete and metview_all==complete 
+            complete ($ENABLE_POST_ARCHIVE == 0)
+            on_ecgate_submit
+    endfamily
+
+  endfamily
+
+endsuite

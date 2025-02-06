@@ -1,0 +1,58 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+set -x
+addexp="./addexp"
+#############################################################################
+##
+## create ocean list
+##
+#############################################################################
+listname=oes-ref
+./rmlist $listname
+
+./create_ocean_builders $listname
+
+#-----------------------------------------------------------
+# OES
+
+# add omip binary-identical test on levante
+$addexp checksuite.ocean_internal/omip/exp.test_ocean_omip_10days \
+--machines levante --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+$addexp checksuite.ocean_internal/omip/exp.test_ocean_zstar_omip_10days \
+--machines levante --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+$addexp checksuite.ocean_internal/hamocc/exp.test_hamocc_omip_10days       \
+--machines levante --runflags "cpu_time=00:30:00 queue=shared,compute memory=32G ntasks=16" --list $listname
+
+$addexp checksuite.ocean_internal/omip/pp.refgen_test_ocean_omip_10days  --machines levante --list $listname
+$addexp checksuite.ocean_internal/omip/pp.refgen_test_ocean_zstar_omip_10days  --machines levante --list $listname
+$addexp checksuite.ocean_internal/hamocc/pp.refgen_test_hamocc_omip_10days --machines levante --list $listname
+
+
+
+./adddep --from-experiment checksuite.ocean_internal/omip/pp.refgen_test_ocean_omip_10days \
+         --to-experiment checksuite.ocean_internal/omip/exp.test_ocean_omip_10days \
+	 --machines levante --list $listname
+./adddep --from-experiment checksuite.ocean_internal/omip/pp.refgen_test_ocean_zstar_omip_10days \
+         --to-experiment checksuite.ocean_internal/omip/exp.test_ocean_zstar_omip_10days \
+	 --machines levante --list $listname
+./adddep --from-experiment checksuite.ocean_internal/hamocc/pp.refgen_test_hamocc_omip_10days \
+         --to-experiment checksuite.ocean_internal/hamocc/exp.test_hamocc_omip_10days \
+	 --machines levante --list $listname
+#-----------------------------------------------------------
+#lets see the list
+./lslist $listname
+#-----------------------------------------------------------

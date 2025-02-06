@@ -1,0 +1,185 @@
+# Parameter table
+#
+# TABLE_ID=128
+# TABLE_MODEL=ECHAM5
+# TABLE_INSTITUT=MPIMET
+# TABLE_CENTER=98
+# TABLE_SUBCENTER=232
+#
+#-------------------------------------------------------------------------
+#!variable
+#
+# Variables
+#   (max number of entries = 256)
+#
+# The format of each record is:
+#   id | name | title | units
+#
+# id       = parameter ID
+# name     = variable name
+# title    = long name (description)
+# units    = variable units
+#
+#----+-------------+------------------------------------------+----------+
+# id | name        | title                                    | units    |
+#----+-------------+------------------------------------------+----------+
+   4 | precip      | total precipitation                      | kg/m^2s  |
+  79 | swnirac     | net surface NIR flux acc.                | W/m^2    |
+  80 | swdifnirac  | fraction of diffuse NIR acc.             | W/m^2    |
+  81 | swvisac     | net surface visible flux acc.            | W/m^2    |
+  82 | swdifvisac  | fraction of diffuse visible acc.         | W/m^2    |
+  83 | ocu         | ocean eastw. velocity (coupled mode)     | m/s      |
+  84 | ocv         | ocean northw. velocity (coupled mode)    | m/s      |
+  85 | tradl       | net LW radiation 200mb                   | W/m^2    |
+  86 | sradl       | net SW radiation 200mb                   | W/m^2    |
+  87 | trafl       | net LW radiation 200mb (clear sky)       | W/m^2    |
+  88 | srafl       | net SW radiation 200mb (clear sky)       | W/m^2    |
+  89 | amlcorac    | mixed layer flux correction              | W/m^2    |
+  90 | amlheatac   | mixed layer heat content                 | J/m^2    |
+  91 | trfliac     | net LW radiation over ice                | W/m^2    |
+  92 | trflwac     | net LW radiation over water              | W/m^2    |
+  93 | trfllac     | net LW radiation over land               | W/m^2    |
+  94 | sofliac     | net SW radiation over ice                | W/m^2    |
+  95 | soflwac     | net SW radiation over water              | W/m^2    |
+  96 | sofllac     | net SW radiation over land               | W/m^2    |
+  97 | friac       | ice cover (fraction of grid box)         |          |
+ 102 | tsi         | surface temperature of ice               | K        |
+ 103 | tsw         | surface temperature of water             | K        |
+ 104 | ustri       | zonal      wind stress over ice          | Pa       |
+ 105 | vstri       | meridional wind stress over ice          | Pa       |
+ 106 | ustrw       | zonal      wind stress over water        | Pa       |
+ 107 | vstrw       | meridional wind stress over water        | Pa       |
+ 108 | ustrl       | zonal      wind stress over land         | Pa       |
+ 109 | vstrl       | meridional wind stress over land         | Pa       |
+ 110 | ahfliac     | latent heat flux over ice                | W/m^2    |
+ 111 | ahflwac     | latent heat flux over water              | W/m^2    |
+ 112 | ahfllac     | latent heat flux over land               | W/m^2    |
+ 113 | evapiac     | evaporation over ice                     | kg/m^2s  |
+ 114 | evapwac     | evaporation over water                   | kg/m^2s  |
+ 115 | evaplac     | evaporation over land                    | kg/m^2s  |
+ 116 | az0i        | roughness length over ice                | m        |
+ 117 | az0w        | roughness length over water              | m        |
+ 118 | az0l        | roughness length over land               | m        |
+ 119 | ahfsiac     | sensible heat flux over ice              | W/m^2    |
+ 120 | ahfswac     | sensible heat flux over water            | W/m^2    |
+ 121 | ahfslac     | sensible heat flux over land             | W/m^2    |
+ 122 | alsoi       | albedo of ice                            |          |
+ 123 | alsow       | albedo of water                          |          |
+ 124 | alsol       | albedo of land                           |          |
+ 125 | ahfice      | conductive heat flux through ice         | W/m^2    |
+ 126 | qres        | residual heat flux for melting sea ice   | W/m^2    |
+ 127 | alake       | lake fraction                            |          |
+ 128 | rintop      | low level inversion                      |          |
+ 129 | geosp       | surface geopotential (orography)         | m^2/s^2  |
+ 130 | t           | temperature                              | K        |
+ 131 | u           | u-velocity                               | m/s      |
+ 132 | v           | v-velocity                               | m/s      |
+ 133 | q           | specific humidity                        | kg/kg    |
+ 134 | aps         | surface pressure                         | Pa       |
+ 135 | omega       | vertical velocity                        | Pa/s     |
+ 136 | acdnc       | cloud droplet number concentration       | 1/m^3    |
+ 137 | apmeb       | (P-E) error                              | kg/m^2s  |  
+ 138 | svo         | vorticity                                | 1/s      |
+ 139 | tslm1       | surface temperature of land              | K        |
+ 140 | ws          | soil wetness                             | m        |
+ 141 | sn          | water equivalent snow depth              | m        |
+ 142 | aprl        | large scale precipitation                | kg/m^2s  |
+ 143 | aprc        | convective  precipitation                | kg/m^2s  |
+ 144 | aprs        | snow fall                                | kg/m^2s  |
+ 145 | vdis        | boundary layer dissipation               | W/m^2    |
+ 146 | ahfs        | sensible heat flux                       | W/m^2    |
+ 147 | ahfl        | latent heat flux                         | W/m^2    |
+ 148 | stream      | streamfunction                           | m^2/s    |
+ 149 | velopot     | velocity potential                       | m^2/s    |
+ 150 | xivi        | vertically integrated cloud ice          | kg/m^2   |
+ 151 | slp         | mean sea level pressure                  | Pa       |
+ 152 | lsp         | log surface pressure                     |          |
+ 153 | xl          | cloud water                              | kg/kg    |
+ 154 | xi          | cloud ice                                | kg/kg    |
+ 155 | sd          | divergence                               | 1/s      |
+ 156 | geopoth     | geopotential height                      | m        |
+ 157 | rhumidity   | relative humidity                        |          |
+ 159 | wind10w     | 10m windspeed over water                 | m/s      |
+ 160 | runoff      | surface runoff and drainage              | kg/m^2s  | 
+ 161 | drain       | drainage                                 | kg/m^2s  | 
+ 162 | aclc        | cloud cover                              |          |
+ 164 | aclcov      | total cloud cover                        |          |
+ 165 | u10         | 10m u-velocity                           | m/s      |
+ 166 | v10         | 10m v-velocity                           | m/s      |
+ 167 | temp2       | 2m temperature                           | K        |
+ 168 | dew2        | 2m dew point temperature                 | K        |
+ 169 | tsurf       | surface temperature                      | K        |
+ 170 | xvar        | variance of total water amount           | kg/kg    |
+ 171 | wind10      | 10m windspeed                            | m/s      |
+ 172 | slm         | land sea mask (1. = land, 0. = sea/lakes)|          |
+ 173 | az0         | roughness length                         | m        |
+ 174 | alb         | surface background albedo                |          |
+ 175 | albedo      | surface albedo                           |          |
+ 176 | srads       | net surface SW radiation                 | W/m^2    |
+ 177 | trads       | net surface LW radiation                 | W/m^2    |
+ 178 | srad0       | net top SW radiation                     | W/m^2    |
+ 179 | trad0       | net top LW radiation (-OLR)              | W/m^2    |
+ 180 | ustr        | u-stress                                 | Pa       |
+ 181 | vstr        | v-stress                                 | Pa       |
+ 182 | evap        | evaporation                              | kg/m^2s  |
+ 183 | xskew       | skewness of total water amount qv+qi+ql  |          |
+ 184 | srad0d      | top incoming SW radiation                | W/m^2    |
+ 185 | srafs       | net surface SW radiation (clear sky)     | W/m^2    |
+ 186 | trafs       | net surface LW radiation (clear sky)     | W/m^2    |
+ 187 | sraf0       | net top SW radiation   (clear sky)       | W/m^2    |
+ 188 | traf0       | net top LW radiation   (clear sky)       | W/m^2    |
+ 189 | sclfs       | net surface SW cloud forcing (176-185)   | W/m^2    |
+ 190 | tclfs       | net surface LW cloud forcing (177-186)   | W/m^2    |
+ 191 | sclf0       | net SW top cloud forcing (178-187)       | W/m^2    |
+ 192 | tclf0       | net LW top cloud forcing (179-188)       | W/m^2    |
+ 193 | wl          | skin reservoir content                   | m        |
+ 194 | slf         | fractional land cover                    |          | 
+ 195 | ustrgw      | u-gravity wave stress                    | Pa       |
+ 196 | vstrgw      | v-gravity wave stress                    | Pa       |
+ 197 | vdisgw      | gravity wave dissipation                 | W/m^2    |
+ 198 | vgrat       | vegetation ratio                         |          |
+ 199 | orostd      | orographic standard deviation            | m        |
+ 200 | vlt         | leaf area index                          |          |
+ 201 | t2max       | maximum 2m-temperature                   | K        |
+ 202 | t2min       | minimum 2m-temperature                   | K        |
+ 203 | srad0u      | top SW radiation upward                  | W/m^2    |
+ 204 | sradsu      | surface SW radiation upward              | W/m^2    |
+ 205 | tradsu      | surface LW radiation upward              | W/m^2    |
+ 206 | grndflux    | surface ground heat flux                 |          |
+ 207 | tsoil       | deep soil temperatures (5 layers)        | K        |
+ 208 | ahfcon      | conductive heat flux through ice         | W/m^2    |
+ 209 | ahfres      | res. heat flux for melting ice           | W/m^2    |
+ 210 | seaice      | ice cover (fraction of ice+water)        |          |
+ 211 | siced       | ice thickness                            | m        |
+ 212 | forest      | forest fraction                          |          |
+ 213 | gld         | glacier thickness                        | m        |
+ 214 | sni         | water equivalent of snow on ice          | m        |
+ 215 | rogl        | glacier runoff                           | kg/m^2s  |
+ 216 | wimax       | maximum 10m-wind speed                   | m/s      |
+ 217 | topmax      | maximum height of convective cloud tops  | Pa       |
+ 218 | snmel       | snow melt                                | kg/m^2s  |
+ 219 | runtoc      | surface runoff into ocean                | kg/m^2s  |
+ 220 | runlnd      | surface runoff not running into ocean    | kg/m^2s  |
+ 221 | apmegl      | P-E over land ice                        | kg/m^2s  |
+ 222 | snacl       | snow accumulation over land              | kg/m^2s  |
+ 223 | aclcac      | cloud cover                              |          |
+ 224 | tke         | turbulent kinetic energy                 | m^2/s^2  |
+ 225 | tkem1       | turbulent kinetic energy (t-1)           | m^2/s^2  |
+ 226 | fao         | FAO data set (soil data flags) 0...5     |          |
+ 227 | rgcgn       | heat capacity of soil                    |          |
+ 228 | sodif       | soil diffusivity                         | m^2/s    |
+ 229 | wsmx        | field capacity of soil                   | m        |
+ 230 | qvi         | vertically integrated water vapor        | kg/m^2   |
+ 231 | xlvi        | vertically integrated cloud water        | kg/m^2   |
+ 232 | glac        | fraction of land covered by glaciers     |          |
+ 233 | snc         | snow depth at the canopy                 | m        |
+ 234 | rtype       | type of convection                       | 0...3    |
+ 235 | abso4       | anthropogenic sulfur burden              | kg/m^2   |
+ 236 | ao3         | ipcc ozone                               | kg/m^2   |
+ 237 | tropo       | WMO defined tropopause height            | Pa       |
+ 259 | windspeed   | windspeed (sqrt(u^2+v^2))                | m/s      |
+ 260 | precip      | total precipitation  (142+143)           | kg/m^2s  |
+ 261 | net_top     | total top radiation  (178+179)           | W/m^2    |
+ 262 | net_bot     | total surface radiation (176+177)        | W/m^2    |
+ 272 | mastrfu     | mass stream function                     | kg/s     |
+

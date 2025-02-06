@@ -1,0 +1,143 @@
+C Compiler -FLAGS:
+
+-[no-]prec-sqrt
+          determine if certain square root optimizations are enabled
+
+-[no-]prec-div
+          improve precision of FP divides (some speed impact)
+
+-[no-]fast-transcendentals
+          generate a faster version of the transcendental functions
+
+-m64      generate code for Intel(R) 64 architecture
+
+-march=<cpu>
+          generate code exclusively for a given <cpu>
+            core-avx2  - Generates code for processors that support Intel(R)
+                         Advanced Vector Extensions 2 (Intel(R) AVX2), Intel(R)
+                         AVX, SSE4.2 SSE4.1, SSE3, SSE2, SSE, and SSSE3
+                         instructions
+
+-mtune=<cpu>
+          optimize for a specific <cpu>
+            core-avx2  - Optimizes code for processors that support Intel(R)
+                         Advanced Vector Extensions 2 (Intel(R) AVX2), Intel(R)
+                         AVX, SSE4.2 SSE4.1, SSE3, SSE2, SSE, and SSSE3
+                         instructions
+
+-[no-]fma
+          enable/disable the combining of floating point multiplies and
+          add/subtract operations
+
+-[no-]ftz
+          enable/disable flush denormal results to zero
+
+-g[level]
+          Produce symbolic debug information.
+          Valid [level] values:
+             2  - Emit complete debug information. (default for -g)
+
+-gdwarf-<version>
+          Enable generation of debug information using the specified DWARF
+          version.  These options may require additional tools such as linkers
+          and debuggers which support these formats.
+          Valid <version> values:
+             4  - DWARF Debug Information Format Version 4.
+
+-[no-]ip  enable(DEFAULT)/disable single-file IP optimization
+          within files
+
+-pc64     set internal FPU precision to 53 bit significand
+
+-std=<std>
+          enable language support for <std>, as described below
+            gnu99 conforms to ISO C99 plus GNU extensions
+
+-O3       optimize for maximum speed and enable more aggressive optimizations
+          that may not improve performance on some programs
+
+-qopt-dynamic-align
+          enable(DEFAULT) dynamic data alignment optimizations.  Specify
+          -qno-opt-dynamic-align to disable
+
+
+====================================================================================
+
+FORTRAN-Compiler FLAGS:
+
+-gdwarf-<version>
+          Enable generation of debug information using the specified DWARF
+          version.  These options may require additional tools such as linkers
+          and debuggers which support these formats.
+          Valid <version> values:
+             4  - DWARF Debug Information Format Version 4.
+
+-g[level]
+          Produce symbolic debug information.
+          Valid [level] values:
+             2  - Emit complete debug information. (default for -g)
+
+-pc64     set internal FPU precision to 53 bit significand
+
+-fp-model <name>
+          enable <name> floating point model variation
+            [no-]except - enable/disable floating point exception semantics
+            fast[=1|2]  - enables more aggressive floating point optimizations
+            precise     - allows value-safe optimizations
+            source      - enables intermediates in source precision
+                          sets -assume protect_parens for Fortran
+            strict      - enables -fp-model precise -fp-model except, disables
+                          contractions and enables pragma stdc fenv_access
+            consistent  - enables consistent, reproducible results for
+                          different optimization levels or between different
+                          processors of the same architecture
+
+-fpe{0|1|3}
+          specifies program-wide behavior on floating point exceptions
+
+-qoverride-limits
+          provides a way to override certain internal compiler limits that are
+          intended to prevent excessive memory usage or compile times for very
+          large, complex compilation units.
+
+-assume <keyword>
+          specify assumptions made by the optimizer and code generator
+
+-align <keyword>
+          specify how data items are aligned
+
+-[no-]prec-sqrt
+          determine if certain square root optimizations are enabled
+
+-[no-]prec-div
+          improve precision of FP divides (some speed impact)
+
+-[no-]fast-transcendentals
+          generate a faster version of the transcendental functions
+
+-m64      generate code for Intel(R) 64 architecture
+
+-march=<cpu>
+          generate code exclusively for a given <cpu>
+            core-avx2  - Generates code for processors that support Intel(R)
+                         Advanced Vector Extensions 2 (Intel(R) AVX2), Intel(R)
+                         AVX, SSE4.2 SSE4.1, SSE3, SSE2, SSE, and SSSE3
+                         instructions
+ 
+-mtune=<cpu>
+          optimize for a specific <cpu>
+            core-avx2  - Optimizes code for processors that support Intel(R)
+                         Advanced Vector Extensions 2 (Intel(R) AVX2), Intel(R)
+                         AVX, SSE4.2 SSE4.1, SSE3, SSE2, SSE, and SSSE3
+                         instructions
+
+-[no-]fma
+          enable/disable the combining of floating point multiplies and
+          add/subtract operations
+
+-[no-]ip  enable(DEFAULT)/disable single-file IP optimization
+          within files
+
+
+
+

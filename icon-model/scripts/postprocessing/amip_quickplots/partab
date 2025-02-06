@@ -1,0 +1,117 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+&parameter  name=pr  code=260   /
+&parameter  name=prlr  code=61   /
+&parameter  name=prls  code=62   /
+&parameter  name=prcr  code=63   /
+&parameter  name=prcs  code=64   /
+&parameter  name=rsdt  code=184   /
+&parameter  name=rsns  code=176   /
+&parameter  name=rlns  code=177   /
+&parameter  name=rsnt  code=178   /
+&parameter  name=rlnt  code=179   /
+&parameter  name=rsns_wtr  code=95     delete=1   /
+&parameter  name=rsns_ice  code=94     delete=1  /
+&parameter  name=rsns_lnd  code=96      delete=1  /
+&parameter  name=rlns_wtr  code=92      delete=1  /
+&parameter  name=rlns_ice  code=91     delete=1  /
+&parameter  name=rlns_lnd  code=93      delete=1  /
+&parameter  name=ts_wtr  code=103      delete=1  /
+&parameter  name=ts_ice  code=102     delete=1  /
+&parameter  name=evspsbl_ice  code=113     delete=1  /
+&parameter  name=evspsbl_wtr  code=114      delete=1  /
+&parameter  name=evspsbl_lnd  code=115      delete=1  /
+&parameter  name=z0m_ice  code=116     delete=1  /
+&parameter  name=z0m_wtr  code=117     delete=1   /
+&parameter  name=z0m_lnd  code=118      delete=1  /
+&parameter  name=albedo_ice  code=122     delete=1  /
+&parameter  name=albedo_wtr  code=123     delete=1   /
+&parameter  name=albedo_lnd  code=124      delete=1  /
+&parameter  name=sfcwind_wtr  code=159      delete=1  /
+&parameter  name=ts_lnd  code=139      delete=1  /
+&parameter  name=ts  code=169   /
+&parameter  name=tas  code=167   /
+&parameter  name=sic  code=97   /
+&parameter  name=sit  code=211   /
+&parameter  name=clt  code=164   /
+&parameter  name=prw  code=230   /
+&parameter  name=cllvi  code=231   /
+&parameter  name=clivi  code=150   /
+&parameter  name=hfls  code=147   /
+&parameter  name=hfss  code=146   /
+&parameter  name=evspsbl  code=182   /
+&parameter  name=hfls_wtr  code=111     delete=1   /
+&parameter  name=hfls_ice  code=110     delete=1  /
+&parameter  name=hfls_lnd  code=112     delete=1   /
+&parameter  name=hfss_wtr  code=120      delete=1  /
+&parameter  name=hfss_ice  code=119     delete=1  /
+&parameter  name=hfss_lnd  code=121     delete=1   /
+&parameter  name=tauu   code=180   /
+&parameter  name=tauv   code=181  / 
+&parameter  name=tauu_wtr  code=106      delete=1  /
+&parameter  name=tauu_ice  code=104     delete=1  /
+&parameter  name=tauu_lnd  code=108      delete=1  /
+&parameter  name=tauv_wtr  code=107      delete=1  /
+&parameter  name=tauv_ice  code=105     delete=1  /
+&parameter  name=tauv_lnd  code=109      delete=1  /
+&parameter  name=tauu_sso  code=195   /
+&parameter  name=tauv_sso  code=196   /
+&parameter  name=diss_sso  code=197   /
+&parameter  name=psl  code=151   /
+&parameter  name=albedo  code=175   /
+&parameter  name=cosmu0     delete=1 /
+&parameter  name=orog      delete=1 /
+&parameter  name=sh_vdiff    delete=1  /
+&parameter  name=qv_vdiff    delete=1  /
+&parameter  name=con_dtrl    delete=1  /
+&parameter  name=con_dtri    delete=1  /
+&parameter  name=con_iteqv    delete=1  /
+&parameter  name=cld_dtrl       delete=1 /
+&parameter  name=cld_dtri     delete=1 /
+&parameter  name=cld_iteq     delete=1 /
+&parameter  name=prm_rintop    delete=1  /
+&parameter  name=prm_rtype     delete=1 /
+&parameter  name=prm_topmax    delete=1  /
+&parameter  name=ps             delete=1 /
+&parameter  name=ch_concloud    delete=1  /
+&parameter  name=ts_eff    delete=1  /
+&parameter  name=ts_rad    delete=1  /
+&parameter  name=rsuscs    delete=1  /
+&parameter  name=rldscs    delete=1  /
+&parameter  name=rsdscs    delete=1  /
+&parameter  name=rlutcs    delete=1  /
+&parameter  name=rsutcs    delete=1  /
+&parameter  name=sfcWind    delete=1  /
+&parameter  name=sfcwind_ice    delete=1  /
+&parameter  name=sfcwind_lnd    delete=1  /
+&parameter  name=rsut    delete=1  /
+&parameter  name=rlut    delete=1  /
+&parameter  name=rsus    delete=1  /
+&parameter  name=rsds   delete=1  /
+&parameter  name=rlds   delete=1  /
+&parameter  name=rlus    delete=1  /
+&parameter  name=uas    delete=1  /
+&parameter  name=uas_lnd    delete=1  /
+&parameter  name=uas_ice    delete=1  /
+&parameter  name=uas_wtr    delete=1  /
+&parameter  name=vas   delete=1  /
+&parameter  name=vas_lnd    delete=1  /
+&parameter  name=vas_ice    delete=1  /
+&parameter  name=vas_wtr    delete=1  /
+&parameter  name=tas_lnd    delete=1  /
+&parameter  name=tas_ice    delete=1  /
+&parameter  name=tas_wtr    delete=1  /
+&parameter  name=dew2   delete=1  /
+&parameter  name=dew2_lnd    delete=1  /
+&parameter  name=dew2_ice     delete=1  /
+&parameter  name=dew2_wtr    delete=1  /
+&parameter  name=tasmin    delete=1  /
+&parameter  name=tasmax    delete=1  /
+

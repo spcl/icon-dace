@@ -1,0 +1,197 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -eu
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+# Base dir for (most of) the external libraries on a typical Linux workstation:
+GLOBAL_LIB_ROOT="/usr"
+GLOBAL_LIB_DIRS="-L${GLOBAL_LIB_ROOT}/lib64 -L${GLOBAL_LIB_ROOT}/lib"
+
+RTTOV_LIB_ROOT="/uwork1/ublahak/ICON/LIB/rttov13_rev06/linuxWS.gcc"
+RTTOV_INCLUDE="${RTTOV_LIB_ROOT}/include"
+RTTOV_LIB="-L${RTTOV_LIB_ROOT} -lrttov13"
+
+# Assume that HDF5 resides under the GLOBAL_LIB_ROOT:
+HDF5_LIB_ROOT=${GLOBAL_LIB_ROOT}
+HDF5_INCLUDE="${HDF5_LIB_ROOT}/include"
+HDF5_LIBS="-L${HDF5_LIB_ROOT} -lhdf5_hl -lhdf5 -lhdf5hl_fortran -lhdf5_fortran"
+
+# Assume that Netcdf resides under the GLOBAL_LIB_ROOT:
+NETCDF_LIB_ROOT=${GLOBAL_LIB_ROOT}
+NETCDF_INCLUDE="${NETCDF_LIB_ROOT}/include"
+NETCDF_LIBS="-L${NETCDF_LIB_ROOT} -lnetcdff -lnetcdf"
+
+# Assume that eccodes resides under the GLOBAL_LIB_ROOT:
+ECCODES_LIB_ROOT=${GLOBAL_LIB_ROOT}
+ECCODES_INCLUDE="${ECCODES_LIB_ROOT}/include"
+ECCODES_LIBS="-L${ECCODES_LIB_ROOT} -leccodes_f90 -leccodes"
+
+# Assume that lapack and blas reside under the GLOBAL_LIB_ROOT:
+BLAS_LAPACK_LIBS="-llapack -lblas"
+
+# Assume that xml2 resides under the GLOBAL_LIB_ROOT:
+XML2_INCLUDE="${GLOBAL_LIB_ROOT}/include"
+XML2_LIBS="-lxml2"
+
+# Assume that zlib (needed for EMVORADO) resides under the GLOBAL_LIB_ROOT:
+ZLIB_LIBS="-lz"
+
+################################################################################
+#
+# Check existence of the above libs:
+
+ls_silent () {
+    ls $* 2> /dev/null
+}
+
+error_lib=0
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libhdf5hl_fortran*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libhdf5hl_fortran*)" ]; then
+
+    echo "
+Could not find hdf5 library. Please install hdf5 library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via correcting HDF5_INCLUDE and adding a -L<path-to-lib> to HDF5_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libnetcdff*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libnetcdff*)" ]; then
+
+    echo "
+Could not find netcdf4 library. Please install netcdf4 library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via correcting NETCDF_INCLUDE and adding a -L<path-to-lib> to NETCDF_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libeccodes_f90*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libeccodes_f90*)" ]; then
+
+    echo "
+Could not find eccodes library. Please install eccodes library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via correcting ECCODES_INCLUDE and adding a -L<path-to-lib> to ECCODES_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/liblapack*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/liblapack*)" ]; then
+
+    echo "
+Could not find lapack library. Please install lapack library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via adding a -L<path-to-lib> to BLAS_LAPACK_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libblas*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libblas*)" ]; then
+
+    echo "
+Could not find lapack library. Please install lapack library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via adding a -L<path-to-lib> to BLAS_LAPACK_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libxml2*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libxml2*)" ]; then
+
+    echo "
+Could not find xml2 library. Please install xml2 library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via correcting XML2_INCLUDE and adding a -L<path-to-lib> to XML2_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib64/libz.*)" -a -z "$(ls_silent ${GLOBAL_LIB_ROOT}/lib/libz.*)" ]; then
+
+    echo "
+Could not find libz library. Please install libz library under ${GLOBAL_LIB_ROOT}/lib or ${GLOBAL_LIB_ROOT}/lib64
+or set the correct path to the lib in $0 via adding a -L<path-to-lib> to ZLIB_LIBS!
+"
+    let "error_lib=error_lib+1"
+fi
+if [ -z "$(ls_silent ${RTTOV_LIB_ROOT}/lib*rttov*)" -a -z "$(ls_silent ${RTTOV_LIB_ROOT}/lib/lib*rttov*)" ]; then
+
+    echo "
+Could not find rttov library. Please install rttov library under ${RTTOV_LIB_ROOT}
+or set the correct path to the lib in $0 via correcting RTTOV_LIB_ROOT!
+"
+    let "error_lib=error_lib+1"
+fi
+
+if [ $error_lib -ne 0 ]; then
+    exit $error_lib
+fi
+
+################################################################################
+
+BUILD_ENV=""
+
+# C compiler wrapper on cray machine
+CC='mpicc'
+CXX='mpic++'
+CFLAGS='-std=gnu99'
+
+ICON_CFLAGS='-O2'
+ICON_BUNDLED_CFLAGS='-O2'
+CPPFLAGS="-I${ECCODES_INCLUDE} -I${HDF5_INCLUDE} -I${NETCDF_INCLUDE} -I${XML2_INCLUDE} -I${RTTOV_INCLUDE}"
+
+# Fortran compiler wrapper on Linux workstation using OpenMPI
+FC='mpif90'
+FCFLAGS="-I${GLOBAL_LIB_ROOT}/include -I${RTTOV_INCLUDE} -I${ECCODES_INCLUDE} -cpp -std=gnu -fimplicit-none -fmax-identifier-length=63 -fmax-errors=25 -Wall -Wcharacter-truncation -Wconversion -Wunderflow -Wunused-parameter -Wno-surprising -fall-intrinsics -ffree-line-length-132"
+
+ICON_FCFLAGS='-fno-range-check -fopenmp -g -fbacktrace -fcheck=all -ffpe-trap=invalid,zero,overflow -fstack-protector-all -finit-real=nan -finit-integer=-2147483648 -finit-character=127 -O2'
+ICON_OCEAN_FCFLAGS="${ICON_FCFLAGS}"
+
+LDFLAGS="${GLOBAL_LIB_DIRS} -g -fbacktrace"
+LIBS="${XML2_LIBS} ${BLAS_LAPACK_LIBS} ${NETCDF_LIBS} ${HDF5_LIBS} ${ECCODES_LIBS} ${ZLIB_LIBS} ${RTTOV_LIB}"
+
+MPI_LAUNCH='mpiexec'
+
+EXTRA_CONFIG_ARGS='--enable-grib2 --enable-openmp --disable-ocean --disable-jsbach --disable-coupling --disable-rttov --disable-aes --disable-art --disable-rte-rrtmgp --enable-emvorado --enable-dace'
+
+################################################################################
+
+"${ICON_DIR}/configure" \
+BUILD_ENV="${BUILD_ENV}" \
+CC="${CC}" \
+CXX="${CXX}" \
+CFLAGS="${CFLAGS}" \
+CPPFLAGS="${CPPFLAGS}" \
+FC="${FC}" \
+FCFLAGS="${FCFLAGS}" \
+ICON_BUNDLED_CFLAGS="${ICON_BUNDLED_CFLAGS}" \
+ICON_CFLAGS="${ICON_CFLAGS}" \
+ICON_FCFLAGS="${ICON_FCFLAGS}" \
+ICON_OCEAN_FCFLAGS="${ICON_OCEAN_FCFLAGS}" \
+LDFLAGS="${LDFLAGS}" \
+LIBS="${LIBS}" \
+MPI_LAUNCH="${MPI_LAUNCH}" \
+${EXTRA_CONFIG_ARGS} \
+"$@"
+
+for arg in "$@"; do
+  case $arg in
+    -help | --help | --hel | --he | -h | -help=r* | --help=r* | --hel=r* | --he=r* | -hr* | -help=s* | --help=s* | --hel=s* | --he=s* | -hs*)
+      test -n "${EXTRA_CONFIG_ARGS}" && echo '' && echo "This wrapper script ('$0') calls the configure script with the following extra arguments, which might override the default values listed above: ${EXTRA_CONFIG_ARGS}"
+      exit 0 ;;
+  esac
+done
+
+# Generate input file for runscript generation:
+./config.status --file=run/set-up.info
+echo 'use_mpi_root="openmpi"' >> run/set-up.info
+
+# Copy runscript-related files when building out-of-source:
+if test $(pwd) != $(cd "${ICON_DIR}"; pwd); then
+  echo "Copying runscript input files from the source directory..."
+  rsync -uavz ${ICON_DIR}/run . --exclude='*in' --exclude='.*'
+  rsync -uavz ${ICON_DIR}/externals . --exclude='.git' --exclude='*.f90' --exclude='*.F90' --exclude='*.c' --exclude='*.h' --exclude='*.Po' --exclude='tests' --exclude='*.mod' --exclude='*.o'
+  rsync -uavz ${ICON_DIR}/make_runscripts .
+  ln -sf ${ICON_DIR}/data
+  ln -sf ${ICON_DIR}/vertical_coord_tables
+fi
+

@@ -1,0 +1,107 @@
+#!/bin/sh
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -ex
+#
+ANAME=$1
+ADIR=$2
+#
+BNAME=$3
+BDIR=$4
+#
+
+echo QUELLE path $QUELLE
+
+#
+AinDat="${ADIR}/${ANAME}_atm_3d_ml.nc"
+BinDat="${BDIR}/${BNAME}_atm_3d_ml.nc"
+#
+###########################################################################
+
+
+LEVELS="100900,99500,97100,93900,90200,86100,81700,77200,72500,67900,63300,58800,54300,49900,45700,41600,37700,33900,30402,27015,23833,20867,18116,15578,13239,11066,9102,7406,5964,4752,3743,2914,2235,1685,1245,901,637,440,296,193,122,74,43,23,11,4,1"
+
+#
+
+###########################################################################
+# 
+set  -ex
+#
+
+#--interpolate to pressure level and t63
+cdo -setpartabn,partab -ap2pl,${LEVELS}   $AinDat Uatm_dyn_plA
+REMAP_AREA_MIN=0.5 
+cdo -r remapycon,t63grid   Uatm_dyn_plA Uatm_dyn_t63A
+cdo sinfon   $AinDat
+cdo sinfon  Uatm_dyn_plA
+cdo sinfon  Uatm_dyn_t63A
+
+cdo -setpartabn,partab -ap2pl,${LEVELS}   $BinDat Uatm_dyn_plB
+cdo -r remapycon,t63grid   Uatm_dyn_plB Uatm_dyn_t63B
+cdo sinfon   $BinDat
+cdo sinfon  Uatm_dyn_plB
+cdo sinfon  Uatm_dyn_t63B
+
+#--- var.txt input for atm_3d.ncl
+
+#--- number of latitudes
+nlat=`cdo griddes Uatm_dyn_t63A| grep ysize | cut -d"=" -f2`
+echo $nlat >>var.txt
+more var.txt
+#
+
+#
+#----code130--TA- Temperature---ZONAL--CMOR: ta ---
+#
+Cvar=ta
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63A > /dev/null 
+then
+   if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63B > /dev/null ;then
+      cdo sub -zonmean -subc,273.15 -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63A \
+              -zonmean -subc,273.15 -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63B  Ubusy_d${Cvar}.nc
+#
+fi
+fi
+#
+#
+#-----code131--------zonal----CMOR: ua ----
+#
+Cvar=ua
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63A > /dev/null 
+then
+   if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63B > /dev/null ;then
+      cdo sub -zonmean -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63A \
+              -zonmean -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63B  Ubusy_d${Cvar}.nc
+#
+fi
+fi
+#
+#
+#-----code132---VA-----zonal----CMOR: va ----
+#
+Cvar=va
+if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63A > /dev/null 
+then
+   if cdo -s showvar -selvar,${Cvar} Uatm_dyn_t63B > /dev/null ;then
+      cdo sub -zonmean -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63A \
+              -zonmean -sellevel,${LEVELS} -selvar,${Cvar} Uatm_dyn_t63B  Ubusy_d${Cvar}.nc
+#
+fi
+fi
+exit 
+
+
+
+
+
+
+

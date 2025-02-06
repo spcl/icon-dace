@@ -1,0 +1,65 @@
+{
+    "default": {
+        "model_output_dir": "{{codebase_install}}/{{experiment_name}}",
+        "perturbed_model_output_dir": "{{codebase_install}}/{{experiment_name}}_member_id_{member_id}",
+        "experiment_name": "{{experiment_name}}",
+        "perturbed_experiment_name": "{{experiment_name}}_member_id_{member_id}",
+        "stats_file_name": "{{reference}}/reference/{{experiment_name}}_{member_id}.csv",
+        "tolerance_file_name": "{{reference}}/tolerance/{{experiment_name}}.csv",
+        "member_num": "[{member_num}]",
+        "member_type": "{{member_type}}",
+        "factor": 5,
+        "file_id": [ ["NetCDF", "*.nc"]],
+        "file_specification": [{
+            "NetCDF": { "format": "netcdf", "time_dim": "time", "horizontal_dims": ["ncells", "ncells_2"] }
+        }],
+        "savedir": "{{reference}}/plots"
+    },
+    "perturb": {
+        "perturb_amplitude": 1e-14,
+        "variable_names": ["T", "QV"],
+        "copy_all_files": false,
+        "files": ["initial_condition.nc"],
+        "model_input_dir": "{{codebase_install}}/{{experiment_name}}",
+        "perturbed_model_input_dir": "{{reference}}/perturb/{{experiment_name}}_member_id_{member_id}"
+    },
+    "stats": {
+        "ensemble": true
+    },
+    "select-members":
+        {
+            "test_tolerance": false,
+            "selected_members_file_name": "{{reference}}/{{experiment_name}}_selected_members.csv"
+        },
+    "check": {
+        "input_file_ref": "{{reference}}/reference/{{experiment_name}}_{{member_num[0] if member_num|length>1 else 1}}.csv",
+        "input_file_cur": "{{reference}}/reference/{{experiment_name}}_{{member_num[1] if member_num|length>1 else 2}}.csv"
+    },
+    "performance": {
+        "timing_regex": "{{codebase_install}}/{{experiment_name}}/LOG.exp.{{experiment_name}}.run.12345678.o",
+        "timing_names": ["integrate_nh", "nh_solve", "physics"],
+        "timing_database": "{{reference}}/performance/{{experiment_name}}"
+    },
+    "performance-meta-data": {
+        "timing_database": "{{codebase_install}}/performance/performance"
+    },
+    "performance-plot": {
+        "timing_database": "{{codebase_install}}/performance/performance"
+    },
+    "cdo": {
+        "cdo_table_file": "{{reference}}/cdo_table/{{experiment_name}}.csv",
+        "histogram": true
+    },
+    "run": {
+        "run_script_name": "exp.{{experiment_name}}.run",
+        "perturbed_run_script_name": "exp.{{experiment_name}}_member_id_{member_id}.run",
+        "run_dir": "{{codebase_install}}/{{experiment_name}}",
+        "perturbed_run_dir": "{{reference}}/run",
+        "lhs": ["pinit_seed", "pinit_amplitude"],
+        "rhs_new": ["{seed}", "1e-14"],
+        "rhs_old": [null, null],
+        "submit_command": "",
+        "parallel": true,
+        "dry": true
+    }
+}

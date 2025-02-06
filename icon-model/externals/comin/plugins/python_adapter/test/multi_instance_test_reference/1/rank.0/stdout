@@ -1,0 +1,54 @@
+ComIn: Hello Python!
+Descr cells data:  ['area', 'clat', 'clon', 'edge_blk', 'edge_idx', 'end_block', 'end_index', 'hhl', 'neighbor_blk', 'neighbor_idx', 'num_edges', 'start_block', 'start_index', 'vertex_blk', 'vertex_idx']
+Descr verts data:  ['cell_blk', 'cell_idx', 'edge_blk', 'edge_idx', 'end_block', 'end_index', 'neighbor_blk', 'neighbor_idx', 'start_block', 'start_index', 'vlat', 'vlon']
+Descr edges data:  ['cell_blk', 'cell_idx', 'elat', 'elon', 'end_block', 'end_index', 'start_block', 'start_index', 'vertex_blk', 'vertex_idx']
+ComIn: Received clon, clat fields with shape (8, 641)
+Coordinates of cell 0: 1.2566370614359503,1.531311379045472
+ComIn: Hello Python!
+Descr cells data:  ['area', 'clat', 'clon', 'edge_blk', 'edge_idx', 'end_block', 'end_index', 'hhl', 'neighbor_blk', 'neighbor_idx', 'num_edges', 'start_block', 'start_index', 'vertex_blk', 'vertex_idx']
+Descr verts data:  ['cell_blk', 'cell_idx', 'edge_blk', 'edge_idx', 'end_block', 'end_index', 'neighbor_blk', 'neighbor_idx', 'start_block', 'start_index', 'vlat', 'vlon']
+Descr edges data:  ['cell_blk', 'cell_idx', 'elat', 'elon', 'end_block', 'end_index', 'start_block', 'start_index', 'vertex_blk', 'vertex_idx']
+ComIn: Received clon, clat fields with shape (8, 641)
+Coordinates of cell 0: 1.2566370614359503,1.531311379045472
+ComIn: secondary constructor
+Found variable: u on domain 1
+Found variable: v on domain 1
+Found variable: pres on domain 1
+Found variable: temp on domain 1
+Found variable: pres_sfc on domain 1
+Found variable: tracer on domain 1
+Found variable: qr on domain 1
+Found variable: qi on domain 1
+Found variable: qv on domain 1
+Found variable: qs on domain 1
+ComIn: secondary constructor
+Found variable: u on domain 1
+Found variable: v on domain 1
+Found variable: pres on domain 1
+Found variable: temp on domain 1
+Found variable: pres_sfc on domain 1
+Found variable: tracer on domain 1
+Found variable: qr on domain 1
+Found variable: qi on domain 1
+Found variable: qv on domain 1
+Found variable: qs on domain 1
+ComIn: Mean surface temperatur: 42.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Mean surface temperatur: 42.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Mean surface temperatur: 42.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Mean surface temperatur: 42.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Mean surface temperatur: 47.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Mean surface temperatur: 47.0
+qv_np.shape=(8, 10, 641, 1, 1)
+qv_np[0:17,0,0,0,0]=array([3., 3., 3., 3., 3., 3., 3., 3.])
+ComIn: Good Bye!
+ComIn: Good Bye!

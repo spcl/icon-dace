@@ -1,0 +1,42 @@
+#!@SHELL@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# -*- python -*-
+
+""":"
+@TEST_MPI_FALSE@exit 77
+@PYTHON@ -c 'import mpi4py, matplotlib' || exit 77
+
+PYTHONPATH="@abs_top_builddir@/python:$PYTHONPATH"
+export PYTHONPATH
+
+exec @MPI_LAUNCH@ -n 2 @PYTHON@ "$0"
+":"""
+
+import sys
+
+from mpi4py import MPI
+
+from yac import YAC
+from yac.examples import Driver, NoiseGenerator, Plotter
+
+yac = YAC(default_instance=True)
+
+driver = Driver(start="2020-01-01T00:00", end="2020-01-02T00:00")
+
+comm = MPI.COMM_WORLD
+rank = comm.Get_rank()
+
+if rank == 0:
+    driver.run(NoiseGenerator(timestep="PT1H"))
+elif rank == 1:
+    driver.run(
+        Plotter(
+            variables=[("noisegenerator", "noise_grid", "noise")],
+            outdir="test_noise2plot_parallel.plots",
+        )
+    )
+else:
+    raise Exception("Unknown component!")

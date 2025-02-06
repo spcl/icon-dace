@@ -1,0 +1,135 @@
+#! /usr/bin/env python
+#
+# Print experiment info in shell-digestible form
+#
+# $Id$
+#
+
+from __future__ import print_function
+
+import argparse
+import io
+import os
+import sys
+
+from expargparse import get_key_chain
+from expconfig import ExpConfig, ExpConfigError
+from feedback import setLevel, INFO, die, info
+
+#
+# Utilities
+#
+
+# Get config value, parsing dotted keys
+
+def get_value(config, key):
+    sections = get_key_chain(key)
+    sections.reverse()
+    key = sections.pop()
+    for section in sections:
+        config = config[section]
+    return config[key]
+
+#
+# Main routine
+#
+
+# Basic settings
+
+setLevel(INFO)
+
+# Check environment
+
+config_roots = os.environ.get('MKEXP_PATH', '').split(':')
+
+# Check command line
+
+command_line = argparse.ArgumentParser(description=
+    'Print experiment info in shell-digestible form.')
+command_line.add_argument('config', help='experiment configuration file name')
+command_line.add_argument('assigns', metavar='key=value', nargs='*',
+                           help='override configuration file settings')
+command_line.add_argument('--path', '-p', 
+                          help='search path for default config and templates')
+command_line.add_argument('--readme', '-R', action='store_true',
+                          help='only show header comment as in README file')
+command_line.add_argument('--verbose', '-v', action='count', default=0,
+                          help='show all top-level settings, '
+                               'or all settings if used twice')
+command_line.add_argument('--key', '-k', action='append',
+                          help='only print value of given configuration key, '
+                               'may be used more than once')
+command_line.add_argument('--set', '-s', action='store_true',
+                          help='prefix --key values with key name and =, '
+                               'use single quotes for values')
+command_line.add_argument('-g', '--getexp', '--dump', action='store_true',
+                          help='load flat config (from getexp -vv or .dump)')
+
+args = command_line.parse_args()
+
+# Experiment configuration
+if args.path:
+    config_roots = args.path.split(':')
+
+experiment_config_name = args.config
+
+if not os.path.exists(experiment_config_name):
+    die("config file '{0}' does not exist".format(experiment_config_name))
+
+# Overrides
+invalid_args = [x for x in args.assigns if not x.find('=')+1]
+
+if invalid_args:
+    die("invalid parameters ('"+"', '".join(invalid_args)+"')\n" +
+        command_line.format_usage())
+
+# Read and store configuration info from input and experiments' library
+# Store environment as default for control settings, then add config from files
+
+# Hack to allow use in diffexp
+if 'DIFF' in os.environ:
+    del os.environ['DIFF']
+
+try:
+    config = ExpConfig(experiment_config_name,
+                       dict([x.split('=', 1) for x in args.assigns]),
+                       config_roots, getexp=args.getexp)
+except ExpConfigError as error:
+    die(error.message, status=2)
+
+if args.readme:
+    print(config['EXP_DESCRIPTION'])
+elif args.key:
+    try:
+        for key in args.key:
+            if args.set:
+                print("{0}='{1}'".format(key, get_value(config, key)))
+            else:
+                print(get_value(config, key))
+    except KeyError as error:
+        die("invalid config name '{0}'".format(error.message))
+elif args.verbose >= 2:
+    config.indent_type = '  '
+    lines = io.BytesIO()
+    config.write(lines)
+    lines.seek(0)
+    for line in io.TextIOWrapper(lines):
+        print(line, end='')
+elif args.verbose == 1:
+    for key in sorted(config.scalars):
+        value = config[key]
+        if isinstance(value, (list, tuple)):
+            value = u'"{0}"'.format(u'" "'.join(value))
+        print(u"{0}='{1}'".format(key, value.replace("'",'"')))
+else:
+    print("EXP_ID='{0}'".format(config.experiment_id))
+    print("MODEL_DIR='{0}'".format(config['MODEL_DIR']))
+    print("SCRIPT_DIR='{0}'".format(config['SCRIPT_DIR']))
+    print("WORK_DIR='{0}'".format(config['WORK_DIR']))
+    print("DATA_DIR='{0}'".format(config['DATA_DIR']))
+
+if not (os.path.isdir(config['MODEL_DIR']) and
+        os.path.isdir(config['SCRIPT_DIR']) and
+        os.path.isdir(config['WORK_DIR']) and
+        os.path.isdir(config['DATA_DIR'])):
+    info("data for experiment '{0}' does not exist".format(config.experiment_id))

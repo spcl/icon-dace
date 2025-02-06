@@ -1,0 +1,476 @@
+#! /usr/bin/env perl
+#
+# makedoc
+#
+$prog       = "CDI";
+$longname   = "Climate Data Interface";
+$srcdir     = "../../src";
+$modules    = "Modules";
+#
+open(README,   ">FUNCTIONS");
+#
+$noper = 0;
+#
+#
+open(MOFILE, $modules) || die "Open failed on module file $modules: $!\n";
+#
+#
+print README "===========================\n";
+print README "$prog  $longname\n";
+print README "===========================\n";
+print README "\n";
+print README "Function catalog:\n\n";
+#
+$nline = 0;
+$nfunc = 0;
+$ofunc = "dummy";
+#
+%hrefproto = ();
+%hreftitle = ();
+#
+while (<MOFILE>) {
+    chomp;
+    ($funcname,$sourcefile) = split(" ");
+    print "process module: $sourcefile function $funcname\n";
+    $sourcefilename = "${srcdir}/${sourcefile}.c";
+    open(MODFILE, "$sourcefilename") || die "Open failed on module file $sourcefilename: $!\n";
+    $module    = "";
+    $margs     = "";
+    $operators  = "";
+    undef @modlines;
+    $lblock = 0;
+    while (<MODFILE>) {
+      chomp;
+      ($kword, $fname) = split(" ");
+      $kword = uc($kword);
+      if ( $lblock == 0 ) {
+	if ( "$kword" eq "\@FUNCTION" && "$fname" eq "$funcname" ) {
+	  $lblock = 1;
+	  next;
+	}
+      }
+      if ( $lblock == 1 ) {
+	if ( "$kword" eq "\@ENDFUNCTION" ) { last; }
+	push(@modlines, $_);
+      }
+    }
+    close(MODFILE);
+
+    if ( $lblock == 0 ) {
+      print "$funcname: description not found!\n";
+      next;
+    }
+
+    $ldescr   = 0;
+    $lresult  = 0;
+    $lerrors  = 0;
+    $lexample = 0;
+    undef @descr;
+    undef @result;
+    undef @errors;
+    undef @example;
+    $title  = "";
+    $cproto = "";
+    undef @param;
+    foreach $tag (@modlines) {
+      $line = $tag;
+      $line =~ s/^\s+|\s+$//og;
+      ($kword, $value) =  split(" ", $line, 2);
+      $kword = uc($kword);
+      if ( "$kword" eq "\@TITLE" ) {
+	$lparam = 0; $ldescr = 0; $lresult = 0; $lerrors = 0; $lexample = 0;
+	$title = $value;
+	next;
+      }
+      elsif ( "$kword" eq "\@PROTOTYPE" ) {
+	$lparam = 0; $ldescr = 0; $lresult = 0; $lerrors = 0; $lexample = 0;
+	$cproto = $value;
+	next;
+      }
+      elsif ( "$kword" eq "\@PARAMETER" ) {
+	$lparam = 1; $ldescr = 0; $lresult = 0; $lerrors = 0; $lexample = 0;
+	next;
+      }
+      elsif ( "$kword" eq "\@DESCRIPTION" ) {
+	$lparam = 0; $ldescr = 1; $lresult = 0; $lerrors = 0; $lexample = 0;
+	next;
+      }
+      elsif ( "$kword" eq "\@RESULT" ) {
+	$lparam = 0; $ldescr = 0; $lresult = 1; $lerrors = 0; $lexample = 0;
+	next;
+      }
+      elsif ( "$kword" eq "\@ERRORS" ) {
+	$lparam = 0; $ldescr = 0; $lresult = 0; $lerrors = 1; $lexample = 0;
+	next;
+      }
+      elsif ( "$kword" eq "\@EXAMPLE" ) {
+	$lparam = 0; $ldescr = 0; $lresult = 0; $lerrors = 0; $lexample = 1;
+	next;
+      }
+      elsif ( $lparam == 1 ) {
+ 	push(@param, $tag);
+      }
+      elsif ( $ldescr == 1 ) {
+	push(@descr, $tag);
+      }
+      elsif ( $lresult == 1 ) {
+	push(@result, $tag);
+      }
+      elsif ( $lerrors == 1 ) {
+	push(@errors, $tag);
+      }
+      elsif ( $lexample == 1 ) {
+	push(@example, $tag);
+      }
+    }
+
+    $nline = $nline + 1;
+    if ( "$sourcefile" ne "$oname" ) {
+      $oname = $sourcefile;
+
+      print README "-------------------------------------------------------------\n";
+      print README "   $sourcefile\n";
+      print README "-------------------------------------------------------------\n";
+
+      $ctexfile = "c_${sourcefile}.tex";
+      $ftexfile = "f_${sourcefile}.tex";
+      open(CDOCFILE,   ">$ctexfile");
+      open(CDOFFILE,   ">$ftexfile");
+    }
+    printf README ("   %-20s %s\n", $funcname,  $title);
+
+    $hrefproto{$funcname} = $cproto;
+    $hreftitle{$funcname} = $title;
+
+    printcfdoc ("\n\n\\subsection{$title: \\texttt{$funcname}}\n");
+    printcfdoc ("\\index{$funcname}\n");
+    printcfdoc ("\\label{$funcname}\n");
+
+    if ( $#descr >= 0 ) {
+      printcfdoc ("\n");
+      foreach $tag (@descr) {
+	$line = $tag;
+	($kword) = split(" ", $tag, 1);
+	$kword = uc($kword);
+	if ( "$kword" eq "\@LIST" ) {
+	  undef @list;
+	  $list = 1;
+	  next;
+	}
+	if ( "$kword" eq "\@ENDLIST" ) {
+	  printlist(@list);
+	  $list = 0;
+	  next;
+	}
+	if ( $list == 1 ) {
+	  push(@list, $line);
+	  next;
+	}
+	printcfdoc ("$line\n");
+      }
+    }
+
+    printcfdoc ("\\subsubsection*{Usage}\n\n");
+    printcfdoc ("\\begin{verbatim}\n");
+    printproto ($cproto);
+    printcfdoc ("\\end{verbatim}\n");
+
+    if ( $#param >= 0 ) {
+      printlist(@param);
+    }
+
+    if ( $#result >= 0 ) {
+      printcfdoc ("\n\\subsubsection*{Result}\n\n");
+      foreach $tag (@result) {
+	$line = $tag;
+	($kword) = split(" ", $tag, 1);
+	$kword = uc($kword);
+	if ( "$kword" eq "\@LIST" ) {
+	  undef @list;
+	  $list = 1;
+	  next;
+	}
+	if ( "$kword" eq "\@ENDLIST" ) {
+	  printlist(@list);
+	  $list = 0;
+	  next;
+	}
+	if ( $list == 1 ) {
+	  push(@list, $line);
+	  next;
+	}
+	printcfdoc ("$line\n");
+      }
+    }
+
+    if ( $#errors >= 0 ) {
+      printcfdoc ("\n\\subsubsection*{Errors}\n\n");
+      $list = 0;
+      foreach $tag (@errors) {
+	$line = $tag;
+	($kword) = split(" ", $tag, 1);
+	$kword = uc($kword);
+	if ( "$kword" eq "\@LIST" ) {
+	  undef @list;
+	  $list = 1;
+	  next;
+	}
+	if ( "$kword" eq "\@ENDLIST" ) {
+	  printlist(@list);
+	  $list = 0;
+	  next;
+	}
+	if ( $list == 1 ) {
+	  push(@list, $line);
+	  next;
+	}
+	printcfdoc ("$line\n");
+      }
+    }
+
+    if ( $#example >= 0 ) {
+      printcfdoc ("\n\\subsubsection*{Example}\n\n");
+      $source = 0;
+      foreach $tag (@example) {
+	$line = $tag;
+	($kword) = split(" ", $tag, 1);
+	$kword = uc($kword);
+	if ( "$kword" eq "\@SOURCE" ) {
+#	  printcfdoc ("\\begin{verbatim}\n");
+	  printcsrc ("\\begin{lstlisting}[language=C, backgroundcolor=\\color{pyellow}, basicstyle=\\small, columns=flexible]\n");
+	  printfsrc ("\\begin{lstlisting}[language=Fortran, backgroundcolor=\\color{pyellow}, basicstyle=\\small, columns=flexible]\n");
+	  $source = 1;
+	  next;
+	}
+	if ( "$kword" eq "\@ENDSOURCE" ) {
+#	  printcfdoc ("\\end{verbatim}\n");
+	  printcfdoc ("\\end{lstlisting}\n");
+	  $source = 0;
+	  next;
+	}
+	if ( $source == 1 ) {
+	  printcsrc("    $line");
+	  printfortran($line);
+	}
+	else {
+	  printcfdoc ("$line");
+	}
+      }
+    }
+
+    $nfunc++;
+}
+#
+close(MOFILE);
+#
+print "\nNumber of functions: $nfunc\n";
+
+open(CDOCFILE, ">c_ref.tex");
+open(CDOFFILE, ">f_ref.tex");
+
+@sorted_func = sort { $a cmp $b } keys %hreftitle;
+
+foreach $key (@sorted_func)  {
+  $cproto = $hrefproto{$key};
+  $title  = $hreftitle{$key};
+
+  printcfdoc ("\n\n\\section*{\\texttt{ ");
+  printcfdoc ("\\ifpdf\n");
+  printcfdoc ("\\hyperref[$key]{$key}\n");
+  printcfdoc ("\\else\n");
+  printcfdoc ("$key\n");
+  printcfdoc ("\\fi\n");
+  printcfdoc ("}}\n");
+  printcfdoc ("\\begin{verbatim}\n");
+  printproto ($cproto);
+  printcfdoc ("\\end{verbatim}\n");
+  printcfdoc ("\n$title\n");
+  printcfdoc ("\\ifpdfoutput{}{(\\ref{$key})}\n");
+}
+
+sub printproto {
+  my $proto = @_[0];
+  my $tag;
+  my @param;
+  $proto =~ s/, /,/og;
+  $ISVOID = 1; $ISSRING = 2; $ISINT = 3; $ISDOUBLE = 3;
+  ($ftype, $value) =  split(" ", $proto, 2);
+  ($fname, $value) =  split("\\(", $value, 2);
+  ($value, $dummy) =  split("\\)", $value, 2);
+
+  # c proto
+  $klen = 0;
+  $klen += length($ftype) + length($fname) + 6;
+  print CDOCFILE "    $ftype $fname(";
+  undef @param;
+  (@param) =  split(",", $value);
+  $plen = $klen;
+  $n = 0;
+  foreach $tag (@param) {
+    if ( $n > 0 ) { print CDOCFILE ", ";}
+    $len = length($tag);
+    if ( $plen + $len > 80 ) {
+      print CDOCFILE "\n";
+      printf CDOCFILE ("%*s", $klen, "");
+      $plen = $klen;
+    }
+    $plen += $len;
+    print CDOCFILE "$tag";
+    $n++;
+  }
+  print CDOCFILE ");\n";
+
+  # fortran proto
+  if ( "$ftype" eq "void"    ) { $ftype = "SUBROUTINE"; }
+  if ( "$ftype" eq "int"     ) { $ftype = "INTEGER FUNCTION"; }
+  if ( "$ftype" eq "DateType") { $ftype = "INTEGER FUNCTION"; }
+  if ( "$ftype" eq "SizeType") { $ftype = "INTEGER FUNCTION"; }
+  if ( "$ftype" eq "double"  ) { $ftype = "REAL*8 FUNCTION"; }
+  if ( "$ftype" eq "float"   ) { $ftype = "REAL*4 FUNCTION"; }
+  $klen = 0;
+  $klen += length($ftype) + length($fname) + 6;
+  print CDOFFILE "    $ftype $fname(";
+  undef @param;
+  (@param) =  split(",", $value);
+  $plen = $klen;
+  $n = 0;
+  foreach $tag (@param) {
+    if ( $n > 0 ) { print CDOFFILE ", ";}
+    $tag =~ s/void//og;
+    $tag =~ s/const char \*/CHARACTER*(*) /og;
+    $tag =~ s/char \*/CHARACTER*(*) /og;
+    $tag =~ s/int \*/INTEGER /og;
+    $tag =~ s/int /INTEGER /og;
+    $tag =~ s/DateType \*/INTEGER /og;
+    $tag =~ s/DateType /INTEGER /og;
+    $tag =~ s/SizeType \*/INTEGER /og;
+    $tag =~ s/SizeType /INTEGER /og;
+    $tag =~ s/double \*/REAL*8 /og;
+    $tag =~ s/double /REAL*8 /og;
+    $tag =~ s/float \*/REAL*4 /og;
+    $tag =~ s/float /REAL*4 /og;
+    $tag =~ s/const //og;
+    $len = length($tag);
+    if ( $plen + $len > 80 ) {
+      print CDOFFILE "\n";
+      printf CDOFFILE ("%*s", $klen, "");
+      $plen = $klen;
+    }
+    $plen += $len;
+    print CDOFFILE "$tag";
+    $n++;
+  }
+  print CDOFFILE ")\n";
+}
+
+sub printfproto {
+  printfortran ($cproto);
+}
+
+sub printfortran {
+  my $line = @_[0];
+  if ( index($line, int) == 0 || index($line, double) == 0 ) {
+    $line =~ s/\[/(/og;
+    $line =~ s/\]/)/og;
+    $line =~ s/{/(\//og;
+    $line =~ s/}/\/)/og;
+  }
+  if ( index($line, gridDef) == 0 || index($line, zaxisDef) == 0 ) {
+    $line =~ s/^/CALL /og;
+  }
+  $line =~ s/ < / .LT. /og;
+  $line =~ s/;$//og;
+  $line =~ s/&//og;
+  $line =~ s/const char \*/CHARACTER\*(\*) /og;
+  $line =~ s/char \*/CHARACTER\*(\*) /og;
+  $line =~ s/char /CHARACTER /og;
+  $line =~ s/int /INTEGER /og;
+  $line =~ s/DateType /INTEGER /og;
+  $line =~ s/SizeType /INTEGER /og;
+  $line =~ s/double /REAL*8 /og;
+  $line =~ s/float /REAL*4 /og;
+  $line =~ s/const //og;
+  $line =~ s/if /IF /og;
+  $line =~ s/#include \"cdi.h\"/INCLUDE \'cdi.inc\'/og;
+#  $line =~ s/#include \"/INCLUDE \'/og;
+#  $line =~ s/\"$/\'/og;
+  $line =~ s/handle_error/CALL handle_error/og;
+  printfsrc ("    $line");
+}
+
+sub printcsrc {
+  my $tag;
+  my @list;
+  @list = @_;
+  if ( $#list >= 0 ) {
+    foreach $tag (@list) {
+      print CDOCFILE "$tag\n";
+    }
+  }
+}
+
+sub printfsrc {
+  my $tag;
+  my @list;
+  @list = @_;
+  if ( $#list >= 0 ) {
+    foreach $tag (@list) {
+      print CDOFFILE "$tag\n";
+    }
+  }
+}
+
+sub printcfdoc {
+  my $tag;
+  my @list;
+  @list = @_;
+  if ( $#list >= 0 ) {
+    foreach $tag (@list) {
+      chomp $tag;
+      $tag =~ s/ CDI / {\\CDI} /og;
+      $tag =~ s/_/\\_/og;
+      $tag =~ s/\@fref\{([^}]*)\}/{\\htmlref{\\texttt{\1}}{\1}}/og;
+      $tag =~ s/\@func\{([^}]*)\}/{\\texttt{\1}}/og;
+      print CDOCFILE "$tag\n";
+      print CDOFFILE "$tag\n";
+    }
+  }
+}
+
+sub printlist {
+  my $tag;
+  my @list;
+  my $item;
+  my $mitem;
+  my $line;
+  my $kword;
+  @list = @_;
+  if ( $#list >= 0 ) {
+    $mlen = 0;
+    foreach $tag (@list) {
+      ($kword,$item,$line) = split(" ", $tag, 3);
+      $kword = uc($kword);
+      if ( "$kword" eq "\@ITEM" ) {
+	$len = length($item);
+	if ( $len > $mlen ) {
+	  $mlen = $len;
+	  $mitem = $item;
+	}
+      }
+    }
+    printcfdoc "\n\\hspace*{4mm}\\begin{minipage}[]{15cm}\n";
+    printcfdoc "\\begin{deflist}{\\texttt{$mitem}\\ }\n";
+    foreach $tag (@list) {
+      ($kword,$item,$line) = split(" ", $tag, 3);
+      $kword = uc($kword);
+      if ( "$kword" eq "\@ITEM" ) {
+	printcfdoc "\\item[\\texttt{${item}}]\n";
+	printcfdoc "$line\n";
+      } else {
+	printcfdoc "$tag\n";
+      }
+    }
+    printcfdoc "\\end{deflist}\n";
+    printcfdoc "\\end{minipage}\n";
+  }
+}

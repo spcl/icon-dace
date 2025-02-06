@@ -1,0 +1,430 @@
+#!/bin/ksh
+#=============================================================================
+# 
+# exp.testsuite.nataero
+# This script is based on the exp.nh_oper by Guenther Zangl and Daniel Reinert
+# 
+#=============================================================================
+# Input variables:
+
+INDIR=$1
+EXP=$2
+ICONFOLDER=$3
+ARTFOLDER=$4
+OUTDIR=$5
+CENTER=${6:-IMK}
+FILETYPE=${7:-4}  # 2: GRIB2 / 4: NetCDF
+
+# Remove folder ${EXP} from OUTDIR for postprocessing output
+OUTDIR_PREFIX=`dirname ${OUTDIR}`
+
+# Create output directory and go to this directory
+
+if [ ! -d $OUTDIR ]; then
+    mkdir -p $OUTDIR
+fi
+
+cd $OUTDIR
+
+# Link the input files
+case ${CENTER} in
+   IMK)
+      ##
+      ln -sf /pfs/imk/ICON/INPUT/IFSINIT/ECHAM6_CldOptProps.nc ECHAM6_CldOptProps.nc
+      ln -sf /pfs/imk/ICON/INPUT/IFSINIT/rrtmg_lw.nc rrtmg_lw.nc
+      ##
+      ;;
+   DWD)
+      ##
+      ln -sf /e/rhome/routfor/routfox/icon/const/rrtm_cldopt.nc ECHAM6_CldOptProps.nc
+      ln -sf /e/rhome/routfor/routfox/icon/const/rrtmg_lw.nc rrtmg_lw.nc
+      ##       
+      ;;
+esac
+##
+ln -sf $INDIR/$EXP/iconR2B05_DOM01_TCNN.nc iconR2B05_DOM01.nc
+ln -sf $INDIR/$EXP/iconR2B06_DOM02_TCNN.nc iconR2B06_DOM02.nc
+ln -sf $INDIR/$EXP/ExtPar_R2B5_DOM1_TCNN.nc extpar_iconR2B05_DOM01.nc
+ln -sf $INDIR/$EXP/ExtPar_R2B6_DOM2_TCNN.nc extpar_iconR2B06_DOM02.nc
+ln -sf $INDIR/$EXP/IFS2ICON_R2B05_2014032900_TCNN.nc ifs2icon_R2B05_DOM01.nc
+ln -sf $INDIR/$EXP/IFS2ICON_R2B06_2014032900_TCNN.nc ifs2icon_R2B06_DOM02.nc
+
+##ln -sf $INDIR/$EXP/ART_ES_iconR2B06_DOM01.nc /home/kit/imk-tro/fx0250/ICON/icon-4dom-diss/src/art/io/ART_ES_iconR2B06_DOM01.nc
+
+# the namelist filename
+atmo_namelist=NAMELIST_${EXP}
+#
+#-----------------------------------------------------------------------------
+# global timing
+ndays_restart=60
+dt_restart=`expr ${ndays_restart} \* 86400`
+#
+#-----------------------------------------------------------------------------
+# model timing
+STARTDATE="2014-03-29T00:00:00"
+dtime=360  # 360 sec for R2B6, 120 sec for R3B7
+ndays=1
+nsteps=`expr ${ndays} \* 86400 / ${dtime}`
+LEADTIME="2014-03-30T00:00:00"
+
+((dt_checkpoint= 10 * 3600 * 24 ))
+checkpoint_interval="P10D"
+#
+#-----------------------------------------------------------------------------
+# model parameters
+model_equations=3             # equation system
+#                     1=hydrost. atm. T
+#                     1=hydrost. atm. theta dp
+#                     3=non-hydrost. atm.,
+#                     0=shallow water model
+#                    -1=hydrost. ocean
+#-----------------------------------------------------------------------------
+
+
+# create ICON master namelist
+# ------------------------
+# For a complete list see Namelist_overview and Namelist_overview.pdf
+
+
+
+cat > icon_master.namelist << EOF
+&master_nml
+ lRestart = .false.
+/
+&master_time_control_nml
+ experimentStartDate = "$STARTDATE"
+ forecastLeadTime = "$LEADTIME"
+ checkpointTimeIntval = "$checkpoint_interval"
+/
+&master_model_nml
+  model_type=1
+  model_name="ATMO"
+  model_namelist_filename="$atmo_namelist"
+  model_min_rank=1
+  model_max_rank=65536
+  model_inc_rank=1
+/
+&time_nml
+ ini_datetime_string = "$STARTDATE"
+ dt_restart          = $dt_restart
+/
+EOF
+
+#-----------------------------------------------------------------------------
+#
+
+#-----------------------------------------------------------------------------
+#
+# write ICON namelist parameters
+# ------------------------
+
+# ------------------------
+
+cat > ${atmo_namelist} << EOF
+&parallel_nml
+ nproma         = 8  ! optimal setting 8 for CRAY; use 16 or 24 for IBM
+ p_test_run     = .false.
+ l_test_openmp  = .false.
+ l_log_checks   = .false.
+ num_io_procs   = 1   ! up to one PE per output stream is possible
+ itype_comm     = 1
+ iorder_sendrecv = 3  ! best value for CRAY (slightly faster than option 1)
+/
+&grid_nml
+ dynamics_grid_filename  = 'iconR2B05_DOM01.nc', 'iconR2B06_DOM02.nc'
+ dynamics_parent_grid_id = 0,1
+!lredgrid_phys           = .false.
+!radiation_grid_filename = ${radiation_grid_filename}
+ lredgrid_phys           = .false.,.false.
+ lfeedback               = .false.,.false.
+/
+&initicon_nml
+ init_mode   = 2           ! operation mode 2: IFS
+ zpbl1       = 500. 
+ zpbl2       = 1000. 
+ l_sst_in    = .true.
+/
+&run_nml
+ num_lev        = 90,60
+ lvert_nest     = .true.       ! use vertical nesting if a nest is active
+ nsteps         = ${nsteps}    ! 50 ! 1200 ! 7200 !
+ dtime          = ${dtime}     ! timestep in seconds
+ ldynamics      = .TRUE.       ! dynamics
+ ltransport     = .true.
+ iforcing       = 3            ! NWP forcing
+ ltestcase      = .false.      ! false: run with real data
+ msg_level      = 7            ! print maximum wind speeds every 5 time steps
+ ltimer         = .false.      ! set .TRUE. for timer output
+ timers_level   = 1            ! can be increased up to 10 for detailed timer output
+ output         = "nml"
+ lart           = .true.
+/
+&nwp_phy_nml
+ inwp_gscp       = 1
+ inwp_convection = 1
+ inwp_radiation  = 1
+ inwp_cldcover   = 1
+ inwp_turb       = 1
+ inwp_satad      = 1
+ inwp_sso        = 1
+ inwp_gwd        = 1
+ inwp_surface    = 1
+ icapdcycl       = 3 ! apply CAPE modification to improve diurnalcycle over tropical land (optimizes NWP scores)
+ latm_above_top  = .false., .true.  ! the second entry refers to the nested domain (if present)
+ efdt_min_raylfric = 7200.
+ itype_z0         = 2
+ icpl_aero_conv   = 1
+ icpl_aero_gscp   = 1
+ ! resolution-dependent settings - please choose the appropriate one
+ dt_rad    = 2160.
+ dt_conv   = 720.
+ dt_sso    = 1440.
+ dt_gwd    = 1440.
+/
+&nwp_tuning_nml
+ tune_zceff_min = 0.075 ! ** default value to be used for R3B7; use 0.05 for R2B6 in order to get similar temperature biases in upper troposphere **
+ itune_albedo   = 1     ! somewhat reduced albedo (w.r.t. MODIS data) over Sahara in order to reduce cold bias
+/
+&turbdiff_nml
+ tkhmin  = 0.75  ! new default since rev. 16527
+ tkmmin  = 0.75  !           " 
+ pat_len = 100.
+ c_diff  = 0.2
+ rat_sea = 8.5  ! ** new since r20191: 8.5 for R3B7, 8.0 for R2B6 in order to get similar temperature biases in the tropics **
+ ltkesso = .true.
+ frcsmot = 0.2      ! these 2 switches together apply vertical smoothing of the TKE source terms
+ imode_frcsmot = 2  ! in the tropics (only), which reduces the moist bias in the tropical lower troposphere
+ ! use horizontal shear production terms with 1/SQRT(Ri) scaling to prevent unwanted side effects:
+ itype_sher = 3    
+ ltkeshs    = .true.
+ a_hshr     = 2.0
+/
+&lnd_nml
+ ntiles         = 3      !!! 1 for assimilation cycle and forecast
+ nlev_snow      = 3      !!! 1 for assimilation cycle and forecast
+ lmulti_snow    = .true. !!! .false. for assimilation cycle and forecast
+ itype_heatcond = 2
+ idiag_snowfrac = 2
+ lsnowtile      = .false.  !! later on .true. if GRIB encoding issues are solved
+ lseaice        = .true.
+ llake          = .false.
+ itype_lndtbl   = 3  ! minimizes moist/cold bias in lower tropical troposphere
+ itype_root     = 2
+/
+&radiation_nml
+ irad_o3       = 7
+ irad_aero     = 6
+ albedo_type   = 2 ! Modis albedo
+ vmr_co2       = 390.e-06 ! values representative for 2012
+ vmr_ch4       = 1800.e-09
+ vmr_n2o       = 322.0e-09
+ vmr_o2        = 0.20946
+ vmr_cfc11     = 240.e-12
+ vmr_cfc12     = 532.e-12
+/
+&nonhydrostatic_nml
+ iadv_rhotheta  = 2
+ ivctype        = 2
+ itime_scheme   = 4
+ exner_expol    = 0.333
+ vwind_offctr   = 0.2
+ damp_height    = 50000.
+ rayleigh_coeff = 0.10
+ lhdiff_rcf     = .true.
+ divdamp_order  = 24    ! for data assimilation runs, '2' provides extra-strong filtering of gravity waves 
+ divdamp_type   = 32    !!! optional: 2 for assimilation cycle if very strong gravity-wave filtering is desired
+ divdamp_fac    = 0.004
+ l_open_ubc     = .false.
+ igradp_method  = 3
+ l_zdiffu_t     = .true.
+ thslp_zdiffu   = 0.02
+ thhgtd_zdiffu  = 125.
+ htop_moist_proc= 22500.
+ hbot_qvsubstep = 22500. ! use 19000. with R3B7
+/
+&sleve_nml
+ min_lay_thckn   = 20.
+ max_lay_thckn   = 400.   ! maximum layer thickness below htop_thcknlimit
+ htop_thcknlimit = 14000. ! this implies that the upcoming COSMO-EU nest will have 60 levels
+ top_height      = 75000.
+ stretch_fac     = 0.9
+ decay_scale_1   = 4000.
+ decay_scale_2   = 2500.
+ decay_exp       = 1.2
+ flat_height     = 16000.
+/
+&dynamics_nml
+ iequations     = 3
+ idiv_method    = 1
+ divavg_cntrwgt = 0.50
+ lcoriolis      = .TRUE.
+/
+&transport_nml
+ ctracer_list  = '12345'
+ ivadv_tracer  = 3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3,3
+ itype_hlimit  = 3,4,4,4,4,3,3,3,3,3,3,3,3,3,3,3,3
+ ihadv_tracer  = 52,2,2,2,2,22,22,22,22,22,22,22,22,22,22,22,22
+ iadv_tke      = 0
+/
+&diffusion_nml
+ hdiff_order      = 5
+ itype_vn_diffu   = 1
+ itype_t_diffu    = 2
+ hdiff_efdt_ratio = 24.0
+ hdiff_smag_fac   = 0.025
+ lhdiff_vn        = .TRUE.
+ lhdiff_temp      = .TRUE.
+/
+&interpol_nml
+ nudge_zone_width  = 8
+ lsq_high_ord      = 3
+ l_intp_c2l        = .true.
+ l_mono_c2l        = .true.
+ support_baryctr_intp = .false.
+/
+&extpar_nml
+ itopo          = 1
+ n_iter_smooth_topo = 1
+ heightdiff_threshold = 3000.
+/
+&io_nml
+ itype_pres_msl = 4  ! IFS method with bug fix for self-consistency between SLP and geopotential
+ itype_rh       = 1  ! RH w.r.t. water
+/
+&output_nml
+ filetype                     =  ${FILETYPE}        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  -1                 ! write all domains
+ output_bounds                =  0., 86400., 3600.  ! start, end, increment
+ steps_per_file               = 1
+ include_last                 =  .TRUE.
+ output_filename              = 'icon-art-${EXP}-aero-reg'            ! file name base
+ ml_varlist                   = 'group:ART_AEROSOL','group:ART_DIAGNOSTICS','pres'
+ remap                        = 1
+ reg_lon_def                  = -180.,0.5,179.5
+ reg_lat_def                  = 90.,-0.5, -90.
+/
+&output_nml
+ filetype                     =  ${FILETYPE}        ! output format: 2=GRIB2, 4=NETCDFv2
+ dom                          =  -1                 ! write all domains
+ output_bounds                =  0., 86400., 3600.  ! start, end, increment
+ steps_per_file               = 1
+ include_last                 =  .TRUE.
+ output_filename              = 'icon-art-${EXP}-aero'                ! file name base
+ ml_varlist                   = 'group:ART_AEROSOL','group:ART_DIAGNOSTICS','pres'
+ remap                        = 0
+/
+&art_nml
+ lart_diag_out    = .TRUE.
+ lart_aerosol     = .TRUE.
+ iart_init_aero   = 0
+ iart_seasalt     = 1
+ iart_volcano     = 2
+ iart_pollen      = 1
+ iart_dust        = 0
+ cart_io_suffix   = 'TCNN','TCNN'
+ cart_input_folder= '${INDIR}/${EXP}'
+ cart_volcano_file= '${ARTFOLDER}/runctrl_examples/emiss_ctrl/volcano_list.txt'
+ cart_aerosol_xml = '${ARTFOLDER}/runctrl_examples/xml_ctrl/tracers_TCNN.xml'
+ cart_modes_xml   = '${ARTFOLDER}/runctrl_examples/xml_ctrl/modes_TCNN.xml'
+/
+EOF
+
+##
+cp -p $ICONFOLDER/build/x86_64-unknown-linux-gnu/bin/icon ./icon.exe
+##
+case ${CENTER} in
+   IMK)
+      case ${CLUSTER} in
+      uc1)
+      ##
+cat > job_ICON << ****
+#!/bin/bash
+
+            #MSUB -N ICON
+            #MSUB -l walltime=00:00:30:00
+            #MSUB -l nodes=4:ppn=28
+            ##MSUB -l pmem=2000mb
+            #MSUB -e job_uc1_%J.err
+            #MSUB -o job_uc1_%J.out
+                      
+            cd ${OUTDIR}
+            echo \${LD_LIBRARY_PATH}
+                      
+            export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/pfs/imk/ICON/LIBRARIES_IFORT16/szip/lib:/pfs/imk/ICON/LIBRARIES_IFORT16/grib-api/lib'
+            export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/opt/netcdf-fortran/4.4_serial/lib:/opt/netcdf/4.4_serial/lib:/opt/hdf5/1.8_serial/lib'
+            module load compiler/intel/17.0
+            module load mpi/openmpi/3.0-intel-17.0
+            mpirun ./icon.exe
+          
+          
+****
+       chmod +x $OUTDIR/job_ICON          ##
+	   msub -q dev_multinode ./job_ICON
+          ;;
+       fh2)
+          cat > job_ICON << ENDFILE
+          #!/bin/bash
+          #MSUB -N job_ICON
+          #MSUB -l walltime=01:00:00
+          #MSUB -l nodes=4:ppn=20
+          
+          cd ${OUTDIR}
+            export LD_LIBRARY_PATH=\${LD_LIBRARY_PATH}:/opt/netcdf/4.4_serial/lib/:/opt/netcdf-fortran/4.4_serial/lib:/opt/hdf5/1.8_serial/lib:/pfs/imk/ICON/LIBRARIES_IFORT16/szip/lib:/pfs/imk/ICON/LIBRARIES_IFORT16/grib-api/lib
+          
+            module load mpi/openmpi/3.0_intel_17.0
+            module load lib/netcdf/4.4_serial
+            module load lib/netcdf-fortran/4.4_serial
+            module load lib/hdf5/1.8_serial
+
+            mpirun --bind-to core --map-by core ./icon.exe
+            
+            mkdir -p $OUTDIR_PREFIX/Postprocessing
+            ncl 'out_folder="'${OUTDIR_PREFIX}'"'                \
+           'script_folder="'${INDIR}'"'             \
+            ${INDIR}/POSTPROCESSING/NCL-Scripts/nataero_norad.ncl            
+ENDFILE
+
+          chmod +x job_ICON
+    
+          msub ./job_ICON
+          ##
+          ;;
+        esac # case CLUSTER
+      ;;
+   DWD)
+      ##
+      cat > icon.job <<ENDFILEDWD
+#!/bin/ksh
+#-----------------------------------------------------------------------------
+#PBS -q xc_norm_h
+#PBS -l select=12:ompthreads=1
+#PBS -l place=scatter
+#PBS -l walltime=00:60:00
+#PBS -j oe
+# ----------------------------------------------------------------------
+set -x
+
+ export OMP_SCHEDULE="static"
+ export OMP_DYNAMIC="false"
+#export OMP_STACKSIZE=256M
+ export ATP_ENABLED=1
+ export MPICH_RMA_OVER_DMAPP=1
+
+# for PBS change to directory where job was submitted
+# (without this job is started in HOME)
+ if [[ -n \${PBS_O_WORKDIR} ]] ; then
+    cd \${PBS_O_WORKDIR}
+ fi
+
+# run ICON
+ aprun  -n 288 -N 24 -j 2 -d 1 -m 1500m icon.exe
+
+ENDFILEDWD
+
+      # submit the job
+      qsub icon.job
+
+      ##       
+      ;;
+esac
+##

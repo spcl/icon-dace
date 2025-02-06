@@ -1,0 +1,32 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#
+# stdout is crucial for that script - it lists the indivitual
+# templates/runscripts for buildbot ON A SINGLE LINE
+#
+# basically the ./scripts/buildbot_scripts/build does the same thing with the
+# 'runscript_list' file. But this is shared with
+# ./scripts/buildbot_scripts/runexp and I dont want to interfere with this
+# process
+
+SCRIPT_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${SCRIPT_DIR}/../.."; pwd)
+
+experimentLogfile="${ICON_DIR}/run/buildbotsExperiments.log"
+
+if [ ! -f ${experimentLogfile} ]; then
+  echo "Cannot find experiment list file: '${experimentLogfile}'"
+  exit 1
+fi
+#TODO perl -pn -e 's/(\n|\s+)/ /g' ${experimentLogfile}
+cat ${experimentLogfile}

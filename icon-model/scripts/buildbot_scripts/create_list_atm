@@ -1,0 +1,151 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# abort on error
+set -euo pipefail
+
+cd $(dirname "${BASH_SOURCE[0]}")
+
+addexp="./addexp"
+#############################################################################
+##
+## create atm list
+##
+#############################################################################
+
+listname=${1:-atm}
+./rmlist $listname
+# ./mklist $listname
+./create_all_builders $listname
+
+#-----------------------------------------------------------
+# AES
+# add qubicc tests incl. GRIB output to Levante only
+$addexp "checksuite.icon-dev/check.atm_qubicc"            --machines "levante" --list $listname --runflags="queue=shared memory=32G"
+$addexp "checksuite.icon-dev/check.atm_qubicc_nofor"      --machines "levante" --list $listname --runflags="queue=shared memory=32G"
+$addexp "checksuite.icon-dev/check.atm_qubicc_onlyfor"    --machines "levante" --list $listname --runflags="queue=shared memory=32G"
+$addexp "checksuite.icon-dev/check.atm_heldsuarez"        --machines "levante" --list $listname --runflags "queue=shared"
+$addexp "checksuite.icon-dev/check.atm_ape"               --machines "levante" --list $listname --runflags "queue=shared"
+$addexp "checksuite.icon-dev/check.atm_sma"               --machines "levante" --list $listname --runflags "queue=shared"
+# add qubicc update test on Levante (netcdf) only
+$addexp "checksuite.icon-dev/check.atm_qubicc_nc_update"  --machines "levante" --list $listname --runflags="queue=shared memory=32G"
+
+# no update test for qubicc on levante_nag's
+./rmexp "checksuite.icon-dev/check.atm_qubicc_nc_update"  --builders "levante_nag_serial" --list $listname
+#sma fails in a hybrid mixed build
+./rmexp "checksuite.icon-dev/check.atm_sma"  --builders "levante_intel_hybrid_mixed" --list $listname
+
+# limitted area runs
+$addexp "checksuite.les/exp.ac3_les_20210211.run" --builders "levante_intel_hybrid" --list $listname
+
+# add bubble est 
+#off#$addexp "checksuite.icon-dev/check.atm_2mom_bubble_rceTorus"               --list $listname
+#-----------------------------------------------------------
+
+#-----------------------------------------------------------
+# CSCS
+# add experiments relevant for C2SM from yml-config
+./../experiments/addexp_from_yml --list $listname
+
+#-----------------------------------------------------------
+# DWD
+# tests for nwp
+$addexp "exp.test_nwp_R02B04N06multi"  --without-configureflags "--without-mpi" --runflags "cpu_time=00:30:00 queue=shared memory=64G ntasks=32"  --machines levante --list $listname
+$addexp "exp.test_nwp_R02B04_R02B05_nest"  --without-configureflags "--without-mpi" --runflags "cpu_time=00:30:00 queue=shared memory=32G ntasks=32"  --machines levante --list $listname
+$addexp "checksuite.infrastructure/comin/exp.build_comin_plugins_LEVANTE.run" --builders "levante_gcc" --list $listname
+$addexp "exp.test_nwp_R02B04_R02B05_nest_comin"                                  --builders "levante_gcc" --list $listname
+./adddep --from-experiment "exp.test_nwp_R02B04_R02B05_nest_comin" --to-experiment "checksuite.infrastructure/comin/exp.build_comin_plugins_LEVANTE.run" --builders "levante_gcc" --list $listname
+$addexp "exp.test_nwp_R02B04_R02B05_nest_comin_python"  --without-configureflags "--without-mpi" --runflags "cpu_time=00:30:00 queue=shared memory=32G ntasks=32"  --machines levante --list $listname
+./adddep --from-experiment "exp.test_nwp_R02B04_R02B05_nest_comin_python" --to-experiment "checksuite.infrastructure/comin/exp.build_comin_plugins_LEVANTE.run" --builders "levante_gcc" --list $listname
+
+$addexp "checksuite.infrastructure/comin/nwpexp.build_comin_plugins_DWD_nec" --builders "DWD_nec_yac2" --list $listname
+$addexp "exp.test_nwp_R02B04_R02B05_nest_comin"                                  --builders "DWD_nec_yac2" --list $listname
+./adddep --from-experiment "exp.test_nwp_R02B04_R02B05_nest_comin" --to-experiment "checksuite.infrastructure/comin/nwpexp.build_comin_plugins_DWD_nec" --builders "DWD_nec_yac2" --list $listname
+
+# this experiment runs only with-mpi and without openmp
+#
+# builders at DWD
+for builder in DWD_nec DWD_nec_hybrid; do
+  $addexp checksuite.nwp/nwpexp.run_ICON_11_R3B08_lam_initmode7_restarttest --builders ${builder} --list $listname
+  $addexp checksuite.nwp/nwpexp.run_ICON_14_R2B6N7_oper_IAU_and_restarttest --builders ${builder} --list $listname
+done
+# only DWD_nec
+$addexp checksuite.nwp/nwpexp.run_ICON_02_R2B13_lam                            --builders DWD_nec --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_06_R02B06N07_UPATMO_ifsinit_restarttest --builders DWD_nec --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_07_R02B04N06M_restarttest               --builders DWD_nec --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_08_R19B7-ID2_oper                       --builders DWD_nec --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_09_R2B6N7_oper_EPS                      --builders DWD_nec --list $listname
+$addexp checksuite.rcnl.dwd.de/exp.run_ICON-SCM_02_REAL.run                    --builders DWD_nec --list $listname
+# only DWD_nec_yac2
+$addexp checksuite.nwp/nwpexp.run_ICON_17_R2B4_AO_coupled                      --builders DWD_nec_yac2 --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_20_R2B4_R2B6_AO_coupled                 --builders DWD_nec_yac2 --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_26_R2B4_R2B6_AO-HD_coupled              --builders DWD_nec_yac2 --list $listname
+#only DWD_nec_hybrid
+$addexp checksuite.nwp/nwpexp.run_ICON_19_R2B4_cmip_forcing                    --builders DWD_nec_hybrid --list $listname
+
+# wave tests
+$addexp checksuite.nwp/nwpexp.run_ICON_18_R2B4_waves                    --builders "DWD_nec_hybrid levante_intel_hybrid levante_nag" --list $listname
+$addexp checksuite.nwp/nwpexp.run_ICON_21_R2B4_waves_standalone_restart --builders "DWD_nec_hybrid levante_intel_hybrid" --list $listname
+
+#-----------------------------------------------------------
+# Ruby0 coupled tests, only with mpi
+$addexp exp.esm_bb_ruby0 --without-configureflags "--without-mpi" --machines levante --runflags "cpu_time=00:20:00 no_of_nodes=2" --list $listname
+
+# test memory loggin in amip setup
+$addexp checksuite.infrastructure/memLog/exp.atm_memLog         --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
+$addexp checksuite.infrastructure/memLog/exp.atm_memLog_AsyncIO --builders "levante_intel_hybrid levante_gcc" --runflags "cpu_time=00:10:00 no_of_nodes=2" --list $listname
+#-----------------------------------------------------------
+#remove red setups
+./rmexp "exp.test_nwp_R02B04N06_multifile_restart exp.test_nwp_R02B04N06multi2" --builders levante_nag --list $listname
+./rmexp checksuite.icon-dev/check.atm_icoles_nested --builders levante_intel_openmp --list $listname
+#-----------------------------------------------------------
+
+# activate runs for the CDI-PIO builder on mistral
+./set_builder_flags Active --builders 'levante_intel_pio' --list $listname
+for builder in levante_intel_pio; do
+  $addexp checksuite.infrastructure/output/exp.atm_amip_R2B4_1day_pio --builders ${builder} --list $listname
+  $addexp checksuite.infrastructure/output/exp.atm_amip_R2B4_1day     --builders ${builder} --list $listname
+  $addexp exp.esm_bb_ruby0_pio  --builders ${builder} --list $listname --runflags "cpu_time=00:20:00 no_of_nodes=4"
+  $addexp exp.esm_bb_ruby0      --builders ${builder} --list $listname --runflags "cpu_time=00:20:00 no_of_nodes=4"
+done
+
+# activate experiments for the Mac builder and breeze
+for builder in MPIMAC_gcc breeze_gcc breeze_nag breeze_intel; do
+  [[ 'MPIMAC_gcc' = "${builder}" ]] && ./set_builder_flags Active --builders ${builder}  --list $listname
+  $addexp exp.atm_qubicc_test_short --builders ${builder} --list $listname --runflags "mpi_procs_pernode=4"
+done
+
+# add tests for checking yaxt and yac stand-alone; this needs yaxt/yac to be enabled
+$addexp  checksuite.infrastructure/checkExternals/exp.check_externals_DWD.run --builders DWD_nec_yac2 --list ${listname}
+$addexp  checksuite.infrastructure/checkExternals/exp.check_externals_LEVANTE.run --machines levante --list ${listname}
+./adddep --from-experiment "checksuite.infrastructure/comin/exp.build_comin_plugins_LEVANTE.run" --to-experiment "checksuite.infrastructure/checkExternals/exp.check_externals_LEVANTE.run" --builders "levante_gcc" --list $listname
+
+# icon-clm tests
+$addexp "checksuite.clm/check.ICON_CLM" --builders "levante_intel levante_gcc_hybrid" --list ${listname} --runflags="ntasks=32 queue=shared"
+
+# remove tests for NAG which are buggy or take too long
+for experiment in exp.esm_bb_ruby0 exp.test_nwp_R02B04N06multi exp.test_nwp_R02B04_R02B05_nest
+do
+  ./rmexp $experiment --builders levante_nag --list $listname
+done
+for experiment in checksuite.icon-dev/check.atm_ape checksuite.icon-dev/check.atm_qubicc checksuite.icon-dev/check.atm_qubicc_nofor checksuite.icon-dev/check.atm_qubicc_onlyfor
+do
+  ./rmexp $experiment --builders levante_nag_serial --list $listname
+done
+./set_builder_flags Active --builders 'levante_gpu_nvhpc' --list $listname
+$addexp checksuite.infrastructure/gpu/exp.atm_gpu_auto --builders levante_gpu_nvhpc --list ${listname}
+$addexp checksuite.infrastructure/gpu/exp.atm_gpu.run --builders levante_gpu_nvhpc --list ${listname}
+
+#lets see the list
+./lslist $listname
+#-----------------------------------------------------------
+

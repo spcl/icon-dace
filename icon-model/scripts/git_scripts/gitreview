@@ -1,0 +1,728 @@
+#!/usr/bin/env python
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+#
+# This is a first draft of a git merge review tool. It is only tested on
+# xceXXX and lceXXX at DWD and on my Mac. Testing and updating the
+# module provided python versions need to be done.
+# 
+# There are certain requirements:
+# 
+# 1) pygtk is needed (due to the old system installations available that
+#    was the lowest common denominator).
+# 
+# 2) gitpython
+# 
+#    There is a version installed at DWD in my local home directory,
+#    which I added to the scripts load path so that it can be used by
+#    others.
+# 
+#    For python 2.6 the following steps have to be performed:
+# 
+#    wget https://bootstrap.pypa.io/get-pip.py
+#    python ./get-pip.py --user
+#    export PATH=$HOME/.local/bin:$PATH
+#    pip install --user gitpython
+#    pip install --user ordereddict
+#    pip install --user unittest2
+# 
+#    For python 2.7 the following steps have to be performed (pip and
+#    ordereddict are part of python as of 2.7):
+# 
+#    wget https://bootstrap.pypa.io/get-pip.py
+#    python ./get-pip.py --user
+#    export PATH=$HOME/.local/bin:$PATH
+#    pip install --user gitpython
+#    pip install --user unittest2
+# 
+# 3) Select a grpahical difftool. A selection available could be retrieved with
+# 
+#    git difftool --tool-help
+# 
+#    You need to change your copy's predefined difftool around line 15
+#    of the script.
+# 
+# Feel free to contact me by email (luis.kornblueh@mpimet.mpg.de). This
+# tool is considered to be in alpha state!
+# ------------------------------------------------------------------------------
+
+# -*- coding: utf-8 -*-
+
+import datetime
+import getopt
+import os
+import subprocess
+import sys
+
+sys.path.append('/e/uhome/extlkorn/.local/lib/python2.6/site-packages')
+from contextlib import contextmanager
+
+@contextmanager
+def suppress_output(fd):
+    """
+    Suppress output to the given ``fd``::
+
+       with suppress_fd(sys.stderr):
+           # in this block any output to standard error is suppressed
+
+    ``fd`` is an integral file descriptor, or any object with a ``fileno()``
+    method.
+    """
+    if hasattr(fd, 'fileno'):
+        # we were given a file-like object with an underlying fd
+        if hasattr(fd, 'flush'):
+            # flush Python-side buffers before redirecting
+            fd.flush()
+        # get the fd to redirect
+        fd = fd.fileno()
+
+    # duplicate the file descriptor to restore it eventually
+    oldfd = os.dup(fd)
+    try:
+        # open the trash can
+        devnull = os.open(os.devnull, os.O_WRONLY)
+        try:
+            # point the file descriptor to the trash can
+            os.dup2(devnull, fd)
+        finally:
+            # close the old trash can descriptor, we don't need it anymore
+            # since the fd now points to the trash can
+            os.close(devnull)
+        # enter the callers block
+        yield
+        # restore the file descriptor
+        os.dup2(oldfd, fd)
+    finally:
+        # close the duplicated copy of the original fd, we don't need it
+        # anymore now that fd is restored
+        os.close(oldfd)
+        
+with suppress_output(sys.stderr):
+    from git import *
+
+    import pygtk
+    pygtk.require('2.0')
+    import gtk
+    import gobject
+
+#__________________________________________________
+# User configuration
+
+difftool = "emerge"
+
+#__________________________________________________
+
+class GitCommit:
+
+    def __init__(self, commit, author, date, message):
+        self.commit  = commit
+        self.author  = author
+        self.date    = date
+        self.message = message
+
+#__________________________________________________
+#
+        
+class GitFileChangeset:
+
+    def __init__(self, change_type, filename):
+        self.change_type = change_type
+        self.filename    = filename
+
+#__________________________________________________
+#
+        
+class GitRepository:
+
+    def __init__(self, repository):
+        self.repository = Repo(repository)
+        self.working_tree_dir = self.repository.working_tree_dir
+        
+    def commit(self, branch):
+
+        return self.repository.commit(branch)
+        
+    def changeset(self, sha1_range):
+        this_changeset = []
+
+        if ".." in sha1_range:
+            (parent1_sha, parent2_sha) = sha1_range.split("..") 
+        # else:
+        #     (parent1_sha, parent2_sha) = sha1_range.split(" ")             
+        first = self.repository.commit(parent1_sha)
+        last = self.repository.commit(parent2_sha)    
+        
+        diffs = first.diff(last)
+        
+        for diff in diffs:
+            if diff.renamed:
+                this_changeset.append(GitFileChangeset("R", diff.b_path + " renamed " + diff.a_path))
+            elif diff.deleted_file:
+                this_changeset.append(GitFileChangeset("D", diff.a_path))
+            elif diff.new_file:
+                this_changeset.append(GitFileChangeset("A", diff.a_path))
+            else:
+                this_changeset.append(GitFileChangeset("M", diff.a_path))
+            
+        return this_changeset
+
+    def rev_parse(self, sha1):
+        return self.repository.git.rev_parse(sha1)
+    
+    def branches(self):
+        this_branches = []
+    
+        this_branches.append("master")
+        for head in self.repository.heads:
+            if str(head) == "master":
+                continue
+            this_branches.append(str(head))
+
+        return this_branches
+
+    def exclusive_commits(self, branch_a, branch_b):
+        this_commits = []
+
+        exclusive_shas = self.repository.git.log("--format=%H",
+                                                 "--cherry-pick",
+                                                 "--no-merges",
+                                                 branch_a,
+                                                 "--not",
+                                                 branch_b).splitlines()
+    
+        for sha in exclusive_shas:
+            commit     = self.repository.commit(sha)
+            commit_sha = commit.hexsha
+            author     = commit.author.name
+            date       = datetime.datetime.utcfromtimestamp(commit.authored_date).isoformat(" ")
+            if len(commit.message) == 0:
+                message = "INFO: no commit message available."
+            else:
+                message    = commit.message.splitlines()[0]
+            merge = commit.parents[0].hexsha
+            this_commits.append(GitCommit(commit_sha, author, date, message))
+
+        return this_commits 
+
+    def all_commits(self, branch, merges = False, no_merges = False):
+        this_commits = []
+
+        if merges:
+            all_shas = self.repository.git.log("--format=%H",
+                                               "--merges",
+                                               "--since='6 months'",                                               
+                                               branch).splitlines()
+        elif no_merges:
+            all_shas = self.repository.git.log("--format=%H",
+                                               "--no-merges",
+                                               "--since='6 months'",                                               
+                                               branch).splitlines()
+        else:
+            all_shas = self.repository.git.log("--format=%H",
+                                               "--since='6 months'",
+                                               branch).splitlines()
+            
+        for sha in all_shas:
+            commit     = self.repository.commit(sha)
+            commit_sha  = commit.hexsha
+            if commit.parents:
+                parent_sha1 = commit.parents[0].hexsha
+            else:
+                break
+            author      = commit.author.name
+            date        = datetime.datetime.utcfromtimestamp(commit.authored_date).isoformat(" ")
+            if len(commit.message) == 0:
+                message = "INFO: no commit message available."
+            else:
+                message = commit.message.splitlines()[0]
+            this_commits.append(GitCommit(commit_sha, author, date, message))
+
+        return this_commits 
+
+#__________________________________________________
+#
+
+class BranchWidget:
+
+    def __init__(self, vbox, repository, title, branch, branch_to_compare = False):
+
+        self.repository = repository
+        self.branch = branch
+        self.branch_to_compare = ""
+        
+        self.treeview = gtk.TreeView(self.create_branch_view(self.repository.branches()))
+        self.treeview.set_rules_hint(True)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column = gtk.TreeViewColumn(title, renderer_text, text=0)
+        self.treeview.append_column(column)
+
+        if branch_to_compare:
+            self.treeview.connect("row-activated", self.launch_compare_window)
+        else:
+            self.treeview.connect("row-activated", self.select_branch)
+        
+        sw = gtk.ScrolledWindow()
+        sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+        sw.set_policy(gtk.POLICY_NEVER, gtk.POLICY_AUTOMATIC)
+        sw.add(self.treeview)
+
+        vbox.pack_start(sw, True, True, 5)
+
+    def create_branch_view(self, branches):
+        store = gtk.ListStore(str)
+        for branch in branches:
+           store.append([ branch ])
+        return store
+
+    def select_branch(self, widget, row, col):    
+        model = widget.get_model()
+        self.branch = model[row][0]
+
+    def launch_compare_window(self, widget, row, col):
+        model = widget.get_model()
+        self.branch_to_compare = model[row][0]
+        self.compare_branches_window = CompareBranchesWindow(self, self.repository, self.branch, self.branch_to_compare)
+        sha1_a = self.repository.commit(self.branch)
+        sha1_b = self.repository.commit(self.branch_to_compare)
+        sha1_range = sha1_a.hexsha + ".." + sha1_b.hexsha
+        self.changed_file_window = ChangedFileWindow(self, self.repository, sha1_range)
+
+#__________________________________________________
+#
+        
+class ChangesetWidget:
+
+    def __init__(self, vbox, repository, sha1_range):
+
+        self.repository = repository
+        self.sha1_range = sha1_range
+
+        self.treeview = gtk.TreeView(self.create_file_changeset_view(self.repository.changeset(self.sha1_range)))
+        self.treeview.set_rules_hint(True)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column = gtk.TreeViewColumn("Type", renderer_text, text=0)
+        self.treeview.append_column(column)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column = gtk.TreeViewColumn("File", renderer_text, text=1)
+        self.treeview.append_column(column)
+                                     
+        self.treeview.connect("row-activated", self.start_difftool)
+
+        sw = gtk.ScrolledWindow()
+        sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.add(self.treeview)
+
+        vbox.pack_start(sw, True, True, 5)
+
+    def create_file_changeset_view(self, changeset):
+        store = gtk.ListStore(str, str)
+        for change in changeset:
+            store.append([ "{0:.7}".format(change.change_type), change.filename ])
+        return store
+
+    def start_difftool(self, widget, row, col):
+        model = widget.get_model()
+        filename = model[row][1]
+        original_path = os.getcwd()
+        os.chdir(self.repository.working_tree_dir)
+        subprocess.call([ "git", "difftool", "-t", difftool, "--no-prompt", self.sha1_range, "--", filename])
+        os.chdir(original_path)
+                                     
+#__________________________________________________
+#
+
+class CommitWidget:
+
+    def __init__(self, vbox, repository, branch):
+
+        self.repository = repository
+        self.branch = branch
+        
+        self.treeview = gtk.TreeView(self.create_commit_view(self.repository.all_commits(self.branch)))
+        self.treeview.set_rules_hint(True)
+                                     
+        self.create_columns(self.treeview, [ "Commit", "Author", "Date", "Message" ] )
+        self.treeview.connect("row-activated", self.select_commit)
+
+        mergebuttonsbox = gtk.HBox(spacing=5)
+
+        merges_button = gtk.Button("Merges only")
+        merges_button.connect("clicked", self.redraw_merges)
+        mergebuttonsbox.pack_start(merges_button, False, False, 5)
+
+        no_merges_button = gtk.Button("No merges")
+        no_merges_button.connect("clicked", self.redraw_no_merges)
+        mergebuttonsbox.pack_start(no_merges_button, False, False, 5)
+
+        vbox.pack_start(mergebuttonsbox, False, False, 5)
+        
+        sw = gtk.ScrolledWindow()
+        sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+        sw.set_policy(gtk.POLICY_ALWAYS, gtk.POLICY_AUTOMATIC)
+        sw.add(self.treeview)
+
+        vbox.pack_start(sw, True, True, 5)
+
+    def redraw_merges(self, widget):
+        model = self.treeview.get_model()
+        self.treeview.set_model(self.create_commit_view(self.repository.all_commits(self.branch, merges = True)))
+
+    def redraw_no_merges(self, widget):
+        model = self.treeview.get_model()
+        self.treeview.set_model(self.create_commit_view(self.repository.all_commits(self.branch, no_merges = True)))        
+        
+    def create_columns(self, treeview, columns):
+        id = 0
+        for column in columns:
+            rendererText = gtk.CellRendererText()
+            rendererText.set_property("font", "monospace")
+            column_head = gtk.TreeViewColumn(column, rendererText, text=id)
+            column_head.set_sort_column_id(id)    
+            if id == (len(columns)-1):
+                column_head.set_resizable(True)
+            treeview.append_column(column_head)
+            id += 1
+
+    def create_commit_view(self, commits):
+        store = gtk.ListStore(str, str, str, str)
+        for commit in commits:
+            store.append([ "{0:.7}".format(commit.commit),
+                           "{0:.20}".format(commit.author),
+                           "{0:.16}".format(commit.date),
+                           commit.message ])
+        return store
+
+        
+    def select_commit(self, widget, row, col):
+        model = widget.get_model()
+        # if ".." in model[row][1]:
+        #     sha1_range = model[row][1]
+        # else:
+        #     sha1_range = model[row][0] + ".." + model[row][1]
+        parent_sha1 = self.repository.rev_parse("{0!s}^".format(model[row][0]))
+        commit_sha1 = self.repository.rev_parse("{0!s}".format(model[row][0]))
+        sha1_range = "{0!s}..{1!s}".format(parent_sha1, commit_sha1)
+        self.changed_file_window = ChangedFileWindow(self, self.repository, sha1_range)
+
+#__________________________________________________
+#
+
+class CompareBranchesWindow(gtk.Window):
+
+    def __init__(self, main_window, repository, branch_a, branch_b):
+
+        self.repository = repository
+        self.branch_a = branch_a
+        self.branch_b = branch_b        
+
+        print self.branch_a
+        print self.branch_b
+        
+        self.cb = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.cb.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
+        self.cb.set_default_size(1200, 400)
+        self.cb.set_border_width(5)
+        self.cb.set_title("Compare branches " + self.branch_a + " with " + self.branch_b)
+        self.cb.connect("destroy", self.destroy, main_window) 
+        
+        vbox = gtk.VBox()
+                              
+        self.liststore = self.create_commit_view(self.repository.exclusive_commits(self.branch_a, self.branch_b))
+
+        self.treeview = gtk.TreeView(self.liststore)
+        self.treeview.set_rules_hint(True)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column0 = gtk.TreeViewColumn("Commit", renderer_text, text=0)
+        self.treeview.append_column(column0)
+
+        renderer_toggle = gtk.CellRendererToggle()
+        renderer_toggle.set_property('radio', True)
+        renderer_toggle.set_property('activatable', True)
+        renderer_toggle.set_property('active', False)                
+        renderer_toggle.connect('toggled', self.toggled_sha_a)
+        column1 = gtk.TreeViewColumn(" ", renderer_toggle)
+        self.treeview.append_column(column1)
+        
+        renderer_toggle = gtk.CellRendererToggle()
+        renderer_toggle.set_property('radio', True)
+        renderer_toggle.set_property('activatable', True)
+        renderer_toggle.set_property('active', False)                        
+        renderer_toggle.connect('toggled', self.toggled_sha_b)
+        column2 = gtk.TreeViewColumn(" ", renderer_toggle)
+        column2.add_attribute(renderer_toggle, "active", 1)
+        self.treeview.append_column(column2)
+        
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column3 = gtk.TreeViewColumn("Date", renderer_text, text=3)
+        self.treeview.append_column(column3)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column4 = gtk.TreeViewColumn("Author", renderer_text, text=4)
+        self.treeview.append_column(column4)
+
+        renderer_text = gtk.CellRendererText()
+        renderer_text.set_property("font", "monospace")
+        column5 = gtk.TreeViewColumn("Message", renderer_text, text=5)
+        self.treeview.append_column(column5)
+
+        sw = gtk.ScrolledWindow()
+        sw.set_shadow_type(gtk.SHADOW_ETCHED_IN)
+        sw.set_policy(gtk.POLICY_AUTOMATIC, gtk.POLICY_AUTOMATIC)
+        sw.add(self.treeview)
+
+        vbox.pack_start(sw, True, True, 0)
+
+        self.cb.add(vbox)
+        self.cb.show_all()
+
+    def destroy(self, widget, main_window):
+        self.cb.hide()
+        
+    def toggled_sha_a( self, cell, path):
+        print "Toggle A '%s' to: %s" % (cell, path)
+
+    def toggled_sha_b( self, cell, path):
+        print "Toggle B '%s' to: %s" % (cell, path)
+        
+    def create_commit_view(self, commits):
+        store = gtk.ListStore(gobject.TYPE_STRING,
+                              gobject.TYPE_BOOLEAN,
+                              gobject.TYPE_BOOLEAN,
+                              gobject.TYPE_STRING,
+                              gobject.TYPE_STRING,
+                              gobject.TYPE_STRING)
+                              
+        for commit in commits:
+            store.append([ "{0:.7}".format(commit.commit),
+                           False,
+                           False,
+                           "{0:.20}".format(commit.author),
+                           "{0:.16}".format(commit.date),
+                           commit.message ])
+        return store
+
+    def select_commit(self, widget, row, col):
+        model = widget.get_model()
+        if ".." in model[row][1]:
+            sha1_range = model[row][1]
+        else:
+            sha1_range = model[row][0] + ".." + model[row][1]
+        self.changed_file_window = ChangedFileWindow(self, self.repository, sha1_range)
+
+#__________________________________________________
+#
+        
+class ChangedFileWindow(gtk.Window):
+
+    def __init__(self, main_window, repository, sha1_range):
+
+        self.repository = repository
+        self.sha1_range = sha1_range
+
+        self.cw = gtk.Window(gtk.WINDOW_TOPLEVEL)
+        self.cw.set_position(gtk.WIN_POS_CENTER_ON_PARENT)
+        self.cw.set_default_size(1200, 400)
+        self.cw.set_border_width(5)
+        self.cw.set_title("File changeset")
+        self.cw.connect("destroy", self.destroy, main_window) 
+        
+        vbox = gtk.VBox()
+
+        c_top = ChangesetWidget(vbox, self.repository, self.sha1_range) 
+
+        quitbutton = gtk.Button("Close")
+        quitbutton.connect("clicked", self.destroy, main_window)
+        halign = gtk.Alignment(1, 0, 0, 0)
+        halign.add(quitbutton)
+
+        vbox.pack_end(halign, False, False, 5)
+
+        self.cw.add(vbox)
+        self.cw.show_all()
+
+    def destroy(self, widget, main_window):
+        self.cw.hide()
+
+    def create_columns(self, treeview, columns):
+        id = 0
+        for column in columns:
+            rendererText = gtk.CellRendererText()
+            rendererText.set_property("font", "monospace")
+            column_head = gtk.TreeViewColumn(column, rendererText, text=id)
+            column_head.set_sort_column_id(id)    
+            treeview.append_column(column_head)
+            id += 1
+        lastColumn = treeview.get_column(id-1)
+        lastColumn.set_sizing(gtk.TREE_VIEW_COLUMN_AUTOSIZE)
+        lastColumn.set_expand(False)
+        lastColumn.set_alignment(1.0)
+            
+#__________________________________________________
+#
+
+class GitReviewerApp(gtk.Window):
+    
+    def __init__(self, repository):
+        super(GitReviewerApp, self).__init__()
+
+        self._compare = False
+
+        self.branch_a = "master"
+        self.branch_b = ""
+
+        self.repository = GitRepository(repository)
+        
+        self.set_title("GitReview")
+
+        screen = self.get_screen()
+        monitors = []
+        n_monitors = screen.get_n_monitors()
+        for n in range(n_monitors):
+            monitors.append(screen.get_monitor_geometry(n))
+        w = screen.get_active_window()
+        if w is not None:
+            current_monitor = screen.get_monitor_at_window(w)
+            (pos_x, pos_y, width, height) = monitors[current_monitor]    
+        else:
+            n_monitors = 1
+            (pos_x, pos_y, width, height) = monitors[0]
+        pos_x  = 10
+        pos_y  = 10
+        width  = width/n_monitors - 20
+        height = height - 150
+
+        self.move(pos_x, pos_y)        
+        self.set_resizable(True)
+        self.set_default_size(width, height)
+        self.set_border_width(5)
+
+        # outer horizontal box
+        hbox = gtk.HBox(spacing=5)
+
+        # first vertical box
+
+        vbox_left = gtk.VBox()
+
+        #___
+        #
+
+        b_top    = BranchWidget(vbox_left, self.repository, "Branch commit history", self.branch_a) 
+        b_bottom = BranchWidget(vbox_left, self.repository, "Compare with branch ...", self.branch_a, branch_to_compare = True) 
+
+        #___
+        #
+        
+        hbox.pack_start(vbox_left, False, False, 0)
+        
+        # second vertical box
+
+        vbox_right = gtk.VBox()
+
+        c_top = CommitWidget(vbox_right, self.repository, self.branch_a) 
+                                     
+        quitbutton = gtk.Button("Quit")
+        quitbutton.connect("clicked", self.destroy)
+        halign = gtk.Alignment(1, 0, 0, 0)
+        halign.add(quitbutton)
+
+        vbox_right.pack_end(halign, False, False, 5)
+
+        hbox.pack_start(vbox_right, True, True, 0)
+
+        self.add(hbox)
+        self.show_all()
+        
+        self.connect("destroy", gtk.main_quit)
+
+    def destroy(self, widget, data=None):
+        gtk.main_quit()
+        
+            
+
+#__________________________________________________
+#
+        
+def usage():
+    usage_text = """
+    Usage: gitreview [options] arguments
+
+    Options:
+      -h|--help   show this help message 
+
+    Arguments:
+      -r/--repository <absolute path to repository>   absolute path to repository to work with (required)
+    """
+    print str(usage_text)
+
+#__________________________________________________
+#
+
+def main():
+    try:
+        opts, args = getopt.getopt(sys.argv[1:], "hr:", ["help", "output="])
+    except getopt.GetoptError as err:
+        print str(err)
+        usage()
+        sys.exit(2)
+
+    repository = None
+    commit     = None
+    
+    for o, a in opts:
+        if o in ("-h", "--help"):
+            usage()
+            sys.exit()
+        elif o in ("-r", "--repository"):
+            repository = a
+            if not repository:
+                print "\n    No repository given ..."
+                usage()
+                sys.exit()            
+            if not os.path.isdir(repository):
+                print "\n    Given path to repository is not a directory ..." 
+                usage()
+                sys.exit()
+            if not os.path.isdir(os.path.join(repository, ".git")):
+                print "\n    Given path to repository is not a Git repository ..." 
+                usage()
+                sys.exit()
+        else:
+            print "\n    Unknown option ..."
+            usage()
+            sys.exit()
+
+    if not repository:
+        print "\n    No repository argument given ..."
+        usage()
+        sys.exit()
+
+    #___
+    #
+    GitReviewerApp(repository)
+    gtk.main()
+        
+        
+#_______________________________________________________________________________________________
+#
+
+if __name__ == "__main__":
+    main()

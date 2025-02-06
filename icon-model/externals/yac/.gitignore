@@ -1,0 +1,89 @@
+# Copyright (c) 2024 The YAC Authors
+#
+# SPDX-License-Identifier: CC0-1.0
+
+# Autoreconf stage files
+/aclocal.m4
+/autom4te.cache
+/config/compile
+/config/config.guess
+/config/config.sub
+/config/depcomp
+/config/install-sh
+/config/missing
+/config/test-driver
+/configure
+/configure~
+/src/config.h.in
+/src/config.h.in~
+Makefile.in
+
+# Configure stage files
+.deps
+/**/examples/**/*.sh
+/**/python/setup.py
+/**/src/config.h
+/**/src/pkgconfig/yac*.pc
+/**/src/stamp-h1
+/**/src/stamp-h2
+/**/src/yac_config.h
+/**/tests/**/*.sh
+Makefile
+config.cache
+config.log
+config.status
+
+# Build stage files
+*.L
+*.a
+*.mod
+*.o
+*.so
+*.x
+.dirstamp
+/**/clapack/sysdep1.h
+/**/grids/icon_grid_*.nc
+/**/python/yac/*
+/**/python/yac_pyx.c
+/**/src/*/manifest.txt
+/**/src/core/yac_core.h
+/**/src/utils/yac_utils.h
+
+# Test stage files
+/**/examples/**/*.nc
+/**/examples/**/*.vtk
+/**/tests/**/*.log
+/**/tests/**/*.nc
+/**/tests/**/*.trs
+/**/tests/python/*.plots/*
+
+# Install stage files
+/**/python/build/*
+/**/python/yac.egg-info/*
+
+# Files of additional manual stages
+/doc/doxygen_sqlite3.db
+/doc/html
+
+# VIM files:
+.*.swp
+Session.vim
+tags
+
+# Core dump files
+core
+!/src/core
+!/tests/core
+core.[0-9]
+core.[0-9][0-9]
+core.[0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9][0-9]
+core.[0-9][0-9][0-9][0-9][0-9][0-9][0-9]
+
+# Mac OS generated files
+.DS_Store
+
+# Dist stage files
+yac-*.tar.gz

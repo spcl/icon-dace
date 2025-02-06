@@ -1,0 +1,345 @@
+#! /bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+#______________________________________________________________________________
+#
+# Creates the ICON run scripts
+# Original version by Leonidas Linardakis, MPI-M, 2011-25-1
+# Update for DWD jobs by Marek Jacob, DWD, 2022-08-09
+#______________________________________________________________________________
+#______________________________________________________________________________
+#
+# The basic command for creating an ICON experiment run script is
+#
+#  $make_runscript in_script=exp.<name> in_script=exec.iconrun EXPNAME=<name>
+#
+# By default the folder in use is ./run, and the run script is named
+# exp.<name>.run.
+# 
+# Basic optional parameters for the $make_runscript command are:
+#
+#    out_script=<output run script name>. By default is
+#    <in_script>.run
+#
+#    in_folder=<input folder>. By default is run
+#
+#    out_folder=<output folder>. By default is =<in_folder>
+#
+#    mpi_procs_pernode=<number of mpi processes>. In the case of MPI
+#       configuration, defines how many processes per node will be
+#       used.
+#
+#    no_of_nodes=<Number of nodes>. In the case of MPI configuration,
+#       defines how many nodes will be used.
+#
+#    openmp_threads=<Number of openmp threads>. In the case of OPENMP
+#       configuration, defines how many OPENMP threads will be used.
+#
+#    cpu_time=<wall time>. Defines the expected run wall time.
+#
+#    <free_variable>=<value> Free variables can be passed to the run
+#       script using this syntax. For example: EXPNAME=test, will
+#       result the definition of the variable EXPNAME=test in the run
+#       script.
+#
+# For more details see the parameters in the
+#./run/make_target_runscript
+#______________________________________________________________________________
+
+set -eu
+set +x
+
+#define defaults
+FALSE=0
+TRUE=1
+secondary_build_dir=""
+in_folder="run"
+name="all"
+debug=$FALSE
+this_folder="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+
+echo_usage()
+{
+    echo "usage: ./make_runscripts [<experiment name> | --all] \\"
+    echo "                         [-r <run directory to process>] \\"
+    echo "                         [-s <secondary build dir>] \\"
+    echo "                         [-d] \\"
+    echo
+    echo "  --all  Use '-all' as experiment name to process all experiments."
+    echo "  -r     Specify run directory _relative_ to the location of make_runscripts."
+    echo "         (i.e. -r is relative to '${this_folder}/')"
+    echo "  -s     Specify a secondary build dir. Its path can be relative to the current"
+    echo "         working directory or absolute.  The secondary build dir is used for"
+    echo "         setups like the hybrid NEC host/vector. For the NEC, the path to the"
+    echo "         ICON host binaries can be set here."
+    echo "  -d     Debug: Print make_target_runscript with all options"
+}
+
+function error_trap()
+{
+    # Print some helpful information in case this script crashes.
+    echo
+    if [[ -n "$name" ]]
+    then
+        echo "make_runscripts: Error while processing experiment '$name'."
+    fi
+    echo_usage
+}
+trap error_trap ERR
+
+if [[ "$#" = 0 ]]; then
+    echo "No arguments specified"
+    echo
+    echo_usage
+    exit 1
+fi
+
+name="$1"
+shift 1
+
+if [[ "$name" != "--all" ]] && [[ "${name:0:1}" = "-" ]]; then
+    echo "Please specify an experiment name or '--all' before any other option."
+    echo
+    echo_usage
+    exit 1
+fi
+
+# Parse options using getops
+while getopts ":hdr:s:" opt
+do
+    case $opt in
+        h) echo_usage
+           exit 0
+           ;;
+        d) debug=$TRUE
+          ;;
+        r) in_folder="${OPTARG}"
+           ;;
+        s) secondary_build_dir="${OPTARG}"
+           ;;
+        :)
+            echo "Please supply an argument to -$OPTARG."
+            echo
+            echo_usage
+            exit 1
+           ;;
+        \?)
+            echo "Invalid option: -${OPTARG}."
+            echo
+            echo_usage
+            exit 1
+           ;;
+    esac
+done
+
+# Test for invalid arguments
+#
+# (Each time `getopts` is invoked, the getopts utility places the index of the 
+#  next argument to be processed into OPTIND. $# is the total number of
+#  arguments passed to this program.)
+if [[ "$#" -ge "$OPTIND" ]]
+then
+    shift $(($OPTIND - 1))
+    echo "Invalid arguments: $*"
+    echo
+    echo_usage
+    exit 1
+fi
+#______________________________________________________________________________
+#==============================================================================
+
+if [[ ! -r "${this_folder}/run/set-up.info" ]]; then
+    echo "The set-up.info could not be found."
+    echo "No such file: ${this_folder}/run/set-up.info"
+    echo
+    echo "set-up.info will be generated through one of wrappers of './configure'."
+    echo
+    echo "Please configure your build directory before using './make_runscripts'."
+    echo
+    echo "For out-of-source builds:"
+    echo "    Please execute the 'make_runscripts' executable"
+    echo "    that was copied into your build directory."
+    exit 2
+fi
+
+source "${this_folder}/run/set-up.info"
+use_shell=${use_shell:="/bin/bash"}
+
+# default for options
+
+
+secondary_build_dir_option=""
+if [[ -n "${secondary_build_dir}" ]]
+then
+    secondary_build_dir_option="secondary_build_dir=${secondary_build_dir}"
+fi
+
+#______________________________________________________________________________
+# define the runscripts to be created
+name_found="no"
+
+# experiment runscript
+
+if [[ -r "${this_folder}/${in_folder}/exp.${name}" ]]
+then
+    name_found="yes"
+
+    #__________________________________________________________________________
+    # Create the experiment run script
+    #
+    # This consist of a target specific header, the experiment description in
+    # exp.<name> and the executing part in exec.iconrun.
+    #
+    # Note: The ICON experiments require the definition of the
+    #       EXPNAME=<name> variable
+    #__________________________________________________________________________
+
+    [[ $debug -eq $TRUE ]] && set -x
+    ${this_folder}/run/make_target_runscript \
+        "in_folder=${in_folder}" \
+        "in_script=exp.${name}" \
+        in_script=exec.iconrun \
+        "out_script=exp.${name}.run" \
+        "EXPNAME=${name}" \
+        memory_model="large" \
+        $secondary_build_dir_option
+    set +x
+fi
+
+# NWP experiment runscript
+
+if [[ -r "${this_folder}/${in_folder}/nwpexp.${name}" ]]
+then
+    name_found="yes"
+
+    #__________________________________________________________________________
+    # Create the experiment run script
+    #
+    # This consist of a target specific header and the experiment description in
+    # nwpexp.<name>.
+    #
+    # Note: The ICON experiments require the definition of the
+    #       EXPNAME=<name> variable
+    #__________________________________________________________________________
+
+    [[ $debug -eq $TRUE ]] && set -x
+    ${this_folder}/run/make_target_runscript \
+        "in_folder=${in_folder}" \
+        "in_script=nwpexp.${name}" \
+        "out_script=nwpexp.${name}.run" \
+        "EXPNAME=${name}" \
+        memory_model="large" \
+        $secondary_build_dir_option \
+        omp_stacksize="200M"
+    set +x
+fi
+
+# CLM experiment runscript
+
+if [[ -r "${this_folder}/${in_folder}/clmexp.${name}" ]]
+then
+    name_found="yes"
+
+    #__________________________________________________________________________
+    # Create the experiment run script
+    #
+    # This consist of a target specific header and the experiment description in
+    # clmexp.<name>.
+    #
+    # Note: The ICON experiments require the definition of the
+    #       EXPNAME=<name> variable
+    #__________________________________________________________________________
+
+    [[ $debug -eq $TRUE ]] && set -x
+    ${this_folder}/run/make_target_runscript \
+        "in_folder=${in_folder}" \
+        "in_script=clmexp.${name}" \
+        "out_script=clmexp.${name}.run" \
+        "EXPNAME=${name}" \
+        memory_model="large" \
+        $secondary_build_dir_option
+    set +x
+fi
+
+# post-processing runscript
+
+if [[ -r "${this_folder}/${in_folder}/post.${name}" ]]
+then
+    name_found="yes"
+
+    #__________________________________________________________________________
+    # Create the postprocessing script
+    #
+    # This consist of a target specific header and the executing part
+    # in post.<name>.
+    #
+    # NOTE: The postprocessing script is sequential, so we define:
+    #    with_mpi="no" with_openmp="no"
+    #__________________________________________________________________________
+
+    [[ $debug -eq $TRUE ]] && set -x
+    ${this_folder}/run/make_target_runscript \
+        "in_folder=${in_folder}" \
+        "in_script=post.${name}" \
+        "out_script=post.${name}.run" \
+        $secondary_build_dir_option \
+        "EXPNAME=${name}" \
+        with_mpi="no" \
+        with_openmp="no" \
+        queue="express"
+    set +x
+fi
+
+
+# do not remove the all case as this is heavily used in infrastructure testing
+
+if [[ "${name}" == "--all" ]]
+then
+
+    # all exp.* in $in_folder
+    while IFS= read -r -d $'\0' experiment
+    do
+        name="$(basename "$experiment")"
+        name=${name##exp.}
+        rundir="$(dirname "$experiment")" # the same as in_folder because of `-maxdepth 1`
+        ${this_folder}/make_runscripts "$name" -r "$rundir" -s "$secondary_build_dir"
+    done < <(cd "${this_folder}"; find "./${in_folder}" -maxdepth 1 -type f -name "exp.*" -not -name "*.run" -not -name "*.status" -print0 | sort -z)
+    # find prints the file names followed by a null character to allow for spaces and other script-hostile characters.
+    # See also https://stackoverflow.com/q/23356779
+
+    # all nwpexp.* and clmexp.* in $in_folder and it's subfolders
+    while IFS= read -r -d $'\0' experiment
+    do
+        name="$(basename "$experiment")"
+        name=${name##nwpexp.}
+        name=${name##clmexp.}
+        rundir="$(dirname "$experiment")"
+        ${this_folder}/make_runscripts "$name" -r "$rundir" -s "$secondary_build_dir"
+    done < <(cd "${this_folder}"; find "./${in_folder}" -type f \( -name "nwpexp.*" -o -name "clmexp.*" \)  -not -name "*.run" -not -name "*.status" -print0 | sort -z)
+else
+    # error message if nothing found
+    if [[ "$name_found" = "no" ]]
+    then
+        echo
+        echo "ERROR: Cannot find "
+        echo "    'exp.${name}' or "
+        echo "    'nwpexp.${name}' or "
+        echo "    'clmexp.${name}' or "
+        echo "    'post.${name}'"
+        echo "in '${this_folder}/${in_folder}' !"
+        echo_usage
+        exit 1
+    fi
+fi
+
+exit 0
+#______________________________________________________________________________

@@ -1,0 +1,13 @@
+--- a/config/ltmain.sh	2019-10-18 09:59:55.967567005 +0200
++++ b/config/ltmain.sh	2019-10-18 10:00:11.403887362 +0200
+@@ -8958,8 +8958,8 @@
+ 	  xlcverstring="$wl-compatibility_version $wl$minor_current $wl-current_version $wl$minor_current.$revision"
+ 	  verstring="-compatibility_version $minor_current -current_version $minor_current.$revision"
+           # On Darwin other compilers
+-          case $CC in
+-              nagfor*)
++          case $with_nagfor in
++              yes)
+                   verstring="$wl-compatibility_version $wl$minor_current $wl-current_version $wl$minor_current.$revision"
+                   ;;
+               *)

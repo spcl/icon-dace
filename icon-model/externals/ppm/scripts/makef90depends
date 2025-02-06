@@ -1,0 +1,1380 @@
+#! /usr/bin/perl
+#
+# makef90depends --- generate Fortran 77/90 object file
+#                    dependencies
+#
+# Copyright  (C)  2016  Thomas Jahns <jahns@dkrz.de>
+#
+# Version: 1.0
+# Keywords: dependency generator Fortran
+# Author: Thomas Jahns <jahns@dkrz.de>
+# Maintainer: Thomas Jahns <jahns@dkrz.de>
+# URL: https://www.dkrz.de/redmine/projects/scales-ppm
+#
+# Redistribution and use in source and binary forms, with or without
+# modification, are  permitted provided that the following conditions are
+# met:
+#
+# Redistributions of source code must retain the above copyright notice,
+# this list of conditions and the following disclaimer.
+#
+# Redistributions in binary form must reproduce the above copyright
+# notice, this list of conditions and the following disclaimer in the
+# documentation and/or other materials provided with the distribution.
+#
+# Neither the name of the DKRZ GmbH nor the names of its contributors
+# may be used to endorse or promote products derived from this software
+# without specific prior written permission.
+#
+# THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+# IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+# TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+# PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+# OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+# EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+# PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+# PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+# LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+# NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+# SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+#
+# Commentary:
+#
+# Please run
+#   pod2usage makef90depends
+# for usage information. And use
+#   pod2man makef90depends | man -l -
+# OR
+#   perldoc makef90depends
+#
+# to view as manual page (the first method will not work on some systems with
+# older man command version)
+#
+# Print Makefile-style dependencies for objects derived from Fortran
+# 90 source files, i.e. if a.f90 includes a line like
+#
+#  use b
+#
+# and b.f90 contains a line like
+#
+#  module b
+#
+# then the following will be emitted:
+#
+#  a.o: b.o
+#
+# The script tries to produce the same for include and #include
+# directives, but might infer both, too many and too few dependencies
+# because preprocessor conditionals are currently not evaluated
+# correctly and includes are not followed recursively.
+#
+# Author: Thomas Jahns <jahns@dkrz.de>, 2009-2016.
+# Based on createMakefile.pl by Uwe Schulzweida <schulzweida@dkrz.de>
+#
+use strict;
+use warnings;
+
+use Data::Dumper ();
+use File::Spec ();
+use File::Temp ();
+use Getopt::Long ();
+use IPC::Open2 ();
+use Pod::Usage;
+use Storable qw(freeze thaw store retrieve);
+use cpp;
+
+sub hashMerge(\%\%);
+sub debugDefault();
+sub setup();
+sub buildNameSubst(\@);
+sub parseSource($$;$);
+
+my ($debug, $verbose, $dumpCppKeys) = (debugDefault(), 0, undef);
+my (@includeDirs, %defines, @ignoredSysIncludes, %ignoredModules);
+my ($objDepOut, $objectSuffix, $stripObjDirname) = (1, '.o', 0);
+my (@depNameSubst, @moduleSearchPath);
+my ($fcmodcase, $fcmodsuffix, $fcmodflag, $fcincflag, $fcdefopt, $fcundefopt)
+    = ('lc', '.mod', '-I', '-I', '-D', '-U');
+my ($stdFSuffices) = (qr{\.(?:f9[05]|for|f|fpp|ftn|f0[38])$}i);
+my ($writePreprocessed, @preprocNameSubst) = (0);
+# stores for each source file previously visited the
+# * timestamp(mtime) of the file
+# * system and program includes referenced
+# * modules referenced and provided
+# * also stores digested environment and options from last run
+#   if persistentParseCache == 1
+my (%parseCache, $parseCacheDB);
+my $persistentParseCache = 0;
+
+setup();
+push(@depNameSubst, [$stdFSuffices, $objectSuffix])
+    if (!exists($depNameSubst[0]));
+buildNameSubst(@depNameSubst);
+
+#print STDERR Data::Dumper->Dump([\@depNameSubst], ['depNameSubst']), "\n";
+#print STDERR Data::Dumper->Dump([\%defines], ['defines']), "\n";
+
+buildNameSubst(@preprocNameSubst);
+push(@preprocNameSubst, [$stdFSuffices, '.fi'])
+    if ($writePreprocessed and !exists($preprocNameSubst[0]));
+
+# filter duplicate filenames, duplicate dependencies make no sense
+my @srcs;
+pushUnique(\@srcs, @ARGV);
+
+
+MakeDependsf90mod({ 'includePaths' => \@includeDirs,
+                    'moduleDirs' => \@moduleSearchPath,
+                    'defines' => \%defines,
+                    'depNameSubst' => \@depNameSubst,
+                    'stripObjDirname' => $stripObjDirname,
+                    'ignoredSysIncludes' => \@ignoredSysIncludes,
+                    'ignoredModules' => \%ignoredModules,
+                    'dumpCppKeys' => $dumpCppKeys,
+                    'writePreprocessed' => $writePreprocessed,
+                    'preprocNameSubst' => \@preprocNameSubst,
+                  }, @srcs);
+
+sub uniq {
+   my (%seen);
+   return grep { if (!exists $seen{$_}) { $seen{$_} = 1; } else { 0; } } @_;
+}
+
+#
+# &MakeDependsf90([optHASH, ] [FILE...]);
+#
+sub MakeDependsf90mod {
+   my (%moduleProvide, %incs, %sys_incs, %prg_incs, %moduleUse,
+       $objfile, @incDirs, @moduleDirs,
+       @ignoredSysIncludes, $ignoredModules, $globalDefines, $dumpCppKeys);
+   my %cppKeys;
+   my $optArgs = {};
+   my ($stripObjDirname, $writePreprocessed, $preprocNameSubst) = (0, 0);
+   local $_;
+   my @srcs = @_;
+   if (ref($srcs[0]) eq 'HASH')
+   {
+      $optArgs = shift @srcs;
+#      print STDERR Data::Dumper->Dump([\@depNameSubst], ['depNameSubst']);
+      $stripObjDirname = $optArgs->{'stripObjDirname'}
+          if (exists($optArgs->{'stripObjDirname'}));
+      @ignoredSysIncludes = @{$optArgs->{'ignoredSysIncludes'}}
+          if (exists($optArgs->{'ignoredSysIncludes'}));
+      $ignoredModules = exists($optArgs->{'ignoredModules'})
+          ? $optArgs->{'ignoredModules'} : {};
+      $globalDefines = $optArgs->{'defines'}
+          if (exists($optArgs->{'defines'}));
+      $dumpCppKeys = exists($optArgs->{'dumpCppKeys'})?
+          $optArgs->{'dumpCppKeys'}:0;
+      $writePreprocessed = $optArgs->{'writePreprocessed'}
+          if (exists($optArgs->{'writePreprocessed'}));
+      $preprocNameSubst = $optArgs->{'preprocNameSubst'}
+          if (exists($optArgs->{'preprocNameSubst'}));
+      push(@incDirs, @{$optArgs->{'includePaths'}});
+      push(@moduleDirs, @{$optArgs->{'moduleDirs'}});
+   }
+   print(STDERR 'include paths: ', join(':', @incDirs), "\n") if $debug;
+   #
+   # Associate each module with the name of the file that contains it
+   #
+   foreach my $srcfile (@srcs) {
+      my (@modulesOfSrcFile, @srcfileCppKeys);
+      if (exists($parseCache{'source:'.$srcfile})
+          and $parseCache{'source:'.$srcfile}{'timestamp'}
+          == (stat($srcfile))[9])
+      {
+         print STDERR 'Reusing persistent data for ', $srcfile, "\n"
+             if ($debug > 1);
+         my %cached = %{$parseCache{'source:'.$srcfile}};
+         $sys_incs{$srcfile} = $cached{'sys_incs'};
+         $prg_incs{$srcfile} = $cached{'prg_incs'};
+         $moduleUse{$srcfile} = $cached{'moduleUse'};
+         @modulesOfSrcFile = @{$cached{'moduleProvide'}};
+         @srcfileCppKeys = @{$cached{'cppKeys'}};
+      }
+      else
+      {
+         my $preprocOutFh = undef;
+         if ($writePreprocessed)
+         {
+            my ($preprocOutFn) = transformFilename($preprocNameSubst, $srcfile);
+            open($preprocOutFh, '>', $preprocOutFn)
+                or die('cannot open (partial) preprocessing output');
+         }
+         my %parse_res = parseSource($srcfile, $globalDefines, $preprocOutFh);
+         $parseCache{'source:'.$srcfile} = \%parse_res;
+
+         $sys_incs{$srcfile} = $parse_res{'sys_incs'};
+         $prg_incs{$srcfile} = $parse_res{'prg_incs'};
+         $moduleUse{$srcfile} = $parse_res{'moduleUse'};
+         @modulesOfSrcFile = @{$parse_res{'moduleProvide'}};
+         @srcfileCppKeys = @{$parse_res{'cppKeys'}};
+         if ($writePreprocessed)
+         {
+            close($preprocOutFh) or die;
+         }
+      }
+      foreach my $key (@srcfileCppKeys)
+      {
+         haPush(\%cppKeys, $key, $srcfile);
+      }
+      foreach my $moduleName (@modulesOfSrcFile)
+      {
+         my $provider = transformFilename($optArgs, $srcfile);
+         if (!exists($moduleProvide{$moduleName})
+             or ($moduleProvide{$moduleName} eq $provider))
+         {
+            $moduleProvide{$moduleName} = $provider;
+         }
+         else
+         {
+            die('Duplicate module definition: ', "\n",
+                'module ', $moduleName, ' defined in ', $provider, ' and ',
+                $moduleProvide{$moduleName});
+         }
+      }
+   }
+   # print STDERR Data::Dumper->Dump([\%moduleUse, \%moduleProvide],
+   #                                 ['moduleUse', 'moduleProvide']);
+   #
+   # Print the dependencies of each file that has one or more include's or
+   # references one or more modules
+   #
+   if ($objDepOut)
+   {
+      my %modNotFoundWarned;
+      foreach my $srcfile (@srcs)
+      {
+         my $objfile = transformFilename($optArgs, $srcfile);
+         {
+            print(STDERR $srcfile, ':', "\n",
+                  Data::Dumper->Dump([$sys_incs{$srcfile}, $prg_incs{$srcfile}],
+                                     ['system includes', 'program includes']))
+                if ($debug > 1);
+            my @locatedIncludes;
+            foreach my $incs ($sys_incs{$srcfile}, $prg_incs{$srcfile})
+            {
+               @$incs = grep { my $include = $_ ;
+                               !grep { $_ eq $include }
+                                   @ignoredSysIncludes }
+                   @$incs;
+            }
+            @locatedIncludes =
+                map { findRelFile($_, @incDirs) }
+                    @{$sys_incs{$srcfile}};
+            my ($srcvol, $srcdir, undef) = File::Spec->splitpath($srcfile);
+            my @dirparts = File::Spec->splitdir($srcdir);
+            my @srcSearch;
+            @srcSearch = File::Spec->curdir();
+            if (@dirparts)
+            {
+               $srcdir = File::Spec->catdir(@dirparts[0..$#dirparts-1]);
+               unshift(@srcSearch, File::Spec->catpath($srcvol, $srcdir,
+                                                 $dirparts[$#dirparts]));
+            }
+            push(@locatedIncludes,
+                 map { findRelFile($_, @srcSearch, @incDirs) }
+                 @{$prg_incs{$srcfile}});
+            print(STDERR $srcfile, ':', "\n",
+                  Data::Dumper->Dump([$sys_incs{$srcfile}, $prg_incs{$srcfile},
+                                      \@locatedIncludes],
+                                     ['system includes', 'program includes',
+                                      'located'])) if ($debug > 1);
+            if (grep { !defined($_) } @locatedIncludes) {
+               for(my $i = 0; $i < @{$sys_incs{$srcfile}}; ++$i) {
+                  warn $srcfile, ': include file ', $sys_incs{$srcfile}[$i],
+                      " not found\n" if (!defined($locatedIncludes[$i]));
+               }
+               for(my $i = 0; $i < @{$prg_incs{$srcfile}}; ++$i) {
+                  my $incloc = $locatedIncludes[$i + @{$sys_incs{$srcfile}}];
+                  warn $srcfile, ': include file ', $prg_incs{$srcfile}[$i],
+                      " not found\n"
+                   if (!defined($incloc));
+               }
+            }
+            $incs{$srcfile} = [ grep { defined($_) } @locatedIncludes ];
+         }
+         # filter self-referential module use
+         @{$moduleUse{$srcfile}} =
+             grep { !(exists($moduleProvide{$_}) and
+                      $objfile eq $moduleProvide{$_}) } @{$moduleUse{$srcfile}};
+         if (@{$incs{$srcfile}} + @{$moduleUse{$srcfile}}) {
+            {
+               my @notFound =
+                   grep { !exists $moduleProvide{$_}
+                          and not exists($ignoredModules->{$_}) }
+                       @{$moduleUse{$srcfile}};
+               hashMerge(%moduleProvide,
+                         %{{searchModuleFile(\@moduleDirs, @notFound)}});
+               @notFound =
+                   grep { !exists $moduleProvide{$_} } @notFound;
+               my @notFoundNotYetWarned
+                   = grep { ! exists $modNotFoundWarned{$_} } @notFound;
+               @modNotFoundWarned{@notFoundNotYetWarned} = undef;
+               warn $srcfile, ': module', (@notFound>1?'s':()),
+                   ' ', join(', ', @notFound),
+                   " not found\n" if @notFoundNotYetWarned;
+            }
+            my @dependencies =
+                map { $moduleProvide{$_} }
+                    (grep { exists $moduleProvide{$_} }
+                     (@{$moduleUse{$srcfile}}));
+            my @externalModuleCandidates =
+                grep { !exists $moduleProvide{$_} } @{$moduleUse{$srcfile}};
+
+            push @dependencies, @{$incs{$srcfile}};
+            if (@dependencies)
+            {
+               print $objfile, ':';
+               @dependencies = uniq(sort(@dependencies));
+               printLFEscapeLineWrap({ 'printed' => length($objfile) + 1},
+                                     @dependencies);
+               print "\n";
+            }
+         }
+      }
+   }
+   if (defined($dumpCppKeys))
+   {
+      my ($dcpFh, $key, $files);
+      open($dcpFh, '>', $dumpCppKeys) or die('Cannot open file for dump: ',
+                                             $dumpCppKeys, ": ", $!);
+      while(($key, $files) = each(%cppKeys))
+      {
+         print($dcpFh join(' ', $key, @$files), "\n");
+      }
+      print STDERR Data::Dumper->Dump([\%cppKeys], ['cppKeys'])
+          if ($debug > 1);
+   }
+}
+
+sub parseSource($$;$)
+{
+   my ($srcfile, $globalDefines, $preprocOut) = @_;
+   my ($fh, @sys_incs, @prg_incs, @moduleUse, @moduleProvide);
+   open($fh, $srcfile) or die('Cannot open ', $srcfile, ': ', $!);
+   my %localDefines = %$globalDefines;
+   my @predicateLevels = ({'ignored' => 0});
+   my $ignored = 0;
+   my @cppKeys;
+   while (<$fh>) {
+      $_ = cpp::transliterateTrigraphs($_);
+      my $lineno = $.;
+      {
+         my $contPrefix = $_;
+         my $terminated = (substr($_, -1, 1) eq "\n") ? 1 : 0;
+         while (substr($_, -1 - $terminated, 1) eq '\\') {
+            # adjoin continuation lines
+            my $contLine = <$fh>;
+            if (defined($contLine)) {
+               $contLine = cpp::transliterateTrigraphs($contLine);
+               $_ = substr($_, 0, -1 - $terminated) . $contLine;
+               $contPrefix = $contLine;
+            } else {
+               die('continuation at end of last line in file ', $srcfile,
+                   ' line ', $., ":\n",
+                   $contPrefix, "\n");
+            }
+            $terminated = (substr($_, -1, 1) eq "\n") ? 1 : 0;
+         }
+      }
+      if (m{^\s*#\s*(if|ifdef|ifndef|endif|else|elif)\b\s*(.*?)\s*$})
+      {
+         my ($clause, $predicate) = ($1, $2);
+         print(STDERR 'Investigating ', $clause,
+               (defined($predicate)?(' ', $predicate):()),
+               ' at ', $srcfile, ', line ', $lineno, "\n") if $debug > 1;
+         if ($clause eq 'endif')
+         {
+            die('#endif without opening #if at line ', $lineno,
+                ' of ', $srcfile, "\n")
+                if (@predicateLevels < 2);
+            print(STDERR Data::Dumper->Dump([\@predicateLevels],
+                                               ['predicatelevels']))
+                if $debug > 1;
+            pop(@predicateLevels);
+            $ignored = $predicateLevels[-1]{'ignored'};
+         }
+         elsif ($clause eq 'else')
+         {
+            die('#else without opening #if at line ', $lineno,
+                ' of ', $srcfile, "\n")
+                if (@predicateLevels < 2);
+            $ignored = $predicateLevels[-1]{'ignored'} =
+                ($predicateLevels[-1]{'predValueAny'}
+                 or $predicateLevels[-2]{'ignored'});
+         }
+         elsif ($clause eq 'elif')
+         {
+            die('#elif without opening #if at line ', $lineno,
+                ' of ', $srcfile, "\n")
+                if (@predicateLevels < 2);
+            my @localCppKeys;
+            my $predValue
+                = eval {
+                   cpp::evaluatePreProcExpression($predicate,
+                                                  \%localDefines,
+                                                  \@localCppKeys,
+                                                  !$objDepOut);
+                };
+            if ($@)
+            {
+               die($srcfile, ':', $lineno, ":\n",
+                   'Error: invalid conditional expression: ',
+                   $predicate, "\n", $@);
+            }
+            $ignored = (!$predValue
+                        or $predicateLevels[-1]{'predValueAny'}
+                        or $predicateLevels[-2]{'ignored'});
+            $predicateLevels[-1]{'ignored'} = $ignored;
+            $predicateLevels[-1]{'predValueAny'}
+                = $predicateLevels[-1]{'predValueAny'} || $predValue;
+            push(@cppKeys, @localCppKeys);
+         }
+         else
+         {
+            if ($clause eq 'if') {
+               my @localCppKeys;
+               my $predValue
+                   = eval {
+                      cpp::evaluatePreProcExpression($predicate,
+                                                     \%localDefines,
+                                                     \@localCppKeys,
+                                                     !$objDepOut);
+                   };
+               if ($@)
+               {
+                  die($srcfile, ':', $lineno, ":\n",
+                      'Error: invalid conditional expression: ',
+                      $predicate, "\n", $@);
+               }
+               $ignored = (!$predValue or $ignored);
+               push(@predicateLevels, { 'ignored' => $ignored,
+                                        'predValue' => $predValue,
+                                        'predValueAny' => $predValue,
+                                        'line' => $lineno });
+               push(@cppKeys, @localCppKeys)
+            } elsif (($clause eq 'ifdef') or ($clause eq 'ifndef')) {
+               my $predValue = 1;
+               die('Malformed predicate: ', $clause, ' ', $predicate)
+                   if (not cpp::validPreProcSym($predicate));
+               if ($objDepOut) {
+                  cpp::insertDefinitionOnDemand(\%localDefines, $predicate)
+                      if (!exists($localDefines{$predicate}));
+                  $predValue = defined($localDefines{$predicate})?1:0;
+               }
+               $predValue = !$predValue if ($clause eq 'ifndef');
+               print(STDERR Data::Dumper->Dump([\$predValue],
+                                               [qw(predicate)]))
+                   if $debug > 1;
+               $ignored = (!$predValue or $ignored);
+               push(@predicateLevels, { 'ignored' => $ignored,
+                                        'predValue' => $predValue,
+                                        'predValueAny' => $predValue,
+                                        'line' => $lineno });
+               push(@cppKeys, $predicate);
+            }
+         }
+         print(STDERR ($ignored?'Ignoring':'Evaluating'), ' upcoming text.',
+               "\n") if $debug > 1;
+      } elsif (!$ignored) {
+         if (m{$cpp::definition_match}x) {
+            my ($preProcSym, $args, $definition)
+                = ($1, $2, $3);
+            $localDefines{$preProcSym}
+                = cpp::parseDefinition($args, $definition, $srcfile, $lineno);
+            print(STDERR 'Intern\'ed definition ',
+                  $preProcSym, (not defined($args))?():('(', $args, ')'),
+                  ' => ', $definition, "\n") if $debug;
+            print(STDERR Data::Dumper->Dump([$localDefines{$preProcSym}],
+                                            ['definition parse']))
+                if ($debug > 1);
+         } elsif (m{^\s*#+(?:undef)\s+([A-Za-z_]\w*)\s*(..*)?$}) {
+            my ($preProcSym, $trail) = ($1, $2);
+            $localDefines{$preProcSym} = undef;
+            warn('Trailing garbage on undef line ',
+                 $lineno, ' of ', $srcfile, ': ', $trail)
+                if defined($trail);
+         } elsif (m{^\s*module\s+([^\s!]+)}i and lc($1) ne 'procedure') {
+            my $moduleName = lc($1);
+            pushUnique(\@moduleProvide, $moduleName);
+         } elsif (/^\s*#*include\s+"(.+)?"/i) {
+            pushUnique(\@prg_incs, $1);
+            print(STDERR 'Unsupported preprocessor include "', $1,
+                  '" found while writing preprocessor output!')
+                if (defined($preprocOut));
+         } elsif (/^\s*#*include\s+<(.+)?>/i) {
+            pushUnique(\@sys_incs, $1);
+            print(STDERR 'Unsupported preprocessor include "', $1,
+                  '" found while writing preprocessor output!')
+                if (defined($preprocOut));
+         } elsif (/^\s*include\s+(["'])(.+)?\1/i) {
+            pushUnique(\@sys_incs, $2);
+         } elsif (/^\s*use\s+([^\s,!]+)/i) {
+            print(STDERR 'Found use association: ', $1, "\n")
+                if ($debug);
+            pushUnique(\@moduleUse, lc($1));
+         }
+      }
+      print $preprocOut $_
+          if (defined($preprocOut) and !$ignored and !m{^\s*\#});
+   }
+   die('Missing #endif for conditional at line ', $predicateLevels[-1]{'line'},
+       ' of ', $srcfile, "\n")
+       if @predicateLevels > 2;
+   my $timestamp = (stat($fh))[9];
+   close($fh) or die('Failed to close handle for '.$srcfile);
+   return ( 'sys_incs' => \@sys_incs,
+            'prg_incs' => \@prg_incs,
+            'moduleUse' => \@moduleUse,
+            'moduleProvide' => \@moduleProvide,
+            'cppKeys' => \@cppKeys,
+            'timestamp' => $timestamp,
+          );
+}
+
+
+sub searchModuleFile
+{
+   local $_;
+   my ($moduleDirs, @moduleRequests) = @_;
+   my %moduleProvide;
+   # try to find externally provided module files
+   foreach my $modCand (@moduleRequests)
+   {
+      my $modFileQuery;
+      if ($fcmodcase eq 'uc') {
+         $modFileQuery = uc($modCand);
+      }
+      elsif ($fcmodcase eq 'lc') {
+         $modFileQuery = lc($modCand);
+      }
+      else
+      {
+         $modFileQuery = $modCand;
+      }
+      $modFileQuery .= $fcmodsuffix;
+      my $modFile = findRelFile($modFileQuery, @$moduleDirs);
+      if (defined($modFile))
+      {
+         $moduleProvide{$modCand} = $modFile;
+      }
+   }
+   return %moduleProvide;
+}
+
+sub hashMerge(\%\%)
+{
+   my ($targetHash, $newMappings) = @_;
+   while (my ($key, $value) = each %$newMappings) {
+      $targetHash->{$key} = $value
+   }
+}
+
+
+sub transformFilename
+{
+   my @transformed;
+   my $stripDirname = 0;
+   my @nameSubst;
+   if (ref($_[0]) eq 'HASH')
+   {
+      my $optArgs = shift @_;
+      @nameSubst = @{$optArgs->{'depNameSubst'}}
+          if (exists($optArgs->{'depNameSubst'}));
+      $stripObjDirname = $optArgs->{'stripObjDirname'}
+          if (exists($optArgs->{'stripObjDirname'}));
+   }
+   elsif (ref($_[0]) eq 'ARRAY')
+   {
+      @nameSubst = @{shift @_};
+   }
+   foreach my $filename (@_)
+   {
+      my $fname = $filename;
+      foreach my $transformRule (@nameSubst)
+      {
+         my ($pattern, $replacement) = ($transformRule->[0],
+                                        $transformRule->[1]);
+         $fname =~ s/${pattern}/${replacement}/;
+      }
+      (undef, undef, $fname) = File::Spec->splitpath($fname)
+          if $stripObjDirname;
+      push @transformed, $fname
+   }
+   return wantarray ? @transformed : join('', @transformed);
+}
+
+sub findRelFile($@)
+{
+   local $_;
+   my ($file, @Paths) = @_;
+   return $file if File::Spec->file_name_is_absolute($file);
+   foreach my $path (@Paths)
+   {
+      my $qualPath = File::Spec->catfile($path, $file);
+      return $qualPath if (-e $qualPath);
+      print STDERR 'Requested include ', $file, ' not found in ',
+          $qualPath, "\n" if $debug > 2;
+   }
+   return undef;
+}
+
+sub printLFEscapeLineWrap {
+   local $_;
+   my $options = (ref($_[0]) eq 'HASH')?shift @_:{};
+   my $fd = exists($options->{'fd'})?$options->{'fd'}:\*STDOUT;
+   my $linewidth = exists($options->{'linewidth'})?$options->{'linewidth'}:78;
+   my $columns = $linewidth
+       - exists($options->{'printed'})?$options->{'printed'}:0;
+   my $lineindent = exists($options->{'lineindent'})?
+       $options->{'lineindent'}:"\t";
+   #
+   foreach my $word (@_) {
+      my $wordlength = length($word);
+      if ($columns >= $wordlength + 1 + 2) {
+         print $fd ' ', $word;
+         $columns -= $wordlength + 1;
+      } else {
+         #
+         # Continue onto a new line
+         #
+         print $fd " \\\n", $lineindent, $word;
+         $columns = $linewidth - length(expand($lineindent)) - $wordlength;
+      }
+   }
+}
+
+sub pushUnique
+{
+   local $_;
+   my ($listref, @elems) = @_;
+   foreach my $elem (@elems)
+   {
+      push(@$listref, $elem) if not grep { $_ eq $elem } @$listref;
+   }
+}
+
+sub haPush
+{
+   # insert value in list corresponding to key in hash, create new
+   # list if necessary
+   my ($href, $key, @values) = @_;
+   if (exists($href->{$key}))
+   {
+      die('Must be hash of arrays!') if (ref($href->{$key}) ne 'ARRAY');
+   }
+   else
+   {
+      $href->{$key} = [];
+   }
+   pushUnique($href->{$key}, @values);
+}
+
+sub expand
+{
+   local $_;
+   my @expanded = map
+      { my $textcopy = $_;
+        $textcopy =~ s/\t/        /; }
+          @_;
+   return wantarray ? @expanded : join('', @expanded);
+}
+
+sub whoami  { (caller(1))[3] }
+
+sub buildNameSubst(\@)
+{
+   my ($nameSubst) = @_;
+   foreach my $transformRule (@$nameSubst)
+   {
+      next if (ref($transformRule) eq 'ARRAY');
+      my $trCopy = $transformRule;
+      $transformRule = [ $transformRule =~ m{([^=]+)=(.*)} ];
+      die('Malformed rule of transformation: ', $trCopy, "\n")
+          if (@$transformRule != 2);
+   }
+}
+
+
+{
+   # choose defaults for LP64
+   my ($prog_fpp, $c_sizeof_int, $c_sizeof_long, $c_sizeof_long_long,
+       $c_char_is_unsigned) = (undef, 4, 8, 8, 0);
+   my (@FPPFLAGS);
+
+   sub setup()
+   {
+      parseOptions();
+      $prog_fpp = $ENV{'FPP'}
+          if (!defined($prog_fpp) && defined($ENV{'FPP'}));
+      cpp::init({ defined($prog_fpp)?('FPP' => $prog_fpp):(),
+                  'FPPFLAGS' => \@FPPFLAGS,
+                  'c_sizeof_int' => $c_sizeof_int,
+                  'c_sizeof_long' => $c_sizeof_long,
+                  'c_sizeof_long_long' => $c_sizeof_long_long,
+                  'c_char_is_unsigned'
+                  => $c_char_is_unsigned,
+                });
+   }
+
+   sub parseOptions
+   {
+      local $_;
+      my ($help, $usage)=(0, 0);
+      my ($ENVdigest, @optArgs);
+      # list of environment variables of which I'm fairly sure they
+      # don't influence compiler behaviour, feel free to submit more
+      my %mostlyHarmless =
+          map { ($_, undef) }
+              qw(ALTERNATE_EDITOR COLORTERM
+                 DBUS_SESSION_BUS_ADDRESS DEBUG DESKTOP_SESSION DISPLAY
+                 EDITOR FPATH_modshare
+                 FONT_ENCODINGS_DIRECTORY
+                 GDMSESSION GDM_LANG GDM_XSERVER_LOCATION
+                 GEOPROBE_USEGLX
+                 GJS_DEBUG_OUTPUT GJS_DEBUG_TOPICS
+                 GNOME_DESKTOP_SESSION_ID GNOME_KEYRING_PID
+                 GNOME_KEYRING_CONTROL GNOME_KEYRING_SOCKET
+                 GNUSTEP_USER_ROOT GPG_AGENT_INFO
+                 GTK_RC_FILES GTK_MODULES
+                 HISTCONTROL HISTFILESIZE HISTSIZE
+                 ICAROOT INDEXSTYLE
+                 JOURNAL_STREAM
+                 LESS LESSCLOSE LESSOPEN LOADEDMODULES
+                 LOADEDMODULES_modshare LS_COLORS
+                 MAIL
+                 MAKEFLAGS MAKELEVEL MAKEOVERRIDES MAKE_TERMERR MAKE_TERMOUT
+                 MANPATH MANPATH_modshare MFLAGS
+                 MODULEPATH MODULEPATH_modshare MODULE_VERSION
+                 MODULE_VERSION_STACK
+                 MUTT_XTITLES
+                 PAGER PATH_modshare PROFILEREAD PROMAGIC_USEGLX
+                 QT_ACCESSIBILITY QT_LINUX_ACCESSIBILITY_ALWAYS_ON
+                 QT_QPA_PLATFORMTHEME
+                 RSYNC_RSH SESSION_MANAGER
+                 SHLVL SLURM_JOBID SLURM_JOB_ID SLURM_JOB_NODELIST
+                 SLURM_NODELIST
+                 SSH_AGENT_PID SSH_AUTH_SOCK SSH_CLIENT SSH_CONNECTION
+                 SSH_TTY TERM TEST_LOGS TESTSUITEFLAGS
+                 TMPDIR TMUX TMUX_PANE
+                 USERNAME
+                 VBOX_CROGL_FORCE_SUPPORTED
+                 VGL_COMPRESS VGL_DISPLAY VGL_ISACTIVE VGL_WM VNCDESKTOP VISUAL
+                 WINDOWID WINDOWPATH
+                 WINDOW_MANAGER XAUTHORITY
+                 XDG_CURRENT_DESKTOP XDG_DATA_DIRS XDG_MENU_PREFIX
+                 XDG_RUNTIME_DIR XDG_SEAT XDG_SESSION_DESKTOP XDG_SESSION_ID
+                 XDG_SESSION_COOKIE XDG_SESSION_TYPE XDG_VTNR
+                 XKL_XMODMAP_DISABLE
+                 am__remaking_logs);
+      $ENVdigest = join("\0",
+                        (map { "$_=$ENV{$_}" }
+                             (sort grep { !exists($mostlyHarmless{$_})
+                                          && rindex($_,'BASH_FUNC_',0) }
+                              keys(%ENV))));
+      my $optionParser = new Getopt::Long::Parser;
+      # This program should accept the full set of preprocessor flags,
+      # but might not implement all of them. Therefore abbreviation and
+      # ignoring of case are not allowed because either might promote
+      # unhandled options to options of this program. Also unhandled
+      # options are passed through.
+      configureOptionParser($optionParser, 'no_auto_abbrev', 'no_ignore_case');
+      # duplicate -- option terminator for brain-dead versions of
+      # Getopt::Long (which unfortunately includes the one distributed
+      # with Perl 5.6.1)
+      if (grep /^--$/, @ARGV)
+      {
+         my @seen = (0, 0);
+         @ARGV = ((grep { ($seen[0] or /^--$/)?
+                              ($seen[0]?0:!($seen[0]=1)):1 } @ARGV),
+                  '--', '--',
+                  (grep { ($seen[1] or /^--$/)?$seen[1]++:0 } @ARGV));
+      }
+      print(STDERR join(", ", @ARGV), "\n") if $debug > 2;
+      my @ignoredModules;
+      my $result
+          = $optionParser->getoptions('debug+' => \$debug,
+                                      'debug-cpp-pm+' => \$cpp::debug,
+                                      'help|?!' => \$help,
+                                      'usage!' => \$usage,
+                                      'dump-cpp-keys=s' => \$dumpCppKeys,
+                                      'print-obj-deps!' => \$objDepOut,
+                                      'verbose+' => \$verbose,
+                                      'strip-obj-dirname!' =>
+                                      \$stripObjDirname,
+                                      'fc-mod-suf=s' => \$fcmodsuffix,
+                                      'fc-mod-case=s' => \$fcmodcase,
+                                      'fc-mod-flag=s' => \$fcmodflag,
+                                      'fc-inc-flag=s' => \$fcincflag,
+                                      'fc-def-opt=s' => \$fcdefopt,
+                                      'fc-undef-opt=s' => \$fcundefopt,
+                                      'fpp-cast-mode=s' => \&set_cast_mode,
+                                      'fpp-sizeof-int=i' => \$c_sizeof_int,
+                                      'fpp-sizeof-long=i' => \$c_sizeof_long,
+                                      'fpp-sizeof-long-long=i'
+                                      => \$c_sizeof_long_long,
+                                      'fpp-char-is-signed'
+                                      => \&set_c_char_sign,
+                                      'fpp-char-is-unsigned'
+                                      => \&set_c_char_sign,
+                                      'write-preprocessed!'
+                                      => \$writePreprocessed,
+                                      'preprocessed-transform-name=s'
+                                      => \@preprocNameSubst,
+                                      'prog-fpp=s' => \$prog_fpp,
+                                      'obj-suf=s' => \$objectSuffix,
+                                      'obj-transform-name=s' => \@depNameSubst,
+                                      'ignore-sys-include=s' =>
+                                      \@ignoredSysIncludes,
+                                      'ignore-module=s' => \@ignoredModules,
+                                      'parse-cache=s' => \$parseCacheDB,
+                                     );
+      %ignoredModules = map { $_ => undef } @ignoredModules;
+      if($help or $usage)
+      {
+         pod2usage( {
+                     '-msg' => "",
+                     '-exitval' => 0,
+                     '-verbose' => 1
+                    });
+      }
+      # filter unhandled options
+      print(STDERR join(", ", @ARGV), "\n") if $debug > 2;
+      if (grep(/^--$/, @ARGV) == 2)
+      {
+         my $seen = 0;
+         {
+            my @unhandledOptions
+                = grep { ($seen or /^--$/)?
+                             ($seen?0:!($seen=1)):1 } @ARGV[1..$#ARGV];
+            @optArgs = @unhandledOptions;
+            print(STDERR 'unhandled options: ', join(', ', @unhandledOptions),
+                  "\n") if $debug > 2;
+            @moduleSearchPath = map { /^$fcmodflag(.+)$/?$1:() }
+                @unhandledOptions;
+            @unhandledOptions = grep { /^$fcincflag(.+)$/?
+                                           (!push @includeDirs, $1):1 }
+                @unhandledOptions;
+            @unhandledOptions = grep
+            {
+               if (/^(-D|$fcdefopt)(.+?)(?:=(.*))?$/
+                       or /^(-U|$fcundefopt)(.+)$/)
+               {
+                  if ($1 eq '-D' || $1 eq $fcdefopt)
+                  {
+                     $defines{$2}=defined($3)?$3:'';
+                  }
+                  elsif (($1 eq '-U' || $1 eq $fcundefopt) && !defined($3))
+                  {
+                     $defines{$2}=undef;
+                  }
+                  else
+                  {
+                     die('Internal error parsing option: ', $_);
+                  }
+                  0;
+               }
+               else
+               {
+                  1;
+               }
+            } @unhandledOptions;
+            print(STDERR 'unhandled options: ', join(', ', @unhandledOptions),
+                  "\n") if $debug > 2;
+         }
+         while (grep /^--$/, @ARGV)
+         {
+            $seen = 0;
+            @ARGV
+                = grep { ($seen or /^--$/)?$seen++:do {push(@FPPFLAGS, $_) ; 0} }
+                    @ARGV;
+         }
+         for (my $i = 0; $i < @FPPFLAGS; ++$i)
+         {
+            my $flag = $FPPFLAGS[$i];
+            if ($flag eq '-Xlinker' or $flag eq '-Xcompiler' or $flag eq '-XCClinker')
+            {
+               splice(@FPPFLAGS, $i, 1);
+               redo;
+            }
+         }
+         print(STDERR 'FPPFLAGS: ', join(', ', @FPPFLAGS), "\n")
+             if $debug;
+      }
+      # no preproc options?
+      elsif (grep(/^--$/, @ARGV) == 1)
+      {
+         if (!$ARGV[0] eq '--')
+         {
+            # give up if option parsing mysteriously failed
+            die('internal error: double dash must be first in ARGV by now!');
+         }
+         shift @ARGV;
+      }
+      # replace defines with pre-parsed construct
+      my @names = keys %defines;
+      my $i;
+      for ($i = 0; $i < @names; ++$i)
+      {
+         my ($name, $definition, $macroArgs)
+             = ($names[$i], $defines{$names[$i]});
+         next if !defined($definition);
+         if ($name =~ m{([^(]*)
+                        (\(\s*[A-Za-z_]\w*(?:\s*,[A-Za-z_]\w*)*\s*\))}x)
+         {
+            ($name, $macroArgs) = ($1, $2);
+         }
+         die('Malformed define ', $name, $macroArgs?('(', $macroArgs, ')'):'',
+             '=', $definition, "\n") if ($name !~ m{^[A-Za-z_]\w+$});
+         delete($defines{$names[$i]});
+         $defines{$name} = cpp::parseDefinition($macroArgs, $definition,
+                                                undef,$name);
+      }
+      # tie cache of parsed files to database if available
+      if (defined($parseCacheDB))
+      {
+         @AnyDBM_File::ISA = qw(DB_File GDBM_File);
+         eval {
+            no warnings 'all';
+            require AnyDBM_File;
+         };
+         if (!$@)
+         {
+            print(STDERR join(', ', @AnyDBM_File::ISA), "\n") if ($debug > 1);
+            print(STDERR 'Using persistent database ', $parseCacheDB, "\n")
+                if ($debug);
+            my $db = dbmopen(%parseCache, $parseCacheDB, 0666)
+                or die('Could not open database', (($!)?": $!\.":()));
+            $db->filter_store_value(sub { $_ = freeze($_) });
+            $db->filter_fetch_value(sub { $_ = thaw($_) });
+            $persistentParseCache = 1;
+         }
+         else
+         {
+            # We don't have a flat database on this system, fall back to
+            # Storable store/retrieve
+            %parseCache = %{retrieve($parseCacheDB)} if (-r $parseCacheDB);
+            $persistentParseCache = 2;
+         }
+         my $depdb_schema_version = 2;
+         my $rebuild = 0;
+         my @savedOptArgs = exists($parseCache{'options:'})?
+             @{$parseCache{'options:'}} : ();
+         $rebuild |= 1 if (join("\0", @optArgs) ne join("\0", @savedOptArgs));
+         my $savedENVdigest = exists($parseCache{'env:'})?
+             ${$parseCache{'env:'}} : '';
+         $rebuild |= 2 if ($ENVdigest ne $savedENVdigest);
+         $rebuild |= 4 if (!exists $parseCache{'schema_version:'}
+                           or $parseCache{'schema_version:'}
+                           < $depdb_schema_version);
+         if ($rebuild)
+         {
+            my %depdb_rebuild_reasons
+                = (
+                   '1' => 'option arguments',
+                   '2' => 'environment',
+                   '4' => 'db format'
+                  );
+            my @changes;
+            while (my ($key, $value) = each %depdb_rebuild_reasons) {
+               push(@changes, $value) if ($rebuild & $key);
+            }
+            print STDERR 'dependency database: ',
+                (@changes > 1?
+                 join(', ', @changes[0..$#changes-1]) . ' and ' . $changes[-1]
+                 :$changes[0]),
+                     ' changed, forcing rebuild', "\n";
+            while (my ($k, $v) = each %parseCache) {
+               delete $parseCache{$k};
+            }
+            $parseCache{'options:'} = \@optArgs;
+            $parseCache{'env:'} = \$ENVdigest;
+            $parseCache{'schema_version:'} = \$depdb_schema_version;
+            if ($debug) {
+               require Text::Diff;
+               if ($ENVdigest ne $savedENVdigest) {
+                  $savedENVdigest =~ tr/\0/\n/;
+                  $ENVdigest =~ tr/\0/\n/;
+                  print(STDERR Text::Diff::diff(\$savedENVdigest, \$ENVdigest),
+                        "\n");
+               }
+               my ($optArgs_serialized, $savedOptArgs_serialized)
+                   = (join("\n", @optArgs), join("\n", @savedOptArgs));
+               print(STDERR Text::Diff::diff(\$optArgs_serialized,
+                                             \$savedOptArgs_serialized), "\n")
+                   if ($optArgs_serialized ne $savedOptArgs_serialized);
+            }
+         }
+      }
+      # make spawned processes (hopefully) emit debugging information
+      $ENV{'DEBUG'} = "$debug" if $debug;
+   }
+
+   sub set_cast_mode($)
+   {
+      my $mode = $_[1];
+      if ($mode =~ m{^lp64$}ix)
+      {
+         ($c_sizeof_int, $c_sizeof_long, $c_sizeof_long_long) = (4, 8, 8);
+      }
+      elsif ($mode =~ m{^ilp32$}ix)
+      {
+         ($c_sizeof_int, $c_sizeof_long, $c_sizeof_long_long) = (4, 4, 8);
+      }
+      else
+      {
+         print STDERR 'Unexpected arithmetic conversion mode: ', $mode, "\n";
+         exit(1);
+      }
+   }
+
+   sub set_c_char_sign($$)
+   {
+      my $mode = $_[0];
+      if ($mode =~ m{fpp-char-is-unsigned})
+      {
+         $c_char_is_unsigned = 1;
+      }
+      elsif ($mode =~ m{fpp-char-is-signed})
+      {
+         $c_char_is_unsigned = 0;
+      }
+      else
+      {
+         die('Unexpected error');
+      }
+   }
+
+}
+
+dbmclose(%parseCache) if ($persistentParseCache == 1);
+if ($persistentParseCache == 2)
+{
+   store(\%parseCache, $parseCacheDB)
+       or die('Failed to save persistent cache of dependencies');
+}
+
+sub debugDefault()
+{
+   if (exists($ENV{'DEBUG'}))
+   {
+      if ($ENV{'DEBUG'} =~ m{^\d+$})
+      {
+         return $ENV{'DEBUG'} + 0;
+      }
+      else
+      {
+         return 1;
+      }
+   }
+   return 0;
+}
+
+
+# evil hack to work with older versions of Getopt::Long
+sub configureOptionParser
+{
+   my ($optionParser, @options) = (@_);
+   eval {
+      $optionParser->configure(@options);
+   };
+   if ($@)
+   {
+      my $save = Getopt::Long::Configure ($optionParser->{settings}, @options);
+      $optionParser->{settings} = Getopt::Long::Configure($save);
+   }
+}
+
+__END__
+
+=head1 NAME
+
+makef90depends - compute dependencies of FORTRAN 90 object files from source
+
+=head1 SYNOPSIS
+
+makef90depends [options] -- [compiler options] -- [source file...]
+
+Parse each Fortran source file and determine
+prerequisites. Prerequisites are: files included by either C
+preprocessor or FORTRAN compiler and modules USEd.
+
+If one of the modules used by some file F<A.f90> is provided by
+another file F<B.f90>, then B.o will become a dependency of
+A.o. Similarly, if F<A.f90> includes F<C.inc>, F<C.inc> will be
+emitted as a dependency of F<A.o>.
+
+Note: on some systems, F<.obj> might be used instead of F<.o>.
+
+=head1 OPTIONS
+
+=over 8
+
+=item B<-Dname>I<[=definition]>
+
+Define a C preprocessor macro with name B<name>. This option itself
+can also be changed for compilers that use another option
+prefix, e.g. to use -WF,-D for IBM XL Fortran, specify
+B<--fc-def-opt=>I<-WF,-D>.
+
+=item B<-Uname>
+
+Explicitly undefine a C preprocessor macro with name B<name>. This
+option itself can also be changed for compilers that use another
+option prefix, e.g. to use -WF,-U for IBM XL Fortran, specify
+B<--fc-undef-opt=>I<-WF,-D>.
+
+=item B<-I>F<DIR>
+
+Add F<DIR> to list of directories to search for include files and
+module files. The two meanings of this option itself can independently
+be changed to e.g. I<-M> with option B<--fc-mod-flag=>I<-M> and
+I<-WF,-I> with B<--fc-inc-flag=>I<-WF,-I>.
+
+=item B<--obj-suf=>F<.suf>
+
+Write dependencies for objects with suffix F<.suf> (defaults to
+F<.o>).
+
+=item B<--fc-mod-flag=>I<PREFIX>
+
+Change option prefix for the compiler module search path to I<PREFIX>,
+i.e. with compilers using I<-module>F<DIR> to search F<DIR> for module
+files one needs to specify B<--fc-mod-flag=>I<-module>.
+
+=item B<--fc-mod-suf=>F<.suf>
+
+Assume the compiler writes and expects module information into files
+with names ending in F<.suf> (defaults to F<.mod>).
+
+=item B<--fc-mod-case=>I<(lc|uc|none)>
+
+Assume the compiler writes into and expects module information in
+files with names changed to lower (B<lc>), upper (B<uc>) or unmangled
+case.
+
+=item B<--fc-def-opt=>I<PREFIX>
+
+Change option prefix for Fortran preprocessor macro definitions to
+I<PREFIX>, thus I<-Wp,-D>B<HAVE_FEATURE> will result in the dependency
+tracker to assume HAVE_FEATURE to be defined when evaluating file
+structures if B<--fc-def-opt=>I<-Wp,-D> has previously been specified.
+I<PREFIX> defaults to I<-D>.
+
+=item B<--fc-undef-opt=>I<PREFIX>
+
+Change option prefix for Fortran preprocessor macro undefine to
+I<PREFIX>, thus I<-Wp,-D>B<HAVE_FEATURE> will result in the dependency
+tracker to assume HAVE_FEATURE to not be defined when evaluating
+file structures if B<--fc-undef-opt=>I<-Wp,-U> has previously been
+specified.  I<PREFIX> defaults to I<-U>.
+
+=item B<--fc-inc-flag=>I<PREFIX>
+
+Change option prefix for Fortran include file searches to I<PREFIX>,
+thus I<-WF,-I>F<DIR> will result in the dependency tracker to search
+F<DIR> for included files in #include and INCLUDE directives if
+B<--fc-inc-flag=>I<-WF,-I> has previously been specified.
+
+=item B<--prog-fpp=>I<FPP>
+
+Use I<FPP> as program to produce preprocessor output. I<FPP> will be
+split at blanks, i.e. will be interpreted as if passed as an argument
+in "sh -c 'I<FPP>'". I<FPP> must take file arguments and write the
+result to standard output. For fortran compilers not capable of this,
+a wrapper must be provided and specified here.
+
+=item B<--fpp-sizeof-int=>I<ISIZE>, B<--fpp-sizeof-long=>I<LSIZE>,
+B<--fpp-sizeof-long-long=>I<LLSIZE>
+
+State size of types used in arithmetic preprocessor expressions. This
+is needed to correctly convert values, e.g. unsigned vs. long
+comparisons will be evaluated after conversion to long if I<LSIZE> >
+I<ISIZE> and as unsigned if I<ISIZE> == I<LSIZE>.
+
+=item B<--fpp-cast-mode=>I<MODE>
+
+Set --fpp-sizeof-{int|long|long-long} according to I<MODE> where mode is
+one of
+
+=over
+
+=item LP64
+
+Equivalent to setting --fpp-sizeof-int=4, --fpp-sizeof-long=8,
+--fpp-sizeof-long-long=8.
+
+=item ILP32
+
+Equivalent to setting --fpp-sizeof-int=4, --fpp-sizeof-long=4,
+--fpp-sizeof-long-long=8.
+
+=back
+
+=item B<--fpp-char-is-unsigned>, B<--fpp-char-is-signed>
+
+Specify how character constants are interpreted when used in
+arithmetic conversions ore comparisons.
+
+=item B<--strip-obj-dirname>
+
+Do not prepend path information to object files. By default,
+dependencies for F<a/path/file.o> are written with the directory name
+included.
+
+=item B<--obj-transform-name=PATTERN=REPLACEMENT>
+
+Transform every object filename with s/PATTERN/REPLACEMENT/. See
+perlre(5) for specific details of the regular expressions used.
+
+=item B<--ignore-sys-include=HEADER>
+
+Ignore inclusions of HEADER for dependency generation.
+
+=item B<--ignore-module=MODULE>
+
+Ignore MODULE in dependencies.
+
+=item B<--dump-cpp-keys=>F<FILE>
+
+Print the list of files it occurs in for each non-builtin preprocessor
+symbol encountered.
+
+=item B<--write-preprocessed>, B<--no-write-preprocessed>
+
+For each file inspected, also write a preprocessed output file. The
+name of the output file(s) can be specified with
+B<--preprocessed-transform-name> and defaults to change known fortran
+suffices to F<.fi>. The default is to not write preprocessed files.
+
+The set of files inspected might not include all files
+given on the command line, see option B<--parse-cache>.
+
+=item B<--preprocessed-transform-name=PATTERN=REPLACEMENT>
+
+Transform every filename for preprocessing output (see
+B<--write-preprocessed>) with s/PATTERN/REPLACEMENT/. See perlre(5) for
+specific details of the regular expressions used.
+
+=item B<--parse-cache=>F<FILE>
+
+Store and retrieve pre-parsed results from persistent database in
+F<FILE>. This will speed up repeated runs of the dependency tracker.
+
+=item B<--help>, B<--usage>
+
+Print usage information.
+
+=item B<--debug>
+
+Produces debugging output.
+
+=item B<--debug-cpp-pm>
+
+Produces debugging output from cpp.pm, too.
+
+=item B<--verbose>
+
+Print verbose progress information.
+
+=back
+
+=head1 EXAMPLES
+
+Given files foo.f90, bar.f90 and baz.f90 with the following contents,
+as given in the doc/makef90depends/example directory of the ScalES-PPM
+distribution:
+
+ ------------bar.f90--------------------
+ MODULE bar
+   USE banana
+ END MODULE bar
+
+ ------------baz.f90--------------------
+ PROGRAM baz
+   USE bar
+   USE mpi
+   USE bork
+ END PROGRAM baz
+
+ ------------foo.f90--------------------
+ MODULE foo
+   TYPE rhubarb
+     INTEGER :: i
+   END TYPE rhubarb
+ END MODULE foo
+ 
+ MODULE banana
+   USE foo, ONLY: rhubarb
+ END MODULE banana
+ ---------------------------------------
+
+Running makef90depends will produce the following:
+
+ $ perl -I../../../scripts ../../../scripts/makef90depends -- -I. -- *.f90
+ bar.o: \
+ 	foo.o
+ baz.o: \
+ 	./bork.mod bar.o
+
+This can be written to a file which can then be included in a
+Makefile.
+
+Also the following diagnostic will be printed to standard error:
+
+ baz.f90: module(s) mpi not found
+
+It can be prevented with the option --ignore-module=mpi.
+
+=head1 AUTHOR
+
+Written by Thomas Jahns.
+
+=head1 Version
+
+makef90depends Version 1.0
+
+=head1 Reporting Bugs
+
+Please report bugs to Thomas Jahns <jahns@dkrz.de>.
+
+=head1 Copyright
+
+Copyright (C) Thomas Jahns <jahns@dkrz.de>.
+
+Redistribution and use in source and binary forms, with or without
+modification, are  permitted provided that the following conditions are
+met:
+
+Redistributions of source code must retain the above copyright notice,
+this list of conditions and the following disclaimer.
+
+Redistributions in binary form must reproduce the above copyright
+notice, this list of conditions and the following disclaimer in the
+documentation and/or other materials provided with the distribution.
+
+Neither the name of the DKRZ GmbH nor the names of its contributors
+may be used to endorse or promote products derived from this software
+without specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS
+IS" AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED
+TO, THE IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A
+PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER
+OR CONTRIBUTORS BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
+EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO,
+PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR
+PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF
+LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING
+NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=cut
+
+# Local Variables:
+# mode: cperl
+# cperl-indent-level: 3
+# license-project-url: "https://www.dkrz.de/redmine/projects/scales-ppm"
+# license-default: "bsd"
+# End:

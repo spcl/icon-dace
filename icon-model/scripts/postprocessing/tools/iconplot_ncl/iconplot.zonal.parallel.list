@@ -1,0 +1,13 @@
+iconplot.zonal.parallel.s -v T
+iconplot.zonal.parallel.s -v U
+iconplot.zonal.parallel.s -v V
+iconplot.zonal.parallel.s -v W
+iconplot.zonal.parallel.s -v CC
+iconplot.zonal.parallel.s -v QV
+iconplot.zonal.parallel.s -v QC
+iconplot.zonal.parallel.s -v QI
+iconplot.zonal.parallel.s -v Q1
+iconplot.zonal.parallel.s -v Q2
+iconplot.zonal.parallel.s -v Q3
+iconplot.zonal.parallel.s -v Q4
+iconplot.zonal.parallel.s -v Q5

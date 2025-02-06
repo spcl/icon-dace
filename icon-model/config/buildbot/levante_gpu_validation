@@ -1,0 +1,82 @@
+#!/bin/bash
+
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+set -e
+
+MY_DIR=$(cd "$(dirname "$0")"; pwd)
+ICON_DIR=$(cd "${MY_DIR}/../.."; pwd)
+
+MAKE_PROCS=8
+
+
+# Go one step up - otherwise the there might be recursive calls in "make install"
+cd ${ICON_DIR}
+
+
+# =============================================================================
+# Build CPU binary
+
+mkdir -p build/cpurun
+cd build/cpurun
+${ICON_DIR}/config/dkrz/levante.cpu.nvhpc-22.5 --prefix=${ICON_DIR}/cpurun \
+'FCFLAGS=-I/sw/spack-levante/netcdf-fortran-4.5.4-syv4qr/include -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline -Mnofma'
+
+make -j ${MAKE_PROCS}
+cd ../../
+
+
+# =============================================================================
+# Build GPU binary
+
+mkdir -p build/gpurun
+cd build/gpurun
+${ICON_DIR}/config/dkrz/levante.gpu.nvhpc-22.5 --prefix=${ICON_DIR}/gpurun \
+'FCFLAGS=-I/sw/spack-levante/netcdf-fortran-4.5.4-syv4qr/include -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=accel,inline -acc=gpu,verystrict -gpu=cc80,math_uniform -Mnofma'
+
+make -j ${MAKE_PROCS}
+cd ../../
+
+
+# =============================================================================
+# Build CPU LVECTOR binary
+
+mkdir -p build/cpurun_lvec
+cd build/cpurun_lvec
+${ICON_DIR}/config/dkrz/levante.cpu.nvhpc-22.5 --prefix=${ICON_DIR}/cpurun_lvec \
+'FCFLAGS=-I/sw/spack-levante/netcdf-fortran-4.5.4-syv4qr/include -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=inline -Mnofma -D__LVECTOR__ -D__LVEC_BITID__'
+
+make -j ${MAKE_PROCS}
+cd ../../
+
+
+# =============================================================================
+# Build GPU LVECTOR binary
+
+mkdir -p build/gpurun_lvec
+cd build/gpurun_lvec
+${ICON_DIR}/config/dkrz/levante.gpu.nvhpc-22.5 --prefix=${ICON_DIR}/gpurun_lvec \
+'FCFLAGS=-I/sw/spack-levante/netcdf-fortran-4.5.4-syv4qr/include -g -O2 -Mrecursive -Mallocatable=03 -Mstack_arrays -Minfo=accel,inline -acc=gpu,verystrict -gpu=cc80,math_uniform -Mnofma -D__LVECTOR__ -D__LVEC_BITID__'
+
+make -j ${MAKE_PROCS}
+cd ../../
+
+
+# =============================================================================
+# Copy set-up.info file to the base run directory in ${ICON_DIR} where runexp expects it
+cp -v build/gpurun/run/set-up.info run/
+
+
+# =============================================================================
+# Check successfull creation and installation
+
+set +e
+file "${ICON_DIR}/build/cpurun/bin/icon" "${ICON_DIR}/build/gpurun/bin/icon" "${ICON_DIR}/build/cpurun_lvec/bin/icon" "${ICON_DIR}/build/gpurun_lvec/bin/icon"

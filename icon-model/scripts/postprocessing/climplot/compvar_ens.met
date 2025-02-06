@@ -1,0 +1,851 @@
+# ICON
+#
+# ------------------------------------------
+# Copyright (C) 2004-2024, DWD, MPI-M, DKRZ, KIT, ETH, MeteoSwiss
+# Contact information: icon-model.org
+# See AUTHORS.TXT for a list of authors
+# See LICENSES/ for license information
+# SPDX-License-Identifier: BSD-3-Clause
+# ------------------------------------------
+
+# compvar_ens
+#
+# metview script to plot single level variables on maps
+# compared to a control for climate runs.
+# output:    3 panels - exp,ctrl,diff
+#
+# run as:    export MACRO_EXTRA_LIBS="-L/usr/local/apps/nag/22/LP64/lib -lnag"
+#            export PLOTDATA=/scratch/ms/de/deia/icon/dei2/118/seasonal
+#            metview4_new -b compvar_ens.met deia_004 fycq 20000801/20000802/20000803/20000804 200009 12 24 LSP 0 sfc ins avg 2.0 2 1 1 icon
+#
+# attention: requires global environment variable DATA (dir)
+#
+# Martin Koehler, April 2003 (developed from verifydata_ens.met)
+# Martin Koehler, April 2004 (updated to climate_obs.met from Adrian)
+# Adrian Tompkins, June 2009 (add statistical significance shading)
+# Peter Bechtold, November 2009 phasing for 36r3
+# Martin Koehler, October 2011 upgrade to Metview4
+#--------------------------------------------------------------#
+
+
+#############################################################
+# Definitions
+#############################################################
+
+# --- argument list processing
+
+args = arguments()
+print("parameters: ", args)
+
+expv1      = args[1]    # experiment ID (e.g. ecff)
+expv2      = args[2]    # control exp ID (e.g. eawi)
+datestr    = args[3]    # initial fc dates (e.g. 19871101/19871102)
+yymm_start = args[4]    # first yyyymm in averaging period
+mm_len     = args[5]    # length of averaging period in months
+dtdata     = args[6]    # data time interval used (24. or 12.)
+varid      = args[7]    # GRIB variable ID (e.g. BLH or 101)
+lev        = args[8]    # level (0 for sfc variable)
+levtype    = args[9]    # level type (sfc=surface, ml=model levels, pl=pressure levels)
+vartype    = args[10]   # variable type (acc/ins for accum. or instant.)
+stat       = args[11]   # statistic ("avg" or "std")
+res        = args[12]   # lat/lon resolution for plotting
+lsigt      = args[13]   # 1=colour 2=black and white plots?
+lcol       = args[14]   # 1=colour 2=black and white plots?
+larticle   = args[15]   # 2=changes titles to a b c
+model      = args[16]   # model: 'icon' or 'ifs'
+
+
+# for the case that the variable names in the model run and in the control run are different
+varidm=varid
+if (model = "icon") then
+  case varid of
+     "2T"  : varidm ="167.128";   end #500011
+    #"2D"  : varidm = 500017  ;   end
+     "SD"  : varidm =   3066  ;   end # single layer: 500045,  multi layer: 502329
+    #"SST" : varidm = 500475  ;   end # ICON: T_SEA
+     "SKT" : varidm = 500010  ;   end # ICON: T_G
+    #"10SI": varidm = 500025  ;   end
+     "10U" : varidm ="165.129";   end #500027
+     "10V" : varidm ="166.128";   end #500029
+     "TCC" : varidm = 500046  ;   end #500046 (metview4/examine/Namespace/mars)
+     "LCC" : varidm = 502343  ;   end #500048, 500098
+     "MCC" : varidm = 502342  ;   end #500049
+     "HCC" : varidm = 502341  ;   end #500050
+    #"SSHF": varidm = 502320  ;   end
+    #"SLHF": varidm = 502319  ;   end
+    #"TTR" : varidm = 502323  ;   end
+     "TSR" : varidm = 502327  ;   end
+    #"STR" : varidm = 502322  ;   end
+    #"SSR" : varidm = 502321  ;   end
+     "TCWV": varidm = 503058  ;   end #TQV_DIA: 503058  TQV: 260057
+     "TCLW": varidm = 503059  ;   end #TQC_DIA: 503059  TQC: 500051
+     "TCIW": varidm = 503115  ;   end #TQI_DIA: 503115  TQI: 500040
+     "TP"  : varidm = 228228  ;   end #500041
+    #"T"   : varidm = 500014  ;   end
+    #"Z"   : varidm = 500006  ;   end
+     "CAPE": varidm = 500183  ;   end
+    #"BLH" : varidm = 50  ;   end
+      otherwise : print("Set ICON parameters!!!") ;  end
+  end case
+
+end if
+
+# --- statistic
+
+if stat = "avg" then
+  statnamefile =""
+  statnametitle=""
+else
+  statnamefile ="_stdev"
+  statnametitle="Stdev of "
+end if
+
+gl_area = [90,-180,-90,180]
+
+# --- special_sets of vars
+
+spec_par_tp      =["CP","LSP"]
+spec_par_tp_icon =[500137,500052,500134,500053] #[228228] [500041] ["TOT_PREC"]
+spec_par_cp      =[500137,500052]               #["RAIN_CON","SNOW_CON"]   #ICON
+spec_par_lsp     =["500134",500053]               #["RAIN_GSP","SNOW_GSP"]   #ICON
+spec_par_tcw_icon=[503058,503059,503115]
+spec_par_surfradn=["SSR","STR"]
+spec_par_topradn =["SSR","STR"]
+spec_par_surfnet =["SSR","STR","SLHF","SSHF"]
+
+
+# --- directory
+
+#dir = "./"
+dir = getenv("PLOTDATA") & "/"
+
+# --- input file names (experiment and control)
+
+file_mod = dir&"mmean_"&expv1&"_"&levtype&"_alldates.grb"
+file_ctr = dir&"mmean_"&expv2&"_"&levtype&"_alldates.grb"
+
+print("input files:")
+print(file_mod)
+print(file_ctr)
+
+
+# --- output format & file name (ps or png or screen)
+
+#output = "screen"
+output = "ps"
+
+dates= parse(datestr,"/")
+ndates  = count(dates)
+
+if levtype = "sfc" then
+  title="diffmap_"&expv1&"-"&expv2&"_"&varid&statnamefile&"_nens"&string(ndates)&"_"&yymm_start&"_nmon"&mm_len
+else if levtype = "ml" then
+  title="diffmap_"&expv1&"-"&expv2&"_"&varid&"_L"&lev&statnamefile&"_nens"&string(ndates)&"_"&yymm_start&"_nmon"&mm_len
+else if levtype = "pl" then
+  title="diffmap_"&expv1&"-"&expv2&"_"&varid&"_P"&lev&statnamefile&"_nens"&string(ndates)&"_"&yymm_start&"_nmon"&mm_len
+else
+  print("levtype ", levtype, " not supported")
+  fail
+end if
+
+outfile(dir,title,output)
+
+
+
+
+################################################################
+# Retrieve and process data
+################################################################
+
+var_modm= 0.
+var_ctrm= 0.
+
+if vartype = "ins" then 
+
+# --- retrieve
+
+      if expv2 = "ERA40" then
+        expv22 = 1
+      else
+        expv22 = expv2
+      end if
+
+# --- special treatment for "total precip"
+
+      case varid of 
+       #"TP": 
+       #  #res=2.5   # fix for metview/emos porblem (no interpolation on IFS precip data!)
+       #   var_ctr_all=multiget(spec_par_tp     ,expv22,levtype,lev,dates,res,file_ctr)
+       #   var_mod_all=multiget(spec_par_tp_icon,expv1, levtype,lev,dates,res,file_mod)
+       #   unit = "[mm d<sup>-1</sup>]"
+       #  #unit = "[mm/day]"
+       #end
+        "SURFRADN": 
+           var_ctr_all=multiget(spec_par_surfradn,expv22,levtype,lev,dates,res,file_ctr)
+           var_mod_all=multiget(spec_par_surfradn,expv1, levtype,lev,dates,res,file_mod)
+           unit = "[W m<sup>-2</sup>]"
+          #unit = "[W/m2]"
+        end
+        "SURFNET": 
+           var_ctr_all=multiget(spec_par_surfnet,expv22,levtype,lev,dates,res,file_ctr)
+           var_mod_all=multiget(spec_par_surfnet,expv1, levtype,lev,dates,res,file_mod)
+           unit = "[W m<sup>-2</sup>]"
+          #unit = "[W/m2]"
+        end
+        "CP": 
+          #var_ctr_all=multiget("CP"       ,expv22,levtype,lev,dates,res,file_ctr)    # IFS
+           var_ctr_all=multiget(spec_par_cp,expv2, levtype,lev,dates,res,file_ctr)    # ICON
+           var_mod_all=multiget(spec_par_cp,expv1, levtype,lev,dates,res,file_mod)
+  	   unit = "[mm d<sup>-1</sup>]"
+        end
+        "LSP": 
+          #var_ctr_all=multiget("LSP"       ,expv22,levtype,lev,dates,res,file_ctr)   # IFS
+           var_ctr_all=multiget(spec_par_lsp,expv2, levtype,lev,dates,res,file_ctr)   # ICON
+           var_mod_all=multiget(spec_par_lsp,expv1, levtype,lev,dates,res,file_mod)
+  	   unit = "[mm d<sup>-1</sup>]"
+        end
+        "TCW": 
+          #var_ctr_all=multiget("TCW"            ,expv22,levtype,lev,dates,res,file_ctr) # IFS
+           var_ctr_all=multiget(spec_par_tcw_icon,expv2, levtype,lev,dates,res,file_ctr) # ICON
+           var_mod_all=multiget(spec_par_tcw_icon,expv1, levtype,lev,dates,res,file_mod)
+  	   unit = "[mm d<sup>-1</sup>]"
+        end
+        otherwise: 
+          if  lev = 0  then
+            lev0=''
+          else
+            lev0=lev
+          end if
+	  var_mod_all = read(
+           #levtype	:	levtype,
+            levelist	:       lev0,
+            param	:	varidm,
+            date	:	dates,
+            grid	:	[res,res],
+            source	:	file_mod
+            )
+          print("Read model from file: ", file_mod) 
+          print("Read level: ", lev0, " variable: ", varidm, " dates: ", dates, " resol:  ", res, "deg # flds: ", var_mod_all)
+
+          var_ctr_all = read(
+           #levtype	:	levtype,
+            levelist	:       lev0,
+            param	:	varidm,
+            date	:	dates,
+            grid	:	[res,res],
+            source	:	file_ctr
+            )
+          print("Read control from file: ", file_ctr) 
+          print("Read level: ", lev0, " variable: ", varidm, " dates: ", dates, " resol: ", res, "deg # flds: ", var_ctr_all)
+
+          if (varid = "SD") then
+            if (search(expv1,'_') > 0) then                    # test for ICON run
+              nsnowlev    = count(var_mod_all) / count(dates)  #multi-layer snow in ICON)
+              var_mod_all = mean(var_mod_all) * nsnowlev              
+            end if
+            if (search(expv2,'_') > 0) then                    # test for ICON run
+              nsnowlev    = count(var_ctr_all) / count(dates)  #multi-layer snow in ICON)
+              var_ctr_all = mean(var_ctr_all) * nsnowlev              
+            end if
+          end if
+
+          if (varid = "SST") then
+            seapoints=(var_mod_all[1]>260.) # and var_mod_all[1]<250)  
+            seamask=bitmap(seapoints,0)
+            var_mod_all=bitmap(var_mod_all,seamask)
+            var_ctr_all=bitmap(var_ctr_all,seamask)
+          end if
+
+          if (varid = "TCC" or varid = "HCC" or varid = "MCC" or varid = "LCC" ) then
+            if (search(expv1,'_') > 0) then     # test for ICON run
+              var_mod_all = var_mod_all / 100.0
+            end if
+            if (search(expv2,'_') > 0) then     # test for ICON run
+              var_ctr_all = var_ctr_all / 100.0
+            end if
+          end if
+
+          #units=grib_get_string(var_mod_all,"units")
+          units=grib_get_string(var_ctr_all,"units")
+          unit=units[1]
+	end 
+      end case
+end if
+
+
+# --- special units for precipitation
+
+if varid = "CP"  or varid = 143
+or varid = "LSP" or varid = 142 
+or varid = "TP"  or varid = 228 then
+        if (search(expv1,'_') < 0) then     # test for IFS run
+          var_mod_all = var_mod_all * 86400 * 1000
+        end if
+        if (search(expv2,'_') < 0) then     # test for IFS run
+          var_ctr_all = var_ctr_all * 86400 * 1000
+        end if
+        unit = "[mm d<sup>-1</sup>]"
+       #unit = "[mm/day]"
+end if
+
+if varid = "SD" then
+        var_mod_all = var_mod_all * 100
+        var_ctr_all = var_ctr_all * 100
+        unit = "cm of water equiv."
+end if
+
+if varid = "SSR"
+or varid = "STR"
+or varid = "TSR"
+or varid = "TTR" then 
+   unit = "[W m<sup>-2</sup>]"
+  #unit = "[W/m2]"
+end if
+if varid = "ssr"
+or varid = "str"
+or varid = "tsr"
+or varid = "ttr" 
+or varid = "sshf"
+or varid = "slhf" then 
+   unit = "[W m<sup>-2</sup>]"
+  #unit = "[W/m2]"
+end if
+
+
+# --- calculate stats
+
+tcrit=-999 # switch stat plot off
+
+if stat = "avg" then
+  var_mod = mean(var_mod_all)
+  var_ctr = mean(var_ctr_all)
+  var_diff= var_mod-var_ctr
+
+  nens  = count(var_mod_all)
+
+#---------------------------
+# calculate the T-Test limit
+#---------------------------
+
+  sig=0.975   # 95%% 2-tailed test level (could set to user parameter)
+  dof=2*nens-2 # degrees of freedom for two ensembles of size nens
+  if lsigt  and nens > 2 then
+    tcrit=ttest_thresh(sig,dof)
+    mod_ctr_std = sqrt((var(var_mod_all)+var(var_ctr_all))/2.)  #stdev of all months and dates!
+    mod_ctr_std = bitmap(mod_ctr_std,0.0) # replace zeros with missing 
+    tstat=sqrt(nens/2.0)*abs(var_diff)/mod_ctr_std
+    if varid="TP" or  varid="LSP" or  varid="CP" then
+      sig=(var_ctr > 0.5) and (tstat > tcrit)
+    else
+      sig=tstat > tcrit # fieldset of 0 or 1
+    end if
+  end if
+else
+  var_mod = stdev(var_mod)  #stdev of all months and dates!
+  var_ctr = stdev(var_ctr)
+  var_diff= var_mod-var_ctr
+end if
+
+
+# --- global integrals
+
+mn_mod   = integrate(var_mod)
+mn_ctr   = integrate(var_ctr)
+mn_diff  = integrate(var_diff)
+std_diff = integrate(var_diff*var_diff) - integrate(var_diff)*integrate(var_diff)
+std_diff = sqrt(std_diff)
+
+#print("finished with time mean at time:")
+#shell("date")
+
+
+#############################################################
+# Views
+#############################################################
+
+coastlines = pcoast(
+    map_coastline_colour		:	"black",
+    map_coastline_thickness		:	2,
+    map_coastline_land_shade		:	"off",
+    map_coastline_land_shade_colour  	:       "grey",
+    map_grid_colour			:	"grey",
+    map_grid_line_style             	:  	"dash",
+    map_label			    	:	"on",
+    map_label_height			:	0.3,
+    map_label_colour			:	"black",
+    map_label_quality			:	"medium",
+    map_grid				:	"on",
+    map_grid_latitude_increment		:	30,
+    map_grid_longitude_increment	:	45
+    )
+    
+map_view = mapview(
+   map_projection		:	"cylindrical",
+   area		   		:	gl_area,
+   page_frame	   		: 	"off",
+   subpage_frame_thickness    	:   	2,
+   subpage_y_position    	:   	7,
+   subpage_y_length             :       75,
+   coastlines		 	: 	coastlines
+   )
+
+page_1 = plot_page(
+   bottom	:	33.3333333333,
+   view		:	map_view
+   )
+page_2 = plot_page(
+   top		:	33.3333333333,
+   bottom	:	66.6666666667,
+   view		:	map_view
+   )
+page_3 = plot_page(
+   top		:	66.6666666667,
+   view		:	map_view
+   )
+
+
+################################################################
+# Contours
+################################################################
+
+maxlevelvar = max(maxvalue(var_mod),maxvalue(var_ctr))
+minlevelvar = min(minvalue(var_mod),minvalue(var_ctr))
+intlevelvar = ( maxlevelvar - minlevelvar ) / 10.0
+
+print("original min,max,int ",minlevelvar," ",maxlevelvar," ",intlevelvar)
+
+power10     = round( log10(intlevelvar) - 0.5 , 0)
+intlevelvar = round( intlevelvar / 10.0^power10 + 0.5 , 0) * 10.0^power10
+nconts      = round( (maxlevelvar-minlevelvar) / intlevelvar + 0.5 , 0)
+minlevelvar = round( minlevelvar / 10.0^power10 - 0.5 , 0) * 10.0^power10
+maxlevelvar = nconts * intlevelvar + minlevelvar
+
+print("rounded min,max,int ",minlevelvar," ",maxlevelvar," ",intlevelvar)
+
+#maxlevelvar = 15.0
+#minlevelvar = 1.0
+#intlevelvar = 2
+
+#maxlevelvar = 1.1
+#minlevelvar = -0.1
+#intlevelvar = 0.2
+
+maxlevelpos = max(abs(maxvalue(var_diff)),abs(minvalue(var_diff)))
+minlevelpos = maxlevelpos / 5.0
+if (varid = "sst" ) then
+ maxlevelpos = 3.0
+ minlevelpos = maxlevelpos / 6.0
+end if
+intlevelpos = minlevelpos
+
+power10     = round( log10(intlevelpos) - 0.5 , 0)
+intlevelpos = round( intlevelpos / 10.0^power10 - 0.5 , 0) * 10.0^power10
+nconts      = round( (maxlevelpos-minlevelpos) / intlevelpos - 0.5 , 0)
+minlevelpos = round( minlevelpos / 10.0^power10 - 0.5 , 0) * 10.0^power10
+maxlevelpos = nconts * intlevelpos + minlevelpos
+
+#maxlevelpos = 5
+#minlevelpos = 0.5
+#intlevelpos = 0.5
+
+# --- special contours for precipitation
+
+if varid = "CP"  or varid = 143 or 
+   varid = "LSP" or varid = 142 or
+   varid = "TP"  or varid = 228 then
+  maxlevelvar = 15.0
+  minlevelvar = 1.0
+  intlevelvar = 1
+  maxlevelpos = 5
+  minlevelpos = 0.5
+  intlevelpos = 0.5
+end if
+
+# --- special contours for CAPE
+
+if varid = "CAPE"  or varid = 59 then
+  maxlevelvar = 2600.0
+  minlevelvar = 25.0
+  intlevelvar =300 
+  maxlevelpos =300
+  minlevelpos =25
+  intlevelpos =40 
+end if
+
+if varid = "STL1" then
+  maxlevelvar = 320.0
+  minlevelvar = 200.0
+  intlevelvar = 10
+  maxlevelpos = 6
+  minlevelpos = 0.5
+  intlevelpos = 0.5
+end if
+
+if varid = "SSR" then
+  maxlevelpos = 70
+  minlevelpos = 10
+  intlevelpos = 15
+end if
+
+# --- special contours for T2m
+
+if varid = "2T" then
+  maxlevelvar = 320.0
+  minlevelvar = 200.0
+  intlevelvar = 10
+  maxlevelpos = 6
+  minlevelpos = 0.5
+  intlevelpos = 0.5
+end if
+
+if varid = "2D" then
+  maxlevelvar = 320.0
+  minlevelvar = 200.0
+  intlevelvar = 10
+  maxlevelpos = 6
+  minlevelpos = 0.5
+  intlevelpos = 0.5
+end if
+
+if varid = "SD" then
+ #varid = 141
+  maxlevelvar = 50
+  minlevelvar = 0
+  intlevelvar = 5
+  maxlevelpos = 5
+  minlevelpos = 1
+  intlevelpos = 1
+end if
+
+# --- special contours for CC (LCC, MCC, HCC, TCC)
+
+if varid = "LCC" or varid = 186
+or varid = "MCC" or varid = 187
+or varid = "HCC" or varid = 188
+or varid = "TCC" or varid = 164 then
+  maxlevelvar = 1.0
+  minlevelvar = 0.0
+  intlevelvar = 0.1
+  maxlevelpos = 0.5
+  minlevelpos = 0.05
+  intlevelpos = 0.05
+end if
+
+# --- special contours for 101 & BLH
+
+if varid = 101
+or varid = "BLH" or varid = 159 then
+  maxlevelvar = 3000.0
+  minlevelvar = 0.0
+  intlevelvar = 200.0
+  maxlevelpos = 500.0
+  minlevelpos = 50.0
+  intlevelpos = 50.0
+end if
+
+# --- special contours for LWP
+
+if varid = "TCLW" or varid = 102 then
+  maxlevelvar = 0.3
+  minlevelvar = 0.025
+  intlevelvar = 0.025
+  maxlevelpos = 0.07
+  minlevelpos = 0.01
+  intlevelpos = 0.01
+end if
+
+if varid = "10U" or varid = "10V" then
+  maxlevelvar = 7.0
+  minlevelvar = -7.0
+  intlevelvar = 1.0
+  maxlevelpos = 2.0
+  minlevelpos = 0.2
+  intlevelpos = 0.2
+end if
+
+if varid = "10SI" then
+  maxlevelvar = 7.0
+  minlevelvar = -7.0
+  intlevelvar = 1.0
+  maxlevelpos = 2.0
+  minlevelpos = 0.2
+  intlevelpos = 0.2
+end if
+
+
+# --- special contours for IWP
+
+if varid = "TCIW" or varid = 103 then
+  maxlevelvar = 0.2
+  minlevelvar = 0.02
+  intlevelvar = 0.02
+  maxlevelpos = 0.02
+  minlevelpos = 0.004
+  intlevelpos = 0.004
+end if
+
+# --- special contours for decoupling criteria
+
+if varid = 100 and (lev > 20 or lev = 16) then
+  maxlevelvar = 1.0
+  minlevelvar = 0.0
+  intlevelvar = 0.1
+  maxlevelpos = 0.5
+  minlevelpos = 0.1
+  intlevelpos = 0.1
+end if
+
+maxlevelneg = minlevelpos * (-1.0)
+minlevelneg = maxlevelpos * (-1.0)
+intlevelneg = intlevelpos
+
+# --- define contours
+
+if lcol = 2 then 
+
+  min_col="RGB(0.7,0.7,0.7)"
+  max_col="RGB(0.45,0.45,0.45)"
+
+  pos_max_col="RGB(0.7,0.7,0.7)"
+  pos_min_col="RGB(0.45,0.45,0.45)"
+
+  neg_max_col="RGB(0.95,0.95,0.95)"
+  neg_min_col="RGB(0.7,0.7,0.7)"
+
+  neg_dir="clockwise"
+  pos_dir="clockwise"
+  csm="area_fill"
+  cs="on"
+else 
+  neg_min_col="blue"
+  neg_max_col="yellow_green"
+
+  pos_max_col="red"
+  pos_min_col="orange_yellow"
+
+  min_col="blue"
+  max_col="red"
+  neg_dir="clockwise"
+  pos_dir="clockwise"
+  csm="area_fill"
+  cs="on"
+end if
+
+var_cont            = set_cont(minlevelvar,maxlevelvar,intlevelvar,"solid",min_col,max_col,-1e21,1e21)
+var_diff_cont_pos   = set_cont(minlevelpos,maxlevelpos,intlevelpos,"solid",pos_min_col,pos_max_col,-1e21,1e21)
+var_diff_cont_neg   = set_cont(minlevelneg,maxlevelneg,intlevelneg,"dash",neg_min_col,neg_max_col,-1e21,1e21)
+
+sig_cont = pcont(
+    LEGEND                   :  'OFF',
+    CONTOUR                  :  'OFF',
+    CONTOUR_LEVEL_SELECTION_TYPE:  'LEVEL_LIST',
+    CONTOUR_LEVEL_LIST       :  [ 0.0,0.5,2.5 ],
+    CONTOUR_SHADE            :  'ON',
+    CONTOUR_LINE_COLOUR      :  'GREY',
+    CONTOUR_SHADE_TECHNIQUE  :  'POLYGON_SHADING',
+#   CONTOUR_SHADE_TECHNIQUE  :  'CELL_SHADING',
+    CONTOUR_SHADE_METHOD     :  'HATCH',
+#   CONTOUR_SHADE_METHOD     :  'AREA_FILL',
+    CONTOUR_SHADE_HATCH_THICKNESS:  2,
+    CONTOUR_SHADE_HATCH_DENSITY:  15.0,
+    CONTOUR_SHADE_HATCH_INDEX  :  3,
+    CONTOUR_SHADE_MIN_LEVEL  :  0.5,
+    CONTOUR_SHADE_MIN_LEVEL_COLOUR:  'GREY',
+    CONTOUR_SHADE_MAX_LEVEL_COLOUR:  'GREY',
+    CONTOUR_SHADE_LABEL_BLANKING:  'OFF',
+    CONTOUR_LABEL            :  'OFF',
+    CONTOUR_HILO             :  'OFF',
+    GRIB_SCALING_OF_RETRIEVED_FIELDS:  'OFF'
+    )
+
+
+#######################################################################
+# Text and Legend
+#######################################################################
+
+#xmk  varname = "!PARAM!"
+varname = varid
+if levtype = "ml" then
+  varname = varid&"_L"&lev
+end if
+if levtype = "pl" then
+  varname = varid&"_P"&lev
+end if
+
+precision(4)
+timestr=yymm_start&" nmon="&mm_len&" nens="&ndates
+text1=statnametitle&varname&"  "&expv1&"  "&timestr&"   Mean: "&mn_mod
+text2=statnametitle&varname&"  "&expv2&"  "&timestr&"   Mean: "&mn_ctr
+text3=statnametitle&varname&"  "&expv1&"-"&expv2&"  "&timestr&"   Diff: "&mn_diff&"   Stdev: "&std_diff
+if larticle=2 then 
+  text1='(a)'
+  text2='(b)'
+  text3='(c)'
+end if
+
+ptext1=set_text(text1)
+ptext2=set_text(text2)
+ptext3=set_text(text3)
+
+legend = mlegend(
+        legend_entry_plot_direction    :    "column",
+        legend_text_font_size          :    0.4,
+        legend_box_mode    	       :    "positional",
+        legend_box_x_position          :    17.5,
+        legend_box_y_position          :    0.3,
+        legend_box_x_length   	       :    2,
+        legend_box_y_length    	       :    8.5,
+    	legend_title		       :    "on",
+    	#legend_title_text	       :    units,
+    	legend_title_text	       :    unit,
+    	legend_text_colour	       :    "black"
+        )
+
+
+#######################################################################
+# Plot
+#######################################################################
+
+display_window = plot_superpage(
+    	LAYOUT_SIZE            : "CUSTOM", 
+    	CUSTOM_WIDTH           : 21.1, 
+    	CUSTOM_HEIGHT          : 29.6, 
+        pages    	       :    [page_1,page_2,page_3]
+        )
+
+plot(    display_window[1], var_mod, var_cont,                          ptext1,               legend)
+if expv1 <> expv2 then
+  plot(  display_window[2], var_ctr, var_cont,                          ptext2,               legend)
+  if tcrit = -999  then 
+    plot(display_window[3], var_diff,var_diff_cont_neg,var_diff_cont_pos,ptext3,              legend)
+  else
+    plot(display_window[3], var_diff,var_diff_cont_neg,var_diff_cont_pos,ptext3,sig,sig_cont, legend)
+  end if
+end if
+
+print("finished with plotting at time:")
+shell("date")
+
+
+#######################################################################
+# functions
+#######################################################################
+
+function outfile(dir,title,output)
+	if output = "png" or output = "ps" then
+		filen=dir&title
+		print ("writing to file: ", filen)
+		if output = "png" then
+			format  = "png"
+			ps_file = png_output(  OUTPUT_NAME : filen  )
+		else
+			format  = "postscript"
+			ps_file = ps_output (  OUTPUT_NAME : filen  )
+		end if
+		setoutput(ps_file)
+	end if
+end outfile
+
+
+# ------------------------------------------------------
+
+function set_cont(cmin,cmax,cint,line_style,min_col,max_col,neg_lim,pos_lim)
+
+# sets the contour style for the full fields when INTERVALS are used 
+# (i.e. not used for specified conts such as nonlinear rainfall int.)
+
+	cont = pcont(
+			legend			:	"on",
+			contour_min_level	:	cmin,
+			contour_max_level	:	cmax,
+			contour_level_selection_type	:	"interval",
+			contour_interval	:	cint,
+			contour_reference_level	:	cmin,
+			contour_shade	:	"on",
+			contour_shade_min_level	:	cmin,
+			contour_shade_max_level	:	cmax,
+			contour_shade_min_level_colour	:	min_col,
+			contour_shade_max_level_colour	:	max_col,
+			contour_shade_method	:	"area_fill",
+			contour_shade_colour_direction	:	"clockwise",
+			contour_shade_label_blanking	:	"on",
+			contour_highlight	:	"off",
+			contour_line_colour	:	"background",
+ 			contour_line_style	:	line_style,
+			contour_line_thickness	:	2,
+			contour_label_quality:	"medium",
+			contour_label	:	"off",
+			contour_label_height:	0.2,
+			contour_label_frequency : 1,
+			input_field_suppress_above	:	pos_lim,
+			input_field_suppress_below	:	neg_lim,
+			contour_hilo	:	"off"
+			)
+
+	 return cont
+
+end set_cont
+
+
+# ------------------------------------------------------
+
+function set_text(title:string)
+
+# sets the legend text and plot title
+   
+  text = mtext(
+    TEXT_LINE_1              :  title,
+    TEXT_COLOUR              :  'BLACK',
+    text_mode                :  "positional",
+    text_box_x_position      :  4.5,
+    text_box_y_position      :  8.5,
+    text_font_size_height    :  0.5
+    )
+  return text
+
+end set_text
+
+
+# ------------------------------------------------------
+
+function multiget(list,expver,levtype,lev,dates,res,file)
+
+  for i=1 to count(list) do 
+
+     if list[i] = '500134' then    # fix 201608 from Fernando Ii because MARS doesn't distinguish 500134 & 134
+        filetmp = tmpfile()        # temporary file that will be deleted when metview exits
+        shell("grib_copy -wparam=500134 " & file & " " & filetmp)
+     else
+        filetmp = file
+     end if
+     fld = read(
+               #class	:	"rd",
+	       #type	:	"fc",
+	       #expver	:	expver,
+	       #levtype	:	levtype,
+               #levelist:       lev,
+	       #repres	:	"gg",
+		param	:	list[i],
+		date	:	dates,
+	        grid	:	[res,res],
+                source	:	filetmp
+		)
+     print("Read model from file: ", file) 
+     print("Read level: ", lev, " variable: ", list[i], " dates: ", dates, " resol:  ", res, "deg # flds: ", fld)
+     print("Average field value: ", average(fld))
+
+     if i=1 then 
+       fldset=fld
+     else
+       fldset=fldset+fld
+     end if
+  end for
+
+  return fldset
+end multiget
+
+
+# ------------------------------------------------------
+# simple fortran to calculate T-Test limit
+
+include "ttest_thresh.f90"
