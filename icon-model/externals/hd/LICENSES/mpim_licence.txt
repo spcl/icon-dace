@@ -1,0 +1,284 @@
+		 MAX PLANCK INSTITUTE FOR METEOROLOGY
+			   HAMBURG, GERMANY
+
+	  SOFTWARE LICENCE AGREEMENT (Version2, 2012-02-21)
+
+Preamble 
+
+Since its inception, the Max Planck Institute for Meteorology (MPI-M)
+has sought to understand Earth's climate system, using as its
+principal tool comprehensive Earth system modelling. The MPI-M is
+committed to developing a comprehensive Earth System Model (MPI-ESM)
+in which the physical aspects of the climate system are coupled with
+biogeochemical cycles, and to making the MPI-ESM available to the
+scientific community.
+
+The models/components developed at the MPI-M, including components
+provided by scientists of other institutes, are made available and
+shared within the scientific community.
+
+However, the MPI-M Software developed must remain controllable and
+documented.  This is the spirit behind the following licence
+agreement, which the MPI-M must ask the users to accept before a user
+can get the MPI-M Software. It is also important to provide feedback
+to the model developers, to report about errors and to suggest
+improvements of the code.
+
+MPI-M must also ensure that the MPI-M Software is protected from
+misuse and false statements about its characteristics and
+performance. Therefore, all alterations to the Software have to be
+marked clearly and publications of results obtained with modified
+versions must contain a description of the changes made.
+
+This licence agreement is crafted as a personal licence, even though
+the MPI-M knows that typically several users in one institution share
+such software and develop it further in a group effort. The personal
+licence ensures that each user has seen and accepted the terms of this
+agreement, and it also allows the MPI-M to maintain a user data base,
+which ensures efficient communication of updates and revised versions
+of this software.
+
+Points of Agreement 
+
+1. Licence 
+
+This is a licence to use the above-mentioned MPI-M Software (in the
+following the "Software"). The "Software", which is received with and
+accompanied by this licence agreement, is licenced (not sold) to you
+on a personal nonexclusive basis by the MPI-M. You have to ensure that
+your employer has accepted the terms of this agreement.
+
+2. Definition of Software 
+
+The term "Software" includes all source codes, executable programs,
+documentation, run scripts and data files of MPI-M Software.
+
+3. Permitted Use 
+
+Use of the "Software" is permitted only for lawful scientific purposes
+in research and education. It is explicitly prohibited to use this
+"Software" or parts of it, whether modified or not, for commercial
+purposes. For commercial use please refer to Garching Innovation GmbH
+(GI), Technology Transfer for the Max Planck Society for the
+Advancement of Science, Germany.
+
+4. Copyright and Distribution 
+
+"Software" developed at MPI-M is the sole and exclusive property of
+MPI-M. All Rights Reserved.
+
+You are allowed to make personal copies of the "Software" and to
+modify the code, data files, and run scripts, and to recompile the
+code on any computer system, where you have legal access.
+
+If you make copies of the "Software", each copy must include all
+copyright information and notes that accompany the original. Such
+notes shall be displayed on any documents, media, printouts, and
+visualization or on any other electronic or tangible expressions
+associated with, related to or derived from the "Software" or
+associated documentation.
+
+You are not allowed to sell this "Software" or any part of it.
+
+You are not allowed to distribute the "Software" in its original or
+modified form.  Third party users must obtain the "Software" directly
+from MPI-M. Exception: You are given the right to share the "Software"
+with colleagues from your institution, provided that these colleagues
+read and accept this licence agreement also.
+
+Under the definition of permitted use you may distribute your
+modifications to the "Software" provided that you adhere to the rules
+concerning modifications as outlined below.
+
+You are not allowed to sell modifications to this "Software", but you
+may ask for reimbursement of the re-distribution cost.
+
+5. Modifications 
+
+Modifications are supplements to the "Software", which other users can
+apply to the original "Software" from MPI-M. Modifications may include
+revised versions of subroutines or modules, but must not constitute a
+working model on their own.
+
+You may change any part of the source code, run scripts, or data
+files, provided that all files that are modified carry a prominent
+notice indicating the name of the person who changed the file, the
+modification date, and the purpose of the modification.  Results (data
+files and plots or visualization products) obtained with modified
+versions of the "Software" must bear a clearly visible label, which
+distinguishes such product from any product obtained with the original
+version of the "Software", unless you have ensured that the results
+are in fact identical.
+
+Error fixes and "Software" modifications must be communicated to the
+coordinator of MPI-M model development/ model integration so that they
+can be used to improve the "Software". This does not affect your right
+to distribute such modifications as outlined above. You agree to
+submit modified parts of the "Software" to MPI-M. This covers all
+modifications, which maintain the functionality of the "Software" as
+provided, and those modifications, which improve the model results
+and/or performance.
+
+If you develop independent new components of the models, you may cover
+them with your own licence agreement as long as the terms of this
+licence are not violated. In particular, you must make your code
+available free of charge, and you must grant equal access rights to
+MPI-M.
+
+6. Acknowledgements 
+
+When you publish results generated with this "Software", you agree to
+refer to appropriate publications according to the appendix of this
+licence agreement. The "Software" must be explicitly mentioned, and
+modifications must be clearly described as outlined above. Depending
+on the degree of involvement of MPI-M scientists in the publication,
+their help must be acknowledged or co-authorship shall be offered.
+Individual extensions of the "Software" may carry more explicit
+requirements. The title and authors of any publication with results
+from the "Software" shall be sent to the coordinator of MPI-M model
+development/model integration not later than the publication is
+submitted to a scientific journal or as a book chapter, conference
+proceedings, etc. The coordinator of MPI-M model development/model
+integration also appreciates receiving a preprint and a reprint of
+your articles.
+
+7. Termination 
+
+Your rights under this licence agreement will terminate automatically
+without notice from MPI-M if you fail to comply with any term(s) of
+this licence. You may terminate this licence at any time by destroying
+the "Software" and any related documentation and any complete or
+partial copies thereof. Upon termination, all rights granted under
+this licence shall terminate. Provisions of this licence that, by
+their nature, contemplate continued effect after termination, shall
+survive termination, including paragraphs 9 to 11.
+
+8. Fees 
+
+There is no licence fee for the "Software".
+
+9. Proprietary Rights 
+
+Title, ownership rights, and intellectual property rights in the
+"Software" shall remain in MPI-M. You acknowledge such ownership and
+intellectual property rights and will not take any action to
+jeopardize, limit or interfere in any manner with MPI-M's ownership of
+rights with respect to the "Software". The "Software" is protected by
+Property Rights.
+
+10. Disclaimer of Warranty 
+
+You expressly acknowledge and agree that use of the "Software" is at
+your own risk.  The "Software" is provided "AS IS" and without
+warranty of any kind. MPI-M expressly disclaims all warranties and/or
+conditions, expressed or implied, including, but not limited to, the
+implied warranties and/or conditions of merchantability or
+satisfactory quality and fitness for a particular purpose. MPI-M does
+not warrant that the functions contained in the "Software" will meet
+your requirements, or that the operation of the "Software" will be
+uninterrupted or error-free, or that defects in the "Software" will be
+corrected. Furthermore, MPI-M does not warrant or make any
+representations regarding the use or the results of the use of the
+"Software" or related documentation in terms of their correctness,
+accuracy, reliability. No oral or written information or advice given
+by MPI-M or an MPI-M authorized representative shall create a warranty
+or in any way increase the scope of this warranty. Should the
+"Software" prove defective by your use, you (and not MPI-M or any
+MPI-M representative) assume the cost of all necessary correction.
+
+11. Limitation of Liability 
+
+Under no circumstances, including negligence, shall MPI-M be liable
+for any incidental, special, indirect or consequential damages arising
+out of or relating to this licence. In particular, MPI-M notes that
+the "Software" is not fault-tolerant and is not designed, manufactured
+or intended for use as on-line control equipment in hazardous
+environments requiring fail-safe performance, such as in the operation
+of nuclear facilities, aircraft navigation or communication systems,
+air traffic control, direct life support machines, or weapons systems,
+in which the failure of the "Software" could lead directly to death,
+personal injury, or severe physical or environmental damage ("High
+Risk Activities"). Accordingly, MPI-M specifically disclaims any
+expressed or implied warranties of fitness for High Risk
+Activities. By this licence the user agrees that MPI-M shall not be
+liable for any claims or damages arising from the use of the
+"Software" in such applications.
+
+12. Support/Modifications 
+
+The "Software" is provided without any support or maintenance, and
+without any obligation to provide you with modifications,
+improvements, enhancements, or updates of the "Software".
+
+13. Controlling Law and Severability 
+
+This licence shall be governed by the laws of the Federal Republic of
+Germany and the court of jurisdiction is Hamburg. If for any reason a
+court of competent jurisdiction finds any provision, or portion
+thereof, to be unenforceable, the remainder of this licence shall
+continue in full force and effect.
+
+Final Remarks 
+
+This licence constitutes the entire agreement between the parties with
+respect to the use of the "Software" and supersedes all prior or
+contemporaneous understandings regarding such subject matter.
+
+
+APPENDIX 
+
+
+A current set of reference publications, as of November 2006, is
+listed below, and will be amended in due time:
+
+ECHAM5: 
+
+Roeckner E., et al., The atmospheric general circulation model ECHAM
+5. PART I: Model description, MPI-Report 349, 127 pp, 2003.  Roeckner,
+E., R. Brokopf, M. Esch, M. Giorgetta, S. Hagemann, L. Kornblueh, E.
+Manzini, U. Schlese, and U. Schulzweida, Sensitivity of simulated
+climate to horizontal and vertical resolution in the ECHAM5 atmosphere
+model, J. Climate, 19, 3771-3791, 2006.
+
+MAECHAM5 (Middle Atmosphere configuration of ECHAM5): 
+
+Manzini, E., M.A. Giorgetta, M. Esch, L. Kornblueh, and E. Roeckner,
+The influence of sea surface temperatures on the northern winter
+stratosphere: ensemble simulations with the MAECHAM5 model,
+J. Climate, 19, 3863-3881, 2006.  Giorgetta, M. A., E. Manzini,
+E. Roeckner, M. Esch, and L. Bengtsson, Climatology and forcing of the
+quasi-biennial oscillation in the MAECHAM5 model, J. Climate, 19,
+3882-3901, 2006.
+
+ECHAM5-HAM: 
+
+Stier, P., et al., The aerosol-climate model ECHAM5-HAM,
+Atmos. Chem. Phys., 5, 1125-1156, 2005.
+
+MPIOM: 
+
+Marsland, S. J., H. Haak, J.H. Jungclaus, M. Latif, and F. Roeske, The
+Max-Planck- Institute global ocean/sea ice model with orthogonal
+curvilinear coordinates, Ocean Modelling, 5, 91-127, 2003.  Jungclaus,
+J.H., H. Haak, M. Latif, and U. Mikolajewicz, 2005: Arctic-North
+Atlantic interactions and multidecadal variability of the meridional
+overturning circulation, J.  Climate, 18, 4013-4031, 2005.
+
+MPIOM-HAMOCC: 
+
+Wetzel, P., A. Winguth, and E. Maier-Reimer, Sea-to-air CO2 flux from
+1948 to 2003: A model study, Global Biogeochem. Cycles, 19, GB2005,
+doi:10.1029/2004GB002339, 2005.
+
+ECHAM5/MPIOM: 
+
+Jungclaus, J.H. , N. Keenlyside, M. Botzet, H. Haak, J.-J. Luo,
+M. Latif, J. Marotzke, U. Mikolajewicz, and E. Roeckner, Ocean
+circulation and tropical variability in the coupled model
+ECHAM5/MPI-OM, J. Climate, 19, 3952-3972, 2006.  HD:
+
+Hagemann, S., and L. Dümenil, A parameterization of the lateral
+waterflow for the global scale. Clim. Dyn., 14, 17-31, 1998.
+Hagemann, S., L. Dümenil Gates, Validation of the hydrological
+cycle of ECMWF and NCEP reanalyses using the MPI hydrological
+discharge model. J. Geophys. Res., 106, 1503-1510, 2001.

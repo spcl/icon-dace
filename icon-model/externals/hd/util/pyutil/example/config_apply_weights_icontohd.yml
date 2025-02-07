@@ -1,0 +1,11 @@
+DATA: '/work/gg0302/g260122/data/icon/trang'
+DNICON: '/work/gg0302/g260122/data/icon/trang/icon_grid_atmos.nc'
+IFILE: 0              # 0: use DNINP, 1: generate file name with INTAG
+IOUT: 0               # 0: use DNOUT, 1: generate file name with PLTAG and var.name
+DNWEI: 'w_atm2riv.nc'  # Weight file in DATA
+DNINP: 'run.nc'     # ann_runoff_1861-1980.nc
+DNOUT: 'icon_to_hd_mapped'
+IWORK: 1         # 1: 1D -> 2D mapping, e.g. use weight15.nc or w_atm2riv.nc
+#                  2: 2D -> 1D mapping, e.g. use weight11.nc
+IGRID: 0         # Target Grid: 0 = global 0.5°, 2=euro5min
+

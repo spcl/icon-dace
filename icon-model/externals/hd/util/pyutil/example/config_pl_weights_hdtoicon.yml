@@ -1,0 +1,19 @@
+DATA: '/work/gg0302/g260122/data/icon/trang'
+DPLOT: '/scratch/g/g260122/tmp/plot'
+DNICON: '/work/gg0302/g260122/data/icon/trang/icon_grid_ocean.nc'
+IFILE: 0                # 0: use DNINP, 1: generate file name with INTAG
+IOUT: 0                 # 0: use DNOUT, 1: generate file name with PLTAG and var.name
+DNINP: 'w_riv2oce.nc'   # In YAC 2, this was named weight11.nc
+DNOUT: 'hd_to_icon_weights_trang_r2b6'
+IWORK: 1         # 1: Read src_address and plot hd_to_ICON boxes & mapping, Use: weight11.nc
+#                  2: read dst_address and plot HD_from_ICON, Use: weight15.nc
+PLTAG: 'hd_to_icon_r2b6'
+IREGION: 10      # Region no., 0 = globe, 10=euro5min
+IDOMAIN: 0       # Domain: 0 = global 0.5°, 2=euro5min
+XMIN: 0          # Minimum value for color range
+XMAX: 10         # Maximum value for color range
+XLOW: 0          # Values of XLOW and below are masked.
+XMISS: -9999     # Missing Value
+NCOL: 10         # Number of colors
+ICOLTYP: 1       # Colormap, 0 = jet, 1=jet_r, 5=r-b, 6=b-r
+LINTER: False    # Interactive run: no/yes

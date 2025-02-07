@@ -1,0 +1,90 @@
+/* src/config.h.in.  Generated from configure.ac by autoheader.  */
+
+/* Have PTHREAD_PRIO_INHERIT. */
+#undef HAVE_PTHREAD_PRIO_INHERIT
+
+/* Name of package */
+#undef PACKAGE
+
+/* Define to the address where bug reports for this package should be sent. */
+#undef PACKAGE_BUGREPORT
+
+/* Define to the full name of this package. */
+#undef PACKAGE_NAME
+
+/* Define to the full name and version of this package. */
+#undef PACKAGE_STRING
+
+/* Define to the one symbol short name of this package. */
+#undef PACKAGE_TARNAME
+
+/* Define to the home page for this package. */
+#undef PACKAGE_URL
+
+/* Define to the version of this package. */
+#undef PACKAGE_VERSION
+
+/* Define to necessary symbol if this constant uses a non-standard name on
+   your system. */
+#undef PTHREAD_CREATE_JOINABLE
+
+/* Version number of package */
+#undef VERSION
+
+/* do not include yac_config.h */
+#undef YAC_CONFIG_H
+
+/* Define to a macro mangling the given C identifier (in lower and upper
+   case), which must not contain underscores, for linking Fortran global
+   functions. */
+#undef YAC_FC_GLOBAL
+
+/* As YAC_FC_GLOBAL, but for identifiers containing underscores. */
+#undef YAC_FC_GLOBAL_
+
+/* Define to the ID of LAPACK interface to be used:
+   1 - for Intel MKL LAPACKE;
+   2 - for Netlib LAPACKE;
+   3 - for ATLAS CLAPACK;
+   4 - for Netlib CLAPACK;
+   5 - for Fortran LAPACK. */
+#undef YAC_LAPACK_INTERFACE_ID
+
+/* Fortran kind type parameter for MPI_Fint */
+#undef YAC_MPI_FINT_FC_KIND
+
+/* Enable NetCDF support */
+#undef YAC_NETCDF_ENABLED
+
+/* Enable OpenMP support */
+#undef YAC_OPENMP_ENABLED
+
+/* YAC version */
+#undef YAC_VERSION
+
+/* YAC major version */
+#undef YAC_VERSION_MAJOR
+
+/* YAC minor version */
+#undef YAC_VERSION_MINOR
+
+/* YAC patch version */
+#undef YAC_VERSION_PATCH
+
+/* YAC tweak version */
+#undef YAC_VERSION_TWEAK
+
+/* Define to the equivalent of the C99 'restrict' keyword, or to
+   nothing if this is not supported.  Do not define if restrict is
+   supported only directly.  */
+#undef restrict
+/* Work around a bug in older versions of Sun C++, which did not
+   #define __restrict__ or support _Restrict or __restrict__
+   even though the corresponding Sun C compiler ended up with
+   "#define restrict _Restrict" or "#define restrict __restrict__"
+   in the previous line.  This workaround can be removed once
+   we assume Oracle Developer Studio 12.5 (2016) or later.  */
+#if defined __SUNPRO_CC && !defined __RESTRICT && !defined __restrict__
+# define _Restrict
+# define __restrict__
+#endif

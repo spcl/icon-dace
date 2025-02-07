@@ -1,0 +1,21 @@
+gridtype  = projection
+gridsize  = 25800
+xsize     = 200
+ysize     = 129
+xname     = rlon
+xlongname = "rotated longitude"
+xunits    = "degrees"
+yname     = rlat
+ylongname = "rotated latitude"
+yunits    = "degrees"
+xfirst    = -37.84
+xinc      = 0.44
+yfirst    = -22.88
+yinc      = 0.44
+grid_mapping = rotated_pole
+grid_mapping_name = rotated_latitude_longitude
+long_name = "coordinates of the rotated North Pole"
+grid_north_pole_latitude = 60.31f
+grid_north_pole_longitude = 141.38f
+north_pole_grid_longitude = 180.f
+

@@ -1,0 +1,40 @@
+start_date: 1979-01-01T00:00:00
+end_date: 1979-12-31T00:00:00
+timestep_unit: hour
+calendar: proleptic-gregorian
+coupling:
+  - src_component: HD
+    src_grid: HD_GRID
+    tgt_component: OCEAN
+    tgt_grid: ocean_grid
+    coupling_period: 1
+    time_reduction: accumulate
+    field: RDC2NEMO
+    interpolation:
+      - source_to_target_map:
+          max_search_distance: 3.6
+      - fixed:
+          user_value: 0.0
+    weight_file_name: RDC2NEMO.nc
+  - src_component: land
+    src_grid: land_grid
+    tgt_component: HD
+    tgt_grid: HD_GRID
+    coupling_period: 1
+    time_reduction: accumulate
+    field: RUNOFF_S
+    interpolation:
+      - conservative:
+          order: 1
+    weight_file_name: RUNOFF_S.nc
+  - src_component: land
+    src_grid: land_grid
+    tgt_component: HD
+    tgt_grid: HD_GRID
+    coupling_period: 1
+    time_reduction: accumulate
+    field: RUNOFF_G
+    interpolation:
+      - conservative:
+          order: 1
+    weight_file_name: RUNOFF_G.nc

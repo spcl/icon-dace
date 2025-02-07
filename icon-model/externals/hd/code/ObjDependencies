@@ -1,0 +1,255 @@
+# ObjDependencies - File with Dependencies for compiling the HD model
+# 
+# Copyright (C) 2021, Institute of Coastal Systems - Analysis and Modelling, Helmholtz-Zentrum Hereon
+# SPDX-License-Identifier: Apache-2.0
+# See ./LICENSES/ for license information
+#
+# Authors: Stefan Hagemann and Ha Ho-Hagemann
+# Contact: <stefan.hagemann@hereon.de>
+#_________________________________________
+#
+$(OBJDIR)/mo_kind.o:                        $(SRCDIR)/mo_kind.f90
+	echo compiling mo_kind.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_kind.f90 )
+#
+$(OBJDIR)/get_dates.o:                      $(SRCDIR)/get_dates.f90 \
+           $(OBJDIR)/mo_io.o                $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_netcdf.o            $(OBJDIR)/mo_time_control.o \
+	   $(OBJDIR)/mo_time_conversion.o   $(OBJDIR)/mo_exception.o
+	echo compiling get_dates.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/get_dates.f90 )
+#
+$(OBJDIR)/hd_driver.o:                      $(SRCDIR)/hd_driver.f90 \
+           $(SRCDIR)/hd_ctl.inc        	    $(OBJDIR)/mo_bias_correction.o \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_grid.o   \
+	   $(OBJDIR)/mo_io_units.o          $(OBJDIR)/mo_hydrology.o \
+	   $(OBJDIR)/mo_hd_highres_io.o     $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_couple_to_ocean.o   $(OBJDIR)/mo_machine.o \
+	   $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_control.o           $(OBJDIR)/mo_filename.o \
+	   $(OBJDIR)/mo_namelist.o          $(OBJDIR)/mo_gaussgrid.o \
+	   $(OBJDIR)/mo_constants.o         $(OBJDIR)/mo_netcdf.o \
+	   $(OBJDIR)/mo_io.o                $(OBJDIR)/oas_hd.o   \
+	   $(OBJDIR)/mo_coupling.o          $(OBJDIR)/mo_coupling_hd.o
+	echo compiling hd_driver.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/hd_driver.f90 )
+#
+$(OBJDIR)/mo_array_utils.o:                 $(SRCDIR)/mo_array_utils.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_array_utils.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_array_utils.f90 )
+#
+$(OBJDIR)/mo_constants.o:                   $(SRCDIR)/mo_constants.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_constants.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_constants.f90 )
+#
+$(OBJDIR)/mo_control.o:                     $(SRCDIR)/mo_control.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_control.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_control.f90 )
+# HaHo adds $(OBJDIR)/oas_hd.o {
+$(OBJDIR)/mo_decomposition.o:               $(SRCDIR)/mo_decomposition.f90 \
+           $(OBJDIR)/mo_exception.o         $(OBJDIR)/mo_util_string.o \
+	   $(OBJDIR)/mo_mpi.o              
+	echo compiling mo_decomposition.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_decomposition.f90 )
+# HaHo }
+$(OBJDIR)/mo_exception.o:                   $(SRCDIR)/mo_exception.f90 \
+           $(OBJDIR)/mo_io_units.o          $(OBJDIR)/mo_mpi.o
+	echo compiling mo_exception.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_exception.f90 )
+#
+$(OBJDIR)/mo_filename.o:                    $(SRCDIR)/mo_filename.f90 \
+           $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_control.o \
+           $(OBJDIR)/mo_exception.o
+	echo compiling mo_filename.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_filename.f90 )
+#
+$(OBJDIR)/mo_gaussgrid.o:                   $(SRCDIR)/mo_gaussgrid.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_control.o \
+           $(OBJDIR)/mo_constants.o
+	echo compiling mo_gaussgrid.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_gaussgrid.f90 )
+#
+$(OBJDIR)/mo_grid.o:                        $(SRCDIR)/mo_grid.f90 \
+           $(OBJDIR)/mo_kind.o  \
+           $(OBJDIR)/mo_constants.o
+	echo compiling mo_grid.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_grid.f90 )
+#
+$(OBJDIR)/mo_hd_highres_io.o:               $(SRCDIR)/mo_hd_highres_io.f90 \
+           $(OBJDIR)/mo_grid.o      \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_filename.o \
+	   $(OBJDIR)/mo_namelist.o          $(OBJDIR)/mo_io_units.o \
+	   $(OBJDIR)/mo_netcdf.o            $(OBJDIR)/mo_time_conversion.o 
+	echo compiling mo_hd_highres_io.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_hd_highres_io.f90 )
+#
+$(OBJDIR)/mo_hydrology.o:                   $(SRCDIR)/mo_hydrology.f90 \
+           $(SRCDIR)/hydrology_ctl.inc      			 \
+	   $(OBJDIR)/mo_constants.o         $(OBJDIR)/mo_control.o \
+	   $(OBJDIR)/mo_decomposition.o     $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_hd_highres_io.o     $(OBJDIR)/mo_gaussgrid.o \
+           $(OBJDIR)/mo_grid.o              $(OBJDIR)/mo_kind.o   \
+	   $(OBJDIR)/mo_io.o                $(OBJDIR)/mo_netcdf.o \
+	   $(OBJDIR)/mo_memory_g3b.o        $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_array_utils.o \
+	   $(OBJDIR)/mo_namelist.o          $(OBJDIR)/mo_io_units.o \
+	   $(OBJDIR)/mo_filename.o          $(OBJDIR)/mo_coupling.o
+	echo compiling mo_hydrology.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_hydrology.f90 )
+#
+$(OBJDIR)/mo_couple_to_ocean.o:             $(SRCDIR)/mo_couple_to_ocean.f90 \
+           $(OBJDIR)/mo_exception.o         $(OBJDIR)/mo_grid.o      \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_hydrology.o \
+	   $(OBJDIR)/mo_namelist.o          $(OBJDIR)/mo_io_units.o \
+	   $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_time_conversion.o \
+           $(OBJDIR)/mo_netcdf.o            $(OBJDIR)/mo_io.o
+	echo compiling mo_couple_to_ocean.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_couple_to_ocean.f90 )
+#
+$(OBJDIR)/mo_interpo.o:                     $(SRCDIR)/mo_interpo.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_interpo.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_interpo.f90 )
+#
+$(OBJDIR)/mo_io.o:                          $(SRCDIR)/mo_io.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_netcdf.o \
+	   $(OBJDIR)/mo_filename.o          $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_control.o           $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_util_string.o       $(OBJDIR)/mo_linked_list.o \
+	   $(OBJDIR)/mo_decomposition.o     $(OBJDIR)/mo_time_control.o \
+	   $(OBJDIR)/mo_memory_base.o       $(OBJDIR)/mo_jsbach_comm_to_echam5mods.o
+	echo compiling mo_io.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_io.f90 )
+#
+$(OBJDIR)/mo_io_units.o:                    $(SRCDIR)/mo_io_units.f90
+	echo compiling mo_io_units.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_io_units.f90 )
+#
+$(OBJDIR)/mo_jsbach_comm_to_echam5mods.o:   $(SRCDIR)/mo_jsbach_comm_to_echam5mods.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_jsbach_comm_to_echam5mods.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_jsbach_comm_to_echam5mods.f90 )
+#
+$(OBJDIR)/mo_linked_list.o:                 $(SRCDIR)/mo_linked_list.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_util_string.o       $(OBJDIR)/mo_filename.o \
+	   $(OBJDIR)/mo_netcdf.o
+	echo compiling mo_linked_list.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_linked_list.f90 )
+#
+$(OBJDIR)/mo_machine.o:                     $(SRCDIR)/mo_machine.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_exception.o
+	echo compiling mo_machine.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_machine.f90 )
+#
+$(OBJDIR)/mo_memory_base.o:                 $(SRCDIR)/mo_memory_base.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_linked_list.o       $(OBJDIR)/mo_netcdf.o \
+	   $(OBJDIR)/mo_decomposition.o     $(OBJDIR)/mo_time_event.o \
+	   $(OBJDIR)/mo_time_control.o      $(OBJDIR)/mo_control.o \
+	   $(OBJDIR)/mo_jsbach_comm_to_echam5mods.o
+	echo compiling mo_memory_base.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_memory_base.f90 )
+#
+$(OBJDIR)/mo_memory_g3b.o:                  $(SRCDIR)/mo_memory_g3b.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_linked_list.o \
+	   $(OBJDIR)/mo_memory_base.o       $(OBJDIR)/mo_control.o
+	echo compiling mo_memory_g3b.f90 
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_memory_g3b.f90 )
+# HaHo add $(OBJDIR)/oas_hd_init.o {
+$(OBJDIR)/mo_mpi.o:                         $(SRCDIR)/mo_mpi.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_io_units.o \
+	   $(OBJDIR)/mo_util_string.o       $(OBJDIR)/oas_hd_init.o \
+	   $(OBJDIR)/mo_coupling.o
+	echo compiling mo_mpi.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_mpi.f90 )
+# HaHo }
+$(OBJDIR)/mo_namelist.o:                    $(SRCDIR)/mo_namelist.f90 \
+           $(OBJDIR)/mo_util_string.o       $(OBJDIR)/mo_filename.o \
+	   $(OBJDIR)/mo_exception.o
+	echo compiling mo_namelist.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_namelist.f90 )
+#
+$(OBJDIR)/mo_netcdf.o:                      $(SRCDIR)/mo_netcdf.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_control.o           $(OBJDIR)/mo_filename.o 
+	echo compiling mo_netcdf.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_netcdf.f90 )
+#
+$(OBJDIR)/mo_time_base.o:                   $(SRCDIR)/mo_time_base.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o
+	echo compiling mo_time_base.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_time_base.f90 )
+#
+$(OBJDIR)/mo_time_control.o:                $(SRCDIR)/mo_time_control.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_machine.o \
+	   $(OBJDIR)/mo_control.o           $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_mpi.o               $(OBJDIR)/mo_constants.o \
+	   $(OBJDIR)/mo_time_conversion.o \
+	   $(OBJDIR)/mo_time_manager.o      $(OBJDIR)/mo_time_event.o \
+	   $(OBJDIR)/mo_time_base.o         $(OBJDIR)/mo_interpo.o
+	echo compiling mo_time_control.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_time_control.f90 )
+#
+$(OBJDIR)/mo_time_conversion.o:             $(SRCDIR)/mo_time_conversion.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_time_base.o
+	echo compiling mo_time_conversion.f90  
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_time_conversion.f90 )
+#
+$(OBJDIR)/mo_time_event.o:                  $(SRCDIR)/mo_time_event.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_time_conversion.o   $(OBJDIR)/mo_time_base.o
+	echo compiling mo_time_event.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_time_event.f90 )
+#
+$(OBJDIR)/mo_time_manager.o:                $(SRCDIR)/mo_time_manager.f90 \
+           $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_time_conversion.o   $(OBJDIR)/mo_time_base.o
+	echo compiling mo_time_manager.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_time_manager.f90 )
+#
+$(OBJDIR)/mo_util_string.o:                 $(SRCDIR)/mo_util_string.f90 \
+           $(OBJDIR)/mo_kind.o
+	echo compiling mo_util_string.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG) $(SRCDIR)/mo_util_string.f90 )
+#
+# Ha Ho-Hagemann {
+$(OBJDIR)/oas_hd_init.o: $(SRCDIR)/oas_hd_init.f90 			\
+	   $(OBJDIR)/mo_kind.o
+	echo compiling oas_hd_init.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG1) $(SRCDIR)/oas_hd_init.f90 )
+#
+$(OBJDIR)/oas_hd.o: $(SRCDIR)/oas_hd.f90 				\
+	   $(OBJDIR)/mo_kind.o    	    $(OBJDIR)/mo_mpi.o \
+	   $(OBJDIR)/mo_control.o           $(OBJDIR)/mo_time_control.o
+	echo compiling oas_hd.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG1) $(SRCDIR)/oas_hd.f90 )
+# Ha Ho-Hagemann }
+#
+$(OBJDIR)/mo_coupling.o: $(SRCDIR)/mo_coupling.f90 			\
+	   $(OBJDIR)/mo_io_units.o
+	echo compiling mo_coupling.f90
+	( cd $(OBJDIR) && $(F90)  $(COMFLG1) $(SRCDIR)/mo_coupling.f90 )
+#
+$(OBJDIR)/mo_coupling_hd.o: $(SRCDIR)/mo_coupling_hd.f90 		\
+           $(OBJDIR)/mo_exception.o \
+	   $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_mpi.o  \
+	   $(OBJDIR)/mo_io.o                $(OBJDIR)/mo_netcdf.o \
+           $(OBJDIR)/mo_coupling.o
+	echo compiling mo_coupling_hd.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG1) $(SRCDIR)/mo_coupling_hd.f90 )
+#
+$(OBJDIR)/mo_bias_correction.o: $(SRCDIR)/mo_bias_correction.f90 	\
+           $(OBJDIR)/mo_exception.o         $(OBJDIR)/mo_hydrology.o  \
+	   $(OBJDIR)/mo_kind.o              $(OBJDIR)/mo_mpi.o  \
+	   $(OBJDIR)/mo_io.o                $(OBJDIR)/mo_netcdf.o \
+           $(OBJDIR)/mo_time_control.o
+	echo compiling mo_bias_correction.f90
+	( cd $(OBJDIR) && $(F90) $(COMFLG1) $(SRCDIR)/mo_bias_correction.f90 )
+
