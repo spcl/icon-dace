@@ -181,8 +181,8 @@ cd build/verification/
 export SDFG_LIB_PATHS="-L/home/primrose/Work/IconGrounds/icon-dace/.dacecache/radiation/build"
 export SDFG_LIBS="-lradiation"
 ../../config/generic/gcc \
-    CC=mpicc \
-    FC=mpif90 \
+    CC=gcc \
+    FC=gfortran \
     FCFLAGS="-g -O2 -I/usr/include/ -Wall -frecursive -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function -Wno-missing-include-dirs -DDACE_SUBST_VERIFY -DDACE_SUBST_ENABLE" \
     LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ ${SDFG_LIB_PATHS}" \
     LIBS="-leccodes -lnetcdff -lnetcdf -lopenblas ${SDFG_LIBS}" \
@@ -201,7 +201,9 @@ export SDFG_LIBS="-lradiation"
     --disable-openmp \
     --disable-loop-exchange \
     --enable-dace-subst=no \
-    --enable-explicit-fpp
+    --enable-explicit-fpp \
+    --disable-cdi-pio \
+    --disable-grib2 \
 make -j16
 ```
 
