@@ -110,9 +110,10 @@ def process(
             processed_lines.append(generate_imports_src(imports))
 
     processed_output_content = "".join(processed_lines)
-    assert os.path.islink(processed_output_path)
     if os.path.islink(processed_output_path):
         os.unlink(processed_output_path)
+    if os.path.isfile(processed_output_path):
+        os.remove(processed_output_path)
 
     with open(processed_output_path, "w+") as processed_output_file:
         processed_output_file.write(processed_output_content)
