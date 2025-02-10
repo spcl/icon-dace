@@ -185,7 +185,7 @@ export SDFG_LIBS="-lradiation"
     FC=gfortran \
     FCFLAGS="-g -O2 -I/usr/include/ -Wall -frecursive -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function -Wno-missing-include-dirs -DDACE_SUBST_VERIFY -DDACE_SUBST_ENABLE" \
     LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ ${SDFG_LIB_PATHS}" \
-    LIBS="-leccodes -lnetcdff -lnetcdf -lopenblas ${SDFG_LIBS}" \
+    LIBS="-lnetcdff -lnetcdf -lopenblas ${SDFG_LIBS}" \
     --enable-acm-license \
     --disable-mixed-precision \
     --disable-edmf \
@@ -203,8 +203,41 @@ export SDFG_LIBS="-lradiation"
     --enable-dace-subst=no \
     --enable-explicit-fpp \
     --disable-cdi-pio \
-    --disable-grib2 \
+    --disable-grib2
 make -j16
+```
+
+```
+./pipeline.sh
+cd icon-scratchpad/icon-model
+mkdir -p build/verification/
+cd build/verification/
+export SDFG_LIB_PATHS="-L/home/icon/icon/.dacecache/radiation/build"
+export SDFG_LIBS="-lradiation"
+../../config/generic/gcc \
+    CC=gcc \
+    FC=gfortran \
+    FCFLAGS="-g -O2 -I/usr/include/ -Wall -frecursive -Wno-unused-variable -Wno-unused-dummy-argument -Wno-unused-function -Wno-missing-include-dirs -DDACE_SUBST_VERIFY -DDACE_SUBST_ENABLE" \
+    LDFLAGS="-L/usr/lib/x86_64-linux-gnu/ ${SDFG_LIB_PATHS}" \
+    LIBS="-lnetcdff -lnetcdf -lopenblas ${SDFG_LIBS}" \
+    --enable-acm-license \
+    --disable-mixed-precision \
+    --disable-edmf \
+    --disable-les \
+    --disable-ocean \
+    --disable-jsbach \
+    --disable-coupling \
+    --disable-aes \
+    --disable-rte-rrtmgp \
+    --enable-ecrad \
+    --disable-mpi \
+    --disable-mpi-checks \
+    --disable-openmp \
+    --disable-loop-exchange \
+    --enable-dace-subst=no \
+    --enable-explicit-fpp \
+    --disable-cdi-pio \
+    --disable-grib2
 ```
 
 After this you need to make run scripts and run by:
