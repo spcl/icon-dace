@@ -322,7 +322,7 @@ def generate_copy_in_function_struct(
 
         member_name = fix_identifier(member_name)
 
-        if member_name in unused_names:
+        if member_name not in unused_names:
             if member_name in members_use_null:
                 copy_fields_src += f"""\
         dace_rich_obj%{member_name} = c_null_ptr
