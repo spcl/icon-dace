@@ -699,10 +699,7 @@ def generate_copy_back_subroutine_struct(
 
     if (.not. c_associated(c_loc(fortran_obj))) then
       if (c_associated(dace_obj_ptr)) then
-        call warning( &
-          "copy_back_{struct.name}", &
-          "Invalid allocation of {struct.name} by DaCe!" &
-        )
+        print *, "copy_back_{struct.name}: Invalid allocation of {struct.name} by DaCe!"
       end if
       return
     end if
@@ -732,10 +729,7 @@ def generate_copy_back_subroutine_struct_array(
 
     if (.not. c_associated(c_loc(fortran_struct_array))) then
       if (c_associated(dace_struct_array_ptr)) then
-        call warning( &
-          "copy_back_{stype.name}_{rank}d_array", &
-          "Invalid allocation of {stype.name} array by DaCe!" &
-        )
+        print *, "copy_back_{stype.name}_{rank}d_array: Invalid allocation of {stype.name} array by DaCe!" 
       end if
       return
     end if
@@ -831,7 +825,7 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
 
     real(8) :: rel_error, abs_error, threshold_ratio
     real(8) :: actual_rel_threshold, actual_abs_threshold
-    CHARACTER(len=MAX_CHAR_LENGTH) :: message_text = ''
+    CHARACTER(len=120) :: message_text = ''
 
     if (present(rel_threshold)) then
       actual_rel_threshold = rel_threshold
@@ -866,7 +860,8 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
           ref, &
           ", actual = ", &
           actual
-      call warning("compare_{dtype.to_string()}_scalar", message_text)
+        print *, "compare_{dtype.to_string()}_scalar"
+        print *, message_text
 
     end if
 
@@ -922,7 +917,7 @@ def _(array: dace.data.Array) -> str:
     logical :: local_result
     {ArrayLoopHelper.indices_decl(rank)}
     {dace_type_to_fortran_c_var_type_decl(dtype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
-    CHARACTER(len=MAX_CHAR_LENGTH) :: message_text = ''
+    CHARACTER(len=120) :: message_text = ''
 
     {dace_type_to_fortran_c_var_type_decl(dtype)} :: error_ref, error_actual
     integer, dimension(0:{rank - 1}) :: max_threshold_ratio_loc
@@ -938,7 +933,8 @@ def _(array: dace.data.Array) -> str:
           "Verification failed for array '", &
             trim(array_expr), &
           "':"//new_line('a')//"    - ref was NULL, but actual was not!"
-        call warning("compare_{dtype.to_string()}_{rank}d_array", message_text)
+        print *, "compare_{dtype.to_string()}_{rank}d_array"
+        print *, message_text
       end if
 
       return
@@ -991,7 +987,8 @@ def _(array: dace.data.Array) -> str:
           error_ref, &
           ", actual = ", &
           error_actual
-      call warning("compare_{dtype.to_string()}_{rank}d_array", message_text)
+      print *, "compare_{dtype.to_string()}_{rank}d_array"
+      print *, message_text
 
     end if
 
@@ -1057,7 +1054,7 @@ def generate_comparison_routine_dace_struct(
     logical, intent(out) :: result
     character(*), intent(in) :: struct_expr
 
-    CHARACTER(len=MAX_CHAR_LENGTH) :: member_expr = ''
+    CHARACTER(len=120) :: member_expr = ''
     type(dace_{struct.name}), pointer :: actual_rich
     logical :: local_result
     call c_f_pointer(actual, actual_rich)
@@ -1099,8 +1096,8 @@ def _(struct_array: dace.data.ContainerArray) -> str:
     logical, intent(out) :: result
     character(*), intent(in) :: struct_array_expr
 
-    CHARACTER(len=MAX_CHAR_LENGTH) :: member_expr = ''
-    CHARACTER(len=MAX_CHAR_LENGTH) :: message_text = ''
+    CHARACTER(len=120) :: member_expr = ''
+    CHARACTER(len=120) :: message_text = ''
     logical :: local_result
     {ArrayLoopHelper.indices_decl(rank)}
     {dace_type_to_fortran_c_var_type_decl(stype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
@@ -1113,7 +1110,8 @@ def _(struct_array: dace.data.ContainerArray) -> str:
           "Verification failed for array '", &
             trim(struct_array_expr), &
           "':"//new_line('a')//"    - ref was NULL, but actual was not!"
-        call warning("compare_{stype.name}_{rank}d_array", message_text)
+        print *, "compare_{stype.name}_{rank}d_array"
+        print *, message_text
       end if
 
       return
@@ -1464,7 +1462,8 @@ def _(value: bool, var_name: str, routine_name: str) -> str:
         "variable incorrectly initialized: {var_name} = '", &
         {var_name}, &
         "' (in SDFG = '{value}')"
-      call warning("{routine_name}", message_text)
+      print *, "{routine_name}"
+      print *, message_text
     end if
 """
 
@@ -1479,7 +1478,8 @@ def _(value: Union[int, np.int32, np.int64], var_name: str, routine_name: str) -
         "variable incorrectly initialized: {var_name} = '", &
         {var_name}, &
         "' (in SDFG = '{value}')"
-      call warning("{routine_name}", message_text)
+      print *, "{routine_name}"
+      print *, message_text
     end if
 """
 
@@ -1497,7 +1497,8 @@ def _(
         "variable incorrectly initialized: {var_name} = '", &
         {var_name}, &
         "' (in SDFG = '{value:.20e}')"
-      call warning("{routine_name}", message_text)
+      print *, "{routine_name}"
+      print *, message_text
     end if
 """
 
@@ -1539,7 +1540,7 @@ def generate_initializations_check(
 
     return f"""\
   subroutine check_initializations()
-    CHARACTER(len=MAX_CHAR_LENGTH) :: message_text = ''
+    CHARACTER(len=120) :: message_text = ''
 {checks_str}
   end subroutine check_initializations
 """
@@ -1559,7 +1560,7 @@ def generate_fortran_interface_source(
 
     imports_collector = ImportsCollector(initializaion_checks_ignore_list)
     imports_collector.require_symbol("warning")
-    imports_collector.require_symbol("MAX_CHAR_LENGTH")
+    #imports_collector.require_symbol("MAX_CHAR_LENGTH") # Requires module from ICON cant be used in ECRAD
 
     # they are sorted according to the C interfaces of the relevant functions
     sdfg_parameters = {
@@ -1833,8 +1834,12 @@ contains
         desc = sdfg_parameters[param_name]
 
         convenience_parameter_decls_str += f"""\
-    {dace_type_to_fortran_rich_var_type_decl(desc, enable_inout_hack=True)} :: {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX}{param_name}
+    !Optional helper parameter
+    !WARNING: HACKFIX, POSSIBLE EXPLOSION
+    integer(kind=c_int) :: {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX}{param_name}
 """
+        #{dace_type_to_fortran_rich_var_type_decl(desc, enable_inout_hack=True)} :: {_F2DACE_PARAM_OPTIONAL_HELPER_PREFIX}{param_name}
+
 
         # FIXME(small): try to use _obvious wrong value_ if not present
         assign_op = "="
@@ -2020,16 +2025,16 @@ contains
 {initialize_optionals_src}
 
     if (is_initialized .eqv. .false.) then
-      call warning("verify_{sdfg_name}", "dace state is not initialized")
+      print *, "verify_{sdfg_name}: dace state is not initialized"
     end if
 
     call check_initializations()
 
 {verification_copies_comparisons_src}
     if (.not. result) then
-      call warning("verify_{sdfg_name}", "Failed verification")
+      print *, "verify_{sdfg_name}: Failed verification"
     else
-      call warning("verify_{sdfg_name}", "Verification successful :)")
+      print *, "verify_{sdfg_name}: Verification successful :)"
     end if
 
   end subroutine verify_{sdfg_name}

@@ -67,8 +67,20 @@ def create_radiation_sdfg(
         )
 
 
-VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
-    # The only symbol needed for the actual SDFG
+CORE_EXCEPTION_MODULE_DEFINITIONS = dict(
+    message="mo_exception",
+    em_error="mo_exception",
+    em_none="mo_exception",
+    em_info="mo_exception",
+    em_warn="mo_exception",
+    em_param="mo_exception",
+    em_debug="mo_exception",
+    number_of_warnings="mo_exception",
+    number_of_errors="mo_exception",
+    warning="mo_exception",
+)
+
+CORE_VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     t_patch="mo_model_domain",
     t_grid_cells="mo_model_domain",
     t_grid_edges="mo_model_domain",
@@ -98,24 +110,12 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     t_nh_prog="mo_nonhydro_types",
     t_nh_ref="mo_nonhydro_types",
     t_prepare_adv="mo_prepadv_types",
-    # helpers for fortan interface
-    message="mo_exception",
-    em_error="mo_exception",
     MAX_CHAR_LENGTH="mo_impl_constants",
-    # globals
     dp="mo_kind",
     wp="mo_kind",
     sp="mo_kind",
     vp="mo_kind",
     i4="mo_kind",
-    em_none="mo_exception",
-    em_info="mo_exception",
-    em_warn="mo_exception",
-    em_param="mo_exception",
-    em_debug="mo_exception",
-    number_of_warnings="mo_exception",
-    number_of_errors="mo_exception",
-    warning="mo_exception",
     grid_length_rescale_factor="mo_grid_config",
     grid_rescale_factor="mo_grid_config",
     grid_angular_velocity="mo_grid_config",
@@ -206,6 +206,8 @@ VELOCITY_TENDENCIES_MODULE_DEFINITIONS = dict(
     edge2cell_coeff_cc="mo_intp_data_strc",
 )
 
+VELOCITY_TENDENCIES_MODULE_DEFINITIONS = CORE_VELOCITY_TENDENCIES_MODULE_DEFINITIONS
+
 sub_dict = dict(
     p_prog="p_nh%prog(nnew)",
     p_patch="p_patch",
@@ -242,7 +244,7 @@ sub_dict2 = dict(
     lvert_nest="transfer(lvert_nest, mold=int(1, kind=4))",
 )
 
-RADIATION_MODULE_DEFINITIONS = {
+CORE_RADIATION_MODULE_DEFINITIONS = {
     "ecrad": "mo_ecrad",
     "ecrad_ssi_default": "mo_ecrad",
     "ISolverSpartacus": "mo_ecrad",
@@ -269,10 +271,70 @@ RADIATION_MODULE_DEFINITIONS = {
     "ncol": "mo_parallel_config",
     "nproma_sub": "mo_parallel_config",
     "c_null_ptr": "iso_c_binding",
+    "jprb":"parkind1"
 }
 
 RADIATION_MODULE_DEFINITIONS = (
-    VELOCITY_TENDENCIES_MODULE_DEFINITIONS | RADIATION_MODULE_DEFINITIONS
+    CORE_VELOCITY_TENDENCIES_MODULE_DEFINITIONS | CORE_RADIATION_MODULE_DEFINITIONS
+)
+
+CORE_GET_ALBEDOS_MODULE_DEFINITIONS = {
+    "jprb": "parkind1",
+    "lhook": "ecradhook",
+    "dr_hook": "ecradhook",
+    "jphook": "ecradhook",
+    "nulout": "radiation_io",
+    "nulerr": "radiation_io",
+    "radiation_abort": "radiation_io",
+    "config_type": "radiation_config",
+    "IGasModelMonochromatic": "radiation_config",
+    "IGasModelIFSRRTMG": "radiation_config",
+    "IGasModelECCKD": "radiation_config",
+    "ISolverMcICA": "radiation_config",
+    "ISolverSpartacus": "radiation_config",
+    "ISolverHomogeneous": "radiation_config",
+    "ISolverTripleclouds": "radiation_config",
+    "ISolverMcICAACC": "radiation_config",
+    "single_level_type": "radiation_single_level",
+    "thermodynamics_type": "radiation_thermodynamics",
+    "gas_type": "radiation_gas",
+    "cloud_type": "radiation_cloud",
+    "aerosol_type": "radiation_aerosol",
+    "flux_type": "radiation_flux",
+    "solver_spartacus_sw": "radiation_spartacus_sw",
+    "solver_spartacus_lw": "radiation_spartacus_lw",
+    "solver_tripleclouds_sw": "radiation_tripleclouds_sw",
+    "solver_tripleclouds_lw": "radiation_tripleclouds_lw",
+    "solver_mcica_sw": "radiation_mcica_sw",
+    "solver_mcica_lw": "radiation_mcica_lw",
+    "solver_mcica_acc_sw": "radiation_mcica_acc_sw",
+    "solver_mcica_acc_lw": "radiation_mcica_acc_lw",
+    "solver_cloudless_sw": "radiation_cloudless_sw",
+    "solver_cloudless_lw": "radiation_cloudless_lw",
+    "solver_homogeneous_sw": "radiation_homogeneous_sw",
+    "solver_homogeneous_lw": "radiation_homogeneous_lw",
+    "save_radiative_properties": "radiation_save",
+    "gas_optics_mono": "radiation_monochromatic",
+    "cloud_optics_mono": "radiation_monochromatic",
+    "add_aerosol_optics_mono": "radiation_monochromatic",
+    "gas_optics_rrtmg": "radiation_ifs_rrtm",
+    "gas_optics_ecckd": "radiation_ecckd_interface",
+    "cloud_optics": "radiation_cloud_optics",
+    "general_cloud_optics": "radiation_general_cloud_optics",
+    "add_aerosol_optics": "radiation_aerosol_optics",
+    "cloud_optics_type": "radiation_cloud_optics_data",
+    "liq_coeff_lw":"radiation_cloud_optics_data",
+    "ice_coeff_sw":"radiation_cloud_optics_data",
+    "ncdf": "radiation_pdf_sampler",
+    "fsd1": "radiation_pdf_sampler",
+    "inv_fsd_interval":"radiation_pdf_sampler",
+    "pdf_sampler_type":"radiation_pdf_sampler",
+    #"MAX_CHAR_LENGTH":"mo_impl_constants", "cant include stuff from ICON in external module"
+
+}
+
+GET_ALBEDOS_MODULE_DEFINITIONS = (
+    CORE_GET_ALBEDOS_MODULE_DEFINITIONS | CORE_RADIATION_MODULE_DEFINITIONS
 )
 
 sub_dict3 = dict(
@@ -286,12 +348,7 @@ sub_dict3 = dict(
     iendcol="i_endidx_rad",
     istartcol="i_startidx_rad",
     ncol="nproma_sub",
-    nlev="nlev",
-    #sym_iendcol="i_endidx_rad",
-    #sym_istartcol="i_startidx_rad",
-    # sw_albedo_diffuse_var_601="0.0d0",
-    # sw_albedo_direct_var_600="0.0d0",
-    # lw_albedo_var_599="0.0d0",
+    nlev="nlev"
 )
 
 VELOCITY_TENDENCIES_ASSOCIATIONS = {
@@ -302,6 +359,50 @@ RADIATION_ASSOCIATIONS = {
     "mo_nwp_ecrad_interface.f90": {
         432: {442: sub_dict3},
     }
+}
+
+"""
+void __program_get_albedos_internal(
+get_albedos_state_t*__state,
+config_type* config_var_379,
+double * __restrict__ lw_albedo_var_382,
+single_level_type* self_var_378
+double * __restrict__ sw_albedo_diffuse_var_384
+double * __restrict__ sw_albedo_direct_var_383
+int __f2dace_OPTIONAL_lw_albedo_var_382
+int iendcol_var_381
+int istartcol_var_380
+int sym_iendcol_var_381
+int sym_istartcol_var_380
+)
+
+"""
+"""
+sub_dict4 = dict(
+    single_level="single_level",
+    istartcol="istartcol",
+    iendcol="iendcol",
+    config="config",
+    sw_albedo_direct_var_600="sw_albedo_direct",
+    sw_albedo_diffuse_var_601="sw_albedo_diffuse",
+    lw_albedo_var_599="lw_albedo",
+)
+"""
+
+sub_dict4 = {
+    "config_var_379": "config",
+    "lw_albedo_var_382": "lw_albedo",
+    "self_var_378": "single_level",
+    "sw_albedo_diffuse_var_384": "sw_albedo_diffuse",
+    "sw_albedo_direct_var_383": "sw_albedo_direct",
+    "iendcol_var_381": "iendcol",
+    "istartcol_var_380": "istartcol",
+    "sym_iendcol_var_381": "iendcol",
+    "sym_istartcol_var_380": "istartcol"
+}
+
+GET_ALBEDOS_ASSOCIATIONS = {
+    "radiation_interface.F90": {335: {338: sub_dict4}, }
 }
 
 
@@ -341,6 +442,62 @@ def create_velocity_tendencies_sdfg(
         module_definitions_yaml.write(
             dump_yaml(
                 VELOCITY_TENDENCIES_ASSOCIATIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
+
+
+size_repl_dict = {
+    "__f2dace_SA_i_band_from_reordered_g_lw_d_0_s_58":"__f2dace_SA_i_band_from_reordered_g_lw_d_0_s_58_config_var_379_1",
+    "__f2dace_SA_i_band_from_reordered_g_sw_d_0_s_59":"__f2dace_SA_i_band_from_reordered_g_sw_d_0_s_59_config_var_379_1",
+    "__f2dace_SA_lw_emissivity_d_0_s_196":"__f2dace_SA_lw_emissivity_d_0_s_196_self_var_378_0",
+    "__f2dace_SA_lw_emissivity_d_1_s_197":"__f2dace_SA_lw_emissivity_d_1_s_197_self_var_378_0",
+}
+
+def create_get_albedos_sdfg(
+    output_folder: Path,
+    associations: Dict[str, List[Tuple[int, int]]],
+):
+    current_folder = os.path.dirname(os.path.abspath(__file__))
+
+    demo_sdfg = dace.SDFG.from_file(
+        current_folder + "/get_albedos_broken.sdfgz"
+    )
+    for arr_name, arr in demo_sdfg.arrays.items():
+        ns = []
+        for s in arr.shape:
+            for sizestr in size_repl_dict:
+                ss = dace.symbolic.symbol(sizestr)
+                if ss in s.free_symbols:
+                    ns.append(s.replace(ss, dace.symbolic.symbol(size_repl_dict[sizestr])))
+                    break
+            else:
+                ns.append(s)
+        if isinstance(arr, dace.data.Array):
+            arr.set_shape(ns)
+    # Every occurence of size_repl_dict in all symbols
+    demo_sdfg.replace_dict(size_repl_dict)
+
+    demo_sdfg.save(str(output_folder / "get_albedos_unsimplified.sdfgz"))
+
+    # create module definitions
+    with open(
+        output_folder / "get_albedos_module_definitions.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                GET_ALBEDOS_MODULE_DEFINITIONS,
+                Dumper=YAML_Dumper,
+            )
+        )
+
+    # create associations
+    with open(
+        output_folder / "get_albedos_associations.yaml", "w"
+    ) as module_definitions_yaml:
+        module_definitions_yaml.write(
+            dump_yaml(
+                GET_ALBEDOS_ASSOCIATIONS,
                 Dumper=YAML_Dumper,
             )
         )
@@ -393,6 +550,8 @@ def main():
         create_radiation_sdfg(args.output_folder, required_associations)
     elif args.sdfg_name == "velocity_tendencies":
         create_velocity_tendencies_sdfg(args.output_folder, required_associations)
+    elif args.sdfg_name == "get_albedos":
+        create_get_albedos_sdfg(args.output_folder, required_associations)
     else:
         parser.error(f"Unknown SDFG '{args.sdfg_name}'!")
 
