@@ -825,7 +825,7 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
 
     real(8) :: rel_error, abs_error, threshold_ratio
     real(8) :: actual_rel_threshold, actual_abs_threshold
-    CHARACTER(len=120) :: message_text = ''
+    CHARACTER(len=5000) :: message_text = ''
 
     if (present(rel_threshold)) then
       actual_rel_threshold = rel_threshold
@@ -850,13 +850,13 @@ _COMPARISON_PRIMITIVE_FUNCTIONS_STR = "".join(
       write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,e28.20,a,e28.20)') &
         "Verification failed for scalar '", &
           trim(scalar_expr), &
-        "'"//new_line('a')//"    - rel_error = ", &
+        "'"//char(10)//"    - rel_error = ", &
           rel_error, &
           ", abs_error = ", &
           abs_error, &
           ", threshold_ratio = ", &
           threshold_ratio, &
-        new_line('a')//"    - ref = ", &
+        char(10)//"    - ref = ", &
           ref, &
           ", actual = ", &
           actual
@@ -898,6 +898,9 @@ def _(array: dace.data.Array) -> str:
         abs_threshold_expr="actual_abs_threshold",
     )
 
+    ll = len(ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i").split(","))
+    assert ll == rank
+
     return f"""
   subroutine compare_{dtype.to_string()}_{rank}d_array( &
     actual, &
@@ -917,13 +920,18 @@ def _(array: dace.data.Array) -> str:
     logical :: local_result
     {ArrayLoopHelper.indices_decl(rank)}
     {dace_type_to_fortran_c_var_type_decl(dtype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
-    CHARACTER(len=120) :: message_text = ''
+    CHARACTER(len=5000) :: message_text = ''
 
     {dace_type_to_fortran_c_var_type_decl(dtype)} :: error_ref, error_actual
     integer, dimension(0:{rank - 1}) :: max_threshold_ratio_loc
     real(8) :: rel_error, abs_error, threshold_ratio
 
     {ArrayLoopHelper.indices_decl(rank, "max_threshold_ratio_i")}
+    {ArrayLoopHelper.indices_decl(rank, "first_fail_i")}
+    {ArrayLoopHelper.indices_decl(rank, "last_fail_i")}
+    integer :: total_fails
+    integer :: total_indices
+    integer :: first_fail
 
     if (.not. c_associated(c_loc(ref))) then
       result = .not. c_associated(actual)
@@ -932,7 +940,7 @@ def _(array: dace.data.Array) -> str:
         write (message_text, '(a,a,a)') &
           "Verification failed for array '", &
             trim(array_expr), &
-          "':"//new_line('a')//"    - ref was NULL, but actual was not!"
+          "':"//char(10)//"    - ref was NULL, but actual was not!"
         print *, "compare_{dtype.to_string()}_{rank}d_array"
         print *, message_text
       end if
@@ -956,10 +964,28 @@ def _(array: dace.data.Array) -> str:
 
     call c_f_pointer(actual, actual_rich, shape=shape(ref))
 
+
 {ArrayLoopHelper.loop_begins(rank, "ref")}
 {comparison_stmts}
     result = result .and. local_result
 {ArrayLoopHelper.loop_ends(rank)}
+
+    ! Initialize first and last fail locations
+    first_fail = -1
+
+{ArrayLoopHelper.loop_begins(rank, "ref")}
+    {comparison_stmts}
+    if (.not. local_result) then
+        if (first_fail == -1) then
+            {"\n            ".join([f"first_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
+            first_fail = 1
+        endif
+        {"\n        ".join([f"last_fail_{i} = {i}" for i in ArrayLoopHelper.indices_expr(rank).split(", ")])}
+        total_fails = total_fails + 1
+    endif
+{ArrayLoopHelper.loop_ends(rank)}
+
+    total_indices =  {" * ".join([f"size(ref, dim={i+1})" for i in range(rank)])}
 
     if (.not. result) then
       max_threshold_ratio_loc = maxloc(abs(ref - actual_rich) / max(actual_rel_threshold * abs(ref), actual_abs_threshold))
@@ -972,21 +998,25 @@ def _(array: dace.data.Array) -> str:
       rel_error = abs(real(error_ref - error_actual, kind=8)/error_ref)
       abs_error = abs(error_ref - error_actual)
 
-      write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,{rank}(i0:,", "),a,e28.20,a,e28.20)') &
+      write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,"(",{',", ",'.join(["i0"]*rank)},")",a,i0,a,i0)') &
         "Verification failed for array '", &
           trim(array_expr), &
-        "':"//new_line('a')//"    - max_threshold_ratio = ", &
+        "':"//char(10)//"    - max_threshold_ratio = ", &
           threshold_ratio, &
           ", rel_error = ", &
           rel_error, &
           ", abs_error = ", &
           abs_error, &
-        new_line('a')//"    - at (", &
-          [{ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")}], &
+        char(10)//"    - at (", &
+          {ArrayLoopHelper.indices_expr(rank, "max_threshold_ratio_i")}, &
           "), ref = ", &
           error_ref, &
           ", actual = ", &
-          error_actual
+          error_actual, &
+          " first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
+          " last_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "last_fail_i")}, &
+          " total_fails: ", total_fails, &
+          " total_indices: ", total_indices
       print *, "compare_{dtype.to_string()}_{rank}d_array"
       print *, message_text
 
@@ -1054,7 +1084,7 @@ def generate_comparison_routine_dace_struct(
     logical, intent(out) :: result
     character(*), intent(in) :: struct_expr
 
-    CHARACTER(len=120) :: member_expr = ''
+    CHARACTER(len=5000) :: member_expr = ''
     type(dace_{struct.name}), pointer :: actual_rich
     logical :: local_result
     call c_f_pointer(actual, actual_rich)
@@ -1096,8 +1126,8 @@ def _(struct_array: dace.data.ContainerArray) -> str:
     logical, intent(out) :: result
     character(*), intent(in) :: struct_array_expr
 
-    CHARACTER(len=120) :: member_expr = ''
-    CHARACTER(len=120) :: message_text = ''
+    CHARACTER(len=5000) :: member_expr = ''
+    CHARACTER(len=5000) :: message_text = ''
     logical :: local_result
     {ArrayLoopHelper.indices_decl(rank)}
     {dace_type_to_fortran_c_var_type_decl(stype)}, dimension({ArrayLoopHelper.dimensions(rank)}), pointer :: actual_rich
@@ -1109,7 +1139,7 @@ def _(struct_array: dace.data.ContainerArray) -> str:
         write (message_text, '(a,a,a)') &
           "Verification failed for array '", &
             trim(struct_array_expr), &
-          "':"//new_line('a')//"    - ref was NULL, but actual was not!"
+          "':"//char(10)//"    - ref was NULL, but actual was not!"
         print *, "compare_{stype.name}_{rank}d_array"
         print *, message_text
       end if
@@ -1540,7 +1570,7 @@ def generate_initializations_check(
 
     return f"""\
   subroutine check_initializations()
-    CHARACTER(len=120) :: message_text = ''
+    CHARACTER(len=5000) :: message_text = ''
 {checks_str}
   end subroutine check_initializations
 """
