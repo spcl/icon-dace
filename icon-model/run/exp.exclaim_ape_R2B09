@@ -3,7 +3,7 @@
 # Aquaplanet setup for EXCLAIM using NWP physics
 #
 #=============================================================================
-# 
+#
 # This section of the run script contains the specifications of the experiment.
 # The specifications are passed by namelist to the program.
 # For a complete list see Namelist_overview.pdf
@@ -43,7 +43,7 @@ dt_gwd=`expr 4 \* $atmTimeStep`
 
 # horizontal grid(s)
 # ------------------
-atmo_dyn_grid=/home/alex/icon-model/grids/icon_grid_${atmos_gridID}_${atmos_refinement}_G.nc
+atmo_dyn_grid=${basedir}/grids/icon_grid_${atmos_gridID}_${atmos_refinement}_G.nc
 
 # start and end date+time
 start_date=${start_date:="2000-01-01T00:00:00Z"}
