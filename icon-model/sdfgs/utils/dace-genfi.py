@@ -929,10 +929,18 @@ def _(array: dace.data.Array) -> str:
     {ArrayLoopHelper.indices_decl(rank, "max_threshold_ratio_i")}
     {ArrayLoopHelper.indices_decl(rank, "first_fail_i")}
     {ArrayLoopHelper.indices_decl(rank, "last_fail_i")}
+    {ArrayLoopHelper.indices_decl(rank, "dim_i")}
     integer :: total_fails
     integer :: total_indices
     integer :: first_fail
 
+    {"\n    ".join([f"{ex} = -1" for ex in ArrayLoopHelper.indices_expr(rank, "first_fail_i").split(", ")])}
+    {"\n    ".join([f"{ex} = -1" for ex in ArrayLoopHelper.indices_expr(rank, "last_fail_i").split(", ")])}
+    {"\n    ".join([f"{ex} = size(ref, dim={kk+1})" for kk, ex in enumerate(ArrayLoopHelper.indices_expr(rank, "dim_i").split(", "))])}
+    total_fails = 0
+    total_indices = 0
+    first_fail = -1
+    
     if (.not. c_associated(c_loc(ref))) then
       result = .not. c_associated(actual)
 
@@ -970,9 +978,6 @@ def _(array: dace.data.Array) -> str:
     result = result .and. local_result
 {ArrayLoopHelper.loop_ends(rank)}
 
-    ! Initialize first and last fail locations
-    first_fail = -1
-
 {ArrayLoopHelper.loop_begins(rank, "ref")}
     {comparison_stmts}
     if (.not. local_result) then
@@ -998,7 +1003,7 @@ def _(array: dace.data.Array) -> str:
       rel_error = abs(real(error_ref - error_actual, kind=8)/error_ref)
       abs_error = abs(error_ref - error_actual)
 
-      write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,"(",{',", ",'.join(["i0"]*rank)},")",a,i0,a,i0)') &
+      write (message_text, '(a,a,a,e28.20,a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,e28.20,a,e28.20,a,"(",{',", ",'.join(["i0"]*rank)},")",a,"(",{',", ",'.join(["i0"]*rank)},")",a,i0,a,i0,a,i0,a,"(",{',", ",'.join(["i0"]*rank)},")")') &
         "Verification failed for array '", &
           trim(array_expr), &
         "':"//char(10)//"    - max_threshold_ratio = ", &
@@ -1016,7 +1021,9 @@ def _(array: dace.data.Array) -> str:
           " first_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "first_fail_i")}, &
           " last_fail_index: ", {ArrayLoopHelper.indices_expr(rank, "last_fail_i")}, &
           " total_fails: ", total_fails, &
-          " total_indices: ", total_indices
+          " total_indices: ", total_indices, &
+          " call_to_size: ", size(ref), &
+          " shape: ", {ArrayLoopHelper.indices_expr(rank, "dim_i")}
       print *, "compare_{dtype.to_string()}_{rank}d_array"
       print *, message_text
 
