@@ -484,8 +484,8 @@ end subroutine revert_delta_eddington
                    &  -thermodynamics%pressure_hl(jcol,jlev  )  ) &
                    &  / (accelduetogravity * cloud%fraction(jcol,jlev))
             end if
-            lwp_in_cloud = factor * cloud%q_liq(jcol,jlev)
-            iwp_in_cloud = factor * cloud%q_ice(jcol,jlev)
+            lwp_in_cloud = factor * cloud%mixing_ratio(jcol,jlev,1)
+            iwp_in_cloud = factor * cloud%mixing_ratio(jcol,jlev,2)
 
             ! only compute liquid properties if liquid cloud is
             ! present
@@ -496,24 +496,24 @@ end subroutine revert_delta_eddington
                 ! compute longwave properties
                 call calc_liq_optics_socrates(config%n_bands_lw, &
                     &  config%cloud_optics%liq_coeff_lw, &
-                    &  lwp_in_cloud, cloud%re_liq(jcol,jlev), &
+                    &  lwp_in_cloud, cloud%effective_radius(jcol,jlev,1), &
                     &  od_lw_liq, scat_od_lw_liq, g_lw_liq)
                 ! compute shortwave properties
                 call calc_liq_optics_socrates(config%n_bands_sw, &
                     &  config%cloud_optics%liq_coeff_sw, &
-                    &  lwp_in_cloud, cloud%re_liq(jcol,jlev), &
+                    &  lwp_in_cloud, cloud%effective_radius(jcol,jlev,1), &
                     &  od_sw_liq, scat_od_sw_liq, g_sw_liq)
 
               else if (config%i_liq_model == iliquidmodelslingo) then
                 ! compute longwave properties
                 call calc_liq_optics_lindner_li(config%n_bands_lw, &
                     &  config%cloud_optics%liq_coeff_lw, &
-                    &  lwp_in_cloud, cloud%re_liq(jcol,jlev), &
+                    &  lwp_in_cloud, cloud%effective_radius(jcol,jlev,1), &
                     &  od_lw_liq, scat_od_lw_liq, g_lw_liq)
                 ! compute shortwave properties
                 call calc_liq_optics_slingo(config%n_bands_sw, &
                     &  config%cloud_optics%liq_coeff_sw, &
-                    &  lwp_in_cloud, cloud%re_liq(jcol,jlev), &
+                    &  lwp_in_cloud, cloud%effective_radius(jcol,jlev,1), &
                     &  od_sw_liq, scat_od_sw_liq, g_sw_liq)
               else
                 write(nulerr,*) '*** error: unknown liquid model with code', &
@@ -548,12 +548,12 @@ end subroutine revert_delta_eddington
                 ! compute longwave properties
                 call calc_ice_optics_baran(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jle,2), &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 ! compute shortwave properties
                 call calc_ice_optics_baran(config%n_bands_sw, &
                     &  config%cloud_optics%ice_coeff_sw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
               else if (config%i_ice_model == iicemodelbaran2016) then
                 temperature = 0.5_jprb * (thermodynamics%temperature_hl(jcol,jlev) &
@@ -561,13 +561,13 @@ end subroutine revert_delta_eddington
                 ! compute longwave properties
                 call calc_ice_optics_baran2016(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  temperature, &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 ! compute shortwave properties
                 call calc_ice_optics_baran2016(config%n_bands_sw, &
                     &  config%cloud_optics%ice_coeff_sw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  temperature, &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
               else if (config%i_ice_model == iicemodelbaran2017) then
@@ -577,14 +577,14 @@ end subroutine revert_delta_eddington
                 call calc_ice_optics_baran2017(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_gen, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  temperature, &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 ! compute shortwave properties
                 call calc_ice_optics_baran2017(config%n_bands_sw, &
                     &  config%cloud_optics%ice_coeff_gen, &
                     &  config%cloud_optics%ice_coeff_sw, &
-                    &  iwp_in_cloud, cloud%q_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  temperature, &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
               else if (config%i_ice_model == iicemodelfu) then
@@ -592,7 +592,7 @@ end subroutine revert_delta_eddington
                 ! compute longwave properties
                 call calc_ice_optics_fu_lw(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%re_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%effective_radius(jcol,jlev,2), &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 if (config%do_fu_lw_ice_optics_bug) then
                   ! reproduce bug in old ifs scheme
@@ -601,19 +601,19 @@ end subroutine revert_delta_eddington
                 ! compute shortwave properties
                 call calc_ice_optics_fu_sw(config%n_bands_sw, &
                     &  config%cloud_optics%ice_coeff_sw, &
-                    &  iwp_in_cloud, cloud%re_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%effective_radius(jcol,jlev,2), &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
 
               else if (config%i_ice_model == iicemodelyi) then
                 ! compute longwave properties
                 call calc_ice_optics_yi_lw(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%re_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%effective_radius(jcol,jlev,2), &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 ! compute shortwave properties
                 call calc_ice_optics_yi_sw(config%n_bands_sw, &
                     &  config%cloud_optics%ice_coeff_sw, &
-                    &  iwp_in_cloud, cloud%re_ice(jcol,jlev), &
+                    &  iwp_in_cloud, cloud%effective_radius(jcol,jlev,2), &
                     &  od_sw_ice, scat_od_sw_ice, g_sw_ice)
               else
                 write(nulerr,*) '*** error: unknown ice model with code', &

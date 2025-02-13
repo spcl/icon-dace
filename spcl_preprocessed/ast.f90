@@ -1145,8 +1145,7 @@ END MODULE radiation_aerosol_optics
 MODULE radiation_cloud
   IMPLICIT NONE
   TYPE :: cloud_type
-    REAL(KIND = 8), ALLOCATABLE, DIMENSION(:, :, :) :: mixing_ratio
-    REAL(KIND = 8), POINTER, DIMENSION(:, :) :: q_liq, q_ice, re_liq, re_ice
+    REAL(KIND = 8), ALLOCATABLE, DIMENSION(:, :, :) :: mixing_ratio, effective_radius
     REAL(KIND = 8), ALLOCATABLE, DIMENSION(:, :) :: fraction
     REAL(KIND = 8), ALLOCATABLE, DIMENSION(:, :) :: fractional_std
     REAL(KIND = 8), ALLOCATABLE, DIMENSION(:, :) :: overlap_param
@@ -1234,11 +1233,11 @@ MODULE radiation_cloud_optics
       DO jcol_var_450 = istartcol_var_438, iendcol_var_439
         IF (cloud_var_442 % fraction(jcol_var_450, jlev_var_451) > 0.0D0) THEN
           factor_var_449 = (thermodynamics_var_441 % pressure_hl(jcol_var_450, jlev_var_451 + 1) - thermodynamics_var_441 % pressure_hl(jcol_var_450, jlev_var_451)) / (9.80665D0 * cloud_var_442 % fraction(jcol_var_450, jlev_var_451))
-          lwp_in_cloud = factor_var_449 * cloud_var_442 % q_liq(jcol_var_450, jlev_var_451)
-          iwp_in_cloud = factor_var_449 * cloud_var_442 % q_ice(jcol_var_450, jlev_var_451)
+          lwp_in_cloud = factor_var_449 * cloud_var_442 % mixing_ratio(jcol_var_450, jlev_var_451, 1)
+          iwp_in_cloud = factor_var_449 * cloud_var_442 % mixing_ratio(jcol_var_450, jlev_var_451, 2)
           IF (lwp_in_cloud > 0.0D0) THEN
-            CALL calc_liq_optics_socrates(16, config_var_440 % cloud_optics % liq_coeff_lw, lwp_in_cloud, cloud_var_442 % re_liq(jcol_var_450, jlev_var_451), od_lw_liq, scat_od_lw_liq, g_lw_liq)
-            CALL calc_liq_optics_socrates(14, config_var_440 % cloud_optics % liq_coeff_sw, lwp_in_cloud, cloud_var_442 % re_liq(jcol_var_450, jlev_var_451), od_sw_liq, scat_od_sw_liq, g_sw_liq)
+            CALL calc_liq_optics_socrates(16, config_var_440 % cloud_optics % liq_coeff_lw, lwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 1), od_lw_liq, scat_od_lw_liq, g_lw_liq)
+            CALL calc_liq_optics_socrates(14, config_var_440 % cloud_optics % liq_coeff_sw, lwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 1), od_sw_liq, scat_od_sw_liq, g_sw_liq)
             CALL delta_eddington_scat_od(od_sw_liq, scat_od_sw_liq, g_sw_liq)
           ELSE
             od_lw_liq = 0.0D0
@@ -1249,10 +1248,10 @@ MODULE radiation_cloud_optics
             g_sw_liq = 0.0D0
           END IF
           IF (iwp_in_cloud > 0.0D0) THEN
-            CALL calc_ice_optics_fu_lw(16, config_var_440 % cloud_optics % ice_coeff_lw, iwp_in_cloud, cloud_var_442 % re_ice(jcol_var_450, jlev_var_451), od_lw_ice, scat_od_lw_ice, g_lw_ice)
-            CALL calc_ice_optics_fu_sw(14, config_var_440 % cloud_optics % ice_coeff_sw, iwp_in_cloud, cloud_var_442 % re_ice(jcol_var_450, jlev_var_451), od_sw_ice, scat_od_sw_ice, g_sw_ice)
-            CALL calc_ice_optics_yi_lw(16, config_var_440 % cloud_optics % ice_coeff_lw, iwp_in_cloud, cloud_var_442 % re_ice(jcol_var_450, jlev_var_451), od_lw_ice, scat_od_lw_ice, g_lw_ice)
-            CALL calc_ice_optics_yi_sw(14, config_var_440 % cloud_optics % ice_coeff_sw, iwp_in_cloud, cloud_var_442 % re_ice(jcol_var_450, jlev_var_451), od_sw_ice, scat_od_sw_ice, g_sw_ice)
+            CALL calc_ice_optics_fu_lw(16, config_var_440 % cloud_optics % ice_coeff_lw, iwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 2), od_lw_ice, scat_od_lw_ice, g_lw_ice)
+            CALL calc_ice_optics_fu_sw(14, config_var_440 % cloud_optics % ice_coeff_sw, iwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 2), od_sw_ice, scat_od_sw_ice, g_sw_ice)
+            CALL calc_ice_optics_yi_lw(16, config_var_440 % cloud_optics % ice_coeff_lw, iwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 2), od_lw_ice, scat_od_lw_ice, g_lw_ice)
+            CALL calc_ice_optics_yi_sw(14, config_var_440 % cloud_optics % ice_coeff_sw, iwp_in_cloud, cloud_var_442 % effective_radius(jcol_var_450, jlev_var_451, 2), od_sw_ice, scat_od_sw_ice, g_sw_ice)
             CALL delta_eddington_scat_od(od_sw_ice, scat_od_sw_ice, g_sw_ice)
             CALL delta_eddington_scat_od(od_lw_ice, scat_od_lw_ice, g_lw_ice)
           ELSE
