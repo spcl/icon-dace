@@ -548,7 +548,7 @@ end subroutine revert_delta_eddington
                 ! compute longwave properties
                 call calc_ice_optics_baran(config%n_bands_lw, &
                     &  config%cloud_optics%ice_coeff_lw, &
-                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jle,2), &
+                    &  iwp_in_cloud, cloud%mixing_ratio(jcol,jlev,2), &
                     &  od_lw_ice, scat_od_lw_ice, g_lw_ice)
                 ! compute shortwave properties
                 call calc_ice_optics_baran(config%n_bands_sw, &
