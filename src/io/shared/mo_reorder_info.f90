@@ -17,6 +17,7 @@
 #else
 #undef USE_CONTIGUOUS
 #endif
+#undef USE_CONTIGUOUS
 MODULE mo_reorder_info
   USE mo_kind, ONLY: i4, i8, dp, sp
   USE mo_mpi, ONLY: p_bcast, p_comm_remote_size, p_allgather, p_allgatherv, &
